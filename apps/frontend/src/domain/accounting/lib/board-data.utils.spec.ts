@@ -10,12 +10,14 @@ import {
 import type {
   BoardDocument,
   BoardVolunteer,
+  DocStatus,
 } from '../components/reimbursements-board';
 import {
   boardYear,
   buildBoardVolunteers,
   contractPeriodOverlapsYear,
   contractStatusToDocStatus,
+  documentRowAction,
   formatMonthYear,
   getContractStateForPicker,
   getDocLineSummary,
@@ -1055,5 +1057,40 @@ describe('getPickerAnnotations', () => {
     expect(
       getPickerAnnotations(makeVol([])).latestTimesheetDate,
     ).toBeUndefined();
+  });
+});
+
+describe('documentRowAction', () => {
+  const doc = (status: DocStatus): BoardDocument => ({
+    id: 'synthetic-or-real',
+    status,
+    periodLabel: '',
+  });
+
+  it('routes a timesheet still to create to the creation modal, not the detail sheet', () => {
+    expect(documentRowAction(doc('timesheet-generate'))).toBe('create');
+  });
+
+  it('makes a contract still to create inert on the row body', () => {
+    expect(documentRowAction(doc('contract-generate'))).toBe('none');
+  });
+
+  it('opens the detail sheet for rows backed by a persisted document', () => {
+    const persisted: DocStatus[] = [
+      'contract-draft',
+      'contract-signing-vol',
+      'contract-signing-coord',
+      'contract-active',
+      'contract-missing',
+      'contract-declined',
+      'timesheet-signing-vol',
+      'timesheet-signing-super',
+      'timesheet-ready',
+      'timesheet-muted',
+      'timesheet-declined',
+    ];
+    for (const status of persisted) {
+      expect(documentRowAction(doc(status))).toBe('open');
+    }
   });
 });

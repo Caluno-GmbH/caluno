@@ -60,6 +60,21 @@ export function getDocLineSummary(
   return { count: matches.length, latest };
 }
 
+export type DocumentRowAction = 'open' | 'create' | 'none';
+
+/**
+ * What a board row's body click should do. Rows backed by a persisted document
+ * open the detail sheet by id; a timesheet still to create has no persisted
+ * document — its row id is synthetic — so its body click opens the creation
+ * modal instead of querying an id that is not a UUID. `contract-generate`
+ * stays inert; its action lives on the button.
+ */
+export function documentRowAction(doc: BoardDocument): DocumentRowAction {
+  if (doc.status === 'contract-generate') return 'none';
+  if (doc.status === 'timesheet-generate') return 'create';
+  return 'open';
+}
+
 export type ContractPickerState =
   | 'none'
   | 'awaiting-signature'

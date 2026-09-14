@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { documentRowAction } from '../lib/board-data.utils';
 import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
@@ -36,7 +37,6 @@ import {
   getReadyToGoDocs,
   isTimesheetNonCompliant,
 } from './reimbursements-board';
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
@@ -421,9 +421,12 @@ function VolunteerTableGroup({
             doc.status === 'contract-generate' ||
             doc.status === 'timesheet-generate';
           // Contract-generate has nothing to show yet (no signing chain has
-          // started); timesheet-generate already has computed hours/amount,
-          // so it stays visually dimmed but is still openable.
-          const canOpenSheet = doc.status !== 'contract-generate';
+          // started); timesheet-generate already has computed hours/amount.
+          // A row with no persisted document (timesheet-generate) opens the
+          // creation modal on body click; its synthetic id must never be
+          // fetched as a document.
+          const rowAction = documentRowAction(doc);
+          const canOpenSheet = rowAction !== 'none';
           const effectivePauschale = doc.pauschale ?? vol.pauschale;
           const docNonCompliant = isTimesheetNonCompliant(vol, doc);
           const isDeclined =
@@ -440,7 +443,13 @@ function VolunteerTableGroup({
                   : 'cursor-default',
                 !isActive && !meta.isYourAction && !isGenerate && 'bg-muted/20',
               )}
-              onClick={() => canOpenSheet && onDocumentClick(doc, vol)}
+              onClick={() => {
+                if (rowAction === 'create') {
+                  onRequestCreate({ doc, vol });
+                  return;
+                }
+                if (rowAction === 'open') onDocumentClick(doc, vol);
+              }}
             >
               <TableCell
                 className={cn(
