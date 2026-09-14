@@ -520,4 +520,131 @@ describe('reimbursement-rate resolver unit scoping', () => {
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
     });
   });
+
+  describe('volunteerYearlyUsage', () => {
+    const createInvoiceTemplate = (
+      organizationId: string,
+      reimbursementTypeId: string,
+    ) =>
+      createDocumentTemplate(db, {
+        organizationId,
+        reimbursementTypeId,
+        kind: DocumentKind.INVOICE,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+
+    const insertInvoice = async (input: {
+      documentTemplateId: string;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      totalAmountCents: number;
+      invoiceStatus: InvoiceStatus;
+    }) => {
+      const [invoice] = await db
+        .insert(schema.invoices)
+        .values({
+          documentTemplateId: input.documentTemplateId,
+          volunteerId: input.volunteerId,
+          reimbursementTypeId: input.reimbursementTypeId,
+          periodStart: new Date('2026-03-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-04-01T00:00:00.000Z'),
+          totalAmountCents: input.totalAmountCents,
+          totalHours: 1,
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+          invoiceStatus: input.invoiceStatus,
+        })
+        .returning();
+      return invoice;
+    };
+
+    it("rejects a volunteer outside the caller's org subtree", async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { branchA, branchB } = await setupOrgTree();
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, branchB.id);
+
+      await expect(
+        queryResolver.volunteerYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          contextFor(branchA.id),
+        ),
+      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+    });
+
+    it("returns the volunteer's usage including the initial amount, not the caller's", async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { organization, branchA, branchASub } = await setupOrgTree();
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, branchASub.id);
+      const caller = await createUser(db);
+      await mutationResolver.setManualBaseline(
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        5_000,
+        contextFor(branchA.id),
+        { user: { id: caller.id } } as UserSession,
+      );
+      const template = await createInvoiceTemplate(
+        organization.id,
+        reimbursementType.id,
+      );
+      await insertInvoice({
+        documentTemplateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        totalAmountCents: 10_000,
+        invoiceStatus: InvoiceStatus.READY,
+      });
+
+      const usage = await queryResolver.volunteerYearlyUsage(
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        undefined,
+        contextFor(branchA.id),
+      );
+
+      expect(usage.usedCents).toBe(15_000);
+      expect(usage.remainingCents).toBe(usage.limitCents - 15_000);
+    });
+
+    it('leaves out the invoice being completed', async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { organization, branchA } = await setupOrgTree();
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, branchA.id);
+      const template = await createInvoiceTemplate(
+        organization.id,
+        reimbursementType.id,
+      );
+      await insertInvoice({
+        documentTemplateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        totalAmountCents: 10_000,
+        invoiceStatus: InvoiceStatus.READY,
+      });
+      const draft = await insertInvoice({
+        documentTemplateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        totalAmountCents: 4_000,
+        invoiceStatus: InvoiceStatus.DRAFT,
+      });
+
+      const usage = await queryResolver.volunteerYearlyUsage(
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        draft.id,
+        contextFor(branchA.id),
+      );
+
+      expect(usage.usedCents).toBe(10_000);
+    });
+  });
 });

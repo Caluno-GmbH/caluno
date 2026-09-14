@@ -85,6 +85,32 @@ export class ReimbursementQueryResolver {
     );
   }
 
+  /** A volunteer's usage as seen by a coordinator; `yearlyUsage` is the caller's own. */
+  @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
+  @Query(() => YearlyUsage)
+  async volunteerYearlyUsage(
+    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('reimbursementTypeId', { type: () => ID })
+    reimbursementTypeId: string,
+    @Args('year', { type: () => Int }) year: number,
+    @Args('excludeInvoiceId', { type: () => ID, nullable: true })
+    excludeInvoiceId: string | null | undefined,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<YearlyUsage> {
+    await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+      context.organizationUnitId,
+    );
+    await this.assertVolunteerInScope(context, volunteerId);
+
+    return this.reimbursementRateService.getYearlyUsage(
+      volunteerId,
+      reimbursementTypeId,
+      year,
+      undefined,
+      excludeInvoiceId ?? undefined,
+    );
+  }
+
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
   @Query(() => [VolunteerYearlyUsage])
   async rosterYearlyUsage(

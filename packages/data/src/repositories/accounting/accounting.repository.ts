@@ -118,6 +118,16 @@ export class AccountingRepository extends BaseRepository {
     return data.yearlyUsage;
   }
 
+  async findVolunteerYearlyUsage(input: {
+    volunteerId: string;
+    reimbursementTypeId: string;
+    year: number;
+    excludeInvoiceId?: string;
+  }): Promise<RawYearlyUsage> {
+    const data = await this.sdk.GetVolunteerYearlyUsage(input);
+    return data.volunteerYearlyUsage;
+  }
+
   async findRosterYearlyUsage(
     organizationUnitId: string,
     year: number,

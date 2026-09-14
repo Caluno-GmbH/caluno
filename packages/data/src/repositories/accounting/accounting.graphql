@@ -46,6 +46,24 @@ query GetYearlyUsage($reimbursementTypeId: ID!, $year: Int!) {
   }
 }
 
+query GetVolunteerYearlyUsage(
+  $volunteerId: ID!
+  $reimbursementTypeId: ID!
+  $year: Int!
+  $excludeInvoiceId: ID
+) {
+  volunteerYearlyUsage(
+    volunteerId: $volunteerId
+    reimbursementTypeId: $reimbursementTypeId
+    year: $year
+    excludeInvoiceId: $excludeInvoiceId
+  ) {
+    usedCents
+    limitCents
+    remainingCents
+  }
+}
+
 query GetInviteAllowanceEligibility(
   $organizationUnitId: ID!
   $reimbursementTypeId: ID!

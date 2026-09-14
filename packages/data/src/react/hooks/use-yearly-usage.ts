@@ -21,6 +21,31 @@ export function useYearlyUsage(reimbursementTypeId?: string, year?: number) {
   });
 }
 
+/** A volunteer's usage for a coordinator; `excludeInvoiceId` leaves out the invoice being completed. */
+export function useVolunteerYearlyUsage(input: {
+  volunteerId?: string;
+  reimbursementTypeId?: string;
+  year?: number;
+  excludeInvoiceId?: string;
+}) {
+  const sdk = useSdk();
+  const repository = new AccountingRepository(sdk);
+
+  return useQuery<RawYearlyUsage>({
+    // Nested under 'yearly-usage' so setting an initial amount refreshes it.
+    queryKey: ['accounting', 'yearly-usage', 'volunteer', input],
+    queryFn: () =>
+      repository.findVolunteerYearlyUsage({
+        volunteerId: input.volunteerId ?? '',
+        reimbursementTypeId: input.reimbursementTypeId ?? '',
+        year: input.year ?? 0,
+        excludeInvoiceId: input.excludeInvoiceId,
+      }),
+    staleTime: 30 * 1000,
+    enabled: !!input.volunteerId && !!input.reimbursementTypeId && !!input.year,
+  });
+}
+
 export function useRosterYearlyUsage(
   organizationUnitId?: string,
   year?: number,

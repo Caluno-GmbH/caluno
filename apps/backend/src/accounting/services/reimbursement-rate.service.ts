@@ -207,6 +207,7 @@ export class ReimbursementRateService {
     reimbursementTypeId: string,
     year: number,
     asOfDate?: Date,
+    excludeInvoiceId?: string,
   ): Promise<YearlyUsage> {
     const yearStart = new Date(Date.UTC(year, 0, 1));
     const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
@@ -220,6 +221,9 @@ export class ReimbursementRateService {
           reimbursementTypeId,
           periodStart: { gte: yearStart, lt: yearEnd },
           ...(asOfDate ? { periodEnd: { lte: asOfDate } } : {}),
+          // The invoice being completed must not count toward what was
+          // already received before it.
+          ...(excludeInvoiceId ? { id: { ne: excludeInvoiceId } } : {}),
         },
         columns: { totalAmountCents: true, invoiceStatus: true },
       }),

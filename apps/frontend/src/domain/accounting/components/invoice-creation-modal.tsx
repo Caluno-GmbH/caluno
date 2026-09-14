@@ -11,7 +11,7 @@ import {
   usePermissions,
   useReimbursementTypes,
   useVolunteersNeedingTimesheets,
-  useYearlyUsage,
+  useVolunteerYearlyUsage,
 } from '@repo/data/react';
 import { Input } from '@repo/ui';
 import { useTranslations } from 'next-intl';
@@ -208,10 +208,14 @@ export function InvoiceCreationModal({
     periodStart: period.from?.toISOString(),
     periodEnd: (period.to ?? period.from)?.toISOString(),
   });
-  const yearlyUsageQuery = useYearlyUsage(
-    reimbursementType?.id,
-    period.from?.getFullYear(),
-  );
+  // The volunteer's usage, not the signed-in coordinator's. A draft being
+  // completed is left out, or its own amount would count twice.
+  const yearlyUsageQuery = useVolunteerYearlyUsage({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+    year: period.from?.getFullYear(),
+    excludeInvoiceId: draftInvoiceId ?? undefined,
+  });
   const formatting = useFormatting();
   const lines = useMemo(
     () =>
