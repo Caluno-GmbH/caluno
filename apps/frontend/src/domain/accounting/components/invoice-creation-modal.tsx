@@ -10,6 +10,7 @@ import {
   useEligibleTimeEntriesForInvoice,
   usePermissions,
   useReimbursementTypes,
+  useVolunteersNeedingTimesheets,
   useYearlyUsage,
 } from '@repo/data/react';
 import { Input } from '@repo/ui';
@@ -24,9 +25,11 @@ import {
   deriveEditableFields,
 } from '../lib/creation-fields';
 import { mapEligibleTimeEntry } from '../lib/creation-modal.utils';
+import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
 import {
   apiDocumentKindFor,
+  pauschaleForReimbursementTypeKey,
   reimbursementTypeKeyFor,
 } from '../lib/reimbursement-type-mapping';
 import { AccountingProfileFieldCard } from './accounting-profile-field-card';
@@ -133,6 +136,9 @@ export function InvoiceCreationModal({
   const tPeriod = useTranslations(
     'Accounting.reimbursements.invoiceModal.periodPicker',
   );
+  const tHours = useTranslations(
+    'Accounting.reimbursements.invoiceModal.hoursCard',
+  );
 
   const org = useCurrentOrg();
   const router = useRouter();
@@ -190,6 +196,17 @@ export function InvoiceCreationModal({
     periodStart: period.from?.toISOString(),
     periodEnd: (period.to ?? period.from)?.toISOString(),
     draftInvoiceId: draftInvoiceId ?? undefined,
+  });
+  // Only read to explain an empty Eligible hours list: the same entries
+  // without the period, and this volunteer's hours under other types.
+  const anyPeriodEligibleQuery = useEligibleTimeEntriesForInvoice({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+    draftInvoiceId: draftInvoiceId ?? undefined,
+  });
+  const needsTimesheetInPeriodQuery = useVolunteersNeedingTimesheets({
+    periodStart: period.from?.toISOString(),
+    periodEnd: (period.to ?? period.from)?.toISOString(),
   });
   const yearlyUsageQuery = useYearlyUsage(
     reimbursementType?.id,
@@ -448,6 +465,36 @@ export function InvoiceCreationModal({
     if (value) values[field.source] = value;
   }
 
+  const emptyReason = eligibleHoursEmptyReason({
+    listedCount: eligibleQuery.data?.length,
+    anyPeriodCount: anyPeriodEligibleQuery.data?.length,
+    otherTypeKeysInPeriod: needsTimesheetInPeriodQuery.data
+      ?.filter(
+        (row) =>
+          row.volunteer.id === volunteerId &&
+          row.reimbursementType.id !== reimbursementType?.id,
+      )
+      .map((row) => row.reimbursementType.key),
+  });
+  const hoursEmptyMessage =
+    emptyReason?.kind === 'outside-period'
+      ? tHours('emptyOutsidePeriod', { count: emptyReason.count })
+      : emptyReason?.kind === 'other-type'
+        ? tHours('emptyOtherType', {
+            types: emptyReason.reimbursementTypeKeys
+              .map((key) =>
+                tPauschale(
+                  `type${getPauschaleKey(pauschaleForReimbursementTypeKey(key)).toUpperCase()}` as Parameters<
+                    typeof tPauschale
+                  >[0],
+                ),
+              )
+              .join(', '),
+          })
+        : emptyReason?.kind === 'nothing-tracked'
+          ? tHours('emptyNothingTracked')
+          : undefined;
+
   const tableBlock = template?.blocks.find((b) => b.kind === 'table');
   const firstColumnSource =
     tableBlock?.kind === 'table'
@@ -641,6 +688,7 @@ export function InvoiceCreationModal({
               selectedIds={checkedIds}
               onToggle={toggleLine}
               timesheetsHref={timesheetsHref}
+              emptyMessage={hoursEmptyMessage}
             />
           </>
         )
