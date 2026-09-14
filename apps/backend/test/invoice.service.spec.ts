@@ -944,6 +944,100 @@ describe('InvoiceService', () => {
       ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
 
+    it('rejects a second timesheet for the same volunteer, type and month', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+      const otherEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-05T09:00:00.000Z'),
+        endedAt: new Date('2026-07-05T11:00:00.000Z'),
+      });
+      const period = {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-06-30T22:00:00.000Z'),
+        periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+      };
+
+      await service.createInvoice(
+        organization.id,
+        { ...period, timeEntryIds: [timeEntry.id] },
+        supervisor.id,
+      );
+
+      // A second timesheet for the same month would split the month across
+      // documents; the board models one row per month, so it is rejected.
+      await expect(
+        service.createInvoice(
+          organization.id,
+          { ...period, timeEntryIds: [otherEntry.id] },
+          supervisor.id,
+        ),
+      ).rejects.toBeInstanceOf(ConflictGraphQLError);
+
+      const invoices = await db.query.invoices.findMany({
+        where: { volunteerId: volunteer.id },
+      });
+      expect(invoices).toHaveLength(1);
+    });
+
+    it('allows a timesheet for the same volunteer and type in another month', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+      const augustEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-08-05T09:00:00.000Z'),
+        endedAt: new Date('2026-08-05T11:00:00.000Z'),
+      });
+
+      await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-06-30T22:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+      await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [augustEntry.id],
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+
+      const invoices = await db.query.invoices.findMany({
+        where: { volunteerId: volunteer.id },
+      });
+      expect(invoices).toHaveLength(2);
+    });
+
     it('does not create a second draft contract for the same volunteer, type and year', async () => {
       const {
         organization,
@@ -956,25 +1050,33 @@ describe('InvoiceService', () => {
         organizationUnitId: timeEntry.organizationUnitId,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
-        startedAt: new Date('2026-07-02T09:00:00.000Z'),
-        endedAt: new Date('2026-07-02T13:00:00.000Z'),
+        // A different month, so the two timesheets do not overlap.
+        startedAt: new Date('2026-08-02T09:00:00.000Z'),
+        endedAt: new Date('2026-08-02T13:00:00.000Z'),
       });
 
-      const input = {
-        organizationUnitId: null,
-        volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
-        periodStart: new Date('2026-07-01T00:00:00.000Z'),
-        periodEnd: new Date('2026-07-31T00:00:00.000Z'),
-      };
       await service.createInvoice(
         organization.id,
-        { ...input, timeEntryIds: [timeEntry.id] },
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-06-30T22:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        },
         supervisor.id,
       );
       await service.createInvoice(
         organization.id,
-        { ...input, timeEntryIds: [secondEntry.id] },
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [secondEntry.id],
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        },
         supervisor.id,
       );
 

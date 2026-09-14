@@ -356,6 +356,28 @@ export class InvoiceService {
       return entry;
     });
 
+    // One timesheet per volunteer, reimbursement type and period: the board
+    // models a month as a single "to invoice" row, so a second overlapping
+    // document would split it. A declined timesheet does not block a reissue.
+    const overlapping = await this.db.query.invoices.findFirst({
+      where: {
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        organizationUnitId: input.organizationUnitId
+          ? input.organizationUnitId
+          : { isNull: true },
+        invoiceStatus: { ne: InvoiceStatus.DECLINED },
+        periodStart: { lt: input.periodEnd },
+        periodEnd: { gt: input.periodStart },
+      },
+      columns: { id: true },
+    });
+    if (overlapping) {
+      throw new ConflictGraphQLError(
+        'A timesheet already exists for this volunteer and reimbursement type in this period',
+      );
+    }
+
     const totalHours =
       Math.round(
         selected.reduce((sum, entry) => sum + this.durationHours(entry), 0) *

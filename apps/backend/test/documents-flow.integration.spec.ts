@@ -361,13 +361,17 @@ const createCompletedTimeEntry = async (
     organizationUnitId: string;
     volunteerId: string;
     reimbursementTypeId: string;
+    startedAt?: Date;
+    endedAt?: Date;
   },
 ) => {
+  const startedAt = args.startedAt ?? new Date('2026-07-01T09:00:00.000Z');
+  const endedAt = args.endedAt ?? new Date('2026-07-01T13:00:00.000Z');
   const shift = await createShift(db, {
     organizationUnitId: args.organizationUnitId,
     title: `Paid shift ${crypto.randomUUID()}`,
-    startsAt: new Date('2026-07-01T09:00:00.000Z'),
-    endsAt: new Date('2026-07-01T10:00:00.000Z'),
+    startsAt: startedAt,
+    endsAt: endedAt,
   });
   const instance = await createShiftInstance(db, shift.id);
   const [timeEntry] = await db
@@ -377,8 +381,8 @@ const createCompletedTimeEntry = async (
       organizationUnitId: args.organizationUnitId,
       volunteerId: args.volunteerId,
       reimbursementTypeId: args.reimbursementTypeId,
-      startedAt: new Date('2026-07-01T09:00:00.000Z'),
-      endedAt: new Date('2026-07-01T13:00:00.000Z'), // 4 hours
+      startedAt,
+      endedAt, // 4 hours
       isPaid: true,
     })
     .returning();
@@ -793,6 +797,9 @@ describe('documents flow — admin + volunteer', () => {
         organizationUnitId: org.organizationUnitId,
         volunteerId: org.volunteerId,
         reimbursementTypeId: org.reimbursementTypeId,
+        // August, so it does not overlap the July invoice from the lifecycle test.
+        startedAt: new Date('2026-08-03T09:00:00.000Z'),
+        endedAt: new Date('2026-08-03T13:00:00.000Z'),
       });
 
       setAuthMockUserId(org.adminId);
@@ -808,8 +815,8 @@ describe('documents flow — admin + volunteer', () => {
               reimbursementTypeId: org.reimbursementTypeId,
               volunteerId: org.volunteerId,
               timeEntryIds: [timeEntry.id],
-              periodStart: '2026-06-30T22:00:00.000Z',
-              periodEnd: '2026-07-31T22:00:00.000Z',
+              periodStart: '2026-07-31T22:00:00.000Z',
+              periodEnd: '2026-08-31T22:00:00.000Z',
             },
           },
           headers: orgHeader,
