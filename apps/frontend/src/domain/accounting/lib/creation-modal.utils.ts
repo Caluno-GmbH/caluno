@@ -1,5 +1,6 @@
 import type { EligibleTimeEntry } from '@repo/data';
 import type { EligibleHourLine } from '../components/eligible-hours-card';
+import { billingYearBounds } from './billing-period';
 
 /**
  * Extracts the year from the contract's manual "Vertragslaufzeit" field
@@ -16,10 +17,7 @@ export function contractPeriodForLifespan(
 ): { periodStart: string; periodEnd: string } {
   const match = lifespan.match(/(\d{4})\s*$/);
   const year = match ? Number(match[1]) : now.getFullYear();
-  return {
-    periodStart: new Date(Date.UTC(year, 0, 1)).toISOString(),
-    periodEnd: new Date(Date.UTC(year + 1, 0, 1)).toISOString(),
-  };
+  return billingYearBounds(year);
 }
 
 /** Hours between two ISO timestamps, rounded to hundredths so display never shows floating-point noise. */

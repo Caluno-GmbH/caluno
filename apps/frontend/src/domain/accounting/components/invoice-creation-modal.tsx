@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { fromPeriodBounds, toPeriodBounds } from '../lib/billing-period';
 import {
   type DerivedField,
   deriveEditableFields,
@@ -96,18 +97,17 @@ interface InvoiceCreationModalProps {
   onSent: () => void;
   /** Set when completing an auto-drafted timesheet: its claimed hours are listed and the draft is promoted in place. */
   draftInvoiceId?: string | null;
-  /** The draft's period start, so the modal opens on the draft's month instead of "this month". */
-  draftPeriodStart?: Date | null;
+  /** The draft's stored period, so the modal opens on it instead of "this month". */
+  draftPeriod?: { start: Date; end: Date } | null;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
 }
 
-function initialPeriod(draftPeriodStart?: Date | null): DateRange {
-  if (!draftPeriodStart) return thisMonthRange();
-  // Drafts are stored as UTC month boundaries.
-  const year = draftPeriodStart.getUTCFullYear();
-  const month = draftPeriodStart.getUTCMonth();
-  return { from: new Date(year, month, 1), to: new Date(year, month + 1, 0) };
+function initialPeriod(
+  draftPeriod?: { start: Date; end: Date } | null,
+): DateRange {
+  if (!draftPeriod) return thisMonthRange();
+  return fromPeriodBounds(draftPeriod.start, draftPeriod.end);
 }
 
 export function InvoiceCreationModal({
@@ -120,7 +120,7 @@ export function InvoiceCreationModal({
   pauschale,
   onSent,
   draftInvoiceId,
-  draftPeriodStart,
+  draftPeriod,
   embedded,
 }: InvoiceCreationModalProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal');
@@ -180,8 +180,10 @@ export function InvoiceCreationModal({
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [period, setPeriod] = useState<DateRange>(() =>
-    initialPeriod(draftPeriodStart),
+    initialPeriod(draftPeriod),
   );
+  // Berlin calendar days with an exclusive end, the way periods are stored.
+  const periodBounds = toPeriodBounds(period);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
@@ -189,8 +191,8 @@ export function InvoiceCreationModal({
   const eligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
-    periodStart: period.from?.toISOString(),
-    periodEnd: (period.to ?? period.from)?.toISOString(),
+    periodStart: periodBounds?.periodStart,
+    periodEnd: periodBounds?.periodEnd,
     draftInvoiceId: draftInvoiceId ?? undefined,
   });
   // Only read to explain an empty Eligible hours list: the same entries
@@ -201,8 +203,8 @@ export function InvoiceCreationModal({
     draftInvoiceId: draftInvoiceId ?? undefined,
   });
   const needsTimesheetInPeriodQuery = useVolunteersNeedingTimesheets({
-    periodStart: period.from?.toISOString(),
-    periodEnd: (period.to ?? period.from)?.toISOString(),
+    periodStart: periodBounds?.periodStart,
+    periodEnd: periodBounds?.periodEnd,
   });
   // The volunteer's usage, not the signed-in coordinator's. A draft being
   // completed is left out, or its own amount would count twice.
@@ -212,7 +214,7 @@ export function InvoiceCreationModal({
     year: period.from?.getFullYear(),
     // The period end this invoice is saved with, which the PDF uses as its
     // cutoff, so the dialog and the document state the same figure.
-    asOfDate: (period.to ?? period.from)?.toISOString(),
+    asOfDate: periodBounds?.periodEnd,
     excludeInvoiceId: draftInvoiceId ?? undefined,
   });
   const formatting = useFormatting();
@@ -232,7 +234,7 @@ export function InvoiceCreationModal({
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-    setPeriod(initialPeriod(draftPeriodStart));
+    setPeriod(initialPeriod(draftPeriod));
   }, [volunteerId, docId]);
 
   // Every eligible entry starts checked — unchecking removes it from the
@@ -345,7 +347,7 @@ export function InvoiceCreationModal({
   };
 
   const handleSend = async () => {
-    if (!reimbursementType) return;
+    if (!reimbursementType || !periodBounds) return;
     setIsSending(true);
     setSendError(null);
     setSendErrorCode(null);
@@ -354,8 +356,8 @@ export function InvoiceCreationModal({
         organizationUnitId: orgUId,
         reimbursementTypeId: reimbursementType.id,
         volunteerId,
-        periodStart: (period.from ?? new Date()).toISOString(),
-        periodEnd: (period.to ?? period.from ?? new Date()).toISOString(),
+        periodStart: periodBounds.periodStart,
+        periodEnd: periodBounds.periodEnd,
         timeEntryIds: selectedLines.map((line) => line.id),
         draftInvoiceId: draftInvoiceId ?? null,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>

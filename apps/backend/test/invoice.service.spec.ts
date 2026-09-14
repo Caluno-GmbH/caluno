@@ -16,6 +16,7 @@ import { DocumentSigningService } from '../src/accounting/services/document-sign
 import { DocumentTemplateService } from '../src/accounting/services/document-template.service';
 import { InvoiceService } from '../src/accounting/services/invoice.service';
 import { ReimbursementRateService } from '../src/accounting/services/reimbursement-rate.service';
+import { billingMonthBounds } from '../src/accounting/utils/billing-period';
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
@@ -330,6 +331,39 @@ describe('InvoiceService', () => {
   });
 
   describe('findEligibleTimeEntries', () => {
+    it("includes hours from the last day's evening in a Berlin month period", async () => {
+      const { root, reimbursementType, volunteer } = await setup();
+      // 31 July, 23:30 to 23:50 in Berlin (CEST): still July there.
+      const lastEvening = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-31T21:30:00.000Z'),
+        endedAt: new Date('2026-07-31T21:50:00.000Z'),
+      });
+      // 1 August, 00:30 in Berlin: belongs to August even though it is
+      // still 31 July in UTC.
+      const nextMonth = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-31T22:30:00.000Z'),
+        endedAt: new Date('2026-07-31T23:00:00.000Z'),
+      });
+
+      const july = billingMonthBounds(new Date('2026-07-15T12:00:00.000Z'));
+      const eligible = await service.findEligibleTimeEntries(
+        volunteer.id,
+        reimbursementType.id,
+        july.start,
+        july.end,
+      );
+
+      const ids = eligible.map((entry) => entry.id);
+      expect(ids).toContain(lastEvening.id);
+      expect(ids).not.toContain(nextMonth.id);
+    });
+
     it('excludes entries that have not been ended yet', async () => {
       const { root, reimbursementType, volunteer } = await setup();
       const shift = await createShift(db, {
@@ -888,8 +922,9 @@ describe('InvoiceService', () => {
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
         contractStatus: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
-        periodStart: new Date('2026-01-01T00:00:00.000Z'),
-        periodEnd: new Date('2027-01-01T00:00:00.000Z'),
+        // The 2026 Berlin calendar year; its exclusive end is 1 Jan 2027 00:00 Berlin.
+        periodStart: new Date('2025-12-31T23:00:00.000Z'),
+        periodEnd: new Date('2026-12-31T23:00:00.000Z'),
         resolvedBody: { header: {}, blocks: [], footer: {} },
       });
 

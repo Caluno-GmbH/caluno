@@ -6,6 +6,7 @@ import { OrganizationUnitDataService } from '../../organization/organization-uni
 import { AccountingEvent } from '../../shared/accounting-events';
 import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
 import { InvoiceService } from '../services/invoice.service';
+import { billingMonthBounds } from '../utils/billing-period';
 
 @Injectable()
 export class TimeEntryClosedListener {
@@ -37,17 +38,14 @@ export class TimeEntryClosedListener {
         );
       if (!organization) return;
 
-      const startedAt = new Date(entry.startedAt);
+      // The Berlin calendar month the entry started in.
+      const month = billingMonthBounds(new Date(entry.startedAt));
       const input: CreateInvoiceInput = {
         organizationUnitId: entry.organizationUnitId,
         volunteerId: entry.volunteerId,
         reimbursementTypeId: entry.reimbursementTypeId,
-        periodStart: new Date(
-          Date.UTC(startedAt.getUTCFullYear(), startedAt.getUTCMonth(), 1),
-        ),
-        periodEnd: new Date(
-          Date.UTC(startedAt.getUTCFullYear(), startedAt.getUTCMonth() + 1, 1),
-        ),
+        periodStart: month.start,
+        periodEnd: month.end,
         timeEntryIds: [entry.id],
       };
 

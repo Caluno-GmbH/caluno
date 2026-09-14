@@ -6,6 +6,7 @@ import {
   type InvoiceSummary,
   SigneeType,
 } from '@repo/data';
+import { billingMonthOf } from './billing-period';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 
@@ -171,8 +172,9 @@ export function periodLabel(
   periodStart: string,
   formatMonth: (date: Date) => string,
 ): string {
-  const start = new Date(periodStart);
-  return kind === 'contract' ? String(start.getFullYear()) : formatMonth(start);
+  return kind === 'contract'
+    ? String(billingMonthOf(periodStart).year)
+    : formatMonth(new Date(periodStart));
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────

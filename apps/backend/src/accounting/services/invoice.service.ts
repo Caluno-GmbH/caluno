@@ -1,5 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, inArray, isNotNull, isNull, lt, ne } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  ne,
+} from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -32,6 +42,7 @@ import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
+import { billingYearBounds, billingYearOf } from '../utils/billing-period';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -91,8 +102,10 @@ export class InvoiceService {
     if (filter.status) {
       conditions.push(eq(schema.invoices.invoiceStatus, filter.status));
     }
+    // Periods end exclusively, so one ending exactly at the range start
+    // doesn't overlap it.
     if (filter.periodStart) {
-      conditions.push(gte(schema.invoices.periodEnd, filter.periodStart));
+      conditions.push(gt(schema.invoices.periodEnd, filter.periodStart));
     }
     if (filter.periodEnd) {
       conditions.push(lt(schema.invoices.periodStart, filter.periodEnd));
@@ -232,8 +245,7 @@ export class InvoiceService {
     organizationId: string,
     year: number,
   ): Promise<Array<{ volunteerId: string; reimbursementTypeId: string }>> {
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
 
     const rows = await this.db
       .select({
@@ -443,9 +455,9 @@ export class InvoiceService {
     );
 
     if (!activeContract) {
-      const contractYear = input.periodStart.getUTCFullYear();
-      const yearStart = new Date(Date.UTC(contractYear, 0, 1));
-      const yearEnd = new Date(Date.UTC(contractYear + 1, 0, 1));
+      const { start: yearStart, end: yearEnd } = billingYearBounds(
+        billingYearOf(input.periodStart),
+      );
       const existingContract = await this.db.query.contracts.findFirst({
         where: {
           volunteerId: input.volunteerId,
