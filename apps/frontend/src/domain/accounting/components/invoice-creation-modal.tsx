@@ -10,6 +10,7 @@ import {
   useEligibleTimeEntriesForInvoice,
   usePermissions,
   useReimbursementTypes,
+  useVolunteersNeedingTimesheets,
   useYearlyUsage,
 } from '@repo/data/react';
 import { Input } from '@repo/ui';
@@ -24,9 +25,11 @@ import {
   deriveEditableFields,
 } from '../lib/creation-fields';
 import { mapEligibleTimeEntry } from '../lib/creation-modal.utils';
+import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
 import {
   apiDocumentKindFor,
+  pauschaleForReimbursementTypeKey,
   reimbursementTypeKeyFor,
 } from '../lib/reimbursement-type-mapping';
 import { AccountingProfileFieldCard } from './accounting-profile-field-card';
@@ -93,8 +96,20 @@ interface InvoiceCreationModalProps {
   usedBeforeAmount: number | null;
   totalCapAmount: number | null;
   onSent: () => void;
+  /** Set when completing an auto-drafted timesheet: its claimed hours are listed and the draft is promoted in place. */
+  draftInvoiceId?: string | null;
+  /** The draft's period start, so the modal opens on the draft's month instead of "this month". */
+  draftPeriodStart?: Date | null;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
+}
+
+function initialPeriod(draftPeriodStart?: Date | null): DateRange {
+  if (!draftPeriodStart) return thisMonthRange();
+  // Drafts are stored as UTC month boundaries.
+  const year = draftPeriodStart.getUTCFullYear();
+  const month = draftPeriodStart.getUTCMonth();
+  return { from: new Date(year, month, 1), to: new Date(year, month + 1, 0) };
 }
 
 export function InvoiceCreationModal({
@@ -108,6 +123,8 @@ export function InvoiceCreationModal({
   usedBeforeAmount,
   totalCapAmount,
   onSent,
+  draftInvoiceId,
+  draftPeriodStart,
   embedded,
 }: InvoiceCreationModalProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal');
@@ -118,6 +135,9 @@ export function InvoiceCreationModal({
   const tPauschale = useTranslations('Accounting.reimbursements.toolbar');
   const tPeriod = useTranslations(
     'Accounting.reimbursements.invoiceModal.periodPicker',
+  );
+  const tHours = useTranslations(
+    'Accounting.reimbursements.invoiceModal.hoursCard',
   );
 
   const org = useCurrentOrg();
@@ -163,7 +183,9 @@ export function InvoiceCreationModal({
   );
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
-  const [period, setPeriod] = useState<DateRange>(thisMonthRange);
+  const [period, setPeriod] = useState<DateRange>(() =>
+    initialPeriod(draftPeriodStart),
+  );
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
@@ -171,6 +193,18 @@ export function InvoiceCreationModal({
   const eligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
+    periodStart: period.from?.toISOString(),
+    periodEnd: (period.to ?? period.from)?.toISOString(),
+    draftInvoiceId: draftInvoiceId ?? undefined,
+  });
+  // Only read to explain an empty Eligible hours list: the same entries
+  // without the period, and this volunteer's hours under other types.
+  const anyPeriodEligibleQuery = useEligibleTimeEntriesForInvoice({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+    draftInvoiceId: draftInvoiceId ?? undefined,
+  });
+  const needsTimesheetInPeriodQuery = useVolunteersNeedingTimesheets({
     periodStart: period.from?.toISOString(),
     periodEnd: (period.to ?? period.from)?.toISOString(),
   });
@@ -195,7 +229,7 @@ export function InvoiceCreationModal({
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-    setPeriod(thisMonthRange());
+    setPeriod(initialPeriod(draftPeriodStart));
   }, [volunteerId, docId]);
 
   // Every eligible entry starts checked — unchecking removes it from the
@@ -324,6 +358,7 @@ export function InvoiceCreationModal({
         periodStart: (period.from ?? new Date()).toISOString(),
         periodEnd: (period.to ?? period.from ?? new Date()).toISOString(),
         timeEntryIds: selectedLines.map((line) => line.id),
+        draftInvoiceId: draftInvoiceId ?? null,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({
@@ -429,6 +464,36 @@ export function InvoiceCreationModal({
     const value = currentValue(field.fieldId, field.value);
     if (value) values[field.source] = value;
   }
+
+  const emptyReason = eligibleHoursEmptyReason({
+    listedCount: eligibleQuery.data?.length,
+    anyPeriodCount: anyPeriodEligibleQuery.data?.length,
+    otherTypeKeysInPeriod: needsTimesheetInPeriodQuery.data
+      ?.filter(
+        (row) =>
+          row.volunteer.id === volunteerId &&
+          row.reimbursementType.id !== reimbursementType?.id,
+      )
+      .map((row) => row.reimbursementType.key),
+  });
+  const hoursEmptyMessage =
+    emptyReason?.kind === 'outside-period'
+      ? tHours('emptyOutsidePeriod', { count: emptyReason.count })
+      : emptyReason?.kind === 'other-type'
+        ? tHours('emptyOtherType', {
+            types: emptyReason.reimbursementTypeKeys
+              .map((key) =>
+                tPauschale(
+                  `type${getPauschaleKey(pauschaleForReimbursementTypeKey(key)).toUpperCase()}` as Parameters<
+                    typeof tPauschale
+                  >[0],
+                ),
+              )
+              .join(', '),
+          })
+        : emptyReason?.kind === 'nothing-tracked'
+          ? tHours('emptyNothingTracked')
+          : undefined;
 
   const tableBlock = template?.blocks.find((b) => b.kind === 'table');
   const firstColumnSource =
@@ -623,6 +688,7 @@ export function InvoiceCreationModal({
               selectedIds={checkedIds}
               onToggle={toggleLine}
               timesheetsHref={timesheetsHref}
+              emptyMessage={hoursEmptyMessage}
             />
           </>
         )
