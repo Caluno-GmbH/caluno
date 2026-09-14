@@ -521,7 +521,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
     });
   });
 
-  describe('volunteerYearlyUsage', () => {
+  describe('yearlyUsage', () => {
     const createInvoiceTemplate = (
       organizationId: string,
       reimbursementTypeId: string,
@@ -564,7 +564,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await addMembership(db, volunteer.id, branchB.id);
 
       await expect(
-        queryResolver.volunteerYearlyUsage(
+        queryResolver.yearlyUsage(
           volunteer.id,
           reimbursementType.id,
           2026,
@@ -601,7 +601,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         invoiceStatus: InvoiceStatus.READY,
       });
 
-      const usage = await queryResolver.volunteerYearlyUsage(
+      const usage = await queryResolver.yearlyUsage(
         volunteer.id,
         reimbursementType.id,
         2026,
@@ -638,7 +638,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         invoiceStatus: InvoiceStatus.DRAFT,
       });
 
-      const usage = await queryResolver.volunteerYearlyUsage(
+      const usage = await queryResolver.yearlyUsage(
         volunteer.id,
         reimbursementType.id,
         2026,

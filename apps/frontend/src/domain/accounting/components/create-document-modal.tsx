@@ -333,14 +333,6 @@ export function CreateDocumentModal({
               volunteerId={volunteer.id}
               volunteerName={volunteer.name}
               pauschale={selectedLine.pauschale}
-              usedBeforeAmount={
-                volunteer.limits?.[selectedLine.pauschale]?.used ??
-                volunteer.usedAmount
-              }
-              totalCapAmount={
-                volunteer.limits?.[selectedLine.pauschale]?.total ??
-                volunteer.totalCap
-              }
               onSent={() => onInvoiceSent(docId)}
             />
           ))}

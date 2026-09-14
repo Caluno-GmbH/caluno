@@ -1,5 +1,4 @@
 import { Args, Context, ID, Int, Query, Resolver } from '@nestjs/graphql';
-import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { NotFoundGraphQLError } from '../../graphql/errors';
@@ -71,24 +70,10 @@ export class ReimbursementQueryResolver {
     }));
   }
 
-  @Query(() => YearlyUsage)
-  async yearlyUsage(
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
-    @Args('year', { type: () => Int }) year: number,
-    @Session() session: UserSession,
-  ): Promise<YearlyUsage> {
-    return this.reimbursementRateService.getYearlyUsage(
-      session.user.id,
-      reimbursementTypeId,
-      year,
-    );
-  }
-
-  /** A volunteer's usage as seen by a coordinator; `yearlyUsage` is the caller's own. */
+  /** A volunteer's usage: their non-declined invoices plus the initial amount. */
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
   @Query(() => YearlyUsage)
-  async volunteerYearlyUsage(
+  async yearlyUsage(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
     reimbursementTypeId: string,

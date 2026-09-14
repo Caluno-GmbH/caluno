@@ -38,22 +38,14 @@ mutation SetReimbursementRate(
   }
 }
 
-query GetYearlyUsage($reimbursementTypeId: ID!, $year: Int!) {
-  yearlyUsage(reimbursementTypeId: $reimbursementTypeId, year: $year) {
-    usedCents
-    limitCents
-    remainingCents
-  }
-}
-
-query GetVolunteerYearlyUsage(
+query GetYearlyUsage(
   $volunteerId: ID!
   $reimbursementTypeId: ID!
   $year: Int!
   $asOfDate: DateTime
   $excludeInvoiceId: ID
 ) {
-  volunteerYearlyUsage(
+  yearlyUsage(
     volunteerId: $volunteerId
     reimbursementTypeId: $reimbursementTypeId
     year: $year

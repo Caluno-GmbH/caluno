@@ -8,21 +8,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
 
-export function useYearlyUsage(reimbursementTypeId?: string, year?: number) {
-  const sdk = useSdk();
-  const repository = new AccountingRepository(sdk);
-
-  return useQuery<RawYearlyUsage>({
-    queryKey: ['accounting', 'yearly-usage', reimbursementTypeId, year],
-    queryFn: () =>
-      repository.findYearlyUsage(reimbursementTypeId ?? '', year ?? 0),
-    staleTime: 30 * 1000,
-    enabled: !!reimbursementTypeId && !!year,
-  });
-}
-
 /** A volunteer's usage for a coordinator; `excludeInvoiceId` leaves out the invoice being completed. */
-export function useVolunteerYearlyUsage(input: {
+export function useYearlyUsage(input: {
   volunteerId?: string;
   reimbursementTypeId?: string;
   year?: number;
@@ -35,9 +22,9 @@ export function useVolunteerYearlyUsage(input: {
 
   return useQuery<RawYearlyUsage>({
     // Nested under 'yearly-usage' so setting an initial amount refreshes it.
-    queryKey: ['accounting', 'yearly-usage', 'volunteer', input],
+    queryKey: ['accounting', 'yearly-usage', input],
     queryFn: () =>
-      repository.findVolunteerYearlyUsage({
+      repository.findYearlyUsage({
         volunteerId: input.volunteerId ?? '',
         reimbursementTypeId: input.reimbursementTypeId ?? '',
         year: input.year ?? 0,
