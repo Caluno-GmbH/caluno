@@ -320,21 +320,6 @@ export function CreateDocumentModal({
               onOpenChange={handleOpenChange}
               orgUId={orgUId}
               docId={docId}
-              draftInvoiceId={
-                existingDoc?.status === 'timesheet-draft'
-                  ? existingDoc.id
-                  : null
-              }
-              draftPeriod={
-                existingDoc?.status === 'timesheet-draft' &&
-                existingDoc.periodStart &&
-                existingDoc.periodEnd
-                  ? {
-                      start: existingDoc.periodStart,
-                      end: existingDoc.periodEnd,
-                    }
-                  : null
-              }
               volunteerId={volunteer.id}
               volunteerName={volunteer.name}
               pauschale={selectedLine.pauschale}

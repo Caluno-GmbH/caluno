@@ -95,19 +95,15 @@ interface InvoiceCreationModalProps {
   volunteerName: string | null;
   pauschale: PauschalenType | null;
   onSent: () => void;
-  /** Set when completing an auto-drafted timesheet: its claimed hours are listed and the draft is promoted in place. */
-  draftInvoiceId?: string | null;
-  /** The draft's stored period, so the modal opens on it instead of "this month". */
-  draftPeriod?: { start: Date; end: Date } | null;
+  /** The period to open on (a board row's month, or a declined timesheet's period); defaults to "this month". */
+  initialPeriod?: { start: Date; end: Date } | null;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
 }
 
-function initialPeriod(
-  draftPeriod?: { start: Date; end: Date } | null,
-): DateRange {
-  if (!draftPeriod) return thisMonthRange();
-  return fromPeriodBounds(draftPeriod.start, draftPeriod.end);
+function periodToOpen(initial?: { start: Date; end: Date } | null): DateRange {
+  if (!initial) return thisMonthRange();
+  return fromPeriodBounds(initial.start, initial.end);
 }
 
 export function InvoiceCreationModal({
@@ -119,8 +115,7 @@ export function InvoiceCreationModal({
   volunteerName,
   pauschale,
   onSent,
-  draftInvoiceId,
-  draftPeriod,
+  initialPeriod,
   embedded,
 }: InvoiceCreationModalProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal');
@@ -180,7 +175,7 @@ export function InvoiceCreationModal({
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
   const [period, setPeriod] = useState<DateRange>(() =>
-    initialPeriod(draftPeriod),
+    periodToOpen(initialPeriod),
   );
   // Berlin calendar days with an exclusive end, the way periods are stored.
   const periodBounds = toPeriodBounds(period);
@@ -193,21 +188,18 @@ export function InvoiceCreationModal({
     reimbursementTypeId: reimbursementType?.id,
     periodStart: periodBounds?.periodStart,
     periodEnd: periodBounds?.periodEnd,
-    draftInvoiceId: draftInvoiceId ?? undefined,
   });
   // Only read to explain an empty Eligible hours list: the same entries
   // without the period, and this volunteer's hours under other types.
   const anyPeriodEligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
-    draftInvoiceId: draftInvoiceId ?? undefined,
   });
   const needsTimesheetInPeriodQuery = useVolunteersNeedingTimesheets({
     periodStart: periodBounds?.periodStart,
     periodEnd: periodBounds?.periodEnd,
   });
-  // The volunteer's usage, not the signed-in coordinator's. A draft being
-  // completed is left out, or its own amount would count twice.
+  // The volunteer's usage, not the signed-in coordinator's.
   const yearlyUsageQuery = useYearlyUsage({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
@@ -215,7 +207,6 @@ export function InvoiceCreationModal({
     // The period end this invoice is saved with, which the PDF uses as its
     // cutoff, so the dialog and the document state the same figure.
     asOfDate: periodBounds?.periodEnd,
-    excludeInvoiceId: draftInvoiceId ?? undefined,
   });
   const formatting = useFormatting();
   const lines = useMemo(
@@ -234,7 +225,7 @@ export function InvoiceCreationModal({
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-    setPeriod(initialPeriod(draftPeriod));
+    setPeriod(periodToOpen(initialPeriod));
   }, [volunteerId, docId]);
 
   // Every eligible entry starts checked — unchecking removes it from the
@@ -359,7 +350,6 @@ export function InvoiceCreationModal({
         periodStart: periodBounds.periodStart,
         periodEnd: periodBounds.periodEnd,
         timeEntryIds: selectedLines.map((line) => line.id),
-        draftInvoiceId: draftInvoiceId ?? null,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({

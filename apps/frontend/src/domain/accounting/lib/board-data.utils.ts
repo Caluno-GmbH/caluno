@@ -285,6 +285,16 @@ export function monthsInRange(
   return result;
 }
 
+/** A volunteer's unclaimed hours for one reimbursement type in one Berlin month (see `volunteersNeedingTimesheets`). */
+export interface TimesheetToCreate {
+  volunteerId: string;
+  reimbursementTypeId: string;
+  periodStart: string;
+  periodEnd: string;
+  eligibleHours: number;
+  estimatedAmountCents: number;
+}
+
 export interface BuildBoardVolunteersInput {
   rosterUsage: RawVolunteerUsage[];
   contracts: RawContract[];
@@ -300,6 +310,12 @@ export interface BuildBoardVolunteersInput {
    */
   eligibleHoursVolunteers?: ReadonlyMap<string, ReadonlySet<string>>;
   paidShiftVolunteers?: ReadonlyMap<string, ReadonlySet<string>>;
+  /**
+   * Timesheets still to be created. Each becomes a `timesheet-generate` row
+   * for its month showing the hours so far; entries are only claimed once the
+   * coordinator issues the timesheet, so the row keeps adding up.
+   */
+  timesheetsToCreate?: readonly TimesheetToCreate[];
 }
 
 export function buildBoardVolunteers({
@@ -311,6 +327,7 @@ export function buildBoardVolunteers({
   dateRange,
   eligibleHoursVolunteers,
   paidShiftVolunteers,
+  timesheetsToCreate = [],
 }: BuildBoardVolunteersInput): BoardVolunteer[] {
   return rosterUsage.map((entry) => {
     const documents: BoardDocument[] = [];
@@ -318,7 +335,13 @@ export function buildBoardVolunteers({
       Record<PauschalenType, { used: number; total: number }>
     > = {};
     const reimbursementTypeIds: Partial<Record<PauschalenType, string>> = {};
-    const eligibleTypeIds = eligibleHoursVolunteers?.get(entry.volunteer.id);
+    const volunteerTimesheetsToCreate = timesheetsToCreate.filter(
+      (timesheet) => timesheet.volunteerId === entry.volunteer.id,
+    );
+    const eligibleTypeIds = new Set([
+      ...(eligibleHoursVolunteers?.get(entry.volunteer.id) ?? []),
+      ...volunteerTimesheetsToCreate.map((t) => t.reimbursementTypeId),
+    ]);
     const paidShiftTypeIds = paidShiftVolunteers?.get(entry.volunteer.id);
 
     for (const usage of entry.usageByType) {
@@ -368,6 +391,30 @@ export function buildBoardVolunteers({
               limit.used + centsToEuros(invoice.totalAmountCents) > limit.total;
           }
           documents.push(doc);
+        }
+
+        for (const timesheet of volunteerTimesheetsToCreate) {
+          const timesheetMonth = billingMonthOf(timesheet.periodStart);
+          if (
+            timesheet.reimbursementTypeId !== usage.reimbursementType.id ||
+            timesheetMonth.year !== y ||
+            timesheetMonth.month !== month
+          ) {
+            continue;
+          }
+          documents.push({
+            id: `${entry.volunteer.id}-timesheet-generate-${type}-${y}-${String(month + 1).padStart(2, '0')}`,
+            status: 'timesheet-generate',
+            pauschale: type,
+            hours: timesheet.eligibleHours,
+            amount: centsToEuros(timesheet.estimatedAmountCents),
+            periodLabel: formatMonthYear(
+              new Date(timesheet.periodStart),
+              locale,
+            ),
+            periodStart: new Date(timesheet.periodStart),
+            periodEnd: new Date(timesheet.periodEnd),
+          });
         }
       }
 

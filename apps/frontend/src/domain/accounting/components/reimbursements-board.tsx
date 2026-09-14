@@ -298,7 +298,7 @@ function matchesTile(status: DocStatus, tile: TileFilter): boolean {
         status === 'contract-signing-vol' || status === 'contract-signing-coord'
       );
     case 'timesheet-generate':
-      return status === 'timesheet-generate' || status === 'timesheet-draft';
+      return status === 'timesheet-generate';
     case 'timesheet-signing':
       return (
         status === 'timesheet-signing-vol' ||
@@ -504,7 +504,6 @@ export function ReimbursementsBoard({
     }
     if (
       pair.doc.status === 'timesheet-generate' ||
-      pair.doc.status === 'timesheet-draft' ||
       pair.doc.status === 'timesheet-declined'
     ) {
       setInvoiceCreationTarget(pair);
@@ -885,14 +884,10 @@ export function ReimbursementsBoard({
         }}
         orgUId={orgUId}
         docId={invoiceCreationTarget?.doc.id ?? null}
-        draftInvoiceId={
-          invoiceCreationTarget?.doc.status === 'timesheet-draft'
-            ? invoiceCreationTarget.doc.id
-            : null
-        }
-        draftPeriod={
-          invoiceCreationTarget?.doc.status === 'timesheet-draft' &&
-          invoiceCreationTarget.doc.periodStart &&
+        // A "to invoice" row opens on its month; a declined timesheet on the
+        // period it was issued for, so its released hours are listed.
+        initialPeriod={
+          invoiceCreationTarget?.doc.periodStart &&
           invoiceCreationTarget.doc.periodEnd
             ? {
                 start: invoiceCreationTarget.doc.periodStart,

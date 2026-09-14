@@ -218,14 +218,15 @@ describe('InvoiceService', () => {
 
   describe('findInvoicesForOrganization — period filter', () => {
     it('excludes invoices whose period does not overlap the requested range', async () => {
-      const {
-        organization,
-        root,
-        reimbursementType,
-        volunteer,
-        supervisor,
-        timeEntry,
-      } = await setup();
+      const { organization, root, reimbursementType, volunteer, supervisor } =
+        await setup();
+      const marchTimeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-03-02T09:00:00.000Z'),
+        endedAt: new Date('2026-03-02T13:00:00.000Z'),
+      });
       const outOfRangeTimeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: root.id,
         volunteerId: volunteer.id,
@@ -240,7 +241,7 @@ describe('InvoiceService', () => {
           organizationUnitId: null,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
-          timeEntryIds: [timeEntry.id],
+          timeEntryIds: [marchTimeEntry.id],
           periodStart: new Date('2026-03-01'),
           periodEnd: new Date('2026-03-31'),
         },
@@ -522,9 +523,55 @@ describe('InvoiceService', () => {
       expect(result[0]).toEqual({
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        // July 2026 as a Berlin calendar month.
+        periodStart: new Date('2026-06-30T22:00:00.000Z'),
+        periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 4,
       });
       expect(result[0]?.volunteerId).toBe(timeEntry.volunteerId);
+    });
+
+    it('adds up every unclaimed entry per Berlin month into one row', async () => {
+      const { root, reimbursementType, volunteer } = await setup();
+      const entry = (startedAt: string, endedAt: string) =>
+        createCompletedTimeEntry(db, {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          startedAt: new Date(startedAt),
+          endedAt: new Date(endedAt),
+        });
+      await entry('2026-07-20T09:00:00.000Z', '2026-07-20T11:00:00.000Z');
+      // 31 July 23:30 in Berlin is still July.
+      await entry('2026-07-31T21:30:00.000Z', '2026-07-31T22:00:00.000Z');
+      await entry('2026-08-03T09:00:00.000Z', '2026-08-03T10:00:00.000Z');
+      const [periodStart, periodEnd] = yearPeriod();
+
+      const result = await service.findVolunteersNeedingTimesheets(
+        root.id,
+        periodStart,
+        periodEnd,
+      );
+
+      const rows = result
+        .filter((row) => row.volunteerId === volunteer.id)
+        .sort((a, b) => a.periodStart.getTime() - b.periodStart.getTime());
+      expect(rows).toEqual([
+        {
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-06-30T22:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+          eligibleHours: 6.5,
+        },
+        {
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+          eligibleHours: 1,
+        },
+      ]);
     });
 
     it('excludes a volunteer whose only entry has already been claimed by an invoice', async () => {
@@ -826,42 +873,75 @@ describe('InvoiceService', () => {
       expect(contracts[0].contractStatus).toBe(ContractStatus.DRAFT);
     });
 
-    it('createDraftInvoice creates a DRAFT invoice and a DRAFT contract', async () => {
-      const { organization, root, reimbursementType, volunteer, timeEntry } =
-        await setup();
+    it('puts every selected entry of the month on one invoice', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup({ rateCents: 1_500 });
+      const more = await Promise.all(
+        ['2026-07-10', '2026-07-24'].map((day) =>
+          createCompletedTimeEntry(db, {
+            organizationUnitId: root.id,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            startedAt: new Date(`${day}T09:00:00.000Z`),
+            endedAt: new Date(`${day}T11:00:00.000Z`),
+          }),
+        ),
+      );
 
-      const draft = await service.createDraftInvoice(
+      const invoice = await service.createInvoice(
         organization.id,
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
-          timeEntryIds: [timeEntry.id],
-          periodStart: new Date('2026-07-01T00:00:00.000Z'),
-          periodEnd: new Date('2026-08-01T00:00:00.000Z'),
+          timeEntryIds: [timeEntry.id, ...more.map((entry) => entry.id)],
+          periodStart: new Date('2026-06-30T22:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         },
-        volunteer.id,
+        supervisor.id,
       );
 
-      expect(draft.invoiceStatus).toBe(InvoiceStatus.DRAFT);
-
+      expect(invoice.totalHours).toBe(8);
+      expect(invoice.totalAmountCents).toBe(8 * 1_500);
+      const full = await service.findInvoice(invoice.id);
+      expect(full.invoiceTimeEntries).toHaveLength(3);
       const invoices = await db.query.invoices.findMany({
-        where: {
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-        },
+        where: { volunteerId: volunteer.id },
       });
       expect(invoices).toHaveLength(1);
-      expect(invoices[0].invoiceStatus).toBe(InvoiceStatus.DRAFT);
+    });
 
-      const contracts = await db.query.contracts.findMany({
-        where: {
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-        },
-      });
-      expect(contracts).toHaveLength(1);
-      expect(contracts[0].contractStatus).toBe(ContractStatus.DRAFT);
+    it('rejects an entry outside the invoice period', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+
+      // The entry is in July; the invoice is for August.
+      await expect(
+        service.createInvoice(
+          organization.id,
+          {
+            organizationUnitId: root.id,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            timeEntryIds: [timeEntry.id],
+            periodStart: new Date('2026-07-31T22:00:00.000Z'),
+            periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+          },
+          supervisor.id,
+        ),
+      ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
 
     it('does not create a second draft contract for the same volunteer, type and year', async () => {
@@ -911,12 +991,19 @@ describe('InvoiceService', () => {
     it('drafts for the following year despite a prior-year contract ending Jan 1', async () => {
       const {
         organization,
+        root,
         reimbursementType,
         volunteer,
         supervisor,
-        timeEntry,
         contractTemplate,
       } = await setup();
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2027-07-01T09:00:00.000Z'),
+        endedAt: new Date('2027-07-01T13:00:00.000Z'),
+      });
       await db.insert(schema.contracts).values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
@@ -990,241 +1077,6 @@ describe('InvoiceService', () => {
           supervisor.id,
         ),
       ).rejects.toBeInstanceOf(ConflictGraphQLError);
-    });
-  });
-
-  describe('completing an auto-drafted invoice', () => {
-    const july = {
-      periodStart: new Date('2026-07-01T00:00:00.000Z'),
-      periodEnd: new Date('2026-08-01T00:00:00.000Z'),
-    };
-
-    const setupWithDraft = async () => {
-      const context = await setup();
-      const secondEntry = await createCompletedTimeEntry(db, {
-        organizationUnitId: context.root.id,
-        volunteerId: context.volunteer.id,
-        reimbursementTypeId: context.reimbursementType.id,
-        startedAt: new Date('2026-07-02T09:00:00.000Z'),
-        endedAt: new Date('2026-07-02T11:00:00.000Z'),
-      });
-      const draft = await service.createDraftInvoice(
-        context.organization.id,
-        {
-          organizationUnitId: context.root.id,
-          volunteerId: context.volunteer.id,
-          reimbursementTypeId: context.reimbursementType.id,
-          timeEntryIds: [context.timeEntry.id, secondEntry.id],
-          ...july,
-        },
-        context.volunteer.id,
-      );
-      return { ...context, secondEntry, draft };
-    };
-
-    it('lists the entries claimed by the draft being completed', async () => {
-      const { reimbursementType, volunteer, timeEntry, secondEntry, draft } =
-        await setupWithDraft();
-
-      const withoutDraft = await service.findEligibleTimeEntries(
-        volunteer.id,
-        reimbursementType.id,
-      );
-      expect(withoutDraft.map((e) => e.id)).not.toContain(timeEntry.id);
-
-      const withDraft = await service.findEligibleTimeEntries(
-        volunteer.id,
-        reimbursementType.id,
-        july.periodStart,
-        july.periodEnd,
-        draft.id,
-      );
-      expect(withDraft.map((e) => e.id).sort()).toEqual(
-        [timeEntry.id, secondEntry.id].sort(),
-      );
-    });
-
-    it('still excludes entries claimed by another live invoice', async () => {
-      const {
-        organization,
-        root,
-        reimbursementType,
-        volunteer,
-        supervisor,
-        draft,
-      } = await setupWithDraft();
-      const otherEntry = await createCompletedTimeEntry(db, {
-        organizationUnitId: root.id,
-        volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
-        startedAt: new Date('2026-07-03T09:00:00.000Z'),
-        endedAt: new Date('2026-07-03T10:00:00.000Z'),
-      });
-      await service.createInvoice(
-        organization.id,
-        {
-          organizationUnitId: root.id,
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-          timeEntryIds: [otherEntry.id],
-          ...july,
-        },
-        supervisor.id,
-      );
-
-      const eligible = await service.findEligibleTimeEntries(
-        volunteer.id,
-        reimbursementType.id,
-        july.periodStart,
-        july.periodEnd,
-        draft.id,
-      );
-      expect(eligible.map((e) => e.id)).not.toContain(otherEntry.id);
-    });
-
-    it('promotes the draft in place instead of creating a second invoice', async () => {
-      const {
-        organization,
-        root,
-        reimbursementType,
-        volunteer,
-        supervisor,
-        timeEntry,
-        secondEntry,
-        draft,
-      } = await setupWithDraft();
-
-      const invoice = await service.createInvoice(
-        organization.id,
-        {
-          organizationUnitId: root.id,
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-          timeEntryIds: [timeEntry.id, secondEntry.id],
-          draftInvoiceId: draft.id,
-          ...july,
-        },
-        supervisor.id,
-      );
-
-      expect(invoice.id).toBe(draft.id);
-      expect(invoice.invoiceStatus).toBe(
-        InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
-      );
-      expect(invoice.totalHours).toBe(6);
-      expect(invoice.totalAmountCents).toBe(6 * 1_500);
-
-      const invoices = await db.query.invoices.findMany({
-        where: {
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-        },
-      });
-      expect(invoices).toHaveLength(1);
-
-      const full = await service.findInvoice(draft.id);
-      expect(full.signatures).toHaveLength(2);
-      expect(
-        full.invoiceTimeEntries
-          .filter((row) => !row.released)
-          .map((row) => row.timeEntryId)
-          .sort(),
-      ).toEqual([timeEntry.id, secondEntry.id].sort());
-    });
-
-    it('releases draft entries left unselected', async () => {
-      const {
-        organization,
-        root,
-        reimbursementType,
-        volunteer,
-        supervisor,
-        timeEntry,
-        secondEntry,
-        draft,
-      } = await setupWithDraft();
-
-      const invoice = await service.createInvoice(
-        organization.id,
-        {
-          organizationUnitId: root.id,
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-          timeEntryIds: [timeEntry.id],
-          draftInvoiceId: draft.id,
-          ...july,
-        },
-        supervisor.id,
-      );
-
-      expect(invoice.totalHours).toBe(4);
-      const eligible = await service.findEligibleTimeEntries(
-        volunteer.id,
-        reimbursementType.id,
-      );
-      expect(eligible.map((e) => e.id)).toContain(secondEntry.id);
-      expect(eligible.map((e) => e.id)).not.toContain(timeEntry.id);
-    });
-
-    it('rejects a draftInvoiceId that is not a draft', async () => {
-      const {
-        organization,
-        root,
-        reimbursementType,
-        volunteer,
-        supervisor,
-        timeEntry,
-        secondEntry,
-        draft,
-      } = await setupWithDraft();
-      const input = {
-        organizationUnitId: root.id,
-        volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
-        draftInvoiceId: draft.id,
-        ...july,
-      };
-      await service.createInvoice(
-        organization.id,
-        { ...input, timeEntryIds: [timeEntry.id] },
-        supervisor.id,
-      );
-
-      await expect(
-        service.createInvoice(
-          organization.id,
-          { ...input, timeEntryIds: [secondEntry.id] },
-          supervisor.id,
-        ),
-      ).rejects.toBeInstanceOf(BadRequestGraphQLError);
-    });
-
-    it('rejects a draft that belongs to another volunteer', async () => {
-      const { organization, root, reimbursementType, supervisor, draft } =
-        await setupWithDraft();
-      const otherVolunteer = await createUser(db);
-      const otherEntry = await createCompletedTimeEntry(db, {
-        organizationUnitId: root.id,
-        volunteerId: otherVolunteer.id,
-        reimbursementTypeId: reimbursementType.id,
-        startedAt: new Date('2026-07-04T09:00:00.000Z'),
-        endedAt: new Date('2026-07-04T10:00:00.000Z'),
-      });
-
-      await expect(
-        service.createInvoice(
-          organization.id,
-          {
-            organizationUnitId: root.id,
-            volunteerId: otherVolunteer.id,
-            reimbursementTypeId: reimbursementType.id,
-            timeEntryIds: [otherEntry.id],
-            draftInvoiceId: draft.id,
-            ...july,
-          },
-          supervisor.id,
-        ),
-      ).rejects.toBeInstanceOf(BadRequestGraphQLError);
     });
   });
 

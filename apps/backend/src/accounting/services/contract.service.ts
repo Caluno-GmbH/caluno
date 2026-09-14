@@ -28,6 +28,7 @@ import type { CreateContractInput } from '../inputs/create-contract.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { ContractEntity } from '../schemas/contract.schema';
 import type { ContractStatusChangeEntity } from '../schemas/contract-status-change.schema';
+import { billingYearBounds, billingYearOf } from '../utils/billing-period';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
@@ -228,6 +229,48 @@ export class ContractService {
     }
 
     return contract;
+  }
+
+  /**
+   * Queues the volunteer's yearly Vereinbarung as a DRAFT when they have no
+   * contract (other than a declined one) for the reimbursement type in the
+   * Berlin year of `periodStart`. Runs when paid hours first appear and when
+   * a timesheet is created, so a volunteer without a contract always lands
+   * under "Create contracts". Returns the draft, or undefined if one exists.
+   */
+  async ensureDraftContract(
+    organizationId: string,
+    input: {
+      organizationUnitId?: string | null;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      periodStart: Date;
+    },
+    actorUserId: string,
+  ): Promise<ContractEntity | undefined> {
+    const year = billingYearBounds(billingYearOf(input.periodStart));
+    const existing = await this.db.query.contracts.findFirst({
+      where: {
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        contractStatus: { ne: ContractStatus.DECLINED },
+        periodEnd: { gt: year.start },
+        periodStart: { lt: year.end },
+      },
+    });
+    if (existing) return undefined;
+
+    return this.createDraftContract(
+      organizationId,
+      {
+        organizationUnitId: input.organizationUnitId,
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        periodStart: year.start,
+        periodEnd: year.end,
+      },
+      actorUserId,
+    );
   }
 
   async createDraftContract(

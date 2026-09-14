@@ -60,7 +60,6 @@ export function useEligibleTimeEntriesForInvoice(input: {
   reimbursementTypeId?: string;
   periodStart?: string;
   periodEnd?: string;
-  draftInvoiceId?: string;
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
@@ -73,7 +72,6 @@ export function useEligibleTimeEntriesForInvoice(input: {
         reimbursementTypeId: input.reimbursementTypeId ?? '',
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
-        draftInvoiceId: input.draftInvoiceId,
       }),
     staleTime: 30 * 1000,
     enabled: !!input.volunteerId && !!input.reimbursementTypeId,

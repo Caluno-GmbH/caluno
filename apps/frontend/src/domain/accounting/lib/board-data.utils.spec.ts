@@ -367,6 +367,111 @@ describe('buildBoardVolunteers', () => {
     expect(volunteers[0]?.documents).toEqual([]);
   });
 
+  describe('timesheets to create', () => {
+    const activeContract = makeContract({
+      id: 'c-active',
+      contractStatus: ContractStatus.Active,
+    });
+    const timesheetsToCreate = [
+      {
+        volunteerId: 'v-1',
+        reimbursementTypeId: 'rt-ehrenamt',
+        // July and August 2026 as Berlin calendar months.
+        periodStart: '2026-06-30T22:00:00.000Z',
+        periodEnd: '2026-07-31T22:00:00.000Z',
+        eligibleHours: 6.5,
+        estimatedAmountCents: 2_925,
+      },
+      {
+        volunteerId: 'v-1',
+        reimbursementTypeId: 'rt-ehrenamt',
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+        eligibleHours: 1,
+        estimatedAmountCents: 450,
+      },
+    ];
+
+    it('adds one row per volunteer, Pauschale and month with the summed hours', () => {
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [activeContract],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        timesheetsToCreate,
+      });
+
+      const rows = (volunteers[0]?.documents ?? []).filter(
+        (doc) => doc.status === 'timesheet-generate',
+      );
+      expect(rows).toEqual([
+        {
+          id: 'v-1-timesheet-generate-ehrenamt-2026-07',
+          status: 'timesheet-generate',
+          pauschale: 'ehrenamt',
+          hours: 6.5,
+          amount: 29.25,
+          periodLabel: formatMonthYear(
+            new Date('2026-06-30T22:00:00.000Z'),
+            'de',
+          ),
+          periodStart: new Date('2026-06-30T22:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        },
+        {
+          id: 'v-1-timesheet-generate-ehrenamt-2026-08',
+          status: 'timesheet-generate',
+          pauschale: 'ehrenamt',
+          hours: 1,
+          amount: 4.5,
+          periodLabel: formatMonthYear(
+            new Date('2026-07-31T22:00:00.000Z'),
+            'de',
+          ),
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        },
+      ]);
+    });
+
+    it('only adds rows for months in the selected range', () => {
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [activeContract],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        dateRange: { from: new Date(2026, 7, 1), to: new Date(2026, 7, 31) },
+        timesheetsToCreate,
+      });
+
+      const rows = (volunteers[0]?.documents ?? []).filter(
+        (doc) => doc.status === 'timesheet-generate',
+      );
+      expect(rows.map((row) => row.id)).toEqual([
+        'v-1-timesheet-generate-ehrenamt-2026-08',
+      ]);
+    });
+
+    it('still queues the contract when the volunteer has hours but no contract', () => {
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        timesheetsToCreate,
+      });
+
+      const statuses = (volunteers[0]?.documents ?? []).map((d) => d.status);
+      expect(statuses).toContain('contract-generate');
+      expect(statuses.filter((s) => s === 'timesheet-generate')).toHaveLength(
+        2,
+      );
+    });
+  });
+
   it('does not synthesize a contract-generate row when an active contract exists', () => {
     const volunteers = buildBoardVolunteers({
       rosterUsage: [noDocsVolunteer],
