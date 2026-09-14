@@ -10,6 +10,7 @@ import {
 import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import type { DateRange } from '../components/period-picker';
+import { billingYearBounds } from '../lib/billing-period';
 import { boardYear, buildBoardVolunteers } from '../lib/board-data.utils';
 import { isBoardInitialLoad } from '../lib/board-loading';
 
@@ -27,12 +28,8 @@ export function useReimbursementBoardData({
   const locale = useLocale();
   const resolvedYear = year ?? boardYear(dateRange);
 
-  const periodStart = useMemo(
-    () => new Date(resolvedYear, 0, 1).toISOString(),
-    [resolvedYear],
-  );
-  const periodEnd = useMemo(
-    () => new Date(resolvedYear + 1, 0, 1).toISOString(),
+  const { periodStart, periodEnd } = useMemo(
+    () => billingYearBounds(resolvedYear),
     [resolvedYear],
   );
 

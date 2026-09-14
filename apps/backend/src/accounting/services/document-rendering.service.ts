@@ -5,12 +5,18 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
+import { appDateParts } from '../../shift/utils/app-time';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
+import {
+  billingYearBounds,
+  billingYearOf,
+  lastDayOfPeriod,
+} from '../utils/billing-period';
 import {
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
@@ -493,7 +499,7 @@ export class DocumentRenderingService {
             .getYearlyUsage(
               document.volunteerId,
               document.reimbursementTypeId,
-              documentPeriodStart.getFullYear(),
+              billingYearOf(documentPeriodStart),
               documentPeriodEnd,
               document.id,
             )
@@ -511,7 +517,7 @@ export class DocumentRenderingService {
       yearlyUsage?.limitCents ?? document.reimbursementType?.yearlyLimitCents;
     const alreadyReceivedPeriod =
       'invoiceStatus' in document
-        ? `${this.formatDate(new Date(Date.UTC(documentPeriodStart.getFullYear(), 0, 1)))} – ${this.formatDate(documentPeriodEnd)}`
+        ? `${this.formatDate(billingYearBounds(billingYearOf(documentPeriodStart)).start)} – ${this.formatDate(lastDayOfPeriod(documentPeriodEnd))}`
         : undefined;
 
     const str = (value: unknown): string =>
@@ -548,8 +554,8 @@ export class DocumentRenderingService {
       total_amount:
         amountCents !== undefined ? this.formatEuro(amountCents) : '',
       period_start: this.formatDate(new Date(document.periodStart)),
-      period_end: this.formatDate(new Date(document.periodEnd)),
-      contract_period: `${this.formatDate(new Date(document.periodStart))} – ${this.formatDate(new Date(document.periodEnd))}`,
+      period_end: this.formatDate(lastDayOfPeriod(documentPeriodEnd)),
+      contract_period: `${this.formatDate(documentPeriodStart)} – ${this.formatDate(lastDayOfPeriod(documentPeriodEnd))}`,
       already_received_amount:
         alreadyReceivedCents !== undefined
           ? this.formatEuro(alreadyReceivedCents)
@@ -582,9 +588,10 @@ export class DocumentRenderingService {
     periodStart: Date,
     kostenstelle: string | undefined,
   ): string {
-    const yyyy = periodStart.getUTCFullYear();
-    const mm = String(periodStart.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(periodStart.getUTCDate()).padStart(2, '0');
+    const { year, month, day } = appDateParts(periodStart);
+    const yyyy = year;
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
     const seq = '001';
     switch (invoiceFormat) {
       case 'date-number':
@@ -747,18 +754,16 @@ export class DocumentRenderingService {
   }
 
   /**
-   * Formats a stored period/date boundary in UTC — document periods are
-   * calendar-date boundaries (e.g. periodEnd `23:59:59.999Z`), not
-   * timezone-local instants, and formatting in the server's local timezone
-   * can roll a late-UTC timestamp into the next calendar day (e.g. Jahresdeckel
-   * period-end dates would silently drift by a day in timezones ahead of UTC).
+   * Formats a date as the Berlin calendar day. Document periods are Berlin
+   * calendar days (see billing-period), so pass `lastDayOfPeriod(periodEnd)`
+   * for a period's last day, never the exclusive end itself.
    */
   private formatDate(date: Date): string {
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      timeZone: 'UTC',
+      timeZone: 'Europe/Berlin',
     }).format(date);
   }
 

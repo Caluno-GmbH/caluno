@@ -890,9 +890,14 @@ export function ReimbursementsBoard({
             ? invoiceCreationTarget.doc.id
             : null
         }
-        draftPeriodStart={
-          invoiceCreationTarget?.doc.status === 'timesheet-draft'
-            ? invoiceCreationTarget.doc.periodStart
+        draftPeriod={
+          invoiceCreationTarget?.doc.status === 'timesheet-draft' &&
+          invoiceCreationTarget.doc.periodStart &&
+          invoiceCreationTarget.doc.periodEnd
+            ? {
+                start: invoiceCreationTarget.doc.periodStart,
+                end: invoiceCreationTarget.doc.periodEnd,
+              }
             : null
         }
         volunteerId={invoiceCreationTarget?.vol.id ?? null}

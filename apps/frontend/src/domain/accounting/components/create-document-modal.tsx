@@ -325,9 +325,14 @@ export function CreateDocumentModal({
                   ? existingDoc.id
                   : null
               }
-              draftPeriodStart={
-                existingDoc?.status === 'timesheet-draft'
-                  ? existingDoc.periodStart
+              draftPeriod={
+                existingDoc?.status === 'timesheet-draft' &&
+                existingDoc.periodStart &&
+                existingDoc.periodEnd
+                  ? {
+                      start: existingDoc.periodStart,
+                      end: existingDoc.periodEnd,
+                    }
                   : null
               }
               volunteerId={volunteer.id}

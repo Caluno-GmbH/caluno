@@ -22,6 +22,7 @@ import type { ReimbursementBundleDownloadEntity } from '../schemas/reimbursement
 import type { ManualBaselineEntity } from '../schemas/reimbursement-manual-baseline.schema';
 import type { ReimbursementRateEntity } from '../schemas/reimbursement-rate.schema';
 import type { ReimbursementTypeEntity } from '../schemas/reimbursement-type.schema';
+import { billingYearBounds } from '../utils/billing-period';
 
 export interface ReimbursementTypeUsageResult {
   reimbursementType: ReimbursementTypeEntity;
@@ -210,8 +211,7 @@ export class ReimbursementRateService {
     asOfDate?: Date,
     excludeInvoiceId?: string,
   ): Promise<YearlyUsage> {
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
     const reimbursementType =
       await this.findReimbursementTypeById(reimbursementTypeId);
 
@@ -260,8 +260,7 @@ export class ReimbursementRateService {
     ]);
     if (members.length === 0) return [];
 
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
     const memberIds = members.map((member) => member.id);
 
     const [invoices, baselines] = await Promise.all([
