@@ -599,6 +599,109 @@ describe('ReimbursementRateService', () => {
         remainingCents: 54_000,
       });
     });
+
+    describe('excludeInvoiceId', () => {
+      const setupVolunteerWithInvoices = async () => {
+        const reimbursementType = await createReimbursementType(db, {
+          yearlyLimitCents: 84_000,
+        });
+        const { organization } = await createOrganizationWithType(
+          db,
+          `Yearly Usage Exclude Org ${crypto.randomUUID()}`,
+        );
+        const volunteer = await createUser(db);
+        const template = await createDocumentTemplate(db, {
+          organizationId: organization.id,
+          reimbursementTypeId: reimbursementType.id,
+          kind: DocumentKind.INVOICE,
+          signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+        });
+        const insertInvoice = async (
+          totalAmountCents: number,
+          periodStart: Date,
+        ) => {
+          const [invoice] = await db
+            .insert(schema.invoices)
+            .values({
+              documentTemplateId: template.id,
+              volunteerId: volunteer.id,
+              reimbursementTypeId: reimbursementType.id,
+              periodStart,
+              periodEnd: periodStart,
+              totalAmountCents,
+              totalHours: 1,
+              resolvedBody: { header: {}, blocks: [], footer: {} },
+              invoiceStatus: InvoiceStatus.READY,
+            })
+            .returning();
+          return invoice;
+        };
+        await insertInvoice(10_000, new Date('2026-03-01T00:00:00.000Z'));
+        const current = await insertInvoice(
+          25_000,
+          new Date('2026-07-01T00:00:00.000Z'),
+        );
+        return { organization, reimbursementType, volunteer, current };
+      };
+
+      it('leaves the given invoice out of the sum', async () => {
+        const { reimbursementType, volunteer, current } =
+          await setupVolunteerWithInvoices();
+
+        const usage = await service.getYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          current.id,
+        );
+
+        expect(usage).toEqual({
+          usedCents: 10_000,
+          limitCents: 84_000,
+          remainingCents: 74_000,
+        });
+      });
+
+      it('ignores an id that is not a UUID', async () => {
+        const { reimbursementType, volunteer } =
+          await setupVolunteerWithInvoices();
+
+        const usage = await service.getYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          `${volunteer.id}-manual-invoice-ehrenamt`,
+        );
+
+        expect(usage.usedCents).toBe(35_000);
+      });
+
+      it('keeps the initial amount when leaving an invoice out', async () => {
+        const { organization, reimbursementType, volunteer, current } =
+          await setupVolunteerWithInvoices();
+        const editor = await createUser(db);
+        await service.setManualBaseline(
+          organization.id,
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          5_000,
+          editor.id,
+        );
+
+        const usage = await service.getYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          current.id,
+        );
+
+        expect(usage.usedCents).toBe(15_000);
+      });
+    });
   });
 
   describe('getRosterYearlyUsage', () => {

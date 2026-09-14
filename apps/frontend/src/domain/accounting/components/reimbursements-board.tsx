@@ -903,22 +903,6 @@ export function ReimbursementsBoard({
               invoiceCreationTarget.vol.pauschale)
             : null
         }
-        usedBeforeAmount={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.vol.limits?.[
-                invoiceCreationTarget.doc.pauschale ??
-                  invoiceCreationTarget.vol.pauschale
-              ]?.used ?? invoiceCreationTarget.vol.usedAmount)
-            : null
-        }
-        totalCapAmount={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.vol.limits?.[
-                invoiceCreationTarget.doc.pauschale ??
-                  invoiceCreationTarget.vol.pauschale
-              ]?.total ?? invoiceCreationTarget.vol.totalCap)
-            : null
-        }
         onSent={() => setInvoiceCreationTarget(null)}
       />
 

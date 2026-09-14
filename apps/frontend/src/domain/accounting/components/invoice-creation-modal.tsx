@@ -93,8 +93,6 @@ interface InvoiceCreationModalProps {
   volunteerId: string | null;
   volunteerName: string | null;
   pauschale: PauschalenType | null;
-  usedBeforeAmount: number | null;
-  totalCapAmount: number | null;
   onSent: () => void;
   /** Set when completing an auto-drafted timesheet: its claimed hours are listed and the draft is promoted in place. */
   draftInvoiceId?: string | null;
@@ -120,8 +118,6 @@ export function InvoiceCreationModal({
   volunteerId,
   volunteerName,
   pauschale,
-  usedBeforeAmount,
-  totalCapAmount,
   onSent,
   draftInvoiceId,
   draftPeriodStart,
@@ -208,10 +204,17 @@ export function InvoiceCreationModal({
     periodStart: period.from?.toISOString(),
     periodEnd: (period.to ?? period.from)?.toISOString(),
   });
-  const yearlyUsageQuery = useYearlyUsage(
-    reimbursementType?.id,
-    period.from?.getFullYear(),
-  );
+  // The volunteer's usage, not the signed-in coordinator's. A draft being
+  // completed is left out, or its own amount would count twice.
+  const yearlyUsageQuery = useYearlyUsage({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+    year: period.from?.getFullYear(),
+    // The period end this invoice is saved with, which the PDF uses as its
+    // cutoff, so the dialog and the document state the same figure.
+    asOfDate: (period.to ?? period.from)?.toISOString(),
+    excludeInvoiceId: draftInvoiceId ?? undefined,
+  });
   const formatting = useFormatting();
   const lines = useMemo(
     () =>
@@ -249,7 +252,8 @@ export function InvoiceCreationModal({
     !!template &&
     !!contractTemplate &&
     ratesQuery.isSuccess &&
-    eligibleQuery.isSuccess;
+    eligibleQuery.isSuccess &&
+    yearlyUsageQuery.isSuccess;
   const hasError =
     typesQuery.isError ||
     ratesQuery.isError ||
@@ -257,6 +261,7 @@ export function InvoiceCreationModal({
     invoiceTemplateQuery.isError ||
     contractTemplateQuery.isError ||
     eligibleQuery.isError ||
+    yearlyUsageQuery.isError ||
     reimbursementTypeMissing;
 
   // The first query that failed carries the actual reason (e.g. "No invoice
@@ -268,7 +273,8 @@ export function InvoiceCreationModal({
     profileQuery.error ??
     invoiceTemplateQuery.error ??
     contractTemplateQuery.error ??
-    eligibleQuery.error;
+    eligibleQuery.error ??
+    yearlyUsageQuery.error;
 
   // The most common blocker: the org has the reimbursement type but no
   // invoice template yet (org-default or unit-override). Offer a direct CTA
@@ -303,15 +309,7 @@ export function InvoiceCreationModal({
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the
   // nullable identity props once past this guard.
-  if (
-    !docId ||
-    !volunteerId ||
-    !volunteerName ||
-    !pauschale ||
-    usedBeforeAmount == null ||
-    totalCapAmount == null
-  )
-    return null;
+  if (!docId || !volunteerId || !volunteerName || !pauschale) return null;
 
   const isEdited = (fieldId: string) => Object.hasOwn(editedValues, fieldId);
   const currentValue = (
@@ -330,10 +328,11 @@ export function InvoiceCreationModal({
     0,
   );
   const selectedAmount = selectedHours * ratePerHour;
-  const usedBefore =
-    yearlyUsageQuery.data?.usedCents !== undefined
-      ? centsToEuros(yearlyUsageQuery.data.usedCents)
-      : usedBeforeAmount;
+  // One source for the cap card, the projection and the Jahresdeckel
+  // sentence, with the same cutoff the PDF uses. The dialog waits for it
+  // (see dataReady) rather than showing the board's full-year figure.
+  const usedBefore = centsToEuros(yearlyUsageQuery.data?.usedCents ?? 0);
+  const totalCap = centsToEuros(yearlyUsageQuery.data?.limitCents ?? 0);
   const projectedAfter = usedBefore + selectedAmount;
 
   const toggleLine = (id: string) => {
@@ -672,7 +671,7 @@ export function InvoiceCreationModal({
             <InvoiceCapCard
               usedBefore={usedBefore}
               projectedAfter={projectedAfter}
-              total={totalCapAmount}
+              total={totalCap}
             />
             {reimbursementType && (
               <ManualCapEditor

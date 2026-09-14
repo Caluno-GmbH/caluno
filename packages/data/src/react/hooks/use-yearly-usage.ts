@@ -8,16 +8,31 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
 
-export function useYearlyUsage(reimbursementTypeId?: string, year?: number) {
+/** A volunteer's usage for a coordinator; `excludeInvoiceId` leaves out the invoice being completed. */
+export function useYearlyUsage(input: {
+  volunteerId?: string;
+  reimbursementTypeId?: string;
+  year?: number;
+  /** ISO timestamp: only invoices whose period ended by then count. */
+  asOfDate?: string;
+  excludeInvoiceId?: string;
+}) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
 
   return useQuery<RawYearlyUsage>({
-    queryKey: ['accounting', 'yearly-usage', reimbursementTypeId, year],
+    // Nested under 'yearly-usage' so setting an initial amount refreshes it.
+    queryKey: ['accounting', 'yearly-usage', input],
     queryFn: () =>
-      repository.findYearlyUsage(reimbursementTypeId ?? '', year ?? 0),
+      repository.findYearlyUsage({
+        volunteerId: input.volunteerId ?? '',
+        reimbursementTypeId: input.reimbursementTypeId ?? '',
+        year: input.year ?? 0,
+        asOfDate: input.asOfDate,
+        excludeInvoiceId: input.excludeInvoiceId,
+      }),
     staleTime: 30 * 1000,
-    enabled: !!reimbursementTypeId && !!year,
+    enabled: !!input.volunteerId && !!input.reimbursementTypeId && !!input.year,
   });
 }
 

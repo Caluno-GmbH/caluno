@@ -481,9 +481,10 @@ export class DocumentRenderingService {
     //
     // The "already received" figure is a running calendar-year-to-date sum
     // for the correct Pauschalentyp — Jan 1 of the document's own period's
-    // year through that document's own period end (not "today"), so a
-    // reissued/regenerated document stays internally consistent with what it
-    // originally stated instead of drifting with later invoices.
+    // year through that document's own period end (not "today"), excluding
+    // this document itself, so a reissued/regenerated document stays
+    // internally consistent with what it originally stated instead of
+    // drifting with later invoices.
     const documentPeriodStart = new Date(document.periodStart);
     const documentPeriodEnd = new Date(document.periodEnd);
     const yearlyUsage =
@@ -494,6 +495,7 @@ export class DocumentRenderingService {
               document.reimbursementTypeId,
               documentPeriodStart.getFullYear(),
               documentPeriodEnd,
+              document.id,
             )
             .catch((error: unknown) => {
               this.logger.warn(
@@ -504,9 +506,7 @@ export class DocumentRenderingService {
               return undefined;
             })
         : undefined;
-    const alreadyReceivedCents = yearlyUsage
-      ? Math.max(0, yearlyUsage.usedCents - (amountCents ?? 0))
-      : undefined;
+    const alreadyReceivedCents = yearlyUsage?.usedCents;
     const yearlyLimitCents =
       yearlyUsage?.limitCents ?? document.reimbursementType?.yearlyLimitCents;
     const alreadyReceivedPeriod =
