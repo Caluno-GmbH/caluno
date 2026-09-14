@@ -15,6 +15,7 @@ import type {
   DocStatus,
 } from '../components/reimbursements-board';
 import type { Signee, SigneeRole } from '../components/template/types';
+import { billingMonthOf } from './billing-period';
 import { centsToEuros } from './money';
 import { pauschaleForReimbursementTypeKey } from './reimbursement-type-mapping';
 
@@ -202,7 +203,7 @@ export function mapContractToBoardDoc(
     id: contract.id,
     status: contractStatusToDocStatus(contract.contractStatus),
     lastActionDate: new Date(contract.updatedAt ?? contract.createdAt),
-    periodLabel: String(new Date(contract.periodStart).getFullYear()),
+    periodLabel: String(billingMonthOf(contract.periodStart).year),
     pauschale: type,
     declineReason: contract.declineReason ?? undefined,
     declinedBy: contract.declinedByUser?.name ?? undefined,
@@ -226,6 +227,8 @@ export function mapInvoiceToBoardDoc(
     hours: invoice.totalHours,
     lastActionDate: new Date(invoice.updatedAt ?? invoice.createdAt),
     periodLabel: formatMonthYear(new Date(invoice.periodStart), locale),
+    periodStart: new Date(invoice.periodStart),
+    periodEnd: new Date(invoice.periodEnd),
     pauschale: type,
     declineReason: invoice.declineReason ?? undefined,
     declinedBy: invoice.declinedByUser?.name ?? undefined,
@@ -238,8 +241,11 @@ export function contractPeriodOverlapsYear(
   contract: RawContract,
   year: number,
 ): boolean {
-  const start = new Date(contract.periodStart).getFullYear();
-  const end = new Date(contract.periodEnd).getFullYear();
+  // The end is exclusive: a contract ending 1 Jan doesn't reach into that year.
+  const start = billingMonthOf(contract.periodStart).year;
+  const end = billingMonthOf(
+    new Date(new Date(contract.periodEnd).getTime() - 1),
+  ).year;
   return start <= year && end >= year;
 }
 
@@ -248,8 +254,8 @@ export function invoiceInMonth(
   year: number,
   month: number,
 ): boolean {
-  const start = new Date(invoice.periodStart);
-  return start.getFullYear() === year && start.getMonth() === month;
+  const start = billingMonthOf(invoice.periodStart);
+  return start.year === year && start.month === month;
 }
 
 export function formatMonthYear(date: Date, locale: string): string {

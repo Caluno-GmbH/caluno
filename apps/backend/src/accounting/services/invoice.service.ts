@@ -1,5 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  ne,
+} from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -32,6 +42,7 @@ import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
+import { billingYearBounds, billingYearOf } from '../utils/billing-period';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -91,8 +102,10 @@ export class InvoiceService {
     if (filter.status) {
       conditions.push(eq(schema.invoices.invoiceStatus, filter.status));
     }
+    // Periods end exclusively, so one ending exactly at the range start
+    // doesn't overlap it.
     if (filter.periodStart) {
-      conditions.push(gte(schema.invoices.periodEnd, filter.periodStart));
+      conditions.push(gt(schema.invoices.periodEnd, filter.periodStart));
     }
     if (filter.periodEnd) {
       conditions.push(lt(schema.invoices.periodStart, filter.periodEnd));
@@ -120,6 +133,7 @@ export class InvoiceService {
     reimbursementTypeId: string,
     periodStart?: Date,
     periodEnd?: Date,
+    draftInvoiceId?: string,
   ): Promise<TimeEntryEntity[]> {
     const conditions = [
       eq(schema.timeEntries.volunteerId, volunteerId),
@@ -145,6 +159,10 @@ export class InvoiceService {
         and(
           eq(schema.invoiceTimeEntries.timeEntryId, schema.timeEntries.id),
           eq(schema.invoiceTimeEntries.released, false),
+          // Entries held by the draft being completed stay selectable.
+          draftInvoiceId
+            ? ne(schema.invoiceTimeEntries.invoiceId, draftInvoiceId)
+            : undefined,
         ),
       )
       .where(and(...conditions));
@@ -227,8 +245,7 @@ export class InvoiceService {
     organizationId: string,
     year: number,
   ): Promise<Array<{ volunteerId: string; reimbursementTypeId: string }>> {
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
 
     const rows = await this.db
       .select({
@@ -352,9 +369,31 @@ export class InvoiceService {
       );
     }
 
+    const draftInvoiceId = asDraft
+      ? undefined
+      : (input.draftInvoiceId ?? undefined);
+    if (draftInvoiceId) {
+      const draft = await this.db.query.invoices.findFirst({
+        where: { id: draftInvoiceId },
+      });
+      if (
+        !draft ||
+        draft.invoiceStatus !== InvoiceStatus.DRAFT ||
+        draft.volunteerId !== input.volunteerId ||
+        draft.reimbursementTypeId !== input.reimbursementTypeId
+      ) {
+        throw new BadRequestGraphQLError(
+          `Invoice ${draftInvoiceId} is not a draft for this volunteer and reimbursement type`,
+        );
+      }
+    }
+
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
+      undefined,
+      undefined,
+      draftInvoiceId,
     );
     const eligibleById = new Map(
       eligibleEntries.map((entry) => [entry.id, entry]),
@@ -416,9 +455,9 @@ export class InvoiceService {
     );
 
     if (!activeContract) {
-      const contractYear = input.periodStart.getUTCFullYear();
-      const yearStart = new Date(Date.UTC(contractYear, 0, 1));
-      const yearEnd = new Date(Date.UTC(contractYear + 1, 0, 1));
+      const { start: yearStart, end: yearEnd } = billingYearBounds(
+        billingYearOf(input.periodStart),
+      );
       const existingContract = await this.db.query.contracts.findFirst({
         where: {
           volunteerId: input.volunteerId,
@@ -444,24 +483,57 @@ export class InvoiceService {
     }
 
     const invoice = await this.db.transaction(async (tx) => {
+      const values = {
+        documentTemplateId: template.id,
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        organizationUnitId: input.organizationUnitId,
+        invoiceStatus: asDraft
+          ? InvoiceStatus.DRAFT
+          : this.nextInvoiceStatus(orderedSignees[0].signeeType),
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        totalAmountCents,
+        totalHours,
+        isNonCompliant: !activeContract,
+        resolvedBody: structuredClone(template.body),
+        fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
+      };
+
+      if (draftInvoiceId) {
+        // Promote the draft: its signatures and claims are rebuilt from the
+        // current template and selection, so unselected entries are freed.
+        const [promoted] = await tx
+          .update(schema.invoices)
+          .set(values)
+          .where(eq(schema.invoices.id, draftInvoiceId))
+          .returning();
+        await tx
+          .delete(schema.invoiceSignatures)
+          .where(eq(schema.invoiceSignatures.invoiceId, draftInvoiceId));
+        await tx
+          .delete(schema.invoiceTimeEntries)
+          .where(eq(schema.invoiceTimeEntries.invoiceId, draftInvoiceId));
+        await tx.insert(schema.invoiceSignatures).values(
+          orderedSignees.map((signee) => ({
+            invoiceId: promoted.id,
+            order: signee.order,
+            signeeType: signee.signeeType,
+            requiredPermissionId: signee.requiredPermissionId,
+          })),
+        );
+        await tx.insert(schema.invoiceTimeEntries).values(
+          selected.map((entry) => ({
+            invoiceId: promoted.id,
+            timeEntryId: entry.id,
+          })),
+        );
+        return promoted;
+      }
+
       const [created] = await tx
         .insert(schema.invoices)
-        .values({
-          documentTemplateId: template.id,
-          volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
-          organizationUnitId: input.organizationUnitId,
-          invoiceStatus: asDraft
-            ? InvoiceStatus.DRAFT
-            : this.nextInvoiceStatus(orderedSignees[0].signeeType),
-          periodStart: input.periodStart,
-          periodEnd: input.periodEnd,
-          totalAmountCents,
-          totalHours,
-          isNonCompliant: !activeContract,
-          resolvedBody: structuredClone(template.body),
-          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
-        })
+        .values(values)
         .returning();
 
       await tx.insert(schema.invoiceSignatures).values(

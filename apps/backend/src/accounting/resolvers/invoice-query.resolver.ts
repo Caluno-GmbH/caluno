@@ -120,6 +120,8 @@ export class InvoiceQueryResolver {
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
     periodEnd: Date | null | undefined,
+    @Args('draftInvoiceId', { type: () => ID, nullable: true })
+    draftInvoiceId: string | null | undefined,
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntry[]> {
@@ -129,6 +131,7 @@ export class InvoiceQueryResolver {
       reimbursementTypeId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
+      draftInvoiceId ?? undefined,
     );
     return this.timeEntryMapper.toArray(entries);
   }

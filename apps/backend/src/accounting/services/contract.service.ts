@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, lt } from 'drizzle-orm';
+import { and, eq, gt, lt } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -82,8 +82,10 @@ export class ContractService {
     if (filter.status) {
       conditions.push(eq(schema.contracts.contractStatus, filter.status));
     }
+    // Periods end exclusively, so one ending exactly at the range start
+    // doesn't overlap it.
     if (filter.periodStart) {
-      conditions.push(gte(schema.contracts.periodEnd, filter.periodStart));
+      conditions.push(gt(schema.contracts.periodEnd, filter.periodStart));
     }
     if (filter.periodEnd) {
       conditions.push(lt(schema.contracts.periodStart, filter.periodEnd));
@@ -118,7 +120,7 @@ export class ContractService {
         volunteerId,
         reimbursementTypeId,
         contractStatus: ContractStatus.ACTIVE,
-        periodEnd: { gte: new Date() },
+        periodEnd: { gt: new Date() },
       },
     });
   }

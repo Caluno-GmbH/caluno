@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { UserEntity } from '../../auth/schemas/auth.schema';
 import type { Database } from '../../database/database.module';
@@ -21,6 +22,7 @@ import type { ReimbursementBundleDownloadEntity } from '../schemas/reimbursement
 import type { ManualBaselineEntity } from '../schemas/reimbursement-manual-baseline.schema';
 import type { ReimbursementRateEntity } from '../schemas/reimbursement-rate.schema';
 import type { ReimbursementTypeEntity } from '../schemas/reimbursement-type.schema';
+import { billingYearBounds } from '../utils/billing-period';
 
 export interface ReimbursementTypeUsageResult {
   reimbursementType: ReimbursementTypeEntity;
@@ -207,9 +209,9 @@ export class ReimbursementRateService {
     reimbursementTypeId: string,
     year: number,
     asOfDate?: Date,
+    excludeInvoiceId?: string,
   ): Promise<YearlyUsage> {
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
     const reimbursementType =
       await this.findReimbursementTypeById(reimbursementTypeId);
 
@@ -220,6 +222,12 @@ export class ReimbursementRateService {
           reimbursementTypeId,
           periodStart: { gte: yearStart, lt: yearEnd },
           ...(asOfDate ? { periodEnd: { lte: asOfDate } } : {}),
+          // The invoice being completed or rendered must not count toward
+          // what was already received before it. A non-UUID id can't match
+          // an invoice and would fail the uuid comparison, so it's ignored.
+          ...(excludeInvoiceId && isUUID(excludeInvoiceId)
+            ? { id: { ne: excludeInvoiceId } }
+            : {}),
         },
         columns: { totalAmountCents: true, invoiceStatus: true },
       }),
@@ -252,8 +260,7 @@ export class ReimbursementRateService {
     ]);
     if (members.length === 0) return [];
 
-    const yearStart = new Date(Date.UTC(year, 0, 1));
-    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
     const memberIds = members.map((member) => member.id);
 
     const [invoices, baselines] = await Promise.all([

@@ -110,11 +110,14 @@ export class AccountingRepository extends BaseRepository {
     return data.setReimbursementRate;
   }
 
-  async findYearlyUsage(
-    reimbursementTypeId: string,
-    year: number,
-  ): Promise<RawYearlyUsage> {
-    const data = await this.sdk.GetYearlyUsage({ reimbursementTypeId, year });
+  async findYearlyUsage(input: {
+    volunteerId: string;
+    reimbursementTypeId: string;
+    year: number;
+    asOfDate?: string;
+    excludeInvoiceId?: string;
+  }): Promise<RawYearlyUsage> {
+    const data = await this.sdk.GetYearlyUsage(input);
     return data.yearlyUsage;
   }
 
@@ -217,6 +220,7 @@ export class AccountingRepository extends BaseRepository {
     reimbursementTypeId: string;
     periodStart?: string;
     periodEnd?: string;
+    draftInvoiceId?: string;
   }): Promise<EligibleTimeEntry[]> {
     const data = await this.sdk.GetEligibleTimeEntriesForInvoice(input);
     return data.eligibleTimeEntriesForInvoice;

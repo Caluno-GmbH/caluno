@@ -8,10 +8,10 @@ import {
 } from './creation-modal.utils';
 
 describe('contractPeriodForLifespan', () => {
-  it('covers the full calendar year of the entered MM/YYYY string', () => {
+  it('covers the full Berlin calendar year of the entered MM/YYYY string', () => {
     expect(contractPeriodForLifespan('03/2026')).toEqual({
-      periodStart: '2026-01-01T00:00:00.000Z',
-      periodEnd: '2027-01-01T00:00:00.000Z',
+      periodStart: '2025-12-31T23:00:00.000Z',
+      periodEnd: '2026-12-31T23:00:00.000Z',
     });
   });
 
@@ -19,8 +19,8 @@ describe('contractPeriodForLifespan', () => {
     expect(
       contractPeriodForLifespan('not-a-date', new Date('2025-06-01T00:00:00Z')),
     ).toEqual({
-      periodStart: '2025-01-01T00:00:00.000Z',
-      periodEnd: '2026-01-01T00:00:00.000Z',
+      periodStart: '2024-12-31T23:00:00.000Z',
+      periodEnd: '2025-12-31T23:00:00.000Z',
     });
   });
 });
