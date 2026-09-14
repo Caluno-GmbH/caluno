@@ -3,6 +3,10 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import {
+  type ResolvedOrgProfile,
+  resolveOrgProfile,
+} from '../utils/org-profile';
+import {
   type TemplateBodyShape as BodyShape,
   type TemplateLineShape as LineShape,
   ORG_SOURCE_TO_ORG_COLUMN,
@@ -131,36 +135,34 @@ export class DocumentProfileRequirementService {
   }
 
   /**
-   * The org-profile source keys (e.g. org_city/org_address) a document's
-   * template needs that the org's root/creating unit has not yet supplied.
-   * Empty when the unit's profile is complete enough to create the document.
-   * Reads the unit by id — the same entity the overview Edit edits, so what an
-   * account manager sees and what the document renders stay in sync.
+   * The org details a document for this unit renders (the org root when no
+   * unit is given), with blank fields inherited from the nearest parent unit.
+   * See resolveOrgProfile.
    */
-  /** The unit whose org profile a document/template renders: the given unit, else the org root. */
-  private async resolveProfileUnit(
+  resolveOrgProfile(
     organizationId: string,
     organizationUnitId: string | null | undefined,
-  ) {
-    return this.db.query.organizationUnits.findFirst({
-      where: organizationUnitId
-        ? { id: organizationUnitId }
-        : { organizationId, parentId: { isNull: true } },
-    });
+  ): Promise<ResolvedOrgProfile | undefined> {
+    return resolveOrgProfile(this.db, organizationId, organizationUnitId);
   }
 
+  /**
+   * The org-profile source keys (e.g. org_city/org_address) a document's
+   * template needs that the unit's resolved org details don't supply. Empty
+   * when the document can be created.
+   */
   async missingOrgProfileSources(
     organizationId: string,
     organizationUnitId: string | null | undefined,
     templateBody: unknown,
   ): Promise<string[]> {
     if (this.requiredOrgSources(templateBody).length === 0) return [];
-    const unit = await this.resolveProfileUnit(
+    const profile = await this.resolveOrgProfile(
       organizationId,
       organizationUnitId,
     );
     return this.missingOrgProfileSourcesForUnit(
-      unit as unknown as Record<string, unknown> | undefined,
+      profile as unknown as Record<string, unknown> | undefined,
       templateBody,
     );
   }
@@ -175,11 +177,11 @@ export class DocumentProfileRequirementService {
     organizationId: string,
     organizationUnitId: string | null | undefined,
   ): Promise<string[]> {
-    const unit = await this.resolveProfileUnit(
+    const profile = await this.resolveOrgProfile(
       organizationId,
       organizationUnitId,
     );
-    const record = unit as unknown as Record<string, unknown> | undefined;
+    const record = profile as unknown as Record<string, unknown> | undefined;
     // `org_name` maps to `name`, which is always present, so it never appears
     // as missing — keep the no-unit fallback consistent with that.
     if (!record) {

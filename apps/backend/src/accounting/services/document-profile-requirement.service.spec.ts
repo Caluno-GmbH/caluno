@@ -275,4 +275,79 @@ describe('DocumentProfileRequirementService', () => {
       ).toEqual([]);
     });
   });
+
+  describe('sub-units inherit org details from their parents', () => {
+    const units: Record<string, Record<string, unknown>> = {
+      root: {
+        id: 'root',
+        parentId: null,
+        name: 'Testing org',
+        address: 'Hauptstraße 1',
+        city: 'Berlin',
+        legalRep: 'Erika Mustermann',
+      },
+      branch: {
+        id: 'branch',
+        parentId: 'root',
+        name: 'Branch',
+        address: null,
+        city: '',
+        legalRep: null,
+      },
+      suborg: {
+        id: 'suborg',
+        parentId: 'branch',
+        name: 'Testing suborg',
+        address: 'Nebenweg 2',
+        city: null,
+        legalRep: null,
+      },
+    };
+    const serviceWithTree = new DocumentProfileRequirementService(
+      {
+        query: {
+          organizationUnits: {
+            findFirst: (args: { where: { id?: string } }) =>
+              Promise.resolve(args.where.id ? units[args.where.id] : undefined),
+          },
+        },
+      } as never,
+      userProfileService,
+    );
+    const body = {
+      header: {
+        orgIdentityLine: {
+          enabled: true,
+          fields: [
+            { value: { kind: 'bound', source: 'org_address' } },
+            { value: { kind: 'bound', source: 'org_city' } },
+            { value: { kind: 'bound', source: 'org_legal_rep' } },
+          ],
+        },
+      },
+    };
+
+    it('does not block a sub-unit whose missing fields a parent has filled in', async () => {
+      expect(
+        await serviceWithTree.missingOrgProfileSources('org-1', 'suborg', body),
+      ).toEqual([]);
+      expect(
+        await serviceWithTree.missingBaselineOrgProfileSources(
+          'org-1',
+          'suborg',
+        ),
+      ).toEqual([]);
+    });
+
+    it("keeps the sub-unit's own value and takes the nearest parent's for the rest", async () => {
+      expect(
+        await serviceWithTree.resolveOrgProfile('org-1', 'suborg'),
+      ).toMatchObject({
+        name: 'Testing suborg',
+        address: 'Nebenweg 2',
+        city: 'Berlin',
+        legalRep: 'Erika Mustermann',
+      });
+    });
+  });
 });

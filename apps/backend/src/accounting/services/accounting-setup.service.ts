@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { DocumentKind, type ReimbursementTypeKey } from '../enums';
+import type { ResolvedOrgProfile } from '../utils/org-profile';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 
 export interface AccountingTemplateSlotStatus {
@@ -14,6 +15,7 @@ export interface AccountingTemplateSlotStatus {
 }
 
 export interface AccountingSetupStatusResult {
+  orgProfile: ResolvedOrgProfile | null;
   orgProfileComplete: boolean;
   missingOrgProfileFields: string[];
   slots: AccountingTemplateSlotStatus[];
@@ -43,11 +45,16 @@ export class AccountingSetupService {
     organizationId: string,
     organizationUnitId: string | null,
   ): Promise<AccountingSetupStatusResult> {
-    const missingOrgProfileFields =
-      await this.documentProfileRequirementService.missingBaselineOrgProfileSources(
+    const [orgProfile, missingOrgProfileFields] = await Promise.all([
+      this.documentProfileRequirementService.resolveOrgProfile(
         organizationId,
         organizationUnitId,
-      );
+      ),
+      this.documentProfileRequirementService.missingBaselineOrgProfileSources(
+        organizationId,
+        organizationUnitId,
+      ),
+    ]);
     const orgProfileComplete = missingOrgProfileFields.length === 0;
 
     // reimbursementTypes is a global table (exactly EHRENAMT/UEBUNGSLEITER in
@@ -95,6 +102,7 @@ export class AccountingSetupService {
     });
 
     return {
+      orgProfile: orgProfile ?? null,
       orgProfileComplete,
       missingOrgProfileFields,
       slots,

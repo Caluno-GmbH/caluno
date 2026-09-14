@@ -17,6 +17,7 @@ import {
   billingYearOf,
   lastDayOfPeriod,
 } from '../utils/billing-period';
+import { resolveOrgProfile } from '../utils/org-profile';
 import {
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
@@ -466,9 +467,14 @@ export class DocumentRenderingService {
         where: { id: document.volunteerId },
       }),
     ]);
-    const profile = await this.userProfileService.findByUserId(
-      document.volunteerId,
-    );
+    const [profile, orgProfile] = await Promise.all([
+      this.userProfileService.findByUserId(document.volunteerId),
+      // The same resolved org details the create gate checked, so a sub-org's
+      // document prints what its parents filled in rather than blanks.
+      template.organizationId && rootUnit
+        ? resolveOrgProfile(this.db, template.organizationId, rootUnit.id)
+        : Promise.resolve(undefined),
+    ]);
     const profileData = (profile?.data ?? {}) as Record<string, unknown>;
 
     const [firstName, lastName] = this.splitName(volunteer?.name);
@@ -525,9 +531,9 @@ export class DocumentRenderingService {
 
     return {
       org_name: rootUnit?.name ?? '',
-      org_address: rootUnit?.address ?? '',
-      org_city: rootUnit?.city ?? '',
-      org_legal_rep: rootUnit?.legalRep ?? '',
+      org_address: orgProfile?.address ?? rootUnit?.address ?? '',
+      org_city: orgProfile?.city ?? rootUnit?.city ?? '',
+      org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,
       volunteer_last_name: lastName,

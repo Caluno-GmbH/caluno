@@ -20,7 +20,6 @@ import type { ContractStatusChangeEntity } from '../schemas/contract-status-chan
 import type { DocumentTemplateEntity } from '../schemas/document-template.schema';
 import type { ReimbursementTypeEntity } from '../schemas/reimbursement-type.schema';
 import { DocumentProfileRequirementService } from '../services/document-profile-requirement.service';
-import { AccountingOrganizationLoader } from './accounting-organization.loader';
 import { AccountingUserLoader } from './accounting-user.loader';
 import { ContractLoader } from './contract.loader';
 
@@ -122,8 +121,6 @@ export class ContractFieldResolver {
   async missingOrgProfileFields(
     @Parent() contract: MaybeWithRelations,
     @Loader(ContractLoader) contractLoader: ContractLoader,
-    @Loader(AccountingOrganizationLoader)
-    orgLoader: AccountingOrganizationLoader,
   ): Promise<string[]> {
     let templateBody: unknown = contract.documentTemplate?.body;
     let organizationId = contract.documentTemplate?.organizationId;
@@ -138,11 +135,11 @@ export class ContractFieldResolver {
       organizationUnitId = full.organizationUnitId ?? undefined;
     }
     if (!organizationId) return [];
-    const unit = organizationUnitId
-      ? await orgLoader.organizationUnitById.load(organizationUnitId)
-      : await orgLoader.rootUnitByOrganizationId.load(organizationId);
-    return this.documentProfileRequirementService.missingOrgProfileSourcesForUnit(
-      (unit ?? undefined) as Record<string, unknown> | undefined,
+    // Same resolution as the create gate and the PDF, so a sub-org inherits
+    // the org details its parents have filled in.
+    return this.documentProfileRequirementService.missingOrgProfileSources(
+      organizationId,
+      organizationUnitId,
       templateBody,
     );
   }

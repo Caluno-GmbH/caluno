@@ -586,6 +586,13 @@ query MyDocumentSummary {
 
 query GetAccountingSetupStatus {
   accountingSetupStatus {
+    orgProfile {
+      name
+      address
+      city
+      zipCode
+      legalRep
+    }
     orgProfileComplete
     missingOrgProfileFields
     canCreateDocuments

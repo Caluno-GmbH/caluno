@@ -8,6 +8,7 @@ import {
   serializeTemplateBody,
 } from '@repo/data';
 import {
+  useAccountingSetupStatus,
   useCreateDocumentTemplate,
   useCurrentOrg,
   useDocumentTemplate,
@@ -132,6 +133,9 @@ export function TemplateBuilder({
 
   const orgUId = useOrgUId();
   const org = useCurrentOrg();
+  // The org details documents will render (inherited from parent units,
+  // refreshed on every profile edit); the page-load org is only a fallback.
+  const orgProfile = useAccountingSetupStatus().data?.orgProfile;
   const slotKind = kind === 'contract' ? 'contract' : 'invoice';
 
   const templatesQuery = useDocumentTemplates();
@@ -185,10 +189,10 @@ export function TemplateBuilder({
 
   const knownValues = getKnownOrgValues({
     pauschale,
-    orgName: org.name,
-    orgAddress: org.address,
-    orgCity: org.city,
-    orgLegalRep: org.legalRep,
+    orgName: orgProfile?.name ?? org.name,
+    orgAddress: orgProfile ? orgProfile.address : org.address,
+    orgCity: orgProfile ? orgProfile.city : org.city,
+    orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
     hourlyRateCents: effectiveRate?.hourlyRateCents,
     yearlyLimitCents:
       effectiveRate?.reimbursementType.yearlyLimitCents ??
@@ -340,7 +344,7 @@ export function TemplateBuilder({
   // the coordinator is pointed at the unit's edit sheet (or told to ask someone
   // who can manage the org) instead of the request failing on the server.
   const missingOrgSources = templateDoc
-    ? missingOrgProfileSourcesForOrg(templateDoc, org)
+    ? missingOrgProfileSourcesForOrg(templateDoc, orgProfile ?? org)
     : [];
   const canEditOrg =
     permissionsQuery.data?.some((p) => p.key === PermissionKey.OrgEdit) ??

@@ -4,6 +4,7 @@ import { AccountingSetupService } from './accounting-setup.service';
 
 function makeService(args: {
   missingOrgFields?: string[];
+  orgProfile?: Record<string, unknown>;
   templates?: { reimbursementTypeId: string; kind: DocumentKind }[];
   types?: { id: string; key: ReimbursementTypeKey }[];
 }) {
@@ -19,11 +20,28 @@ function makeService(args: {
   };
   const requirements = {
     missingBaselineOrgProfileSources: async () => args.missingOrgFields ?? [],
+    resolveOrgProfile: async () => args.orgProfile,
   };
   return new AccountingSetupService(db as never, requirements as never);
 }
 
 describe('AccountingSetupService.getSetupStatus', () => {
+  it('returns the resolved org details documents will render', async () => {
+    const orgProfile = {
+      id: 'unit-1',
+      name: 'Testing suborg',
+      address: 'Hauptstraße 1',
+      city: 'Berlin',
+      zipCode: null,
+      legalRep: 'Erika Mustermann',
+    };
+    const service = makeService({ orgProfile });
+
+    const status = await service.getSetupStatus('org-1', 'unit-1');
+
+    expect(status.orgProfile).toEqual(orgProfile);
+  });
+
   it('blocks template management while org profile fields are missing', async () => {
     const service = makeService({ missingOrgFields: ['org_address'] });
 
