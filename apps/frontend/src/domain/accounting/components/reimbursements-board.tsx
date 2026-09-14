@@ -111,6 +111,9 @@ export interface BoardDocument {
   hours?: number;
   lastActionDate?: Date;
   periodLabel: string;
+  /** The document's own period — a draft timesheet is completed for this range, not "this month". */
+  periodStart?: Date;
+  periodEnd?: Date;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
   isOverCap?: boolean;
   pauschale?: PauschalenType;
@@ -882,6 +885,16 @@ export function ReimbursementsBoard({
         }}
         orgUId={orgUId}
         docId={invoiceCreationTarget?.doc.id ?? null}
+        draftInvoiceId={
+          invoiceCreationTarget?.doc.status === 'timesheet-draft'
+            ? invoiceCreationTarget.doc.id
+            : null
+        }
+        draftPeriodStart={
+          invoiceCreationTarget?.doc.status === 'timesheet-draft'
+            ? invoiceCreationTarget.doc.periodStart
+            : null
+        }
         volunteerId={invoiceCreationTarget?.vol.id ?? null}
         volunteerName={invoiceCreationTarget?.vol.name ?? null}
         pauschale={

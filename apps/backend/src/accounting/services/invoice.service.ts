@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNotNull, isNull, lt, ne } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -120,6 +120,7 @@ export class InvoiceService {
     reimbursementTypeId: string,
     periodStart?: Date,
     periodEnd?: Date,
+    draftInvoiceId?: string,
   ): Promise<TimeEntryEntity[]> {
     const conditions = [
       eq(schema.timeEntries.volunteerId, volunteerId),
@@ -145,6 +146,10 @@ export class InvoiceService {
         and(
           eq(schema.invoiceTimeEntries.timeEntryId, schema.timeEntries.id),
           eq(schema.invoiceTimeEntries.released, false),
+          // Entries held by the draft being completed stay selectable.
+          draftInvoiceId
+            ? ne(schema.invoiceTimeEntries.invoiceId, draftInvoiceId)
+            : undefined,
         ),
       )
       .where(and(...conditions));
@@ -352,9 +357,31 @@ export class InvoiceService {
       );
     }
 
+    const draftInvoiceId = asDraft
+      ? undefined
+      : (input.draftInvoiceId ?? undefined);
+    if (draftInvoiceId) {
+      const draft = await this.db.query.invoices.findFirst({
+        where: { id: draftInvoiceId },
+      });
+      if (
+        !draft ||
+        draft.invoiceStatus !== InvoiceStatus.DRAFT ||
+        draft.volunteerId !== input.volunteerId ||
+        draft.reimbursementTypeId !== input.reimbursementTypeId
+      ) {
+        throw new BadRequestGraphQLError(
+          `Invoice ${draftInvoiceId} is not a draft for this volunteer and reimbursement type`,
+        );
+      }
+    }
+
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
+      undefined,
+      undefined,
+      draftInvoiceId,
     );
     const eligibleById = new Map(
       eligibleEntries.map((entry) => [entry.id, entry]),
@@ -444,24 +471,57 @@ export class InvoiceService {
     }
 
     const invoice = await this.db.transaction(async (tx) => {
+      const values = {
+        documentTemplateId: template.id,
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        organizationUnitId: input.organizationUnitId,
+        invoiceStatus: asDraft
+          ? InvoiceStatus.DRAFT
+          : this.nextInvoiceStatus(orderedSignees[0].signeeType),
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+        totalAmountCents,
+        totalHours,
+        isNonCompliant: !activeContract,
+        resolvedBody: structuredClone(template.body),
+        fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
+      };
+
+      if (draftInvoiceId) {
+        // Promote the draft: its signatures and claims are rebuilt from the
+        // current template and selection, so unselected entries are freed.
+        const [promoted] = await tx
+          .update(schema.invoices)
+          .set(values)
+          .where(eq(schema.invoices.id, draftInvoiceId))
+          .returning();
+        await tx
+          .delete(schema.invoiceSignatures)
+          .where(eq(schema.invoiceSignatures.invoiceId, draftInvoiceId));
+        await tx
+          .delete(schema.invoiceTimeEntries)
+          .where(eq(schema.invoiceTimeEntries.invoiceId, draftInvoiceId));
+        await tx.insert(schema.invoiceSignatures).values(
+          orderedSignees.map((signee) => ({
+            invoiceId: promoted.id,
+            order: signee.order,
+            signeeType: signee.signeeType,
+            requiredPermissionId: signee.requiredPermissionId,
+          })),
+        );
+        await tx.insert(schema.invoiceTimeEntries).values(
+          selected.map((entry) => ({
+            invoiceId: promoted.id,
+            timeEntryId: entry.id,
+          })),
+        );
+        return promoted;
+      }
+
       const [created] = await tx
         .insert(schema.invoices)
-        .values({
-          documentTemplateId: template.id,
-          volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
-          organizationUnitId: input.organizationUnitId,
-          invoiceStatus: asDraft
-            ? InvoiceStatus.DRAFT
-            : this.nextInvoiceStatus(orderedSignees[0].signeeType),
-          periodStart: input.periodStart,
-          periodEnd: input.periodEnd,
-          totalAmountCents,
-          totalHours,
-          isNonCompliant: !activeContract,
-          resolvedBody: structuredClone(template.body),
-          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
-        })
+        .values(values)
         .returning();
 
       await tx.insert(schema.invoiceSignatures).values(

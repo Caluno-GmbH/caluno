@@ -226,6 +226,8 @@ export function mapInvoiceToBoardDoc(
     hours: invoice.totalHours,
     lastActionDate: new Date(invoice.updatedAt ?? invoice.createdAt),
     periodLabel: formatMonthYear(new Date(invoice.periodStart), locale),
+    periodStart: new Date(invoice.periodStart),
+    periodEnd: new Date(invoice.periodEnd),
     pauschale: type,
     declineReason: invoice.declineReason ?? undefined,
     declinedBy: invoice.declinedByUser?.name ?? undefined,

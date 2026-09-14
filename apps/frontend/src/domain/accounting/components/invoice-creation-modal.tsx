@@ -93,8 +93,20 @@ interface InvoiceCreationModalProps {
   usedBeforeAmount: number | null;
   totalCapAmount: number | null;
   onSent: () => void;
+  /** Set when completing an auto-drafted timesheet: its claimed hours are listed and the draft is promoted in place. */
+  draftInvoiceId?: string | null;
+  /** The draft's period start, so the modal opens on the draft's month instead of "this month". */
+  draftPeriodStart?: Date | null;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
+}
+
+function initialPeriod(draftPeriodStart?: Date | null): DateRange {
+  if (!draftPeriodStart) return thisMonthRange();
+  // Drafts are stored as UTC month boundaries.
+  const year = draftPeriodStart.getUTCFullYear();
+  const month = draftPeriodStart.getUTCMonth();
+  return { from: new Date(year, month, 1), to: new Date(year, month + 1, 0) };
 }
 
 export function InvoiceCreationModal({
@@ -108,6 +120,8 @@ export function InvoiceCreationModal({
   usedBeforeAmount,
   totalCapAmount,
   onSent,
+  draftInvoiceId,
+  draftPeriodStart,
   embedded,
 }: InvoiceCreationModalProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal');
@@ -163,7 +177,9 @@ export function InvoiceCreationModal({
   );
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
-  const [period, setPeriod] = useState<DateRange>(thisMonthRange);
+  const [period, setPeriod] = useState<DateRange>(() =>
+    initialPeriod(draftPeriodStart),
+  );
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
@@ -173,6 +189,7 @@ export function InvoiceCreationModal({
     reimbursementTypeId: reimbursementType?.id,
     periodStart: period.from?.toISOString(),
     periodEnd: (period.to ?? period.from)?.toISOString(),
+    draftInvoiceId: draftInvoiceId ?? undefined,
   });
   const yearlyUsageQuery = useYearlyUsage(
     reimbursementType?.id,
@@ -195,7 +212,7 @@ export function InvoiceCreationModal({
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-    setPeriod(thisMonthRange());
+    setPeriod(initialPeriod(draftPeriodStart));
   }, [volunteerId, docId]);
 
   // Every eligible entry starts checked — unchecking removes it from the
@@ -324,6 +341,7 @@ export function InvoiceCreationModal({
         periodStart: (period.from ?? new Date()).toISOString(),
         periodEnd: (period.to ?? period.from ?? new Date()).toISOString(),
         timeEntryIds: selectedLines.map((line) => line.id),
+        draftInvoiceId: draftInvoiceId ?? null,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({
