@@ -569,6 +569,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
           reimbursementType.id,
           2026,
           undefined,
+          undefined,
           contextFor(branchA.id),
         ),
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
@@ -605,6 +606,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         reimbursementType.id,
         2026,
         undefined,
+        undefined,
         contextFor(branchA.id),
       );
 
@@ -640,6 +642,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         volunteer.id,
         reimbursementType.id,
         2026,
+        undefined,
         draft.id,
         contextFor(branchA.id),
       );

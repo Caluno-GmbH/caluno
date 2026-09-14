@@ -50,12 +50,14 @@ query GetVolunteerYearlyUsage(
   $volunteerId: ID!
   $reimbursementTypeId: ID!
   $year: Int!
+  $asOfDate: DateTime
   $excludeInvoiceId: ID
 ) {
   volunteerYearlyUsage(
     volunteerId: $volunteerId
     reimbursementTypeId: $reimbursementTypeId
     year: $year
+    asOfDate: $asOfDate
     excludeInvoiceId: $excludeInvoiceId
   ) {
     usedCents

@@ -122,6 +122,7 @@ export class AccountingRepository extends BaseRepository {
     volunteerId: string;
     reimbursementTypeId: string;
     year: number;
+    asOfDate?: string;
     excludeInvoiceId?: string;
   }): Promise<RawYearlyUsage> {
     const data = await this.sdk.GetVolunteerYearlyUsage(input);

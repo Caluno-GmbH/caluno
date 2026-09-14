@@ -93,6 +93,10 @@ export class ReimbursementQueryResolver {
     @Args('reimbursementTypeId', { type: () => ID })
     reimbursementTypeId: string,
     @Args('year', { type: () => Int }) year: number,
+    // Same cutoff the PDF uses (the document's period end), so the
+    // already-received figure in the dialog matches the generated document.
+    @Args('asOfDate', { type: () => Date, nullable: true })
+    asOfDate: Date | null | undefined,
     @Args('excludeInvoiceId', { type: () => ID, nullable: true })
     excludeInvoiceId: string | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
@@ -106,7 +110,7 @@ export class ReimbursementQueryResolver {
       volunteerId,
       reimbursementTypeId,
       year,
-      undefined,
+      asOfDate ?? undefined,
       excludeInvoiceId ?? undefined,
     );
   }

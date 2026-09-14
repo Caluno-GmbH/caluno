@@ -214,6 +214,9 @@ export function InvoiceCreationModal({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
     year: period.from?.getFullYear(),
+    // The period end this invoice is saved with, which the PDF uses as its
+    // cutoff, so the dialog and the document state the same figure.
+    asOfDate: (period.to ?? period.from)?.toISOString(),
     excludeInvoiceId: draftInvoiceId ?? undefined,
   });
   const formatting = useFormatting();

@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import type { UserEntity } from '../../auth/schemas/auth.schema';
 import type { Database } from '../../database/database.module';
@@ -221,9 +222,12 @@ export class ReimbursementRateService {
           reimbursementTypeId,
           periodStart: { gte: yearStart, lt: yearEnd },
           ...(asOfDate ? { periodEnd: { lte: asOfDate } } : {}),
-          // The invoice being completed must not count toward what was
-          // already received before it.
-          ...(excludeInvoiceId ? { id: { ne: excludeInvoiceId } } : {}),
+          // The invoice being completed or rendered must not count toward
+          // what was already received before it. A non-UUID id can't match
+          // an invoice and would fail the uuid comparison, so it's ignored.
+          ...(excludeInvoiceId && isUUID(excludeInvoiceId)
+            ? { id: { ne: excludeInvoiceId } }
+            : {}),
         },
         columns: { totalAmountCents: true, invoiceStatus: true },
       }),

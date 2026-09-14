@@ -26,6 +26,8 @@ export function useVolunteerYearlyUsage(input: {
   volunteerId?: string;
   reimbursementTypeId?: string;
   year?: number;
+  /** ISO timestamp: only invoices whose period ended by then count. */
+  asOfDate?: string;
   excludeInvoiceId?: string;
 }) {
   const sdk = useSdk();
@@ -39,6 +41,7 @@ export function useVolunteerYearlyUsage(input: {
         volunteerId: input.volunteerId ?? '',
         reimbursementTypeId: input.reimbursementTypeId ?? '',
         year: input.year ?? 0,
+        asOfDate: input.asOfDate,
         excludeInvoiceId: input.excludeInvoiceId,
       }),
     staleTime: 30 * 1000,
