@@ -234,7 +234,7 @@ export class ContractService {
   /**
    * Queues the volunteer's yearly Vereinbarung as a DRAFT when they have no
    * contract (other than a declined one) for the reimbursement type in the
-   * Berlin year of `periodStart`. Runs when paid hours first appear and when
+   * Berlin year of `anchorDate`. Runs when paid hours first appear and when
    * a timesheet is created, so a volunteer without a contract always lands
    * under "Create contracts". Returns the draft, or undefined if one exists.
    */
@@ -244,11 +244,12 @@ export class ContractService {
       organizationUnitId?: string | null;
       volunteerId: string;
       reimbursementTypeId: string;
-      periodStart: Date;
+      /** Any instant in the target Berlin year; only the year is used. */
+      anchorDate: Date;
     },
     actorUserId: string,
   ): Promise<ContractEntity | undefined> {
-    const year = billingYearBounds(billingYearOf(input.periodStart));
+    const year = billingYearBounds(billingYearOf(input.anchorDate));
     const existing = await this.db.query.contracts.findFirst({
       where: {
         volunteerId: input.volunteerId,

@@ -431,7 +431,7 @@ export class InvoiceService {
           organizationUnitId: input.organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          periodStart: input.periodStart,
+          anchorDate: input.periodStart,
         },
         actorUserId,
       );

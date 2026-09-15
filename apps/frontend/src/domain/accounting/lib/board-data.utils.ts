@@ -63,11 +63,9 @@ export function getDocLineSummary(
 export type DocumentRowAction = 'open' | 'create' | 'none';
 
 /**
- * What a board row's body click should do. Rows backed by a persisted document
- * open the detail sheet by id; a timesheet still to create has no persisted
- * document — its row id is synthetic — so its body click opens the creation
- * modal instead of querying an id that is not a UUID. `contract-generate`
- * stays inert; its action lives on the button.
+ * What a board row's body click should do. A timesheet still to create has no
+ * persisted document — its row id is synthetic — so it opens the creation
+ * modal rather than fetching an id that is not a UUID.
  */
 export function documentRowAction(doc: BoardDocument): DocumentRowAction {
   if (doc.status === 'contract-generate') return 'none';
@@ -431,9 +429,8 @@ export function buildBoardVolunteers({
         }
       }
 
-      // Eligible hours with no contract yet mean the real blocker is creating
-      // the Vereinbarung, so queue the volunteer under "Create contracts"
-      // rather than anywhere downstream.
+      // Eligible hours with no contract yet also queue a "create contract"
+      // row, so the missing Vereinbarung is visible alongside the timesheet.
       if (
         eligibleTypeIds?.has(usage.reimbursementType.id) ||
         paidShiftTypeIds?.has(usage.reimbursementType.id)

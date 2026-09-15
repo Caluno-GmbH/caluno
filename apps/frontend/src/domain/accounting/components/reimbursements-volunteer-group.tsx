@@ -416,9 +416,6 @@ function VolunteerTableGroup({
             doc.status === 'timesheet-generate';
           // Contract-generate has nothing to show yet (no signing chain has
           // started); timesheet-generate already has computed hours/amount.
-          // A row with no persisted document (timesheet-generate) opens the
-          // creation modal on body click; its synthetic id must never be
-          // fetched as a document.
           const rowAction = documentRowAction(doc);
           const canOpenSheet = rowAction !== 'none';
           const effectivePauschale = doc.pauschale ?? vol.pauschale;

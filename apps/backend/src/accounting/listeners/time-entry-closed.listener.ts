@@ -47,7 +47,7 @@ export class TimeEntryClosedListener {
           organizationUnitId: entry.organizationUnitId,
           volunteerId: entry.volunteerId,
           reimbursementTypeId: entry.reimbursementTypeId,
-          periodStart: new Date(entry.startedAt),
+          anchorDate: new Date(entry.startedAt),
         },
         entry.volunteerId,
       );

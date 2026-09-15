@@ -110,7 +110,7 @@ export interface BoardDocument {
   hours?: number;
   lastActionDate?: Date;
   periodLabel: string;
-  /** The document's own period — a draft timesheet is completed for this range, not "this month". */
+  /** The document's own period: a to-invoice row opens on this month, a declined timesheet on the period it was issued for. */
   periodStart?: Date;
   periodEnd?: Date;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
