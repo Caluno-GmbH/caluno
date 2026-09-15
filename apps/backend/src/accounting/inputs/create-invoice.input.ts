@@ -25,9 +25,4 @@ export class CreateInvoiceInput {
 
   @Field(() => [DocumentFieldOverrideInput], { nullable: true })
   fieldOverrides?: DocumentFieldOverrideInput[] | null;
-
-  // Set when completing an auto-drafted invoice: the draft is promoted in
-  // place instead of creating a second invoice for the same hours.
-  @Field(() => ID, { nullable: true })
-  draftInvoiceId?: string | null;
 }

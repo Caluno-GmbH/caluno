@@ -8,7 +8,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
 
-/** A volunteer's usage for a coordinator; `excludeInvoiceId` leaves out the invoice being completed. */
+/** A volunteer's usage for a coordinator; `excludeInvoiceId` leaves out the document being reissued or rendered. */
 export function useYearlyUsage(input: {
   volunteerId?: string;
   reimbursementTypeId?: string;

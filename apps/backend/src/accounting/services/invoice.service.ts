@@ -1,15 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  and,
-  eq,
-  gt,
-  gte,
-  inArray,
-  isNotNull,
-  isNull,
-  lt,
-  ne,
-} from 'drizzle-orm';
+import { and, eq, gt, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -42,7 +32,7 @@ import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
-import { billingYearBounds, billingYearOf } from '../utils/billing-period';
+import { billingMonthBounds, billingYearBounds } from '../utils/billing-period';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -133,7 +123,6 @@ export class InvoiceService {
     reimbursementTypeId: string,
     periodStart?: Date,
     periodEnd?: Date,
-    draftInvoiceId?: string,
   ): Promise<TimeEntryEntity[]> {
     const conditions = [
       eq(schema.timeEntries.volunteerId, volunteerId),
@@ -159,10 +148,6 @@ export class InvoiceService {
         and(
           eq(schema.invoiceTimeEntries.timeEntryId, schema.timeEntries.id),
           eq(schema.invoiceTimeEntries.released, false),
-          // Entries held by the draft being completed stay selectable.
-          draftInvoiceId
-            ? ne(schema.invoiceTimeEntries.invoiceId, draftInvoiceId)
-            : undefined,
         ),
       )
       .where(and(...conditions));
@@ -171,9 +156,11 @@ export class InvoiceService {
   }
 
   /**
-   * Volunteers in the unit that still need a timesheet: they have at least
-   * one eligible (unclaimed, completed, in-period) time entry, grouped by
-   * volunteer and reimbursement type with the summed eligible hours.
+   * Timesheets still to be created in the unit: eligible (unclaimed,
+   * completed, in-period) hours grouped by volunteer, reimbursement type and
+   * Berlin calendar month, with the month's bounds and summed hours. Entries
+   * are only claimed once a timesheet is issued, so these rows always reflect
+   * the current time entries.
    */
   async findVolunteersNeedingTimesheets(
     organizationUnitId: string,
@@ -205,27 +192,28 @@ export class InvoiceService {
       )
       .where(and(...conditions));
 
-    const hoursByVolunteerType = new Map<string, number>();
+    const groups = new Map<string, EligibleTimesheetVolunteer>();
     for (const row of rows) {
       const entry = row.timeEntry;
       if (!entry.endedAt || !entry.reimbursementTypeId) continue;
-      const key = `${entry.volunteerId}:${entry.reimbursementTypeId}`;
-      const hours =
+      const month = billingMonthBounds(entry.startedAt);
+      const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
+      const group = groups.get(key) ?? {
+        volunteerId: entry.volunteerId,
+        reimbursementTypeId: entry.reimbursementTypeId,
+        periodStart: month.start,
+        periodEnd: month.end,
+        eligibleHours: 0,
+      };
+      group.eligibleHours +=
         (entry.endedAt.getTime() - entry.startedAt.getTime()) / 3_600_000;
-      hoursByVolunteerType.set(
-        key,
-        (hoursByVolunteerType.get(key) ?? 0) + hours,
-      );
+      groups.set(key, group);
     }
 
-    return Array.from(hoursByVolunteerType, ([key, eligibleHours]) => {
-      const [volunteerId, reimbursementTypeId] = key.split(':');
-      return {
-        volunteerId,
-        reimbursementTypeId,
-        eligibleHours: Math.round(eligibleHours * 100) / 100,
-      };
-    });
+    return [...groups.values()].map((group) => ({
+      ...group,
+      eligibleHours: Math.round(group.eligibleHours * 100) / 100,
+    }));
   }
 
   /**
@@ -341,59 +329,19 @@ export class InvoiceService {
     input: CreateInvoiceInput,
     actorUserId: string,
   ): Promise<InvoiceEntity> {
-    return this.createInvoiceDocument(
-      organizationId,
-      input,
-      actorUserId,
-      false,
-    );
-  }
-
-  async createDraftInvoice(
-    organizationId: string,
-    input: CreateInvoiceInput,
-    actorUserId: string,
-  ): Promise<InvoiceEntity> {
-    return this.createInvoiceDocument(organizationId, input, actorUserId, true);
-  }
-
-  private async createInvoiceDocument(
-    organizationId: string,
-    input: CreateInvoiceInput,
-    actorUserId: string,
-    asDraft: boolean,
-  ): Promise<InvoiceEntity> {
     if (input.timeEntryIds.length === 0) {
       throw new BadRequestGraphQLError(
         'At least one time entry must be selected',
       );
     }
 
-    const draftInvoiceId = asDraft
-      ? undefined
-      : (input.draftInvoiceId ?? undefined);
-    if (draftInvoiceId) {
-      const draft = await this.db.query.invoices.findFirst({
-        where: { id: draftInvoiceId },
-      });
-      if (
-        !draft ||
-        draft.invoiceStatus !== InvoiceStatus.DRAFT ||
-        draft.volunteerId !== input.volunteerId ||
-        draft.reimbursementTypeId !== input.reimbursementTypeId
-      ) {
-        throw new BadRequestGraphQLError(
-          `Invoice ${draftInvoiceId} is not a draft for this volunteer and reimbursement type`,
-        );
-      }
-    }
-
+    // Only entries inside the invoice's own period can go on it, so the
+    // document never lists hours from outside the period it states.
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
-      undefined,
-      undefined,
-      draftInvoiceId,
+      input.periodStart,
+      input.periodEnd,
     );
     const eligibleById = new Map(
       eligibleEntries.map((entry) => [entry.id, entry]),
@@ -407,6 +355,28 @@ export class InvoiceService {
       }
       return entry;
     });
+
+    // One timesheet per volunteer, reimbursement type and period: the board
+    // models a month as a single "to invoice" row, so a second overlapping
+    // document would split it. A declined timesheet does not block a reissue.
+    const overlapping = await this.db.query.invoices.findFirst({
+      where: {
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        organizationUnitId: input.organizationUnitId
+          ? input.organizationUnitId
+          : { isNull: true },
+        invoiceStatus: { ne: InvoiceStatus.DECLINED },
+        periodStart: { lt: input.periodEnd },
+        periodEnd: { gt: input.periodStart },
+      },
+      columns: { id: true },
+    });
+    if (overlapping) {
+      throw new ConflictGraphQLError(
+        'A timesheet already exists for this volunteer and reimbursement type in this period',
+      );
+    }
 
     const totalHours =
       Math.round(
@@ -455,85 +425,35 @@ export class InvoiceService {
     );
 
     if (!activeContract) {
-      const { start: yearStart, end: yearEnd } = billingYearBounds(
-        billingYearOf(input.periodStart),
-      );
-      const existingContract = await this.db.query.contracts.findFirst({
-        where: {
+      await this.contractService.ensureDraftContract(
+        organizationId,
+        {
+          organizationUnitId: input.organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          contractStatus: { ne: ContractStatus.DECLINED },
-          periodEnd: { gt: yearStart },
-          periodStart: { lt: yearEnd },
+          anchorDate: input.periodStart,
         },
-      });
-      if (!existingContract) {
-        await this.contractService.createDraftContract(
-          organizationId,
-          {
-            organizationUnitId: input.organizationUnitId,
-            volunteerId: input.volunteerId,
-            reimbursementTypeId: input.reimbursementTypeId,
-            periodStart: yearStart,
-            periodEnd: yearEnd,
-          },
-          actorUserId,
-        );
-      }
+        actorUserId,
+      );
     }
 
     const invoice = await this.db.transaction(async (tx) => {
-      const values = {
-        documentTemplateId: template.id,
-        volunteerId: input.volunteerId,
-        reimbursementTypeId: input.reimbursementTypeId,
-        organizationUnitId: input.organizationUnitId,
-        invoiceStatus: asDraft
-          ? InvoiceStatus.DRAFT
-          : this.nextInvoiceStatus(orderedSignees[0].signeeType),
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-        totalAmountCents,
-        totalHours,
-        isNonCompliant: !activeContract,
-        resolvedBody: structuredClone(template.body),
-        fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
-      };
-
-      if (draftInvoiceId) {
-        // Promote the draft: its signatures and claims are rebuilt from the
-        // current template and selection, so unselected entries are freed.
-        const [promoted] = await tx
-          .update(schema.invoices)
-          .set(values)
-          .where(eq(schema.invoices.id, draftInvoiceId))
-          .returning();
-        await tx
-          .delete(schema.invoiceSignatures)
-          .where(eq(schema.invoiceSignatures.invoiceId, draftInvoiceId));
-        await tx
-          .delete(schema.invoiceTimeEntries)
-          .where(eq(schema.invoiceTimeEntries.invoiceId, draftInvoiceId));
-        await tx.insert(schema.invoiceSignatures).values(
-          orderedSignees.map((signee) => ({
-            invoiceId: promoted.id,
-            order: signee.order,
-            signeeType: signee.signeeType,
-            requiredPermissionId: signee.requiredPermissionId,
-          })),
-        );
-        await tx.insert(schema.invoiceTimeEntries).values(
-          selected.map((entry) => ({
-            invoiceId: promoted.id,
-            timeEntryId: entry.id,
-          })),
-        );
-        return promoted;
-      }
-
       const [created] = await tx
         .insert(schema.invoices)
-        .values(values)
+        .values({
+          documentTemplateId: template.id,
+          volunteerId: input.volunteerId,
+          reimbursementTypeId: input.reimbursementTypeId,
+          organizationUnitId: input.organizationUnitId,
+          invoiceStatus: this.nextInvoiceStatus(orderedSignees[0].signeeType),
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          totalAmountCents,
+          totalHours,
+          isNonCompliant: !activeContract,
+          resolvedBody: structuredClone(template.body),
+          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
+        })
         .returning();
 
       await tx.insert(schema.invoiceSignatures).values(
@@ -562,10 +482,6 @@ export class InvoiceService {
 
       return created;
     });
-
-    if (asDraft) {
-      return invoice;
-    }
 
     // Render the unsigned PDF now so the volunteer can preview the document
     // before they sign it. Previously the file was only produced after the
