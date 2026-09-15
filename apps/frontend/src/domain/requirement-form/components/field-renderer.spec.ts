@@ -216,3 +216,38 @@ describe('buildFieldSchema MULTI_CHOICE', () => {
     expect(schema.safeParse('10:30').success).toBe(true);
   });
 });
+
+describe('buildFieldSchema gender', () => {
+  const genderField = makeField({
+    id: 'gender',
+    type: FieldType.SingleChoice,
+    label: 'Gender',
+    systemKey: 'gender',
+  });
+
+  it('accepts each fixed option value when optional', () => {
+    const schema = buildFieldSchema(genderField, false, msgs);
+    for (const v of [
+      'female',
+      'male',
+      'diverse',
+      'other',
+      'prefer-not-to-say',
+    ]) {
+      expect(schema.safeParse(v).success).toBe(true);
+    }
+    expect(schema.safeParse('').success).toBe(true);
+  });
+
+  it('rejects free text and values outside the fixed list', () => {
+    const schema = buildFieldSchema(genderField, false, msgs);
+    expect(schema.safeParse('Weiblich').success).toBe(false);
+    expect(schema.safeParse('attack').success).toBe(false);
+  });
+
+  it('requires a value when the field is required', () => {
+    const schema = buildFieldSchema(genderField, true, msgs);
+    expect(schema.safeParse('').success).toBe(false);
+    expect(schema.safeParse('prefer-not-to-say').success).toBe(true);
+  });
+});
