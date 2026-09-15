@@ -62,7 +62,6 @@ export type DocStatus =
   // manual "Create contract" action.
   | 'contract-missing'
   | 'timesheet-generate'
-  | 'timesheet-draft'
   | 'timesheet-signing-vol'
   | 'timesheet-signing-super'
   | 'timesheet-ready'
