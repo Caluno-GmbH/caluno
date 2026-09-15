@@ -1,9 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { isExpectedGraphqlCode } from '@repo/observability';
+import { GraphQLError } from 'graphql';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import { AccountingEvent } from '../../shared/accounting-events';
+import { ObservabilityService } from '../../shared/observability/observability.service';
 import { ContractService } from '../services/contract.service';
 
 /**
@@ -21,6 +24,7 @@ export class TimeEntryClosedListener {
     private readonly db: Database,
     private readonly contractService: ContractService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
+    private readonly observabilityService: ObservabilityService,
   ) {}
 
   @OnEvent(AccountingEvent.TIME_ENTRY_CLOSED)
@@ -52,7 +56,18 @@ export class TimeEntryClosedListener {
         `Failed to auto-draft a contract for time entry ${payload.timeEntryId}: ${
           error instanceof Error ? error.message : String(error)
         }`,
+        error instanceof Error ? error.stack : undefined,
       );
+      // Expected domain errors (missing template, etc.) are control flow and
+      // stay out of Sentry; anything else is a real failure worth reporting.
+      if (
+        !(
+          error instanceof GraphQLError &&
+          isExpectedGraphqlCode(error.extensions?.code)
+        )
+      ) {
+        this.observabilityService.captureException(error);
+      }
     }
   }
 }
