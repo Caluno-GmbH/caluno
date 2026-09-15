@@ -261,6 +261,7 @@ export function ContractCreationModal({
       orgName: orgProfile?.name ?? org.name,
       orgAddress: orgProfile ? orgProfile.address : org.address,
       orgCity: orgProfile ? orgProfile.city : org.city,
+      orgZip: orgProfile ? orgProfile.zipCode : null,
       orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
       hourlyRateCents: effectiveRate?.hourlyRateCents,
       yearlyLimitCents:

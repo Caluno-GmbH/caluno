@@ -19,7 +19,8 @@ function makeService(args: {
     },
   };
   const requirements = {
-    missingBaselineOrgProfileSources: async () => args.missingOrgFields ?? [],
+    missingBaselineOrgProfileSourcesForProfile: () =>
+      args.missingOrgFields ?? [],
     resolveOrgProfile: async () => args.orgProfile,
   };
   return new AccountingSetupService(db as never, requirements as never);
@@ -101,5 +102,30 @@ describe('AccountingSetupService.getSetupStatus', () => {
     expect(status.slots).toHaveLength(2);
     expect(status.slots.every((s) => !s.ready)).toBe(true);
     expect(status.canCreateDocuments).toBe(false);
+  });
+
+  it('resolves the org profile only once per setup-status call', async () => {
+    let resolveCalls = 0;
+    const db = {
+      query: {
+        reimbursementTypes: { findMany: async () => [] },
+        documentTemplates: { findMany: async () => [] },
+      },
+    };
+    const requirements = {
+      resolveOrgProfile: async () => {
+        resolveCalls++;
+        return undefined;
+      },
+      missingBaselineOrgProfileSourcesForProfile: () => [],
+    };
+    const service = new AccountingSetupService(
+      db as never,
+      requirements as never,
+    );
+
+    await service.getSetupStatus('org-1', 'unit-1');
+
+    expect(resolveCalls).toBe(1);
   });
 });

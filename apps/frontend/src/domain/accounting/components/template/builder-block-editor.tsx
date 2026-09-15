@@ -51,6 +51,7 @@ const ORG_SOURCES: DataSourceKey[] = [
   'org_name',
   'org_address',
   'org_city',
+  'org_zip',
   'org_legal_rep',
 ];
 const VOLUNTEER_SOURCES: DataSourceKey[] = [
@@ -169,6 +170,7 @@ const PLACEHOLDER_EXAMPLES: Partial<Record<DataSourceKey, string>> = {
   volunteer_first_name: 'Vorname',
   volunteer_last_name: 'Name',
   volunteer_address: 'Musterstraße 1, 12345 Stadt',
+  org_zip: '12345',
   volunteer_dob: 'TT.MM.JJJJ',
   volunteer_iban: 'DE00 0000 0000 0000 0000 00',
   volunteer_bic: 'XXXXXXXX',

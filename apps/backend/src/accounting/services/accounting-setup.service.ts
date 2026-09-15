@@ -45,16 +45,18 @@ export class AccountingSetupService {
     organizationId: string,
     organizationUnitId: string | null,
   ): Promise<AccountingSetupStatusResult> {
-    const [orgProfile, missingOrgProfileFields] = await Promise.all([
-      this.documentProfileRequirementService.resolveOrgProfile(
+    // Resolve the profile once and reuse it for the baseline check: both read
+    // the same unit (plus its ancestors), so resolving twice doubled the
+    // traversal per setup-status call.
+    const orgProfile =
+      await this.documentProfileRequirementService.resolveOrgProfile(
         organizationId,
         organizationUnitId,
-      ),
-      this.documentProfileRequirementService.missingBaselineOrgProfileSources(
-        organizationId,
-        organizationUnitId,
-      ),
-    ]);
+      );
+    const missingOrgProfileFields =
+      this.documentProfileRequirementService.missingBaselineOrgProfileSourcesForProfile(
+        orgProfile,
+      );
     const orgProfileComplete = missingOrgProfileFields.length === 0;
 
     // reimbursementTypes is a global table (exactly EHRENAMT/UEBUNGSLEITER in

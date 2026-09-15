@@ -33,16 +33,14 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
  * Data sources already known at template-configuration time (the org itself, its
  * configured rate) — shown as real values in the preview instead of a generic
  * "will be filled in later" chip. Volunteer- and generation-time sources (name, IBAN,
- * dates, totals) aren't in this map — there's no specific volunteer yet. Sources the
- * org profile can't answer (city, legal representative) stay unresolved too.
+ * dates, totals) aren't in this map — there's no specific volunteer yet.
  */
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
   orgName?: string | null;
   orgAddress?: string | null;
-  /** Not part of the org profile API yet — only mock call sites pass this. */
   orgCity?: string | null;
-  /** Not part of the org profile API yet — only mock call sites pass this. */
+  orgZip?: string | null;
   orgLegalRep?: string | null;
   hourlyRateCents?: number;
   yearlyLimitCents?: number;
@@ -53,6 +51,7 @@ export function getKnownOrgValues(args: {
   if (args.orgName) values.org_name = args.orgName;
   if (args.orgAddress) values.org_address = args.orgAddress;
   if (args.orgCity) values.org_city = args.orgCity;
+  if (args.orgZip) values.org_zip = args.orgZip;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
   if (args.hourlyRateCents !== undefined) {
     // German document content, formatted like the German legal text around it.

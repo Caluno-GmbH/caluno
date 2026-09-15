@@ -181,6 +181,7 @@ const CONTRACTS = `
 const ACCOUNTING_SETUP_STATUS = `
   query {
     accountingSetupStatus {
+      orgProfile { name address city zipCode legalRep }
       orgProfileComplete
       missingOrgProfileFields
       canManageTemplates
@@ -2038,6 +2039,69 @@ describe('documents flow — admin + volunteer', () => {
       expect(
         unitB.accountingSetupStatus.slots.every((slot) => !slot.ready),
       ).toBe(true);
+    });
+
+    it('inherits the parent unit’s org details for a sub-unit that has none of its own', async () => {
+      const inheritOrg = await setupFlowOrgWithoutTemplates(db);
+      const rootUnitId = inheritOrg.organizationUnitId;
+      const typeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: inheritOrg.organizationId },
+          })
+        )?.id ?? '';
+      const subUnit = await createUnit(db, {
+        organizationId: inheritOrg.organizationId,
+        typeId,
+        name: 'Sub Unit',
+        parentId: rootUnitId,
+      });
+      await db
+        .update(schema.organizationUnits)
+        .set({
+          address: 'Hauptstraße 1',
+          city: 'Berlin',
+          zipCode: '10115',
+          legalRep: 'Erika Mustermann',
+        })
+        .where(eq(schema.organizationUnits.id, rootUnitId));
+
+      setAuthMockUserId(inheritOrg.adminId);
+
+      const subUnitStatus = await graphqlRequestRequiringData<{
+        accountingSetupStatus: {
+          orgProfile: {
+            name: string;
+            address: string | null;
+            city: string | null;
+            zipCode: string | null;
+            legalRep: string | null;
+          } | null;
+          orgProfileComplete: boolean;
+          missingOrgProfileFields: string[];
+        };
+      }>(
+        app,
+        {
+          query: ACCOUNTING_SETUP_STATUS,
+          headers: { 'x-organization-unit-id': subUnit.id },
+        },
+        'accountingSetupStatus',
+      );
+
+      // The sub-unit has none of its own, so the gate and the rendered
+      // profile fall back to its parent's details.
+      expect(subUnitStatus.accountingSetupStatus.orgProfileComplete).toBe(true);
+      expect(
+        subUnitStatus.accountingSetupStatus.missingOrgProfileFields,
+      ).toEqual([]);
+      expect(subUnitStatus.accountingSetupStatus.orgProfile).toMatchObject({
+        name: 'Sub Unit',
+        address: 'Hauptstraße 1',
+        city: 'Berlin',
+        zipCode: '10115',
+        legalRep: 'Erika Mustermann',
+      });
     });
   });
 });

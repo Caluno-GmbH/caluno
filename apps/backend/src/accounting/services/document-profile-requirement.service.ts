@@ -181,6 +181,17 @@ export class DocumentProfileRequirementService {
       organizationId,
       organizationUnitId,
     );
+    return this.missingBaselineOrgProfileSourcesForProfile(profile);
+  }
+
+  /**
+   * Pure baseline check for callers that already resolved the org profile
+   * (e.g. the setup status, which reports the profile too), so the same unit
+   * isn't traversed twice per call.
+   */
+  missingBaselineOrgProfileSourcesForProfile(
+    profile: ResolvedOrgProfile | undefined,
+  ): string[] {
     const record = profile as unknown as Record<string, unknown> | undefined;
     // `org_name` maps to `name`, which is always present, so it never appears
     // as missing — keep the no-unit fallback consistent with that.

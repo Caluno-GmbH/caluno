@@ -169,6 +169,38 @@ describe('DocumentProfileRequirementService', () => {
     ).toEqual(['org_legal_rep']);
   });
 
+  it('reports org zip as missing when the org unit has none', async () => {
+    const dbWithOrg = {
+      query: {
+        organizationUnits: {
+          findFirst: () =>
+            Promise.resolve({
+              id: 'unit-1',
+              name: 'Playground',
+              address: 'Straße 1',
+              city: 'Berlin',
+              zipCode: '',
+            }),
+        },
+      },
+    } as never;
+    const serviceWithOrg = new DocumentProfileRequirementService(
+      dbWithOrg,
+      userProfileService,
+    );
+    const body = {
+      header: {
+        orgIdentityLine: {
+          enabled: true,
+          fields: [{ value: { kind: 'bound', source: 'org_zip' } }],
+        },
+      },
+    };
+    expect(
+      await serviceWithOrg.missingOrgProfileSources('org-1', 'unit-1', body),
+    ).toEqual(['org_zip']);
+  });
+
   it('falls back to the org root unit when no organization unit id is given', async () => {
     const findFirst = (args: {
       where: { organizationId?: string; parentId?: { isNull: boolean } };
@@ -273,6 +305,21 @@ describe('DocumentProfileRequirementService', () => {
       expect(
         await service.missingBaselineOrgProfileSources('org-1', 'unit-1'),
       ).toEqual([]);
+    });
+
+    it('checks a pre-resolved profile without re-reading the unit', () => {
+      const service = makeService({ unit: undefined });
+
+      expect(
+        service.missingBaselineOrgProfileSourcesForProfile({
+          id: 'unit-1',
+          name: 'Playground',
+          address: 'Hauptstraße 1',
+          city: '  ',
+          zipCode: null,
+          legalRep: null,
+        }),
+      ).toEqual(['org_city']);
     });
   });
 

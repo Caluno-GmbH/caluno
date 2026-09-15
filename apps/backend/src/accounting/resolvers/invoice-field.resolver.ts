@@ -23,6 +23,7 @@ import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change
 import type { InvoiceTimeEntryEntity } from '../schemas/invoice-time-entry.schema';
 import type { ReimbursementTypeEntity } from '../schemas/reimbursement-type.schema';
 import { DocumentProfileRequirementService } from '../services/document-profile-requirement.service';
+import { AccountingOrganizationLoader } from './accounting-organization.loader';
 import { AccountingUserLoader } from './accounting-user.loader';
 import { InvoiceLoader } from './invoice.loader';
 
@@ -138,6 +139,8 @@ export class InvoiceFieldResolver {
   async missingOrgProfileFields(
     @Parent() invoice: MaybeWithRelations,
     @Loader(InvoiceLoader) invoiceLoader: InvoiceLoader,
+    @Loader(AccountingOrganizationLoader)
+    orgLoader: AccountingOrganizationLoader,
   ): Promise<string[]> {
     let templateBody: unknown = invoice.documentTemplate?.body;
     let organizationId = invoice.documentTemplate?.organizationId;
@@ -152,11 +155,14 @@ export class InvoiceFieldResolver {
       organizationUnitId = full.organizationUnitId ?? undefined;
     }
     if (!organizationId) return [];
-    // Same resolution as the create gate and the PDF, so a sub-org inherits
-    // the org details its parents have filled in.
-    return this.documentProfileRequirementService.missingOrgProfileSources(
-      organizationId,
-      organizationUnitId,
+    // Batched (one query per ancestor depth for the whole list) and the same
+    // resolution as the create gate and the PDF, so a sub-org inherits the org
+    // details its parents have filled in.
+    const profile = organizationUnitId
+      ? await orgLoader.orgProfileByUnitId.load(organizationUnitId)
+      : await orgLoader.orgProfileByOrganizationId.load(organizationId);
+    return this.documentProfileRequirementService.missingOrgProfileSourcesForUnit(
+      (profile ?? undefined) as Record<string, unknown> | undefined,
       templateBody,
     );
   }

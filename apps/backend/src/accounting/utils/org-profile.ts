@@ -15,14 +15,61 @@ export type ResolvedOrgProfile = {
   name: string;
 } & Record<InheritedColumn, string | null>;
 
-type UnitRow = {
+export type UnitRow = {
   id: string;
   parentId?: string | null;
   name: string;
+  deletedAt?: Date | null;
 } & Partial<Record<InheritedColumn, string | null>>;
 
 const isBlank = (value: unknown): boolean =>
   typeof value !== 'string' || value.trim() === '';
+
+/**
+ * Pure resolution of a unit's org details from the unit plus its already-loaded
+ * ancestors: the unit's own values, with any blank field taken from its nearest
+ * live ancestor that has it. A soft-deleted unit is never inherited from (its
+ * details are stale), but the chain still walks through it so a live
+ * grandparent can still contribute.
+ *
+ * Split out from `resolveOrgProfile` so a batched DataLoader can hand it units
+ * it loaded in bulk instead of querying per ancestor hop.
+ */
+export function resolveOrgProfileFromUnits(
+  unit: UnitRow,
+  unitsById: Map<string, UnitRow>,
+): ResolvedOrgProfile {
+  const profile: ResolvedOrgProfile = {
+    id: unit.id,
+    name: unit.name,
+    address: null,
+    city: null,
+    zipCode: null,
+    legalRep: null,
+  };
+  const fillFrom = (row: UnitRow) => {
+    for (const column of INHERITED_ORG_PROFILE_COLUMNS) {
+      if (isBlank(profile[column]) && !isBlank(row[column])) {
+        profile[column] = row[column] ?? null;
+      }
+    }
+  };
+  const complete = () =>
+    INHERITED_ORG_PROFILE_COLUMNS.every((column) => !isBlank(profile[column]));
+
+  if (!unit.deletedAt) fillFrom(unit);
+  let current = unit;
+  const visited = new Set([unit.id]);
+  while (!complete() && current.parentId && !visited.has(current.parentId)) {
+    const parent = unitsById.get(current.parentId);
+    if (!parent) break;
+    visited.add(parent.id);
+    if (!parent.deletedAt) fillFrom(parent);
+    current = parent;
+  }
+
+  return profile;
+}
 
 /**
  * The org details for a unit (or the org root when no unit is given): the
@@ -45,36 +92,18 @@ export async function resolveOrgProfile(
   })) as UnitRow | undefined;
   if (!unit) return undefined;
 
-  const profile: ResolvedOrgProfile = {
-    id: unit.id,
-    name: unit.name,
-    address: null,
-    city: null,
-    zipCode: null,
-    legalRep: null,
-  };
-  const fillFrom = (row: UnitRow) => {
-    for (const column of INHERITED_ORG_PROFILE_COLUMNS) {
-      if (isBlank(profile[column]) && !isBlank(row[column])) {
-        profile[column] = row[column] ?? null;
-      }
-    }
-  };
-  const complete = () =>
-    INHERITED_ORG_PROFILE_COLUMNS.every((column) => !isBlank(profile[column]));
-
-  fillFrom(unit);
+  const unitsById = new Map<string, UnitRow>([[unit.id, unit]]);
   let current = unit;
   const visited = new Set([unit.id]);
-  while (!complete() && current.parentId && !visited.has(current.parentId)) {
+  while (current.parentId && !visited.has(current.parentId)) {
     const parent = (await db.query.organizationUnits.findFirst({
       where: { id: current.parentId },
     })) as UnitRow | undefined;
     if (!parent) break;
     visited.add(parent.id);
-    fillFrom(parent);
+    unitsById.set(parent.id, parent);
     current = parent;
   }
 
-  return profile;
+  return resolveOrgProfileFromUnits(unit, unitsById);
 }
