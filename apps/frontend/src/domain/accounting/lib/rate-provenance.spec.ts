@@ -27,6 +27,7 @@ describe('resolveRateDisplay', () => {
     expect(result.line).toEqual({
       kind: 'inheritedFrom',
       source: 'Hauptverein',
+      rateCents: 1000,
     });
   });
 

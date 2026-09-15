@@ -15,7 +15,7 @@ import { Fragment, useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 import { formatEuro } from '@/lib/formatting/formats';
 import { centsToEuros, eurosToCents, formatHourlyRate } from '../lib/money';
-import { resolveRateDisplay } from '../lib/rate-provenance';
+import { type RateLine, resolveRateDisplay } from '../lib/rate-provenance';
 import { reimbursementTypeKeyFor } from '../lib/reimbursement-type-mapping';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
@@ -71,21 +71,26 @@ function RateRow({
   const effectiveEuros = centsToEuros(rateCents);
   const formatLineRate = (cents: number) =>
     `${formatHourlyRate(centsToEuros(cents))}${t('rateUnit')}`;
-  const provenanceText =
-    line === null
-      ? undefined
-      : line.kind === 'inheritedFrom'
-        ? t('provenance.inheritedFrom', {
-            source: line.source,
-          } as Parameters<typeof t>[1])
-        : line.kind === 'replaces'
-          ? t('provenance.replaces', {
-              source: line.source,
-              rate: formatLineRate(line.rateCents),
-            } as Parameters<typeof t>[1])
-          : t('provenance.replacesDefault', {
-              rate: formatLineRate(line.rateCents),
-            } as Parameters<typeof t>[1]);
+  const provenanceLine = (current: RateLine | null): string | undefined => {
+    if (current === null) return undefined;
+    switch (current.kind) {
+      case 'inheritedFrom':
+        return t('provenance.inheritedFrom', {
+          source: current.source,
+          rate: formatLineRate(current.rateCents),
+        } as Parameters<typeof t>[1]);
+      case 'replaces':
+        return t('provenance.replaces', {
+          source: current.source,
+          rate: formatLineRate(current.rateCents),
+        } as Parameters<typeof t>[1]);
+      case 'replacesDefault':
+        return t('provenance.replacesDefault', {
+          rate: formatLineRate(current.rateCents),
+        } as Parameters<typeof t>[1]);
+    }
+  };
+  const provenanceText = provenanceLine(line);
   const typeLabel = t(
     `${getPauschaleKey(type)}Label` as Parameters<typeof t>[0],
   );

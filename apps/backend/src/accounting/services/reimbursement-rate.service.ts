@@ -147,38 +147,41 @@ export class ReimbursementRateService {
     const nameOf = (unitId: string | null) =>
       unitId ? (unitNames.get(unitId) ?? null) : (organization?.name ?? null);
 
+    const provenanceOf = (
+      reimbursementType: ReimbursementTypeEntity,
+      rate: { isOverride: boolean; organizationUnitId: string | null },
+    ): RateProvenance => {
+      if (!rate.isOverride) {
+        return {
+          kind: RateProvenanceKind.DEFAULT,
+          sourceName: null,
+          replacesRateCents: null,
+        };
+      }
+      if (rate.organizationUnitId !== requestedUnitId) {
+        return {
+          kind: RateProvenanceKind.INHERITED,
+          sourceName: nameOf(rate.organizationUnitId),
+          replacesRateCents: null,
+        };
+      }
+      const fallback = resolve(reimbursementType, fallbackChain);
+      return {
+        kind: RateProvenanceKind.OWN,
+        sourceName: fallback.isOverride
+          ? nameOf(fallback.organizationUnitId)
+          : null,
+        replacesRateCents: fallback.hourlyRateCents,
+      };
+    };
+
     return types.map((reimbursementType) => {
       const resolved = resolve(reimbursementType, chain);
       return {
         reimbursementType,
         ...resolved,
-        provenance: provenanceOf(resolved),
+        provenance: provenanceOf(reimbursementType, resolved),
       };
-
-      function provenanceOf(rate: typeof resolved): RateProvenance {
-        if (!rate.isOverride) {
-          return {
-            kind: RateProvenanceKind.DEFAULT,
-            sourceName: null,
-            replacesRateCents: null,
-          };
-        }
-        if (rate.organizationUnitId !== requestedUnitId) {
-          return {
-            kind: RateProvenanceKind.INHERITED,
-            sourceName: nameOf(rate.organizationUnitId),
-            replacesRateCents: null,
-          };
-        }
-        const fallback = resolve(reimbursementType, fallbackChain);
-        return {
-          kind: RateProvenanceKind.OWN,
-          sourceName: fallback.isOverride
-            ? nameOf(fallback.organizationUnitId)
-            : null,
-          replacesRateCents: fallback.hourlyRateCents,
-        };
-      }
     });
   }
 

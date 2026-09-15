@@ -7,6 +7,7 @@ import { createShift } from './shift.factory';
 import { createShiftInstance } from './shift-instance.factory';
 
 export type ReimbursementType = typeof schema.reimbursementTypes.$inferSelect;
+export type ReimbursementRate = typeof schema.reimbursementRates.$inferSelect;
 export type DocumentTemplate = typeof schema.documentTemplates.$inferSelect;
 export type TemplateSignee = typeof schema.templateSignees.$inferSelect;
 export type TimeEntry = typeof schema.timeEntries.$inferSelect;
@@ -47,6 +48,31 @@ export const createReimbursementType = async (
     throw new Error('Failed to create reimbursement type');
   }
   return reimbursementType;
+};
+
+/** An hourly-rate override for a unit, or the org-wide row when no unit is given. */
+export const createReimbursementRate = async (
+  db: Database,
+  args: {
+    organizationId: string;
+    organizationUnitId?: string | null;
+    reimbursementTypeId: string;
+    hourlyRateCents: number;
+  },
+): Promise<ReimbursementRate> => {
+  const [rate] = await db
+    .insert(schema.reimbursementRates)
+    .values({
+      organizationId: args.organizationId,
+      organizationUnitId: args.organizationUnitId ?? null,
+      reimbursementTypeId: args.reimbursementTypeId,
+      hourlyRateCents: args.hourlyRateCents,
+    })
+    .returning();
+  if (!rate) {
+    throw new Error('Failed to create reimbursement rate');
+  }
+  return rate;
 };
 
 export const createDocumentTemplate = async (
