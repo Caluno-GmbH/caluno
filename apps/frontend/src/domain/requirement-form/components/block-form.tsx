@@ -341,6 +341,7 @@ export function BlockForm({
             fieldType={watchedFields[index]?.type}
             currentRequired={watchedFields[index]?.required ?? false}
             isSystemField={!!watchedFields[index]?.systemKey}
+            systemKey={watchedFields[index]?.systemKey}
             lockType={watchedFields[index]?.lockType ?? false}
             onToggleRequired={(next) =>
               setValue(`fields.${index}.required`, next, { shouldDirty: true })
@@ -481,6 +482,7 @@ function FieldCard({
   fieldType,
   currentRequired,
   isSystemField,
+  systemKey,
   lockType,
   onToggleRequired,
   readOnly,
@@ -500,6 +502,7 @@ function FieldCard({
   fieldType?: FieldType;
   currentRequired: boolean;
   isSystemField: boolean;
+  systemKey?: string;
   lockType: boolean;
   onToggleRequired: (next: boolean) => void;
   readOnly?: boolean;
@@ -510,8 +513,11 @@ function FieldCard({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tValidation = useTranslations('RequirementForm.validation');
   const tCommon = useTranslations('Common');
+  const hasFixedOptions = systemKey === 'gender';
   const showOptions =
-    fieldType === FieldType.SingleChoice || fieldType === FieldType.MultiChoice;
+    (fieldType === FieldType.SingleChoice ||
+      fieldType === FieldType.MultiChoice) &&
+    !hasFixedOptions;
   const isDocument = fieldType === FieldType.DocumentAcknowledgement;
   const documentPreviewUrl = useWatch({
     control,
@@ -547,7 +553,7 @@ function FieldCard({
                 checked={currentRequired}
                 onCheckedChange={onToggleRequired}
                 size="sm"
-                disabled={isSystemField}
+                disabled={isSystemField && systemKey !== 'gender'}
               />
               {currentRequired ? t('required') : t('optional')}
             </label>

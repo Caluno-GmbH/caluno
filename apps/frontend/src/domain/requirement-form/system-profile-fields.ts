@@ -21,7 +21,12 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
     type: FieldType.Lastname,
     required: true,
   },
-  { key: 'gender', labelKey: 'gender', type: FieldType.Text, required: false },
+  {
+    key: 'gender',
+    labelKey: 'gender',
+    type: FieldType.SingleChoice,
+    required: false,
+  },
 
   { key: 'email', labelKey: 'email', type: FieldType.Email, required: true },
   { key: 'phone', labelKey: 'phone', type: FieldType.Phone, required: false },
