@@ -13,3 +13,12 @@ export const SYSTEM_PROFILE_KEYS = new Set<string>([
   'bic',
   'tax-id',
 ]);
+
+/** Fixed option values for the gender system field. Mirrored in the frontend (gender-options.ts). */
+export const GENDER_OPTION_VALUES = [
+  'female',
+  'male',
+  'diverse',
+  'other',
+  'prefer-not-to-say',
+] as const;

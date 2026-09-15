@@ -48,4 +48,28 @@ describe('validateSystemKeyValue', () => {
       expectOk('', 'iban');
     });
   });
+
+  describe('gender', () => {
+    it('accepts all five fixed option values', () => {
+      for (const v of [
+        'female',
+        'male',
+        'diverse',
+        'other',
+        'prefer-not-to-say',
+      ]) {
+        expectOk(v, 'gender');
+      }
+    });
+
+    it('accepts an empty value (no answer is not an invalid value)', () => {
+      expectOk('', 'gender');
+    });
+
+    it('rejects values outside the fixed list, including legacy free text', () => {
+      expectBad('Weiblich', 'gender');
+      expectBad('non-binary', 'gender');
+      expectBad('anything', 'gender');
+    });
+  });
 });

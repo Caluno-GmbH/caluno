@@ -1,4 +1,5 @@
 import { BadRequestGraphQLError } from '../graphql/errors';
+import { GENDER_OPTION_VALUES } from './constants';
 
 /** A human label for a system key, used in validation error messages. */
 export const formatSystemKeyLabel = (systemKey: string): string => {
@@ -76,9 +77,9 @@ export const validateSystemKeyValue = (
         );
       break;
     case 'gender':
-      if (value.length > 50)
+      if (!(GENDER_OPTION_VALUES as readonly string[]).includes(value))
         throw new BadRequestGraphQLError(
-          `"${label}": must be 50 characters or fewer`,
+          `"${label}": must be one of the available options`,
         );
       break;
     case 'birth-date':
