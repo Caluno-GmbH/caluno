@@ -19,8 +19,30 @@ export class AccountingTemplateSlotStatus {
   ready!: boolean;
 }
 
+/** The org details documents for this unit render, inherited from parent units where blank. */
+@ObjectType()
+export class AccountingOrgProfile {
+  @Field(() => String)
+  name!: string;
+
+  @Field(() => String, { nullable: true })
+  address!: string | null;
+
+  @Field(() => String, { nullable: true })
+  city!: string | null;
+
+  @Field(() => String, { nullable: true })
+  zipCode!: string | null;
+
+  @Field(() => String, { nullable: true })
+  legalRep!: string | null;
+}
+
 @ObjectType()
 export class AccountingSetupStatus {
+  @Field(() => AccountingOrgProfile, { nullable: true })
+  orgProfile!: AccountingOrgProfile | null;
+
   @Field(() => Boolean)
   orgProfileComplete!: boolean;
 

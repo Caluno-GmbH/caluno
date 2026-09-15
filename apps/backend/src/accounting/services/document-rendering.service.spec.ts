@@ -23,6 +23,7 @@ describe('DocumentRenderingService', () => {
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      unit?: Record<string, unknown>;
       yearlyUsage?: {
         usedCents: number;
         limitCents: number;
@@ -45,7 +46,8 @@ describe('DocumentRenderingService', () => {
             Promise.resolve({ id: 'vol-1', name: 'Max Mustermann' }),
         },
         organizationUnits: {
-          findFirst: () => Promise.resolve({ id: 'root-unit' }),
+          findFirst: () =>
+            Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
         },
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
@@ -427,6 +429,47 @@ describe('DocumentRenderingService', () => {
         new Date('2025-01-31'),
         'invoice-1',
       ]);
+    });
+  });
+
+  describe('resolved org profile values', () => {
+    const resolveValues = (
+      service: DocumentRenderingService,
+      document: ContractWithRelations,
+    ): Promise<Record<string, string>> =>
+      (
+        service as unknown as {
+          resolveValues: (
+            d: ContractWithRelations,
+          ) => Promise<Record<string, string>>;
+        }
+      ).resolveValues(document);
+
+    it('renders the resolved org postal code the create gate checked', async () => {
+      const service = createService({
+        unit: {
+          id: 'unit-1',
+          name: 'Branch',
+          address: 'Hauptstraße 1',
+          city: 'Berlin',
+          zipCode: '10115',
+          legalRep: 'Erika Mustermann',
+        },
+      });
+
+      const values = await resolveValues(service, contract());
+
+      expect(values.org_zip).toBe('10115');
+    });
+
+    it('renders a blank postal code as an empty string when the org has none', async () => {
+      const service = createService({
+        unit: { id: 'unit-1', name: 'Branch' },
+      });
+
+      const values = await resolveValues(service, contract());
+
+      expect(values.org_zip).toBe('');
     });
   });
 });

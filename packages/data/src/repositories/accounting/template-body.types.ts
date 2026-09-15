@@ -18,6 +18,7 @@ export type DataSourceKey =
   | 'org_name'
   | 'org_address'
   | 'org_city'
+  | 'org_zip'
   | 'org_legal_rep'
   | 'pauschalen_type'
   | 'hourly_rate'

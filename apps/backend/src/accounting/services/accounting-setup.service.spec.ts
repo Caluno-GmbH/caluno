@@ -4,6 +4,7 @@ import { AccountingSetupService } from './accounting-setup.service';
 
 function makeService(args: {
   missingOrgFields?: string[];
+  orgProfile?: Record<string, unknown>;
   templates?: { reimbursementTypeId: string; kind: DocumentKind }[];
   types?: { id: string; key: ReimbursementTypeKey }[];
 }) {
@@ -18,12 +19,30 @@ function makeService(args: {
     },
   };
   const requirements = {
-    missingBaselineOrgProfileSources: async () => args.missingOrgFields ?? [],
+    missingBaselineOrgProfileSourcesForProfile: () =>
+      args.missingOrgFields ?? [],
+    resolveOrgProfile: async () => args.orgProfile,
   };
   return new AccountingSetupService(db as never, requirements as never);
 }
 
 describe('AccountingSetupService.getSetupStatus', () => {
+  it('returns the resolved org details documents will render', async () => {
+    const orgProfile = {
+      id: 'unit-1',
+      name: 'Testing suborg',
+      address: 'Hauptstraße 1',
+      city: 'Berlin',
+      zipCode: null,
+      legalRep: 'Erika Mustermann',
+    };
+    const service = makeService({ orgProfile });
+
+    const status = await service.getSetupStatus('org-1', 'unit-1');
+
+    expect(status.orgProfile).toEqual(orgProfile);
+  });
+
   it('blocks template management while org profile fields are missing', async () => {
     const service = makeService({ missingOrgFields: ['org_address'] });
 
@@ -83,5 +102,30 @@ describe('AccountingSetupService.getSetupStatus', () => {
     expect(status.slots).toHaveLength(2);
     expect(status.slots.every((s) => !s.ready)).toBe(true);
     expect(status.canCreateDocuments).toBe(false);
+  });
+
+  it('resolves the org profile only once per setup-status call', async () => {
+    let resolveCalls = 0;
+    const db = {
+      query: {
+        reimbursementTypes: { findMany: async () => [] },
+        documentTemplates: { findMany: async () => [] },
+      },
+    };
+    const requirements = {
+      resolveOrgProfile: async () => {
+        resolveCalls++;
+        return undefined;
+      },
+      missingBaselineOrgProfileSourcesForProfile: () => [],
+    };
+    const service = new AccountingSetupService(
+      db as never,
+      requirements as never,
+    );
+
+    await service.getSetupStatus('org-1', 'unit-1');
+
+    expect(resolveCalls).toBe(1);
   });
 });
