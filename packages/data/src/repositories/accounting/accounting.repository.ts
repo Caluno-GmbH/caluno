@@ -220,7 +220,6 @@ export class AccountingRepository extends BaseRepository {
     reimbursementTypeId: string;
     periodStart?: string;
     periodEnd?: string;
-    draftInvoiceId?: string;
   }): Promise<EligibleTimeEntry[]> {
     const data = await this.sdk.GetEligibleTimeEntriesForInvoice(input);
     return data.eligibleTimeEntriesForInvoice;

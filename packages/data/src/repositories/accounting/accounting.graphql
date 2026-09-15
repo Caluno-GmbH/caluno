@@ -316,7 +316,10 @@ query GetVolunteersNeedingTimesheets(
       id
       key
     }
+    periodStart
+    periodEnd
     eligibleHours
+    estimatedAmountCents
   }
 }
 
@@ -338,14 +341,12 @@ query GetEligibleTimeEntriesForInvoice(
   $reimbursementTypeId: ID!
   $periodStart: DateTime
   $periodEnd: DateTime
-  $draftInvoiceId: ID
 ) {
   eligibleTimeEntriesForInvoice(
     volunteerId: $volunteerId
     reimbursementTypeId: $reimbursementTypeId
     periodStart: $periodStart
     periodEnd: $periodEnd
-    draftInvoiceId: $draftInvoiceId
   ) {
     id
     startedAt

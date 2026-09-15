@@ -222,7 +222,7 @@ export class ReimbursementRateService {
           reimbursementTypeId,
           periodStart: { gte: yearStart, lt: yearEnd },
           ...(asOfDate ? { periodEnd: { lte: asOfDate } } : {}),
-          // The invoice being completed or rendered must not count toward
+          // The invoice being reissued or rendered must not count toward
           // what was already received before it. A non-UUID id can't match
           // an invoice and would fail the uuid comparison, so it's ignored.
           ...(excludeInvoiceId && isUUID(excludeInvoiceId)

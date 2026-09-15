@@ -28,7 +28,7 @@ export interface AccountingSetupStatusResult {
  *
  * Gate B pairs contract + invoice per reimbursement type: creating a timesheet
  * auto-drafts a contract (invoice.service.ts calls
- * ContractService.createDraftContract, which resolves the CONTRACT template),
+ * ContractService.ensureDraftContract, which resolves the CONTRACT template),
  * so a slot is only usable when BOTH its templates exist.
  */
 @Injectable()

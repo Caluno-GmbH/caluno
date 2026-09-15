@@ -77,6 +77,14 @@ export function useReimbursementBoardData({
       dateRange,
       eligibleHoursVolunteers,
       paidShiftVolunteers,
+      timesheetsToCreate: (needsTimesheetQuery.data ?? []).map((row) => ({
+        volunteerId: row.volunteer.id,
+        reimbursementTypeId: row.reimbursementType.id,
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
+        eligibleHours: row.eligibleHours,
+        estimatedAmountCents: row.estimatedAmountCents,
+      })),
     });
   }, [
     rosterQuery.data,
