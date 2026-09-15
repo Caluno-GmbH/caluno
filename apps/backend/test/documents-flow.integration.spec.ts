@@ -1572,6 +1572,150 @@ describe('documents flow — admin + volunteer', () => {
       expect(glyphs).toContain('840,00');
       expect(glyphs).toMatch(/\d{8}-001/);
     });
+
+    it('prints and charges the rate of a nested sub-org that inherits the template but sets its own rate', async () => {
+      // Root sets 10 €/hr, the child overrides with 12 €/hr, and the
+      // grandchild sets nothing — so it must inherit 12 €/hr from the child.
+      // The templates are org-wide, so the grandchild inherits those too:
+      // exactly the case where the printed rate used to follow the template.
+      const nested = await setupFlowOrg(db);
+      const nestedHeader = {
+        'x-organization-unit-id': nested.organizationUnitId,
+      };
+      await db
+        .update(schema.documentTemplates)
+        .set({ body: bodyFor(DocumentKind.CONTRACT) })
+        .where(
+          eq(schema.documentTemplates.organizationId, nested.organizationId),
+        );
+      const unitTypeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: nested.organizationId },
+          })
+        )?.id ?? '';
+      const child = await createUnit(db, {
+        organizationId: nested.organizationId,
+        typeId: unitTypeId,
+        name: 'Child club',
+        parentId: nested.organizationUnitId,
+      });
+      const grandchild = await createUnit(db, {
+        organizationId: nested.organizationId,
+        typeId: unitTypeId,
+        name: 'Grandchild team',
+        parentId: child.id,
+      });
+      await db.insert(schema.reimbursementRates).values([
+        {
+          organizationId: nested.organizationId,
+          organizationUnitId: nested.organizationUnitId,
+          reimbursementTypeId: nested.reimbursementTypeId,
+          hourlyRateCents: 1_000,
+        },
+        {
+          organizationId: nested.organizationId,
+          organizationUnitId: child.id,
+          reimbursementTypeId: nested.reimbursementTypeId,
+          hourlyRateCents: 1_200,
+        },
+      ]);
+
+      setAuthMockUserId(nested.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: grandchild.id,
+              reimbursementTypeId: nested.reimbursementTypeId,
+              volunteerId: nested.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: nestedHeader,
+        },
+        'createContract',
+      );
+      for (const signer of [nested.volunteerId, nested.adminId]) {
+        setAuthMockUserId(signer);
+        await graphqlRequestRequiringData(
+          app,
+          {
+            query: SIGN_CONTRACT,
+            variables: { contractId: createContract.id },
+            headers: nestedHeader,
+          },
+          'signContract',
+        );
+      }
+
+      // The money: 4h charged at the grandchild's inherited 12 €/hr.
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: grandchild.id,
+        volunteerId: nested.volunteerId,
+        reimbursementTypeId: nested.reimbursementTypeId,
+      });
+      setAuthMockUserId(nested.adminId);
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { totalAmountCents: number };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: grandchild.id,
+              reimbursementTypeId: nested.reimbursementTypeId,
+              volunteerId: nested.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
+            },
+          },
+          headers: nestedHeader,
+        },
+        'createInvoice',
+      );
+      expect(createInvoice.totalAmountCents).toBe(4_800);
+
+      // The page: the signed contract prints the same 12 €/hr, not the
+      // root's 10 €/hr. Reading the PDF back needs object storage.
+      const detail = await graphqlRequestRequiringData<{
+        contract: { downloadUrl: string | null };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: createContract.id },
+          headers: nestedHeader,
+        },
+        'contract',
+      );
+      if (!process.env.STORAGE_ENDPOINT) return;
+      if (!detail.contract.downloadUrl) throw new Error('PDF was not stored');
+
+      const pdfBytes = Buffer.from(
+        await (await fetch(detail.contract.downloadUrl)).arrayBuffer(),
+      );
+      const { inflateSync } = await import('node:zlib');
+      const content = [
+        ...pdfBytes
+          .toString('latin1')
+          .matchAll(/stream\r?\n([\s\S]*?)endstream/g),
+      ]
+        .map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
+        .join('\n');
+      const glyphs = [...content.matchAll(/<([0-9a-f]+)>/g)]
+        .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
+        .join('');
+      expect(glyphs).toContain('12,00');
+      expect(glyphs).not.toContain('10,00');
+    });
   });
 
   describe('profile gating', () => {

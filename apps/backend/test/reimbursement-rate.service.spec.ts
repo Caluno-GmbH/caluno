@@ -283,6 +283,125 @@ describe('ReimbursementRateService', () => {
     });
   });
 
+  describe('provenance', () => {
+    /** Org → root → child → grandchild, with one reimbursement type. */
+    const setupNestedUnits = async () => {
+      const { organization, unitType, root } = await setupOrgWithRootUnit();
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: unitType.id,
+        name: 'Child club',
+        parentId: root.id,
+      });
+      const grandchild = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: unitType.id,
+        name: 'Grandchild team',
+        parentId: child.id,
+      });
+      const type = await createReimbursementType(db, {
+        platformDefaultRateCents: 500,
+      });
+      const rateAt = async (unitId: string) =>
+        (await service.getEffectiveRates(organization.id, unitId)).find(
+          (rate) => rate.reimbursementType.id === type.id,
+        );
+      return { organization, root, child, grandchild, type, rateAt };
+    };
+
+    it('attributes an inherited rate to the ancestor that set it, at every depth', async () => {
+      const { organization, root, child, grandchild, type, rateAt } =
+        await setupNestedUnits();
+      await service.setReimbursementRate(
+        organization.id,
+        type.id,
+        1_000,
+        ACTOR_USER_ID,
+        root.id,
+      );
+
+      for (const unit of [child, grandchild]) {
+        const rate = await rateAt(unit.id);
+        expect(rate?.hourlyRateCents).toBe(1_000);
+        expect(rate?.isOwnRate).toBe(false);
+        expect(rate?.fallbackRateCents).toBe(1_000);
+        expect(rate?.sourceUnitName).toBe('root');
+      }
+    });
+
+    it('reports an own rate and the ancestor rate it replaces', async () => {
+      const { organization, root, child, grandchild, type, rateAt } =
+        await setupNestedUnits();
+      await service.setReimbursementRate(
+        organization.id,
+        type.id,
+        1_000,
+        ACTOR_USER_ID,
+        root.id,
+      );
+      await service.setReimbursementRate(
+        organization.id,
+        type.id,
+        1_200,
+        ACTOR_USER_ID,
+        child.id,
+      );
+
+      const childRate = await rateAt(child.id);
+      expect(childRate?.hourlyRateCents).toBe(1_200);
+      expect(childRate?.isOwnRate).toBe(true);
+      expect(childRate?.fallbackRateCents).toBe(1_000);
+      expect(childRate?.sourceUnitName).toBeNull();
+
+      // The grandchild now inherits the child's override, not the root's.
+      const grandchildRate = await rateAt(grandchild.id);
+      expect(grandchildRate?.hourlyRateCents).toBe(1_200);
+      expect(grandchildRate?.sourceUnitName).toBe('Child club');
+    });
+
+    it('follows a parent rate change in units without a rate of their own', async () => {
+      const { organization, root, child, type, rateAt } =
+        await setupNestedUnits();
+      await service.setReimbursementRate(
+        organization.id,
+        type.id,
+        1_000,
+        ACTOR_USER_ID,
+        root.id,
+      );
+      await service.setReimbursementRate(
+        organization.id,
+        type.id,
+        1_500,
+        ACTOR_USER_ID,
+        root.id,
+      );
+
+      expect((await rateAt(child.id))?.hourlyRateCents).toBe(1_500);
+    });
+
+    it('names no source for the platform default or the org-wide row', async () => {
+      const { organization, child, type, rateAt } = await setupNestedUnits();
+
+      const platformDefault = await rateAt(child.id);
+      expect(platformDefault?.hourlyRateCents).toBe(500);
+      expect(platformDefault?.isOwnRate).toBe(false);
+      expect(platformDefault?.fallbackRateCents).toBe(500);
+      expect(platformDefault?.sourceUnitName).toBeNull();
+
+      await service.setReimbursementRate(
+        organization.id,
+        type.id,
+        900,
+        ACTOR_USER_ID,
+      );
+      const orgWide = await rateAt(child.id);
+      expect(orgWide?.hourlyRateCents).toBe(900);
+      expect(orgWide?.isOwnRate).toBe(false);
+      expect(orgWide?.sourceUnitName).toBeNull();
+    });
+  });
+
   describe('setReimbursementRate', () => {
     it('rejects a rate that is not greater than zero', async () => {
       const reimbursementType = await createReimbursementType(db);

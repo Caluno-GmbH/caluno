@@ -1,66 +1,71 @@
 import { describe, expect, it } from 'bun:test';
+import type { RawEffectiveRate } from '@repo/data/react';
 import { resolveRateDisplay } from './rate-provenance';
 
 const PLATFORM_DEFAULT_CENTS = 500;
-const SUB_UNIT = 'sub-unit';
 
-function buildRate(
-  overrides: Partial<Parameters<typeof resolveRateDisplay>[0]>,
-) {
+function display(effectiveRate?: Partial<RawEffectiveRate>) {
   return resolveRateDisplay({
     platformDefaultRateCents: PLATFORM_DEFAULT_CENTS,
-    organizationUnitId: SUB_UNIT,
-    ...overrides,
+    effectiveRate: effectiveRate as RawEffectiveRate | undefined,
   });
 }
 
 describe('resolveRateDisplay', () => {
-  it('shows a rate inherited from the parent with no fallback line', () => {
-    const display = buildRate({
-      effectiveRate: {
-        hourlyRateCents: 1000,
-        inheritedRateCents: 1000,
-        isOverride: true,
-        organizationUnitId: 'root-unit',
-      } as never,
+  it('names the ancestor a sub-org inherits its rate from', () => {
+    const result = display({
+      hourlyRateCents: 1000,
+      fallbackRateCents: 1000,
+      isOwnRate: false,
+      sourceUnitName: 'Hauptverein',
     });
 
-    expect(display.rateCents).toBe(1000);
-    expect(display.fallbackRateCents).toBeUndefined();
+    expect(result.rateCents).toBe(1000);
+    expect(result.provenance).toEqual({
+      kind: 'inherited',
+      sourceName: 'Hauptverein',
+    });
   });
 
-  it("shows the unit's own rate above the parent rate it overrides", () => {
-    const display = buildRate({
-      effectiveRate: {
-        hourlyRateCents: 1200,
-        inheritedRateCents: 1000,
-        isOverride: true,
-        organizationUnitId: SUB_UNIT,
-      } as never,
+  it("shows the unit's own rate above the rate it replaces", () => {
+    const result = display({
+      hourlyRateCents: 1200,
+      fallbackRateCents: 1000,
+      isOwnRate: true,
+      sourceUnitName: null,
     });
 
-    expect(display.rateCents).toBe(1200);
-    expect(display.fallbackRateCents).toBe(1000);
+    expect(result.rateCents).toBe(1200);
+    expect(result.provenance).toEqual({ kind: 'own', fallbackRateCents: 1000 });
   });
 
-  it('shows the platform default with no fallback line when nothing is set', () => {
-    const display = buildRate({
-      effectiveRate: {
-        hourlyRateCents: PLATFORM_DEFAULT_CENTS,
-        inheritedRateCents: PLATFORM_DEFAULT_CENTS,
-        isOverride: false,
-        organizationUnitId: null,
-      } as never,
+  it('adds no line when an own rate equals the rate it replaces', () => {
+    const result = display({
+      hourlyRateCents: 1000,
+      fallbackRateCents: 1000,
+      isOwnRate: true,
+      sourceUnitName: null,
     });
 
-    expect(display.rateCents).toBe(PLATFORM_DEFAULT_CENTS);
-    expect(display.fallbackRateCents).toBeUndefined();
+    expect(result.rateCents).toBe(1000);
+    expect(result.provenance).toEqual({ kind: 'none' });
+  });
+
+  it('adds no line for an inherited rate with no unit to attribute it to', () => {
+    const result = display({
+      hourlyRateCents: PLATFORM_DEFAULT_CENTS,
+      fallbackRateCents: PLATFORM_DEFAULT_CENTS,
+      isOwnRate: false,
+      sourceUnitName: null,
+    });
+
+    expect(result.provenance).toEqual({ kind: 'none' });
   });
 
   it('falls back to the platform default while rates are unavailable', () => {
-    const display = buildRate({ effectiveRate: undefined });
+    const result = display(undefined);
 
-    expect(display.rateCents).toBe(PLATFORM_DEFAULT_CENTS);
-    expect(display.fallbackRateCents).toBeUndefined();
+    expect(result.rateCents).toBe(PLATFORM_DEFAULT_CENTS);
+    expect(result.provenance).toEqual({ kind: 'none' });
   });
 });

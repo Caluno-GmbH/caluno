@@ -19,7 +19,9 @@ query GetEffectiveRates($organizationUnitId: ID) {
     }
     hourlyRateCents
     isOverride
-    inheritedRateCents
+    isOwnRate
+    fallbackRateCents
+    sourceUnitName
     organizationUnitId
   }
 }

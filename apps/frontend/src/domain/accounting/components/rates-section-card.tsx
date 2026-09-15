@@ -42,18 +42,20 @@ function RateRow({
   const errorId = useId();
   const setRate = useSetReimbursementRate();
 
-  const { rateCents, fallbackRateCents } = resolveRateDisplay({
+  const { rateCents, provenance } = resolveRateDisplay({
     effectiveRate,
     platformDefaultRateCents: reimbursementType.platformDefaultRateCents,
-    organizationUnitId,
   });
 
+  // Only a rate this unit set itself is editable text. Starting from an
+  // inherited value would turn a no-op save into an override, and there is
+  // no mutation to take one back.
+  const ownRateInput = effectiveRate?.isOwnRate
+    ? centsToEuros(effectiveRate.hourlyRateCents).toFixed(2)
+    : '';
+
   const [editing, setEditing] = useState(false);
-  // Editing starts from the rate in force here, inherited or not — the same
-  // number the row displays.
-  const [inputValue, setInputValue] = useState(
-    centsToEuros(rateCents).toFixed(2),
-  );
+  const [inputValue, setInputValue] = useState(ownRateInput);
   const [inputError, setInputError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -66,6 +68,16 @@ function RateRow({
   }, [editing]);
 
   const effectiveEuros = centsToEuros(rateCents);
+  const provenanceText =
+    provenance.kind === 'own'
+      ? `${t('provenance.inherited')}: ${formatHourlyRate(
+          centsToEuros(provenance.fallbackRateCents),
+        )}${t('rateUnit')}`
+      : provenance.kind === 'inherited'
+        ? t('provenance.inheritedFrom', {
+            org: provenance.sourceName,
+          } as Parameters<typeof t>[1])
+        : undefined;
   const typeLabel = t(
     `${getPauschaleKey(type)}Label` as Parameters<typeof t>[0],
   );
@@ -98,7 +110,7 @@ function RateRow({
   }
 
   function handleCancel() {
-    setInputValue(centsToEuros(rateCents).toFixed(2));
+    setInputValue(ownRateInput);
     setInputError(null);
     setEditing(false);
   }
@@ -178,15 +190,7 @@ function RateRow({
                 {t('rateUnit')}
               </span>
             </div>
-            <RateProvenanceRow
-              rate={
-                fallbackRateCents === undefined
-                  ? undefined
-                  : formatHourlyRate(centsToEuros(fallbackRateCents))
-              }
-              unit={t('rateUnit')}
-              inheritedLabel={t('provenance.inherited')}
-            />
+            <RateProvenanceRow text={provenanceText} />
           </div>
           {canEdit && (
             <Button

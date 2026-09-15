@@ -1,25 +1,11 @@
-export type RateProvenance = 'inherited' | 'override' | 'unset';
-
 interface RateProvenanceRowProps {
-  /** Preformatted rate, e.g. "4,50 €". */
-  rate?: string;
-  unit?: string;
-  inheritedLabel: string;
+  /** Preformatted line, e.g. "Org default: 4,50 €/hr". Hidden when absent. */
+  text?: string;
   className?: string;
 }
 
-export function RateProvenanceRow({
-  rate,
-  unit = '',
-  inheritedLabel,
-  className,
-}: RateProvenanceRowProps) {
-  if (rate === undefined) return null;
+export function RateProvenanceRow({ text, className }: RateProvenanceRowProps) {
+  if (!text) return null;
 
-  return (
-    <p className={className ?? 'text-sm text-muted-foreground'}>
-      {inheritedLabel}: {rate}
-      {unit}
-    </p>
-  );
+  return <p className={className ?? 'text-sm text-muted-foreground'}>{text}</p>;
 }

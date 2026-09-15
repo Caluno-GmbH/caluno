@@ -24,6 +24,14 @@ export type EffectiveRate = {
   reimbursementType: ReimbursementTypeEntity;
   hourlyRateCents: number;
   isOverride: boolean;
+  /** The unit whose override won, null for the org-wide row or the default. */
+  organizationUnitId: string | null;
+  /** Set by the unit the rates were resolved for, rather than inherited. */
+  isOwnRate: boolean;
+  /** What the unit would fall back to if it set no rate of its own. */
+  fallbackRateCents: number;
+  /** Name of the ancestor unit the rate comes from, null when it is not one. */
+  sourceUnitName: string | null;
 };
 
 /**

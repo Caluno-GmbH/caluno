@@ -78,12 +78,7 @@ export class ReimbursementRateService {
   async getEffectiveRates(
     organizationId: string,
     organizationUnitId?: string | null,
-  ): Promise<
-    (EffectiveRate & {
-      organizationUnitId: string | null;
-      inheritedRateCents: number;
-    })[]
-  > {
+  ): Promise<EffectiveRate[]> {
     const [types, chain] = await Promise.all([
       this.db.query.reimbursementTypes.findMany(),
       this.resolutionChain(organizationUnitId),
@@ -133,14 +128,40 @@ export class ReimbursementRateService {
     // The chain starts at the requested unit itself, so dropping its first
     // link resolves what the unit would fall back to without its own
     // override — the parent's rate, or the platform default at the top.
-    const inheritedChain = organizationUnitId ? chain.slice(1) : chain;
+    const requestedUnitId = organizationUnitId ?? null;
+    const fallbackChain = requestedUnitId ? chain.slice(1) : chain;
+    const unitNames = await this.unitNamesByIdFor(unitIds);
 
-    return types.map((reimbursementType) => ({
-      reimbursementType,
-      ...resolve(reimbursementType, chain),
-      inheritedRateCents: resolve(reimbursementType, inheritedChain)
-        .hourlyRateCents,
-    }));
+    return types.map((reimbursementType) => {
+      const resolved = resolve(reimbursementType, chain);
+      const isOwnRate =
+        resolved.isOverride && resolved.organizationUnitId === requestedUnitId;
+      return {
+        reimbursementType,
+        ...resolved,
+        isOwnRate,
+        fallbackRateCents: resolve(reimbursementType, fallbackChain)
+          .hourlyRateCents,
+        // Named only when an ancestor unit is the source: the org-wide row
+        // and the platform default belong to no unit, so there is nothing
+        // truthful to attribute them to.
+        sourceUnitName:
+          !isOwnRate && resolved.organizationUnitId
+            ? (unitNames.get(resolved.organizationUnitId) ?? null)
+            : null,
+      };
+    });
+  }
+
+  private async unitNamesByIdFor(
+    unitIds: string[],
+  ): Promise<Map<string, string>> {
+    if (unitIds.length === 0) return new Map();
+    const units = await this.db.query.organizationUnits.findMany({
+      where: { id: { in: unitIds } },
+      columns: { id: true, name: true },
+    });
+    return new Map(units.map((unit) => [unit.id, unit.name]));
   }
 
   /**
