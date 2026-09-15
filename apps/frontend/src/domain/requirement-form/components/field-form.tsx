@@ -243,7 +243,8 @@ export function FieldForm({
             </>
           )}
 
-          {(autoSystemKey || (isLocked && manualSystemKey && !showSystemKeyPicker)) && (
+          {(autoSystemKey ||
+            (isLocked && manualSystemKey && !showSystemKeyPicker)) && (
             <p className="text-muted-foreground text-xs">
               {t('profileField', { key: autoSystemKey || manualSystemKey })}
             </p>

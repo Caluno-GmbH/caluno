@@ -509,14 +509,14 @@ describe('FormSubmissionService org-unit shares', () => {
         })
         .returning();
       if (!genderField) throw new Error('Failed to create gender field');
-      return { form, unitA, volunteer, genderField };
+      return { form, block, unitA, volunteer, genderField };
     };
 
     const submit = (
       formId: string,
       unitId: string,
       userId: string,
-      values: { fieldId: string; value: string }[],
+      values: { fieldId: string; blockId: string; value: string }[],
     ) =>
       formSubmissionService.submitRequiredForm(
         {
@@ -529,10 +529,10 @@ describe('FormSubmissionService org-unit shares', () => {
       );
 
     it('accepts a fixed option value and writes it to the user profile', async () => {
-      const { form, unitA, volunteer, genderField } =
+      const { form, block, unitA, volunteer, genderField } =
         await setupGenderForm(false);
       await submit(form.id, unitA.id, volunteer.id, [
-        { fieldId: genderField.id, value: 'female' },
+        { fieldId: genderField.id, blockId: block.id, value: 'female' },
       ]);
       const profile = await db.query.userProfiles.findFirst({
         where: { userId: volunteer.id },
@@ -541,23 +541,27 @@ describe('FormSubmissionService org-unit shares', () => {
     });
 
     it('rejects a value outside the fixed list', async () => {
-      const { form, unitA, volunteer, genderField } =
+      const { form, block, unitA, volunteer, genderField } =
         await setupGenderForm(false);
       await expect(
         submit(form.id, unitA.id, volunteer.id, [
-          { fieldId: genderField.id, value: 'Weiblich' },
+          { fieldId: genderField.id, blockId: block.id, value: 'Weiblich' },
         ]),
       ).rejects.toThrow('must be one of the available options');
     });
 
     it('enforces a required gender but accepts prefer-not-to-say', async () => {
-      const { form, unitA, volunteer, genderField } =
+      const { form, block, unitA, volunteer, genderField } =
         await setupGenderForm(true);
       await expect(submit(form.id, unitA.id, volunteer.id, [])).rejects.toThrow(
         'is required',
       );
       await submit(form.id, unitA.id, volunteer.id, [
-        { fieldId: genderField.id, value: 'prefer-not-to-say' },
+        {
+          fieldId: genderField.id,
+          blockId: block.id,
+          value: 'prefer-not-to-say',
+        },
       ]);
       const profile = await db.query.userProfiles.findFirst({
         where: { userId: volunteer.id },
