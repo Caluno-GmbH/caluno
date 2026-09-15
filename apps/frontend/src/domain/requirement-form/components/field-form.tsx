@@ -73,7 +73,6 @@ export function FieldForm({
     { label: t('firstName'), value: 'name' },
     { label: t('lastName'), value: 'lastname' },
     { label: t('preferredName'), value: 'preferred-name' },
-    { label: t('gender'), value: 'gender' },
     { label: t('address'), value: 'address' },
     { label: t('zipCode'), value: 'zip' },
     { label: t('city'), value: 'city' },
@@ -108,12 +107,14 @@ export function FieldForm({
   );
   const [error, setError] = useState<string | null>(null);
 
-  const showOptions =
-    fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTI_CHOICE';
-  const isDocument = fieldType === 'DOCUMENT_ACKNOWLEDGEMENT';
-  const isStaticText = fieldType === 'STATIC_TEXT';
   const autoSystemKey = AUTO_SYSTEM_KEY[fieldType];
   const showSystemKeyPicker = !autoSystemKey && TEXT_LIKE_TYPES.has(fieldType);
+  const hasFixedOptions = (autoSystemKey || manualSystemKey) === 'gender';
+  const showOptions =
+    (fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTI_CHOICE') &&
+    !hasFixedOptions;
+  const isDocument = fieldType === 'DOCUMENT_ACKNOWLEDGEMENT';
+  const isStaticText = fieldType === 'STATIC_TEXT';
 
   function commit() {
     if (!fieldType) {
@@ -128,7 +129,11 @@ export function FieldForm({
       setError(t('enterDocumentFileError'));
       return;
     }
-    if (showOptions && !options.some((o) => o.label.trim() !== '')) {
+    if (
+      showOptions &&
+      !hasFixedOptions &&
+      !options.some((o) => o.label.trim() !== '')
+    ) {
       setError(t('enterOptionError'));
       return;
     }

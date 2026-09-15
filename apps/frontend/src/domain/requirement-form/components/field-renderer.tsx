@@ -260,8 +260,6 @@ export function buildFieldSchema(
     s = s.refine((v) => !v || ZIP_RE.test(v), {
       message: messages.validPostalCode(label),
     }) as z.ZodString;
-  } else if (sk === 'gender') {
-    s = s.max(50, messages.maxChars(label, 50)) as z.ZodString;
   }
 
   if (type === FieldType.Iban || systemKey === 'iban') {
