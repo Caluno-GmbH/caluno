@@ -1,5 +1,6 @@
 'use client';
 
+import { RateProvenanceKind } from '@repo/data';
 import {
   type RawEffectiveRate,
   type RawReimbursementType,
@@ -18,7 +19,6 @@ import { resolveRateDisplay } from '../lib/rate-provenance';
 import { reimbursementTypeKeyFor } from '../lib/reimbursement-type-mapping';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
-import { RateProvenanceRow } from './rate-provenance-row';
 
 const PAUSCHALE_ORDER: PauschalenType[] = ['ehrenamt', 'uebungsleiter'];
 
@@ -42,7 +42,7 @@ function RateRow({
   const errorId = useId();
   const setRate = useSetReimbursementRate();
 
-  const { rateCents, provenance } = resolveRateDisplay({
+  const { rateCents, line } = resolveRateDisplay({
     effectiveRate,
     platformDefaultRateCents: reimbursementType.platformDefaultRateCents,
   });
@@ -50,9 +50,10 @@ function RateRow({
   // Only a rate this unit set itself is editable text. Starting from an
   // inherited value would turn a no-op save into an override, and there is
   // no mutation to take one back.
-  const ownRateInput = effectiveRate?.isOwnRate
-    ? centsToEuros(effectiveRate.hourlyRateCents).toFixed(2)
-    : '';
+  const ownRateInput =
+    effectiveRate?.provenance.kind === RateProvenanceKind.Own
+      ? centsToEuros(effectiveRate.hourlyRateCents).toFixed(2)
+      : '';
 
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState(ownRateInput);
@@ -68,16 +69,23 @@ function RateRow({
   }, [editing]);
 
   const effectiveEuros = centsToEuros(rateCents);
+  const formatLineRate = (cents: number) =>
+    `${formatHourlyRate(centsToEuros(cents))}${t('rateUnit')}`;
   const provenanceText =
-    provenance.kind === 'own'
-      ? `${t('provenance.inherited')}: ${formatHourlyRate(
-          centsToEuros(provenance.fallbackRateCents),
-        )}${t('rateUnit')}`
-      : provenance.kind === 'inherited'
+    line === null
+      ? undefined
+      : line.kind === 'inheritedFrom'
         ? t('provenance.inheritedFrom', {
-            org: provenance.sourceName,
+            source: line.source,
           } as Parameters<typeof t>[1])
-        : undefined;
+        : line.kind === 'replaces'
+          ? t('provenance.replaces', {
+              source: line.source,
+              rate: formatLineRate(line.rateCents),
+            } as Parameters<typeof t>[1])
+          : t('provenance.replacesDefault', {
+              rate: formatLineRate(line.rateCents),
+            } as Parameters<typeof t>[1]);
   const typeLabel = t(
     `${getPauschaleKey(type)}Label` as Parameters<typeof t>[0],
   );
@@ -190,7 +198,9 @@ function RateRow({
                 {t('rateUnit')}
               </span>
             </div>
-            <RateProvenanceRow text={provenanceText} />
+            {provenanceText && (
+              <p className="text-sm text-muted-foreground">{provenanceText}</p>
+            )}
           </div>
           {canEdit && (
             <Button

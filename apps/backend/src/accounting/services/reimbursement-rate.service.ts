@@ -16,8 +16,12 @@ import {
   POSTHOG_SURFACE,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
-import type { EffectiveRate, YearlyUsage } from '../accounting.types';
-import { InvoiceStatus } from '../enums';
+import type {
+  EffectiveRate,
+  RateProvenance,
+  YearlyUsage,
+} from '../accounting.types';
+import { InvoiceStatus, RateProvenanceKind } from '../enums';
 import type { ReimbursementBundleDownloadEntity } from '../schemas/reimbursement-bundle-download.schema';
 import type { ManualBaselineEntity } from '../schemas/reimbursement-manual-baseline.schema';
 import type { ReimbursementRateEntity } from '../schemas/reimbursement-rate.schema';
@@ -129,39 +133,53 @@ export class ReimbursementRateService {
     // link resolves what the unit would fall back to without its own
     // override — the parent's rate, or the platform default at the top.
     const requestedUnitId = organizationUnitId ?? null;
-    const fallbackChain = requestedUnitId ? chain.slice(1) : chain;
-    const unitNames = await this.unitNamesByIdFor(unitIds);
+    const fallbackChain = chain.slice(1);
+    const [units, organization] = await Promise.all([
+      this.organizationUnitDataService.findByIds(unitIds),
+      this.db.query.organizations.findFirst({
+        where: { id: organizationId },
+        columns: { name: true },
+      }),
+    ]);
+    const unitNames = new Map(units.map((unit) => [unit.id, unit.name]));
+    // The org-wide row belongs to no unit, so it is attributed to the
+    // organisation itself.
+    const nameOf = (unitId: string | null) =>
+      unitId ? (unitNames.get(unitId) ?? null) : (organization?.name ?? null);
 
     return types.map((reimbursementType) => {
       const resolved = resolve(reimbursementType, chain);
-      const isOwnRate =
-        resolved.isOverride && resolved.organizationUnitId === requestedUnitId;
       return {
         reimbursementType,
         ...resolved,
-        isOwnRate,
-        fallbackRateCents: resolve(reimbursementType, fallbackChain)
-          .hourlyRateCents,
-        // Named only when an ancestor unit is the source: the org-wide row
-        // and the platform default belong to no unit, so there is nothing
-        // truthful to attribute them to.
-        sourceUnitName:
-          !isOwnRate && resolved.organizationUnitId
-            ? (unitNames.get(resolved.organizationUnitId) ?? null)
-            : null,
+        provenance: provenanceOf(resolved),
       };
-    });
-  }
 
-  private async unitNamesByIdFor(
-    unitIds: string[],
-  ): Promise<Map<string, string>> {
-    if (unitIds.length === 0) return new Map();
-    const units = await this.db.query.organizationUnits.findMany({
-      where: { id: { in: unitIds } },
-      columns: { id: true, name: true },
+      function provenanceOf(rate: typeof resolved): RateProvenance {
+        if (!rate.isOverride) {
+          return {
+            kind: RateProvenanceKind.DEFAULT,
+            sourceName: null,
+            replacesRateCents: null,
+          };
+        }
+        if (rate.organizationUnitId !== requestedUnitId) {
+          return {
+            kind: RateProvenanceKind.INHERITED,
+            sourceName: nameOf(rate.organizationUnitId),
+            replacesRateCents: null,
+          };
+        }
+        const fallback = resolve(reimbursementType, fallbackChain);
+        return {
+          kind: RateProvenanceKind.OWN,
+          sourceName: fallback.isOverride
+            ? nameOf(fallback.organizationUnitId)
+            : null,
+          replacesRateCents: fallback.hourlyRateCents,
+        };
+      }
     });
-    return new Map(units.map((unit) => [unit.id, unit.name]));
   }
 
   /**

@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import {
   DocumentKind,
   InvoiceStatus,
+  RateProvenanceKind,
   ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
@@ -302,103 +303,111 @@ describe('ReimbursementRateService', () => {
       const type = await createReimbursementType(db, {
         platformDefaultRateCents: 500,
       });
+      const setRate = (cents: number, unitId?: string) =>
+        service.setReimbursementRate(
+          organization.id,
+          type.id,
+          cents,
+          ACTOR_USER_ID,
+          unitId,
+        );
       const rateAt = async (unitId: string) =>
         (await service.getEffectiveRates(organization.id, unitId)).find(
           (rate) => rate.reimbursementType.id === type.id,
         );
-      return { organization, root, child, grandchild, type, rateAt };
+      return { organization, root, child, grandchild, setRate, rateAt };
     };
 
     it('attributes an inherited rate to the ancestor that set it, at every depth', async () => {
-      const { organization, root, child, grandchild, type, rateAt } =
+      const { root, child, grandchild, setRate, rateAt } =
         await setupNestedUnits();
-      await service.setReimbursementRate(
-        organization.id,
-        type.id,
-        1_000,
-        ACTOR_USER_ID,
-        root.id,
-      );
+      await setRate(1_000, root.id);
 
       for (const unit of [child, grandchild]) {
         const rate = await rateAt(unit.id);
         expect(rate?.hourlyRateCents).toBe(1_000);
-        expect(rate?.isOwnRate).toBe(false);
-        expect(rate?.fallbackRateCents).toBe(1_000);
-        expect(rate?.sourceUnitName).toBe('root');
+        expect(rate?.provenance).toEqual({
+          kind: RateProvenanceKind.INHERITED,
+          sourceName: 'root',
+          replacesRateCents: null,
+        });
       }
     });
 
-    it('reports an own rate and the ancestor rate it replaces', async () => {
-      const { organization, root, child, grandchild, type, rateAt } =
+    it('reports an own rate with the ancestor rate it replaces', async () => {
+      const { root, child, grandchild, setRate, rateAt } =
         await setupNestedUnits();
-      await service.setReimbursementRate(
-        organization.id,
-        type.id,
-        1_000,
-        ACTOR_USER_ID,
-        root.id,
-      );
-      await service.setReimbursementRate(
-        organization.id,
-        type.id,
-        1_200,
-        ACTOR_USER_ID,
-        child.id,
-      );
+      await setRate(1_000, root.id);
+      await setRate(1_200, child.id);
 
       const childRate = await rateAt(child.id);
       expect(childRate?.hourlyRateCents).toBe(1_200);
-      expect(childRate?.isOwnRate).toBe(true);
-      expect(childRate?.fallbackRateCents).toBe(1_000);
-      expect(childRate?.sourceUnitName).toBeNull();
+      expect(childRate?.provenance).toEqual({
+        kind: RateProvenanceKind.OWN,
+        sourceName: 'root',
+        replacesRateCents: 1_000,
+      });
 
       // The grandchild now inherits the child's override, not the root's.
       const grandchildRate = await rateAt(grandchild.id);
       expect(grandchildRate?.hourlyRateCents).toBe(1_200);
-      expect(grandchildRate?.sourceUnitName).toBe('Child club');
+      expect(grandchildRate?.provenance.sourceName).toBe('Child club');
+    });
+
+    it('keeps an own rate distinguishable when it equals the rate it replaces', async () => {
+      const { root, child, setRate, rateAt } = await setupNestedUnits();
+      await setRate(1_000, root.id);
+      await setRate(1_000, child.id);
+
+      expect((await rateAt(child.id))?.provenance).toEqual({
+        kind: RateProvenanceKind.OWN,
+        sourceName: 'root',
+        replacesRateCents: 1_000,
+      });
+    });
+
+    it('reports a root rate as replacing the platform default', async () => {
+      const { root, setRate, rateAt } = await setupNestedUnits();
+      await setRate(1_000, root.id);
+
+      expect((await rateAt(root.id))?.provenance).toEqual({
+        kind: RateProvenanceKind.OWN,
+        sourceName: null,
+        replacesRateCents: 500,
+      });
     });
 
     it('follows a parent rate change in units without a rate of their own', async () => {
-      const { organization, root, child, type, rateAt } =
-        await setupNestedUnits();
-      await service.setReimbursementRate(
-        organization.id,
-        type.id,
-        1_000,
-        ACTOR_USER_ID,
-        root.id,
-      );
-      await service.setReimbursementRate(
-        organization.id,
-        type.id,
-        1_500,
-        ACTOR_USER_ID,
-        root.id,
-      );
+      const { root, child, setRate, rateAt } = await setupNestedUnits();
+      await setRate(1_000, root.id);
+      await setRate(1_500, root.id);
 
       expect((await rateAt(child.id))?.hourlyRateCents).toBe(1_500);
     });
 
-    it('names no source for the platform default or the org-wide row', async () => {
-      const { organization, child, type, rateAt } = await setupNestedUnits();
+    it('attributes the org-wide row to the organisation', async () => {
+      const { organization, child, setRate, rateAt } = await setupNestedUnits();
+      await setRate(900);
 
-      const platformDefault = await rateAt(child.id);
-      expect(platformDefault?.hourlyRateCents).toBe(500);
-      expect(platformDefault?.isOwnRate).toBe(false);
-      expect(platformDefault?.fallbackRateCents).toBe(500);
-      expect(platformDefault?.sourceUnitName).toBeNull();
+      const rate = await rateAt(child.id);
+      expect(rate?.hourlyRateCents).toBe(900);
+      expect(rate?.provenance).toEqual({
+        kind: RateProvenanceKind.INHERITED,
+        sourceName: organization.name,
+        replacesRateCents: null,
+      });
+    });
 
-      await service.setReimbursementRate(
-        organization.id,
-        type.id,
-        900,
-        ACTOR_USER_ID,
-      );
-      const orgWide = await rateAt(child.id);
-      expect(orgWide?.hourlyRateCents).toBe(900);
-      expect(orgWide?.isOwnRate).toBe(false);
-      expect(orgWide?.sourceUnitName).toBeNull();
+    it('reports the platform default when nothing in the chain sets a rate', async () => {
+      const { child, rateAt } = await setupNestedUnits();
+
+      const rate = await rateAt(child.id);
+      expect(rate?.hourlyRateCents).toBe(500);
+      expect(rate?.provenance).toEqual({
+        kind: RateProvenanceKind.DEFAULT,
+        sourceName: null,
+        replacesRateCents: null,
+      });
     });
   });
 

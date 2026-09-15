@@ -8,6 +8,7 @@ import {
   mock,
   setDefaultTimeout,
 } from 'bun:test';
+import { inflateSync } from 'node:zlib';
 import type { INestApplication } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { eq } from 'drizzle-orm';
@@ -18,6 +19,8 @@ import {
   InvoiceStatus,
   SigneeType,
 } from '../src/accounting/enums';
+import { ContractService } from '../src/accounting/services/contract.service';
+import { DocumentRenderingService } from '../src/accounting/services/document-rendering.service';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
@@ -220,6 +223,21 @@ const INVOICE_DETAIL = `
 `;
 
 // ─── Setup helpers ────────────────────────────────────────────────────────────
+
+/**
+ * The text of a rendered PDF. Content streams are Flate-compressed and glyph
+ * runs hex-encoded, so both are decoded before the runs are joined.
+ */
+const pdfGlyphs = (pdfBytes: Buffer): string => {
+  const content = [
+    ...pdfBytes.toString('latin1').matchAll(/stream\r?\n([\s\S]*?)endstream/g),
+  ]
+    .map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
+    .join('\n');
+  return [...content.matchAll(/<([0-9a-f]+)>/g)]
+    .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
+    .join('');
+};
 
 type FlowOrg = Awaited<ReturnType<typeof setupFlowOrg>>;
 
@@ -1330,22 +1348,11 @@ describe('documents flow — admin + volunteer', () => {
       expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
       expect(pdfBytes.length).toBeGreaterThan(500);
 
-      // The PDF carries the resolved volunteer name. Text is Flate-compressed
-      // in the content stream, so inflate it before reading.
-      const { inflateSync } = await import('node:zlib');
-      const latin = pdfBytes.toString('latin1');
-      const streams = [
-        ...latin.matchAll(/stream\r?\n([\s\S]*?)endstream/g),
-      ].map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'));
-      const content = streams.join('\n');
-
+      // The PDF carries the resolved volunteer name.
       const volunteer = await db.query.users.findFirst({
         where: { id: pdfOrg.volunteerId },
       });
-      // Glyph runs are hex-encoded; decode them so name/rate are comparable.
-      const glyphs = [...content.matchAll(/<([0-9a-f]+)>/g)]
-        .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
-        .join('');
+      const glyphs = pdfGlyphs(pdfBytes);
       expect(glyphs).toContain(volunteer?.name ?? '');
       expect(glyphs).toContain('Unterschrift');
     });
@@ -1542,15 +1549,7 @@ describe('documents flow — admin + volunteer', () => {
       const pdfBytes = Buffer.from(await pdfResponse.arrayBuffer());
       expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
 
-      const { inflateSync } = await import('node:zlib');
-      const latin = pdfBytes.toString('latin1');
-      const streams = [
-        ...latin.matchAll(/stream\r?\n([\s\S]*?)endstream/g),
-      ].map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'));
-      const content = streams.join('\n');
-      const glyphs = [...content.matchAll(/<([0-9a-f]+)>/g)]
-        .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
-        .join('');
+      const glyphs = pdfGlyphs(pdfBytes);
       // The invoice table lists the shift that produced the time entry.
       expect(glyphs).toContain('Stundennachweis');
       expect(glyphs).toContain('Unterschrift');
@@ -1683,37 +1682,16 @@ describe('documents flow — admin + volunteer', () => {
       );
       expect(createInvoice.totalAmountCents).toBe(4_800);
 
-      // The page: the signed contract prints the same 12 €/hr, not the
-      // root's 10 €/hr. Reading the PDF back needs object storage.
-      const detail = await graphqlRequestRequiringData<{
-        contract: { downloadUrl: string | null };
-      }>(
-        app,
-        {
-          query: CONTRACT_DETAIL,
-          variables: { id: createContract.id },
-          headers: nestedHeader,
-        },
-        'contract',
+      // The page: the signed contract renders the same 12 €/hr, not the
+      // root's 10 €/hr. Rendered in-process so the assertion runs whether
+      // or not object storage is configured.
+      const contract = await app
+        .get(ContractService)
+        .findContract(createContract.id);
+      const glyphs = pdfGlyphs(
+        await app.get(DocumentRenderingService).generatePdf(contract),
       );
-      if (!process.env.STORAGE_ENDPOINT) return;
-      if (!detail.contract.downloadUrl) throw new Error('PDF was not stored');
-
-      const pdfBytes = Buffer.from(
-        await (await fetch(detail.contract.downloadUrl)).arrayBuffer(),
-      );
-      const { inflateSync } = await import('node:zlib');
-      const content = [
-        ...pdfBytes
-          .toString('latin1')
-          .matchAll(/stream\r?\n([\s\S]*?)endstream/g),
-      ]
-        .map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
-        .join('\n');
-      const glyphs = [...content.matchAll(/<([0-9a-f]+)>/g)]
-        .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
-        .join('');
-      expect(glyphs).toContain('12,00');
+      expect(glyphs).toContain('Stundensatz 12,00');
       expect(glyphs).not.toContain('10,00');
     });
   });

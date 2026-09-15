@@ -66,9 +66,7 @@ export class ReimbursementQueryResolver {
       ),
       hourlyRateCents: rate.hourlyRateCents,
       isOverride: rate.isOverride,
-      fallbackRateCents: rate.fallbackRateCents,
-      isOwnRate: rate.isOwnRate,
-      sourceUnitName: rate.sourceUnitName,
+      provenance: rate.provenance,
       organizationUnitId: rate.organizationUnitId,
     }));
   }

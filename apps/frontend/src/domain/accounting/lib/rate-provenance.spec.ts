@@ -1,71 +1,93 @@
 import { describe, expect, it } from 'bun:test';
+import { RateProvenanceKind } from '@repo/data';
 import type { RawEffectiveRate } from '@repo/data/react';
 import { resolveRateDisplay } from './rate-provenance';
 
 const PLATFORM_DEFAULT_CENTS = 500;
 
-function display(effectiveRate?: Partial<RawEffectiveRate>) {
+function display(
+  hourlyRateCents: number,
+  provenance: RawEffectiveRate['provenance'],
+) {
   return resolveRateDisplay({
     platformDefaultRateCents: PLATFORM_DEFAULT_CENTS,
-    effectiveRate: effectiveRate as RawEffectiveRate | undefined,
+    effectiveRate: { hourlyRateCents, provenance } as RawEffectiveRate,
   });
 }
 
 describe('resolveRateDisplay', () => {
-  it('names the ancestor a sub-org inherits its rate from', () => {
-    const result = display({
-      hourlyRateCents: 1000,
-      fallbackRateCents: 1000,
-      isOwnRate: false,
-      sourceUnitName: 'Hauptverein',
+  it('names the unit or organisation an inherited rate comes from', () => {
+    const result = display(1000, {
+      kind: RateProvenanceKind.Inherited,
+      sourceName: 'Hauptverein',
+      replacesRateCents: null,
     });
 
     expect(result.rateCents).toBe(1000);
-    expect(result.provenance).toEqual({
-      kind: 'inherited',
-      sourceName: 'Hauptverein',
+    expect(result.line).toEqual({
+      kind: 'inheritedFrom',
+      source: 'Hauptverein',
     });
   });
 
-  it("shows the unit's own rate above the rate it replaces", () => {
-    const result = display({
-      hourlyRateCents: 1200,
-      fallbackRateCents: 1000,
-      isOwnRate: true,
-      sourceUnitName: null,
+  it('names what an own rate replaces', () => {
+    const result = display(1200, {
+      kind: RateProvenanceKind.Own,
+      sourceName: 'Hauptverein',
+      replacesRateCents: 1000,
     });
 
     expect(result.rateCents).toBe(1200);
-    expect(result.provenance).toEqual({ kind: 'own', fallbackRateCents: 1000 });
+    expect(result.line).toEqual({
+      kind: 'replaces',
+      source: 'Hauptverein',
+      rateCents: 1000,
+    });
   });
 
-  it('adds no line when an own rate equals the rate it replaces', () => {
-    const result = display({
-      hourlyRateCents: 1000,
-      fallbackRateCents: 1000,
-      isOwnRate: true,
-      sourceUnitName: null,
+  it('keeps the line for an own rate equal to the rate it replaces', () => {
+    const result = display(1000, {
+      kind: RateProvenanceKind.Own,
+      sourceName: 'Hauptverein',
+      replacesRateCents: 1000,
     });
 
-    expect(result.rateCents).toBe(1000);
-    expect(result.provenance).toEqual({ kind: 'none' });
+    expect(result.line).toEqual({
+      kind: 'replaces',
+      source: 'Hauptverein',
+      rateCents: 1000,
+    });
   });
 
-  it('adds no line for an inherited rate with no unit to attribute it to', () => {
-    const result = display({
-      hourlyRateCents: PLATFORM_DEFAULT_CENTS,
-      fallbackRateCents: PLATFORM_DEFAULT_CENTS,
-      isOwnRate: false,
-      sourceUnitName: null,
+  it('reads an own rate over the platform default as replacing the default', () => {
+    const result = display(1000, {
+      kind: RateProvenanceKind.Own,
+      sourceName: null,
+      replacesRateCents: PLATFORM_DEFAULT_CENTS,
     });
 
-    expect(result.provenance).toEqual({ kind: 'none' });
+    expect(result.line).toEqual({
+      kind: 'replacesDefault',
+      rateCents: PLATFORM_DEFAULT_CENTS,
+    });
+  });
+
+  it('adds no line for the platform default', () => {
+    const result = display(PLATFORM_DEFAULT_CENTS, {
+      kind: RateProvenanceKind.Default,
+      sourceName: null,
+      replacesRateCents: null,
+    });
+
+    expect(result.line).toBeNull();
   });
 
   it('falls back to the platform default while rates are unavailable', () => {
-    const result = display(undefined);
+    const result = resolveRateDisplay({
+      platformDefaultRateCents: PLATFORM_DEFAULT_CENTS,
+    });
 
     expect(result.rateCents).toBe(PLATFORM_DEFAULT_CENTS);
-    expect(result.provenance).toEqual({ kind: 'none' });
+    expect(result.line).toBeNull();
   });
 });
