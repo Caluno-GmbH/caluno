@@ -14,6 +14,7 @@ import { Fragment, useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 import { formatEuro } from '@/lib/formatting/formats';
 import { centsToEuros, eurosToCents, formatHourlyRate } from '../lib/money';
+import { resolveRateDisplay } from '../lib/rate-provenance';
 import { reimbursementTypeKeyFor } from '../lib/reimbursement-type-mapping';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
@@ -41,13 +42,17 @@ function RateRow({
   const errorId = useId();
   const setRate = useSetReimbursementRate();
 
-  const overrideCents = effectiveRate?.isOverride
-    ? effectiveRate.hourlyRateCents
-    : undefined;
+  const { rateCents, fallbackRateCents } = resolveRateDisplay({
+    effectiveRate,
+    platformDefaultRateCents: reimbursementType.platformDefaultRateCents,
+    organizationUnitId,
+  });
 
   const [editing, setEditing] = useState(false);
+  // Editing starts from the rate in force here, inherited or not — the same
+  // number the row displays.
   const [inputValue, setInputValue] = useState(
-    overrideCents !== undefined ? centsToEuros(overrideCents).toFixed(2) : '',
+    centsToEuros(rateCents).toFixed(2),
   );
   const [inputError, setInputError] = useState<string | null>(null);
 
@@ -60,10 +65,7 @@ function RateRow({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [editing]);
 
-  const effectiveEuros = centsToEuros(
-    effectiveRate?.hourlyRateCents ??
-      reimbursementType.platformDefaultRateCents,
-  );
+  const effectiveEuros = centsToEuros(rateCents);
   const typeLabel = t(
     `${getPauschaleKey(type)}Label` as Parameters<typeof t>[0],
   );
@@ -96,9 +98,7 @@ function RateRow({
   }
 
   function handleCancel() {
-    setInputValue(
-      overrideCents !== undefined ? centsToEuros(overrideCents).toFixed(2) : '',
-    );
+    setInputValue(centsToEuros(rateCents).toFixed(2));
     setInputError(null);
     setEditing(false);
   }
@@ -179,9 +179,11 @@ function RateRow({
               </span>
             </div>
             <RateProvenanceRow
-              rate={formatHourlyRate(
-                centsToEuros(reimbursementType.platformDefaultRateCents),
-              )}
+              rate={
+                fallbackRateCents === undefined
+                  ? undefined
+                  : formatHourlyRate(centsToEuros(fallbackRateCents))
+              }
               unit={t('rateUnit')}
               inheritedLabel={t('provenance.inherited')}
             />

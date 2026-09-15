@@ -19,6 +19,7 @@ query GetEffectiveRates($organizationUnitId: ID) {
     }
     hourlyRateCents
     isOverride
+    inheritedRateCents
     organizationUnitId
   }
 }

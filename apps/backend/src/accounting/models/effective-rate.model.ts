@@ -12,6 +12,10 @@ export class EffectiveRate {
   @Field(() => Boolean)
   isOverride!: boolean;
 
+  /** What this unit would fall back to if it set no rate of its own. */
+  @Field(() => Int)
+  inheritedRateCents!: number;
+
   @Field(() => ID, { nullable: true })
   organizationUnitId?: string | null;
 }
