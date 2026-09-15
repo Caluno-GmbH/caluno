@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { eq } from 'drizzle-orm';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
@@ -473,6 +474,95 @@ describe('FormSubmissionService org-unit shares', () => {
           otherUnit.id,
         ),
       ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
+    });
+  });
+
+  describe('gender system field', () => {
+    const setupGenderForm = async (required: boolean) => {
+      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
+      const { form, block } = await createRequirementForm(db, {
+        organizationId: rootUnit.organizationId,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        required,
+      });
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [form.id],
+      });
+      // The factory block ships a generic required text field; neutralise
+      // it so only the gender field is enforced.
+      await db
+        .update(schema.formBlockFields)
+        .set({ required: false })
+        .where(eq(schema.formBlockFields.blockId, block.id));
+      const [genderField] = await db
+        .insert(schema.formBlockFields)
+        .values({
+          blockId: block.id,
+          type: 'SINGLE_CHOICE',
+          label: 'Gender',
+          required,
+          systemKey: 'gender',
+          options: [],
+          fieldOrder: 1,
+        })
+        .returning();
+      if (!genderField) throw new Error('Failed to create gender field');
+      return { form, unitA, volunteer, genderField };
+    };
+
+    const submit = (
+      formId: string,
+      unitId: string,
+      userId: string,
+      values: { fieldId: string; value: string }[],
+    ) =>
+      formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitId,
+        },
+        formId,
+        { values },
+        userId,
+      );
+
+    it('accepts a fixed option value and writes it to the user profile', async () => {
+      const { form, unitA, volunteer, genderField } =
+        await setupGenderForm(false);
+      await submit(form.id, unitA.id, volunteer.id, [
+        { fieldId: genderField.id, value: 'female' },
+      ]);
+      const profile = await db.query.userProfiles.findFirst({
+        where: { userId: volunteer.id },
+      });
+      expect(profile?.data.gender).toBe('female');
+    });
+
+    it('rejects a value outside the fixed list', async () => {
+      const { form, unitA, volunteer, genderField } =
+        await setupGenderForm(false);
+      await expect(
+        submit(form.id, unitA.id, volunteer.id, [
+          { fieldId: genderField.id, value: 'Weiblich' },
+        ]),
+      ).rejects.toThrow('must be one of the available options');
+    });
+
+    it('enforces a required gender but accepts prefer-not-to-say', async () => {
+      const { form, unitA, volunteer, genderField } =
+        await setupGenderForm(true);
+      await expect(submit(form.id, unitA.id, volunteer.id, [])).rejects.toThrow(
+        'is required',
+      );
+      await submit(form.id, unitA.id, volunteer.id, [
+        { fieldId: genderField.id, value: 'prefer-not-to-say' },
+      ]);
+      const profile = await db.query.userProfiles.findFirst({
+        where: { userId: volunteer.id },
+      });
+      expect(profile?.data.gender).toBe('prefer-not-to-say');
     });
   });
 });
