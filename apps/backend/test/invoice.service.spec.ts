@@ -606,6 +606,45 @@ describe('InvoiceService', () => {
       expect(result.map((r) => r.volunteerId)).not.toContain(volunteer.id);
     });
 
+    it('surfaces the hours again once the invoice is declined', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+      const invoice = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-06-30T22:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+      await service.declineInvoice(invoice.id, volunteer.id, 'wrong hours');
+
+      const result = await service.findVolunteersNeedingTimesheets(
+        root.id,
+        new Date('2026-01-01T00:00:00.000Z'),
+        new Date('2027-01-01T00:00:00.000Z'),
+      );
+
+      const row = result.find((r) => r.volunteerId === volunteer.id);
+      expect(row).toEqual({
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-06-30T22:00:00.000Z'),
+        periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        eligibleHours: 4,
+      });
+    });
+
     it('excludes a volunteer whose only time entry has not been ended yet', async () => {
       const { root, reimbursementType } = await setup();
       const volunteer = await createUser(db);
