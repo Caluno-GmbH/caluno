@@ -14,13 +14,14 @@ export type ResolveFieldAnswerOptions = {
   dash: string;
   accepted: string;
   formatDate: (date: Date) => string;
+  genderLabels: Record<string, string>;
 };
 
 export function resolveFieldAnswer(
   field: SubmissionField,
   submissionValues: SubmissionValue[],
   profileData: Record<string, unknown>,
-  { dash, accepted, formatDate }: ResolveFieldAnswerOptions,
+  { dash, accepted, formatDate, genderLabels }: ResolveFieldAnswerOptions,
 ): string {
   const raw =
     field.systemKey && profileData[field.systemKey] !== undefined
@@ -29,6 +30,10 @@ export function resolveFieldAnswer(
 
   if (!raw) {
     return dash;
+  }
+
+  if (field.systemKey === 'gender') {
+    return genderLabels[raw] ?? raw;
   }
 
   if (field.type === 'DATE') {

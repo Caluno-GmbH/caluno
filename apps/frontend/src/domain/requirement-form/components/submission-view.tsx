@@ -8,6 +8,7 @@ import {
 } from '@repo/ui';
 import { getTranslations } from 'next-intl/server';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { GENDER_OPTION_VALUES } from '../gender-options';
 import {
   resolveFieldAnswer,
   type SubmissionField,
@@ -24,6 +25,7 @@ export const SubmissionView = async ({
   profileData?: Record<string, unknown>;
 }) => {
   const t = await getTranslations('RequirementForm.submission');
+  const tGender = await getTranslations('RequirementForm.genderOptions');
   const tCommon = await getTranslations('Common');
   const { formatDate } = await getFormatting();
 
@@ -57,6 +59,9 @@ export const SubmissionView = async ({
                     dash: tCommon('dash'),
                     accepted: t('accepted'),
                     formatDate,
+                    genderLabels: Object.fromEntries(
+                      GENDER_OPTION_VALUES.map((v) => [v, tGender(v)]),
+                    ),
                   })}
                 </TableCell>
               </TableRow>
