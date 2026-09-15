@@ -149,13 +149,24 @@ export class InvoiceQueryResolver {
     );
     if (rows.length === 0) return [];
 
-    const [users, reimbursementTypes] = await Promise.all([
+    const organizationId =
+      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+        context.organizationUnitId,
+      );
+    const [users, reimbursementTypes, rates] = await Promise.all([
       this.userService.findByIds(rows.map((row) => row.volunteerId)),
       this.reimbursementRateService.findReimbursementTypes(),
+      this.reimbursementRateService.getEffectiveRates(
+        organizationId,
+        context.organizationUnitId,
+      ),
     ]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const reimbursementTypeById = new Map(
       reimbursementTypes.map((type) => [type.id, type]),
+    );
+    const rateCentsByTypeId = new Map(
+      rates.map((rate) => [rate.reimbursementType.id, rate.hourlyRateCents]),
     );
 
     return rows.map((row) => {
@@ -177,7 +188,16 @@ export class InvoiceQueryResolver {
         volunteer: this.userMapper.toModelOrThrow(user),
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
         eligibleHours: row.eligibleHours,
+        // What the timesheet would come to at the unit's current rate; the
+        // issued document computes its own total at creation.
+        estimatedAmountCents: Math.round(
+          row.eligibleHours *
+            (rateCentsByTypeId.get(row.reimbursementTypeId) ??
+              reimbursementType.platformDefaultRateCents),
+        ),
       };
     });
   }

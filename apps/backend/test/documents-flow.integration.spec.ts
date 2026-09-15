@@ -25,6 +25,7 @@ import type { DocumentAwaitingSignaturePayload } from '../src/notification/paylo
 import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/document-declined-by-org.payload';
 import { userProfiles } from '../src/requirement-profile/schemas/user-profile.schema';
 import {
+  createDocumentTemplate,
   createReimbursementType,
   createTwoStepTemplate,
 } from './factories/accounting.factory';
@@ -177,6 +178,18 @@ const CONTRACTS = `
   }
 `;
 
+const ACCOUNTING_SETUP_STATUS = `
+  query {
+    accountingSetupStatus {
+      orgProfileComplete
+      missingOrgProfileFields
+      canManageTemplates
+      canCreateDocuments
+      slots { reimbursementTypeKey hasContractTemplate hasInvoiceTemplate ready }
+    }
+  }
+`;
+
 const CONTRACT_DETAIL = `
   query ContractDetail($id: ID!) {
     contract(id: $id) {
@@ -285,6 +298,62 @@ const setupFlowOrg = async (db: Database) => {
   };
 };
 
+/**
+ * Like `setupFlowOrg`, but without the contract/invoice templates — for
+ * proving the setup-status query's "not ready yet" state, which
+ * `setupFlowOrg`'s org can never be in.
+ */
+const setupFlowOrgWithoutTemplates = async (db: Database) => {
+  const reimbursementType = await createReimbursementType(db);
+  const { organization, type } = await createOrganizationWithType(
+    db,
+    `Setup Status Org ${crypto.randomUUID()}`,
+  );
+  const root = await createUnit(db, {
+    organizationId: organization.id,
+    typeId: type.id,
+    name: 'root',
+  });
+  await db
+    .update(schema.organizations)
+    .set({
+      accountingEnabled: true,
+      address: 'Teststraße 1',
+      city: 'Berlin',
+      zipCode: '10115',
+    })
+    .where(eq(schema.organizations.id, organization.id));
+  await db
+    .update(schema.organizationUnits)
+    .set({ address: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
+    .where(eq(schema.organizationUnits.id, root.id));
+
+  const permission =
+    (await db.query.permissions.findFirst({
+      where: { key: 'accounting:manage' },
+    })) ?? (await createPermission(db, { key: 'accounting:manage' }));
+  const role = await createRole(db, { organizationId: organization.id });
+  await grantPermissionToRole(db, {
+    roleId: role.id,
+    permissionId: permission.id,
+  });
+
+  const admin = await createUser(db);
+  const adminMembership = await addMembership(db, admin.id, root.id);
+  await assignRoleToMembership(db, {
+    membershipId: adminMembership.id,
+    roleId: role.id,
+  });
+
+  return {
+    organizationId: organization.id,
+    organizationUnitId: root.id,
+    adminId: admin.id,
+    reimbursementTypeId: reimbursementType.id,
+    permissionId: permission.id,
+  };
+};
+
 /** A completed, unclaimed, paid time entry — the raw material for an invoice. */
 const createCompletedTimeEntry = async (
   db: Database,
@@ -292,13 +361,17 @@ const createCompletedTimeEntry = async (
     organizationUnitId: string;
     volunteerId: string;
     reimbursementTypeId: string;
+    startedAt?: Date;
+    endedAt?: Date;
   },
 ) => {
+  const startedAt = args.startedAt ?? new Date('2026-07-01T09:00:00.000Z');
+  const endedAt = args.endedAt ?? new Date('2026-07-01T13:00:00.000Z');
   const shift = await createShift(db, {
     organizationUnitId: args.organizationUnitId,
     title: `Paid shift ${crypto.randomUUID()}`,
-    startsAt: new Date('2026-07-01T09:00:00.000Z'),
-    endsAt: new Date('2026-07-01T10:00:00.000Z'),
+    startsAt: startedAt,
+    endsAt: endedAt,
   });
   const instance = await createShiftInstance(db, shift.id);
   const [timeEntry] = await db
@@ -308,8 +381,8 @@ const createCompletedTimeEntry = async (
       organizationUnitId: args.organizationUnitId,
       volunteerId: args.volunteerId,
       reimbursementTypeId: args.reimbursementTypeId,
-      startedAt: new Date('2026-07-01T09:00:00.000Z'),
-      endedAt: new Date('2026-07-01T13:00:00.000Z'), // 4 hours
+      startedAt,
+      endedAt, // 4 hours
       isPaid: true,
     })
     .returning();
@@ -369,8 +442,8 @@ describe('documents flow — admin + volunteer', () => {
             organizationUnitId: org.organizationUnitId,
             reimbursementTypeId: org.reimbursementTypeId,
             volunteerId: org.volunteerId,
-            periodStart: '2026-01-01T00:00:00.000Z',
-            periodEnd: '2027-01-01T00:00:00.000Z',
+            periodStart: '2025-12-31T23:00:00.000Z',
+            periodEnd: '2026-12-31T23:00:00.000Z',
           },
         },
         headers: orgHeader,
@@ -624,8 +697,8 @@ describe('documents flow — admin + volunteer', () => {
               reimbursementTypeId: org.reimbursementTypeId,
               volunteerId: org.volunteerId,
               timeEntryIds: [timeEntry.id],
-              periodStart: '2026-07-01T00:00:00.000Z',
-              periodEnd: '2026-07-31T23:59:59.000Z',
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
             },
           },
           headers: orgHeader,
@@ -724,6 +797,9 @@ describe('documents flow — admin + volunteer', () => {
         organizationUnitId: org.organizationUnitId,
         volunteerId: org.volunteerId,
         reimbursementTypeId: org.reimbursementTypeId,
+        // August, so it does not overlap the July invoice from the lifecycle test.
+        startedAt: new Date('2026-08-03T09:00:00.000Z'),
+        endedAt: new Date('2026-08-03T13:00:00.000Z'),
       });
 
       setAuthMockUserId(org.adminId);
@@ -739,8 +815,8 @@ describe('documents flow — admin + volunteer', () => {
               reimbursementTypeId: org.reimbursementTypeId,
               volunteerId: org.volunteerId,
               timeEntryIds: [timeEntry.id],
-              periodStart: '2026-07-01T00:00:00.000Z',
-              periodEnd: '2026-07-31T23:59:59.000Z',
+              periodStart: '2026-07-31T22:00:00.000Z',
+              periodEnd: '2026-08-31T22:00:00.000Z',
             },
           },
           headers: orgHeader,
@@ -811,8 +887,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: orgA.organizationUnitId,
               reimbursementTypeId: orgA.reimbursementTypeId,
               volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: orgAHeader,
@@ -831,8 +907,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: orgB.organizationUnitId,
               reimbursementTypeId: orgB.reimbursementTypeId,
               volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: orgBHeader,
@@ -900,8 +976,8 @@ describe('documents flow — admin + volunteer', () => {
             organizationUnitId: disabledOrg.organizationUnitId,
             reimbursementTypeId: disabledOrg.reimbursementTypeId,
             volunteerId: disabledOrg.volunteerId,
-            periodStart: '2026-01-01T00:00:00.000Z',
-            periodEnd: '2027-01-01T00:00:00.000Z',
+            periodStart: '2025-12-31T23:00:00.000Z',
+            periodEnd: '2026-12-31T23:00:00.000Z',
           },
         },
         headers: disabledHeader,
@@ -941,8 +1017,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: orgA.organizationUnitId,
               reimbursementTypeId: orgA.reimbursementTypeId,
               volunteerId: orgA.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: { 'x-organization-unit-id': orgA.organizationUnitId },
@@ -960,8 +1036,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: orgA.organizationUnitId,
               reimbursementTypeId: orgA.reimbursementTypeId,
               volunteerId: orgA.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: { 'x-organization-unit-id': orgA.organizationUnitId },
@@ -992,8 +1068,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: orgB.organizationUnitId,
               reimbursementTypeId: orgB.reimbursementTypeId,
               volunteerId: orgA.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: { 'x-organization-unit-id': orgB.organizationUnitId },
@@ -1185,8 +1261,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: pdfOrg.organizationUnitId,
               reimbursementTypeId: pdfOrg.reimbursementTypeId,
               volunteerId: pdfOrg.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: pdfOrgHeader,
@@ -1298,8 +1374,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: pdfOrg.organizationUnitId,
               reimbursementTypeId: pdfOrg.reimbursementTypeId,
               volunteerId: pdfOrg.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: pdfOrgHeader,
@@ -1360,8 +1436,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: pdfOrg.organizationUnitId,
               reimbursementTypeId: pdfOrg.reimbursementTypeId,
               volunteerId: pdfOrg.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: pdfOrgHeader,
@@ -1406,8 +1482,8 @@ describe('documents flow — admin + volunteer', () => {
               reimbursementTypeId: pdfOrg.reimbursementTypeId,
               volunteerId: pdfOrg.volunteerId,
               timeEntryIds: [timeEntry.id],
-              periodStart: '2026-07-01T00:00:00.000Z',
-              periodEnd: '2026-07-31T23:59:59.000Z',
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
             },
           },
           headers: pdfOrgHeader,
@@ -1569,8 +1645,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: gatedOrg.organizationUnitId,
               reimbursementTypeId: gatedOrg.reimbursementTypeId,
               volunteerId: gatedOrg.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: gatedHeader,
@@ -1681,8 +1757,8 @@ describe('documents flow — admin + volunteer', () => {
             organizationUnitId: orgGated.organizationUnitId,
             reimbursementTypeId: orgGated.reimbursementTypeId,
             volunteerId: orgGated.volunteerId,
-            periodStart: '2026-01-01T00:00:00.000Z',
-            periodEnd: '2027-01-01T00:00:00.000Z',
+            periodStart: '2025-12-31T23:00:00.000Z',
+            periodEnd: '2026-12-31T23:00:00.000Z',
           },
         },
         headers: orgGatedHeader,
@@ -1711,8 +1787,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: orgGated.organizationUnitId,
               reimbursementTypeId: orgGated.reimbursementTypeId,
               volunteerId: orgGated.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: orgGatedHeader,
@@ -1807,8 +1883,8 @@ describe('documents flow — admin + volunteer', () => {
               organizationUnitId: siblingUnit.id,
               reimbursementTypeId: orgTwoUnits.reimbursementTypeId,
               volunteerId: orgTwoUnits.volunteerId,
-              periodStart: '2026-01-01T00:00:00.000Z',
-              periodEnd: '2027-01-01T00:00:00.000Z',
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
             },
           },
           headers: orgTwoUnitsHeader,
@@ -1824,6 +1900,144 @@ describe('documents flow — admin + volunteer', () => {
         .where(eq(schema.contracts.id, createContract.id))
         .limit(1);
       expect(contract.organizationUnitId).toBe(siblingUnit.id);
+    });
+  });
+
+  describe('accounting setup status', () => {
+    it('reports the org as not ready when it has no templates, and ready once both exist', async () => {
+      const statusOrg = await setupFlowOrgWithoutTemplates(db);
+      const statusHeader = {
+        'x-organization-unit-id': statusOrg.organizationUnitId,
+      };
+      setAuthMockUserId(statusOrg.adminId);
+
+      const before = await graphqlRequestRequiringData<{
+        accountingSetupStatus: {
+          canCreateDocuments: boolean;
+          slots: Array<{ reimbursementTypeKey: string; ready: boolean }>;
+        };
+      }>(
+        app,
+        { query: ACCOUNTING_SETUP_STATUS, headers: statusHeader },
+        'accountingSetupStatus',
+      );
+      expect(before.accountingSetupStatus.canCreateDocuments).toBe(false);
+      expect(
+        before.accountingSetupStatus.slots.every((slot) => !slot.ready),
+      ).toBe(true);
+
+      await createTwoStepTemplate(db, {
+        organizationId: statusOrg.organizationId,
+        reimbursementTypeId: statusOrg.reimbursementTypeId,
+        kind: DocumentKind.CONTRACT,
+        requiredPermissionId: statusOrg.permissionId,
+        signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
+      });
+      await createTwoStepTemplate(db, {
+        organizationId: statusOrg.organizationId,
+        reimbursementTypeId: statusOrg.reimbursementTypeId,
+        kind: DocumentKind.INVOICE,
+        requiredPermissionId: statusOrg.permissionId,
+        signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
+      });
+
+      const after = await graphqlRequestRequiringData<{
+        accountingSetupStatus: {
+          canCreateDocuments: boolean;
+          slots: Array<{
+            reimbursementTypeKey: string;
+            ready: boolean;
+          }>;
+        };
+      }>(
+        app,
+        { query: ACCOUNTING_SETUP_STATUS, headers: statusHeader },
+        'accountingSetupStatus',
+      );
+      const ehrenamt = after.accountingSetupStatus.slots.find(
+        (slot) => slot.reimbursementTypeKey === 'EHRENAMT',
+      );
+      expect(ehrenamt?.ready).toBe(true);
+      expect(after.accountingSetupStatus.canCreateDocuments).toBe(true);
+    });
+
+    it('resolves readiness per unit: a unit-scoped template does not make a sibling unit ready', async () => {
+      // One org, two units — but templates are configured for the root unit
+      // only. The sibling unit must not inherit readiness from them.
+      const multiUnitOrg = await setupFlowOrgWithoutTemplates(db);
+      const rootUnitId = multiUnitOrg.organizationUnitId;
+      const typeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: multiUnitOrg.organizationId },
+          })
+        )?.id ?? '';
+      const siblingUnit = await createUnit(db, {
+        organizationId: multiUnitOrg.organizationId,
+        typeId,
+        name: 'Sibling Unit',
+        parentId: rootUnitId,
+      });
+
+      // Both slots configured for the root unit only — no org-wide default.
+      for (const kind of [DocumentKind.CONTRACT, DocumentKind.INVOICE]) {
+        await createDocumentTemplate(db, {
+          organizationId: multiUnitOrg.organizationId,
+          organizationUnitId: rootUnitId,
+          reimbursementTypeId: multiUnitOrg.reimbursementTypeId,
+          kind,
+          signees: [
+            { order: 0, signeeType: SigneeType.VOLUNTEER },
+            {
+              order: 1,
+              signeeType: SigneeType.PERMISSION_HOLDER,
+              requiredPermissionId: multiUnitOrg.permissionId,
+            },
+          ],
+        });
+      }
+
+      setAuthMockUserId(multiUnitOrg.adminId);
+
+      // Unit A (the root, where the templates live) is ready.
+      const unitA = await graphqlRequestRequiringData<{
+        accountingSetupStatus: {
+          canCreateDocuments: boolean;
+          slots: Array<{ reimbursementTypeKey: string; ready: boolean }>;
+        };
+      }>(
+        app,
+        {
+          query: ACCOUNTING_SETUP_STATUS,
+          headers: { 'x-organization-unit-id': rootUnitId },
+        },
+        'accountingSetupStatus',
+      );
+      expect(unitA.accountingSetupStatus.canCreateDocuments).toBe(true);
+      expect(
+        unitA.accountingSetupStatus.slots.find(
+          (slot) => slot.reimbursementTypeKey === 'EHRENAMT',
+        )?.ready,
+      ).toBe(true);
+
+      // Unit B (the sibling, no override and no org-wide default) is not.
+      const unitB = await graphqlRequestRequiringData<{
+        accountingSetupStatus: {
+          canCreateDocuments: boolean;
+          slots: Array<{ reimbursementTypeKey: string; ready: boolean }>;
+        };
+      }>(
+        app,
+        {
+          query: ACCOUNTING_SETUP_STATUS,
+          headers: { 'x-organization-unit-id': siblingUnit.id },
+        },
+        'accountingSetupStatus',
+      );
+      expect(unitB.accountingSetupStatus.canCreateDocuments).toBe(false);
+      expect(
+        unitB.accountingSetupStatus.slots.every((slot) => !slot.ready),
+      ).toBe(true);
     });
   });
 });

@@ -4,6 +4,7 @@ import type {
   CreateDocumentTemplateInput,
   CreateInvoiceInput,
   DocumentKind,
+  GetAccountingSetupStatusQuery,
   GetBundleDownloadStatusQuery,
   GetContractQuery,
   GetContractsQuery,
@@ -82,6 +83,11 @@ export type RawManualBaseline = GetManualBaselineQuery['manualBaseline'];
 export type SetManualBaselineResult =
   SetManualBaselineMutation['setManualBaseline'];
 
+// Prefixed with `Raw` because `AccountingSetupStatus` collides with the
+// same-named entity type exported from `generated/graphql.ts`.
+export type RawAccountingSetupStatus =
+  GetAccountingSetupStatusQuery['accountingSetupStatus'];
+
 export class AccountingRepository extends BaseRepository {
   async findReimbursementTypes(): Promise<RawReimbursementType[]> {
     const data = await this.sdk.GetReimbursementTypes();
@@ -104,11 +110,14 @@ export class AccountingRepository extends BaseRepository {
     return data.setReimbursementRate;
   }
 
-  async findYearlyUsage(
-    reimbursementTypeId: string,
-    year: number,
-  ): Promise<RawYearlyUsage> {
-    const data = await this.sdk.GetYearlyUsage({ reimbursementTypeId, year });
+  async findYearlyUsage(input: {
+    volunteerId: string;
+    reimbursementTypeId: string;
+    year: number;
+    asOfDate?: string;
+    excludeInvoiceId?: string;
+  }): Promise<RawYearlyUsage> {
+    const data = await this.sdk.GetYearlyUsage(input);
     return data.yearlyUsage;
   }
 
@@ -333,6 +342,11 @@ export class AccountingRepository extends BaseRepository {
   }): Promise<SetManualBaselineResult> {
     const data = await this.sdk.SetManualBaseline(input);
     return data.setManualBaseline;
+  }
+
+  async findAccountingSetupStatus(): Promise<RawAccountingSetupStatus> {
+    const data = await this.sdk.GetAccountingSetupStatus();
+    return data.accountingSetupStatus;
   }
 }
 

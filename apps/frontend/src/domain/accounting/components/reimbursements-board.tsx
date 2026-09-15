@@ -62,7 +62,6 @@ export type DocStatus =
   // manual "Create contract" action.
   | 'contract-missing'
   | 'timesheet-generate'
-  | 'timesheet-draft'
   | 'timesheet-signing-vol'
   | 'timesheet-signing-super'
   | 'timesheet-ready'
@@ -111,6 +110,9 @@ export interface BoardDocument {
   hours?: number;
   lastActionDate?: Date;
   periodLabel: string;
+  /** The document's own period: a to-invoice row opens on this month, a declined timesheet on the period it was issued for. */
+  periodStart?: Date;
+  periodEnd?: Date;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
   isOverCap?: boolean;
   pauschale?: PauschalenType;
@@ -295,7 +297,7 @@ function matchesTile(status: DocStatus, tile: TileFilter): boolean {
         status === 'contract-signing-vol' || status === 'contract-signing-coord'
       );
     case 'timesheet-generate':
-      return status === 'timesheet-generate' || status === 'timesheet-draft';
+      return status === 'timesheet-generate';
     case 'timesheet-signing':
       return (
         status === 'timesheet-signing-vol' ||
@@ -444,6 +446,7 @@ interface ReimbursementsBoardProps {
   onReadyToGoSelected: () => void;
   createDocOpen: boolean;
   onCreateDocOpenChange: (open: boolean) => void;
+  canCreateDocuments: boolean;
 }
 
 export function ReimbursementsBoard({
@@ -455,6 +458,7 @@ export function ReimbursementsBoard({
   onReadyToGoSelected,
   createDocOpen,
   onCreateDocOpenChange,
+  canCreateDocuments,
 }: ReimbursementsBoardProps) {
   const t = useTranslations('Accounting.reimbursements');
 
@@ -488,6 +492,7 @@ export function ReimbursementsBoard({
     useState<DocVolPair | null>(null);
 
   function handleRequestCreate(pair: DocVolPair) {
+    if (!canCreateDocuments) return;
     if (
       pair.doc.status === 'contract-generate' ||
       pair.doc.status === 'contract-declined' ||
@@ -498,7 +503,6 @@ export function ReimbursementsBoard({
     }
     if (
       pair.doc.status === 'timesheet-generate' ||
-      pair.doc.status === 'timesheet-draft' ||
       pair.doc.status === 'timesheet-declined'
     ) {
       setInvoiceCreationTarget(pair);
@@ -837,6 +841,7 @@ export function ReimbursementsBoard({
           docTypeFilter={docTypeFilter}
           dateRange={dateRange}
           activeTile={activeTile}
+          canCreateDocuments={canCreateDocuments}
         />
       )}
 
@@ -852,6 +857,7 @@ export function ReimbursementsBoard({
         onDecline={handleDecline}
         selectedDate={selectedDate}
         orgUId={orgUId}
+        canCreateDocuments={canCreateDocuments}
       />
 
       <ContractCreationModal
@@ -877,28 +883,23 @@ export function ReimbursementsBoard({
         }}
         orgUId={orgUId}
         docId={invoiceCreationTarget?.doc.id ?? null}
+        // A "to invoice" row opens on its month; a declined timesheet on the
+        // period it was issued for, so its released hours are listed.
+        initialPeriod={
+          invoiceCreationTarget?.doc.periodStart &&
+          invoiceCreationTarget.doc.periodEnd
+            ? {
+                start: invoiceCreationTarget.doc.periodStart,
+                end: invoiceCreationTarget.doc.periodEnd,
+              }
+            : null
+        }
         volunteerId={invoiceCreationTarget?.vol.id ?? null}
         volunteerName={invoiceCreationTarget?.vol.name ?? null}
         pauschale={
           invoiceCreationTarget
             ? (invoiceCreationTarget.doc.pauschale ??
               invoiceCreationTarget.vol.pauschale)
-            : null
-        }
-        usedBeforeAmount={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.vol.limits?.[
-                invoiceCreationTarget.doc.pauschale ??
-                  invoiceCreationTarget.vol.pauschale
-              ]?.used ?? invoiceCreationTarget.vol.usedAmount)
-            : null
-        }
-        totalCapAmount={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.vol.limits?.[
-                invoiceCreationTarget.doc.pauschale ??
-                  invoiceCreationTarget.vol.pauschale
-              ]?.total ?? invoiceCreationTarget.vol.totalCap)
             : null
         }
         onSent={() => setInvoiceCreationTarget(null)}

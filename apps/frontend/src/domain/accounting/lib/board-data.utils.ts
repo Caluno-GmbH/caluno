@@ -15,6 +15,7 @@ import type {
   DocStatus,
 } from '../components/reimbursements-board';
 import type { Signee, SigneeRole } from '../components/template/types';
+import { billingMonthOf } from './billing-period';
 import { centsToEuros } from './money';
 import { pauschaleForReimbursementTypeKey } from './reimbursement-type-mapping';
 
@@ -57,6 +58,19 @@ export function getDocLineSummary(
     return dDate > accDate ? d : acc;
   }, undefined);
   return { count: matches.length, latest };
+}
+
+export type DocumentRowAction = 'open' | 'create' | 'none';
+
+/**
+ * What a board row's body click should do. A timesheet still to create has no
+ * persisted document — its row id is synthetic — so it opens the creation
+ * modal rather than fetching an id that is not a UUID.
+ */
+export function documentRowAction(doc: BoardDocument): DocumentRowAction {
+  if (doc.status === 'contract-generate') return 'none';
+  if (doc.status === 'timesheet-generate') return 'create';
+  return 'open';
 }
 
 export type ContractPickerState =
@@ -146,8 +160,6 @@ export function contractStatusToDocStatus(status: ContractStatus): DocStatus {
 
 export function invoiceStatusToDocStatus(status: InvoiceStatus): DocStatus {
   switch (status) {
-    case InvoiceStatus.Draft:
-      return 'timesheet-draft';
     case InvoiceStatus.AwaitingVolunteerSignature:
       return 'timesheet-signing-vol';
     case InvoiceStatus.AwaitingSupervisorSignature:
@@ -202,7 +214,7 @@ export function mapContractToBoardDoc(
     id: contract.id,
     status: contractStatusToDocStatus(contract.contractStatus),
     lastActionDate: new Date(contract.updatedAt ?? contract.createdAt),
-    periodLabel: String(new Date(contract.periodStart).getFullYear()),
+    periodLabel: String(billingMonthOf(contract.periodStart).year),
     pauschale: type,
     declineReason: contract.declineReason ?? undefined,
     declinedBy: contract.declinedByUser?.name ?? undefined,
@@ -226,6 +238,8 @@ export function mapInvoiceToBoardDoc(
     hours: invoice.totalHours,
     lastActionDate: new Date(invoice.updatedAt ?? invoice.createdAt),
     periodLabel: formatMonthYear(new Date(invoice.periodStart), locale),
+    periodStart: new Date(invoice.periodStart),
+    periodEnd: new Date(invoice.periodEnd),
     pauschale: type,
     declineReason: invoice.declineReason ?? undefined,
     declinedBy: invoice.declinedByUser?.name ?? undefined,
@@ -238,8 +252,11 @@ export function contractPeriodOverlapsYear(
   contract: RawContract,
   year: number,
 ): boolean {
-  const start = new Date(contract.periodStart).getFullYear();
-  const end = new Date(contract.periodEnd).getFullYear();
+  // The end is exclusive: a contract ending 1 Jan doesn't reach into that year.
+  const start = billingMonthOf(contract.periodStart).year;
+  const end = billingMonthOf(
+    new Date(new Date(contract.periodEnd).getTime() - 1),
+  ).year;
   return start <= year && end >= year;
 }
 
@@ -248,8 +265,8 @@ export function invoiceInMonth(
   year: number,
   month: number,
 ): boolean {
-  const start = new Date(invoice.periodStart);
-  return start.getFullYear() === year && start.getMonth() === month;
+  const start = billingMonthOf(invoice.periodStart);
+  return start.year === year && start.month === month;
 }
 
 export function formatMonthYear(date: Date, locale: string): string {
@@ -279,6 +296,16 @@ export function monthsInRange(
   return result;
 }
 
+/** A volunteer's unclaimed hours for one reimbursement type in one Berlin month (see `volunteersNeedingTimesheets`). */
+export interface TimesheetToCreate {
+  volunteerId: string;
+  reimbursementTypeId: string;
+  periodStart: string;
+  periodEnd: string;
+  eligibleHours: number;
+  estimatedAmountCents: number;
+}
+
 export interface BuildBoardVolunteersInput {
   rosterUsage: RawVolunteerUsage[];
   contracts: RawContract[];
@@ -294,6 +321,12 @@ export interface BuildBoardVolunteersInput {
    */
   eligibleHoursVolunteers?: ReadonlyMap<string, ReadonlySet<string>>;
   paidShiftVolunteers?: ReadonlyMap<string, ReadonlySet<string>>;
+  /**
+   * Timesheets still to be created. Each becomes a `timesheet-generate` row
+   * for its month showing the hours so far; entries are only claimed once the
+   * coordinator issues the timesheet, so the row keeps adding up.
+   */
+  timesheetsToCreate?: readonly TimesheetToCreate[];
 }
 
 export function buildBoardVolunteers({
@@ -305,6 +338,7 @@ export function buildBoardVolunteers({
   dateRange,
   eligibleHoursVolunteers,
   paidShiftVolunteers,
+  timesheetsToCreate = [],
 }: BuildBoardVolunteersInput): BoardVolunteer[] {
   return rosterUsage.map((entry) => {
     const documents: BoardDocument[] = [];
@@ -312,7 +346,13 @@ export function buildBoardVolunteers({
       Record<PauschalenType, { used: number; total: number }>
     > = {};
     const reimbursementTypeIds: Partial<Record<PauschalenType, string>> = {};
-    const eligibleTypeIds = eligibleHoursVolunteers?.get(entry.volunteer.id);
+    const volunteerTimesheetsToCreate = timesheetsToCreate.filter(
+      (timesheet) => timesheet.volunteerId === entry.volunteer.id,
+    );
+    const eligibleTypeIds = new Set([
+      ...(eligibleHoursVolunteers?.get(entry.volunteer.id) ?? []),
+      ...volunteerTimesheetsToCreate.map((t) => t.reimbursementTypeId),
+    ]);
     const paidShiftTypeIds = paidShiftVolunteers?.get(entry.volunteer.id);
 
     for (const usage of entry.usageByType) {
@@ -363,11 +403,34 @@ export function buildBoardVolunteers({
           }
           documents.push(doc);
         }
+
+        for (const timesheet of volunteerTimesheetsToCreate) {
+          const timesheetMonth = billingMonthOf(timesheet.periodStart);
+          if (
+            timesheet.reimbursementTypeId !== usage.reimbursementType.id ||
+            timesheetMonth.year !== y ||
+            timesheetMonth.month !== month
+          ) {
+            continue;
+          }
+          documents.push({
+            id: `${entry.volunteer.id}-timesheet-generate-${type}-${y}-${String(month + 1).padStart(2, '0')}`,
+            status: 'timesheet-generate',
+            pauschale: type,
+            hours: timesheet.eligibleHours,
+            amount: centsToEuros(timesheet.estimatedAmountCents),
+            periodLabel: formatMonthYear(
+              new Date(timesheet.periodStart),
+              locale,
+            ),
+            periodStart: new Date(timesheet.periodStart),
+            periodEnd: new Date(timesheet.periodEnd),
+          });
+        }
       }
 
-      // Eligible hours with no contract yet mean the real blocker is creating
-      // the Vereinbarung, so queue the volunteer under "Create contracts"
-      // rather than anywhere downstream.
+      // Eligible hours with no contract yet also queue a "create contract"
+      // row, so the missing Vereinbarung is visible alongside the timesheet.
       if (
         eligibleTypeIds?.has(usage.reimbursementType.id) ||
         paidShiftTypeIds?.has(usage.reimbursementType.id)

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, lt } from 'drizzle-orm';
+import { and, eq, gt, lt } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -28,6 +28,7 @@ import type { CreateContractInput } from '../inputs/create-contract.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { ContractEntity } from '../schemas/contract.schema';
 import type { ContractStatusChangeEntity } from '../schemas/contract-status-change.schema';
+import { billingYearBounds, billingYearOf } from '../utils/billing-period';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
@@ -82,8 +83,10 @@ export class ContractService {
     if (filter.status) {
       conditions.push(eq(schema.contracts.contractStatus, filter.status));
     }
+    // Periods end exclusively, so one ending exactly at the range start
+    // doesn't overlap it.
     if (filter.periodStart) {
-      conditions.push(gte(schema.contracts.periodEnd, filter.periodStart));
+      conditions.push(gt(schema.contracts.periodEnd, filter.periodStart));
     }
     if (filter.periodEnd) {
       conditions.push(lt(schema.contracts.periodStart, filter.periodEnd));
@@ -118,7 +121,7 @@ export class ContractService {
         volunteerId,
         reimbursementTypeId,
         contractStatus: ContractStatus.ACTIVE,
-        periodEnd: { gte: new Date() },
+        periodEnd: { gt: new Date() },
       },
     });
   }
@@ -226,6 +229,49 @@ export class ContractService {
     }
 
     return contract;
+  }
+
+  /**
+   * Queues the volunteer's yearly Vereinbarung as a DRAFT when they have no
+   * contract (other than a declined one) for the reimbursement type in the
+   * Berlin year of `anchorDate`. Runs when paid hours first appear and when
+   * a timesheet is created, so a volunteer without a contract always lands
+   * under "Create contracts". Returns the draft, or undefined if one exists.
+   */
+  async ensureDraftContract(
+    organizationId: string,
+    input: {
+      organizationUnitId?: string | null;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      /** Any instant in the target Berlin year; only the year is used. */
+      anchorDate: Date;
+    },
+    actorUserId: string,
+  ): Promise<ContractEntity | undefined> {
+    const year = billingYearBounds(billingYearOf(input.anchorDate));
+    const existing = await this.db.query.contracts.findFirst({
+      where: {
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        contractStatus: { ne: ContractStatus.DECLINED },
+        periodEnd: { gt: year.start },
+        periodStart: { lt: year.end },
+      },
+    });
+    if (existing) return undefined;
+
+    return this.createDraftContract(
+      organizationId,
+      {
+        organizationUnitId: input.organizationUnitId,
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        periodStart: year.start,
+        periodEnd: year.end,
+      },
+      actorUserId,
+    );
   }
 
   async createDraftContract(

@@ -10,6 +10,7 @@ import {
   useEligibleTimeEntriesForInvoice,
   usePermissions,
   useReimbursementTypes,
+  useVolunteersNeedingTimesheets,
   useYearlyUsage,
 } from '@repo/data/react';
 import { Input } from '@repo/ui';
@@ -19,14 +20,17 @@ import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { fromPeriodBounds, toPeriodBounds } from '../lib/billing-period';
 import {
   type DerivedField,
   deriveEditableFields,
 } from '../lib/creation-fields';
 import { mapEligibleTimeEntry } from '../lib/creation-modal.utils';
+import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
 import {
   apiDocumentKindFor,
+  pauschaleForReimbursementTypeKey,
   reimbursementTypeKeyFor,
 } from '../lib/reimbursement-type-mapping';
 import { AccountingProfileFieldCard } from './accounting-profile-field-card';
@@ -90,11 +94,16 @@ interface InvoiceCreationModalProps {
   volunteerId: string | null;
   volunteerName: string | null;
   pauschale: PauschalenType | null;
-  usedBeforeAmount: number | null;
-  totalCapAmount: number | null;
   onSent: () => void;
+  /** The period to open on (a board row's month, or a declined timesheet's period); defaults to "this month". */
+  initialPeriod?: { start: Date; end: Date } | null;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
+}
+
+function periodToOpen(initial?: { start: Date; end: Date } | null): DateRange {
+  if (!initial) return thisMonthRange();
+  return fromPeriodBounds(initial.start, initial.end);
 }
 
 export function InvoiceCreationModal({
@@ -105,9 +114,8 @@ export function InvoiceCreationModal({
   volunteerId,
   volunteerName,
   pauschale,
-  usedBeforeAmount,
-  totalCapAmount,
   onSent,
+  initialPeriod,
   embedded,
 }: InvoiceCreationModalProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal');
@@ -118,6 +126,9 @@ export function InvoiceCreationModal({
   const tPauschale = useTranslations('Accounting.reimbursements.toolbar');
   const tPeriod = useTranslations(
     'Accounting.reimbursements.invoiceModal.periodPicker',
+  );
+  const tHours = useTranslations(
+    'Accounting.reimbursements.invoiceModal.hoursCard',
   );
 
   const org = useCurrentOrg();
@@ -163,7 +174,11 @@ export function InvoiceCreationModal({
   );
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
-  const [period, setPeriod] = useState<DateRange>(thisMonthRange);
+  const [period, setPeriod] = useState<DateRange>(() =>
+    periodToOpen(initialPeriod),
+  );
+  // Berlin calendar days with an exclusive end, the way periods are stored.
+  const periodBounds = toPeriodBounds(period);
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
@@ -171,13 +186,28 @@ export function InvoiceCreationModal({
   const eligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
-    periodStart: period.from?.toISOString(),
-    periodEnd: (period.to ?? period.from)?.toISOString(),
+    periodStart: periodBounds?.periodStart,
+    periodEnd: periodBounds?.periodEnd,
   });
-  const yearlyUsageQuery = useYearlyUsage(
-    reimbursementType?.id,
-    period.from?.getFullYear(),
-  );
+  // Only read to explain an empty Eligible hours list: the same entries
+  // without the period, and this volunteer's hours under other types.
+  const anyPeriodEligibleQuery = useEligibleTimeEntriesForInvoice({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+  });
+  const needsTimesheetInPeriodQuery = useVolunteersNeedingTimesheets({
+    periodStart: periodBounds?.periodStart,
+    periodEnd: periodBounds?.periodEnd,
+  });
+  // The volunteer's usage, not the signed-in coordinator's.
+  const yearlyUsageQuery = useYearlyUsage({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+    year: period.from?.getFullYear(),
+    // The period end this invoice is saved with, which the PDF uses as its
+    // cutoff, so the dialog and the document state the same figure.
+    asOfDate: periodBounds?.periodEnd,
+  });
   const formatting = useFormatting();
   const lines = useMemo(
     () =>
@@ -195,7 +225,7 @@ export function InvoiceCreationModal({
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-    setPeriod(thisMonthRange());
+    setPeriod(periodToOpen(initialPeriod));
   }, [volunteerId, docId]);
 
   // Every eligible entry starts checked — unchecking removes it from the
@@ -215,7 +245,8 @@ export function InvoiceCreationModal({
     !!template &&
     !!contractTemplate &&
     ratesQuery.isSuccess &&
-    eligibleQuery.isSuccess;
+    eligibleQuery.isSuccess &&
+    yearlyUsageQuery.isSuccess;
   const hasError =
     typesQuery.isError ||
     ratesQuery.isError ||
@@ -223,6 +254,7 @@ export function InvoiceCreationModal({
     invoiceTemplateQuery.isError ||
     contractTemplateQuery.isError ||
     eligibleQuery.isError ||
+    yearlyUsageQuery.isError ||
     reimbursementTypeMissing;
 
   // The first query that failed carries the actual reason (e.g. "No invoice
@@ -234,7 +266,8 @@ export function InvoiceCreationModal({
     profileQuery.error ??
     invoiceTemplateQuery.error ??
     contractTemplateQuery.error ??
-    eligibleQuery.error;
+    eligibleQuery.error ??
+    yearlyUsageQuery.error;
 
   // The most common blocker: the org has the reimbursement type but no
   // invoice template yet (org-default or unit-override). Offer a direct CTA
@@ -269,15 +302,7 @@ export function InvoiceCreationModal({
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the
   // nullable identity props once past this guard.
-  if (
-    !docId ||
-    !volunteerId ||
-    !volunteerName ||
-    !pauschale ||
-    usedBeforeAmount == null ||
-    totalCapAmount == null
-  )
-    return null;
+  if (!docId || !volunteerId || !volunteerName || !pauschale) return null;
 
   const isEdited = (fieldId: string) => Object.hasOwn(editedValues, fieldId);
   const currentValue = (
@@ -296,10 +321,11 @@ export function InvoiceCreationModal({
     0,
   );
   const selectedAmount = selectedHours * ratePerHour;
-  const usedBefore =
-    yearlyUsageQuery.data?.usedCents !== undefined
-      ? centsToEuros(yearlyUsageQuery.data.usedCents)
-      : usedBeforeAmount;
+  // One source for the cap card, the projection and the Jahresdeckel
+  // sentence, with the same cutoff the PDF uses. The dialog waits for it
+  // (see dataReady) rather than showing the board's full-year figure.
+  const usedBefore = centsToEuros(yearlyUsageQuery.data?.usedCents ?? 0);
+  const totalCap = centsToEuros(yearlyUsageQuery.data?.limitCents ?? 0);
   const projectedAfter = usedBefore + selectedAmount;
 
   const toggleLine = (id: string) => {
@@ -312,7 +338,7 @@ export function InvoiceCreationModal({
   };
 
   const handleSend = async () => {
-    if (!reimbursementType) return;
+    if (!reimbursementType || !periodBounds) return;
     setIsSending(true);
     setSendError(null);
     setSendErrorCode(null);
@@ -321,8 +347,8 @@ export function InvoiceCreationModal({
         organizationUnitId: orgUId,
         reimbursementTypeId: reimbursementType.id,
         volunteerId,
-        periodStart: (period.from ?? new Date()).toISOString(),
-        periodEnd: (period.to ?? period.from ?? new Date()).toISOString(),
+        periodStart: periodBounds.periodStart,
+        periodEnd: periodBounds.periodEnd,
         timeEntryIds: selectedLines.map((line) => line.id),
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
@@ -429,6 +455,36 @@ export function InvoiceCreationModal({
     const value = currentValue(field.fieldId, field.value);
     if (value) values[field.source] = value;
   }
+
+  const emptyReason = eligibleHoursEmptyReason({
+    listedCount: eligibleQuery.data?.length,
+    anyPeriodCount: anyPeriodEligibleQuery.data?.length,
+    otherTypeKeysInPeriod: needsTimesheetInPeriodQuery.data
+      ?.filter(
+        (row) =>
+          row.volunteer.id === volunteerId &&
+          row.reimbursementType.id !== reimbursementType?.id,
+      )
+      .map((row) => row.reimbursementType.key),
+  });
+  const hoursEmptyMessage =
+    emptyReason?.kind === 'outside-period'
+      ? tHours('emptyOutsidePeriod', { count: emptyReason.count })
+      : emptyReason?.kind === 'other-type'
+        ? tHours('emptyOtherType', {
+            types: emptyReason.reimbursementTypeKeys
+              .map((key) =>
+                tPauschale(
+                  `type${getPauschaleKey(pauschaleForReimbursementTypeKey(key)).toUpperCase()}` as Parameters<
+                    typeof tPauschale
+                  >[0],
+                ),
+              )
+              .join(', '),
+          })
+        : emptyReason?.kind === 'nothing-tracked'
+          ? tHours('emptyNothingTracked')
+          : undefined;
 
   const tableBlock = template?.blocks.find((b) => b.kind === 'table');
   const firstColumnSource =
@@ -607,7 +663,7 @@ export function InvoiceCreationModal({
             <InvoiceCapCard
               usedBefore={usedBefore}
               projectedAfter={projectedAfter}
-              total={totalCapAmount}
+              total={totalCap}
             />
             {reimbursementType && (
               <ManualCapEditor
@@ -623,6 +679,7 @@ export function InvoiceCreationModal({
               selectedIds={checkedIds}
               onToggle={toggleLine}
               timesheetsHref={timesheetsHref}
+              emptyMessage={hoursEmptyMessage}
             />
           </>
         )

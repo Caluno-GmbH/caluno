@@ -26,10 +26,15 @@ export type EffectiveRate = {
   isOverride: boolean;
 };
 
-/** A volunteer with at least one eligible (unclaimed, completed, in-period) time entry. */
+/**
+ * A volunteer's eligible (unclaimed, completed) hours for one reimbursement
+ * type in one Berlin calendar month: a timesheet still to be created.
+ */
 export type EligibleTimesheetVolunteer = {
   volunteerId: string;
   reimbursementTypeId: string;
+  periodStart: Date;
+  periodEnd: Date;
   eligibleHours: number;
 };
 
