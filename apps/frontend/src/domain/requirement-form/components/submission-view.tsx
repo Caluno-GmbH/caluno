@@ -10,10 +10,10 @@ import { getTranslations } from 'next-intl/server';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import {
   isMaskedPaymentAnswer,
-  resolveFieldAnswer,
   type SubmissionField,
   type SubmissionValue,
 } from '../lib/resolve-field-answer';
+import { resolveSubmissionFieldAnswers } from '../lib/resolve-submission-field-answers';
 import { MaskedPaymentAnswer } from './masked-payment-answer';
 
 export const SubmissionView = async ({
@@ -29,7 +29,16 @@ export const SubmissionView = async ({
   const tCommon = await getTranslations('Common');
   const { formatDate } = await getFormatting();
 
-  const displayFields = fields.filter((f) => f.type !== 'STATIC_TEXT');
+  const fieldAnswers = resolveSubmissionFieldAnswers(
+    fields,
+    submissionValues,
+    profileData,
+    {
+      dash: tCommon('dash'),
+      accepted: t('accepted'),
+      formatDate,
+    },
+  );
 
   return (
     <div className="rounded-md border overflow-x-auto">
@@ -41,7 +50,7 @@ export const SubmissionView = async ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {displayFields.length === 0 ? (
+          {fieldAnswers.length === 0 ? (
             <TableRow>
               <TableCell
                 colSpan={2}
@@ -51,30 +60,18 @@ export const SubmissionView = async ({
               </TableCell>
             </TableRow>
           ) : (
-            displayFields.map((field) => {
-              const answer = resolveFieldAnswer(
-                field,
-                submissionValues,
-                profileData,
-                {
-                  dash: tCommon('dash'),
-                  accepted: t('accepted'),
-                  formatDate,
-                },
-              );
-              return (
-                <TableRow key={field.id}>
-                  <TableCell className="font-medium">{field.label}</TableCell>
-                  <TableCell>
-                    {isMaskedPaymentAnswer(answer) ? (
-                      <MaskedPaymentAnswer value={answer} />
-                    ) : (
-                      answer
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })
+            fieldAnswers.map(({ field, answer }) => (
+              <TableRow key={field.id}>
+                <TableCell className="font-medium">{field.label}</TableCell>
+                <TableCell>
+                  {isMaskedPaymentAnswer(answer) ? (
+                    <MaskedPaymentAnswer value={answer} />
+                  ) : (
+                    answer
+                  )}
+                </TableCell>
+              </TableRow>
+            ))
           )}
         </TableBody>
       </Table>

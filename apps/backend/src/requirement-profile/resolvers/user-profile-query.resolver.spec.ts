@@ -106,3 +106,33 @@ describe('UserProfileQueryResolver.adminUserProfile payment-data visibility', ()
     expect(result?.data.bic).toBeUndefined();
   });
 
+  it('checks the accounting permission for the viewer in the org unit', async () => {
+    authService.hasRequiredPermissions.mockResolvedValue(true);
+
+    await resolver.adminUserProfile('volunteer-1', sessionFor('viewer-1'), ctx);
+
+    expect(authService.hasRequiredPermissions).toHaveBeenCalledWith(
+      'viewer-1',
+      'unit-1',
+      [PERMISSIONS.ACCOUNTING_MANAGE],
+    );
+  });
+});
+
+describe('UserProfileQueryResolver.myUserProfile', () => {
+  it('returns the volunteer their own bank data unmasked', async () => {
+    const userProfileService = {
+      findByUserId: jest.fn().mockResolvedValue(profile),
+    };
+    const resolver = new UserProfileQueryResolver(
+      userProfileService as unknown as UserProfileService,
+      new UserProfileMapper(),
+      {} as unknown as AuthService,
+    );
+
+    const result = await resolver.myUserProfile(ctx, sessionFor('volunteer-1'));
+
+    expect(result?.data.iban).toBe(profile.data.iban);
+    expect(result?.data.bic).toBe(profile.data.bic);
+  });
+});

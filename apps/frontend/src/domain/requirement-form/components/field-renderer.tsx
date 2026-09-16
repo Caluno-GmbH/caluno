@@ -559,7 +559,6 @@ export function FieldRenderer({
 
   const descriptionId = description ? `${field.id}-description` : undefined;
 
-
   const paymentDataVisibilityHint =
     field.systemKey && Object.hasOwn(RESTRICTED_PAYMENT_MASKS, field.systemKey)
       ? t('paymentDataVisibilityHint')

@@ -1,6 +1,5 @@
 import { parseMultiChoiceValue } from '../option-values';
 
-
 export const RESTRICTED_PAYMENT_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',

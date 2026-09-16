@@ -2,7 +2,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui';
 import { Info } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 
-
 export async function MaskedPaymentAnswer({ value }: { value: string }) {
   const t = await getTranslations('RequirementForm.submission');
 
