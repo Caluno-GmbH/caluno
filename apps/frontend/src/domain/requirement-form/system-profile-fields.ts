@@ -44,7 +44,7 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
     key: 'account-holder',
     labelKey: 'accountHolder',
     type: FieldType.Text,
-    required: false,
+    required: true,
   },
   { key: 'bic', labelKey: 'bic', type: FieldType.Text, required: false },
   {
