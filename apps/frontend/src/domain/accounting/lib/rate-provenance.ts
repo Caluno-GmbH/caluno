@@ -3,7 +3,7 @@ import type { RawEffectiveRate } from '@repo/data/react';
 
 /** The line under a rate saying where it comes from. */
 export type RateLine =
-  | { kind: 'inheritedFrom'; source: string }
+  | { kind: 'inheritedFrom'; source: string; rateCents: number }
   | { kind: 'replaces'; source: string; rateCents: number }
   | { kind: 'replacesDefault'; rateCents: number };
 
@@ -26,17 +26,22 @@ export function resolveRateDisplay({
   }
   return {
     rateCents: effectiveRate.hourlyRateCents,
-    line: lineFor(effectiveRate.provenance),
+    line: lineFor(effectiveRate.provenance, effectiveRate.hourlyRateCents),
   };
 }
 
-function lineFor({
-  kind,
-  sourceName,
-  replacesRateCents,
-}: RawEffectiveRate['provenance']): RateLine | null {
+function lineFor(
+  { kind, sourceName, replacesRateCents }: RawEffectiveRate['provenance'],
+  hourlyRateCents: number,
+): RateLine | null {
   if (kind === RateProvenanceKind.Inherited) {
-    return sourceName ? { kind: 'inheritedFrom', source: sourceName } : null;
+    return sourceName
+      ? {
+          kind: 'inheritedFrom',
+          source: sourceName,
+          rateCents: hourlyRateCents,
+        }
+      : null;
   }
   if (kind === RateProvenanceKind.Own && replacesRateCents != null) {
     // Shown even when equal to the rate in force: an own rate must never

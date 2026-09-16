@@ -11,7 +11,7 @@ import {
 import { inflateSync } from 'node:zlib';
 import type { INestApplication } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
@@ -21,6 +21,7 @@ import {
 } from '../src/accounting/enums';
 import { ContractService } from '../src/accounting/services/contract.service';
 import { DocumentRenderingService } from '../src/accounting/services/document-rendering.service';
+import { InvoiceService } from '../src/accounting/services/invoice.service';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
@@ -29,6 +30,7 @@ import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/
 import { userProfiles } from '../src/requirement-profile/schemas/user-profile.schema';
 import {
   createDocumentTemplate,
+  createReimbursementRate,
   createReimbursementType,
   createTwoStepTemplate,
 } from './factories/accounting.factory';
@@ -1572,7 +1574,7 @@ describe('documents flow — admin + volunteer', () => {
       expect(glyphs).toMatch(/\d{8}-001/);
     });
 
-    it('prints and charges the rate of a nested sub-org that inherits the template but sets its own rate', async () => {
+    it('prints and charges a nested sub-org the rate it inherits from its parent', async () => {
       // Root sets 10 €/hr, the child overrides with 12 €/hr, and the
       // grandchild sets nothing — so it must inherit 12 €/hr from the child.
       // The templates are org-wide, so the grandchild inherits those too:
@@ -1585,7 +1587,19 @@ describe('documents flow — admin + volunteer', () => {
         .update(schema.documentTemplates)
         .set({ body: bodyFor(DocumentKind.CONTRACT) })
         .where(
-          eq(schema.documentTemplates.organizationId, nested.organizationId),
+          and(
+            eq(schema.documentTemplates.organizationId, nested.organizationId),
+            eq(schema.documentTemplates.kind, DocumentKind.CONTRACT),
+          ),
+        );
+      await db
+        .update(schema.documentTemplates)
+        .set({ body: bodyFor(DocumentKind.INVOICE) })
+        .where(
+          and(
+            eq(schema.documentTemplates.organizationId, nested.organizationId),
+            eq(schema.documentTemplates.kind, DocumentKind.INVOICE),
+          ),
         );
       const unitTypeId =
         (
@@ -1605,20 +1619,18 @@ describe('documents flow — admin + volunteer', () => {
         name: 'Grandchild team',
         parentId: child.id,
       });
-      await db.insert(schema.reimbursementRates).values([
-        {
-          organizationId: nested.organizationId,
-          organizationUnitId: nested.organizationUnitId,
-          reimbursementTypeId: nested.reimbursementTypeId,
-          hourlyRateCents: 1_000,
-        },
-        {
-          organizationId: nested.organizationId,
-          organizationUnitId: child.id,
-          reimbursementTypeId: nested.reimbursementTypeId,
-          hourlyRateCents: 1_200,
-        },
-      ]);
+      await createReimbursementRate(db, {
+        organizationId: nested.organizationId,
+        organizationUnitId: nested.organizationUnitId,
+        reimbursementTypeId: nested.reimbursementTypeId,
+        hourlyRateCents: 1_000,
+      });
+      await createReimbursementRate(db, {
+        organizationId: nested.organizationId,
+        organizationUnitId: child.id,
+        reimbursementTypeId: nested.reimbursementTypeId,
+        hourlyRateCents: 1_200,
+      });
 
       setAuthMockUserId(nested.adminId);
       const { createContract } = await graphqlRequestRequiringData<{
@@ -1661,7 +1673,7 @@ describe('documents flow — admin + volunteer', () => {
       });
       setAuthMockUserId(nested.adminId);
       const { createInvoice } = await graphqlRequestRequiringData<{
-        createInvoice: { totalAmountCents: number };
+        createInvoice: { id: string; totalAmountCents: number };
       }>(
         app,
         {
@@ -1693,6 +1705,22 @@ describe('documents flow — admin + volunteer', () => {
       );
       expect(glyphs).toContain('Stundensatz 12,00');
       expect(glyphs).not.toContain('10,00');
+
+      // The timesheet resolves the same rate: its PDF prints 12 €/hr and never
+      // the root's 10. This covers the rate substitution, not the real
+      // Stundennachweis table — `bodyFor` gives the invoice the same free-text
+      // rate line as the contract, so the production table path (a Stundensatz
+      // column with per-row values) stays uncovered here. What the sub-org is
+      // actually charged is asserted above, via totalAmountCents.
+      const invoice = await app
+        .get(InvoiceService)
+        .findInvoice(createInvoice.id);
+      const invoiceGlyphs = pdfGlyphs(
+        await app.get(DocumentRenderingService).generatePdf(invoice),
+      );
+      expect(invoiceGlyphs).toContain('Stundennachweis');
+      expect(invoiceGlyphs).toContain('Stundensatz 12,00');
+      expect(invoiceGlyphs).not.toContain('10,00');
     });
   });
 
