@@ -19,6 +19,7 @@ import enEmail from '../i18n/locales/en/email.json';
 import { UserLocaleService } from '../i18n/user-locale.service';
 import { RecurrenceDay } from '../shift/enums';
 import { UserService } from '../user/user.service';
+import { CheckInQrService } from './email/check-in-qr.service';
 import { EmailService } from './email/email.service';
 import { documentAwaitingSignatureTemplate } from './email/templates/document-awaiting-signature.template';
 import { documentDeclinedByOrgTemplate } from './email/templates/document-declined-by-org.template';
@@ -45,6 +46,8 @@ import { shiftInstanceLeftTemplate } from './email/templates/shift-instance-left
 import { shiftInstanceRemovedTemplate } from './email/templates/shift-instance-removed.template';
 import { shiftInstanceSeriesCancelledTemplate } from './email/templates/shift-instance-series-cancelled.template';
 import { shiftInstanceVolunteerLeftTemplate } from './email/templates/shift-instance-volunteer-left.template';
+import { shiftInstanceWaitlistJoinedTemplate } from './email/templates/shift-instance-waitlist-joined.template';
+import { shiftInstanceWaitlistPromotedTemplate } from './email/templates/shift-instance-waitlist-promoted.template';
 import { shiftInstanceWaitlistSpotOpenedTemplate } from './email/templates/shift-instance-waitlist-spot-opened.template';
 import { shiftInvitedTemplate } from './email/templates/shift-invited.template';
 import { shiftSeriesLeftTemplate } from './email/templates/shift-series-left.template';
@@ -119,6 +122,7 @@ describe('NotificationModule', () => {
       providers: [
         TypedNotificationEmitter,
         NotificationService,
+        CheckInQrService,
         OrganizationListener,
         MembershipListener,
         ShiftListener,
@@ -313,11 +317,12 @@ describe('NotificationModule', () => {
     });
   });
 
-  it('sends membership approved email when event is emitted', async () => {
+  it('sends membership approved email with the check-in QR attached when event is emitted', async () => {
     const user = {
       id: 'user-member-1',
       name: 'Sam Smith',
       email: 'volunteer@example.com',
+      checkInId: 'checkin1abc23',
     };
     userService.findById.mockResolvedValue(user);
 
@@ -337,13 +342,24 @@ describe('NotificationModule', () => {
 
     notificationService.notifyMembershipApproved(payload);
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(userService.findById).toHaveBeenCalledWith(user.id);
+    expect(expected.html).toContain('cid:check-in-qr-code');
     expect(emailService.send).toHaveBeenCalledWith({
       to: user.email,
       subject: expected.subject,
       html: expected.html,
+      attachments: [
+        expect.objectContaining({
+          filename: 'Check-in-QR-Sam-Smith.pdf',
+          contentType: 'application/pdf',
+        }),
+        expect.objectContaining({
+          contentType: 'image/png',
+          cid: 'check-in-qr-code',
+        }),
+      ],
     });
   });
 
@@ -774,6 +790,104 @@ describe('NotificationModule', () => {
     );
 
     notificationService.notifyShiftInstanceJoinApproved(payload);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
+    expect(emailService.send).toHaveBeenCalledWith({
+      to: 'sam@example.com',
+      subject: expected.subject,
+      html: expected.html,
+    });
+  });
+
+  it('sends shift instance waitlist joined email when an approval lands on the waitlist', async () => {
+    const startsAt = new Date('2026-07-10T09:00:00.000Z');
+    const endsAt = new Date('2026-07-10T12:00:00.000Z');
+
+    userService.findById.mockImplementation((id: string) =>
+      Promise.resolve({
+        id,
+        name: id === 'volunteer-1' ? 'Sam Volunteer' : 'Other User',
+        email: id === 'volunteer-1' ? 'sam@example.com' : 'other@example.com',
+      }),
+    );
+
+    const payload = {
+      organizationUnitId: 'unit-root-1',
+      organizationUnitName: 'Acme Volunteers',
+      shiftId: 'shift-1',
+      shiftTitle: 'Morning Kitchen',
+      shiftLocation: 'Main hall',
+      userId: 'volunteer-1',
+      startsAt,
+      endsAt,
+      instanceId: 'instance-1',
+    };
+    const expected = await shiftInstanceWaitlistJoinedTemplate(
+      {
+        organizationUnitName: payload.organizationUnitName,
+        shiftId: payload.shiftId,
+        shiftTitle: payload.shiftTitle,
+        shiftLocation: payload.shiftLocation,
+        recipientFirstName: 'Sam',
+        startsAt,
+        endsAt,
+        instanceId: payload.instanceId,
+      },
+      createFixtureTranslator('en'),
+    );
+
+    notificationService.notifyShiftInstanceWaitlistJoined(payload);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
+    expect(emailService.send).toHaveBeenCalledWith({
+      to: 'sam@example.com',
+      subject: expected.subject,
+      html: expected.html,
+    });
+  });
+
+  it('sends shift instance waitlist promoted email when a freed seat is claimed', async () => {
+    const startsAt = new Date('2026-07-10T09:00:00.000Z');
+    const endsAt = new Date('2026-07-10T12:00:00.000Z');
+
+    userService.findById.mockImplementation((id: string) =>
+      Promise.resolve({
+        id,
+        name: id === 'volunteer-1' ? 'Sam Volunteer' : 'Other User',
+        email: id === 'volunteer-1' ? 'sam@example.com' : 'other@example.com',
+      }),
+    );
+
+    const payload = {
+      organizationUnitId: 'unit-root-1',
+      organizationUnitName: 'Acme Volunteers',
+      shiftId: 'shift-1',
+      shiftTitle: 'Morning Kitchen',
+      shiftLocation: 'Main hall',
+      userId: 'volunteer-1',
+      startsAt,
+      endsAt,
+      instanceId: 'instance-1',
+    };
+    const expected = await shiftInstanceWaitlistPromotedTemplate(
+      {
+        organizationUnitName: payload.organizationUnitName,
+        shiftId: payload.shiftId,
+        shiftTitle: payload.shiftTitle,
+        shiftLocation: payload.shiftLocation,
+        recipientFirstName: 'Sam',
+        startsAt,
+        endsAt,
+        instanceId: payload.instanceId,
+      },
+      createFixtureTranslator('en'),
+    );
+
+    notificationService.notifyShiftInstanceWaitlistPromoted(payload);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -1801,7 +1915,7 @@ describe('NotificationModule', () => {
       organizationName: 'Acme Volunteers',
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(emailService.send).toHaveBeenCalledTimes(1);
   });

@@ -12,11 +12,13 @@ import type {
   BoardVolunteer,
   DocStatus,
 } from '../components/reimbursements-board';
+import { STATUS_META } from '../components/reimbursements-volunteer-group';
 import {
   boardYear,
   buildBoardVolunteers,
   contractPeriodOverlapsYear,
   contractStatusToDocStatus,
+  creationTargetFor,
   documentRowAction,
   formatMonthYear,
   getContractStateForPicker,
@@ -1091,6 +1093,49 @@ describe('documentRowAction', () => {
     ];
     for (const status of persisted) {
       expect(documentRowAction(doc(status))).toBe('open');
+    }
+  });
+});
+
+describe('creationTargetFor', () => {
+  it('opens the contract modal for every contract row still to create', () => {
+    const statuses: DocStatus[] = [
+      'contract-generate',
+      'contract-draft',
+      'contract-declined',
+      'contract-missing',
+    ];
+    for (const status of statuses) {
+      expect(creationTargetFor(status)).toBe('contract');
+    }
+  });
+
+  it('opens the invoice modal for every timesheet row still to create', () => {
+    const statuses: DocStatus[] = ['timesheet-generate', 'timesheet-declined'];
+    for (const status of statuses) {
+      expect(creationTargetFor(status)).toBe('invoice');
+    }
+  });
+
+  it('has nothing to create once a document is in its signing chain', () => {
+    const statuses: DocStatus[] = [
+      'contract-signing-vol',
+      'contract-signing-coord',
+      'contract-active',
+      'timesheet-signing-vol',
+      'timesheet-signing-super',
+      'timesheet-ready',
+      'timesheet-muted',
+    ];
+    for (const status of statuses) {
+      expect(creationTargetFor(status)).toBeNull();
+    }
+  });
+
+  it('backs every row that shows a Preview and create button', () => {
+    for (const [status, meta] of Object.entries(STATUS_META)) {
+      if (meta.actionKey !== 'create') continue;
+      expect(creationTargetFor(status as DocStatus)).not.toBeNull();
     }
   });
 });

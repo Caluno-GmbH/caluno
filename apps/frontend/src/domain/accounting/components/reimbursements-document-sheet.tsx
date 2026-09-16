@@ -38,6 +38,7 @@ import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   contractStatusToDocStatus,
+  creationTargetFor,
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
@@ -455,11 +456,7 @@ export function DocumentSheet({
   };
 
   const actionKey =
-    effectiveDoc.status === 'contract-generate' ||
-    effectiveDoc.status === 'timesheet-generate' ||
-    effectiveDoc.status === 'contract-declined' ||
-    effectiveDoc.status === 'timesheet-declined' ||
-    effectiveDoc.status === 'contract-missing'
+    creationTargetFor(effectiveDoc.status) !== null
       ? 'create'
       : effectiveDoc.status === 'contract-signing-coord' ||
           effectiveDoc.status === 'timesheet-signing-super'

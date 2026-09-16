@@ -1867,7 +1867,9 @@
         },
         "rateUnit": "/Std.",
         "provenance": {
-          "inherited": "Standard"
+          "inheritedFrom": "Übernommen von {source}: {rate}",
+          "replaces": "Ersetzt {source}: {rate}",
+          "replacesDefault": "Ersetzt Standard: {rate}"
         }
       },
       "templates": {
@@ -2181,6 +2183,7 @@
         "invoice": "Stundennachweis für {name} gegengezeichnet.",
         "invoiceError": "Stundennachweis konnte für {name} nicht gegengezeichnet werden."
       },
+      "createUnavailable": "Dieses Dokument für {name} kann hier nicht mehr erstellt werden. Lade die Seite neu und versuche es erneut.",
       "declineToasts": {
         "contract": "Vereinbarung für {name} abgelehnt.",
         "contractError": "Vereinbarung konnte für {name} nicht abgelehnt werden.",
@@ -2250,7 +2253,16 @@
           "incompleteCount": "{count, plural, one {Hier fehlt noch eine Angabe} other {Hier fehlen noch {count} Angaben}}",
           "notSetYet": "noch nicht festgelegt",
           "sameAsAbove": "gleicher Wert wie oben festgelegt",
-          "scrollRegionLabel": "Vorlagen-Editor, scrollbar"
+          "scrollRegionLabel": "Vorlagen-Editor, scrollbar",
+          "placeholderExamples": {
+            "volunteer_first_name": "Vorname",
+            "volunteer_last_name": "Name"
+          }
+        },
+        "blockHeadings": {
+          "persoenlicheDaten": "Persönliche Daten",
+          "stundennachweis": "Stundennachweis",
+          "jahresdeckelHinweis": "Bereits erhaltene Zahlungen"
         },
         "editorGroups": {
           "org": "Angaben der Organisation",
@@ -2334,6 +2346,7 @@
           "volunteer_tax_id": "Steueridentifikationsnummer",
           "contract_period": "Vereinbarungszeitraum",
           "already_received_amount": "Bereits erhaltener Betrag",
+          "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
           "yearly_limit_amount": "Jahresdeckel"
         }
       },
