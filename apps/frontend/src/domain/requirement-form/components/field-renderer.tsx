@@ -26,7 +26,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { GENDER_OPTION_VALUES } from '../gender-options';
+import { GENDER_OPTION_VALUES, hasFixedGenderOptions } from '../gender-options';
 import {
   parseMultiChoiceValue,
   serializeMultiChoiceValue,
@@ -184,7 +184,7 @@ export function buildFieldSchema(
   }
 
   if (type === FieldType.SingleChoice) {
-    if (systemKey === 'gender') {
+    if (hasFixedGenderOptions(systemKey)) {
       const e = z.enum(GENDER_OPTION_VALUES, {
         message: messages.fieldRequired(label),
       });
@@ -405,10 +405,9 @@ export function FieldRenderer({
 
   if (field.type === 'SINGLE_CHOICE') {
     const descriptionId = description ? `${field.id}-description` : undefined;
-    const opts =
-      field.systemKey === 'gender'
-        ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
-        : (field.options ?? []);
+    const opts = hasFixedGenderOptions(field.systemKey)
+      ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
+      : (field.options ?? []);
     return (
       <Field>
         <FieldLabel>

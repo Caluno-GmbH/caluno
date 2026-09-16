@@ -29,7 +29,10 @@ import type {
 } from '../schemas/form-block.schema';
 import type { FormBlockFieldInsert } from '../schemas/form-block-field.schema';
 import { isUnitInOrg } from './is-unit-in-org';
-import { assertValidFieldOptions } from './validate-field-options';
+import {
+  assertValidFieldOptions,
+  assertValidSystemKeyBinding,
+} from './validate-field-options';
 
 @Injectable()
 export class FormBlockService {
@@ -131,6 +134,11 @@ export class FormBlockService {
       if (input.fields && input.fields.length > 0) {
         for (const field of input.fields) {
           assertValidFieldOptions(field.type, field.options);
+          assertValidSystemKeyBinding(
+            field.systemKey,
+            field.type,
+            field.options,
+          );
         }
         await tx
           .insert(schema.formBlockFields)
@@ -282,6 +290,7 @@ export class FormBlockService {
       );
     }
     assertValidFieldOptions(input.type, input.options);
+    assertValidSystemKeyBinding(input.systemKey, input.type, input.options);
     await this.validateDocumentFile(input.documentFileId);
 
     const block = await this.findById(blockId);
@@ -351,6 +360,12 @@ export class FormBlockService {
         input.options,
       );
     }
+
+    assertValidSystemKeyBinding(
+      input.systemKey === undefined ? field.systemKey : input.systemKey,
+      input.type ?? (field.type as FieldType),
+      input.options === undefined ? field.options : input.options,
+    );
 
     await isUnitInOrg(this.db, organizationUnitId, field.block.organizationId);
 

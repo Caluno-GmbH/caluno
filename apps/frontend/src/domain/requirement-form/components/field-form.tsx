@@ -18,6 +18,7 @@ import { Plus, Save, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { FileUpload } from '@/components/storage/file-upload';
+import { hasFixedGenderOptions } from '../gender-options';
 import { OptionsEditor } from './options-editor';
 
 // Field types that have a fixed, unambiguous system key
@@ -109,7 +110,7 @@ export function FieldForm({
 
   const autoSystemKey = AUTO_SYSTEM_KEY[fieldType];
   const showSystemKeyPicker = !autoSystemKey && TEXT_LIKE_TYPES.has(fieldType);
-  const hasFixedOptions = (autoSystemKey || manualSystemKey) === 'gender';
+  const hasFixedOptions = hasFixedGenderOptions(manualSystemKey);
   const showOptions =
     (fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTI_CHOICE') &&
     !hasFixedOptions;
@@ -129,11 +130,7 @@ export function FieldForm({
       setError(t('enterDocumentFileError'));
       return;
     }
-    if (
-      showOptions &&
-      !hasFixedOptions &&
-      !options.some((o) => o.label.trim() !== '')
-    ) {
+    if (showOptions && !options.some((o) => o.label.trim() !== '')) {
       setError(t('enterOptionError'));
       return;
     }

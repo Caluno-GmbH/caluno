@@ -547,7 +547,7 @@ describe('FormSubmissionService org-unit shares', () => {
         submit(form.id, unitA.id, volunteer.id, [
           { fieldId: genderField.id, blockId: block.id, value: 'Weiblich' },
         ]),
-      ).rejects.toThrow('must be one of the available options');
+      ).rejects.toThrow('must be one of the available gender options');
     });
 
     it('enforces a required gender but accepts prefer-not-to-say', async () => {

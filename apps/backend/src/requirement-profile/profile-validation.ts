@@ -79,7 +79,7 @@ export const validateSystemKeyValue = (
     case 'gender':
       if (!(GENDER_OPTION_VALUES as readonly string[]).includes(value))
         throw new BadRequestGraphQLError(
-          `"${label}": must be one of the available options`,
+          `"${label}": must be one of the available gender options`,
         );
       break;
     case 'birth-date':

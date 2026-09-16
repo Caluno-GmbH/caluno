@@ -1,3 +1,4 @@
+import { GENDER_SYSTEM_KEY } from '../gender-options';
 import { parseMultiChoiceValue } from '../option-values';
 
 export type SubmissionField = {
@@ -32,7 +33,7 @@ export function resolveFieldAnswer(
     return dash;
   }
 
-  if (field.systemKey === 'gender') {
+  if (field.systemKey === GENDER_SYSTEM_KEY) {
     return genderLabels[raw] ?? raw;
   }
 

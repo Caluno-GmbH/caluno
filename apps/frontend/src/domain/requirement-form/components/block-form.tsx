@@ -43,6 +43,7 @@ import {
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/storage/file-upload';
 import { saveBlock } from '../actions';
+import { GENDER_SYSTEM_KEY, hasFixedGenderOptions } from '../gender-options';
 import { SYSTEM_PROFILE_FIELDS } from '../system-profile-fields';
 import { OptionsEditor } from './options-editor';
 
@@ -513,7 +514,7 @@ function FieldCard({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tValidation = useTranslations('RequirementForm.validation');
   const tCommon = useTranslations('Common');
-  const hasFixedOptions = systemKey === 'gender';
+  const hasFixedOptions = hasFixedGenderOptions(systemKey);
   const showOptions =
     (fieldType === FieldType.SingleChoice ||
       fieldType === FieldType.MultiChoice) &&
@@ -553,7 +554,7 @@ function FieldCard({
                 checked={currentRequired}
                 onCheckedChange={onToggleRequired}
                 size="sm"
-                disabled={isSystemField && systemKey !== 'gender'}
+                disabled={isSystemField && systemKey !== GENDER_SYSTEM_KEY}
               />
               {currentRequired ? t('required') : t('optional')}
             </label>
