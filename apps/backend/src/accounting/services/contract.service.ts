@@ -161,6 +161,20 @@ export class ContractService {
     }
 
     const contract = await this.db.transaction(async (tx) => {
+      // The draft queued by ensureDraftContract stands in for this contract
+      // until it exists. Drop it so the board shows one row, not two.
+      await tx
+        .delete(schema.contracts)
+        .where(
+          and(
+            eq(schema.contracts.volunteerId, input.volunteerId),
+            eq(schema.contracts.reimbursementTypeId, input.reimbursementTypeId),
+            eq(schema.contracts.contractStatus, ContractStatus.DRAFT),
+            gt(schema.contracts.periodEnd, input.periodStart),
+            lt(schema.contracts.periodStart, input.periodEnd),
+          ),
+        );
+
       const [created] = await tx
         .insert(schema.contracts)
         .values({

@@ -238,6 +238,77 @@ describe('ContractService', () => {
         'volunteer-iban-field': 'DE00 0000 0000 0000 0000 00',
       });
     });
+
+    it('replaces the auto-queued draft for the same volunteer, type and year', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const draft = await service.ensureDraftContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2026-06-15T12:00:00.000Z'),
+        },
+        signer.id,
+      );
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      const remaining = await db.query.contracts.findMany({
+        where: {
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+        },
+      });
+      expect(remaining.map((c) => c.id)).toEqual([contract.id]);
+      expect(contract.contractStatus).toBe(
+        ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+      );
+    });
+
+    it('keeps a draft queued for a different year', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const draft = await service.ensureDraftContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2027-06-15T12:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draft?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
   });
 
   describe('signContract', () => {

@@ -73,6 +73,28 @@ export function documentRowAction(doc: BoardDocument): DocumentRowAction {
   return 'open';
 }
 
+export type CreationTarget = 'contract' | 'invoice';
+
+/**
+ * Which creation modal a row's "Preview and create" opens, or null once the
+ * document is in its signing chain. An auto-queued DRAFT contract has no
+ * signing chain yet, so it is created like a contract that was never drafted.
+ */
+export function creationTargetFor(status: DocStatus): CreationTarget | null {
+  switch (status) {
+    case 'contract-generate':
+    case 'contract-draft':
+    case 'contract-declined':
+    case 'contract-missing':
+      return 'contract';
+    case 'timesheet-generate':
+    case 'timesheet-declined':
+      return 'invoice';
+    default:
+      return null;
+  }
+}
+
 export type ContractPickerState =
   | 'none'
   | 'awaiting-signature'
