@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gt, lt } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -34,6 +34,15 @@ import { DocumentProfileRequirementService } from './document-profile-requiremen
 import { DocumentRenderingService } from './document-rendering.service';
 import { DocumentSigningService } from './document-signing.service';
 import { DocumentTemplateService } from './document-template.service';
+
+// Periods end exclusively, so one ending exactly at the range start doesn't
+// overlap it.
+function contractOverlapsPeriod(periodStart: Date, periodEnd: Date) {
+  return [
+    gt(schema.contracts.periodEnd, periodStart),
+    lt(schema.contracts.periodStart, periodEnd),
+  ];
+}
 
 @Injectable()
 export class ContractService {
@@ -83,12 +92,13 @@ export class ContractService {
     if (filter.status) {
       conditions.push(eq(schema.contracts.contractStatus, filter.status));
     }
-    // Periods end exclusively, so one ending exactly at the range start
-    // doesn't overlap it.
-    if (filter.periodStart) {
+    if (filter.periodStart && filter.periodEnd) {
+      conditions.push(
+        ...contractOverlapsPeriod(filter.periodStart, filter.periodEnd),
+      );
+    } else if (filter.periodStart) {
       conditions.push(gt(schema.contracts.periodEnd, filter.periodStart));
-    }
-    if (filter.periodEnd) {
+    } else if (filter.periodEnd) {
       conditions.push(lt(schema.contracts.periodStart, filter.periodEnd));
     }
     if (filter.organizationUnitId) {
@@ -162,18 +172,35 @@ export class ContractService {
 
     const contract = await this.db.transaction(async (tx) => {
       // The draft queued by ensureDraftContract stands in for this contract
-      // until it exists. Drop it so the board shows one row, not two.
-      await tx
-        .delete(schema.contracts)
+      // until it exists. Drop it so the board shows one row, not two. Scoped
+      // to this organization's templates: reimbursement types are global, so
+      // without this join a volunteer with a draft in another org could lose
+      // it here.
+      const overlappingDrafts = await tx
+        .select({ id: schema.contracts.id })
+        .from(schema.contracts)
+        .innerJoin(
+          schema.documentTemplates,
+          eq(schema.documentTemplates.id, schema.contracts.documentTemplateId),
+        )
         .where(
           and(
+            eq(schema.documentTemplates.organizationId, organizationId),
             eq(schema.contracts.volunteerId, input.volunteerId),
             eq(schema.contracts.reimbursementTypeId, input.reimbursementTypeId),
             eq(schema.contracts.contractStatus, ContractStatus.DRAFT),
-            gt(schema.contracts.periodEnd, input.periodStart),
-            lt(schema.contracts.periodStart, input.periodEnd),
+            ...contractOverlapsPeriod(input.periodStart, input.periodEnd),
           ),
         );
+
+      if (overlappingDrafts.length > 0) {
+        await tx.delete(schema.contracts).where(
+          inArray(
+            schema.contracts.id,
+            overlappingDrafts.map((draft) => draft.id),
+          ),
+        );
+      }
 
       const [created] = await tx
         .insert(schema.contracts)
@@ -204,6 +231,16 @@ export class ContractService {
         type: DocumentStatusChange.CREATED,
         actorUserId,
       });
+
+      // The draft's own history is gone (its status changes cascade-deleted
+      // with it), so record the replacement on the surviving contract.
+      if (overlappingDrafts.length > 0) {
+        await tx.insert(schema.contractStatusChanges).values({
+          contractId: created.id,
+          type: DocumentStatusChange.DRAFT_SUPERSEDED,
+          actorUserId,
+        });
+      }
 
       return created;
     });
