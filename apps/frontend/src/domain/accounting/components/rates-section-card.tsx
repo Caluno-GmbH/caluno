@@ -88,6 +88,12 @@ function RateRow({
         return t('provenance.replacesDefault', {
           rate: formatLineRate(current.rateCents),
         } as Parameters<typeof t>[1]);
+      default: {
+        // noImplicitReturns is off, so without this a new RateLine kind would
+        // fall through to `undefined` and silently drop the line.
+        const exhaustive: never = current;
+        return exhaustive;
+      }
     }
   };
   const provenanceText = provenanceLine(line);

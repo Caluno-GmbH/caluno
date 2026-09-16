@@ -1706,8 +1706,12 @@ describe('documents flow — admin + volunteer', () => {
       expect(glyphs).toContain('Stundensatz 12,00');
       expect(glyphs).not.toContain('10,00');
 
-      // The timesheet shares the same resolved rate: its PDF prints the same
-      // 12 €/hr, so AC4 covers both document kinds.
+      // The timesheet resolves the same rate: its PDF prints 12 €/hr and never
+      // the root's 10. This covers the rate substitution, not the real
+      // Stundennachweis table — `bodyFor` gives the invoice the same free-text
+      // rate line as the contract, so the production table path (a Stundensatz
+      // column with per-row values) stays uncovered here. What the sub-org is
+      // actually charged is asserted above, via totalAmountCents.
       const invoice = await app
         .get(InvoiceService)
         .findInvoice(createInvoice.id);
@@ -1716,6 +1720,7 @@ describe('documents flow — admin + volunteer', () => {
       );
       expect(invoiceGlyphs).toContain('Stundennachweis');
       expect(invoiceGlyphs).toContain('Stundensatz 12,00');
+      expect(invoiceGlyphs).not.toContain('10,00');
     });
   });
 
