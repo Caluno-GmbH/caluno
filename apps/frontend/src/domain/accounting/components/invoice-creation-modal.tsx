@@ -2,6 +2,7 @@
 
 import { DataError, PermissionKey, parseTemplateBody } from '@repo/data';
 import {
+  useAccountingSetupStatus,
   useActiveDocumentTemplate,
   useAdminUserProfile,
   useCreateInvoice,
@@ -132,6 +133,9 @@ export function InvoiceCreationModal({
   );
 
   const org = useCurrentOrg();
+  // The org details the document will render (inherited from parent units,
+  // refreshed on every profile edit); the page-load org is only a fallback.
+  const orgProfile = useAccountingSetupStatus().data?.orgProfile;
   const router = useRouter();
   const permissionsQuery = usePermissions();
 
@@ -413,10 +417,11 @@ export function InvoiceCreationModal({
   const values: Partial<Record<DataSourceKey, string>> = {
     ...getKnownOrgValues({
       pauschale,
-      orgName: org.name,
-      orgAddress: org.address,
-      orgCity: org.city,
-      orgLegalRep: org.legalRep,
+      orgName: orgProfile?.name ?? org.name,
+      orgAddress: orgProfile ? orgProfile.address : org.address,
+      orgCity: orgProfile ? orgProfile.city : org.city,
+      orgZip: orgProfile ? orgProfile.zipCode : null,
+      orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
       hourlyRateCents: effectiveRate?.hourlyRateCents,
       yearlyLimitCents:
         effectiveRate?.reimbursementType.yearlyLimitCents ??
@@ -586,7 +591,7 @@ export function InvoiceCreationModal({
             pauschale={pauschale}
             pauschaleLabel={pauschaleLabel}
             documentTitle={t('preview.documentTitle')}
-            orgName={org.name}
+            orgName={orgProfile?.name ?? org.name}
             disclaimerLabel={t('preview.disclaimerBadge')}
             signerLeftLabel={t('preview.signatureVolunteer')}
             signerRightLabel={t('preview.signatureSupervisor')}

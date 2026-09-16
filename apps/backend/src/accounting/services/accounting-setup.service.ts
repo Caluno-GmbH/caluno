@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { DocumentKind, type ReimbursementTypeKey } from '../enums';
+import type { ResolvedOrgProfile } from '../utils/org-profile';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 
 export interface AccountingTemplateSlotStatus {
@@ -14,6 +15,7 @@ export interface AccountingTemplateSlotStatus {
 }
 
 export interface AccountingSetupStatusResult {
+  orgProfile: ResolvedOrgProfile | null;
   orgProfileComplete: boolean;
   missingOrgProfileFields: string[];
   slots: AccountingTemplateSlotStatus[];
@@ -43,10 +45,17 @@ export class AccountingSetupService {
     organizationId: string,
     organizationUnitId: string | null,
   ): Promise<AccountingSetupStatusResult> {
-    const missingOrgProfileFields =
-      await this.documentProfileRequirementService.missingBaselineOrgProfileSources(
+    // Resolve the profile once and reuse it for the baseline check: both read
+    // the same unit (plus its ancestors), so resolving twice doubled the
+    // traversal per setup-status call.
+    const orgProfile =
+      await this.documentProfileRequirementService.resolveOrgProfile(
         organizationId,
         organizationUnitId,
+      );
+    const missingOrgProfileFields =
+      this.documentProfileRequirementService.missingBaselineOrgProfileSourcesForProfile(
+        orgProfile,
       );
     const orgProfileComplete = missingOrgProfileFields.length === 0;
 
@@ -95,6 +104,7 @@ export class AccountingSetupService {
     });
 
     return {
+      orgProfile: orgProfile ?? null,
       orgProfileComplete,
       missingOrgProfileFields,
       slots,

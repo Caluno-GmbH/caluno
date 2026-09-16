@@ -42,4 +42,11 @@ export enum DocumentStatusChange {
   ACTIVATED = 'ACTIVATED',
   DECLINED = 'DECLINED',
   EXPIRED = 'EXPIRED',
+  DRAFT_SUPERSEDED = 'DRAFT_SUPERSEDED',
+}
+
+export enum RateProvenanceKind {
+  OWN = 'OWN',
+  INHERITED = 'INHERITED',
+  DEFAULT = 'DEFAULT',
 }

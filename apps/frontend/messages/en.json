@@ -1195,6 +1195,8 @@
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postal code",
       "zipCodePlaceholder": "10115",
+      "legalRepLabel": "Legal representative",
+      "legalRepPlaceholder": "e.g. Jane Doe",
       "contactEmailLabel": "Contact email",
       "contactEmailPlaceholder": "contact@organization.org",
       "phoneLabel": "Phone",
@@ -1858,7 +1860,9 @@
         },
         "rateUnit": "/hr",
         "provenance": {
-          "inherited": "Org default"
+          "inheritedFrom": "Inherited from {source}: {rate}",
+          "replaces": "Replaces {source}: {rate}",
+          "replacesDefault": "Replaces default: {rate}"
         }
       },
       "templates": {
@@ -1878,6 +1882,7 @@
       "org_name": "Name",
       "org_address": "Address",
       "org_city": "City",
+      "org_zip": "Postal code",
       "org_legal_rep": "Legal representative"
     },
     "reimbursements": {
@@ -2171,6 +2176,7 @@
         "invoice": "Timesheet countersigned for {name}.",
         "invoiceError": "Timesheet could not be countersigned for {name}."
       },
+      "createUnavailable": "This document for {name} can no longer be created from here. Refresh the page and try again.",
       "declineToasts": {
         "contract": "Contract declined for {name}.",
         "contractError": "Contract could not be declined for {name}.",
@@ -2240,7 +2246,16 @@
           "incompleteCount": "{count} fields need a value",
           "notSetYet": "not set yet",
           "sameAsAbove": "same value as set above",
-          "scrollRegionLabel": "Template editor, scrollable"
+          "scrollRegionLabel": "Template editor, scrollable",
+          "placeholderExamples": {
+            "volunteer_first_name": "First name",
+            "volunteer_last_name": "Last name"
+          }
+        },
+        "blockHeadings": {
+          "persoenlicheDaten": "Personal data",
+          "stundennachweis": "Stundennachweis",
+          "jahresdeckelHinweis": "Payments already received"
         },
         "editorGroups": {
           "org": "Organization details",
@@ -2307,6 +2322,7 @@
           "org_name": "Organisation name",
           "org_address": "Organisation address",
           "org_city": "City (Organisation)",
+          "org_zip": "Postal code (Organisation)",
           "org_legal_rep": "Legal representative",
           "pauschalen_type": "Pauschale type",
           "hourly_rate": "Hourly rate",
@@ -2323,6 +2339,7 @@
           "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Contract period",
           "already_received_amount": "Amount already received",
+          "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Yearly cap"
         }
       },

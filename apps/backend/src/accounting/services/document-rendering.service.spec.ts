@@ -16,6 +16,7 @@ interface TimeEntryMock {
 
 describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
+  let rateCallArgs: unknown[] = [];
 
   const createService = (
     overrides: {
@@ -23,6 +24,7 @@ describe('DocumentRenderingService', () => {
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      unit?: Record<string, unknown>;
       yearlyUsage?: {
         usedCents: number;
         limitCents: number;
@@ -45,7 +47,8 @@ describe('DocumentRenderingService', () => {
             Promise.resolve({ id: 'vol-1', name: 'Max Mustermann' }),
         },
         organizationUnits: {
-          findFirst: () => Promise.resolve({ id: 'root-unit' }),
+          findFirst: () =>
+            Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
         },
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
@@ -60,7 +63,10 @@ describe('DocumentRenderingService', () => {
         }),
     } as never;
     const reimbursementRateService = {
-      getEffectiveRateCents: () => Promise.resolve(overrides.rateCents),
+      getEffectiveRateCents: (...args: unknown[]) => {
+        rateCallArgs = args;
+        return Promise.resolve(overrides.rateCents);
+      },
       getYearlyUsage: (...args: unknown[]) => {
         yearlyUsageCallArgs = args;
         return Promise.resolve(overrides.yearlyUsage);
@@ -235,6 +241,21 @@ describe('DocumentRenderingService', () => {
       purpose: FilePurpose.DOCUMENT,
     });
     expect(saved).toHaveProperty('bytes');
+  });
+
+  it('resolves the rate at the document own unit, not the template unit', async () => {
+    rateCallArgs = [];
+    const service = createService({ rateCents: 1500 });
+    await service.generatePdf(
+      contract({
+        organizationUnitId: 'sub-unit',
+        documentTemplate: {
+          ...contract().documentTemplate,
+          organizationUnitId: null,
+        } as never,
+      }),
+    );
+    expect(rateCallArgs).toEqual(['org-1', 'sub-unit', 'type-1']);
   });
 
   it('renderAndAttachPdf never throws — returns null when the template is missing', async () => {
@@ -427,6 +448,47 @@ describe('DocumentRenderingService', () => {
         new Date('2025-01-31'),
         'invoice-1',
       ]);
+    });
+  });
+
+  describe('resolved org profile values', () => {
+    const resolveValues = (
+      service: DocumentRenderingService,
+      document: ContractWithRelations,
+    ): Promise<Record<string, string>> =>
+      (
+        service as unknown as {
+          resolveValues: (
+            d: ContractWithRelations,
+          ) => Promise<Record<string, string>>;
+        }
+      ).resolveValues(document);
+
+    it('renders the resolved org postal code the create gate checked', async () => {
+      const service = createService({
+        unit: {
+          id: 'unit-1',
+          name: 'Branch',
+          address: 'Hauptstraße 1',
+          city: 'Berlin',
+          zipCode: '10115',
+          legalRep: 'Erika Mustermann',
+        },
+      });
+
+      const values = await resolveValues(service, contract());
+
+      expect(values.org_zip).toBe('10115');
+    });
+
+    it('renders a blank postal code as an empty string when the org has none', async () => {
+      const service = createService({
+        unit: { id: 'unit-1', name: 'Branch' },
+      });
+
+      const values = await resolveValues(service, contract());
+
+      expect(values.org_zip).toBe('');
     });
   });
 });

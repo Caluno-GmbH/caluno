@@ -83,6 +83,9 @@
   },
   "membershipApproved": {
     "buttonLabel": "{organizationName} öffnen",
+    "checkInQrAlt": "Dein Check-in-QR-Code",
+    "checkInQrCaption": "Zeige diesen Code beim Check-in oder lass ihn von einer Aufsichtsperson scannen.",
+    "checkInQrNote": "Dein Check-in-QR-Code ist unten zu sehen und außerdem als PDF beigefügt. Du kannst ihn ausdrucken oder auf deinem Handy speichern – zeig ihn einfach beim Check-in, auch ohne Caluno-Login.",
     "footerNote": "Du erhältst diese E-Mail, weil deine Mitgliedschaftsanfrage für {organizationName} auf {brandName} genehmigt wurde.",
     "greetingAfter": "ist genehmigt. Du kannst jetzt Einsätze entdecken und dich anmelden, wenn etwas zu dir passt.",
     "greetingBefore": "Hallo {firstName}, deine Mitgliedschaftsanfrage für",
@@ -322,6 +325,34 @@
     "note": "Möglicherweise musst du Ersatz finden.",
     "previewText": "{volunteerName} hat {shiftTitle} bei {organizationName} verlassen.",
     "subject": "{volunteerName} hat {shiftTitle} verlassen",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistJoined": {
+    "buttonLabel": "Einsatz ansehen",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil du auf {brandName} auf der Warteliste für diesen Einsatz stehst.",
+    "greeting": "Hallo {firstName}, dieser Einsatz hat bereits die maximale Anzahl an Freiwilligen erreicht, daher wurdest du auf die Warteliste gesetzt.",
+    "heading": "Du stehst auf der Warteliste",
+    "note": "Wir informieren dich per E-Mail, sobald ein Platz frei wird.",
+    "previewText": "{shiftTitle} bei {organizationName} ist voll, daher wurdest du auf die Warteliste gesetzt.",
+    "subject": "Du stehst auf der Warteliste für {shiftTitle}",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistPromoted": {
+    "buttonLabel": "Einsatz ansehen",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil du auf der Warteliste für diesen Einsatz standest.",
+    "greeting": "Hallo {firstName}, gute Nachrichten – ein Platz ist frei geworden und du bist jetzt für diesen Einsatz bestätigt.",
+    "heading": "Du stehst nicht mehr auf der Warteliste",
+    "note": "Öffne den Einsatz, um alle Details und deinen Plan zu sehen.",
+    "previewText": "Ein Platz ist frei geworden und du bist jetzt für {shiftTitle} bei {organizationName} bestätigt.",
+    "subject": "Du bist für {shiftTitle} bestätigt",
     "whenRange": "{date} · {timeRange}"
   },
   "shiftInstanceWaitlistSpotOpened": {

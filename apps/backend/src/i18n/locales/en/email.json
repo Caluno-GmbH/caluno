@@ -83,6 +83,9 @@
   },
   "membershipApproved": {
     "buttonLabel": "Open {organizationName}",
+    "checkInQrAlt": "Your check-in QR code",
+    "checkInQrCaption": "Show this code at check-in, or have it scanned by a supervisor.",
+    "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Print it out or keep it on your phone — you can show it at check-in any time, even without your Caluno login.",
     "footerNote": "You're receiving this because your membership request for {organizationName} was approved on {brandName}.",
     "greetingAfter": "has been approved. You can now browse shifts and sign up when something works for you.",
     "greetingBefore": "Hi {firstName}, your membership request for",
@@ -322,6 +325,34 @@
     "note": "You may need to find a replacement.",
     "previewText": "{volunteerName} left {shiftTitle} at {organizationName}.",
     "subject": "{volunteerName} left {shiftTitle}",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistJoined": {
+    "buttonLabel": "View shift",
+    "detailLocation": "Location",
+    "detailOrganization": "Organization",
+    "detailShift": "Shift",
+    "detailWhen": "When",
+    "footerNote": "You're receiving this because you're on the waitlist for this shift on {brandName}.",
+    "greeting": "Hi {firstName}, this shift already reached its maximum number of volunteers, so you've been added to the waitlist.",
+    "heading": "You're on the waitlist",
+    "note": "We'll email you if a spot opens up.",
+    "previewText": "{shiftTitle} at {organizationName} is full, so you've been added to the waitlist.",
+    "subject": "You're on the waitlist for {shiftTitle}",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistPromoted": {
+    "buttonLabel": "View shift",
+    "detailLocation": "Location",
+    "detailOrganization": "Organization",
+    "detailShift": "Shift",
+    "detailWhen": "When",
+    "footerNote": "You're receiving this because you were on the waitlist for this shift on {brandName}.",
+    "greeting": "Hi {firstName}, good news — a spot opened up and you're now confirmed for this shift.",
+    "heading": "You're off the waitlist",
+    "note": "Open the shift to see the details and your schedule.",
+    "previewText": "A spot opened up and you're now confirmed for {shiftTitle} at {organizationName}.",
+    "subject": "You're confirmed for {shiftTitle}",
     "whenRange": "{date} · {timeRange}"
   },
   "shiftInstanceWaitlistSpotOpened": {

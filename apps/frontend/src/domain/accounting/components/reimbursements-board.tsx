@@ -33,6 +33,7 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useReimbursementBoardData } from '../hooks/use-reimbursement-board-data';
+import { creationTargetFor } from '../lib/board-data.utils';
 import { ContractCreationModal } from './contract-creation-modal';
 import { CreateDocumentModal } from './create-document-modal';
 import type { PauschalenType } from './doc-type-header';
@@ -493,20 +494,17 @@ export function ReimbursementsBoard({
 
   function handleRequestCreate(pair: DocVolPair) {
     if (!canCreateDocuments) return;
-    if (
-      pair.doc.status === 'contract-generate' ||
-      pair.doc.status === 'contract-declined' ||
-      pair.doc.status === 'contract-missing'
-    ) {
+    const target = creationTargetFor(pair.doc.status);
+    if (target === 'contract') {
       setContractCreationTarget(pair);
       return;
     }
-    if (
-      pair.doc.status === 'timesheet-generate' ||
-      pair.doc.status === 'timesheet-declined'
-    ) {
+    if (target === 'invoice') {
       setInvoiceCreationTarget(pair);
+      return;
     }
+    // Never swallow a click: tell the admin why nothing opens.
+    toast.error(t('createUnavailable', { name: pair.vol.name }));
   }
 
   function handleSign(pair: DocVolPair) {
