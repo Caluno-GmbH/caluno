@@ -30,5 +30,3 @@ Use `bun` - never npm or yarn.
 ## Local fixtures
 
 - Fixture members are `testing+001@caluno.org` and up (no `+000`); fixtures skip already-existing rows, so users seeded before your session keep their original password.
-- Reset one: hash with `bun -e "import { hashPassword } from 'better-auth/crypto'; console.log(await hashPassword('abcd1234'))"` (run from `apps/backend`), then `update accounts set password='<hash>' where user_id=(select id from users where email='…')` — passwords live in `accounts`, not `users`.
-
