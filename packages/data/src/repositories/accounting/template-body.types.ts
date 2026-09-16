@@ -64,7 +64,11 @@ export type TemplateLine = {
 export type TemplateTextBlock = {
   kind: 'text';
   id: string;
-  /** Literal German heading — documents are always German, never i18n'd. */
+  /**
+   * Literal German heading — documents are always German, never i18n'd. Rendered as-is in the
+   * document preview and the generated PDF; the template editor renders its own translated
+   * heading instead (`builder-headings.ts`), so interface copy never leaks from here (VOLI-1336).
+   */
   title: string;
   /** true = mandatory, no block-level toggle (lines may still have their own `optional` toggle). */
   locked: boolean;
@@ -79,6 +83,7 @@ export type TableFirstColumnSource = 'agreement_task_description' | 'custom';
 export type TemplateTableBlock = {
   kind: 'table';
   id: string;
+  /** Literal German heading — document content, same interface-versus-document rule as `TemplateTextBlock.title`. */
   title: string;
   locked: true;
   columns: string[];
@@ -93,6 +98,7 @@ export type TemplateTableBlock = {
 export type TemplateNoteBlock = {
   kind: 'note';
   id: string;
+  /** Literal German heading — document content, same interface-versus-document rule as `TemplateTextBlock.title`. */
   title: string;
   locked: true;
   line: TemplateLine;
