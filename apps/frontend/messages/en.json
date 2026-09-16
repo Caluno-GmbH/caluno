@@ -793,7 +793,7 @@
       "subtitles": {
         "firstName": "As on your ID",
         "iban": "For expense and allowance payments",
-        "accountHolder": "Name on the account, if different from yours",
+        "accountHolder": "Name on the bank account",
         "lastName": "As on your ID",
         "preferredName": "If you'd like to be called something else",
         "bic": "Bank identifier code (BIC) for your account",

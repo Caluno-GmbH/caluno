@@ -793,7 +793,7 @@
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
         "iban": "Für Aufwandsentschädigungen",
-        "accountHolder": "Name auf dem Konto, falls abweichend von deinem Namen",
+        "accountHolder": "Name auf dem Bankkonto",
         "lastName": "Wie auf deinem Ausweis",
         "preferredName": "Falls du anders angesprochen werden möchtest",
         "bic": "Bankleitzahl (BIC) deines Kontos",
