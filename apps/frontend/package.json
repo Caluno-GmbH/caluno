@@ -37,7 +37,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.12",
+    "@biomejs/biome": "2.5.13",
     "@repo/typescript-config": "*",
     "@repo/ui": "*",
     "@tailwindcss/postcss": "^4",
