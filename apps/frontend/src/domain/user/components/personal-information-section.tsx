@@ -42,6 +42,7 @@ export const PersonalInformationSection = async ({
     name: tSubtitles('firstName'),
     lastname: tSubtitles('lastName'),
     iban: tSubtitles('iban'),
+    'account-holder': tSubtitles('accountHolder'),
   };
 
   const fields: FieldItem[] = SYSTEM_PROFILE_FIELDS.map((field) => {

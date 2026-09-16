@@ -79,6 +79,7 @@ export function FieldForm({
     { label: t('city'), value: 'city' },
     { label: t('birthDate'), value: 'birth-date' },
     { label: t('iban'), value: 'iban' },
+    { label: t('accountHolder'), value: 'account-holder' },
   ];
 
   const [fieldType, setFieldType] = useState(initial?.type ?? '');

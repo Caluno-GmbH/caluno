@@ -182,6 +182,10 @@ describe('isMaskedPaymentAnswer', () => {
     expect(isMaskedPaymentAnswer('XXXXXXXXXXX')).toBe(true);
   });
 
+  it('detects the account holder mask', () => {
+    expect(isMaskedPaymentAnswer('XXXXXX XXXXX')).toBe(true);
+  });
+
   it('does not flag the real payment data a permitted viewer sees', () => {
     expect(isMaskedPaymentAnswer('DE89 3704 0044 0532 0130 00')).toBe(false);
     expect(isMaskedPaymentAnswer('COBADEFFXXX')).toBe(false);

@@ -3,11 +3,11 @@ import { parseMultiChoiceValue } from '../option-values';
 export const RESTRICTED_PAYMENT_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',
+  'account-holder': 'XXXXXX XXXXX',
 } as const;
 
 export const isMaskedPaymentAnswer = (answer: string): boolean =>
-  answer === RESTRICTED_PAYMENT_MASKS.iban ||
-  answer === RESTRICTED_PAYMENT_MASKS.bic;
+  (Object.values(RESTRICTED_PAYMENT_MASKS) as string[]).includes(answer);
 
 export type SubmissionField = {
   id: string;

@@ -8,6 +8,7 @@ import type { UserProfileService } from '../services';
 import { UserProfileQueryResolver } from './user-profile-query.resolver';
 
 const MASKED_IBAN = 'XXXX XXXX XXXX XXXX XXXX XX';
+const MASKED_ACCOUNT_HOLDER = 'XXXXXX XXXXX';
 const MASKED_BIC = 'XXXXXXXXXXX';
 
 const now = new Date('2026-09-15T08:00:00Z');
@@ -18,6 +19,7 @@ const profile = {
   data: {
     address: 'Musterstraße 1',
     iban: 'DE89 3704 0044 0532 0130 00',
+    'account-holder': 'Erika Musterfrau',
     bic: 'COBADEFFXXX',
   },
   createdAt: now,
@@ -60,6 +62,7 @@ describe('UserProfileQueryResolver.adminUserProfile payment-data visibility', ()
     );
 
     expect(result?.data.iban).toBe(MASKED_IBAN);
+    expect(result?.data['account-holder']).toBe(MASKED_ACCOUNT_HOLDER);
     expect(result?.data.bic).toBe(MASKED_BIC);
     expect(result?.data.address).toBe('Musterstraße 1');
   });
@@ -74,6 +77,7 @@ describe('UserProfileQueryResolver.adminUserProfile payment-data visibility', ()
     );
 
     expect(result?.data.iban).toBe(profile.data.iban);
+    expect(result?.data['account-holder']).toBe(profile.data['account-holder']);
     expect(result?.data.bic).toBe(profile.data.bic);
   });
 
@@ -85,6 +89,7 @@ describe('UserProfileQueryResolver.adminUserProfile payment-data visibility', ()
     );
 
     expect(result?.data.iban).toBe(profile.data.iban);
+    expect(result?.data['account-holder']).toBe(profile.data['account-holder']);
     expect(result?.data.bic).toBe(profile.data.bic);
     expect(authService.hasRequiredPermissions).not.toHaveBeenCalled();
   });
