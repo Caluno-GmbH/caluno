@@ -42,7 +42,7 @@
         "drizzle-orm": "^1.0.0-beta.15",
         "express": "^5.2.1",
         "graphql": "^16.12.0",
-        "graphql-scalars": "^1.25.0",
+        "graphql-scalars": "^2.0.0",
         "mjml": "^5.3.0",
         "nanoid": "^6.0.0",
         "nestjs-i18n": "^10.8.4",
@@ -2341,7 +2341,7 @@
 
     "graphql-request": ["graphql-request@7.4.0", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0" }, "peerDependencies": { "graphql": "14 - 16" } }, "sha512-xfr+zFb/QYbs4l4ty0dltqiXIp07U6sl+tOKAb0t50/EnQek6CVVBLjETXi+FghElytvgaAWtIOt3EV7zLzIAQ=="],
 
-    "graphql-scalars": ["graphql-scalars@1.26.0", "", { "dependencies": { "tslib": "^2.5.0" }, "peerDependencies": { "graphql": "^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0" } }, "sha512-o7BnU5yxAFUWTMKpC5yshB12DjzzoxLgEBO9OpOAcxodWrL3sPldD/fqVQoIfcqPH8OclyQilLtg3/7ZRqQUVQ=="],
+    "graphql-scalars": ["graphql-scalars@2.0.0", "", { "dependencies": { "tslib": "^2.5.0" }, "peerDependencies": { "graphql": "^16.0.0 || ^17.0.0" } }, "sha512-tCd2ddcxlbz5rG7xsfDbjvIssR9c/5EauDYt272pxfxpUNBjFMpnDwukuA3rm1O/9michQDxFfPPAeoQjZtJVQ=="],
 
     "graphql-tag": ["graphql-tag@2.12.6", "", { "dependencies": { "tslib": "^2.1.0" }, "peerDependencies": { "graphql": "^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0" } }, "sha512-FdSNcu2QQcWnM2VNvSCCDCVS5PpPqpzgFT8+GXzqJuoDd0CBncxCY278u4mhRO7tMgo2JjgJA5aZ+nWSQ/Z+xg=="],
 
