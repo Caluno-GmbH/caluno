@@ -9,10 +9,12 @@ import {
 import { getTranslations } from 'next-intl/server';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import {
+  isMaskedPaymentAnswer,
   resolveFieldAnswer,
   type SubmissionField,
   type SubmissionValue,
 } from '../lib/resolve-field-answer';
+import { MaskedPaymentAnswer } from './masked-payment-answer';
 
 export const SubmissionView = async ({
   fields,
@@ -49,18 +51,30 @@ export const SubmissionView = async ({
               </TableCell>
             </TableRow>
           ) : (
-            displayFields.map((field) => (
-              <TableRow key={field.id}>
-                <TableCell className="font-medium">{field.label}</TableCell>
-                <TableCell>
-                  {resolveFieldAnswer(field, submissionValues, profileData, {
-                    dash: tCommon('dash'),
-                    accepted: t('accepted'),
-                    formatDate,
-                  })}
-                </TableCell>
-              </TableRow>
-            ))
+            displayFields.map((field) => {
+              const answer = resolveFieldAnswer(
+                field,
+                submissionValues,
+                profileData,
+                {
+                  dash: tCommon('dash'),
+                  accepted: t('accepted'),
+                  formatDate,
+                },
+              );
+              return (
+                <TableRow key={field.id}>
+                  <TableCell className="font-medium">{field.label}</TableCell>
+                  <TableCell>
+                    {isMaskedPaymentAnswer(answer) ? (
+                      <MaskedPaymentAnswer value={answer} />
+                    ) : (
+                      answer
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

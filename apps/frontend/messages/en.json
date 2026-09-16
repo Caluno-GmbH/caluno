@@ -1048,7 +1048,8 @@
       "fallbackForm": "Form",
       "fallbackVolunteer": "Volunteer",
       "fieldColumn": "Field",
-      "noFields": "No fields defined for this form."
+      "noFields": "No fields defined for this form.",
+      "restrictedPaymentData": "You don't have permission to view banking information."
     },
     "submissions": {
       "emailColumn": "Email",
@@ -1115,6 +1116,7 @@
       "next": "Next",
       "noBlocks": "This form has no blocks.",
       "noFields": "This block has no fields configured yet.",
+      "paymentDataVisibilityHint": "Your bank details are visible only to the people who process the invoices.",
       "pickDate": "Pick a date",
       "selectOption": "Select an option",
       "step": "Step {current} of {total}",
