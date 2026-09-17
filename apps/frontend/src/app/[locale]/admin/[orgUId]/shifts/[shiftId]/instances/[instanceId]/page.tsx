@@ -166,6 +166,7 @@ export default async function ShiftInstanceDetailPage({
         shiftId={shiftId}
         instanceId={instanceId}
         invites={instance.invites ?? []}
+        timeEntries={instance.timeEntries ?? []}
         spotsLeft={instance.spotsLeft}
         filledCount={instance.filledCount}
         maxVolunteers={
