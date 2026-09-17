@@ -675,11 +675,13 @@
   },
   "OrgUnit": {
     "delete": {
-      "childrenWarning": "Warnung: Diese Einheit hat untergeordnete Einheiten. Das Löschen wirkt sich auf die Hierarchie aus.",
-      "confirmLabel": "Gib LÖSCHEN zur Bestätigung ein",
-      "confirmPlaceholder": "LÖSCHEN",
-      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Die Einheit wird dauerhaft gelöscht.",
-      "title": "\"{name}\" löschen"
+      "description": "Unser Team prüft deine Anfrage und entfernt die Einheit für dich.",
+      "messageLabel": "Nachricht (optional)",
+      "requestButton": "Anfrage senden",
+      "requesting": "Wird gesendet…",
+      "sentDescription": "Wir haben unser Team informiert, dass du \"{name}\" entfernt haben möchtest. Es meldet sich bei dir.",
+      "sentTitle": "Anfrage gesendet",
+      "title": "Löschung von \"{name}\" anfragen"
     },
     "detail": {
       "aboutTitle": "Über",

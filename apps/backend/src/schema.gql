@@ -704,7 +704,6 @@ type Mutation {
   deleteEvent(id: ID!): Event!
   deleteFormBlock(id: String!): FormBlock!
   deleteFormBlockField(fieldId: String!): FormBlock!
-  deleteOrganizationUnit(id: String!): OrganizationUnit!
   deleteRequirement(id: String!): Requirement!
   deleteRequirementForm(id: String!): RequirementForm!
   deleteRequirementFulfillment(id: String!): RequirementFulfillment!
@@ -725,6 +724,7 @@ type Mutation {
   remindShiftInstanceInvite(instanceId: String!, userId: String!): DateTime!
   removeMembership(id: ID!): Membership!
   removeMembershipRequest(id: ID!): MembershipRequest!
+  requestOrganizationUnitDeletion(id: String!, message: String): OrganizationUnit!
   sendShiftInstanceCallOut(instanceId: String!): ShiftInstanceCallOutResult!
   setEventRequiredForms(eventId: ID!, formIds: [String!]!): [RequiredFormRef!]!
   setManualBaseline(amountCents: Int!, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline!

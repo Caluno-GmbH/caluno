@@ -29,10 +29,13 @@ export const serverCreateOrgUnitSchema = createOrgUnitSchema({
   typeRequired: 'Organization unit type is required',
 });
 
-export const deleteOrgUnitSchema = z.object({
+export const requestOrgUnitDeletionSchema = z.object({
   id: z.uuid(),
   organizationUnitId: z.uuid(),
+  message: z.string().optional(),
 });
 
 export type CreateOrgUnitFormValues = z.infer<typeof serverCreateOrgUnitSchema>;
-export type DeleteOrgUnitFormValues = z.infer<typeof deleteOrgUnitSchema>;
+export type RequestOrgUnitDeletionFormValues = z.infer<
+  typeof requestOrgUnitDeletionSchema
+>;

@@ -70,3 +70,51 @@ export async function renderEmail(
 
   return { subject, html };
 }
+
+export interface RenderInternalEmailOptions {
+  templateName: string;
+  subject: string;
+  previewText: string;
+  body: string;
+}
+
+export async function renderInternalEmail(
+  options: RenderInternalEmailOptions,
+): Promise<{ subject: string; html: string }> {
+  const { templateName, subject, previewText, body } = options;
+
+  const { html, errors } = await mjml2html(`
+    <mjml>
+      <mj-head>
+        <mj-preview>${previewText}</mj-preview>
+        <mj-font name="Geologica" href="https://fonts.googleapis.com/css2?family=Geologica:wght@400;600;700&display=swap" />
+        <mj-attributes>
+          <mj-all font-family="${fontStack}" />
+          <mj-text font-size="16px" line-height="1.6" color="${colors.ink}" />
+        </mj-attributes>
+        <mj-style>
+          a { color: ${colors.primaryText}; }
+        </mj-style>
+      </mj-head>
+      <mj-body background-color="${colors.bg}" width="600px">
+        <mj-section padding="32px 0 16px">
+          <mj-column>
+            <mj-text align="center" padding="0">
+              ${emailBrandLogo(colors.ink, brandName)}
+            </mj-text>
+          </mj-column>
+        </mj-section>
+
+        ${body}
+      </mj-body>
+    </mjml>
+  `);
+
+  if (errors.length > 0) {
+    throw new Error(
+      `MJML compilation errors in ${templateName}: ${errors.map((error) => error.message).join(', ')}`,
+    );
+  }
+
+  return { subject, html };
+}

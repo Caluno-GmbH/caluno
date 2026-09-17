@@ -675,11 +675,13 @@
   },
   "OrgUnit": {
     "delete": {
-      "childrenWarning": "Warning: this unit has children. Deleting it will affect the hierarchy.",
-      "confirmLabel": "Type DELETE to confirm",
-      "confirmPlaceholder": "DELETE",
-      "description": "This action cannot be undone. The unit will be permanently deleted.",
-      "title": "Delete \"{name}\""
+      "description": "Our team will review your request and remove this unit for you.",
+      "messageLabel": "Message (optional)",
+      "requestButton": "Send request",
+      "requesting": "Sending…",
+      "sentDescription": "We've let our team know you'd like \"{name}\" removed. They'll follow up with you.",
+      "sentTitle": "Request sent",
+      "title": "Request to delete \"{name}\""
     },
     "detail": {
       "aboutTitle": "About",

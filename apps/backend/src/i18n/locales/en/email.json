@@ -157,6 +157,18 @@
     "step3Title": "Bring in volunteers",
     "subject": "Your organization \"{organizationName}\" is ready"
   },
+  "organizationUnitDeletionRequest": {
+    "buttonLabel": "View unit",
+    "detailMessage": "Message",
+    "detailOrganization": "Organization",
+    "detailRequestedAt": "Requested at",
+    "detailRequestedBy": "Requested by",
+    "detailUnit": "Unit",
+    "heading": "Org unit deletion requested",
+    "intro": "{requesterName} requested that \"{organizationUnitName}\" be deleted.",
+    "previewText": "{requesterName} requested deletion of {organizationUnitName}.",
+    "subject": "Deletion requested: {organizationUnitName}"
+  },
   "organizationUnitInvited": {
     "buttonLabel": "Join {organizationUnitName}",
     "footerNote": "You're receiving this because an admin invited you to join {brandName}.",

@@ -157,6 +157,18 @@
     "step3Title": "Freiwillige gewinnen",
     "subject": "Deine Organisation \"{organizationName}\" ist bereit"
   },
+  "organizationUnitDeletionRequest": {
+    "buttonLabel": "Einheit ansehen",
+    "detailMessage": "Nachricht",
+    "detailOrganization": "Organisation",
+    "detailRequestedAt": "Angefragt am",
+    "detailRequestedBy": "Angefragt von",
+    "detailUnit": "Einheit",
+    "heading": "Löschung einer Organisationseinheit angefragt",
+    "intro": "{requesterName} hat angefragt, dass \"{organizationUnitName}\" gelöscht wird.",
+    "previewText": "{requesterName} hat die Löschung von {organizationUnitName} angefragt.",
+    "subject": "Löschung angefragt: {organizationUnitName}"
+  },
   "organizationUnitInvited": {
     "buttonLabel": "{organizationUnitName} beitreten",
     "footerNote": "Du erhältst diese E-Mail, weil ein Admin dich eingeladen hat, {brandName} beizutreten.",
