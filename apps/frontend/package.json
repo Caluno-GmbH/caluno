@@ -20,7 +20,7 @@
     "@teispace/next-themes": "^3.0.2",
     "@yudiel/react-qr-scanner": "^2.5.1",
     "better-auth": "1.6.25",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.4.0",
     "js-cookie": "^3.0.5",
     "lucide-react": "^1.8.0",
     "motion": "^13.4.0",
