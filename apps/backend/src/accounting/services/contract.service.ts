@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gt, inArray, lt } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt, ne } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -91,6 +91,11 @@ export class ContractService {
     }
     if (filter.status) {
       conditions.push(eq(schema.contracts.contractStatus, filter.status));
+    }
+    if (filter.issuedOnly) {
+      conditions.push(
+        ne(schema.contracts.contractStatus, ContractStatus.DRAFT),
+      );
     }
     if (filter.periodStart && filter.periodEnd) {
       conditions.push(

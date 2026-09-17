@@ -9,11 +9,13 @@ import {
 import { getTranslations } from 'next-intl/server';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { GENDER_OPTION_VALUES } from '../gender-options';
-import type {
-  SubmissionField,
-  SubmissionValue,
+import {
+  isMaskedPaymentAnswer,
+  type SubmissionField,
+  type SubmissionValue,
 } from '../lib/resolve-field-answer';
 import { resolveSubmissionFieldAnswers } from '../lib/resolve-submission-field-answers';
+import { MaskedPaymentAnswer } from './masked-payment-answer';
 
 export const SubmissionView = async ({
   fields,
@@ -66,7 +68,13 @@ export const SubmissionView = async ({
             fieldAnswers.map(({ field, answer }) => (
               <TableRow key={field.id}>
                 <TableCell className="font-medium">{field.label}</TableCell>
-                <TableCell>{answer}</TableCell>
+                <TableCell>
+                  {isMaskedPaymentAnswer(answer) ? (
+                    <MaskedPaymentAnswer value={answer} />
+                  ) : (
+                    answer
+                  )}
+                </TableCell>
               </TableRow>
             ))
           )}

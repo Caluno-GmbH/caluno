@@ -55,12 +55,12 @@ export function VolunteerDocumentsSection({
   const documents = useMemo(() => {
     const formatMonth = (date: Date) =>
       formatDate(date, { month: 'long', year: 'numeric' });
-    const contracts = (contractsQuery.data ?? []).map((c) =>
-      contractToVolunteerDocument(c, formatMonth),
-    );
-    const invoices = (invoicesQuery.data ?? []).map((i) =>
-      invoiceToVolunteerDocument(i, formatMonth),
-    );
+    const contracts = (contractsQuery.data ?? [])
+      .map((c) => contractToVolunteerDocument(c, formatMonth))
+      .filter((d): d is VolunteerDocument => d !== null);
+    const invoices = (invoicesQuery.data ?? [])
+      .map((i) => invoiceToVolunteerDocument(i, formatMonth))
+      .filter((d): d is VolunteerDocument => d !== null);
     return [...contracts, ...invoices].sort((a, b) => {
       // Anything that needs the volunteer's signature goes first.
       const aNeeds = a.state === 'awaiting-signature' ? 0 : 1;

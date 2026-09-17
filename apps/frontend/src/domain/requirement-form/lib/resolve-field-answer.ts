@@ -1,6 +1,15 @@
 import { GENDER_SYSTEM_KEY } from '../gender-options';
 import { parseMultiChoiceValue } from '../option-values';
 
+export const RESTRICTED_PAYMENT_MASKS = {
+  iban: 'XXXX XXXX XXXX XXXX XXXX XX',
+  bic: 'XXXXXXXXXXX',
+  'account-holder': 'XXXXXX XXXXXX',
+} as const;
+
+export const isMaskedPaymentAnswer = (answer: string): boolean =>
+  (Object.values(RESTRICTED_PAYMENT_MASKS) as string[]).includes(answer);
+
 export type SubmissionField = {
   id: string;
   label: string;

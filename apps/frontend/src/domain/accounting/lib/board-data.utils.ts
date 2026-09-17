@@ -109,10 +109,23 @@ export interface PickerContractAnnotation {
 
 export interface PickerAnnotations {
   contracts: PickerContractAnnotation[];
-  latestTimesheetDate?: Date;
+  latestTimesheetPeriod?: string;
 }
 
 const PICKER_PAUSCHALEN: PauschalenType[] = ['ehrenamt', 'uebungsleiter'];
+
+/**
+ * The timesheet states that represent an actually-issued document. Deliberately
+ * excludes `timesheet-generate` (not created yet — including auto-queued rows
+ * and drafts, which carry a period but no document), `timesheet-declined`
+ * (declining releases the hours, VOLI-1245, so it is not a settled period) and
+ * `timesheet-muted` (a paid-shift record with no document at all).
+ */
+const ISSUED_TIMESHEET_STATUSES = new Set<DocStatus>([
+  'timesheet-signing-vol',
+  'timesheet-signing-super',
+  'timesheet-ready',
+]);
 
 export function getContractStateForPicker(
   vol: BoardVolunteer,
@@ -134,15 +147,30 @@ export function getContractStateForPicker(
   }
 }
 
-export function getLatestTimesheetDate(vol: BoardVolunteer): Date | undefined {
-  const dates = PICKER_PAUSCHALEN.map(
-    (pauschale) =>
-      getDocLineSummary(vol, 'invoice', pauschale).latest?.lastActionDate,
-  ).filter((d): d is Date => d instanceof Date);
-  if (dates.length === 0) return undefined;
-  return dates.reduce((latest, d) =>
-    d.getTime() > latest.getTime() ? d : latest,
+/**
+ * The billing period the volunteer's most recent issued timesheet covers (e.g.
+ * "August 2026"), or undefined when they have none. Deliberately keyed on the
+ * document's covered period rather than a row timestamp: an invoice's
+ * `updatedAt` moves for unrelated reasons (PDF render, payment, decline), so it
+ * answers "when was this last touched", not "which months are settled". Ordered
+ * by `periodStart` — the displayed value *is* the period, and this avoids the
+ * created/signed/countersigned ambiguity entirely (VOLI-1339).
+ */
+export function getLatestTimesheetPeriod(
+  vol: BoardVolunteer,
+): string | undefined {
+  const issued = vol.documents.filter((d) =>
+    ISSUED_TIMESHEET_STATUSES.has(d.status),
   );
+  const latest = issued.reduce<BoardDocument | undefined>((acc, d) => {
+    if (!acc) return d;
+    const accStart = (acc.periodStart ?? acc.periodEnd)?.getTime();
+    const dStart = (d.periodStart ?? d.periodEnd)?.getTime();
+    if (dStart === undefined) return acc;
+    if (accStart === undefined) return d;
+    return dStart > accStart ? d : acc;
+  }, undefined);
+  return latest?.periodLabel;
 }
 
 export function getPickerAnnotations(vol: BoardVolunteer): PickerAnnotations {
@@ -151,7 +179,7 @@ export function getPickerAnnotations(vol: BoardVolunteer): PickerAnnotations {
       pauschale,
       state: getContractStateForPicker(vol, pauschale),
     })),
-    latestTimesheetDate: getLatestTimesheetDate(vol),
+    latestTimesheetPeriod: getLatestTimesheetPeriod(vol),
   };
 }
 

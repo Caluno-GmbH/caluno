@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  isMaskedPaymentAnswer,
   resolveFieldAnswer,
   type SubmissionField,
 } from './resolve-field-answer';
@@ -185,5 +186,39 @@ describe('resolveFieldAnswer', () => {
       opts,
     );
     expect(result).toBe('plain text');
+  });
+
+  it('passes a masked payment value through unchanged so the viewer sees it masked', () => {
+    const result = resolveFieldAnswer(
+      field({ type: 'IBAN', systemKey: 'iban' }),
+      [],
+      { iban: 'XXXX XXXX XXXX XXXX XXXX XX' },
+      opts,
+    );
+    expect(result).toBe('XXXX XXXX XXXX XXXX XXXX XX');
+  });
+});
+
+describe('isMaskedPaymentAnswer', () => {
+  it('detects the IBAN mask', () => {
+    expect(isMaskedPaymentAnswer('XXXX XXXX XXXX XXXX XXXX XX')).toBe(true);
+  });
+
+  it('detects the BIC mask', () => {
+    expect(isMaskedPaymentAnswer('XXXXXXXXXXX')).toBe(true);
+  });
+
+  it('detects the account holder mask', () => {
+    expect(isMaskedPaymentAnswer('XXXXXX XXXXXX')).toBe(true);
+  });
+
+  it('does not flag the real payment data a permitted viewer sees', () => {
+    expect(isMaskedPaymentAnswer('DE89 3704 0044 0532 0130 00')).toBe(false);
+    expect(isMaskedPaymentAnswer('COBADEFFXXX')).toBe(false);
+  });
+
+  it('does not flag near-misses', () => {
+    expect(isMaskedPaymentAnswer('XXXXXXXX')).toBe(false);
+    expect(isMaskedPaymentAnswer('')).toBe(false);
   });
 });

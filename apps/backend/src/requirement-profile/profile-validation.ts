@@ -14,6 +14,8 @@ export const formatSystemKeyLabel = (systemKey: string): string => {
       return 'Birth date';
     case 'iban':
       return 'IBAN';
+    case 'account-holder':
+      return 'Account holder';
     case 'bic':
       return 'BIC';
     default:
