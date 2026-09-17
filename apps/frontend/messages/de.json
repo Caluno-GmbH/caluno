@@ -421,6 +421,7 @@
         "awaiting-signature": "Zu unterschreiben",
         "awaiting-countersignature": "Zu gegenzeichnen",
         "signed": "Aktiv",
+        "expired": "Abgelaufen",
         "declined": "Abgelehnt"
       },
       "figures": "{shifts} Einsätze · {hours} Stunden · {amount}",

@@ -110,10 +110,9 @@ export function VolunteerDocumentPreview({
     ? periodLabel(kind, periodStart, formatMonth)
     : '';
 
-  const awaitingSignature =
-    !!status && documentState(status) === 'awaiting-signature';
-  const canDecide =
-    !!status && canDecideDocument(documentState(status), previewStatus);
+  const state = status ? documentState(status) : null;
+  const awaitingSignature = state === 'awaiting-signature';
+  const canDecide = canDecideDocument(state, previewStatus);
   const previewBlocksDecision = awaitingSignature && !canDecide;
 
   const currentDocument = detail
@@ -251,7 +250,7 @@ export function VolunteerDocumentPreview({
           // the dialog must not reappear and the decline cannot be re-submitted.
           setDeclineOpen(false);
           if (!currentDocument || !status) return;
-          if (canDecline(documentState(status))) {
+          if (canDecline(state)) {
             decline(currentDocument, reason);
           }
         }}

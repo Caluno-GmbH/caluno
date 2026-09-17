@@ -32,6 +32,7 @@ export type VolunteerDocumentState =
   | 'awaiting-signature'
   | 'awaiting-countersignature'
   | 'signed'
+  | 'expired'
   | 'declined';
 
 /**
@@ -186,9 +187,15 @@ export function periodLabel(
  */
 export function documentState(
   status: ContractStatus | InvoiceStatus,
-): VolunteerDocumentState {
+): VolunteerDocumentState | null {
   if (status === ContractStatus.Declined || status === InvoiceStatus.Declined) {
     return 'declined';
+  }
+  // DRAFT rows are auto-queued for the admin and were never sent. Failing
+  // closed on them (and on any future unknown status) keeps a leak from
+  // rendering as Active.
+  if (status === ContractStatus.Draft || status === InvoiceStatus.Draft) {
+    return null;
   }
   if (
     status === ContractStatus.AwaitingVolunteerSignature ||
@@ -202,8 +209,13 @@ export function documentState(
   ) {
     return 'awaiting-countersignature';
   }
-  // ACTIVE / READY / EXPIRED — fully signed; download-only.
-  return 'signed';
+  if (status === ContractStatus.Expired) {
+    return 'expired';
+  }
+  if (status === ContractStatus.Active || status === InvoiceStatus.Ready) {
+    return 'signed';
+  }
+  return null;
 }
 
 // ─── Signing gate ─────────────────────────────────────────────────────────────
@@ -223,7 +235,7 @@ export type PreviewStatus =
  * and "sign/decline enabled" could both be true at once (VOLI-1216).
  */
 export function canDecideDocument(
-  state: VolunteerDocumentState,
+  state: VolunteerDocumentState | null,
   previewStatus: PreviewStatus,
 ): boolean {
   return state === 'awaiting-signature' && previewStatus === 'ready';
@@ -235,7 +247,7 @@ export function canDecideDocument(
  * further decline must not go through — this is the guard against a reopened
  * decline dialog or a double submit (VOLI-1285).
  */
-export function canDecline(state: VolunteerDocumentState): boolean {
+export function canDecline(state: VolunteerDocumentState | null): boolean {
   return state === 'awaiting-signature';
 }
 
@@ -244,7 +256,9 @@ export function canDecline(state: VolunteerDocumentState): boolean {
 export function contractToVolunteerDocument(
   contract: ContractSummary,
   formatMonth: (date: Date) => string,
-): VolunteerDocument {
+): VolunteerDocument | null {
+  const state = documentState(contract.contractStatus);
+  if (!state) return null;
   const declinedAt = contract.declinedAt
     ? new Date(contract.declinedAt)
     : undefined;
@@ -253,7 +267,7 @@ export function contractToVolunteerDocument(
     kind: 'contract',
     periodLabel: periodLabel('contract', contract.periodStart, formatMonth),
     nameKey: 'agreement',
-    state: documentState(contract.contractStatus),
+    state,
     lines: documentLines({
       signatures: contract.signatures,
       statusChanges: contract.statusChanges,
@@ -270,7 +284,9 @@ export function contractToVolunteerDocument(
 export function invoiceToVolunteerDocument(
   invoice: InvoiceSummary,
   formatMonth: (date: Date) => string,
-): VolunteerDocument {
+): VolunteerDocument | null {
+  const state = documentState(invoice.invoiceStatus);
+  if (!state) return null;
   const declinedAt = invoice.declinedAt
     ? new Date(invoice.declinedAt)
     : undefined;
@@ -279,7 +295,7 @@ export function invoiceToVolunteerDocument(
     kind: 'invoice',
     periodLabel: periodLabel('invoice', invoice.periodStart, formatMonth),
     nameKey: 'timesheet',
-    state: documentState(invoice.invoiceStatus),
+    state,
     figures: {
       shiftCount: invoice.invoiceTimeEntries.length,
       totalHours: invoice.totalHours,

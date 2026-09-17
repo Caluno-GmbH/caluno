@@ -72,6 +72,15 @@ describe('documentState', () => {
     expect(documentState(ContractStatus.Declined)).toBe('declined');
     expect(documentState(InvoiceStatus.Declined)).toBe('declined');
   });
+
+  it('drops drafts instead of rendering them as active', () => {
+    expect(documentState(ContractStatus.Draft)).toBeNull();
+    expect(documentState(InvoiceStatus.Draft)).toBeNull();
+  });
+
+  it('maps an expired contract to its own state, never signed', () => {
+    expect(documentState(ContractStatus.Expired)).toBe('expired');
+  });
 });
 
 describe('canDecideDocument', () => {
@@ -91,6 +100,10 @@ describe('canDecideDocument', () => {
     expect(canDecideDocument('signed', 'ready')).toBe(false);
     expect(canDecideDocument('declined', 'ready')).toBe(false);
   });
+
+  it('never allows deciding a document with no volunteer-visible state', () => {
+    expect(canDecideDocument(null, 'ready')).toBe(false);
+  });
 });
 
 describe('canDecline', () => {
@@ -102,6 +115,11 @@ describe('canDecline', () => {
     expect(canDecline('declined')).toBe(false);
     expect(canDecline('signed')).toBe(false);
     expect(canDecline('awaiting-countersignature')).toBe(false);
+  });
+
+  it('never allows declining a draft or an expired document', () => {
+    expect(canDecline(null)).toBe(false);
+    expect(canDecline('expired')).toBe(false);
   });
 });
 
@@ -210,11 +228,12 @@ describe('contractToVolunteerDocument', () => {
       },
       formatMonth,
     );
-    expect(doc.kind).toBe('contract');
-    expect(doc.nameKey).toBe('agreement');
-    expect(doc.periodLabel).toBe('2026');
-    expect(doc.state).toBe('awaiting-signature');
-    expect(doc.figures).toBeUndefined();
-    expect(doc.lines[0]?.kind).toBe('generated');
+    expect(doc).not.toBeNull();
+    expect(doc?.kind).toBe('contract');
+    expect(doc?.nameKey).toBe('agreement');
+    expect(doc?.periodLabel).toBe('2026');
+    expect(doc?.state).toBe('awaiting-signature');
+    expect(doc?.figures).toBeUndefined();
+    expect(doc?.lines[0]?.kind).toBe('generated');
   });
 });
