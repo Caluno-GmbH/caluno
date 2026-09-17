@@ -27,7 +27,6 @@ import {
 import {
   type CheckInTimeEntry,
   deriveAcceptedRowState,
-  formatCheckedOutWindows,
   groupTimeEntriesByVolunteer,
   openTimeEntryId,
 } from '../check-in-state';
@@ -40,6 +39,7 @@ import {
   toInviteDisplayState,
 } from '../invite-status-display';
 import { shiftInvitePath } from '../routes';
+import { CheckedOutStatusTooltip } from './checked-out-status-tooltip';
 import { SendCallOutDialog } from './send-call-out-dialog';
 
 type InstanceInvite = {
@@ -153,26 +153,9 @@ export function ShiftInstanceVolunteersPanel({
       baseState === 'accepted' ? deriveAcceptedRowState(entries) : baseState;
 
     const statusTooltip =
-      state === 'checked_out' && entries
-        ? (() => {
-            const { lines, overflowCount } = formatCheckedOutWindows(
-              entries,
-              formatTime,
-            );
-            return (
-              <div className="flex flex-col gap-0.5 text-xs">
-                {lines.map((line) => (
-                  <span key={line}>{line}</span>
-                ))}
-                {overflowCount > 0 ? (
-                  <span>
-                    {t('checkIn.moreWindows', { count: overflowCount })}
-                  </span>
-                ) : null}
-              </div>
-            );
-          })()
-        : undefined;
+      state === 'checked_out' && entries ? (
+        <CheckedOutStatusTooltip entries={entries} formatTime={formatTime} />
+      ) : undefined;
 
     return {
       id: invite.user.id,
