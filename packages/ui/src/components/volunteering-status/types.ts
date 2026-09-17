@@ -38,8 +38,7 @@ export type VolunteeringActionLabel =
   | 'View'
   | 'Check in'
   | 'Check out'
-  | 'Add timesheet'
-  | 'Edit time';
+  | 'Add timesheet';
 
 /** A status the chip dropdown can move a volunteer to. */
 export type VolunteeringStatusOption = {

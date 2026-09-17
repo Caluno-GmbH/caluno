@@ -1245,7 +1245,7 @@
       "checkingOut": "Checking out...",
       "checkingOutAt": "Checking out: {time}",
       "generalCheckIn": "General check-in",
-      "moreWindows": "{count, plural, one {+# more} other {+# more}}",
+      "moreWindows": "{count, plural, one {1 more} other {# more}}",
       "volunteerCheckedOut": "Volunteer checked out"
     },
     "compensation": {

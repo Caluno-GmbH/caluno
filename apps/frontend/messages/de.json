@@ -1245,7 +1245,7 @@
       "checkingOut": "Wird ausgecheckt...",
       "checkingOutAt": "Wird ausgecheckt: {time}",
       "generalCheckIn": "Allgemeines Check-in",
-      "moreWindows": "{count, plural, one {+# weitere} other {+# weitere}}",
+      "moreWindows": "{count, plural, one {noch 1 weitere} other {noch # weitere}}",
       "volunteerCheckedOut": "Freiwillige:r ausgecheckt"
     },
     "compensation": {
