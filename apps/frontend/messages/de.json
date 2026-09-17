@@ -1236,12 +1236,16 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
+      "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
+      "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
+      "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutTitle": "Auschecken",
       "checkedInAt": "Eingecheckt: {time}",
       "checkingOut": "Wird ausgecheckt...",
       "checkingOutAt": "Wird ausgecheckt: {time}",
       "generalCheckIn": "Allgemeines Check-in",
+      "moreWindows": "{count, plural, one {+# weitere} other {+# weitere}}",
       "volunteerCheckedOut": "Freiwillige:r ausgecheckt"
     },
     "compensation": {
@@ -1371,10 +1375,13 @@
       "changeStatusAria": "Status der/des Freiwilligen ändern",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
+      "checkedIn": "Eingecheckt",
+      "checkedOut": "Ausgecheckt",
       "declined": "Abgelehnt",
       "declineSuccess": "Freiwillige:r abgelehnt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
+      "notCheckedIn": "Noch nicht da",
       "pendingApproval": "Genehmigung ausstehend",
       "rejected": "Zurückgewiesen",
       "remindedAtTooltip": "Erinnert am {when}",
@@ -1705,6 +1712,7 @@
     "action": {
       "checkInAria": "Einchecken",
       "checkInShiftAria": "Einchecken",
+      "checkOutAria": "Auschecken",
       "remove": "Entfernen",
       "removeAria": "Entfernen",
       "removeDescription": "Bist du sicher, dass du {name} aus dieser Organisation entfernen möchtest? Das kann nicht rückgängig gemacht werden.",

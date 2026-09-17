@@ -1236,12 +1236,16 @@
       "waitlistInviteSuccess": "Volunteer invited to the shift"
     },
     "checkIn": {
+      "checkInError": "Could not check in volunteer",
+      "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
+      "checkOutError": "Could not check out volunteer",
       "checkOutTitle": "Check-out",
       "checkedInAt": "Checked in: {time}",
       "checkingOut": "Checking out...",
       "checkingOutAt": "Checking out: {time}",
       "generalCheckIn": "General check-in",
+      "moreWindows": "{count, plural, one {+# more} other {+# more}}",
       "volunteerCheckedOut": "Volunteer checked out"
     },
     "compensation": {
@@ -1371,10 +1375,13 @@
       "changeStatusAria": "Change volunteer status",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
+      "checkedIn": "Checked in",
+      "checkedOut": "Checked out",
       "declined": "Declined",
       "declineSuccess": "Volunteer declined",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
+      "notCheckedIn": "Not here yet",
       "pendingApproval": "Pending approval",
       "rejected": "Rejected",
       "remindedAtTooltip": "Reminded on {when}",
@@ -1705,6 +1712,7 @@
     "action": {
       "checkInAria": "Check in",
       "checkInShiftAria": "Check in",
+      "checkOutAria": "Check out",
       "remove": "Remove",
       "removeAria": "Remove",
       "removeDescription": "Are you sure you want to remove {name} from this organisation? This cannot be undone.",
