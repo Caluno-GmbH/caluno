@@ -31,8 +31,8 @@ export function OrgUnitCreateEditSheet({ types }: Props) {
   const tCommon = useTranslations('Common');
 
   const handleSuccess = () => {
-    router.refresh();
     sheetProps.close();
+    router.refresh();
     toast.success(isEdit ? t('toast.updated') : t('toast.created'));
   };
 
