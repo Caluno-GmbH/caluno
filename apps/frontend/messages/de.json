@@ -1044,6 +1044,12 @@
       "nameLabel": "Name",
       "namePlaceholder": "z. B. Onboarding-Formular"
     },
+    "genderOptions": {
+      "female": "Weiblich",
+      "male": "Männlich",
+      "diverse": "Divers",
+      "prefer-not-to-say": "Keine Angabe"
+    },
     "submission": {
       "accepted": "Akzeptiert",
       "answerColumn": "Antwort",

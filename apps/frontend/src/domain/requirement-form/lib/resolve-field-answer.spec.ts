@@ -16,6 +16,12 @@ const opts = {
   dash: '—',
   accepted: 'Accepted',
   formatDate: (d: Date) => `FMT:${d.toISOString().slice(0, 10)}`,
+  genderLabels: {
+    female: 'Female',
+    male: 'Male',
+    diverse: 'Diverse',
+    'prefer-not-to-say': 'Prefer not to say',
+  },
 };
 
 describe('resolveFieldAnswer', () => {
@@ -150,6 +156,26 @@ describe('resolveFieldAnswer', () => {
       opts,
     );
     expect(result).toBe('—');
+  });
+
+  it('maps gender system values to localized labels', () => {
+    const result = resolveFieldAnswer(
+      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      [{ fieldId: 'f1', value: 'female' }],
+      {},
+      opts,
+    );
+    expect(result).toBe('Female');
+  });
+
+  it('passes unknown gender values through unchanged', () => {
+    const result = resolveFieldAnswer(
+      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      [{ fieldId: 'f1', value: 'legacy-free-text' }],
+      {},
+      opts,
+    );
+    expect(result).toBe('legacy-free-text');
   });
 
   it('passes other field types through unchanged', () => {

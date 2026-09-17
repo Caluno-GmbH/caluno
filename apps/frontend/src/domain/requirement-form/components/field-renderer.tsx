@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { GENDER_OPTION_VALUES, hasFixedGenderOptions } from '../gender-options';
 import { RESTRICTED_PAYMENT_MASKS } from '../lib/resolve-field-answer';
 import {
   parseMultiChoiceValue,
@@ -184,6 +185,12 @@ export function buildFieldSchema(
   }
 
   if (type === FieldType.SingleChoice) {
+    if (hasFixedGenderOptions(systemKey)) {
+      const e = z.enum(GENDER_OPTION_VALUES, {
+        message: messages.fieldRequired(label),
+      });
+      return isRequired ? e : z.preprocess(emptyAsUndefined, e.optional());
+    }
     const vals = (options ?? []).map((o) => o.value);
     if (vals.length > 0) {
       const e = z.enum(vals as [string, ...string[]], {
@@ -254,8 +261,6 @@ export function buildFieldSchema(
     s = s.refine((v) => !v || ZIP_RE.test(v), {
       message: messages.validPostalCode(label),
     }) as z.ZodString;
-  } else if (sk === 'gender') {
-    s = s.max(50, messages.maxChars(label, 50)) as z.ZodString;
   }
 
   if (type === FieldType.Iban || systemKey === 'iban') {
@@ -310,6 +315,7 @@ export function FieldRenderer({
   readOnly?: boolean;
 }) {
   const t = useTranslations('RequirementForm.volunteerForm');
+  const tGender = useTranslations('RequirementForm.genderOptions');
   const { formatDate } = useFormatting();
   const description = fieldDescription(field);
 
@@ -400,6 +406,9 @@ export function FieldRenderer({
 
   if (field.type === 'SINGLE_CHOICE') {
     const descriptionId = description ? `${field.id}-description` : undefined;
+    const opts = hasFixedGenderOptions(field.systemKey)
+      ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
+      : (field.options ?? []);
     return (
       <Field>
         <FieldLabel>
@@ -415,7 +424,7 @@ export function FieldRenderer({
             <SelectValue placeholder={t('selectOption')} />
           </SelectTrigger>
           <SelectContent>
-            {field.options?.map((opt) => (
+            {opts.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>

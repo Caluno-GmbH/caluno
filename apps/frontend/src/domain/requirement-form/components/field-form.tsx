@@ -18,6 +18,7 @@ import { Plus, Save, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { FileUpload } from '@/components/storage/file-upload';
+import { hasFixedGenderOptions } from '../gender-options';
 import { OptionsEditor } from './options-editor';
 
 // Field types that have a fixed, unambiguous system key
@@ -73,7 +74,6 @@ export function FieldForm({
     { label: t('firstName'), value: 'name' },
     { label: t('lastName'), value: 'lastname' },
     { label: t('preferredName'), value: 'preferred-name' },
-    { label: t('gender'), value: 'gender' },
     { label: t('address'), value: 'address' },
     { label: t('zipCode'), value: 'zip' },
     { label: t('city'), value: 'city' },
@@ -110,12 +110,14 @@ export function FieldForm({
   );
   const [error, setError] = useState<string | null>(null);
 
-  const showOptions =
-    fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTI_CHOICE';
-  const isDocument = fieldType === 'DOCUMENT_ACKNOWLEDGEMENT';
-  const isStaticText = fieldType === 'STATIC_TEXT';
   const autoSystemKey = AUTO_SYSTEM_KEY[fieldType];
   const showSystemKeyPicker = !autoSystemKey && TEXT_LIKE_TYPES.has(fieldType);
+  const hasFixedOptions = hasFixedGenderOptions(manualSystemKey);
+  const showOptions =
+    (fieldType === 'SINGLE_CHOICE' || fieldType === 'MULTI_CHOICE') &&
+    !hasFixedOptions;
+  const isDocument = fieldType === 'DOCUMENT_ACKNOWLEDGEMENT';
+  const isStaticText = fieldType === 'STATIC_TEXT';
 
   function commit() {
     if (!fieldType) {
@@ -245,9 +247,10 @@ export function FieldForm({
             </>
           )}
 
-          {autoSystemKey && (
+          {(autoSystemKey ||
+            (isLocked && manualSystemKey && !showSystemKeyPicker)) && (
             <p className="text-muted-foreground text-xs">
-              {t('profileField', { key: autoSystemKey })}
+              {t('profileField', { key: autoSystemKey || manualSystemKey })}
             </p>
           )}
 

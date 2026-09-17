@@ -13,6 +13,7 @@ const opts = {
   dash: '—',
   accepted: 'Accepted',
   formatDate: (d: Date) => `FMT:${d.toISOString().slice(0, 10)}`,
+  genderLabels: {},
 };
 
 describe('resolveSubmissionFieldAnswers', () => {

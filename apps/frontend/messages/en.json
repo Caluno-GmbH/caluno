@@ -1044,6 +1044,12 @@
       "nameLabel": "Name",
       "namePlaceholder": "e.g. Onboarding Form"
     },
+    "genderOptions": {
+      "female": "Female",
+      "male": "Male",
+      "diverse": "Diverse",
+      "prefer-not-to-say": "Prefer not to say"
+    },
     "submission": {
       "accepted": "Accepted",
       "answerColumn": "Answer",
