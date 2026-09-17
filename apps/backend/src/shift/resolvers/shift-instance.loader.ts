@@ -1,12 +1,12 @@
 import { Injectable, Scope } from '@nestjs/common';
 import DataLoader from 'dataloader';
 import { RegisterLoader } from '../../graphql/interceptors';
+import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 import { ShiftInviteStatus } from '../enums';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import type { ShiftCallOutSummary } from '../services/shift-call-out.service';
 import { ShiftCallOutService } from '../services/shift-call-out.service';
 import { ShiftService } from '../shift.service';
-import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 
 @RegisterLoader()
 @Injectable({ scope: Scope.REQUEST })

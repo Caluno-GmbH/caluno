@@ -50,7 +50,8 @@ export function formatCheckedOutWindows(
     .filter((entry) => entry.endedAt != null)
     .slice()
     .sort(
-      (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
+      (a, b) =>
+        new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime(),
     );
 
   const lines = closed

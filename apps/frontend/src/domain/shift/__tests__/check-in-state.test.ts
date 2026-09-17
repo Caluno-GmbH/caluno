@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  type CheckInTimeEntry,
   deriveAcceptedRowState,
   formatCheckedOutWindows,
   groupTimeEntriesByVolunteer,
   openTimeEntryId,
-  type CheckInTimeEntry,
 } from '../check-in-state';
 
 describe('groupTimeEntriesByVolunteer', () => {
@@ -113,8 +113,7 @@ describe('openTimeEntryId', () => {
 });
 
 describe('formatCheckedOutWindows', () => {
-  const formatTime = (date: Date) =>
-    date.toISOString().slice(11, 16); // 'HH:mm' for deterministic test output
+  const formatTime = (date: Date) => date.toISOString().slice(11, 16); // 'HH:mm' for deterministic test output
 
   it('formats closed entries as HH:mm – HH:mm lines, sorted ascending', () => {
     const entries: CheckInTimeEntry[] = [
@@ -155,15 +154,12 @@ describe('formatCheckedOutWindows', () => {
   });
 
   it('caps lines at 5 and reports the overflow count', () => {
-    const entries: CheckInTimeEntry[] = Array.from(
-      { length: 7 },
-      (_, i) => ({
-        id: `${i}`,
-        startedAt: `2026-09-0${i + 1}T08:00:00.000Z`,
-        endedAt: `2026-09-0${i + 1}T09:00:00.000Z`,
-        volunteer: { id: 'user-1' },
-      }),
-    );
+    const entries: CheckInTimeEntry[] = Array.from({ length: 7 }, (_, i) => ({
+      id: `${i}`,
+      startedAt: `2026-09-0${i + 1}T08:00:00.000Z`,
+      endedAt: `2026-09-0${i + 1}T09:00:00.000Z`,
+      volunteer: { id: 'user-1' },
+    }));
 
     const result = formatCheckedOutWindows(entries, formatTime);
 

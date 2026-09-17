@@ -87,9 +87,7 @@ describe('ShiftInstanceLoader', () => {
         startedAt: new Date('2026-09-02T08:00:00.000Z'),
         endedAt: null,
       };
-      const findTimeEntriesForInstances = jest
-        .fn()
-        .mockResolvedValue([entry]);
+      const findTimeEntriesForInstances = jest.fn().mockResolvedValue([entry]);
       const loader = new ShiftInstanceLoader(
         { findTimeEntriesForInstances } as unknown as ShiftService,
         shiftCallOutServiceStub,
