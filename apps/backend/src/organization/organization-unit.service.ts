@@ -288,6 +288,13 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
+    if (updated.parentId === null && input.name !== undefined) {
+      await this.db
+        .update(schema.organizations)
+        .set({ name: updated.name })
+        .where(eq(schema.organizations.id, updated.organizationId));
+    }
+
     this.postHogService.capture({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_UPDATE,
       userId,
