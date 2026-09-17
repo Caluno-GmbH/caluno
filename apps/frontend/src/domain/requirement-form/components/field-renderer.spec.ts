@@ -227,13 +227,7 @@ describe('buildFieldSchema gender', () => {
 
   it('accepts each fixed option value when optional', () => {
     const schema = buildFieldSchema(genderField, false, msgs);
-    for (const v of [
-      'female',
-      'male',
-      'diverse',
-      'other',
-      'prefer-not-to-say',
-    ]) {
+    for (const v of ['female', 'male', 'diverse', 'prefer-not-to-say']) {
       expect(schema.safeParse(v).success).toBe(true);
     }
     expect(schema.safeParse('').success).toBe(true);

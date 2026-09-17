@@ -21,6 +21,5 @@ export const GENDER_OPTION_VALUES = [
   'female',
   'male',
   'diverse',
-  'other',
   'prefer-not-to-say',
 ] as const;

@@ -11,7 +11,6 @@ describe('gender options', () => {
       'female',
       'male',
       'diverse',
-      'other',
       'prefer-not-to-say',
     ]);
   });

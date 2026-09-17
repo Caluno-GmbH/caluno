@@ -51,13 +51,7 @@ describe('validateSystemKeyValue', () => {
 
   describe('gender', () => {
     it('accepts all five fixed option values', () => {
-      for (const v of [
-        'female',
-        'male',
-        'diverse',
-        'other',
-        'prefer-not-to-say',
-      ]) {
+      for (const v of ['female', 'male', 'diverse', 'prefer-not-to-say']) {
         expectOk(v, 'gender');
       }
     });

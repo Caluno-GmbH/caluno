@@ -19,7 +19,6 @@ const opts = {
     female: 'Female',
     male: 'Male',
     diverse: 'Diverse',
-    other: 'Other',
     'prefer-not-to-say': 'Prefer not to say',
   },
 };
