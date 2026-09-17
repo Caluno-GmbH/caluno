@@ -730,5 +730,42 @@ describe('ContractService', () => {
       expect(ids).toContain(inRange.id);
       expect(ids).not.toContain(outOfRange.id);
     });
+
+    it('excludes auto-queued DRAFT contracts when issuedOnly is set', async () => {
+      const { organization, root, reimbursementType, volunteer, signer } =
+        await setup();
+
+      const issued = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01'),
+          periodEnd: new Date('2026-12-31'),
+        },
+        signer.id,
+      );
+      const draft = await service.createDraftContract(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01'),
+          periodEnd: new Date('2026-12-31'),
+        },
+        signer.id,
+      );
+
+      const all = await service.findContractsForOrganization(organization.id);
+      expect(all.map((c) => c.id).sort()).toEqual([issued.id, draft.id].sort());
+
+      const onlyIssued = await service.findContractsForOrganization(
+        organization.id,
+        { issuedOnly: true },
+      );
+      expect(onlyIssued.map((c) => c.id)).toEqual([issued.id]);
+    });
   });
 });
