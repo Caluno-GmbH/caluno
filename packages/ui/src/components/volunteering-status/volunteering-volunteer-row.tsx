@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../base/avatar';
 import { Badge } from '../base/badge';
@@ -62,6 +63,8 @@ export type VolunteeringVolunteerRowProps = {
   completedDuration?: string;
   /** Overrides status badge label (e.g. i18n). */
   statusLabel?: string;
+  /** Extra content shown in a tooltip on the status chip (e.g. check-out windows). */
+  statusTooltip?: ReactNode;
   /** When set, renders the status chip as a dropdown offering these targets. */
   statusOptions?: VolunteeringStatusOption[];
   /** Accessible label for the status chip dropdown trigger. */
@@ -87,6 +90,7 @@ export function VolunteeringVolunteerRow({
   phase,
   completedDuration,
   statusLabel,
+  statusTooltip,
   statusOptions,
   statusMenuAriaLabel,
   actions: actionsOverride,
@@ -114,6 +118,7 @@ export function VolunteeringVolunteerRow({
       label={statusLabel}
     />
   );
+  const tooltipContent = passiveHint ?? statusTooltip;
   const statusChip =
     statusOptions && statusOptions.length > 0 && onStatusChange ? (
       <Select value={state} onValueChange={onStatusChange}>
@@ -128,13 +133,13 @@ export function VolunteeringVolunteerRow({
           ))}
         </SelectContent>
       </Select>
-    ) : passiveHint ? (
+    ) : tooltipContent ? (
       <Tooltip>
         <TooltipTrigger asChild>
           <Badge variant="outline">{statusContent}</Badge>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
-          {passiveHint}
+          {tooltipContent}
         </TooltipContent>
       </Tooltip>
     ) : (
