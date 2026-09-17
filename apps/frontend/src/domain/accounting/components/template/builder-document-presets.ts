@@ -99,7 +99,9 @@ export function getContractDocument(
   return {
     header: {
       titleLines: ['Zusatzvereinbarung zur', PAUSCHALE_TITLE[pauschale]],
-      orgIdentityLine: line('header-org-identity', '{orgName} {orgAddress}', [
+      // Newline between name and address: the header is a letterhead block, so
+      // they belong on separate lines (VOLI-1325).
+      orgIdentityLine: line('header-org-identity', '{orgName}\n{orgAddress}', [
         bound('header-org-name', 'org_name'),
         bound('header-org-address', 'org_address'),
       ]),
@@ -113,7 +115,7 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName} {orgAddress}, und', [
+          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
             bound('parties-org-name', 'org_name'),
             bound('parties-org-address', 'org_address'),
           ]),

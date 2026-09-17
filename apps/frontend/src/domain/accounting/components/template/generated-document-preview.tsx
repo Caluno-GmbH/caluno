@@ -119,7 +119,7 @@ function LineRow({
   const fields = line.fields;
 
   return (
-    <p className="text-base leading-relaxed">
+    <p className="whitespace-pre-line text-base leading-relaxed">
       {parts.map((part, i) => {
         const field = fields[i];
         const value = field
