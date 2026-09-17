@@ -64,6 +64,7 @@ type ShiftInstanceVolunteersPanelProps = {
   filledCount: number;
   maxVolunteers: number | null | undefined;
   canManage: boolean;
+  canCheckIn: boolean;
   isInstanceInThePast: boolean;
 };
 
@@ -77,6 +78,7 @@ export function ShiftInstanceVolunteersPanel({
   filledCount,
   maxVolunteers,
   canManage,
+  canCheckIn,
   isInstanceInThePast,
 }: ShiftInstanceVolunteersPanelProps) {
   const { formatDate, formatTime } = useFormatting();
@@ -151,9 +153,9 @@ export function ShiftInstanceVolunteersPanel({
       baseState === 'accepted' ? deriveAcceptedRowState(entries) : baseState;
 
     const checkInAction: VolunteeringActionLabel[] =
-      state === 'not_checked_in'
+      canCheckIn && state === 'not_checked_in'
         ? ['Check in']
-        : state === 'checked_in'
+        : canCheckIn && state === 'checked_in'
           ? ['Check out']
           : [];
 
@@ -282,7 +284,7 @@ export function ShiftInstanceVolunteersPanel({
     }
 
     if (action === 'Check in') {
-      if (pending) return;
+      if (!canCheckIn || pending) return;
       startTransition(async () => {
         const result = await checkInVolunteer({
           organizationUnitId: orgUId,
@@ -300,8 +302,9 @@ export function ShiftInstanceVolunteersPanel({
     }
 
     if (action === 'Check out') {
+      if (!canCheckIn || pending) return;
       const entryId = openTimeEntryId(timeEntriesByVolunteer.get(volunteerId));
-      if (!entryId || pending) return;
+      if (!entryId) return;
       startTransition(async () => {
         const result = await checkOutVolunteer({
           timeEntryId: entryId,

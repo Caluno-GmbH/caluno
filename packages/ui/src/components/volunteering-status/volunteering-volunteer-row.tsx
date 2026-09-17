@@ -119,7 +119,7 @@ export function VolunteeringVolunteerRow({
     />
   );
   const tooltipContent = passiveHint ?? statusTooltip;
-  const statusChip =
+  const chip =
     statusOptions && statusOptions.length > 0 && onStatusChange ? (
       <Select value={state} onValueChange={onStatusChange}>
         <SelectTrigger aria-label={statusMenuAriaLabel}>
@@ -133,18 +133,19 @@ export function VolunteeringVolunteerRow({
           ))}
         </SelectContent>
       </Select>
-    ) : tooltipContent ? (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline">{statusContent}</Badge>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          {tooltipContent}
-        </TooltipContent>
-      </Tooltip>
     ) : (
       <Badge variant="outline">{statusContent}</Badge>
     );
+  const statusChip = tooltipContent ? (
+    <Tooltip>
+      <TooltipTrigger asChild>{chip}</TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        {tooltipContent}
+      </TooltipContent>
+    </Tooltip>
+  ) : (
+    chip
+  );
 
   return (
     <div
