@@ -192,6 +192,7 @@ export function VolunteerDocumentPreview({
             <Button
               variant="outline"
               className="w-full"
+              disabled={!downloadUrl}
               onClick={() => download(currentDocument)}
             >
               <DownloadIcon />

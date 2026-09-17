@@ -463,8 +463,7 @@
         "retry": "Erneut versuchen",
         "errorHelp": "Zu deiner Mitgliedschaft, um Hilfe zu erhalten",
         "signDisabledHint": "Du kannst erst unterschreiben oder ablehnen, wenn du das Dokument in der Vorschau angesehen hast."
-      },
-      "downloadUnavailableNote": "PDF noch nicht verfügbar."
+      }
     }
   },
   "IdVerification": {

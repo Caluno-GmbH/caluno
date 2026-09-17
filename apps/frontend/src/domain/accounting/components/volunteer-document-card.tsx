@@ -173,11 +173,6 @@ export function VolunteerDocumentCard({
           <DownloadIcon />
           {t('actions.download')}
         </Button>
-        {!document.downloadUrl && (
-          <p className="px-1 text-xs text-muted-foreground">
-            {t('downloadUnavailableNote')}
-          </p>
-        )}
         {awaitingSignature && (
           <>
             <Button
