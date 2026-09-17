@@ -323,16 +323,22 @@ export class ShiftService {
       ) as Promise<{ shiftInstanceId: string }[]>;
   }
 
-  /** All time entries for a set of shift instances, ordered by start time (DataLoader batch). */
+  /** All time entries for a set of shift instances in one org unit, ordered by start time (DataLoader batch). */
   async findTimeEntriesForInstances(
     instanceIds: string[],
+    organizationUnitId: string,
   ): Promise<TimeEntryEntity[]> {
     if (instanceIds.length === 0) return [];
 
     return this.db
       .select()
       .from(schema.timeEntries)
-      .where(inArray(schema.timeEntries.shiftInstanceId, instanceIds))
+      .where(
+        and(
+          inArray(schema.timeEntries.shiftInstanceId, instanceIds),
+          eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+        ),
+      )
       .orderBy(asc(schema.timeEntries.startedAt));
   }
 

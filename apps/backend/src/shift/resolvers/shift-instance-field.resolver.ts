@@ -219,9 +219,12 @@ export class ShiftInstanceFieldResolver {
   @ResolveField(() => [TimeEntry])
   async timeEntries(
     @Parent() instance: ShiftInstanceEntity,
+    @Context() context: AuthenticatedGraphQLContext,
     @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
   ): Promise<TimeEntry[]> {
-    const entries = await loader.timeEntriesByInstanceId.load(instance.id);
+    const entries = await loader.timeEntriesByKey.load(
+      `${context.organizationUnitId}:${instance.id}`,
+    );
     return entries as unknown as TimeEntry[];
   }
 

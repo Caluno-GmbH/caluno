@@ -169,20 +169,37 @@ export class ShiftInstanceLoader {
     },
   );
 
-  public readonly timeEntriesByInstanceId = new DataLoader<
-    string,
-    TimeEntryEntity[]
-  >(async (instanceIds) => {
-    const entries = await this.shiftService.findTimeEntriesForInstances(
-      instanceIds as string[],
-    );
+  // Keyed by `${organizationUnitId}:${instanceId}` so the batch stays scoped to
+  // the caller's org unit — the loader itself has no access to request context.
+  public readonly timeEntriesByKey = new DataLoader<string, TimeEntryEntity[]>(
+    async (keys) => {
+      const parsed = keys.map((key) => {
+        const [organizationUnitId, instanceId] = key.split(':');
+        return { organizationUnitId, instanceId };
+      });
 
-    const byInstanceId = new Map<string, TimeEntryEntity[]>();
-    for (const entry of entries) {
-      const list = byInstanceId.get(entry.shiftInstanceId as string) ?? [];
-      list.push(entry);
-      byInstanceId.set(entry.shiftInstanceId as string, list);
-    }
-    return instanceIds.map((id) => byInstanceId.get(id) ?? []);
-  });
+      const entriesByKey = new Map<string, TimeEntryEntity[]>();
+      const instanceIdsByOrgUnit = new Map<string, string[]>();
+      for (const { organizationUnitId, instanceId } of parsed) {
+        const list = instanceIdsByOrgUnit.get(organizationUnitId) ?? [];
+        list.push(instanceId);
+        instanceIdsByOrgUnit.set(organizationUnitId, list);
+      }
+
+      for (const [organizationUnitId, instanceIds] of instanceIdsByOrgUnit) {
+        const entries = await this.shiftService.findTimeEntriesForInstances(
+          instanceIds,
+          organizationUnitId,
+        );
+        for (const entry of entries) {
+          const key = `${organizationUnitId}:${entry.shiftInstanceId as string}`;
+          const list = entriesByKey.get(key) ?? [];
+          list.push(entry);
+          entriesByKey.set(key, list);
+        }
+      }
+
+      return keys.map((key) => entriesByKey.get(key) ?? []);
+    },
+  );
 }

@@ -66,7 +66,7 @@ describe('ShiftInstanceFieldResolver', () => {
   });
 
   describe('timeEntries', () => {
-    it('loads time entries keyed by instance id', async () => {
+    it('loads time entries keyed by org unit and instance id', async () => {
       const resolver = newResolver();
       const entries = [
         {
@@ -78,16 +78,18 @@ describe('ShiftInstanceFieldResolver', () => {
       ];
       const load = jest.fn().mockResolvedValue(entries);
       const loader = {
-        timeEntriesByInstanceId: { load },
+        timeEntriesByKey: { load },
       } as unknown as ShiftInstanceLoader;
+      const context = { organizationUnitId: 'ou-1' } as never;
 
       const result = await resolver.timeEntries(
         instance({ id: 'instance-1' }),
+        context,
         loader,
       );
 
       expect(result).toEqual(entries);
-      expect(load).toHaveBeenCalledWith('instance-1');
+      expect(load).toHaveBeenCalledWith('ou-1:instance-1');
     });
   });
 });
