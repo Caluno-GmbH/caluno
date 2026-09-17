@@ -2434,6 +2434,7 @@ export type ShiftInstance = {
   requiredForms: Array<RequiredFormRef>;
   requiredFormsCount: Scalars['Int']['output'];
   spotsLeft?: Maybe<Scalars['Int']['output']>;
+  timeEntries?: Maybe<Array<TimeEntry>>;
   volunteers?: Maybe<Array<User>>;
 };
 
@@ -3914,7 +3915,7 @@ export type GetShiftInstanceQueryVariables = Exact<{
 }>;
 
 
-export type GetShiftInstanceQuery = { __typename?: 'Query', shiftInstance: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, overrideLocation?: string | null, overrideInstructions?: string | null, overrideMaxVolunteers?: number | null, overrideMinVolunteers?: number | null, overrideReimbursementTypeId?: string | null, isCancelled: boolean, filledCount: number, spotsLeft?: number | null, requiredFormsCount: number, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentFileId?: string | null, documentDownloadUrl?: string | null, documentFilename?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null }> | null } | null }> | null } }>, master: { __typename?: 'Shift', id: string, title: string, location?: string | null, instructions?: string | null, minVolunteers?: number | null, maxVolunteers?: number | null, reimbursementTypeId?: string | null, visibility: ShiftVisibility, rrule?: string | null, createdAt: string, imageUrl?: string | null, createdBy?: { __typename?: 'User', id: string, name: string, image?: string | null } | null }, invites?: Array<{ __typename?: 'ShiftInstanceInvite', status: ShiftInviteStatus, remindedAt?: string | null, user: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string } }> | null } };
+export type GetShiftInstanceQuery = { __typename?: 'Query', shiftInstance: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, overrideLocation?: string | null, overrideInstructions?: string | null, overrideMaxVolunteers?: number | null, overrideMinVolunteers?: number | null, overrideReimbursementTypeId?: string | null, isCancelled: boolean, filledCount: number, spotsLeft?: number | null, requiredFormsCount: number, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentFileId?: string | null, documentDownloadUrl?: string | null, documentFilename?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null }> | null } | null }> | null } }>, master: { __typename?: 'Shift', id: string, title: string, location?: string | null, instructions?: string | null, minVolunteers?: number | null, maxVolunteers?: number | null, reimbursementTypeId?: string | null, visibility: ShiftVisibility, rrule?: string | null, createdAt: string, imageUrl?: string | null, createdBy?: { __typename?: 'User', id: string, name: string, image?: string | null } | null }, invites?: Array<{ __typename?: 'ShiftInstanceInvite', status: ShiftInviteStatus, remindedAt?: string | null, user: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string } }> | null, timeEntries?: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, volunteer: { __typename?: 'User', id: string } }> | null } };
 
 export type GetWeeklyShiftsQueryVariables = Exact<{
   startsAfter: Scalars['DateTime']['input'];
@@ -7122,6 +7123,14 @@ export const GetShiftInstanceDocument = gql`
         email
         image
         checkInId
+      }
+    }
+    timeEntries {
+      id
+      startedAt
+      endedAt
+      volunteer {
+        id
       }
     }
   }

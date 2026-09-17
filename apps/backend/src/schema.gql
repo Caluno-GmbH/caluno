@@ -1341,6 +1341,7 @@ type ShiftInstance {
   requiredForms: [RequiredFormRef!]!
   requiredFormsCount: Int!
   spotsLeft: Int
+  timeEntries: [TimeEntry!]
   volunteers: [User!]
 }
 

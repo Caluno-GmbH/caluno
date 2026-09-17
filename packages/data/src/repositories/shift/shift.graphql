@@ -377,6 +377,14 @@ query GetShiftInstance($id: ID!) {
         checkInId
       }
     }
+    timeEntries {
+      id
+      startedAt
+      endedAt
+      volunteer {
+        id
+      }
+    }
   }
 }
 
