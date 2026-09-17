@@ -1048,7 +1048,8 @@
       "fallbackForm": "Formular",
       "fallbackVolunteer": "Freiwillige:r",
       "fieldColumn": "Feld",
-      "noFields": "Für dieses Formular sind keine Felder definiert."
+      "noFields": "Für dieses Formular sind keine Felder definiert.",
+      "restrictedPaymentData": "Du hast keine Berechtigung, Bankdaten einzusehen."
     },
     "submissions": {
       "emailColumn": "E-Mail",
@@ -1115,6 +1116,7 @@
       "next": "Weiter",
       "noBlocks": "Dieses Formular hat keine Blöcke.",
       "noFields": "Dieser Block hat noch keine konfigurierten Felder.",
+      "paymentDataVisibilityHint": "Deine Bankdaten sind nur für Mitwirkende einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
       "selectOption": "Option auswählen",
       "step": "Schritt {current} von {total}",

@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { RESTRICTED_PAYMENT_MASKS } from '../lib/resolve-field-answer';
 import {
   parseMultiChoiceValue,
   serializeMultiChoiceValue,
@@ -558,6 +559,11 @@ export function FieldRenderer({
 
   const descriptionId = description ? `${field.id}-description` : undefined;
 
+  const paymentDataVisibilityHint =
+    field.systemKey && Object.hasOwn(RESTRICTED_PAYMENT_MASKS, field.systemKey)
+      ? t('paymentDataVisibilityHint')
+      : null;
+
   return (
     <Field>
       <FieldLabel htmlFor={field.id}>
@@ -576,6 +582,9 @@ export function FieldRenderer({
       />
       {description && (
         <FieldDescription id={descriptionId}>{description}</FieldDescription>
+      )}
+      {paymentDataVisibilityHint && (
+        <FieldDescription>{paymentDataVisibilityHint}</FieldDescription>
       )}
       {error && <FieldError>{error}</FieldError>}
     </Field>
