@@ -1959,7 +1959,7 @@
           "active": "Aktiv",
           "declined": "Abgelehnt"
         },
-        "latestTimesheet": "Letzter Stundennachweis · {date}",
+        "latestTimesheet": "Letzter Stundennachweis umfasst · {period}",
         "noTimesheetYet": "Noch kein Stundennachweis"
       },
       "bundle": {

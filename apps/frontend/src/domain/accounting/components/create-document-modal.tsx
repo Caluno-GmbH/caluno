@@ -18,7 +18,6 @@ import {
 import { UserIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   getDocLineSummary,
   getPickerAnnotations,
@@ -98,7 +97,6 @@ export function CreateDocumentModal({
   const tCommon = useTranslations('Common');
   const tDocs = useTranslations('Accounting.reimbursements.docs');
   const tSections = useTranslations('Accounting.templates.sections');
-  const { formatDate } = useFormatting();
 
   const [step, setStep] = useState<1 | 2>(1);
   const [volunteerId, setVolunteerId] = useState<string | null>(null);
@@ -203,11 +201,9 @@ export function CreateDocumentModal({
                             </span>
                           ))}
                           <span className="truncate text-xs text-muted-foreground">
-                            {annotations.latestTimesheetDate
+                            {annotations.latestTimesheetPeriod
                               ? t('createDocumentModal.latestTimesheet', {
-                                  date: formatDate(
-                                    annotations.latestTimesheetDate,
-                                  ),
+                                  period: annotations.latestTimesheetPeriod,
                                 })
                               : t('createDocumentModal.noTimesheetYet')}
                           </span>
