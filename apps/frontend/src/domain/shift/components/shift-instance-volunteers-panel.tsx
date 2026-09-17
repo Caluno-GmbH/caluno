@@ -152,13 +152,6 @@ export function ShiftInstanceVolunteersPanel({
     const state: ShiftVolunteeringDisplayState =
       baseState === 'accepted' ? deriveAcceptedRowState(entries) : baseState;
 
-    const checkInAction: VolunteeringActionLabel[] =
-      canCheckIn && state === 'not_checked_in'
-        ? ['Check in']
-        : canCheckIn && state === 'checked_in'
-          ? ['Check out']
-          : [];
-
     const statusTooltip =
       state === 'checked_out' && entries
         ? (() => {
@@ -196,9 +189,18 @@ export function ShiftInstanceVolunteersPanel({
             }))
           : undefined,
       statusMenuAriaLabel: t('inviteStatus.changeStatusAria'),
-      actions: remindVisible
-        ? ['Remind', ...rowActions]
-        : [...checkInAction, ...rowActions],
+      // Accepted rows defer to the ui status defaults (Check in / Check out per
+      // check-in state, including re-check-in after checkout) and are only
+      // suppressed when the user lacks CHECK_IN_MANAGE. adminRowActions is
+      // empty for accepted invites, so there is nothing to merge.
+      actions:
+        baseState === 'accepted'
+          ? canCheckIn
+            ? undefined
+            : []
+          : remindVisible
+            ? ['Remind', ...rowActions]
+            : rowActions,
       disabledActions: remindVisible && !remindActive ? ['Remind'] : undefined,
       actionLabels: remindVisible
         ? {
@@ -362,7 +364,7 @@ export function ShiftInstanceVolunteersPanel({
   return (
     <VolunteeringVolunteerList
       volunteers={volunteers}
-      phase="before"
+      phase="during"
       title={t('inviteStatus.volunteersTitle')}
       summary={summary}
       headerAction={
