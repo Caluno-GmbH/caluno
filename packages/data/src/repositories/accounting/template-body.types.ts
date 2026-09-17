@@ -29,6 +29,7 @@ export type DataSourceKey =
   | 'generated_date'
   | 'document_number'
   | 'volunteer_iban'
+  | 'volunteer_account_holder'
   | 'volunteer_bic'
   | 'volunteer_address'
   | 'volunteer_dob'

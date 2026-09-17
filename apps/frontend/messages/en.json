@@ -793,6 +793,7 @@
       "subtitles": {
         "firstName": "As on your ID",
         "iban": "For expense and allowance payments",
+        "accountHolder": "Name on the bank account",
         "lastName": "As on your ID",
         "preferredName": "If you'd like to be called something else",
         "bic": "Bank identifier code (BIC) for your account",
@@ -1003,6 +1004,7 @@
       "firstName": "First name",
       "gender": "Gender",
       "iban": "IBAN",
+      "accountHolder": "Account holder",
       "bic": "BIC",
       "taxId": "Tax ID",
       "infoText": "Info text",
@@ -2256,7 +2258,8 @@
           "scrollRegionLabel": "Template editor, scrollable",
           "placeholderExamples": {
             "volunteer_first_name": "First name",
-            "volunteer_last_name": "Last name"
+            "volunteer_last_name": "Last name",
+            "volunteer_account_holder": "Account holder"
           }
         },
         "blockHeadings": {
@@ -2340,6 +2343,7 @@
           "generated_date": "Generated date",
           "document_number": "Invoice number",
           "volunteer_iban": "IBAN (Volunteer)",
+          "volunteer_account_holder": "Account holder (Volunteer)",
           "volunteer_bic": "BIC (Volunteer)",
           "volunteer_address": "Address (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",

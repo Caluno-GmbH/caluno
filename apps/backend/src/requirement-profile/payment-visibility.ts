@@ -1,6 +1,7 @@
 export const PAYMENT_DATA_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',
+  'account-holder': 'XXXXXX XXXXXX',
 } as const;
 
 export function maskRestrictedPaymentData(

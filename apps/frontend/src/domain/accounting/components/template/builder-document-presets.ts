@@ -202,14 +202,9 @@ export function getContractDocument(
             'payout-intro',
             'Die Aufwandsentschädigung wird monatlich auf folgendes Konto überwiesen:',
           ),
-          line(
-            'payout-holder',
-            '{volunteerFirstName} {volunteerLastName}, (Kontoinhaber:in)',
-            [
-              bound('payout-holder-first', 'volunteer_first_name'),
-              bound('payout-holder-last', 'volunteer_last_name'),
-            ],
-          ),
+          line('payout-holder', '{volunteerAccountHolder} (Kontoinhaber:in)', [
+            bound('payout-holder-field', 'volunteer_account_holder'),
+          ]),
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),
