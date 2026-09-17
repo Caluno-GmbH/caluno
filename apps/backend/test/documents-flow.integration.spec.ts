@@ -1189,6 +1189,48 @@ describe('documents flow — admin + volunteer', () => {
       }>(app, { query: CONTRACTS, headers: header }, 'contracts');
       expect(board.contracts.map((c) => c.contractStatus)).toEqual(['DRAFT']);
     });
+
+    it('returns NOT_FOUND when a volunteer opens a draft contract by id, but an admin can', async () => {
+      const draftOrg = await setupFlowOrg(db);
+      const contractService = app.get(ContractService);
+      const draft = await contractService.ensureDraftContract(
+        draftOrg.organizationId,
+        {
+          organizationUnitId: draftOrg.organizationUnitId,
+          volunteerId: draftOrg.volunteerId,
+          reimbursementTypeId: draftOrg.reimbursementTypeId,
+          anchorDate: new Date('2026-01-01T12:00:00.000Z'),
+        },
+        draftOrg.volunteerId,
+      );
+      if (!draft) throw new Error('draft not created');
+      const header = { 'x-organization-unit-id': draftOrg.organizationUnitId };
+
+      setAuthMockUserId(draftOrg.volunteerId);
+      const asVolunteer = await graphqlRequest<{
+        contract: { id: string };
+      }>(app, {
+        query: CONTRACT_DETAIL,
+        variables: { id: draft.id },
+        headers: header,
+      });
+      expect(asVolunteer.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+
+      setAuthMockUserId(draftOrg.adminId);
+      const asAdmin = await graphqlRequestRequiringData<{
+        contract: { id: string; contractStatus: string };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: draft.id },
+          headers: header,
+        },
+        'contract',
+      );
+      expect(asAdmin.contract.id).toBe(draft.id);
+      expect(asAdmin.contract.contractStatus).toBe('DRAFT');
+    });
   });
 
   describe('pdf download', () => {
