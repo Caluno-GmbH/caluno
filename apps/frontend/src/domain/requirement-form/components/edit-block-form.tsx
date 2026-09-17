@@ -108,7 +108,7 @@ export function EditBlockForm({
     required?: boolean;
     systemKey?: string;
     options?: { label: string; value: string }[];
-    documentFileId?: string | null;
+    documentFileIds?: string[] | null;
     documentLabel?: string;
   }) {
     startTransition(async () => {
@@ -139,7 +139,7 @@ export function EditBlockForm({
       required?: boolean;
       systemKey?: string;
       options?: { label: string; value: string }[];
-      documentFileId?: string | null;
+      documentFileIds?: string[] | null;
       documentLabel?: string;
     },
   ) {
@@ -306,7 +306,7 @@ export function EditBlockForm({
                   required: data.required,
                   systemKey: data.systemKey,
                   options: data.options,
-                  documentFileId: data.documentFileId,
+                  documentFileIds: data.documentFileIds,
                   documentLabel: data.documentLabel,
                 })
               }
@@ -394,7 +394,7 @@ export function EditBlockForm({
                 required: data.required,
                 systemKey: data.systemKey,
                 options: data.options,
-                documentFileId: data.documentFileId,
+                documentFileIds: data.documentFileIds,
                 documentLabel: data.documentLabel,
               })
             }

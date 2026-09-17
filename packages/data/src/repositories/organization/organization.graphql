@@ -94,9 +94,11 @@ query GetOrganizationUnit($id: String!) {
                 label
                 value
               }
-              documentFileId
-              documentDownloadUrl
-              documentFilename
+              documents {
+                fileId
+                filename
+                downloadUrl
+              }
               documentLabel
               minAge
               fieldOrder

@@ -15,6 +15,18 @@ export class SelectOption {
 }
 
 @ObjectType()
+export class FormBlockFieldDocument {
+  @Field(() => String)
+  fileId!: string;
+
+  @Field(() => String, { nullable: true })
+  filename?: string | null;
+
+  @Field(() => String, { nullable: true })
+  downloadUrl?: string | null;
+}
+
+@ObjectType()
 export class FormBlockField {
   @Field(() => ID)
   id!: string;
@@ -46,17 +58,13 @@ export class FormBlockField {
   @Field(() => [SelectOption], { nullable: true })
   options?: SelectOption[] | null;
 
-  @Field(() => String, { nullable: true })
-  documentFileId?: string | null;
+  documentFileIds?: string[] | null;
 
   @Field(() => String, { nullable: true })
   documentLabel?: string | null;
 
-  @Field(() => String, { nullable: true })
-  documentDownloadUrl?: string | null;
-
-  @Field(() => String, { nullable: true })
-  documentFilename?: string | null;
+  @Field(() => [FormBlockFieldDocument])
+  documents?: FormBlockFieldDocument[];
 
   @Field(() => Number, { nullable: true })
   minAge?: number | null;

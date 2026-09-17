@@ -45,7 +45,7 @@ export function FieldForm({
     required?: boolean;
     systemKey?: string;
     options?: { label: string; value: string }[];
-    documentFileId?: string | null;
+    documentFileIds?: string[] | null;
     documentLabel?: string;
   }) => void;
   onCancel: () => void;
@@ -105,8 +105,14 @@ export function FieldForm({
       ];
     },
   );
-  const [documentFileId, setDocumentFileId] = useState<string | null>(
-    initial?.documentFileId ?? null,
+  const [documents, setDocuments] = useState<
+    { fileId: string; filename?: string | null; downloadUrl?: string | null }[]
+  >(() =>
+    (initial?.documents ?? []).map((d) => ({
+      fileId: d.fileId,
+      filename: d.filename,
+      downloadUrl: d.downloadUrl,
+    })),
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -128,7 +134,7 @@ export function FieldForm({
       setError(isStaticText ? t('enterTextError') : t('enterLabelError'));
       return;
     }
-    if (isDocument && !documentFileId) {
+    if (isDocument && documents.length === 0) {
       setError(t('enterDocumentFileError'));
       return;
     }
@@ -165,7 +171,7 @@ export function FieldForm({
         : {}),
       ...(isDocument
         ? {
-            documentFileId,
+            documentFileIds: documents.map((d) => d.fileId),
             documentLabel: `${label.trim()} read`,
           }
         : {}),
@@ -175,7 +181,7 @@ export function FieldForm({
   const canSubmit =
     !!fieldType &&
     label.trim() !== '' &&
-    (!isDocument || Boolean(documentFileId)) &&
+    (!isDocument || documents.length > 0) &&
     (!showOptions || options.some((o) => o.label.trim() !== ''));
 
   return (
@@ -276,23 +282,56 @@ export function FieldForm({
           )}
 
           {isDocument && (
-            <FileUpload
-              purpose="form_document"
-              organizationUnitId={orgUId}
-              label={t('documentFileLabel')}
-              value={documentFileId || null}
-              initialPreviewUrl={initial?.documentDownloadUrl}
-              initialFilename={initial?.documentFilename}
-              error={error ?? undefined}
-              onUploaded={(result) => {
-                setDocumentFileId(result.fileId);
-                if (error) setError(null);
-              }}
-              onClear={() => {
-                setDocumentFileId(null);
-                if (error) setError(null);
-              }}
-            />
+            <div className="space-y-2">
+              {documents.map((doc, i) => (
+                <FileUpload
+                  key={doc.fileId}
+                  purpose="form_document"
+                  organizationUnitId={orgUId}
+                  label={`${t('documentFileLabel')} ${i + 1}`}
+                  value={doc.fileId}
+                  initialPreviewUrl={doc.downloadUrl ?? null}
+                  initialFilename={doc.filename ?? null}
+                  error={error ?? undefined}
+                  onUploaded={(result) => {
+                    setDocuments((docs) =>
+                      docs.map((d, j) =>
+                        j === i
+                          ? {
+                              fileId: result.fileId,
+                              filename: result.filename,
+                              downloadUrl: result.publicUrl,
+                            }
+                          : d,
+                      ),
+                    );
+                    if (error) setError(null);
+                  }}
+                  onClear={() => {
+                    setDocuments((docs) => docs.filter((_, j) => j !== i));
+                    if (error) setError(null);
+                  }}
+                />
+              ))}
+              <FileUpload
+                purpose="form_document"
+                organizationUnitId={orgUId}
+                label={t('addDocumentFile')}
+                value={null}
+                error={error ?? undefined}
+                onUploaded={(result) => {
+                  setDocuments((docs) => [
+                    ...docs,
+                    {
+                      fileId: result.fileId,
+                      filename: result.filename,
+                      downloadUrl: result.publicUrl,
+                    },
+                  ]);
+                  if (error) setError(null);
+                }}
+              />
+            </div>
           )}
 
           {showOptions && (

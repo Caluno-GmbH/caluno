@@ -290,9 +290,7 @@ export type RenderableField = Pick<
   | 'placeholder'
   | 'systemKey'
   | 'options'
-  | 'documentFileId'
-  | 'documentDownloadUrl'
-  | 'documentFilename'
+  | 'documents'
   | 'documentLabel'
   | 'minAge'
 >;
@@ -331,28 +329,33 @@ export function FieldRenderer({
 
   if (field.type === 'DOCUMENT_ACKNOWLEDGEMENT') {
     const descriptionId = description ? `${field.id}-description` : undefined;
+    const docCount = field.documents?.length ?? 0;
     return (
       <Field>
         <FieldLabel>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.documentLabel && (
+        {docCount > 0 && (
           <FieldDescription>
-            {field.documentDownloadUrl ? (
-              <span className="flex items-center gap-1">
-                <a
-                  href={field.documentDownloadUrl}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  {field.documentLabel}
-                </a>
-                <Link className="size-3" />
-              </span>
-            ) : (
-              field.documentLabel
-            )}
+            <span className="flex flex-col items-start gap-1">
+              {field.documents?.map((doc, i) => {
+                const text = `${field.documentLabel || doc.filename || ''}${
+                  docCount > 1 ? ` (${i + 1})` : ''
+                }`;
+                if (!text) return null;
+                return doc.downloadUrl ? (
+                  <span key={doc.fileId} className="flex items-center gap-1">
+                    <a href={doc.downloadUrl} target="_blank" rel="noopener">
+                      {text}
+                    </a>
+                    <Link className="size-3" />
+                  </span>
+                ) : (
+                  <span key={doc.fileId}>{text}</span>
+                );
+              })}
+            </span>
           </FieldDescription>
         )}
         <div className="flex gap-2 items-center">
