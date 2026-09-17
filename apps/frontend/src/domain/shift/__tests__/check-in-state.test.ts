@@ -1,0 +1,173 @@
+import { describe, expect, it } from 'bun:test';
+import {
+  deriveAcceptedRowState,
+  formatCheckedOutWindows,
+  groupTimeEntriesByVolunteer,
+  openTimeEntryId,
+  type CheckInTimeEntry,
+} from '../check-in-state';
+
+describe('groupTimeEntriesByVolunteer', () => {
+  it('groups entries by volunteer id', () => {
+    const entries: CheckInTimeEntry[] = [
+      {
+        id: '1',
+        startedAt: '2026-09-02T08:00:00.000Z',
+        endedAt: null,
+        volunteer: { id: 'user-1' },
+      },
+      {
+        id: '2',
+        startedAt: '2026-09-02T09:00:00.000Z',
+        endedAt: null,
+        volunteer: { id: 'user-2' },
+      },
+      {
+        id: '3',
+        startedAt: '2026-09-02T10:00:00.000Z',
+        endedAt: '2026-09-02T11:00:00.000Z',
+        volunteer: { id: 'user-1' },
+      },
+    ];
+
+    const result = groupTimeEntriesByVolunteer(entries);
+
+    expect(result.get('user-1')).toEqual([entries[0], entries[2]]);
+    expect(result.get('user-2')).toEqual([entries[1]]);
+    expect(result.get('user-3')).toBeUndefined();
+  });
+});
+
+describe('deriveAcceptedRowState', () => {
+  it('returns not_checked_in when there are no entries', () => {
+    expect(deriveAcceptedRowState(undefined)).toBe('not_checked_in');
+    expect(deriveAcceptedRowState([])).toBe('not_checked_in');
+  });
+
+  it('returns checked_in when there is an open entry', () => {
+    const entries: CheckInTimeEntry[] = [
+      {
+        id: '1',
+        startedAt: '2026-09-02T08:00:00.000Z',
+        endedAt: '2026-09-02T09:00:00.000Z',
+        volunteer: { id: 'user-1' },
+      },
+      {
+        id: '2',
+        startedAt: '2026-09-02T10:00:00.000Z',
+        endedAt: null,
+        volunteer: { id: 'user-1' },
+      },
+    ];
+
+    expect(deriveAcceptedRowState(entries)).toBe('checked_in');
+  });
+
+  it('returns checked_out when every entry is closed', () => {
+    const entries: CheckInTimeEntry[] = [
+      {
+        id: '1',
+        startedAt: '2026-09-02T08:00:00.000Z',
+        endedAt: '2026-09-02T09:00:00.000Z',
+        volunteer: { id: 'user-1' },
+      },
+    ];
+
+    expect(deriveAcceptedRowState(entries)).toBe('checked_out');
+  });
+});
+
+describe('openTimeEntryId', () => {
+  it('returns the id of the open entry', () => {
+    const entries: CheckInTimeEntry[] = [
+      {
+        id: '1',
+        startedAt: '2026-09-02T08:00:00.000Z',
+        endedAt: '2026-09-02T09:00:00.000Z',
+        volunteer: { id: 'user-1' },
+      },
+      {
+        id: '2',
+        startedAt: '2026-09-02T10:00:00.000Z',
+        endedAt: null,
+        volunteer: { id: 'user-1' },
+      },
+    ];
+
+    expect(openTimeEntryId(entries)).toBe('2');
+  });
+
+  it('returns null when there is no open entry', () => {
+    expect(openTimeEntryId(undefined)).toBeNull();
+    expect(
+      openTimeEntryId([
+        {
+          id: '1',
+          startedAt: '2026-09-02T08:00:00.000Z',
+          endedAt: '2026-09-02T09:00:00.000Z',
+          volunteer: { id: 'user-1' },
+        },
+      ]),
+    ).toBeNull();
+  });
+});
+
+describe('formatCheckedOutWindows', () => {
+  const formatTime = (date: Date) =>
+    date.toISOString().slice(11, 16); // 'HH:mm' for deterministic test output
+
+  it('formats closed entries as HH:mm – HH:mm lines, sorted ascending', () => {
+    const entries: CheckInTimeEntry[] = [
+      {
+        id: '2',
+        startedAt: '2026-09-02T13:00:00.000Z',
+        endedAt: '2026-09-02T15:30:00.000Z',
+        volunteer: { id: 'user-1' },
+      },
+      {
+        id: '1',
+        startedAt: '2026-09-02T08:00:00.000Z',
+        endedAt: '2026-09-02T12:00:00.000Z',
+        volunteer: { id: 'user-1' },
+      },
+    ];
+
+    const result = formatCheckedOutWindows(entries, formatTime);
+
+    expect(result.lines).toEqual(['08:00 – 12:00', '13:00 – 15:30']);
+    expect(result.overflowCount).toBe(0);
+  });
+
+  it('ignores open entries', () => {
+    const entries: CheckInTimeEntry[] = [
+      {
+        id: '1',
+        startedAt: '2026-09-02T08:00:00.000Z',
+        endedAt: null,
+        volunteer: { id: 'user-1' },
+      },
+    ];
+
+    const result = formatCheckedOutWindows(entries, formatTime);
+
+    expect(result.lines).toEqual([]);
+    expect(result.overflowCount).toBe(0);
+  });
+
+  it('caps lines at 5 and reports the overflow count', () => {
+    const entries: CheckInTimeEntry[] = Array.from(
+      { length: 7 },
+      (_, i) => ({
+        id: `${i}`,
+        startedAt: `2026-09-0${i + 1}T08:00:00.000Z`,
+        endedAt: `2026-09-0${i + 1}T09:00:00.000Z`,
+        volunteer: { id: 'user-1' },
+      }),
+    );
+
+    const result = formatCheckedOutWindows(entries, formatTime);
+
+    expect(result.lines).toHaveLength(5);
+    expect(result.overflowCount).toBe(2);
+  });
+});
