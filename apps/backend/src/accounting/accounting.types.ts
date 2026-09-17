@@ -21,6 +21,8 @@ export type InvoiceFilter = {
   periodStart?: Date;
   periodEnd?: Date;
   organizationUnitId?: string;
+  /** Server-set: when true, DRAFT (never created) rows are hidden. */
+  issuedOnly?: boolean;
 };
 
 export type RateProvenance = {
