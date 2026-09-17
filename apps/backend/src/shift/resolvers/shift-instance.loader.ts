@@ -6,6 +6,7 @@ import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import type { ShiftCallOutSummary } from '../services/shift-call-out.service';
 import { ShiftCallOutService } from '../services/shift-call-out.service';
 import { ShiftService } from '../shift.service';
+import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 
 @RegisterLoader()
 @Injectable({ scope: Scope.REQUEST })
@@ -167,4 +168,21 @@ export class ShiftInstanceLoader {
       return keys.map((key) => intendedKeys.has(key));
     },
   );
+
+  public readonly timeEntriesByInstanceId = new DataLoader<
+    string,
+    TimeEntryEntity[]
+  >(async (instanceIds) => {
+    const entries = await this.shiftService.findTimeEntriesForInstances(
+      instanceIds as string[],
+    );
+
+    const byInstanceId = new Map<string, TimeEntryEntity[]>();
+    for (const entry of entries) {
+      const list = byInstanceId.get(entry.shiftInstanceId as string) ?? [];
+      list.push(entry);
+      byInstanceId.set(entry.shiftInstanceId as string, list);
+    }
+    return instanceIds.map((id) => byInstanceId.get(id) ?? []);
+  });
 }

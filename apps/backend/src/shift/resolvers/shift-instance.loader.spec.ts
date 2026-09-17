@@ -78,4 +78,74 @@ describe('ShiftInstanceLoader', () => {
       ]);
     });
   });
+
+  describe('timeEntriesByInstanceId', () => {
+    it('returns the entries for a matching instance', async () => {
+      const entry = {
+        id: 'entry-1',
+        shiftInstanceId: 'instance-1',
+        startedAt: new Date('2026-09-02T08:00:00.000Z'),
+        endedAt: null,
+      };
+      const findTimeEntriesForInstances = jest
+        .fn()
+        .mockResolvedValue([entry]);
+      const loader = new ShiftInstanceLoader(
+        { findTimeEntriesForInstances } as unknown as ShiftService,
+        shiftCallOutServiceStub,
+      );
+
+      const result = await loader.timeEntriesByInstanceId.load('instance-1');
+
+      expect(result).toEqual([entry]);
+      expect(findTimeEntriesForInstances).toHaveBeenCalledWith(['instance-1']);
+    });
+
+    it('returns an empty array when the instance has no entries', async () => {
+      const findTimeEntriesForInstances = jest.fn().mockResolvedValue([]);
+      const loader = new ShiftInstanceLoader(
+        { findTimeEntriesForInstances } as unknown as ShiftService,
+        shiftCallOutServiceStub,
+      );
+
+      const result = await loader.timeEntriesByInstanceId.load('instance-1');
+
+      expect(result).toEqual([]);
+    });
+
+    it('batches multiple instance loads into one service call, grouped correctly', async () => {
+      const entryA = {
+        id: 'entry-a',
+        shiftInstanceId: 'instance-1',
+        startedAt: new Date('2026-09-02T08:00:00.000Z'),
+        endedAt: null,
+      };
+      const entryB = {
+        id: 'entry-b',
+        shiftInstanceId: 'instance-2',
+        startedAt: new Date('2026-09-03T08:00:00.000Z'),
+        endedAt: null,
+      };
+      const findTimeEntriesForInstances = jest
+        .fn()
+        .mockResolvedValue([entryA, entryB]);
+      const loader = new ShiftInstanceLoader(
+        { findTimeEntriesForInstances } as unknown as ShiftService,
+        shiftCallOutServiceStub,
+      );
+
+      const [result1, result2] = await Promise.all([
+        loader.timeEntriesByInstanceId.load('instance-1'),
+        loader.timeEntriesByInstanceId.load('instance-2'),
+      ]);
+
+      expect(result1).toEqual([entryA]);
+      expect(result2).toEqual([entryB]);
+      expect(findTimeEntriesForInstances).toHaveBeenCalledTimes(1);
+      expect(findTimeEntriesForInstances).toHaveBeenCalledWith([
+        'instance-1',
+        'instance-2',
+      ]);
+    });
+  });
 });
