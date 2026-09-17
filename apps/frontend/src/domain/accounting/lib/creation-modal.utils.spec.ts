@@ -8,20 +8,33 @@ import {
 } from './creation-modal.utils';
 
 describe('contractPeriodForLifespan', () => {
-  it('covers the full Berlin calendar year of the entered MM/YYYY string', () => {
-    expect(contractPeriodForLifespan('03/2026')).toEqual({
+  it('covers the single Berlin month of an MM/YYYY string', () => {
+    expect(contractPeriodForLifespan('08/2026')).toEqual({
+      periodStart: '2026-07-31T22:00:00.000Z',
+      periodEnd: '2026-08-31T22:00:00.000Z',
+    });
+  });
+
+  it('covers the full Berlin calendar year of a YYYY string', () => {
+    expect(contractPeriodForLifespan('2026')).toEqual({
       periodStart: '2025-12-31T23:00:00.000Z',
       periodEnd: '2026-12-31T23:00:00.000Z',
     });
   });
 
-  it('falls back to the reference year when the string does not parse', () => {
-    expect(
-      contractPeriodForLifespan('not-a-date', new Date('2025-06-01T00:00:00Z')),
-    ).toEqual({
-      periodStart: '2024-12-31T23:00:00.000Z',
-      periodEnd: '2025-12-31T23:00:00.000Z',
+  it('covers a stated day range with an exclusive end', () => {
+    expect(contractPeriodForLifespan('01.08.2026–15.08.2026')).toEqual({
+      periodStart: '2026-07-31T22:00:00.000Z',
+      periodEnd: '2026-08-15T22:00:00.000Z',
     });
+  });
+
+  it('returns undefined when the string does not parse', () => {
+    expect(contractPeriodForLifespan('not-a-date')).toBeUndefined();
+  });
+
+  it('returns undefined for an empty entry', () => {
+    expect(contractPeriodForLifespan('')).toBeUndefined();
   });
 });
 

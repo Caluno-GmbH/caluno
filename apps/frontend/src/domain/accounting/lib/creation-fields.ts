@@ -1,4 +1,9 @@
-import type { DataSourceKey, TemplateDocument, TemplateLine } from '@repo/data';
+import type {
+  DataSourceKey,
+  TemplateDocument,
+  TemplateField,
+  TemplateLine,
+} from '@repo/data';
 
 export type DerivedFieldKind = 'bound' | 'manual';
 export type DerivedFieldProvenance = 'template' | 'profile' | 'gap';
@@ -10,6 +15,8 @@ export interface DerivedField {
   fieldIds: string[];
   labelKey: string;
   kind: DerivedFieldKind;
+  /** Manual fields only: which control the template declares (e.g. `period`), so the modal can render the right editor. */
+  control?: TemplateField['control'];
   source?: DataSourceKey;
   value: string | null;
   provenance: DerivedFieldProvenance;
@@ -90,6 +97,7 @@ export function deriveEditableFields(
           fieldIds: [field.id],
           labelKey: field.id,
           kind: 'manual',
+          control: field.control,
           value: field.value.value || null,
           provenance: 'template',
         });

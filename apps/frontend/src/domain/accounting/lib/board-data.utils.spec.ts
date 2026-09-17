@@ -59,8 +59,9 @@ function makeContract(
   return {
     id: 'c-1',
     contractStatus: ContractStatus.AwaitingVolunteerSignature,
-    periodStart: '2026-01-01T00:00:00.000Z',
-    periodEnd: '2026-12-31T23:59:59.000Z',
+    // 2026 as Berlin calendar-year bounds, the shape the app persists.
+    periodStart: '2025-12-31T23:00:00.000Z',
+    periodEnd: '2026-12-31T23:00:00.000Z',
     isNonCompliant: false,
     declineReason: null,
     declinedAt: null,
@@ -144,7 +145,7 @@ describe('contractStatusToDocStatus', () => {
       'contract-active',
     );
     expect(contractStatusToDocStatus(ContractStatus.Expired)).toBe(
-      'contract-active',
+      'contract-expired',
     );
     expect(contractStatusToDocStatus(ContractStatus.Declined)).toBe(
       'contract-declined',
@@ -234,11 +235,54 @@ describe('mapSignatureToSignee', () => {
 
 describe('mapContractToBoardDoc', () => {
   it('maps a contract to a board document', () => {
-    const doc = mapContractToBoardDoc(makeContract({}), 'ehrenamt');
+    const doc = mapContractToBoardDoc(makeContract({}), 'ehrenamt', 'de');
     expect(doc.status).toBe('contract-signing-vol');
     expect(doc.periodLabel).toBe('2026');
     expect(doc.pauschale).toBe('ehrenamt');
     expect(doc.lastActionDate).toBeInstanceOf(Date);
+  });
+
+  // VOLI-1370: a contract's label must state the period the agreement does,
+  // not always the calendar year.
+  it('labels a month-scoped contract by its month', () => {
+    const doc = mapContractToBoardDoc(
+      makeContract({
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+      }),
+      'uebungsleiter',
+      'de',
+    );
+    expect(doc.periodLabel).toBe('August 2026');
+  });
+
+  // VOLI-1370: an ACTIVE contract past its period is not current cover.
+  it('shows an ACTIVE contract whose period has ended as expired', () => {
+    const doc = mapContractToBoardDoc(
+      makeContract({
+        contractStatus: ContractStatus.Active,
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+      }),
+      'ehrenamt',
+      'de',
+      new Date('2026-09-15T12:00:00.000Z'),
+    );
+    expect(doc.status).toBe('contract-expired');
+  });
+
+  it('keeps an ACTIVE contract inside its period as active', () => {
+    const doc = mapContractToBoardDoc(
+      makeContract({
+        contractStatus: ContractStatus.Active,
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+      }),
+      'ehrenamt',
+      'de',
+      new Date('2026-08-15T12:00:00.000Z'),
+    );
+    expect(doc.status).toBe('contract-active');
   });
 
   // VOLI-1246: the admin's document sheet needs to show who declined a
@@ -254,6 +298,7 @@ describe('mapContractToBoardDoc', () => {
         declinedByUser: { id: 'v-1', name: 'Anna Müller' },
       }),
       'ehrenamt',
+      'de',
     );
     expect(doc.status).toBe('contract-declined');
     expect(doc.declineReason).toBe('Terms are not acceptable');
@@ -458,7 +503,7 @@ describe('buildBoardVolunteers', () => {
       ]);
     });
 
-    it('still queues the contract when the volunteer has hours but no contract', () => {
+    it('suppresses the timesheet and queues the contract when hours have no covering contract', () => {
       const volunteers = buildBoardVolunteers({
         rosterUsage: [noDocsVolunteer],
         contracts: [],
@@ -468,10 +513,145 @@ describe('buildBoardVolunteers', () => {
         timesheetsToCreate,
       });
 
-      const statuses = (volunteers[0]?.documents ?? []).map((d) => d.status);
-      expect(statuses).toContain('contract-generate');
-      expect(statuses.filter((s) => s === 'timesheet-generate')).toHaveLength(
-        2,
+      const docs = volunteers[0]?.documents ?? [];
+      expect(docs.map((d) => d.status)).toEqual(['contract-generate']);
+      expect(docs[0]?.periodLabel).toBe('Juli 2026');
+    });
+
+    // VOLI-1370: an ACTIVE contract for one month must not cover hours in
+    // another month. The uncovered month gets a reminder instead of a payment.
+    it('does not create a timesheet for a month outside the active contract', () => {
+      const augustContract = makeContract({
+        id: 'c-august',
+        contractStatus: ContractStatus.Active,
+        // August 2026 as Berlin bounds.
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+      });
+
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [augustContract],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        timesheetsToCreate: [
+          {
+            volunteerId: 'v-1',
+            reimbursementTypeId: 'rt-ehrenamt',
+            // September 2026 as Berlin bounds.
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+            eligibleHours: 5,
+            estimatedAmountCents: 600,
+          },
+        ],
+      });
+
+      const docs = volunteers[0]?.documents ?? [];
+      expect(docs.some((d) => d.status === 'timesheet-generate')).toBe(false);
+      const reminder = docs.find((d) => d.status === 'contract-generate');
+      expect(reminder?.periodLabel).toBe('September 2026');
+    });
+
+    it('still creates a timesheet for a month the active contract covers', () => {
+      const augustContract = makeContract({
+        id: 'c-august',
+        contractStatus: ContractStatus.Active,
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+      });
+
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [augustContract],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        timesheetsToCreate: [
+          {
+            volunteerId: 'v-1',
+            reimbursementTypeId: 'rt-ehrenamt',
+            periodStart: '2026-07-31T22:00:00.000Z',
+            periodEnd: '2026-08-31T22:00:00.000Z',
+            eligibleHours: 5,
+            estimatedAmountCents: 600,
+          },
+        ],
+      });
+
+      const docs = volunteers[0]?.documents ?? [];
+      expect(
+        docs.filter((d) => d.status === 'timesheet-generate'),
+      ).toHaveLength(1);
+      expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
+    });
+
+    // VOLI-1370 / PM: until both parties have signed there is no valid
+    // contract, so a covering draft must not release the payment.
+    it('does not create a timesheet for a month only a DRAFT contract covers', () => {
+      const september = {
+        volunteerId: 'v-1',
+        reimbursementTypeId: 'rt-ehrenamt',
+        // September 2026 as Berlin bounds.
+        periodStart: '2026-08-31T22:00:00.000Z',
+        periodEnd: '2026-09-30T22:00:00.000Z',
+        eligibleHours: 5,
+        estimatedAmountCents: 600,
+      };
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [
+          makeContract({
+            id: 'c-draft',
+            contractStatus: ContractStatus.Draft,
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          }),
+        ],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        timesheetsToCreate: [september],
+      });
+
+      const docs = volunteers[0]?.documents ?? [];
+      expect(docs.some((d) => d.status === 'timesheet-generate')).toBe(false);
+      // The draft is its own "create contract" task; no duplicate reminder.
+      expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
+      expect(docs.some((d) => d.status === 'contract-draft')).toBe(true);
+    });
+
+    it('does not create a timesheet for a month only an awaiting-signature contract covers', () => {
+      const september = {
+        volunteerId: 'v-1',
+        reimbursementTypeId: 'rt-ehrenamt',
+        periodStart: '2026-08-31T22:00:00.000Z',
+        periodEnd: '2026-09-30T22:00:00.000Z',
+        eligibleHours: 5,
+        estimatedAmountCents: 600,
+      };
+      const volunteers = buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [
+          makeContract({
+            id: 'c-pending',
+            contractStatus: ContractStatus.AwaitingNgoSignature,
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          }),
+        ],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        timesheetsToCreate: [september],
+      });
+
+      const docs = volunteers[0]?.documents ?? [];
+      expect(docs.some((d) => d.status === 'timesheet-generate')).toBe(false);
+      expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
+      expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(
+        true,
       );
     });
   });
@@ -533,7 +713,15 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      paidShiftVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      paidShiftSignups: [
+        {
+          volunteerId: 'v-1',
+          reimbursementTypeId: 'rt-ehrenamt',
+          // September 2026 as Berlin bounds.
+          periodStart: '2026-08-31T22:00:00.000Z',
+          periodEnd: '2026-09-30T22:00:00.000Z',
+        },
+      ],
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs).toHaveLength(1);
@@ -541,7 +729,9 @@ describe('buildBoardVolunteers', () => {
     expect(docs[0]?.id).toBe('v-1-contract-generate-ehrenamt');
   });
 
-  it('does not synthesize a contract-generate row for a paid-shift signup with an active contract', () => {
+  // VOLI-1370: the backend only returns paid-shift signups whose shift date no
+  // valid contract covers, so the board surfaces the create task for each.
+  it('surfaces the paid-shift create task for a signup the backend judged uncovered', () => {
     const volunteers = buildBoardVolunteers({
       rosterUsage: [noDocsVolunteer],
       contracts: [
@@ -550,10 +740,21 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      paidShiftVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      paidShiftSignups: [
+        {
+          volunteerId: 'v-1',
+          reimbursementTypeId: 'rt-ehrenamt',
+          // September 2026 as Berlin bounds.
+          periodStart: '2026-08-31T22:00:00.000Z',
+          periodEnd: '2026-09-30T22:00:00.000Z',
+        },
+      ],
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
+    const reminder = docs.find((d) => d.status === 'contract-generate');
+    expect(reminder).toBeDefined();
+    // The reminder names the uncovered month, not the year (VOLI-1370).
+    expect(reminder?.periodLabel).toBe('September 2026');
     expect(docs.some((d) => d.status === 'contract-active')).toBe(true);
   });
 
@@ -565,7 +766,15 @@ describe('buildBoardVolunteers', () => {
       year: 2026,
       locale: 'de',
       eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
-      paidShiftVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      paidShiftSignups: [
+        {
+          volunteerId: 'v-1',
+          reimbursementTypeId: 'rt-ehrenamt',
+          // September 2026 as Berlin bounds.
+          periodStart: '2026-08-31T22:00:00.000Z',
+          periodEnd: '2026-09-30T22:00:00.000Z',
+        },
+      ],
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.filter((d) => d.status === 'contract-generate')).toHaveLength(
@@ -927,6 +1136,18 @@ describe('getContractStateForPicker', () => {
       },
     ]);
     expect(getContractStateForPicker(vol, 'ehrenamt')).toBe('declined');
+  });
+
+  it('returns expired for a contract whose period has ended', () => {
+    const vol = makeVol([
+      {
+        id: 'c-1',
+        status: 'contract-expired',
+        periodLabel: 'August 2026',
+        pauschale: 'ehrenamt',
+      },
+    ]);
+    expect(getContractStateForPicker(vol, 'ehrenamt')).toBe('expired');
   });
 
   it('returns awaiting-countersignature for a coordinator-signed contract', () => {

@@ -67,11 +67,15 @@ query GetInviteAllowanceEligibility(
   $organizationUnitId: ID!
   $reimbursementTypeId: ID!
   $shiftDurationMinutes: Int!
+  $periodStart: DateTime
+  $periodEnd: DateTime
 ) {
   inviteAllowanceEligibility(
     organizationUnitId: $organizationUnitId
     reimbursementTypeId: $reimbursementTypeId
     shiftDurationMinutes: $shiftDurationMinutes
+    periodStart: $periodStart
+    periodEnd: $periodEnd
   ) {
     volunteerId
     state
@@ -338,6 +342,8 @@ query GetPaidShiftSignupVolunteers($year: Int!) {
       id
       key
     }
+    periodStart
+    periodEnd
   }
 }
 

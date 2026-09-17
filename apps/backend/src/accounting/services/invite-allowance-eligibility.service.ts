@@ -18,6 +18,11 @@ export interface GetInviteAllowanceStatesInput {
   reimbursementTypeId: string;
   /** Planned duration of the shift the volunteer would be invited to. */
   shiftDurationMinutes: number;
+  /**
+   * The shift's period. A contract only counts when it covers this period;
+   * when omitted, the check falls back to "now".
+   */
+  period?: { start: Date; end: Date };
   /** Defaults to the current calendar year. */
   year?: number;
 }
@@ -80,6 +85,7 @@ export class InviteAllowanceEligibilityService {
         const contract = await this.contractService.findActiveContract(
           member.id,
           input.reimbursementTypeId,
+          input.period,
         );
 
         const typeUsage = usageByVolunteerId

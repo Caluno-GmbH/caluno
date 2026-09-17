@@ -16,7 +16,7 @@ import { DocumentSigningService } from '../src/accounting/services/document-sign
 import { DocumentTemplateService } from '../src/accounting/services/document-template.service';
 import { InvoiceService } from '../src/accounting/services/invoice.service';
 import { ReimbursementRateService } from '../src/accounting/services/reimbursement-rate.service';
-import { billingMonthBounds } from '../src/accounting/utils/billing-period';
+import { billingMonthBoundsOf } from '../src/accounting/utils/billing-period';
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
@@ -407,7 +407,7 @@ describe('InvoiceService', () => {
         endedAt: new Date('2026-07-31T23:00:00.000Z'),
       });
 
-      const july = billingMonthBounds(new Date('2026-07-15T12:00:00.000Z'));
+      const july = billingMonthBoundsOf(new Date('2026-07-15T12:00:00.000Z'));
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
         reimbursementType.id,
@@ -914,8 +914,9 @@ describe('InvoiceService', () => {
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
         contractStatus: ContractStatus.ACTIVE,
-        periodStart: new Date(Date.now() - 86_400_000),
-        periodEnd: new Date(Date.now() + 86_400_000),
+        // Covers the invoice's July 2026 period.
+        periodStart: new Date('2026-07-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-08-01T00:00:00.000Z'),
         resolvedBody: { header: {}, blocks: [], footer: {} },
       });
 
@@ -933,6 +934,44 @@ describe('InvoiceService', () => {
       );
 
       expect(invoice.isNonCompliant).toBe(false);
+    });
+
+    // VOLI-1370: an ACTIVE contract for a different month is not cover for
+    // this invoice's period.
+    it('flags the invoice when the active contract covers a different month', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+        contractTemplate,
+      } = await setup();
+      await db.insert(schema.contracts).values({
+        documentTemplateId: contractTemplate.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        contractStatus: ContractStatus.ACTIVE,
+        // August 2026 as Berlin bounds — the invoice is for July.
+        periodStart: new Date('2026-07-31T22:00:00.000Z'),
+        periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+      });
+
+      const invoice = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+
+      expect(invoice.isNonCompliant).toBe(true);
     });
 
     it('auto-creates a DRAFT contract when the volunteer has no contract', async () => {
@@ -1132,7 +1171,7 @@ describe('InvoiceService', () => {
       expect(invoices).toHaveLength(2);
     });
 
-    it('does not create a second draft contract for the same volunteer, type and year', async () => {
+    it('creates one month-scoped draft per uncovered month', async () => {
       const {
         organization,
         reimbursementType,
@@ -1179,9 +1218,22 @@ describe('InvoiceService', () => {
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
         },
+        orderBy: (c, { asc }) => [asc(c.periodStart)],
       });
-      expect(contracts).toHaveLength(1);
-      expect(contracts[0].contractStatus).toBe(ContractStatus.DRAFT);
+      // VOLI-1370: a draft is scoped to the uncovered month, so July and August
+      // each queue their own — never one whole-year draft.
+      expect(contracts.map((c) => c.contractStatus)).toEqual([
+        ContractStatus.DRAFT,
+        ContractStatus.DRAFT,
+      ]);
+      expect(contracts.map((c) => c.periodStart)).toEqual([
+        new Date('2026-06-30T22:00:00.000Z'),
+        new Date('2026-07-31T22:00:00.000Z'),
+      ]);
+      expect(contracts.map((c) => c.periodEnd)).toEqual([
+        new Date('2026-07-31T22:00:00.000Z'),
+        new Date('2026-08-31T22:00:00.000Z'),
+      ]);
     });
 
     it('drafts for the following year despite a prior-year contract ending Jan 1', async () => {

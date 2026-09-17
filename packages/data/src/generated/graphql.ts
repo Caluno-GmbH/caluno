@@ -1416,6 +1416,8 @@ export type PaginationInfo = {
 
 export type PaidShiftSignupVolunteer = {
   __typename?: 'PaidShiftSignupVolunteer';
+  periodEnd: Scalars['DateTime']['output'];
+  periodStart: Scalars['DateTime']['output'];
   reimbursementType: ReimbursementType;
   volunteer: User;
 };
@@ -1730,6 +1732,8 @@ export type QueryFormSubmissionsForVolunteerArgs = {
 
 export type QueryInviteAllowanceEligibilityArgs = {
   organizationUnitId: Scalars['ID']['input'];
+  periodEnd?: InputMaybe<Scalars['DateTime']['input']>;
+  periodStart?: InputMaybe<Scalars['DateTime']['input']>;
   reimbursementTypeId: Scalars['ID']['input'];
   shiftDurationMinutes: Scalars['Int']['input'];
 };
@@ -2816,6 +2820,8 @@ export type GetInviteAllowanceEligibilityQueryVariables = Exact<{
   organizationUnitId: Scalars['ID']['input'];
   reimbursementTypeId: Scalars['ID']['input'];
   shiftDurationMinutes: Scalars['Int']['input'];
+  periodStart?: InputMaybe<Scalars['DateTime']['input']>;
+  periodEnd?: InputMaybe<Scalars['DateTime']['input']>;
 }>;
 
 
@@ -2924,7 +2930,7 @@ export type GetPaidShiftSignupVolunteersQueryVariables = Exact<{
 }>;
 
 
-export type GetPaidShiftSignupVolunteersQuery = { __typename?: 'Query', paidShiftSignupVolunteers: Array<{ __typename?: 'PaidShiftSignupVolunteer', volunteer: { __typename?: 'User', id: string, name: string }, reimbursementType: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey } }> };
+export type GetPaidShiftSignupVolunteersQuery = { __typename?: 'Query', paidShiftSignupVolunteers: Array<{ __typename?: 'PaidShiftSignupVolunteer', periodStart: string, periodEnd: string, volunteer: { __typename?: 'User', id: string, name: string }, reimbursementType: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey } }> };
 
 export type GetEligibleTimeEntriesForInvoiceQueryVariables = Exact<{
   volunteerId: Scalars['ID']['input'];
@@ -4666,11 +4672,13 @@ export const GetYearlyUsageDocument = gql`
 }
     `;
 export const GetInviteAllowanceEligibilityDocument = gql`
-    query GetInviteAllowanceEligibility($organizationUnitId: ID!, $reimbursementTypeId: ID!, $shiftDurationMinutes: Int!) {
+    query GetInviteAllowanceEligibility($organizationUnitId: ID!, $reimbursementTypeId: ID!, $shiftDurationMinutes: Int!, $periodStart: DateTime, $periodEnd: DateTime) {
   inviteAllowanceEligibility(
     organizationUnitId: $organizationUnitId
     reimbursementTypeId: $reimbursementTypeId
     shiftDurationMinutes: $shiftDurationMinutes
+    periodStart: $periodStart
+    periodEnd: $periodEnd
   ) {
     volunteerId
     state
@@ -4826,6 +4834,8 @@ export const GetPaidShiftSignupVolunteersDocument = gql`
       id
       key
     }
+    periodStart
+    periodEnd
   }
 }
     `;
