@@ -1130,6 +1130,107 @@ describe('documents flow — admin + volunteer', () => {
       }>(app, { query: MY_DOCUMENT_SUMMARY }, 'myDocumentSummary');
       expect(summary.myDocumentSummary).toEqual({ total: 3, pending: 2 });
     });
+
+    it('hides an auto-queued DRAFT contract from the volunteer but keeps it on the admin board', async () => {
+      const draftOrg = await setupFlowOrg(db);
+      const contractService = app.get(ContractService);
+
+      await contractService.ensureDraftContract(
+        draftOrg.organizationId,
+        {
+          organizationUnitId: draftOrg.organizationUnitId,
+          volunteerId: draftOrg.volunteerId,
+          reimbursementTypeId: draftOrg.reimbursementTypeId,
+          anchorDate: new Date('2026-01-01T12:00:00.000Z'),
+        },
+        draftOrg.volunteerId,
+      );
+
+      // Queuing a draft must not notify the volunteer (no "awaiting signature"
+      // event for a document that was never created).
+      expect(awaitingSignatureEvents).toEqual([]);
+
+      // Volunteer: nothing issued yet.
+      setAuthMockUserId(draftOrg.volunteerId);
+      const header = { 'x-organization-unit-id': draftOrg.organizationUnitId };
+
+      const documents = await graphqlRequestRequiringData<{
+        myDocuments: Array<{
+          organizationUnitId: string;
+          contracts: Array<{ id: string }>;
+          invoices: Array<{ id: string }>;
+        }>;
+      }>(app, { query: MY_DOCUMENTS }, 'myDocuments');
+      const group = documents.myDocuments.find(
+        (g) => g.organizationUnitId === draftOrg.organizationUnitId,
+      );
+      expect(group?.contracts).toEqual([]);
+      expect(group?.invoices).toEqual([]);
+
+      const mine = await graphqlRequestRequiringData<{
+        myContracts: Array<{ id: string }>;
+      }>(app, { query: MY_CONTRACTS, headers: header }, 'myContracts');
+      expect(mine.myContracts).toEqual([]);
+
+      const myInvoices = await graphqlRequestRequiringData<{
+        myInvoices: Array<{ id: string }>;
+      }>(app, { query: MY_INVOICES, headers: header }, 'myInvoices');
+      expect(myInvoices.myInvoices).toEqual([]);
+
+      const summary = await graphqlRequestRequiringData<{
+        myDocumentSummary: { total: number; pending: number };
+      }>(app, { query: MY_DOCUMENT_SUMMARY }, 'myDocumentSummary');
+      expect(summary.myDocumentSummary).toEqual({ total: 0, pending: 0 });
+
+      // Admin: the same row is still queued on the board.
+      setAuthMockUserId(draftOrg.adminId);
+      const board = await graphqlRequestRequiringData<{
+        contracts: Array<{ contractStatus: string }>;
+      }>(app, { query: CONTRACTS, headers: header }, 'contracts');
+      expect(board.contracts.map((c) => c.contractStatus)).toEqual(['DRAFT']);
+    });
+
+    it('returns NOT_FOUND when a volunteer opens a draft contract by id, but an admin can', async () => {
+      const draftOrg = await setupFlowOrg(db);
+      const contractService = app.get(ContractService);
+      const draft = await contractService.ensureDraftContract(
+        draftOrg.organizationId,
+        {
+          organizationUnitId: draftOrg.organizationUnitId,
+          volunteerId: draftOrg.volunteerId,
+          reimbursementTypeId: draftOrg.reimbursementTypeId,
+          anchorDate: new Date('2026-01-01T12:00:00.000Z'),
+        },
+        draftOrg.volunteerId,
+      );
+      if (!draft) throw new Error('draft not created');
+      const header = { 'x-organization-unit-id': draftOrg.organizationUnitId };
+
+      setAuthMockUserId(draftOrg.volunteerId);
+      const asVolunteer = await graphqlRequest<{
+        contract: { id: string };
+      }>(app, {
+        query: CONTRACT_DETAIL,
+        variables: { id: draft.id },
+        headers: header,
+      });
+      expect(asVolunteer.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+
+      setAuthMockUserId(draftOrg.adminId);
+      const asAdmin = await graphqlRequestRequiringData<{
+        contract: { id: string; contractStatus: string };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: draft.id },
+          headers: header,
+        },
+        'contract',
+      );
+      expect(asAdmin.contract.id).toBe(draft.id);
+      expect(asAdmin.contract.contractStatus).toBe('DRAFT');
+    });
   });
 
   describe('pdf download', () => {

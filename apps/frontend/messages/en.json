@@ -421,6 +421,7 @@
         "awaiting-signature": "To sign",
         "awaiting-countersignature": "To countersign",
         "signed": "Active",
+        "expired": "Expired",
         "declined": "Declined"
       },
       "figures": "{shifts} Shifts · {hours} hours · {amount}",
@@ -462,8 +463,7 @@
         "retry": "Try again",
         "errorHelp": "Go to your membership for help",
         "signDisabledHint": "You can only sign or decline once you've viewed the document in the preview."
-      },
-      "downloadUnavailableNote": "PDF not available yet."
+      }
     }
   },
   "IdVerification": {

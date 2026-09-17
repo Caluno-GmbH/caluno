@@ -13,6 +13,7 @@ import {
   contractToVolunteerDocument,
   documentLines,
   documentState,
+  invoiceToVolunteerDocument,
   periodLabel,
 } from './volunteer-documents.utils';
 
@@ -72,6 +73,15 @@ describe('documentState', () => {
     expect(documentState(ContractStatus.Declined)).toBe('declined');
     expect(documentState(InvoiceStatus.Declined)).toBe('declined');
   });
+
+  it('drops drafts instead of rendering them as active', () => {
+    expect(documentState(ContractStatus.Draft)).toBeNull();
+    expect(documentState(InvoiceStatus.Draft)).toBeNull();
+  });
+
+  it('maps an expired contract to its own state, never signed', () => {
+    expect(documentState(ContractStatus.Expired)).toBe('expired');
+  });
 });
 
 describe('canDecideDocument', () => {
@@ -91,6 +101,10 @@ describe('canDecideDocument', () => {
     expect(canDecideDocument('signed', 'ready')).toBe(false);
     expect(canDecideDocument('declined', 'ready')).toBe(false);
   });
+
+  it('never allows deciding a document with no volunteer-visible state', () => {
+    expect(canDecideDocument(null, 'ready')).toBe(false);
+  });
 });
 
 describe('canDecline', () => {
@@ -102,6 +116,11 @@ describe('canDecline', () => {
     expect(canDecline('declined')).toBe(false);
     expect(canDecline('signed')).toBe(false);
     expect(canDecline('awaiting-countersignature')).toBe(false);
+  });
+
+  it('never allows declining a draft or an expired document', () => {
+    expect(canDecline(null)).toBe(false);
+    expect(canDecline('expired')).toBe(false);
   });
 });
 
@@ -210,11 +229,74 @@ describe('contractToVolunteerDocument', () => {
       },
       formatMonth,
     );
-    expect(doc.kind).toBe('contract');
-    expect(doc.nameKey).toBe('agreement');
-    expect(doc.periodLabel).toBe('2026');
-    expect(doc.state).toBe('awaiting-signature');
-    expect(doc.figures).toBeUndefined();
-    expect(doc.lines[0]?.kind).toBe('generated');
+    expect(doc).not.toBeNull();
+    expect(doc?.kind).toBe('contract');
+    expect(doc?.nameKey).toBe('agreement');
+    expect(doc?.periodLabel).toBe('2026');
+    expect(doc?.state).toBe('awaiting-signature');
+    expect(doc?.figures).toBeUndefined();
+    expect(doc?.lines[0]?.kind).toBe('generated');
+  });
+
+  it('returns null for a draft contract summary', () => {
+    const doc = contractToVolunteerDocument(
+      {
+        id: 'contract-1',
+        contractStatus: ContractStatus.Draft,
+        periodStart: '2026-01-01T00:00:00.000Z',
+        periodEnd: '2027-01-01T00:00:00.000Z',
+        isNonCompliant: false,
+        declineReason: null,
+        declinedAt: null,
+        declinedAtSigneeType: null,
+        declinedByUser: null,
+        renewDate: null,
+        downloadUrl: null,
+        missingProfileFields: [],
+        missingOrgProfileFields: [],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: null,
+        volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
+        reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
+        documentTemplate: { id: 'dt-1', kind: DocumentKind.Contract },
+        signatures: [],
+        statusChanges: [statusChange()],
+      },
+      formatMonth,
+    );
+    expect(doc).toBeNull();
+  });
+});
+
+describe('invoiceToVolunteerDocument', () => {
+  it('returns null for a draft invoice summary', () => {
+    const doc = invoiceToVolunteerDocument(
+      {
+        id: 'invoice-1',
+        invoiceStatus: InvoiceStatus.Draft,
+        periodStart: '2026-07-01T00:00:00.000Z',
+        periodEnd: '2026-07-31T23:59:59.000Z',
+        totalAmountCents: 12_000,
+        totalHours: 8,
+        isNonCompliant: false,
+        declineReason: null,
+        declinedAt: null,
+        declinedAtSigneeType: null,
+        declinedByUser: null,
+        downloadUrl: null,
+        missingProfileFields: [],
+        missingOrgProfileFields: [],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: null,
+        volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
+        reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
+        documentTemplate: { id: 'dt-2', kind: DocumentKind.Invoice },
+        invoiceTimeEntries: [],
+        signatures: [],
+        statusChanges: [statusChange()],
+      },
+      formatMonth,
+    );
+    expect(doc).toBeNull();
   });
 });

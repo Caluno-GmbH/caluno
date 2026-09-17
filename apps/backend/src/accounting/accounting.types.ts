@@ -10,6 +10,8 @@ export type ContractFilter = {
   periodStart?: Date;
   periodEnd?: Date;
   organizationUnitId?: string;
+  /** Server-set: when true, DRAFT (auto-queued, not yet created) rows are hidden. */
+  issuedOnly?: boolean;
 };
 
 export type InvoiceFilter = {
@@ -19,6 +21,8 @@ export type InvoiceFilter = {
   periodStart?: Date;
   periodEnd?: Date;
   organizationUnitId?: string;
+  /** Server-set: when true, DRAFT (never created) rows are hidden. */
+  issuedOnly?: boolean;
 };
 
 export type RateProvenance = {
