@@ -7,7 +7,10 @@ import type {
 import z from 'zod';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
-import { deleteOrgUnitSchema, serverCreateOrgUnitSchema } from './schemas';
+import {
+  requestOrgUnitDeletionSchema,
+  serverCreateOrgUnitSchema,
+} from './schemas';
 
 export const createOrgUnit = actionClient
   .inputSchema(serverCreateOrgUnitSchema)
@@ -62,11 +65,14 @@ export const updateOrgUnit = actionClient
     return await data.organizationUnit.update(id, input);
   });
 
-export const deleteOrgUnit = actionClient
-  .inputSchema(deleteOrgUnitSchema)
+export const requestOrgUnitDeletion = actionClient
+  .inputSchema(requestOrgUnitDeletionSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient({
       orgUId: parsedInput.organizationUnitId,
     });
-    return await data.organizationUnit.delete(parsedInput.id);
+    return await data.organizationUnit.requestDeletion(
+      parsedInput.id,
+      parsedInput.message,
+    );
   });

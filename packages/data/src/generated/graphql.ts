@@ -747,7 +747,6 @@ export type Mutation = {
   deleteEvent: Event;
   deleteFormBlock: FormBlock;
   deleteFormBlockField: FormBlock;
-  deleteOrganizationUnit: OrganizationUnit;
   deleteRequirement: Requirement;
   deleteRequirementForm: RequirementForm;
   deleteRequirementFulfillment: RequirementFulfillment;
@@ -768,6 +767,7 @@ export type Mutation = {
   remindShiftInstanceInvite: Scalars['DateTime']['output'];
   removeMembership: Membership;
   removeMembershipRequest: MembershipRequest;
+  requestOrganizationUnitDeletion: OrganizationUnit;
   sendShiftInstanceCallOut: ShiftInstanceCallOutResult;
   setEventRequiredForms: Array<RequiredFormRef>;
   setManualBaseline: ManualBaseline;
@@ -970,11 +970,6 @@ export type MutationDeleteFormBlockFieldArgs = {
 };
 
 
-export type MutationDeleteOrganizationUnitArgs = {
-  id: Scalars['String']['input'];
-};
-
-
 export type MutationDeleteRequirementArgs = {
   id: Scalars['String']['input'];
 };
@@ -1079,6 +1074,12 @@ export type MutationRemoveMembershipArgs = {
 
 export type MutationRemoveMembershipRequestArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationRequestOrganizationUnitDeletionArgs = {
+  id: Scalars['String']['input'];
+  message?: InputMaybe<Scalars['String']['input']>;
 };
 
 
@@ -3427,12 +3428,13 @@ export type UpdateOrganizationUnitMutationVariables = Exact<{
 
 export type UpdateOrganizationUnitMutation = { __typename?: 'Mutation', updateOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, deletedAt?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, parent?: { __typename?: 'OrganizationUnit', id: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } };
 
-export type DeleteOrganizationUnitMutationVariables = Exact<{
+export type RequestOrganizationUnitDeletionMutationVariables = Exact<{
   id: Scalars['String']['input'];
+  message?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type DeleteOrganizationUnitMutation = { __typename?: 'Mutation', deleteOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string } };
+export type RequestOrganizationUnitDeletionMutation = { __typename?: 'Mutation', requestOrganizationUnitDeletion: { __typename?: 'OrganizationUnit', id: string, name: string } };
 
 export type IsMemberOfOrgUnitOrAncestorQueryVariables = Exact<{
   organizationUnitId: Scalars['ID']['input'];
@@ -5857,9 +5859,9 @@ export const UpdateOrganizationUnitDocument = gql`
   }
 }
     `;
-export const DeleteOrganizationUnitDocument = gql`
-    mutation DeleteOrganizationUnit($id: String!) {
-  deleteOrganizationUnit(id: $id) {
+export const RequestOrganizationUnitDeletionDocument = gql`
+    mutation RequestOrganizationUnitDeletion($id: String!, $message: String) {
+  requestOrganizationUnitDeletion(id: $id, message: $message) {
     id
     name
   }
@@ -7898,8 +7900,8 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     UpdateOrganizationUnit(variables: UpdateOrganizationUnitMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateOrganizationUnitMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateOrganizationUnitMutation>({ document: UpdateOrganizationUnitDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateOrganizationUnit', 'mutation', variables);
     },
-    DeleteOrganizationUnit(variables: DeleteOrganizationUnitMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteOrganizationUnitMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<DeleteOrganizationUnitMutation>({ document: DeleteOrganizationUnitDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteOrganizationUnit', 'mutation', variables);
+    RequestOrganizationUnitDeletion(variables: RequestOrganizationUnitDeletionMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RequestOrganizationUnitDeletionMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<RequestOrganizationUnitDeletionMutation>({ document: RequestOrganizationUnitDeletionDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RequestOrganizationUnitDeletion', 'mutation', variables);
     },
     IsMemberOfOrgUnitOrAncestor(variables: IsMemberOfOrgUnitOrAncestorQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<IsMemberOfOrgUnitOrAncestorQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<IsMemberOfOrgUnitOrAncestorQuery>({ document: IsMemberOfOrgUnitOrAncestorDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'IsMemberOfOrgUnitOrAncestor', 'query', variables);

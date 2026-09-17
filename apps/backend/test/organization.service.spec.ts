@@ -397,6 +397,8 @@ describe('OrganizationUnitService', () => {
       } as never,
       new OrganizationUnitDataService(db),
       { capture: () => {} } as never,
+      {} as never,
+      {} as never,
     );
 
     registerTestResourceCleanup(async () => {
