@@ -1,3 +1,5 @@
+import { parseISO } from 'date-fns';
+
 export const LAST_ORG_COOKIE = 'caluno.last_org_slug';
 export const LOCALE_HEADER = 'x-locale';
 export const LOCALE_COOKIE = 'caluno.locale';
@@ -101,8 +103,9 @@ export function parseRruleEndDate(
   if (!untilMatch?.[1]) return undefined;
 
   const untilStr = untilMatch[1];
+
   try {
-    return new Date(untilStr);
+    return parseISO(untilStr);
   } catch {
     return undefined;
   }
