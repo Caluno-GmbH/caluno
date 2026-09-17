@@ -45,7 +45,7 @@
     "date-fns": "^4.1.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^1.11.0",
-    "motion": "^13.2.0",
+    "motion": "^13.4.0",
     "radix-ui": "^1.4.3",
     "react": "^19",
     "react-day-picker": "^10.0.0",
