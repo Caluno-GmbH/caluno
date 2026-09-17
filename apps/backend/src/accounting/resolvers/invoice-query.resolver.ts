@@ -14,6 +14,8 @@ import { TimeEntry } from '../../time-tracking/models/time-entry.model';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
 import type { InvoiceFilter } from '../accounting.types';
+import { isIssuedDocument } from '../document-visibility';
+import { DocumentKind, InvoiceStatus } from '../enums';
 import { InvoiceFilterInput } from '../inputs/invoice-filter.input';
 import { InvoiceMapper, ReimbursementTypeMapper } from '../mappers';
 import { Invoice } from '../models/invoice.model';
@@ -60,7 +62,12 @@ export class InvoiceQueryResolver {
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Invoice> {
     const invoice = await this.invoiceService.findInvoice(id);
-    await this.assertCanViewDocument(invoice.volunteerId, session, context);
+    await this.assertCanViewDocument(
+      invoice.volunteerId,
+      invoice.invoiceStatus,
+      session,
+      context,
+    );
     return this.invoiceMapper.toModelOrThrow(invoice);
   }
 
@@ -95,7 +102,11 @@ export class InvoiceQueryResolver {
     const organizationId = await this.resolveOrganizationId(context);
     const invoices = await this.invoiceService.findInvoicesForOrganization(
       organizationId,
-      { ...toInvoiceFilter(filter), volunteerId: session.user.id },
+      {
+        ...toInvoiceFilter(filter),
+        volunteerId: session.user.id,
+        issuedOnly: true,
+      },
     );
     return this.invoiceMapper.toArray(invoices);
   }
@@ -107,7 +118,12 @@ export class InvoiceQueryResolver {
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<PendingSignee | null> {
     const invoice = await this.invoiceService.findInvoice(invoiceId);
-    await this.assertCanViewDocument(invoice.volunteerId, session, context);
+    await this.assertCanViewDocument(
+      invoice.volunteerId,
+      invoice.invoiceStatus,
+      session,
+      context,
+    );
     return this.invoiceService.findPendingInvoiceSignee(invoiceId);
   }
 
@@ -123,7 +139,7 @@ export class InvoiceQueryResolver {
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntry[]> {
-    await this.assertCanViewDocument(volunteerId, session, context);
+    await this.assertCanViewDocument(volunteerId, undefined, session, context);
     const entries = await this.invoiceService.findEligibleTimeEntries(
       volunteerId,
       reimbursementTypeId,
@@ -149,13 +165,24 @@ export class InvoiceQueryResolver {
     );
     if (rows.length === 0) return [];
 
-    const [users, reimbursementTypes] = await Promise.all([
+    const organizationId =
+      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+        context.organizationUnitId,
+      );
+    const [users, reimbursementTypes, rates] = await Promise.all([
       this.userService.findByIds(rows.map((row) => row.volunteerId)),
       this.reimbursementRateService.findReimbursementTypes(),
+      this.reimbursementRateService.getEffectiveRates(
+        organizationId,
+        context.organizationUnitId,
+      ),
     ]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const reimbursementTypeById = new Map(
       reimbursementTypes.map((type) => [type.id, type]),
+    );
+    const rateCentsByTypeId = new Map(
+      rates.map((rate) => [rate.reimbursementType.id, rate.hourlyRateCents]),
     );
 
     return rows.map((row) => {
@@ -177,7 +204,16 @@ export class InvoiceQueryResolver {
         volunteer: this.userMapper.toModelOrThrow(user),
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
         eligibleHours: row.eligibleHours,
+        // What the timesheet would come to at the unit's current rate; the
+        // issued document computes its own total at creation.
+        estimatedAmountCents: Math.round(
+          row.eligibleHours *
+            (rateCentsByTypeId.get(row.reimbursementTypeId) ??
+              reimbursementType.platformDefaultRateCents),
+        ),
       };
     });
   }
@@ -232,21 +268,28 @@ export class InvoiceQueryResolver {
 
   private async assertCanViewDocument(
     volunteerId: string,
+    status: InvoiceStatus | undefined,
     session: UserSession,
     context: AuthenticatedGraphQLContext,
   ): Promise<void> {
-    if (session.user.id === volunteerId) {
-      return;
-    }
+    const isOwner = session.user.id === volunteerId;
     const hasPermission = await this.authService.hasRequiredPermissions(
       session.user.id,
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
-    if (!hasPermission) {
+    if (!isOwner && !hasPermission) {
       throw new ForbiddenGraphQLError(
         'You do not have permission to view this document',
       );
+    }
+    if (
+      isOwner &&
+      !hasPermission &&
+      status !== undefined &&
+      !isIssuedDocument(DocumentKind.INVOICE, status)
+    ) {
+      throw new NotFoundGraphQLError('Invoice not found');
     }
   }
 

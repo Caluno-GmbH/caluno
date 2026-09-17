@@ -380,6 +380,7 @@ describe('OrganizationService', () => {
 describe('OrganizationUnitService', () => {
   let db: Database;
   let organizationUnitService: OrganizationUnitService;
+  let organizationService: OrganizationService;
 
   beforeAll(async () => {
     await ensureTestDatabase();
@@ -397,6 +398,16 @@ describe('OrganizationUnitService', () => {
       } as never,
       new OrganizationUnitDataService(db),
       { capture: () => {} } as never,
+    );
+
+    organizationService = new OrganizationService(
+      db,
+      {} as OrganizationMapper,
+      {} as MembershipService,
+      {} as OrganizationUnitService,
+      {} as NotificationService,
+      {} as FileService,
+      { capture: () => {} } as unknown as PostHogService,
     );
 
     registerTestResourceCleanup(async () => {
@@ -436,6 +447,68 @@ describe('OrganizationUnitService', () => {
 
       expect(updated.slug).toBe(originalSlug);
       expect(updated.name).toBe('Renamed Child');
+    });
+
+    it('updates organizations.name when the root unit is renamed', async () => {
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Org Name ${crypto.randomUUID()}`,
+      );
+      const rootUnit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'Root Unit Name',
+      });
+
+      const updateRootUnit = await organizationUnitService.update(
+        rootUnit.id,
+        {
+          organizationId: organization.id,
+          name: 'All New Name',
+        },
+        (await createUser(db)).id,
+      );
+
+      expect(updateRootUnit.name).toBe('All New Name');
+      expect((await organizationService.findById(organization.id))?.name).toBe(
+        'All New Name',
+      );
+    });
+
+    it('does not touch organizations when a non-root unit is renamed', async () => {
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        'MC Hammer',
+      );
+      const rootUnit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'Root Unit Name',
+      });
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'Child Org Unit',
+        parentId: rootUnit.id,
+      });
+
+      const updateChildUnit = await organizationUnitService.update(
+        child.id,
+        {
+          organizationId: organization.id,
+          name: 'All New Name',
+        },
+        (await createUser(db)).id,
+      );
+
+      expect(updateChildUnit.name).toBe('All New Name');
+
+      expect((await organizationUnitService.findById(rootUnit.id))?.name).toBe(
+        'Root Unit Name',
+      );
+      expect((await organizationService.findById(organization.id))?.name).toBe(
+        'MC Hammer',
+      );
     });
   });
 });

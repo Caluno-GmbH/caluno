@@ -1,3 +1,4 @@
+import type { EmailTemplateContext } from '../../../../i18n/email-translate';
 import { DEFAULT_APP_URL } from './theme';
 
 /**
@@ -34,6 +35,11 @@ export function organizationAdminUrl(organizationUnitId: string): string {
 /** Deep link to the volunteers admin page for reviewing membership requests. */
 export function volunteersAdminUrl(organizationUnitId: string): string {
   return `${resolveAppUrl()}/admin/${encodeURIComponent(organizationUnitId)}/volunteers`;
+}
+
+/** Deep link a supervisor's scanner resolves to check a volunteer in — the same URL the frontend's own QR view encodes. */
+export function checkInAdminUrl(checkInId: string): string {
+  return `${resolveAppUrl()}/admin/check-in/${encodeURIComponent(checkInId)}`;
 }
 
 /** Deep link to the Abrechnungen (reimbursements) admin queue, where a declined document shows up needing correction and reissue. */
@@ -102,4 +108,24 @@ export function myInvitationsUrl(): string {
 /** Deep link to the volunteering side's open-shift discovery page. */
 export function discoverShiftsUrl(): string {
   return `${resolveAppUrl()}/discover`;
+}
+
+/**
+ * Landing page for managing email preferences, linked from every
+ * preference-gated email's footer. For now it just redirects to the account
+ * settings screen rather than acting on anything itself.
+ */
+export function emailUnsubscribeUrl(): string {
+  return `${resolveAppUrl()}/unsubscribe`;
+}
+
+/**
+ * The "Don't want these emails anymore? Manage your email preferences" footer
+ * line shared by every preference-gated template, so the wording lives in one
+ * place instead of being hand-rolled per template.
+ */
+export function unsubscribeFooterNote(t: EmailTemplateContext['t']): string {
+  return t('emailUnsubscribe.prompt', {
+    link: `<a href="${emailUnsubscribeUrl()}">${t('emailUnsubscribe.label')}</a>`,
+  });
 }

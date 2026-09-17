@@ -2,6 +2,7 @@
 
 import { DataError, PermissionKey, parseTemplateBody } from '@repo/data';
 import {
+  useAccountingSetupStatus,
   useActiveDocumentTemplate,
   useAdminUserProfile,
   useCreateContract,
@@ -17,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
 import { useRouter } from '@/i18n/navigation';
+import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   type DerivedField,
   deriveEditableFields,
@@ -67,6 +69,9 @@ export function ContractCreationModal({
 
   const orgUId = useOrgUId();
   const org = useCurrentOrg();
+  // The org details the document will render (inherited from parent units,
+  // refreshed on every profile edit); the page-load org is only a fallback.
+  const orgProfile = useAccountingSetupStatus().data?.orgProfile;
   const router = useRouter();
   const permissionsQuery = usePermissions();
 
@@ -166,6 +171,8 @@ export function ContractCreationModal({
     );
   }, [dataReady, templateDoc, derivedFields, profileQuery.data, volunteerName]);
 
+  const { formatDate } = useFormatting();
+
   // Rendered unconditionally (per the DocumentSheet precedent) so the Dialog
   // can drive its own open/close animation; nothing below needs the nullable
   // identity props once past this guard.
@@ -231,6 +238,10 @@ export function ContractCreationModal({
   };
 
   const sendErrorIsNoTemplate = sendErrorCode === 'NOT_FOUND';
+  // A missing template is an ordinary state, not an unexpected failure: show
+  // the dedicated copy + CTA and never the raw server message (it carries the
+  // internal reimbursement-type id).
+  const noTemplate = noContractTemplate || sendErrorIsNoTemplate;
   const sendErrorIsOrgProfile = /organization is missing/i.test(
     sendError ?? '',
   );
@@ -251,16 +262,17 @@ export function ContractCreationModal({
   const values: Partial<Record<DataSourceKey, string>> = {
     ...getKnownOrgValues({
       pauschale,
-      orgName: org.name,
-      orgAddress: org.address,
-      orgCity: org.city,
-      orgLegalRep: org.legalRep,
+      orgName: orgProfile?.name ?? org.name,
+      orgAddress: orgProfile ? orgProfile.address : org.address,
+      orgCity: orgProfile ? orgProfile.city : org.city,
+      orgZip: orgProfile ? orgProfile.zipCode : null,
+      orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
       hourlyRateCents: effectiveRate?.hourlyRateCents,
       yearlyLimitCents:
         effectiveRate?.reimbursementType.yearlyLimitCents ??
         reimbursementType?.yearlyLimitCents,
     }),
-    generated_date: new Date().toLocaleDateString('de-DE'),
+    generated_date: formatDate(new Date()),
   };
   for (const field of derivedFields ?? []) {
     if (field.kind !== 'bound' || !field.source) continue;
@@ -285,19 +297,23 @@ export function ContractCreationModal({
       errorTitle={
         sendErrorIsOrgProfile
           ? t('orgProfileErrorTitle')
-          : sendError
-            ? t('sendErrorTitle')
-            : t('loadErrorTitle')
+          : noTemplate
+            ? t('noTemplateTitle')
+            : sendError
+              ? t('sendErrorTitle')
+              : t('loadErrorTitle')
       }
       errorDescription={
         sendErrorIsOrgProfile
           ? t('orgProfileErrorDescription')
-          : sendError
-            ? t('sendError', { name: volunteerName })
-            : t('loadError', { name: volunteerName })
+          : noTemplate
+            ? t('noTemplateDescription', { pauschale: pauschaleLabel })
+            : sendError
+              ? t('sendError', { name: volunteerName })
+              : t('loadError', { name: volunteerName })
       }
       errorMessage={
-        sendErrorIsOrgProfile
+        sendErrorIsOrgProfile || noTemplate
           ? undefined
           : (sendError ??
             (loadError instanceof Error ? loadError.message : undefined))
@@ -307,7 +323,7 @@ export function ContractCreationModal({
           ? canEditOrg
             ? t('editProfileCta')
             : undefined
-          : noContractTemplate || sendErrorIsNoTemplate
+          : noTemplate
             ? t('noTemplateCta')
             : undefined
       }
@@ -316,7 +332,7 @@ export function ContractCreationModal({
           ? canEditOrg
             ? editOrgProfileCta
             : undefined
-          : noContractTemplate || sendErrorIsNoTemplate
+          : noTemplate
             ? createTemplateCta
             : undefined
       }
@@ -335,7 +351,7 @@ export function ContractCreationModal({
             pauschale={pauschale}
             pauschaleLabel={pauschaleLabel}
             documentTitle={t('preview.documentTitle')}
-            orgName={org.name}
+            orgName={orgProfile?.name ?? org.name}
             disclaimerLabel={t('preview.disclaimerBadge')}
             signerLeftLabel={t('preview.signatureVolunteer')}
             signerRightLabel={t('preview.signatureCoordinator')}

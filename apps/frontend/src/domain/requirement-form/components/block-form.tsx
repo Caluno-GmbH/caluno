@@ -1,7 +1,7 @@
 'use client';
 
 import { FieldType } from '@repo/data';
-import { useBlock } from '@repo/data/react';
+import { useBlock, useRefreshBlock } from '@repo/data/react';
 import {
   Badge,
   Button,
@@ -43,6 +43,7 @@ import {
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/storage/file-upload';
 import { saveBlock } from '../actions';
+import { GENDER_SYSTEM_KEY, hasFixedGenderOptions } from '../gender-options';
 import { SYSTEM_PROFILE_FIELDS } from '../system-profile-fields';
 import { OptionsEditor } from './options-editor';
 
@@ -88,6 +89,7 @@ export function BlockForm({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tActions = useTranslations('RequirementForm.actions');
   const tValidation = useTranslations('RequirementForm.validation');
+  const refreshBlock = useRefreshBlock();
   const isEdit = !!blockId;
   const blockQuery = useBlock(blockId ?? '');
 
@@ -197,20 +199,20 @@ export function BlockForm({
       organizationId,
       blockId,
       title: data.title,
-      description: data.description || undefined,
-      icon: data.icon || undefined,
+      description: data.description,
+      icon: data.icon,
       fields: data.fields.map((f) => ({
         id: f.id,
         type: f.type,
         label: f.label,
-        description: f.description || undefined,
-        placeholder: f.placeholder || undefined,
+        description: f.description,
+        placeholder: f.placeholder,
         required: f.required,
         systemKey: f.systemKey || undefined,
         lockType: f.lockType ?? false,
         options: f.options,
         documentFileId: f.documentFileId,
-        documentLabel: f.documentLabel || undefined,
+        documentLabel: f.documentLabel,
       })),
     });
 
@@ -218,7 +220,13 @@ export function BlockForm({
       toast.error(result.serverError);
     } else if (result?.data) {
       toast.success(isEdit ? tActions('blockSaved') : tActions('blockCreated'));
-      reset(data);
+
+      if (isEdit && blockId) {
+        await refreshBlock(blockId);
+      } else {
+        reset(data);
+      }
+
       onSuccess(result.data.blockId);
     } else {
       toast.error(tActions('failedToSaveBlock'));
@@ -334,6 +342,7 @@ export function BlockForm({
             fieldType={watchedFields[index]?.type}
             currentRequired={watchedFields[index]?.required ?? false}
             isSystemField={!!watchedFields[index]?.systemKey}
+            systemKey={watchedFields[index]?.systemKey}
             lockType={watchedFields[index]?.lockType ?? false}
             onToggleRequired={(next) =>
               setValue(`fields.${index}.required`, next, { shouldDirty: true })
@@ -474,6 +483,7 @@ function FieldCard({
   fieldType,
   currentRequired,
   isSystemField,
+  systemKey,
   lockType,
   onToggleRequired,
   readOnly,
@@ -493,6 +503,7 @@ function FieldCard({
   fieldType?: FieldType;
   currentRequired: boolean;
   isSystemField: boolean;
+  systemKey?: string;
   lockType: boolean;
   onToggleRequired: (next: boolean) => void;
   readOnly?: boolean;
@@ -503,8 +514,11 @@ function FieldCard({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tValidation = useTranslations('RequirementForm.validation');
   const tCommon = useTranslations('Common');
+  const hasFixedOptions = hasFixedGenderOptions(systemKey);
   const showOptions =
-    fieldType === FieldType.SingleChoice || fieldType === FieldType.MultiChoice;
+    (fieldType === FieldType.SingleChoice ||
+      fieldType === FieldType.MultiChoice) &&
+    !hasFixedOptions;
   const isDocument = fieldType === FieldType.DocumentAcknowledgement;
   const documentPreviewUrl = useWatch({
     control,
@@ -540,7 +554,7 @@ function FieldCard({
                 checked={currentRequired}
                 onCheckedChange={onToggleRequired}
                 size="sm"
-                disabled={isSystemField}
+                disabled={isSystemField && systemKey !== GENDER_SYSTEM_KEY}
               />
               {currentRequired ? t('required') : t('optional')}
             </label>

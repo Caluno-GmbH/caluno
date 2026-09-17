@@ -10,6 +10,8 @@ export type PostHogSurface =
 
 export const POSTHOG_JOIN_SOURCE = {
   SELF_JOIN: 'self_join',
+  SELF: 'self',
+  ADMIN: 'admin',
   MEMBERSHIP_APPROVE: 'membership_approve',
   INVITE_ACCEPT: 'invite_accept',
   CHECK_IN: 'check_in',
@@ -210,10 +212,6 @@ export const POSTHOG_EVENT_REGISTRY = {
     'shift_instance_invite',
     'Volunteers are invited to a shift instance.',
   ),
-  shift_instance_join: defineEvent(
-    'shift_instance_join',
-    'A volunteer becomes a participant of a shift instance.',
-  ),
   shift_instance_check_in: defineEvent(
     'shift_instance_check_in',
     'A volunteer checks in to a shift instance.',
@@ -229,6 +227,10 @@ export const POSTHOG_EVENT_REGISTRY = {
   shift_instance_invite_update: defineEvent(
     'shift_instance_invite_update',
     'A shift instance invite status is updated.',
+  ),
+  shift_instance_invite_send: defineEvent(
+    'shift_instance_invite_send',
+    'A reminder email is sent for an unanswered shift instance invite.',
   ),
   shift_call_out_send: defineEvent(
     'shift_call_out_send',

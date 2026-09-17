@@ -8,6 +8,10 @@
     "previewText": "Dein {brandName}-Bestätigungscode ist {otp}.",
     "subject": "Dein {brandName}-Bestätigungscode"
   },
+  "emailUnsubscribe": {
+    "label": "E-Mail-Einstellungen verwalten",
+    "prompt": "Du möchtest diese E-Mails nicht mehr erhalten? {link}."
+  },
   "eventCancelled": {
     "detailEvent": "Event",
     "detailLocation": "Ort",
@@ -79,6 +83,9 @@
   },
   "membershipApproved": {
     "buttonLabel": "{organizationName} öffnen",
+    "checkInQrAlt": "Dein Check-in-QR-Code",
+    "checkInQrCaption": "Zeige diesen Code beim Check-in oder lass ihn von einer Aufsichtsperson scannen.",
+    "checkInQrNote": "Dein Check-in-QR-Code ist unten zu sehen und außerdem als PDF beigefügt. Du kannst ihn ausdrucken oder auf deinem Handy speichern – zeig ihn einfach beim Check-in, auch ohne Caluno-Login.",
     "footerNote": "Du erhältst diese E-Mail, weil deine Mitgliedschaftsanfrage für {organizationName} auf {brandName} genehmigt wurde.",
     "greetingAfter": "ist genehmigt. Du kannst jetzt Einsätze entdecken und dich anmelden, wenn etwas zu dir passt.",
     "greetingBefore": "Hallo {firstName}, deine Mitgliedschaftsanfrage für",
@@ -196,6 +203,20 @@
     "subject": "Du bist zu {shiftTitle} eingeladen",
     "whenRange": "{date} · {timeRange}"
   },
+  "shiftInstanceJoinApproved": {
+    "buttonLabel": "Einsatz ansehen",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil deine Anfrage zur Teilnahme an einem Einsatz auf {brandName} genehmigt wurde.",
+    "greeting": "Hallo {firstName}, gute Nachrichten – du wurdest für diesen Einsatz angenommen.",
+    "heading": "Du bist für den Einsatz bestätigt",
+    "note": "Öffne den Einsatz, um alle Details und deinen Plan zu sehen.",
+    "previewText": "Deine Anfrage zur Teilnahme an {shiftTitle} bei {organizationName} wurde genehmigt.",
+    "subject": "Du bist für {shiftTitle} bestätigt",
+    "whenRange": "{date} · {timeRange}"
+  },
   "shiftInstanceJoined": {
     "buttonLabel": "Einsatzplan ansehen",
     "detailOrganization": "Organisation",
@@ -208,6 +229,34 @@
     "note": "Der Einsatzplan ist bereits aktualisiert.",
     "previewText": "{volunteerName} hat sich für {shiftTitle} bei {organizationName} am {startsAt} angemeldet.",
     "subject": "{shiftTitle}: {volunteerName} hat sich angemeldet"
+  },
+  "shiftInstanceJoinRequested": {
+    "buttonLabel": "Anfrage prüfen",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailStarts": "Beginn",
+    "detailVolunteer": "Freiwillige:r",
+    "footerNote": "Du erhältst diese E-Mail, weil du Einsätze auf {brandName} verwalten kannst.",
+    "greeting": "Hallo {firstName}, ein:e Freiwillige:r möchte einem Einsatz beitreten, den du verwaltest, und wartet auf deine Genehmigung.",
+    "heading": "Eine Einsatz-Anfrage wartet auf deine Genehmigung",
+    "note": "Genehmige oder lehne die Anfrage ab, um die Besetzung zu aktualisieren.",
+    "previewText": "{volunteerName} möchte {shiftTitle} bei {organizationName} am {startsAt} beitreten.",
+    "subject": "{shiftTitle}: {volunteerName} möchte beitreten"
+  },
+  "shiftInstanceReminded": {
+    "buttonLabel": "Einsatz ansehen",
+    "detailInstructions": "Beschreibung",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil du zu einem Einsatz auf {brandName} eingeladen wurdest.",
+    "greeting": "Hallo {firstName}, eine kurze Erinnerung an deine Einsatz-Einladung.",
+    "heading": "Erinnerung: Du bist zu einem Einsatz eingeladen",
+    "note": "Öffne den Einsatz, um die Details zu sehen und an- oder abzusagen.",
+    "previewText": "Kurze Erinnerung: Du bist zu {shiftTitle} bei {organizationName} eingeladen.",
+    "subject": "Erinnerung: Du bist zu {shiftTitle} eingeladen",
+    "whenRange": "{date} · {timeRange}"
   },
   "shiftInstanceSeriesCancelled": {
     "bodyMessage": "Alle Einsätze der Serie \"{shiftTitle}\" ab {fromDate} wurden abgesagt.",
@@ -276,6 +325,48 @@
     "note": "Möglicherweise musst du Ersatz finden.",
     "previewText": "{volunteerName} hat {shiftTitle} bei {organizationName} verlassen.",
     "subject": "{volunteerName} hat {shiftTitle} verlassen",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistJoined": {
+    "buttonLabel": "Einsatz ansehen",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil du auf {brandName} auf der Warteliste für diesen Einsatz stehst.",
+    "greeting": "Hallo {firstName}, dieser Einsatz hat bereits die maximale Anzahl an Freiwilligen erreicht, daher wurdest du auf die Warteliste gesetzt.",
+    "heading": "Du stehst auf der Warteliste",
+    "note": "Wir informieren dich per E-Mail, sobald ein Platz frei wird.",
+    "previewText": "{shiftTitle} bei {organizationName} ist voll, daher wurdest du auf die Warteliste gesetzt.",
+    "subject": "Du stehst auf der Warteliste für {shiftTitle}",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistPromoted": {
+    "buttonLabel": "Einsatz ansehen",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil du auf der Warteliste für diesen Einsatz standest.",
+    "greeting": "Hallo {firstName}, gute Nachrichten – ein Platz ist frei geworden und du bist jetzt für diesen Einsatz bestätigt.",
+    "heading": "Du stehst nicht mehr auf der Warteliste",
+    "note": "Öffne den Einsatz, um alle Details und deinen Plan zu sehen.",
+    "previewText": "Ein Platz ist frei geworden und du bist jetzt für {shiftTitle} bei {organizationName} bestätigt.",
+    "subject": "Du bist für {shiftTitle} bestätigt",
+    "whenRange": "{date} · {timeRange}"
+  },
+  "shiftInstanceWaitlistSpotOpened": {
+    "buttonLabel": "Platz sichern",
+    "detailLocation": "Ort",
+    "detailOrganization": "Organisation",
+    "detailShift": "Einsatz",
+    "detailWhen": "Wann",
+    "footerNote": "Du erhältst diese E-Mail, weil du auf {brandName} auf der Warteliste für diesen Einsatz stehst.",
+    "greeting": "Hallo {firstName}, für einen Einsatz, auf den du wartest, ist gerade ein Platz frei geworden.",
+    "heading": "Ein Platz ist frei",
+    "note": "Wer zuerst kommt, mahlt zuerst — der Platz geht an die Person, die zuerst beitritt. Wenn jemand anderes schneller ist, bleibst du auf der Warteliste.",
+    "previewText": "Ein Platz ist frei für {shiftTitle} bei {organizationName} am {startsAt}.",
+    "subject": "Ein Platz ist frei: {shiftTitle}",
     "whenRange": "{date} · {timeRange}"
   },
   "shiftSeriesLeft": {

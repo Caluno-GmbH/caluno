@@ -30,14 +30,22 @@ export type VolunteeringStatusIconTone =
 
 export type VolunteeringActionLabel =
   | 'Accept'
+  | 'Approve'
   | 'Decline'
   | 'Invite'
   | 'Uninvite'
+  | 'Remind'
   | 'View'
   | 'Check in'
   | 'Check out'
   | 'Add timesheet'
   | 'Edit time';
+
+/** A status the chip dropdown can move a volunteer to. */
+export type VolunteeringStatusOption = {
+  value: string;
+  label: string;
+};
 
 export type VolunteeringStatusPresentation = {
   iconTone: VolunteeringStatusIconTone;

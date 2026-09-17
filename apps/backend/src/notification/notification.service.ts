@@ -3,7 +3,9 @@ import type { Locale } from '../graphql/locale';
 import { UserLocaleService } from '../i18n/user-locale.service';
 import { UserService } from '../user/user.service';
 import { maskEmail } from '../utils';
+import type { EmailAttachment } from './email/email.service';
 import { EmailService } from './email/email.service';
+import { filterRecipientsForEvent } from './email-preferences';
 import type { NotificationEventPayloadMap } from './notification-event-map';
 import { NotificationEvent } from './notification-events';
 import { TypedNotificationEmitter } from './typed-notification-emitter.service';
@@ -14,6 +16,10 @@ export interface UserNotificationData {
   email: string;
   firstName: string;
   locale: Locale;
+  checkInId: string;
+  emailWeeklyUpdateEnabled?: boolean | null;
+  emailUrgentCallsEnabled?: boolean | null;
+  emailPlatformEnabled?: boolean | null;
 }
 
 export interface ResolveUserNotificationDataOptions {
@@ -41,8 +47,23 @@ type MembershipRejectedInput =
 type ShiftInstanceJoinedInput =
   NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_JOINED];
 
+type ShiftInstanceJoinRequestedInput =
+  NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_JOIN_REQUESTED];
+
+type ShiftInstanceJoinApprovedInput =
+  NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_JOIN_APPROVED];
+
 type ShiftInstanceInvitedInput =
   NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_INVITED];
+
+type ShiftInstanceWaitlistSpotOpenedInput =
+  NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_WAITLIST_SPOT_OPENED];
+
+type ShiftInstanceWaitlistJoinedInput =
+  NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_WAITLIST_JOINED];
+
+type ShiftInstanceWaitlistPromotedInput =
+  NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_WAITLIST_PROMOTED];
 
 type ShiftInstanceCancelledInput =
   NotificationEventPayloadMap[typeof NotificationEvent.SHIFT_INSTANCE_CANCELLED];
@@ -130,6 +151,10 @@ export class NotificationService {
       email: user.email,
       firstName: user.name.split(' ')[0],
       locale,
+      checkInId: user.checkInId,
+      emailWeeklyUpdateEnabled: user.emailWeeklyUpdateEnabled,
+      emailUrgentCallsEnabled: user.emailUrgentCallsEnabled,
+      emailPlatformEnabled: user.emailPlatformEnabled,
     };
   }
 
@@ -146,30 +171,48 @@ export class NotificationService {
     return users.filter((user): user is UserNotificationData => Boolean(user));
   }
 
+  filterRecipientsByEmailPreferences(
+    recipients: UserNotificationData[],
+    event: NotificationEvent,
+  ): UserNotificationData[] {
+    return filterRecipientsForEvent(recipients, event);
+  }
+
   async sendNotification(
     userIds: string | string[],
     options: ResolveUserNotificationDataOptions,
-    callback: (
-      recipient: UserNotificationData,
-    ) => Promise<{ subject: string; html: string }>,
+    callback: (recipient: UserNotificationData) => Promise<{
+      subject: string;
+      html: string;
+      attachments?: EmailAttachment[];
+    }>,
   ): Promise<void> {
-    const recipients = await this.resolveUsersNotificationData(
+    const resolved = await this.resolveUsersNotificationData(
       Array.isArray(userIds) ? userIds : [userIds],
       options,
     );
-    if (recipients.length === 0) {
+    if (resolved.length === 0) {
       this.logger.warn(`Can not resolve users for userIds: ${userIds}`);
+      return;
+    }
+
+    const recipients = this.filterRecipientsByEmailPreferences(
+      resolved,
+      options.event,
+    );
+    if (recipients.length === 0) {
       return;
     }
 
     await Promise.all(
       recipients.map(async (recipient) => {
         try {
-          const { subject, html } = await callback(recipient);
+          const { subject, html, attachments } = await callback(recipient);
           await this.emailService.send({
             to: recipient.email,
             subject,
             html,
+            attachments,
           });
         } catch (error) {
           this.logger.error(
@@ -208,8 +251,42 @@ export class NotificationService {
     this.emitter.emit(NotificationEvent.SHIFT_INSTANCE_JOINED, input);
   }
 
+  notifyShiftInstanceJoinRequested(
+    input: ShiftInstanceJoinRequestedInput,
+  ): void {
+    this.emitter.emit(NotificationEvent.SHIFT_INSTANCE_JOIN_REQUESTED, input);
+  }
+
+  notifyShiftInstanceJoinApproved(input: ShiftInstanceJoinApprovedInput): void {
+    this.emitter.emit(NotificationEvent.SHIFT_INSTANCE_JOIN_APPROVED, input);
+  }
+
   notifyShiftInstanceInvited(input: ShiftInstanceInvitedInput): void {
     this.emitter.emit(NotificationEvent.SHIFT_INSTANCE_INVITED, input);
+  }
+
+  notifyShiftInstanceWaitlistSpotOpened(
+    input: ShiftInstanceWaitlistSpotOpenedInput,
+  ): void {
+    this.emitter.emit(
+      NotificationEvent.SHIFT_INSTANCE_WAITLIST_SPOT_OPENED,
+      input,
+    );
+  }
+
+  notifyShiftInstanceWaitlistJoined(
+    input: ShiftInstanceWaitlistJoinedInput,
+  ): void {
+    this.emitter.emit(NotificationEvent.SHIFT_INSTANCE_WAITLIST_JOINED, input);
+  }
+
+  notifyShiftInstanceWaitlistPromoted(
+    input: ShiftInstanceWaitlistPromotedInput,
+  ): void {
+    this.emitter.emit(
+      NotificationEvent.SHIFT_INSTANCE_WAITLIST_PROMOTED,
+      input,
+    );
   }
 
   notifyShiftInstanceCancelled(input: ShiftInstanceCancelledInput): void {

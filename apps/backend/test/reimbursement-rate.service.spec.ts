@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import {
   DocumentKind,
   InvoiceStatus,
+  RateProvenanceKind,
   ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
@@ -63,6 +64,7 @@ describe('ReimbursementRateService', () => {
       {} as RequiredFormService,
       { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
     );
     service = new ReimbursementRateService(
       db,
@@ -279,6 +281,133 @@ describe('ReimbursementRateService', () => {
           uebungsleiter.id,
         ),
       ).toBe(2_800);
+    });
+  });
+
+  describe('provenance', () => {
+    /** Org → root → child → grandchild, with one reimbursement type. */
+    const setupNestedUnits = async () => {
+      const { organization, unitType, root } = await setupOrgWithRootUnit();
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: unitType.id,
+        name: 'Child club',
+        parentId: root.id,
+      });
+      const grandchild = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: unitType.id,
+        name: 'Grandchild team',
+        parentId: child.id,
+      });
+      const type = await createReimbursementType(db, {
+        platformDefaultRateCents: 500,
+      });
+      const setRate = (cents: number, unitId?: string) =>
+        service.setReimbursementRate(
+          organization.id,
+          type.id,
+          cents,
+          ACTOR_USER_ID,
+          unitId,
+        );
+      const rateAt = async (unitId: string) =>
+        (await service.getEffectiveRates(organization.id, unitId)).find(
+          (rate) => rate.reimbursementType.id === type.id,
+        );
+      return { organization, root, child, grandchild, setRate, rateAt };
+    };
+
+    it('attributes an inherited rate to the ancestor that set it, at every depth', async () => {
+      const { root, child, grandchild, setRate, rateAt } =
+        await setupNestedUnits();
+      await setRate(1_000, root.id);
+
+      for (const unit of [child, grandchild]) {
+        const rate = await rateAt(unit.id);
+        expect(rate?.hourlyRateCents).toBe(1_000);
+        expect(rate?.provenance).toEqual({
+          kind: RateProvenanceKind.INHERITED,
+          sourceName: 'root',
+          replacesRateCents: null,
+        });
+      }
+    });
+
+    it('reports an own rate with the ancestor rate it replaces', async () => {
+      const { root, child, grandchild, setRate, rateAt } =
+        await setupNestedUnits();
+      await setRate(1_000, root.id);
+      await setRate(1_200, child.id);
+
+      const childRate = await rateAt(child.id);
+      expect(childRate?.hourlyRateCents).toBe(1_200);
+      expect(childRate?.provenance).toEqual({
+        kind: RateProvenanceKind.OWN,
+        sourceName: 'root',
+        replacesRateCents: 1_000,
+      });
+
+      // The grandchild now inherits the child's override, not the root's.
+      const grandchildRate = await rateAt(grandchild.id);
+      expect(grandchildRate?.hourlyRateCents).toBe(1_200);
+      expect(grandchildRate?.provenance.sourceName).toBe('Child club');
+    });
+
+    it('keeps an own rate distinguishable when it equals the rate it replaces', async () => {
+      const { root, child, setRate, rateAt } = await setupNestedUnits();
+      await setRate(1_000, root.id);
+      await setRate(1_000, child.id);
+
+      expect((await rateAt(child.id))?.provenance).toEqual({
+        kind: RateProvenanceKind.OWN,
+        sourceName: 'root',
+        replacesRateCents: 1_000,
+      });
+    });
+
+    it('reports a root rate as replacing the platform default', async () => {
+      const { root, setRate, rateAt } = await setupNestedUnits();
+      await setRate(1_000, root.id);
+
+      expect((await rateAt(root.id))?.provenance).toEqual({
+        kind: RateProvenanceKind.OWN,
+        sourceName: null,
+        replacesRateCents: 500,
+      });
+    });
+
+    it('follows a parent rate change in units without a rate of their own', async () => {
+      const { root, child, setRate, rateAt } = await setupNestedUnits();
+      await setRate(1_000, root.id);
+      await setRate(1_500, root.id);
+
+      expect((await rateAt(child.id))?.hourlyRateCents).toBe(1_500);
+    });
+
+    it('attributes the org-wide row to the organisation', async () => {
+      const { organization, child, setRate, rateAt } = await setupNestedUnits();
+      await setRate(900);
+
+      const rate = await rateAt(child.id);
+      expect(rate?.hourlyRateCents).toBe(900);
+      expect(rate?.provenance).toEqual({
+        kind: RateProvenanceKind.INHERITED,
+        sourceName: organization.name,
+        replacesRateCents: null,
+      });
+    });
+
+    it('reports the platform default when nothing in the chain sets a rate', async () => {
+      const { child, rateAt } = await setupNestedUnits();
+
+      const rate = await rateAt(child.id);
+      expect(rate?.hourlyRateCents).toBe(500);
+      expect(rate?.provenance).toEqual({
+        kind: RateProvenanceKind.DEFAULT,
+        sourceName: null,
+        replacesRateCents: null,
+      });
     });
   });
 
@@ -596,6 +725,109 @@ describe('ReimbursementRateService', () => {
         usedCents: 30_000,
         limitCents: 84_000,
         remainingCents: 54_000,
+      });
+    });
+
+    describe('excludeInvoiceId', () => {
+      const setupVolunteerWithInvoices = async () => {
+        const reimbursementType = await createReimbursementType(db, {
+          yearlyLimitCents: 84_000,
+        });
+        const { organization } = await createOrganizationWithType(
+          db,
+          `Yearly Usage Exclude Org ${crypto.randomUUID()}`,
+        );
+        const volunteer = await createUser(db);
+        const template = await createDocumentTemplate(db, {
+          organizationId: organization.id,
+          reimbursementTypeId: reimbursementType.id,
+          kind: DocumentKind.INVOICE,
+          signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+        });
+        const insertInvoice = async (
+          totalAmountCents: number,
+          periodStart: Date,
+        ) => {
+          const [invoice] = await db
+            .insert(schema.invoices)
+            .values({
+              documentTemplateId: template.id,
+              volunteerId: volunteer.id,
+              reimbursementTypeId: reimbursementType.id,
+              periodStart,
+              periodEnd: periodStart,
+              totalAmountCents,
+              totalHours: 1,
+              resolvedBody: { header: {}, blocks: [], footer: {} },
+              invoiceStatus: InvoiceStatus.READY,
+            })
+            .returning();
+          return invoice;
+        };
+        await insertInvoice(10_000, new Date('2026-03-01T00:00:00.000Z'));
+        const current = await insertInvoice(
+          25_000,
+          new Date('2026-07-01T00:00:00.000Z'),
+        );
+        return { organization, reimbursementType, volunteer, current };
+      };
+
+      it('leaves the given invoice out of the sum', async () => {
+        const { reimbursementType, volunteer, current } =
+          await setupVolunteerWithInvoices();
+
+        const usage = await service.getYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          current.id,
+        );
+
+        expect(usage).toEqual({
+          usedCents: 10_000,
+          limitCents: 84_000,
+          remainingCents: 74_000,
+        });
+      });
+
+      it('ignores an id that is not a UUID', async () => {
+        const { reimbursementType, volunteer } =
+          await setupVolunteerWithInvoices();
+
+        const usage = await service.getYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          `${volunteer.id}-manual-invoice-ehrenamt`,
+        );
+
+        expect(usage.usedCents).toBe(35_000);
+      });
+
+      it('keeps the initial amount when leaving an invoice out', async () => {
+        const { organization, reimbursementType, volunteer, current } =
+          await setupVolunteerWithInvoices();
+        const editor = await createUser(db);
+        await service.setManualBaseline(
+          organization.id,
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          5_000,
+          editor.id,
+        );
+
+        const usage = await service.getYearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          current.id,
+        );
+
+        expect(usage.usedCents).toBe(15_000);
       });
     });
   });

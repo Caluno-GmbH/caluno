@@ -8,6 +8,12 @@ import type { Organization } from '../../organization/models/organization.model'
 import type { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { OrganizationService } from '../../organization/organization.service';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
+import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import {
+  type ResolvedOrgProfile,
+  resolveOrgProfileFromUnits,
+  type UnitRow,
+} from '../utils/org-profile';
 import { settleEach } from './settle-each';
 
 @RegisterLoader()
@@ -18,6 +24,7 @@ export class AccountingOrganizationLoader {
     private readonly organizationMapper: OrganizationMapper,
     private readonly organizationUnitService: OrganizationUnitService,
     private readonly organizationUnitMapper: OrganizationUnitMapper,
+    private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
 
   public readonly organizationById = new DataLoader<string, Organization>(
@@ -59,4 +66,59 @@ export class AccountingOrganizationLoader {
       ),
     ),
   );
+
+  /**
+   * A unit's resolved org details (own values, blank fields inherited from the
+   * nearest live parent), keyed by unit id. Batched: one query loads every
+   * requested unit, then one more per ancestor depth, instead of the per-document
+   * findFirst + hop-per-ancestor traversal of `resolveOrgProfile`.
+   */
+  public readonly orgProfileByUnitId = new DataLoader<
+    string,
+    ResolvedOrgProfile | null
+  >(async (unitIds) => {
+    const unitsById = await this.loadUnitsWithAncestors([...unitIds]);
+    return unitIds.map((id) => {
+      const unit = unitsById.get(id);
+      return unit ? resolveOrgProfileFromUnits(unit, unitsById) : null;
+    });
+  });
+
+  /** The org root unit's resolved org details, keyed by organizationId — for documents scoped to the org as a whole. */
+  public readonly orgProfileByOrganizationId = new DataLoader<
+    string,
+    ResolvedOrgProfile | null
+  >(async (organizationIds) => {
+    const roots = await Promise.all(
+      organizationIds.map((id) => this.organizationService.findRootUnit(id)),
+    );
+    const unitsById = await this.loadUnitsWithAncestors(
+      roots
+        .filter((root): root is NonNullable<typeof root> => root != null)
+        .map((root) => root.id),
+    );
+    return roots.map((root) => {
+      const unit = root ? unitsById.get(root.id) : undefined;
+      return unit ? resolveOrgProfileFromUnits(unit, unitsById) : null;
+    });
+  });
+
+  /** Loads the seed units plus their whole ancestor chain in one query per depth. */
+  private async loadUnitsWithAncestors(
+    seedIds: string[],
+  ): Promise<Map<string, UnitRow>> {
+    const unitsById = new Map<string, UnitRow>();
+    let frontier = [...new Set(seedIds)];
+    while (frontier.length > 0) {
+      const rows = (await this.organizationUnitDataService.findByIds(
+        frontier,
+      )) as UnitRow[];
+      for (const row of rows) unitsById.set(row.id, row);
+      const parentIds = rows
+        .map((row) => row.parentId)
+        .filter((id): id is string => typeof id === 'string');
+      frontier = [...new Set(parentIds)].filter((id) => !unitsById.has(id));
+    }
+    return unitsById;
+  }
 }

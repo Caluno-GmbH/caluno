@@ -1,5 +1,6 @@
 'use client';
 
+import { RateProvenanceKind } from '@repo/data';
 import {
   type RawEffectiveRate,
   type RawReimbursementType,
@@ -14,10 +15,10 @@ import { Fragment, useEffect, useId, useState } from 'react';
 import { toast } from 'sonner';
 import { formatEuro } from '@/lib/formatting/formats';
 import { centsToEuros, eurosToCents, formatHourlyRate } from '../lib/money';
+import { type RateLine, resolveRateDisplay } from '../lib/rate-provenance';
 import { reimbursementTypeKeyFor } from '../lib/reimbursement-type-mapping';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
-import { RateProvenanceRow } from './rate-provenance-row';
 
 const PAUSCHALE_ORDER: PauschalenType[] = ['ehrenamt', 'uebungsleiter'];
 
@@ -41,14 +42,21 @@ function RateRow({
   const errorId = useId();
   const setRate = useSetReimbursementRate();
 
-  const overrideCents = effectiveRate?.isOverride
-    ? effectiveRate.hourlyRateCents
-    : undefined;
+  const { rateCents, line } = resolveRateDisplay({
+    effectiveRate,
+    platformDefaultRateCents: reimbursementType.platformDefaultRateCents,
+  });
+
+  // Only a rate this unit set itself is editable text. Starting from an
+  // inherited value would turn a no-op save into an override, and there is
+  // no mutation to take one back.
+  const ownRateInput =
+    effectiveRate?.provenance.kind === RateProvenanceKind.Own
+      ? centsToEuros(effectiveRate.hourlyRateCents).toFixed(2)
+      : '';
 
   const [editing, setEditing] = useState(false);
-  const [inputValue, setInputValue] = useState(
-    overrideCents !== undefined ? centsToEuros(overrideCents).toFixed(2) : '',
-  );
+  const [inputValue, setInputValue] = useState(ownRateInput);
   const [inputError, setInputError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,10 +68,35 @@ function RateRow({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [editing]);
 
-  const effectiveEuros = centsToEuros(
-    effectiveRate?.hourlyRateCents ??
-      reimbursementType.platformDefaultRateCents,
-  );
+  const effectiveEuros = centsToEuros(rateCents);
+  const formatLineRate = (cents: number) =>
+    `${formatHourlyRate(centsToEuros(cents))}${t('rateUnit')}`;
+  const provenanceLine = (current: RateLine | null): string | undefined => {
+    if (current === null) return undefined;
+    switch (current.kind) {
+      case 'inheritedFrom':
+        return t('provenance.inheritedFrom', {
+          source: current.source,
+          rate: formatLineRate(current.rateCents),
+        } as Parameters<typeof t>[1]);
+      case 'replaces':
+        return t('provenance.replaces', {
+          source: current.source,
+          rate: formatLineRate(current.rateCents),
+        } as Parameters<typeof t>[1]);
+      case 'replacesDefault':
+        return t('provenance.replacesDefault', {
+          rate: formatLineRate(current.rateCents),
+        } as Parameters<typeof t>[1]);
+      default: {
+        // noImplicitReturns is off, so without this a new RateLine kind would
+        // fall through to `undefined` and silently drop the line.
+        const exhaustive: never = current;
+        return exhaustive;
+      }
+    }
+  };
+  const provenanceText = provenanceLine(line);
   const typeLabel = t(
     `${getPauschaleKey(type)}Label` as Parameters<typeof t>[0],
   );
@@ -96,9 +129,7 @@ function RateRow({
   }
 
   function handleCancel() {
-    setInputValue(
-      overrideCents !== undefined ? centsToEuros(overrideCents).toFixed(2) : '',
-    );
+    setInputValue(ownRateInput);
     setInputError(null);
     setEditing(false);
   }
@@ -178,13 +209,9 @@ function RateRow({
                 {t('rateUnit')}
               </span>
             </div>
-            <RateProvenanceRow
-              rate={formatHourlyRate(
-                centsToEuros(reimbursementType.platformDefaultRateCents),
-              )}
-              unit={t('rateUnit')}
-              inheritedLabel={t('provenance.inherited')}
-            />
+            {provenanceText && (
+              <p className="text-sm text-muted-foreground">{provenanceText}</p>
+            )}
           </div>
           {canEdit && (
             <Button

@@ -38,6 +38,7 @@ import {
   canTransitionInviteStatus,
   isParticipatingShiftInviteStatus,
   isVolunteerJoinResolveSource,
+  MY_SHIFT_INVITE_STATUSES,
   PARTICIPATING_SHIFT_INVITE_STATUSES,
   resolveAdminApprovalTargetStatus,
   resolveVolunteerJoinTargetStatus,
@@ -421,7 +422,7 @@ export class ShiftService {
     limit: number,
     offset: number,
     order: SortOrder,
-    statuses: readonly ShiftInviteStatus[] = PARTICIPATING_SHIFT_INVITE_STATUSES,
+    statuses: readonly ShiftInviteStatus[] = MY_SHIFT_INVITE_STATUSES,
     includeIntended = false,
   ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
     const organizationUnitIds =
@@ -742,7 +743,7 @@ export class ShiftService {
       NOT: {
         invites: {
           userId,
-          status: { in: [...PARTICIPATING_SHIFT_INVITE_STATUSES] },
+          status: { in: [...MY_SHIFT_INVITE_STATUSES] },
         },
       },
       OR: visibilityBranches,
@@ -1206,7 +1207,10 @@ export class ShiftService {
         // The insert above no-ops on conflict; resurrect the inactive row.
         await tx
           .update(schema.shiftInstanceInvites)
-          .set({ status: ShiftInviteStatus.ADMIN_INVITED })
+          .set({
+            status: ShiftInviteStatus.ADMIN_INVITED,
+            remindedAt: null,
+          })
           .where(
             and(
               eq(schema.shiftInstanceInvites.instanceId, shiftInstanceId),
@@ -1330,7 +1334,10 @@ export class ShiftService {
           if (otherIdsToAdd.length > 0) {
             await tx
               .update(schema.shiftInstanceInvites)
-              .set({ status: inviteStatus })
+              .set({
+                status: inviteStatus,
+                remindedAt: null,
+              })
               .where(
                 and(
                   eq(schema.shiftInstanceInvites.instanceId, shiftInstanceId),
@@ -1474,7 +1481,10 @@ export class ShiftService {
         if (userIdsToAdd.length > 0) {
           await tx
             .update(schema.shiftInstanceInvites)
-            .set({ status: inviteStatus })
+            .set({
+              status: inviteStatus,
+              remindedAt: null,
+            })
             .where(
               and(
                 inArray(
@@ -1497,6 +1507,16 @@ export class ShiftService {
             currentShiftInstance,
             removedUserId,
           );
+        }
+        const removedJoinedMember = userIdsToRemove.some((removedId) =>
+          currentShiftInstance.invites.some(
+            (invite) =>
+              invite.userId === removedId &&
+              invite.status === ShiftInviteStatus.JOINED,
+          ),
+        );
+        if (removedJoinedMember) {
+          void this.notifyWaitlistOfOpenedSeat(shiftInstanceId);
         }
       } else {
         const fromDate = currentShiftInstance.actualStartsAt;
@@ -2344,6 +2364,30 @@ export class ShiftService {
       .groupBy(schema.shifts.eventId);
   }
 
+  async countActiveInstancesByMasterIds(
+    masterIds: string[],
+  ): Promise<Map<string, number>> {
+    if (masterIds.length === 0) {
+      return new Map();
+    }
+
+    const rows = await this.db
+      .select({
+        masterId: schema.shiftInstances.masterId,
+        count: count(),
+      })
+      .from(schema.shiftInstances)
+      .where(
+        and(
+          inArray(schema.shiftInstances.masterId, masterIds),
+          eq(schema.shiftInstances.isCancelled, false),
+        ),
+      )
+      .groupBy(schema.shiftInstances.masterId);
+
+    return new Map(rows.map((row) => [row.masterId, Number(row.count)]));
+  }
+
   async findAllForEvent(
     eventId: string,
     organizationUnitId: string,
@@ -2793,6 +2837,105 @@ export class ShiftService {
     } catch (error) {
       this.logger.error(
         `Failed to emit shift instance invited notification: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async loadAndEmitShiftInstanceJoinApprovedNotification(
+    shift: ShiftEntity,
+    instance: ShiftInstanceEntity,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const organizationUnit = await this.db.query.organizationUnits.findFirst({
+        where: { id: shift.organizationUnitId },
+        columns: { id: true, name: true },
+      });
+
+      if (!organizationUnit) {
+        return;
+      }
+
+      this.notificationService.notifyShiftInstanceJoinApproved({
+        organizationUnitId: organizationUnit.id,
+        organizationUnitName: organizationUnit.name,
+        shiftId: shift.id,
+        shiftTitle: shift.title,
+        shiftLocation: shift.location,
+        userId,
+        startsAt: instance.actualStartsAt,
+        endsAt: instance.actualEndsAt,
+        instanceId: instance.id,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit shift instance join approved notification: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async loadAndEmitShiftInstanceWaitlistJoinedNotification(
+    shift: ShiftEntity,
+    instance: ShiftInstanceEntity,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const organizationUnit = await this.db.query.organizationUnits.findFirst({
+        where: { id: shift.organizationUnitId },
+        columns: { id: true, name: true },
+      });
+
+      if (!organizationUnit) {
+        return;
+      }
+
+      this.notificationService.notifyShiftInstanceWaitlistJoined({
+        organizationUnitId: organizationUnit.id,
+        organizationUnitName: organizationUnit.name,
+        shiftId: shift.id,
+        shiftTitle: shift.title,
+        shiftLocation: shift.location,
+        userId,
+        startsAt: instance.actualStartsAt,
+        endsAt: instance.actualEndsAt,
+        instanceId: instance.id,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit shift instance waitlist joined notification: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async loadAndEmitShiftInstanceWaitlistPromotedNotification(
+    shift: ShiftEntity,
+    instance: ShiftInstanceEntity,
+    userId: string,
+  ): Promise<void> {
+    try {
+      const organizationUnit = await this.db.query.organizationUnits.findFirst({
+        where: { id: shift.organizationUnitId },
+        columns: { id: true, name: true },
+      });
+
+      if (!organizationUnit) {
+        return;
+      }
+
+      this.notificationService.notifyShiftInstanceWaitlistPromoted({
+        organizationUnitId: organizationUnit.id,
+        organizationUnitName: organizationUnit.name,
+        shiftId: shift.id,
+        shiftTitle: shift.title,
+        shiftLocation: shift.location,
+        userId,
+        startsAt: instance.actualStartsAt,
+        endsAt: instance.actualEndsAt,
+        instanceId: instance.id,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit shift instance waitlist promoted notification: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -3350,6 +3493,50 @@ export class ShiftService {
     }
   }
 
+  private async notifyShiftInstanceJoinRequested(
+    userId: string,
+    shift: ShiftEntity,
+    instance: ShiftInstanceEntity,
+  ): Promise<void> {
+    try {
+      const organizationUnit = await this.db.query.organizationUnits.findFirst({
+        where: { id: shift.organizationUnitId },
+        columns: { id: true, name: true },
+      });
+
+      if (!organizationUnit) {
+        return;
+      }
+
+      const shiftManagers = await this.authService.findUsersWithPermission(
+        shift.organizationUnitId,
+        PERMISSIONS.SHIFT_EDIT,
+      );
+      const recipientUserIds = shiftManagers
+        .filter((manager) => manager.id !== userId)
+        .map((manager) => manager.id);
+
+      if (recipientUserIds.length === 0) {
+        return;
+      }
+
+      this.notificationService.notifyShiftInstanceJoinRequested({
+        organizationUnitId: shift.organizationUnitId,
+        organizationUnitName: organizationUnit.name,
+        shiftId: shift.id,
+        shiftTitle: shift.title,
+        instanceId: instance.id,
+        requesterUserId: userId,
+        recipientUserIds,
+        startsAt: instance.actualStartsAt,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit shift instance join requested notification: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
   async joinShiftInstance(
     userId: string,
     instanceId: string,
@@ -3426,10 +3613,42 @@ export class ShiftService {
     });
 
     if (existingInvite) {
+      if (existingInvite.status === ShiftInviteStatus.WAITLIST_JOINED) {
+        if (!hasSeat) {
+          return;
+        }
+
+        this.assertInviteStatusTransition(
+          existingInvite.status,
+          ShiftInviteStatus.JOINED,
+        );
+
+        await db
+          .update(schema.shiftInstanceInvites)
+          .set({ status: ShiftInviteStatus.JOINED })
+          .where(eq(schema.shiftInstanceInvites.id, existingInvite.id));
+
+        void this.notifyShiftInstanceJoined(userId, shift, instance);
+        void this.loadAndEmitShiftInstanceWaitlistPromotedNotification(
+          shift,
+          instance,
+          userId,
+        );
+        await this.captureShiftInstanceInviteUpdate({
+          userId,
+          organizationUnitId: shift.organizationUnitId,
+          shiftId: shift.id,
+          shiftInstanceId: instanceId,
+          source: POSTHOG_JOIN_SOURCE.WAITLIST_PROMOTE,
+          inviteStatus: ShiftInviteStatus.JOINED,
+          previousStatus: existingInvite.status,
+        });
+        return;
+      }
+
       if (
         isParticipatingShiftInviteStatus(existingInvite.status) ||
         existingInvite.status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL ||
-        existingInvite.status === ShiftInviteStatus.WAITLIST_JOINED ||
         existingInvite.status === ShiftInviteStatus.ADMIN_REJECTED
       ) {
         return;
@@ -3458,14 +3677,24 @@ export class ShiftService {
 
         if (targetStatus === ShiftInviteStatus.JOINED) {
           void this.notifyShiftInstanceJoined(userId, shift, instance);
-          await this.captureShiftInstanceJoin({
+        } else if (targetStatus === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL) {
+          void this.notifyShiftInstanceJoinRequested(userId, shift, instance);
+        } else if (targetStatus === ShiftInviteStatus.WAITLIST_JOINED) {
+          void this.loadAndEmitShiftInstanceWaitlistJoinedNotification(
+            shift,
+            instance,
             userId,
-            organizationUnitId: shift.organizationUnitId,
-            shiftId: shift.id,
-            shiftInstanceId: instanceId,
-            source,
-          });
+          );
         }
+        await this.captureShiftInstanceInviteUpdate({
+          userId,
+          organizationUnitId: shift.organizationUnitId,
+          shiftId: shift.id,
+          shiftInstanceId: instanceId,
+          source,
+          inviteStatus: targetStatus,
+          previousStatus: existingInvite.status,
+        });
       }
 
       return;
@@ -3494,14 +3723,23 @@ export class ShiftService {
 
     if (targetStatus === ShiftInviteStatus.JOINED) {
       void this.notifyShiftInstanceJoined(userId, shift, instance);
-      await this.captureShiftInstanceJoin({
+    } else if (targetStatus === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL) {
+      void this.notifyShiftInstanceJoinRequested(userId, shift, instance);
+    } else if (targetStatus === ShiftInviteStatus.WAITLIST_JOINED) {
+      void this.loadAndEmitShiftInstanceWaitlistJoinedNotification(
+        shift,
+        instance,
         userId,
-        organizationUnitId: shift.organizationUnitId,
-        shiftId: shift.id,
-        shiftInstanceId: instanceId,
-        source,
-      });
+      );
     }
+    await this.captureShiftInstanceInviteUpdate({
+      userId,
+      organizationUnitId: shift.organizationUnitId,
+      shiftId: shift.id,
+      shiftInstanceId: instanceId,
+      source,
+      inviteStatus: targetStatus,
+    });
   }
 
   async joinShift(
@@ -3736,7 +3974,8 @@ export class ShiftService {
 
     if (
       existingInvite &&
-      !isVolunteerJoinResolveSource(existingInvite.status)
+      !isVolunteerJoinResolveSource(existingInvite.status) &&
+      existingInvite.status !== ShiftInviteStatus.WAITLIST_JOINED
     ) {
       return this.buildRequestJoinShiftInstanceResult(
         userId,
@@ -3753,8 +3992,9 @@ export class ShiftService {
 
     if (
       existingInvite &&
-      isVolunteerJoinResolveSource(existingInvite.status) &&
-      !isAllowed
+      !isAllowed &&
+      (isVolunteerJoinResolveSource(existingInvite.status) ||
+        existingInvite.status === ShiftInviteStatus.WAITLIST_JOINED)
     ) {
       return this.buildRequestJoinShiftInstanceResult(
         userId,
@@ -3938,6 +4178,16 @@ export class ShiftService {
         hasAvailableSeat: hasSeat,
         allowWaitlist: true,
       }) as ShiftInviteStatus;
+    } else if (
+      invite.status === ShiftInviteStatus.WAITLIST_JOINED &&
+      status === ShiftInviteStatus.JOINED &&
+      !isAdminActor
+    ) {
+      // Waitlist claim at series level (VOLI-1260): re-resolve by next-instance
+      // capacity — full keeps the volunteer on the waitlist, no error.
+      targetStatus = hasSeat
+        ? ShiftInviteStatus.JOINED
+        : ShiftInviteStatus.WAITLIST_JOINED;
     }
 
     this.assertInviteStatusTransition(invite.status, targetStatus);
@@ -3990,6 +4240,7 @@ export class ShiftService {
         source,
         shift_id: shiftId,
         invite_status: targetStatus,
+        previous_status: invite.status,
       },
     });
     if (targetStatus === ShiftInviteStatus.JOINED) {
@@ -4003,7 +4254,10 @@ export class ShiftService {
               : POSTHOG_SURFACE.VOLUNTEERING,
           organization_id: organizationId,
           organization_unit_id: shift.organizationUnitId,
-          source: POSTHOG_JOIN_SOURCE.INVITE_ACCEPT,
+          source:
+            invite.status === ShiftInviteStatus.WAITLIST_JOINED
+              ? POSTHOG_JOIN_SOURCE.WAITLIST_PROMOTE
+              : POSTHOG_JOIN_SOURCE.INVITE_ACCEPT,
           shift_id: shiftId,
         },
       });
@@ -4129,7 +4383,10 @@ export class ShiftService {
     const instanceIds = instances.map((instance) => instance.id);
     await db
       .update(schema.shiftInstanceInvites)
-      .set({ status: ShiftInviteStatus.ADMIN_INVITED })
+      .set({
+        status: ShiftInviteStatus.ADMIN_INVITED,
+        remindedAt: null,
+      })
       .where(
         and(
           eq(schema.shiftInstanceInvites.userId, userId),
@@ -4203,6 +4460,16 @@ export class ShiftService {
         hasAvailableSeat: hasSeat,
         allowWaitlist: true,
       }) as ShiftInviteStatus;
+    } else if (
+      invite.status === ShiftInviteStatus.WAITLIST_JOINED &&
+      status === ShiftInviteStatus.JOINED &&
+      !isAdminActor
+    ) {
+      // Waitlist claim from the shift page (VOLI-1260): re-resolve by
+      // capacity — a full instance keeps the volunteer on the waitlist.
+      targetStatus = hasSeat
+        ? ShiftInviteStatus.JOINED
+        : ShiftInviteStatus.WAITLIST_JOINED;
     }
 
     this.assertInviteStatusTransition(invite.status, targetStatus);
@@ -4215,7 +4482,10 @@ export class ShiftService {
 
     const [updated] = await this.db
       .update(schema.shiftInstanceInvites)
-      .set({ status: targetStatus })
+      .set({
+        status: targetStatus,
+        remindedAt: null,
+      })
       .where(eq(schema.shiftInstanceInvites.id, invite.id))
       .returning();
 
@@ -4224,11 +4494,49 @@ export class ShiftService {
       (targetStatus === ShiftInviteStatus.VOLUNTEER_CANCELLED ||
         targetStatus === ShiftInviteStatus.ADMIN_REJECTED)
     ) {
-      await this.promoteOldestWaitlisted(instanceId);
+      void this.notifyWaitlistOfOpenedSeat(instanceId);
     }
 
     if (targetStatus === ShiftInviteStatus.JOINED) {
       void this.notifyShiftInstanceJoined(userId, instance.master, instance);
+
+      if (
+        invite.status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL &&
+        isAdminActor
+      ) {
+        void this.loadAndEmitShiftInstanceJoinApprovedNotification(
+          instance.master,
+          instance,
+          userId,
+        );
+      } else if (invite.status === ShiftInviteStatus.WAITLIST_JOINED) {
+        void this.loadAndEmitShiftInstanceWaitlistPromotedNotification(
+          instance.master,
+          instance,
+          userId,
+        );
+      }
+    } else if (targetStatus === ShiftInviteStatus.WAITLIST_JOINED) {
+      // Whatever got them here — an admin's approval catching a full shift,
+      // or the volunteer's own accept/re-join losing the race for the last
+      // seat — they resolved to the waitlist above instead of the shift they
+      // expected; let them know it happened.
+      void this.loadAndEmitShiftInstanceWaitlistJoinedNotification(
+        instance.master,
+        instance,
+        userId,
+      );
+    }
+
+    if (
+      invite.status === ShiftInviteStatus.ADMIN_REJECTED &&
+      targetStatus === ShiftInviteStatus.ADMIN_INVITED
+    ) {
+      void this.loadAndEmitShiftInstanceInvitedNotification(
+        instance.master,
+        instance,
+        [userId],
+      );
     }
 
     if (status === ShiftInviteStatus.ADMIN_REJECTED && actorUserId !== userId) {
@@ -4250,43 +4558,18 @@ export class ShiftService {
       );
     }
 
-    const source = actorUserId === userId ? 'self' : 'admin';
-    const organizationId = await this.resolveOrganizationId(
-      instance.master.organizationUnitId,
-    );
-    this.postHogService.capture({
-      event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE_UPDATE,
+    await this.captureShiftInstanceInviteUpdate({
       userId,
-      properties: {
-        surface:
-          source === 'admin'
-            ? POSTHOG_SURFACE.BACKOFFICE
-            : POSTHOG_SURFACE.VOLUNTEERING,
-        organization_id: organizationId,
-        organization_unit_id: instance.master.organizationUnitId,
-        source,
-        shift_id: instance.master.id,
-        shift_instance_id: instanceId,
-        invite_status: targetStatus,
-      },
+      organizationUnitId: instance.master.organizationUnitId,
+      shiftId: instance.master.id,
+      shiftInstanceId: instanceId,
+      source:
+        actorUserId === userId
+          ? POSTHOG_JOIN_SOURCE.SELF
+          : POSTHOG_JOIN_SOURCE.ADMIN,
+      inviteStatus: targetStatus,
+      previousStatus: invite.status,
     });
-    if (targetStatus === ShiftInviteStatus.JOINED) {
-      this.postHogService.capture({
-        event: POSTHOG_EVENT.SHIFT_INSTANCE_JOIN,
-        userId,
-        properties: {
-          surface:
-            source === 'admin'
-              ? POSTHOG_SURFACE.BACKOFFICE
-              : POSTHOG_SURFACE.VOLUNTEERING,
-          organization_id: organizationId,
-          organization_unit_id: instance.master.organizationUnitId,
-          source: POSTHOG_JOIN_SOURCE.INVITE_ACCEPT,
-          shift_id: instance.master.id,
-          shift_instance_id: instanceId,
-        },
-      });
-    }
 
     return updated;
   }
@@ -4326,72 +4609,71 @@ export class ShiftService {
     return (capacity?.current ?? 0) < maxVolunteers;
   }
 
-  private async promoteOldestWaitlisted(
+  /**
+   * Notifies the waitlist that a seat opened up. Guarded so call sites can
+   * invoke it unconditionally after a seat *may* have freed: no-op unless
+   * the instance is live and in the future, a seat is actually available,
+   * and someone is waiting (VOLI-1260).
+   */
+  private async notifyWaitlistOfOpenedSeat(
     instanceId: string,
     db: Database = this.db,
   ): Promise<void> {
-    const instance = await db.query.shiftInstances.findFirst({
-      where: { id: instanceId, isCancelled: false },
-      with: { master: true },
-    });
+    try {
+      const instance = await db.query.shiftInstances.findFirst({
+        where: {
+          id: instanceId,
+          isCancelled: false,
+          actualStartsAt: { gte: new Date() },
+        },
+        with: { master: true },
+      });
 
-    if (!instance?.master) {
-      return;
+      if (!instance?.master || instance.master.isDeleted) {
+        return;
+      }
+
+      const maxVolunteers =
+        instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
+      if (!(await this.hasAvailableSeat(instanceId, maxVolunteers, db))) {
+        return;
+      }
+
+      const waitlisted = await db.query.shiftInstanceInvites.findMany({
+        where: {
+          instanceId,
+          status: ShiftInviteStatus.WAITLIST_JOINED,
+        },
+        columns: { userId: true },
+      });
+      if (waitlisted.length === 0) {
+        return;
+      }
+
+      const organizationUnit = await db.query.organizationUnits.findFirst({
+        where: { id: instance.master.organizationUnitId },
+        columns: { id: true, name: true },
+      });
+      if (!organizationUnit) {
+        return;
+      }
+
+      this.notificationService.notifyShiftInstanceWaitlistSpotOpened({
+        organizationUnitId: organizationUnit.id,
+        organizationUnitName: organizationUnit.name,
+        shiftId: instance.master.id,
+        shiftTitle: instance.master.title,
+        shiftLocation: instance.master.location,
+        instanceId: instance.id,
+        startsAt: instance.actualStartsAt,
+        endsAt: instance.actualEndsAt,
+        recipientUserIds: waitlisted.map((invite) => invite.userId),
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to notify waitlist of opened seat: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
-
-    const maxVolunteers =
-      instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
-    if (!(await this.hasAvailableSeat(instanceId, maxVolunteers, db))) {
-      return;
-    }
-
-    const next = await db.query.shiftInstanceInvites.findFirst({
-      where: {
-        instanceId,
-        status: ShiftInviteStatus.WAITLIST_JOINED,
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    if (!next) {
-      return;
-    }
-
-    await db
-      .update(schema.shiftInstanceInvites)
-      .set({ status: ShiftInviteStatus.JOINED })
-      .where(eq(schema.shiftInstanceInvites.id, next.id));
-
-    void this.notifyShiftInstanceJoined(next.userId, instance.master, instance);
-
-    const organizationId = await this.resolveOrganizationId(
-      instance.master.organizationUnitId,
-    );
-    this.postHogService.capture({
-      event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE_UPDATE,
-      userId: next.userId,
-      properties: {
-        surface: POSTHOG_SURFACE.BACKOFFICE,
-        organization_id: organizationId,
-        organization_unit_id: instance.master.organizationUnitId,
-        source: POSTHOG_JOIN_SOURCE.WAITLIST_PROMOTE,
-        shift_id: instance.master.id,
-        shift_instance_id: instanceId,
-        invite_status: ShiftInviteStatus.JOINED,
-      },
-    });
-    this.postHogService.capture({
-      event: POSTHOG_EVENT.SHIFT_INSTANCE_JOIN,
-      userId: next.userId,
-      properties: {
-        surface: POSTHOG_SURFACE.BACKOFFICE,
-        organization_id: organizationId,
-        organization_unit_id: instance.master.organizationUnitId,
-        source: POSTHOG_JOIN_SOURCE.WAITLIST_PROMOTE,
-        shift_id: instance.master.id,
-        shift_instance_id: instanceId,
-      },
-    });
   }
 
   private async assertShiftInstanceAcceptanceCapacity(
@@ -4521,21 +4803,23 @@ export class ShiftService {
     return unit?.organizationId ?? undefined;
   }
 
-  private async captureShiftInstanceJoin(input: {
+  private async captureShiftInstanceInviteUpdate(input: {
     userId: string;
     organizationUnitId: string;
     shiftId: string;
     shiftInstanceId: string;
     source: PostHogJoinSource;
+    inviteStatus: ShiftInviteStatus;
+    previousStatus?: ShiftInviteStatus;
   }): Promise<void> {
     this.postHogService.capture({
-      event: POSTHOG_EVENT.SHIFT_INSTANCE_JOIN,
+      event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE_UPDATE,
       userId: input.userId,
       properties: {
         surface:
           input.source === POSTHOG_JOIN_SOURCE.MEMBERSHIP_APPROVE ||
           input.source === POSTHOG_JOIN_SOURCE.CHECK_IN ||
-          input.source === POSTHOG_JOIN_SOURCE.WAITLIST_PROMOTE
+          input.source === POSTHOG_JOIN_SOURCE.ADMIN
             ? POSTHOG_SURFACE.BACKOFFICE
             : POSTHOG_SURFACE.VOLUNTEERING,
         organization_id: await this.resolveOrganizationId(
@@ -4545,6 +4829,10 @@ export class ShiftService {
         source: input.source,
         shift_id: input.shiftId,
         shift_instance_id: input.shiftInstanceId,
+        invite_status: input.inviteStatus,
+        ...(input.previousStatus
+          ? { previous_status: input.previousStatus }
+          : {}),
       },
     });
   }

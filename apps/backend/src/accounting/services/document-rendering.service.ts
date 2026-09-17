@@ -5,12 +5,19 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
+import { appDateParts } from '../../shift/utils/app-time';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
+import {
+  billingYearBounds,
+  billingYearOf,
+  lastDayOfPeriod,
+} from '../utils/billing-period';
+import { resolveOrgProfile } from '../utils/org-profile';
 import {
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
@@ -302,12 +309,12 @@ export class DocumentRenderingService {
       {
         label: 'Unterschrift (Freiwillige:r)',
         name: resolved.volunteer_name || '—',
-        signedAt: this.signatureDateFor(document, 'VOLUNTEER'),
+        signedAt: this.signatureTimestampFor(document, 'VOLUNTEER'),
       },
       {
         label: 'Unterschrift Koordination',
         name: resolved.org_name || '—',
-        signedAt: this.signatureDateFor(document, 'PERMISSION_HOLDER'),
+        signedAt: this.signatureTimestampFor(document, 'PERMISSION_HOLDER'),
       },
     ];
 
@@ -331,8 +338,9 @@ export class DocumentRenderingService {
 
     pdf.lineWidth(1);
     if (seat.signedAt) {
-      // HelloSign-style: the signing date sits in a gap in the top border —
-      // the border stops, shows the short date, then continues.
+      // HelloSign-style: the signing timestamp sits in a gap in the top border —
+      // the border stops, shows the timestamp, then continues. Lift it above
+      // the line so it does not crowd the signature name below.
       pdf.font('Helvetica').fontSize(8);
       const timestamp = seat.signedAt;
       const labelWidth = pdf.widthOfString(timestamp);
@@ -351,7 +359,7 @@ export class DocumentRenderingService {
       pdf
         .font('Helvetica')
         .fontSize(8)
-        .text(timestamp, gapStart + 3, top + 3, { lineBreak: false });
+        .text(timestamp, gapStart + 3, top - 4, { lineBreak: false });
     } else {
       pdf
         .moveTo(left, top)
@@ -377,7 +385,7 @@ export class DocumentRenderingService {
     return ['', '', 'Gesamtbetrag', '', '', this.formatEuro(totalAmountCents)];
   }
 
-  private signatureDateFor(
+  private signatureTimestampFor(
     document: RenderableDocument,
     signeeType: string,
   ): string | undefined {
@@ -385,7 +393,7 @@ export class DocumentRenderingService {
       (s) => s.signeeType === signeeType && s.signedAt,
     );
     return signature?.signedAt
-      ? this.formatDate(new Date(signature.signedAt))
+      ? this.formatSignatureTimestamp(new Date(signature.signedAt))
       : undefined;
   }
 
@@ -459,9 +467,14 @@ export class DocumentRenderingService {
         where: { id: document.volunteerId },
       }),
     ]);
-    const profile = await this.userProfileService.findByUserId(
-      document.volunteerId,
-    );
+    const [profile, orgProfile] = await Promise.all([
+      this.userProfileService.findByUserId(document.volunteerId),
+      // The same resolved org details the create gate checked, so a sub-org's
+      // document prints what its parents filled in rather than blanks.
+      template.organizationId && rootUnit
+        ? resolveOrgProfile(this.db, template.organizationId, rootUnit.id)
+        : Promise.resolve(undefined),
+    ]);
     const profileData = (profile?.data ?? {}) as Record<string, unknown>;
 
     const [firstName, lastName] = this.splitName(volunteer?.name);
@@ -480,9 +493,10 @@ export class DocumentRenderingService {
     //
     // The "already received" figure is a running calendar-year-to-date sum
     // for the correct Pauschalentyp — Jan 1 of the document's own period's
-    // year through that document's own period end (not "today"), so a
-    // reissued/regenerated document stays internally consistent with what it
-    // originally stated instead of drifting with later invoices.
+    // year through that document's own period end (not "today"), excluding
+    // this document itself, so a reissued/regenerated document stays
+    // internally consistent with what it originally stated instead of
+    // drifting with later invoices.
     const documentPeriodStart = new Date(document.periodStart);
     const documentPeriodEnd = new Date(document.periodEnd);
     const yearlyUsage =
@@ -491,8 +505,9 @@ export class DocumentRenderingService {
             .getYearlyUsage(
               document.volunteerId,
               document.reimbursementTypeId,
-              documentPeriodStart.getFullYear(),
+              billingYearOf(documentPeriodStart),
               documentPeriodEnd,
+              document.id,
             )
             .catch((error: unknown) => {
               this.logger.warn(
@@ -503,14 +518,12 @@ export class DocumentRenderingService {
               return undefined;
             })
         : undefined;
-    const alreadyReceivedCents = yearlyUsage
-      ? Math.max(0, yearlyUsage.usedCents - (amountCents ?? 0))
-      : undefined;
+    const alreadyReceivedCents = yearlyUsage?.usedCents;
     const yearlyLimitCents =
       yearlyUsage?.limitCents ?? document.reimbursementType?.yearlyLimitCents;
     const alreadyReceivedPeriod =
       'invoiceStatus' in document
-        ? `${this.formatDate(new Date(Date.UTC(documentPeriodStart.getFullYear(), 0, 1)))} – ${this.formatDate(documentPeriodEnd)}`
+        ? `${this.formatDate(billingYearBounds(billingYearOf(documentPeriodStart)).start)} – ${this.formatDate(lastDayOfPeriod(documentPeriodEnd))}`
         : undefined;
 
     const str = (value: unknown): string =>
@@ -518,9 +531,10 @@ export class DocumentRenderingService {
 
     return {
       org_name: rootUnit?.name ?? '',
-      org_address: rootUnit?.address ?? '',
-      org_city: rootUnit?.city ?? '',
-      org_legal_rep: rootUnit?.legalRep ?? '',
+      org_address: orgProfile?.address ?? rootUnit?.address ?? '',
+      org_city: orgProfile?.city ?? rootUnit?.city ?? '',
+      org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,
       volunteer_last_name: lastName,
@@ -532,6 +546,9 @@ export class DocumentRenderingService {
       ),
       volunteer_iban: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_iban],
+      ),
+      volunteer_account_holder: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_account_holder],
       ),
       volunteer_bic: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
@@ -547,8 +564,8 @@ export class DocumentRenderingService {
       total_amount:
         amountCents !== undefined ? this.formatEuro(amountCents) : '',
       period_start: this.formatDate(new Date(document.periodStart)),
-      period_end: this.formatDate(new Date(document.periodEnd)),
-      contract_period: `${this.formatDate(new Date(document.periodStart))} – ${this.formatDate(new Date(document.periodEnd))}`,
+      period_end: this.formatDate(lastDayOfPeriod(documentPeriodEnd)),
+      contract_period: `${this.formatDate(documentPeriodStart)} – ${this.formatDate(lastDayOfPeriod(documentPeriodEnd))}`,
       already_received_amount:
         alreadyReceivedCents !== undefined
           ? this.formatEuro(alreadyReceivedCents)
@@ -581,9 +598,10 @@ export class DocumentRenderingService {
     periodStart: Date,
     kostenstelle: string | undefined,
   ): string {
-    const yyyy = periodStart.getUTCFullYear();
-    const mm = String(periodStart.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(periodStart.getUTCDate()).padStart(2, '0');
+    const { year, month, day } = appDateParts(periodStart);
+    const yyyy = year;
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
     const seq = '001';
     switch (invoiceFormat) {
       case 'date-number':
@@ -700,7 +718,11 @@ export class DocumentRenderingService {
       if (!template) {
         return undefined;
       }
+      // The document's own unit first: a sub-org can use a template it
+      // inherited from a parent while setting a rate of its own, and the
+      // rate on the page must be the one that unit pays.
       const organizationUnitId =
+        document.organizationUnitId ??
         template.organizationUnitId ??
         (await this.resolveOrgRootUnitId(organizationId));
       return await this.reimbursementRateService.getEffectiveRateCents(
@@ -746,18 +768,16 @@ export class DocumentRenderingService {
   }
 
   /**
-   * Formats a stored period/date boundary in UTC — document periods are
-   * calendar-date boundaries (e.g. periodEnd `23:59:59.999Z`), not
-   * timezone-local instants, and formatting in the server's local timezone
-   * can roll a late-UTC timestamp into the next calendar day (e.g. Jahresdeckel
-   * period-end dates would silently drift by a day in timezones ahead of UTC).
+   * Formats a date as the Berlin calendar day. Document periods are Berlin
+   * calendar days (see billing-period), so pass `lastDayOfPeriod(periodEnd)`
+   * for a period's last day, never the exclusive end itself.
    */
   private formatDate(date: Date): string {
     return new Intl.DateTimeFormat('de-DE', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
-      timeZone: 'UTC',
+      timeZone: 'Europe/Berlin',
     }).format(date);
   }
 
@@ -769,6 +789,27 @@ export class DocumentRenderingService {
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
+  }
+
+  /**
+   * Compact date + wall-clock time with seconds for a signature seat, e.g.
+   * "10.09.2026 15:04:05". A signature is a real instant, so it is shown in
+   * Europe/Berlin wall-clock time — unlike `formatDate`, which stays in UTC
+   * so calendar boundaries (period end, Jahresdeckel) never drift.
+   */
+  private formatSignatureTimestamp(date: Date): string {
+    return new Intl.DateTimeFormat('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Europe/Berlin',
+    })
+      .format(date)
+      .replace(',', '');
   }
 
   /** "10,00" without the € sign — the template text carries "€ pro Stunde" around the marker. */

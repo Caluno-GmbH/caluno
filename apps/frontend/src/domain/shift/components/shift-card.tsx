@@ -2,6 +2,7 @@
 
 import {
   formatRrulePattern,
+  isRecurringRrule,
   ShiftInviteStatus,
   ShiftVisibility,
   type WeeklyShiftInstance,
@@ -14,7 +15,6 @@ import {
   type VolunteeringShiftCardVolunteer,
   VolunteeringShiftCardVolunteers,
 } from '@repo/ui';
-import { format } from 'date-fns';
 import {
   LockKeyhole,
   RepeatIcon,
@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { Link, useRouter } from '@/i18n/navigation';
+import { useFormatting } from '@/lib/formatting/use-formatting';
 import { updateShiftInstanceInviteStatus } from '../actions';
 import {
   partitionInvitesByWaitlist,
@@ -78,6 +79,7 @@ export function ShiftCard({
   orgUId,
 }: ShiftCardProps) {
   const t = useTranslations('Shift');
+  const { formatTime } = useFormatting();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -93,8 +95,8 @@ export function ShiftCard({
   const showButton = canManage && !isAtCapacity;
   const buttonVariant = state === 'alert' ? 'default' : 'outline';
 
-  const startTime = format(new Date(instance.actualStartsAt), 'HH:mm');
-  const endTime = format(new Date(instance.actualEndsAt), 'HH:mm');
+  const startTime = formatTime(new Date(instance.actualStartsAt));
+  const endTime = formatTime(new Date(instance.actualEndsAt));
 
   const invitedVolunteers: VolunteeringShiftCardVolunteer[] = invites.map(
     (invite) => ({
@@ -163,7 +165,7 @@ export function ShiftCard({
             <span className="min-w-0 tabular-nums">
               {startTime} - {endTime}
             </span>
-            {instance.master.rrule && (
+            {isRecurringRrule(instance.master.rrule) && (
               <ActionTooltip label={formatRrulePattern(instance.master.rrule)}>
                 <span className="inline-flex shrink-0 text-muted-foreground">
                   <RepeatIcon className="size-3.5" />

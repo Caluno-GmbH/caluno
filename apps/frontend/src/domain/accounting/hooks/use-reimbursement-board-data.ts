@@ -10,7 +10,9 @@ import {
 import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 import type { DateRange } from '../components/period-picker';
+import { billingYearBounds } from '../lib/billing-period';
 import { boardYear, buildBoardVolunteers } from '../lib/board-data.utils';
+import { isBoardInitialLoad } from '../lib/board-loading';
 
 interface UseReimbursementBoardDataInput {
   orgUId: string;
@@ -26,12 +28,8 @@ export function useReimbursementBoardData({
   const locale = useLocale();
   const resolvedYear = year ?? boardYear(dateRange);
 
-  const periodStart = useMemo(
-    () => new Date(resolvedYear, 0, 1).toISOString(),
-    [resolvedYear],
-  );
-  const periodEnd = useMemo(
-    () => new Date(resolvedYear + 1, 0, 1).toISOString(),
+  const { periodStart, periodEnd } = useMemo(
+    () => billingYearBounds(resolvedYear),
     [resolvedYear],
   );
 
@@ -79,6 +77,14 @@ export function useReimbursementBoardData({
       dateRange,
       eligibleHoursVolunteers,
       paidShiftVolunteers,
+      timesheetsToCreate: (needsTimesheetQuery.data ?? []).map((row) => ({
+        volunteerId: row.volunteer.id,
+        reimbursementTypeId: row.reimbursementType.id,
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
+        eligibleHours: row.eligibleHours,
+        estimatedAmountCents: row.estimatedAmountCents,
+      })),
     });
   }, [
     rosterQuery.data,
@@ -93,12 +99,16 @@ export function useReimbursementBoardData({
 
   return {
     volunteers,
-    isLoading:
-      rosterQuery.isFetching ||
-      contractsQuery.isFetching ||
-      invoicesQuery.isFetching ||
-      needsTimesheetQuery.isFetching ||
-      paidShiftQuery.isFetching,
+    // Only the first load for this mount may blank the board out. A refetch
+    // triggered by a mutation's invalidation must leave it standing — see
+    // isBoardInitialLoad.
+    isLoading: isBoardInitialLoad([
+      rosterQuery,
+      contractsQuery,
+      invoicesQuery,
+      needsTimesheetQuery,
+      paidShiftQuery,
+    ]),
     error:
       rosterQuery.error ??
       contractsQuery.error ??

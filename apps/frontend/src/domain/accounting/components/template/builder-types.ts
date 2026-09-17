@@ -33,6 +33,7 @@ export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'org_name',
   'org_address',
   'org_city',
+  'org_zip',
   'org_legal_rep',
   'pauschalen_type',
   'hourly_rate',
@@ -50,6 +51,7 @@ export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
 
 export const PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
   'volunteer_iban',
+  'volunteer_account_holder',
   'volunteer_bic',
   'volunteer_address',
   'volunteer_dob',
@@ -74,6 +76,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   volunteer_first_name: 'volunteer_profile',
   volunteer_last_name: 'volunteer_profile',
   volunteer_iban: 'volunteer_profile',
+  volunteer_account_holder: 'volunteer_profile',
   volunteer_bic: 'volunteer_profile',
   volunteer_address: 'volunteer_profile',
   volunteer_dob: 'volunteer_profile',
@@ -91,6 +94,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   org_name: 'organization_profile',
   org_address: 'organization_profile',
   org_city: 'organization_profile',
+  org_zip: 'organization_profile',
   org_legal_rep: 'organization_profile',
   yearly_limit_amount: 'yearly_limit',
 };
@@ -240,6 +244,7 @@ export function countIncompleteManualFields(doc: TemplateDocument): number {
 const ORG_PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
   'org_address',
   'org_city',
+  'org_zip',
   'org_legal_rep',
 ];
 
@@ -254,6 +259,7 @@ export function missingOrgProfileSourcesForOrg(
   org: {
     address?: string | null;
     city?: string | null;
+    zipCode?: string | null;
     legalRep?: string | null;
   },
 ): DataSourceKey[] {
@@ -283,13 +289,17 @@ export function missingOrgProfileSourcesForOrg(
   }
   collectLine(doc.footer.closingLine);
 
+  const valueBySource: Partial<
+    Record<DataSourceKey, string | null | undefined>
+  > = {
+    org_address: org.address,
+    org_city: org.city,
+    org_zip: org.zipCode,
+    org_legal_rep: org.legalRep,
+  };
+
   return [...bound].filter((source) => {
-    const value =
-      source === 'org_address'
-        ? org.address
-        : source === 'org_city'
-          ? org.city
-          : org.legalRep;
+    const value = valueBySource[source];
     return typeof value !== 'string' || value.trim() === '';
   });
 }

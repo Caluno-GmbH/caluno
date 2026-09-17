@@ -113,6 +113,13 @@ export function isParticipatingShiftInviteStatus(
   return status === ShiftInviteStatus.JOINED;
 }
 
+/** Volunteer "My shifts" roster — joined, pending approval, or waitlisted. */
+export const MY_SHIFT_INVITE_STATUSES: readonly ShiftInviteStatus[] = [
+  ShiftInviteStatus.JOINED,
+  ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+  ShiftInviteStatus.WAITLIST_JOINED,
+] as const;
+
 /** Pending or participating — currently "on" the shift/event roster. */
 export const ACTIVE_SHIFT_INVITE_STATUSES: readonly ShiftInviteStatus[] = [
   ShiftInviteStatus.ADMIN_INVITED,
@@ -155,8 +162,22 @@ export function isVolunteerJoinResolveSource(
 /**
  * Whether a non-admin (self) actor may request `to` from current `from`.
  * JOINED / WAITLIST_JOINED are only from volunteer join-resolve sources
- * (accept / re-join); admin approval and waitlist promotion are admin-only.
+ * (accept / re-join); admin approval is admin-only; a waitlisted volunteer
+ * may claim a freed seat themselves (VOLI-1260).
  */
+/** Volunteer self-withdraw/cancel on an event (not shift waitlist). */
+export function isVolunteerEventParticipationWithdrawal(
+  from: InviteStatusValue,
+  to: InviteStatusValue,
+): boolean {
+  return (
+    (from === EventInviteStatus.JOINED &&
+      to === EventInviteStatus.VOLUNTEER_CANCELLED) ||
+    (from === EventInviteStatus.AWAITING_ADMIN_APPROVAL &&
+      to === EventInviteStatus.VOLUNTEER_REJECTED)
+  );
+}
+
 export function volunteerMayRequestInviteStatus(
   from: InviteStatusValue,
   to: InviteStatusValue,
@@ -176,7 +197,10 @@ export function volunteerMayRequestInviteStatus(
     to === ShiftInviteStatus.JOINED ||
     to === ShiftInviteStatus.WAITLIST_JOINED
   ) {
-    return isVolunteerJoinResolveSource(from);
+    return (
+      isVolunteerJoinResolveSource(from) ||
+      from === ShiftInviteStatus.WAITLIST_JOINED
+    );
   }
 
   return true;

@@ -155,11 +155,14 @@ export class InvoiceFieldResolver {
       organizationUnitId = full.organizationUnitId ?? undefined;
     }
     if (!organizationId) return [];
-    const unit = organizationUnitId
-      ? await orgLoader.organizationUnitById.load(organizationUnitId)
-      : await orgLoader.rootUnitByOrganizationId.load(organizationId);
+    // Batched (one query per ancestor depth for the whole list) and the same
+    // resolution as the create gate and the PDF, so a sub-org inherits the org
+    // details its parents have filled in.
+    const profile = organizationUnitId
+      ? await orgLoader.orgProfileByUnitId.load(organizationUnitId)
+      : await orgLoader.orgProfileByOrganizationId.load(organizationId);
     return this.documentProfileRequirementService.missingOrgProfileSourcesForUnit(
-      (unit ?? undefined) as Record<string, unknown> | undefined,
+      (profile ?? undefined) as Record<string, unknown> | undefined,
       templateBody,
     );
   }

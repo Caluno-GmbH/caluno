@@ -20,6 +20,8 @@ interface DeleteAlertDialogProps {
   onDelete: () => void;
   trigger: React.ReactNode;
   deleteLabel?: string;
+  /** When true the dialog trigger is disabled and cannot open the dialog. */
+  disabled?: boolean;
 }
 
 export function DeleteAlertDialog({
@@ -28,12 +30,15 @@ export function DeleteAlertDialog({
   onDelete,
   trigger,
   deleteLabel,
+  disabled,
 }: DeleteAlertDialogProps) {
   const t = useTranslations('Common');
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+      <AlertDialogTrigger asChild disabled={disabled}>
+        {trigger}
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -15,12 +15,21 @@ interface TimeEntryMock {
 }
 
 describe('DocumentRenderingService', () => {
+  let yearlyUsageCallArgs: unknown[] = [];
+  let rateCallArgs: unknown[] = [];
+
   const createService = (
     overrides: {
       saveFile?: (args: unknown) => Promise<{ id: string }>;
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      unit?: Record<string, unknown>;
+      yearlyUsage?: {
+        usedCents: number;
+        limitCents: number;
+        remainingCents: number;
+      };
     } = {},
   ) => {
     const db = {
@@ -38,7 +47,8 @@ describe('DocumentRenderingService', () => {
             Promise.resolve({ id: 'vol-1', name: 'Max Mustermann' }),
         },
         organizationUnits: {
-          findFirst: () => Promise.resolve({ id: 'root-unit' }),
+          findFirst: () =>
+            Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
         },
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
@@ -53,8 +63,14 @@ describe('DocumentRenderingService', () => {
         }),
     } as never;
     const reimbursementRateService = {
-      getEffectiveRateCents: () => Promise.resolve(overrides.rateCents),
-      getYearlyUsage: () => Promise.resolve(undefined),
+      getEffectiveRateCents: (...args: unknown[]) => {
+        rateCallArgs = args;
+        return Promise.resolve(overrides.rateCents);
+      },
+      getYearlyUsage: (...args: unknown[]) => {
+        yearlyUsageCallArgs = args;
+        return Promise.resolve(overrides.yearlyUsage);
+      },
     } as never;
     const fileService = {
       saveGeneratedFile: (args: unknown) =>
@@ -227,6 +243,21 @@ describe('DocumentRenderingService', () => {
     expect(saved).toHaveProperty('bytes');
   });
 
+  it('resolves the rate at the document own unit, not the template unit', async () => {
+    rateCallArgs = [];
+    const service = createService({ rateCents: 1500 });
+    await service.generatePdf(
+      contract({
+        organizationUnitId: 'sub-unit',
+        documentTemplate: {
+          ...contract().documentTemplate,
+          organizationUnitId: null,
+        } as never,
+      }),
+    );
+    expect(rateCallArgs).toEqual(['org-1', 'sub-unit', 'type-1']);
+  });
+
   it('renderAndAttachPdf never throws — returns null when the template is missing', async () => {
     const service = createService();
     const fileId = await service.renderAndAttachPdf(
@@ -378,6 +409,86 @@ describe('DocumentRenderingService', () => {
       ).invoiceTotalRowCells(8250);
 
       expect(cells).toEqual(['', '', 'Gesamtbetrag', '', '', '82,50 €']);
+    });
+  });
+
+  describe('Jahresdeckel already-received amount', () => {
+    const resolveValues = (
+      service: DocumentRenderingService,
+      document: InvoiceWithRelations,
+    ): Promise<Record<string, string>> =>
+      (
+        service as unknown as {
+          resolveValues: (
+            d: InvoiceWithRelations,
+          ) => Promise<Record<string, string>>;
+        }
+      ).resolveValues(document);
+
+    it('reports the year-to-date sum, excluding the current invoice by id', async () => {
+      yearlyUsageCallArgs = [];
+      const service = createService({
+        rateCents: 1500,
+        yearlyUsage: {
+          usedCents: 5_000,
+          limitCents: 84_000,
+          remainingCents: 79_000,
+        },
+      });
+
+      const values = await resolveValues(service, invoice());
+
+      // 50,00 € is the mocked usage as is, not minus the invoice's own
+      // 82,50 € (which would clamp to 0,00 €): the invoice is excluded by id.
+      expect(values.already_received_amount).toBe('50,00 €');
+      expect(yearlyUsageCallArgs).toEqual([
+        'vol-1',
+        'type-1',
+        2025,
+        new Date('2025-01-31'),
+        'invoice-1',
+      ]);
+    });
+  });
+
+  describe('resolved org profile values', () => {
+    const resolveValues = (
+      service: DocumentRenderingService,
+      document: ContractWithRelations,
+    ): Promise<Record<string, string>> =>
+      (
+        service as unknown as {
+          resolveValues: (
+            d: ContractWithRelations,
+          ) => Promise<Record<string, string>>;
+        }
+      ).resolveValues(document);
+
+    it('renders the resolved org postal code the create gate checked', async () => {
+      const service = createService({
+        unit: {
+          id: 'unit-1',
+          name: 'Branch',
+          address: 'Hauptstraße 1',
+          city: 'Berlin',
+          zipCode: '10115',
+          legalRep: 'Erika Mustermann',
+        },
+      });
+
+      const values = await resolveValues(service, contract());
+
+      expect(values.org_zip).toBe('10115');
+    });
+
+    it('renders a blank postal code as an empty string when the org has none', async () => {
+      const service = createService({
+        unit: { id: 'unit-1', name: 'Branch' },
+      });
+
+      const values = await resolveValues(service, contract());
+
+      expect(values.org_zip).toBe('');
     });
   });
 });

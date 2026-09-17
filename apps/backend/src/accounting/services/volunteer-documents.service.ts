@@ -90,9 +90,11 @@ export class VolunteerDocumentsService {
       const [contracts, invoices] = await Promise.all([
         this.contractService.findContractsForOrganization(org.organizationId, {
           volunteerId: userId,
+          issuedOnly: true,
         }),
         this.invoiceService.findInvoicesForOrganization(org.organizationId, {
           volunteerId: userId,
+          issuedOnly: true,
         }),
       ]);
       groups.push({
@@ -126,9 +128,11 @@ export class VolunteerDocumentsService {
       const [contracts, invoices] = await Promise.all([
         this.contractService.findContractsForOrganization(org.organizationId, {
           volunteerId: userId,
+          issuedOnly: true,
         }),
         this.invoiceService.findInvoicesForOrganization(org.organizationId, {
           volunteerId: userId,
+          issuedOnly: true,
         }),
       ]);
       total += contracts.length + invoices.length;

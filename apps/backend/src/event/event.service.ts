@@ -30,6 +30,7 @@ import {
   ACTIVE_EVENT_INVITE_STATUSES,
   ADMIN_LIST_EVENT_INVITE_STATUSES,
   canTransitionInviteStatus,
+  isVolunteerEventParticipationWithdrawal,
   isVolunteerJoinResolveSource,
   PARTICIPATING_EVENT_INVITE_STATUSES,
   resolveAdminApprovalTargetStatus,
@@ -1002,6 +1003,16 @@ export class EventService {
       );
     }
 
+    if (
+      !isAdminActor &&
+      isVolunteerEventParticipationWithdrawal(invite.status, targetStatus) &&
+      Date.now() > event.startsAt.getTime()
+    ) {
+      throw new BadRequestGraphQLError(
+        'You can no longer cancel your participation after the event has started',
+      );
+    }
+
     const updated = await this.db.transaction(async (tx) => {
       const [updated] = await tx
         .update(schema.eventInvites)
@@ -1051,6 +1062,7 @@ export class EventService {
         source,
         event_id: eventId,
         invite_status: targetStatus,
+        previous_status: invite.status,
       },
     });
     if (targetStatus === EventInviteStatus.JOINED) {

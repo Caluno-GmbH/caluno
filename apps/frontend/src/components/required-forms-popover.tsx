@@ -2,9 +2,7 @@
 
 import type { RequiredForm } from '@repo/data/react';
 import { Button, Popover, PopoverContent, PopoverTrigger } from '@repo/ui';
-import { FilePlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Link } from '@/i18n/navigation';
 import {
   RequiredFormsAddExisting,
   RequiredFormsDedupHint,
@@ -23,7 +21,6 @@ interface RequiredFormsPopoverProps {
   isPending: boolean;
   disabled?: boolean;
   disabledFormIds?: Set<string>;
-  createNewHref: string;
   t: (key: string, values?: Record<string, string | number | Date>) => string;
   subtitle?: string;
   onOpenChange?: (open: boolean) => void;
@@ -37,7 +34,6 @@ export function RequiredFormsPopover({
   isPending,
   disabled,
   disabledFormIds,
-  createNewHref,
   t,
   subtitle,
   onOpenChange,
@@ -125,13 +121,6 @@ export function RequiredFormsPopover({
               disabledFormIds={disabledFormIds}
               t={t}
             />
-
-            <Button variant="outline" size="sm" className="flex-1" asChild>
-              <Link href={createNewHref}>
-                <FilePlus className="mr-2 h-4 w-4" />
-                {t('createNew')}
-              </Link>
-            </Button>
           </div>
 
           <RequiredFormsDedupHint t={t} />

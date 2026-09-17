@@ -1,9 +1,15 @@
 'use client';
 
+import { useAccountingSetupStatus } from '@repo/data/react';
 import { Button } from '@repo/ui';
-import { PlusIcon } from 'lucide-react';
+import { AlertCircleIcon, PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import {
+  documentCreationBlocker,
+  templateReadinessByPauschale,
+} from '../lib/setup-status';
+import { AccountingSetupAlert } from './accounting-setup-alert';
 import type { DateRange } from './period-picker';
 import { thisMonthRange } from './period-picker';
 import { ReimbursementsBoard } from './reimbursements-board';
@@ -26,6 +32,15 @@ export function ReimbursementsPageHeader({
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [createDocOpen, setCreateDocOpen] = useState(false);
 
+  const setupStatusQuery = useAccountingSetupStatus();
+  const blocker = documentCreationBlocker(setupStatusQuery.data);
+  // Fail closed: while the status is loading or errored we cannot prove the
+  // gates are met, so the create paths stay disabled.
+  const canCreateDocuments = setupStatusQuery.isSuccess && blocker === null;
+  // Per-Pauschale readiness so a row whose type has no template is disabled
+  // before it is clicked, not just blocked org-wide.
+  const templateReadiness = templateReadinessByPauschale(setupStatusQuery.data);
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -36,12 +51,26 @@ export function ReimbursementsPageHeader({
 
         <Button
           className="h-10 shrink-0"
+          disabled={!canCreateDocuments}
           onClick={() => setCreateDocOpen(true)}
         >
           <PlusIcon />
           {t('createDocument')}
         </Button>
       </div>
+
+      {blocker && <AccountingSetupAlert blocker={blocker} orgUId={orgUId} />}
+
+      {setupStatusQuery.isError && (
+        <div className="flex items-start gap-2 rounded-xl border border-border bg-muted p-4 text-sm text-muted-foreground">
+          <AlertCircleIcon
+            size={16}
+            className="mt-0.5 shrink-0"
+            aria-hidden="true"
+          />
+          <p>{t('setupStatusError')}</p>
+        </div>
+      )}
 
       <ReimbursementsBoard
         orgUId={orgUId}
@@ -55,6 +84,8 @@ export function ReimbursementsPageHeader({
         }}
         createDocOpen={createDocOpen}
         onCreateDocOpenChange={setCreateDocOpen}
+        canCreateDocuments={canCreateDocuments}
+        templateReadiness={templateReadiness}
       />
     </div>
   );

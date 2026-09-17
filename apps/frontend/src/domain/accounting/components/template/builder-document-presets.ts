@@ -33,16 +33,14 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
  * Data sources already known at template-configuration time (the org itself, its
  * configured rate) — shown as real values in the preview instead of a generic
  * "will be filled in later" chip. Volunteer- and generation-time sources (name, IBAN,
- * dates, totals) aren't in this map — there's no specific volunteer yet. Sources the
- * org profile can't answer (city, legal representative) stay unresolved too.
+ * dates, totals) aren't in this map — there's no specific volunteer yet.
  */
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
   orgName?: string | null;
   orgAddress?: string | null;
-  /** Not part of the org profile API yet — only mock call sites pass this. */
   orgCity?: string | null;
-  /** Not part of the org profile API yet — only mock call sites pass this. */
+  orgZip?: string | null;
   orgLegalRep?: string | null;
   hourlyRateCents?: number;
   yearlyLimitCents?: number;
@@ -53,6 +51,7 @@ export function getKnownOrgValues(args: {
   if (args.orgName) values.org_name = args.orgName;
   if (args.orgAddress) values.org_address = args.orgAddress;
   if (args.orgCity) values.org_city = args.orgCity;
+  if (args.orgZip) values.org_zip = args.orgZip;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
   if (args.hourlyRateCents !== undefined) {
     // German document content, formatted like the German legal text around it.
@@ -100,7 +99,9 @@ export function getContractDocument(
   return {
     header: {
       titleLines: ['Zusatzvereinbarung zur', PAUSCHALE_TITLE[pauschale]],
-      orgIdentityLine: line('header-org-identity', '{orgName} {orgAddress}', [
+      // Newline between name and address: the header is a letterhead block, so
+      // they belong on separate lines (VOLI-1325).
+      orgIdentityLine: line('header-org-identity', '{orgName}\n{orgAddress}', [
         bound('header-org-name', 'org_name'),
         bound('header-org-address', 'org_address'),
       ]),
@@ -114,7 +115,7 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName} {orgAddress}, und', [
+          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
             bound('parties-org-name', 'org_name'),
             bound('parties-org-address', 'org_address'),
           ]),
@@ -201,14 +202,9 @@ export function getContractDocument(
             'payout-intro',
             'Die Aufwandsentschädigung wird monatlich auf folgendes Konto überwiesen:',
           ),
-          line(
-            'payout-holder',
-            '{volunteerFirstName} {volunteerLastName}, (Kontoinhaber:in)',
-            [
-              bound('payout-holder-first', 'volunteer_first_name'),
-              bound('payout-holder-last', 'volunteer_last_name'),
-            ],
-          ),
+          line('payout-holder', '{volunteerAccountHolder} (Kontoinhaber:in)', [
+            bound('payout-holder-field', 'volunteer_account_holder'),
+          ]),
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),

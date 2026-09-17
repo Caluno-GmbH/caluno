@@ -11,13 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui';
-import { format } from 'date-fns';
 import { ChevronDownIcon, FileTextIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
+import { useFormatting } from '@/lib/formatting/use-formatting';
+import { documentRowAction } from '../lib/board-data.utils';
+import {
+  documentCreationBlockedFor,
+  type TemplateReadinessByPauschale,
+} from '../lib/setup-status';
 import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
@@ -36,7 +41,6 @@ import {
   getReadyToGoDocs,
   isTimesheetNonCompliant,
 } from './reimbursements-board';
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
@@ -91,11 +95,6 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
     actionKey: 'create',
     isYourAction: true,
   },
-  'timesheet-draft': {
-    labelKey: 'timesheetDraft',
-    actionKey: 'create',
-    isYourAction: true,
-  },
   'timesheet-signing-vol': {
     labelKey: 'timesheetSigningVol',
     actionKey: null,
@@ -147,7 +146,6 @@ const STATUS_SORT_ORDER: DocStatus[] = [
   'contract-generate',
   'contract-draft',
   'timesheet-generate',
-  'timesheet-draft',
   'contract-missing',
   'contract-signing-coord',
   'timesheet-signing-super',
@@ -183,6 +181,7 @@ function BundleDownloadButton({
   orgUId,
 }: BundleDownloadButtonProps) {
   const t = useTranslations('Accounting.reimbursements');
+  const { formatDate } = useFormatting();
   const queryClient = useQueryClient();
   const { data: status, isLoading } = useBundleDownloadStatus(
     volunteerId,
@@ -250,7 +249,7 @@ function BundleDownloadButton({
                 by: status.downloadedByUser?.name
                   ? abbreviateName(status.downloadedByUser.name)
                   : t('bundle.unknownUser'),
-                at: format(new Date(status.downloadedAt), 'dd.MM.yyyy'),
+                at: formatDate(new Date(status.downloadedAt)),
                 // Stubbed: no volunteer-profile route exists yet
                 // in this prototype — becomes a real link there.
                 name: (chunks) => (
@@ -279,6 +278,8 @@ interface VolunteerTableGroupProps {
   docTypeFilter: DocTypeFilter;
   dateRange: DateRange | undefined;
   activeTile: TileFilter;
+  canCreateDocuments: boolean;
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 function VolunteerTableGroup({
@@ -289,6 +290,8 @@ function VolunteerTableGroup({
   docTypeFilter,
   dateRange,
   activeTile,
+  canCreateDocuments,
+  templateReadiness,
 }: VolunteerTableGroupProps) {
   const t = useTranslations('Accounting.reimbursements');
   const tSections = useTranslations('Accounting.templates.sections');
@@ -418,11 +421,18 @@ function VolunteerTableGroup({
             doc.status === 'contract-generate' ||
             doc.status === 'timesheet-generate';
           // Contract-generate has nothing to show yet (no signing chain has
-          // started); timesheet-generate already has computed hours/amount,
-          // so it stays visually dimmed but is still openable.
-          const canOpenSheet = doc.status !== 'contract-generate';
+          // started); timesheet-generate already has computed hours/amount.
+          const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale ?? vol.pauschale;
           const docNonCompliant = isTimesheetNonCompliant(vol, doc);
+          const createBlocked =
+            actionKey === 'create' &&
+            documentCreationBlockedFor(
+              templateReadiness,
+              effectivePauschale,
+              isTimesheet ? 'invoice' : 'contract',
+            );
+          const canOpenSheet = rowAction !== 'none' && !createBlocked;
           const isDeclined =
             doc.status === 'contract-declined' ||
             doc.status === 'timesheet-declined';
@@ -437,7 +447,14 @@ function VolunteerTableGroup({
                   : 'cursor-default',
                 !isActive && !meta.isYourAction && !isGenerate && 'bg-muted/20',
               )}
-              onClick={() => canOpenSheet && onDocumentClick(doc, vol)}
+              onClick={() => {
+                if (rowAction === 'create') {
+                  if (createBlocked) return;
+                  onRequestCreate({ doc, vol });
+                  return;
+                }
+                if (rowAction === 'open') onDocumentClick(doc, vol);
+              }}
             >
               <TableCell
                 className={cn(
@@ -542,6 +559,16 @@ function VolunteerTableGroup({
                       className="text-alert"
                     />
                   )}
+                  {createBlocked && (
+                    <AlertIconTooltip
+                      hint={t(
+                        'docs.statusLabel.templateMissingHint' as Parameters<
+                          typeof t
+                        >[0],
+                      )}
+                      className="text-alert"
+                    />
+                  )}
                   {isDeclined && (
                     <Button
                       size="sm"
@@ -558,9 +585,14 @@ function VolunteerTableGroup({
                     <Button
                       size="sm"
                       variant={actionKey === 'create' ? 'default' : 'outline'}
+                      disabled={
+                        actionKey === 'create' &&
+                        (!canCreateDocuments || createBlocked)
+                      }
                       onClick={(e) => {
                         e.stopPropagation();
                         if (actionKey === 'create') {
+                          if (!canCreateDocuments || createBlocked) return;
                           onRequestCreate({ doc, vol });
                         } else {
                           onDocumentClick(doc, vol);
@@ -591,6 +623,8 @@ interface ReimbursementsTableProps {
   docTypeFilter: DocTypeFilter;
   dateRange: DateRange | undefined;
   activeTile: TileFilter;
+  canCreateDocuments: boolean;
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 export function ReimbursementsTable({
@@ -601,6 +635,8 @@ export function ReimbursementsTable({
   docTypeFilter,
   dateRange,
   activeTile,
+  canCreateDocuments,
+  templateReadiness,
 }: ReimbursementsTableProps) {
   const t = useTranslations('Accounting.reimbursements');
 
@@ -633,6 +669,8 @@ export function ReimbursementsTable({
               docTypeFilter={docTypeFilter}
               dateRange={dateRange}
               activeTile={activeTile}
+              canCreateDocuments={canCreateDocuments}
+              templateReadiness={templateReadiness}
             />
           ))}
         </TableBody>

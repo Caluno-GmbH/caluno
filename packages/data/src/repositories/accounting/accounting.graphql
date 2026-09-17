@@ -20,6 +20,11 @@ query GetEffectiveRates($organizationUnitId: ID) {
     hourlyRateCents
     isOverride
     organizationUnitId
+    provenance {
+      kind
+      sourceName
+      replacesRateCents
+    }
   }
 }
 
@@ -38,8 +43,20 @@ mutation SetReimbursementRate(
   }
 }
 
-query GetYearlyUsage($reimbursementTypeId: ID!, $year: Int!) {
-  yearlyUsage(reimbursementTypeId: $reimbursementTypeId, year: $year) {
+query GetYearlyUsage(
+  $volunteerId: ID!
+  $reimbursementTypeId: ID!
+  $year: Int!
+  $asOfDate: DateTime
+  $excludeInvoiceId: ID
+) {
+  yearlyUsage(
+    volunteerId: $volunteerId
+    reimbursementTypeId: $reimbursementTypeId
+    year: $year
+    asOfDate: $asOfDate
+    excludeInvoiceId: $excludeInvoiceId
+  ) {
     usedCents
     limitCents
     remainingCents
@@ -304,7 +321,10 @@ query GetVolunteersNeedingTimesheets(
       id
       key
     }
+    periodStart
+    periodEnd
     eligibleHours
+    estimatedAmountCents
   }
 }
 
@@ -566,5 +586,27 @@ query MyDocumentSummary {
   myDocumentSummary {
     total
     pending
+  }
+}
+
+query GetAccountingSetupStatus {
+  accountingSetupStatus {
+    orgProfile {
+      name
+      address
+      city
+      zipCode
+      legalRep
+    }
+    orgProfileComplete
+    missingOrgProfileFields
+    canCreateDocuments
+    slots {
+      reimbursementTypeId
+      reimbursementTypeKey
+      hasContractTemplate
+      hasInvoiceTemplate
+      ready
+    }
   }
 }

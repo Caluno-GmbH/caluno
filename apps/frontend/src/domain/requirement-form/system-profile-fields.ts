@@ -21,7 +21,12 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
     type: FieldType.Lastname,
     required: true,
   },
-  { key: 'gender', labelKey: 'gender', type: FieldType.Text, required: false },
+  {
+    key: 'gender',
+    labelKey: 'gender',
+    type: FieldType.SingleChoice,
+    required: false,
+  },
 
   { key: 'email', labelKey: 'email', type: FieldType.Email, required: true },
   { key: 'phone', labelKey: 'phone', type: FieldType.Phone, required: false },
@@ -40,6 +45,12 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   { key: 'zip', labelKey: 'zipCode', type: FieldType.Zip, required: false },
   { key: 'city', labelKey: 'city', type: FieldType.Text, required: false },
   { key: 'iban', labelKey: 'iban', type: FieldType.Iban, required: true },
+  {
+    key: 'account-holder',
+    labelKey: 'accountHolder',
+    type: FieldType.Text,
+    required: true,
+  },
   { key: 'bic', labelKey: 'bic', type: FieldType.Text, required: false },
   {
     key: 'tax-id',
