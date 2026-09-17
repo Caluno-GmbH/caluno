@@ -183,7 +183,7 @@ describe('isMaskedPaymentAnswer', () => {
   });
 
   it('detects the account holder mask', () => {
-    expect(isMaskedPaymentAnswer('XXXXXX XXXXX')).toBe(true);
+    expect(isMaskedPaymentAnswer('XXXXXX XXXXXX')).toBe(true);
   });
 
   it('does not flag the real payment data a permitted viewer sees', () => {

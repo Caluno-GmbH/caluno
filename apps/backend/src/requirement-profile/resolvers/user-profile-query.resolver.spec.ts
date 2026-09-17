@@ -8,7 +8,7 @@ import type { UserProfileService } from '../services';
 import { UserProfileQueryResolver } from './user-profile-query.resolver';
 
 const MASKED_IBAN = 'XXXX XXXX XXXX XXXX XXXX XX';
-const MASKED_ACCOUNT_HOLDER = 'XXXXXX XXXXX';
+const MASKED_ACCOUNT_HOLDER = 'XXXXXX XXXXXX';
 const MASKED_BIC = 'XXXXXXXXXXX';
 
 const now = new Date('2026-09-15T08:00:00Z');

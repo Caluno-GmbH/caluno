@@ -3,7 +3,7 @@ import { parseMultiChoiceValue } from '../option-values';
 export const RESTRICTED_PAYMENT_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',
-  'account-holder': 'XXXXXX XXXXX',
+  'account-holder': 'XXXXXX XXXXXX',
 } as const;
 
 export const isMaskedPaymentAnswer = (answer: string): boolean =>
