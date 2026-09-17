@@ -80,7 +80,11 @@ export class ContractQueryResolver {
     const organizationId = await this.resolveOrganizationId(context);
     const contracts = await this.contractService.findContractsForOrganization(
       organizationId,
-      { ...toContractFilter(filter), volunteerId: session.user.id },
+      {
+        ...toContractFilter(filter),
+        volunteerId: session.user.id,
+        issuedOnly: true,
+      },
     );
     return this.contractMapper.toArray(contracts);
   }

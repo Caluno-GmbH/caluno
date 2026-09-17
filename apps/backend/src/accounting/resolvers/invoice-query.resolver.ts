@@ -95,7 +95,11 @@ export class InvoiceQueryResolver {
     const organizationId = await this.resolveOrganizationId(context);
     const invoices = await this.invoiceService.findInvoicesForOrganization(
       organizationId,
-      { ...toInvoiceFilter(filter), volunteerId: session.user.id },
+      {
+        ...toInvoiceFilter(filter),
+        volunteerId: session.user.id,
+        issuedOnly: true,
+      },
     );
     return this.invoiceMapper.toArray(invoices);
   }
