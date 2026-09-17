@@ -13,6 +13,7 @@ import {
   contractToVolunteerDocument,
   documentLines,
   documentState,
+  invoiceToVolunteerDocument,
   periodLabel,
 } from './volunteer-documents.utils';
 
@@ -235,5 +236,67 @@ describe('contractToVolunteerDocument', () => {
     expect(doc?.state).toBe('awaiting-signature');
     expect(doc?.figures).toBeUndefined();
     expect(doc?.lines[0]?.kind).toBe('generated');
+  });
+
+  it('returns null for a draft contract summary', () => {
+    const doc = contractToVolunteerDocument(
+      {
+        id: 'contract-1',
+        contractStatus: ContractStatus.Draft,
+        periodStart: '2026-01-01T00:00:00.000Z',
+        periodEnd: '2027-01-01T00:00:00.000Z',
+        isNonCompliant: false,
+        declineReason: null,
+        declinedAt: null,
+        declinedAtSigneeType: null,
+        declinedByUser: null,
+        renewDate: null,
+        downloadUrl: null,
+        missingProfileFields: [],
+        missingOrgProfileFields: [],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: null,
+        volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
+        reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
+        documentTemplate: { id: 'dt-1', kind: DocumentKind.Contract },
+        signatures: [],
+        statusChanges: [statusChange()],
+      },
+      formatMonth,
+    );
+    expect(doc).toBeNull();
+  });
+});
+
+describe('invoiceToVolunteerDocument', () => {
+  it('returns null for a draft invoice summary', () => {
+    const doc = invoiceToVolunteerDocument(
+      {
+        id: 'invoice-1',
+        invoiceStatus: InvoiceStatus.Draft,
+        periodStart: '2026-07-01T00:00:00.000Z',
+        periodEnd: '2026-07-31T23:59:59.000Z',
+        totalAmountCents: 12_000,
+        totalHours: 8,
+        isNonCompliant: false,
+        declineReason: null,
+        declinedAt: null,
+        declinedAtSigneeType: null,
+        declinedByUser: null,
+        downloadUrl: null,
+        missingProfileFields: [],
+        missingOrgProfileFields: [],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: null,
+        volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
+        reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
+        documentTemplate: { id: 'dt-2', kind: DocumentKind.Invoice },
+        invoiceTimeEntries: [],
+        signatures: [],
+        statusChanges: [statusChange()],
+      },
+      formatMonth,
+    );
+    expect(doc).toBeNull();
   });
 });

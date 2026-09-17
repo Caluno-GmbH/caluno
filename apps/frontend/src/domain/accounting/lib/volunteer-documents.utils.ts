@@ -181,9 +181,11 @@ export function periodLabel(
 // ─── State ────────────────────────────────────────────────────────────────────
 
 /**
- * Maps a backend document status to the volunteer's five display states.
- * Everything a card renders hangs off this: the pill, the actions offered,
- * and (with `documentLines`) the provenance lines.
+ * Maps a backend document status to a volunteer-visible display state, or
+ * `null` for a draft or an unrecognised status. Callers drop nulls, so a
+ * document with no volunteer-visible state never renders. Everything a card
+ * renders hangs off this: the pill, the actions offered, and (with
+ * `documentLines`) the provenance lines.
  */
 export function documentState(
   status: ContractStatus | InvoiceStatus,
