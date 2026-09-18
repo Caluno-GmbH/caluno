@@ -11,6 +11,7 @@ import {
   MapPinIcon,
   PencilIcon,
   PhoneIcon,
+  UserIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useSheetTrigger } from '@/hooks/use-sheet';
@@ -36,6 +37,7 @@ export function OrgUnitDetailView({
   const tNav = useTranslations('Navigation');
 
   const hasContact =
+    orgUnit.contactPersonName ||
     orgUnit.contactEmail ||
     orgUnit.phone ||
     orgUnit.websiteUrl ||
@@ -76,6 +78,12 @@ export function OrgUnitDetailView({
             <CardTitle>{t('contactTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {orgUnit.contactPersonName && (
+              <div className="flex items-center gap-2 text-sm">
+                <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span>{orgUnit.contactPersonName}</span>
+              </div>
+            )}
             {orgUnit.contactEmail && (
               <div className="flex items-center gap-2 text-sm">
                 <MailIcon className="h-4 w-4 text-muted-foreground shrink-0" />

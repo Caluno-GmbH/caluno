@@ -208,6 +208,7 @@ input CreateOrganizationUnitInput {
   address: String
   city: String
   contactEmail: String
+  contactPersonName: String
   description: String
   legalRep: String
   logoFileId: String
@@ -217,6 +218,7 @@ input CreateOrganizationUnitInput {
   phone: String
   typeId: String!
   websiteUrl: String
+  welcomeMessage: String
   zipCode: String
 }
 
@@ -648,7 +650,7 @@ type Membership {
 }
 
 type MembershipRequest {
-  contact: User
+  contact: MembershipRequestContact
   createdAt: DateTime!
   id: ID!
   organizationUnit: OrganizationUnit!
@@ -658,6 +660,12 @@ type MembershipRequest {
   status: MembershipRequestStatus!
   updatedAt: DateTime!
   user: User!
+}
+
+type MembershipRequestContact {
+  email: String
+  name: String
+  phone: String
 }
 
 type MembershipRequestPaginatedResponse {
@@ -811,6 +819,7 @@ type OrganizationUnit {
   children: [OrganizationUnit!]!
   city: String
   contactEmail: String
+  contactPersonName: String
   coverUrl: String
   deletedAt: DateTime
   description: String
@@ -831,6 +840,7 @@ type OrganizationUnit {
   slug: String!
   type: OrganizationUnitType!
   websiteUrl: String
+  welcomeMessage: String
   zipCode: String
 }
 
@@ -1512,6 +1522,7 @@ input UpdateOrganizationUnitInput {
   address: String
   city: String
   contactEmail: String
+  contactPersonName: String
   description: String
   idVerificationEnabled: Boolean
   legalRep: String
@@ -1523,6 +1534,7 @@ input UpdateOrganizationUnitInput {
   requiredMembershipRequirementProfileId: String
   typeId: String
   websiteUrl: String
+  welcomeMessage: String
   zipCode: String
 }
 
