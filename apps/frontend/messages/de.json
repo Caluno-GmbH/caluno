@@ -1845,6 +1845,7 @@
     "yourEventsHeading": "Deine Veranstaltungen",
     "yourEventsThisWeek": "{n, plural, one {# Veranstaltung diese Woche} other {# Veranstaltungen diese Woche}}",
     "yourShiftsCount": "{n, plural, one {# Einsatz} other {# Einsätze}}",
+    "dayStripCount": "{n, plural, one {# Einsatz} other {# Einsätze}}",
     "yourShiftsEmpty": "Du hast keine bevorstehenden Einsätze.",
     "yourShiftsHeading": "Deine Einsätze",
     "yourShiftsSeeAll": "Alle anzeigen",
