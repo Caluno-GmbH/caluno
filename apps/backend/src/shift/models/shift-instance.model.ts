@@ -1,6 +1,5 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
 import { createPaginatedResponseType } from '../../graphql/paginated-response.model';
-import { TimeEntry } from '../../time-tracking/models/time-entry.model';
 import { User } from '../../user/models/user.model';
 import { ShiftInviteStatus } from '../enums';
 import type { Shift } from './shift.model';
@@ -62,9 +61,6 @@ export class ShiftInstance {
 
   @Field(() => [ShiftInstanceInvite], { nullable: true })
   invites?: ShiftInstanceInvite[] | null;
-
-  @Field(() => [TimeEntry], { nullable: true })
-  timeEntries?: TimeEntry[] | null;
 
   @Field(() => ShiftInviteStatus, { nullable: true })
   myInviteStatus?: ShiftInviteStatus | null;
