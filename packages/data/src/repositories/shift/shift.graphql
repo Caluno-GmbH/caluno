@@ -458,6 +458,7 @@ fragment VolunteerHomeShiftInstance on ShiftInstance {
   actualEndsAt
   isCheckedIn
   filledCount
+  spotsLeft
   myInviteStatus
   myInvitedAt
   isIntendingToJoin
