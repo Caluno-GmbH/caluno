@@ -1,6 +1,7 @@
 import { Injectable, Scope } from '@nestjs/common';
 import DataLoader from 'dataloader';
 import { RegisterLoader } from '../../graphql/interceptors';
+import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 import { ShiftInviteStatus } from '../enums';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import type { ShiftCallOutSummary } from '../services/shift-call-out.service';
@@ -165,6 +166,40 @@ export class ShiftInstanceLoader {
         await this.shiftService.findIntendedInstanceIdsForUsers(parsed);
 
       return keys.map((key) => intendedKeys.has(key));
+    },
+  );
+
+  // Keyed by `${organizationUnitId}:${instanceId}` so the batch stays scoped to
+  // the caller's org unit — the loader itself has no access to request context.
+  public readonly timeEntriesByKey = new DataLoader<string, TimeEntryEntity[]>(
+    async (keys) => {
+      const parsed = keys.map((key) => {
+        const [organizationUnitId, instanceId] = key.split(':');
+        return { organizationUnitId, instanceId };
+      });
+
+      const entriesByKey = new Map<string, TimeEntryEntity[]>();
+      const instanceIdsByOrgUnit = new Map<string, string[]>();
+      for (const { organizationUnitId, instanceId } of parsed) {
+        const list = instanceIdsByOrgUnit.get(organizationUnitId) ?? [];
+        list.push(instanceId);
+        instanceIdsByOrgUnit.set(organizationUnitId, list);
+      }
+
+      for (const [organizationUnitId, instanceIds] of instanceIdsByOrgUnit) {
+        const entries = await this.shiftService.findTimeEntriesForInstances(
+          instanceIds,
+          organizationUnitId,
+        );
+        for (const entry of entries) {
+          const key = `${organizationUnitId}:${entry.shiftInstanceId as string}`;
+          const list = entriesByKey.get(key) ?? [];
+          list.push(entry);
+          entriesByKey.set(key, list);
+        }
+      }
+
+      return keys.map((key) => entriesByKey.get(key) ?? []);
     },
   );
 }

@@ -4,6 +4,7 @@ import { MembershipRequestStatus, ShiftInviteStatus } from '@repo/data';
 import {
   Badge,
   Button,
+  type ShiftVolunteeringDisplayState,
   type VolunteeringActionLabel,
   VolunteeringVolunteerList,
   type VolunteeringVolunteerListItem,
@@ -12,6 +13,10 @@ import { Megaphone, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
+import {
+  checkInVolunteer,
+  checkOutVolunteer,
+} from '@/domain/time-entry/actions';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -19,6 +24,12 @@ import {
   remindShiftInstanceInvite,
   updateShiftInstanceInviteStatus,
 } from '../actions';
+import {
+  type CheckInTimeEntry,
+  deriveAcceptedRowState,
+  groupTimeEntriesByVolunteer,
+  openTimeEntryId,
+} from '../check-in-state';
 import {
   adminChipTargetStatuses,
   adminRowActions,
@@ -28,6 +39,7 @@ import {
   toInviteDisplayState,
 } from '../invite-status-display';
 import { shiftInvitePath } from '../routes';
+import { CheckedOutStatusTooltip } from './checked-out-status-tooltip';
 import { SendCallOutDialog } from './send-call-out-dialog';
 
 type InstanceInvite = {
@@ -47,10 +59,12 @@ type ShiftInstanceVolunteersPanelProps = {
   shiftId: string;
   instanceId: string;
   invites: InstanceInvite[];
+  timeEntries: CheckInTimeEntry[];
   spotsLeft: number | null | undefined;
   filledCount: number;
   maxVolunteers: number | null | undefined;
   canManage: boolean;
+  canCheckIn: boolean;
   isInstanceInThePast: boolean;
 };
 
@@ -59,10 +73,12 @@ export function ShiftInstanceVolunteersPanel({
   shiftId,
   instanceId,
   invites,
+  timeEntries,
   spotsLeft,
   filledCount,
   maxVolunteers,
   canManage,
+  canCheckIn,
   isInstanceInThePast,
 }: ShiftInstanceVolunteersPanelProps) {
   const { formatDate, formatTime } = useFormatting();
@@ -72,8 +88,9 @@ export function ShiftInstanceVolunteersPanel({
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
   const [pending, startTransition] = useTransition();
 
-  const statusLabel = (status: ShiftInviteStatus) => {
-    const state = toInviteDisplayState(status);
+  const timeEntriesByVolunteer = groupTimeEntriesByVolunteer(timeEntries);
+
+  const stateLabel = (state: ShiftVolunteeringDisplayState) => {
     switch (state) {
       case 'invited':
         return t('inviteStatus.invited');
@@ -91,6 +108,12 @@ export function ShiftInstanceVolunteersPanel({
         return t('inviteStatus.pendingApproval');
       case 'waitlisted':
         return t('inviteStatus.waitlisted');
+      case 'checked_in':
+        return t('inviteStatus.checkedIn');
+      case 'not_checked_in':
+        return t('inviteStatus.notCheckedIn');
+      case 'checked_out':
+        return t('inviteStatus.checkedOut');
       default:
         return state;
     }
@@ -119,12 +142,32 @@ export function ShiftInstanceVolunteersPanel({
     const chipTargets = canManage ? adminChipTargetStatuses(invite.status) : [];
     const rowActions = canManage ? adminRowActions(invite.status) : [];
 
+    const baseState = toInviteDisplayState(invite.status);
+    // Entries are only meaningful for accepted invites — every other status
+    // keeps its normal invite-derived state and ignores time entries.
+    const entries =
+      baseState === 'accepted'
+        ? timeEntriesByVolunteer.get(invite.user.id)
+        : undefined;
+    const state: ShiftVolunteeringDisplayState =
+      baseState === 'accepted' ? deriveAcceptedRowState(entries) : baseState;
+
+    const statusTooltip =
+      state === 'checked_out' && entries ? (
+        <CheckedOutStatusTooltip
+          key={invite.user.id}
+          entries={entries}
+          formatTime={formatTime}
+        />
+      ) : undefined;
+
     return {
       id: invite.user.id,
       name: invite.user.name,
       image: invite.user.image,
-      state: toInviteDisplayState(invite.status),
-      statusLabel: statusLabel(invite.status),
+      state,
+      statusLabel: stateLabel(state),
+      statusTooltip,
       statusOptions:
         chipTargets.length > 0
           ? chipTargets.map((target) => ({
@@ -133,7 +176,18 @@ export function ShiftInstanceVolunteersPanel({
             }))
           : undefined,
       statusMenuAriaLabel: t('inviteStatus.changeStatusAria'),
-      actions: remindVisible ? ['Remind', ...rowActions] : rowActions,
+      // Accepted rows defer to the ui status defaults (Check in / Check out per
+      // check-in state, including re-check-in after checkout) and are only
+      // suppressed when the user lacks CHECK_IN_MANAGE. adminRowActions is
+      // empty for accepted invites, so there is nothing to merge.
+      actions:
+        baseState === 'accepted'
+          ? canCheckIn
+            ? undefined
+            : []
+          : remindVisible
+            ? ['Remind', ...rowActions]
+            : rowActions,
       disabledActions: remindVisible && !remindActive ? ['Remind'] : undefined,
       actionLabels: remindVisible
         ? {
@@ -153,7 +207,7 @@ export function ShiftInstanceVolunteersPanel({
               }),
             }
           : undefined,
-      iconActions: ['View', 'Check in'],
+      iconActions: ['View'],
     };
   });
 
@@ -219,9 +273,39 @@ export function ShiftInstanceVolunteersPanel({
     }
 
     if (action === 'Check in') {
-      router.push(
-        `/check-in/${invite.user.checkInId}/check-in?orgUId=${orgUId}`,
-      );
+      if (!canCheckIn || pending) return;
+      startTransition(async () => {
+        const result = await checkInVolunteer({
+          organizationUnitId: orgUId,
+          volunteerId,
+          shiftInstanceId: instanceId,
+        });
+        if (result?.serverError) {
+          toast.error(t('checkIn.checkInError'));
+          return;
+        }
+        toast.success(t('checkIn.checkInSuccess'));
+        router.refresh();
+      });
+      return;
+    }
+
+    if (action === 'Check out') {
+      if (!canCheckIn || pending) return;
+      const entryId = openTimeEntryId(timeEntriesByVolunteer.get(volunteerId));
+      if (!entryId) return;
+      startTransition(async () => {
+        const result = await checkOutVolunteer({
+          timeEntryId: entryId,
+          organizationUnitId: orgUId,
+        });
+        if (result?.serverError) {
+          toast.error(t('checkIn.checkOutError'));
+          return;
+        }
+        toast.success(t('checkIn.volunteerCheckedOut'));
+        router.refresh();
+      });
       return;
     }
 
@@ -267,7 +351,7 @@ export function ShiftInstanceVolunteersPanel({
   return (
     <VolunteeringVolunteerList
       volunteers={volunteers}
-      phase="before"
+      phase="during"
       title={t('inviteStatus.volunteersTitle')}
       summary={summary}
       headerAction={
@@ -309,6 +393,7 @@ export function ShiftInstanceVolunteersPanel({
       actionLabels={{
         View: tVolunteer('viewProfileAria'),
         'Check in': tVolunteer('checkInAria'),
+        'Check out': tVolunteer('checkOutAria'),
         Invite: t('inviteStatus.actionInvite'),
         Approve: t('inviteStatus.actionApprove'),
         Remind: t('inviteStatus.actionRemind'),
