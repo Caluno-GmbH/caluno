@@ -1,39 +1,65 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
-import type { OrgContextData } from '../org-context-server';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { LAST_ORG_COOKIE, type MyOrganizationUnit } from '@repo/data';
 
 const cookieValues = new Map<string, string>();
-const accessibleOrgs: OrgContextData[] = [];
+const accessibleUnits: MyOrganizationUnit[] = [];
 let lastVisitedOrgId: string | null = null;
+
+const findMyAdminstrableOrganizationUnits = mock(async () => accessibleUnits);
 
 mock.module('next/headers', () => ({
   cookies: async () => ({
     get: (name: string) => {
+      if (name === LAST_ORG_COOKIE && lastVisitedOrgId) {
+        return { name, value: lastVisitedOrgId };
+      }
       const value = cookieValues.get(name);
       return value !== undefined ? { name, value } : undefined;
     },
   }),
 }));
 
-mock.module('../org-context-server', () => ({
-  getMyAdministrableOrgUnits: async () => accessibleOrgs,
-  getLastVisitedOrgServer: async () => lastVisitedOrgId,
+mock.module('../data-client', () => ({
+  getDataClient: async () => ({
+    organization: { findMyAdminstrableOrganizationUnits },
+  }),
 }));
 
 const { resolveAuthPageRedirects } = await import('../auth-page-redirect');
 
-const lastOrg: OrgContextData = {
-  id: 'last-org',
-  slug: 'last-org',
-  name: 'Last Org',
-  organizationId: 'last-org',
-  accountingEnabled: false,
-};
+function rootOrgUnit(id: string, organizationId: string): MyOrganizationUnit {
+  return {
+    id,
+    slug: id,
+    name: id,
+    parent: null,
+    description: null,
+    logoUrl: null,
+    address: null,
+    city: null,
+    legalRep: null,
+    organization: {
+      id: organizationId,
+      name: id,
+      description: null,
+      logoUrl: null,
+      accountingEnabled: false,
+    },
+  };
+}
+
+const lastOrg = rootOrgUnit('last-org', 'last-org');
+
+afterAll(() => {
+  mock.restore();
+});
 
 describe('resolveAuthPageRedirects', () => {
   beforeEach(() => {
     cookieValues.clear();
-    accessibleOrgs.length = 0;
+    accessibleUnits.length = 0;
     lastVisitedOrgId = null;
+    findMyAdminstrableOrganizationUnits.mockClear();
   });
 
   describe('authenticatedRedirect', () => {
@@ -46,7 +72,7 @@ describe('resolveAuthPageRedirects', () => {
     });
 
     it('falls back to resolvePostAuthDestination when no explicit redirect', async () => {
-      accessibleOrgs.push(lastOrg);
+      accessibleUnits.push(lastOrg);
       lastVisitedOrgId = lastOrg.id;
 
       const { authenticatedRedirect } = await resolveAuthPageRedirects({});
