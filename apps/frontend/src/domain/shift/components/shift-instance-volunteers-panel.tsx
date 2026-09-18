@@ -154,7 +154,11 @@ export function ShiftInstanceVolunteersPanel({
 
     const statusTooltip =
       state === 'checked_out' && entries ? (
-        <CheckedOutStatusTooltip entries={entries} formatTime={formatTime} />
+        <CheckedOutStatusTooltip
+          key={invite.user.id}
+          entries={entries}
+          formatTime={formatTime}
+        />
       ) : undefined;
 
     return {
