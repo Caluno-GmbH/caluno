@@ -25,7 +25,7 @@ export function useAvailableShiftInstances(
   return useQuery({
     queryKey: ['availableShiftInstances', options],
     queryFn: () => repository.findAvailableShiftInstances(options),
-    staleTime: 30 * 1000,
+    staleTime: 0,
     ...queryOptions,
   });
 }
