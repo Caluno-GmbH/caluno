@@ -271,7 +271,9 @@ export class ShiftCallOutService {
         const status = resolvedStatuses.get(userId);
         return (
           status === undefined ||
-          status === ShiftInviteStatus.VOLUNTEER_CANCELLED
+          status === ShiftInviteStatus.VOLUNTEER_CANCELLED ||
+          status === ShiftInviteStatus.VOLUNTEER_REJECTED ||
+          status === ShiftInviteStatus.ADMIN_INVITED
         );
       });
   }
