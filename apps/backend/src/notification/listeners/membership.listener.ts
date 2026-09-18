@@ -80,6 +80,7 @@ export class MembershipListener {
             organizationUnitId: payload.organizationUnitId,
             organizationName: payload.organizationName,
             recipientFirstName: recipient.firstName,
+            contact: payload.contact,
           },
           templateContext,
         );

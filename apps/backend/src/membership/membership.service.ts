@@ -28,6 +28,7 @@ import {
 import { PostHogService } from '../shared/observability/posthog.service';
 import { MembershipRequestStatus } from './enums';
 import { UpdateMembershipRequestInput } from './inputs/update-membership-request.input';
+import { orgUnitWelcomeContactFromEntity } from './membership-request-contact';
 import type { MembershipEntity } from './schemas/membership.schema';
 import {
   type MembershipRequestEntity,
@@ -823,6 +824,7 @@ export class MembershipService {
         organizationUnitId,
         organizationName: organizationUnit.name,
         userId: membershipRequest.userId,
+        contact: orgUnitWelcomeContactFromEntity(organizationUnit),
       });
 
       if (organizationUnit.organizationId) {
