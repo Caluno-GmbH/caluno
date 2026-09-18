@@ -262,6 +262,8 @@ export class InvoiceQueryResolver {
         volunteer: this.userMapper.toModelOrThrow(user),
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
+        periodStart: row.periodStart,
+        periodEnd: row.periodEnd,
       };
     });
   }

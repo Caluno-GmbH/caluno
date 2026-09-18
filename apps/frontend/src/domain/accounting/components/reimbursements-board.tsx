@@ -60,6 +60,10 @@ export type DocStatus =
   | 'contract-signing-vol'
   | 'contract-signing-coord'
   | 'contract-active'
+  // An ACTIVE contract whose stated period has ended: the signing chain is
+  // complete, but it is no longer valid cover for the current month and a new
+  // agreement must be created (VOLI-1370).
+  | 'contract-expired'
   // Muted placeholder: implied by a 'timesheet-muted' sibling (or a
   // search-only, zero-document volunteer) but no contract flow has actually
   // been started. Not part of the automatic signup-triggered flow, so it
@@ -296,7 +300,11 @@ function matchesTile(status: DocStatus, tile: TileFilter): boolean {
   if (!tile) return false;
   switch (tile) {
     case 'contract-generate':
-      return status === 'contract-generate' || status === 'contract-draft';
+      return (
+        status === 'contract-generate' ||
+        status === 'contract-draft' ||
+        status === 'contract-expired'
+      );
     case 'contract-signing':
       return (
         status === 'contract-signing-vol' || status === 'contract-signing-coord'

@@ -28,7 +28,11 @@ import type { CreateContractInput } from '../inputs/create-contract.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { ContractEntity } from '../schemas/contract.schema';
 import type { ContractStatusChangeEntity } from '../schemas/contract-status-change.schema';
-import { billingYearBounds, billingYearOf } from '../utils/billing-period';
+import {
+  type BillingPeriod,
+  billingMonthBoundsOf,
+  periodCovers,
+} from '../utils/billing-period';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
@@ -124,21 +128,40 @@ export class ContractService {
     return rows.map((row) => row.contract);
   }
 
+  /**
+   * The volunteer's ACTIVE contract of this type whose period covers the given
+   * target (defaults to now). A contract is only cover for what its stated
+   * period contains: a contract issued for 08/2026 must not make a September
+   * invoice compliant (VOLI-1370). `contractStatus` alone isn't enough either —
+   * nothing expires it once `periodEnd` passes (no expiry job runs yet), so an
+   * out-of-date ACTIVE row must not count.
+   */
+  /**
+   * The volunteer's ACTIVE contract of this type whose period fully covers the
+   * given target period (defaults to the instant "now"). A contract is only
+   * cover for what its stated period contains: a contract issued for 08/2026
+   * must not make a September invoice — or a monthly timesheet that also spans
+   * other months — compliant (VOLI-1370). `contractStatus` alone isn't enough
+   * either: nothing expires it once `periodEnd` passes (no expiry job runs yet),
+   * so an out-of-date ACTIVE row must not count.
+   */
   async findActiveContract(
     volunteerId: string,
     reimbursementTypeId: string,
+    period: BillingPeriod = { start: new Date(), end: new Date() },
   ): Promise<ContractEntity | undefined> {
-    // contractStatus alone isn't enough: nothing expires it once periodEnd
-    // passes (no expiry job runs yet), so an out-of-date ACTIVE row must not
-    // count as compliance cover.
-    return this.db.query.contracts.findFirst({
+    const rows = await this.db.query.contracts.findMany({
       where: {
         volunteerId,
         reimbursementTypeId,
         contractStatus: ContractStatus.ACTIVE,
-        periodEnd: { gt: new Date() },
+        periodStart: { lte: period.start },
+        periodEnd: { gte: period.end },
       },
     });
+    return rows.find((c) =>
+      periodCovers(c.periodStart, c.periodEnd, period.start, period.end),
+    );
   }
 
   async createContract(
@@ -288,11 +311,12 @@ export class ContractService {
   }
 
   /**
-   * Queues the volunteer's yearly Vereinbarung as a DRAFT when they have no
-   * contract (other than a declined one) for the reimbursement type in the
-   * Berlin year of `anchorDate`. Runs when paid hours first appear and when
-   * a timesheet is created, so a volunteer without a contract always lands
-   * under "Create contracts". Returns the draft, or undefined if one exists.
+   * Queues the volunteer's Vereinbarung as a DRAFT when no non-declined
+   * contract covers the anchor date for the reimbursement type. The draft is
+   * scoped to the anchor's Berlin calendar month, so it surfaces the admin's
+   * "create contract" task for exactly the uncovered month. Runs when paid
+   * hours first appear and when a timesheet is created. Returns the draft, or
+   * undefined if a covering contract already exists.
    */
   async ensureDraftContract(
     organizationId: string,
@@ -300,19 +324,22 @@ export class ContractService {
       organizationUnitId?: string | null;
       volunteerId: string;
       reimbursementTypeId: string;
-      /** Any instant in the target Berlin year; only the year is used. */
+      /** Instant that must be covered by an existing contract. */
       anchorDate: Date;
     },
     actorUserId: string,
   ): Promise<ContractEntity | undefined> {
-    const year = billingYearBounds(billingYearOf(input.anchorDate));
+    const month = billingMonthBoundsOf(input.anchorDate);
+    // A contract only stands in for the period it states, so a draft is only
+    // skipped when an existing contract actually covers the anchor date —
+    // not merely one that overlaps its calendar year (VOLI-1370).
     const existing = await this.db.query.contracts.findFirst({
       where: {
         volunteerId: input.volunteerId,
         reimbursementTypeId: input.reimbursementTypeId,
         contractStatus: { ne: ContractStatus.DECLINED },
-        periodEnd: { gt: year.start },
-        periodStart: { lt: year.end },
+        periodStart: { lte: input.anchorDate },
+        periodEnd: { gt: input.anchorDate },
       },
     });
     if (existing) return undefined;
@@ -323,8 +350,8 @@ export class ContractService {
         organizationUnitId: input.organizationUnitId,
         volunteerId: input.volunteerId,
         reimbursementTypeId: input.reimbursementTypeId,
-        periodStart: year.start,
-        periodEnd: year.end,
+        periodStart: month.start,
+        periodEnd: month.end,
       },
       actorUserId,
     );

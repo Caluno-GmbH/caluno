@@ -47,6 +47,8 @@ const PAID_SHIFT_SIGNUP_VOLUNTEERS = `
     paidShiftSignupVolunteers(year: $year) {
       volunteer { id }
       reimbursementType { id }
+      periodStart
+      periodEnd
     }
   }
 `;
@@ -54,6 +56,8 @@ const PAID_SHIFT_SIGNUP_VOLUNTEERS = `
 type PaidShiftSignup = {
   volunteer: { id: string };
   reimbursementType: { id: string };
+  periodStart: string;
+  periodEnd: string;
 };
 
 type FlowOrg = Awaited<ReturnType<typeof setupPaidShiftOrg>>;
@@ -161,6 +165,29 @@ describe('paidShiftSignupVolunteers', () => {
       'paidShiftSignupVolunteers',
     );
 
+  /** A unit-scoped CONTRACT template; the unique index means tests must share one. */
+  const ensureContractTemplate = async () => {
+    const existing = await db.query.documentTemplates.findFirst({
+      where: {
+        organizationId: org.organizationId,
+        reimbursementTypeId: org.reimbursementTypeId,
+        kind: DocumentKind.CONTRACT,
+      },
+    });
+    if (existing) return existing;
+    const [created] = await db
+      .insert(schema.documentTemplates)
+      .values({
+        organizationId: org.organizationId,
+        organizationUnitId: org.organizationUnitId,
+        reimbursementTypeId: org.reimbursementTypeId,
+        kind: DocumentKind.CONTRACT,
+        body: { header: {}, blocks: [], footer: {} },
+      })
+      .returning();
+    return created;
+  };
+
   it('surfaces a volunteer with a JOINED invite on a paid shift instance in the requested year', async () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
@@ -174,6 +201,9 @@ describe('paidShiftSignupVolunteers', () => {
         expect.objectContaining({
           volunteer: { id: org.volunteerId },
           reimbursementType: { id: org.reimbursementTypeId },
+          // June 2026 as Berlin bounds (the default signup date).
+          periodStart: '2026-05-31T22:00:00.000Z',
+          periodEnd: '2026-06-30T22:00:00.000Z',
         }),
       ]),
     );
@@ -212,16 +242,7 @@ describe('paidShiftSignupVolunteers', () => {
       actualStartsAt: new Date('2026-03-10T08:00:00.000Z'),
     });
 
-    const [template] = await db
-      .insert(schema.documentTemplates)
-      .values({
-        organizationId: org.organizationId,
-        organizationUnitId: org.organizationUnitId,
-        reimbursementTypeId: org.reimbursementTypeId,
-        kind: DocumentKind.CONTRACT,
-        body: { header: {}, blocks: [], footer: {} },
-      })
-      .returning();
+    const template = await ensureContractTemplate();
     await db.insert(schema.contracts).values({
       documentTemplateId: template.id,
       volunteerId: other.id,
@@ -241,7 +262,42 @@ describe('paidShiftSignupVolunteers', () => {
     ).toBe(false);
   });
 
-  it('excludes a volunteer who already has an invoice for that type in the year', async () => {
+  // VOLI-1370: cover is per period — a contract for another month must not
+  // hide an uncovered paid shift.
+  it('surfaces a volunteer whose contract covers a different month', async () => {
+    const other = await createUser(db);
+    await addMembership(db, other.id, org.organizationUnitId);
+    await createPaidShiftWithJoinedVolunteer(db, {
+      organizationUnitId: org.organizationUnitId,
+      volunteerId: other.id,
+      reimbursementTypeId: org.reimbursementTypeId,
+      actualStartsAt: new Date('2026-09-10T08:00:00.000Z'),
+    });
+
+    const template = await ensureContractTemplate();
+    await db.insert(schema.contracts).values({
+      documentTemplateId: template.id,
+      volunteerId: other.id,
+      reimbursementTypeId: org.reimbursementTypeId,
+      organizationUnitId: org.organizationUnitId,
+      contractStatus: ContractStatus.ACTIVE,
+      // August 2026 as Berlin bounds.
+      periodStart: new Date('2026-07-31T22:00:00.000Z'),
+      periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+      resolvedBody: { header: {}, blocks: [], footer: {} },
+    });
+
+    const { paidShiftSignupVolunteers } = await query(2026);
+    const row = paidShiftSignupVolunteers.find(
+      (entry) => entry.volunteer.id === other.id,
+    );
+    expect(row).toBeDefined();
+    // The task names the uncovered month (September), not the year.
+    expect(row?.periodStart).toBe('2026-08-31T22:00:00.000Z');
+    expect(row?.periodEnd).toBe('2026-09-30T22:00:00.000Z');
+  });
+
+  it('excludes a volunteer who already has an invoice for that period', async () => {
     const other = await createUser(db);
     await addMembership(db, other.id, org.organizationUnitId);
     await createPaidShiftWithJoinedVolunteer(db, {
@@ -267,8 +323,8 @@ describe('paidShiftSignupVolunteers', () => {
       reimbursementTypeId: org.reimbursementTypeId,
       organizationUnitId: org.organizationUnitId,
       invoiceStatus: InvoiceStatus.READY,
-      periodStart: new Date('2026-05-01T00:00:00.000Z'),
-      periodEnd: new Date('2026-05-31T23:59:59.000Z'),
+      periodStart: new Date('2026-04-01T00:00:00.000Z'),
+      periodEnd: new Date('2026-05-01T00:00:00.000Z'),
       totalAmountCents: 100,
       totalHours: 1,
       resolvedBody: { header: {}, blocks: [], footer: {} },

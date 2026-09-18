@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { inflateSync } from 'node:zlib';
 import { FilePurpose } from '../../storage/enums';
 import type {
   ContractWithRelations,
@@ -13,6 +14,18 @@ interface TimeEntryMock {
   endedAt: Date | null;
   notes?: string | null;
 }
+
+/** The text of a rendered PDF; content streams are Flate-compressed and glyph runs hex-encoded. */
+const pdfGlyphs = (pdfBytes: Buffer): string => {
+  const content = [
+    ...pdfBytes.toString('latin1').matchAll(/stream\r?\n([\s\S]*?)endstream/g),
+  ]
+    .map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
+    .join('\n');
+  return [...content.matchAll(/<([0-9a-f]+)>/g)]
+    .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
+    .join('');
+};
 
 describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
@@ -197,6 +210,35 @@ describe('DocumentRenderingService', () => {
     const buffer = await service.generatePdf(contract());
     expect(buffer).toBeInstanceOf(Buffer);
     expect(buffer.subarray(0, 5).toString()).toBe('%PDF-');
+  });
+
+  // VOLI-1370: an issued document must render from its creation-time snapshot,
+  // so a later template edit never rewrites it.
+  it('renders the resolvedBody snapshot, not the live template body', async () => {
+    const body = (title: string) => ({
+      header: {
+        titleLines: [title],
+        orgIdentityLine: { id: 'org-line', text: '', fields: [] },
+        metaLines: [],
+      },
+      blocks: [],
+      footer: { closingLine: { id: 'closing', text: '', fields: [] } },
+    });
+    const service = createService({ rateCents: 1500 });
+    const buffer = await service.generatePdf(
+      contract({
+        resolvedBody: body('SnapshotTitle'),
+        documentTemplate: {
+          organizationId: 'org-1',
+          organizationUnitId: 'unit-1',
+          body: body('LiveTemplateTitle'),
+        } as unknown as ContractWithRelations['documentTemplate'],
+      }),
+    );
+
+    const glyphs = pdfGlyphs(buffer);
+    expect(glyphs).toContain('SnapshotTitle');
+    expect(glyphs).not.toContain('LiveTemplateTitle');
   });
 
   it('generatePdf renders an invoice with a valid PDF buffer', async () => {

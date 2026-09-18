@@ -60,6 +60,18 @@ describe('deriveEditableFields', () => {
     expect(ids.filter((id) => id === 'contract-lifespan')).toHaveLength(1);
   });
 
+  // VOLI-1370: the per-contract modal must render a period picker for the
+  // Zeitraum field, which it can only do if the template's `control` survives.
+  it('carries the manual field control (period) through to the modal', () => {
+    const fields = deriveEditableFields(getContractDocument('ehrenamt'));
+    const lifespan = fields.find((f) => f.fieldId === 'contract-lifespan');
+    expect(lifespan?.kind).toBe('manual');
+    expect(lifespan?.control).toBe('period');
+
+    const hoursUnit = fields.find((f) => f.fieldId === 'hours-unit');
+    expect(hoursUnit?.control).toBe('unit-tabs');
+  });
+
   it('carries every field id bound to a source, not just the first', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'));
     const firstName = fields.find((f) => f.source === 'volunteer_first_name');

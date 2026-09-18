@@ -74,6 +74,7 @@ export function VolunteerDocumentPreview({
       ? contractQuery.data?.contractStatus
       : invoiceQuery.data?.invoiceStatus;
   const periodStart = detail?.periodStart;
+  const periodEnd = detail?.periodEnd;
   const downloadUrl = detail?.downloadUrl;
   const missingProfileFields = detail?.missingProfileFields ?? [];
 
@@ -107,7 +108,7 @@ export function VolunteerDocumentPreview({
   const nameKey: 'agreement' | 'timesheet' =
     kind === 'contract' ? 'agreement' : 'timesheet';
   const periodLabelText = periodStart
-    ? periodLabel(kind, periodStart, formatMonth)
+    ? periodLabel(kind, periodStart, formatMonth, periodEnd)
     : '';
 
   const state = status ? documentState(status) : null;

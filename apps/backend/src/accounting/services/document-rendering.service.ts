@@ -109,7 +109,10 @@ export class DocumentRenderingService {
       throw new Error('Document is missing its template');
     }
     const resolved = await this.resolveValues(document);
-    const body = (template.body ?? {}) as TemplateBodyShape;
+    // Render from the document's own creation-time snapshot, not the live
+    // template: a template edit (e.g. the monthly Zeitraum the coordinators
+    // change) must never rewrite an already-issued agreement (VOLI-1370).
+    const body = this.snapshotBody(document);
     const fieldValues = this.buildFieldValueMap(
       body,
       resolved,
@@ -397,6 +400,17 @@ export class DocumentRenderingService {
       : undefined;
   }
 
+  /**
+   * The body an issued document renders from: its own creation-time
+   * `resolvedBody` snapshot, falling back to the live template only for
+   * fixtures/legacy rows (VOLI-1370).
+   */
+  private snapshotBody(document: RenderableDocument): TemplateBodyShape {
+    return (document.resolvedBody ??
+      document.documentTemplate?.body ??
+      {}) as TemplateBodyShape;
+  }
+
   private buildFieldValueMap(
     body: TemplateBodyShape,
     resolved: Record<string, string>,
@@ -579,7 +593,7 @@ export class DocumentRenderingService {
               template.invoiceNumberFormat,
               new Date(document.periodStart),
               this.findManualFieldValue(
-                (template.body ?? {}) as TemplateBodyShape,
+                this.snapshotBody(document),
                 'kostenstelle',
               ),
             )

@@ -9,4 +9,11 @@ export class PaidShiftSignupVolunteer {
 
   @Field(() => ReimbursementType)
   reimbursementType!: ReimbursementType;
+
+  /** The uncovered month's Berlin bounds — the period the contract task covers. */
+  @Field(() => Date)
+  periodStart!: Date;
+
+  @Field(() => Date)
+  periodEnd!: Date;
 }
