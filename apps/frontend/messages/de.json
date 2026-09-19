@@ -1161,7 +1161,10 @@
       "permissionsLabel": "Berechtigungen"
     },
     "noRole": "Keine Rolle",
-    "owner": "Eigentümer",
+    "internal": {
+      "owner": "Leitung",
+      "member": "Mitglied"
+    },
     "page": {
       "createButton": "Rolle erstellen",
       "empty": "Noch keine Rollen. Erstelle deine erste Rolle, um loszulegen.",

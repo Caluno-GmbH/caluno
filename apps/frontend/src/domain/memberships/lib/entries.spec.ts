@@ -11,10 +11,14 @@ const orgUnit = (id: string, orgName = 'Care Org') => ({
   organization: { name: orgName },
 });
 
-const membership = (id: string, orgUnitId: string, roles: string[] = []) => ({
+const membership = (
+  id: string,
+  orgUnitId: string,
+  roles: { name: string; isInternal?: boolean }[] = [],
+) => ({
   id,
   createdAt: '2024-01-14T00:00:00.000Z',
-  roles: roles.map((name, i) => ({ id: `role-${i}`, name })),
+  roles: roles.map((role, i) => ({ id: `role-${i}`, ...role })),
   organizationUnit: orgUnit(orgUnitId),
 });
 
@@ -35,7 +39,7 @@ describe('buildMembershipEntries', () => {
   it('turns memberships into accepted entries with role names and join date', () => {
     const entries = buildMembershipEntries(
       [],
-      [membership('m1', 'u1', ['Member'])],
+      [membership('m1', 'u1', [{ name: 'Member', isInternal: true }])],
     );
     expect(entries).toHaveLength(1);
     expect(entries[0]).toEqual({
@@ -43,7 +47,7 @@ describe('buildMembershipEntries', () => {
       id: 'm1',
       organizationName: 'Care Org',
       orgUnit: expect.objectContaining({ id: 'u1', name: 'Unit u1' }),
-      roles: ['Member'],
+      roles: [{ name: 'Member', isInternal: true }],
       date: new Date('2024-01-14T00:00:00.000Z'),
     });
   });
@@ -54,7 +58,7 @@ describe('buildMembershipEntries', () => {
         request('r1', 'u2', MembershipRequestStatus.Pending),
         request('r2', 'u3', MembershipRequestStatus.Rejected),
       ],
-      [membership('m1', 'u1', ['Member'])],
+      [membership('m1', 'u1', [{ name: 'Member', isInternal: true }])],
     );
     expect(entries.map((e) => e.state)).toEqual([
       'accepted',
@@ -82,7 +86,7 @@ describe('buildMembershipEntries', () => {
   it('suppresses a request for an org unit that already has a membership', () => {
     const entries = buildMembershipEntries(
       [request('r1', 'u1', MembershipRequestStatus.Pending)],
-      [membership('m1', 'u1', ['Member'])],
+      [membership('m1', 'u1', [{ name: 'Member', isInternal: true }])],
     );
     expect(entries).toHaveLength(1);
     expect(entries[0]?.state).toBe('accepted');
@@ -98,11 +102,11 @@ describe('buildMembershipEntries', () => {
 
   it('orders newest-first within the same state', () => {
     const older = {
-      ...membership('m1', 'u1', ['Member']),
+      ...membership('m1', 'u1', [{ name: 'Member', isInternal: true }]),
       createdAt: '2023-01-01T00:00:00.000Z',
     };
     const newer = {
-      ...membership('m2', 'u2', ['Member']),
+      ...membership('m2', 'u2', [{ name: 'Member', isInternal: true }]),
       createdAt: '2025-01-01T00:00:00.000Z',
     };
     const entries = buildMembershipEntries([], [older, newer]);
