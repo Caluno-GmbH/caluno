@@ -71,6 +71,18 @@ const SENIORENKREIS_IMAGE_URL =
   'https://images.unsplash.com/photo-1758691031036-5b7b635e30b8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Vitaly Gariev — three seniors together with a photo album
 const LITERATURKURS_IMAGE_URL =
   'https://images.unsplash.com/photo-1758270704080-e3556e6794a7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Vitaly Gariev — teacher and adult students in a classroom
+const KITA_IMAGE_URL =
+  'https://images.unsplash.com/photo-1583468982228-19f19164aee2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Adam Winger — woman and child reading together in a library
+const DEUTSCH_LERNEN_IMAGE_URL =
+  'https://images.unsplash.com/photo-1583468991267-3f068b607ae1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Adam Winger — woman reading to children in a library
+const BUECHERBUS_IMAGE_URL =
+  'https://images.unsplash.com/photo-1708653584807-b3c1c65a5807?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Raylor Photo — portable bookshelf cart in a park
+const VORLESEWETTBEWERB_IMAGE_URL =
+  'https://images.unsplash.com/photo-1742659708021-fde30a5a74b7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Kabila Haile Soboka — a young girl reads a book on stage
+const INTERKULTURELLER_LESETAG_IMAGE_URL =
+  'https://images.unsplash.com/photo-1739302750691-59c12d251139?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Ninthgrid — three women sitting together looking at a book
+const NORD_COVER_IMAGE_URL =
+  'https://images.unsplash.com/photo-1610070835951-156b6921281d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'; // Beth Macdonald — group sitting in a circle on grass, reading-circle feel
 
 // One portrait per fixture person (via Unsplash search), keyed by local-part,
 // so avatars look like real photos instead of initials placeholders.
@@ -107,6 +119,45 @@ const PORTRAIT_URLS: Record<string, string> = {
     'https://images.unsplash.com/photo-1608549950158-6d1dc2022ccd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // nacer eddine
   'sabine.wolff':
     'https://images.unsplash.com/photo-1654762699761-b6d13143bb2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Ivan Kazlouskij
+  // 19 additional Lesepaten-Nord-Freiwillige (insgesamt 23 mit den obigen vier).
+  'julia.schroeder':
+    'https://images.unsplash.com/photo-1662850886700-4ec19bd30d11?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Nolan Manning
+  'finn.kowalski':
+    'https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Elizeu Dias
+  'amara.boateng':
+    'https://images.unsplash.com/photo-1669844444850-5acd7e8c71c5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Christopher John
+  'paul.lehmann':
+    'https://images.unsplash.com/photo-1625241152315-4a698f74ceb7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Nicolas Horn
+  'zeynep.demir':
+    'https://images.unsplash.com/photo-1562337404-3044c84ac061?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Kate Kozyrka
+  'clara.winkler':
+    'https://images.unsplash.com/photo-1612203304476-2ed23c55b5b9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // HamZa NOUASRIA
+  'leon.kraus':
+    'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Warren
+  'fatima.elamin':
+    'https://images.unsplash.com/photo-1604072366595-e75dc92d6bdc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Jorik Kleen
+  'tobias.richter':
+    'https://images.unsplash.com/photo-1764084052338-23a317e34ea1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Sophie Paterson
+  'greta.sommer':
+    'https://images.unsplash.com/photo-1609436132311-e4b0c9370469?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Andre Styles
+  'ali.hassan':
+    'https://images.unsplash.com/photo-1774437678715-fb40846dc252?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Tanmay Abhay Mahajan
+  'marlene.vogel':
+    'https://images.unsplash.com/photo-1630939687530-241d630735df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Luca Nicoletti
+  'tarek.younes':
+    'https://images.unsplash.com/photo-1764084051711-45a3b7c84c06?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Sophie Paterson
+  'nele.krueger':
+    'https://images.unsplash.com/photo-1609371497456-3a55a205d5eb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Andre Styles
+  'milan.petrov':
+    'https://images.unsplash.com/photo-1564564244660-5d73c057f2d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Irene Strong
+  'ida.wagner':
+    'https://images.unsplash.com/photo-1758686254593-7c4cd55b2621?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Vitaly Gariev
+  'samuel.owusu':
+    'https://images.unsplash.com/photo-1758337779808-6c64838afda1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // litoon dev
+  'franziska.berg':
+    'https://images.unsplash.com/photo-1778368281721-94839cd797ef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Sophie Dyson
+  'yusuf.kaya':
+    'https://images.unsplash.com/photo-1729862939068-de7a9e2209b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400', // Bennie Bates
 };
 
 const WEEKLY_RRULE = {
@@ -114,7 +165,10 @@ const WEEKLY_RRULE = {
   TUESDAY: 'FREQ=WEEKLY;BYDAY=TU;WKST=MO',
   WEDNESDAY: 'FREQ=WEEKLY;BYDAY=WE;WKST=MO',
   THURSDAY: 'FREQ=WEEKLY;BYDAY=TH;WKST=MO',
+  FRIDAY: 'FREQ=WEEKLY;BYDAY=FR;WKST=MO',
 } as const;
+const BIWEEKLY_THURSDAY_RRULE = 'FREQ=WEEKLY;INTERVAL=2;BYDAY=TH;WKST=MO';
+const SATURDAY_SIX_WEEKS_RRULE = 'FREQ=WEEKLY;BYDAY=SA;COUNT=6';
 const ONE_TIME_RRULE = 'FREQ=DAILY;COUNT=1';
 
 const SUPERVISOR_ROLE_NAME = 'Koordinator:in vor Ort';
@@ -512,6 +566,7 @@ const ensureAltonaerLesepatenOrganization = async (
           slug: region.slug,
           contactEmail: organization.contactEmail,
           description: region.description,
+          coverUrl: region.key === 'nord' ? NORD_COVER_IMAGE_URL : null,
           address: 'Museumstraße 23',
           city: 'Hamburg',
           zipCode: '22765',
@@ -641,6 +696,8 @@ type ShiftFixture = {
   instructions?: string;
   location?: string;
   imageUrl?: string;
+  joinRequiresApproval?: boolean;
+  reimbursementTypeId?: string;
   pendingInviteUserIds?: string[];
   extraInvites?: Array<{ userIds: string[]; status: ShiftInviteStatus }>;
 };
@@ -702,6 +759,8 @@ const ensureShiftWithInvites = async (
       organizationUnitId,
       createdById,
       visibility: shift.visibility ?? ShiftVisibility.INVITED_MEMBERS,
+      joinRequiresApproval: shift.joinRequiresApproval ?? false,
+      reimbursementTypeId: shift.reimbursementTypeId ?? null,
       maxVolunteers: shift.maxVolunteers ?? null,
       originalStartsAt: shift.startsAt,
       durationMinutes: shift.durationMinutes,
@@ -1111,6 +1170,29 @@ async function seedDemoVideoFixtures() {
 
   const org = await ensureAltonaerLesepatenOrganization(db, coordinator.id);
 
+  // Resolved up front (not just before the Zeiterfassung block) so shifts
+  // below can also be tagged by Pauschalenart: einige Einsätze mit
+  // Ehrenamtspauschale, einige mit Übungsleiterpauschale, der Rest ohne.
+  const reimbursementTypes = await db.query.reimbursementTypes.findMany({
+    where: {
+      key: {
+        in: [ReimbursementTypeKey.EHRENAMT, ReimbursementTypeKey.UEBUNGSLEITER],
+      },
+    },
+  });
+  const ehrenamtType = reimbursementTypes.find(
+    (type) => type.key === ReimbursementTypeKey.EHRENAMT,
+  );
+  const uebungsleiterType = reimbursementTypes.find(
+    (type) => type.key === ReimbursementTypeKey.UEBUNGSLEITER,
+  );
+
+  if (!ehrenamtType || !uebungsleiterType) {
+    console.warn(
+      'Reimbursement types not found — run `bun run db:seed` first so this script can tag shifts/time entries by Pauschalenart. Continuing without them.',
+    );
+  }
+
   await ensurePersonalInfoForm(
     db,
     org.organizationId,
@@ -1185,6 +1267,53 @@ async function seedDemoVideoFixtures() {
   );
   members.push({ ...demoUser, unit: 'nord' });
 
+  // 19 weitere Freiwillige für Lesepaten Nord (zusammen mit den vier oben:
+  // 23 insgesamt). Bewusst NACH Lena Vogt angelegt, damit bestehende
+  // Referenzen wie nordMembers[3] weiterhin auf sie zeigen, statt sich zu
+  // verschieben. Ohne weitere Einsatz-Zuordnung — sie zählen zur
+  // Mitgliederliste und tauchen unten in der Zeiterfassung auf.
+  const additionalNordMemberDefinitions: Array<{
+    localPart: string;
+    name: string;
+  }> = [
+    { localPart: 'julia.schroeder', name: 'Julia Schröder' },
+    { localPart: 'finn.kowalski', name: 'Finn Kowalski' },
+    { localPart: 'amara.boateng', name: 'Amara Boateng' },
+    { localPart: 'paul.lehmann', name: 'Paul Lehmann' },
+    { localPart: 'zeynep.demir', name: 'Zeynep Demir' },
+    { localPart: 'clara.winkler', name: 'Clara Winkler' },
+    { localPart: 'leon.kraus', name: 'Leon Kraus' },
+    { localPart: 'fatima.elamin', name: 'Fatima El-Amin' },
+    { localPart: 'tobias.richter', name: 'Tobias Richter' },
+    { localPart: 'greta.sommer', name: 'Greta Sommer' },
+    { localPart: 'ali.hassan', name: 'Ali Hassan' },
+    { localPart: 'marlene.vogel', name: 'Marlene Vogel' },
+    { localPart: 'tarek.younes', name: 'Tarek Younes' },
+    { localPart: 'nele.krueger', name: 'Nele Krüger' },
+    { localPart: 'milan.petrov', name: 'Milan Petrov' },
+    { localPart: 'ida.wagner', name: 'Ida Wagner' },
+    { localPart: 'samuel.owusu', name: 'Samuel Owusu' },
+    { localPart: 'franziska.berg', name: 'Franziska Berg' },
+    { localPart: 'yusuf.kaya', name: 'Yusuf Kaya' },
+  ];
+
+  const additionalNordMembers: FixtureUser[] = [];
+  for (const definition of additionalNordMemberDefinitions) {
+    const user = await createAuthUser(db, hashedPassword, {
+      email: email(definition.localPart),
+      name: definition.name,
+      image: PORTRAIT_URLS[definition.localPart],
+    });
+    await ensureMembershipWithRole(
+      db,
+      user.id,
+      org.unitIds.nord,
+      org.memberRoleId,
+    );
+    members.push({ ...user, unit: 'nord' });
+    additionalNordMembers.push(user);
+  }
+
   const byUnit = (unit: 'nord' | 'sued' | 'west') =>
     members.filter((member) => member.unit === unit);
 
@@ -1253,6 +1382,13 @@ async function seedDemoVideoFixtures() {
   const anchor = (weekday: number) =>
     findWeekdayWeeksAgo(weekday, RECURRENCE_WEEKS_BACK);
 
+  // Used to place one-off (non-recurring) shifts in the current/next week,
+  // so the near-term calendar looks like a real one instead of a perfectly
+  // even grid of weekly series (some days busy, some empty, some doubled up).
+  const today = getDateInFixtureTimezone(new Date());
+  const daysUntilWeekday = (weekday: number): number =>
+    (weekday - today.weekday + 7) % 7;
+
   const parkStart = fixtureWallClockToUtc(
     anchor(2).year,
     anchor(2).month,
@@ -1315,6 +1451,423 @@ async function seedDemoVideoFixtures() {
     coordinator.id,
     lesenImPark.shiftId,
   );
+
+  // ─── Weitere Einsätze für Lesepaten Nord, damit der Einsatzkalender nicht
+  // nur einen einzigen Einsatz zeigt. Bewusst UNGLEICHMÄSSIG statt "ein
+  // Termin pro Wochentag, für immer" — echte Vereinskalender sehen so aus:
+  // manche Tage haben mehrere Dinge, manche nichts, manches ist eine Serie,
+  // manches ein Einzeltermin, mal mit direkter Einladung, mal offen, mal mit
+  // Freigabe, mal ohne. Nur drei der folgenden Einsätze sind unbegrenzt
+  // wiederkehrend (Kita montags, Park dienstags, Bücherbus zweiwöchentlich
+  // donnerstags) — der Rest sind Einzeltermine oder eine befristete Reihe,
+  // bewusst in dieser und der kommenden Woche platziert. ───
+
+  const kitaStart = fixtureWallClockToUtc(
+    anchor(1).year,
+    anchor(1).month,
+    anchor(1).day,
+    9,
+    30,
+  );
+
+  // "Vorlesepatenschaft Kita Sonnenschein": feste 1:1-Patenschaft, deshalb
+  // direktes Einladen und (wie "Lesen im Park") das Führungszeugnis-Formular.
+  const kitaSonnenschein = await ensureShiftWithInvites(
+    db,
+    org.unitIds.nord,
+    coordinator.id,
+    {
+      title: 'Vorlesepatenschaft Kita Sonnenschein',
+      startsAt: kitaStart,
+      rrule: WEEKLY_RRULE.MONDAY,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+      maxVolunteers: 2,
+      instructions:
+        'Feste 1:1-Vorlesepatenschaft für ein Kita-Kind. Ablauf und Ansprechpartnerin vor Ort bespricht die Kita beim ersten Termin.',
+      location: 'Kita Sonnenschein, Fruchtallee',
+      imageUrl: KITA_IMAGE_URL,
+      reimbursementTypeId: uebungsleiterType?.id,
+      inviteUserIds: nordMembers.slice(0, 2).map((member) => member.id),
+    },
+  );
+
+  await ensureChildSafetyForm(
+    db,
+    org.organizationId,
+    org.unitIds.nord,
+    coordinator.id,
+    kitaSonnenschein.shiftId,
+  );
+
+  const lesecafeDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    daysUntilWeekday(3),
+  );
+  const lesecafeStart = fixtureWallClockToUtc(
+    lesecafeDay.year,
+    lesecafeDay.month,
+    lesecafeDay.day,
+    15,
+    30,
+  );
+
+  // "Lesecafé für Senior:innen Eimsbüttel": Einzeltermin diese Woche, ohne
+  // Bild, komplett offen — niemand ist vorab eingeladen oder muss sich
+  // freischalten lassen (Kontrast zu Park/Kita/Deutsch-lernen unten).
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Lesecafé für Senior:innen Eimsbüttel',
+    startsAt: lesecafeStart,
+    rrule: ONE_TIME_RRULE,
+    durationMinutes: 90,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    maxVolunteers: 4,
+    instructions:
+      'Vorlesen bei Kaffee und Kuchen im Bürgerhaus. Zeitungsartikel, Kurzgeschichten oder was die Gruppe gerade interessiert.',
+    location: 'Bürgerhaus Eimsbüttel, Café',
+    reimbursementTypeId: ehrenamtType?.id,
+    inviteUserIds: [],
+  });
+
+  const deutschLernenDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    daysUntilWeekday(5) + 7,
+  );
+  const deutschLernenStart = fixtureWallClockToUtc(
+    deutschLernenDay.year,
+    deutschLernenDay.month,
+    deutschLernenDay.day,
+    16,
+    30,
+  );
+
+  // "Deutsch lernen beim Vorlesen": Einzeltermin kommende Woche, offen für
+  // alle, aber mit Freigabeprozess (joinRequiresApproval) — eine Person
+  // wartet bereits auf Zusage. Zeigt "Freigabe" auch außerhalb von Süd.
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Deutsch lernen beim Vorlesen',
+    startsAt: deutschLernenStart,
+    rrule: ONE_TIME_RRULE,
+    durationMinutes: 90,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    joinRequiresApproval: true,
+    maxVolunteers: 3,
+    instructions:
+      'Einfache Texte und Bilderbücher zum lauten Vorlesen und Nachsprechen, für Familien und Erwachsene, die neu Deutsch lernen. Zweisprachige Bücher sind willkommen.',
+    location: 'Familienzentrum Schnelsen, Gruppenraum',
+    imageUrl: DEUTSCH_LERNEN_IMAGE_URL,
+    reimbursementTypeId: uebungsleiterType?.id,
+    inviteUserIds: nordMembers.slice(2, 3).map((member) => member.id),
+    extraInvites: nordMembers[0]
+      ? [
+          {
+            userIds: [nordMembers[0].id],
+            status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+          },
+        ]
+      : [],
+  });
+
+  // Anchored to THIS week's Thursday (not the past) so the biweekly pattern
+  // is deterministic: occurrence 0 falls in the current week, the next one
+  // two weeks later — i.e. it does NOT appear next week, by design.
+  const buecherbusDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    daysUntilWeekday(4),
+  );
+  const buecherbusStart = fixtureWallClockToUtc(
+    buecherbusDay.year,
+    buecherbusDay.month,
+    buecherbusDay.day,
+    16,
+  );
+
+  // "Bücherbus-Vorlesestunde Stellingen": zweiwöchentlich statt wöchentlich —
+  // zeigt ein anderes Wiederholungsmuster als die übrigen Einsätze.
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Bücherbus-Vorlesestunde Stellingen',
+    startsAt: buecherbusStart,
+    rrule: BIWEEKLY_THURSDAY_RRULE,
+    durationMinutes: 60,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    maxVolunteers: 3,
+    instructions:
+      'Vorlesen für Kinder und Familien, während der Bücherbus an seiner Haltestelle steht. Findet alle zwei Wochen statt.',
+    location: 'Bücherbus-Haltestelle Stellingen, Kieler Straße',
+    imageUrl: BUECHERBUS_IMAGE_URL,
+    reimbursementTypeId: ehrenamtType?.id,
+    inviteUserIds: nordMembers.slice(0, 1).map((member) => member.id),
+  });
+
+  const ferienlesestundeDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    daysUntilWeekday(2),
+  );
+  const ferienlesestundeStart = fixtureWallClockToUtc(
+    ferienlesestundeDay.year,
+    ferienlesestundeDay.month,
+    ferienlesestundeDay.day,
+    10,
+  );
+
+  // "Ferienlesestunde im Stadtpark": Einzeltermin, direkt eingeladen, bewusst
+  // am selben Tag wie "Lesen im Park" (nur morgens statt nachmittags) — zeigt,
+  // dass an einem Tag auch mehrere Einsätze stattfinden können.
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Ferienlesestunde im Stadtpark',
+    startsAt: ferienlesestundeStart,
+    rrule: ONE_TIME_RRULE,
+    durationMinutes: 60,
+    visibility: ShiftVisibility.INVITED_MEMBERS,
+    maxVolunteers: 2,
+    instructions:
+      'Zusätzlicher Vorlesetermin in den Ferien, morgens vor dem regulären "Lesen im Park". Gleicher Treffpunkt.',
+    location: 'Altonaer Volkspark, Haupteingang Kieler Straße',
+    inviteUserIds: nordMembers[3] ? [nordMembers[3].id] : [],
+  });
+
+  const buecherhalleDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    daysUntilWeekday(3) + 7,
+  );
+  const buecherhalleStart = fixtureWallClockToUtc(
+    buecherhalleDay.year,
+    buecherhalleDay.month,
+    buecherhalleDay.day,
+    16,
+  );
+
+  // "Vorlesestunde Bücherhalle Eimsbüttel": Einzeltermin kommende Woche,
+  // komplett offen — niemand vorab eingeladen, keine Warteliste, keine
+  // Freigabe nötig. Ohne Bild.
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Vorlesestunde Bücherhalle Eimsbüttel',
+    startsAt: buecherhalleStart,
+    rrule: ONE_TIME_RRULE,
+    durationMinutes: 60,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    maxVolunteers: 2,
+    instructions:
+      'Spontaner Vorlesetermin in der Bücherhalle, offen für alle Ehrenamtlichen ohne Voranmeldung.',
+    location: 'Bücherhalle Eimsbüttel',
+    inviteUserIds: [],
+  });
+
+  // Anchored to THIS week's Saturday (starts now, not already in progress) so
+  // it deterministically shows up once this week and once next week.
+  const familienzentrumSeriesDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    daysUntilWeekday(6),
+  );
+  const familienzentrumSeriesStart = fixtureWallClockToUtc(
+    familienzentrumSeriesDay.year,
+    familienzentrumSeriesDay.month,
+    familienzentrumSeriesDay.day,
+    11,
+  );
+
+  // "Vorlesenachmittag Familienzentrum Schnelsen": befristete Reihe mit
+  // sechs Terminen (statt unbegrenzt wöchentlich) — ohne Bild.
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Vorlesenachmittag Familienzentrum Schnelsen',
+    startsAt: familienzentrumSeriesStart,
+    rrule: SATURDAY_SIX_WEEKS_RRULE,
+    durationMinutes: 75,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    maxVolunteers: 2,
+    instructions:
+      'Sechsteilige Vorlesereihe für Familien mit kleinen Kindern, thematisch rund um Jahreszeiten. Nach dem sechsten Termin endet die Reihe.',
+    location: 'Familienzentrum Schnelsen, Spielraum',
+    reimbursementTypeId: ehrenamtType?.id,
+    inviteUserIds: nordMembers.slice(0, 2).map((member) => member.id),
+  });
+
+  // ─── Weitere Einzeltermine für Lesepaten Nord, damit diese und die
+  // kommende Woche insgesamt so aussehen wie ein echter, gut gefüllter
+  // Vereinskalender: 12 Einsätze diese Woche, 8 in der nächsten — darunter
+  // unterbesetzte, voll besetzte und Einsätze mit Warteschlange. Über ein
+  // Array statt einzelner Blöcke, weil es sonst zu unübersichtlich würde. ───
+
+  type NordFillerShift = {
+    title: string;
+    dayOffset: number;
+    hour: number;
+    durationMinutes: number;
+    visibility: ShiftVisibility;
+    maxVolunteers: number;
+    instructions: string;
+    location: string;
+    joinedIds: string[];
+    waitlistIds?: string[];
+    reimbursementTypeId?: string;
+  };
+
+  const nordFillerShifts: NordFillerShift[] = [
+    // ── Diese Woche (6 zusätzliche, macht zusammen mit den 6 Terminen oben
+    // 12 Einsätze diese Woche) ──
+    {
+      title: 'Vorlesestunde Seniorentreff Schnelsen',
+      dayOffset: daysUntilWeekday(1),
+      hour: 16,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 3,
+      instructions:
+        'Vorlesen und Austausch beim Seniorentreff im Familienzentrum Schnelsen.',
+      location: 'Familienzentrum Schnelsen, Seniorentreff',
+      joinedIds: nordMembers.slice(0, 3).map((member) => member.id), // voll besetzt
+    },
+    {
+      title: 'Elternlesekreis Kita Sonnenschein',
+      dayOffset: daysUntilWeekday(3),
+      hour: 18,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+      maxVolunteers: 2,
+      instructions:
+        'Abendtermin für Eltern der Kita Sonnenschein: gemeinsam vorlesen und über Leseförderung austauschen.',
+      location: 'Kita Sonnenschein, Elternraum',
+      joinedIds: nordMembers[3] ? [nordMembers[3].id] : [], // unterbesetzt
+      reimbursementTypeId: uebungsleiterType?.id,
+    },
+    {
+      title: 'Vorlesepause Bücherhalle Stellingen',
+      dayOffset: daysUntilWeekday(4),
+      hour: 12,
+      durationMinutes: 45,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 2,
+      instructions:
+        'Kurze Vorlesepause in der Mittagszeit für Kita-Gruppen, die die Bücherhalle besuchen.',
+      location: 'Bücherhalle Stellingen',
+      joinedIds: nordMembers.slice(1, 3).map((member) => member.id), // voll besetzt
+    },
+    {
+      title: 'Lesestunde Familienzentrum Schnelsen (Zusatztermin)',
+      dayOffset: daysUntilWeekday(5),
+      hour: 15,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 2,
+      instructions:
+        'Zusätzlicher Vorlesetermin im Familienzentrum, sehr gefragt bei Eltern mit Kleinkindern.',
+      location: 'Familienzentrum Schnelsen, Spielraum',
+      joinedIds: [nordMembers[0], nordMembers[3]]
+        .filter((member) => Boolean(member))
+        .map((member) => member.id), // voll besetzt
+      waitlistIds: nordMembers[1] ? [nordMembers[1].id] : [], // + Warteschlange
+    },
+    {
+      title: 'Kinderlesekreis Bücherhalle Eimsbüttel',
+      dayOffset: daysUntilWeekday(6),
+      hour: 11,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 3,
+      instructions:
+        'Offener Lesekreis für Grundschulkinder, keine Anmeldung nötig.',
+      location: 'Bücherhalle Eimsbüttel',
+      joinedIds: [], // unterbesetzt, komplett offen
+    },
+    {
+      title: 'Bücherkiste packen für Kinderhort',
+      dayOffset: daysUntilWeekday(0),
+      hour: 10,
+      durationMinutes: 45,
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+      maxVolunteers: 1,
+      instructions:
+        'Bücherkiste für den nächsten Kinderhort-Besuch zusammenstellen und vorbereiten.',
+      location: 'Vereinsbüro Lesepaten Nord',
+      joinedIds: [supervisor.id], // voll besetzt
+    },
+    // ── Nächste Woche (3 zusätzliche, macht zusammen mit den 5 Terminen
+    // oben 8 Einsätze in der Folgewoche) ──
+    {
+      title: 'Vorlesestunde Seniorenresidenz Schnelsen',
+      dayOffset: daysUntilWeekday(4) + 7,
+      hour: 15,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 2,
+      instructions:
+        'Vorlesen für Bewohner:innen der Seniorenresidenz, in Kleingruppen.',
+      location: 'Seniorenresidenz Schnelsen',
+      joinedIds: nordMembers.slice(0, 2).map((member) => member.id), // voll besetzt
+    },
+    {
+      title: 'Ferienlesestunde im Stadtpark (Zusatztermin)',
+      dayOffset: daysUntilWeekday(2) + 7,
+      hour: 10,
+      durationMinutes: 60,
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+      maxVolunteers: 2,
+      instructions:
+        'Zweiter Zusatztermin der Ferienlesestunde, gleicher Treffpunkt wie in der Vorwoche.',
+      location: 'Altonaer Volkspark, Haupteingang Kieler Straße',
+      joinedIds: nordMembers.slice(2, 4).map((member) => member.id), // voll besetzt
+    },
+    {
+      title: 'Spontane Vorlesestunde Bücherschrank',
+      dayOffset: daysUntilWeekday(1) + 7,
+      hour: 17,
+      durationMinutes: 30,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 3,
+      instructions:
+        'Spontaner Kurztermin am öffentlichen Bücherschrank, offen für alle.',
+      location: 'Bücherschrank Kieler Straße',
+      joinedIds: nordMembers[0] ? [nordMembers[0].id] : [], // unterbesetzt
+    },
+  ];
+
+  for (const fillerShift of nordFillerShifts) {
+    const fillerDay = addDaysInFixtureTimezone(
+      today.year,
+      today.month,
+      today.day,
+      fillerShift.dayOffset,
+    );
+    const fillerStart = fixtureWallClockToUtc(
+      fillerDay.year,
+      fillerDay.month,
+      fillerDay.day,
+      fillerShift.hour,
+    );
+
+    await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+      title: fillerShift.title,
+      startsAt: fillerStart,
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: fillerShift.durationMinutes,
+      visibility: fillerShift.visibility,
+      maxVolunteers: fillerShift.maxVolunteers,
+      instructions: fillerShift.instructions,
+      location: fillerShift.location,
+      reimbursementTypeId: fillerShift.reimbursementTypeId,
+      inviteUserIds: fillerShift.joinedIds,
+      extraInvites: fillerShift.waitlistIds?.length
+        ? [
+            {
+              userIds: fillerShift.waitlistIds,
+              status: ShiftInviteStatus.WAITLIST_JOINED,
+            },
+          ]
+        : [],
+    });
+  }
 
   // "Lesen im Elisabethstift": direktes Einladen (INVITED_MEMBERS).
   const suedMembers = byUnit('sued');
@@ -1390,7 +1943,6 @@ async function seedDemoVideoFixtures() {
 
   // ─── Events (Lesesommer / Lesefest) ───
 
-  const today = getDateInFixtureTimezone(new Date());
   const lesesommerStartDay = addDaysInFixtureTimezone(
     today.year,
     today.month,
@@ -1416,7 +1968,9 @@ async function seedDemoVideoFixtures() {
     18,
   );
 
-  const lesesommer = await ensureEvent(db, org.rootUnitId, coordinator.id, {
+  // Events leben bei Lesepaten Nord (statt org-weit auf Vereinsebene), damit
+  // sie direkt in der Nord-Ansicht auftauchen.
+  const lesesommer = await ensureEvent(db, org.unitIds.nord, coordinator.id, {
     title: 'Lesesommer',
     description:
       'Zehn Wochen lang Vorlesestunden an drei Standorten in Altona — für alle, die im Sommer draußen vorlesen oder zuhören möchten.',
@@ -1464,7 +2018,7 @@ async function seedDemoVideoFixtures() {
     lesefestDay.day,
     11,
   );
-  const lesefest = await ensureEvent(db, org.rootUnitId, coordinator.id, {
+  const lesefest = await ensureEvent(db, org.unitIds.nord, coordinator.id, {
     title: 'Lesefest',
     description:
       'Eintägiges Straßenfest zum Abschluss des Lesesommers: Lesungen, Bücherflohmarkt und ein Programm für Kinder.',
@@ -1474,7 +2028,7 @@ async function seedDemoVideoFixtures() {
     endsAt: addHours(lesefestStart, 6),
   });
 
-  await ensureShiftWithInvites(db, org.rootUnitId, coordinator.id, {
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
     title: 'Standbetreuung Lesefest',
     startsAt: lesefestStart,
     rrule: ONE_TIME_RRULE,
@@ -1488,21 +2042,96 @@ async function seedDemoVideoFixtures() {
     inviteUserIds: [demoUser.id, ...members.slice(0, 3).map((m) => m.id)],
   });
 
-  // ─── Zeiterfassung (Use Case 3), getrennt nach Pauschalenart (Use Case 4) ───
-
-  const reimbursementTypes = await db.query.reimbursementTypes.findMany({
-    where: {
-      key: {
-        in: [ReimbursementTypeKey.EHRENAMT, ReimbursementTypeKey.UEBUNGSLEITER],
-      },
+  // "Vorlesewettbewerb": einmaliges Event für Kinder, mit einem
+  // Betreuungs-Einsatz in Lesepaten Nord.
+  const vorlesewettbewerbDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    30,
+  );
+  const vorlesewettbewerbStart = fixtureWallClockToUtc(
+    vorlesewettbewerbDay.year,
+    vorlesewettbewerbDay.month,
+    vorlesewettbewerbDay.day,
+    14,
+  );
+  const vorlesewettbewerb = await ensureEvent(
+    db,
+    org.unitIds.nord,
+    coordinator.id,
+    {
+      title: 'Vorlesewettbewerb',
+      description:
+        'Kinder aus Altonaer Grundschulen lesen vor einer kleinen Jury aus ihrem Lieblingsbuch vor. Am Ende gibt es für alle eine Urkunde.',
+      location: 'Bücherhalle Eimsbüttel, Veranstaltungssaal',
+      coverUrl: VORLESEWETTBEWERB_IMAGE_URL,
+      startsAt: vorlesewettbewerbStart,
+      endsAt: addHours(vorlesewettbewerbStart, 3),
     },
+  );
+
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Jury & Betreuung Vorlesewettbewerb',
+    startsAt: vorlesewettbewerbStart,
+    rrule: ONE_TIME_RRULE,
+    durationMinutes: 180,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    maxVolunteers: 3,
+    instructions:
+      'Jurymitglied sein oder beim Empfang und der Kinderbetreuung am Rand des Wettbewerbs helfen.',
+    location: 'Bücherhalle Eimsbüttel, Veranstaltungssaal',
+    eventId: vorlesewettbewerb.id,
+    inviteUserIds: nordMembers.slice(1, 3).map((member) => member.id),
   });
-  const ehrenamtType = reimbursementTypes.find(
-    (type) => type.key === ReimbursementTypeKey.EHRENAMT,
+
+  // "Interkultureller Lesetag": einmaliges Event, Geschichten und
+  // zweisprachige Bücher aus vielen Herkunftsländern.
+  const interkulturellerLesetagDay = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    60,
   );
-  const uebungsleiterType = reimbursementTypes.find(
-    (type) => type.key === ReimbursementTypeKey.UEBUNGSLEITER,
+  const interkulturellerLesetagStart = fixtureWallClockToUtc(
+    interkulturellerLesetagDay.year,
+    interkulturellerLesetagDay.month,
+    interkulturellerLesetagDay.day,
+    12,
   );
+  const interkulturellerLesetag = await ensureEvent(
+    db,
+    org.unitIds.nord,
+    coordinator.id,
+    {
+      title: 'Interkultureller Lesetag',
+      description:
+        'Geschichten und zweisprachige Bücher aus vielen Herkunftsländern — zum Vorlesen, Zuhören und gemeinsamen Entdecken, für die ganze Familie.',
+      location: 'Familienzentrum Schnelsen',
+      coverUrl: INTERKULTURELLER_LESETAG_IMAGE_URL,
+      startsAt: interkulturellerLesetagStart,
+      endsAt: addHours(interkulturellerLesetagStart, 6),
+    },
+  );
+
+  await ensureShiftWithInvites(db, org.unitIds.nord, coordinator.id, {
+    title: 'Standbetreuung Interkultureller Lesetag',
+    startsAt: interkulturellerLesetagStart,
+    rrule: ONE_TIME_RRULE,
+    durationMinutes: 360,
+    visibility: ShiftVisibility.ALL_MEMBERS,
+    instructions:
+      'Empfang, Ausleihe der zweisprachigen Bücher und Ansprechpartner:in für Familien den ganzen Nachmittag über.',
+    location: 'Familienzentrum Schnelsen',
+    eventId: interkulturellerLesetag.id,
+    inviteUserIds: nordMembers.slice(0, 2).map((member) => member.id),
+    pendingInviteUserIds: [demoUser.id],
+  });
+
+  // ─── Zeiterfassung (Use Case 3), getrennt nach Pauschalenart (Use Case 4) ───
+  // (ehrenamtType/uebungsleiterType wurden bereits oben aufgelöst, direkt nach
+  // dem Anlegen der Organisation, damit auch Einsätze weiter oben schon mit
+  // reimbursementTypeId getaggt werden konnten.)
 
   if (!ehrenamtType || !uebungsleiterType) {
     console.warn(
@@ -1564,6 +2193,320 @@ async function seedDemoVideoFixtures() {
     }
   }
 
+  // ─── Weitere Zeiterfassung: Abrechnungs-Demo für Lena Vogt (August) plus
+  // ca. 20 weitere Einträge anderer Freiwilliger, überwiegend mit
+  // Pauschalenart. Nicht an konkrete Schicht-Instanzen gekoppelt
+  // (shiftInstanceId bleibt leer) — das Datenmodell erlaubt das explizit für
+  // manuell nacherfasste Zeiten, und es macht die Platzierung unabhängig von
+  // den tatsächlich generierten RRULE-Terminen. Einmalig über einen Check auf
+  // Lenas Zeiterfassung abgesichert, damit ein erneuter Lauf nichts
+  // verdoppelt. ───
+
+  const lenaHasTimeEntries = ehrenamtType
+    ? await db.query.timeEntries.findFirst({
+        where: { volunteerId: demoUser.id },
+      })
+    : null;
+
+  if (ehrenamtType && uebungsleiterType && !lenaHasTimeEntries) {
+    // August des Vorjahresmonats, der zuletzt vergangen ist — robust
+    // unabhängig davon, wann dieses Skript im Jahr läuft.
+    const augustYear = today.month > 8 ? today.year : today.year - 1;
+
+    const manualEntries: Array<typeof schema.timeEntries.$inferInsert> = [];
+
+    const addManualEntry = (params: {
+      volunteerId: string;
+      organizationUnitId: string;
+      reimbursementTypeId: string;
+      year: number;
+      month: number;
+      day: number;
+      hour: number;
+      minute?: number;
+      durationHours: number;
+      notes: string;
+    }): void => {
+      const startedAt = fixtureWallClockToUtc(
+        params.year,
+        params.month,
+        params.day,
+        params.hour,
+        params.minute ?? 0,
+      );
+      manualEntries.push({
+        shiftInstanceId: null,
+        organizationUnitId: params.organizationUnitId,
+        volunteerId: params.volunteerId,
+        reimbursementTypeId: params.reimbursementTypeId,
+        startedAt,
+        endedAt: addHours(startedAt, params.durationHours),
+        notes: params.notes,
+      });
+    };
+
+    // Lena Vogt: 4 Einsätze mit Übungsleiterpauschale im August, zum
+    // Vorführen der Abrechnung auf ihrem Account.
+    const lenaAugustDays = [4, 11, 18, 25];
+    for (const [index, day] of lenaAugustDays.entries()) {
+      addManualEntry({
+        volunteerId: demoUser.id,
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        year: augustYear,
+        month: 8,
+        day,
+        hour: index % 2 === 0 ? 9 : 16,
+        minute: index % 2 === 0 ? 30 : 0,
+        durationHours: 1.5,
+        notes:
+          index % 2 === 0
+            ? 'Vorlesepatenschaft Kita Sonnenschein — für Abrechnung nacherfasst'
+            : 'Deutsch lernen beim Vorlesen — für Abrechnung nacherfasst',
+      });
+    }
+
+    // ~20 weitere Einträge anderer Freiwilliger, überwiegend mit
+    // Pauschalenart, verteilt über die letzten Wochen.
+    type OtherEntryFixture = {
+      volunteer: FixtureUser;
+      organizationUnitId: string;
+      reimbursementTypeId: string;
+      daysAgo: number;
+      hour: number;
+      minute?: number;
+      durationHours: number;
+      notes: string;
+    };
+
+    const otherEntries: OtherEntryFixture[] = [
+      // Lesepaten Nord — Übungsleiterpauschale
+      {
+        volunteer: additionalNordMembers[0],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 7,
+        hour: 9,
+        minute: 30,
+        durationHours: 1,
+        notes: 'Vorlesepatenschaft Kita Sonnenschein — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[1],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 14,
+        hour: 9,
+        minute: 30,
+        durationHours: 1,
+        notes: 'Vorlesepatenschaft Kita Sonnenschein — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[2],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 21,
+        hour: 9,
+        minute: 30,
+        durationHours: 1,
+        notes: 'Vorlesepatenschaft Kita Sonnenschein — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[3],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 28,
+        hour: 9,
+        minute: 30,
+        durationHours: 1,
+        notes: 'Vorlesepatenschaft Kita Sonnenschein — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[4],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 10,
+        hour: 16,
+        minute: 30,
+        durationHours: 1.5,
+        notes: 'Deutsch lernen beim Vorlesen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[5],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 24,
+        hour: 16,
+        minute: 30,
+        durationHours: 1.5,
+        notes: 'Deutsch lernen beim Vorlesen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[13],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 5,
+        hour: 16,
+        minute: 30,
+        durationHours: 1.5,
+        notes: 'Deutsch lernen beim Vorlesen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[14],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 15,
+        hour: 9,
+        minute: 30,
+        durationHours: 1,
+        notes: 'Vorlesepatenschaft Kita Sonnenschein — nachträglich erfasst',
+      },
+      // Lesepaten Nord — Ehrenamtspauschale
+      {
+        volunteer: additionalNordMembers[6],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 3,
+        hour: 15,
+        minute: 30,
+        durationHours: 1.5,
+        notes: 'Lesecafé für Senior:innen Eimsbüttel — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[7],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 9,
+        hour: 16,
+        durationHours: 1,
+        notes: 'Bücherbus-Vorlesestunde Stellingen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[8],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 13,
+        hour: 11,
+        durationHours: 1.25,
+        notes:
+          'Vorlesenachmittag Familienzentrum Schnelsen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[9],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 17,
+        hour: 15,
+        minute: 30,
+        durationHours: 1.5,
+        notes: 'Lesecafé für Senior:innen Eimsbüttel — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[10],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 20,
+        hour: 16,
+        durationHours: 1,
+        notes: 'Bücherbus-Vorlesestunde Stellingen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[11],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 27,
+        hour: 11,
+        durationHours: 1.25,
+        notes:
+          'Vorlesenachmittag Familienzentrum Schnelsen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[12],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 31,
+        hour: 15,
+        minute: 30,
+        durationHours: 1.5,
+        notes: 'Lesecafé für Senior:innen Eimsbüttel — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[15],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 22,
+        hour: 16,
+        durationHours: 1,
+        notes: 'Bücherbus-Vorlesestunde Stellingen — nachträglich erfasst',
+      },
+      {
+        volunteer: additionalNordMembers[16],
+        organizationUnitId: org.unitIds.nord,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 35,
+        hour: 11,
+        durationHours: 1.25,
+        notes:
+          'Vorlesenachmittag Familienzentrum Schnelsen — nachträglich erfasst',
+      },
+      // Lesepaten Süd — Ehrenamtspauschale
+      {
+        volunteer: suedMembers[3],
+        organizationUnitId: org.unitIds.sued,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 4,
+        hour: 14,
+        durationHours: 2,
+        notes: 'Seniorenkreis — nachträglich erfasst',
+      },
+      {
+        volunteer: suedMembers[0],
+        organizationUnitId: org.unitIds.sued,
+        reimbursementTypeId: ehrenamtType.id,
+        daysAgo: 11,
+        hour: 16,
+        durationHours: 1.5,
+        notes: 'Lesen im Elisabethstift — nachträglich erfasst',
+      },
+      // Lesepaten West — Übungsleiterpauschale
+      {
+        volunteer: westMembers[2],
+        organizationUnitId: org.unitIds.west,
+        reimbursementTypeId: uebungsleiterType.id,
+        daysAgo: 8,
+        hour: 17,
+        durationHours: 1.5,
+        notes: 'Deutsche Literatur für Anfänger — nachträglich erfasst',
+      },
+    ];
+
+    for (const entry of otherEntries) {
+      if (!entry.volunteer) {
+        continue;
+      }
+      const day = addDaysInFixtureTimezone(
+        today.year,
+        today.month,
+        today.day,
+        -entry.daysAgo,
+      );
+      addManualEntry({
+        volunteerId: entry.volunteer.id,
+        organizationUnitId: entry.organizationUnitId,
+        reimbursementTypeId: entry.reimbursementTypeId,
+        year: day.year,
+        month: day.month,
+        day: day.day,
+        hour: entry.hour,
+        minute: entry.minute,
+        durationHours: entry.durationHours,
+        notes: entry.notes,
+      });
+    }
+
+    await db.insert(schema.timeEntries).values(manualEntries);
+  }
+
   // No admin UI to toggle accountingEnabled yet.
   await db
     .update(schema.organizations)
@@ -1583,14 +2526,34 @@ async function seedDemoVideoFixtures() {
     `Login (Demo-Ehrenamtliche für Screens): ${demoUser.email} / ${FIXTURE_PASSWORD}`,
   );
   console.log(
-    'Shifts: Lesen im Park (Warteliste), Lesen im Elisabethstift (direkt eingeladen), Seniorenkreis (Freigabe ausstehend), Deutsche Literatur für Anfänger',
+    'Lesepaten Nord: 12 Einsätze diese Woche, 8 in der Folgewoche — Mischung aus 4 Dauerserien (Kita montags, Park dienstags, Bücherbus alle 2 Wochen donnerstags, Familienzentrum-Reihe samstags über 6 Wochen) und Einzelterminen.',
   );
-  console.log('Events: Lesesommer (mit Vorlesestunde im Stadtpark), Lesefest');
   console.log(
-    'Anforderungsformulare: Interessensbekundung + Vereinbarung zur ehrenamtlichen Mitarbeit (Verein), Erweitertes Führungszeugnis (Lesen im Park)',
+    'Lesepaten Nord — Besetzungsstatus: unterbesetzt u.a. Bücherbus, Lesecafé, Elternlesekreis, Kinderlesekreis, Deutsch lernen (+Freigabe ausstehend), Bücherschrank; voll besetzt u.a. Kita, Seniorentreff, Vorlesepause, Bücherkiste, Seniorenresidenz; mit Warteschlange: Lesen im Park, Lesestunde Familienzentrum (Zusatztermin).',
+  );
+  console.log(
+    'Lesepaten Nord — Einladungsarten: direkt eingeladen (Kita, Ferienlesestunde x2, Elternlesekreis, Bücherkiste), offen ohne Anmeldung (Park, Bücherbus, Lesecafé, Kinderlesekreis, u.a.), offen mit Freigabe (Deutsch lernen).',
+  );
+  console.log(
+    'Shifts (Süd/West): Lesen im Elisabethstift (direkt eingeladen), Seniorenkreis (Freigabe ausstehend), Deutsche Literatur für Anfänger',
+  );
+  console.log(
+    'Events (jetzt bei Lesepaten Nord statt Vereinsebene): Lesesommer (mit Vorlesestunde im Stadtpark), Lesefest, Vorlesewettbewerb, Interkultureller Lesetag',
+  );
+  console.log(
+    'Anforderungsformulare: Interessensbekundung + Vereinbarung zur ehrenamtlichen Mitarbeit (Verein), Erweitertes Führungszeugnis (Lesen im Park, Vorlesepatenschaft Kita Sonnenschein)',
   );
   console.log(
     'Mitgliedschaften: 2 ausstehend (Marie Albrecht, David Kern), 1 abgelehnt (Sabine Wolff)',
+  );
+  console.log(
+    `Lesepaten Nord: 23 Freiwillige insgesamt (Hannah, Mehmet, Sophie, Lena + 19 weitere), eigenes Titelbild.`,
+  );
+  console.log(
+    'Pauschalenart bei Einsätzen: Übungsleiterpauschale (Kita Sonnenschein, Deutsch lernen, Elternlesekreis), Ehrenamtspauschale (Lesecafé, Bücherbus, Familienzentrum-Reihe); alle anderen Einsätze ohne Pauschale.',
+  );
+  console.log(
+    `Zeiterfassung: 4 Einträge mit Übungsleiterpauschale im August für ${demoUser.email} (Abrechnungs-Demo) plus rund 20 weitere Einträge anderer Freiwilliger.`,
   );
 
   await pool.end();
