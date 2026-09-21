@@ -1,8 +1,9 @@
 /**
- * Demo dataset for the product videos ("Altonaer Lesepaten").
+ * Realistic demo dataset ("Altonaer Lesepaten") for local development,
+ * demos and manual testing.
  *
  * Fully fictional non-profit reading-mentorship organisation, built to look
- * like a real Caluno customer on screen instead of the "testing+00X" Playground
+ * like a real Caluno customer instead of the "testing+00X" Playground
  * fixtures. Completely independent from `fixtures.ts` — it creates its own
  * organisation, its own accounts and its own shifts/events, so re-running
  * `bun run src/database/fixtures.ts` (the Playground/e2e dataset) is
@@ -12,7 +13,7 @@
  * `bun run db:seed` have run at least once so permissions + reimbursement
  * types exist):
  *
- *   bun run db:fixtures:demo-video
+ *   bun run db:fixtures:demo
  *
  * All accounts use the password from DEMO_FIXTURE_PASSWORD, default `abcd1234`.
  * All emails are on the `lesepaten-altona.example` domain — reserved by
@@ -50,7 +51,7 @@ const RECURRENCE_WEEKS_BACK = 8;
 // Real Unsplash photos (via the connected Unsplash search), one per
 // event/shift/person context so screens look like a real customer instead
 // of generic placeholder art. All from photographers who allow free use;
-// if any of these stills end up in the published video, credit the
+// if any of these images are used publicly, credit the
 // photographer per Unsplash's license (photo -> photographer name is in
 // the fixture comments below).
 const ORG_COVER_IMAGE_URL =
@@ -1146,7 +1147,7 @@ const ensureChildSafetyForm = async (
 
 // ─── Main ───
 
-async function seedDemoVideoFixtures() {
+async function seedDemoFixtures() {
   const pool = new Pool({
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT ?? '5432', 10),
@@ -1251,7 +1252,7 @@ async function seedDemoVideoFixtures() {
     members.push({ ...user, unit: definition.unit });
   }
 
-  // The account to log into for the videos: a member with a realistic mix
+  // The primary demo account: a member with a realistic mix
   // of accepted, pending and self-joined shifts (mirrors the Playground
   // "Demo Volunteer" pattern), plus complete personal/banking-style data.
   const demoUser = await createAuthUser(db, hashedPassword, {
@@ -2559,7 +2560,7 @@ async function seedDemoVideoFixtures() {
   await pool.end();
 }
 
-seedDemoVideoFixtures().catch((error) => {
+seedDemoFixtures().catch((error) => {
   console.error(error);
   process.exit(1);
 });
