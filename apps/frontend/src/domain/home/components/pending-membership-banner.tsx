@@ -8,12 +8,16 @@ import { Link } from '@/i18n/navigation';
 interface PendingMembershipBannerProps {
   orgName: string;
   contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
   requestsHref: string;
 }
 
 export function PendingMembershipBanner({
   orgName,
   contactName,
+  contactEmail,
+  contactPhone,
   requestsHref,
 }: PendingMembershipBannerProps) {
   const t = useTranslations('VolunteerHome');
@@ -32,11 +36,33 @@ export function PendingMembershipBanner({
           <p className="text-sm text-muted-foreground">
             {t('pendingRequestBody')}
           </p>
-          {contactName && (
+          {contactName ? (
             <p className="text-sm text-muted-foreground">
               {t('pendingRequestContact', { name: contactName })}
             </p>
-          )}
+          ) : contactEmail ? (
+            <p className="text-sm text-muted-foreground">
+              {t('pendingRequestContactEmailBefore')}
+              <a
+                href={`mailto:${contactEmail}`}
+                className="text-foreground underline underline-offset-2"
+              >
+                {contactEmail}
+              </a>
+              {t('pendingRequestContactEmailAfter')}
+            </p>
+          ) : contactPhone ? (
+            <p className="text-sm text-muted-foreground">
+              {t('pendingRequestContactPhoneBefore')}
+              <a
+                href={`tel:${contactPhone.replace(/\s/g, '')}`}
+                className="text-foreground underline underline-offset-2"
+              >
+                {contactPhone}
+              </a>
+              {t('pendingRequestContactPhoneAfter')}
+            </p>
+          ) : null}
         </div>
 
         <Button asChild variant="outline" className="w-full">

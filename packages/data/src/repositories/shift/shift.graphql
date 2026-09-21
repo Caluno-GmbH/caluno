@@ -377,6 +377,14 @@ query GetShiftInstance($id: ID!) {
         checkInId
       }
     }
+    timeEntries {
+      id
+      startedAt
+      endedAt
+      volunteer {
+        id
+      }
+    }
   }
 }
 
@@ -458,6 +466,7 @@ fragment VolunteerHomeShiftInstance on ShiftInstance {
   actualEndsAt
   isCheckedIn
   filledCount
+  spotsLeft
   myInviteStatus
   myInvitedAt
   isIntendingToJoin
