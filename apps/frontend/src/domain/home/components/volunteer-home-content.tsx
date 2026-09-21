@@ -441,10 +441,10 @@ export function VolunteerHomeContent({
       availableEventList.length === 0 ? (
         <div className="flex flex-col gap-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <h2 className="hyphens-auto break-words text-2xl font-semibold text-foreground">
+            <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
               {t('discoverHeading')}
             </h2>
-            <p className="text-base text-muted-foreground">
+            <p className="min-w-0 break-words text-base text-muted-foreground">
               {t('discoverPendingSubtitle', {
                 orgName: pendingRequest.organizationName,
               })}
