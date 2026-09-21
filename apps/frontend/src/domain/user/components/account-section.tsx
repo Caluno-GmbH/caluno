@@ -40,8 +40,8 @@ export const AccountSection = async ({
 
   return (
     <section>
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="min-w-0 hyphens-auto break-words text-xl font-bold">
+      <div className="flex items-start justify-between gap-2">
+        <h1 className="min-w-0 flex-1 hyphens-auto break-words text-xl font-bold">
           {tProfile('accountSettings')}
         </h1>
         <Button asChild variant="outline" size="sm">
