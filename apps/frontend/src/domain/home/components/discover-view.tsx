@@ -64,7 +64,7 @@ export function DiscoverView({
 
   const tabsControl = (
     <SegmentedControl
-      size="default"
+      size="lg"
       variant="line"
       triggerClassName="px-1 text-[18px] sm:px-3.5 sm:text-lg"
       value={tab}

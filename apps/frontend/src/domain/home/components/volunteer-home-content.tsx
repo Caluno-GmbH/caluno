@@ -486,7 +486,7 @@ export function VolunteerHomeContent({
 
           <SegmentedControl
             className="mb-3"
-            size="default"
+            size="lg"
             triggerClassName="px-1 text-[18px] sm:px-3.5 sm:text-lg"
             value={discoverTab}
             onChange={(value) => setDiscoverTab(value as DiscoverTab)}
