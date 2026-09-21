@@ -332,6 +332,23 @@ type DocumentTemplate {
   updatedAt: DateTime
 }
 
+input DuplicateShiftInput {
+  endsAt: DateTime!
+  eventId: ID
+  imageFileId: String
+  instructions: String
+  joinRequiresApproval: Boolean
+  location: String
+  maxVolunteers: Int
+  minVolunteers: Int
+  reimbursementTypeId: ID
+  requiredFormIds: [String!]
+  rrule: String
+  startsAt: DateTime!
+  title: String!
+  visibility: ShiftVisibility!
+}
+
 type EffectiveRate {
   hourlyRateCents: Int!
   isOverride: Boolean!
@@ -721,6 +738,7 @@ type Mutation {
   deleteShift(id: String!): Shift!
   deleteShiftInstance(applyToAllFuture: Boolean, id: String!): ShiftInstance!
   deleteTimeEntry(id: ID!): TimeEntry!
+  duplicateShift(id: String!, input: DuplicateShiftInput!): Shift!
   inviteMembersToEvent(eventId: ID!, memberIds: [String!]!): Event!
   joinEvent(eventId: ID!): JoinEventResult!
   joinOrganization(organizationUnitId: ID!): JoinOrganizationResult!
