@@ -1,5 +1,16 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, count, eq, gte, inArray, isNull, lt, ne, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  sql,
+} from 'drizzle-orm';
 import { ReimbursementTypeKey } from '../accounting/enums';
 import { AccountingOrgAccessService } from '../accounting/services/accounting-org-access.service';
 import { AuthService } from '../auth/auth.service';
@@ -53,6 +64,7 @@ import {
 import { PostHogService } from '../shared/observability/posthog.service';
 import { FilePurpose } from '../storage/enums';
 import { FileService } from '../storage/services/file.service';
+import type { TimeEntryEntity } from '../time-tracking/schemas/time-entry.schema';
 import { UserService } from '../user/user.service';
 import { slugify } from '../utils/slug.util';
 import {
@@ -309,6 +321,25 @@ export class ShiftService {
           isNull(schema.timeEntries.endedAt),
         ),
       ) as Promise<{ shiftInstanceId: string }[]>;
+  }
+
+  /** All time entries for a set of shift instances in one org unit, ordered by start time (DataLoader batch). */
+  async findTimeEntriesForInstances(
+    instanceIds: string[],
+    organizationUnitId: string,
+  ): Promise<TimeEntryEntity[]> {
+    if (instanceIds.length === 0) return [];
+
+    return this.db
+      .select()
+      .from(schema.timeEntries)
+      .where(
+        and(
+          inArray(schema.timeEntries.shiftInstanceId, instanceIds),
+          eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+        ),
+      )
+      .orderBy(asc(schema.timeEntries.startedAt));
   }
 
   /** A user's shift-instance invite statuses across many instances in one query (DataLoader batch). */

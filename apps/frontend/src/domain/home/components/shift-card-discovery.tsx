@@ -30,10 +30,7 @@ export function ShiftCardDiscovery({
   const t = useTranslations('VolunteerHome');
   const event = shiftInstance.master.event;
   const recurrence = getRecurrenceLabel(shiftInstance.master.rrule);
-  const spotsLeft =
-    shiftInstance.master.maxVolunteers != null
-      ? shiftInstance.master.maxVolunteers - shiftInstance.filledCount
-      : null;
+  const spotsLeft = shiftInstance.spotsLeft ?? null;
   const fullyBooked = spotsLeft !== null && spotsLeft <= 0;
 
   const body = (

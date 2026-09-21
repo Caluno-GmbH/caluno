@@ -66,6 +66,8 @@ interface PendingRequest {
   id: string;
   organizationName: string;
   contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
 }
 
 interface VolunteerHomeContentProps {
@@ -591,6 +593,8 @@ export function VolunteerHomeContent({
         <PendingMembershipBanner
           orgName={pendingRequest.organizationName}
           contactName={pendingRequest.contactName}
+          contactEmail={pendingRequest.contactEmail}
+          contactPhone={pendingRequest.contactPhone}
           requestsHref="/profile"
         />
       )}

@@ -69,6 +69,8 @@ export default async function VolunteeringHomePage({
               organizationName:
                 pendingRequest.organizationUnit.organization.name,
               contactName: pendingRequest.contact?.name,
+              contactEmail: pendingRequest.contact?.email,
+              contactPhone: pendingRequest.contact?.phone,
             }
           : null
       }

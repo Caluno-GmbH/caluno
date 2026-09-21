@@ -208,14 +208,6 @@ const SHIFT_CARD_SHADOW =
 
 const SHIFT_CARD_BADGE_TEXT = '#9c2f34';
 
-/**
- * A clickable shift card mirroring the frontend's volunteering-side shift
- * cards: a cover image banner above a title, a subtitle line (org/date), and
- * an optional reason pill — the whole card is one link. Shifts without a
- * cover image skip the banner entirely and instead absorb its height into
- * the text content's padding, so every card in a stack lines up at the same
- * height rather than showing an empty image placeholder.
- */
 export function shiftCard(options: ShiftCardOptions): string {
   const { href, imageUrl, title, subtitle, meta, last = false } = options;
   const marginBottom = last ? '0' : '12px';
@@ -224,8 +216,7 @@ export function shiftCard(options: ShiftCardOptions): string {
     ? `<img src="${escapeHtml(imageUrl)}" width="600" alt="" style="display:block;width:100%;height:${SHIFT_CARD_IMAGE_HEIGHT_PX}px;object-fit:cover;background-color:${colors.border};" />`
     : '';
 
-  const extraPadding = imageUrl ? 0 : SHIFT_CARD_IMAGE_HEIGHT_PX / 2;
-  const contentPadding = `${CONTENT_PADDING_TOP_PX + extraPadding}px ${CONTENT_PADDING_SIDE_PX}px ${CONTENT_PADDING_BOTTOM_PX + extraPadding}px`;
+  const contentPadding = `${CONTENT_PADDING_TOP_PX}px ${CONTENT_PADDING_SIDE_PX}px ${CONTENT_PADDING_BOTTOM_PX}px`;
 
   const metaBadge = meta
     ? `<span style="display:inline-block;background-color:${colors.primarySoft};color:${SHIFT_CARD_BADGE_TEXT};border-radius:9999px;padding:3px 10px;font-size:12px;font-weight:600;margin-top:8px;">${meta}</span>`

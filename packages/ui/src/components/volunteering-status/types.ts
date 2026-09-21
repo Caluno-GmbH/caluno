@@ -16,7 +16,7 @@ export type ShiftVolunteeringDisplayState =
   | 'cancelled'
   | 'checked_in'
   | 'not_checked_in'
-  | 'completed'
+  | 'checked_out'
   | 'no_show'
   | 'invited_never_responded'
   | 'requested_never_responded';
@@ -38,8 +38,7 @@ export type VolunteeringActionLabel =
   | 'View'
   | 'Check in'
   | 'Check out'
-  | 'Add timesheet'
-  | 'Edit time';
+  | 'Add timesheet';
 
 /** A status the chip dropdown can move a volunteer to. */
 export type VolunteeringStatusOption = {
