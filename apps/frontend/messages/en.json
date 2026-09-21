@@ -421,6 +421,7 @@
         "awaiting-signature": "To sign",
         "awaiting-countersignature": "To countersign",
         "signed": "Active",
+        "expired": "Expired",
         "declined": "Declined"
       },
       "figures": "{shifts} Shifts · {hours} hours · {amount}",
@@ -462,8 +463,7 @@
         "retry": "Try again",
         "errorHelp": "Go to your membership for help",
         "signDisabledHint": "You can only sign or decline once you've viewed the document in the preview."
-      },
-      "downloadUnavailableNote": "PDF not available yet."
+      }
     }
   },
   "IdVerification": {
@@ -675,11 +675,13 @@
   },
   "OrgUnit": {
     "delete": {
-      "childrenWarning": "Warning: this unit has children. Deleting it will affect the hierarchy.",
-      "confirmLabel": "Type DELETE to confirm",
-      "confirmPlaceholder": "DELETE",
-      "description": "This action cannot be undone. The unit will be permanently deleted.",
-      "title": "Delete \"{name}\""
+      "description": "Our team will review your request and remove this unit for you.",
+      "messageLabel": "Message (optional)",
+      "requestButton": "Send request",
+      "requesting": "Sending…",
+      "sentDescription": "We've let our team know you'd like \"{name}\" removed. They'll follow up with you.",
+      "sentTitle": "Request sent",
+      "title": "Request to delete \"{name}\""
     },
     "detail": {
       "aboutTitle": "About",
@@ -697,8 +699,12 @@
       "zipCodePlaceholder": "e.g. 10115",
       "legalRepLabel": "Legal representative",
       "legalRepPlaceholder": "e.g. Jane Doe",
+      "contactPersonNameLabel": "Contact person name",
+      "contactPersonNamePlaceholder": "e.g. Jane Doe",
+      "contactPersonSectionDescription": "Shown to new members in the welcome email and while their request is pending.",
+      "contactPersonSectionTitle": "Contact person for new members",
       "descriptionLabel": "Description",
-      "descriptionPlaceholder": "Describe this organizational unit...",
+      "descriptionPlaceholder": "Describe this organizational unit",
       "emailLabel": "Email",
       "emailPlaceholder": "e.g. contact@example.com",
       "logoLabel": "Logo",
@@ -710,7 +716,9 @@
       "typeLabel": "Type",
       "typePlaceholder": "Select a type",
       "websiteLabel": "Website URL",
-      "websitePlaceholder": "e.g. https://example.com"
+      "websitePlaceholder": "e.g. https://example.com",
+      "welcomeMessageLabel": "Welcome message",
+      "welcomeMessagePlaceholder": "A short message for new members"
     },
     "page": {
       "subtitle": "Manage the organizational unit hierarchy for {orgName}",
@@ -793,6 +801,7 @@
       "subtitles": {
         "firstName": "As on your ID",
         "iban": "For expense and allowance payments",
+        "accountHolder": "Name on the bank account",
         "lastName": "As on your ID",
         "preferredName": "If you'd like to be called something else",
         "bic": "Bank identifier code (BIC) for your account",
@@ -1003,6 +1012,7 @@
       "firstName": "First name",
       "gender": "Gender",
       "iban": "IBAN",
+      "accountHolder": "Account holder",
       "bic": "BIC",
       "taxId": "Tax ID",
       "infoText": "Info text",
@@ -1042,13 +1052,20 @@
       "nameLabel": "Name",
       "namePlaceholder": "e.g. Onboarding Form"
     },
+    "genderOptions": {
+      "female": "Female",
+      "male": "Male",
+      "diverse": "Diverse",
+      "prefer-not-to-say": "Prefer not to say"
+    },
     "submission": {
       "accepted": "Accepted",
       "answerColumn": "Answer",
       "fallbackForm": "Form",
       "fallbackVolunteer": "Volunteer",
       "fieldColumn": "Field",
-      "noFields": "No fields defined for this form."
+      "noFields": "No fields defined for this form.",
+      "restrictedPaymentData": "You don't have permission to view banking information."
     },
     "submissions": {
       "emailColumn": "Email",
@@ -1115,6 +1132,7 @@
       "next": "Next",
       "noBlocks": "This form has no blocks.",
       "noFields": "This block has no fields configured yet.",
+      "paymentDataVisibilityHint": "Your bank details are visible only to the people who process the invoices.",
       "pickDate": "Pick a date",
       "selectOption": "Select an option",
       "step": "Step {current} of {total}",
@@ -1236,12 +1254,16 @@
       "waitlistInviteSuccess": "Volunteer invited to the shift"
     },
     "checkIn": {
+      "checkInError": "Could not check in volunteer",
+      "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
+      "checkOutError": "Could not check out volunteer",
       "checkOutTitle": "Check-out",
       "checkedInAt": "Checked in: {time}",
       "checkingOut": "Checking out...",
       "checkingOutAt": "Checking out: {time}",
       "generalCheckIn": "General check-in",
+      "moreWindows": "{count, plural, one {1 more} other {# more}}",
       "volunteerCheckedOut": "Volunteer checked out"
     },
     "compensation": {
@@ -1371,10 +1393,13 @@
       "changeStatusAria": "Change volunteer status",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
+      "checkedIn": "Checked in",
+      "checkedOut": "Checked out",
       "declined": "Declined",
       "declineSuccess": "Volunteer declined",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
+      "notCheckedIn": "Not here yet",
       "pendingApproval": "Pending approval",
       "rejected": "Rejected",
       "remindedAtTooltip": "Reminded on {when}",
@@ -1705,6 +1730,7 @@
     "action": {
       "checkInAria": "Check in",
       "checkInShiftAria": "Check in",
+      "checkOutAria": "Check out",
       "remove": "Remove",
       "removeAria": "Remove",
       "removeDescription": "Are you sure you want to remove {name} from this organisation? This cannot be undone.",
@@ -1820,6 +1846,10 @@
     "pendingBadge": "Pending",
     "pendingRequestBody": "An admin is reviewing your request. This usually takes a few days.",
     "pendingRequestContact": "Questions? {name} can help.",
+    "pendingRequestContactEmailAfter": " can help.",
+    "pendingRequestContactEmailBefore": "Questions? ",
+    "pendingRequestContactPhoneAfter": " can help.",
+    "pendingRequestContactPhoneBefore": "Questions? Call ",
     "pendingRequestCta": "View your requests",
     "pendingRequestTitle": "{orgName} is reviewing your request",
     "spotsLeft": "{n, plural, one {# spot left} other {# spots left}}",
@@ -1860,7 +1890,9 @@
         },
         "rateUnit": "/hr",
         "provenance": {
-          "inherited": "Org default"
+          "inheritedFrom": "Inherited from {source}: {rate}",
+          "replaces": "Replaces {source}: {rate}",
+          "replacesDefault": "Replaces default: {rate}"
         }
       },
       "templates": {
@@ -1957,7 +1989,7 @@
           "active": "Active",
           "declined": "Declined"
         },
-        "latestTimesheet": "Latest timesheet · {date}",
+        "latestTimesheet": "Last timesheet covers · {period}",
         "noTimesheetYet": "No timesheet yet"
       },
       "bundle": {
@@ -2046,7 +2078,8 @@
           "overCapHint": "This timesheet's amount pushes the volunteer at or over their yearly allowance cap",
           "contractMissing": "No contract — create manually",
           "timesheetMuted": "Recorded without a contract",
-          "declined": "Declined"
+          "declined": "Declined",
+          "templateMissingHint": "No template for this allowance type yet — set it up under Accounting → Templates."
         },
         "actions": {
           "create": "Preview and create",
@@ -2096,6 +2129,8 @@
         "sendErrorToast": "Couldn't send the contract to {name}. Please try again.",
         "loadErrorTitle": "Couldn't load profile data",
         "loadError": "{name}'s profile data couldn't be loaded. Please close this and try again.",
+        "noTemplateTitle": "No contract template yet",
+        "noTemplateDescription": "There's no contract template for {pauschale} yet. Create one first, then come back to create the contract.",
         "sendErrorTitle": "Couldn't send the contract",
         "sendError": "The contract couldn't be sent to {name}. Please try again.",
         "noTemplateCta": "Create a contract template",
@@ -2122,6 +2157,8 @@
         "sendErrorToast": "Couldn't send the invoice to {name}. Please try again.",
         "loadErrorTitle": "Couldn't load invoice data",
         "loadError": "{name}'s invoice data couldn't be loaded. Please close this and try again.",
+        "noTemplateTitle": "No invoice template yet",
+        "noTemplateDescription": "The document templates for {pauschale} aren't set up yet. Create them first, then come back to create the invoice.",
         "sendErrorTitle": "Couldn't send the invoice",
         "sendError": "The invoice couldn't be sent to {name}. Please try again.",
         "noTemplateCta": "Create an invoice template",
@@ -2174,6 +2211,7 @@
         "invoice": "Timesheet countersigned for {name}.",
         "invoiceError": "Timesheet could not be countersigned for {name}."
       },
+      "createUnavailable": "This document for {name} can no longer be created from here. Refresh the page and try again.",
       "declineToasts": {
         "contract": "Contract declined for {name}.",
         "contractError": "Contract could not be declined for {name}.",
@@ -2243,7 +2281,17 @@
           "incompleteCount": "{count} fields need a value",
           "notSetYet": "not set yet",
           "sameAsAbove": "same value as set above",
-          "scrollRegionLabel": "Template editor, scrollable"
+          "scrollRegionLabel": "Template editor, scrollable",
+          "placeholderExamples": {
+            "volunteer_first_name": "First name",
+            "volunteer_last_name": "Last name",
+            "volunteer_account_holder": "Account holder"
+          }
+        },
+        "blockHeadings": {
+          "persoenlicheDaten": "Personal data",
+          "stundennachweis": "Stundennachweis",
+          "jahresdeckelHinweis": "Payments already received"
         },
         "editorGroups": {
           "org": "Organization details",
@@ -2321,12 +2369,14 @@
           "generated_date": "Generated date",
           "document_number": "Invoice number",
           "volunteer_iban": "IBAN (Volunteer)",
+          "volunteer_account_holder": "Account holder (Volunteer)",
           "volunteer_bic": "BIC (Volunteer)",
           "volunteer_address": "Address (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",
           "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Contract period",
           "already_received_amount": "Amount already received",
+          "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Yearly cap"
         }
       },

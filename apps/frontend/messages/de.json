@@ -421,6 +421,7 @@
         "awaiting-signature": "Zu unterschreiben",
         "awaiting-countersignature": "Zu gegenzeichnen",
         "signed": "Aktiv",
+        "expired": "Abgelaufen",
         "declined": "Abgelehnt"
       },
       "figures": "{shifts} Einsätze · {hours} Stunden · {amount}",
@@ -462,8 +463,7 @@
         "retry": "Erneut versuchen",
         "errorHelp": "Zu deiner Mitgliedschaft, um Hilfe zu erhalten",
         "signDisabledHint": "Du kannst erst unterschreiben oder ablehnen, wenn du das Dokument in der Vorschau angesehen hast."
-      },
-      "downloadUnavailableNote": "PDF noch nicht verfügbar."
+      }
     }
   },
   "IdVerification": {
@@ -675,11 +675,13 @@
   },
   "OrgUnit": {
     "delete": {
-      "childrenWarning": "Warnung: Diese Einheit hat untergeordnete Einheiten. Das Löschen wirkt sich auf die Hierarchie aus.",
-      "confirmLabel": "Gib LÖSCHEN zur Bestätigung ein",
-      "confirmPlaceholder": "LÖSCHEN",
-      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Die Einheit wird dauerhaft gelöscht.",
-      "title": "\"{name}\" löschen"
+      "description": "Unser Team prüft deine Anfrage und entfernt die Einheit für dich.",
+      "messageLabel": "Nachricht (optional)",
+      "requestButton": "Anfrage senden",
+      "requesting": "Wird gesendet…",
+      "sentDescription": "Wir haben unser Team informiert, dass du \"{name}\" entfernt haben möchtest. Es meldet sich bei dir.",
+      "sentTitle": "Anfrage gesendet",
+      "title": "Löschung von \"{name}\" anfragen"
     },
     "detail": {
       "aboutTitle": "Über",
@@ -697,8 +699,12 @@
       "zipCodePlaceholder": "z. B. 10115",
       "legalRepLabel": "Vertretungsberechtigte Person",
       "legalRepPlaceholder": "z. B. Erika Musterfrau",
+      "contactPersonNameLabel": "Name der Ansprechperson",
+      "contactPersonNamePlaceholder": "z. B. Erika Musterfrau",
+      "contactPersonSectionDescription": "Wird neuen Mitgliedern in der Willkommens-E-Mail und während ihrer ausstehenden Anfrage angezeigt.",
+      "contactPersonSectionTitle": "Ansprechperson für neue Mitglieder",
       "descriptionLabel": "Beschreibung",
-      "descriptionPlaceholder": "Beschreibe diese Organisationseinheit...",
+      "descriptionPlaceholder": "Beschreibe diese Organisationseinheit",
       "emailLabel": "E-Mail",
       "emailPlaceholder": "z. B. kontakt@beispiel.de",
       "logoLabel": "Logo",
@@ -710,7 +716,9 @@
       "typeLabel": "Typ",
       "typePlaceholder": "Typ auswählen",
       "websiteLabel": "Website-URL",
-      "websitePlaceholder": "z. B. https://beispiel.de"
+      "websitePlaceholder": "z. B. https://beispiel.de",
+      "welcomeMessageLabel": "Willkommensnachricht",
+      "welcomeMessagePlaceholder": "Eine kurze Nachricht für neue Mitglieder"
     },
     "page": {
       "subtitle": "Verwalte die Hierarchie der Organisationseinheiten für {orgName}",
@@ -793,6 +801,7 @@
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
         "iban": "Für Aufwandsentschädigungen",
+        "accountHolder": "Name auf dem Bankkonto",
         "lastName": "Wie auf deinem Ausweis",
         "preferredName": "Falls du anders angesprochen werden möchtest",
         "bic": "Bankleitzahl (BIC) deines Kontos",
@@ -1003,6 +1012,7 @@
       "firstName": "Vorname",
       "gender": "Geschlecht",
       "iban": "IBAN",
+      "accountHolder": "Kontoinhaber",
       "bic": "BIC",
       "taxId": "Steuernummer",
       "infoText": "Infotext",
@@ -1042,13 +1052,20 @@
       "nameLabel": "Name",
       "namePlaceholder": "z. B. Onboarding-Formular"
     },
+    "genderOptions": {
+      "female": "Weiblich",
+      "male": "Männlich",
+      "diverse": "Divers",
+      "prefer-not-to-say": "Keine Angabe"
+    },
     "submission": {
       "accepted": "Akzeptiert",
       "answerColumn": "Antwort",
       "fallbackForm": "Formular",
       "fallbackVolunteer": "Freiwillige:r",
       "fieldColumn": "Feld",
-      "noFields": "Für dieses Formular sind keine Felder definiert."
+      "noFields": "Für dieses Formular sind keine Felder definiert.",
+      "restrictedPaymentData": "Du hast keine Berechtigung, Bankdaten einzusehen."
     },
     "submissions": {
       "emailColumn": "E-Mail",
@@ -1115,6 +1132,7 @@
       "next": "Weiter",
       "noBlocks": "Dieses Formular hat keine Blöcke.",
       "noFields": "Dieser Block hat noch keine konfigurierten Felder.",
+      "paymentDataVisibilityHint": "Deine Bankdaten sind nur für Mitwirkende einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
       "selectOption": "Option auswählen",
       "step": "Schritt {current} von {total}",
@@ -1236,12 +1254,16 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
+      "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
+      "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
+      "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutTitle": "Auschecken",
       "checkedInAt": "Eingecheckt: {time}",
       "checkingOut": "Wird ausgecheckt...",
       "checkingOutAt": "Wird ausgecheckt: {time}",
       "generalCheckIn": "Allgemeines Check-in",
+      "moreWindows": "{count, plural, one {noch 1 weitere} other {noch # weitere}}",
       "volunteerCheckedOut": "Freiwillige:r ausgecheckt"
     },
     "compensation": {
@@ -1371,10 +1393,13 @@
       "changeStatusAria": "Status der/des Freiwilligen ändern",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
+      "checkedIn": "Eingecheckt",
+      "checkedOut": "Ausgecheckt",
       "declined": "Abgelehnt",
       "declineSuccess": "Freiwillige:r abgelehnt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
+      "notCheckedIn": "Noch nicht da",
       "pendingApproval": "Genehmigung ausstehend",
       "rejected": "Zurückgewiesen",
       "remindedAtTooltip": "Erinnert am {when}",
@@ -1705,6 +1730,7 @@
     "action": {
       "checkInAria": "Einchecken",
       "checkInShiftAria": "Einchecken",
+      "checkOutAria": "Auschecken",
       "remove": "Entfernen",
       "removeAria": "Entfernen",
       "removeDescription": "Bist du sicher, dass du {name} aus dieser Organisation entfernen möchtest? Das kann nicht rückgängig gemacht werden.",
@@ -1820,6 +1846,10 @@
     "pendingBadge": "Ausstehend",
     "pendingRequestBody": "Ein Admin schaut sich deine Anfrage an. Meistens dauert das ein paar Tage.",
     "pendingRequestContact": "Fragen? {name} kann helfen.",
+    "pendingRequestContactEmailAfter": " kann helfen.",
+    "pendingRequestContactEmailBefore": "Fragen? ",
+    "pendingRequestContactPhoneAfter": " kann helfen.",
+    "pendingRequestContactPhoneBefore": "Fragen? Ruf ",
     "pendingRequestCta": "Deine Anfragen ansehen",
     "pendingRequestTitle": "{orgName} prüft deine Anfrage",
     "spotsLeft": "{n, plural, one {# Platz frei} other {# Plätze frei}}",
@@ -1860,7 +1890,9 @@
         },
         "rateUnit": "/Std.",
         "provenance": {
-          "inherited": "Standard"
+          "inheritedFrom": "Übernommen von {source}: {rate}",
+          "replaces": "Ersetzt {source}: {rate}",
+          "replacesDefault": "Ersetzt Standard: {rate}"
         }
       },
       "templates": {
@@ -1957,7 +1989,7 @@
           "active": "Aktiv",
           "declined": "Abgelehnt"
         },
-        "latestTimesheet": "Letzter Stundennachweis · {date}",
+        "latestTimesheet": "Letzter Stundennachweis umfasst · {period}",
         "noTimesheetYet": "Noch kein Stundennachweis"
       },
       "bundle": {
@@ -2046,7 +2078,8 @@
           "overCapHint": "Der Betrag dieses Stundennachweises bringt die Person an oder über ihr Jahreslimit",
           "contractMissing": "Keine Vereinbarung — manuell anlegen",
           "timesheetMuted": "Erfasst ohne Vereinbarung",
-          "declined": "Abgelehnt"
+          "declined": "Abgelehnt",
+          "templateMissingHint": "Noch keine Vorlage für diese Pauschale — unter Buchhaltung → Vorlagen einrichten."
         },
         "actions": {
           "create": "Überprüfen und erstellen",
@@ -2096,6 +2129,8 @@
         "sendErrorToast": "Die Vereinbarung konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
         "loadErrorTitle": "Profildaten konnten nicht geladen werden",
         "loadError": "Die Profildaten von {name} konnten nicht geladen werden. Bitte schließen und erneut versuchen.",
+        "noTemplateTitle": "Noch keine Vertragsvorlage",
+        "noTemplateDescription": "Für {pauschale} gibt es noch keine Vertragsvorlage. Erstellen Sie zuerst eine und kommen Sie dann zurück, um den Vertrag anzulegen.",
         "sendErrorTitle": "Vertrag konnte nicht gesendet werden",
         "sendError": "Der Vertrag konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
         "noTemplateCta": "Vertragsvorlage erstellen",
@@ -2122,6 +2157,8 @@
         "sendErrorToast": "Der Stundennachweis konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
         "loadErrorTitle": "Stundennachweisdaten konnten nicht geladen werden",
         "loadError": "Die Stundennachweisdaten von {name} konnten nicht geladen werden. Bitte schließen und erneut versuchen.",
+        "noTemplateTitle": "Noch keine Stundennachweis-Vorlage",
+        "noTemplateDescription": "Die Dokumentvorlagen für {pauschale} sind noch nicht eingerichtet. Erstellen Sie sie zuerst und kommen Sie dann zurück, um den Stundennachweis anzulegen.",
         "sendErrorTitle": "Stundennachweis konnte nicht gesendet werden",
         "sendError": "Der Stundennachweis konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
         "noTemplateCta": "Stundennachweis-Vorlage erstellen",
@@ -2174,6 +2211,7 @@
         "invoice": "Stundennachweis für {name} gegengezeichnet.",
         "invoiceError": "Stundennachweis konnte für {name} nicht gegengezeichnet werden."
       },
+      "createUnavailable": "Dieses Dokument für {name} kann hier nicht mehr erstellt werden. Lade die Seite neu und versuche es erneut.",
       "declineToasts": {
         "contract": "Vereinbarung für {name} abgelehnt.",
         "contractError": "Vereinbarung konnte für {name} nicht abgelehnt werden.",
@@ -2243,7 +2281,17 @@
           "incompleteCount": "{count, plural, one {Hier fehlt noch eine Angabe} other {Hier fehlen noch {count} Angaben}}",
           "notSetYet": "noch nicht festgelegt",
           "sameAsAbove": "gleicher Wert wie oben festgelegt",
-          "scrollRegionLabel": "Vorlagen-Editor, scrollbar"
+          "scrollRegionLabel": "Vorlagen-Editor, scrollbar",
+          "placeholderExamples": {
+            "volunteer_first_name": "Vorname",
+            "volunteer_last_name": "Name",
+            "volunteer_account_holder": "Kontoinhaber:in"
+          }
+        },
+        "blockHeadings": {
+          "persoenlicheDaten": "Persönliche Daten",
+          "stundennachweis": "Stundennachweis",
+          "jahresdeckelHinweis": "Bereits erhaltene Zahlungen"
         },
         "editorGroups": {
           "org": "Angaben der Organisation",
@@ -2321,12 +2369,14 @@
           "generated_date": "Erstellungsdatum",
           "document_number": "Rechnungsnummer",
           "volunteer_iban": "IBAN (Ehrenamtliche:r)",
+          "volunteer_account_holder": "Kontoinhaber (Ehrenamtliche:r)",
           "volunteer_bic": "BIC (Ehrenamtliche:r)",
           "volunteer_address": "Adresse (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
           "volunteer_tax_id": "Steueridentifikationsnummer",
           "contract_period": "Vereinbarungszeitraum",
           "already_received_amount": "Bereits erhaltener Betrag",
+          "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
           "yearly_limit_amount": "Jahresdeckel"
         }
       },

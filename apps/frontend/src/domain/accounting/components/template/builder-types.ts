@@ -51,6 +51,7 @@ export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
 
 export const PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
   'volunteer_iban',
+  'volunteer_account_holder',
   'volunteer_bic',
   'volunteer_address',
   'volunteer_dob',
@@ -75,6 +76,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   volunteer_first_name: 'volunteer_profile',
   volunteer_last_name: 'volunteer_profile',
   volunteer_iban: 'volunteer_profile',
+  volunteer_account_holder: 'volunteer_profile',
   volunteer_bic: 'volunteer_profile',
   volunteer_address: 'volunteer_profile',
   volunteer_dob: 'volunteer_profile',

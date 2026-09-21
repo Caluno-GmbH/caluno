@@ -38,9 +38,14 @@ import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   contractStatusToDocStatus,
+  creationTargetFor,
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
+import {
+  documentCreationBlockedFor,
+  type TemplateReadinessByPauschale,
+} from '../lib/setup-status';
 import { AlertIconTooltip } from './alert-icon-tooltip';
 import { DeclineReasonDialog } from './decline-reason-dialog';
 import { getPauschaleKey, TYPE_COLOR } from './doc-type-header';
@@ -350,6 +355,7 @@ interface DocumentSheetProps {
   selectedDate: Date;
   orgUId: string;
   canCreateDocuments: boolean;
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 export function DocumentSheet({
@@ -363,6 +369,7 @@ export function DocumentSheet({
   selectedDate,
   orgUId,
   canCreateDocuments,
+  templateReadiness,
 }: DocumentSheetProps) {
   const t = useTranslations('Accounting.reimbursements.docs');
   const ts = useTranslations('Accounting.reimbursements.docs.sheet');
@@ -455,16 +462,22 @@ export function DocumentSheet({
   };
 
   const actionKey =
-    effectiveDoc.status === 'contract-generate' ||
-    effectiveDoc.status === 'timesheet-generate' ||
-    effectiveDoc.status === 'contract-declined' ||
-    effectiveDoc.status === 'timesheet-declined' ||
-    effectiveDoc.status === 'contract-missing'
+    creationTargetFor(effectiveDoc.status) !== null
       ? 'create'
       : effectiveDoc.status === 'contract-signing-coord' ||
           effectiveDoc.status === 'timesheet-signing-super'
         ? 'countersign'
         : null;
+
+  // A create action whose template is missing is disabled before it is
+  // clicked — the alternative is the raw "no template" dead end.
+  const createBlocked =
+    actionKey === 'create' &&
+    documentCreationBlockedFor(
+      templateReadiness,
+      effectivePauschale,
+      isContract ? 'contract' : 'invoice',
+    );
 
   // Real invoices already have totalHours; for generated rows the backend does
   // not yet exist, so we show nothing.
@@ -797,9 +810,9 @@ export function DocumentSheet({
           {isDeclined ? (
             <Button
               className="w-full"
-              disabled={!canCreateDocuments}
+              disabled={!canCreateDocuments || createBlocked}
               onClick={() => {
-                if (!canCreateDocuments) return;
+                if (!canCreateDocuments || createBlocked) return;
                 onRequestCreate({ doc, vol });
                 onOpenChange(false);
               }}
@@ -814,17 +827,24 @@ export function DocumentSheet({
                   className="text-alert"
                 />
               )}
+              {createBlocked && (
+                <AlertIconTooltip
+                  hint={t('statusLabel.templateMissingHint')}
+                  className="text-alert"
+                />
+              )}
               <Button
                 className="flex-1"
                 variant={actionKey === 'create' ? 'default' : 'outline'}
                 disabled={
                   (actionKey === 'countersign' &&
                     (!canUserSign || isDetailLoading)) ||
-                  (actionKey === 'create' && !canCreateDocuments)
+                  (actionKey === 'create' &&
+                    (!canCreateDocuments || createBlocked))
                 }
                 onClick={() => {
                   if (actionKey === 'create') {
-                    if (!canCreateDocuments) return;
+                    if (!canCreateDocuments || createBlocked) return;
                     onRequestCreate({ doc, vol });
                     onOpenChange(false);
                   } else {

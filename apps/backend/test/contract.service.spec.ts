@@ -238,6 +238,160 @@ describe('ContractService', () => {
         'volunteer-iban-field': 'DE00 0000 0000 0000 0000 00',
       });
     });
+
+    it('replaces the auto-queued draft for the same volunteer, type and year', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const draft = await service.ensureDraftContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2026-06-15T12:00:00.000Z'),
+        },
+        signer.id,
+      );
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      const remaining = await db.query.contracts.findMany({
+        where: {
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+        },
+      });
+      expect(remaining.map((c) => c.id)).toEqual([contract.id]);
+      expect(contract.contractStatus).toBe(
+        ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+      );
+
+      const statusChanges = await db.query.contractStatusChanges.findMany({
+        where: { contractId: contract.id },
+      });
+      expect(statusChanges.map((c) => c.type)).toEqual(
+        expect.arrayContaining([
+          DocumentStatusChange.CREATED,
+          DocumentStatusChange.DRAFT_SUPERSEDED,
+        ]),
+      );
+    });
+
+    it("does not delete another organization's draft for the same volunteer and type", async () => {
+      // Reimbursement types are global (not per-org), so two orgs' templates
+      // can target the same type. A volunteer with a draft in one org must
+      // not have it swept up when a contract is created for them in another.
+      const reimbursementType = await createReimbursementType(db);
+      const buildOrg = async () => {
+        const { organization, type } = await createOrganizationWithType(
+          db,
+          `Contract Org ${crypto.randomUUID()}`,
+        );
+        const root = await createUnit(db, {
+          organizationId: organization.id,
+          typeId: type.id,
+          name: 'root',
+        });
+        const permission = await createPermission(db, {
+          key: `accounting:manage:${crypto.randomUUID()}`,
+        });
+        const role = await createRole(db, { organizationId: organization.id });
+        await grantPermissionToRole(db, {
+          roleId: role.id,
+          permissionId: permission.id,
+        });
+        const signer = await createUser(db);
+        const signerMembership = await addMembership(db, signer.id, root.id);
+        await assignRoleToMembership(db, {
+          membershipId: signerMembership.id,
+          roleId: role.id,
+        });
+        await createTwoStepTemplate(db, {
+          organizationId: organization.id,
+          reimbursementTypeId: reimbursementType.id,
+          kind: DocumentKind.CONTRACT,
+          requiredPermissionId: permission.id,
+          signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
+        });
+        return { organization, signer };
+      };
+
+      const orgA = await buildOrg();
+      const orgB = await buildOrg();
+      const volunteer = await createUser(db);
+
+      const draftInOrgB = await service.ensureDraftContract(
+        orgB.organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2026-06-15T12:00:00.000Z'),
+        },
+        orgB.signer.id,
+      );
+      expect(draftInOrgB?.contractStatus).toBe(ContractStatus.DRAFT);
+
+      await service.createContract(
+        orgA.organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        orgA.signer.id,
+      );
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draftInOrgB?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('keeps a draft queued for a different year', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const draft = await service.ensureDraftContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2027-06-15T12:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draft?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
   });
 
   describe('signContract', () => {
@@ -575,6 +729,43 @@ describe('ContractService', () => {
       const ids = results.map((c) => c.id);
       expect(ids).toContain(inRange.id);
       expect(ids).not.toContain(outOfRange.id);
+    });
+
+    it('excludes auto-queued DRAFT contracts when issuedOnly is set', async () => {
+      const { organization, root, reimbursementType, volunteer, signer } =
+        await setup();
+
+      const issued = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01'),
+          periodEnd: new Date('2026-12-31'),
+        },
+        signer.id,
+      );
+      const draft = await service.createDraftContract(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01'),
+          periodEnd: new Date('2026-12-31'),
+        },
+        signer.id,
+      );
+
+      const all = await service.findContractsForOrganization(organization.id);
+      expect(all.map((c) => c.id).sort()).toEqual([issued.id, draft.id].sort());
+
+      const onlyIssued = await service.findContractsForOrganization(
+        organization.id,
+        { issuedOnly: true },
+      );
+      expect(onlyIssued.map((c) => c.id)).toEqual([issued.id]);
     });
   });
 });

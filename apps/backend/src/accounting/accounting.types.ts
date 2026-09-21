@@ -1,4 +1,5 @@
 import { InferResultType } from '../database/typeutil';
+import type { RateProvenanceKind } from './enums';
 import { ContractStatus, InvoiceStatus, SigneeType } from './enums';
 import type { ReimbursementTypeEntity } from './schemas/reimbursement-type.schema';
 
@@ -9,6 +10,8 @@ export type ContractFilter = {
   periodStart?: Date;
   periodEnd?: Date;
   organizationUnitId?: string;
+  /** Server-set: when true, DRAFT (auto-queued, not yet created) rows are hidden. */
+  issuedOnly?: boolean;
 };
 
 export type InvoiceFilter = {
@@ -18,12 +21,23 @@ export type InvoiceFilter = {
   periodStart?: Date;
   periodEnd?: Date;
   organizationUnitId?: string;
+  /** Server-set: when true, DRAFT (never created) rows are hidden. */
+  issuedOnly?: boolean;
+};
+
+export type RateProvenance = {
+  kind: RateProvenanceKind;
+  sourceName: string | null;
+  replacesRateCents: number | null;
 };
 
 export type EffectiveRate = {
   reimbursementType: ReimbursementTypeEntity;
   hourlyRateCents: number;
   isOverride: boolean;
+  /** The unit whose override won, null for the org-wide row or the default. */
+  organizationUnitId: string | null;
+  provenance: RateProvenance;
 };
 
 /**

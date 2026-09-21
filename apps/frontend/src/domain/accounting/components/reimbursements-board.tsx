@@ -33,6 +33,11 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useReimbursementBoardData } from '../hooks/use-reimbursement-board-data';
+import { creationTargetFor } from '../lib/board-data.utils';
+import {
+  documentCreationBlockedFor,
+  type TemplateReadinessByPauschale,
+} from '../lib/setup-status';
 import { ContractCreationModal } from './contract-creation-modal';
 import { CreateDocumentModal } from './create-document-modal';
 import type { PauschalenType } from './doc-type-header';
@@ -447,6 +452,8 @@ interface ReimbursementsBoardProps {
   createDocOpen: boolean;
   onCreateDocOpenChange: (open: boolean) => void;
   canCreateDocuments: boolean;
+  /** Per-Pauschale template state — blocks a create action whose template is missing. */
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 export function ReimbursementsBoard({
@@ -459,6 +466,7 @@ export function ReimbursementsBoard({
   createDocOpen,
   onCreateDocOpenChange,
   canCreateDocuments,
+  templateReadiness,
 }: ReimbursementsBoardProps) {
   const t = useTranslations('Accounting.reimbursements');
 
@@ -493,20 +501,26 @@ export function ReimbursementsBoard({
 
   function handleRequestCreate(pair: DocVolPair) {
     if (!canCreateDocuments) return;
+    const target = creationTargetFor(pair.doc.status);
+    // Never open a create modal whose template is missing — the admin would
+    // only reach the raw "no template" dead end.
+    const pauschale = pair.doc.pauschale ?? pair.vol.pauschale;
     if (
-      pair.doc.status === 'contract-generate' ||
-      pair.doc.status === 'contract-declined' ||
-      pair.doc.status === 'contract-missing'
+      target &&
+      documentCreationBlockedFor(templateReadiness, pauschale, target)
     ) {
+      return;
+    }
+    if (target === 'contract') {
       setContractCreationTarget(pair);
       return;
     }
-    if (
-      pair.doc.status === 'timesheet-generate' ||
-      pair.doc.status === 'timesheet-declined'
-    ) {
+    if (target === 'invoice') {
       setInvoiceCreationTarget(pair);
+      return;
     }
+    // Never swallow a click: tell the admin why nothing opens.
+    toast.error(t('createUnavailable', { name: pair.vol.name }));
   }
 
   function handleSign(pair: DocVolPair) {
@@ -842,6 +856,7 @@ export function ReimbursementsBoard({
           dateRange={dateRange}
           activeTile={activeTile}
           canCreateDocuments={canCreateDocuments}
+          templateReadiness={templateReadiness}
         />
       )}
 
@@ -858,6 +873,7 @@ export function ReimbursementsBoard({
         selectedDate={selectedDate}
         orgUId={orgUId}
         canCreateDocuments={canCreateDocuments}
+        templateReadiness={templateReadiness}
       />
 
       <ContractCreationModal
@@ -912,6 +928,7 @@ export function ReimbursementsBoard({
         volunteers={volunteers}
         onContractSent={() => {}}
         onInvoiceSent={() => {}}
+        templateReadiness={templateReadiness}
       />
     </div>
   );

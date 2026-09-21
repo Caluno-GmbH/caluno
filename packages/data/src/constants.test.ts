@@ -5,6 +5,7 @@ import {
   isRecurringRrule,
   isSingleOccurrenceRrule,
   parseRruleDays,
+  parseRruleEndDate,
   type RecurrenceDayValue,
   WEEKEND_DAYS,
   WORKING_DAYS,
@@ -208,5 +209,32 @@ describe('isRecurringRrule', () => {
         formatRrulePattern(rrule) !== 'One-time',
       );
     }
+  });
+});
+
+describe('parseRruleEndDate', () => {
+  it('is the End Date for UNITL', () => {
+    expect(
+      parseRruleEndDate(`DTSTART:20260917T111700Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=20260923T111700Z`),
+    ).toEqual(new Date('2026-09-23:11:17:00Z'));
+  });
+
+  it('is undefined for invalid rule', () => {
+    expect(parseRruleEndDate('WAT')).toBeUndefined();
+    expect(parseRruleEndDate('')).toBeUndefined();
+    expect(parseRruleEndDate('1223/24/24')).toBeUndefined();
+  });
+
+  it('is undefined for no UNITL', () => {
+    expect(
+      parseRruleEndDate(`DTSTART:20260915T124600Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU`),
+    ).toBeUndefined();
+
+    expect(
+      parseRruleEndDate(`DTSTART:20260917T111700Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=`),
+    ).toBeUndefined();
   });
 });

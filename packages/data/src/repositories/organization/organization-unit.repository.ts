@@ -40,9 +40,12 @@ export class OrganizationUnitRepository extends BaseRepository {
     return data.updateOrganizationUnit;
   }
 
-  async delete(id: string) {
-    const data = await this.sdk.DeleteOrganizationUnit({ id });
-    return data.deleteOrganizationUnit;
+  async requestDeletion(id: string, message?: string) {
+    const data = await this.sdk.RequestOrganizationUnitDeletion({
+      id,
+      message,
+    });
+    return data.requestOrganizationUnitDeletion;
   }
 
   async isMemberOfOrgUnitOrAncestor(

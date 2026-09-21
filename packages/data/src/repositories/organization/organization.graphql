@@ -49,7 +49,9 @@ query GetOrganizationUnit($id: String!) {
     logoUrl
     websiteUrl
     contactEmail
+    contactPersonName
     phone
+    welcomeMessage
     address
     city
     zipCode
@@ -340,8 +342,8 @@ mutation UpdateOrganizationUnit(
   }
 }
 
-mutation DeleteOrganizationUnit($id: String!) {
-  deleteOrganizationUnit(id: $id) {
+mutation RequestOrganizationUnitDeletion($id: String!, $message: String) {
+  requestOrganizationUnitDeletion(id: $id, message: $message) {
     id
     name
   }

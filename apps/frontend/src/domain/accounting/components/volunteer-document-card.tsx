@@ -2,6 +2,7 @@
 
 import { Badge, Button, cn } from '@repo/ui';
 import {
+  CalendarXIcon,
   CheckIcon,
   Clock3Icon,
   DownloadIcon,
@@ -24,6 +25,7 @@ const STATE_ICON: Record<VolunteerDocumentState, typeof CheckIcon> = {
   'awaiting-signature': SignatureIcon,
   'awaiting-countersignature': Clock3Icon,
   signed: CheckIcon,
+  expired: CalendarXIcon,
   declined: OctagonXIcon,
 };
 
@@ -34,6 +36,7 @@ const STATE_BADGE_VARIANT: Record<
   'awaiting-signature': 'alert',
   'awaiting-countersignature': 'outline',
   signed: 'success',
+  expired: 'outline',
   declined: 'error',
 };
 
@@ -170,11 +173,6 @@ export function VolunteerDocumentCard({
           <DownloadIcon />
           {t('actions.download')}
         </Button>
-        {!document.downloadUrl && (
-          <p className="px-1 text-xs text-muted-foreground">
-            {t('downloadUnavailableNote')}
-          </p>
-        )}
         {awaitingSignature && (
           <>
             <Button

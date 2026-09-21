@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  isMaskedPaymentAnswer,
   resolveFieldAnswer,
   type SubmissionField,
 } from './resolve-field-answer';
@@ -15,6 +16,12 @@ const opts = {
   dash: '—',
   accepted: 'Accepted',
   formatDate: (d: Date) => `FMT:${d.toISOString().slice(0, 10)}`,
+  genderLabels: {
+    female: 'Female',
+    male: 'Male',
+    diverse: 'Diverse',
+    'prefer-not-to-say': 'Prefer not to say',
+  },
 };
 
 describe('resolveFieldAnswer', () => {
@@ -151,6 +158,26 @@ describe('resolveFieldAnswer', () => {
     expect(result).toBe('—');
   });
 
+  it('maps gender system values to localized labels', () => {
+    const result = resolveFieldAnswer(
+      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      [{ fieldId: 'f1', value: 'female' }],
+      {},
+      opts,
+    );
+    expect(result).toBe('Female');
+  });
+
+  it('passes unknown gender values through unchanged', () => {
+    const result = resolveFieldAnswer(
+      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      [{ fieldId: 'f1', value: 'legacy-free-text' }],
+      {},
+      opts,
+    );
+    expect(result).toBe('legacy-free-text');
+  });
+
   it('passes other field types through unchanged', () => {
     const result = resolveFieldAnswer(
       field({ type: 'TEXT' }),
@@ -159,5 +186,39 @@ describe('resolveFieldAnswer', () => {
       opts,
     );
     expect(result).toBe('plain text');
+  });
+
+  it('passes a masked payment value through unchanged so the viewer sees it masked', () => {
+    const result = resolveFieldAnswer(
+      field({ type: 'IBAN', systemKey: 'iban' }),
+      [],
+      { iban: 'XXXX XXXX XXXX XXXX XXXX XX' },
+      opts,
+    );
+    expect(result).toBe('XXXX XXXX XXXX XXXX XXXX XX');
+  });
+});
+
+describe('isMaskedPaymentAnswer', () => {
+  it('detects the IBAN mask', () => {
+    expect(isMaskedPaymentAnswer('XXXX XXXX XXXX XXXX XXXX XX')).toBe(true);
+  });
+
+  it('detects the BIC mask', () => {
+    expect(isMaskedPaymentAnswer('XXXXXXXXXXX')).toBe(true);
+  });
+
+  it('detects the account holder mask', () => {
+    expect(isMaskedPaymentAnswer('XXXXXX XXXXXX')).toBe(true);
+  });
+
+  it('does not flag the real payment data a permitted viewer sees', () => {
+    expect(isMaskedPaymentAnswer('DE89 3704 0044 0532 0130 00')).toBe(false);
+    expect(isMaskedPaymentAnswer('COBADEFFXXX')).toBe(false);
+  });
+
+  it('does not flag near-misses', () => {
+    expect(isMaskedPaymentAnswer('XXXXXXXX')).toBe(false);
+    expect(isMaskedPaymentAnswer('')).toBe(false);
   });
 });

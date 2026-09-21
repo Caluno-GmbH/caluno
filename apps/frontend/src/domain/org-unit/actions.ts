@@ -7,7 +7,10 @@ import type {
 import z from 'zod';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
-import { deleteOrgUnitSchema, serverCreateOrgUnitSchema } from './schemas';
+import {
+  requestOrgUnitDeletionSchema,
+  serverCreateOrgUnitSchema,
+} from './schemas';
 
 export const createOrgUnit = actionClient
   .inputSchema(serverCreateOrgUnitSchema)
@@ -25,7 +28,9 @@ export const createOrgUnit = actionClient
       logoFileId: parsedInput.logoFileId ?? null,
       websiteUrl: parsedInput.websiteUrl || null,
       contactEmail: parsedInput.contactEmail || null,
+      contactPersonName: parsedInput.contactPersonName || null,
       phone: parsedInput.phone || null,
+      welcomeMessage: parsedInput.welcomeMessage || null,
       description: parsedInput.description || null,
       address: parsedInput.address || null,
       city: parsedInput.city || null,
@@ -51,7 +56,9 @@ export const updateOrgUnit = actionClient
       logoFileId: parsedInput.logoFileId,
       websiteUrl: parsedInput.websiteUrl || null,
       contactEmail: parsedInput.contactEmail || null,
+      contactPersonName: parsedInput.contactPersonName || null,
       phone: parsedInput.phone || null,
+      welcomeMessage: parsedInput.welcomeMessage || null,
       description: parsedInput.description || null,
       address: parsedInput.address || null,
       city: parsedInput.city || null,
@@ -62,11 +69,14 @@ export const updateOrgUnit = actionClient
     return await data.organizationUnit.update(id, input);
   });
 
-export const deleteOrgUnit = actionClient
-  .inputSchema(deleteOrgUnitSchema)
+export const requestOrgUnitDeletion = actionClient
+  .inputSchema(requestOrgUnitDeletionSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient({
       orgUId: parsedInput.organizationUnitId,
     });
-    return await data.organizationUnit.delete(parsedInput.id);
+    return await data.organizationUnit.requestDeletion(
+      parsedInput.id,
+      parsedInput.message,
+    );
   });

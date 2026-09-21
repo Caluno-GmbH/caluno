@@ -2,9 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-"""
-The org details documents for this unit render, inherited from parent units where blank.
-"""
 type AccountingOrgProfile {
   address: String
   city: String
@@ -211,6 +208,7 @@ input CreateOrganizationUnitInput {
   address: String
   city: String
   contactEmail: String
+  contactPersonName: String
   description: String
   legalRep: String
   logoFileId: String
@@ -220,6 +218,7 @@ input CreateOrganizationUnitInput {
   phone: String
   typeId: String!
   websiteUrl: String
+  welcomeMessage: String
   zipCode: String
 }
 
@@ -311,6 +310,7 @@ enum DocumentStatusChange {
   COUNTERSIGNED
   CREATED
   DECLINED
+  DRAFT_SUPERSEDED
   EXPIRED
   SIGNED
 }
@@ -336,6 +336,7 @@ type EffectiveRate {
   hourlyRateCents: Int!
   isOverride: Boolean!
   organizationUnitId: ID
+  provenance: RateProvenance!
   reimbursementType: ReimbursementType!
 }
 
@@ -649,7 +650,7 @@ type Membership {
 }
 
 type MembershipRequest {
-  contact: User
+  contact: MembershipRequestContact
   createdAt: DateTime!
   id: ID!
   organizationUnit: OrganizationUnit!
@@ -659,6 +660,12 @@ type MembershipRequest {
   status: MembershipRequestStatus!
   updatedAt: DateTime!
   user: User!
+}
+
+type MembershipRequestContact {
+  email: String
+  name: String
+  phone: String
 }
 
 type MembershipRequestPaginatedResponse {
@@ -705,7 +712,6 @@ type Mutation {
   deleteEvent(id: ID!): Event!
   deleteFormBlock(id: String!): FormBlock!
   deleteFormBlockField(fieldId: String!): FormBlock!
-  deleteOrganizationUnit(id: String!): OrganizationUnit!
   deleteRequirement(id: String!): Requirement!
   deleteRequirementForm(id: String!): RequirementForm!
   deleteRequirementFulfillment(id: String!): RequirementFulfillment!
@@ -726,6 +732,7 @@ type Mutation {
   remindShiftInstanceInvite(instanceId: String!, userId: String!): DateTime!
   removeMembership(id: ID!): Membership!
   removeMembershipRequest(id: ID!): MembershipRequest!
+  requestOrganizationUnitDeletion(id: String!, message: String): OrganizationUnit!
   sendShiftInstanceCallOut(instanceId: String!): ShiftInstanceCallOutResult!
   setEventRequiredForms(eventId: ID!, formIds: [String!]!): [RequiredFormRef!]!
   setManualBaseline(amountCents: Int!, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline!
@@ -812,6 +819,7 @@ type OrganizationUnit {
   children: [OrganizationUnit!]!
   city: String
   contactEmail: String
+  contactPersonName: String
   coverUrl: String
   deletedAt: DateTime
   description: String
@@ -832,6 +840,7 @@ type OrganizationUnit {
   slug: String!
   type: OrganizationUnitType!
   websiteUrl: String
+  welcomeMessage: String
   zipCode: String
 }
 
@@ -1018,6 +1027,18 @@ type Query {
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
+}
+
+type RateProvenance {
+  kind: RateProvenanceKind!
+  replacesRateCents: Int
+  sourceName: String
+}
+
+enum RateProvenanceKind {
+  DEFAULT
+  INHERITED
+  OWN
 }
 
 type ReimbursementRate {
@@ -1330,6 +1351,7 @@ type ShiftInstance {
   requiredForms: [RequiredFormRef!]!
   requiredFormsCount: Int!
   spotsLeft: Int
+  timeEntries: [TimeEntry!]!
   volunteers: [User!]
 }
 
@@ -1501,6 +1523,7 @@ input UpdateOrganizationUnitInput {
   address: String
   city: String
   contactEmail: String
+  contactPersonName: String
   description: String
   idVerificationEnabled: Boolean
   legalRep: String
@@ -1512,6 +1535,7 @@ input UpdateOrganizationUnitInput {
   requiredMembershipRequirementProfileId: String
   typeId: String
   websiteUrl: String
+  welcomeMessage: String
   zipCode: String
 }
 

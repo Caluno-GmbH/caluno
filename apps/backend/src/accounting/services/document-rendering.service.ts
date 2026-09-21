@@ -547,6 +547,9 @@ export class DocumentRenderingService {
       volunteer_iban: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_iban],
       ),
+      volunteer_account_holder: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_account_holder],
+      ),
       volunteer_bic: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
       ),
@@ -715,7 +718,11 @@ export class DocumentRenderingService {
       if (!template) {
         return undefined;
       }
+      // The document's own unit first: a sub-org can use a template it
+      // inherited from a parent while setting a rate of its own, and the
+      // rate on the page must be the one that unit pays.
       const organizationUnitId =
+        document.organizationUnitId ??
         template.organizationUnitId ??
         (await this.resolveOrgRootUnitId(organizationId));
       return await this.reimbursementRateService.getEffectiveRateCents(

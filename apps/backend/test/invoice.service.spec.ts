@@ -329,6 +329,61 @@ describe('InvoiceService', () => {
       expect(ids).toContain(inRoot.id);
       expect(ids).not.toContain(inSibling.id);
     });
+
+    it('excludes DRAFT invoices when issuedOnly is set', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+
+      const issued = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: root.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01'),
+          periodEnd: new Date('2026-07-31'),
+        },
+        supervisor.id,
+      );
+
+      // No public API creates a draft invoice; insert one directly to prove the
+      // defensive filter, mirroring a legacy/other writer.
+      const template = await db.query.documentTemplates.findFirst({
+        where: { organizationId: organization.id, kind: DocumentKind.INVOICE },
+      });
+      if (!template) throw new Error('missing invoice template');
+      const [draft] = await db
+        .insert(schema.invoices)
+        .values({
+          documentTemplateId: template.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          invoiceStatus: InvoiceStatus.DRAFT,
+          periodStart: new Date('2026-08-01'),
+          periodEnd: new Date('2026-08-31'),
+          totalAmountCents: 0,
+          totalHours: 0,
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+        })
+        .returning();
+      if (!draft) throw new Error('failed to insert draft invoice');
+
+      const all = await service.findInvoicesForOrganization(organization.id);
+      expect(all.map((i) => i.id).sort()).toEqual([issued.id, draft.id].sort());
+
+      const onlyIssued = await service.findInvoicesForOrganization(
+        organization.id,
+        { issuedOnly: true },
+      );
+      expect(onlyIssued.map((i) => i.id)).toEqual([issued.id]);
+    });
   });
 
   describe('findEligibleTimeEntries', () => {

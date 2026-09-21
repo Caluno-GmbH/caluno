@@ -10,7 +10,7 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 - `bun run lint` - Lint with Biome
 - `bun run format` - Format with Biome
 - `bun run check-types` - Check for type errors
-- `bun run test` - Jest unit tests (`src/**/*.spec.ts`; pattern: `src/notification/notification.spec.ts`)
+- `bun run test` - Unit tests (`bun test src`; `src/**/*.spec.ts`). Target a single file with `bun test src/notification/notification.spec.ts` — appending a path to `bun run test` runs the whole suite (bun ORs it with the script's `src` filter).
 - `bun test apps/backend/test/` - Bun integration tests; creates an isolated `${POSTGRES_DB}_test_<pid>_<id>` database per run, migrates/seeds, then drops it when the process exits
 - `bun run --cwd apps/backend test:integration` - Same as `bun test test/` from `apps/backend`
 - `bun run db:generate` - Generate database migrations based on schema changes
@@ -21,7 +21,7 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 ### Test runners
 The backend has two test suites:
 
-1. **Unit tests** — Jest, files under `src/**/*.spec.ts`.
+1. **Unit tests** — `bun:test` (Jest-compatible API), files under `src/**/*.spec.ts`.
    - Use for pure business logic, event handlers, and utilities that do not touch the database.
    - Mock external collaborators (services, repositories, event emitters).
    - Run with `bun run test`.
@@ -195,6 +195,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 - DB is `snake_case`; Drizzle auto-converts to `camelCase` (`casing: 'snake_case'`)
 - Soft deletes via `deletedAt` timestamp — no hard deletes on important records
 - Export entity types: `$inferSelect` / `$inferInsert`
+- Migration `snapshot.json` files (`src/database/migrations/*/`) duplicate the full schema once per migration and drown out real search hits — they are excluded from search via the root `.ignore`. Trace schema history through the `migration.sql` diffs; read a specific snapshot by naming its path explicitly.
 
 ### Querying: Relational Query v2 by default
 For fetching entities and their relations, use Relational Query v2:
@@ -219,3 +220,4 @@ Update this section when a decision changes one of these (pipeline Decision rout
 - **Admin event uninvite/re-invite cascades to event-linked shifts.** Setting an event invite to `ADMIN_REJECTED` also sets active shift + shift-instance invites for that user on shifts with the same `eventId` to `ADMIN_REJECTED` (via `ShiftService.adminRejectInvitesForEventUser`). No notification is sent. Admin re-invite (`ADMIN_REJECTED` → `ADMIN_INVITED`) reverses this: `ShiftService.adminReinviteInvitesForEventUser` restores this user's `ADMIN_REJECTED` shift + shift-instance invites on the event's shifts back to `ADMIN_INVITED`; shift invites in other states (e.g. `VOLUNTEER_REJECTED`) are left untouched. Admin event volunteer lists include `ADMIN_REJECTED` so re-invite stays available. The event invite sheet does not preselect `ADMIN_REJECTED` (`preselectedInviteMemberIds`); `inviteMembersToEvent` only resurrects them when explicitly included in `memberIds`. `Event.myJoinStatus` / `requestJoinEvent` map event-invite `ADMIN_REJECTED` to `JoinStatus.REJECTED` so the public Follow CTA stays disabled (membership `REJECTED` remains the org-level path). Admin-only invite targets (`ADMIN_REJECTED`, `ADMIN_INVITED` via `updateEventInviteStatus`) always require `SHIFT_EDIT`, including self. (VOLI-997)
 - **Ending a membership hard-deletes org-unit invites and the membership request.** `leaveMembership` and `removeMembership` share one path: after deleting the membership row, hard-delete that user's membership request for that unit, all `shift_invites` on that unit (past or future — they seed instance expansion), `shift_instance_invites` for instances that have not ended, and `event_invites` for events that have not ended. Past events/instances keep their invites. Sibling/child units, other organizations, and other users are untouched. This is complete removal, not `ADMIN_REJECTED`. Time entries, form submissions, and remaining memberships in other units of the same org are not part of this path yet. (VOLI-1109)
 - **Privacy policy PDFs live in `apps/backend/legal/`** as `datenschutzhinweise-YYYY-MM-DD.pdf`. The current version is the newest matching filename. `GET /legal/privacy-policy.pdf` (`@AllowAnonymous()`) serves that file. Signup sends `privacyPolicyAccepted: true` on the request body only — it is not a Better Auth `additionalField` (those must exist on the Drizzle `users` table, and create hooks merge rather than replace). A non-null `privacyPolicyAcceptedAt` is the stored proof of acceptance; the server also stamps `privacyPolicyVersion`. The client does not send a version. (privacy-policy-backend-source)
+- **Gender is a fixed single-choice system field.** Four option values (`female`/`male`/`diverse`/`prefer-not-to-say`) are defined in code and mirrored frontend (`src/domain/requirement-form/gender-options.ts`) and backend (`GENDER_OPTION_VALUES` in `src/requirement-profile/constants.ts`); labels are localised client-side from `RequirementForm.genderOptions`. Gender field rows carry empty DB options — rendering and validation inject the fixed list by `systemKey`. (VOLI-1267)

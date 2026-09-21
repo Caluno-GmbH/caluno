@@ -1,4 +1,4 @@
-import { PermissionKey, ShiftVisibility } from '@repo/data';
+import { DataError, PermissionKey, ShiftVisibility } from '@repo/data';
 import { Button } from '@repo/ui';
 import { Trash2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -28,29 +28,44 @@ export default async function ShiftInstanceDetailPage({
 }: ShiftInstanceDetailPageProps) {
   const { orgUId, shiftId, instanceId } = await params;
   await requireOrgAccess(orgUId);
-  const [canManage = false] = await checkPermission(
+  const [canManage = false, canCheckIn = false] = await checkPermission(
     orgUId,
     PermissionKey.ShiftEdit,
+    PermissionKey.CheckInManage,
   );
 
   const t = await getTranslations('Shift');
   const data = await getDataClient({ orgUId });
-  const instance = await data.shift.findInstance(instanceId);
-  const isInstanceInThePast =
-    new Date(instance?.actualEndsAt ?? 0) < new Date();
-  const isOpenShift =
-    instance?.master.visibility === ShiftVisibility.AllMembers;
-  const isRecurring = Boolean(instance?.master.rrule);
 
-  if (!instance || instance.isCancelled) {
+  let instance: Awaited<ReturnType<typeof data.shift.findInstance>>;
+  try {
+    instance = await data.shift.findInstance(instanceId);
+  } catch (error) {
+    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+      notFound();
+    }
+    throw error;
+  }
+
+  if (instance.isCancelled) {
     notFound();
   }
+
+  const isInstanceInThePast = new Date(instance.actualEndsAt ?? 0) < new Date();
+  const isOpenShift = instance.master.visibility === ShiftVisibility.AllMembers;
+  const isRecurring = Boolean(instance.master.rrule);
 
   const title = instance.overrideTitle ?? instance.master.title;
   const imageUrl = instance.master.imageUrl;
   const canAddImage = canManage && !isInstanceInThePast;
+
   const callOuts = canManage
-    ? await data.shift.findCallOutHistory(instanceId)
+    ? await data.shift.findCallOutHistory(instanceId).catch((error) => {
+        if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+          notFound();
+        }
+        throw error;
+      })
     : null;
 
   return (
@@ -152,12 +167,14 @@ export default async function ShiftInstanceDetailPage({
         shiftId={shiftId}
         instanceId={instanceId}
         invites={instance.invites ?? []}
+        timeEntries={instance.timeEntries ?? []}
         spotsLeft={instance.spotsLeft}
         filledCount={instance.filledCount}
         maxVolunteers={
           instance.overrideMaxVolunteers ?? instance.master.maxVolunteers
         }
         canManage={canManage}
+        canCheckIn={canCheckIn}
         isInstanceInThePast={isInstanceInThePast}
       />
     </div>

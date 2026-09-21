@@ -86,7 +86,12 @@
     "checkInQrAlt": "Your check-in QR code",
     "checkInQrCaption": "Show this code at check-in, or have it scanned by a supervisor.",
     "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Print it out or keep it on your phone — you can show it at check-in any time, even without your Caluno login.",
+    "contactEmailLabel": "Email",
+    "contactHeading": "Your contact person",
+    "contactNameLabel": "Name",
+    "contactPhoneLabel": "Phone",
     "footerNote": "You're receiving this because your membership request for {organizationName} was approved on {brandName}.",
+    "welcomeMessageHeading": "A message from the team",
     "greetingAfter": "has been approved. You can now browse shifts and sign up when something works for you.",
     "greetingBefore": "Hi {firstName}, your membership request for",
     "heading": "Welcome to the team",
@@ -156,6 +161,18 @@
     "step3Detail": "share your invite link and watch the schedule fill up.",
     "step3Title": "Bring in volunteers",
     "subject": "Your organization \"{organizationName}\" is ready"
+  },
+  "organizationUnitDeletionRequest": {
+    "buttonLabel": "View unit",
+    "detailMessage": "Message",
+    "detailOrganization": "Organization",
+    "detailRequestedAt": "Requested at",
+    "detailRequestedBy": "Requested by",
+    "detailUnit": "Unit",
+    "heading": "Org unit deletion requested",
+    "intro": "{requesterName} requested that \"{organizationUnitName}\" be deleted.",
+    "previewText": "{requesterName} requested deletion of {organizationUnitName}.",
+    "subject": "Deletion requested: {organizationUnitName}"
   },
   "organizationUnitInvited": {
     "buttonLabel": "Join {organizationUnitName}",

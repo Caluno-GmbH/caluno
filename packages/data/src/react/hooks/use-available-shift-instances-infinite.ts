@@ -54,7 +54,7 @@ export function useAvailableShiftInstancesInfinite(
       lastPage.pagination.hasMore
         ? lastPage.pagination.offset + lastPage.pagination.limit
         : undefined,
-    staleTime: 30 * 1000,
+    staleTime: 0,
     ...queryOptions,
   });
 }
