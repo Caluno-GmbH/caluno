@@ -3259,14 +3259,14 @@ export type RemoveMembershipMutation = { __typename?: 'Mutation', removeMembersh
 export type MyMembershipsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyMembershipsQuery = { __typename?: 'Query', myMemberships: Array<{ __typename?: 'Membership', id: string, createdAt: string, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, logoUrl?: string | null, type: { __typename?: 'OrganizationUnitType', icon: string }, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', name: string } }, roles: Array<{ __typename?: 'Role', id: string, name: string }> }> };
+export type MyMembershipsQuery = { __typename?: 'Query', myMemberships: Array<{ __typename?: 'Membership', id: string, createdAt: string, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, logoUrl?: string | null, type: { __typename?: 'OrganizationUnitType', icon: string }, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', name: string } }, roles: Array<{ __typename?: 'Role', id: string, name: string, isInternal: boolean }> }> };
 
 export type MyMembershipQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type MyMembershipQuery = { __typename?: 'Query', myMembership?: { __typename?: 'Membership', id: string, createdAt: string, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, logoUrl?: string | null, type: { __typename?: 'OrganizationUnitType', icon: string }, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', name: string } }, roles: Array<{ __typename?: 'Role', id: string, name: string }> } | null };
+export type MyMembershipQuery = { __typename?: 'Query', myMembership?: { __typename?: 'Membership', id: string, createdAt: string, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, logoUrl?: string | null, type: { __typename?: 'OrganizationUnitType', icon: string }, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', name: string } }, roles: Array<{ __typename?: 'Role', id: string, name: string, isInternal: boolean }> } | null };
 
 export type SetMembershipIdVerifiedMutationVariables = Exact<{
   membershipId: Scalars['ID']['input'];
@@ -5366,6 +5366,7 @@ export const MyMembershipsDocument = gql`
     roles {
       id
       name
+      isInternal
     }
   }
 }
@@ -5392,6 +5393,7 @@ export const MyMembershipDocument = gql`
     roles {
       id
       name
+      isInternal
     }
   }
 }
