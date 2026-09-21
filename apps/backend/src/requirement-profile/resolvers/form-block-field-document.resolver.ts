@@ -16,24 +16,20 @@ export class FormBlockFieldDocumentResolver {
     @Parent() field: FormBlockField,
   ): Promise<FormBlockFieldDocument[]> {
     const fileIds = field.documentFileIds ?? [];
-    const documents = await Promise.all(
-      fileIds.map(async (fileId) => {
-        try {
-          const [file, downloadUrl] = await Promise.all([
-            this.fileService.findById(fileId),
-            this.fileService.resolvePublicUrlForUploadedFile(fileId),
-          ]);
-          if (!file) return null;
-          return {
-            fileId,
-            filename: file.filename,
-            downloadUrl,
-          } satisfies FormBlockFieldDocument;
-        } catch {
-          return null;
-        }
-      }),
-    );
+    const files = await this.fileService.findByIds(fileIds);
+    const documents = files.map((file) => {
+      try {
+        const downloadUrl = this.fileService.resolvePublicUrlForFile(file);
+        return {
+          fileId: file.id,
+          filename: file.filename,
+          downloadUrl,
+        } satisfies FormBlockFieldDocument;
+      } catch {
+        return null;
+      }
+    });
+
     return documents.filter((d) => d !== null);
   }
 }

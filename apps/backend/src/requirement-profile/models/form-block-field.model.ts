@@ -58,6 +58,7 @@ export class FormBlockField {
   @Field(() => [SelectOption], { nullable: true })
   options?: SelectOption[] | null;
 
+  // filled from the entity during mapping. But not exposed to clients. Converted to FormBlockFieldDocument in resolver
   documentFileIds?: string[] | null;
 
   @Field(() => String, { nullable: true })
