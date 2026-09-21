@@ -1167,7 +1167,10 @@
       "permissionsLabel": "Permissions"
     },
     "noRole": "No role",
-    "owner": "Owner",
+    "internal": {
+      "owner": "Owner",
+      "member": "Member"
+    },
     "page": {
       "createButton": "Create role",
       "empty": "No roles yet. Create your first role to get started.",

@@ -86,6 +86,7 @@ query MyMemberships {
     roles {
       id
       name
+      isInternal
     }
   }
 }
@@ -111,6 +112,7 @@ query MyMembership($id: ID!) {
     roles {
       id
       name
+      isInternal
     }
   }
 }
