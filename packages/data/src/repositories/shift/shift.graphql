@@ -124,6 +124,12 @@ mutation UpdateShift($id: String!, $input: UpdateShiftInput!) {
   }
 }
 
+mutation DuplicateShift($id: String!, $input: DuplicateShiftInput!) {
+  duplicateShift(id: $id, input: $input) {
+    id
+  }
+}
+
 mutation DeleteShift($id: String!) {
   deleteShift(id: $id) {
     id
