@@ -1,6 +1,7 @@
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@repo/ui';
 import { ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { internalRoleKey } from '@/domain/role/lib/role-label';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import type { MembershipEntry } from '../types';
@@ -14,6 +15,7 @@ type Props = { entry: MembershipEntry };
 
 export function MembershipCard({ entry }: Props) {
   const t = useTranslations('MembershipRequest');
+  const tRole = useTranslations('Role');
   const { formatDate } = useFormatting();
   const { organizationName, orgUnit, date } = entry;
 
@@ -42,7 +44,12 @@ export function MembershipCard({ entry }: Props) {
       <CardContent>
         {entry.state === 'accepted' && entry.roles.length > 0 && (
           <p className="text-muted-foreground text-sm">
-            {entry.roles.join(', ')}
+            {entry.roles
+              .map((role) => {
+                const key = internalRoleKey(role);
+                return key ? tRole(key) : role.name;
+              })
+              .join(', ')}
           </p>
         )}
 

@@ -66,6 +66,8 @@ interface PendingRequest {
   id: string;
   organizationName: string;
   contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
 }
 
 interface VolunteerHomeContentProps {
@@ -510,7 +512,7 @@ export function VolunteerHomeContent({
                   hasNext={hasNextDay}
                   onPrev={() => goToDay(-1)}
                   onNext={() => goToDay(1)}
-                  shiftCountLabel={(n) => t('yourShiftsCount', { n })}
+                  shiftCountLabel={(n) => t('dayStripCount', { n })}
                   className="mb-3"
                 />
               )}
@@ -592,6 +594,8 @@ export function VolunteerHomeContent({
         <PendingMembershipBanner
           orgName={pendingRequest.organizationName}
           contactName={pendingRequest.contactName}
+          contactEmail={pendingRequest.contactEmail}
+          contactPhone={pendingRequest.contactPhone}
           requestsHref="/profile"
         />
       )}

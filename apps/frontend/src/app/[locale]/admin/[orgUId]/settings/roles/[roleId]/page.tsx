@@ -3,6 +3,7 @@ import { Lock, Shield, ShieldCheck, Unlock } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/role/components/action-bar';
+import { internalRoleKey } from '@/domain/role/lib/role-label';
 import { getDataClient } from '@/lib/data-client';
 
 interface RoleDetailsPageProps {
@@ -35,11 +36,15 @@ export default async function RoleDetailsPage({
     }))
     .filter((group) => group.items.length > 0);
 
+  const roleNameKey = internalRoleKey(role);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between">
         <div>
-          <h1 className="page-title mb-1">{role.name}</h1>
+          <h1 className="page-title mb-1">
+            {roleNameKey ? t(roleNameKey) : role.name}
+          </h1>
           <p className="text-muted-foreground">{role.description}</p>
         </div>
         <ActionBar

@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "bun run db:up && turbo run dev",
+    "mdev": "bun run --cwd apps/backend db:migrate && turbo run dev",
     "lint": "turbo run format-and-lint",
     "format": "turbo run format-and-lint:fix",
     "check-types": "turbo run check-types",

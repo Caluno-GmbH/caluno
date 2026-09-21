@@ -1,4 +1,8 @@
-import { LAST_ORG_COOKIE, type MyOrganizationUnit } from '@repo/data';
+import {
+  isUnauthenticatedDataError,
+  LAST_ORG_COOKIE,
+  type MyOrganizationUnit,
+} from '@repo/data';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getDataClient } from './data-client';
@@ -61,7 +65,16 @@ export async function getMyCheckInOrgUnits(): Promise<OrgContextData[]> {
 }
 
 export async function isAnAdminstrator() {
-  return (await getMyAdministrableOrgUnits()).length > 0;
+  try {
+    const data = await getDataClient({ redirectOnUnauthenticated: false });
+    const units = await data.organization.findMyAdminstrableOrganizationUnits();
+    return normalizeUnits(units).length > 0;
+  } catch (error) {
+    if (isUnauthenticatedDataError(error)) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 export async function resolveOrgFromId(

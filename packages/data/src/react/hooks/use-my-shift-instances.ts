@@ -29,7 +29,7 @@ export function useMyShiftInstances(
   return useQuery({
     queryKey: ['myShiftInstances', options],
     queryFn: () => repository.findMyShiftInstances(options),
-    staleTime: 30 * 1000,
+    staleTime: 0,
     ...queryOptions,
   });
 }
