@@ -306,9 +306,9 @@ export function VolunteerHomeContent({
 
   const yourShiftsSection = (
     <section>
-      <div className="mb-3 flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="hyphens-auto break-words text-2xl font-semibold text-foreground">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
             {t('yourShiftsHeading')}
           </h2>
           <p className="text-base text-muted-foreground">
@@ -398,9 +398,9 @@ export function VolunteerHomeContent({
 
   const yourEventsSection = (
     <section>
-      <div className="mb-3 flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <h2 className="hyphens-auto break-words text-2xl font-semibold text-foreground">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
             {t('yourEventsHeading')}
           </h2>
           <p className="text-base text-muted-foreground">
@@ -470,9 +470,9 @@ export function VolunteerHomeContent({
         </div>
       ) : (
         <>
-          <div className="mb-3 flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3">
-            <div className="flex min-w-0 flex-col gap-1">
-              <h2 className="hyphens-auto break-words text-2xl font-semibold text-foreground">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
                 {t('discoverHeading')}
               </h2>
               <p className="text-base text-muted-foreground">
