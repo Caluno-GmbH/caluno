@@ -49,7 +49,9 @@ query GetOrganizationUnit($id: String!) {
     logoUrl
     websiteUrl
     contactEmail
+    contactPersonName
     phone
+    welcomeMessage
     address
     city
     zipCode

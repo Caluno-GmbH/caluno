@@ -87,7 +87,7 @@ export function EventVolunteersSection({
     state: toInviteDisplayState(invite.status),
     statusLabel: statusLabel(invite.status),
     actions: manageActions(invite.status, canEdit),
-    iconActions: ['View', 'Check in'],
+    iconActions: ['View'],
   }));
 
   const counts = countInviteDisplayStates(invites.map((i) => i.status));
@@ -117,13 +117,6 @@ export function EventVolunteersSection({
 
     if (action === 'View') {
       openProfile(invite);
-      return;
-    }
-
-    if (action === 'Check in') {
-      router.push(
-        `/check-in/${invite.user.checkInId}/check-in?orgUId=${orgUId}`,
-      );
       return;
     }
 
@@ -177,7 +170,6 @@ export function EventVolunteersSection({
       }
       actionLabels={{
         View: tVolunteer('viewProfileAria'),
-        'Check in': tVolunteer('checkInAria'),
         Invite: t('actionInvite'),
         Uninvite: t('actionUninvite'),
       }}

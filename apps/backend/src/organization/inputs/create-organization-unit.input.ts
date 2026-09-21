@@ -24,7 +24,13 @@ export class CreateOrganizationUnitInput {
   contactEmail?: string | null;
 
   @Field(() => String, { nullable: true })
+  contactPersonName?: string | null;
+
+  @Field(() => String, { nullable: true })
   phone?: string | null;
+
+  @Field(() => String, { nullable: true })
+  welcomeMessage?: string | null;
 
   @Field(() => String, { nullable: true })
   description?: string | null;

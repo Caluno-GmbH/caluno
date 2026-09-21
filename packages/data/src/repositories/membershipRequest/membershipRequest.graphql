@@ -124,8 +124,9 @@ query GetMyMembershipRequests($limit: Int!, $offset: Int!) {
         email
       }
       contact {
-        id
         name
+        email
+        phone
       }
       status
       reviewedAt
