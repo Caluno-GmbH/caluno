@@ -259,18 +259,14 @@ describe('ShiftCallOutService.sendCallOut', () => {
       'actor-1',
     );
 
-    expect(result.recipientCount).toBe(4);
+    expect(result.recipientCount).toBe(2);
     expect(sentEmails.map((email) => email.to).sort()).toEqual([
       'vol-admin-invited@example.com',
       'vol-no-invite@example.com',
-      'vol-volunteer-cancelled@example.com',
-      'vol-volunteer-rejected@example.com',
     ]);
     expect(insertedRows.map((row) => row.recipientId).sort()).toEqual([
       'vol-admin-invited',
       'vol-no-invite',
-      'vol-volunteer-cancelled',
-      'vol-volunteer-rejected',
     ]);
   });
 
@@ -337,7 +333,7 @@ describe('ShiftCallOutService.sendCallOut', () => {
     const { service, insertedRows } = setup({
       members: [{ id: 'vol-1' }],
       instanceInvites: [
-        { userId: 'vol-1', status: ShiftInviteStatus.VOLUNTEER_CANCELLED },
+        { userId: 'vol-1', status: ShiftInviteStatus.ADMIN_INVITED },
       ],
       seriesInvites: [{ userId: 'vol-1', status: ShiftInviteStatus.JOINED }],
     });
