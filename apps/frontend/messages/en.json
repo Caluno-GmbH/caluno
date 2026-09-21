@@ -1866,6 +1866,7 @@
     "yourEventsHeading": "Your events",
     "yourEventsThisWeek": "{n, plural, one {# event this week} other {# events this week}}",
     "yourShiftsCount": "{n, plural, one {# assignment} other {# assignments}}",
+    "dayStripCount": "{n, plural, one {# option} other {# options}}",
     "yourShiftsEmpty": "You have no upcoming assignments.",
     "yourShiftsHeading": "Your assignments",
     "yourShiftsSeeAll": "See all",

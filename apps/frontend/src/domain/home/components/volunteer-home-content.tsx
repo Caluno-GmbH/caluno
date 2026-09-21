@@ -511,7 +511,7 @@ export function VolunteerHomeContent({
                   hasNext={hasNextDay}
                   onPrev={() => goToDay(-1)}
                   onNext={() => goToDay(1)}
-                  shiftCountLabel={(n) => t('yourShiftsCount', { n })}
+                  shiftCountLabel={(n) => t('dayStripCount', { n })}
                   className="mb-3"
                 />
               )}

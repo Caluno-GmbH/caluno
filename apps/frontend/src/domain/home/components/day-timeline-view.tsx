@@ -195,7 +195,7 @@ export function DayTimelineView<T>({
                   onSelect={handleSelectDay}
                   todayLabel={t('todayButton')}
                   goToTodayLabel={t('goToToday')}
-                  shiftCountLabel={(n) => t('yourShiftsCount', { n })}
+                  shiftCountLabel={(n) => t('dayStripCount', { n })}
                   isScrolling={isScrolling}
                   sparse={!!sparseDays}
                   sparseDays={sparseDays}
