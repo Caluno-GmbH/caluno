@@ -58,11 +58,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           </div>
         </section>
         <section>
-          <div className="mb-4 flex items-start justify-between gap-2">
-            <h1 className="min-w-0 flex-1 hyphens-auto break-words text-xl font-bold">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+            <h1 className="hyphens-auto break-words text-xl font-bold">
               {tProfile('personalInformation')}
             </h1>
-            <Button asChild variant="outline" size="sm">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="ml-auto shrink-0"
+            >
               <Link href="/profile/edit">
                 <Pencil className="size-4" />
                 {tCommon('edit')}

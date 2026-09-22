@@ -40,11 +40,16 @@ export const AccountSection = async ({
 
   return (
     <section>
-      <div className="flex items-start justify-between gap-2">
-        <h1 className="min-w-0 flex-1 hyphens-auto break-words text-xl font-bold">
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+        <h1 className="hyphens-auto break-words text-xl font-bold">
           {tProfile('accountSettings')}
         </h1>
-        <Button asChild variant="outline" size="sm">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="ml-auto shrink-0"
+        >
           <Link href="/profile/account-settings">
             <Pencil className="size-4" />
             {tCommon('edit')}
