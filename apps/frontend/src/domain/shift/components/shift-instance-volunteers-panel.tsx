@@ -36,6 +36,7 @@ import {
   canRemindInvitee,
   countInviteDisplayStates,
   formatInviteStatusSummary,
+  groupInvitesByRosterGroup,
   toInviteDisplayState,
 } from '../invite-status-display';
 import { shiftInvitePath } from '../routes';
@@ -211,6 +212,39 @@ export function ShiftInstanceVolunteersPanel({
     };
   });
 
+  const volunteersById = new Map(
+    volunteers.map((volunteer) => [volunteer.id, volunteer]),
+  );
+
+  const grouped = groupInvitesByRosterGroup(invites);
+
+  const groups = [
+    {
+      key: 'coming',
+      label: t('inviteStatus.groupComing'),
+      volunteers: grouped.coming,
+    },
+    {
+      key: 'pending',
+      label: t('inviteStatus.groupPending'),
+      volunteers: grouped.pending,
+    },
+    {
+      key: 'notComing',
+      label: t('inviteStatus.groupNotComing'),
+      volunteers: grouped.notComing,
+      defaultOpen: false,
+    },
+  ].map((group) => ({
+    ...group,
+    volunteers: group.volunteers
+      .map((invite) => volunteersById.get(invite.user.id))
+      .filter(
+        (volunteer): volunteer is (typeof volunteers)[number] =>
+          volunteer != null,
+      ),
+  }));
+
   const counts = countInviteDisplayStates(invites.map((i) => i.status));
   const summary = formatInviteStatusSummary(counts, spotsLeft, {
     invited: t('inviteStatus.summaryInvited'),
@@ -351,6 +385,7 @@ export function ShiftInstanceVolunteersPanel({
   return (
     <VolunteeringVolunteerList
       volunteers={volunteers}
+      groups={groups}
       phase="during"
       title={t('inviteStatus.volunteersTitle')}
       summary={summary}
