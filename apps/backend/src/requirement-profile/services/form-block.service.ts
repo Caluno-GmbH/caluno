@@ -269,15 +269,15 @@ export class FormBlockService {
     return deleted;
   }
 
-  private async validateDocumentFile(
-    fileId: string | null | undefined,
+  private async validateDocumentFiles(
+    fileIds: string[] | null | undefined,
   ): Promise<void> {
-    if (!fileId) return;
-
-    await this.fileService.assertUploadedFileForPurpose(
-      fileId,
-      FilePurpose.FORM_DOCUMENT,
-    );
+    for (const fileId of fileIds ?? []) {
+      await this.fileService.assertUploadedFileForPurpose(
+        fileId,
+        FilePurpose.FORM_DOCUMENT,
+      );
+    }
   }
 
   async createField(
@@ -294,7 +294,7 @@ export class FormBlockService {
     assertValidFieldOptions(input.type, input.options);
     assertValidSystemKeyBinding(input.systemKey, input.type, input.options);
     assertValidRequiredFlag(input.type, input.required);
-    await this.validateDocumentFile(input.documentFileId);
+    await this.validateDocumentFiles(input.documentFileIds);
 
     const block = await this.findById(blockId);
     if (!block) {
@@ -346,7 +346,7 @@ export class FormBlockService {
         `Invalid systemKey: "${input.systemKey}". Must be one of: ${[...SYSTEM_PROFILE_KEYS].join(', ')}`,
       );
     }
-    await this.validateDocumentFile(input.documentFileId);
+    await this.validateDocumentFiles(input.documentFileIds);
 
     const field = await this.db.query.formBlockFields.findFirst({
       where: { id: fieldId },
@@ -459,7 +459,7 @@ export class FormBlockService {
       lockType: input.lockType ?? false,
       systemKey: input.systemKey,
       options: input.options,
-      documentFileId: input.documentFileId,
+      documentFileIds: input.documentFileIds,
       documentLabel: input.documentLabel,
       minAge: input.minAge,
       fieldOrder: input.fieldOrder ?? order,
