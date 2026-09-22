@@ -1402,7 +1402,7 @@
       "checkedIn": "Eingecheckt",
       "checkedOut": "Ausgecheckt",
       "declined": "Abgelehnt",
-      "declineSuccess": "Freiwillige:r abgelehnt",
+      "removeSuccess": "Freiwillige:r von dieser Schicht entfernt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
       "notCheckedIn": "Noch nicht da",

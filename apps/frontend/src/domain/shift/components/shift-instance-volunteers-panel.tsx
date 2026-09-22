@@ -255,7 +255,7 @@ export function ShiftInstanceVolunteersPanel({
       } else if (target === ShiftInviteStatus.AdminInvited) {
         toast.success(t('inviteStatus.inviteSuccess'));
       } else if (target === ShiftInviteStatus.AdminRejected) {
-        toast.success(t('inviteStatus.declineSuccess'));
+        toast.success(t('inviteStatus.removeSuccess'));
       }
       router.refresh();
     });

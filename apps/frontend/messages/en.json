@@ -1402,7 +1402,7 @@
       "checkedIn": "Checked in",
       "checkedOut": "Checked out",
       "declined": "Declined",
-      "declineSuccess": "Volunteer declined",
+      "removeSuccess": "Volunteer removed from this shift",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
       "notCheckedIn": "Not here yet",
