@@ -322,6 +322,20 @@ export interface OrgOverrideGroup {
   fieldIds: string[];
   /** The org-profile source it falls back to when the toggle is off. */
   source: DataSourceKey;
+  /**
+   * Set when one field in the panel drives two slots in the document.
+   *
+   * The postal address is a single thing to a coordinator, but the letterhead wants
+   * street and town on separate lines while the parties sentence wants them inline
+   * with a comma. One value cannot satisfy both — the line text owns the separator —
+   * so the document keeps two slots and the coordinator's text is split on its first
+   * newline. One card, one toggle, correct formatting in both positions.
+   */
+  split?: {
+    streetIds: string[];
+    townIds: string[];
+    townSource: DataSourceKey;
+  };
 }
 
 export const ORG_OVERRIDE_GROUPS = {
@@ -330,8 +344,18 @@ export const ORG_OVERRIDE_GROUPS = {
     source: 'org_name',
   },
   orgAddress: {
-    fieldIds: ['header-org-address', 'parties-org-address'],
+    fieldIds: [
+      'header-org-address',
+      'parties-org-address',
+      'header-org-town',
+      'parties-org-town',
+    ],
     source: 'org_address',
+    split: {
+      streetIds: ['header-org-address', 'parties-org-address'],
+      townIds: ['header-org-town', 'parties-org-town'],
+      townSource: 'org_zip',
+    },
   },
   // Deliberately separate from orgName: where the volunteer serves can differ
   // from who signs the contract.
@@ -417,9 +441,26 @@ export function setOrgFieldOverride(
 ): TemplateDocument {
   const group = orgOverrideGroupFor(fieldId);
   if (!group) return doc;
+  const { street, town } = splitAddressValue(prefill);
 
   return mapAllFields(doc, (field) => {
     if (!group.fieldIds.includes(field.id)) return field;
+
+    if (group.split) {
+      const isTown = group.split.townIds.includes(field.id);
+      return {
+        ...field,
+        // A multi-line address needs a textarea; bound fields carry no control.
+        control: overridden ? ('textarea' as const) : undefined,
+        value: overridden
+          ? { kind: 'manual-template' as const, value: isTown ? town : street }
+          : {
+              kind: 'bound' as const,
+              source: isTown ? group.split.townSource : group.source,
+            },
+      };
+    }
+
     return {
       ...field,
       value: overridden
@@ -427,4 +468,29 @@ export function setOrgFieldOverride(
         : { kind: 'bound' as const, source: group.source },
     };
   });
+}
+
+/**
+ * Splits a coordinator-typed address into the document's two slots on its first
+ * newline: everything before it is the street line, everything after is the town.
+ * A single-line entry leaves the town empty rather than guessing where to break.
+ */
+export function splitAddressValue(value: string): {
+  street: string;
+  town: string;
+} {
+  const newline = value.indexOf('\n');
+  if (newline === -1) return { street: value, town: '' };
+  return {
+    street: value.slice(0, newline),
+    town: value
+      .slice(newline + 1)
+      .replace(/\n/g, ' ')
+      .trim(),
+  };
+}
+
+/** Rejoins the two document slots into the single value the panel edits. */
+export function joinAddressValue(street: string, town: string): string {
+  return [street, town].filter(Boolean).join('\n');
 }

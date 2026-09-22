@@ -32,13 +32,16 @@ import {
   FIELD_ORIGIN,
   type FieldOrigin,
   getFirstOccurrenceLineByFieldId,
+  getManualFieldValue,
   type InvoiceNumberFormat,
   isOrgFieldOverridden,
+  joinAddressValue,
   ORG_OVERRIDE_GROUPS,
   ORG_SECTION_MANUAL_FIELD_IDS,
   orgOverrideGroupFor,
   orgOverrideGroupKeyFor,
   setOrgFieldOverride,
+  splitAddressValue,
   type TableFirstColumnSource,
   type TemplateBlock,
   type TemplateDocument,
@@ -88,6 +91,8 @@ export interface HoursEditorEntry {
 
 export interface ContractEditorGroups {
   org: EditorFieldEntry[];
+  /** The signature place, rendered at the foot of the panel where it appears in the document. */
+  signaturePlace: EditorFieldEntry | undefined;
   volunteer: EditorFieldEntry[];
   engagement: EditorFieldEntry[];
   hours: HoursEditorEntry | undefined;
@@ -104,6 +109,7 @@ export function collectContractEditorGroups(
   const seenManualIds = new Set<string>();
   const seenOverrideGroups = new Set<string>();
   let extraBlock: TemplateTextBlock | undefined;
+  let signaturePlace: EditorFieldEntry | undefined;
   let hours: HoursEditorEntry | undefined;
   let hoursUnitField: TemplateField | undefined;
 
@@ -175,11 +181,15 @@ export function collectContractEditorGroups(
       const key = orgOverrideGroupKeyFor(field.id);
       if (!key || seenOverrideGroups.has(key)) continue;
       seenOverrideGroups.add(key);
-      org.push({ field, line: doc.footer.closingLine, blockId: 'footer' });
+      signaturePlace = {
+        field,
+        line: doc.footer.closingLine,
+        blockId: 'footer',
+      };
     }
   }
 
-  return { org, volunteer, engagement, hours, extraBlock };
+  return { org, volunteer, engagement, hours, extraBlock, signaturePlace };
 }
 
 const INVOICE_NUMBER_FORMATS: InvoiceNumberFormat[] = [
@@ -305,9 +315,13 @@ function sourceLabelKey(origin: FieldOrigin | undefined): string {
  * levels of editor props. A real implementation would decide whether this is the
  * right seam; for a throwaway it keeps the diff honest and small.
  */
-const OrgOverrideContext = createContext<
-  ((fieldId: string, overridden: boolean, prefill: string) => void) | null
->(null);
+interface OrgOverrideApi {
+  toggle: (fieldId: string, overridden: boolean, prefill: string) => void;
+  /** The value a split group edits as one field, rejoined from its document slots. */
+  joinedValue: (fieldId: string) => string | undefined;
+}
+
+const OrgOverrideContext = createContext<OrgOverrideApi | null>(null);
 
 function OrgOverrideSwitch({
   fieldId,
@@ -322,8 +336,8 @@ function OrgOverrideSwitch({
   label: string;
 }) {
   const t = useTranslations('Accounting.templates.builder');
-  const onToggle = useContext(OrgOverrideContext);
-  if (!onToggle) return null;
+  const api = useContext(OrgOverrideContext);
+  if (!api) return null;
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-muted-foreground">
@@ -331,7 +345,7 @@ function OrgOverrideSwitch({
       </span>
       <Switch
         checked={usingOrgData}
-        onCheckedChange={(checked) => onToggle(fieldId, !checked, prefill)}
+        onCheckedChange={(checked) => api.toggle(fieldId, !checked, prefill)}
         aria-label={`${label} — ${t('fieldSource.useOrgData')}`}
       />
     </div>
@@ -350,6 +364,7 @@ function FieldRow({
 }: FieldRowProps) {
   const t = useTranslations('Accounting.templates.builder');
   const inputId = useId();
+  const overrideApi = useContext(OrgOverrideContext);
   const title = getFieldTitle(field, t);
 
   if (field.value.kind === 'bound') {
@@ -411,7 +426,14 @@ function FieldRow({
             <OrgOverrideSwitch
               fieldId={field.id}
               usingOrgData
-              prefill={known ?? ''}
+              prefill={
+                boundOverrideGroup.split
+                  ? joinAddressValue(
+                      knownValues[boundOverrideGroup.source] ?? '',
+                      knownValues[boundOverrideGroup.split.townSource] ?? '',
+                    )
+                  : (known ?? '')
+              }
               label={title}
             />
           )
@@ -445,11 +467,16 @@ function FieldRow({
     );
   }
 
+  const splitGroup = orgOverrideGroupFor(field.id)?.split;
+  const controlValue =
+    (splitGroup ? overrideApi?.joinedValue(field.id) : undefined) ??
+    field.value.value;
+
   const control =
     field.control === 'textarea' ? (
       <Textarea
         id={inputId}
-        value={field.value.value}
+        value={controlValue}
         onChange={(e) => onManualChange(field.id, e.target.value)}
         placeholder={placeholder}
         aria-label={title}
@@ -466,7 +493,7 @@ function FieldRow({
         id={inputId}
         type={field.control === 'number' ? 'number' : 'text'}
         inputMode={field.control === 'number' ? 'numeric' : undefined}
-        value={field.value.value}
+        value={controlValue}
         onChange={(e) => onManualChange(field.id, e.target.value)}
         placeholder={placeholder}
         aria-label={title}
@@ -487,6 +514,7 @@ function FieldRow({
             fieldId={field.id}
             usingOrgData={false}
             prefill={knownValues[manualOverrideGroup.source] ?? ''}
+            // switching back off discards the manual text; prefill is unused there
             label={title}
           />
         )
@@ -945,18 +973,29 @@ interface TemplateBuilderBlockEditorProps {
 export function TemplateBuilderBlockEditor(
   props: TemplateBuilderBlockEditorProps,
 ) {
-  const handleOrgOverrideToggle = (
-    fieldId: string,
-    overridden: boolean,
-    prefill: string,
-  ) => {
-    props.onChange(
-      setOrgFieldOverride(props.document, fieldId, overridden, prefill),
-    );
+  const overrideApi: OrgOverrideApi = {
+    toggle: (fieldId, overridden, prefill) => {
+      props.onChange(
+        setOrgFieldOverride(props.document, fieldId, overridden, prefill),
+      );
+    },
+    // A split group is edited as one field but stored in two document slots; give
+    // the card back the whole address so the textarea does not lose the town line.
+    joinedValue: (fieldId) => {
+      const group = orgOverrideGroupFor(fieldId);
+      if (!group?.split) return undefined;
+      const streetId = group.split.streetIds[0];
+      const townId = group.split.townIds[0];
+      if (!streetId || !townId) return undefined;
+      return joinAddressValue(
+        getManualFieldValue(props.document, streetId) ?? '',
+        getManualFieldValue(props.document, townId) ?? '',
+      );
+    },
   };
 
   return (
-    <OrgOverrideContext.Provider value={handleOrgOverrideToggle}>
+    <OrgOverrideContext.Provider value={overrideApi}>
       <TemplateBuilderBlockEditorBody {...props} />
     </OrgOverrideContext.Provider>
   );
@@ -1014,6 +1053,20 @@ function TemplateBuilderBlockEditorBody({
     // only the edited one would leave the header still showing the organisation's
     // own name while the contract text named someone else. Write the whole group.
     const overrideGroup = orgOverrideGroupFor(fieldId);
+    if (overrideGroup?.split) {
+      // One typed address, two document slots: everything before the first newline
+      // is the street line, the rest is the town.
+      const { street, town } = splitAddressValue(value);
+      let next = templateDoc;
+      for (const id of overrideGroup.split.streetIds) {
+        next = updateManualFieldValue(next, id, street);
+      }
+      for (const id of overrideGroup.split.townIds) {
+        next = updateManualFieldValue(next, id, town);
+      }
+      onChange(next);
+      return;
+    }
     if (overrideGroup) {
       let next = templateDoc;
       for (const id of overrideGroup.fieldIds) {
@@ -1101,6 +1154,18 @@ function TemplateBuilderBlockEditorBody({
             )
           }
         />
+        {groups.signaturePlace && (
+          <ContractGroupSection
+            title={t('editorGroups.signaturePlace')}
+            entries={[groups.signaturePlace]}
+            firstOccurrenceByFieldId={firstOccurrenceByFieldId}
+            profileGaps={profileGaps}
+            knownValues={knownValues}
+            typeLabel={typeLabel}
+            onLineToggle={handleLineToggle}
+            onFieldChange={handleFieldChange}
+          />
+        )}
         {groups.extraBlock && (
           <ExtraClausesCard
             block={groups.extraBlock}

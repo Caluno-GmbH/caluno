@@ -101,10 +101,15 @@ export function getContractDocument(
       titleLines: ['Zusatzvereinbarung zur', PAUSCHALE_TITLE[pauschale]],
       // Newline between name and address: the header is a letterhead block, so
       // they belong on separate lines (VOLI-1325).
-      orgIdentityLine: line('header-org-identity', '{orgName}\n{orgAddress}', [
-        bound('header-org-name', 'org_name'),
-        bound('header-org-address', 'org_address'),
-      ]),
+      orgIdentityLine: line(
+        'header-org-identity',
+        '{orgName}\n{orgAddress}\n{orgTown}',
+        [
+          bound('header-org-name', 'org_name'),
+          bound('header-org-address', 'org_address'),
+          bound('header-org-town', 'org_zip'),
+        ],
+      ),
       metaLines: [],
     },
     blocks: [
@@ -115,9 +120,10 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName}, {orgAddress},', [
+          line('parties', 'Zwischen dem {orgName}, {orgAddress}, {orgTown},', [
             bound('parties-org-name', 'org_name'),
             bound('parties-org-address', 'org_address'),
+            bound('parties-org-town', 'org_zip'),
           ]),
           // Optional extra contracting parties, named after the organisation and
           // before the conjunction. Off by default; the "und" lives on the

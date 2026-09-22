@@ -2305,7 +2305,8 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses"
+          "extra": "Extra clauses",
+          "signaturePlace": "Place of signature"
         },
         "hoursUnit": {
           "month": "Month",
@@ -2394,7 +2395,7 @@
           "orgName": "Organisation name",
           "orgAddress": "Organisation address",
           "einrichtung": "Facility",
-          "ort": "Place"
+          "ort": "Place of signature"
         }
       },
       "card": {

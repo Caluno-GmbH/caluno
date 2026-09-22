@@ -187,26 +187,25 @@ export function TemplateBuilder({
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,
   );
 
-  // PROTOTYPE (VOLI-1443): the letterhead carries the full postal address, but street,
-  // postcode and town are three separate sources. Composing them into the single
-  // {orgAddress} placeholder — rather than adding {orgZip}/{orgCity} alongside it —
-  // is what lets an override replace the whole address with one free-text field whose
-  // own line breaks are honoured. Lines render `whitespace-pre-line`, and PDFKit
-  // respects \n too, so the break survives into the generated document.
-  const composedOrgAddress = (() => {
-    const street = (orgProfile ? orgProfile.address : org.address) ?? '';
+  // PROTOTYPE (VOLI-1443): street and town are separate values on purpose. The
+  // letterhead wants them on two lines, the parties sentence wants them inline with a
+  // comma — one value cannot do both, because the line text owns the separator. Two
+  // fields let each position format them correctly, and give the coordinator two
+  // inputs to override rather than one blob where the line break carries meaning.
+  const composedOrgTown = (() => {
     const zip = (orgProfile ? orgProfile.zipCode : null) ?? '';
     const city = (orgProfile ? orgProfile.city : org.city) ?? '';
-    const town = [zip, city].filter(Boolean).join(' ');
-    return [street, town].filter(Boolean).join('\n');
+    return [zip, city].filter(Boolean).join(' ');
   })();
 
   const knownValues = getKnownOrgValues({
     pauschale,
     orgName: orgProfile?.name ?? org.name,
-    orgAddress: composedOrgAddress,
+    orgAddress: orgProfile ? orgProfile.address : org.address,
+    // org_zip carries "postcode town" as one display value; org_city stays the bare
+    // city, which the footer's signature place still uses.
+    orgZip: composedOrgTown,
     orgCity: orgProfile ? orgProfile.city : org.city,
-    orgZip: orgProfile ? orgProfile.zipCode : null,
     orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
     hourlyRateCents: effectiveRate?.hourlyRateCents,
     yearlyLimitCents:

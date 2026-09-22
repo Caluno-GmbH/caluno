@@ -2305,7 +2305,8 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen"
+          "extra": "Weitere Vereinbarungen",
+          "signaturePlace": "Zeichnungsort"
         },
         "hoursUnit": {
           "month": "Monat",
@@ -2394,7 +2395,7 @@
           "orgName": "Organisationsname",
           "orgAddress": "Organisationsadresse",
           "einrichtung": "Einrichtung",
-          "ort": "Ort"
+          "ort": "Zeichnungsort"
         }
       },
       "card": {
