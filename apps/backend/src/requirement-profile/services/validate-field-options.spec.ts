@@ -118,9 +118,10 @@ describe('assertValidRequiredFlag', () => {
   });
 
   it('accepts required on any other field type', () => {
-    expect(() => assertValidRequiredFlag(FieldType.TEXT, true)).not.toThrow();
-    expect(() =>
-      assertValidRequiredFlag(FieldType.SINGLE_CHOICE, true),
-    ).not.toThrow();
+    for (const fieldType of Object.values(FieldType).filter(
+      (type) => type !== FieldType.STATIC_TEXT,
+    )) {
+      expect(() => assertValidRequiredFlag(fieldType, true)).not.toThrow();
+    }
   });
 });
