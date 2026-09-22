@@ -128,11 +128,11 @@ export class DocumentRenderingService {
     if (!template) {
       throw new Error('Document is missing its template');
     }
-    const resolved = await this.resolveValues(document);
+    const resolvedValues = await this.resolveValues(document);
     const body = (template.body ?? {}) as TemplateBodyShape;
     const fieldValues = this.buildFieldValueMap(
       body,
-      resolved,
+      resolvedValues,
       document.fieldOverrides ?? {},
     );
     const tableRows =
@@ -149,10 +149,10 @@ export class DocumentRenderingService {
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
       pdf.on('error', reject);
 
-      this.renderHeader(pdf, body, fieldValues, resolved);
+      this.renderHeader(pdf, body, fieldValues, resolvedValues);
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
-      this.renderSignatures(pdf, document, resolved);
+      this.renderSignatures(pdf, document, resolvedValues);
       pdf.end();
     });
   }
