@@ -187,10 +187,24 @@ export function TemplateBuilder({
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,
   );
 
+  // PROTOTYPE (VOLI-1443): the letterhead carries the full postal address, but street,
+  // postcode and town are three separate sources. Composing them into the single
+  // {orgAddress} placeholder — rather than adding {orgZip}/{orgCity} alongside it —
+  // is what lets an override replace the whole address with one free-text field whose
+  // own line breaks are honoured. Lines render `whitespace-pre-line`, and PDFKit
+  // respects \n too, so the break survives into the generated document.
+  const composedOrgAddress = (() => {
+    const street = (orgProfile ? orgProfile.address : org.address) ?? '';
+    const zip = (orgProfile ? orgProfile.zipCode : null) ?? '';
+    const city = (orgProfile ? orgProfile.city : org.city) ?? '';
+    const town = [zip, city].filter(Boolean).join(' ');
+    return [street, town].filter(Boolean).join('\n');
+  })();
+
   const knownValues = getKnownOrgValues({
     pauschale,
     orgName: orgProfile?.name ?? org.name,
-    orgAddress: orgProfile ? orgProfile.address : org.address,
+    orgAddress: composedOrgAddress,
     orgCity: orgProfile ? orgProfile.city : org.city,
     orgZip: orgProfile ? orgProfile.zipCode : null,
     orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,

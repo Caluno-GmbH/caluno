@@ -22,7 +22,7 @@ import {
 import { LockIcon, TriangleAlertIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
-import { useId } from 'react';
+import { createContext, useContext, useId } from 'react';
 import type { DocumentKind } from '../doc-type-header';
 import { InfoPanel } from '../info-panel';
 import { blockHeadingKey } from './builder-headings';
@@ -33,6 +33,12 @@ import {
   type FieldOrigin,
   getFirstOccurrenceLineByFieldId,
   type InvoiceNumberFormat,
+  isOrgFieldOverridden,
+  ORG_OVERRIDE_GROUPS,
+  ORG_SECTION_MANUAL_FIELD_IDS,
+  orgOverrideGroupFor,
+  orgOverrideGroupKeyFor,
+  setOrgFieldOverride,
   type TableFirstColumnSource,
   type TemplateBlock,
   type TemplateDocument,
@@ -96,6 +102,7 @@ export function collectContractEditorGroups(
   const engagement: EditorFieldEntry[] = [];
   const seenSources = new Set<DataSourceKey>();
   const seenManualIds = new Set<string>();
+  const seenOverrideGroups = new Set<string>();
   let extraBlock: TemplateTextBlock | undefined;
   let hours: HoursEditorEntry | undefined;
   let hoursUnitField: TemplateField | undefined;
@@ -119,6 +126,15 @@ export function collectContractEditorGroups(
           continue;
         }
         const entry: EditorFieldEntry = { field, line, blockId: block.id };
+
+        const overrideKey = orgOverrideGroupKeyFor(field.id);
+        if (overrideKey) {
+          if (seenOverrideGroups.has(overrideKey)) continue;
+          seenOverrideGroups.add(overrideKey);
+          org.push(entry);
+          continue;
+        }
+
         if (field.value.kind === 'bound') {
           const source = field.value.source;
           if (seenSources.has(source)) continue;
@@ -134,12 +150,32 @@ export function collectContractEditorGroups(
           }
         } else {
           if (seenManualIds.has(field.id)) continue;
-          if (ENGAGEMENT_MANUAL_FIELD_IDS.includes(field.id)) {
+          if (ORG_SECTION_MANUAL_FIELD_IDS.includes(field.id)) {
+            seenManualIds.add(field.id);
+            org.push(entry);
+          } else if (ENGAGEMENT_MANUAL_FIELD_IDS.includes(field.id)) {
             seenManualIds.add(field.id);
             engagement.push(entry);
           }
         }
       }
+    }
+  }
+
+  // The signature place lives in the footer's closing line, which the block walk
+  // above never visits. Surface it only once the address is overridden: while the
+  // organisation's own address is in use the place follows from it, but a manually
+  // named counterparty may well sign somewhere else, and leaving the sub-org's town
+  // under the signature would contradict the address printed above it.
+  const addressOverridden = ORG_OVERRIDE_GROUPS.orgAddress.fieldIds.some((id) =>
+    isOrgFieldOverridden(doc, id),
+  );
+  if (addressOverridden) {
+    for (const field of doc.footer.closingLine.fields) {
+      const key = orgOverrideGroupKeyFor(field.id);
+      if (!key || seenOverrideGroups.has(key)) continue;
+      seenOverrideGroups.add(key);
+      org.push({ field, line: doc.footer.closingLine, blockId: 'footer' });
     }
   }
 
@@ -211,6 +247,14 @@ function getFieldTitle(
   field: TemplateField,
   t: ReturnType<typeof useTranslations>,
 ): string {
+  // An overridable org field keeps one title across the toggle. Falling through to
+  // the generic lookup would rename it the moment it flipped kind — bound fields are
+  // titled by data source, manual ones by field id — and the source-derived title is
+  // wrong anyway where two fields share a source (Organisationsname vs Einrichtung).
+  const overrideKey = orgOverrideGroupKeyFor(field.id);
+  if (overrideKey) {
+    return t(`orgOverrideLabels.${overrideKey}` as Parameters<typeof t>[0]);
+  }
   return field.value.kind === 'bound'
     ? t(`dataSources.${field.value.source}` as Parameters<typeof t>[0])
     : t(`manualFieldLabels.${field.id}` as Parameters<typeof t>[0]);
@@ -255,6 +299,45 @@ function sourceLabelKey(origin: FieldOrigin | undefined): string {
   }
 }
 
+/**
+ * PROTOTYPE (VOLI-1443). Lets a deeply nested FieldRow flip an org field between
+ * its bound source and a manual value without threading a callback through four
+ * levels of editor props. A real implementation would decide whether this is the
+ * right seam; for a throwaway it keeps the diff honest and small.
+ */
+const OrgOverrideContext = createContext<
+  ((fieldId: string, overridden: boolean, prefill: string) => void) | null
+>(null);
+
+function OrgOverrideSwitch({
+  fieldId,
+  usingOrgData,
+  prefill,
+  label,
+}: {
+  fieldId: string;
+  /** ON = take the value from the organisation profile. This is the default. */
+  usingOrgData: boolean;
+  prefill: string;
+  label: string;
+}) {
+  const t = useTranslations('Accounting.templates.builder');
+  const onToggle = useContext(OrgOverrideContext);
+  if (!onToggle) return null;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">
+        {t('fieldSource.useOrgData')}
+      </span>
+      <Switch
+        checked={usingOrgData}
+        onCheckedChange={(checked) => onToggle(fieldId, !checked, prefill)}
+        aria-label={`${label} — ${t('fieldSource.useOrgData')}`}
+      />
+    </div>
+  );
+}
+
 function FieldRow({
   field,
   line,
@@ -270,6 +353,7 @@ function FieldRow({
   const title = getFieldTitle(field, t);
 
   if (field.value.kind === 'bound') {
+    const boundOverrideGroup = orgOverrideGroupFor(field.id);
     const isGap = profileGaps.has(field.value.source);
     const known = knownValues[field.value.source];
     const origin = FIELD_ORIGIN[field.value.source];
@@ -283,7 +367,7 @@ function FieldRow({
     const body = hasValue ? (
       <div className="space-y-0.5">
         <p className="text-base text-foreground">{known}</p>
-        {origin && (
+        {origin && !boundOverrideGroup && (
           <p className="text-xs text-muted-foreground">
             {t(sourceLabelKey(origin))}
           </p>
@@ -319,7 +403,20 @@ function FieldRow({
     if (hideTitle) return <div className="py-1">{body}</div>;
 
     return (
-      <InfoPanel variant="outline" title={title}>
+      <InfoPanel
+        variant="outline"
+        title={title}
+        headerRight={
+          boundOverrideGroup && (
+            <OrgOverrideSwitch
+              fieldId={field.id}
+              usingOrgData
+              prefill={known ?? ''}
+              label={title}
+            />
+          )
+        }
+      >
         {body}
       </InfoPanel>
     );
@@ -378,8 +475,23 @@ function FieldRow({
 
   if (hideTitle) return <div className="py-1">{control}</div>;
 
+  const manualOverrideGroup = orgOverrideGroupFor(field.id);
+
   return (
-    <InfoPanel variant="outline" title={title}>
+    <InfoPanel
+      variant="outline"
+      title={title}
+      headerRight={
+        manualOverrideGroup && (
+          <OrgOverrideSwitch
+            fieldId={field.id}
+            usingOrgData={false}
+            prefill={knownValues[manualOverrideGroup.source] ?? ''}
+            label={title}
+          />
+        )
+      }
+    >
       {control}
     </InfoPanel>
   );
@@ -825,7 +937,32 @@ interface TemplateBuilderBlockEditorProps {
   onChange: (document: TemplateDocument) => void;
 }
 
-export function TemplateBuilderBlockEditor({
+/**
+ * PROTOTYPE (VOLI-1443). Thin wrapper that supplies the org-override toggle to the
+ * whole editor tree — the body below has two separate return paths, so providing
+ * the context out here beats wrapping both.
+ */
+export function TemplateBuilderBlockEditor(
+  props: TemplateBuilderBlockEditorProps,
+) {
+  const handleOrgOverrideToggle = (
+    fieldId: string,
+    overridden: boolean,
+    prefill: string,
+  ) => {
+    props.onChange(
+      setOrgFieldOverride(props.document, fieldId, overridden, prefill),
+    );
+  };
+
+  return (
+    <OrgOverrideContext.Provider value={handleOrgOverrideToggle}>
+      <TemplateBuilderBlockEditorBody {...props} />
+    </OrgOverrideContext.Provider>
+  );
+}
+
+function TemplateBuilderBlockEditorBody({
   document: templateDoc,
   kind,
   profileGaps,
@@ -871,6 +1008,20 @@ export function TemplateBuilderBlockEditor({
   }
 
   function handleFieldChange(fieldId: string, value: string) {
+    // An overridable org field is quoted under a different id per position — the
+    // letterhead's `header-org-name` and the parties sentence's `parties-org-name`
+    // are separate fields. `updateManualFieldValue` matches on exact id, so writing
+    // only the edited one would leave the header still showing the organisation's
+    // own name while the contract text named someone else. Write the whole group.
+    const overrideGroup = orgOverrideGroupFor(fieldId);
+    if (overrideGroup) {
+      let next = templateDoc;
+      for (const id of overrideGroup.fieldIds) {
+        next = updateManualFieldValue(next, id, value);
+      }
+      onChange(next);
+      return;
+    }
     onChange(updateManualFieldValue(templateDoc, fieldId, value));
   }
 

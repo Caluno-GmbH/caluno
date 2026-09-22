@@ -303,3 +303,128 @@ export function missingOrgProfileSourcesForOrg(
     return typeof value !== 'string' || value.trim() === '';
   });
 }
+
+// ---------------------------------------------------------------------------
+// PROTOTYPE (VOLI-1443) — organisation-data override
+//
+// Throwaway: explores how a default/manual toggle on the org identity fields
+// feels before the real implementation, which waits on VOLI-1351 restructuring
+// the invoice header. Not intended to ship as-is.
+//
+// A logical builder field (e.g. "Organisationsname") can be quoted by several
+// template field ids — the letterhead and the parties sentence each carry their
+// own. One toggle drives the whole group, so the document can never name the org
+// one way in the header and another in the contract text.
+// ---------------------------------------------------------------------------
+
+export interface OrgOverrideGroup {
+  /** Every template field id that quotes this logical field. */
+  fieldIds: string[];
+  /** The org-profile source it falls back to when the toggle is off. */
+  source: DataSourceKey;
+}
+
+export const ORG_OVERRIDE_GROUPS = {
+  orgName: {
+    fieldIds: ['header-org-name', 'parties-org-name'],
+    source: 'org_name',
+  },
+  orgAddress: {
+    fieldIds: ['header-org-address', 'parties-org-address'],
+    source: 'org_address',
+  },
+  // Deliberately separate from orgName: where the volunteer serves can differ
+  // from who signs the contract.
+  einrichtung: { fieldIds: ['engagement-org-name'], source: 'org_name' },
+  ort: { fieldIds: ['closing-place'], source: 'org_city' },
+} satisfies Record<string, OrgOverrideGroup>;
+
+export function orgOverrideGroupFor(
+  fieldId: string,
+): OrgOverrideGroup | undefined {
+  return Object.values(ORG_OVERRIDE_GROUPS).find((group) =>
+    group.fieldIds.includes(fieldId),
+  );
+}
+
+/**
+ * The group key a field belongs to, used to render exactly one card per logical
+ * field. Deduping by data source would be wrong here: Organisationsname and
+ * Einrichtung both read `org_name`, and collapsing them would hide the very
+ * distinction this feature exists to give the coordinator.
+ */
+export function orgOverrideGroupKeyFor(fieldId: string): string | undefined {
+  return Object.entries(ORG_OVERRIDE_GROUPS).find(([, group]) =>
+    group.fieldIds.includes(fieldId),
+  )?.[0];
+}
+
+/** Manual fields that belong in the contract editor's organisation section. */
+export const ORG_SECTION_MANUAL_FIELD_IDS = ['parties-additional-info'];
+
+/** True when this field is currently overridden — i.e. carries a manual value in place of its source. */
+export function isOrgFieldOverridden(
+  doc: TemplateDocument,
+  fieldId: string,
+): boolean {
+  for (const line of allLines(doc)) {
+    for (const field of line.fields) {
+      if (field.id === fieldId) return field.value.kind === 'manual-template';
+    }
+  }
+  return false;
+}
+
+function mapAllFields(
+  doc: TemplateDocument,
+  fn: (field: TemplateField) => TemplateField,
+): TemplateDocument {
+  const mapLine = (line: TemplateLine): TemplateLine => ({
+    ...line,
+    fields: line.fields.map(fn),
+  });
+  return {
+    ...doc,
+    header: {
+      ...doc.header,
+      orgIdentityLine: mapLine(doc.header.orgIdentityLine),
+      metaLines: doc.header.metaLines.map(mapLine),
+    },
+    blocks: doc.blocks.map((block) => {
+      if (block.kind === 'text') {
+        return { ...block, lines: block.lines.map(mapLine) };
+      }
+      if (block.kind === 'note') return { ...block, line: mapLine(block.line) };
+      return block;
+    }),
+    footer: { ...doc.footer, closingLine: mapLine(doc.footer.closingLine) },
+  };
+}
+
+/**
+ * Flips every field id in the group between its bound source and a manual value.
+ *
+ * Switching on prefills with the org's current value, so the coordinator edits
+ * from something sensible rather than an empty box. Switching off discards the
+ * manual text and restores the binding, so the field tracks the org profile
+ * again — that is the whole point of a toggle over a pencil.
+ */
+export function setOrgFieldOverride(
+  doc: TemplateDocument,
+  fieldId: string,
+  overridden: boolean,
+  prefill: string,
+): TemplateDocument {
+  const group = orgOverrideGroupFor(fieldId);
+  if (!group) return doc;
+
+  return mapAllFields(doc, (field) => {
+    if (!group.fieldIds.includes(field.id)) return field;
+    return {
+      ...field,
+      value: overridden
+        ? { kind: 'manual-template' as const, value: prefill }
+        : { kind: 'bound' as const, source: group.source },
+    };
+  });
+}

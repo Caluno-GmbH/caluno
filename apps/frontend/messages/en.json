@@ -2329,7 +2329,8 @@
           "freeform-text": "Freeform text",
           "kostenstelle": "Cost centre",
           "kostentraeger": "Cost unit",
-          "rechtstraeger": "Legal entity"
+          "rechtstraeger": "Legal entity",
+          "parties-additional-info": "Optional additional information"
         },
         "manualFieldPlaceholders": {
           "contract-lifespan": "Select period",
@@ -2339,14 +2340,16 @@
           "freeform-text": "Add other clauses here if you need to",
           "kostenstelle": "e.g. K-4200",
           "kostentraeger": "e.g. KT-100",
-          "rechtstraeger": "e.g. Diakonisches Werk e.V."
+          "rechtstraeger": "e.g. Diakonisches Werk e.V.",
+          "parties-additional-info": "Add further information about contractual partners here"
         },
         "fieldSource": {
           "volunteerProfile": "Filled from the volunteer's profile.",
           "generationTime": "Filled in automatically when the document is generated.",
           "organizationProfile": "Filled from your organisation's profile.",
           "rateSettings": "Filled from the rate set in Accounting settings.",
-          "yearlyLimit": "Filled from the legally fixed annual allowance."
+          "yearlyLimit": "Filled from the legally fixed annual allowance.",
+          "useOrgData": "Use the organisation data"
         },
         "invoiceNumberFormats": {
           "date-number": "DD-MM-YYYY-Number",
@@ -2386,6 +2389,12 @@
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Annual allowance"
+        },
+        "orgOverrideLabels": {
+          "orgName": "Organisation name",
+          "orgAddress": "Organisation address",
+          "einrichtung": "Facility",
+          "ort": "Place"
         }
       },
       "card": {

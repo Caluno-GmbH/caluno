@@ -2329,7 +2329,8 @@
           "freeform-text": "Freitext",
           "kostenstelle": "Kostenstelle",
           "kostentraeger": "Kostenträger",
-          "rechtstraeger": "Rechtsträger"
+          "rechtstraeger": "Rechtsträger",
+          "parties-additional-info": "Optionale Zusatzinformationen"
         },
         "manualFieldPlaceholders": {
           "contract-lifespan": "Zeitraum wählen",
@@ -2339,14 +2340,16 @@
           "freeform-text": "Ergänze hier weitere Klauseln, falls nötig",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
-          "rechtstraeger": "z. B. Diakonisches Werk e.V."
+          "rechtstraeger": "z. B. Diakonisches Werk e.V.",
+          "parties-additional-info": "Ergänze hier weitere Informationen zu Vertragspartnern"
         },
         "fieldSource": {
           "volunteerProfile": "Wird aus dem Profil der ehrenamtlich tätigen Person übernommen.",
           "generationTime": "Wird beim Erstellen des Dokuments automatisch eingetragen.",
           "organizationProfile": "Wird aus den Daten deiner Organisation übernommen.",
           "rateSettings": "Wird aus dem in den Buchhaltungseinstellungen hinterlegten Satz übernommen.",
-          "yearlyLimit": "Wird aus dem gesetzlich festgelegten Jahresfreibetrag übernommen."
+          "yearlyLimit": "Wird aus dem gesetzlich festgelegten Jahresfreibetrag übernommen.",
+          "useOrgData": "Aus den Organisationsdaten übernehmen"
         },
         "invoiceNumberFormats": {
           "date-number": "TT-MM-JJJJ-Nummer",
@@ -2386,6 +2389,12 @@
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
           "yearly_limit_amount": "Jahresfreibetrag"
+        },
+        "orgOverrideLabels": {
+          "orgName": "Organisationsname",
+          "orgAddress": "Organisationsadresse",
+          "einrichtung": "Einrichtung",
+          "ort": "Ort"
         }
       },
       "card": {

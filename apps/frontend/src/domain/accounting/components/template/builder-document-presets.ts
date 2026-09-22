@@ -115,13 +115,22 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
+          line('parties', 'Zwischen dem {orgName}, {orgAddress},', [
             bound('parties-org-name', 'org_name'),
             bound('parties-org-address', 'org_address'),
           ]),
+          // Optional extra contracting parties, named after the organisation and
+          // before the conjunction. Off by default; the "und" lives on the
+          // volunteer line below so this reads correctly either way.
+          line(
+            'parties-additional',
+            '{additionalInfo},',
+            [manual('parties-additional-info', '', 'textarea')],
+            { optional: true },
+          ),
           line(
             'volunteer-name',
-            '{volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
+            'und {volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
             [
               bound('volunteer-name-first', 'volunteer_first_name'),
               bound('volunteer-name-last', 'volunteer_last_name'),
