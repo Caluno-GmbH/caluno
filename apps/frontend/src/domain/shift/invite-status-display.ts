@@ -152,6 +152,7 @@ export function partitionInvitesByWaitlist<T extends { status: InviteStatus }>(
 
 export type InviteStatusCounts = {
   invited: number;
+  requested: number;
   accepted: number;
   signedUp: number;
   declined: number;
@@ -165,6 +166,7 @@ export function countInviteDisplayStates(
 ): InviteStatusCounts {
   const counts: InviteStatusCounts = {
     invited: 0,
+    requested: 0,
     accepted: 0,
     signedUp: 0,
     declined: 0,
@@ -194,8 +196,7 @@ export function countInviteDisplayStates(
         counts.rejected += 1;
         break;
       case 'requested':
-        // Count approval requests under invited for summary until UI splits
-        counts.invited += 1;
+        counts.requested += 1;
         break;
       case 'waitlisted':
         counts.waitlisted += 1;

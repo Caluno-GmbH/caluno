@@ -200,6 +200,7 @@ describe('countInviteDisplayStates', () => {
       ]),
     ).toEqual({
       invited: 2,
+      requested: 0,
       accepted: 2,
       signedUp: 0,
       declined: 0,
@@ -218,6 +219,7 @@ describe('countInviteDisplayStates', () => {
       ]),
     ).toEqual({
       invited: 1,
+      requested: 0,
       accepted: 0,
       signedUp: 0,
       declined: 0,
@@ -227,14 +229,15 @@ describe('countInviteDisplayStates', () => {
     });
   });
 
-  it('still counts approval requests under invited', () => {
+  it('counts approval requests separately from invited', () => {
     expect(
       countInviteDisplayStates([
         ShiftInviteStatus.AwaitingAdminApproval,
         ShiftInviteStatus.AwaitingAdminApproval,
       ]),
     ).toEqual({
-      invited: 2,
+      invited: 0,
+      requested: 2,
       accepted: 0,
       signedUp: 0,
       declined: 0,
@@ -242,6 +245,17 @@ describe('countInviteDisplayStates', () => {
       rejected: 0,
       waitlisted: 0,
     });
+  });
+
+  it('counts approval requests separately from invites', () => {
+    const counts = countInviteDisplayStates([
+      ShiftInviteStatus.AdminInvited,
+      ShiftInviteStatus.AdminInvited,
+      ShiftInviteStatus.AwaitingAdminApproval,
+    ]);
+
+    expect(counts.invited).toBe(2);
+    expect(counts.requested).toBe(1);
   });
 });
 
