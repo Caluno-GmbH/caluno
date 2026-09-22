@@ -6,15 +6,25 @@ import { localePreferenceRedirect } from './proxy';
 function makeRequest(
   pathname: string,
   cookieLocale?: string,
-  { loggedIn = true }: { loggedIn?: boolean } = {},
+  {
+    loggedIn = true,
+    acceptLanguage,
+  }: { loggedIn?: boolean; acceptLanguage?: string } = {},
 ): NextRequest {
   const url = new URL(`http://localhost:3000${pathname}`);
   const cookies = [
     loggedIn ? 'better-auth.session_token=abc.def' : undefined,
     cookieLocale ? `${USER_LOCALE_COOKIE}=${cookieLocale}` : undefined,
   ].filter(Boolean);
+  const headers: Record<string, string> = {};
+  if (cookies.length) {
+    headers.cookie = cookies.join('; ');
+  }
+  if (acceptLanguage) {
+    headers['accept-language'] = acceptLanguage;
+  }
   return new NextRequest(url, {
-    headers: cookies.length ? { cookie: cookies.join('; ') } : undefined,
+    headers: Object.keys(headers).length ? headers : undefined,
   });
 }
 
@@ -41,6 +51,32 @@ describe('localePreferenceRedirect', () => {
     expect(response?.headers.get('location')).toBe(
       'http://localhost:3000/de/dashboard',
     );
+  });
+
+  it('keeps the profile locale for authenticated users even when Accept-Language differs', () => {
+    // users.locale mirrored in caluno.locale wins; browser language is ignored.
+    const response = localePreferenceRedirect(
+      makeRequest('/en/dashboard', 'de', {
+        loggedIn: true,
+        acceptLanguage: 'en-US,en;q=0.9',
+      }),
+    );
+
+    expect(response?.status).toBe(307);
+    expect(response?.headers.get('location')).toBe(
+      'http://localhost:3000/de/dashboard',
+    );
+  });
+
+  it('does not apply preference for logged-out visitors (Accept-Language left to next-intl)', () => {
+    expect(
+      localePreferenceRedirect(
+        makeRequest('/', undefined, {
+          loggedIn: false,
+          acceptLanguage: 'en-US,en;q=0.9',
+        }),
+      ),
+    ).toBeNull();
   });
 
   it('returns null when the cookie locale matches the URL locale', () => {
