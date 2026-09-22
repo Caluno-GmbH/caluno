@@ -39,7 +39,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { pauschaleForReimbursementTypeKey } from '../../accounting/lib/reimbursement-type-mapping';
 import { resolveCreateShiftSuccessNavigation } from '../create-shift-flow';
-import { shiftInvitePath } from '../routes';
+import { shiftDetailPath, shiftInvitePath } from '../routes';
 import { type ShiftFormValues, shiftFormSchema } from '../schemas';
 import { setSuccessDialogCreatedShift } from '../success-dialog';
 import {
@@ -62,6 +62,7 @@ interface ShiftFormProps {
   }>;
   defaultLocation?: string;
   redirectToInviteOnCreate?: boolean;
+  redirectToDetailOnCreate?: boolean;
   event?: { title: string; startsAt: Date; endsAt: Date };
   imagePreviewUrl?: string | null;
 }
@@ -75,6 +76,7 @@ export const ShiftForm = ({
   mutate,
   defaultLocation,
   redirectToInviteOnCreate = false,
+  redirectToDetailOnCreate = false,
   event,
   imagePreviewUrl,
 }: ShiftFormProps) => {
@@ -184,6 +186,13 @@ export const ShiftForm = ({
 
       if (result.serverError) {
         setServerError(result.serverError);
+        return;
+      }
+
+      if (redirectToDetailOnCreate && result.data) {
+        await setOpen(false, () => null);
+        router.push(shiftDetailPath(orgUId, result.data.id));
+        router.refresh();
         return;
       }
 

@@ -46,6 +46,15 @@ export function shiftEditPath(orgUId: string, shiftId: string): string {
   return `/admin/${orgUId}/shifts/${shiftId}/edit`;
 }
 
+export function shiftDuplicatePath(
+  orgUId: string,
+  shiftId: string,
+  options?: { redirectToDetail?: boolean },
+): string {
+  const query = options?.redirectToDetail ? '?redirect=detail' : '';
+  return `/admin/${orgUId}/shifts/${shiftId}/duplicate${query}`;
+}
+
 export function shiftInvitePath(
   orgUId: string,
   shiftId: string,

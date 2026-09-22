@@ -270,8 +270,7 @@ export class ShiftCallOutService {
         if (excluded.has(userId)) return false;
         const status = resolvedStatuses.get(userId);
         return (
-          status === undefined ||
-          status === ShiftInviteStatus.VOLUNTEER_CANCELLED
+          status === undefined || status === ShiftInviteStatus.ADMIN_INVITED
         );
       });
   }

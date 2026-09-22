@@ -80,6 +80,8 @@ describe('reimbursement-rate resolver unit scoping', () => {
       {} as FileService,
       organizationUnitDataService,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
+      {} as never,
     );
     const membershipService = new MembershipService(
       db,

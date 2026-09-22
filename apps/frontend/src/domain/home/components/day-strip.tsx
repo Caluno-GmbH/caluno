@@ -244,7 +244,7 @@ function PagedDayStrip({
             dayLabel={formatDate(day.date, { day: 'numeric' })}
             shiftCountLabel={shiftCountLabel}
             onSelect={onSelect}
-            className="min-w-[84px] flex-1"
+            className="min-w-[92px] flex-1"
           />
         ))}
       </div>
@@ -403,7 +403,7 @@ function ScrollDayStrip({
               dayLabel={formatDate(day.date, { day: 'numeric' })}
               shiftCountLabel={shiftCountLabel}
               onSelect={onSelect}
-              className="min-w-[84px] flex-1"
+              className="min-w-[92px] flex-1"
             />
           ))}
         </div>
@@ -564,7 +564,7 @@ function SparseScrollDayStrip({
                 dayLabel={formatDate(entry.date, { day: 'numeric' })}
                 shiftCountLabel={shiftCountLabel}
                 onSelect={onSelect}
-                className="min-w-[84px] flex-1"
+                className="min-w-[92px] flex-1"
               />
             ),
           )}

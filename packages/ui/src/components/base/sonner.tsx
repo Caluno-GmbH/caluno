@@ -1,6 +1,5 @@
 'use client';
 
-import { useTheme } from '@teispace/next-themes/hooks/use-theme';
 import {
   CircleCheckIcon,
   InfoIcon,
@@ -11,11 +10,8 @@ import {
 import { Toaster as Sonner, type ToasterProps } from 'sonner';
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = 'system' } = useTheme();
-
   return (
     <Sonner
-      theme={theme as ToasterProps['theme']}
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

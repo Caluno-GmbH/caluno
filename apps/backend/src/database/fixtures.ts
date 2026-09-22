@@ -980,10 +980,18 @@ const ensureBankingInformationForm = async (
       {
         blockId: block.id,
         type: FieldType.TEXT,
+        label: 'Account holder',
+        systemKey: 'account-holder',
+        required: true,
+        fieldOrder: 1,
+      },
+      {
+        blockId: block.id,
+        type: FieldType.TEXT,
         label: 'BIC',
         systemKey: 'bic',
         required: true,
-        fieldOrder: 1,
+        fieldOrder: 2,
       },
     ]);
 
@@ -1197,6 +1205,7 @@ async function seedFixtures() {
           // A valid German IBAN (mod-97 checksum). Same account for the
           // fixture members so it round-trips the validator.
           iban: 'DE89 3704 0044 0532 0130 00',
+          'account-holder': `Erika Musterfrau ${index + 1}`,
           bic: 'COBADEFFXXX',
           address: `Musterstraße ${index + 1}`,
           'birth-date': '1990-08-02',

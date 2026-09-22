@@ -99,7 +99,9 @@ export function getContractDocument(
   return {
     header: {
       titleLines: ['Zusatzvereinbarung zur', PAUSCHALE_TITLE[pauschale]],
-      orgIdentityLine: line('header-org-identity', '{orgName} {orgAddress}', [
+      // Newline between name and address: the header is a letterhead block, so
+      // they belong on separate lines (VOLI-1325).
+      orgIdentityLine: line('header-org-identity', '{orgName}\n{orgAddress}', [
         bound('header-org-name', 'org_name'),
         bound('header-org-address', 'org_address'),
       ]),
@@ -113,7 +115,7 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName} {orgAddress}, und', [
+          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
             bound('parties-org-name', 'org_name'),
             bound('parties-org-address', 'org_address'),
           ]),
@@ -200,14 +202,9 @@ export function getContractDocument(
             'payout-intro',
             'Die Aufwandsentschädigung wird monatlich auf folgendes Konto überwiesen:',
           ),
-          line(
-            'payout-holder',
-            '{volunteerFirstName} {volunteerLastName}, (Kontoinhaber:in)',
-            [
-              bound('payout-holder-first', 'volunteer_first_name'),
-              bound('payout-holder-last', 'volunteer_last_name'),
-            ],
-          ),
+          line('payout-holder', '{volunteerAccountHolder} (Kontoinhaber:in)', [
+            bound('payout-holder-field', 'volunteer_account_holder'),
+          ]),
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),

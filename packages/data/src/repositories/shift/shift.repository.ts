@@ -5,6 +5,7 @@ import {
 } from '../../constants';
 import {
   type CreateShiftInput,
+  type DuplicateShiftInput,
   type GetActiveShiftInstancesQuery,
   type GetAvailableShiftInstancesQuery,
   type GetCheckInShiftInstancesQuery,
@@ -129,6 +130,11 @@ export class ShiftRepository extends BaseRepository {
   async update(id: string, input: UpdateShiftInput) {
     const data = await this.sdk.UpdateShift({ id, input });
     return data.updateShift;
+  }
+
+  async duplicate(id: string, input: DuplicateShiftInput) {
+    const data = await this.sdk.DuplicateShift({ id, input });
+    return data.duplicateShift;
   }
 
   async delete(id: string): Promise<{ id: string }> {

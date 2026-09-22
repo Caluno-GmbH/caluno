@@ -33,8 +33,9 @@ export class UpdateFormBlockFieldInput {
   @Field(() => [SelectOptionInput], { nullable: true })
   options?: SelectOptionInput[] | null;
 
-  @Field(() => String, { nullable: true })
-  documentFileId?: string | null;
+  // Nullable in DB — undefined means "don't update", null or [] means "clear"
+  @Field(() => [String], { nullable: true })
+  documentFileIds?: string[] | null;
 
   @Field(() => String, { nullable: true })
   documentLabel?: string | null;

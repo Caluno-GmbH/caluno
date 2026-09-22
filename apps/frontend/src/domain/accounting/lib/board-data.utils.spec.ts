@@ -24,7 +24,7 @@ import {
   getContractStateForPicker,
   getDocLineSummary,
   getInitials,
-  getLatestTimesheetDate,
+  getLatestTimesheetPeriod,
   getPickerAnnotations,
   invoiceInMonth,
   invoiceStatusToDocStatus,
@@ -989,7 +989,7 @@ describe('getContractStateForPicker', () => {
   });
 });
 
-describe('getLatestTimesheetDate', () => {
+describe('getLatestTimesheetPeriod', () => {
   it('returns undefined when there are no timesheets', () => {
     const vol = makeVol([
       {
@@ -999,34 +999,98 @@ describe('getLatestTimesheetDate', () => {
         pauschale: 'ehrenamt',
       },
     ]);
-    expect(getLatestTimesheetDate(vol)).toBeUndefined();
+    expect(getLatestTimesheetPeriod(vol)).toBeUndefined();
   });
 
-  it('returns the most recent timesheet date across pauschales', () => {
+  it('returns the covered period of the most recent timesheet across pauschales', () => {
     const vol = makeVol([
       {
         id: 'i-1',
         status: 'timesheet-ready',
         periodLabel: 'July 2026',
         pauschale: 'ehrenamt',
-        lastActionDate: new Date('2026-07-15T00:00:00.000Z'),
+        periodStart: new Date('2026-07-01T00:00:00.000Z'),
       },
       {
         id: 'i-2',
         status: 'timesheet-ready',
         periodLabel: 'June 2026',
         pauschale: 'uebungsleiter',
-        lastActionDate: new Date('2026-06-10T00:00:00.000Z'),
+        periodStart: new Date('2026-06-01T00:00:00.000Z'),
       },
     ]);
-    expect(getLatestTimesheetDate(vol)?.getTime()).toBe(
-      new Date('2026-07-15T00:00:00.000Z').getTime(),
-    );
+    expect(getLatestTimesheetPeriod(vol)).toBe('July 2026');
+  });
+
+  it('ignores a declined timesheet even when its period is newer', () => {
+    const vol = makeVol([
+      {
+        id: 'i-1',
+        status: 'timesheet-ready',
+        periodLabel: 'July 2026',
+        pauschale: 'ehrenamt',
+        periodStart: new Date('2026-07-01T00:00:00.000Z'),
+      },
+      {
+        id: 'i-2',
+        status: 'timesheet-declined',
+        periodLabel: 'August 2026',
+        pauschale: 'ehrenamt',
+        periodStart: new Date('2026-08-01T00:00:00.000Z'),
+      },
+    ]);
+    expect(getLatestTimesheetPeriod(vol)).toBe('July 2026');
+  });
+
+  it('returns undefined when the only timesheet has not been created yet', () => {
+    const vol = makeVol([
+      {
+        id: 'i-1',
+        status: 'timesheet-generate',
+        periodLabel: 'September 2026',
+        pauschale: 'ehrenamt',
+        periodStart: new Date('2026-09-01T00:00:00.000Z'),
+      },
+    ]);
+    expect(getLatestTimesheetPeriod(vol)).toBeUndefined();
+  });
+
+  it('shows the older issued period, not a newer to-create row, when both exist', () => {
+    const vol = makeVol([
+      {
+        id: 'i-1',
+        status: 'timesheet-ready',
+        periodLabel: 'July 2026',
+        pauschale: 'ehrenamt',
+        periodStart: new Date('2026-07-01T00:00:00.000Z'),
+      },
+      {
+        id: 'i-2',
+        status: 'timesheet-generate',
+        periodLabel: 'September 2026',
+        pauschale: 'ehrenamt',
+        periodStart: new Date('2026-09-01T00:00:00.000Z'),
+      },
+    ]);
+    expect(getLatestTimesheetPeriod(vol)).toBe('July 2026');
+  });
+
+  it('counts a timesheet that is still in signing as issued', () => {
+    const vol = makeVol([
+      {
+        id: 'i-1',
+        status: 'timesheet-signing-vol',
+        periodLabel: 'August 2026',
+        pauschale: 'ehrenamt',
+        periodStart: new Date('2026-08-01T00:00:00.000Z'),
+      },
+    ]);
+    expect(getLatestTimesheetPeriod(vol)).toBe('August 2026');
   });
 });
 
 describe('getPickerAnnotations', () => {
-  it('returns annotations for both pauschales and the latest timesheet date', () => {
+  it('returns annotations for both pauschales and the latest timesheet period', () => {
     const vol = makeVol([
       {
         id: 'c-1',
@@ -1039,7 +1103,7 @@ describe('getPickerAnnotations', () => {
         status: 'timesheet-ready',
         periodLabel: 'July 2026',
         pauschale: 'ehrenamt',
-        lastActionDate: new Date('2026-07-15T00:00:00.000Z'),
+        periodStart: new Date('2026-07-01T00:00:00.000Z'),
       },
     ]);
     const annotations = getPickerAnnotations(vol);
@@ -1050,14 +1114,12 @@ describe('getPickerAnnotations', () => {
     expect(
       annotations.contracts.find((c) => c.pauschale === 'uebungsleiter')?.state,
     ).toBe('none');
-    expect(annotations.latestTimesheetDate?.getTime()).toBe(
-      new Date('2026-07-15T00:00:00.000Z').getTime(),
-    );
+    expect(annotations.latestTimesheetPeriod).toBe('July 2026');
   });
 
-  it('leaves latestTimesheetDate undefined when there is no timesheet', () => {
+  it('leaves latestTimesheetPeriod undefined when there is no timesheet', () => {
     expect(
-      getPickerAnnotations(makeVol([])).latestTimesheetDate,
+      getPickerAnnotations(makeVol([])).latestTimesheetPeriod,
     ).toBeUndefined();
   });
 });

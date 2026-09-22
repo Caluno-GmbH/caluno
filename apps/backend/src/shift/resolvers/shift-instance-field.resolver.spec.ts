@@ -64,4 +64,32 @@ describe('ShiftInstanceFieldResolver', () => {
       expect(load).toHaveBeenCalledWith('instance-1:user-1');
     });
   });
+
+  describe('timeEntries', () => {
+    it('loads time entries keyed by org unit and instance id', async () => {
+      const resolver = newResolver();
+      const entries = [
+        {
+          id: 'entry-1',
+          shiftInstanceId: 'instance-1',
+          startedAt: new Date('2026-09-02T08:00:00.000Z'),
+          endedAt: null,
+        },
+      ];
+      const load = jest.fn().mockResolvedValue(entries);
+      const loader = {
+        timeEntriesByKey: { load },
+      } as unknown as ShiftInstanceLoader;
+      const context = { organizationUnitId: 'ou-1' } as never;
+
+      const result = await resolver.timeEntries(
+        instance({ id: 'instance-1' }),
+        context,
+        loader,
+      );
+
+      expect(result).toEqual(entries);
+      expect(load).toHaveBeenCalledWith('ou-1:instance-1');
+    });
+  });
 });

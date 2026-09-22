@@ -1,10 +1,11 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Resolver } from '@nestjs/graphql';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { Session } from '@thallesp/nestjs-better-auth';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { ForbiddenGraphQLError } from '../../graphql/errors';
+import type { GraphQLContext } from '../../graphql/graphql.context';
 import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
@@ -73,13 +74,18 @@ export class OrganizationUnitMutationResolver {
 
   @Permissions(PERMISSIONS.ORG_EDIT)
   @Mutation(() => OrganizationUnit)
-  async deleteOrganizationUnit(
+  async requestOrganizationUnitDeletion(
     @Args('id') id: string,
+    @Args('message', { type: () => String, nullable: true })
+    message: string | undefined,
     @Session() session: UserSession,
+    @Context() context: GraphQLContext,
   ): Promise<OrganizationUnit> {
-    const organizationUnit = await this.organizationUnitService.delete(
+    const organizationUnit = await this.organizationUnitService.requestDeletion(
       id,
-      session.user.id,
+      { name: session.user.name, email: session.user.email },
+      message ?? undefined,
+      context.locale,
     );
     return this.organizationUnitMapper.toModelOrThrow(organizationUnit);
   }

@@ -11,3 +11,9 @@ export class DataError extends Error {
     this.name = 'DataError';
   }
 }
+
+export function isUnauthenticatedDataError(error: unknown): boolean {
+  return (
+    error instanceof DataError && error.options?.code === 'UNAUTHENTICATED'
+  );
+}

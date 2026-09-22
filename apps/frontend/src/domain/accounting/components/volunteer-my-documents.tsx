@@ -65,13 +65,15 @@ export function VolunteerMyDocuments() {
             ...group.invoices.map((invoice) =>
               invoiceToVolunteerDocument(invoice, formatMonth),
             ),
-          ].sort((a, b) => {
-            // Anything that needs the volunteer's signature goes first.
-            const aNeeds = a.state === 'awaiting-signature' ? 0 : 1;
-            const bNeeds = b.state === 'awaiting-signature' ? 0 : 1;
-            if (aNeeds !== bNeeds) return aNeeds - bNeeds;
-            return b.createdAt.getTime() - a.createdAt.getTime();
-          });
+          ]
+            .filter((doc): doc is VolunteerDocument => doc !== null)
+            .sort((a, b) => {
+              // Anything that needs the volunteer's signature goes first.
+              const aNeeds = a.state === 'awaiting-signature' ? 0 : 1;
+              const bNeeds = b.state === 'awaiting-signature' ? 0 : 1;
+              if (aNeeds !== bNeeds) return aNeeds - bNeeds;
+              return b.createdAt.getTime() - a.createdAt.getTime();
+            });
           return { ...group, docs };
         })
         // Orgs without any documents stay out of the list entirely.

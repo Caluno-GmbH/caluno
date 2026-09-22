@@ -38,11 +38,11 @@ import {
   type UseFormRegister,
   useFieldArray,
   useForm,
-  useWatch,
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/storage/file-upload';
 import { saveBlock } from '../actions';
+import { GENDER_SYSTEM_KEY, hasFixedGenderOptions } from '../gender-options';
 import { SYSTEM_PROFILE_FIELDS } from '../system-profile-fields';
 import { OptionsEditor } from './options-editor';
 
@@ -56,9 +56,11 @@ interface BlockFormFieldInput {
   systemKey?: string;
   lockType?: boolean;
   options?: { label: string; value: string }[];
-  documentFileId?: string | null;
-  documentDownloadUrl?: string;
-  documentFilename?: string;
+  documents?: {
+    fileId: string;
+    filename?: string | null;
+    downloadUrl?: string | null;
+  }[];
   documentLabel?: string;
 }
 
@@ -171,9 +173,12 @@ export function BlockForm({
             systemKey: f.systemKey ?? '',
             lockType: f.lockType ?? false,
             options: f.options ?? [],
-            documentFileId: f.documentFileId ?? null,
-            documentDownloadUrl: f.documentDownloadUrl ?? '',
-            documentFilename: f.documentFilename ?? '',
+            documents:
+              f.documents?.map((d) => ({
+                fileId: d.fileId,
+                filename: d.filename,
+                downloadUrl: d.downloadUrl,
+              })) ?? [],
             documentLabel: f.documentLabel ?? '',
           })) ?? [],
       });
@@ -210,7 +215,7 @@ export function BlockForm({
         systemKey: f.systemKey || undefined,
         lockType: f.lockType ?? false,
         options: f.options,
-        documentFileId: f.documentFileId,
+        documentFileIds: f.documents?.map((d) => d.fileId),
         documentLabel: f.documentLabel,
       })),
     });
@@ -243,7 +248,7 @@ export function BlockForm({
       lockType: false,
       options: [],
       ...(type === FieldType.DocumentAcknowledgement
-        ? { documentFileId: null, documentLabel: '' }
+        ? { documents: [], documentLabel: '' }
         : {}),
     });
   }
@@ -341,6 +346,7 @@ export function BlockForm({
             fieldType={watchedFields[index]?.type}
             currentRequired={watchedFields[index]?.required ?? false}
             isSystemField={!!watchedFields[index]?.systemKey}
+            systemKey={watchedFields[index]?.systemKey}
             lockType={watchedFields[index]?.lockType ?? false}
             onToggleRequired={(next) =>
               setValue(`fields.${index}.required`, next, { shouldDirty: true })
@@ -481,6 +487,7 @@ function FieldCard({
   fieldType,
   currentRequired,
   isSystemField,
+  systemKey,
   lockType,
   onToggleRequired,
   readOnly,
@@ -500,6 +507,7 @@ function FieldCard({
   fieldType?: FieldType;
   currentRequired: boolean;
   isSystemField: boolean;
+  systemKey?: string;
   lockType: boolean;
   onToggleRequired: (next: boolean) => void;
   readOnly?: boolean;
@@ -510,17 +518,22 @@ function FieldCard({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tValidation = useTranslations('RequirementForm.validation');
   const tCommon = useTranslations('Common');
+  const hasFixedOptions = hasFixedGenderOptions(systemKey);
   const showOptions =
-    fieldType === FieldType.SingleChoice || fieldType === FieldType.MultiChoice;
+    (fieldType === FieldType.SingleChoice ||
+      fieldType === FieldType.MultiChoice) &&
+    !hasFixedOptions;
   const isDocument = fieldType === FieldType.DocumentAcknowledgement;
-  const documentPreviewUrl = useWatch({
-    control,
-    name: `fields.${index}.documentDownloadUrl`,
-  });
-  const documentFilename = useWatch({
-    control,
-    name: `fields.${index}.documentFilename`,
-  });
+  const hasPlaceholder =
+    fieldType === FieldType.Email ||
+    fieldType === FieldType.Iban ||
+    fieldType === FieldType.Name ||
+    fieldType === FieldType.Lastname ||
+    fieldType === FieldType.Numbers ||
+    fieldType === FieldType.Phone ||
+    fieldType === FieldType.Zip ||
+    fieldType === FieldType.Text ||
+    fieldType === FieldType.Textarea;
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -547,7 +560,7 @@ function FieldCard({
                 checked={currentRequired}
                 onCheckedChange={onToggleRequired}
                 size="sm"
-                disabled={isSystemField}
+                disabled={isSystemField && systemKey !== GENDER_SYSTEM_KEY}
               />
               {currentRequired ? t('required') : t('optional')}
             </label>
@@ -653,57 +666,81 @@ function FieldCard({
           />
         </Field>
 
-        <Field>
-          <FieldLabel>{tField('placeholderLabel')}</FieldLabel>
-          <Input
-            {...register(`fields.${index}.placeholder`)}
-            placeholder={tField('placeholderPlaceholder')}
-            disabled={readOnly}
-          />
-        </Field>
+        {hasPlaceholder && (
+          <Field>
+            <FieldLabel>{tField('placeholderLabel')}</FieldLabel>
+            <Input
+              {...register(`fields.${index}.placeholder`)}
+              placeholder={tField('placeholderPlaceholder')}
+              disabled={readOnly}
+            />
+          </Field>
+        )}
 
         {isDocument && (
-          <>
-            <Field className="md:col-span-2">
-              <Controller
-                control={control}
-                name={`fields.${index}.documentFileId`}
-                rules={{ required: tField('enterDocumentFileError') }}
-                render={({ field, fieldState }) => (
+          <Field className="md:col-span-2">
+            <Controller
+              control={control}
+              name={`fields.${index}.documents`}
+              rules={{
+                validate: (docs) =>
+                  (docs?.length ?? 0) > 0 || tField('enterDocumentFileError'),
+              }}
+              render={({ field, fieldState }) => (
+                <div className="space-y-2">
+                  {(field.value ?? []).map((doc, docIndex) => (
+                    <FileUpload
+                      key={doc.fileId}
+                      purpose="form_document"
+                      organizationUnitId={orgUId}
+                      label={`${tField('documentFileLabel')} ${docIndex + 1}`}
+                      value={doc.fileId}
+                      initialPreviewUrl={doc.downloadUrl ?? null}
+                      initialFilename={doc.filename ?? null}
+                      disabled={readOnly}
+                      error={fieldState.error?.message}
+                      onUploaded={(result) =>
+                        field.onChange(
+                          (field.value ?? []).map((d, j) =>
+                            j === docIndex
+                              ? {
+                                  fileId: result.fileId,
+                                  filename: result.filename,
+                                  downloadUrl: result.publicUrl,
+                                }
+                              : d,
+                          ),
+                        )
+                      }
+                      onClear={() =>
+                        field.onChange(
+                          (field.value ?? []).filter((_, j) => j !== docIndex),
+                        )
+                      }
+                    />
+                  ))}
                   <FileUpload
                     purpose="form_document"
                     organizationUnitId={orgUId}
-                    label={tField('documentFileLabel')}
-                    value={field.value || null}
-                    initialPreviewUrl={documentPreviewUrl || null}
-                    initialFilename={documentFilename || null}
+                    label={tField('addDocumentFile')}
+                    value={null}
                     disabled={readOnly}
                     error={fieldState.error?.message}
-                    onUploaded={(result) => field.onChange(result.fileId)}
-                    onClear={() => field.onChange(null)}
+                    onUploaded={(result) =>
+                      field.onChange([
+                        ...(field.value ?? []),
+                        {
+                          fileId: result.fileId,
+                          filename: result.filename,
+                          downloadUrl: result.publicUrl,
+                        },
+                      ])
+                    }
                   />
-                )}
-              />
-            </Field>
-            <Field className="md:col-span-2">
-              <FieldLabel>
-                {tField('documentLabelLabel')}{' '}
-                <span className="text-destructive">*</span>
-              </FieldLabel>
-              <Input
-                {...register(`fields.${index}.documentLabel`, {
-                  required: tField('enterDocumentLabelError'),
-                })}
-                placeholder={tField('documentLabelPlaceholder')}
-                disabled={readOnly}
-              />
-              {errors?.documentLabel && (
-                <p className="text-destructive text-sm">
-                  {errors.documentLabel.message}
-                </p>
+                </div>
               )}
-            </Field>
-          </>
+            />
+          </Field>
         )}
       </div>
 

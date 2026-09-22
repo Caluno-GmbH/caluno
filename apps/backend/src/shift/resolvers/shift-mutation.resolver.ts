@@ -15,6 +15,7 @@ import { UserRequirementStatus } from '../../requirement-profile/models/user-req
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { ShiftInviteStatus } from '../enums';
 import { CreateShiftInput } from '../inputs/create-shift.input';
+import { DuplicateShiftInput } from '../inputs/duplicate-shift.input';
 import { UpdateShiftInput } from '../inputs/update-shift.input';
 import { UpdateShiftInstanceInput } from '../inputs/update-shift-instance.input';
 import { ShiftMapper } from '../mappers/shift.mapper';
@@ -87,6 +88,23 @@ export class ShiftMutationResolver {
     const shift = await this.shiftService.create(
       session.user.id,
       context.organizationUnitId,
+      input,
+    );
+    return this.shiftMapper.toModelOrThrow(shift);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => Shift)
+  async duplicateShift(
+    @Session() session: UserSession,
+    @Args('id', { type: () => String }) id: string,
+    @Args('input') input: DuplicateShiftInput,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<Shift> {
+    const shift = await this.shiftService.duplicate(
+      session.user.id,
+      context.organizationUnitId,
+      id,
       input,
     );
     return this.shiftMapper.toModelOrThrow(shift);

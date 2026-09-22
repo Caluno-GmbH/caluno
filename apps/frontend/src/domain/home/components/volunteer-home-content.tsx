@@ -66,6 +66,8 @@ interface PendingRequest {
   id: string;
   organizationName: string;
   contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
 }
 
 interface VolunteerHomeContentProps {
@@ -305,8 +307,8 @@ export function VolunteerHomeContent({
   const yourShiftsSection = (
     <section>
       <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-2xl font-semibold text-foreground">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
             {t('yourShiftsHeading')}
           </h2>
           <p className="text-base text-muted-foreground">
@@ -368,9 +370,9 @@ export function VolunteerHomeContent({
 
   const invitationsSection = (
     <section>
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-semibold text-foreground">
+      <div className="mb-3 flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
             {t('invitationsHeading')}
           </h2>
           <Badge variant="default">{invitationList.length}</Badge>
@@ -397,8 +399,8 @@ export function VolunteerHomeContent({
   const yourEventsSection = (
     <section>
       <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-2xl font-semibold text-foreground">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
             {t('yourEventsHeading')}
           </h2>
           <p className="text-base text-muted-foreground">
@@ -438,11 +440,11 @@ export function VolunteerHomeContent({
       filteredAvailableShiftList.length === 0 &&
       availableEventList.length === 0 ? (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-2xl font-semibold text-foreground">
+          <div className="flex min-w-0 flex-col gap-1">
+            <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
               {t('discoverHeading')}
             </h2>
-            <p className="text-base text-muted-foreground">
+            <p className="min-w-0 break-words text-base text-muted-foreground">
               {t('discoverPendingSubtitle', {
                 orgName: pendingRequest.organizationName,
               })}
@@ -453,7 +455,7 @@ export function VolunteerHomeContent({
               <div className="flex size-12 items-center justify-center rounded-full bg-muted">
                 <CalendarSearchIcon className="size-6 text-muted-foreground" />
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex min-w-0 flex-col gap-1">
                 <h3 className="text-base font-semibold text-foreground">
                   {t('discoverPendingEmptyTitle')}
                 </h3>
@@ -469,8 +471,8 @@ export function VolunteerHomeContent({
       ) : (
         <>
           <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="flex flex-col gap-1">
-              <h2 className="text-2xl font-semibold text-foreground">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <h2 className="min-w-0 hyphens-auto break-words text-2xl font-semibold text-foreground">
                 {t('discoverHeading')}
               </h2>
               <p className="text-base text-muted-foreground">
@@ -485,6 +487,7 @@ export function VolunteerHomeContent({
           <SegmentedControl
             className="mb-3"
             size="lg"
+            triggerClassName="px-1 text-[18px] sm:px-3.5 sm:text-lg"
             value={discoverTab}
             onChange={(value) => setDiscoverTab(value as DiscoverTab)}
             options={[
@@ -509,7 +512,7 @@ export function VolunteerHomeContent({
                   hasNext={hasNextDay}
                   onPrev={() => goToDay(-1)}
                   onNext={() => goToDay(1)}
-                  shiftCountLabel={(n) => t('yourShiftsCount', { n })}
+                  shiftCountLabel={(n) => t('dayStripCount', { n })}
                   className="mb-3"
                 />
               )}
@@ -591,6 +594,8 @@ export function VolunteerHomeContent({
         <PendingMembershipBanner
           orgName={pendingRequest.organizationName}
           contactName={pendingRequest.contactName}
+          contactEmail={pendingRequest.contactEmail}
+          contactPhone={pendingRequest.contactPhone}
           requestsHref="/profile"
         />
       )}

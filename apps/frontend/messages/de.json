@@ -20,23 +20,23 @@
       "emailLabel": "E-Mail",
       "emailPlaceholder": "du@beispiel.de",
       "forgotPasswordLink": "Passwort vergessen?",
-      "genericError": "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
-      "invalidCredentials": "Ungültige Anmeldedaten",
+      "genericError": "Die Anmeldung hat nicht geklappt. Versuch es bitte erneut.",
+      "invalidCredentials": "E-Mail oder Passwort stimmen nicht.",
       "noAccount": "Noch kein Konto?",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
-      "sendVerificationFailed": "Die E-Mail ist nicht bestätigt, und wir konnten keinen neuen Bestätigungscode senden.",
+      "sendVerificationFailed": "Deine E-Mail ist noch nicht bestätigt. Der neue Code lässt sich gerade nicht senden. Versuch es bitte gleich noch einmal.",
       "signUpLink": "Registrieren",
       "submit": "Anmelden",
       "submitting": "Wird angemeldet...",
       "title": "Anmelden",
-      "description": "Willkommen zurück bei caluno. Melde dich an, um Schichten zu übernehmen und mit deiner Organisation mitzuhelfen."
+      "description": "Willkommen zurück bei caluno. Melde dich an, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
     "resetPassword": {
       "confirmPasswordLabel": "Passwort bestätigen",
       "description": "Gib ein neues Passwort für dein Konto ein.",
-      "invalidToken": "Dieser Link zum Zurücksetzen ist ungültig oder abgelaufen.",
-      "missingToken": "In diesem Link zum Zurücksetzen fehlt ein Token.",
+      "invalidToken": "Dieser Link ist abgelaufen oder ungültig. Fordere bitte einen neuen an.",
+      "missingToken": "Dieser Link ist unvollständig. Fordere bitte einen neuen an.",
       "newPasswordLabel": "Neues Passwort",
       "passwordMismatch": "Die Passwörter stimmen nicht überein",
       "passwordPlaceholder": "••••••••",
@@ -47,14 +47,14 @@
       "title": "Neues Passwort wählen"
     },
     "signup": {
-      "createAccountFailed": "Konto konnte nicht erstellt werden",
+      "createAccountFailed": "Dein Konto ließ sich nicht erstellen. Versuch es bitte erneut.",
       "emailLabel": "E-Mail",
       "emailPlaceholder": "du@beispiel.de",
-      "genericError": "Konto konnte nicht erstellt werden. Bitte versuche es erneut.",
+      "genericError": "Dein Konto ließ sich nicht erstellen. Versuch es bitte erneut.",
       "hasAccount": "Hast du bereits ein Konto?",
       "nameLabel": "Vollständiger Name",
       "namePlaceholder": "Max Mustermann",
-      "passwordHint": "Es werden mindestens 6 Zeichen benötigt",
+      "passwordHint": "Mindestens 6 Zeichen",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
       "privacyAcknowledge": "Ich habe die <privacyLink>Datenschutzhinweise</privacyLink> gelesen und akzeptiere sie.",
@@ -63,10 +63,10 @@
       "submit": "Konto erstellen",
       "submitting": "Konto wird erstellt...",
       "title": "Erstelle dein Konto",
-      "description": "Willkommen bei caluno. Registriere dich, um Schichten zu übernehmen und mit deiner Organisation mitzuhelfen."
+      "description": "Willkommen bei caluno. Registriere dich, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
     "verifyEmail": {
-      "codeRequested": "Wenn der E-Mail-Versand verfügbar ist, erhältst du in Kürze einen Bestätigungscode an {email}.",
+      "codeRequested": "Wir haben einen Bestätigungscode an {email} geschickt.",
       "codeSent": "Prüfe {email} auf deinen Bestätigungscode.",
       "emailLabel": "E-Mail",
       "emailPlaceholder": "du@beispiel.de",
@@ -88,34 +88,34 @@
   },
   "CheckIn": {
     "acceptMembershipButton": "Mitgliedschaft akzeptieren",
-    "acceptMembershipError": "Mitgliedschaft konnte nicht akzeptiert werden. Bitte erneut versuchen.",
+    "acceptMembershipError": "Die Mitgliedschaft ließ sich nicht akzeptieren. Versuch es bitte erneut.",
     "acceptMembershipSheetTitle": "Mitgliedschaft prüfen",
     "alreadyCheckedInButton": "Zum Check-out",
-    "alreadyCheckedInDescription": "Diese Person ist für diese Schicht bereits eingecheckt.",
+    "alreadyCheckedInDescription": "Diese Person ist für diesen Einsatz bereits eingecheckt.",
     "alreadyCheckedInTitle": "Bereits eingecheckt",
     "checkInButton": "Einchecken",
-    "checkInRunningTitle": "Checkin läuft",
-    "checkInSectionDescription": "Checke diese Person für eine neue Schicht ein, ohne die offenen Einträge zu schließen.",
+    "checkInRunningTitle": "Check-in läuft",
+    "checkInSectionDescription": "Checke diese Person für einen neuen Einsatz ein, ohne die offenen Einträge zu schließen.",
     "checkInSectionTitle": "Neuer Check-in",
-    "checkInWithoutShift": "Check-in ohne Schicht",
+    "checkInWithoutShift": "Check-in ohne Einsatz",
     "dateSheetTitle": "Datum wählen",
     "foundOnOtherDays": "An anderen Tagen gefunden",
     "idVerificationButton": "Ausweis bestätigen",
-    "idVerificationDescription": "Bitte den Ausweis des Freiwilligen prüfen und den Namen abgleichen.",
+    "idVerificationDescription": "Lass dir den Ausweis zeigen und gleiche den Namen ab.",
     "idVerificationError": "Der Ausweis konnte nicht bestätigt werden.",
-    "idVerificationTitle": "Ausweis nicht geprüft",
+    "idVerificationTitle": "Ausweis noch nicht geprüft",
     "inviteSentConfirmation": "Einladung gesendet",
     "manualCheckin": "Manuelles Einchecken",
     "myQrCodeTab": "Mein QR-Code",
-    "noShiftsFound": "Keine Schichten gefunden",
+    "noShiftsFound": "Keine Einsätze gefunden",
     "noVolunteersFound": "Keine Freiwilligen gefunden",
-    "notInShiftButton": "Zur Schicht einladen",
-    "notInShiftDescription": "Diese Person ist dieser Schicht noch nicht beigetreten.",
-    "notInShiftError": "Freiwillige konnte nicht zur Schicht eingeladen werden. Bitte erneut versuchen.",
-    "notInShiftTitle": "Nicht Teil dieser Schicht",
+    "notInShiftButton": "Zum Einsatz einladen",
+    "notInShiftDescription": "Diese Person ist diesem Einsatz noch nicht beigetreten.",
+    "notInShiftError": "Die Einladung zum Einsatz hat nicht geklappt. Versuch es bitte erneut.",
+    "notInShiftTitle": "Nicht Teil dieses Einsatzes",
     "notMemberButton": "Zur Organisation einladen",
     "notMemberDescription": "Diese Person ist noch kein Mitglied dieser Organisation.",
-    "notMemberError": "Freiwillige konnte nicht zur Organisation eingeladen werden. Bitte erneut versuchen.",
+    "notMemberError": "Die Einladung zur Organisation hat nicht geklappt. Versuch es bitte erneut.",
     "notMemberTitle": "Nicht in deiner Organisation",
     "openEntriesDescription": "Diese Person ist noch eingecheckt. Wähle einen Eintrag, um sie auszuchecken.",
     "openEntriesTitle": "Offene Check-ins",
@@ -125,21 +125,21 @@
     "pendingMembershipTitle": "Wartet auf Beitritt zur Organisation",
     "qrScannerTab": "QR-Scanner",
     "readyBannerTitle": "Bereit zum Check-in",
-    "requiredFormMissing": "Fehlt",
+    "requiredFormMissing": "Noch offen",
     "requiredFormSubmitted": "Eingereicht",
     "saveSelection": "Auswahl speichern",
     "scanACode": "Code scannen",
     "searchVolunteerPlaceholder": "Freiwillige:n suchen",
     "selectDatePlaceholder": "Datum wählen",
     "selectOrgUnit": "Organisationseinheit auswählen",
-    "selectShiftPlaceholder": "Schicht wählen",
-    "shiftSearchPlaceholder": "Schichtname",
-    "shiftSheetTitle": "Schicht wählen",
-    "shiftlessWarningDuplicateAtSubmit": "Wenn diese Person bereits ein offenes Check-in ohne Schicht hat, schlägt das Check-in mit einer Fehlermeldung fehl.",
-    "shiftlessWarningEmptyTaskCell": "Im PDF des Stundennachweises bleibt die Spalte für die Aufgabe leer, wenn dem Eintrag später keine Notiz hinzugefügt wird.",
-    "shiftlessWarningNoReimbursement": "Diese Stunden erhalten keine Vergütungsart. Sie erscheinen nicht im Stundennachweis bzw. in der Abrechnung, wenn du den Eintrag später nicht bearbeitest.",
-    "shiftlessWarningNoShiftStats": "Die Stunden zählen nur in die Gesamtstunden, nicht in die Kapazität oder Planung einer Schicht.",
-    "shiftlessWarningTitle": "Check-in ohne Schicht",
+    "selectShiftPlaceholder": "Einsatz wählen",
+    "shiftSearchPlaceholder": "Einsatzname",
+    "shiftSheetTitle": "Einsatz wählen",
+    "shiftlessWarningDuplicateAtSubmit": "Wenn diese Person bereits ein offenes Check-in ohne Einsatz hat, schlägt das Check-in mit einer Fehlermeldung fehl.",
+    "shiftlessWarningEmptyTaskCell": "Im Stundennachweis bleibt die Spalte für die Aufgabe leer. Du kannst später eine Notiz zum Eintrag hinzufügen.",
+    "shiftlessWarningNoReimbursement": "Diese Stunden bekommen keine Vergütungsart. Sie erscheinen erst im Stundennachweis und in der Abrechnung, wenn du den Eintrag später bearbeitest.",
+    "shiftlessWarningNoShiftStats": "Die Stunden zählen nur in die Gesamtstunden, nicht in die Kapazität oder Planung eines Einsatzes.",
+    "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
     "today": "Heute"
@@ -203,7 +203,7 @@
     "card": {
       "pill": "{shiftsCount, plural, =0 {Keine Einsätze} one {1 Einsatz} other {# Einsätze}}{formsCount, plural, =0 {} one { · 1 Formular} other { · # Formulare}}",
       "viewButton": "Veranstaltung ansehen",
-      "volunteers": "{count, plural, one {1 Freiwillige/r angemeldet} other {# Freiwillige angemeldet}}"
+      "volunteers": "{count, plural, one {1 Freiwillige:r angemeldet} other {# Freiwillige angemeldet}}"
     },
     "deleteDialog": {
       "confirm": "Löschen",
@@ -248,7 +248,7 @@
         "searchForms": "Formulare suchen...",
         "subtitle": "Werden vor dem Beitritt zu {eventTitle} ausgefüllt",
         "title": "Für Beitritt erforderliche Formulare",
-        "updateFailedToast": "Erforderliche Formulare konnten nicht aktualisiert werden"
+        "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
       },
       "shiftsCard": {
         "addAria": "Einsatz erstellen",
@@ -267,17 +267,17 @@
           "signedUp": "Angemeldet",
           "accepted": "Angenommen",
           "declined": "Abgelehnt",
-          "cancelled": "Storniert",
-          "rejected": "Zurückgezogen",
+          "cancelled": "Zurückgezogen",
+          "rejected": "Zurückgewiesen",
           "requested": "Angefragt",
           "waitlisted": "Auf der Warteliste"
         },
         "actionUninvite": "Einladung zurückziehen",
         "uninviteSuccess": "Freiwillige:r von der Veranstaltung entfernt",
-        "uninviteError": "Freiwillige:r konnte nicht entfernt werden",
+        "uninviteError": "Die Person ließ sich nicht entfernen. Versuch es bitte erneut.",
         "actionInvite": "Einladen",
         "inviteSuccess": "Freiwillige:r erneut eingeladen",
-        "inviteError": "Einladung konnte nicht erneut gesendet werden",
+        "inviteError": "Die Einladung ließ sich nicht erneut senden. Versuch es bitte erneut.",
         "title": "Freiwillige"
       }
     },
@@ -286,29 +286,29 @@
       "title": "Noch keine Veranstaltungen"
     },
     "error": {
-      "title": "Veranstaltungen konnten nicht geladen werden",
+      "title": "Die Veranstaltungen ließen sich nicht laden.",
       "tryAgain": "Erneut versuchen"
     },
     "form": {
       "coverUrlLabel": "Cover-URL",
       "endsAtLabel": "Ende",
       "locationLabel": "Ort",
-      "locationPlaceholder": "z. B. Fönix Park",
+      "locationPlaceholder": "z. B. Stadtpark",
       "logoUrlLabel": "Logo-URL",
       "startsAtLabel": "Beginn",
       "titleLabel": "Titel",
-      "titlePlaceholder": "z. B. Sommer Festival",
+      "titlePlaceholder": "z. B. Sommerfestival",
       "validation": {
         "endAfterStart": "Enddatum muss nach dem Startdatum liegen",
-        "endRequired": "Enddatum ist erforderlich",
+        "endRequired": "Bitte gib ein Enddatum an.",
         "invalidUrl": "Muss eine gültige URL sein",
-        "startRequired": "Startdatum ist erforderlich",
-        "titleRequired": "Titel ist erforderlich"
+        "startRequired": "Bitte gib ein Startdatum an.",
+        "titleRequired": "Bitte gib einen Titel an."
       }
     },
     "invite": {
       "copyInviteLink": "Einladungslink kopieren",
-      "description": "Lade Mitglieder zu {eventTitle} ein. Sie werden über die Veranstaltung benachrichtigt – dies weist sie keinem Einsatz zu.",
+      "description": "Lade Mitglieder zu {eventTitle} ein. Sie werden über die Veranstaltung benachrichtigt. Das weist sie keinem Einsatz zu.",
       "helperText": "Lieber einen Link? Teile ihn mit allen, die du zur Veranstaltung einladen möchtest.",
       "title": "Mitglieder einladen"
     },
@@ -345,20 +345,20 @@
       "description": "Bitte fülle die erforderlichen Formulare aus, bevor du der Veranstaltung beitrittst.",
       "joinedToast": "Du machst jetzt bei {eventTitle} mit",
       "noForms": "Es sind keine Formulare erforderlich.",
-      "pendingRequestToast": "Ausstehende Anfrage — ein:e Koordinator:in bestätigt deine Mitgliedschaft.",
+      "pendingRequestToast": "Ausstehende Anfrage. Ein:e Koordinator:in bestätigt deine Mitgliedschaft.",
       "rejectedToast": "Anfrage nicht genehmigt",
-      "requestFailed": "Anfrage konnte nicht gesendet werden",
-      "requestSentToast": "Anfrage gesendet — ein:e Koordinator:in bestätigt sie.",
+      "requestFailed": "Die Anfrage ließ sich nicht senden. Versuch es bitte erneut.",
+      "requestSentToast": "Anfrage gesendet. Ein:e Koordinator:in bestätigt sie.",
       "requirementsNeededToast": "Bitte fülle zuerst alle erforderlichen Formulare aus",
       "title": "{eventTitle} beitreten"
     },
-    "fullyBooked": "Ausgebucht - Warteliste verfügbar",
+    "fullyBooked": "Voll besetzt. Du kannst auf die Warteliste.",
     "noShifts": "Noch keine Einsätze geplant.",
     "noShiftsOnDay": "Keine Einsätze an diesem Tag.",
     "pendingCta": "Ausstehende Anfrage",
     "pendingNote": "Ein:e Koordinator:in bestätigt deine Anfrage.",
     "rejectedCta": "Du kannst dieser Veranstaltung nicht beitreten",
-    "requestSentToast": "Anfrage gesendet — ein:e Koordinator:in bestätigt sie.",
+    "requestSentToast": "Anfrage gesendet. Ein:e Koordinator:in bestätigt sie.",
     "requiredFormsTitle": "Erforderliche Formulare",
     "shiftsCount": "{n, plural, one {# Einsatz} other {# Einsätze}}",
     "shiftsHeading": "Einsätze",
@@ -382,7 +382,7 @@
   "MemberSelect": {
     "allSelected": "Alle Mitglieder wurden ausgewählt",
     "availableLabel": "Verfügbar",
-    "copyToast": "Teile diesen Link mit der/dem Freiwilligen",
+    "copyToast": "Teile diesen Link mit der:dem Freiwilligen",
     "inviteByLink": "Per Link einladen",
     "invitedLabel": "Eingeladen",
     "noResults": "Keine Mitglieder gefunden",
@@ -421,13 +421,14 @@
         "awaiting-signature": "Zu unterschreiben",
         "awaiting-countersignature": "Zu gegenzeichnen",
         "signed": "Aktiv",
+        "expired": "Abgelaufen",
         "declined": "Abgelehnt"
       },
       "figures": "{shifts} Einsätze · {hours} Stunden · {amount}",
       "lines": {
         "generated": "Generiert am {date} von {name}",
         "signedByMe": "Du hast am {date} unterschrieben",
-        "countersignedBy": "{name} hat am {date} gegensigniert",
+        "countersignedBy": "{name} hat am {date} gegengezeichnet",
         "declinedBy": "{name} hat am {date} abgelehnt"
       },
       "actions": {
@@ -439,9 +440,9 @@
       "missingProfileCta": "Profil vervollständigen, um zu unterschreiben",
       "toasts": {
         "signed": "{name} unterschrieben.",
-        "signedError": "{name} konnte nicht unterschrieben werden. Bitte erneut versuchen.",
+        "signedError": "{name} ließ sich nicht unterschreiben. Versuch es bitte erneut.",
         "declined": "{name} abgelehnt.",
-        "declinedError": "{name} konnte nicht abgelehnt werden. Bitte erneut versuchen.",
+        "declinedError": "{name} ließ sich nicht ablehnen. Versuch es bitte erneut.",
         "downloadUnavailable": "Das Dokument ist noch nicht zum Herunterladen verfügbar."
       },
       "empty": {
@@ -452,18 +453,17 @@
         "title": "Dokument ablehnen",
         "description": "Diese Organisation muss verstehen, warum du dieses {documentName} ablehnst.",
         "reasonLabel": "Ablehnungsgrund",
-        "reasonPlaceholder": "Erkläre, warum du das Dokument ablehnst…",
+        "reasonPlaceholder": "Erkläre, warum du das Dokument ablehnst...",
         "submit": "Ablehnen"
       },
       "preview": {
         "title": "{name}",
         "unavailable": "Das Dokument ist noch nicht zur Vorschau verfügbar.",
-        "error": "Die Vorschau konnte nicht geladen werden.",
+        "error": "Die Vorschau ließ sich nicht laden. Versuch es bitte erneut.",
         "retry": "Erneut versuchen",
         "errorHelp": "Zu deiner Mitgliedschaft, um Hilfe zu erhalten",
         "signDisabledHint": "Du kannst erst unterschreiben oder ablehnen, wenn du das Dokument in der Vorschau angesehen hast."
-      },
-      "downloadUnavailableNote": "PDF noch nicht verfügbar."
+      }
     }
   },
   "IdVerification": {
@@ -473,23 +473,23 @@
     },
     "card": {
       "label": "Ausweisprüfung aktivieren",
-      "description": "Wenn aktiviert, werden Betreuer beim Check-in aufgefordert, den Ausweis eines Freiwilligen zu prüfen. Die Prüfung ist optional und blockiert den Check-in nicht.",
-      "updateError": "Die Einstellung konnte nicht gespeichert werden."
+      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht.",
+      "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
     }
   },
   "MembershipRequest": {
     "actions": {
       "approve": "Genehmigen",
-      "approveDisabledTitle": "Erforderliche Formulare sind unvollständig",
+      "approveDisabledTitle": "Erforderliche Formulare sind noch nicht vollständig",
       "cancel": "Abbrechen",
       "dismiss": "Verwerfen",
       "leave": "Verlassen",
       "reject": "Ablehnen",
-      "rejectDialogDescription": "Bist du sicher, dass du diese Mitgliedschaftsanfrage ablehnen möchtest? Bitte gib einen Grund an, damit die betroffene Person versteht, warum ihre Anfrage abgelehnt wurde.",
+      "rejectDialogDescription": "Bist du sicher, dass du diese Mitgliedschaftsanfrage ablehnen möchtest? Bitte gib einen Grund an, damit die Person versteht, warum ihre Anfrage abgelehnt wurde.",
       "rejectDialogTitle": "Mitgliedschaftsanfrage ablehnen",
       "rejecting": "Wird abgelehnt...",
       "rejectionReasonLabel": "Ablehnungsgrund",
-      "rejectionReasonPlaceholder": "Erkläre, warum die Anfrage abgelehnt wird...",
+      "rejectionReasonPlaceholder": "Erkläre, warum du die Anfrage ablehnst...",
       "withdraw": "Zurückziehen",
       "open": "Öffnen"
     },
@@ -502,7 +502,7 @@
     },
     "dialog": {
       "leaveDescription": "Möchtest du {orgName} wirklich verlassen?",
-      "leaveTitle": "Mitgliedschaft widerrufen",
+      "leaveTitle": "Organisation verlassen",
       "withdrawDescription": "Möchtest du deine Anfrage an {orgName} wirklich zurückziehen?",
       "withdrawTitle": "Anfrage zurückziehen"
     },
@@ -518,15 +518,15 @@
         "requestsButton": "Deine Anfragen",
         "title": "Etwas ist schiefgelaufen"
       },
-      "joinErrorFallback": "Organisation konnte nicht beigetreten werden",
+      "joinErrorFallback": "Der Beitritt zur Organisation hat nicht geklappt. Versuch es bitte erneut.",
       "pending": {
-        "message": "Deine Mitgliedschaftsanfrage für {orgName} wird noch geprüft. Ein Admin wird sie in Kürze bearbeiten.",
+        "message": "Deine Mitgliedschaftsanfrage für {orgName} wird noch geprüft. Ein:e Koordinator:in wird sie in Kürze bearbeiten.",
         "title": "Anfrage ausstehend",
         "viewRequests": "Deine Anfragen ansehen"
       },
       "rejected": {
         "homeButton": "Zur Startseite",
-        "message": "Deine Mitgliedschaftsanfrage für {orgName} wurde abgelehnt. Kontaktiere einen Admin, wenn du denkst, dass das ein Fehler war.",
+        "message": "Deine Mitgliedschaftsanfrage für {orgName} wurde abgelehnt. Danke, dass du dich engagieren wolltest. Bei Fragen melde dich bei deiner Ehrenamtskoordination.",
         "requestsButton": "Deine Anfragen",
         "title": "Anfrage abgelehnt"
       },
@@ -538,24 +538,24 @@
         "requiredBadge": "Erforderlich",
         "statusLabel": "Status: {status, select, approved {genehmigt} rejected {abgelehnt} pending {ausstehend} other {ausstehend}}",
         "submitDocuments": "Dokumente einreichen",
-        "submitFailed": "Dokumente konnten nicht eingereicht werden",
+        "submitFailed": "Die Dokumente ließen sich nicht einreichen. Versuch es bitte erneut.",
         "submitSuccess": "Dokumente eingereicht",
         "submitting": "Wird eingereicht...",
         "title": "{orgName} beitreten"
       },
       "sent": {
-        "message": "Deine Mitgliedschaftsanfrage für {orgName} wurde erfolgreich gesendet. Ein Admin wird sie in Kürze bearbeiten.",
+        "message": "Deine Mitgliedschaftsanfrage für {orgName} wurde gesendet. Ein:e Koordinator:in wird sie in Kürze bearbeiten.",
         "title": "Anfrage gesendet",
         "viewRequests": "Deine Anfragen ansehen"
       },
-      "unexpectedError": "Unerwartete Antwort vom Server"
+      "unexpectedError": "Da ist etwas schiefgelaufen. Versuch es bitte erneut."
     },
     "joinForms": {
       "description": "Bitte fülle die erforderlichen Formulare aus, bevor du eine Beitrittsanfrage stellst.",
       "joined": "Du bist der Organisation beigetreten",
       "noForms": "Es sind keine Formulare erforderlich.",
       "rejected": "Deine Anfrage wurde abgelehnt",
-      "requestFailed": "Anfrage konnte nicht gesendet werden",
+      "requestFailed": "Die Anfrage ließ sich nicht senden. Versuch es bitte erneut.",
       "requestPending": "Deine Anfrage wird geprüft",
       "requirementsNeeded": "Bitte fülle zuerst alle erforderlichen Formulare aus",
       "title": "{orgName} beitreten"
@@ -566,7 +566,7 @@
       "requestedDate": "Angefragt · {date}"
     },
     "page": {
-      "subtitle": "Deine Anfragen, Organisationen beizutreten",
+      "subtitle": "Deine Anfragen an Organisationen",
       "title": "Mitgliedschaften"
     },
     "requiredForms": {
@@ -581,31 +581,31 @@
       "requested": "Angefragt"
     },
     "toast": {
-      "approveFailed": "Mitgliedschaftsanfrage konnte nicht genehmigt werden",
+      "approveFailed": "Die Anfrage ließ sich nicht genehmigen. Versuch es bitte erneut.",
       "approved": "Mitgliedschaftsanfrage genehmigt",
-      "cancelFailed": "Mitgliedschaftsanfrage konnte nicht zurückgezogen werden",
+      "cancelFailed": "Die Anfrage ließ sich nicht zurückziehen. Versuch es bitte erneut.",
       "cancelled": "Mitgliedschaftsanfrage zurückgezogen",
-      "dismissFailed": "Mitgliedschaftsanfrage konnte nicht verworfen werden",
+      "dismissFailed": "Die Anfrage ließ sich nicht verwerfen. Versuch es bitte erneut.",
       "dismissed": "Mitgliedschaftsanfrage verworfen",
-      "leaveFailed": "Organisation konnte nicht verlassen werden",
+      "leaveFailed": "Die Organisation ließ sich nicht verlassen. Versuch es bitte erneut.",
       "left": "Du hast {orgName} verlassen",
       "rejected": "Mitgliedschaftsanfrage abgelehnt",
-      "withdrawFailed": "Anfrage konnte nicht zurückgezogen werden",
+      "withdrawFailed": "Die Anfrage ließ sich nicht zurückziehen. Versuch es bitte erneut.",
       "withdrawn": "Anfrage zurückgezogen"
     },
     "validation": {
-      "rejectionReasonRequired": "Ein Ablehnungsgrund ist erforderlich"
+      "rejectionReasonRequired": "Bitte gib einen Ablehnungsgrund an."
     }
   },
   "Metadata": {
-    "description": "Plattform zur Verwaltung von ehrenamtlich Engagierten",
+    "description": "Software für Ehrenamtsmanagement",
     "title": "Caluno",
     "unauthorizedTitle": "Zugriff verweigert | Caluno"
   },
   "MyTime": {
     "empty": {
       "cta": "Einsätze finden",
-      "description": "Sobald du dich zu einem Einsatz eincheckst, erscheinen hier deine geleisteten Stunden.",
+      "description": "Sobald du bei einem Einsatz eincheckst, erscheinen hier deine geleisteten Stunden.",
       "title": "Noch keine Stunden"
     },
     "generalTime": "Allgemeine Zeit",
@@ -625,7 +625,7 @@
     "events": "Veranstaltungen",
     "home": "Startseite",
     "idVerification": "Ausweisprüfung",
-    "myTime": "Deine Nachweise",
+    "myTime": "Nachweise",
     "orgUnits": "Organisationseinheiten",
     "organizationSettings": "Organisationseinstellungen",
     "organizations": "Organisationen",
@@ -645,7 +645,7 @@
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
-    "myDocumentsBadge": "{count} Dokumente warten auf deine Unterschrift"
+    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}"
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",
@@ -657,7 +657,7 @@
     "eventMetaUnlimited": "{shifts, plural, one {# Einsatz} other {# Einsätze}} · Offen",
     "eventsCount": "{n, plural, one {# Veranstaltung} other {# Veranstaltungen}}",
     "eventsHeading": "Veranstaltungen",
-    "fullyBooked": "Ausgebucht - Warteliste verfügbar",
+    "fullyBooked": "Voll besetzt. Du kannst auf die Warteliste.",
     "memberCount": "{n, plural, one {# Mitglied} other {# Mitglieder}}",
     "noEvents": "Noch keine Veranstaltungen.",
     "noShifts": "Noch keine einzelnen Einsätze.",
@@ -666,7 +666,7 @@
     "requestMembershipNote": "Ein:e Koordinator:in bestätigt deine Anfrage.",
     "requestPending": "Anfrage ausstehend",
     "requestRejected": "Anfrage nicht bestätigt",
-    "requestSentToast": "Anfrage gesendet — ein:e Koordinator:in bestätigt sie.",
+    "requestSentToast": "Anfrage gesendet. Ein:e Koordinator:in bestätigt sie.",
     "shiftsCount": "{n, plural, one {# Einsatz} other {# Einsätze}}",
     "shiftsHeading": "Einzelne Einsätze",
     "shiftsSubheading": "Nicht Teil einer Veranstaltung",
@@ -675,11 +675,13 @@
   },
   "OrgUnit": {
     "delete": {
-      "childrenWarning": "Warnung: Diese Einheit hat untergeordnete Einheiten. Das Löschen wirkt sich auf die Hierarchie aus.",
-      "confirmLabel": "Gib LÖSCHEN zur Bestätigung ein",
-      "confirmPlaceholder": "LÖSCHEN",
-      "description": "Diese Aktion kann nicht rückgängig gemacht werden. Die Einheit wird dauerhaft gelöscht.",
-      "title": "\"{name}\" löschen"
+      "description": "Unser Team prüft deine Anfrage und entfernt die Einheit für dich.",
+      "messageLabel": "Nachricht (optional)",
+      "requestButton": "Anfrage senden",
+      "requesting": "Wird gesendet...",
+      "sentDescription": "Wir haben unser Team informiert, dass du \"{name}\" entfernt haben möchtest. Es meldet sich bei dir.",
+      "sentTitle": "Anfrage gesendet",
+      "title": "Löschung von \"{name}\" anfragen"
     },
     "detail": {
       "aboutTitle": "Über",
@@ -697,8 +699,12 @@
       "zipCodePlaceholder": "z. B. 10115",
       "legalRepLabel": "Vertretungsberechtigte Person",
       "legalRepPlaceholder": "z. B. Erika Musterfrau",
+      "contactPersonNameLabel": "Name der Ansprechperson",
+      "contactPersonNamePlaceholder": "z. B. Erika Musterfrau",
+      "contactPersonSectionDescription": "Wird neuen Mitgliedern in der Willkommens-E-Mail und während ihrer ausstehenden Anfrage angezeigt.",
+      "contactPersonSectionTitle": "Ansprechperson für neue Mitglieder",
       "descriptionLabel": "Beschreibung",
-      "descriptionPlaceholder": "Beschreibe diese Organisationseinheit...",
+      "descriptionPlaceholder": "Beschreibe diese Organisationseinheit",
       "emailLabel": "E-Mail",
       "emailPlaceholder": "z. B. kontakt@beispiel.de",
       "logoLabel": "Logo",
@@ -710,7 +716,9 @@
       "typeLabel": "Typ",
       "typePlaceholder": "Typ auswählen",
       "websiteLabel": "Website-URL",
-      "websitePlaceholder": "z. B. https://beispiel.de"
+      "websitePlaceholder": "z. B. https://beispiel.de",
+      "welcomeMessageLabel": "Willkommensnachricht",
+      "welcomeMessagePlaceholder": "Eine kurze Nachricht für neue Mitglieder"
     },
     "page": {
       "subtitle": "Verwalte die Hierarchie der Organisationseinheiten für {orgName}",
@@ -732,12 +740,12 @@
       "copyToast": "Link zur Organisationseinheit kopiert",
       "deleteAria": "Löschen",
       "editAria": "Bearbeiten",
-      "empty": "Keine Organisationseinheit-Hierarchie gefunden. Kontaktiere deinen Administrator.",
+      "empty": "Keine Organisationseinheit-Hierarchie gefunden. Wende dich an deine Koordination.",
       "visitAria": "Besuchen"
     },
     "validation": {
       "nameMin": "Name muss mindestens 2 Zeichen lang sein",
-      "typeRequired": "Ein Typ für die Organisationseinheit ist erforderlich"
+      "typeRequired": "Bitte wähle einen Typ für die Organisationseinheit."
     }
   },
   "Organization": {
@@ -749,9 +757,9 @@
       "emailLabel": "E-Mail",
       "emailPlaceholder": "kontakt@organisation.org",
       "errors": {
-        "generic": "Organisation konnte nicht erstellt werden. Bitte versuche es erneut.",
-        "nameRequired": "Name der Organisation ist erforderlich",
-        "rootNotResolved": "Organisation erstellt, aber die Stammeinheit konnte nicht ermittelt werden."
+        "generic": "Die Organisation ließ sich nicht erstellen. Versuch es bitte erneut.",
+        "nameRequired": "Bitte gib einen Namen für die Organisation an.",
+        "rootNotResolved": "Die Organisation ist erstellt, aber ihre Stammeinheit ließ sich nicht laden. Lade die Seite bitte neu."
       },
       "logoLabel": "Logo",
       "nameLabel": "Name der Organisation",
@@ -772,41 +780,42 @@
   },
   "Pagination": {
     "pageOf": "Seite {current} von {total}",
-    "showing": "{start}-{end} von {total} {name} werden angezeigt"
+    "showing": "Zeigt {start}-{end} von {total} {name}"
   },
   "Profile": {
     "accountSettings": "Kontoeinstellungen",
     "accountSettingsSaved": "Kontoeinstellungen aktualisiert",
-    "accountSettingsSaveFailed": "Kontoeinstellungen konnten nicht aktualisiert werden",
+    "accountSettingsSaveFailed": "Die Kontoeinstellungen ließen sich nicht aktualisieren. Versuch es bitte erneut.",
     "edit": "Bearbeiten",
     "emailLocked": "Mit deiner Anmeldung verknüpft",
     "emailOff": "Aus",
     "emailOn": "Ein",
     "emailPlatform": "Plattform",
-    "emailPlatformDescription": "Einladungen, Beitritte, Absagen, Schichtänderungen und Mitgliedschaft.",
+    "emailPlatformDescription": "Einladungen, Beitritte, Absagen, Einsatzänderungen und Mitgliedschaft.",
     "emailSettings": "E-Mails",
     "emailUrgentCalls": "Dringende Aufrufe",
-    "emailUrgentCallsDescription": "Dringende Aufrufe für unterbesetzte Schichten.",
+    "emailUrgentCallsDescription": "Dringende Aufrufe für unterbesetzte Einsätze.",
     "emailWeeklyUpdate": "Wöchentliche Übersicht",
     "emailWeeklyUpdateDescription": "Die wöchentliche Planungs-E-Mail am Sonntag.",
     "identity": {
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
         "iban": "Für Aufwandsentschädigungen",
+        "accountHolder": "Name auf dem Bankkonto",
         "lastName": "Wie auf deinem Ausweis",
         "preferredName": "Falls du anders angesprochen werden möchtest",
-        "bic": "Bankleitzahl (BIC) deines Kontos",
-        "taxId": "Deine Steuernummer (für Spendenbescheinigungen)"
+        "bic": "BIC deines Kontos",
+        "taxId": "Deine Steuer-ID (für Spendenbescheinigungen)"
       }
     },
     "language": "Sprache",
     "languageDescription": "Anzeigesprache der App",
-    "moreSettingsPrompt": "Weitere Einstellungen findest du in deinem <link>Freiwilligenprofil</link>",
+    "moreSettingsPrompt": "Weitere Einstellungen findest du in deinem <link>Freiwilligenprofil</link>.",
     "organizations": "Deine Organisationen",
     "pageTitle": "Profil",
     "personalInformation": "Persönliche Informationen",
     "pictureLabel": "Profilbild",
-    "saveFailed": "Profil konnte nicht aktualisiert werden",
+    "saveFailed": "Dein Profil ließ sich nicht aktualisieren. Versuch es bitte erneut.",
     "saved": "Profil aktualisiert",
     "title": "Profil bearbeiten"
   },
@@ -841,15 +850,15 @@
     "actions": {
       "blockCreated": "Block erstellt",
       "blockSaved": "Block gespeichert",
-      "couldNotCopyLink": "Link konnte nicht kopiert werden",
-      "failedToAddField": "Feld konnte nicht hinzugefügt werden",
-      "failedToCreateForm": "Formular konnte nicht erstellt werden",
-      "failedToDeleteField": "Feld konnte nicht gelöscht werden",
-      "failedToLoadBlock": "Block konnte nicht geladen werden",
-      "failedToSaveBlock": "Block konnte nicht gespeichert werden",
-      "failedToSaveForm": "Formular konnte nicht gespeichert werden",
-      "failedToSubmitForm": "Formular konnte nicht abgesendet werden",
-      "failedToUpdateField": "Feld konnte nicht aktualisiert werden",
+      "couldNotCopyLink": "Der Link ließ sich nicht kopieren. Versuch es bitte erneut.",
+      "failedToAddField": "Das Feld ließ sich nicht hinzufügen. Versuch es bitte erneut.",
+      "failedToCreateForm": "Das Formular ließ sich nicht erstellen. Versuch es bitte erneut.",
+      "failedToDeleteField": "Das Feld ließ sich nicht löschen. Versuch es bitte erneut.",
+      "failedToLoadBlock": "Der Block ließ sich nicht laden. Versuch es bitte erneut.",
+      "failedToSaveBlock": "Der Block ließ sich nicht speichern. Versuch es bitte erneut.",
+      "failedToSaveForm": "Das Formular ließ sich nicht speichern. Versuch es bitte erneut.",
+      "failedToSubmitForm": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
+      "failedToUpdateField": "Das Feld ließ sich nicht aktualisieren. Versuch es bitte erneut.",
       "fieldAdded": "Feld hinzugefügt",
       "fieldDeleted": "Feld gelöscht",
       "fieldUpdated": "Feld aktualisiert",
@@ -879,11 +888,11 @@
       "enterDocumentFileError": "Bitte lade ein Dokument hoch.",
       "fieldN": "Feld {n}",
       "fieldsTitle": "Felder ({count})",
-      "iconLabel": "Icon",
+      "iconLabel": "Symbol",
       "iconPlaceholder": "z. B. user",
       "labelLabel": "Bezeichnung",
       "labelPlaceholder": "Feldbezeichnung",
-      "loading": "Wird geladen…",
+      "loading": "Wird geladen...",
       "lockedNotice": "Dieser Block ist gesperrt, weil er in einem Formular mit Einsendungen verwendet wird.",
       "noFields": "Noch keine Felder. Füge das erste Feld zu diesem Block hinzu.",
       "optionLabelPlaceholder": "Bezeichnung {n}",
@@ -892,7 +901,7 @@
       "optionsLabel": "Optionen",
       "placeholderLabel": "Platzhalter",
       "placeholderPlaceholder": "z. B. Gib deinen Namen ein",
-      "profileFieldHint": "Freiwillige füllen diese einmal aus und sie werden über Organisationen hinweg wiederverwendet.",
+      "profileFieldHint": "Freiwillige füllen diese einmal aus. Die Angaben gelten dann organisationsübergreifend.",
       "required": "Erforderlich",
       "saveBlock": "Block speichern",
       "saveChanges": "Änderungen speichern",
@@ -913,8 +922,8 @@
       "createTitle": "Block erstellen",
       "editDescription": "Bearbeite diesen Block und seine Felder.",
       "editTitle": "Block bearbeiten",
-      "loading": "Wird geladen…",
-      "viewDescription": "Dieser Block ist gesperrt — er wird in einem Formular mit Einsendungen verwendet.",
+      "loading": "Wird geladen...",
+      "viewDescription": "Dieser Block ist gesperrt. Er wird in einem Formular mit Einsendungen verwendet.",
       "viewTitle": "Block ansehen"
     },
     "builder": {
@@ -929,7 +938,7 @@
       "editBlock": "Bearbeiten",
       "emptyDescription": "Füge deinen ersten Block hinzu, um dieses Formular aufzubauen.",
       "emptyTitle": "Noch keine Blöcke",
-      "fieldsCount": "{count} Felder",
+      "fieldsCount": "{count, plural, one {# Feld} other {# Felder}}",
       "lockedTooltip": "Gesperrt",
       "noFields": "Keine Felder",
       "noPreview": "Füge Blöcke hinzu, um eine Vorschau zu sehen",
@@ -937,9 +946,9 @@
       "saveDisabledHint": "Füge einen Block hinzu, damit du speichern kannst",
       "saveForm": "Formular speichern",
       "saving": "Wird gespeichert...",
-      "shareLinkCopied": "Freigabelink in Zwischenablage kopiert",
+      "shareLinkCopied": "Freigabelink in die Zwischenablage kopiert",
       "submissionsWarning": "Dieses Formular hat Einsendungen",
-      "submissionsWarningDescription": "Die Bearbeitung ist deaktiviert, weil Freiwillige bereits Antworten eingereicht haben. Erstelle eine Kopie, wenn du eine neue Version brauchst.",
+      "submissionsWarningDescription": "Du kannst dieses Formular nicht mehr bearbeiten, weil Freiwillige bereits Antworten eingereicht haben. Erstelle eine Kopie, wenn du eine neue Version brauchst.",
       "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
       "unsavedChangesLeave": "Ohne Speichern verlassen",
       "unsavedChangesStay": "Weiter bearbeiten",
@@ -989,9 +998,10 @@
       "document": "Dokument",
       "documentFileDescription": "PDF oder Bild, max. 10 MB",
       "documentFileLabel": "Dokument",
+      "addDocumentFile": "Dokument hinzufügen",
       "documentLabelLabel": "Dokumentenbezeichnung",
       "documentLabelPlaceholder": "z. B. Datenschutzerklärung",
-      "dropdown": "Dropdown",
+      "dropdown": "Auswahlliste",
       "email": "E-Mail",
       "enterDocumentFileError": "Bitte lade ein Dokument hoch.",
       "enterDocumentLabelError": "Bitte gib eine Dokumentenbezeichnung ein.",
@@ -999,12 +1009,13 @@
       "enterOptionError": "Bitte gib mindestens eine Option ein.",
       "enterTextError": "Bitte gib einen Text ein.",
       "fieldTypeLabel": "Feldtyp",
-      "fieldTypePlaceholder": "Typ auswählen...",
+      "fieldTypePlaceholder": "Typ auswählen",
       "firstName": "Vorname",
       "gender": "Geschlecht",
       "iban": "IBAN",
+      "accountHolder": "Kontoinhaber:in",
       "bic": "BIC",
-      "taxId": "Steuernummer",
+      "taxId": "Steuer-ID",
       "infoText": "Infotext",
       "labelLabel": "Bezeichnung",
       "labelPlaceholder": "z. B. Lieblingsfarbe",
@@ -1017,7 +1028,7 @@
       "placeholderLabel": "Platzhalter",
       "placeholderPlaceholder": "z. B. Gib deine Antwort ein",
       "preferredName": "Bevorzugter Name",
-      "profileField": "Profilfeld: {key} — der Wert wird im Profil der Nutzenden gespeichert und bei zukünftigen Formularen vorausgefüllt.",
+      "profileField": "Profilfeld: {key}. Der Wert wird im Profil der Freiwilligen gespeichert und bei zukünftigen Formularen vorausgefüllt.",
       "profileFieldNone": "Keines",
       "profileFieldOptional": "Profilfeld (optional)",
       "required": "Erforderlich",
@@ -1042,23 +1053,30 @@
       "nameLabel": "Name",
       "namePlaceholder": "z. B. Onboarding-Formular"
     },
+    "genderOptions": {
+      "female": "Weiblich",
+      "male": "Männlich",
+      "diverse": "Divers",
+      "prefer-not-to-say": "Keine Angabe"
+    },
     "submission": {
       "accepted": "Akzeptiert",
       "answerColumn": "Antwort",
       "fallbackForm": "Formular",
       "fallbackVolunteer": "Freiwillige:r",
       "fieldColumn": "Feld",
-      "noFields": "Für dieses Formular sind keine Felder definiert."
+      "noFields": "Für dieses Formular sind keine Felder definiert.",
+      "restrictedPaymentData": "Du hast keine Berechtigung, Bankdaten einzusehen."
     },
     "submissions": {
       "emailColumn": "E-Mail",
       "empty": "Noch keine Einsendungen.",
       "emptySearch": "Keine Freiwilligen gefunden.",
       "lastSubmittedColumn": "Zuletzt eingereicht",
-      "searchPlaceholder": "Freiwillige suchen…",
+      "searchPlaceholder": "Freiwillige suchen...",
       "submissionsColumn": "Einsendungen",
       "subtitle": "Freiwillige, die dieses Formular eingereicht haben. Klicke auf eine Person, um die Einsendung anzusehen.",
-      "title": "Einsendungen — {formName}",
+      "title": "Einsendungen: {formName}",
       "viewSubmission": "Ansehen →",
       "volunteerColumn": "Freiwillige:r"
     },
@@ -1066,61 +1084,62 @@
       "blocks": "Blöcke",
       "cannotDeleteAria": "Gesperrt",
       "copyShareLinkAria": "Link kopieren",
-      "deleteBlockAria": "Löschen",
+      "deleteBlockAria": "Block löschen",
       "deleteBlockDescription": "{name} wird dauerhaft entfernt.",
-      "deleteFormAria": "Löschen",
+      "deleteFormAria": "Formular löschen",
       "deleteFormDescription": "{name} wird dauerhaft entfernt.",
       "description": "Beschreibung",
-      "editBlockAria": "Bearbeiten",
-      "editFormAria": "Bearbeiten",
+      "editBlockAria": "Block bearbeiten",
+      "editFormAria": "Formular bearbeiten",
       "editable": "Bearbeitbar",
       "fieldCount": "{count, plural, one {# Feld} other {# Felder}}",
       "fields": "Felder",
       "name": "Name",
-      "submissionsAria": "Einreichungen",
+      "submissionsAria": "Einsendungen",
       "title": "Titel",
       "updated": "Aktualisiert",
       "usedIn": "Verwendet in",
-      "viewBlockAria": "Ansehen",
+      "viewBlockAria": "Block ansehen",
       "yes": "Ja"
     },
     "validation": {
       "dateNotFuture": "{label} darf nicht in der Zukunft liegen",
-      "fieldLabelRequired": "Feldbezeichnung ist erforderlich",
-      "fieldRequired": "{label} ist erforderlich",
+      "fieldLabelRequired": "Bitte gib eine Feldbezeichnung an.",
+      "fieldRequired": "Bitte fülle {label} aus.",
       "invalidCharacters": "{label} enthält ungültige Zeichen",
       "invalidIban": "{label} muss eine gültige IBAN sein",
       "invalidBic": "{label} muss eine gültige BIC sein",
       "invalidOptions": "{label} enthält ungültige Optionen",
-      "labelRequired": "Bezeichnung ist erforderlich",
+      "labelRequired": "Bitte gib eine Bezeichnung an.",
       "maxChars": "{label} darf maximal {maxLen} Zeichen lang sein",
       "minAge": "Du musst mindestens {minAge} Jahre alt sein",
       "mustBeNumber": "{label} muss eine Zahl sein",
       "mustBeValidDate": "{label} muss ein gültiges Datum sein",
       "mustBeValidEmail": "{label} muss eine gültige E-Mail-Adresse sein",
       "mustBeValidPhone": "{label} muss eine gültige Telefonnummer sein",
-      "nameRequired": "Name ist erforderlich",
-      "titleRequired": "Titel ist erforderlich",
+      "nameRequired": "Bitte gib einen Namen an.",
+      "titleRequired": "Bitte gib einen Titel an.",
       "validPostalCode": "{label} muss eine gültige Postleitzahl sein"
     },
     "volunteerForm": {
-      "alreadySubmittedMessage": "Dein Formular wurde erfolgreich abgesendet.",
+      "alreadySubmittedMessage": "Dein Formular ist abgesendet.",
       "alreadySubmittedTitle": "Formular abgesendet",
       "back": "Zurück",
       "birthDateFormat": "TT.MM.JJJJ",
       "checkboxYes": "Ja",
       "documentAcknowledgement": "Ich bestätige und akzeptiere",
-      "failedToSubmit": "Formular konnte nicht abgesendet werden",
-      "membershipRequestNotice": "Mit dem Absenden dieses Formulars sendest du eine Mitgliedschaftsanfrage an {orgName}. Ein:e Administrator:in prüft und genehmigt deine Anfrage.",
+      "failedToSubmit": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
+      "membershipRequestNotice": "Mit dem Absenden dieses Formulars sendest du eine Mitgliedschaftsanfrage an {orgName}. Ein:e Koordinator:in prüft deine Anfrage.",
       "next": "Weiter",
       "noBlocks": "Dieses Formular hat keine Blöcke.",
-      "noFields": "Dieser Block hat noch keine konfigurierten Felder.",
+      "noFields": "Dieser Block hat noch keine Felder.",
+      "paymentDataVisibilityHint": "Deine Bankdaten sind nur für die Personen einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
       "selectOption": "Option auswählen",
       "step": "Schritt {current} von {total}",
       "submit": "Absenden",
       "submitting": "Wird abgesendet...",
-      "successMessage": "Deine Anfrage wird geprüft. Ein:e Administrator:in meldet sich in Kürze bei dir.",
+      "successMessage": "Deine Anfrage wird geprüft. Ein:e Koordinator:in meldet sich in Kürze bei dir.",
       "successTitle": "Anfrage eingegangen!"
     }
   },
@@ -1128,7 +1147,7 @@
     "action": {
       "deleteAria": "Löschen",
       "deleteDescription": "Bist du sicher, dass du diese Rolle löschen möchtest?",
-      "deleteError": "Rolle konnte nicht gelöscht werden. {error}",
+      "deleteError": "Die Rolle ließ sich nicht löschen. {error}",
       "deleteSuccess": "Rolle gelöscht",
       "deleteTitle": "Löschen",
       "editAria": "Bearbeiten"
@@ -1145,11 +1164,14 @@
       "descriptionPlaceholder": "Wofür ist diese Rolle gedacht?",
       "nameLabel": "Name",
       "namePlaceholder": "z. B. Projektmanager",
-      "permissionsHint": "Wähle aus, was Benutzer mit dieser Rolle tun dürfen.",
+      "permissionsHint": "Wähle aus, was Personen mit dieser Rolle tun dürfen.",
       "permissionsLabel": "Berechtigungen"
     },
     "noRole": "Keine Rolle",
-    "owner": "Eigentümer",
+    "internal": {
+      "owner": "Leitung",
+      "member": "Mitglied"
+    },
     "page": {
       "createButton": "Rolle erstellen",
       "empty": "Noch keine Rollen. Erstelle deine erste Rolle, um loszulegen.",
@@ -1181,7 +1203,7 @@
     },
     "validation": {
       "nameMin": "Name muss mindestens 2 Zeichen lang sein",
-      "permissionsRequired": "Mindestens eine Berechtigung ist erforderlich"
+      "permissionsRequired": "Bitte wähle mindestens eine Berechtigung."
     }
   },
   "Settings": {
@@ -1204,16 +1226,17 @@
       "websiteLabel": "Website",
       "websitePlaceholder": "https://organisation.org",
       "saved": "Organisation aktualisiert",
-      "saveFailed": "Organisation konnte nicht aktualisiert werden"
+      "saveFailed": "Die Organisation ließ sich nicht aktualisieren. Versuch es bitte erneut."
     }
   },
   "Shift": {
     "action": {
       "copyLinkAria": "Link kopieren",
-      "deleteDescription": "Bist du sicher, dass du diesen Einsatz und alle zugehörigen Stundenzettel löschen möchtest?",
-      "deleteError": "Einsatz konnte nicht gelöscht werden. {error}",
-      "deleteSuccess": "Einsatz erfolgreich gelöscht.",
+      "deleteDescription": "Bist du sicher, dass du diesen Einsatz und alle zugehörigen Stundennachweise löschen möchtest?",
+      "deleteError": "Der Einsatz ließ sich nicht löschen. {error}",
+      "deleteSuccess": "Einsatz gelöscht.",
       "deleteTitle": "Löschen",
+      "duplicateAria": "Duplizieren",
       "editAria": "Bearbeiten",
       "inviteAria": "Einladen",
       "leaveShift": "Einsatz verlassen",
@@ -1232,20 +1255,24 @@
       "noVolunteers": "Noch keine Freiwilligen eingeladen",
       "openInstanceAria": "Öffnen",
       "waitlist": "Warteliste",
-      "waitlistInviteError": "Einladen fehlgeschlagen",
+      "waitlistInviteError": "Die Einladung hat nicht geklappt. Versuch es bitte erneut.",
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
+      "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
+      "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
+      "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutTitle": "Auschecken",
       "checkedInAt": "Eingecheckt: {time}",
       "checkingOut": "Wird ausgecheckt...",
       "checkingOutAt": "Wird ausgecheckt: {time}",
       "generalCheckIn": "Allgemeines Check-in",
+      "moreWindows": "{count, plural, one {noch 1 weitere} other {noch # weitere}}",
       "volunteerCheckedOut": "Freiwillige:r ausgecheckt"
     },
     "compensation": {
-      "agreementNote": "Mit der Annahme dieser Schicht erhältst du eine Vereinbarung zur Unterschrift.",
+      "agreementNote": "Wenn du diesen Einsatz annimmst, bekommst du eine Vereinbarung zur Unterschrift.",
       "ehrenamt": "Vergütet über Ehrenamtspauschale",
       "uebungsleiter": "Vergütet über Übungsleiterpauschale"
     },
@@ -1271,7 +1298,7 @@
         "searchForms": "Formulare suchen...",
         "subtitle": "Werden vor dem Beitritt zu {shiftTitle} ausgefüllt",
         "title": "Für Beitritt erforderliche Formulare",
-        "updateFailedToast": "Erforderliche Formulare konnten nicht aktualisiert werden"
+        "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
       },
       "statusLabel": "Status",
       "urgentCallLabel": "Dringender Aufruf",
@@ -1310,33 +1337,33 @@
       "nameLabel": "Titel des Einsatzes",
       "namePlaceholder": "z. B. Morgendliche Essensausgabe",
       "noRecurrence": "Einmalig",
-      "openShiftDescription": "Der Einsatz ist für deine Freiwilligen auf der Plattform sichtbar. Jeder deiner Freiwilligen kann sich für diesen Einsatz anmelden.",
+      "openShiftDescription": "Der Einsatz ist für deine Freiwilligen auf der Plattform sichtbar. Alle können sich anmelden.",
       "openShiftLabel": "Offener Einsatz",
       "recurrenceEndDatePlaceholder": "Datum wählen",
       "recurrenceEnds": "Ende der Serie",
       "recurrenceEndsNever": "Nie",
       "recurrenceEndsOn": "Am",
-      "reimbursementTypeDescription": "Freiwilligenzeit für diesen Einsatz wird für einen Stundennachweis unter dieser Pauschale berücksichtigt",
+      "reimbursementTypeDescription": "Die Stunden für diesen Einsatz zählen für einen Stundennachweis unter dieser Pauschale.",
       "reimbursementTypeLabel": "Erstattungsfähige Pauschale",
       "reimbursementTypeNone": "Nicht erstattungsfähig",
       "recurring": "Wiederholung festlegen",
-      "timeRangeConstraint": "Einsätze müssen innerhalb von ({window}) beginnen und enden."
+      "timeRangeConstraint": "Einsätze müssen innerhalb von {window} beginnen und enden."
     },
     "instanceDetail": {
       "callOutCta": "Dringender Aufruf",
       "callOutDialog": {
         "confirm": "Dringender Aufruf",
-        "description": "Dies sendet einen dringenden Aufruf an alle, die für diesen Einsatz infrage kommen, und bittet sie mitzumachen. Niemand wird dadurch in den Einsatzplan eingetragen.",
-        "error": "Der dringende Aufruf konnte nicht gesendet werden. {error}",
-        "noRecipients": "Niemand war mehr zu fragen — wir haben stattdessen dir eine E-Mail geschickt.",
+        "description": "Dies sendet einen dringenden Aufruf an alle, die für diesen Einsatz infrage kommen, und bittet sie mitzumachen. Wir tragen dabei niemanden in den Einsatzplan ein.",
+        "error": "Der dringende Aufruf ließ sich nicht senden. {error}",
+        "noRecipients": "Es konnte niemand benachrichtigt werden. Wir haben dir stattdessen eine E-Mail zur Information geschickt.",
         "success": "Dringender Aufruf an {count, plural, one {# Person} other {# Personen}} gesendet.",
         "title": "Dringenden Aufruf senden?"
       },
       "deleteAria": "Löschen",
       "deleteDialog": {
-        "description": "Dieser Einsatztermin ist Teil einer Serie. Wähle aus, ob nur diesen Termin oder alle kommenden Termine gelöscht werden sollen.",
+        "description": "Dieser Einsatztermin ist Teil einer Serie. Wähle aus, ob du nur diesen Termin oder alle kommenden Termine löschen möchtest.",
         "oneTimeDescription": "Das ist ein einmaliger Einsatztermin. Bist du sicher, dass du ihn löschen möchtest?",
-        "error": "Einsatztermin konnte nicht gelöscht werden. {error}",
+        "error": "Der Einsatztermin ließ sich nicht löschen. {error}",
         "futureDescription": "Löscht diesen Termin und alle kommenden Termine der Serie. Vergangene Termine bleiben erhalten.",
         "futureTitle": "Diesen und alle zukünftigen Termine",
         "onlyThisDescription": "Löscht den Termin am {date}. Andere Termine bleiben unberührt.",
@@ -1353,10 +1380,10 @@
     },
     "inviteForm": {
       "copyInviteLink": "Einladungslink kopieren",
-      "inviteAllDescription": "Freiwillige werden zu allen Einsätzen ab dem {startDate}, jeden {days}, eingeladen.",
+      "inviteAllDescription": "Die Einladung gilt für alle Einsätze ab dem {startDate}, jeden {days}.",
       "inviteAllLabel": "Zu allen zukünftigen Terminen dieses Einsatzes einladen",
       "managingLabel": "Du verwaltest Freiwillige für:",
-      "title": "Teilnehmende einladen und verwalten"
+      "title": "Freiwillige einladen und verwalten"
     },
     "inviteStatus": {
       "accepted": "Angenommen",
@@ -1364,24 +1391,27 @@
       "actionInvite": "Einladen",
       "actionRemind": "Erinnern",
       "actionReminded": "Erinnert",
-      "actionUninvite": "Zurückweisen",
+      "actionUninvite": "Einladung zurückziehen",
       "approveSuccess": "Freiwillige:r genehmigt",
-      "approveWaitlistedSuccess": "Einsatz ist voll — Freiwillige:r wurde auf die Warteliste gesetzt",
+      "approveWaitlistedSuccess": "Der Einsatz ist voll besetzt. Freiwillige:r steht jetzt auf der Warteliste.",
       "cancelled": "Zurückgezogen",
-      "changeStatusAria": "Status der/des Freiwilligen ändern",
+      "changeStatusAria": "Status ändern",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
+      "checkedIn": "Eingecheckt",
+      "checkedOut": "Ausgecheckt",
       "declined": "Abgelehnt",
       "declineSuccess": "Freiwillige:r abgelehnt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
+      "notCheckedIn": "Noch nicht da",
       "pendingApproval": "Genehmigung ausstehend",
       "rejected": "Zurückgewiesen",
       "remindedAtTooltip": "Erinnert am {when}",
-      "remindError": "Erinnerung konnte nicht gesendet werden",
+      "remindError": "Die Erinnerung ließ sich nicht senden. Versuch es bitte erneut.",
       "remindSuccess": "Erinnerung an Freiwillige:n gesendet",
       "signedUp": "Selbst angemeldet",
-      "statusChangeError": "Status der/des Freiwilligen konnte nicht geändert werden",
+      "statusChangeError": "Der Status ließ sich nicht ändern. Versuch es bitte erneut.",
       "summaryAccepted": "angenommen",
       "summaryInvited": "eingeladen",
       "summarySignedUp": "selbst angemeldet",
@@ -1393,14 +1423,14 @@
     "join": {
       "accept": "Annehmen",
       "accepted": "Du hast die Einladung angenommen.",
-      "cancelBody": "Du gibst deinen Platz am {date} auf. Die Organisation wird benachrichtigt.",
+      "cancelBody": "Du gibst deinen Platz am {date} auf. Wir benachrichtigen die Organisation.",
       "cancelShift": "Einsatz absagen",
       "cancelTitle": "Einsatz absagen?",
       "cancelled": "Du hast deinen Einsatz abgesagt.",
       "confirmCancel": "Einsatz absagen",
       "decline": "Ablehnen",
       "declined": "Du hast die Einladung abgelehnt.",
-      "failed": "Einsatzbeitritt fehlgeschlagen",
+      "failed": "Der Beitritt hat nicht geklappt. Versuch es bitte erneut.",
       "full": "Einsatz voll",
       "inviteOnly": "Nur mit Einladung",
       "joinShift": "Einsatz beitreten",
@@ -1411,17 +1441,17 @@
       "leaveWaitlist": "Warteliste verlassen",
       "leftWaitlist": "Du hast die Warteliste verlassen.",
       "pending": "Deine Mitgliedschaftsanfrage ist ausstehend. Du wirst dem Einsatz hinzugefügt, sobald er genehmigt wurde.",
-      "pendingApproval": "Warte auf Freigabe",
+      "pendingApproval": "Wartet auf Freigabe",
       "withdrewApproval": "Du hast deine Anfrage zurückgezogen.",
       "pendingCta": "Anfrage ausstehend",
       "pendingMessage": "Deine Mitgliedschaftsanfrage für diese Organisation wird noch geprüft. Du kannst dich für den Einsatz anmelden, sobald sie genehmigt wurde.",
       "reenter": "Erneut beitreten",
-      "rejected": "Deine Mitgliedschaftsanfrage für diese Organisation wurde abgelehnt. Kontaktiere einen Administrator, wenn du denkst, dass das ein Fehler war.",
+      "rejected": "Deine Mitgliedschaftsanfrage für diese Organisation wurde abgelehnt. Danke, dass du dich engagieren wolltest. Bei Fragen melde dich bei deiner Ehrenamtskoordination.",
       "rejectedCta": "Anfrage nicht genehmigt",
       "requestSent": "Anfrage gesendet",
       "requirementsFallback": "Anforderungsprofil-Oberfläche (noch zu implementieren)",
       "requirementsNeeded": "Noch zu erledigen: {missing}{hasCompleted, select, yes { (bereits erledigt: {completed})} other {}}",
-      "unexpected": "Unerwartete Antwort vom Server",
+      "unexpected": "Da ist etwas schiefgelaufen. Versuch es bitte erneut.",
       "waitlistJoined": "Du bist auf der Warteliste. Wir schreiben dir per E-Mail, wenn ein Platz frei wird."
     },
     "loading": "Wird geladen...",
@@ -1463,13 +1493,16 @@
     "selector": {
       "chooseShift": "Wähle einen Einsatz",
       "noActiveShifts": "Keine aktiven Einsätze",
-      "noActiveShiftsDescription": "Bitte <addShift>einen Einsatz erstellen</addShift> oder den Zeitraum eines <existingShift>bestehenden Einsatzes</existingShift> anpassen."
+      "noActiveShiftsDescription": "Erstelle bitte <addShift>einen Einsatz</addShift> oder passe den Zeitraum eines <existingShift>bestehenden Einsatzes</existingShift> an."
     },
     "sheet": {
       "createDescription": "Erstelle einen neuen Einsatz.",
       "createEventDescription": "Plane einen Einsatz für diese Veranstaltung.",
       "createEventTitle": "Einsatz erstellen",
       "createTitle": "Einsatz erstellen",
+      "duplicateDescription": "Ändere, was abweicht, und speichere danach.",
+      "duplicateNamePrefill": "{name} (Kopie)",
+      "duplicateTitle": "Einsatz duplizieren",
       "editDescription": "Bearbeite diesen Einsatz.",
       "editInstanceDescription": "Bearbeite diesen Termin des Einsatzes.",
       "editInstanceTitle": "Einsatz bearbeiten",
@@ -1523,24 +1556,24 @@
     "transferList": {
       "addAria": "Hinzufügen",
       "allowance": {
-        "eligible": "Auszahlungsberechtigt",
-        "nearlyExhausted": "Limit fast erreicht",
+        "eligible": "Vergütung möglich",
+        "nearlyExhausted": "Freibetrag der Pauschale fast erreicht",
         "noAgreement": "Vereinbarung nötig",
-        "wouldExceed": "Überschreitet Limit!"
+        "wouldExceed": "Überschreitet den zulässigen Freibetrag"
       },
       "available": "Verfügbar",
       "confirmExceedAllowance": {
         "cancel": "Abbrechen",
         "confirm": "Trotzdem einladen",
-        "description": "Die Auszahlung an {name} für diesen Einsatz würde den jährlichen Höchstbetrag überschreiten. Du kannst die Person trotzdem einladen, prüfe aber, ob das gewollt ist.",
-        "title": "Dies würde das Limit von {name} überschreiten"
+        "description": "Die Ehrenamtspauschale für {name} würde bei diesem Einsatz den jährlichen Freibetrag überschreiten. Du kannst die Person trotzdem einladen, prüfe aber, ob das gewollt ist.",
+        "title": "Dies würde den zulässigen Freibetrag von {name} überschreiten"
       },
       "invited": "Eingeladen",
       "removeAria": "Entfernen",
       "searchPlaceholder": "Name oder E-Mail"
     },
     "validation": {
-      "endTimeRequired": "Endzeit ist erforderlich",
+      "endTimeRequired": "Bitte gib eine Endzeit an.",
       "endMustBeLaterThanStart": "Die Endzeit muss nach der Startzeit liegen",
       "continuesIntoNextDay": "Dieser Einsatz geht in den nächsten Tag über.",
       "shorterThan24Hours": "Der Einsatz muss kürzer als 24 Stunden sein.",
@@ -1548,23 +1581,23 @@
       "instanceDateMismatch": "Das Datum passt nicht zu diesem Termin. Öffne das Bearbeitungsformular bitte noch einmal.",
       "instanceRecurrenceConflict": "Die neue Wiederholung enthält den Wochentag dieses Termins nicht. Passe die Wiederholung an oder bearbeite einen anderen Termin.",
       "instanceTimeConflict": "Ein anderer Termin dieses Einsatzes beginnt bereits zu dieser Zeit.",
-      "minMaxVolunteers": "Die Mindestanzahl an Freiwilligen darf die Höchstanzahl nicht überschreiten",
-      "nameRequired": "Name ist erforderlich",
-      "organizationUnitRequired": "Organisationseinheit ist erforderlich",
+      "minMaxVolunteers": "Die Mindestanzahl darf nicht höher sein als die Höchstanzahl.",
+      "nameRequired": "Bitte gib einen Namen an.",
+      "organizationUnitRequired": "Bitte wähle eine Organisationseinheit.",
       "recurrenceEndBeforeStart": "Enddatum darf nicht vor dem Startdatum liegen",
-      "recurrenceEndRequired": "Enddatum ist erforderlich",
+      "recurrenceEndRequired": "Bitte gib ein Enddatum an.",
       "shiftIdRequired": "Einsatz-ID ist erforderlich",
-      "startTimeRequired": "Startzeit ist erforderlich",
-      "windowViolation": "Muss innerhalb des Veranstaltungszeitraums liegen"
+      "startTimeRequired": "Bitte gib eine Startzeit an.",
+      "windowViolation": "Der Einsatz muss innerhalb des Veranstaltungszeitraums liegen."
     },
     "visibility": {
-      "ALL_MEMBERS": "Offene Einsätze",
+      "ALL_MEMBERS": "Offener Einsatz",
       "INVITED_MEMBERS": "Nur mit Einladung"
     }
   },
   "ShiftDetail": {
     "acceptedBadge": "Angenommen",
-    "pendingApprovalBadge": "Warte auf Freigabe",
+    "pendingApprovalBadge": "Wartet auf Freigabe",
     "back": "Zurück",
     "cancelUntilNote": "Du kannst bis {date} absagen.",
     "cancelledBadge": "Abgesagt",
@@ -1574,7 +1607,7 @@
     "declinedBadge": "Abgelehnt",
     "declinedNote": "Du hast die Einladung zu diesem Einsatz abgelehnt.",
     "earlier": "Früher",
-    "errorBody": "Sie wurde abgesagt oder der Link ist nicht mehr gültig.",
+    "errorBody": "Er wurde abgesagt oder der Link ist nicht mehr gültig.",
     "errorHeading": "Dieser Einsatz existiert nicht mehr",
     "errorOrgCta": "Zur Organisation",
     "eventBadge": "Teil von {eventTitle}",
@@ -1583,12 +1616,12 @@
       "joinedToast": "Du bist für {shiftTitle} angemeldet",
       "noForms": "Es sind keine Formulare erforderlich.",
       "rejectedToast": "Anfrage nicht genehmigt",
-      "requestFailed": "Anfrage konnte nicht gesendet werden",
-      "requestSentToast": "Anfrage gesendet — sie wird noch bestätigt.",
+      "requestFailed": "Die Anfrage ließ sich nicht senden. Versuch es bitte erneut.",
+      "requestSentToast": "Anfrage gesendet. Ein:e Koordinator:in bestätigt sie.",
       "requirementsNeededToast": "Bitte fülle zuerst alle erforderlichen Formulare aus",
       "title": "{shiftTitle} beitreten"
     },
-    "fullNote": "Dieser Einsatz ist bereits ausgebucht.",
+    "fullNote": "Dieser Einsatz ist bereits voll besetzt.",
     "joinedNote": "Du bist für diesen Einsatz angemeldet.",
     "later": "Später",
     "locationDivider": "·",
@@ -1598,12 +1631,12 @@
     "signUpCta": "Anmelden für {date}",
     "signUpNote": "Du kannst jederzeit absagen.",
     "spotsFree": "· {n} frei",
-    "spotsFull": "· ausgebucht",
+    "spotsFull": "· voll besetzt",
     "spotsTaken": "{filled} von {max} belegt",
     "timeLabel": "Zeit",
     "waitlistBadge": "Du bist auf der Warteliste",
     "waitlistNote": "Wird ein Platz frei, schreiben wir dir eine E-Mail, damit du ihn übernehmen kannst.",
-    "waitlistSpotOpenNote": "Gerade ist ein Platz frei – tritt bei, um ihn zu sichern.",
+    "waitlistSpotOpenNote": "Gerade ist ein Platz frei. Tritt bei, um ihn zu sichern.",
     "whatYouDoHeading": "Was du tun wirst",
     "whenWhereHeading": "Wann & Wo"
   },
@@ -1613,7 +1646,7 @@
       "chooseFile": "Datei auswählen",
       "clear": "Entfernen",
       "dropHint": "Datei hierher ziehen oder zum Durchsuchen klicken",
-      "failed": "Hochladen fehlgeschlagen",
+      "failed": "Das Hochladen hat nicht geklappt. Versuch es bitte erneut.",
       "imageHint": "Empfohlen: JPEG oder PNG, bis zu 2 MB",
       "invalidFileType": "Dieser Dateityp ist nicht erlaubt. Verwende JPEG, PNG oder HEIC.",
       "label": "Datei hochladen",
@@ -1626,7 +1659,7 @@
   "TimeEntry": {
     "action": {
       "deleteDescription": "Bist du sicher, dass du diesen Zeiteintrag löschen möchtest?",
-      "deleteError": "Zeiteintrag konnte nicht gelöscht werden. {error}",
+      "deleteError": "Der Zeiteintrag ließ sich nicht löschen. {error}",
       "deleteSuccess": "Zeiteintrag gelöscht",
       "deleteTitle": "Löschen",
       "editAria": "Bearbeiten"
@@ -1645,21 +1678,21 @@
       "title": "Keine Zeiteinträge"
     },
     "form": {
-      "loadInstancesError": "Termine konnten nicht geladen werden.",
+      "loadInstancesError": "Die Termine ließen sich nicht laden. Versuch es bitte erneut.",
       "notesLabel": "Notizen",
       "notesPlaceholder": "Notizen zu diesem Zeiteintrag hinzufügen...",
-      "notTiedToShiftLabel": "Keiner Schicht zugeordnet",
-      "paidTimeLabel": "Bezahlte Zeit",
-      "pauschaleTypeLabel": "Pauschalenart",
-      "pauschaleTypePlaceholder": "Pauschalenart auswählen",
-      "noShiftsMatching": "Keine Schicht entspricht deiner Suche.",
-      "noShiftsOnDay": "Keine Schichten an diesem Tag.",
+      "notTiedToShiftLabel": "Keinem Einsatz zugeordnet",
+      "paidTimeLabel": "Vergütete Zeit",
+      "pauschaleTypeLabel": "Pauschalentyp",
+      "pauschaleTypePlaceholder": "Pauschalentyp auswählen",
+      "noShiftsMatching": "Kein Einsatz entspricht deiner Suche.",
+      "noShiftsOnDay": "Keine Einsätze an diesem Tag.",
       "selectedShiftInstanceLabel": "Ausgewählt: {title} · {range}",
       "selectShiftLabel": "Einsatz auswählen",
       "selectVolunteerLabel": "Freiwillige:n auswählen",
       "selectVolunteerPlaceholder": "Freiwillige:n auswählen",
       "shiftDatePlaceholder": "Datum wählen",
-      "shiftSearchPlaceholder": "Schicht suchen",
+      "shiftSearchPlaceholder": "Einsatz suchen",
       "startEndTimeLabel": "Start- und Endzeit"
     },
     "format": {
@@ -1667,7 +1700,7 @@
     },
     "page": {
       "createButton": "Zeiteintrag hinzufügen",
-      "title": "Stundenzettel"
+      "title": "Erfasste Zeiten"
     },
     "pauschaleType": {
       "ehrenamt": "Ehrenamtspauschale",
@@ -1687,13 +1720,13 @@
       "volunteer": "Freiwillige:r"
     },
     "validation": {
-      "endedAtRequired": "Endzeit ist erforderlich",
-      "organizationUnitRequired": "Organisationseinheit ist erforderlich",
-      "reimbursementTypeRequired": "Pauschalenart ist erforderlich",
-      "shiftInstanceRequired": "Einsatztermin ist erforderlich",
-      "startedAtRequired": "Startzeit ist erforderlich",
+      "endedAtRequired": "Bitte gib eine Endzeit an.",
+      "organizationUnitRequired": "Bitte wähle eine Organisationseinheit.",
+      "reimbursementTypeRequired": "Bitte wähle einen Pauschalentyp.",
+      "shiftInstanceRequired": "Bitte wähle einen Einsatztermin.",
+      "startedAtRequired": "Bitte gib eine Startzeit an.",
       "timeEntryIdRequired": "Zeiteintrags-ID ist erforderlich",
-      "volunteerRequired": "Freiwillige:r ist erforderlich"
+      "volunteerRequired": "Bitte wähle eine Person aus."
     }
   },
   "Unauthorized": {
@@ -1705,10 +1738,11 @@
     "action": {
       "checkInAria": "Einchecken",
       "checkInShiftAria": "Einchecken",
+      "checkOutAria": "Auschecken",
       "remove": "Entfernen",
       "removeAria": "Entfernen",
       "removeDescription": "Bist du sicher, dass du {name} aus dieser Organisation entfernen möchtest? Das kann nicht rückgängig gemacht werden.",
-      "removeFailedToast": "Freiwillige:r konnte nicht entfernt werden",
+      "removeFailedToast": "Die Person ließ sich nicht entfernen. Versuch es bitte erneut.",
       "removeTitle": "Aus Organisation entfernen",
       "removedToast": "{name} wurde aus dieser Organisation entfernt",
       "viewProfileAria": "Ansehen"
@@ -1729,9 +1763,9 @@
     },
     "requiredForms": {
       "addExisting": "Bestehendes hinzufügen",
-      "addedToast": "Formular angehängt",
+      "addedToast": "Formular hinzugefügt",
       "createNew": "Neues erstellen",
-      "dedupHint": "Freiwillige müssen Informationen, die sie bereits angegeben haben, nicht erneut eingeben.",
+      "dedupHint": "Freiwillige werden nicht nach Informationen gefragt, die sie bereits angegeben haben.",
       "fileUploadLabel": "Datei-Upload",
       "noBlocks": "Keine Blöcke",
       "noFormsFound": "Keine Formulare gefunden",
@@ -1745,7 +1779,7 @@
       "searchForms": "Formulare suchen...",
       "subtitle": "Vor der Freigabe in {brand} › {unitName} ausgefüllt",
       "title": "Formulare, die zum Beitritt benötigt werden",
-      "updateFailedToast": "Erforderliche Formulare konnten nicht aktualisiert werden"
+      "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
     "sheet": {
       "addressLabel": "Adresse",
@@ -1755,10 +1789,10 @@
       "idVerification": {
         "label": "{status, select, verified {Ausweis geprüft} other {Ausweis ungeprüft}}",
         "unverifyTitle": "Ausweisprüfung entfernen?",
-        "unverifyDescription": "Der Freiwillige wird beim nächsten Check-in wieder als ungeprüft markiert.",
+        "unverifyDescription": "Die Person wird beim nächsten Check-in wieder als ungeprüft markiert.",
         "unverifyCancel": "Abbrechen",
         "unverifyConfirm": "Prüfung entfernen",
-        "updateError": "Der Ausweisstatus konnte nicht aktualisiert werden."
+        "updateError": "Der Ausweisstatus ließ sich nicht aktualisieren. Versuch es bitte erneut."
       },
       "noSubmissions": "Noch keine eingereichten Formulare.",
       "qrIdLabel": "QR-ID",
@@ -1788,7 +1822,7 @@
     "discoverEmptyHome": "Zurzeit keine Einsätze zum Entdecken. Schau bald wieder vorbei.",
     "discoverEventsEmptyHome": "Zurzeit keine Veranstaltungen zum Entdecken. Schau bald wieder vorbei.",
     "discoverHeading": "Entdecken",
-    "discoverPendingEmptyBody": "Einsätze von {orgName} erscheinen hier, sobald deine Anfrage bestätigt ist.\nEinchecken und Deine Nachweise kannst du jederzeit nutzen.",
+    "discoverPendingEmptyBody": "Einsätze von {orgName} erscheinen hier, sobald deine Anfrage bestätigt ist.\nEinchecken und Nachweise stehen dir jederzeit zur Verfügung.",
     "discoverPendingEmptyTitle": "Noch nichts zu entdecken",
     "discoverPendingSubtitle": "Einsätze von {orgName} erscheinen hier, sobald deine Anfrage bestätigt ist",
     "discoverTabAssignments": "Einsätze",
@@ -1797,7 +1831,7 @@
     "eventCoverImageAlt": "Titelbild für {title}",
     "filterNextWeek": "Nächste Woche",
     "filterThisWeekend": "Dieses Wochenende",
-    "fullyBooked": "Ausgebucht - Warteliste verfügbar",
+    "fullyBooked": "Voll besetzt. Du kannst auf die Warteliste.",
     "goToToday": "Zu heute",
     "goToTop": "Nach oben",
     "greeting": "Hallo, {firstName}!",
@@ -1816,16 +1850,20 @@
     "loadPast": "Vergangene laden",
     "overlapWarning": "Du hast überschneidende Einsätze in deinem Plan",
     "partOfEvent": "Teil von {event}",
-    "pendingApprovalBadge": "Warte auf Freigabe",
+    "pendingApprovalBadge": "Wartet auf Freigabe",
     "pendingBadge": "Ausstehend",
-    "pendingRequestBody": "Ein Admin schaut sich deine Anfrage an. Meistens dauert das ein paar Tage.",
+    "pendingRequestBody": "Ein:e Koordinator:in schaut sich deine Anfrage an. Meistens dauert das ein paar Tage.",
     "pendingRequestContact": "Fragen? {name} kann helfen.",
+    "pendingRequestContactEmailAfter": " kann helfen.",
+    "pendingRequestContactEmailBefore": "Fragen? ",
+    "pendingRequestContactPhoneAfter": " kann helfen.",
+    "pendingRequestContactPhoneBefore": "Fragen? Ruf ",
     "pendingRequestCta": "Deine Anfragen ansehen",
     "pendingRequestTitle": "{orgName} prüft deine Anfrage",
     "spotsLeft": "{n, plural, one {# Platz frei} other {# Plätze frei}}",
     "timerStartedAgo": "Gestartet vor {time}",
     "timerStartsIn": "beginnt in {time}",
-    "timerVolunteering": "Du hilfst seit {time}",
+    "timerVolunteering": "Du bist seit {time} im Einsatz",
     "todayButton": "Heute",
     "waitlistBadge": "Du bist auf der Warteliste",
     "weekly": "Wöchentlich",
@@ -1833,6 +1871,7 @@
     "yourEventsHeading": "Deine Veranstaltungen",
     "yourEventsThisWeek": "{n, plural, one {# Veranstaltung diese Woche} other {# Veranstaltungen diese Woche}}",
     "yourShiftsCount": "{n, plural, one {# Einsatz} other {# Einsätze}}",
+    "dayStripCount": "{n, plural, one {# Einsatz} other {# Einsätze}}",
     "yourShiftsEmpty": "Du hast keine bevorstehenden Einsätze.",
     "yourShiftsHeading": "Deine Einsätze",
     "yourShiftsSeeAll": "Alle anzeigen",
@@ -1840,23 +1879,23 @@
   },
   "Accounting": {
     "settings": {
-      "title": "Buchhaltung Einstellungen",
-      "subtitle": "Aufwandsentschädigung und Dokumentvorlagen einrichten.",
+      "title": "Einstellungen",
+      "subtitle": "Richte Vergütung und Dokumentvorlagen ein.",
       "tabs": {
-        "rates": "Stundensätze",
+        "rates": "Vergütung",
         "templates": "Vorlagen"
       },
       "rates": {
         "sectionTitle": "Vergütung pro Stunde",
-        "sectionSubtitle": "Gilt für alle Einsätze des Pauschalentyps.",
+        "sectionSubtitle": "Gilt für alle Einsätze des jeweiligen Pauschalentyps in dieser Organisationseinheit.",
         "epLabel": "Ehrenamtspauschale",
         "ulLabel": "Übungsleiterpauschale",
         "yearlyLimit": "Bis zu {limit}/Jahr",
         "saveSuccess": "Satz aktualisiert",
-        "saveError": "Der Satz konnte nicht gespeichert werden. Bitte erneut versuchen.",
-        "loadError": "Sätze konnten nicht geladen werden. Bitte Seite neu laden.",
+        "saveError": "Der Satz ließ sich nicht speichern. Versuch es bitte erneut.",
+        "loadError": "Die Sätze ließen sich nicht laden. Lade die Seite bitte neu.",
         "errors": {
-          "invalidRate": "Bitte einen gültigen Satz größer als null eingeben"
+          "invalidRate": "Bitte gib einen Satz größer als null ein."
         },
         "rateUnit": "/Std.",
         "provenance": {
@@ -1867,15 +1906,15 @@
       },
       "templates": {
         "sectionTitle": "Dokumentvorlagen",
-        "sectionSubtitle": "Alle Vorlagen für Dokumente, die zur Auszahlung der jeweiligen Pauschale benötigt werden."
+        "sectionSubtitle": "Alle Vorlagen für Dokumente, die für die jeweilige Pauschale benötigt werden."
       }
     },
     "setupAlert": {
       "orgProfileTitle": "Vervollständige zuerst dein Organisationsprofil",
-      "orgProfileBody": "Dokumente geben die Daten deiner Organisation wieder. Diese Angaben müssen vorhanden sein, bevor Vorlagen gespeichert werden können: {fields}.",
+      "orgProfileBody": "Dokumente geben die Daten deiner Organisation wieder. Diese Angaben brauchst du, bevor du Vorlagen speichern kannst: {fields}.",
       "orgProfileCta": "Zum Organisationsprofil",
       "templatesTitle": "Richte zuerst deine Dokumentvorlagen ein",
-      "templatesBody": "Dokumente können erst erstellt werden, wenn für einen Pauschalentyp sowohl die Vereinbarung als auch der Stundennachweis als Vorlage vorliegen. Es fehlen noch: {pauschalen}.",
+      "templatesBody": "Du kannst Dokumente erst erstellen, wenn für einen Pauschalentyp sowohl die Vereinbarung als auch der Stundennachweis als Vorlage vorliegen. Es fehlen noch: {pauschalen}.",
       "templatesCta": "Zu den Vorlagen"
     },
     "orgProfileFields": {
@@ -1889,7 +1928,7 @@
       "title": "Abrechnungen",
       "subtitle": "Dokumente erstellen, gegenzeichnen, herunterladen.",
       "createDocument": "Dokument erstellen",
-      "setupStatusError": "Der Einrichtungsstatus konnte nicht geprüft werden. Bitte Seite neu laden.",
+      "setupStatusError": "Der Einrichtungsstatus ließ sich nicht prüfen. Lade die Seite bitte neu.",
       "periodLabel": "Zeitraum",
       "yearLabel": "Jahr",
       "periodPicker": {
@@ -1904,30 +1943,30 @@
         "docTypeAll": "Alle Dokumente",
         "docTypeContracts": "Nur Vereinbarungen",
         "docTypeTimesheets": "Nur Stundennachweise",
-        "pauschaletypeLabel": "Pauschale"
+        "pauschaletypeLabel": "Pauschalentyp"
       },
       "tableHead": {
-        "volunteer": "Mitarbeiter",
+        "volunteer": "Freiwillige",
         "status": "Status",
         "hours": "Std.",
         "amount": "Betrag",
         "action": "Aktion"
       },
       "tiles": {
-        "all": "Alle",
-        "docCount": "{count} Dokumente",
-        "waitingOnYou": "{count} warten auf dich",
+        "all": "Alle offenen Aufgaben",
+        "docCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
+        "waitingOnYou": "{count, plural, one {# wartet auf dich} other {# warten auf dich}}",
         "contractGenerate": "Vereinbarungen erstellen",
         "contractSigning": "Vereinbarungen gegenzeichnen",
         "timesheetGenerate": "Stundennachweise erstellen",
         "timesheetSigning": "Stundennachweise gegenzeichnen",
-        "readyToGo": "Bereit zur Abgabe"
+        "readyToGo": "Abgeschlossen"
       },
       "toolbar": {
         "typeAll": "Alle Pauschalen",
         "typeEP": "Ehrenamt",
         "typeUL": "Übungsleiter",
-        "searchPlaceholder": "Freiwillige suchen …",
+        "searchPlaceholder": "Freiwillige suchen...",
         "sortActionNeeded": "Dringend zuerst",
         "sortNewest": "Neueste zuerst"
       },
@@ -1936,7 +1975,7 @@
         "allDoneHint": "Keine offenen Dokumente in diesem Zeitraum.",
         "filtered": "Keine Einträge in dieser Kategorie."
       },
-      "loadError": "Abrechnungen konnten nicht geladen werden.",
+      "loadError": "Die Abrechnungen ließen sich nicht laden.",
       "loadErrorHint": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
       "resetPrototype": "Prototyp zurücksetzen",
       "resetPrototypeToast": "Prototyp-Daten zurückgesetzt.",
@@ -1944,12 +1983,12 @@
         "stepIndicator": "Schritt {step} von {total}",
         "step1Title": "Freiwillige und Dokument",
         "step2Title": "Prüfen und senden",
-        "volunteerPlaceholder": "Freiwillige suchen …",
+        "volunteerPlaceholder": "Freiwillige suchen...",
         "noVolunteersFound": "Keine Freiwilligen gefunden.",
         "selectDocumentTitle": "Dokument auswählen",
         "noDocumentYet": "Noch nicht erstellt",
         "documentCount": "{count, plural, =1 {1 Dokument} other {# Dokumente}}",
-        "viewVolunteer": "Freiwillige/n ansehen",
+        "viewVolunteer": "Freiwillige:n ansehen",
         "createButton": "{kind} erstellen",
         "createButtonEmpty": "Neues Dokument erstellen",
         "contractState": {
@@ -1959,7 +1998,7 @@
           "active": "Aktiv",
           "declined": "Abgelehnt"
         },
-        "latestTimesheet": "Letzter Stundennachweis · {date}",
+        "latestTimesheet": "Letzter Stundennachweis umfasst · {period}",
         "noTimesheetYet": "Noch kein Stundennachweis"
       },
       "bundle": {
@@ -1968,7 +2007,7 @@
         "lastDownloaded": "zuletzt heruntergeladen von <name>{by}</name> am {at}",
         "neverDownloaded": "noch nicht heruntergeladen",
         "unknownUser": "unbekannt",
-        "downloadError": "Das Paket konnte nicht heruntergeladen werden. Bitte versuche es erneut."
+        "downloadError": "Das Paket ließ sich nicht herunterladen. Versuch es bitte erneut."
       },
       "batchBar": {
         "selected": "{count} ausgewählt",
@@ -1976,9 +2015,9 @@
         "remindAll": "Alle erinnern",
         "bundleAll": "Alle Pakete herunterladen",
         "mixed": "Gemischte Auswahl",
-        "clearSelection": "Abbrechen",
+        "clearSelection": "Auswahl aufheben",
         "bundleDownloadToast": "{count, plural, =1 {Paket-Download gestartet.} other {{count} Paket-Downloads gestartet.}}",
-        "bundleDownloadErrorToast": "Paket-Download fehlgeschlagen. Bitte erneut versuchen."
+        "bundleDownloadErrorToast": "Der Paket-Download hat nicht geklappt. Versuch es bitte erneut."
       },
       "actionToasts": {
         "create": "{count, plural, =1 {Für {name} erstellt.} other {{count} erstellt.}}",
@@ -1998,25 +2037,25 @@
             "generate": "Erstellen",
             "sign": "Gegenzeichnen",
             "declined": "Abgelehnt",
-            "volSign": "Freiwillige/r",
-            "coordSign": "Koordinator",
+            "volSign": "Freiwillige:r",
+            "coordSign": "Koordinator:in",
             "superSign": "Supervisor",
             "active": "Aktiv",
             "ready": "Bereit",
             "actorOrg": "Organisation"
           },
-          "limitSection": "Jahresbudget",
-          "invoicesPaidOut": "Ausgezahlt",
-          "invoicesPending": "Ausstehende Zahlung",
+          "limitSection": "Jahresfreibetrag",
+          "invoicesPaidOut": "Abgerechnet",
+          "invoicesPending": "Offen",
           "timelineSection": "Verlauf",
           "timelineEmpty": "Noch keine Aktivität",
           "timelineCreated": "Erstellt",
-          "timelineSigned": "Gegengezeichnet",
+          "timelineSigned": "Unterschrieben",
           "timelineCountersigned": "Gegengezeichnet",
           "timelineActivated": "Aktiviert",
           "timelineDeclined": "Abgelehnt",
           "declineReasonTitle": "Ablehnungsgrund",
-          "noAction": "Keine Aktion erforderlich",
+          "noAction": "Nichts zu tun",
           "pdfView": "PDF anzeigen",
           "pdfDownload": "Herunterladen",
           "pdfViewToast": "Vorschau für {period} geöffnet.",
@@ -2024,9 +2063,9 @@
           "timesheetHours": {
             "title": "Ehrenamtsstunden",
             "paidShifts": "Stunden mit Aufwandsentschädigung",
-            "shifts": "{count} Einsätze",
+            "shifts": "{count, plural, one {# Einsatz} other {# Einsätze}}",
             "grossAmount": "Bruttobetrag",
-            "rateTooltip": "Standardstundensatz für diese Pauschale. Einsätze können einen eigenen Satz haben.",
+            "rateTooltip": "Standardvergütung pro Stunde für diese Pauschale. Einsätze können einen eigenen Satz haben.",
             "viewBtn": "Stundennachweise anzeigen"
           },
           "pdfUnavailableNote": "PDF noch nicht verfügbar."
@@ -2034,21 +2073,22 @@
         "statusLabel": {
           "contractGenerate": "Vereinbarung erstellen",
           "contractDraft": "Entwurf",
-          "contractSigningVol": "Wartet auf Gegenzeichnung",
+          "contractSigningVol": "Wartet auf Unterschrift",
           "contractSigningCoord": "Gegenzeichnung erforderlich",
           "contractActive": "Aktive Vereinbarung",
           "timesheetGenerate": "Stundennachweis erstellen",
-          "timesheetSigningVol": "Wartet auf Gegenzeichnung",
+          "timesheetSigningVol": "Wartet auf Unterschrift",
           "timesheetSigningSuper": "Supervisorunterschrift",
           "timesheetReady": "Bereit zur Abgabe",
           "nonCompliant": "Keine aktive Vereinbarung",
-          "nonCompliantHint": "Noch keine aktive Vereinbarung für diese Pauschale — Vereinbarung erstellen oder aktivieren, damit dieser Stundennachweis compliant ist",
+          "nonCompliantHint": "Noch keine aktive Vereinbarung für diese Pauschale. Erstelle oder aktiviere eine, damit dieser Stundennachweis konform ist.",
           "notYetCreated": "Noch nicht erstellt",
-          "overCap": "Jahreslimit wird überschritten",
-          "overCapHint": "Der Betrag dieses Stundennachweises bringt die Person an oder über ihr Jahreslimit",
-          "contractMissing": "Keine Vereinbarung — manuell anlegen",
+          "overCap": "Jährlicher Freibetrag wird überschritten",
+          "overCapHint": "Der Betrag dieses Stundennachweises bringt die Person an oder über ihren jährlichen Freibetrag",
+          "contractMissing": "Keine Vereinbarung. Manuell anlegen.",
           "timesheetMuted": "Erfasst ohne Vereinbarung",
-          "declined": "Abgelehnt"
+          "declined": "Abgelehnt",
+          "templateMissingHint": "Noch keine Vorlage für diese Pauschale. Richte sie unter Buchhaltung → Vorlagen ein."
         },
         "actions": {
           "create": "Überprüfen und erstellen",
@@ -2063,7 +2103,7 @@
           "titleBatchAll": "{count} Stundennachweise ohne aktive Vereinbarung {action, select, create {erstellen} remind {erinnern} countersign {gegenzeichnen} other {bearbeiten}}?",
           "titleBatchMixed": "{count} von {total} Stundennachweisen haben keine aktive Vereinbarung",
           "descriptionSingle": "Für diese Pauschale gibt es noch keine aktive Vereinbarung. Du kannst den Stundennachweis trotzdem {action, select, create {erstellen} remind {erinnern} countersign {gegenzeichnen} other {bearbeiten}}, er bleibt dann als nicht konform markiert, bis eine Vereinbarung aktiv ist.",
-          "descriptionBatchAll": "Für einige der ausgewählten Personen gibt es noch keine aktive Vereinbarung. Du kannst den Stundennachweis trotzdem {action, select, create {erstellt} remind {erinnert} countersign {gegengezeichnet} other {bearbeitet}}, sie bleiben dann als nicht konform markiert, bis die Vereinbarungen aktiv sind.",
+          "descriptionBatchAll": "Für einige der ausgewählten Personen gibt es noch keine aktive Vereinbarung. Du kannst die Stundennachweise trotzdem {action, select, create {erstellen} remind {daran erinnern} countersign {gegenzeichnen} other {bearbeiten}}, sie bleiben dann als nicht konform markiert, bis die Vereinbarungen aktiv sind.",
           "descriptionBatchMixed": "{count} der ausgewählten Stundennachweise gehören zu Personen ohne aktive Vereinbarung für diese Pauschale.",
           "actionAnyway": "{action, select, create {Trotzdem erstellen} remind {Trotzdem erinnern} countersign {Trotzdem gegenzeichnen} other {Trotzdem fortfahren}}",
           "actionAllAnyway": "{action, select, create {Alle trotzdem erstellen} remind {Alle trotzdem erinnern} countersign {Alle trotzdem gegenzeichnen} other {Trotzdem mit allen fortfahren}}",
@@ -2073,9 +2113,9 @@
         },
         "declineDialog": {
           "title": "{docType} ablehnen?",
-          "description": "Die freiwillige Person benötigt ein neu ausgestelltes Dokument — dieses kann nach der Ablehnung nicht fortgesetzt werden.",
+          "description": "Die freiwillige Person benötigt ein neu ausgestelltes Dokument. Dieses hier kann nach der Ablehnung nicht fortgesetzt werden.",
           "reasonLabel": "Ablehnungsgrund",
-          "reasonPlaceholder": "Erklären, was geändert werden muss …",
+          "reasonPlaceholder": "Erkläre, was sich ändern muss...",
           "submit": "Ablehnen",
           "toast": "Das Dokument von {name} wurde abgelehnt."
         }
@@ -2084,25 +2124,27 @@
         "editButtonLabel": "Bearbeiten",
         "saveButtonLabel": "Speichern",
         "fromProfileHint": "Aus dem Profil von {name}",
-        "editingHint": "Du bearbeitest dies nur für {docType, select, contract {diese Vereinbarung} invoice {dieser Nachweis} other {dieses Dokument}} — die Angaben im Profil von {name} bleiben unverändert.",
-        "overrideHint": "Nur für {docType, select, contract {diese Vereinbarung} invoice {dieser Nachweis} other {dieses Dokument}} geändert",
+        "editingHint": "Du bearbeitest dies nur für {docType, select, contract {diese Vereinbarung} invoice {diesen Stundennachweis} other {dieses Dokument}}. Die Angaben im Profil von {name} bleiben unverändert.",
+        "overrideHint": "Nur für {docType, select, contract {diese Vereinbarung} invoice {diesen Stundennachweis} other {dieses Dokument}} geändert",
         "missingValue": "Nicht angegeben",
-        "gapHint": "Diese Angabe wurde von {name} nicht im Profil hinterlegt — für {docType, select, contract {diese Vereinbarung} invoice {dieser Nachweis} other {dieses Dokument}} ergänzen"
+        "gapHint": "{name} hat diese Angabe nicht im Profil hinterlegt. Ergänze sie für {docType, select, contract {diese Vereinbarung} invoice {diesen Stundennachweis} other {dieses Dokument}}."
       },
       "contractModal": {
         "title": "Vereinbarung erstellen",
         "cancel": "Abbrechen",
         "sendForSigning": "Speichern und zur Unterschrift senden",
-        "sending": "Wird gesendet…",
+        "sending": "Wird gesendet...",
         "sentToast": "Vereinbarung an {name} zur Unterschrift gesendet.",
-        "sendErrorToast": "Die Vereinbarung konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
-        "loadErrorTitle": "Profildaten konnten nicht geladen werden",
-        "loadError": "Die Profildaten von {name} konnten nicht geladen werden. Bitte schließen und erneut versuchen.",
-        "sendErrorTitle": "Vertrag konnte nicht gesendet werden",
-        "sendError": "Der Vertrag konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
-        "noTemplateCta": "Vertragsvorlage erstellen",
+        "sendErrorToast": "Die Vereinbarung ließ sich nicht an {name} senden. Versuch es bitte erneut.",
+        "loadErrorTitle": "Die Profildaten ließen sich nicht laden",
+        "loadError": "Die Profildaten von {name} ließen sich nicht laden. Schließ das Fenster bitte und versuch es erneut.",
+        "noTemplateTitle": "Noch keine Vorlage für die Vereinbarung",
+        "noTemplateDescription": "Für {pauschale} gibt es noch keine Vorlage für die Vereinbarung. Erstelle zuerst eine und komm dann zurück, um die Vereinbarung anzulegen.",
+        "sendErrorTitle": "Die Vereinbarung ließ sich nicht senden",
+        "sendError": "Die Vereinbarung ließ sich nicht an {name} senden. Versuch es bitte erneut.",
+        "noTemplateCta": "Vorlage für die Vereinbarung erstellen",
         "orgProfileErrorTitle": "Organisationsprofil vervollständigen",
-        "orgProfileErrorDescription": "Ihrer Organisation fehlen Angaben, die für dieses Dokument benötigt werden. Ergänzen Sie sie, um fortzufahren.",
+        "orgProfileErrorDescription": "Deiner Organisation fehlen Angaben, die für dieses Dokument benötigt werden. Ergänze sie, um fortzufahren.",
         "editProfileCta": "Profil bearbeiten",
         "hoursUnitMonth": "Monat",
         "hoursUnitWeek": "Woche",
@@ -2111,7 +2153,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Zusatzvereinbarung",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift Koordination",
+          "signatureCoordinator": "Unterschrift (Koordination)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2119,16 +2161,18 @@
         "title": "Stundennachweis erstellen",
         "cancel": "Abbrechen",
         "sendForSigning": "Speichern und zur Unterschrift senden",
-        "sending": "Wird gesendet…",
+        "sending": "Wird gesendet...",
         "sentToast": "Stundennachweis an {name} zur Unterschrift gesendet.",
-        "sendErrorToast": "Der Stundennachweis konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
-        "loadErrorTitle": "Stundennachweisdaten konnten nicht geladen werden",
-        "loadError": "Die Stundennachweisdaten von {name} konnten nicht geladen werden. Bitte schließen und erneut versuchen.",
-        "sendErrorTitle": "Stundennachweis konnte nicht gesendet werden",
-        "sendError": "Der Stundennachweis konnte nicht an {name} gesendet werden. Bitte erneut versuchen.",
+        "sendErrorToast": "Der Stundennachweis ließ sich nicht an {name} senden. Versuch es bitte erneut.",
+        "loadErrorTitle": "Die Daten des Stundennachweises ließen sich nicht laden",
+        "loadError": "Die Daten von {name} ließen sich nicht laden. Schließ das Fenster bitte und versuch es erneut.",
+        "noTemplateTitle": "Noch keine Stundennachweis-Vorlage",
+        "noTemplateDescription": "Die Dokumentvorlagen für {pauschale} sind noch nicht eingerichtet. Erstelle sie zuerst und komm dann zurück, um den Stundennachweis anzulegen.",
+        "sendErrorTitle": "Der Stundennachweis ließ sich nicht senden",
+        "sendError": "Der Stundennachweis ließ sich nicht an {name} senden. Versuch es bitte erneut.",
         "noTemplateCta": "Stundennachweis-Vorlage erstellen",
         "orgProfileErrorTitle": "Organisationsprofil vervollständigen",
-        "orgProfileErrorDescription": "Ihrer Organisation fehlen Angaben, die für dieses Dokument benötigt werden. Ergänzen Sie sie, um fortzufahren.",
+        "orgProfileErrorDescription": "Deiner Organisation fehlen Angaben, die für dieses Dokument benötigt werden. Ergänze sie, um fortzufahren.",
         "editProfileCta": "Profil bearbeiten",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Stundennachweiszeitraum",
@@ -2139,9 +2183,9 @@
           "apply": "Anwenden"
         },
         "capCard": {
-          "title": "Jahresdeckel",
+          "title": "Jahresfreibetrag",
           "value": "{before} → {after}",
-          "subline": "von {total} Jahresdeckel"
+          "subline": "von {total} Jahresfreibetrag"
         },
         "manualCap": {
           "title": "Anfangsbetrag",
@@ -2151,15 +2195,15 @@
           "inputLabel": "Anfangsbetrag in Euro",
           "projectedAfter": "Nach diesem Stundennachweis: {after}",
           "successToast": "Anfangsbetrag gespeichert.",
-          "errorToast": "Der Anfangsbetrag konnte nicht gespeichert werden. Bitte erneut versuchen."
+          "errorToast": "Der Anfangsbetrag ließ sich nicht speichern. Versuch es bitte erneut."
         },
         "hoursCard": {
           "title": "Abrechenbare Stunden",
           "rowCheckboxLabel": "{shiftName} in diesen Stundennachweis aufnehmen",
           "hoursValue": "{hours} Std.",
-          "editHint": "Um Stunden oder Einsatzdetails zu ändern, gehe zu <link>Zeitnachweise</link>.",
+          "editHint": "Um Stunden oder Einsatzdetails zu ändern, gehe zu <link>Zeiterfassung</link>.",
           "emptyOutsidePeriod": "{count, plural, one {# Zeiteintrag} other {# Zeiteinträge}} für diese Pauschale liegen außerhalb des gewählten Abrechnungszeitraums. Ändere den Abrechnungszeitraum, um sie aufzunehmen.",
-          "emptyOtherType": "In diesem Abrechnungszeitraum wurden Stunden unter {types} erfasst, nicht unter dieser Pauschale. Erstelle den Stundennachweis für diese Pauschale oder korrigiere die Pauschale des Einsatzes in den Zeitnachweisen.",
+          "emptyOtherType": "In diesem Abrechnungszeitraum wurden Stunden unter {types} erfasst, nicht unter dieser Pauschale. Erstelle den Stundennachweis für diese Pauschale oder korrigiere die Pauschale des Einsatzes in der Zeiterfassung.",
           "emptyNothingTracked": "Für diese Pauschale sind keine abgeschlossenen, noch nicht abgerechneten Stunden erfasst. Erfasse zuerst Zeiten für diese Person oder prüfe, ob die Stunden bereits in einem anderen Stundennachweis sind."
         },
         "preview": {
@@ -2172,31 +2216,31 @@
       },
       "signToasts": {
         "contract": "Vereinbarung für {name} gegengezeichnet.",
-        "contractError": "Vereinbarung konnte für {name} nicht gegengezeichnet werden.",
+        "contractError": "Die Vereinbarung ließ sich für {name} nicht gegenzeichnen.",
         "invoice": "Stundennachweis für {name} gegengezeichnet.",
-        "invoiceError": "Stundennachweis konnte für {name} nicht gegengezeichnet werden."
+        "invoiceError": "Der Stundennachweis ließ sich für {name} nicht gegenzeichnen."
       },
       "createUnavailable": "Dieses Dokument für {name} kann hier nicht mehr erstellt werden. Lade die Seite neu und versuche es erneut.",
       "declineToasts": {
         "contract": "Vereinbarung für {name} abgelehnt.",
-        "contractError": "Vereinbarung konnte für {name} nicht abgelehnt werden.",
+        "contractError": "Die Vereinbarung ließ sich für {name} nicht ablehnen.",
         "invoice": "Stundennachweis für {name} abgelehnt.",
-        "invoiceError": "Stundennachweis konnte für {name} nicht abgelehnt werden."
+        "invoiceError": "Der Stundennachweis ließ sich für {name} nicht ablehnen."
       }
     },
     "templates": {
-      "title": "Templates",
+      "title": "Vorlagen",
       "sections": {
         "ep": "Ehrenamtspauschale",
         "ul": "Übungsleiterpauschale",
-        "unconfiguredWarning": "Einsätze dieses Typs können nicht geplant werden, solange nicht beide Vorlagen konfiguriert sind."
+        "unconfiguredWarning": "Einsätze dieses Typs können nicht geplant werden, solange nicht beide Vorlagen eingerichtet sind."
       },
       "documentKind": {
         "contract": "Vereinbarung",
         "invoice": "Stundennachweis"
       },
-      "loadError": "Vorlagen konnten nicht geladen werden. Bitte Seite neu laden.",
-      "setupStatusError": "Der Einrichtungsstatus konnte nicht geprüft werden. Bitte Seite neu laden.",
+      "loadError": "Die Vorlagen ließen sich nicht laden. Lade die Seite bitte neu.",
+      "setupStatusError": "Der Einrichtungsstatus ließ sich nicht prüfen. Lade die Seite bitte neu.",
       "builder": {
         "breadcrumb": {
           "accounting": "Buchhaltung",
@@ -2204,7 +2248,7 @@
         },
         "saveButton": "Vorlage speichern",
         "saveSuccessToast": "Vorlage gespeichert",
-        "saveErrorToast": "Die Vorlage konnte nicht gespeichert werden. Bitte erneut versuchen.",
+        "saveErrorToast": "Die Vorlage ließ sich nicht speichern. Versuch es bitte erneut.",
         "orgProfile": {
           "blockedMessage": "In deinen Organisationsdaten fehlen Angaben, die diese Vorlage benötigt. Vervollständige die Organisationsdaten, bevor du speicherst.",
           "blockedCta": "Organisationsdaten vervollständigen",
@@ -2218,14 +2262,14 @@
             "invoice": "Stundennachweis"
           },
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift Koordination",
+          "signatureCoordinator": "Unterschrift (Koordination)",
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
         "blockEditor": {
           "headerTitle": "Kopfbereich",
-          "invoiceNumberFormatLabel": "Format der Rechnungsnummer",
-          "lockedHint": "Pflichtblock — immer im generierten Dokument enthalten.",
+          "invoiceNumberFormatLabel": "Format der Dokumentennummer",
+          "lockedHint": "Pflichtblock. Immer im generierten Dokument enthalten.",
           "tableFixedHint": "Die Zeilen werden beim Erstellen eines Stundennachweises aus den Zeiterfassungen befüllt.",
           "firstColumnSourceLabel": "Inhalt der ersten Spalte",
           "firstColumnSourceOptions": {
@@ -2249,13 +2293,14 @@
           "scrollRegionLabel": "Vorlagen-Editor, scrollbar",
           "placeholderExamples": {
             "volunteer_first_name": "Vorname",
-            "volunteer_last_name": "Name"
+            "volunteer_last_name": "Name",
+            "volunteer_account_holder": "Kontoinhaber:in"
           }
         },
         "blockHeadings": {
           "persoenlicheDaten": "Persönliche Daten",
           "stundennachweis": "Stundennachweis",
-          "jahresdeckelHinweis": "Bereits erhaltene Zahlungen"
+          "jahresdeckelHinweis": "Bereits erhaltene Vergütung"
         },
         "editorGroups": {
           "org": "Angaben der Organisation",
@@ -2302,7 +2347,7 @@
           "generationTime": "Wird beim Erstellen des Dokuments automatisch eingetragen.",
           "organizationProfile": "Wird aus den Daten deiner Organisation übernommen.",
           "rateSettings": "Wird aus dem in den Buchhaltungseinstellungen hinterlegten Satz übernommen.",
-          "yearlyLimit": "Wird aus dem gesetzlich festgelegten Jahresdeckel übernommen."
+          "yearlyLimit": "Wird aus dem gesetzlich festgelegten Jahresfreibetrag übernommen."
         },
         "invoiceNumberFormats": {
           "date-number": "TT-MM-JJJJ-Nummer",
@@ -2313,7 +2358,7 @@
         "fieldList": {
           "requiresCollection": "Fehlende Daten",
           "profileWarningBefore": "Ehrenamtliche werden noch nicht nach diesen Daten gefragt.",
-          "profileWarningAction": "Formular im Formular-Builder erstellen",
+          "profileWarningAction": "Formular unter Anforderungsformulare erstellen",
           "profileWarningAfter": "um diese Daten abzufragen."
         },
         "dataSources": {
@@ -2325,27 +2370,28 @@
           "org_zip": "Postleitzahl (Organisation)",
           "org_legal_rep": "Gesetzliche Vertretung",
           "pauschalen_type": "Pauschalentyp",
-          "hourly_rate": "Stundensatz",
+          "hourly_rate": "Vergütung pro Stunde",
           "period_start": "Zeitraum Beginn",
           "period_end": "Zeitraum Ende",
           "total_hours": "Gesamtstunden",
           "total_amount": "Gesamtbetrag",
           "generated_date": "Erstellungsdatum",
-          "document_number": "Rechnungsnummer",
+          "document_number": "Dokumentennummer",
           "volunteer_iban": "IBAN (Ehrenamtliche:r)",
+          "volunteer_account_holder": "Kontoinhaber:in (Ehrenamtliche:r)",
           "volunteer_bic": "BIC (Ehrenamtliche:r)",
           "volunteer_address": "Adresse (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
-          "volunteer_tax_id": "Steueridentifikationsnummer",
+          "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
-          "yearly_limit_amount": "Jahresdeckel"
+          "yearly_limit_amount": "Jahresfreibetrag"
         }
       },
       "card": {
         "empty": {
-          "alertText": "Noch nicht konfiguriert",
+          "alertText": "Noch nicht eingerichtet",
           "createButton": "Vorlage erstellen"
         },
         "editButton": "Vorlage bearbeiten",

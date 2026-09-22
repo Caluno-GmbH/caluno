@@ -547,6 +547,9 @@ export class DocumentRenderingService {
       volunteer_iban: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_iban],
       ),
+      volunteer_account_holder: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_account_holder],
+      ),
       volunteer_bic: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
       ),

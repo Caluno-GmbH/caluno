@@ -50,6 +50,8 @@ describe('Time entry -> eligible timesheet flow', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
+      {} as never,
     );
     const accountingOrgAccessService = new AccountingOrgAccessService(
       db,

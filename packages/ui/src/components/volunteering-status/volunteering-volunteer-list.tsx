@@ -24,6 +24,8 @@ export type VolunteeringVolunteerListItem = {
   state: ShiftVolunteeringDisplayState;
   completedDuration?: string;
   statusLabel?: string;
+  /** Extra content shown in a tooltip on the status chip (e.g. check-out windows). */
+  statusTooltip?: ReactNode;
   statusOptions?: VolunteeringStatusOption[];
   statusMenuAriaLabel?: string;
   /** When set, overrides default actions from status presentation. */
@@ -87,6 +89,7 @@ export function VolunteeringVolunteerList({
             phase={phase}
             completedDuration={volunteer.completedDuration}
             statusLabel={volunteer.statusLabel}
+            statusTooltip={volunteer.statusTooltip}
             statusOptions={volunteer.statusOptions}
             statusMenuAriaLabel={volunteer.statusMenuAriaLabel}
             actions={volunteer.actions}
