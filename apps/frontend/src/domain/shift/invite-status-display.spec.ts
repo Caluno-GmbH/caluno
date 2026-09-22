@@ -267,6 +267,7 @@ describe('formatInviteStatusSummary', () => {
       formatInviteStatusSummary(
         {
           invited: 4,
+          requested: 0,
           accepted: 2,
           signedUp: 1,
           declined: 0,
@@ -291,6 +292,7 @@ describe('formatInviteStatusSummary', () => {
       formatInviteStatusSummary(
         {
           invited: 4,
+          requested: 0,
           accepted: 2,
           signedUp: 1,
           declined: 0,
