@@ -119,8 +119,7 @@ export type InvoiceNumberFormat =
 export type TemplateHeader = {
   /** Title text, resolved per pauschale type by the caller. */
   titleLines: string[];
-  /** Contract: org name + address, top-right. Invoice: org address, left. */
-  orgIdentityLine: TemplateLine;
+  orgIdentityLine?: TemplateLine;
   /** Invoice-only: document number, generation date, optional Kostenstelle — each its own line. Empty for contracts. */
   metaLines: TemplateLine[];
 };

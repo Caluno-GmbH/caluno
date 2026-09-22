@@ -107,7 +107,10 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
  * occurrence" slot either.
  */
 function allLines(doc: TemplateDocument): TemplateLine[] {
-  const lines = [doc.header.orgIdentityLine, ...(doc.header.metaLines ?? [])];
+  const lines = [
+    ...(doc.header.orgIdentityLine ? [doc.header.orgIdentityLine] : []),
+    ...(doc.header.metaLines ?? []),
+  ];
   for (const block of doc.blocks) {
     if (block.kind === 'text' && (block.locked || block.enabled)) {
       lines.push(...block.lines);
@@ -169,10 +172,12 @@ export function updateManualFieldValue(
     ...doc,
     header: {
       ...doc.header,
-      orgIdentityLine: {
-        ...doc.header.orgIdentityLine,
-        fields: mapFields(doc.header.orgIdentityLine.fields, fieldId, value),
-      },
+      ...(doc.header.orgIdentityLine && {
+        orgIdentityLine: {
+          ...doc.header.orgIdentityLine,
+          fields: mapFields(doc.header.orgIdentityLine.fields, fieldId, value),
+        },
+      }),
       metaLines: mapLines(doc.header.metaLines, fieldId, value),
     },
     blocks: doc.blocks.map((b) =>
