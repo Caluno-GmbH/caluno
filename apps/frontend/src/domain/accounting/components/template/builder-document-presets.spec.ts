@@ -1,11 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  getContractDocument,
-  getInvoiceDocument,
-} from './builder-document-presets';
+import { getContractDocument } from './builder-document-presets';
 
 describe('document preset org identity', () => {
-
   it('Renders the org as the first contracting party with its address', () => {
     const doc = getContractDocument('ehrenamt');
     const partiesBlock = doc.blocks.find((b) => b.id === 'persoenliche-daten');
