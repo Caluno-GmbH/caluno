@@ -43,7 +43,8 @@ import {
 import { toast } from 'sonner';
 import { FileUpload } from '@/components/storage/file-upload';
 import { saveBlock } from '../actions';
-import { GENDER_SYSTEM_KEY, hasFixedGenderOptions } from '../gender-options';
+import { hasFixedGenderOptions } from '../gender-options';
+import { requiredToggleState } from '../required-toggle';
 import { SYSTEM_PROFILE_FIELDS } from '../system-profile-fields';
 import { OptionsEditor } from './options-editor';
 
@@ -255,7 +256,7 @@ export function BlockForm({
       label: preset.label,
       description: '',
       placeholder: '',
-      required: preset.required,
+      required: false,
       systemKey: preset.key,
       lockType: true,
       options: [],
@@ -520,6 +521,7 @@ function FieldCard({
       fieldType === FieldType.MultiChoice) &&
     !hasFixedOptions;
   const isDocument = fieldType === FieldType.DocumentAcknowledgement;
+  const requiredToggle = requiredToggleState(fieldType);
   const documentPreviewUrl = useWatch({
     control,
     name: `fields.${index}.documentDownloadUrl`,
@@ -545,19 +547,26 @@ function FieldCard({
         </div>
         <div className="flex items-center gap-3">
           {!readOnly && (
-            <label
-              htmlFor={`field-${index}-required`}
-              className="flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground"
-            >
-              <Switch
-                id={`field-${index}-required`}
-                checked={currentRequired}
-                onCheckedChange={onToggleRequired}
-                size="sm"
-                disabled={isSystemField && systemKey !== GENDER_SYSTEM_KEY}
-              />
-              {currentRequired ? t('required') : t('optional')}
-            </label>
+            <div className="flex flex-col gap-1">
+              <label
+                htmlFor={`field-${index}-required`}
+                className="flex cursor-pointer items-center gap-1.5 text-sm text-muted-foreground"
+              >
+                <Switch
+                  id={`field-${index}-required`}
+                  checked={currentRequired}
+                  onCheckedChange={onToggleRequired}
+                  size="sm"
+                  disabled={requiredToggle.disabled}
+                />
+                {currentRequired ? t('required') : t('optional')}
+              </label>
+              {requiredToggle.disabled && (
+                <p className="text-xs text-muted-foreground">
+                  {tField(requiredToggle.reasonKey)}
+                </p>
+              )}
+            </div>
           )}
           {!readOnly && (
             <div className="flex items-center gap-1">

@@ -1031,6 +1031,7 @@
       "profileFieldNone": "Keines",
       "profileFieldOptional": "Profilfeld (optional)",
       "required": "Erforderlich",
+      "requiredFixedInfoText": "Infotext enthält keine Antwort und kann daher nicht erforderlich sein.",
       "save": "Speichern",
       "selectTypeError": "Bitte wähle einen Feldtyp aus.",
       "shortText": "Kurzer Text",

@@ -2,6 +2,7 @@ import { BadRequestGraphQLError } from '../../graphql/errors';
 import { FieldType } from '../enums';
 import {
   assertValidFieldOptions,
+  assertValidRequiredFlag,
   assertValidSystemKeyBinding,
 } from './validate-field-options';
 
@@ -93,6 +94,33 @@ describe('assertValidSystemKeyBinding', () => {
       assertValidSystemKeyBinding(undefined, FieldType.SINGLE_CHOICE, [
         { label: 'A', value: 'a' },
       ]),
+    ).not.toThrow();
+  });
+});
+
+describe('assertValidRequiredFlag', () => {
+  it('rejects a required static text field', () => {
+    expect(() => assertValidRequiredFlag(FieldType.STATIC_TEXT, true)).toThrow(
+      BadRequestGraphQLError,
+    );
+  });
+
+  it('accepts an optional static text field', () => {
+    expect(() =>
+      assertValidRequiredFlag(FieldType.STATIC_TEXT, false),
+    ).not.toThrow();
+    expect(() =>
+      assertValidRequiredFlag(FieldType.STATIC_TEXT, null),
+    ).not.toThrow();
+    expect(() =>
+      assertValidRequiredFlag(FieldType.STATIC_TEXT, undefined),
+    ).not.toThrow();
+  });
+
+  it('accepts required on any other field type', () => {
+    expect(() => assertValidRequiredFlag(FieldType.TEXT, true)).not.toThrow();
+    expect(() =>
+      assertValidRequiredFlag(FieldType.SINGLE_CHOICE, true),
     ).not.toThrow();
   });
 });

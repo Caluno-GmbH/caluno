@@ -54,3 +54,14 @@ export function assertValidSystemKeyBinding(
     );
   }
 }
+
+export function assertValidRequiredFlag(
+  type: FieldType,
+  required: boolean | null | undefined,
+): void {
+  if (required === true && type === FieldType.STATIC_TEXT) {
+    throw new BadRequestGraphQLError(
+      'Info text fields carry no answer and cannot be required',
+    );
+  }
+}

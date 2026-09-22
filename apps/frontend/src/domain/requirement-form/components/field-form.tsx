@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { FileUpload } from '@/components/storage/file-upload';
 import { hasFixedGenderOptions } from '../gender-options';
+import { requiredToggleState } from '../required-toggle';
 import { OptionsEditor } from './options-editor';
 
 // Field types that have a fixed, unambiguous system key
@@ -118,6 +119,7 @@ export function FieldForm({
     !hasFixedOptions;
   const isDocument = fieldType === 'DOCUMENT_ACKNOWLEDGEMENT';
   const isStaticText = fieldType === 'STATIC_TEXT';
+  const requiredToggle = requiredToggleState(fieldType);
 
   function commit() {
     if (!fieldType) {
@@ -299,17 +301,21 @@ export function FieldForm({
             <OptionsEditor options={options} onChange={setOptions} />
           )}
 
-          {!isStaticText && (
-            <div className="flex items-center gap-3">
-              <Switch
-                id="field-required"
-                checked={required}
-                onCheckedChange={setRequired}
-              />
-              <FieldLabel htmlFor="field-required" className="mb-0">
-                {t('required')}
-              </FieldLabel>
-            </div>
+          <div className="flex items-center gap-3">
+            <Switch
+              id="field-required"
+              checked={required}
+              onCheckedChange={setRequired}
+              disabled={requiredToggle.disabled}
+            />
+            <FieldLabel htmlFor="field-required" className="mb-0">
+              {t('required')}
+            </FieldLabel>
+          </div>
+          {requiredToggle.disabled && (
+            <p className="text-muted-foreground text-xs">
+              {t(requiredToggle.reasonKey)}
+            </p>
           )}
         </>
       )}
