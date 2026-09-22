@@ -1032,6 +1032,7 @@
       "profileFieldNone": "None",
       "profileFieldOptional": "Profile field (optional)",
       "required": "Required",
+      "requiredFixedInfoText": "Info text carries no answer, so it cannot be required.",
       "save": "Save",
       "selectTypeError": "Please select a field type.",
       "shortText": "Short text",
