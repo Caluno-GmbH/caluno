@@ -31,6 +31,7 @@ import type { FormBlockFieldInsert } from '../schemas/form-block-field.schema';
 import { isUnitInOrg } from './is-unit-in-org';
 import {
   assertValidFieldOptions,
+  assertValidRequiredFlag,
   assertValidSystemKeyBinding,
 } from './validate-field-options';
 
@@ -139,6 +140,7 @@ export class FormBlockService {
             field.type,
             field.options,
           );
+          assertValidRequiredFlag(field.type, field.required);
         }
         await tx
           .insert(schema.formBlockFields)
@@ -291,6 +293,7 @@ export class FormBlockService {
     }
     assertValidFieldOptions(input.type, input.options);
     assertValidSystemKeyBinding(input.systemKey, input.type, input.options);
+    assertValidRequiredFlag(input.type, input.required);
     await this.validateDocumentFiles(input.documentFileIds);
 
     const block = await this.findById(blockId);
@@ -365,6 +368,10 @@ export class FormBlockService {
       input.systemKey === undefined ? field.systemKey : input.systemKey,
       input.type ?? (field.type as FieldType),
       input.options === undefined ? field.options : input.options,
+    );
+    assertValidRequiredFlag(
+      input.type ?? (field.type as FieldType),
+      input.required === undefined ? field.required : input.required,
     );
 
     await isUnitInOrg(this.db, organizationUnitId, field.block.organizationId);
