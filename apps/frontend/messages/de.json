@@ -1407,7 +1407,7 @@
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
       "notCheckedIn": "Noch nicht da",
       "pendingApproval": "Genehmigung ausstehend",
-      "rejected": "Zurückgewiesen",
+      "rejected": "Entfernt",
       "remindedAtTooltip": "Erinnert am {when}",
       "remindError": "Die Erinnerung ließ sich nicht senden. Versuch es bitte erneut.",
       "remindSuccess": "Erinnerung an Freiwillige:n gesendet",
