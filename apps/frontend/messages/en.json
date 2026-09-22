@@ -267,10 +267,10 @@
           "signedUp": "Signed up",
           "accepted": "Accepted",
           "declined": "Declined",
-          "cancelled": "Cancelled",
-          "rejected": "Rejected",
-          "requested": "Requested",
-          "waitlisted": "Waitlisted"
+          "cancelled": "Withdrawn",
+          "rejected": "Removed",
+          "requested": "Pending approval",
+          "waitlisted": "On waitlist"
         },
         "actionUninvite": "Uninvite",
         "uninviteSuccess": "Volunteer removed from event",

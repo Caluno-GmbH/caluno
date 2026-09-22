@@ -264,12 +264,12 @@
         "inviteButton": "Einladen",
         "status": {
           "invited": "Eingeladen",
-          "signedUp": "Angemeldet",
+          "signedUp": "Selbst angemeldet",
           "accepted": "Angenommen",
           "declined": "Abgelehnt",
           "cancelled": "Zurückgezogen",
-          "rejected": "Zurückgewiesen",
-          "requested": "Angefragt",
+          "rejected": "Entfernt",
+          "requested": "Genehmigung ausstehend",
           "waitlisted": "Auf der Warteliste"
         },
         "actionUninvite": "Einladung zurückziehen",
