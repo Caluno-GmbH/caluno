@@ -39,6 +39,26 @@ const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
   UEBUNGSLEITER: 'Übungsleiterpauschale',
 };
 
+const nonBlank = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
+
+export function letterheadLines(fieldValues: Record<string, string>): string[] {
+  const zipCity = [
+    nonBlank(fieldValues.org_zip),
+    nonBlank(fieldValues.org_city),
+  ]
+    .filter((part) => part !== undefined)
+    .join(' ');
+
+  return [
+    nonBlank(fieldValues.org_name),
+    nonBlank(fieldValues.org_address),
+    zipCity || undefined,
+  ].filter((line): line is string => line !== undefined);
+}
+
 /**
  * Renders a fully-signed contract or invoice to a PDF and stores it as a
  * file, attaching the fileId to the document row. The PDF carries the
@@ -129,7 +149,7 @@ export class DocumentRenderingService {
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
       pdf.on('error', reject);
 
-      this.renderHeader(pdf, body, fieldValues);
+      this.renderHeader(pdf, body, fieldValues, resolved);
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
       this.renderSignatures(pdf, document, resolved);
@@ -141,7 +161,16 @@ export class DocumentRenderingService {
     pdf: PDFKit.PDFDocument,
     body: TemplateBodyShape,
     fieldValues: Record<string, string>,
+    resolvedValues: Record<string, string>,
   ): void {
+    const letterhead = letterheadLines(resolvedValues);
+    if (letterhead.length > 0) {
+      pdf
+        .fontSize(10)
+        .font('Helvetica')
+        .text(letterhead.join('\n'), { align: 'left', lineGap: 1 });
+      pdf.moveDown(1);
+    }
     const title = (body.header?.titleLines ?? []).join(' ');
     if (title) {
       pdf.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
@@ -154,15 +183,6 @@ export class DocumentRenderingService {
         .text(this.resolveLine(metaLine, fieldValues), {
           align: 'right',
           lineGap: 1,
-        });
-    }
-    if (body.header?.orgIdentityLine) {
-      pdf
-        .moveDown(0.5)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(this.resolveLine(body.header.orgIdentityLine, fieldValues), {
-          align: 'center',
         });
     }
     pdf.moveDown(1);

@@ -4,14 +4,10 @@ import {
   getInvoiceDocument,
 } from './builder-document-presets';
 
-describe('contract preset org name/address separators (VOLI-1325)', () => {
-  const doc = getContractDocument('ehrenamt');
+describe('document preset org identity', () => {
 
-  it('separates the org name and address in the header with a line break', () => {
-    expect(doc.header.orgIdentityLine.text).toBe('{orgName}\n{orgAddress}');
-  });
-
-  it('separates the org name and address in the parties line with a comma', () => {
+  it('Renders the org as the first contracting party with its address', () => {
+    const doc = getContractDocument('ehrenamt');
     const partiesBlock = doc.blocks.find((b) => b.id === 'persoenliche-daten');
     const partiesLine =
       partiesBlock?.kind === 'text'
@@ -19,11 +15,5 @@ describe('contract preset org name/address separators (VOLI-1325)', () => {
         : undefined;
 
     expect(partiesLine?.text).toBe('Zwischen dem {orgName}, {orgAddress}, und');
-  });
-
-  it('leaves the invoice header address-only', () => {
-    expect(getInvoiceDocument('ehrenamt').header.orgIdentityLine.text).toBe(
-      '{orgAddress}',
-    );
   });
 });
