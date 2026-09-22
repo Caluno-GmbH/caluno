@@ -256,16 +256,6 @@ export function mapSignatureToSignee(
   };
 }
 
-/** Signees in signing sequence — signature rows arrive unordered, so sort by `order` (VOLI-1347). */
-export function mapSignaturesToSignees(
-  signatures: RawContract['signatures'] | RawInvoice['signatures'],
-  kind: 'contract' | 'invoice',
-): Signee[] {
-  return [...signatures]
-    .sort((a, b) => a.order - b.order)
-    .map((signature) => mapSignatureToSignee(signature, kind));
-}
-
 export function mapContractToBoardDoc(
   contract: RawContract,
   type: PauschalenType,

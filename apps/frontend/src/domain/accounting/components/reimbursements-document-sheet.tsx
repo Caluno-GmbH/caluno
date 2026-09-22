@@ -40,7 +40,7 @@ import {
   contractStatusToDocStatus,
   creationTargetFor,
   invoiceStatusToDocStatus,
-  mapSignaturesToSignees,
+  mapSignatureToSignee,
 } from '../lib/board-data.utils';
 import {
   documentCreationBlockedFor,
@@ -401,7 +401,7 @@ export function DocumentSheet({
     const detail = isContract ? contractDetail : invoiceDetail;
     if (!detail) return [];
     const kind = isContract ? 'contract' : 'invoice';
-    return mapSignaturesToSignees(detail.signatures, kind);
+    return detail.signatures.map((s) => mapSignatureToSignee(s, kind));
   }, [contractDetail, invoiceDetail, isContract]);
 
   const canUserSign = useMemo(() => {

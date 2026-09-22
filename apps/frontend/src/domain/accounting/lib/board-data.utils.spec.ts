@@ -31,7 +31,6 @@ import {
   mapContractToBoardDoc,
   mapDeclinedAtRole,
   mapInvoiceToBoardDoc,
-  mapSignaturesToSignees,
   mapSignatureToSignee,
   monthsInRange,
 } from './board-data.utils';
@@ -230,65 +229,6 @@ describe('mapSignatureToSignee', () => {
       'contract',
     );
     expect(signee.role).toBe('coordinator');
-  });
-});
-
-describe('mapSignaturesToSignees', () => {
-  // VOLI-1347: signatures arrive in arbitrary array order.
-  it('sorts coordinator-first signatures into signing order for contracts', () => {
-    const signees = mapSignaturesToSignees(
-      [
-        {
-          id: 's-coord',
-          order: 1,
-          signeeType: SigneeType.PermissionHolder,
-          signedAt: null,
-          signedByUser: null,
-          requiredPermission: {
-            id: 'p-1',
-            key: PermissionKey.AccountingManage,
-          },
-        },
-        {
-          id: 's-vol',
-          order: 0,
-          signeeType: SigneeType.Volunteer,
-          signedAt: null,
-          signedByUser: null,
-          requiredPermission: null,
-        },
-      ],
-      'contract',
-    );
-    expect(signees.map((s) => s.role)).toEqual(['volunteer', 'coordinator']);
-  });
-
-  it('sorts supervisor signatures into signing order for invoices', () => {
-    const signees = mapSignaturesToSignees(
-      [
-        {
-          id: 's-super',
-          order: 1,
-          signeeType: SigneeType.PermissionHolder,
-          signedAt: null,
-          signedByUser: null,
-          requiredPermission: {
-            id: 'p-1',
-            key: PermissionKey.AccountingManage,
-          },
-        },
-        {
-          id: 's-vol',
-          order: 0,
-          signeeType: SigneeType.Volunteer,
-          signedAt: null,
-          signedByUser: null,
-          requiredPermission: null,
-        },
-      ],
-      'invoice',
-    );
-    expect(signees.map((s) => s.role)).toEqual(['volunteer', 'supervisor']);
   });
 });
 

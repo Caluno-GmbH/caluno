@@ -72,7 +72,7 @@ export class InvoiceService {
       with: {
         documentTemplate: true,
         reimbursementType: true,
-        signatures: true,
+        signatures: { orderBy: { order: 'asc' } },
         statusChanges: true,
         invoiceTimeEntries: true,
         organizationUnit: true,
