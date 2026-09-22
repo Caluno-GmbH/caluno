@@ -356,6 +356,23 @@ export type DocumentTemplate = {
   updatedAt?: Maybe<Scalars['DateTime']['output']>;
 };
 
+export type DuplicateShiftInput = {
+  endsAt: Scalars['DateTime']['input'];
+  eventId?: InputMaybe<Scalars['ID']['input']>;
+  imageFileId?: InputMaybe<Scalars['String']['input']>;
+  instructions?: InputMaybe<Scalars['String']['input']>;
+  joinRequiresApproval?: InputMaybe<Scalars['Boolean']['input']>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  maxVolunteers?: InputMaybe<Scalars['Int']['input']>;
+  minVolunteers?: InputMaybe<Scalars['Int']['input']>;
+  reimbursementTypeId?: InputMaybe<Scalars['ID']['input']>;
+  requiredFormIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  rrule?: InputMaybe<Scalars['String']['input']>;
+  startsAt: Scalars['DateTime']['input'];
+  title: Scalars['String']['input'];
+  visibility: ShiftVisibility;
+};
+
 export type EffectiveRate = {
   __typename?: 'EffectiveRate';
   hourlyRateCents: Scalars['Int']['output'];
@@ -765,6 +782,7 @@ export type Mutation = {
   deleteShift: Shift;
   deleteShiftInstance: ShiftInstance;
   deleteTimeEntry: TimeEntry;
+  duplicateShift: Shift;
   inviteMembersToEvent: Event;
   joinEvent: JoinEventResult;
   joinOrganization: JoinOrganizationResult;
@@ -1022,6 +1040,12 @@ export type MutationDeleteShiftInstanceArgs = {
 
 export type MutationDeleteTimeEntryArgs = {
   id: Scalars['ID']['input'];
+};
+
+
+export type MutationDuplicateShiftArgs = {
+  id: Scalars['String']['input'];
+  input: DuplicateShiftInput;
 };
 
 
@@ -3800,6 +3824,14 @@ export type UpdateShiftMutationVariables = Exact<{
 
 
 export type UpdateShiftMutation = { __typename?: 'Mutation', updateShift: { __typename?: 'Shift', id: string } };
+
+export type DuplicateShiftMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+  input: DuplicateShiftInput;
+}>;
+
+
+export type DuplicateShiftMutation = { __typename?: 'Mutation', duplicateShift: { __typename?: 'Shift', id: string } };
 
 export type DeleteShiftMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -6891,6 +6923,13 @@ export const UpdateShiftDocument = gql`
   }
 }
     `;
+export const DuplicateShiftDocument = gql`
+    mutation DuplicateShift($id: String!, $input: DuplicateShiftInput!) {
+  duplicateShift(id: $id, input: $input) {
+    id
+  }
+}
+    `;
 export const DeleteShiftDocument = gql`
     mutation DeleteShift($id: String!) {
   deleteShift(id: $id) {
@@ -8071,6 +8110,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     UpdateShift(variables: UpdateShiftMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateShiftMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateShiftMutation>({ document: UpdateShiftDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateShift', 'mutation', variables);
+    },
+    DuplicateShift(variables: DuplicateShiftMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DuplicateShiftMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<DuplicateShiftMutation>({ document: DuplicateShiftDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DuplicateShift', 'mutation', variables);
     },
     DeleteShift(variables: DeleteShiftMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteShiftMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteShiftMutation>({ document: DeleteShiftDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteShift', 'mutation', variables);
