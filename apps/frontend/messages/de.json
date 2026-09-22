@@ -3,6 +3,7 @@
     "brandName": "caluno",
     "joinTitle": "Tritt {orgName} bei",
     "poweredBy": "Powered by",
+    "switchLocale": "Sprache wechseln zu {locale}",
     "forgotPassword": {
       "checkSpam": "Wenn du ihn nicht siehst, prüfe deinen Spam-Ordner.",
       "description": "Gib deine E-Mail-Adresse ein, und wir senden dir einen Link zum Zurücksetzen deines Passworts.",

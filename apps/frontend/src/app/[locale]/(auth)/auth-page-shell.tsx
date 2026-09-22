@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PendingInviteOrg } from '@/lib/pending-invite-org';
 import { AuthBrand } from './auth-brand';
 import { AuthJoinHeader } from './auth-join-header';
+import { AuthLocaleToggle } from './auth-locale-toggle';
 
 interface AuthPageShellProps {
   title: string;
@@ -24,7 +25,8 @@ export function AuthPageShell({
   children,
 }: AuthPageShellProps) {
   return (
-    <div className="flex min-h-screen justify-center bg-background px-4 py-10 md:py-16">
+    <div className="relative flex min-h-screen justify-center bg-background px-4 py-10 md:py-16">
+      <AuthLocaleToggle />
       <div className="flex w-full max-w-md flex-col gap-8">
         {joiningOrg ? (
           <div className="flex flex-col items-center gap-4 text-center">
