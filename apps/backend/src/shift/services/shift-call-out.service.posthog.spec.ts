@@ -159,15 +159,21 @@ describe('ShiftCallOutService.sendCallOut PostHog', () => {
       {
         findInstanceById: jest.fn().mockResolvedValue(futureInstance()),
       } as never,
-      {} as never,
+      {
+        findUsersWithPermission: jest
+          .fn()
+          .mockResolvedValue([{ id: 'admin-1' }]),
+      } as never,
       {} as never,
       {
-        resolveUserNotificationData: jest.fn().mockResolvedValue({
-          userId: 'admin-1',
-          email: 'admin@example.com',
-          firstName: 'Ada',
-          locale: 'en',
-        }),
+        resolveUsersNotificationData: jest.fn().mockResolvedValue([
+          {
+            userId: 'admin-1',
+            email: 'admin@example.com',
+            firstName: 'Ada',
+            locale: 'en',
+          },
+        ]),
       } as never,
       { send: jest.fn().mockResolvedValue(undefined) } as never,
       { t: jest.fn() } as never,
