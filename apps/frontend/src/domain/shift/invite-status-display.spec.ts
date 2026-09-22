@@ -10,9 +10,11 @@ import {
   canRemindInvitee,
   countInviteDisplayStates,
   formatInviteStatusSummary,
+  groupInvitesByRosterGroup,
   partitionInvitesByWaitlist,
   preselectedInviteMemberIds,
   toInviteDisplayState,
+  toRosterGroup,
 } from './invite-status-display';
 
 describe('canAdminUninvite', () => {
@@ -364,5 +366,69 @@ describe('adminChipTargetStatuses', () => {
     expect(
       adminChipTargetStatuses(ShiftInviteStatus.VolunteerCancelled),
     ).toEqual([]);
+  });
+});
+
+describe('toRosterGroup', () => {
+  it('puts confirmed volunteers in coming', () => {
+    expect(toRosterGroup(ShiftInviteStatus.Joined)).toBe('coming');
+  });
+
+  it('puts unresolved volunteers in pending', () => {
+    expect(toRosterGroup(ShiftInviteStatus.AdminInvited)).toBe('pending');
+    expect(toRosterGroup(ShiftInviteStatus.AwaitingAdminApproval)).toBe(
+      'pending',
+    );
+    expect(toRosterGroup(ShiftInviteStatus.WaitlistJoined)).toBe('pending');
+  });
+
+  it('puts everyone who is out in notComing', () => {
+    expect(toRosterGroup(ShiftInviteStatus.VolunteerRejected)).toBe(
+      'notComing',
+    );
+    expect(toRosterGroup(ShiftInviteStatus.VolunteerCancelled)).toBe(
+      'notComing',
+    );
+    expect(toRosterGroup(ShiftInviteStatus.AdminRejected)).toBe('notComing');
+  });
+});
+
+describe('groupInvitesByRosterGroup', () => {
+  it('splits invites into the three groups', () => {
+    const invites = [
+      { id: 'a', status: ShiftInviteStatus.Joined },
+      { id: 'b', status: ShiftInviteStatus.AdminInvited },
+      { id: 'c', status: ShiftInviteStatus.AdminRejected },
+    ];
+
+    const groups = groupInvitesByRosterGroup(invites);
+
+    expect(groups.coming.map((i) => i.id)).toEqual(['a']);
+    expect(groups.pending.map((i) => i.id)).toEqual(['b']);
+    expect(groups.notComing.map((i) => i.id)).toEqual(['c']);
+  });
+
+  it('sorts approval requests first within pending', () => {
+    const invites = [
+      { id: 'waitlisted', status: ShiftInviteStatus.WaitlistJoined },
+      { id: 'invited', status: ShiftInviteStatus.AdminInvited },
+      { id: 'requested', status: ShiftInviteStatus.AwaitingAdminApproval },
+    ];
+
+    const groups = groupInvitesByRosterGroup(invites);
+
+    expect(groups.pending.map((i) => i.id)).toEqual([
+      'requested',
+      'invited',
+      'waitlisted',
+    ]);
+  });
+
+  it('returns empty arrays for groups with no members', () => {
+    const groups = groupInvitesByRosterGroup([]);
+
+    expect(groups.coming).toEqual([]);
+    expect(groups.pending).toEqual([]);
+    expect(groups.notComing).toEqual([]);
   });
 });

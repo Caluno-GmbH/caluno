@@ -135,6 +135,58 @@ export function toInviteDisplayState(
   }
 }
 
+export type RosterGroupKey = 'coming' | 'pending' | 'notComing';
+
+/** Ordered so the group a supervisor must act on renders first. */
+export const ROSTER_GROUP_ORDER: readonly RosterGroupKey[] = [
+  'coming',
+  'pending',
+  'notComing',
+];
+
+export function toRosterGroup(status: InviteStatus): RosterGroupKey {
+  switch (toInviteDisplayState(status)) {
+    case 'accepted':
+    case 'signed_up':
+      return 'coming';
+    case 'invited':
+    case 'requested':
+    case 'waitlisted':
+      return 'pending';
+    default:
+      return 'notComing';
+  }
+}
+
+/** Approval requests are the only state blocked on the coordinator, so they lead. */
+const PENDING_RANK: Record<string, number> = {
+  requested: 0,
+  invited: 1,
+  waitlisted: 2,
+};
+
+export function groupInvitesByRosterGroup<T extends { status: InviteStatus }>(
+  invites: readonly T[],
+): Record<RosterGroupKey, T[]> {
+  const groups: Record<RosterGroupKey, T[]> = {
+    coming: [],
+    pending: [],
+    notComing: [],
+  };
+
+  for (const invite of invites) {
+    groups[toRosterGroup(invite.status)].push(invite);
+  }
+
+  groups.pending.sort(
+    (a, b) =>
+      (PENDING_RANK[toInviteDisplayState(a.status)] ?? 99) -
+      (PENDING_RANK[toInviteDisplayState(b.status)] ?? 99),
+  );
+
+  return groups;
+}
+
 export function partitionInvitesByWaitlist<T extends { status: InviteStatus }>(
   volunteers: readonly T[],
 ): { invites: T[]; waitlisted: T[] } {
