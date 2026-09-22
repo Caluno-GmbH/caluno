@@ -8,7 +8,6 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { idColumn, timestampColumns } from '../../database/database-columns';
-import { files } from '../../storage/schemas/file.schema';
 import { formBlocks } from './form-block.schema';
 
 export const formBlockFields = snakeCase.table(
@@ -26,9 +25,7 @@ export const formBlockFields = snakeCase.table(
     lockType: boolean('lock_type').notNull().default(false),
     systemKey: text('system_key'),
     options: jsonb('options').$type<Array<{ label: string; value: string }>>(),
-    documentFileId: uuid('document_file_id').references(() => files.id, {
-      onDelete: 'set null',
-    }),
+    documentFileIds: uuid('document_file_ids').array(),
     documentLabel: text('document_label'),
     minAge: integer('min_age'),
     fieldOrder: integer('field_order').notNull().default(0),

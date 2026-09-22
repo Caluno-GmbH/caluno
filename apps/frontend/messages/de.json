@@ -998,6 +998,7 @@
       "document": "Dokument",
       "documentFileDescription": "PDF oder Bild, max. 10 MB",
       "documentFileLabel": "Dokument",
+      "addDocumentFile": "Dokument hinzufügen",
       "documentLabelLabel": "Dokumentenbezeichnung",
       "documentLabelPlaceholder": "z. B. Datenschutzerklärung",
       "dropdown": "Auswahlliste",

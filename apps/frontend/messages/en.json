@@ -998,6 +998,7 @@
       "document": "Document",
       "documentFileDescription": "PDF or image, max 10 MB",
       "documentFileLabel": "Document",
+      "addDocumentFile": "Add document",
       "documentLabelLabel": "Document label",
       "documentLabelPlaceholder": "e.g. Data privacy policy",
       "dropdown": "Dropdown",

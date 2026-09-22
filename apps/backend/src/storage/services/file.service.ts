@@ -313,7 +313,10 @@ export class FileService {
 
   async resolvePublicUrlForUploadedFile(fileId: string): Promise<string> {
     const file = await this.findByIdOrThrow(fileId);
+    return this.resolvePublicUrlForFile(file);
+  }
 
+  resolvePublicUrlForFile(file: FileEntity) {
     if (file.status !== FileStatus.UPLOADED) {
       throw new BadRequestException('File upload is not complete');
     }
@@ -368,6 +371,13 @@ export class FileService {
 
   async findById(id: string): Promise<FileEntity | undefined> {
     return this.db.query.files.findFirst({ where: { id } });
+  }
+
+  async findByIds(ids: string[]): Promise<FileEntity[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+    return this.db.query.files.findMany({ where: { id: { in: ids } } });
   }
 
   private async findByIdOrThrow(id: string): Promise<FileEntity> {

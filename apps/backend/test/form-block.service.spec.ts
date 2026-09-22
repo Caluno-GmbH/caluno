@@ -194,3 +194,174 @@ describe('FormBlockService gender system field contract', () => {
     expect(updated?.systemKey).toBe('gender');
   });
 });
+
+describe('FormBlockService document fields contract', () => {
+  let moduleRef: TestingModule;
+  let db: Database;
+  let formBlockService: FormBlockService;
+  let rejectedFileIds: Set<string>;
+
+  beforeAll(async () => {
+    await ensureTestDatabase();
+    moduleRef = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+    }).compile();
+    db = moduleRef.get<Database>(DATABASE_CONNECTION);
+
+    rejectedFileIds = new Set();
+    const fileService = {
+      assertUploadedFileForPurpose: (fileId: string) => {
+        if (rejectedFileIds.has(fileId)) {
+          throw new BadRequestGraphQLError(
+            `File ${fileId} not uploaded for purpose form_document`,
+          );
+        }
+      },
+    } as unknown as FileService;
+
+    formBlockService = new FormBlockService(db, fileService, {
+      capture: () => {},
+    } as unknown as PostHogService);
+
+    registerTestResourceCleanup(async () => {
+      await moduleRef.close();
+    });
+  });
+
+  const setupOrgWithBlock = async () => {
+    const user = await createUser(db);
+    const { organization, type } = await createOrganizationWithType(
+      db,
+      `Document Contract Org ${crypto.randomUUID()}`,
+    );
+    const unit = await createUnit(db, {
+      organizationId: organization.id,
+      typeId: type.id,
+      name: 'root',
+    });
+    const { block } = await createRequirementForm(db, {
+      organizationId: organization.id,
+      organizationUnitId: unit.id,
+      createdById: user.id,
+    });
+    return { user, unit, block };
+  };
+
+  const insertDocumentField = async (
+    blockId: string,
+    documentFileIds: string[],
+  ) => {
+    const [field] = await db
+      .insert(schema.formBlockFields)
+      .values({
+        blockId,
+        type: 'DOCUMENT_ACKNOWLEDGEMENT',
+        label: 'Code of Conduct',
+        documentFileIds,
+        fieldOrder: 1,
+      })
+      .returning();
+    if (!field) throw new Error('Failed to create document field');
+    return field;
+  };
+
+  it('createField stores multiple document file ids and validates each', async () => {
+    const { user, unit, block } = await setupOrgWithBlock();
+    const fileIds = [crypto.randomUUID(), crypto.randomUUID()];
+
+    await formBlockService.createField(
+      block.id,
+      unit.id,
+      {
+        type: FieldType.DOCUMENT_ACKNOWLEDGEMENT,
+        label: 'Code of Conduct',
+        documentFileIds: fileIds,
+      },
+      user.id,
+    );
+
+    const stored = await db.query.formBlockFields.findFirst({
+      where: { blockId: block.id, type: 'DOCUMENT_ACKNOWLEDGEMENT' },
+    });
+    expect(stored?.documentFileIds).toEqual(fileIds);
+  });
+
+  it('createField rejects when any document file fails purpose validation', async () => {
+    const { user, unit, block } = await setupOrgWithBlock();
+    const [good, bad] = [crypto.randomUUID(), crypto.randomUUID()];
+    rejectedFileIds.add(bad);
+
+    await expect(
+      formBlockService.createField(
+        block.id,
+        unit.id,
+        {
+          type: FieldType.DOCUMENT_ACKNOWLEDGEMENT,
+          label: 'Code of Conduct',
+          documentFileIds: [good, bad],
+        },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestGraphQLError);
+
+    const stored = await db.query.formBlockFields.findFirst({
+      where: { blockId: block.id, type: 'DOCUMENT_ACKNOWLEDGEMENT' },
+    });
+    expect(stored).toBeUndefined();
+    rejectedFileIds.delete(bad);
+  });
+
+  it('updateField replaces the whole document list', async () => {
+    const { user, unit, block } = await setupOrgWithBlock();
+    const field = await insertDocumentField(block.id, [crypto.randomUUID()]);
+    const replacement = [crypto.randomUUID(), crypto.randomUUID()];
+
+    await formBlockService.updateField(
+      field.id,
+      unit.id,
+      { documentFileIds: replacement },
+      user.id,
+    );
+
+    const stored = await db.query.formBlockFields.findFirst({
+      where: { id: field.id },
+    });
+    expect(stored?.documentFileIds).toEqual(replacement);
+  });
+
+  it('updateField clears documents with an empty list', async () => {
+    const { user, unit, block } = await setupOrgWithBlock();
+    const field = await insertDocumentField(block.id, [crypto.randomUUID()]);
+
+    await formBlockService.updateField(
+      field.id,
+      unit.id,
+      { documentFileIds: [] },
+      user.id,
+    );
+
+    const stored = await db.query.formBlockFields.findFirst({
+      where: { id: field.id },
+    });
+    expect(stored?.documentFileIds).toEqual([]);
+  });
+
+  it('updateField keeps documents when input omits them', async () => {
+    const { user, unit, block } = await setupOrgWithBlock();
+    const existing = [crypto.randomUUID()];
+    const field = await insertDocumentField(block.id, existing);
+
+    await formBlockService.updateField(
+      field.id,
+      unit.id,
+      { label: 'Code of Conduct (updated)' },
+      user.id,
+    );
+
+    const stored = await db.query.formBlockFields.findFirst({
+      where: { id: field.id },
+    });
+    expect(stored?.documentFileIds).toEqual(existing);
+    expect(stored?.label).toBe('Code of Conduct (updated)');
+  });
+});
