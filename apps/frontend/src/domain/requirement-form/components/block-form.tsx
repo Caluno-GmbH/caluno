@@ -524,6 +524,16 @@ function FieldCard({
       fieldType === FieldType.MultiChoice) &&
     !hasFixedOptions;
   const isDocument = fieldType === FieldType.DocumentAcknowledgement;
+  const hasPlaceholder =
+    fieldType === FieldType.Email ||
+    fieldType === FieldType.Iban ||
+    fieldType === FieldType.Name ||
+    fieldType === FieldType.Lastname ||
+    fieldType === FieldType.Numbers ||
+    fieldType === FieldType.Phone ||
+    fieldType === FieldType.Zip ||
+    fieldType === FieldType.Text ||
+    fieldType === FieldType.Textarea;
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -656,101 +666,81 @@ function FieldCard({
           />
         </Field>
 
-        <Field>
-          <FieldLabel>{tField('placeholderLabel')}</FieldLabel>
-          <Input
-            {...register(`fields.${index}.placeholder`)}
-            placeholder={tField('placeholderPlaceholder')}
-            disabled={readOnly}
-          />
-        </Field>
+        {hasPlaceholder && (
+          <Field>
+            <FieldLabel>{tField('placeholderLabel')}</FieldLabel>
+            <Input
+              {...register(`fields.${index}.placeholder`)}
+              placeholder={tField('placeholderPlaceholder')}
+              disabled={readOnly}
+            />
+          </Field>
+        )}
 
         {isDocument && (
-          <>
-            <Field className="md:col-span-2">
-              <Controller
-                control={control}
-                name={`fields.${index}.documents`}
-                rules={{
-                  validate: (docs) =>
-                    (docs?.length ?? 0) > 0 || tField('enterDocumentFileError'),
-                }}
-                render={({ field, fieldState }) => (
-                  <div className="space-y-2">
-                    {(field.value ?? []).map((doc, docIndex) => (
-                      <FileUpload
-                        key={doc.fileId}
-                        purpose="form_document"
-                        organizationUnitId={orgUId}
-                        label={`${tField('documentFileLabel')} ${docIndex + 1}`}
-                        value={doc.fileId}
-                        initialPreviewUrl={doc.downloadUrl ?? null}
-                        initialFilename={doc.filename ?? null}
-                        disabled={readOnly}
-                        error={fieldState.error?.message}
-                        onUploaded={(result) =>
-                          field.onChange(
-                            (field.value ?? []).map((d, j) =>
-                              j === docIndex
-                                ? {
-                                    fileId: result.fileId,
-                                    filename: result.filename,
-                                    downloadUrl: result.publicUrl,
-                                  }
-                                : d,
-                            ),
-                          )
-                        }
-                        onClear={() =>
-                          field.onChange(
-                            (field.value ?? []).filter(
-                              (_, j) => j !== docIndex,
-                            ),
-                          )
-                        }
-                      />
-                    ))}
+          <Field className="md:col-span-2">
+            <Controller
+              control={control}
+              name={`fields.${index}.documents`}
+              rules={{
+                validate: (docs) =>
+                  (docs?.length ?? 0) > 0 || tField('enterDocumentFileError'),
+              }}
+              render={({ field, fieldState }) => (
+                <div className="space-y-2">
+                  {(field.value ?? []).map((doc, docIndex) => (
                     <FileUpload
+                      key={doc.fileId}
                       purpose="form_document"
                       organizationUnitId={orgUId}
-                      label={tField('addDocumentFile')}
-                      value={null}
+                      label={`${tField('documentFileLabel')} ${docIndex + 1}`}
+                      value={doc.fileId}
+                      initialPreviewUrl={doc.downloadUrl ?? null}
+                      initialFilename={doc.filename ?? null}
                       disabled={readOnly}
                       error={fieldState.error?.message}
                       onUploaded={(result) =>
-                        field.onChange([
-                          ...(field.value ?? []),
-                          {
-                            fileId: result.fileId,
-                            filename: result.filename,
-                            downloadUrl: result.publicUrl,
-                          },
-                        ])
+                        field.onChange(
+                          (field.value ?? []).map((d, j) =>
+                            j === docIndex
+                              ? {
+                                  fileId: result.fileId,
+                                  filename: result.filename,
+                                  downloadUrl: result.publicUrl,
+                                }
+                              : d,
+                          ),
+                        )
+                      }
+                      onClear={() =>
+                        field.onChange(
+                          (field.value ?? []).filter((_, j) => j !== docIndex),
+                        )
                       }
                     />
-                  </div>
-                )}
-              />
-            </Field>
-            <Field className="md:col-span-2">
-              <FieldLabel>
-                {tField('documentLabelLabel')}{' '}
-                <span className="text-destructive">*</span>
-              </FieldLabel>
-              <Input
-                {...register(`fields.${index}.documentLabel`, {
-                  required: tField('enterDocumentLabelError'),
-                })}
-                placeholder={tField('documentLabelPlaceholder')}
-                disabled={readOnly}
-              />
-              {errors?.documentLabel && (
-                <p className="text-destructive text-sm">
-                  {errors.documentLabel.message}
-                </p>
+                  ))}
+                  <FileUpload
+                    purpose="form_document"
+                    organizationUnitId={orgUId}
+                    label={tField('addDocumentFile')}
+                    value={null}
+                    disabled={readOnly}
+                    error={fieldState.error?.message}
+                    onUploaded={(result) =>
+                      field.onChange([
+                        ...(field.value ?? []),
+                        {
+                          fileId: result.fileId,
+                          filename: result.filename,
+                          downloadUrl: result.publicUrl,
+                        },
+                      ])
+                    }
+                  />
+                </div>
               )}
-            </Field>
-          </>
+            />
+          </Field>
         )}
       </div>
 
