@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, mock } from 'bun:test';
+import { afterEach, beforeAll, describe, expect, it, mock } from 'bun:test';
 import { LOCALE_COOKIE } from '../../constants';
+import type { clearLocaleCookie as ClearLocaleCookie } from './locale-cookie';
 
 const cookieStore = new Map<string, string>();
 const removeCalls: { name: string; options?: unknown }[] = [];
@@ -17,9 +18,14 @@ mock.module('js-cookie', () => ({
   },
 }));
 
-const { clearLocaleCookie } = await import('./locale-cookie');
-
 describe('clearLocaleCookie', () => {
+  let clearLocaleCookie: typeof ClearLocaleCookie;
+
+  // Dynamic import after mock.module — NodeNext forbids top-level await here.
+  beforeAll(async () => {
+    ({ clearLocaleCookie } = await import('./locale-cookie.js'));
+  });
+
   afterEach(() => {
     cookieStore.clear();
     removeCalls.length = 0;

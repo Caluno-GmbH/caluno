@@ -1,5 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  mock,
+} from 'bun:test';
 import { LOCALE_COOKIE } from '../../constants';
+import type { createAuthClient as CreateAuthClient } from './auth-client';
 
 const cookieStore = new Map<string, string>();
 const betterAuthSignOut = mock(() => Promise.resolve({ data: null }));
@@ -39,9 +48,15 @@ mock.module('better-auth/client/plugins', () => ({
   inferAdditionalFields: () => ({ id: 'additional-fields' }),
 }));
 
-const { createAuthClient } = await import('./auth-client');
-
 describe('createAuthClient signOut', () => {
+  let createAuthClient: typeof CreateAuthClient;
+
+  // Dynamic import after mock.module — NodeNext forbids top-level await here
+  // (frontend Bundler resolution allows it; @repo/data does not).
+  beforeAll(async () => {
+    ({ createAuthClient } = await import('./auth-client.js'));
+  });
+
   beforeEach(() => {
     cookieStore.clear();
     betterAuthSignOut.mockClear();
