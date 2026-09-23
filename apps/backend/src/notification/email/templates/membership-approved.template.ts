@@ -13,8 +13,8 @@ import {
   escapeHtml,
   heading,
   orderedListItem,
-  organizationAdminUrl,
   paragraph,
+  publicOrganizationUnitUrl,
   renderEmail,
   strong,
   unsubscribeFooterNote,
@@ -88,7 +88,7 @@ export async function membershipApprovedTemplate(
 ): Promise<{ subject: string; html: string }> {
   const firstName = escapeHtml(data.recipientFirstName);
   const organizationName = escapeHtml(data.organizationName);
-  const organizationUrl = organizationAdminUrl(data.organizationUnitId);
+  const organizationUrl = publicOrganizationUnitUrl(data.organizationUnitId);
   const brandName = emailTheme.brandName;
 
   const contact: WelcomeEmailContact = {
