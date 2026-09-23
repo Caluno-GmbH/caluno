@@ -750,8 +750,12 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Address",
-      "addressPlaceholder": "Musterstraße 1, 10115 Berlin",
+      "addressLabel": "Street name and number",
+      "addressPlaceholder": "e.g. Musterstraße 1",
+      "zipCodeLabel": "Postal code",
+      "zipCodePlaceholder": "e.g. 10115",
+      "cityLabel": "City",
+      "cityPlaceholder": "e.g. Berlin",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "What does your organisation do?",
       "emailLabel": "Email",
