@@ -206,12 +206,6 @@ export function ShiftInstanceVolunteersPanel({
         View: t('inviteStatus.viewProfileAriaNamed', {
           name: invite.user.name,
         }),
-        'Check in': t('inviteStatus.checkInAriaNamed', {
-          name: invite.user.name,
-        }),
-        'Check out': t('inviteStatus.checkOutAriaNamed', {
-          name: invite.user.name,
-        }),
         ...(remindVisible
           ? {
               Remind: remindActive
@@ -224,6 +218,18 @@ export function ShiftInstanceVolunteersPanel({
                   }),
             }
           : {}),
+      },
+      // Check in / Check out are text buttons (not icon-only), so their
+      // labels render as visible children in VolunteeringActionButtons.
+      // Their accessible name is provided separately via a hidden span so
+      // the button doesn't visibly read "Check in Jo Fischer".
+      accessibleActionLabels: {
+        'Check in': t('inviteStatus.checkInAriaNamed', {
+          name: invite.user.name,
+        }),
+        'Check out': t('inviteStatus.checkOutAriaNamed', {
+          name: invite.user.name,
+        }),
       },
       iconActions: ['View'],
       busy: busyIds.has(invite.user.id),

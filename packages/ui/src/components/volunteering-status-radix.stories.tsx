@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UserPlus, UsersRound } from 'lucide-react';
+import { expect, within } from 'storybook/test';
 import { Badge } from '@/components/base/badge';
 import { Button } from '@/components/base/button';
 import { Card } from '@/components/base/card';
@@ -546,4 +547,57 @@ export const StatusDropdownOpen: Story = {
       />
     </div>
   ),
+};
+
+/**
+ * Regression coverage for the bug fixed by this story's PR: Check in / Check
+ * out are *text* buttons (unlike the icon-only View button), so putting a
+ * per-volunteer named phrase straight into `actionLabels` made the button
+ * literally read "Check in Jo Fischer" (German: "Jo Fischer einchecken" —
+ * see commit 1db71fed). The fix renders the plain visible label plus a
+ * hidden (sr-only) span carrying the full accessible phrase, so sighted
+ * users still see just "Check in" while screen readers announce the
+ * volunteer's name.
+ */
+export const AccessibleCheckInName: Story = {
+  name: 'Detail page / accessible check-in name (regression)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="during"
+        titleBadge={<Badge variant="outline">1 / 1 spots filled</Badge>}
+        actionLabels={{ 'Check in': 'Check in' }}
+        volunteers={[
+          {
+            id: '1',
+            name: 'Jo Fischer',
+            state: 'accepted',
+            actions: ['Check in'],
+            // Per-volunteer accessible phrase — must NOT appear in the
+            // visible button text, only in the hidden sr-only span.
+            accessibleActionLabels: {
+              'Check in': 'Check in Jo Fischer',
+            },
+          },
+        ]}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // The visible label stays the plain action name — this is the assertion
+    // that fails if the accessible phrase leaks back into the visible text.
+    const visibleLabel = await canvas.findByText('Check in', {
+      selector: 'span[aria-hidden="true"]',
+    });
+    expect(visibleLabel.textContent).toBe('Check in');
+    expect(visibleLabel.textContent).not.toContain('Jo Fischer');
+
+    // The full accessible phrase is still exposed, just hidden visually.
+    const button = await canvas.findByRole('button', {
+      name: 'Check in Jo Fischer',
+    });
+    expect(button).toBeInTheDocument();
+  },
 };

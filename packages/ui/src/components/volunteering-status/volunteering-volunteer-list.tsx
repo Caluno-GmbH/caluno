@@ -33,6 +33,8 @@ export type VolunteeringVolunteerListItem = {
   /** Far-right icon-only actions (e.g. View profile, Check in). */
   iconActions?: VolunteeringActionLabel[];
   actionLabels?: VolunteeringActionLabels;
+  /** Full accessible phrase keyed by action id, for text actions whose visible label alone would not identify the volunteer. */
+  accessibleActionLabels?: VolunteeringActionLabels;
   /** True while this volunteer has a mutation in flight. */
   busy?: boolean;
 };
@@ -58,6 +60,8 @@ export type VolunteeringVolunteerListProps = {
   headerAction?: ReactNode;
   /** Localized button labels keyed by action id. */
   actionLabels?: VolunteeringActionLabels;
+  /** Full accessible phrase keyed by action id, for text actions whose visible label alone would not identify the volunteer. */
+  accessibleActionLabels?: VolunteeringActionLabels;
   onAction?: (volunteerId: string, action: VolunteeringActionLabel) => void;
   /** Chip dropdown selection: move volunteer to the chosen status value. */
   onStatusChange?: (volunteerId: string, value: string) => void;
@@ -70,12 +74,14 @@ function VolunteerRows({
   volunteers,
   phase,
   actionLabels,
+  accessibleActionLabels,
   onAction,
   onStatusChange,
 }: {
   volunteers: VolunteeringVolunteerListItem[];
   phase?: ShiftVolunteeringPhase;
   actionLabels?: VolunteeringActionLabels;
+  accessibleActionLabels?: VolunteeringActionLabels;
   onAction?: (volunteerId: string, action: VolunteeringActionLabel) => void;
   onStatusChange?: (volunteerId: string, value: string) => void;
 }) {
@@ -109,6 +115,14 @@ function VolunteerRows({
               ? { ...actionLabels, ...volunteer.actionLabels }
               : actionLabels
           }
+          accessibleActionLabels={
+            volunteer.accessibleActionLabels
+              ? {
+                  ...accessibleActionLabels,
+                  ...volunteer.accessibleActionLabels,
+                }
+              : accessibleActionLabels
+          }
           onAction={
             onAction ? (action) => onAction(volunteer.id, action) : undefined
           }
@@ -130,6 +144,7 @@ export function VolunteeringVolunteerList({
   titleBadge,
   headerAction,
   actionLabels,
+  accessibleActionLabels,
   onAction,
   onStatusChange,
   className,
@@ -184,6 +199,7 @@ export function VolunteeringVolunteerList({
                       volunteers={group.volunteers}
                       phase={phase}
                       actionLabels={actionLabels}
+                      accessibleActionLabels={accessibleActionLabels}
                       onAction={onAction}
                       onStatusChange={onStatusChange}
                     />
@@ -196,6 +212,7 @@ export function VolunteeringVolunteerList({
             volunteers={volunteers}
             phase={phase}
             actionLabels={actionLabels}
+            accessibleActionLabels={accessibleActionLabels}
             onAction={onAction}
             onStatusChange={onStatusChange}
           />

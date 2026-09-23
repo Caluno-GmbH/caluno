@@ -75,6 +75,8 @@ export type VolunteeringVolunteerRowProps = {
   iconActions?: VolunteeringActionLabel[];
   /** Localized button labels keyed by action id. */
   actionLabels?: VolunteeringActionLabels;
+  /** Full accessible phrase keyed by action id, for text actions whose visible label alone would not identify the volunteer. */
+  accessibleActionLabels?: VolunteeringActionLabels;
   onAction?: (action: VolunteeringActionLabel) => void;
   onStatusChange?: (value: string) => void;
   className?: string;
@@ -97,6 +99,7 @@ export function VolunteeringVolunteerRow({
   disabledActions,
   iconActions = [],
   actionLabels,
+  accessibleActionLabels,
   onAction,
   onStatusChange,
   className,
@@ -197,6 +200,7 @@ export function VolunteeringVolunteerRow({
         <VolunteeringActionButtons
           actions={actions}
           labels={actionLabels}
+          accessibleLabels={accessibleActionLabels}
           disabledActions={busy ? actions : disabledActions}
           onAction={onAction}
         />
