@@ -1396,7 +1396,8 @@
       "approveSuccess": "Volunteer approved",
       "approveWaitlistedSuccess": "Assignment is full. Volunteer added to the waitlist.",
       "cancelled": "Withdrawn",
-      "changeStatusAria": "Change volunteer status",
+      "changeStatusAria": "Change status for {name}",
+      "checkInAriaNamed": "Check in {name}",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
       "checkedIn": "Checked in",
@@ -1418,6 +1419,7 @@
       "signedUp": "Signed up",
       "statusChangeError": "We couldn't update {name}. Please try again.",
       "statusChangeLoading": "Updating {name}…",
+      "viewProfileAriaNamed": "View {name}'s profile",
       "volunteersTitle": "Volunteers",
       "waitlisted": "On waitlist"
     },

@@ -187,7 +187,9 @@ export function ShiftInstanceVolunteersPanel({
               state: toInviteDisplayState(target),
             }))
           : undefined,
-      statusMenuAriaLabel: t('inviteStatus.changeStatusAria'),
+      statusMenuAriaLabel: t('inviteStatus.changeStatusAria', {
+        name: invite.user.name,
+      }),
       // Accepted rows defer to the ui status defaults (Check in / Check out per
       // check-in state, including re-check-in after checkout) and are only
       // suppressed when the user lacks CHECK_IN_MANAGE. adminRowActions is
@@ -201,13 +203,18 @@ export function ShiftInstanceVolunteersPanel({
             ? ['Remind', ...rowActions]
             : rowActions,
       disabledActions: remindVisible && !remindActive ? ['Remind'] : undefined,
-      actionLabels: remindVisible
-        ? {
-            Remind: remindActive
-              ? t('inviteStatus.actionRemind')
-              : t('inviteStatus.actionReminded'),
-          }
-        : undefined,
+      actionLabels: {
+        View: t('inviteStatus.viewProfileAriaNamed', {
+          name: invite.user.name,
+        }),
+        ...(remindVisible
+          ? {
+              Remind: remindActive
+                ? t('inviteStatus.actionRemind')
+                : t('inviteStatus.actionReminded'),
+            }
+          : {}),
+      },
       actionTooltips:
         remindVisible && invite.remindedAt
           ? {
@@ -219,7 +226,7 @@ export function ShiftInstanceVolunteersPanel({
               }),
             }
           : undefined,
-      iconActions: ['View', 'Check in'],
+      iconActions: ['View'],
       busy: busyIds.has(invite.user.id),
     };
   });

@@ -1396,7 +1396,8 @@
       "approveSuccess": "Freiwillige:r genehmigt",
       "approveWaitlistedSuccess": "Der Einsatz ist voll besetzt. Freiwillige:r steht jetzt auf der Warteliste.",
       "cancelled": "Zurückgezogen",
-      "changeStatusAria": "Status ändern",
+      "changeStatusAria": "Status von {name} ändern",
+      "checkInAriaNamed": "{name} einchecken",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
       "checkedIn": "Eingecheckt",
@@ -1418,6 +1419,7 @@
       "signedUp": "Selbst angemeldet",
       "statusChangeError": "Der Status von {name} ließ sich nicht ändern. Versuch es bitte erneut.",
       "statusChangeLoading": "{name} wird aktualisiert…",
+      "viewProfileAriaNamed": "Profil von {name} ansehen",
       "volunteersTitle": "Freiwillige",
       "waitlisted": "Auf der Warteliste"
     },
