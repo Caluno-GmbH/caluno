@@ -390,12 +390,14 @@ export class DocumentRenderingService {
         .stroke();
     }
 
-    pdf
-      .font('Helvetica')
-      .fontSize(11)
-      .text(seat.name, left + 10, top + 11, {
-        width: width - 20,
-      });
+    if (seat.signedAt) {
+      pdf
+        .font('Helvetica')
+        .fontSize(11)
+        .text(seat.name, left + 10, top + 11, {
+          width: width - 20,
+        });
+    }
 
     pdf.x = pdf.page.margins.left;
     pdf.y = top + height + 10;
