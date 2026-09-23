@@ -2036,6 +2036,7 @@
           "pipelineLabel": "Ablauf",
           "pipeline": {
             "generate": "Erstellen",
+            "signFirst": "Unterschreiben",
             "sign": "Gegenzeichnen",
             "declined": "Abgelehnt",
             "volSign": "Freiwillige:r",
