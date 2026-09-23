@@ -33,6 +33,8 @@ import {
   type FieldOrigin,
   getFirstOccurrenceLineByFieldId,
   type InvoiceNumberFormat,
+  invoiceNumberNeedsKostenstelle,
+  KOSTENSTELLE_LINE_ID,
   type TableFirstColumnSource,
   type TemplateBlock,
   type TemplateDocument,
@@ -41,6 +43,7 @@ import {
   type TemplateTableBlock,
   type TemplateTextBlock,
   updateManualFieldValue,
+  withKostenstelleForNumberFormat,
 } from './builder-types';
 
 /**
@@ -393,6 +396,8 @@ interface LineEditorProps {
   typeLabel: string;
   onToggle: (lineId: string, enabled: boolean) => void;
   onFieldChange: (fieldId: string, value: string) => void;
+  /** Set when the line cannot be switched off — explains why, and locks the switch. */
+  requiredReason?: string;
 }
 
 function LineEditor({
@@ -403,6 +408,7 @@ function LineEditor({
   typeLabel,
   onToggle,
   onFieldChange,
+  requiredReason,
 }: LineEditorProps) {
   const t = useTranslations('Accounting.templates.builder');
 
@@ -422,11 +428,15 @@ function LineEditor({
         headerRight={
           <Switch
             checked={line.enabled}
+            disabled={requiredReason !== undefined}
             onCheckedChange={(checked) => onToggle(line.id, checked)}
             aria-label={title}
           />
         }
       >
+        {requiredReason && (
+          <p className="mb-3 text-sm text-muted-foreground">{requiredReason}</p>
+        )}
         {line.enabled && line.fields.length > 0 && (
           <div className="flex flex-col gap-3">
             {line.fields.map((field) => (
@@ -981,10 +991,12 @@ export function TemplateBuilderBlockEditor({
                 <Select
                   value={templateDoc.invoiceNumberFormat}
                   onValueChange={(value) =>
-                    onChange({
-                      ...templateDoc,
-                      invoiceNumberFormat: value as InvoiceNumberFormat,
-                    })
+                    onChange(
+                      withKostenstelleForNumberFormat({
+                        ...templateDoc,
+                        invoiceNumberFormat: value as InvoiceNumberFormat,
+                      }),
+                    )
                   }
                 >
                   <SelectTrigger className="w-full text-sm">
@@ -1014,6 +1026,14 @@ export function TemplateBuilderBlockEditor({
                 typeLabel={typeLabel}
                 onToggle={handleHeaderLineToggle}
                 onFieldChange={handleFieldChange}
+                requiredReason={
+                  line.id === KOSTENSTELLE_LINE_ID &&
+                  invoiceNumberNeedsKostenstelle(
+                    templateDoc.invoiceNumberFormat,
+                  )
+                    ? t('blockEditor.kostenstelleRequiredByNumberFormat')
+                    : undefined
+                }
               />
             ))}
           </div>

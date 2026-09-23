@@ -240,10 +240,13 @@ export function getInvoiceDocument(
     header: {
       titleLines: [PAUSCHALE_INVOICE_TITLE[pauschale]],
       metaLines: [
-        line('meta-invoice-number', '{documentNumber}', [
+        // Labelled rather than bare: these sit in the header group next to the
+        // organisation's letterhead, where a lone number and a lone date say
+        // nothing about which is which.
+        line('meta-invoice-number', 'Rechnungsnummer: {documentNumber}', [
           bound('meta-invoice-number-field', 'document_number'),
         ]),
-        line('meta-date', '{date}', [
+        line('meta-date', 'Datum: {date}', [
           bound('meta-date-field', 'generated_date'),
         ]),
         line(

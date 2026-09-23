@@ -49,6 +49,7 @@ import {
   missingOrgProfileSourcesForOrg,
   PROFILE_REQUIRED_SOURCES,
   type TemplateDocument,
+  withKostenstelleForNumberFormat,
 } from './builder-types';
 import { GeneratedDocumentPreview } from './generated-document-preview';
 import { TemplateListingPageError } from './listing-page';
@@ -162,13 +163,19 @@ export function TemplateBuilder({
     if (initialized.current) return;
     if (detailQuery.data) {
       initialized.current = true;
-      setTemplateDoc(parseTemplateBody(detailQuery.data.body));
+      // A stored template may predate the rule that a Kostenstelle number format
+      // must collect one, so normalise on the way in as well as on every change.
+      setTemplateDoc(
+        withKostenstelleForNumberFormat(
+          parseTemplateBody(detailQuery.data.body),
+        ),
+      );
     } else if (templatesQuery.isSuccess && !existingTemplate) {
       initialized.current = true;
       setTemplateDoc(
         slotKind === 'contract'
           ? getContractDocument(pauschale)
-          : getInvoiceDocument(pauschale),
+          : withKostenstelleForNumberFormat(getInvoiceDocument(pauschale)),
       );
     }
   }, [

@@ -173,20 +173,20 @@ export class DocumentRenderingService {
     fieldValues: Record<string, string>,
     resolvedValues: Record<string, string>,
   ): void {
+    // The paying organisation and the document's own references (number, date,
+    // Kostenstelle) belong together in one right-aligned block, the way a
+    // letterhead sits on an invoice. The title then heads the document below it.
     const letterhead = letterheadLines(resolvedValues);
     if (letterhead.length > 0) {
       pdf
         .fontSize(10)
         .font('Helvetica')
-        .text(letterhead.join('\n'), { align: 'left', lineGap: 1 });
-      pdf.moveDown(1);
+        .text(letterhead.join('\n'), { align: 'right', lineGap: 1 });
     }
-    const title = (body.header?.titleLines ?? []).join(' ');
-    if (title) {
-      pdf.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
-    }
-    for (const metaLine of body.header?.metaLines ?? []) {
-      if (metaLine.enabled === false) continue;
+    const metaLines = (body.header?.metaLines ?? []).filter(
+      (metaLine) => metaLine.enabled !== false,
+    );
+    for (const metaLine of metaLines) {
       pdf
         .fontSize(9)
         .font('Helvetica')
@@ -194,6 +194,13 @@ export class DocumentRenderingService {
           align: 'right',
           lineGap: 1,
         });
+    }
+    if (letterhead.length > 0 || metaLines.length > 0) {
+      pdf.moveDown(1);
+    }
+    const title = (body.header?.titleLines ?? []).join(' ');
+    if (title) {
+      pdf.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
     }
     pdf.moveDown(1);
     pdf

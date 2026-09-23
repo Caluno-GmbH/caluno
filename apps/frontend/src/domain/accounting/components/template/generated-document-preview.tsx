@@ -220,10 +220,26 @@ export function GeneratedDocumentPreview({
 
         <Separator className="my-6" />
 
-        {letterhead.length > 0 && (
-          <p className="whitespace-pre-line text-left text-sm leading-snug">
-            {letterhead.join('\n')}
-          </p>
+        {/* The paying organisation and the document's own references sit in one
+            right-aligned block, matching the generated PDF's letterhead. */}
+        {(letterhead.length > 0 || templateDoc.header.metaLines.length > 0) && (
+          <div className="space-y-1 text-right">
+            {letterhead.length > 0 && (
+              <p className="whitespace-pre-line text-sm leading-snug">
+                {letterhead.join('\n')}
+              </p>
+            )}
+            {templateDoc.header.metaLines.map((line) => (
+              <LineRow
+                key={line.id}
+                line={line}
+                values={values}
+                manualOverrides={manualOverrides}
+                unresolvedLabels={unresolvedLabels}
+                gapSources={gapSources}
+              />
+            ))}
+          </div>
         )}
 
         <div className="mt-4 space-y-1 text-center">
@@ -240,21 +256,6 @@ export function GeneratedDocumentPreview({
             </p>
           ))}
         </div>
-
-        {templateDoc.header.metaLines.length > 0 && (
-          <div className="mt-1 text-right">
-            {templateDoc.header.metaLines.map((line) => (
-              <LineRow
-                key={line.id}
-                line={line}
-                values={values}
-                manualOverrides={manualOverrides}
-                unresolvedLabels={unresolvedLabels}
-                gapSources={gapSources}
-              />
-            ))}
-          </div>
-        )}
 
         <div className="mt-6 space-y-4">
           {templateDoc.blocks.map((block): ReactNode => {

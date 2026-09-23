@@ -6,6 +6,7 @@
 // those shapes (the shared package intentionally stays shape-only).
 import type {
   DataSourceKey,
+  InvoiceNumberFormat,
   TemplateDocument,
   TemplateField,
   TemplateLine,
@@ -307,4 +308,45 @@ export function missingOrgProfileSourcesForOrg(
     const value = valueBySource[source];
     return typeof value !== 'string' || value.trim() === '';
   });
+}
+
+/** The meta line that collects the cost centre shown in the invoice number. */
+export const KOSTENSTELLE_LINE_ID = 'meta-kostenstelle';
+
+/**
+ * Two of the four number formats put the Kostenstelle inside the invoice number
+ * itself, so the template has to collect one — without it the number renders a
+ * dash where the cost centre belongs.
+ */
+const KOSTENSTELLE_NUMBER_FORMATS: InvoiceNumberFormat[] = [
+  'date-kostenstelle-number',
+  'kostenstelle-month-year-number',
+];
+
+export function invoiceNumberNeedsKostenstelle(
+  format: InvoiceNumberFormat | null | undefined,
+): boolean {
+  return format != null && KOSTENSTELLE_NUMBER_FORMATS.includes(format);
+}
+
+/**
+ * Turns the Kostenstelle line on when the chosen number format needs one. Never
+ * turns it off again: a coordinator who switches formats keeps whatever they
+ * already typed, and the line stays theirs to disable.
+ */
+export function withKostenstelleForNumberFormat(
+  doc: TemplateDocument,
+): TemplateDocument {
+  if (!invoiceNumberNeedsKostenstelle(doc.invoiceNumberFormat)) return doc;
+  return {
+    ...doc,
+    header: {
+      ...doc.header,
+      metaLines: doc.header.metaLines.map((metaLine) =>
+        metaLine.id === KOSTENSTELLE_LINE_ID
+          ? { ...metaLine, enabled: true }
+          : metaLine,
+      ),
+    },
+  };
 }

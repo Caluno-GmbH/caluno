@@ -2276,6 +2276,7 @@
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",
+          "kostenstelleRequiredByNumberFormat": "Das gewählte Format der Dokumentennummer enthält die Kostenstelle, deshalb muss sie hier angegeben werden.",
           "lockedHint": "Pflichtblock. Immer im generierten Dokument enthalten.",
           "tableFixedHint": "Die Zeilen werden beim Erstellen eines Stundennachweises aus den Zeiterfassungen befüllt.",
           "firstColumnSourceLabel": "Inhalt der ersten Spalte",

@@ -2276,6 +2276,7 @@
         "blockEditor": {
           "headerTitle": "Header",
           "invoiceNumberFormatLabel": "Document number format",
+          "kostenstelleRequiredByNumberFormat": "The selected document number format contains the cost centre, so it has to be filled in here.",
           "lockedHint": "Mandatory. Always included in the generated document.",
           "tableFixedHint": "Rows are filled from tracked times when a timesheet is generated.",
           "firstColumnSourceLabel": "First column content",
