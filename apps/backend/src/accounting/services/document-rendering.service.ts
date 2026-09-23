@@ -33,6 +33,16 @@ const EUR = '€';
 
 const AMOUNT_COLUMN = 'Betrag';
 
+/**
+ * "Musterstraße 1, 12345 Stadt" — the postcode and town follow the street on
+ * one line, and any part the volunteer has not filled in is simply left out
+ * rather than leaving a stray comma behind.
+ */
+function joinAddress(street: string, zip: string, city: string): string {
+  const town = [zip.trim(), city.trim()].filter(Boolean).join(' ');
+  return [street.trim(), town].filter(Boolean).join(', ');
+}
+
 /** Human label for the reimbursement type key rendered for the `pauschalen_type` source. */
 const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
   EHRENAMT: 'Ehrenamtspauschale',
@@ -560,8 +570,17 @@ export class DocumentRenderingService {
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,
       volunteer_last_name: lastName,
-      volunteer_address: str(
-        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_address],
+      // The volunteer is the invoicing party on a Stundennachweis, so this is
+      // the sender's address: a street with no postcode or town identifies
+      // nobody. The profile collects address, zip and city as three separate
+      // system fields but only volunteer_address is exposed as a data source,
+      // so the other two could never reach a document. Composed here rather
+      // than added as two more placeholders, because the address occupies one
+      // line in both presets and a single value keeps it that way (VOLI-1351).
+      volunteer_address: joinAddress(
+        str(profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_address]),
+        str(profileData.zip),
+        str(profileData.city),
       ),
       volunteer_dob: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_dob],
