@@ -1186,6 +1186,10 @@
     },
     "select": {
       "addCustom": "Benutzerdefiniert hinzufügen",
+      "confirm": {
+        "description": "Du bist dabei, die Rolle dieser Person zu ändern. Diese Änderung tritt sofort in Kraft. Bist du sicher?",
+        "title": "Rolle ändern?"
+      },
       "empty": "Keine Rollen gefunden.",
       "searchPlaceholder": "Rollen suchen..."
     },
