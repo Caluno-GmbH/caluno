@@ -405,14 +405,13 @@ export const SurfaceComparison: Story = {
   ),
 };
 
-/** Checked-out chip with a multi-window tooltip, including the overflow line. */
 export const CheckedOutWithTooltip: Story = {
   name: 'Detail page / checked out (tooltip)',
   render: () => (
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="after"
-        summary="1 checked out"
+        titleBadge={<Badge variant="outline">1 checked out</Badge>}
         volunteers={[
           {
             id: '1',
@@ -429,6 +428,40 @@ export const CheckedOutWithTooltip: Story = {
                 <span>+2 more</span>
               </div>
             ),
+          },
+        ]}
+      />
+    </div>
+  ),
+};
+
+export const MobileRowLayout: Story = {
+  name: 'Detail page / mobile row layout',
+  render: () => (
+    <div className="w-[375px] border border-dashed border-border p-4">
+      <VolunteeringVolunteerList
+        phase="before"
+        titleBadge={<Badge variant="outline">2 / 8 spots filled</Badge>}
+        actionLabels={{
+          View: 'View',
+          'Check in': 'Check in',
+          Approve: 'Approve',
+        }}
+        volunteers={[
+          {
+            id: '1',
+            name: 'Alexandra Schmidt-Hohenberg',
+            state: 'accepted',
+            statusLabel: 'Accepted',
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            id: '2',
+            name: 'Jo Fischer',
+            state: 'requested',
+            statusLabel: 'Genehmigung ausstehend',
+            actions: ['Approve'],
+            iconActions: ['View', 'Check in'],
           },
         ]}
       />
