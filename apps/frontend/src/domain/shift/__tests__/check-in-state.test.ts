@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  acceptedRowActions,
   type CheckInTimeEntry,
   deriveAcceptedRowState,
   formatCheckedOutWindows,
@@ -39,9 +40,9 @@ describe('groupTimeEntriesByVolunteer', () => {
 });
 
 describe('deriveAcceptedRowState', () => {
-  it('returns not_checked_in when there are no entries', () => {
-    expect(deriveAcceptedRowState(undefined)).toBe('not_checked_in');
-    expect(deriveAcceptedRowState([])).toBe('not_checked_in');
+  it('returns accepted when there are no entries', () => {
+    expect(deriveAcceptedRowState(undefined)).toBe('accepted');
+    expect(deriveAcceptedRowState([])).toBe('accepted');
   });
 
   it('returns checked_in when there is an open entry', () => {
@@ -165,5 +166,25 @@ describe('formatCheckedOutWindows', () => {
 
     expect(result.lines).toHaveLength(5);
     expect(result.overflowCount).toBe(2);
+  });
+});
+
+describe('acceptedRowActions', () => {
+  it('offers Check in for an accepted row that has not checked in', () => {
+    expect(acceptedRowActions('accepted', true)).toEqual(['Check in']);
+  });
+
+  it('offers Check out for a checked-in row', () => {
+    expect(acceptedRowActions('checked_in', true)).toEqual(['Check out']);
+  });
+
+  it('offers Check in again for a checked-out row', () => {
+    expect(acceptedRowActions('checked_out', true)).toEqual(['Check in']);
+  });
+
+  it('offers nothing when the viewer lacks CHECK_IN_MANAGE, regardless of state', () => {
+    expect(acceptedRowActions('accepted', false)).toEqual([]);
+    expect(acceptedRowActions('checked_in', false)).toEqual([]);
+    expect(acceptedRowActions('checked_out', false)).toEqual([]);
   });
 });
