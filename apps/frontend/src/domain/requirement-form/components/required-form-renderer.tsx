@@ -399,10 +399,13 @@ export function RequiredFormRenderer({
           />
         </div>
 
-        {/* Buttons carry whitespace-nowrap and shrink-0, so a long label
-            (German "Alle Formulare absenden") cannot wrap or shrink and
-            overflows the viewport on a phone. Stack below sm. */}
-        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-between">
+        {/* Buttons carry whitespace-nowrap and shrink-0, so neither label can
+            wrap or shrink and a row that does not fit overflows the viewport.
+            flex-wrap rather than a breakpoint: the buttons stay side by side
+            wherever they fit and drop to a second row only when they do not,
+            so this tracks the actual label widths instead of guessing a width
+            at which German or English happens to stop fitting. */}
+        <div className="flex flex-wrap justify-between gap-2 border-t pt-4">
           <Button
             variant="outline"
             onClick={handlePrevious}
