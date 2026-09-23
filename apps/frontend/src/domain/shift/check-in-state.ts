@@ -54,6 +54,22 @@ export function acceptedRowActions(
   return state === 'checked_in' ? ['Check out'] : ['Check in'];
 }
 
+/**
+ * Whether an accepted row's check-in state permits the admin removal
+ * dropdown target (ADMIN_REJECTED, displayed as "Removed"). A volunteer
+ * who is checked in or checked out has a time entry -- open or recorded --
+ * that removing them would orphan; their only status path from there is
+ * Check out or re-Check in. Plain 'accepted' (no time entry yet) is
+ * unaffected and keeps its normal removal option. `null` covers rows that
+ * never had an accepted check-in state to begin with (invited, waitlisted,
+ * etc.), which must also keep their normal removal option.
+ */
+export function canRemoveAcceptedRow(
+  acceptedState: AcceptedRowCheckInState | null,
+): boolean {
+  return acceptedState !== 'checked_in' && acceptedState !== 'checked_out';
+}
+
 export function openTimeEntryId(
   entries: readonly CheckInTimeEntry[] | undefined,
 ): string | null {

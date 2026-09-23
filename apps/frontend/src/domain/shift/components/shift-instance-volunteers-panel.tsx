@@ -27,6 +27,7 @@ import {
 import {
   acceptedRowActions,
   type CheckInTimeEntry,
+  canRemoveAcceptedRow,
   deriveAcceptedRowState,
   groupTimeEntriesByVolunteer,
   openTimeEntryId,
@@ -149,7 +150,6 @@ export function ShiftInstanceVolunteersPanel({
       invite.status === ShiftInviteStatus.AdminInvited;
     const remindActive = canRemindInvitee(invite.status, invite.remindedAt);
 
-    const chipTargets = canManage ? adminChipTargetStatuses(invite.status) : [];
     const rowActions = canManage ? adminRowActions(invite.status) : [];
 
     const baseState = toInviteDisplayState(invite.status);
@@ -162,6 +162,15 @@ export function ShiftInstanceVolunteersPanel({
     const acceptedState =
       baseState === 'accepted' ? deriveAcceptedRowState(entries) : null;
     const state: ShiftVolunteeringDisplayState = acceptedState ?? baseState;
+    // A checked-in or checked-out volunteer has a time entry that removing
+    // them would orphan (see canRemoveAcceptedRow). Their only status path
+    // is Check out / re-Check in, so the admin removal dropdown is
+    // suppressed for those two states only -- adminChipTargetStatuses
+    // itself stays untouched, this only gates the call site.
+    const chipTargets =
+      canManage && canRemoveAcceptedRow(acceptedState)
+        ? adminChipTargetStatuses(invite.status)
+        : [];
 
     const statusTooltip =
       state === 'checked_out' && entries ? (

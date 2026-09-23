@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   acceptedRowActions,
   type CheckInTimeEntry,
+  canRemoveAcceptedRow,
   deriveAcceptedRowState,
   formatCheckedOutWindows,
   groupTimeEntriesByVolunteer,
@@ -186,5 +187,25 @@ describe('acceptedRowActions', () => {
     expect(acceptedRowActions('accepted', false)).toEqual([]);
     expect(acceptedRowActions('checked_in', false)).toEqual([]);
     expect(acceptedRowActions('checked_out', false)).toEqual([]);
+  });
+});
+
+describe('canRemoveAcceptedRow', () => {
+  it('allows removal for a plain accepted row with no time entry', () => {
+    expect(canRemoveAcceptedRow('accepted')).toBe(true);
+  });
+
+  it('forbids removal once the volunteer is checked in', () => {
+    expect(canRemoveAcceptedRow('checked_in')).toBe(false);
+  });
+
+  it('forbids removal after the volunteer has checked out', () => {
+    expect(canRemoveAcceptedRow('checked_out')).toBe(false);
+  });
+
+  it('allows removal when the row has no accepted check-in state at all', () => {
+    // e.g. an invited/waitlisted row, which never computes an
+    // AcceptedRowCheckInState in the panel.
+    expect(canRemoveAcceptedRow(null)).toBe(true);
   });
 });
