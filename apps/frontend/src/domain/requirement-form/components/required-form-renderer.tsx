@@ -401,13 +401,17 @@ export function RequiredFormRenderer({
 
         {/* Buttons carry whitespace-nowrap and shrink-0, so neither label can
             wrap or shrink and a row that does not fit overflows the viewport.
-            flex-wrap rather than a breakpoint: the buttons stay side by side
-            wherever they fit and drop to a second row only when they do not,
-            so this tracks the actual label widths instead of guessing a width
-            at which German or English happens to stop fitting. */}
-        <div className="flex flex-wrap justify-between gap-2 border-t pt-4">
+            Each button is given a half-width basis and allowed to grow, with no
+            breakpoint involved: while both halves are wide enough for their
+            labels the two sit side by side at matching widths, and as soon as
+            one label needs more than half the row it pushes the other onto a
+            second line, where growing fills the full width. Tracks the real
+            label widths rather than guessing a viewport at which German or
+            English stops fitting. */}
+        <div className="flex flex-wrap gap-2 border-t pt-4">
           <Button
             variant="outline"
+            className="grow basis-[calc(50%-0.25rem)]"
             onClick={handlePrevious}
             disabled={isFirstStep || isSubmitting}
           >
@@ -416,14 +420,21 @@ export function RequiredFormRenderer({
           </Button>
 
           {isLastStep ? (
-            <Button onClick={handleSubmitAll} disabled={isSubmitting}>
+            <Button
+              className="grow basis-[calc(50%-0.25rem)]"
+              onClick={handleSubmitAll}
+              disabled={isSubmitting}
+            >
               {isSubmitting && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
               {isSubmitting ? t('submittingAll') : t('submitAll')}
             </Button>
           ) : (
-            <Button onClick={handleNext}>
+            <Button
+              className="grow basis-[calc(50%-0.25rem)]"
+              onClick={handleNext}
+            >
               {tCommon('next')}
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
