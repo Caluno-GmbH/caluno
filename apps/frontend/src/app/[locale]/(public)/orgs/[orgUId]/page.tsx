@@ -51,6 +51,13 @@ export default async function OrgPage({ params }: OrgPageProps) {
     throw error;
   }
 
+  const zipCity = [org.zipCode?.trim(), org.city?.trim()]
+    .filter(Boolean)
+    .join(' ');
+  const addressText = [org.address?.trim(), zipCity || undefined]
+    .filter(Boolean)
+    .join('\n');
+
   return (
     <div className="relative flex min-h-screen flex-col">
       <div className="absolute inset-x-0 top-0 z-10">
@@ -87,10 +94,10 @@ export default async function OrgPage({ params }: OrgPageProps) {
                   {t('openShiftsCount', { n: org.openShiftsCount })}
                 </p>
               </div>
-              {org.address ? (
+              {addressText ? (
                 <p className="flex items-start gap-2 whitespace-pre-line text-base text-foreground">
                   <MapPinIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  {org.address}
+                  {addressText}
                 </p>
               ) : null}
               {org.myMembershipState !== JoinStatus.Joined ? (

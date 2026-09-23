@@ -3495,7 +3495,7 @@ export type SetRequiredFormsMutationVariables = Exact<{
 
 export type SetRequiredFormsMutation = { __typename?: 'Mutation', setRequiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null } }> };
 
-export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
+export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
 
 export type PublicOrgEventFieldsFragment = { __typename?: 'Event', id: string, title: string, slug: string, startsAt: string, endsAt: string, location?: string | null, shiftsCount: number, shifts: Array<{ __typename?: 'Shift', id: string, instances: Array<{ __typename?: 'ShiftInstance', id: string, spotsLeft?: number | null }> }> };
 
@@ -3508,7 +3508,7 @@ export type GetPublicOrganizationUnitQueryVariables = Exact<{
 }>;
 
 
-export type GetPublicOrganizationUnitQuery = { __typename?: 'Query', publicOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus } };
+export type GetPublicOrganizationUnitQuery = { __typename?: 'Query', publicOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus } };
 
 export type GetPublicEventsByOrganizationUnitQueryVariables = Exact<{
   organizationUnitId: Scalars['ID']['input'];
@@ -4567,6 +4567,8 @@ export const PublicOrganizationUnitFieldsFragmentDoc = gql`
   logoUrl
   coverUrl
   address
+  city
+  zipCode
   memberCount
   openShiftsCount
   myMembershipState
