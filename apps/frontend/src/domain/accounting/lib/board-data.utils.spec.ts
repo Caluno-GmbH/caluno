@@ -1139,9 +1139,12 @@ describe('documentRowAction', () => {
     expect(documentRowAction(doc('contract-generate'))).toBe('none');
   });
 
+  it('makes an auto-drafted contract inert on the row body', () => {
+    expect(documentRowAction(doc('contract-draft'))).toBe('none');
+  });
+
   it('opens the detail sheet for rows backed by a persisted document', () => {
     const persisted: DocStatus[] = [
-      'contract-draft',
       'contract-signing-vol',
       'contract-signing-coord',
       'contract-active',
