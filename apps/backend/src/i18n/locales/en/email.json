@@ -206,7 +206,7 @@
     "whenRange": "{date} · {timeRange}"
   },
   "shiftInstanceInvited": {
-    "buttonLabel": "View assignment",
+    "buttonLabel": "Accept or decline invitation",
     "detailInstructions": "Instructions",
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
@@ -215,7 +215,7 @@
     "footerNote": "You're receiving this because you were invited to an assignment on {brandName}.",
     "greeting": "Hi {firstName}, you're invited to an assignment.",
     "heading": "You're invited to an assignment",
-    "note": "Open the assignment to see the details and your schedule.",
+    "note": "You have been personally invited to this assignment. Please accept or decline the invitation.",
     "previewText": "You're invited to {shiftTitle} at {organizationName}.",
     "subject": "You're invited to {shiftTitle}",
     "whenRange": "{date} · {timeRange}"
@@ -261,7 +261,7 @@
     "subject": "{shiftTitle}: {volunteerName} requested to join"
   },
   "shiftInstanceReminded": {
-    "buttonLabel": "View assignment",
+    "buttonLabel": "Accept or decline invitation",
     "detailInstructions": "Instructions",
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
@@ -435,7 +435,7 @@
     "updated": "updated"
   },
   "shiftInvited": {
-    "buttonLabel": "View assignment",
+    "buttonLabel": "Accept or decline invitation",
     "detailInstructions": "Instructions",
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
@@ -448,7 +448,7 @@
     "greeting": "Hi {firstName}, you're invited to an assignment.",
     "greetingRecurring": "Hi {firstName}, you're invited to a recurring assignment.",
     "heading": "You're invited to an assignment",
-    "note": "Open the assignment to see the full schedule.",
+    "note": "You have been personally invited to this assignment. Please accept or decline the invitation.",
     "noteRecurring": "This invitation covers every date in the schedule above.",
     "periodOpenWithCount": "From {startDate} · {count, plural, one {# assignment} other {# assignments}}",
     "periodWithCount": "{startDate} – {endDate} · {count, plural, one {# assignment} other {# assignments}}",
