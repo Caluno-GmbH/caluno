@@ -81,9 +81,7 @@ function signeeActorName(
   t: SheetTranslations,
 ): string {
   if (signee.role === 'volunteer') return volunteerName;
-  // Coordinator / supervisor are org roles: show the human role label, not
-  // the raw permission key the template signee references. The real actor's
-  // name is in the status-change timeline below the pipeline.
+  if (signee.signedByName) return signee.signedByName;
   return signee.role === 'supervisor'
     ? t('pipeline.superSign')
     : t('pipeline.coordSign');
