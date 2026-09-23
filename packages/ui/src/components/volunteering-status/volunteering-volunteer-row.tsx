@@ -80,6 +80,8 @@ export type VolunteeringVolunteerRowProps = {
   onAction?: (action: VolunteeringActionLabel) => void;
   onStatusChange?: (value: string) => void;
   className?: string;
+  /** True while this volunteer has a mutation in flight. */
+  busy?: boolean;
 };
 
 /** Volunteer row for the shift instance detail page volunteers card. */
@@ -101,6 +103,7 @@ export function VolunteeringVolunteerRow({
   onAction,
   onStatusChange,
   className,
+  busy = false,
 }: VolunteeringVolunteerRowProps) {
   const presentation = getVolunteeringStatusPresentation(state, {
     completedDuration,
@@ -121,7 +124,7 @@ export function VolunteeringVolunteerRow({
   const tooltipContent = passiveHint ?? statusTooltip;
   const chip =
     statusOptions && statusOptions.length > 0 && onStatusChange ? (
-      <Select value={state} onValueChange={onStatusChange}>
+      <Select value={state} onValueChange={onStatusChange} disabled={busy}>
         <SelectTrigger aria-label={statusMenuAriaLabel}>
           {statusContent}
         </SelectTrigger>
@@ -159,6 +162,7 @@ export function VolunteeringVolunteerRow({
     <div
       className={cn(
         'flex flex-wrap items-center gap-x-3 gap-y-3 border-b border-border py-4 last:border-b-0 sm:flex-nowrap sm:gap-4',
+        busy && 'opacity-60 transition-opacity',
         className,
       )}
     >
@@ -182,6 +186,7 @@ export function VolunteeringVolunteerRow({
                 size="icon-md"
                 aria-label={actionLabels?.[actionLabel] ?? actionLabel}
                 onClick={() => onAction?.(actionLabel)}
+                disabled={busy}
               >
                 {ActionIcon ? <ActionIcon aria-hidden /> : null}
               </Button>
@@ -195,7 +200,7 @@ export function VolunteeringVolunteerRow({
         <VolunteeringActionButtons
           actions={actions}
           labels={actionLabels}
-          disabledActions={disabledActions}
+          disabledActions={busy ? actions : disabledActions}
           actionTooltips={actionTooltips}
           onAction={onAction}
         />

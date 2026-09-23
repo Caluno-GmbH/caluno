@@ -34,6 +34,8 @@ export type VolunteeringVolunteerListItem = {
   /** Far-right icon-only actions (e.g. View profile, Check in). */
   iconActions?: VolunteeringActionLabel[];
   actionLabels?: VolunteeringActionLabels;
+  /** True while this volunteer has a mutation in flight. */
+  busy?: boolean;
 };
 
 export type VolunteeringVolunteerGroup = {
@@ -96,6 +98,7 @@ function VolunteerRows({
           disabledActions={volunteer.disabledActions}
           actionTooltips={volunteer.actionTooltips}
           iconActions={volunteer.iconActions}
+          busy={volunteer.busy}
           actionLabels={
             volunteer.actionLabels
               ? { ...actionLabels, ...volunteer.actionLabels }
