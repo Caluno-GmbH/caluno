@@ -28,6 +28,10 @@ export interface TemplateBlockShape {
   line?: TemplateLineShape;
   /** Table blocks. */
   columns?: string[];
+  /** Table blocks: what fills the first column of each row. */
+  firstColumnSource?: string;
+  /** Table blocks: the coordinator's own label, used when the source is 'custom'. */
+  firstColumnCustomLabel?: string;
 }
 
 export interface TemplateBodyShape {

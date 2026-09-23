@@ -13,7 +13,10 @@ import {
 import type { TemplateBodyShape } from './document-template.types';
 
 interface TimeEntryMock {
-  shiftInstance: { master: { title: string } };
+  shiftInstance: {
+    overrideTitle?: string | null;
+    master: { title: string };
+  } | null;
   startedAt: Date | null;
   endedAt: Date | null;
   notes?: string | null;
@@ -54,6 +57,10 @@ describe('DocumentRenderingService', () => {
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      contract?: {
+        resolvedBody?: unknown;
+        fieldOverrides?: Record<string, string>;
+      };
       unit?: Record<string, unknown>;
       yearlyUsage?: {
         usedCents: number;
@@ -82,6 +89,9 @@ describe('DocumentRenderingService', () => {
         },
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
+        },
+        contracts: {
+          findFirst: () => Promise.resolve(overrides.contract),
         },
       },
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
@@ -440,6 +450,95 @@ describe('DocumentRenderingService', () => {
       expect(rows[0]).toHaveLength(6);
       expect(rows[0][5]).toBe('30,00 €');
       expect(rows[1][5]).toBe('52,50 €');
+    });
+
+    it('names the shift each row’s hours came from, preferring a renamed occurrence', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: {
+              overrideTitle: 'Food Distribution (Weihnachten)',
+              master: { title: 'Food Distribution' },
+            },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Food Distribution (Weihnachten)');
+    });
+
+    it('falls back to the agreement’s task description for hours with no shift', async () => {
+      const service = createService({
+        rateCents: 1500,
+        contract: {
+          resolvedBody: {
+            blocks: [
+              {
+                id: 'zeitraum-taetigkeit',
+                lines: [
+                  {
+                    id: 'engagement-tasks',
+                    text: 'Tätigkeiten: {tasks}',
+                    fields: [
+                      {
+                        id: 'tasks',
+                        value: {
+                          kind: 'manual-template',
+                          value: 'Betreuung in der Tagespflege',
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        timeEntries: [
+          {
+            shiftInstance: null,
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Betreuung in der Tagespflege');
+    });
+
+    it('repeats the coordinator’s own label when the template asks for one', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: { master: { title: 'Food Distribution' } },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+      const doc = invoice();
+      const table = (
+        doc.documentTemplate as unknown as {
+          body: { blocks: Record<string, unknown>[] };
+        }
+      ).body.blocks[0];
+      table.firstColumnSource = 'custom';
+      table.firstColumnCustomLabel = 'Ehrenamtliche Tätigkeit';
+
+      const rows = await resolveInvoiceTableRows(service, doc);
+
+      expect(rows[0][0]).toBe('Ehrenamtliche Tätigkeit');
     });
 
     it('renders an empty amount cell when there is no rate', async () => {

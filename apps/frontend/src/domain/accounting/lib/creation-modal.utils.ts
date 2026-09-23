@@ -32,6 +32,17 @@ export function hoursBetween(startedAt: string, endedAt: string): number {
  * previous mock data used, so `EligibleHoursCard`'s check/uncheck behavior
  * keeps working unchanged.
  */
+/**
+ * The name this one occurrence goes by — its own title when a coordinator
+ * renamed it, otherwise the shift it repeats from. Undefined when the hours
+ * were tracked without a shift at all.
+ */
+function shiftInstanceName(entry: EligibleTimeEntry): string | undefined {
+  const instance = entry.shiftInstance;
+  if (!instance) return undefined;
+  return instance.overrideTitle ?? instance.master.title;
+}
+
 export function mapEligibleTimeEntry(
   entry: EligibleTimeEntry,
   formatting: {
@@ -47,7 +58,7 @@ export function mapEligibleTimeEntry(
   if (!entry.endedAt) {
     return {
       id: entry.id,
-      shiftName: entry.shiftInstance?.master.title ?? entry.notes ?? '',
+      shiftName: shiftInstanceName(entry) ?? entry.notes ?? '',
       dateTime: `${datePart}, ${startTime}`,
       hours: 0,
     };
@@ -56,7 +67,7 @@ export function mapEligibleTimeEntry(
   const end = new Date(entry.endedAt);
   return {
     id: entry.id,
-    shiftName: entry.shiftInstance?.master.title ?? entry.notes ?? '',
+    shiftName: shiftInstanceName(entry) ?? entry.notes ?? '',
     dateTime: `${datePart}, ${startTime}–${formatTime(end)}`,
     hours: hoursBetween(entry.startedAt, entry.endedAt),
   };

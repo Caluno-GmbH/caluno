@@ -2946,7 +2946,7 @@ export type GetInvoiceQueryVariables = Exact<{
 }>;
 
 
-export type GetInvoiceQuery = { __typename?: 'Query', invoice: { __typename?: 'Invoice', resolvedBody: Record<string, unknown>, id: string, invoiceStatus: InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason?: string | null, declinedAt?: string | null, declinedAtSigneeType?: SigneeType | null, downloadUrl?: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt?: string | null, invoiceTimeEntries: Array<{ __typename?: 'InvoiceTimeEntry', id: string, timeEntry: { __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, master: { __typename?: 'Shift', title: string } } | null } }>, declinedByUser?: { __typename?: 'User', id: string, name: string } | null, volunteer: { __typename?: 'User', id: string, name: string, image?: string | null }, reimbursementType: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey }, documentTemplate: { __typename?: 'DocumentTemplate', id: string, kind: DocumentKind }, signatures: Array<{ __typename?: 'InvoiceSignature', id: string, order: number, signeeType: SigneeType, signedAt?: string | null, signedByUser?: { __typename?: 'User', id: string, name: string } | null, requiredPermission?: { __typename?: 'Permission', id: string, key: PermissionKey } | null }>, statusChanges: Array<{ __typename?: 'InvoiceStatusChange', id: string, type: DocumentStatusChange, occurredAt: string, actorUser?: { __typename?: 'User', id: string, name: string } | null }> } };
+export type GetInvoiceQuery = { __typename?: 'Query', invoice: { __typename?: 'Invoice', resolvedBody: Record<string, unknown>, id: string, invoiceStatus: InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason?: string | null, declinedAt?: string | null, declinedAtSigneeType?: SigneeType | null, downloadUrl?: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt?: string | null, invoiceTimeEntries: Array<{ __typename?: 'InvoiceTimeEntry', id: string, timeEntry: { __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, overrideTitle?: string | null, master: { __typename?: 'Shift', title: string } } | null } }>, declinedByUser?: { __typename?: 'User', id: string, name: string } | null, volunteer: { __typename?: 'User', id: string, name: string, image?: string | null }, reimbursementType: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey }, documentTemplate: { __typename?: 'DocumentTemplate', id: string, kind: DocumentKind }, signatures: Array<{ __typename?: 'InvoiceSignature', id: string, order: number, signeeType: SigneeType, signedAt?: string | null, signedByUser?: { __typename?: 'User', id: string, name: string } | null, requiredPermission?: { __typename?: 'Permission', id: string, key: PermissionKey } | null }>, statusChanges: Array<{ __typename?: 'InvoiceStatusChange', id: string, type: DocumentStatusChange, occurredAt: string, actorUser?: { __typename?: 'User', id: string, name: string } | null }> } };
 
 export type GetPendingInvoiceSigneeQueryVariables = Exact<{
   invoiceId: Scalars['ID']['input'];
@@ -2978,7 +2978,7 @@ export type GetEligibleTimeEntriesForInvoiceQueryVariables = Exact<{
 }>;
 
 
-export type GetEligibleTimeEntriesForInvoiceQuery = { __typename?: 'Query', eligibleTimeEntriesForInvoice: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, master: { __typename?: 'Shift', title: string } } | null }> };
+export type GetEligibleTimeEntriesForInvoiceQuery = { __typename?: 'Query', eligibleTimeEntriesForInvoice: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, overrideTitle?: string | null, master: { __typename?: 'Shift', title: string } } | null }> };
 
 export type CreateInvoiceMutationVariables = Exact<{
   input: CreateInvoiceInput;
@@ -4836,6 +4836,7 @@ export const GetInvoiceDocument = gql`
         notes
         shiftInstance {
           id
+          overrideTitle
           master {
             title
           }
@@ -4901,6 +4902,7 @@ export const GetEligibleTimeEntriesForInvoiceDocument = gql`
     notes
     shiftInstance {
       id
+      overrideTitle
       master {
         title
       }

@@ -78,8 +78,18 @@ export type TemplateTextBlock = {
   lines: TemplateLine[];
 };
 
-/** What populates the Stundennachweis table's first column — the task description written into the volunteer's agreement, or a coordinator-typed custom label. */
-export type TableFirstColumnSource = 'agreement_task_description' | 'custom';
+/**
+ * What populates the Stundennachweis table's first column — the name of the
+ * shift each row's hours came from, the task description written into the
+ * volunteer's agreement, or a coordinator-typed custom label.
+ *
+ * `shift_name` is the only one that differs from row to row; hours tracked
+ * without a shift behind them fall back to the agreement's task description.
+ */
+export type TableFirstColumnSource =
+  | 'shift_name'
+  | 'agreement_task_description'
+  | 'custom';
 
 export type TemplateTableBlock = {
   kind: 'table';

@@ -63,6 +63,20 @@ describe('mapEligibleTimeEntry', () => {
     });
   });
 
+  it('uses the occurrence’s own title when a coordinator renamed that one shift', () => {
+    const entry = mapEligibleTimeEntry(
+      makeEntry({
+        shiftInstance: {
+          id: 'si-1',
+          overrideTitle: 'Sonntagsdienst (Sondereinsatz)',
+          master: { title: 'Sonntagsdienst' },
+        },
+      }),
+      formats('de'),
+    );
+    expect(entry.shiftName).toBe('Sonntagsdienst (Sondereinsatz)');
+  });
+
   it('falls back to notes when there is no shift instance', () => {
     const entry = mapEligibleTimeEntry(
       makeEntry({ shiftInstance: null, notes: 'Ad-hoc Einsatz' }),

@@ -81,11 +81,15 @@ function getPlaceholderTableRows(
   t: ReturnType<typeof useTranslations>,
 ): string[][] {
   const tableBlock = templateDoc.blocks.find((b) => b.kind === 'table');
+  const firstColumnSource =
+    tableBlock?.kind === 'table' ? tableBlock.firstColumnSource : undefined;
   const firstColumnPlaceholder =
-    tableBlock?.kind === 'table' && tableBlock.firstColumnSource === 'custom'
+    firstColumnSource === 'custom' && tableBlock?.kind === 'table'
       ? tableBlock.firstColumnCustomLabel ||
         t('blockEditor.firstColumnPlaceholders.custom')
-      : t('blockEditor.firstColumnPlaceholders.agreementTaskDescription');
+      : firstColumnSource === 'agreement_task_description'
+        ? t('blockEditor.firstColumnPlaceholders.agreementTaskDescription')
+        : t('blockEditor.firstColumnPlaceholders.shiftName');
   return [
     [firstColumnPlaceholder, '', '', '', '', ''],
     [firstColumnPlaceholder, '', '', '', '', ''],

@@ -479,6 +479,7 @@ function LineEditor({
 }
 
 const TABLE_FIRST_COLUMN_SOURCES: TableFirstColumnSource[] = [
+  'shift_name',
   'agreement_task_description',
   'custom',
 ];

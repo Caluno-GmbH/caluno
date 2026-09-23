@@ -2281,6 +2281,10 @@
           "tableFixedHint": "Die Zeilen werden beim Erstellen eines Stundennachweises aus den Zeiterfassungen befüllt.",
           "firstColumnSourceLabel": "Inhalt der ersten Spalte",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name des erfassten Einsatzes",
+              "hint": "Jede Zeile zeigt den Einsatz, aus dem die Stunden stammen. Ohne Einsatz erfasste Stunden zeigen stattdessen die Tätigkeitsbeschreibung aus der Vereinbarung."
+            },
             "agreement_task_description": {
               "label": "Tätigkeitsbeschreibung aus der Vereinbarung",
               "hint": "Jede Zeile zeigt die in der Vereinbarung hinterlegte Tätigkeitsbeschreibung."
@@ -2291,6 +2295,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Name des Einsatzes",
             "agreementTaskDescription": "Tätigkeitsbeschreibung",
             "custom": "z. B. Sonstige Tätigkeit"
           },

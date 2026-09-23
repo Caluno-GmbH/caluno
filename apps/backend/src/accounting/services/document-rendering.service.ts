@@ -17,6 +17,7 @@ import {
   lastDayOfPeriod,
 } from '../utils/billing-period';
 import { formatInvoiceNumber } from '../utils/invoice-number';
+import { resolveFirstColumn } from '../utils/invoice-table';
 import { resolveOrgProfile, resolveOrgRootUnitId } from '../utils/org-profile';
 import {
   findManualFieldValue,
@@ -662,8 +663,20 @@ export class DocumentRenderingService {
         document.documentTemplate?.organizationId ?? '',
       );
 
+      const tableBlock = (
+        (document.documentTemplate?.body ?? {}) as TemplateBodyShape
+      ).blocks?.find((block) => block.kind === 'table');
+      // Templates stored before the shift-name source existed name no source at
+      // all in some cases; the shift name is what those documents have always
+      // printed, so it stays the default.
+      const firstColumnSource = tableBlock?.firstColumnSource ?? 'shift_name';
+      const agreementTaskDescription =
+        firstColumnSource === 'shift_name' ||
+        firstColumnSource === 'agreement_task_description'
+          ? await this.resolveAgreementTaskDescription(document)
+          : undefined;
+
       return timeEntries.map((entry) => {
-        const shiftTitle = entry.shiftInstance?.master?.title;
         const begin = entry.startedAt
           ? this.formatDateTime(new Date(entry.startedAt))
           : '';
@@ -676,7 +689,18 @@ export class DocumentRenderingService {
             ? Math.round(hours * rateCents)
             : undefined;
         return [
-          shiftTitle ?? entry.notes ?? '',
+          resolveFirstColumn({
+            source: firstColumnSource,
+            customLabel: tableBlock?.firstColumnCustomLabel,
+            // The instance's own title when a coordinator renamed that one
+            // occurrence, otherwise the shift it repeats from.
+            shiftName:
+              entry.shiftInstance?.overrideTitle ??
+              entry.shiftInstance?.master?.title ??
+              undefined,
+            agreementTaskDescription,
+            notes: entry.notes ?? undefined,
+          }),
           begin,
           end,
           hours !== undefined ? `${this.formatHours(hours)}h` : '',
@@ -692,6 +716,33 @@ export class DocumentRenderingService {
       );
       return [];
     }
+  }
+
+  /**
+   * The task description from the agreement covering this timesheet's period —
+   * the coordinator's per-document edit first, then the value frozen into the
+   * agreement when it was issued.
+   */
+  private async resolveAgreementTaskDescription(
+    document: InvoiceWithRelations,
+  ): Promise<string | undefined> {
+    const contract = await this.db.query.contracts.findFirst({
+      where: {
+        volunteerId: document.volunteerId,
+        reimbursementTypeId: document.reimbursementTypeId,
+        periodStart: { lte: document.periodEnd },
+        periodEnd: { gte: document.periodStart },
+      },
+      orderBy: { periodStart: 'desc' },
+    });
+    if (!contract) return undefined;
+    return (
+      contract.fieldOverrides?.tasks ??
+      findManualFieldValue(
+        (contract.resolvedBody ?? {}) as TemplateBodyShape,
+        'tasks',
+      )
+    );
   }
 
   private hoursBetweenValue(

@@ -309,7 +309,7 @@ export function getInvoiceDocument(
           'Betrag',
         ],
         previewRowCount: 10,
-        firstColumnSource: 'agreement_task_description',
+        firstColumnSource: 'shift_name',
         firstColumnCustomLabel: '',
       },
       {

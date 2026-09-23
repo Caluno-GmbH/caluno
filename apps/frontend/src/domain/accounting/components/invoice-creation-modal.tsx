@@ -1,6 +1,11 @@
 'use client';
 
-import { DataError, PermissionKey, parseTemplateBody } from '@repo/data';
+import {
+  DataError,
+  PermissionKey,
+  parseTemplateBody,
+  type TableFirstColumnSource,
+} from '@repo/data';
 import {
   useAccountingSetupStatus,
   useActiveDocumentTemplate,
@@ -88,6 +93,27 @@ function formatDocumentNumber(
       return `${String(yyyy).slice(2)}${mm}${dd}${seq}`;
     case 'kostenstelle-month-year-number':
       return `${kostenstelle ?? '—'}-${mm}.${yyyy}-${seq}`;
+  }
+}
+
+/**
+ * The first cell of one Stundennachweis row, mirroring the generated PDF. Only
+ * `shift_name` differs from row to row; hours with no shift behind them fall
+ * back to the agreement's task description.
+ */
+function firstColumnLabel(args: {
+  source: TableFirstColumnSource;
+  customLabel: string;
+  shiftName: string;
+  agreementTaskDescription: string | undefined;
+}): string {
+  switch (args.source) {
+    case 'custom':
+      return args.customLabel;
+    case 'agreement_task_description':
+      return args.agreementTaskDescription || args.shiftName;
+    default:
+      return args.shiftName || args.agreementTaskDescription || '';
   }
 }
 
@@ -506,24 +532,25 @@ export function InvoiceCreationModal({
 
   const tableBlock = template?.blocks.find((b) => b.kind === 'table');
   const firstColumnSource =
-    tableBlock?.kind === 'table'
-      ? tableBlock.firstColumnSource
-      : 'agreement_task_description';
+    tableBlock?.kind === 'table' ? tableBlock.firstColumnSource : 'shift_name';
   const firstColumnCustomLabel =
     tableBlock?.kind === 'table' ? tableBlock.firstColumnCustomLabel : '';
   // The agreement's task description is baked into the volunteer's contract template, not
   // this invoice's own — read from the sibling contract template for this pauschale.
   const agreementTaskDescription =
-    firstColumnSource === 'agreement_task_description' && contractTemplate
+    firstColumnSource !== 'custom' && contractTemplate
       ? getManualFieldValue(contractTemplate, 'tasks')
       : undefined;
 
   const tableRows = selectedLines.map((line) => {
     const { begin, end } = splitDateTimeRange(line.dateTime);
     return [
-      firstColumnSource === 'agreement_task_description'
-        ? (agreementTaskDescription ?? line.shiftName)
-        : firstColumnCustomLabel,
+      firstColumnLabel({
+        source: firstColumnSource,
+        customLabel: firstColumnCustomLabel,
+        shiftName: line.shiftName,
+        agreementTaskDescription,
+      }),
       begin,
       end,
       `${line.hours}h`,

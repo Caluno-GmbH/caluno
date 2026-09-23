@@ -2281,6 +2281,10 @@
           "tableFixedHint": "Rows are filled from tracked times when a timesheet is generated.",
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name of the tracked shift",
+              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+            },
             "agreement_task_description": {
               "label": "Task description from the agreement",
               "hint": "Each row shows the task description stored in the agreement."
@@ -2291,6 +2295,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Shift name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },
