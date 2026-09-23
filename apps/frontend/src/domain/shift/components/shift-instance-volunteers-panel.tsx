@@ -25,6 +25,7 @@ import {
   updateShiftInstanceInviteStatus,
 } from '../actions';
 import {
+  acceptedRowActions,
   type CheckInTimeEntry,
   deriveAcceptedRowState,
   groupTimeEntriesByVolunteer,
@@ -121,8 +122,6 @@ export function ShiftInstanceVolunteersPanel({
         return t('inviteStatus.waitlisted');
       case 'checked_in':
         return t('inviteStatus.checkedIn');
-      case 'not_checked_in':
-        return t('inviteStatus.notCheckedIn');
       case 'checked_out':
         return t('inviteStatus.checkedOut');
       default:
@@ -160,8 +159,9 @@ export function ShiftInstanceVolunteersPanel({
       baseState === 'accepted'
         ? timeEntriesByVolunteer.get(invite.user.id)
         : undefined;
-    const state: ShiftVolunteeringDisplayState =
-      baseState === 'accepted' ? deriveAcceptedRowState(entries) : baseState;
+    const acceptedState =
+      baseState === 'accepted' ? deriveAcceptedRowState(entries) : null;
+    const state: ShiftVolunteeringDisplayState = acceptedState ?? baseState;
 
     const statusTooltip =
       state === 'checked_out' && entries ? (
@@ -190,18 +190,17 @@ export function ShiftInstanceVolunteersPanel({
       statusMenuAriaLabel: t('inviteStatus.changeStatusAria', {
         name: invite.user.name,
       }),
-      // Accepted rows defer to the ui status defaults (Check in / Check out per
-      // check-in state, including re-check-in after checkout) and are only
-      // suppressed when the user lacks CHECK_IN_MANAGE. adminRowActions is
-      // empty for accepted invites, so there is nothing to merge.
-      actions:
-        baseState === 'accepted'
-          ? canCheckIn
-            ? undefined
-            : []
-          : remindVisible
-            ? ['Remind', ...rowActions]
-            : rowActions,
+      // Accepted rows get Check in / Check out (including re-check-in after
+      // checkout) from acceptedRowActions, gated on CHECK_IN_MANAGE. This is
+      // deliberately NOT the shared config's default actions for 'accepted'
+      // (['Uninvite']) — that default must stay generic for every other
+      // surface that shows an accepted volunteer. adminRowActions is empty
+      // for accepted invites, so there is nothing else to merge in.
+      actions: acceptedState
+        ? acceptedRowActions(acceptedState, canCheckIn)
+        : remindVisible
+          ? ['Remind', ...rowActions]
+          : rowActions,
       disabledActions: remindVisible && !remindActive ? ['Remind'] : undefined,
       actionLabels: {
         View: t('inviteStatus.viewProfileAriaNamed', {
