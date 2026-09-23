@@ -91,13 +91,7 @@ function AlertDialogFooter({
     <div
       data-slot="alert-dialog-footer"
       className={cn(
-        // min-w-0: the content is a grid, and a grid item defaults to
-        // min-width:auto — so this footer's intrinsic width (its buttons are
-        // whitespace-nowrap and shrink-0) would size the column and push every
-        // sibling, title and description included, past the dialog's edge.
-        // flex-wrap then lets long labels break onto a second row instead of
-        // overflowing; German labels are routinely wider than the English ones.
-        'flex min-w-0 flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:flex-wrap sm:justify-end',
+        'flex min-w-0 flex-col-reverse gap-2 group-data-[size=sm]/alert-dialog-content:grid group-data-[size=sm]/alert-dialog-content:grid-cols-2 sm:flex-row sm:flex-wrap sm:justify-center',
         className,
       )}
       {...props}
