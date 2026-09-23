@@ -408,6 +408,11 @@ export const SurfaceComparison: Story = {
   ),
 };
 
+/**
+ * No statusOptions here, so this also proves the checked-out tooltip still
+ * works on the new trigger-shaped static chip (see
+ * volunteering-volunteer-row.tsx's no-options fallback).
+ */
 export const CheckedOutWithTooltip: Story = {
   name: 'Detail page / checked out (tooltip)',
   render: () => (
@@ -535,7 +540,10 @@ export const StatusDropdownOpen: Story = {
             iconActions: ['View', 'Check in'],
           },
           {
-            // No transitions, so this row must stay a static badge with no chevron.
+            // No transitions, so this row must stay a static, trigger-sized
+            // chip (not a Badge) with no chevron -- same height/padding as
+            // the open dropdown's trigger above, but without its border or
+            // shadow.
             id: '3',
             name: 'Tom Becker',
             state: 'declined',
@@ -600,4 +608,67 @@ export const AccessibleCheckInName: Story = {
     });
     expect(button).toBeInTheDocument();
   },
+};
+
+/**
+ * Checked-in/checked-out volunteers have a time entry that removal would
+ * orphan, so the shift-instance panel gives them no chip dropdown options
+ * at all (see shift-instance-volunteers-panel.tsx's canRemoveAcceptedRow
+ * guard). The row component doesn't know why options are empty -- it only
+ * ever renders a dropdown when it has statusOptions and a static,
+ * non-interactive chip when it does not -- so this story simulates that by
+ * simply omitting statusOptions on rows that would otherwise have offered
+ * Removed. The chip must be exactly as tall/padded as the open dropdown's
+ * closed trigger, but with no chevron and, per product-owner ruling, no
+ * border or shadow either -- it should match a dropdown in size only, so
+ * it reads as visibly lighter and non-interactive next to one. The chevron
+ * is omitted entirely (not rendered invisible with its space reserved), so
+ * this chip reads very slightly narrower than a real dropdown trigger.
+ * That's a deliberate call, not a bug -- flag it if it looks wrong.
+ */
+export const CheckInProtectedChip: Story = {
+  name: 'Detail page / check-in protected (no removal)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="during"
+        titleBadge={<Badge variant="outline">3 / 4 spots filled</Badge>}
+        onStatusChange={() => {}}
+        volunteers={[
+          {
+            // Checked in: no statusOptions, so no Removed dropdown -- only
+            // the Check out action button, same as the real panel.
+            id: '1',
+            name: 'Jo Fischer',
+            state: 'checked_in',
+            actions: ['Check out'],
+          },
+          {
+            // Checked out, with the existing checked-out tooltip: proves the
+            // tooltip still works when the chip has no dropdown.
+            id: '2',
+            name: 'Amara Diallo',
+            state: 'checked_out',
+            completedDuration: '4h 03m',
+            actions: ['Check in'],
+            statusTooltip: (
+              <div className="flex flex-col gap-0.5 text-xs">
+                <span>09:00 – 13:03</span>
+              </div>
+            ),
+          },
+          {
+            // Busy: the row wrapper dims via opacity while a mutation is in
+            // flight. The static chip itself carries no disabled/opacity
+            // styling of its own, so it must not look "double disabled".
+            id: '3',
+            name: 'Theo Nowak',
+            state: 'checked_in',
+            actions: ['Check out'],
+            busy: true,
+          },
+        ]}
+      />
+    </div>
+  ),
 };

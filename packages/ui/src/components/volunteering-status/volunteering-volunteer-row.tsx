@@ -3,13 +3,13 @@
 import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../base/avatar';
-import { Badge } from '../base/badge';
 import { Button } from '../base/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
+  selectTriggerSizingClassName,
 } from '../base/select';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip';
 import {
@@ -145,7 +145,31 @@ export function VolunteeringVolunteerRow({
         </SelectContent>
       </Select>
     ) : (
-      <Badge variant="outline">{statusContent}</Badge>
+      // No options means there is nothing to choose between (e.g. a
+      // checked-in/checked-out volunteer whose only removal option was
+      // deliberately suppressed upstream, or any other row that never had
+      // a dropdown). Render a plain, non-interactive <span> -- not a
+      // disabled button -- sized exactly like SelectTrigger's closed state
+      // (height/padding/font-size/gap/radius) via the shared
+      // selectTriggerSizingClassName, so hiding the dropdown never shifts
+      // the row's layout. Per product-owner ruling, it deliberately does
+      // NOT copy SelectTrigger's border or shadow: matching in size only
+      // keeps the chip looking calm and non-interactive both next to a
+      // real dropdown and standing alone. The old Badge's outline is not
+      // restored here in any form -- losing it is intended, not an
+      // oversight. No tabIndex, no disabled attribute, no
+      // cursor-not-allowed, no focus stop: this must read as a label, not
+      // a disabled control. The chevron is omitted entirely rather than
+      // reserved as blank space -- a deliberate call, not a rendering bug
+      // -- so this chip is very slightly narrower than an open dropdown's
+      // trigger.
+      <span
+        data-slot="select-trigger"
+        data-size="default"
+        className={cn(selectTriggerSizingClassName, 'text-foreground')}
+      >
+        {statusContent}
+      </span>
     );
   const statusChip = tooltipContent ? (
     <Tooltip>

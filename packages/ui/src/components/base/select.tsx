@@ -23,6 +23,22 @@ function SelectValue({
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
+/**
+ * Sizing/geometry classes only -- height, horizontal/vertical padding,
+ * font-size, inner gap, and border-radius -- shared by SelectTrigger and any
+ * non-interactive element that must occupy the exact same footprint without
+ * looking like a control. Deliberately excludes border, box-shadow, focus
+ * rings, hover/disabled states, and the background fill that makes a
+ * SelectTrigger read as clickable: a product-owner ruling requires a static
+ * chip built from this constant to match a dropdown in size only, not in
+ * shadow or border, so the two read as one family in size while the static
+ * chip still reads as visibly non-interactive next to a real dropdown or on
+ * its own. Those excluded classes live only in SelectTrigger's own
+ * className below.
+ */
+const selectTriggerSizingClassName =
+  'flex w-fit items-center justify-between gap-2 rounded-md px-3 py-2 text-base whitespace-nowrap data-[size=default]:h-9 data-[size=sm]:h-8';
+
 function SelectTrigger({
   className,
   size = 'default',
@@ -36,7 +52,8 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 flex w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-base whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-[size=default]:h-9 data-[size=sm]:h-8 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        selectTriggerSizingClassName,
+        "border-input data-[placeholder]:text-muted-foreground [&_svg:not([class*='text-'])]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 dark:hover:bg-input/50 border bg-transparent shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -186,4 +203,5 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
+  selectTriggerSizingClassName,
 };
