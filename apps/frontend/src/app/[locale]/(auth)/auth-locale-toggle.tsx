@@ -1,9 +1,9 @@
 'use client';
 
+import { otherLocale } from '@repo/data';
 import { Button } from '@repo/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/navigation';
-import { otherLocale } from './other-locale';
 
 /**
  * Logged-out locale switch for auth pages. Navigates to the other URL prefix
