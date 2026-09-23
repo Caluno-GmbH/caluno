@@ -6,7 +6,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '../base/accordion';
-import { Badge } from '../base/badge';
 import {
   Card,
   CardAction,
@@ -58,6 +57,8 @@ export type VolunteeringVolunteerListProps = {
   phase?: ShiftVolunteeringPhase;
   /** Card title, defaults to "Volunteers". */
   title?: string;
+  /** Rendered immediately after the title, e.g. a capacity badge. */
+  titleBadge?: ReactNode;
   /** Header summary, e.g. "5 invited · 12 spots". */
   summary?: string;
   /** Optional action rendered in the card header (e.g. Invite button). */
@@ -126,6 +127,7 @@ export function VolunteeringVolunteerList({
   volunteers,
   phase,
   title = 'Volunteers',
+  titleBadge,
   summary,
   headerAction,
   actionLabels,
@@ -137,15 +139,14 @@ export function VolunteeringVolunteerList({
   return (
     <Card className={cn('gap-0 py-0', className)}>
       <CardHeader className="border-b py-4">
-        <CardTitle className="flex flex-wrap items-center gap-2 text-lg">
+        <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-lg">
           <span>{title}</span>
+          {titleBadge}
           {summary ? (
             <span className="text-sm font-normal text-muted-foreground">
               {summary}
             </span>
-          ) : (
-            <Badge variant="outline">{volunteers.length}</Badge>
-          )}
+          ) : null}
         </CardTitle>
         {headerAction ? <CardAction>{headerAction}</CardAction> : null}
       </CardHeader>
