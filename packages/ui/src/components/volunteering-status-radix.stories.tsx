@@ -488,3 +488,60 @@ export const MobileRowLayout: Story = {
     </div>
   ),
 };
+
+/** Open status dropdown — options must look identical to the closed trigger. */
+export const StatusDropdownOpen: Story = {
+  name: 'Detail page / status dropdown',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="before"
+        titleBadge={<Badge variant="outline">1 / 8 spots filled</Badge>}
+        actionLabels={{
+          View: 'View',
+          'Check in': 'Check in',
+          Approve: 'Approve',
+        }}
+        onStatusChange={() => {}}
+        volunteers={[
+          {
+            // Two transitions offered.
+            id: '1',
+            name: 'Jo Fischer',
+            state: 'requested',
+            statusLabel: 'Pending approval',
+            statusMenuAriaLabel: 'Change volunteer status',
+            statusOptions: [
+              { value: 'JOINED', label: 'Accepted', state: 'accepted' },
+              { value: 'ADMIN_REJECTED', label: 'Removed', state: 'rejected' },
+            ],
+            actions: ['Approve'],
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            // One transition offered, the case that reads worst today.
+            id: '2',
+            name: 'Katharina Zimmer',
+            state: 'accepted',
+            statusLabel: 'Accepted',
+            statusMenuAriaLabel: 'Change volunteer status',
+            statusOptions: [
+              { value: 'ADMIN_REJECTED', label: 'Removed', state: 'rejected' },
+            ],
+            actions: [],
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            // No transitions, so this row must stay a static badge with no chevron.
+            id: '3',
+            name: 'Tom Becker',
+            state: 'declined',
+            statusLabel: 'Declined',
+            actions: [],
+            iconActions: ['View'],
+          },
+        ]}
+      />
+    </div>
+  ),
+};
