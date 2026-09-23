@@ -127,8 +127,16 @@ export function VolunteeringVolunteerRow({
         </SelectTrigger>
         <SelectContent>
           {statusOptions.map((option) => (
-            <SelectItem value={option.value} key={option.value}>
-              {option.label}
+            <SelectItem
+              value={option.value}
+              key={option.value}
+              className="pr-2"
+            >
+              <VolunteeringStatusLabel
+                state={option.state}
+                phase={phase}
+                label={option.label}
+              />
             </SelectItem>
           ))}
         </SelectContent>
