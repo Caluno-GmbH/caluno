@@ -2036,6 +2036,7 @@
           "pipelineLabel": "Process",
           "pipeline": {
             "generate": "Create",
+            "signFirst": "Sign",
             "sign": "Countersign",
             "declined": "Declined",
             "volSign": "Volunteer",

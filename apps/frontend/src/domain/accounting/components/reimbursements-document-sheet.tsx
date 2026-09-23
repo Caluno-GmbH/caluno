@@ -145,7 +145,7 @@ function buildDocSteps(
       if (idx < declinedIdx) {
         steps.push({
           id: signee.id,
-          labelKey: t('pipeline.sign'),
+          labelKey: i === 0 ? t('pipeline.signFirst') : t('pipeline.sign'),
           actorName: signeeActorName(signee, volunteerName, t),
           state: 'done',
         });
@@ -178,7 +178,7 @@ function buildDocSteps(
     const idx = i + 1;
     steps.push({
       id: signee.id,
-      labelKey: t('pipeline.sign'),
+      labelKey: i === 0 ? t('pipeline.signFirst') : t('pipeline.sign'),
       actorName: signeeActorName(signee, volunteerName, t),
       state:
         idx < activeIdx ? 'done' : idx === activeIdx ? 'active' : 'pending',
