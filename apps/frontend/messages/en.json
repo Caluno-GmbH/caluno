@@ -1416,11 +1416,6 @@
       "remindSuccess": "Reminder sent to volunteer",
       "signedUp": "Signed up",
       "statusChangeError": "We couldn't change the status. Please try again.",
-      "summaryAccepted": "accepted",
-      "summaryInvited": "invited",
-      "summarySignedUp": "signed up",
-      "summarySpots": "spots",
-      "summaryWaitlisted": "waitlisted",
       "volunteersTitle": "Volunteers",
       "waitlisted": "On waitlist"
     },

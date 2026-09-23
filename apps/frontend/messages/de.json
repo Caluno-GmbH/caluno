@@ -1416,11 +1416,6 @@
       "remindSuccess": "Erinnerung an Freiwillige:n gesendet",
       "signedUp": "Selbst angemeldet",
       "statusChangeError": "Der Status ließ sich nicht ändern. Versuch es bitte erneut.",
-      "summaryAccepted": "angenommen",
-      "summaryInvited": "eingeladen",
-      "summarySignedUp": "selbst angemeldet",
-      "summarySpots": "Plätze",
-      "summaryWaitlisted": "auf der Warteliste",
       "volunteersTitle": "Freiwillige",
       "waitlisted": "Auf der Warteliste"
     },

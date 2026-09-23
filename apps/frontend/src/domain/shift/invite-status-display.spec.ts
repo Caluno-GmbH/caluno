@@ -8,8 +8,6 @@ import {
   canAdminReinvite,
   canAdminUninvite,
   canRemindInvitee,
-  countInviteDisplayStates,
-  formatInviteStatusSummary,
   groupInvitesByRosterGroup,
   partitionInvitesByWaitlist,
   preselectedInviteMemberIds,
@@ -187,129 +185,6 @@ describe('toInviteDisplayState', () => {
     expect(toInviteDisplayState(ShiftInviteStatus.AdminRejected)).toBe(
       'rejected',
     );
-  });
-});
-
-describe('countInviteDisplayStates', () => {
-  it('counts invite statuses for the summary line', () => {
-    expect(
-      countInviteDisplayStates([
-        ShiftInviteStatus.AdminInvited,
-        ShiftInviteStatus.AdminInvited,
-        ShiftInviteStatus.Joined,
-        ShiftInviteStatus.Joined,
-        ShiftInviteStatus.AdminRejected,
-      ]),
-    ).toEqual({
-      invited: 2,
-      requested: 0,
-      accepted: 2,
-      signedUp: 0,
-      declined: 0,
-      cancelled: 0,
-      rejected: 1,
-      waitlisted: 0,
-    });
-  });
-
-  it('counts waitlisted separately from invited', () => {
-    expect(
-      countInviteDisplayStates([
-        ShiftInviteStatus.AdminInvited,
-        ShiftInviteStatus.WaitlistJoined,
-        ShiftInviteStatus.WaitlistJoined,
-      ]),
-    ).toEqual({
-      invited: 1,
-      requested: 0,
-      accepted: 0,
-      signedUp: 0,
-      declined: 0,
-      cancelled: 0,
-      rejected: 0,
-      waitlisted: 2,
-    });
-  });
-
-  it('counts approval requests separately from invited', () => {
-    expect(
-      countInviteDisplayStates([
-        ShiftInviteStatus.AwaitingAdminApproval,
-        ShiftInviteStatus.AwaitingAdminApproval,
-      ]),
-    ).toEqual({
-      invited: 0,
-      requested: 2,
-      accepted: 0,
-      signedUp: 0,
-      declined: 0,
-      cancelled: 0,
-      rejected: 0,
-      waitlisted: 0,
-    });
-  });
-
-  it('counts approval requests separately from invites', () => {
-    const counts = countInviteDisplayStates([
-      ShiftInviteStatus.AdminInvited,
-      ShiftInviteStatus.AdminInvited,
-      ShiftInviteStatus.AwaitingAdminApproval,
-    ]);
-
-    expect(counts.invited).toBe(2);
-    expect(counts.requested).toBe(1);
-  });
-});
-
-describe('formatInviteStatusSummary', () => {
-  it('formats counts and spots', () => {
-    expect(
-      formatInviteStatusSummary(
-        {
-          invited: 4,
-          requested: 0,
-          accepted: 2,
-          signedUp: 1,
-          declined: 0,
-          cancelled: 0,
-          rejected: 0,
-          waitlisted: 0,
-        },
-        12,
-        {
-          invited: 'invited',
-          accepted: 'accepted',
-          signedUp: 'signed up',
-          waitlisted: 'waitlisted',
-          spots: 'spots',
-        },
-      ),
-    ).toBe('4 invited · 2 accepted · 1 signed up · 12 spots');
-  });
-
-  it('appends the waitlisted count when present', () => {
-    expect(
-      formatInviteStatusSummary(
-        {
-          invited: 4,
-          requested: 0,
-          accepted: 2,
-          signedUp: 1,
-          declined: 0,
-          cancelled: 0,
-          rejected: 0,
-          waitlisted: 3,
-        },
-        12,
-        {
-          invited: 'invited',
-          accepted: 'accepted',
-          signedUp: 'signed up',
-          waitlisted: 'waitlisted',
-          spots: 'spots',
-        },
-      ),
-    ).toBe('4 invited · 2 accepted · 1 signed up · 3 waitlisted · 12 spots');
   });
 });
 
