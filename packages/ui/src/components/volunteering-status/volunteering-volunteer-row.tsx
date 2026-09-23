@@ -150,30 +150,20 @@ export function VolunteeringVolunteerRow({
   return (
     <div
       className={cn(
-        'flex flex-col gap-3 border-b border-border py-4 last:border-b-0 sm:flex-row sm:items-center sm:gap-4',
+        'flex flex-wrap items-center gap-x-3 gap-y-3 border-b border-border py-4 last:border-b-0 sm:flex-nowrap sm:gap-4',
         className,
       )}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="order-1 flex min-w-0 flex-1 items-center gap-3">
         <Avatar className="bg-muted shrink-0">
           <AvatarImage src={image ?? ''} alt="" />
           <AvatarFallback>{getInitials(name)}</AvatarFallback>
         </Avatar>
         <p className="truncate text-base font-medium">{name}</p>
       </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-2 pl-11 sm:shrink-0 sm:gap-3 sm:pl-0">
-        {statusChip}
-        <VolunteeringActionButtons
-          actions={actions}
-          labels={actionLabels}
-          disabledActions={disabledActions}
-          actionTooltips={actionTooltips}
-          onAction={onAction}
-        />
-      </div>
 
       {iconActions.length > 0 ? (
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="order-2 flex shrink-0 items-center gap-2 sm:order-3">
           {iconActions.map((actionLabel) => {
             const ActionIcon = volunteeringActionIcons[actionLabel];
             return (
@@ -181,7 +171,7 @@ export function VolunteeringVolunteerRow({
                 key={actionLabel}
                 type="button"
                 variant="outline"
-                size="icon-xs"
+                size="icon-md"
                 aria-label={actionLabels?.[actionLabel] ?? actionLabel}
                 onClick={() => onAction?.(actionLabel)}
               >
@@ -191,6 +181,17 @@ export function VolunteeringVolunteerRow({
           })}
         </div>
       ) : null}
+
+      <div className="order-3 flex w-full min-w-0 flex-wrap items-center gap-2 pl-11 sm:order-2 sm:w-auto sm:shrink-0 sm:gap-3 sm:pl-0">
+        {statusChip}
+        <VolunteeringActionButtons
+          actions={actions}
+          labels={actionLabels}
+          disabledActions={disabledActions}
+          actionTooltips={actionTooltips}
+          onAction={onAction}
+        />
+      </div>
     </div>
   );
 }
