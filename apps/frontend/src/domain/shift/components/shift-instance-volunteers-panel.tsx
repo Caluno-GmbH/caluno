@@ -314,6 +314,16 @@ export function ShiftInstanceVolunteersPanel({
         }
 
         router.refresh();
+      } catch {
+        // A server action rejects rather than returning serverError when the
+        // RPC call itself fails, the plain case being an offline browser.
+        // Without this the loading toast is never resolved, and sonner gives
+        // loading toasts no auto-dismiss and no close button, so it would sit
+        // there forever with no way to clear it.
+        toast.error(
+          t('inviteStatus.statusChangeError', { name: invite.user.name }),
+          { id: toastId },
+        );
       } finally {
         markBusy(volunteerId, false);
       }
@@ -414,6 +424,13 @@ export function ShiftInstanceVolunteersPanel({
 
           toast.success(t('inviteStatus.remindSuccess'), { id: toastId });
           router.refresh();
+        } catch {
+          // See applyStatus: a rejected server action would otherwise strand an
+          // undismissible loading toast.
+          toast.error(
+            t('inviteStatus.remindError', { name: invite.user.name }),
+            { id: toastId },
+          );
         } finally {
           markBusy(volunteerId, false);
         }
