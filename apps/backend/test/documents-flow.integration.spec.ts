@@ -1522,6 +1522,100 @@ describe('documents flow — admin + volunteer', () => {
       expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
     });
 
+    it('re-renders the PDF after the volunteer signs so their seat carries name and date', async () => {
+      const pdfOrg = await setupFlowOrg(db);
+      const pdfOrgHeader = {
+        'x-organization-unit-id': pdfOrg.organizationUnitId,
+      };
+      await db
+        .update(schema.documentTemplates)
+        .set({ body: bodyFor(DocumentKind.CONTRACT) })
+        .where(
+          eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
+        );
+
+      setAuthMockUserId(pdfOrg.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string; contractStatus: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: pdfOrg.organizationUnitId,
+              reimbursementTypeId: pdfOrg.reimbursementTypeId,
+              volunteerId: pdfOrg.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: pdfOrgHeader,
+        },
+        'createContract',
+      );
+
+      setAuthMockUserId(pdfOrg.volunteerId);
+      const signed = await graphqlRequestRequiringData<{
+        signContract: {
+          contractStatus: string;
+          signatures: { signeeType: string; signedAt: string | null }[];
+        };
+      }>(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: pdfOrgHeader,
+        },
+        'signContract',
+      );
+      expect(signed.signContract.contractStatus).toBe(
+        ContractStatus.AWAITING_NGO_SIGNATURE,
+      );
+      const volunteerSignedAt = signed.signContract.signatures.find(
+        (s) => s.signeeType === 'VOLUNTEER',
+      )?.signedAt;
+      expect(volunteerSignedAt).not.toBeNull();
+
+      setAuthMockUserId(pdfOrg.adminId);
+      const detail = await graphqlRequestRequiringData<{
+        contract: { downloadUrl: string | null };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: createContract.id },
+          headers: pdfOrgHeader,
+        },
+        'contract',
+      );
+      if (!process.env.STORAGE_ENDPOINT) {
+        expect(detail.contract.downloadUrl).toBeNull();
+        return;
+      }
+      expect(detail.contract.downloadUrl).not.toBeNull();
+      if (!detail.contract.downloadUrl) throw new Error('unreachable');
+      const pdfResponse = await fetch(detail.contract.downloadUrl);
+      expect(pdfResponse.ok).toBe(true);
+      const glyphs = pdfGlyphs(Buffer.from(await pdfResponse.arrayBuffer()));
+      // Only a post-signature render can carry the signing instant — the
+      // creation-time PDF predates any signature.
+      const expectedTimestamp = new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Europe/Berlin',
+      })
+        .format(new Date(volunteerSignedAt ?? ''))
+        .replace(',', '');
+      expect(glyphs).toContain(expectedTimestamp);
+    });
+
     it('attaches a real PDF for a fully-signed invoice too, with its time-entry table', async () => {
       const pdfOrg = await setupFlowOrg(db);
       const pdfOrgHeader = {

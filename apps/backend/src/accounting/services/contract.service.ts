@@ -467,12 +467,8 @@ export class ContractService {
       return signed;
     });
 
-    // The document is complete — render its PDF so it can be downloaded.
-    // Failures are logged, never thrown: signing still succeeds.
-    if (isFinal) {
-      const full = await this.findContract(contractId);
-      await this.documentRenderingService.renderAndAttachPdf(full, userId);
-    }
+    const full = await this.findContract(contractId);
+    await this.documentRenderingService.renderAndAttachPdf(full, userId);
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.CONTRACT_SIGN,

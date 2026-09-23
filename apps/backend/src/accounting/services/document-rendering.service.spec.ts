@@ -5,6 +5,7 @@ import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
+import { SigneeType } from '../enums';
 import {
   DocumentRenderingService,
   letterheadLines,
@@ -294,6 +295,39 @@ describe('DocumentRenderingService', () => {
       'actor-1',
     );
     expect(fileId).toBeNull();
+  });
+
+  describe('signature seats', () => {
+    it('renders name and signing date only for parties that have signed', async () => {
+      const service = createService({ rateCents: 1500 });
+      const text = extractPdfText(
+        await service.generatePdf(
+          contract({
+            signatures: [
+              {
+                signeeType: SigneeType.VOLUNTEER,
+                signedAt: new Date('2025-02-01T10:00:00Z'),
+              },
+              { signeeType: SigneeType.PERMISSION_HOLDER, signedAt: null },
+            ] as unknown as ContractWithRelations['signatures'],
+          }),
+        ),
+      );
+      expect(text).toContain('Unterschrift');
+      expect(text).toContain('Max Mustermann');
+      expect(text).toContain('01.02.2025 11:00:00');
+      expect(text).not.toContain('02.02.2025');
+    });
+
+    it('leaves signature seats blank while nobody has signed', async () => {
+      const service = createService({ rateCents: 1500 });
+      const text = extractPdfText(
+        await service.generatePdf(contract({ signatures: [] })),
+      );
+      expect(text).toContain('Unterschrift');
+      expect(text).not.toContain('Max Mustermann');
+      expect(text).not.toContain('01.02.2025');
+    });
   });
 
   describe('buildFieldValueMap', () => {
