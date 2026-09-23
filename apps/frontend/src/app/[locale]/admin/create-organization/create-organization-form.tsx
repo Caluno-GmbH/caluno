@@ -109,15 +109,15 @@ export function CreateOrganizationForm() {
         </div>
 
         <div>
-          <label htmlFor="address" className="block text-sm font-medium">
+          <label htmlFor="street" className="block text-sm font-medium">
             {t('streetLabel')}
           </label>
           <Input
-            id="address"
-            name="address"
+            id="street"
+            name="street"
             type="text"
             className="mt-1"
-            placeholder={t('addressPlaceholder')}
+            placeholder={t('streetPlaceholder')}
             disabled={isPending}
           />
         </div>

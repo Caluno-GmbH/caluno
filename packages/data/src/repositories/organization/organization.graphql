@@ -8,7 +8,7 @@ query GetOrganization($id: String!) {
     websiteUrl
     contactEmail
     phone
-    address
+    street
     zipCode
     city
     createdAt
@@ -26,7 +26,7 @@ query GetOrganizationBySlug($slug: String!) {
     websiteUrl
     contactEmail
     phone
-    address
+    street
     zipCode
     city
     createdAt
@@ -54,7 +54,7 @@ query GetOrganizationUnit($id: String!) {
     contactPersonName
     phone
     welcomeMessage
-    address
+    street
     zipCode
     city
     legalRep
@@ -169,7 +169,7 @@ query GetOrganizationsWithRoot($limit: Int!, $offset: Int!) {
         name
         description
         logoUrl
-        address
+        street
         zipCode
         city
       }
@@ -184,7 +184,7 @@ query GetMyOrganizationUnits {
     name
     description
     logoUrl
-    address
+    street
     zipCode
     city
     legalRep
@@ -208,7 +208,7 @@ query GetMyAdminstableOrganizationUnits {
     name
     description
     logoUrl
-    address
+    street
     zipCode
     city
     legalRep
@@ -232,7 +232,7 @@ query GetMyCheckInAdministrableOrganizationUnits {
     name
     description
     logoUrl
-    address
+    street
     zipCode
     city
     legalRep
@@ -287,7 +287,7 @@ mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
   updateOrganization(id: $id, input: $input) {
     id
     name
-    address
+    street
     zipCode
     city
   }
@@ -335,7 +335,7 @@ mutation UpdateOrganizationUnit(
     name
     slug
     deletedAt
-    address
+    street
     zipCode
     city
     legalRep

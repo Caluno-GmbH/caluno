@@ -31,7 +31,7 @@ describe('AccountingSetupService.getSetupStatus', () => {
     const orgProfile = {
       id: 'unit-1',
       name: 'Testing suborg',
-      address: 'Hauptstraße 1',
+      street: 'Hauptstraße 1',
       zipCode: null,
       city: 'Berlin',
       legalRep: 'Erika Mustermann',

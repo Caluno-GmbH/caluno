@@ -363,7 +363,7 @@ const ensurePlaygroundOrganization = async (
         slug: ORG_SLUG,
         contactEmail: 'testing@caluno.org',
         description: 'Local development playground organization',
-        address: 'Hauptstraße 1',
+        street: 'Hauptstraße 1',
         zipCode: '10115',
         city: 'Berlin',
       })
@@ -398,7 +398,7 @@ const ensurePlaygroundOrganization = async (
         contactEmail: organization.contactEmail,
         description: organization.description,
         coverUrl: ORG_COVER_IMAGE_URL,
-        address: 'Hauptstraße 1',
+        street: 'Hauptstraße 1',
         zipCode: '10115',
         city: 'Berlin',
         legalRep: 'Max Mustermann',
@@ -1207,7 +1207,7 @@ async function seedFixtures() {
           iban: 'DE89 3704 0044 0532 0130 00',
           'account-holder': `Erika Musterfrau ${index + 1}`,
           bic: 'COBADEFFXXX',
-          address: `Musterstraße ${index + 1}`,
+          street: `Musterstraße ${index + 1}`,
           'birth-date': '1990-08-02',
         },
       });
@@ -1934,7 +1934,7 @@ async function seedFixtures() {
   console.log(`Accounting enabled on ${enabledOrgs.length} organization(s).`);
 
   // Backfill missing unit postal fields so accounting documents have an org
-  // address/zip/city to render (a document with "—" in the footer is a hard
+  // street/zip/city to render (a document with "—" in the footer is a hard
   // dead-end the org can't fix without an edit form). The document renders the
   // UNIT's profile, so patch the org's root unit. Only fills gaps.
   for (const enabledOrg of enabledOrgs) {
@@ -1943,7 +1943,7 @@ async function seedFixtures() {
     });
     if (!rootUnit) continue;
     const patch: Partial<typeof schema.organizationUnits.$inferInsert> = {};
-    if (!rootUnit.address) patch.address = 'Hauptstraße 1';
+    if (!rootUnit.street) patch.street = 'Hauptstraße 1';
     if (!rootUnit.zipCode) patch.zipCode = '10115';
     if (!rootUnit.city) patch.city = 'Berlin';
     if (!rootUnit.legalRep) patch.legalRep = 'Max Mustermann';

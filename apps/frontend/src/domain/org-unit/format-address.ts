@@ -1,5 +1,5 @@
 export type OrgAddressParts = {
-  address?: string | null;
+  street?: string | null;
   zipCode?: string | null;
   city?: string | null;
 };
@@ -16,7 +16,7 @@ export function formatOrgAddress(
   const zipCity = [parts.zipCode?.trim(), parts.city?.trim()]
     .filter(Boolean)
     .join(' ');
-  return [parts.address?.trim(), zipCity || undefined]
+  return [parts.street?.trim(), zipCity || undefined]
     .filter(Boolean)
     .join(separator);
 }

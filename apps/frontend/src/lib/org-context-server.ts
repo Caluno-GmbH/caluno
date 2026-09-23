@@ -13,7 +13,7 @@ export interface OrgContextData {
   name: string;
   description?: string | null;
   logoUrl?: string | null;
-  address?: string | null;
+  street?: string | null;
   zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;
@@ -33,7 +33,7 @@ function normalizeUnits(units: MyOrganizationUnit[]): OrgContextData[] {
           : `${unit.organization.name} › ${unit.name}`,
         description: unit.description ?? unit.organization.description ?? null,
         logoUrl: unit.logoUrl ?? unit.organization.logoUrl ?? null,
-        address: unit.address,
+        street: unit.street,
         zipCode: unit.zipCode,
         city: unit.city,
         legalRep: unit.legalRep,
@@ -145,7 +145,7 @@ export async function requireOrgAccess(
       name: unit.name,
       description: unit.description ?? null,
       logoUrl: unit.logoUrl ?? null,
-      address: unit.address ?? null,
+      street: unit.street ?? null,
       zipCode: unit.zipCode ?? null,
       city: unit.city ?? null,
       legalRep: unit.legalRep ?? null,

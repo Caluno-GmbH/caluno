@@ -21,7 +21,7 @@ export class UpdateOrganizationInput {
   description?: string | null;
 
   @Field(() => String, { nullable: true })
-  address?: string | null;
+  street?: string | null;
 
   @Field(() => String, { nullable: true })
   zipCode?: string | null;

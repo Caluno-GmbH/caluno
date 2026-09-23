@@ -25,7 +25,7 @@ export async function createOrganization(
   const contactEmail = formData.get('contactEmail') as string;
   const phone = formData.get('phone') as string;
   const websiteUrl = formData.get('websiteUrl') as string;
-  const address = formData.get('address') as string;
+  const street = formData.get('street') as string;
   const zipCode = formData.get('zipCode') as string;
   const city = formData.get('city') as string;
   const logoFileId = (formData.get('logoFileId') as string) || undefined;
@@ -40,7 +40,7 @@ export async function createOrganization(
     contactEmail: contactEmail || undefined,
     phone: phone || undefined,
     websiteUrl: websiteUrl || undefined,
-    address: address || undefined,
+    street: street || undefined,
     zipCode: zipCode || undefined,
     city: city || undefined,
     logoFileId: logoFileId || null,
@@ -80,7 +80,7 @@ export const updateOrganizationProfile = actionClient
     // type, description, logo) untouched.
     const input: UpdateOrganizationUnitInput = {
       organizationId: parsedInput.organizationId,
-      address: parsedInput.address || null,
+      street: parsedInput.street || null,
       zipCode: parsedInput.zipCode || null,
       city: parsedInput.city || null,
       legalRep: parsedInput.legalRep || null,

@@ -183,15 +183,15 @@ export function OrgUnitFormContent({
       />
 
       <Field>
-        <FieldLabel htmlFor="address">{t('streetLabel')}</FieldLabel>
+        <FieldLabel htmlFor="street">{t('streetLabel')}</FieldLabel>
         <Input
-          id="address"
-          placeholder={t('addressPlaceholder')}
+          id="street"
+          placeholder={t('streetPlaceholder')}
           disabled={isPending}
-          aria-invalid={!!errors.address}
-          {...register('address')}
+          aria-invalid={!!errors.street}
+          {...register('street')}
         />
-        {errors.address && <FieldError>{errors.address.message}</FieldError>}
+        {errors.street && <FieldError>{errors.street.message}</FieldError>}
       </Field>
 
       <Field>

@@ -9,7 +9,7 @@ export interface OrganizationData {
   name: string;
   description?: string | null;
   logoUrl?: string | null;
-  address?: string | null;
+  street?: string | null;
   zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;

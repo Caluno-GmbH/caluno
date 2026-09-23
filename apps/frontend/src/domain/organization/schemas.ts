@@ -8,7 +8,7 @@ export const updateOrganizationSchema = z.object({
   organizationId: z.string().min(1),
   organizationUnitId: z.string().min(1),
   rootUnitId: z.string().min(1),
-  address: z.string().optional(),
+  street: z.string().optional(),
   zipCode: z.string().optional(),
   city: z.string().optional(),
   legalRep: z.string().optional(),

@@ -6,12 +6,12 @@ describe('maskRestrictedPaymentData', () => {
     const masked = maskRestrictedPaymentData({
       iban: 'DE89 3704 0044 0532 0130 00',
       bic: 'COBADEFFXXX',
-      address: 'Musterstraße 1',
+      street: 'Musterstraße 1',
     });
     expect(masked).toEqual({
       iban: 'XXXX XXXX XXXX XXXX XXXX XX',
       bic: 'XXXXXXXXXXX',
-      address: 'Musterstraße 1',
+      street: 'Musterstraße 1',
     });
   });
 
@@ -19,12 +19,12 @@ describe('maskRestrictedPaymentData', () => {
     const masked = maskRestrictedPaymentData({
       iban: '',
       bic: '   ',
-      address: 'Musterstraße 1',
+      street: 'Musterstraße 1',
     });
     expect(masked).toEqual({
       iban: '',
       bic: '   ',
-      address: 'Musterstraße 1',
+      street: 'Musterstraße 1',
     });
   });
 });

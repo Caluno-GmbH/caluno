@@ -43,7 +43,7 @@ export const organizationUnits = snakeCase.table(
     phone: text('phone'),
     welcomeMessage: text('welcome_message'),
     description: text('description'),
-    address: text('address'),
+    street: text('street'),
     zipCode: text('zip_code'),
     city: text('city'),
     legalRep: text('legal_rep'),

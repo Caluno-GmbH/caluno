@@ -6,7 +6,7 @@ type UnitFixture = {
   id: string;
   parentId: string | null;
   name: string;
-  address?: string | null;
+  street?: string | null;
   zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;
@@ -38,7 +38,7 @@ describe('resolveOrgProfile', () => {
         id: 'root',
         parentId: null,
         name: 'Root',
-        address: 'Root street 1',
+        street: 'Root street 1',
         zipCode: '10000',
         city: 'Root city',
         legalRep: 'Root rep',
@@ -47,7 +47,7 @@ describe('resolveOrgProfile', () => {
         id: 'branch',
         parentId: 'root',
         name: 'Branch',
-        address: null,
+        street: null,
         zipCode: null,
         city: '  ',
         legalRep: null,
@@ -56,7 +56,7 @@ describe('resolveOrgProfile', () => {
         id: 'leaf',
         parentId: 'branch',
         name: 'Leaf',
-        address: 'Leaf street 2',
+        street: 'Leaf street 2',
         zipCode: null,
         city: null,
         legalRep: null,
@@ -68,7 +68,7 @@ describe('resolveOrgProfile', () => {
     expect(profile).toMatchObject({
       id: 'leaf',
       name: 'Leaf',
-      address: 'Leaf street 2',
+      street: 'Leaf street 2',
       zipCode: '10000',
       city: 'Root city',
       legalRep: 'Root rep',
@@ -81,7 +81,7 @@ describe('resolveOrgProfile', () => {
         id: 'root',
         parentId: null,
         name: 'Root',
-        address: 'Stale street',
+        street: 'Stale street',
         zipCode: '99999',
         city: 'Stale city',
         legalRep: 'Stale rep',
@@ -91,7 +91,7 @@ describe('resolveOrgProfile', () => {
         id: 'leaf',
         parentId: 'root',
         name: 'Leaf',
-        address: 'Leaf street 2',
+        street: 'Leaf street 2',
         zipCode: null,
         city: null,
         legalRep: null,
@@ -101,7 +101,7 @@ describe('resolveOrgProfile', () => {
     const profile = await resolveOrgProfile(dbWith(units), 'org-1', 'leaf');
 
     expect(profile).toMatchObject({
-      address: 'Leaf street 2',
+      street: 'Leaf street 2',
       zipCode: null,
       city: null,
       legalRep: null,
@@ -114,7 +114,7 @@ describe('resolveOrgProfile', () => {
         id: 'root',
         parentId: null,
         name: 'Root',
-        address: 'Live street',
+        street: 'Live street',
         zipCode: '10115',
         city: 'Live city',
         legalRep: 'Live rep',
@@ -123,7 +123,7 @@ describe('resolveOrgProfile', () => {
         id: 'middle',
         parentId: 'root',
         name: 'Middle',
-        address: 'Stale street',
+        street: 'Stale street',
         zipCode: '99999',
         city: 'Stale city',
         legalRep: 'Stale rep',
@@ -133,7 +133,7 @@ describe('resolveOrgProfile', () => {
         id: 'leaf',
         parentId: 'middle',
         name: 'Leaf',
-        address: null,
+        street: null,
         zipCode: null,
         city: null,
         legalRep: null,
@@ -143,7 +143,7 @@ describe('resolveOrgProfile', () => {
     const profile = await resolveOrgProfile(dbWith(units), 'org-1', 'leaf');
 
     expect(profile).toMatchObject({
-      address: 'Live street',
+      street: 'Live street',
       zipCode: '10115',
       city: 'Live city',
       legalRep: 'Live rep',
@@ -156,7 +156,7 @@ describe('resolveOrgProfile', () => {
         id: 'root',
         parentId: null,
         name: 'Root',
-        address: 'Root street 1',
+        street: 'Root street 1',
         zipCode: '10000',
         city: 'Root city',
         legalRep: 'Root rep',

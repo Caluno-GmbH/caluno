@@ -468,7 +468,7 @@ const ensureAltonaerLesepatenOrganization = async (
         contactEmail: `kontakt@${EMAIL_DOMAIN}`,
         description:
           'Gemeinnütziger Verein: Ehrenamtliche begleiten Kinder, Senior:innen und Menschen mit Leseschwierigkeiten in Hamburg-Altona beim Lesen.',
-        address: 'Museumstraße 23',
+        street: 'Museumstraße 23',
         zipCode: '22765',
         city: 'Hamburg',
       })
@@ -513,7 +513,7 @@ const ensureAltonaerLesepatenOrganization = async (
         contactEmail: organization.contactEmail,
         description: organization.description,
         coverUrl: ORG_COVER_IMAGE_URL,
-        address: 'Museumstraße 23',
+        street: 'Museumstraße 23',
         zipCode: '22765',
         city: 'Hamburg',
         legalRep: 'Friederike Lange',
@@ -568,7 +568,7 @@ const ensureAltonaerLesepatenOrganization = async (
           contactEmail: organization.contactEmail,
           description: region.description,
           coverUrl: region.key === 'nord' ? NORD_COVER_IMAGE_URL : null,
-          address: 'Museumstraße 23',
+          street: 'Museumstraße 23',
           zipCode: '22765',
           city: 'Hamburg',
         })

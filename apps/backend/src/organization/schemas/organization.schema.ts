@@ -18,7 +18,7 @@ export const organizations = snakeCase.table(
     contactEmail: text('contact_email'),
     phone: text('phone'),
     description: text('description'),
-    address: text('address'),
+    street: text('street'),
     zipCode: text('zip_code'),
     city: text('city'),
     accountingEnabled: boolean('accounting_enabled').notNull().default(false),

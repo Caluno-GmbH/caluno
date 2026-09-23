@@ -25,7 +25,7 @@ interface OrganizationProfileFormProps {
    */
   logoUrl?: string | null;
   organization: {
-    address?: string | null;
+    street?: string | null;
     zipCode?: string | null;
     city?: string | null;
     legalRep?: string | null;
@@ -58,7 +58,7 @@ export function OrganizationProfileForm({
       organizationId,
       organizationUnitId,
       rootUnitId,
-      address: organization.address ?? '',
+      street: organization.street ?? '',
       zipCode: organization.zipCode ?? '',
       city: organization.city ?? '',
       legalRep: organization.legalRep ?? '',
@@ -98,15 +98,15 @@ export function OrganizationProfileForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-4 rounded-lg border bg-card p-6">
         <Field>
-          <FieldLabel htmlFor="address">{t('streetLabel')}</FieldLabel>
+          <FieldLabel htmlFor="street">{t('streetLabel')}</FieldLabel>
           <Input
-            id="address"
-            placeholder={t('addressPlaceholder')}
+            id="street"
+            placeholder={t('streetPlaceholder')}
             disabled={isPending}
-            aria-invalid={!!errors.address}
-            {...register('address')}
+            aria-invalid={!!errors.street}
+            {...register('street')}
           />
-          {errors.address && <FieldError>{errors.address.message}</FieldError>}
+          {errors.street && <FieldError>{errors.street.message}</FieldError>}
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">

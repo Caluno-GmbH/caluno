@@ -262,7 +262,7 @@ const ORG_PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
 export function missingOrgProfileSourcesForOrg(
   doc: TemplateDocument,
   org: {
-    address?: string | null;
+    street?: string | null;
     city?: string | null;
     zipCode?: string | null;
     legalRep?: string | null;
@@ -297,7 +297,7 @@ export function missingOrgProfileSourcesForOrg(
   const valueBySource: Partial<
     Record<DataSourceKey, string | null | undefined>
   > = {
-    org_address: org.address,
+    org_address: org.street,
     org_city: org.city,
     org_zip: org.zipCode,
     org_legal_rep: org.legalRep,

@@ -692,7 +692,7 @@
     },
     "form": {
       "streetLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "z. B. Musterstraße 1",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "z. B. Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -751,7 +751,7 @@
   "Organization": {
     "create": {
       "streetLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "z. B. Musterstraße 1",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "zipCodeLabel": "Postleitzahl",
       "zipCodePlaceholder": "z. B. 10115",
       "cityLabel": "Stadt",
@@ -991,7 +991,7 @@
     },
     "fieldForm": {
       "add": "Hinzufügen",
-      "address": "Straße und Hausnummer",
+      "street": "Straße und Hausnummer",
       "birthDate": "Geburtsdatum",
       "cancel": "Abbrechen",
       "checkbox": "Checkbox",
@@ -1217,7 +1217,7 @@
       "title": "Organisationsprofil",
       "subtitle": "Aktualisiere die Adresse und Kontaktdaten deiner Organisation.",
       "streetLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "Musterstraße 1",
+      "streetPlaceholder": "Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postleitzahl",

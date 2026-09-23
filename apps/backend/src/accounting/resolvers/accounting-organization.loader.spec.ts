@@ -10,7 +10,7 @@ type UnitRow = {
   id: string;
   parentId: string | null;
   name: string;
-  address?: string | null;
+  street?: string | null;
   zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;
@@ -42,7 +42,7 @@ const root = (id: string): UnitRow => ({
   id,
   parentId: null,
   name: `Root ${id}`,
-  address: 'Root street 1',
+  street: 'Root street 1',
   zipCode: '10000',
   city: 'Berlin',
   legalRep: 'Erika Mustermann',
@@ -71,7 +71,7 @@ describe('AccountingOrganizationLoader.orgProfileByUnitId', () => {
 
     expect(a).toMatchObject({
       name: 'A',
-      address: 'Root street 1',
+      street: 'Root street 1',
       zipCode: '10000',
       city: 'Berlin',
       legalRep: 'Erika Mustermann',
