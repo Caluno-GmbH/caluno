@@ -136,7 +136,7 @@ export function VolunteeringVolunteerList({
   return (
     <Card className={cn('gap-0 py-0', className)}>
       <CardHeader className="border-b py-4">
-        <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-lg">
+        <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg">
           <span>{title}</span>
           {titleBadge}
         </CardTitle>
