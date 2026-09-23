@@ -145,26 +145,11 @@ export function VolunteeringVolunteerRow({
         </SelectContent>
       </Select>
     ) : (
-      // No options means there is nothing to choose between (e.g. a
-      // checked-in/checked-out volunteer whose only removal option was
-      // deliberately suppressed upstream, or any other row that never had
-      // a dropdown). Render a plain, non-interactive <span> -- not a
-      // disabled button -- sized exactly like SelectTrigger's closed state
-      // (height/padding/font-size/gap/radius) via the shared
-      // selectTriggerSizingClassName, so hiding the dropdown never shifts
-      // the row's layout. Per product-owner ruling, it deliberately does
-      // NOT copy SelectTrigger's border or shadow: matching in size only
-      // keeps the chip looking calm and non-interactive both next to a
-      // real dropdown and standing alone. The old Badge's outline is not
-      // restored here in any form -- losing it is intended, not an
-      // oversight. No tabIndex, no disabled attribute, no
-      // cursor-not-allowed, no focus stop: this must read as a label, not
-      // a disabled control. The chevron is omitted entirely rather than
-      // reserved as blank space -- a deliberate call, not a rendering bug
-      // -- so this chip is very slightly narrower than an open dropdown's
-      // trigger.
+      // Sized like SelectTrigger (data-size drives the height class) so
+      // hiding a row's dropdown never shifts the layout — but deliberately
+      // without its border, shadow or chevron, so it reads as a label
+      // rather than a disabled control.
       <span
-        data-slot="select-trigger"
         data-size="default"
         className={cn(selectTriggerSizingClassName, 'text-foreground')}
       >
