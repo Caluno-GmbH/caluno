@@ -55,6 +55,7 @@ interface TimeEntryFormProps {
   mutate: (formData: TimeEntryFormValues) => Promise<{ serverError?: string }>;
   title: string;
   description: string;
+  isEdit?: boolean;
 }
 
 export const TimeEntryForm = ({
@@ -64,6 +65,7 @@ export const TimeEntryForm = ({
   initialValues,
   title,
   description,
+  isEdit = false,
 }: TimeEntryFormProps) => {
   const router = useRouter();
   const t = useTranslations('TimeEntry.form');
@@ -290,12 +292,13 @@ export const TimeEntryForm = ({
               shouldValidate: true,
             })
           }
-          disabled={pending}
+          disabled={pending || isEdit}
         >
           <ComboboxInput
             id="volunteerId"
             placeholder={t('selectVolunteerPlaceholder')}
             className="w-full"
+            disabled={pending || isEdit}
           />
           <ComboboxContent>
             <ComboboxEmpty>{t('noVolunteersFound')}</ComboboxEmpty>
