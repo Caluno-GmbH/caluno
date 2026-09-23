@@ -9,6 +9,7 @@ import { OrgEventsSection } from '@/domain/org-unit/components/org-events-sectio
 import { OrgJoinButton } from '@/domain/org-unit/components/org-join-button';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import { OrgShiftsSection } from '@/domain/org-unit/components/org-shifts-section';
+import { formatOrgAddress } from '@/domain/org-unit/format-address';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { getInitials } from '@/lib/get-initials';
@@ -51,12 +52,7 @@ export default async function OrgPage({ params }: OrgPageProps) {
     throw error;
   }
 
-  const zipCity = [org.zipCode?.trim(), org.city?.trim()]
-    .filter(Boolean)
-    .join(' ');
-  const addressText = [org.address?.trim(), zipCity || undefined]
-    .filter(Boolean)
-    .join('\n');
+  const addressText = formatOrgAddress(org);
 
   return (
     <div className="relative flex min-h-screen flex-col">
