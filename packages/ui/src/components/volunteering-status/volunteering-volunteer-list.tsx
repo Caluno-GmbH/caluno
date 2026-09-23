@@ -6,13 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '../base/accordion';
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '../base/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../base/card';
 import type {
   ShiftVolunteeringDisplayState,
   ShiftVolunteeringPhase,
@@ -136,11 +130,18 @@ export function VolunteeringVolunteerList({
   return (
     <Card className={cn('gap-0 py-0', className)}>
       <CardHeader className="border-b py-4">
-        <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg">
-          <span>{title}</span>
-          {titleBadge}
-        </CardTitle>
-        {headerAction ? <CardAction>{headerAction}</CardAction> : null}
+        {/*
+          Deliberately not CardAction: that slot is pinned to grid column 2, so the
+          actions can never drop below the title. This flex row keeps them on the
+          right when they fit and wraps them onto a second line when they do not.
+        */}
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg">
+            <span>{title}</span>
+            {titleBadge}
+          </CardTitle>
+          {headerAction}
+        </div>
       </CardHeader>
       <CardContent className="px-6 py-0">
         {groups ? (
