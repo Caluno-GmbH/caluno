@@ -226,22 +226,22 @@ export const SingleRow: Story = {
   name: 'Single volunteer row',
   render: () => (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div className="rounded-xl border px-4">
+      <ul className="list-none rounded-xl border px-4">
         <VolunteeringVolunteerRow
           name="Tom Becker"
           state="requested"
           phase="before"
           onAction={() => {}}
         />
-      </div>
-      <div className="rounded-xl border px-4">
+      </ul>
+      <ul className="list-none rounded-xl border px-4">
         <VolunteeringVolunteerRow
           name="Katharina Zimmer"
           state="accepted"
           phase="before"
           onAction={() => {}}
         />
-      </div>
+      </ul>
     </div>
   ),
 };
@@ -393,13 +393,13 @@ export const SurfaceComparison: Story = {
       </div>
       <div className="space-y-2">
         <p className="text-sm font-semibold">Instance detail</p>
-        <div className="rounded-xl border px-4">
+        <ul className="list-none">
           <VolunteeringVolunteerRow
             name="Tom Becker"
             state="requested"
             phase="before"
           />
-        </div>
+        </ul>
       </div>
     </div>
   ),

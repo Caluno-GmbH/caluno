@@ -81,7 +81,7 @@ function VolunteerRows({
   onStatusChange?: (volunteerId: string, value: string) => void;
 }) {
   return (
-    <>
+    <ul className="list-none">
       {volunteers.map((volunteer) => (
         <VolunteeringVolunteerRow
           key={volunteer.id}
@@ -114,7 +114,7 @@ function VolunteerRows({
           }
         />
       ))}
-    </>
+    </ul>
   );
 }
 

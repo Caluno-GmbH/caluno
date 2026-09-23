@@ -159,7 +159,7 @@ export function VolunteeringVolunteerRow({
   );
 
   return (
-    <div
+    <li
       className={cn(
         'flex flex-wrap items-center gap-x-3 gap-y-3 border-b border-border py-4 last:border-b-0 sm:flex-nowrap sm:gap-4',
         busy && 'opacity-60 transition-opacity',
@@ -205,6 +205,6 @@ export function VolunteeringVolunteerRow({
           onAction={onAction}
         />
       </div>
-    </div>
+    </li>
   );
 }
