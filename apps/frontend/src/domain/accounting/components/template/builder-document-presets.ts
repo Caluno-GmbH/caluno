@@ -99,12 +99,6 @@ export function getContractDocument(
   return {
     header: {
       titleLines: ['Zusatzvereinbarung zur', PAUSCHALE_TITLE[pauschale]],
-      // Newline between name and address: the header is a letterhead block, so
-      // they belong on separate lines (VOLI-1325).
-      orgIdentityLine: line('header-org-identity', '{orgName}\n{orgAddress}', [
-        bound('header-org-name', 'org_name'),
-        bound('header-org-address', 'org_address'),
-      ]),
       metaLines: [],
     },
     blocks: [
@@ -173,7 +167,7 @@ export function getContractDocument(
         lines: [
           line(
             'hours-scope',
-            'Zeitraum: {contractLifespan}  Stundenzahl pro {hoursUnit}: ca. {hoursAmount}',
+            'Zeitraum: {contractLifespan}  Stundenzahl pro {hoursUnit}: in der Regel {hoursAmount}',
             [
               contractLifespan,
               manual('hours-unit', 'Monat', 'unit-tabs'),
@@ -245,9 +239,6 @@ export function getInvoiceDocument(
   return {
     header: {
       titleLines: [PAUSCHALE_INVOICE_TITLE[pauschale]],
-      orgIdentityLine: line('header-org-identity', '{orgAddress}', [
-        bound('header-org-address', 'org_address'),
-      ]),
       metaLines: [
         line('meta-invoice-number', '{documentNumber}', [
           bound('meta-invoice-number-field', 'document_number'),
@@ -325,7 +316,7 @@ export function getInvoiceDocument(
         locked: true,
         line: line(
           'jahresdeckel-hinweis-line',
-          '{volunteerFirstName} {volunteerLastName} hat im Zeitraum {alreadyReceivedPeriod} bereits {alreadyReceivedAmount} vom Jahresdeckel in Höhe von {yearlyLimitAmount} erhalten.',
+          '{volunteerFirstName} {volunteerLastName} hat im Zeitraum {alreadyReceivedPeriod} bereits {alreadyReceivedAmount} vom Jahresfreibetrag in Höhe von {yearlyLimitAmount} erhalten.',
           [
             bound('jahresdeckel-volunteer-first', 'volunteer_first_name'),
             bound('jahresdeckel-volunteer-last', 'volunteer_last_name'),

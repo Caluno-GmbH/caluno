@@ -158,7 +158,7 @@ input CreateEventInput {
 
 input CreateFormBlockFieldInput {
   description: String
-  documentFileId: String
+  documentFileIds: [String!]
   documentLabel: String
   fieldOrder: Float
   label: String!
@@ -454,10 +454,8 @@ type FormBlockField {
   blockId: String!
   createdAt: DateTime!
   description: String
-  documentDownloadUrl: String
-  documentFileId: String
-  documentFilename: String
   documentLabel: String
+  documents: [FormBlockFieldDocument!]!
   fieldOrder: Float!
   id: ID!
   label: String!
@@ -469,6 +467,12 @@ type FormBlockField {
   systemKey: String
   type: FieldType!
   updatedAt: DateTime!
+}
+
+type FormBlockFieldDocument {
+  downloadUrl: String
+  fileId: String!
+  filename: String
 }
 
 type FormBlockPaginatedResponse {
@@ -1494,7 +1498,7 @@ input UpdateEventInput {
 
 input UpdateFormBlockFieldInput {
   description: String
-  documentFileId: String
+  documentFileIds: [String!]
   documentLabel: String
   fieldOrder: Float
   label: String

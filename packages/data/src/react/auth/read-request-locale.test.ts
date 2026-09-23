@@ -48,4 +48,22 @@ describe('readRequestLocale', () => {
     });
     expect(readRequestLocale()).toBe('de');
   });
+
+  it('reads the URL locale prefix when the preference cookie is missing', () => {
+    setCookie('');
+    Object.defineProperty(globalThis, 'window', {
+      value: { location: { pathname: '/en/signup' } },
+      configurable: true,
+    });
+    expect(readRequestLocale()).toBe('en');
+  });
+
+  it('prefers the preference cookie over the URL locale prefix', () => {
+    setCookie(`${LOCALE_COOKIE}=de`);
+    Object.defineProperty(globalThis, 'window', {
+      value: { location: { pathname: '/en/signup' } },
+      configurable: true,
+    });
+    expect(readRequestLocale()).toBe('de');
+  });
 });

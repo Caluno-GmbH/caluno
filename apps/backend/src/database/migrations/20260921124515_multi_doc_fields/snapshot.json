@@ -1,8 +1,11 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "3fa0738f-cb77-4f6d-8724-e02706c32c3f",
-  "prevIds": ["25625a37-ab3a-4b01-8598-4cf4c8374312"],
+  "id": "034c16f5-e490-41c5-ab73-5f237ba1331e",
+  "prevIds": [
+    "3fa0738f-cb77-4f6d-8724-e02706c32c3f",
+    "cfa7b6e5-b0cc-4589-b57e-0de3f205bfa1"
+  ],
   "ddl": [
     {
       "values": [
@@ -4506,11 +4509,11 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "dimensions": 1,
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "document_file_id",
+      "name": "document_file_ids",
       "entityType": "columns",
       "schema": "public",
       "table": "form_block_fields"
@@ -10514,19 +10517,6 @@
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "form_block_fields_block_id_form_blocks_id_fkey",
-      "entityType": "fks",
-      "schema": "public",
-      "table": "form_block_fields"
-    },
-    {
-      "nameExplicit": false,
-      "columns": ["document_file_id"],
-      "schemaTo": "public",
-      "tableTo": "files",
-      "columnsTo": ["id"],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
-      "name": "form_block_fields_document_file_id_files_id_fkey",
       "entityType": "fks",
       "schema": "public",
       "table": "form_block_fields"

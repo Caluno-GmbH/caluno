@@ -38,9 +38,7 @@ const fieldToRenderable = (
   description: subtitle ?? null,
   placeholder: null,
   options: null,
-  documentFileId: null,
-  documentDownloadUrl: null,
-  documentFilename: null,
+  documents: [],
   documentLabel: null,
   minAge: null,
 });

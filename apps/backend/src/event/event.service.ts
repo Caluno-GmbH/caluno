@@ -940,6 +940,7 @@ export class EventService {
     eventId: string,
     status: EventInviteStatus,
     actorUserId: string = userId,
+    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<EventInviteEntity> {
     const event = await this.db.query.events.findFirst({
       where: { id: eventId, isDeleted: false },
@@ -956,10 +957,11 @@ export class EventService {
     }
 
     // Idempotent no-op — matching status skips the shift cascade re-run.
-    const isAdminActor = actorUserId !== userId;
+    const isSelfAction = actorUserId === userId;
+    const isPrivilegedActor = actorHasElevatedPermission;
 
     if (
-      !isAdminActor &&
+      !isPrivilegedActor &&
       !volunteerMayRequestInviteStatus(invite.status, status)
     ) {
       throw new ForbiddenGraphQLError(
@@ -985,7 +987,7 @@ export class EventService {
     } else if (
       invite.status === EventInviteStatus.AWAITING_ADMIN_APPROVAL &&
       status === EventInviteStatus.JOINED &&
-      isAdminActor
+      isPrivilegedActor
     ) {
       targetStatus = resolveAdminApprovalTargetStatus({
         hasAvailableSeat: true,
@@ -1004,7 +1006,7 @@ export class EventService {
     }
 
     if (
-      !isAdminActor &&
+      isSelfAction &&
       isVolunteerEventParticipationWithdrawal(invite.status, targetStatus) &&
       Date.now() > event.startsAt.getTime()
     ) {

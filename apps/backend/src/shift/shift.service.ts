@@ -4273,6 +4273,7 @@ export class ShiftService {
     shiftId: string,
     status: ShiftInviteStatus,
     actorUserId: string = userId,
+    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<ShiftInviteEntity> {
     const shift = await this.db.query.shifts.findFirst({
       where: { id: shiftId, isDeleted: false },
@@ -4304,10 +4305,11 @@ export class ShiftService {
           nextInstance.overrideMaxVolunteers ?? shift.maxVolunteers,
         )
       : true;
-    const isAdminActor = actorUserId !== userId;
+    const isSelfAction = actorUserId === userId;
+    const isPrivilegedActor = actorHasElevatedPermission;
 
     if (
-      !isAdminActor &&
+      !isPrivilegedActor &&
       !volunteerMayRequestInviteStatus(invite.status, status)
     ) {
       throw new ForbiddenGraphQLError(
@@ -4333,7 +4335,7 @@ export class ShiftService {
     } else if (
       invite.status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL &&
       status === ShiftInviteStatus.JOINED &&
-      isAdminActor
+      isPrivilegedActor
     ) {
       targetStatus = resolveAdminApprovalTargetStatus({
         hasAvailableSeat: hasSeat,
@@ -4342,7 +4344,7 @@ export class ShiftService {
     } else if (
       invite.status === ShiftInviteStatus.WAITLIST_JOINED &&
       status === ShiftInviteStatus.JOINED &&
-      !isAdminActor
+      isSelfAction
     ) {
       // Waitlist claim at series level (VOLI-1260): re-resolve by next-instance
       // capacity — full keeps the volunteer on the waitlist, no error.
@@ -4565,6 +4567,7 @@ export class ShiftService {
     instanceId: string,
     status: ShiftInviteStatus,
     actorUserId: string = userId,
+    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<ShiftInstanceInviteEntity> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: instanceId, isCancelled: false },
@@ -4586,10 +4589,11 @@ export class ShiftService {
     const maxVolunteers =
       instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
     const hasSeat = await this.hasAvailableSeat(instanceId, maxVolunteers);
-    const isAdminActor = actorUserId !== userId;
+    const isSelfAction = actorUserId === userId;
+    const isPrivilegedActor = actorHasElevatedPermission;
 
     if (
-      !isAdminActor &&
+      !isPrivilegedActor &&
       !volunteerMayRequestInviteStatus(invite.status, status)
     ) {
       throw new ForbiddenGraphQLError(
@@ -4615,7 +4619,7 @@ export class ShiftService {
     } else if (
       invite.status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL &&
       status === ShiftInviteStatus.JOINED &&
-      isAdminActor
+      isPrivilegedActor
     ) {
       targetStatus = resolveAdminApprovalTargetStatus({
         hasAvailableSeat: hasSeat,
@@ -4624,7 +4628,7 @@ export class ShiftService {
     } else if (
       invite.status === ShiftInviteStatus.WAITLIST_JOINED &&
       status === ShiftInviteStatus.JOINED &&
-      !isAdminActor
+      isSelfAction
     ) {
       // Waitlist claim from the shift page (VOLI-1260): re-resolve by
       // capacity — a full instance keeps the volunteer on the waitlist.
@@ -4663,7 +4667,7 @@ export class ShiftService {
 
       if (
         invite.status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL &&
-        isAdminActor
+        isPrivilegedActor
       ) {
         void this.loadAndEmitShiftInstanceJoinApprovedNotification(
           instance.master,
