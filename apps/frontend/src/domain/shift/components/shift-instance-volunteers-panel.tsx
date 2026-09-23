@@ -170,6 +170,7 @@ export function ShiftInstanceVolunteersPanel({
           ? chipTargets.map((target) => ({
               value: target,
               label: chipOptionLabel(target),
+              state: toInviteDisplayState(target),
             }))
           : undefined,
       statusMenuAriaLabel: t('inviteStatus.changeStatusAria'),
