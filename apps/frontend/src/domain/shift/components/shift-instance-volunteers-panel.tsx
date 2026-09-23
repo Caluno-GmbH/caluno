@@ -34,8 +34,6 @@ import {
   adminChipTargetStatuses,
   adminRowActions,
   canRemindInvitee,
-  countInviteDisplayStates,
-  formatInviteStatusSummary,
   groupInvitesByRosterGroup,
   toInviteDisplayState,
 } from '../invite-status-display';
@@ -61,7 +59,6 @@ type ShiftInstanceVolunteersPanelProps = {
   instanceId: string;
   invites: InstanceInvite[];
   timeEntries: CheckInTimeEntry[];
-  spotsLeft: number | null | undefined;
   filledCount: number;
   maxVolunteers: number | null | undefined;
   canManage: boolean;
@@ -75,7 +72,6 @@ export function ShiftInstanceVolunteersPanel({
   instanceId,
   invites,
   timeEntries,
-  spotsLeft,
   filledCount,
   maxVolunteers,
   canManage,
@@ -245,15 +241,6 @@ export function ShiftInstanceVolunteersPanel({
       ),
   }));
 
-  const counts = countInviteDisplayStates(invites.map((i) => i.status));
-  const summary = formatInviteStatusSummary(counts, spotsLeft, {
-    invited: t('inviteStatus.summaryInvited'),
-    accepted: t('inviteStatus.summaryAccepted'),
-    signedUp: t('inviteStatus.summarySignedUp'),
-    waitlisted: t('inviteStatus.summaryWaitlisted'),
-    spots: t('inviteStatus.summarySpots'),
-  });
-
   const openProfile = (invite: InstanceInvite) => {
     openVolunteerSheet({
       userId: invite.user.id,
@@ -387,20 +374,21 @@ export function ShiftInstanceVolunteersPanel({
       volunteers={volunteers}
       groups={groups}
       phase="during"
+      titleBadge={
+        <Badge variant="outline">
+          {maxVolunteers != null
+            ? t('inviteStatus.capacityBadge', {
+                filled: filledCount,
+                max: maxVolunteers,
+              })
+            : t('inviteStatus.capacityBadgeNoMax', {
+                filled: filledCount,
+              })}
+        </Badge>
+      }
       title={t('inviteStatus.volunteersTitle')}
-      summary={summary}
       headerAction={
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">
-            {maxVolunteers != null
-              ? t('inviteStatus.capacityBadge', {
-                  filled: filledCount,
-                  max: maxVolunteers,
-                })
-              : t('inviteStatus.capacityBadgeNoMax', {
-                  filled: filledCount,
-                })}
-          </Badge>
           {canManage ? (
             <>
               {!isInstanceInThePast ? (
