@@ -64,7 +64,11 @@ function splitDateTimeRange(dateTime: string): { begin: string; end: string } {
   };
 }
 
-/** Mock document-number generation — no real sequence counter exists yet, so this only has to look plausible for the chosen format. */
+/**
+ * The shape of the number this timesheet will carry, for the preview only. The
+ * real one is allocated when the timesheet is created — a counter per
+ * sub-organisation — so the sequence shown here is always the first.
+ */
 function formatDocumentNumber(
   invoiceFormat: InvoiceNumberFormat,
   period: DateRange,

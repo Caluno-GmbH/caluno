@@ -5,7 +5,6 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
-import { appDateParts } from '../../shift/utils/app-time';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
 import type {
@@ -17,8 +16,10 @@ import {
   billingYearOf,
   lastDayOfPeriod,
 } from '../utils/billing-period';
-import { resolveOrgProfile } from '../utils/org-profile';
+import { formatInvoiceNumber } from '../utils/invoice-number';
+import { resolveOrgProfile, resolveOrgRootUnitId } from '../utils/org-profile';
 import {
+  findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
   type TemplateBodyShape,
@@ -105,7 +106,7 @@ export class DocumentRenderingService {
       const isContract = 'contractStatus' in document;
       const organizationUnitId =
         template.organizationUnitId ??
-        (await this.resolveOrgRootUnitId(template.organizationId));
+        (await resolveOrgRootUnitId(this.db, template.organizationId));
 
       const file = await this.fileService.saveGeneratedFile({
         organizationUnitId,
@@ -621,77 +622,25 @@ export class DocumentRenderingService {
       already_received_period: alreadyReceivedPeriod ?? '',
       yearly_limit_amount:
         yearlyLimitCents !== undefined ? this.formatEuro(yearlyLimitCents) : '',
+      // The number an issued timesheet carries is the one it was issued under,
+      // stored when the invoice was created. Invoices from before numbering
+      // existed have none, so they keep rendering one from the template's
+      // format — a display fallback, never a number anything else relies on.
       document_number:
         'invoiceStatus' in document
-          ? this.formatInvoiceNumber(
-              template.invoiceNumberFormat,
-              new Date(document.periodStart),
-              this.findManualFieldValue(
+          ? (document.documentNumber ??
+            formatInvoiceNumber({
+              invoiceFormat: template.invoiceNumberFormat,
+              periodStart: new Date(document.periodStart),
+              kostenstelle: findManualFieldValue(
                 (template.body ?? {}) as TemplateBodyShape,
                 'kostenstelle',
               ),
-            )
+              sequence: 1,
+            }))
           : '',
       generated_date: this.formatDate(new Date()),
     };
-  }
-
-  /**
-   * Mock document-number generation — no real sequence counter exists yet, so
-   * this only has to look plausible for the chosen format (mirrors the
-   * frontend's formatDocumentNumber).
-   */
-  private formatInvoiceNumber(
-    invoiceFormat: string | null | undefined,
-    periodStart: Date,
-    kostenstelle: string | undefined,
-  ): string {
-    const { year, month, day } = appDateParts(periodStart);
-    const yyyy = year;
-    const mm = String(month + 1).padStart(2, '0');
-    const dd = String(day).padStart(2, '0');
-    const seq = '001';
-    switch (invoiceFormat) {
-      case 'date-number':
-        return `${yyyy}${mm}${dd}-${seq}`;
-      case 'date-kostenstelle-number':
-        return `${yyyy}${mm}${dd}-${kostenstelle ?? '—'}-${seq}`;
-      case 'compact-date-number':
-        return `${String(yyyy).slice(2)}${mm}${dd}${seq}`;
-      case 'kostenstelle-month-year-number':
-        return `${kostenstelle ?? '—'}-${mm}.${yyyy}-${seq}`;
-      default:
-        return `${yyyy}${mm}${dd}-${seq}`;
-    }
-  }
-
-  private findManualFieldValue(
-    body: TemplateBodyShape,
-    fieldId: string,
-  ): string | undefined {
-    const findIn = (fields?: TemplateFieldShape[]): string | undefined => {
-      const field = fields?.find(
-        (f) => f.id === fieldId && f.value.kind === 'manual-template',
-      );
-      return field?.value.kind === 'manual-template'
-        ? field.value.value
-        : undefined;
-    };
-
-    const lines: (TemplateLineShape | undefined)[] = [
-      body.header?.orgIdentityLine,
-      ...(body.header?.metaLines ?? []),
-      ...(body.blocks ?? []).flatMap((block) => [
-        block.line,
-        ...(block.lines ?? []),
-      ]),
-      body.footer?.closingLine,
-    ];
-    for (const line of lines) {
-      const value = findIn(line?.fields);
-      if (value !== undefined) return value;
-    }
-    return undefined;
   }
 
   /** Invoice table rows: task, begin, end, hours, rate — mirroring the frontend's eligible-hours preview. */
@@ -772,7 +721,7 @@ export class DocumentRenderingService {
       const organizationUnitId =
         document.organizationUnitId ??
         template.organizationUnitId ??
-        (await this.resolveOrgRootUnitId(organizationId));
+        (await resolveOrgRootUnitId(this.db, organizationId));
       return await this.reimbursementRateService.getEffectiveRateCents(
         organizationId,
         organizationUnitId,
@@ -788,26 +737,10 @@ export class DocumentRenderingService {
   ) {
     const organizationUnitId =
       template?.organizationUnitId ??
-      (await this.resolveOrgRootUnitId(template?.organizationId ?? null));
+      (await resolveOrgRootUnitId(this.db, template?.organizationId ?? null));
     return this.db.query.organizationUnits.findFirst({
       where: { id: organizationUnitId },
     });
-  }
-
-  private async resolveOrgRootUnitId(
-    organizationId: string | null,
-  ): Promise<string> {
-    if (!organizationId) {
-      throw new Error('Organization is missing its id');
-    }
-    const root = await this.db.query.organizationUnits.findFirst({
-      where: { organizationId, parentId: { isNull: true } },
-      columns: { id: true },
-    });
-    if (!root) {
-      throw new Error(`No root unit found for organization ${organizationId}`);
-    }
-    return root.id;
   }
 
   private splitName(name: string | undefined): [string, string] {

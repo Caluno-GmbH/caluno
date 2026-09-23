@@ -107,3 +107,26 @@ export async function resolveOrgProfile(
 
   return resolveOrgProfileFromUnits(unit, unitsById);
 }
+
+/**
+ * The organisation's root unit — the body that stands behind an org-wide
+ * template, which has no unit of its own. Documents need a concrete unit to
+ * file themselves under (the generated PDF, the invoice number series), so
+ * this is where "no unit" resolves to.
+ */
+export async function resolveOrgRootUnitId(
+  db: Database,
+  organizationId: string | null,
+): Promise<string> {
+  if (!organizationId) {
+    throw new Error('Organization is missing its id');
+  }
+  const root = await db.query.organizationUnits.findFirst({
+    where: { organizationId, parentId: { isNull: true } },
+    columns: { id: true },
+  });
+  if (!root) {
+    throw new Error(`No root unit found for organization ${organizationId}`);
+  }
+  return root.id;
+}

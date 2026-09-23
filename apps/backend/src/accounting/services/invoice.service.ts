@@ -8,6 +8,7 @@ import {
   isNotNull,
   isNull,
   lt,
+  max,
   ne,
 } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
@@ -43,12 +44,18 @@ import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
 import { billingMonthBounds, billingYearBounds } from '../utils/billing-period';
+import { formatInvoiceNumber } from '../utils/invoice-number';
+import { resolveOrgRootUnitId } from '../utils/org-profile';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
 import { DocumentSigningService } from './document-signing.service';
 import { DocumentTemplateService } from './document-template.service';
+import {
+  findManualFieldValue,
+  type TemplateBodyShape,
+} from './document-template.types';
 import { ReimbursementRateService } from './reimbursement-rate.service';
 
 @Injectable()
@@ -450,7 +457,29 @@ export class InvoiceService {
       );
     }
 
+    const fieldOverrides = toFieldOverridesMap(input.fieldOverrides);
+    // An org-wide template leaves `organizationUnitId` null, but the number
+    // still has to be unique within the body issuing it — so the series belongs
+    // to the unit if there is one, and to the organisation's root unit if not.
+    const documentNumberScopeUnitId =
+      input.organizationUnitId ??
+      (await resolveOrgRootUnitId(this.db, organizationId));
+
     const invoice = await this.db.transaction(async (tx) => {
+      // Allocated inside the transaction so two coordinators issuing at once
+      // cannot read the same counter; the unique index on
+      // (scope unit, document number) is the backstop if they do.
+      const [{ highest } = { highest: null }] = await tx
+        .select({ highest: max(schema.invoices.documentNumberSeq) })
+        .from(schema.invoices)
+        .where(
+          eq(
+            schema.invoices.documentNumberScopeUnitId,
+            documentNumberScopeUnitId,
+          ),
+        );
+      const documentNumberSeq = (highest ?? 0) + 1;
+
       const [created] = await tx
         .insert(schema.invoices)
         .values({
@@ -465,7 +494,22 @@ export class InvoiceService {
           totalHours,
           isNonCompliant: !activeContract,
           resolvedBody: structuredClone(template.body),
-          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
+          fieldOverrides,
+          documentNumberScopeUnitId,
+          documentNumberSeq,
+          documentNumber: formatInvoiceNumber({
+            invoiceFormat: template.invoiceNumberFormat,
+            periodStart: input.periodStart,
+            // The coordinator may have typed a cost centre for this one
+            // document; the template's own value is the default behind it.
+            kostenstelle:
+              fieldOverrides.kostenstelle ??
+              findManualFieldValue(
+                (template.body ?? {}) as TemplateBodyShape,
+                'kostenstelle',
+              ),
+            sequence: documentNumberSeq,
+          }),
         })
         .returning();
 

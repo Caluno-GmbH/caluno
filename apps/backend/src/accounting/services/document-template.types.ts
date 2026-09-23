@@ -87,3 +87,38 @@ export const REQUIRED_ORG_PROFILE_SOURCES = [
   'org_address',
   'org_city',
 ] as const;
+
+/**
+ * Reads a manual (coordinator-typed) field's value out of a template body,
+ * wherever in the document it sits. Used for values that have to be read
+ * outside the render pass — the Kostenstelle, for one, is needed when an
+ * invoice number is allocated at creation.
+ */
+export function findManualFieldValue(
+  body: TemplateBodyShape,
+  fieldId: string,
+): string | undefined {
+  const findIn = (fields?: TemplateFieldShape[]): string | undefined => {
+    const field = fields?.find(
+      (f) => f.id === fieldId && f.value.kind === 'manual-template',
+    );
+    return field?.value.kind === 'manual-template'
+      ? field.value.value
+      : undefined;
+  };
+
+  const lines: (TemplateLineShape | undefined)[] = [
+    body.header?.orgIdentityLine,
+    ...(body.header?.metaLines ?? []),
+    ...(body.blocks ?? []).flatMap((block) => [
+      block.line,
+      ...(block.lines ?? []),
+    ]),
+    body.footer?.closingLine,
+  ];
+  for (const line of lines) {
+    const value = findIn(line?.fields);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
