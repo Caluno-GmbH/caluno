@@ -1521,7 +1521,7 @@
     },
     "successDialog": {
       "bodyInvited": "Your assignment is active. Invited volunteers have been notified.",
-      "bodyOpen": "Your open assignment is active. All volunteers in your organisation have been notified and can now sign up.",
+      "bodyOpen": "Your open assignment is active. All volunteers in your organisation unit can now discover it and sign up.",
       "copyInviteLink": "Copy invite link",
       "recurrence": {
         "daily": "Daily",
