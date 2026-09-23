@@ -399,7 +399,10 @@ export function RequiredFormRenderer({
           />
         </div>
 
-        <div className="flex justify-between border-t pt-4">
+        {/* Buttons carry whitespace-nowrap and shrink-0, so a long label
+            (German "Alle Formulare absenden") cannot wrap or shrink and
+            overflows the viewport on a phone. Stack below sm. */}
+        <div className="flex flex-col gap-2 border-t pt-4 sm:flex-row sm:justify-between">
           <Button
             variant="outline"
             onClick={handlePrevious}
