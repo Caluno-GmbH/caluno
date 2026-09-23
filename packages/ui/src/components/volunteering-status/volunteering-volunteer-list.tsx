@@ -129,7 +129,11 @@ export function VolunteeringVolunteerList({
 }: VolunteeringVolunteerListProps) {
   return (
     <Card className={cn('gap-0 py-0', className)}>
-      <CardHeader className="border-b py-4">
+      {/*
+        grid-rows-[auto] collapses CardHeader's default two-row template to the one
+        row we actually fill. The empty second track still cost its 8px row gap.
+      */}
+      <CardHeader className="grid-rows-[auto] border-b py-4">
         {/*
           Deliberately not CardAction: that slot is pinned to grid column 2, so the
           actions can never drop below the title. This flex row keeps them on the
