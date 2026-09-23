@@ -211,7 +211,12 @@ export function ShiftInstanceVolunteersPanel({
           ? {
               Remind: remindActive
                 ? t('inviteStatus.actionRemind')
-                : t('inviteStatus.actionReminded'),
+                : t('inviteStatus.remindedAtTooltip', {
+                    when: `${formatDate(new Date(invite.remindedAt as string), {
+                      month: 'short',
+                      day: 'numeric',
+                    })}, ${formatTime(new Date(invite.remindedAt as string))}`,
+                  }),
             }
           : {}),
       },
