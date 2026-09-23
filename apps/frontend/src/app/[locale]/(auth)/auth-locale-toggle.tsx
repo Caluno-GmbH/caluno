@@ -18,15 +18,18 @@ export function AuthLocaleToggle() {
   const label = next.toUpperCase();
 
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="absolute top-0 right-0 font-medium tracking-wide text-muted-foreground"
-      aria-label={t('switchLocale', { locale: label })}
-      onClick={() => router.replace(pathname, { locale: next })}
-    >
-      {label}
-    </Button>
+    <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground">
+      <span>{t('switchLocale')}</span>
+      <Button
+        type="button"
+        variant="link"
+        size="sm"
+        className="h-auto px-1 font-medium tracking-wide text-foreground"
+        aria-label={`${t('switchLocale')} ${label}`}
+        onClick={() => router.replace(pathname, { locale: next })}
+      >
+        {label}
+      </Button>
+    </div>
   );
 }

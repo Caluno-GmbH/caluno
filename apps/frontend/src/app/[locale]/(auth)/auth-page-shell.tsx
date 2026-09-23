@@ -26,9 +26,7 @@ export function AuthPageShell({
 }: AuthPageShellProps) {
   return (
     <div className="flex min-h-screen justify-center bg-background px-4 py-10 md:px-6 md:py-16">
-      {/* Same content width as volunteering pages so the locale toggle isn't viewport-edge. */}
-      <div className="relative mx-auto w-full max-w-4xl">
-        <AuthLocaleToggle />
+      <div className="mx-auto flex w-full max-w-4xl flex-col">
         <div className="mx-auto flex w-full max-w-md flex-col gap-8">
           {joiningOrg ? (
             <div className="flex flex-col items-center gap-4 text-center">
@@ -49,7 +47,10 @@ export function AuthPageShell({
               </div>
             </div>
           )}
-          {children}
+          <div className="flex flex-col gap-6">
+            {children}
+            <AuthLocaleToggle />
+          </div>
         </div>
       </div>
     </div>
