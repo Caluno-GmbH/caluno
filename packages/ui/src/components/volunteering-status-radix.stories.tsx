@@ -435,33 +435,53 @@ export const CheckedOutWithTooltip: Story = {
   ),
 };
 
+/**
+ * Mobile row layout, pinned to 375px so the two-line behaviour is always visible.
+ * Deliberately all-German: German is the widest locale, so this is the worst case
+ * the layout has to survive. Row 2 is the stress case and is expected to spill onto
+ * a third line; see the comment on that row.
+ */
 export const MobileRowLayout: Story = {
   name: 'Detail page / mobile row layout',
   render: () => (
     <div className="w-[375px] border border-dashed border-border p-4">
       <VolunteeringVolunteerList
         phase="before"
-        titleBadge={<Badge variant="outline">2 / 8 spots filled</Badge>}
+        titleBadge={<Badge variant="outline">2 / 8 Plätze besetzt</Badge>}
         actionLabels={{
-          View: 'View',
-          'Check in': 'Check in',
-          Approve: 'Approve',
+          View: 'Ansehen',
+          'Check in': 'Einchecken',
+          Approve: 'Genehmigen',
+          Uninvite: 'Entfernen',
         }}
         volunteers={[
           {
+            // Long name, to prove truncation behaves on line 1.
             id: '1',
             name: 'Alexandra Schmidt-Hohenberg',
             state: 'accepted',
-            statusLabel: 'Accepted',
+            statusLabel: 'Angenommen',
             iconActions: ['View', 'Check in'],
           },
           {
+            // Worst case: the longest German status label beside a text action.
+            // Line 2 needs more width than 375px leaves after the pl-11 indent,
+            // so the button wraps under the chip and this row takes three lines.
             id: '2',
             name: 'Jo Fischer',
             state: 'requested',
             statusLabel: 'Genehmigung ausstehend',
             actions: ['Approve'],
             iconActions: ['View', 'Check in'],
+          },
+          {
+            // No text action at all, so line 2 is a bare status chip.
+            id: '3',
+            name: 'Tom Becker',
+            state: 'declined',
+            statusLabel: 'Abgelehnt',
+            actions: [],
+            iconActions: ['View'],
           },
         ]}
       />
