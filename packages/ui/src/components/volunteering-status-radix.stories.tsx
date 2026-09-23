@@ -74,7 +74,6 @@ export const LifecycleReferenceBoard: Story = {
         phase="during"
         states={[
           'checked_in',
-          'not_checked_in',
           'invited',
           'requested',
           'waitlisted',
@@ -110,7 +109,6 @@ export const StatusIcons: Story = {
           'accepted',
           'declined',
           'checked_in',
-          'not_checked_in',
           'checked_out',
           'no_show',
         ] as const
@@ -137,7 +135,6 @@ export const StatusBadges: Story = {
           'accepted',
           'declined',
           'checked_in',
-          'not_checked_in',
           'checked_out',
           'no_show',
           'invited_never_responded',
@@ -187,7 +184,12 @@ export const DetailPageDuringShift: Story = {
         titleBadge={<Badge variant="outline">3 / 5 spots filled</Badge>}
         volunteers={[
           { id: '1', name: 'Katharina Zimmer', state: 'checked_in' },
-          { id: '2', name: 'Hans Test', state: 'not_checked_in' },
+          {
+            id: '2',
+            name: 'Hans Test',
+            state: 'accepted',
+            actions: ['Check in'],
+          },
           { id: '3', name: 'Lena Müller', state: 'invited' },
           { id: '4', name: 'Tom Becker', state: 'requested' },
           { id: '5', name: 'Sara Klein', state: 'declined' },

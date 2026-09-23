@@ -3,7 +3,6 @@ import {
   BellRing,
   Check,
   CircleCheck,
-  CircleDashed,
   CircleMinus,
   CircleSlash,
   Clock,
@@ -42,7 +41,6 @@ export const volunteeringStatusIcons: Record<
   rejected: CircleSlash,
   cancelled: CircleMinus,
   checked_in: CircleCheck,
-  not_checked_in: CircleDashed,
   checked_out: Timer,
   no_show: UserX,
   invited_never_responded: Clock,
@@ -63,7 +61,6 @@ export const volunteeringStatusIconTone: Record<
   rejected: 'destructive',
   cancelled: 'warning',
   checked_in: 'positive',
-  not_checked_in: 'warning',
   checked_out: 'positive',
   no_show: 'warning',
   invited_never_responded: 'neutral',
@@ -110,7 +107,6 @@ export const volunteeringLifecycleDescriptions: Record<
   rejected: 'Removed by coordinator.',
   cancelled: 'No longer joining this shift.',
   checked_in: 'Here — time is tracking.',
-  not_checked_in: 'Expected but not here yet.',
   checked_out: 'Volunteer time recorded.',
   no_show: "Didn't check in.",
   invited_never_responded: 'No reply before shift ended.',
@@ -204,13 +200,6 @@ export function getVolunteeringStatusPresentation(
         label: 'Checked in',
         description: volunteeringLifecycleDescriptions.checked_in,
         actions: ['Check out'],
-      };
-    case 'not_checked_in':
-      return {
-        iconTone: volunteeringStatusIconTone.not_checked_in,
-        label: 'Not here yet',
-        description: volunteeringLifecycleDescriptions.not_checked_in,
-        actions: ['Check in'],
       };
     case 'checked_out':
       return {
