@@ -1692,6 +1692,7 @@
       "selectShiftLabel": "Einsatz auswählen",
       "selectVolunteerLabel": "Freiwillige:n auswählen",
       "selectVolunteerPlaceholder": "Freiwillige:n auswählen",
+      "noVolunteersFound": "Keine Freiwilligen gefunden",
       "shiftDatePlaceholder": "Datum wählen",
       "shiftSearchPlaceholder": "Einsatz suchen",
       "startEndTimeLabel": "Start- und Endzeit"

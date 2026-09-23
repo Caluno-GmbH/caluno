@@ -1692,6 +1692,7 @@
       "selectShiftLabel": "Select assignment",
       "selectVolunteerLabel": "Select volunteer",
       "selectVolunteerPlaceholder": "Select a volunteer",
+      "noVolunteersFound": "No volunteers found",
       "shiftDatePlaceholder": "Pick a date",
       "shiftSearchPlaceholder": "Search assignment",
       "startEndTimeLabel": "Start and end time"
