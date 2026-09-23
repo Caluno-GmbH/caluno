@@ -87,6 +87,11 @@ export const invoices = snakeCase.table(
     // The counter behind that number. Kept as its own column so the next one is
     // `max + 1` rather than a parse of the formatted string.
     documentNumberSeq: integer('document_number_seq'),
+    // The year that counter belongs to — the series restarts at 1 each January,
+    // as an organisation's books do. Stored rather than derived from
+    // `periodStart` in SQL, so the year is the one the app's calendar sees
+    // rather than whatever time zone the database happens to run in.
+    documentNumberYear: integer('document_number_year'),
     // Which body's series the number belongs to. Resolved at creation, because
     // `organizationUnitId` above is null for an org-wide template while the
     // number still has to be unique within the organisation that issues it.

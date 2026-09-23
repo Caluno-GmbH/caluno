@@ -977,6 +977,56 @@ describe('InvoiceService', () => {
       expect(august.documentNumberSeq).toBe(2);
     });
 
+    it('restarts the series in January and keeps the year on the invoice', async () => {
+      const {
+        organization,
+        root,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+      const januaryEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2027-01-05T09:00:00.000Z'),
+        endedAt: new Date('2027-01-05T13:00:00.000Z'),
+      });
+
+      const july = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+      const january = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [januaryEntry.id],
+          periodStart: new Date('2027-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2027-01-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+
+      expect(july.documentNumberYear).toBe(2026);
+      expect(january.documentNumberYear).toBe(2027);
+      expect(january.documentNumberSeq).toBe(1);
+      // The year is in the number itself, so restarting cannot repeat one.
+      expect(july.documentNumber).toBe('20260701-001');
+      expect(january.documentNumber).toBe('20270101-001');
+    });
+
     it('counts a sub-organisation separately from its parent', async () => {
       const {
         organization,

@@ -1,0 +1,1 @@
+ALTER TABLE "invoices" ADD COLUMN "document_number_year" integer;

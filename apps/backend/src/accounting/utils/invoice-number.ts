@@ -5,10 +5,12 @@ import { appDateParts } from '../../shift/utils/app-time';
  * cost centre inside the number itself, which is why the template forces that
  * field on once one of them is chosen.
  *
- * `sequence` counts documents within one sub-organisation, so the same number
- * can never be issued twice by the same body. It is allocated when the invoice
- * is created and stored on it — an issued document keeps the number it was
- * issued under, whatever happens to the template afterwards.
+ * `sequence` counts documents within one sub-organisation and one calendar
+ * year, restarting at 1 each January as an organisation's books do. Every
+ * format carries the year, so a restarted counter still cannot produce the same
+ * number twice. It is allocated when the invoice is created and stored on it —
+ * an issued document keeps the number it was issued under, whatever happens to
+ * the template afterwards.
  */
 export function formatInvoiceNumber(args: {
   invoiceFormat: string | null | undefined;

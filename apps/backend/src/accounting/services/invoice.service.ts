@@ -25,6 +25,7 @@ import {
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../../shift/enums';
+import { appDateParts } from '../../shift/utils/app-time';
 import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 import type {
   EligibleTimesheetVolunteer,
@@ -464,6 +465,11 @@ export class InvoiceService {
     const documentNumberScopeUnitId =
       input.organizationUnitId ??
       (await resolveOrgRootUnitId(this.db, organizationId));
+    // The series restarts each January, so a document's year is part of which
+    // counter it draws from. Taken from the period the timesheet covers rather
+    // than from today, so a January document issued in February still belongs
+    // to January's books.
+    const documentNumberYear = appDateParts(input.periodStart).year;
 
     const invoice = await this.db.transaction(async (tx) => {
       // Allocated inside the transaction so two coordinators issuing at once
@@ -473,9 +479,12 @@ export class InvoiceService {
         .select({ highest: max(schema.invoices.documentNumberSeq) })
         .from(schema.invoices)
         .where(
-          eq(
-            schema.invoices.documentNumberScopeUnitId,
-            documentNumberScopeUnitId,
+          and(
+            eq(
+              schema.invoices.documentNumberScopeUnitId,
+              documentNumberScopeUnitId,
+            ),
+            eq(schema.invoices.documentNumberYear, documentNumberYear),
           ),
         );
       const documentNumberSeq = (highest ?? 0) + 1;
@@ -497,6 +506,7 @@ export class InvoiceService {
           fieldOverrides,
           documentNumberScopeUnitId,
           documentNumberSeq,
+          documentNumberYear,
           documentNumber: formatInvoiceNumber({
             invoiceFormat: template.invoiceNumberFormat,
             periodStart: input.periodStart,
