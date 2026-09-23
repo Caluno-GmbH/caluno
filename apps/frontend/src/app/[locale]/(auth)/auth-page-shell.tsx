@@ -25,27 +25,32 @@ export function AuthPageShell({
   children,
 }: AuthPageShellProps) {
   return (
-    <div className="relative flex min-h-screen justify-center bg-background px-4 py-10 md:py-16">
-      <AuthLocaleToggle />
-      <div className="flex w-full max-w-md flex-col gap-8">
-        {joiningOrg ? (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AuthJoinHeader org={joiningOrg} />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-8 text-center">
-            <AuthBrand />
-            <div className="space-y-2">
-              <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-              {description ? (
-                <p className="text-sm text-muted-foreground text-pretty">
-                  {description}
-                </p>
-              ) : null}
+    <div className="flex min-h-screen justify-center bg-background px-4 py-10 md:px-6 md:py-16">
+      {/* Same content width as volunteering pages so the locale toggle isn't viewport-edge. */}
+      <div className="relative mx-auto w-full max-w-4xl">
+        <AuthLocaleToggle />
+        <div className="mx-auto flex w-full max-w-md flex-col gap-8">
+          {joiningOrg ? (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <AuthJoinHeader org={joiningOrg} />
             </div>
-          </div>
-        )}
-        {children}
+          ) : (
+            <div className="flex flex-col items-center gap-8 text-center">
+              <AuthBrand />
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold tracking-tight">
+                  {title}
+                </h1>
+                {description ? (
+                  <p className="text-sm text-muted-foreground text-pretty">
+                    {description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          )}
+          {children}
+        </div>
       </div>
     </div>
   );

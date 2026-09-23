@@ -22,7 +22,7 @@ export function AuthLocaleToggle() {
       type="button"
       variant="ghost"
       size="sm"
-      className="absolute top-4 right-4 font-medium tracking-wide text-muted-foreground"
+      className="absolute top-0 right-0 font-medium tracking-wide text-muted-foreground"
       aria-label={t('switchLocale', { locale: label })}
       onClick={() => router.replace(pathname, { locale: next })}
     >
