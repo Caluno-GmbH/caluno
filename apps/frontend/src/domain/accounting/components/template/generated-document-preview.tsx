@@ -163,6 +163,8 @@ interface GeneratedDocumentPreviewProps {
   tableTotalRow?: string[];
   /** A fixed statement row shown under the total row — e.g. the 0% VAT notice, never bold like the total. */
   tableNoteRow?: string[];
+  /** The gross payout, closing the table under the VAT notice — bold like the net row. */
+  tableGrossRow?: string[];
   /**
    * Label for a bound source with no value yet (e.g. "IBAN (Volunteer)") — used by the
    * template builder, where most sources have no volunteer/period to resolve against.
@@ -196,6 +198,7 @@ export function GeneratedDocumentPreview({
   tableRows,
   tableTotalRow,
   tableNoteRow,
+  tableGrossRow,
   unresolvedLabels = {},
   gapSources = new Set(),
   className,
@@ -323,6 +326,18 @@ export function GeneratedDocumentPreview({
                       {tableNoteRow && (
                         <tr className="text-muted-foreground">
                           {tableNoteRow.map((cell, i) => (
+                            <td
+                              key={columns[i] ?? cell}
+                              className="border border-border px-2 py-1"
+                            >
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      )}
+                      {tableGrossRow && (
+                        <tr className="font-semibold">
+                          {tableGrossRow.map((cell, i) => (
                             <td
                               key={columns[i] ?? cell}
                               className="border border-border px-2 py-1"

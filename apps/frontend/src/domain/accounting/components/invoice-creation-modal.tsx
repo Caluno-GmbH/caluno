@@ -33,6 +33,7 @@ import {
 } from '../lib/creation-fields';
 import { mapEligibleTimeEntry } from '../lib/creation-modal.utils';
 import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
+import { formatRateInput, parseRateCents } from '../lib/invoice-rate';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
 import {
   apiDocumentKindFor,
@@ -117,6 +118,11 @@ function firstColumnLabel(args: {
   }
 }
 
+/**
+ * A coordinator-typed rate in euros ("12", "12,50", "12.50") as whole cents.
+ * Undefined while the field is empty or half-typed, which leaves the
+ * organisation's own rate in charge rather than briefly charging zero.
+ */
 interface InvoiceCreationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -182,9 +188,15 @@ export function InvoiceCreationModal({
   const effectiveRate = ratesQuery.data?.find(
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,
   );
-  const ratePerHour = effectiveRate
-    ? centsToEuros(effectiveRate.hourlyRateCents)
-    : 0;
+  const orgRateCents = effectiveRate?.hourlyRateCents;
+  // A coordinator may pay this one timesheet differently — for a single person
+  // or a single month — without moving what the organisation pays anyone else.
+  // Held as the typed string so a half-finished "12," survives a re-render.
+  const [rateInput, setRateInput] = useState<string | null>(null);
+  const rateCents = parseRateCents(rateInput) ?? orgRateCents ?? 0;
+  const rateIsOverridden =
+    orgRateCents !== undefined && rateCents !== orgRateCents;
+  const ratePerHour = centsToEuros(rateCents);
 
   const invoiceTemplateQuery = useActiveDocumentTemplate(
     apiDocumentKindFor('invoice'),
@@ -388,6 +400,7 @@ export function InvoiceCreationModal({
         periodStart: periodBounds.periodStart,
         periodEnd: periodBounds.periodEnd,
         timeEntryIds: selectedLines.map((line) => line.id),
+        hourlyRateCents: rateIsOverridden ? rateCents : undefined,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({
@@ -561,7 +574,7 @@ export function InvoiceCreationModal({
   const tableTotalRow = [
     '',
     '',
-    'Summe',
+    'Nettobetrag',
     `${selectedHours}h`,
     '',
     formatHourlyRate(selectedAmount),
@@ -569,6 +582,16 @@ export function InvoiceCreationModal({
   // The Pauschale reimbursement itself isn't a VAT-liable supply, but the rate is always 0% —
   // stated on every invoice regardless, never computed from the total.
   const tableVatRow = ['', '', 'zzgl. 0 % USt.', '', '', '0,00 €'];
+  // Equal to the net figure by definition, and stated anyway: it is what says
+  // no VAT was applied, rather than leaving a reader to infer it.
+  const tableGrossRow = [
+    '',
+    '',
+    'Gesamtbetrag (brutto)',
+    '',
+    '',
+    formatHourlyRate(selectedAmount),
+  ];
 
   return (
     <DocumentCreationDialog
@@ -644,6 +667,7 @@ export function InvoiceCreationModal({
             tableRows={tableRows}
             tableTotalRow={tableTotalRow}
             tableNoteRow={tableVatRow}
+            tableGrossRow={tableGrossRow}
           />
         )
       }
@@ -686,6 +710,23 @@ export function InvoiceCreationModal({
                 </InfoPanel>
               ),
             )}
+            <InfoPanel title={t('rateFieldLabel')}>
+              <div className="mt-2 flex flex-col gap-1.5">
+                <Input
+                  inputMode="decimal"
+                  value={rateInput ?? formatRateInput(orgRateCents)}
+                  onChange={(e) => setRateInput(e.target.value)}
+                  aria-label={t('rateFieldLabel')}
+                />
+                <p className="text-sm text-muted-foreground">
+                  {rateIsOverridden
+                    ? t('rateFieldOverridden', {
+                        rate: formatHourlyRate(centsToEuros(orgRateCents ?? 0)),
+                      })
+                    : t('rateFieldHint')}
+                </p>
+              </div>
+            </InfoPanel>
             <InfoPanel title={t('periodFieldLabel')}>
               <div className="mt-2">
                 <PeriodPicker

@@ -2183,6 +2183,9 @@
         "editProfileCta": "Profil bearbeiten",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Stundennachweiszeitraum",
+        "rateFieldLabel": "Stundensatz für diesen Nachweis",
+        "rateFieldHint": "Entspricht dem Stundensatz Ihrer Einrichtung. Sie können ihn für diesen einzelnen Nachweis ändern.",
+        "rateFieldOverridden": "Gilt nur für diesen Nachweis. Ihre Einrichtung zahlt weiterhin {rate} pro Stunde.",
         "periodPicker": {
           "placeholder": "Zeitraum wählen",
           "thisMonth": "Dieser Monat",

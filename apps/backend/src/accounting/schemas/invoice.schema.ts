@@ -58,6 +58,12 @@ export const invoices = snakeCase.table(
     periodStart: timestamp('period_start').notNull(),
     periodEnd: timestamp('period_end').notNull(),
     totalAmountCents: integer('total_amount_cents').notNull(),
+    // The rate this timesheet was issued at — the organisation's effective rate
+    // at creation, or the one a coordinator set for this document alone. Stored
+    // so the rate on an issued page can never drift when the organisation
+    // changes what it pays. Null on invoices created before it was stored;
+    // those still resolve the organisation's current rate at render time.
+    hourlyRateCents: integer('hourly_rate_cents'),
     totalHours: numeric('total_hours', {
       precision: 10,
       scale: 2,

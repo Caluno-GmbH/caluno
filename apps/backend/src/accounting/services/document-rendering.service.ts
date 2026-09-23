@@ -311,8 +311,10 @@ export class DocumentRenderingService {
       drawRow(row, false);
     }
     if (isInvoiceTable && totalAmountCents !== undefined) {
-      if (pdf.y > pdf.page.height - 120) pdf.addPage();
-      drawRow(this.invoiceTotalRowCells(totalAmountCents), true);
+      for (const totalRow of this.invoiceTotalRowCells(totalAmountCents)) {
+        if (pdf.y > pdf.page.height - 120) pdf.addPage();
+        drawRow(totalRow, true);
+      }
     }
     pdf.moveDown(0.5);
     pdf.x = pdf.page.margins.left;
@@ -422,8 +424,21 @@ export class DocumentRenderingService {
     pdf.y = top + height + 10;
   }
 
-  private invoiceTotalRowCells(totalAmountCents: number): string[] {
-    return ['', '', 'Gesamtbetrag', '', '', this.formatEuro(totalAmountCents)];
+  /**
+   * The three closing rows of a Stundennachweis: net, VAT, gross.
+   *
+   * The Pauschale is not a VAT-liable supply, so the rate is always 0 % and the
+   * two amounts are always equal — which is exactly why both are stated. A
+   * single unlabelled figure leaves the paying organisation and the volunteer's
+   * tax office to infer that no VAT was applied; these rows say it.
+   */
+  private invoiceTotalRowCells(totalAmountCents: number): string[][] {
+    const amount = this.formatEuro(totalAmountCents);
+    return [
+      ['', '', 'Nettobetrag', '', '', amount],
+      ['', '', 'zzgl. 0 % USt.', '', '', this.formatEuro(0)],
+      ['', '', 'Gesamtbetrag (brutto)', '', '', amount],
+    ];
   }
 
   private signatureTimestampFor(
@@ -761,6 +776,13 @@ export class DocumentRenderingService {
     document: RenderableDocument,
     organizationId: string,
   ): Promise<number | undefined> {
+    // An issued timesheet was issued at a rate, and that is the rate its page
+    // states — whatever the organisation pays today. Only documents from before
+    // the rate was stored, and contracts (which carry no rate of their own),
+    // fall through to the organisation's current one.
+    if ('hourlyRateCents' in document && document.hourlyRateCents != null) {
+      return document.hourlyRateCents;
+    }
     try {
       const template = document.documentTemplate;
       if (!template) {

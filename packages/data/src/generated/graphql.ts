@@ -210,6 +210,7 @@ export type CreateFormBlockInput = {
 
 export type CreateInvoiceInput = {
   fieldOverrides?: InputMaybe<Array<DocumentFieldOverrideInput>>;
+  hourlyRateCents?: InputMaybe<Scalars['Int']['input']>;
   organizationUnitId?: InputMaybe<Scalars['ID']['input']>;
   periodEnd: Scalars['DateTime']['input'];
   periodStart: Scalars['DateTime']['input'];
@@ -586,6 +587,7 @@ export type Invoice = {
   declinedByUser?: Maybe<User>;
   documentTemplate: DocumentTemplate;
   downloadUrl?: Maybe<Scalars['String']['output']>;
+  hourlyRateCents?: Maybe<Scalars['Int']['output']>;
   id: Scalars['ID']['output'];
   invoiceStatus: InvoiceStatus;
   invoiceTimeEntries: Array<InvoiceTimeEntry>;

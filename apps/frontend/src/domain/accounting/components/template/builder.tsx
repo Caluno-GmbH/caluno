@@ -66,7 +66,18 @@ const ALL_DATA_SOURCES: DataSourceKey[] = [
   ...PROFILE_REQUIRED_SOURCES,
 ];
 
-const PLACEHOLDER_TABLE_TOTAL_ROW = ['', '', 'Summe', '—', '', '—'];
+const PLACEHOLDER_TABLE_TOTAL_ROW = ['', '', 'Nettobetrag', '—', '', '—'];
+
+// Equal to the net figure by definition at 0% VAT, and stated anyway: it is
+// what says no VAT was applied, rather than leaving a reader to infer it.
+const PLACEHOLDER_TABLE_GROSS_ROW = [
+  '',
+  '',
+  'Gesamtbetrag (brutto)',
+  '',
+  '',
+  '—',
+];
 
 // The Pauschale reimbursement itself isn't a VAT-liable supply, but the rate is always 0% —
 // stated on every invoice regardless, never computed from the total.
@@ -395,6 +406,9 @@ export function TemplateBuilder({
               kind === 'invoice' ? PLACEHOLDER_TABLE_TOTAL_ROW : undefined
             }
             tableNoteRow={kind === 'invoice' ? TABLE_VAT_ROW : undefined}
+            tableGrossRow={
+              kind === 'invoice' ? PLACEHOLDER_TABLE_GROSS_ROW : undefined
+            }
           />
         </section>
         <section

@@ -2183,6 +2183,9 @@
         "editProfileCta": "Edit your profile",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Timesheet period",
+        "rateFieldLabel": "Hourly rate for this timesheet",
+        "rateFieldHint": "Matches your organisation's hourly rate. You can change it for this one timesheet.",
+        "rateFieldOverridden": "Applies to this timesheet only. Your organisation still pays {rate} per hour.",
         "periodPicker": {
           "placeholder": "Select a period",
           "thisMonth": "This month",

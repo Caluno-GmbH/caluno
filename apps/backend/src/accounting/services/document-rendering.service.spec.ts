@@ -562,15 +562,30 @@ describe('DocumentRenderingService', () => {
   });
 
   describe('invoiceTotalRowCells', () => {
-    it('renders a bold Gesamtbetrag row carrying the formatted total amount', () => {
-      const service = createService();
-      const cells = (
+    const invoiceTotalRowCells = (
+      service: DocumentRenderingService,
+      totalAmountCents: number,
+    ): string[][] =>
+      (
         service as unknown as {
-          invoiceTotalRowCells: (totalAmountCents: number) => string[];
+          invoiceTotalRowCells: (total: number) => string[][];
         }
-      ).invoiceTotalRowCells(8250);
+      ).invoiceTotalRowCells(totalAmountCents);
 
-      expect(cells).toEqual(['', '', 'Gesamtbetrag', '', '', '82,50 €']);
+    it('states the payout as net and gross with the VAT rate between them', () => {
+      const cells = invoiceTotalRowCells(createService(), 8250);
+
+      expect(cells).toEqual([
+        ['', '', 'Nettobetrag', '', '', '82,50 €'],
+        ['', '', 'zzgl. 0 % USt.', '', '', '0,00 €'],
+        ['', '', 'Gesamtbetrag (brutto)', '', '', '82,50 €'],
+      ]);
+    });
+
+    it('states the same figure twice, because a Pauschale carries no VAT', () => {
+      const [net, , gross] = invoiceTotalRowCells(createService(), 12_345);
+
+      expect(net?.[5]).toBe(gross?.[5]);
     });
   });
 

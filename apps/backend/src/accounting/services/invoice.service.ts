@@ -404,11 +404,22 @@ export class InvoiceService {
         selected.reduce((sum, entry) => sum + this.durationHours(entry), 0) *
           100,
       ) / 100;
-    const rateCents = await this.reimbursementRateService.getEffectiveRateCents(
-      organizationId,
-      input.organizationUnitId,
-      input.reimbursementTypeId,
-    );
+    // A coordinator can pay this one timesheet at a different rate — for a
+    // single person or a single month — without moving what the organisation
+    // pays everyone else. The figure below is what the yearly allowance then
+    // counts, because it is what is actually paid out.
+    const rateCents =
+      input.hourlyRateCents ??
+      (await this.reimbursementRateService.getEffectiveRateCents(
+        organizationId,
+        input.organizationUnitId,
+        input.reimbursementTypeId,
+      ));
+    if (!Number.isInteger(rateCents) || rateCents <= 0) {
+      throw new BadRequestGraphQLError(
+        'The hourly rate for this timesheet must be a positive amount in cents',
+      );
+    }
     const totalAmountCents = Math.round(totalHours * rateCents);
 
     const template = await this.documentTemplateService.findActiveTemplate(
@@ -501,6 +512,7 @@ export class InvoiceService {
           periodEnd: input.periodEnd,
           totalAmountCents,
           totalHours,
+          hourlyRateCents: rateCents,
           isNonCompliant: !activeContract,
           resolvedBody: structuredClone(template.body),
           fieldOverrides,

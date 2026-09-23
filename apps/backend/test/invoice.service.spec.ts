@@ -901,6 +901,93 @@ describe('InvoiceService', () => {
       expect(invoice.isNonCompliant).toBe(true);
     });
 
+    it('stores the rate the timesheet was issued at', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup({ rateCents: 1_500 });
+
+      const invoice = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+
+      expect(invoice.hourlyRateCents).toBe(1_500);
+    });
+
+    it('pays one timesheet at its own rate without moving the organisation’s', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup({ rateCents: 1_500 });
+
+      const invoice = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+          hourlyRateCents: 2_500,
+        },
+        supervisor.id,
+      );
+
+      expect(invoice.hourlyRateCents).toBe(2_500);
+      // The payout the yearly allowance counts follows the overridden rate.
+      expect(invoice.totalAmountCents).toBe(4 * 2_500);
+
+      const stillTheOrgRate = await new ReimbursementRateService(
+        db,
+        new OrganizationUnitDataService(db),
+        {} as MembershipService,
+        { capture: () => {} } as unknown as PostHogService,
+      ).getEffectiveRateCents(organization.id, null, reimbursementType.id);
+      expect(stillTheOrgRate).toBe(1_500);
+    });
+
+    it('rejects a rate that is not a positive amount', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+
+      await expect(
+        service.createInvoice(
+          organization.id,
+          {
+            organizationUnitId: null,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            timeEntryIds: [timeEntry.id],
+            periodStart: new Date('2026-07-01T00:00:00.000Z'),
+            periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+            hourlyRateCents: 0,
+          },
+          supervisor.id,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestGraphQLError);
+    });
+
     it('numbers the first timesheet of a body and stores the number on it', async () => {
       const {
         organization,
