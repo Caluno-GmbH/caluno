@@ -1517,7 +1517,7 @@
     },
     "successDialog": {
       "bodyInvited": "Dein Einsatz ist aktiv. Die eingeladenen Freiwilligen sind benachrichtigt.",
-      "bodyOpen": "Dein offener Einsatz ist aktiv. Alle Freiwilligen in deiner Organisation sind benachrichtigt und können sich jetzt anmelden.",
+      "bodyOpen": "Dein offener Einsatz ist aktiv. Alle Freiwilligen deiner Organisationseinheit können ihn jetzt entdecken und sich anmelden.",
       "copyInviteLink": "Einladungslink kopieren",
       "recurrence": {
         "daily": "Täglich",
