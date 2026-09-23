@@ -146,12 +146,15 @@ export function VolunteeringVolunteerRow({
       </Select>
     ) : (
       // Sized like SelectTrigger (data-size drives the height class) so
-      // hiding a row's dropdown never shifts the layout — but deliberately
-      // without its border, shadow or chevron, so it reads as a label
-      // rather than a disabled control.
+      // hiding a row's dropdown never shifts the layout. Keeps a 1px
+      // --border rule, but no shadow and no chevron, so it reads as a
+      // label rather than a disabled control.
       <span
         data-size="default"
-        className={cn(selectTriggerSizingClassName, 'text-foreground')}
+        className={cn(
+          selectTriggerSizingClassName,
+          'border border-border text-foreground',
+        )}
       >
         {statusContent}
       </span>
