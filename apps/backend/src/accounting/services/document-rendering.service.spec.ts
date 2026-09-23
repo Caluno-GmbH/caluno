@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import { inflateSync } from 'node:zlib';
 import { FilePurpose } from '../../storage/enums';
-import { SigneeType } from '../enums';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
+import { SigneeType } from '../enums';
 import {
   DocumentRenderingService,
   letterheadLines,
