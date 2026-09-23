@@ -1788,8 +1788,9 @@
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
     "sheet": {
-      "addressLabel": "Address",
+      "addressLabel": "Street",
       "birthdayLabel": "Birthday",
+      "cityLabel": "City",
       "emailLabel": "Email",
       "formFallback": "Form",
       "idVerification": {
@@ -1804,7 +1805,8 @@
       "qrIdLabel": "QR ID",
       "submittedForms": "Submitted forms",
       "titleFallback": "Volunteer",
-      "userInfo": "Personal information"
+      "userInfo": "Personal information",
+      "zipLabel": "Postal code"
     },
     "table": {
       "email": "Email",

@@ -364,8 +364,8 @@ const ensurePlaygroundOrganization = async (
         contactEmail: 'testing@caluno.org',
         description: 'Local development playground organization',
         address: 'Hauptstraße 1',
-        city: 'Berlin',
         zipCode: '10115',
+        city: 'Berlin',
       })
       .returning();
 
@@ -399,8 +399,8 @@ const ensurePlaygroundOrganization = async (
         description: organization.description,
         coverUrl: ORG_COVER_IMAGE_URL,
         address: 'Hauptstraße 1',
-        city: 'Berlin',
         zipCode: '10115',
+        city: 'Berlin',
         legalRep: 'Max Mustermann',
       })
       .returning();
@@ -1934,7 +1934,7 @@ async function seedFixtures() {
   console.log(`Accounting enabled on ${enabledOrgs.length} organization(s).`);
 
   // Backfill missing unit postal fields so accounting documents have an org
-  // address/city/zip to render (a document with "—" in the footer is a hard
+  // address/zip/city to render (a document with "—" in the footer is a hard
   // dead-end the org can't fix without an edit form). The document renders the
   // UNIT's profile, so patch the org's root unit. Only fills gaps.
   for (const enabledOrg of enabledOrgs) {
@@ -1944,8 +1944,8 @@ async function seedFixtures() {
     if (!rootUnit) continue;
     const patch: Partial<typeof schema.organizationUnits.$inferInsert> = {};
     if (!rootUnit.address) patch.address = 'Hauptstraße 1';
-    if (!rootUnit.city) patch.city = 'Berlin';
     if (!rootUnit.zipCode) patch.zipCode = '10115';
+    if (!rootUnit.city) patch.city = 'Berlin';
     if (!rootUnit.legalRep) patch.legalRep = 'Max Mustermann';
     if (Object.keys(patch).length > 0) {
       await db

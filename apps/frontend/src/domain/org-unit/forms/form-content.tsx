@@ -195,18 +195,6 @@ export function OrgUnitFormContent({
       </Field>
 
       <Field>
-        <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
-        <Input
-          id="city"
-          placeholder={t('cityPlaceholder')}
-          disabled={isPending}
-          aria-invalid={!!errors.city}
-          {...register('city')}
-        />
-        {errors.city && <FieldError>{errors.city.message}</FieldError>}
-      </Field>
-
-      <Field>
         <FieldLabel htmlFor="zipCode">{t('zipCodeLabel')}</FieldLabel>
         <Input
           id="zipCode"
@@ -216,6 +204,18 @@ export function OrgUnitFormContent({
           {...register('zipCode')}
         />
         {errors.zipCode && <FieldError>{errors.zipCode.message}</FieldError>}
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
+        <Input
+          id="city"
+          placeholder={t('cityPlaceholder')}
+          disabled={isPending}
+          aria-invalid={!!errors.city}
+          {...register('city')}
+        />
+        {errors.city && <FieldError>{errors.city.message}</FieldError>}
       </Field>
 
       <Field>

@@ -1,7 +1,7 @@
 export type OrgAddressParts = {
   address?: string | null;
-  city?: string | null;
   zipCode?: string | null;
+  city?: string | null;
 };
 
 /**

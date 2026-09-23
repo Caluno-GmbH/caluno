@@ -27,10 +27,10 @@ export class CreateOrganizationInput {
   address?: string | null;
 
   @Field(() => String, { nullable: true })
-  city?: string | null;
+  zipCode?: string | null;
 
   @Field(() => String, { nullable: true })
-  zipCode?: string | null;
+  city?: string | null;
 
   @Field(() => String, { nullable: true })
   parentId?: string | null;

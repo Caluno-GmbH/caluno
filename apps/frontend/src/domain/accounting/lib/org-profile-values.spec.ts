@@ -54,8 +54,8 @@ describe('missingOrgProfileSourcesForOrg', () => {
     expect(
       missingOrgProfileSourcesForOrg(docWithOrgZip, {
         address: 'Hauptstraße 1',
-        city: 'Berlin',
         zipCode: '',
+        city: 'Berlin',
       }),
     ).toEqual(['org_zip']);
   });
@@ -64,8 +64,8 @@ describe('missingOrgProfileSourcesForOrg', () => {
     expect(
       missingOrgProfileSourcesForOrg(docWithOrgZip, {
         address: 'Hauptstraße 1',
-        city: 'Berlin',
         zipCode: '10115',
+        city: 'Berlin',
       }),
     ).toEqual([]);
   });

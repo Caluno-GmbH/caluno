@@ -2059,7 +2059,7 @@ describe('documents flow — admin + volunteer', () => {
       // The org unit is accounting-enabled but has no city/address yet.
       await db
         .update(schema.organizationUnits)
-        .set({ address: null, city: null, zipCode: null })
+        .set({ address: null, zipCode: null, city: null })
         .where(eq(schema.organizationUnits.id, orgGated.organizationUnitId));
       const body = {
         header: {
@@ -2118,7 +2118,7 @@ describe('documents flow — admin + volunteer', () => {
       // Completing the org unit profile unblocks creation.
       await db
         .update(schema.organizationUnits)
-        .set({ address: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
+        .set({ address: 'Teststraße 1', zipCode: '10115', city: 'Berlin' })
         .where(eq(schema.organizationUnits.id, orgGated.organizationUnitId));
 
       setAuthMockUserId(orgGated.adminId);
@@ -2166,14 +2166,14 @@ describe('documents flow — admin + volunteer', () => {
       });
       await db
         .update(schema.organizationUnits)
-        .set({ address: 'Rootweg 1', city: 'Rootstadt', zipCode: '10111' })
+        .set({ address: 'Rootweg 1', zipCode: '10111', city: 'Rootstadt' })
         .where(eq(schema.organizationUnits.id, rootUnit));
       await db
         .update(schema.organizationUnits)
         .set({
           address: 'Siblingweg 2',
-          city: 'Siblingstadt',
           zipCode: '10122',
+          city: 'Siblingstadt',
         })
         .where(eq(schema.organizationUnits.id, siblingUnit.id));
       // Also make the org row carry a third address to prove the doc uses the unit.
@@ -2405,8 +2405,8 @@ describe('documents flow — admin + volunteer', () => {
         .update(schema.organizationUnits)
         .set({
           address: 'Hauptstraße 1',
-          city: 'Berlin',
           zipCode: '10115',
+          city: 'Berlin',
           legalRep: 'Erika Mustermann',
         })
         .where(eq(schema.organizationUnits.id, rootUnitId));
@@ -2418,8 +2418,8 @@ describe('documents flow — admin + volunteer', () => {
           orgProfile: {
             name: string;
             address: string | null;
-            city: string | null;
             zipCode: string | null;
+            city: string | null;
             legalRep: string | null;
           } | null;
           orgProfileComplete: boolean;
@@ -2443,8 +2443,8 @@ describe('documents flow — admin + volunteer', () => {
       expect(subUnitStatus.accountingSetupStatus.orgProfile).toMatchObject({
         name: 'Sub Unit',
         address: 'Hauptstraße 1',
-        city: 'Berlin',
         zipCode: '10115',
+        city: 'Berlin',
         legalRep: 'Erika Mustermann',
       });
     });

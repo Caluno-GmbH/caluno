@@ -81,8 +81,8 @@ export const updateOrganizationProfile = actionClient
     const input: UpdateOrganizationUnitInput = {
       organizationId: parsedInput.organizationId,
       address: parsedInput.address || null,
-      city: parsedInput.city || null,
       zipCode: parsedInput.zipCode || null,
+      city: parsedInput.city || null,
       legalRep: parsedInput.legalRep || null,
       contactEmail: parsedInput.contactEmail || null,
       phone: parsedInput.phone || null,

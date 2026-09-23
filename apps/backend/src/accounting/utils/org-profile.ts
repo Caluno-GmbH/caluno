@@ -3,8 +3,8 @@ import type { Database } from '../../database/database.module';
 /** Org details a document renders and the accounting gates require. */
 export const INHERITED_ORG_PROFILE_COLUMNS = [
   'address',
-  'city',
   'zipCode',
+  'city',
   'legalRep',
 ] as const;
 
@@ -43,8 +43,8 @@ export function resolveOrgProfileFromUnits(
     id: unit.id,
     name: unit.name,
     address: null,
-    city: null,
     zipCode: null,
+    city: null,
     legalRep: null,
   };
   const fillFrom = (row: UnitRow) => {

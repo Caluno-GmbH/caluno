@@ -33,8 +33,8 @@ export const createOrgUnit = actionClient
       welcomeMessage: parsedInput.welcomeMessage || null,
       description: parsedInput.description || null,
       address: parsedInput.address || null,
-      city: parsedInput.city || null,
       zipCode: parsedInput.zipCode || null,
+      city: parsedInput.city || null,
       legalRep: parsedInput.legalRep || null,
     };
 
@@ -61,8 +61,8 @@ export const updateOrgUnit = actionClient
       welcomeMessage: parsedInput.welcomeMessage || null,
       description: parsedInput.description || null,
       address: parsedInput.address || null,
-      city: parsedInput.city || null,
       zipCode: parsedInput.zipCode || null,
+      city: parsedInput.city || null,
       legalRep: parsedInput.legalRep || null,
     };
 

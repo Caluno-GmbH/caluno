@@ -10,6 +10,7 @@ export interface OrganizationData {
   description?: string | null;
   logoUrl?: string | null;
   address?: string | null;
+  zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;
   accountingEnabled: boolean;

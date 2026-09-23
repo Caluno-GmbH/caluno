@@ -6,8 +6,8 @@ fragment PublicOrganizationUnitFields on OrganizationUnit {
   logoUrl
   coverUrl
   address
-  city
   zipCode
+  city
   memberCount
   openShiftsCount
   myMembershipState

@@ -7,8 +7,8 @@ type UnitFixture = {
   parentId: string | null;
   name: string;
   address?: string | null;
-  city?: string | null;
   zipCode?: string | null;
+  city?: string | null;
   legalRep?: string | null;
   deletedAt?: Date | null;
 };
@@ -39,8 +39,8 @@ describe('resolveOrgProfile', () => {
         parentId: null,
         name: 'Root',
         address: 'Root street 1',
-        city: 'Root city',
         zipCode: '10000',
+        city: 'Root city',
         legalRep: 'Root rep',
       },
       branch: {
@@ -48,8 +48,8 @@ describe('resolveOrgProfile', () => {
         parentId: 'root',
         name: 'Branch',
         address: null,
-        city: '  ',
         zipCode: null,
+        city: '  ',
         legalRep: null,
       },
       leaf: {
@@ -57,8 +57,8 @@ describe('resolveOrgProfile', () => {
         parentId: 'branch',
         name: 'Leaf',
         address: 'Leaf street 2',
-        city: null,
         zipCode: null,
+        city: null,
         legalRep: null,
       },
     };
@@ -69,8 +69,8 @@ describe('resolveOrgProfile', () => {
       id: 'leaf',
       name: 'Leaf',
       address: 'Leaf street 2',
-      city: 'Root city',
       zipCode: '10000',
+      city: 'Root city',
       legalRep: 'Root rep',
     });
   });
@@ -82,8 +82,8 @@ describe('resolveOrgProfile', () => {
         parentId: null,
         name: 'Root',
         address: 'Stale street',
-        city: 'Stale city',
         zipCode: '99999',
+        city: 'Stale city',
         legalRep: 'Stale rep',
         deletedAt: new Date('2025-01-01'),
       },
@@ -92,8 +92,8 @@ describe('resolveOrgProfile', () => {
         parentId: 'root',
         name: 'Leaf',
         address: 'Leaf street 2',
-        city: null,
         zipCode: null,
+        city: null,
         legalRep: null,
       },
     };
@@ -102,8 +102,8 @@ describe('resolveOrgProfile', () => {
 
     expect(profile).toMatchObject({
       address: 'Leaf street 2',
-      city: null,
       zipCode: null,
+      city: null,
       legalRep: null,
     });
   });
@@ -115,8 +115,8 @@ describe('resolveOrgProfile', () => {
         parentId: null,
         name: 'Root',
         address: 'Live street',
-        city: 'Live city',
         zipCode: '10115',
+        city: 'Live city',
         legalRep: 'Live rep',
       },
       middle: {
@@ -124,8 +124,8 @@ describe('resolveOrgProfile', () => {
         parentId: 'root',
         name: 'Middle',
         address: 'Stale street',
-        city: 'Stale city',
         zipCode: '99999',
+        city: 'Stale city',
         legalRep: 'Stale rep',
         deletedAt: new Date('2025-01-01'),
       },
@@ -134,8 +134,8 @@ describe('resolveOrgProfile', () => {
         parentId: 'middle',
         name: 'Leaf',
         address: null,
-        city: null,
         zipCode: null,
+        city: null,
         legalRep: null,
       },
     };
@@ -144,8 +144,8 @@ describe('resolveOrgProfile', () => {
 
     expect(profile).toMatchObject({
       address: 'Live street',
-      city: 'Live city',
       zipCode: '10115',
+      city: 'Live city',
       legalRep: 'Live rep',
     });
   });
@@ -157,8 +157,8 @@ describe('resolveOrgProfile', () => {
         parentId: null,
         name: 'Root',
         address: 'Root street 1',
-        city: 'Root city',
         zipCode: '10000',
+        city: 'Root city',
         legalRep: 'Root rep',
       },
     };

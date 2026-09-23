@@ -26,8 +26,8 @@ interface OrganizationProfileFormProps {
   logoUrl?: string | null;
   organization: {
     address?: string | null;
-    city?: string | null;
     zipCode?: string | null;
+    city?: string | null;
     legalRep?: string | null;
     contactEmail?: string | null;
     phone?: string | null;
@@ -59,8 +59,8 @@ export function OrganizationProfileForm({
       organizationUnitId,
       rootUnitId,
       address: organization.address ?? '',
-      city: organization.city ?? '',
       zipCode: organization.zipCode ?? '',
+      city: organization.city ?? '',
       legalRep: organization.legalRep ?? '',
       contactEmail: organization.contactEmail ?? '',
       phone: organization.phone ?? '',
@@ -111,18 +111,6 @@ export function OrganizationProfileForm({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field>
-            <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
-            <Input
-              id="city"
-              placeholder={t('cityPlaceholder')}
-              disabled={isPending}
-              aria-invalid={!!errors.city}
-              {...register('city')}
-            />
-            {errors.city && <FieldError>{errors.city.message}</FieldError>}
-          </Field>
-
-          <Field>
             <FieldLabel htmlFor="zipCode">{t('zipCodeLabel')}</FieldLabel>
             <Input
               id="zipCode"
@@ -134,6 +122,18 @@ export function OrganizationProfileForm({
             {errors.zipCode && (
               <FieldError>{errors.zipCode.message}</FieldError>
             )}
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
+            <Input
+              id="city"
+              placeholder={t('cityPlaceholder')}
+              disabled={isPending}
+              aria-invalid={!!errors.city}
+              {...register('city')}
+            />
+            {errors.city && <FieldError>{errors.city.message}</FieldError>}
           </Field>
         </div>
 

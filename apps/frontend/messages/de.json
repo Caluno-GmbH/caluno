@@ -1788,8 +1788,9 @@
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
     "sheet": {
-      "addressLabel": "Adresse",
+      "addressLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
+      "cityLabel": "Stadt",
       "emailLabel": "E-Mail",
       "formFallback": "Formular",
       "idVerification": {
@@ -1804,7 +1805,8 @@
       "qrIdLabel": "QR-ID",
       "submittedForms": "Eingereichte Formulare",
       "titleFallback": "Freiwillige:r",
-      "userInfo": "Persönliche Informationen"
+      "userInfo": "Persönliche Informationen",
+      "zipLabel": "PLZ"
     },
     "table": {
       "email": "E-Mail",

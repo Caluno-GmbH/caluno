@@ -3096,7 +3096,7 @@ export type MyDocumentSummaryQuery = { __typename?: 'Query', myDocumentSummary: 
 export type GetAccountingSetupStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAccountingSetupStatusQuery = { __typename?: 'Query', accountingSetupStatus: { __typename?: 'AccountingSetupStatus', orgProfileComplete: boolean, missingOrgProfileFields: Array<string>, canCreateDocuments: boolean, orgProfile?: { __typename?: 'AccountingOrgProfile', name: string, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null } | null, slots: Array<{ __typename?: 'AccountingTemplateSlotStatus', reimbursementTypeId: string, reimbursementTypeKey: ReimbursementTypeKey, hasContractTemplate: boolean, hasInvoiceTemplate: boolean, ready: boolean }> } };
+export type GetAccountingSetupStatusQuery = { __typename?: 'Query', accountingSetupStatus: { __typename?: 'AccountingSetupStatus', orgProfileComplete: boolean, missingOrgProfileFields: Array<string>, canCreateDocuments: boolean, orgProfile?: { __typename?: 'AccountingOrgProfile', name: string, address?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null } | null, slots: Array<{ __typename?: 'AccountingTemplateSlotStatus', reimbursementTypeId: string, reimbursementTypeKey: ReimbursementTypeKey, hasContractTemplate: boolean, hasInvoiceTemplate: boolean, ready: boolean }> } };
 
 export type EventListFieldsFragment = { __typename?: 'Event', id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, coverUrl?: string | null, signedUpCount: number };
 
@@ -3356,14 +3356,14 @@ export type GetOrganizationQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationQuery = { __typename?: 'Query', organization?: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, createdAt: string, updatedAt?: string | null } | null };
+export type GetOrganizationQuery = { __typename?: 'Query', organization?: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, createdAt: string, updatedAt?: string | null } | null };
 
 export type GetOrganizationBySlugQueryVariables = Exact<{
   slug: Scalars['String']['input'];
 }>;
 
 
-export type GetOrganizationBySlugQuery = { __typename?: 'Query', organizationBySlug: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, address?: string | null, createdAt: string } };
+export type GetOrganizationBySlugQuery = { __typename?: 'Query', organizationBySlug: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, createdAt: string } };
 
 export type GetOrganizationRootQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3377,7 +3377,7 @@ export type GetOrganizationUnitQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationUnitQuery = { __typename?: 'Query', organizationUnit?: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, contactPersonName?: string | null, phone?: string | null, welcomeMessage?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, organizationId: string, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null, documents: Array<{ __typename?: 'FormBlockFieldDocument', fileId: string, filename?: string | null, downloadUrl?: string | null }> }> | null } | null }> | null } }>, parent?: { __typename?: 'OrganizationUnit', id: string, name: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } | null };
+export type GetOrganizationUnitQuery = { __typename?: 'Query', organizationUnit?: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, contactPersonName?: string | null, phone?: string | null, welcomeMessage?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, organizationId: string, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null, documents: Array<{ __typename?: 'FormBlockFieldDocument', fileId: string, filename?: string | null, downloadUrl?: string | null }> }> | null } | null }> | null } }>, parent?: { __typename?: 'OrganizationUnit', id: string, name: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } | null };
 
 export type GetOrganizationVolunteersByUnitQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3406,22 +3406,22 @@ export type GetOrganizationsWithRootQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationsWithRootQuery = { __typename?: 'Query', organizations: { __typename?: 'OrganizationPaginatedResponse', items: Array<{ __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, root: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null } }> } };
+export type GetOrganizationsWithRootQuery = { __typename?: 'Query', organizations: { __typename?: 'OrganizationPaginatedResponse', items: Array<{ __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, root: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, zipCode?: string | null, city?: string | null } }> } };
 
 export type GetMyOrganizationUnitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyOrganizationUnitsQuery = { __typename?: 'Query', myOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
+export type GetMyOrganizationUnitsQuery = { __typename?: 'Query', myOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
 
 export type GetMyAdminstableOrganizationUnitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyAdminstableOrganizationUnitsQuery = { __typename?: 'Query', myAdminstableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
+export type GetMyAdminstableOrganizationUnitsQuery = { __typename?: 'Query', myAdminstableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
 
 export type GetMyCheckInAdministrableOrganizationUnitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyCheckInAdministrableOrganizationUnitsQuery = { __typename?: 'Query', myCheckInAdministrableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
+export type GetMyCheckInAdministrableOrganizationUnitsQuery = { __typename?: 'Query', myCheckInAdministrableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
 
 export type GetOrganizationsQueryVariables = Exact<{
   limit: Scalars['Int']['input'];
@@ -3444,7 +3444,7 @@ export type UpdateOrganizationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOrganizationMutation = { __typename?: 'Mutation', updateOrganization: { __typename?: 'Organization', id: string, name: string, address?: string | null, city?: string | null, zipCode?: string | null } };
+export type UpdateOrganizationMutation = { __typename?: 'Mutation', updateOrganization: { __typename?: 'Organization', id: string, name: string, address?: string | null, zipCode?: string | null, city?: string | null } };
 
 export type GetOrganizationTreeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3469,7 +3469,7 @@ export type UpdateOrganizationUnitMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOrganizationUnitMutation = { __typename?: 'Mutation', updateOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, deletedAt?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, parent?: { __typename?: 'OrganizationUnit', id: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } };
+export type UpdateOrganizationUnitMutation = { __typename?: 'Mutation', updateOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, deletedAt?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, parent?: { __typename?: 'OrganizationUnit', id: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } };
 
 export type RequestOrganizationUnitDeletionMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3495,7 +3495,7 @@ export type SetRequiredFormsMutationVariables = Exact<{
 
 export type SetRequiredFormsMutation = { __typename?: 'Mutation', setRequiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null } }> };
 
-export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
+export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
 
 export type PublicOrgEventFieldsFragment = { __typename?: 'Event', id: string, title: string, slug: string, startsAt: string, endsAt: string, location?: string | null, shiftsCount: number, shifts: Array<{ __typename?: 'Shift', id: string, instances: Array<{ __typename?: 'ShiftInstance', id: string, spotsLeft?: number | null }> }> };
 
@@ -3508,7 +3508,7 @@ export type GetPublicOrganizationUnitQueryVariables = Exact<{
 }>;
 
 
-export type GetPublicOrganizationUnitQuery = { __typename?: 'Query', publicOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus } };
+export type GetPublicOrganizationUnitQuery = { __typename?: 'Query', publicOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, zipCode?: string | null, city?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus } };
 
 export type GetPublicEventsByOrganizationUnitQueryVariables = Exact<{
   organizationUnitId: Scalars['ID']['input'];
@@ -4567,8 +4567,8 @@ export const PublicOrganizationUnitFieldsFragmentDoc = gql`
   logoUrl
   coverUrl
   address
-  city
   zipCode
+  city
   memberCount
   openShiftsCount
   myMembershipState
@@ -5103,8 +5103,8 @@ export const GetAccountingSetupStatusDocument = gql`
     orgProfile {
       name
       address
-      city
       zipCode
+      city
       legalRep
     }
     orgProfileComplete
@@ -5573,8 +5573,8 @@ export const GetOrganizationDocument = gql`
     contactEmail
     phone
     address
-    city
     zipCode
+    city
     createdAt
     updatedAt
   }
@@ -5592,6 +5592,8 @@ export const GetOrganizationBySlugDocument = gql`
     contactEmail
     phone
     address
+    zipCode
+    city
     createdAt
   }
 }
@@ -5620,8 +5622,8 @@ export const GetOrganizationUnitDocument = gql`
     phone
     welcomeMessage
     address
-    city
     zipCode
+    city
     legalRep
     idVerificationEnabled
     organizationId
@@ -5739,6 +5741,8 @@ export const GetOrganizationsWithRootDocument = gql`
         description
         logoUrl
         address
+        zipCode
+        city
       }
     }
   }
@@ -5753,6 +5757,7 @@ export const GetMyOrganizationUnitsDocument = gql`
     description
     logoUrl
     address
+    zipCode
     city
     legalRep
     parent {
@@ -5777,6 +5782,7 @@ export const GetMyAdminstableOrganizationUnitsDocument = gql`
     description
     logoUrl
     address
+    zipCode
     city
     legalRep
     parent {
@@ -5801,6 +5807,7 @@ export const GetMyCheckInAdministrableOrganizationUnitsDocument = gql`
     description
     logoUrl
     address
+    zipCode
     city
     legalRep
     parent {
@@ -5858,8 +5865,8 @@ export const UpdateOrganizationDocument = gql`
     id
     name
     address
-    city
     zipCode
+    city
   }
 }
     `;
@@ -5907,8 +5914,8 @@ export const UpdateOrganizationUnitDocument = gql`
     slug
     deletedAt
     address
-    city
     zipCode
+    city
     legalRep
     idVerificationEnabled
     parent {

@@ -38,6 +38,7 @@ function rootOrgUnit(id: string, organizationId: string): MyOrganizationUnit {
     description: null,
     logoUrl: null,
     address: null,
+    zipCode: null,
     city: null,
     legalRep: null,
     organization: {
