@@ -355,6 +355,10 @@ export function ShiftInstanceVolunteersPanel({
 
     if (action === 'Check in') {
       if (!canCheckIn || busyIds.has(volunteerId)) return;
+      const toastId = `check-in-${volunteerId}`;
+      toast.loading(t('checkIn.checkInLoading', { name: invite.user.name }), {
+        id: toastId,
+      });
       markBusy(volunteerId, true);
       startTransition(async () => {
         try {
@@ -364,11 +368,15 @@ export function ShiftInstanceVolunteersPanel({
             shiftInstanceId: instanceId,
           });
           if (result?.serverError) {
-            toast.error(t('checkIn.checkInError'));
+            toast.error(t('checkIn.checkInError'), { id: toastId });
             return;
           }
-          toast.success(t('checkIn.checkInSuccess'));
+          toast.success(t('checkIn.checkInSuccess'), { id: toastId });
           router.refresh();
+        } catch {
+          // See applyStatus: a rejected server action would otherwise strand an
+          // undismissible loading toast.
+          toast.error(t('checkIn.checkInError'), { id: toastId });
         } finally {
           markBusy(volunteerId, false);
         }
@@ -380,6 +388,10 @@ export function ShiftInstanceVolunteersPanel({
       if (!canCheckIn || busyIds.has(volunteerId)) return;
       const entryId = openTimeEntryId(timeEntriesByVolunteer.get(volunteerId));
       if (!entryId) return;
+      const toastId = `check-out-${volunteerId}`;
+      toast.loading(t('checkIn.checkOutLoading', { name: invite.user.name }), {
+        id: toastId,
+      });
       markBusy(volunteerId, true);
       startTransition(async () => {
         try {
@@ -388,11 +400,15 @@ export function ShiftInstanceVolunteersPanel({
             organizationUnitId: orgUId,
           });
           if (result?.serverError) {
-            toast.error(t('checkIn.checkOutError'));
+            toast.error(t('checkIn.checkOutError'), { id: toastId });
             return;
           }
-          toast.success(t('checkIn.volunteerCheckedOut'));
+          toast.success(t('checkIn.volunteerCheckedOut'), { id: toastId });
           router.refresh();
+        } catch {
+          // See applyStatus: a rejected server action would otherwise strand an
+          // undismissible loading toast.
+          toast.error(t('checkIn.checkOutError'), { id: toastId });
         } finally {
           markBusy(volunteerId, false);
         }

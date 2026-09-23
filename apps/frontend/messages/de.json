@@ -1261,9 +1261,11 @@
     },
     "checkIn": {
       "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
+      "checkInLoading": "{name} wird eingecheckt…",
       "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
+      "checkOutLoading": "{name} wird ausgecheckt…",
       "checkOutTitle": "Auschecken",
       "checkedInAt": "Eingecheckt: {time}",
       "checkingOut": "Wird ausgecheckt...",

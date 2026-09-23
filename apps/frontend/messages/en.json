@@ -1261,9 +1261,11 @@
     },
     "checkIn": {
       "checkInError": "Could not check in volunteer",
+      "checkInLoading": "Checking in {name}…",
       "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
+      "checkOutLoading": "Checking out {name}…",
       "checkOutTitle": "Check-out",
       "checkedInAt": "Checked in: {time}",
       "checkingOut": "Checking out...",
