@@ -59,8 +59,6 @@ export type VolunteeringVolunteerListProps = {
   title?: string;
   /** Rendered immediately after the title, e.g. a capacity badge. */
   titleBadge?: ReactNode;
-  /** Header summary, e.g. "5 invited · 12 spots". */
-  summary?: string;
   /** Optional action rendered in the card header (e.g. Invite button). */
   headerAction?: ReactNode;
   /** Localized button labels keyed by action id. */
@@ -128,7 +126,6 @@ export function VolunteeringVolunteerList({
   phase,
   title = 'Volunteers',
   titleBadge,
-  summary,
   headerAction,
   actionLabels,
   onAction,
@@ -142,11 +139,6 @@ export function VolunteeringVolunteerList({
         <CardTitle className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-lg">
           <span>{title}</span>
           {titleBadge}
-          {summary ? (
-            <span className="text-sm font-normal text-muted-foreground">
-              {summary}
-            </span>
-          ) : null}
         </CardTitle>
         {headerAction ? <CardAction>{headerAction}</CardAction> : null}
       </CardHeader>

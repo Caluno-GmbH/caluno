@@ -170,7 +170,7 @@ export const DetailPageBeforeShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="before"
-        summary="1 invited · 2 accepted · 1 waitlisted · 12 spots"
+        titleBadge={<Badge variant="outline">12 spots filled</Badge>}
         volunteers={sampleVolunteers}
       />
     </div>
@@ -184,7 +184,7 @@ export const DetailPageDuringShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="during"
-        summary="2 checked in · 5 accepted"
+        titleBadge={<Badge variant="outline">5 spots filled</Badge>}
         volunteers={[
           { id: '1', name: 'Katharina Zimmer', state: 'checked_in' },
           { id: '2', name: 'Hans Test', state: 'not_checked_in' },
@@ -204,7 +204,7 @@ export const DetailPageAfterShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="after"
-        summary="1 completed · 1 no-show"
+        titleBadge={<Badge variant="outline">4 spots filled</Badge>}
         volunteers={[
           {
             id: '1',
