@@ -794,7 +794,7 @@
     "emailPlatformDescription": "Invitations, joining, cancellations, assignment changes and membership.",
     "emailSettings": "Emails",
     "emailUrgentCalls": "Urgent calls",
-    "emailUrgentCallsDescription": "Urgent call-outs for short-staffed assignments.",
+    "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Weekly update",
     "emailWeeklyUpdateDescription": "The Sunday weekly plan email.",
     "identity": {
@@ -1356,7 +1356,7 @@
         "confirm": "Urgent call",
         "description": "This sends an urgent call to everyone eligible to help with this assignment, asking them to join. It won't add anyone to the assignment.",
         "error": "We couldn't send the urgent call. {error}",
-        "noRecipients": "Nobody was left to ask. We've emailed you instead.",
+        "noRecipients": "Nobody could be notified. We've sent you an email with the details instead.",
         "success": "Urgent call sent to {count, plural, one {# volunteer} other {# volunteers}}.",
         "title": "Send an urgent call?"
       },
