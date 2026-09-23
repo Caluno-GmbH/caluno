@@ -1408,7 +1408,6 @@
       "removeSuccess": "Volunteer removed from this shift",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
-      "notCheckedIn": "Not here yet",
       "pendingApproval": "Pending approval",
       "rejected": "Removed",
       "actionRemindedOn": "Reminded on {when}",
