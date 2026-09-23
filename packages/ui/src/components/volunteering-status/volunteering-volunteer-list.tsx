@@ -30,7 +30,6 @@ export type VolunteeringVolunteerListItem = {
   /** When set, overrides default actions from status presentation. */
   actions?: VolunteeringActionLabel[];
   disabledActions?: VolunteeringActionLabel[];
-  actionTooltips?: VolunteeringActionLabels;
   /** Far-right icon-only actions (e.g. View profile, Check in). */
   iconActions?: VolunteeringActionLabel[];
   actionLabels?: VolunteeringActionLabels;
@@ -103,7 +102,6 @@ function VolunteerRows({
           statusMenuAriaLabel={volunteer.statusMenuAriaLabel}
           actions={volunteer.actions}
           disabledActions={volunteer.disabledActions}
-          actionTooltips={volunteer.actionTooltips}
           iconActions={volunteer.iconActions}
           busy={volunteer.busy}
           actionLabels={

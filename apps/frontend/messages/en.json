@@ -1411,7 +1411,7 @@
       "notCheckedIn": "Not here yet",
       "pendingApproval": "Pending approval",
       "rejected": "Removed",
-      "remindedAtTooltip": "Reminded on {when}",
+      "actionRemindedOn": "Reminded on {when}",
       "remindError": "We couldn't send a reminder to {name}. Please try again.",
       "remindLoading": "Sending reminder to {name}…",
       "remindSuccess": "Reminder sent to volunteer",

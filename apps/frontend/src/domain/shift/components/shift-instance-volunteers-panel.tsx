@@ -211,7 +211,7 @@ export function ShiftInstanceVolunteersPanel({
           ? {
               Remind: remindActive
                 ? t('inviteStatus.actionRemind')
-                : t('inviteStatus.remindedAtTooltip', {
+                : t('inviteStatus.actionRemindedOn', {
                     when: `${formatDate(new Date(invite.remindedAt as string), {
                       month: 'numeric',
                       day: 'numeric',
@@ -220,17 +220,6 @@ export function ShiftInstanceVolunteersPanel({
             }
           : {}),
       },
-      actionTooltips:
-        remindVisible && invite.remindedAt
-          ? {
-              Remind: t('inviteStatus.remindedAtTooltip', {
-                when: `${formatDate(new Date(invite.remindedAt), {
-                  month: 'numeric',
-                  day: 'numeric',
-                })}, ${formatTime(new Date(invite.remindedAt))}`,
-              }),
-            }
-          : undefined,
       iconActions: ['View'],
       busy: busyIds.has(invite.user.id),
     };

@@ -1411,7 +1411,7 @@
       "notCheckedIn": "Noch nicht da",
       "pendingApproval": "Genehmigung ausstehend",
       "rejected": "Entfernt",
-      "remindedAtTooltip": "Erinnert am {when}",
+      "actionRemindedOn": "Erinnert am {when}",
       "remindError": "Die Erinnerung an {name} ließ sich nicht senden. Versuch es bitte erneut.",
       "remindLoading": "Erinnerung an {name} wird gesendet…",
       "remindSuccess": "Erinnerung an Freiwillige:n gesendet",
