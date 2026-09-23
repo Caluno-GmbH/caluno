@@ -407,11 +407,17 @@ export function RequiredFormRenderer({
             one label needs more than half the row it pushes the other onto a
             second line, where growing fills the full width. Tracks the real
             label widths rather than guessing a viewport at which German or
-            English stops fitting. */}
+            English stops fitting.
+
+            The basis subtracts a whole gap rather than the half the arithmetic
+            calls for: at exactly 50% minus half a gap the pair totals precisely
+            100%, and on a container of odd pixel width each button rounds up
+            and the row wraps although it fits. The extra gap is slack against
+            that rounding. */}
         <div className="flex flex-wrap gap-2 border-t pt-4">
           <Button
             variant="outline"
-            className="grow basis-[calc(50%-0.25rem)]"
+            className="grow basis-[calc(50%-0.5rem)]"
             onClick={handlePrevious}
             disabled={isFirstStep || isSubmitting}
           >
@@ -421,7 +427,7 @@ export function RequiredFormRenderer({
 
           {isLastStep ? (
             <Button
-              className="grow basis-[calc(50%-0.25rem)]"
+              className="grow basis-[calc(50%-0.5rem)]"
               onClick={handleSubmitAll}
               disabled={isSubmitting}
             >
@@ -432,7 +438,7 @@ export function RequiredFormRenderer({
             </Button>
           ) : (
             <Button
-              className="grow basis-[calc(50%-0.25rem)]"
+              className="grow basis-[calc(50%-0.5rem)]"
               onClick={handleNext}
             >
               {tCommon('next')}
