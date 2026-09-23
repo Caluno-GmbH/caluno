@@ -8,11 +8,6 @@ export const DEFAULT_LOCALE: Locale = 'de';
 
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
-/** The other supported UI locale (en ↔ de). Used by the logged-out auth toggle. */
-export function otherLocale(locale: string): Locale {
-  return locale === 'de' ? 'en' : 'de';
-}
-
 export const RECURRENCE_DAYS = [
   { label: 'Mon', value: 'MONDAY' as const },
   { label: 'Tue', value: 'TUESDAY' as const },
