@@ -67,6 +67,7 @@ function VolunteerSheetContent({
   status,
   email,
   checkInId,
+  canRemoveMembership,
   onRemoved,
 }: {
   userId: string;
@@ -74,6 +75,16 @@ function VolunteerSheetContent({
   status: MembershipRequestStatus;
   email: string;
   checkInId: string;
+  /**
+   * Whether removing the volunteer from the organisation is offered here.
+   *
+   * Opt-in, because the action is destructive and its meaning depends on where
+   * the sheet was opened from. Opened beside an assignment or an event, a
+   * "Remove" button reads as removing the person from that assignment; it
+   * actually ends their membership of the organisation. Only the volunteers
+   * list, where managing membership is the point of the screen, asks for it.
+   */
+  canRemoveMembership: boolean;
   onRemoved: () => void;
 }) {
   const t = useTranslations('Volunteer.sheet');
@@ -180,7 +191,7 @@ function VolunteerSheetContent({
         )}
       </div>
 
-      {membership && (
+      {membership && canRemoveMembership && (
         <>
           <Separator />
           <RemoveMembershipButton
@@ -204,6 +215,7 @@ export function VolunteerSheet() {
     'volunteerStatus',
     'volunteerEmail',
     'volunteerCheckInId',
+    'canRemoveMembership',
   );
 
   const userId = getParam('userId') ?? '';
@@ -213,6 +225,9 @@ export function VolunteerSheet() {
     MembershipRequestStatus.Pending;
   const email = getParam('volunteerEmail') ?? '';
   const checkInId = getParam('volunteerCheckInId') ?? '';
+  // Absent means no: a caller that does not ask for the destructive action
+  // does not get it.
+  const canRemoveMembership = getParam('canRemoveMembership') === 'true';
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
@@ -229,6 +244,7 @@ export function VolunteerSheet() {
               status={status}
               email={email}
               checkInId={checkInId}
+              canRemoveMembership={canRemoveMembership}
               onRemoved={close}
             />
           )}
