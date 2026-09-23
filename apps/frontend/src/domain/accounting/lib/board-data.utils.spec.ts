@@ -243,7 +243,7 @@ describe('mapSignatureToSignee', () => {
       },
       'contract',
     );
-    expect(signee.signedByName).toBe('Boo Boo');
+    expect(signee.signedByName).toBe('Boo-Boo');
   });
 
   it('leaves the signing users name empty, when the agreement has not signed', () => {
