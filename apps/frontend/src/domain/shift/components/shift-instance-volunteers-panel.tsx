@@ -206,6 +206,12 @@ export function ShiftInstanceVolunteersPanel({
         View: t('inviteStatus.viewProfileAriaNamed', {
           name: invite.user.name,
         }),
+        'Check in': t('inviteStatus.checkInAriaNamed', {
+          name: invite.user.name,
+        }),
+        'Check out': t('inviteStatus.checkOutAriaNamed', {
+          name: invite.user.name,
+        }),
         ...(remindVisible
           ? {
               Remind: remindActive

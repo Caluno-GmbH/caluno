@@ -1397,6 +1397,7 @@
       "cancelled": "Withdrawn",
       "changeStatusAria": "Change status for {name}",
       "checkInAriaNamed": "Check in {name}",
+      "checkOutAriaNamed": "Check out {name}",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
       "checkedIn": "Checked in",
