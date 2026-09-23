@@ -691,8 +691,8 @@
       "partOf": "Part of "
     },
     "form": {
-      "addressLabel": "Address",
-      "addressPlaceholder": "e.g. Musterstraße 1, Berlin",
+      "addressLabel": "Street name and number",
+      "addressPlaceholder": "e.g. Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "e.g. Berlin",
       "zipCodeLabel": "Postal code",
@@ -750,8 +750,12 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Address",
-      "addressPlaceholder": "Musterstraße 1, 10115 Berlin",
+      "addressLabel": "Street name and number",
+      "addressPlaceholder": "e.g. Musterstraße 1",
+      "zipCodeLabel": "Postal code",
+      "zipCodePlaceholder": "e.g. 10115",
+      "cityLabel": "City",
+      "cityPlaceholder": "e.g. Berlin",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "What does your organisation do?",
       "emailLabel": "Email",
@@ -987,7 +991,7 @@
     },
     "fieldForm": {
       "add": "Add",
-      "address": "Address",
+      "address": "Street name and number",
       "birthDate": "Birth date",
       "cancel": "Cancel",
       "checkbox": "Checkbox",
@@ -1212,7 +1216,7 @@
     "organizationProfile": {
       "title": "Organisation profile",
       "subtitle": "Update your organisation's address and contact details.",
-      "addressLabel": "Organisation address",
+      "addressLabel": "Street name and number",
       "addressPlaceholder": "Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "Berlin",

@@ -26,6 +26,8 @@ export async function createOrganization(
   const phone = formData.get('phone') as string;
   const websiteUrl = formData.get('websiteUrl') as string;
   const address = formData.get('address') as string;
+  const zipCode = formData.get('zipCode') as string;
+  const city = formData.get('city') as string;
   const logoFileId = (formData.get('logoFileId') as string) || undefined;
 
   if (!name) {
@@ -39,6 +41,8 @@ export async function createOrganization(
     phone: phone || undefined,
     websiteUrl: websiteUrl || undefined,
     address: address || undefined,
+    zipCode: zipCode || undefined,
+    city: city || undefined,
     logoFileId: logoFileId || null,
   };
 

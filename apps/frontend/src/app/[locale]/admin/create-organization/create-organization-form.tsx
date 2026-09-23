@@ -121,6 +121,34 @@ export function CreateOrganizationForm() {
             disabled={isPending}
           />
         </div>
+
+        <div>
+          <label htmlFor="zipCode" className="block text-sm font-medium">
+            {t('zipCodeLabel')}
+          </label>
+          <Input
+            id="zipCode"
+            name="zipCode"
+            type="text"
+            className="mt-1"
+            placeholder={t('zipCodePlaceholder')}
+            disabled={isPending}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="city" className="block text-sm font-medium">
+            {t('cityLabel')}
+          </label>
+          <Input
+            id="city"
+            name="city"
+            type="text"
+            className="mt-1"
+            placeholder={t('cityPlaceholder')}
+            disabled={isPending}
+          />
+        </div>
       </div>
 
       <Button type="submit" disabled={isPending} className="w-full">

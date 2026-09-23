@@ -691,8 +691,8 @@
       "partOf": "Teil von "
     },
     "form": {
-      "addressLabel": "Adresse",
-      "addressPlaceholder": "z. B. Musterstraße 1, Berlin",
+      "addressLabel": "Straße und Hausnummer",
+      "addressPlaceholder": "z. B. Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "z. B. Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -750,8 +750,12 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Adresse",
-      "addressPlaceholder": "Musterstraße 1, 12345 Berlin",
+      "addressLabel": "Straße und Hausnummer",
+      "addressPlaceholder": "z. B. Musterstraße 1",
+      "zipCodeLabel": "Postleitzahl",
+      "zipCodePlaceholder": "z. B. 10115",
+      "cityLabel": "Stadt",
+      "cityPlaceholder": "z. B. Berlin",
       "descriptionLabel": "Beschreibung",
       "descriptionPlaceholder": "Wofür steht deine Organisation?",
       "emailLabel": "E-Mail",
@@ -987,7 +991,7 @@
     },
     "fieldForm": {
       "add": "Hinzufügen",
-      "address": "Adresse",
+      "address": "Straße und Hausnummer",
       "birthDate": "Geburtsdatum",
       "cancel": "Abbrechen",
       "checkbox": "Checkbox",
@@ -1212,7 +1216,7 @@
     "organizationProfile": {
       "title": "Organisationsprofil",
       "subtitle": "Aktualisiere die Adresse und Kontaktdaten deiner Organisation.",
-      "addressLabel": "Adresse der Organisation",
+      "addressLabel": "Straße und Hausnummer",
       "addressPlaceholder": "Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "Berlin",
