@@ -11,7 +11,7 @@ import {
 } from '@repo/ui';
 import { Megaphone, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
   checkInVolunteer,
@@ -83,7 +83,21 @@ export function ShiftInstanceVolunteersPanel({
   const tVolunteer = useTranslations('Volunteer.action');
   const router = useRouter();
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+
+  const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set());
+
+  const markBusy = (volunteerId: string, busy: boolean) => {
+    setBusyIds((current) => {
+      const next = new Set(current);
+      if (busy) {
+        next.add(volunteerId);
+      } else {
+        next.delete(volunteerId);
+      }
+      return next;
+    });
+  };
 
   const timeEntriesByVolunteer = groupTimeEntriesByVolunteer(timeEntries);
 
@@ -205,7 +219,8 @@ export function ShiftInstanceVolunteersPanel({
               }),
             }
           : undefined,
-      iconActions: ['View'],
+      iconActions: ['View', 'Check in'],
+      busy: busyIds.has(invite.user.id),
     };
   });
 
@@ -253,33 +268,55 @@ export function ShiftInstanceVolunteersPanel({
   };
 
   const applyStatus = (invite: InstanceInvite, target: ShiftInviteStatus) => {
-    if (!canManage || pending) {
+    const volunteerId = invite.user.id;
+    if (!canManage || busyIds.has(volunteerId)) {
       return;
     }
 
-    startTransition(async () => {
-      const result = await updateShiftInstanceInviteStatus(orgUId, instanceId, {
-        userId: invite.user.id,
-        status: target,
-      });
-      if (result?.serverError) {
-        toast.error(t('inviteStatus.statusChangeError'));
-        return;
-      }
+    const toastId = `status-${volunteerId}`;
+    toast.loading(
+      t('inviteStatus.statusChangeLoading', { name: invite.user.name }),
+      { id: toastId },
+    );
+    markBusy(volunteerId, true);
 
-      if (
-        target === ShiftInviteStatus.Joined &&
-        result?.data?.status === ShiftInviteStatus.WaitlistJoined
-      ) {
-        toast.success(t('inviteStatus.approveWaitlistedSuccess'));
-      } else if (target === ShiftInviteStatus.Joined) {
-        toast.success(t('inviteStatus.approveSuccess'));
-      } else if (target === ShiftInviteStatus.AdminInvited) {
-        toast.success(t('inviteStatus.inviteSuccess'));
-      } else if (target === ShiftInviteStatus.AdminRejected) {
-        toast.success(t('inviteStatus.removeSuccess'));
+    startTransition(async () => {
+      try {
+        const result = await updateShiftInstanceInviteStatus(
+          orgUId,
+          instanceId,
+          { userId: volunteerId, status: target },
+        );
+
+        if (result?.serverError) {
+          toast.error(
+            t('inviteStatus.statusChangeError', { name: invite.user.name }),
+            { id: toastId },
+          );
+          return;
+        }
+
+        if (
+          target === ShiftInviteStatus.Joined &&
+          result?.data?.status === ShiftInviteStatus.WaitlistJoined
+        ) {
+          toast.success(t('inviteStatus.approveWaitlistedSuccess'), {
+            id: toastId,
+          });
+        } else if (target === ShiftInviteStatus.Joined) {
+          toast.success(t('inviteStatus.approveSuccess'), { id: toastId });
+        } else if (target === ShiftInviteStatus.AdminInvited) {
+          toast.success(t('inviteStatus.inviteSuccess'), { id: toastId });
+        } else if (target === ShiftInviteStatus.AdminRejected) {
+          toast.success(t('inviteStatus.removeSuccess'), { id: toastId });
+        } else {
+          toast.dismiss(toastId);
+        }
+
+        router.refresh();
+      } finally {
+        markBusy(volunteerId, false);
       }
-      router.refresh();
     });
   };
 
@@ -295,38 +332,48 @@ export function ShiftInstanceVolunteersPanel({
     }
 
     if (action === 'Check in') {
-      if (!canCheckIn || pending) return;
+      if (!canCheckIn || busyIds.has(volunteerId)) return;
+      markBusy(volunteerId, true);
       startTransition(async () => {
-        const result = await checkInVolunteer({
-          organizationUnitId: orgUId,
-          volunteerId,
-          shiftInstanceId: instanceId,
-        });
-        if (result?.serverError) {
-          toast.error(t('checkIn.checkInError'));
-          return;
+        try {
+          const result = await checkInVolunteer({
+            organizationUnitId: orgUId,
+            volunteerId,
+            shiftInstanceId: instanceId,
+          });
+          if (result?.serverError) {
+            toast.error(t('checkIn.checkInError'));
+            return;
+          }
+          toast.success(t('checkIn.checkInSuccess'));
+          router.refresh();
+        } finally {
+          markBusy(volunteerId, false);
         }
-        toast.success(t('checkIn.checkInSuccess'));
-        router.refresh();
       });
       return;
     }
 
     if (action === 'Check out') {
-      if (!canCheckIn || pending) return;
+      if (!canCheckIn || busyIds.has(volunteerId)) return;
       const entryId = openTimeEntryId(timeEntriesByVolunteer.get(volunteerId));
       if (!entryId) return;
+      markBusy(volunteerId, true);
       startTransition(async () => {
-        const result = await checkOutVolunteer({
-          timeEntryId: entryId,
-          organizationUnitId: orgUId,
-        });
-        if (result?.serverError) {
-          toast.error(t('checkIn.checkOutError'));
-          return;
+        try {
+          const result = await checkOutVolunteer({
+            timeEntryId: entryId,
+            organizationUnitId: orgUId,
+          });
+          if (result?.serverError) {
+            toast.error(t('checkIn.checkOutError'));
+            return;
+          }
+          toast.success(t('checkIn.volunteerCheckedOut'));
+          router.refresh();
+        } finally {
+          markBusy(volunteerId, false);
         }
-        toast.success(t('checkIn.volunteerCheckedOut'));
-        router.refresh();
       });
       return;
     }
@@ -337,22 +384,39 @@ export function ShiftInstanceVolunteersPanel({
     }
 
     if (action === 'Remind') {
-      if (!canManage || pending) {
+      if (!canManage || busyIds.has(volunteerId)) {
         return;
       }
       if (!canRemindInvitee(invite.status, invite.remindedAt)) {
         return;
       }
+
+      const toastId = `remind-${volunteerId}`;
+      toast.loading(
+        t('inviteStatus.remindLoading', { name: invite.user.name }),
+        { id: toastId },
+      );
+      markBusy(volunteerId, true);
+
       startTransition(async () => {
-        const result = await remindShiftInstanceInvite(orgUId, instanceId, {
-          userId: volunteerId,
-        });
-        if (result?.serverError) {
-          toast.error(t('inviteStatus.remindError'));
-          return;
+        try {
+          const result = await remindShiftInstanceInvite(orgUId, instanceId, {
+            userId: volunteerId,
+          });
+
+          if (result?.serverError) {
+            toast.error(
+              t('inviteStatus.remindError', { name: invite.user.name }),
+              { id: toastId },
+            );
+            return;
+          }
+
+          toast.success(t('inviteStatus.remindSuccess'), { id: toastId });
+          router.refresh();
+        } finally {
+          markBusy(volunteerId, false);
         }
-        toast.success(t('inviteStatus.remindSuccess'));
-        router.refresh();
       });
       return;
     }
