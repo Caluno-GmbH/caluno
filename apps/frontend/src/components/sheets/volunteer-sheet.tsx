@@ -139,7 +139,7 @@ function VolunteerSheetContent({
         ) : (
           <div className="space-y-2">
             <InfoRow label={t('emailLabel')} value={email} />
-            {address && <InfoRow label={t('addressLabel')} value={address} />}
+            {address && <InfoRow label={t('streetLabel')} value={address} />}
             {zip && <InfoRow label={t('zipLabel')} value={zip} />}
             {city && <InfoRow label={t('cityLabel')} value={city} />}
             {birthday && (

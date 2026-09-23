@@ -98,7 +98,7 @@ export function OrganizationProfileForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-4 rounded-lg border bg-card p-6">
         <Field>
-          <FieldLabel htmlFor="address">{t('addressLabel')}</FieldLabel>
+          <FieldLabel htmlFor="address">{t('streetLabel')}</FieldLabel>
           <Input
             id="address"
             placeholder={t('addressPlaceholder')}

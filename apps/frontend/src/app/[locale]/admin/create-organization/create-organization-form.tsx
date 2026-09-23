@@ -110,7 +110,7 @@ export function CreateOrganizationForm() {
 
         <div>
           <label htmlFor="address" className="block text-sm font-medium">
-            {t('addressLabel')}
+            {t('streetLabel')}
           </label>
           <Input
             id="address"

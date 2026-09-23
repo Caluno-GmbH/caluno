@@ -691,7 +691,7 @@
       "partOf": "Part of "
     },
     "form": {
-      "addressLabel": "Street name and number",
+      "streetLabel": "Street name and number",
       "addressPlaceholder": "e.g. Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "e.g. Berlin",
@@ -750,7 +750,7 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Street name and number",
+      "streetLabel": "Street name and number",
       "addressPlaceholder": "e.g. Musterstraße 1",
       "zipCodeLabel": "Postal code",
       "zipCodePlaceholder": "e.g. 10115",
@@ -1216,7 +1216,7 @@
     "organizationProfile": {
       "title": "Organisation profile",
       "subtitle": "Update your organisation's address and contact details.",
-      "addressLabel": "Street name and number",
+      "streetLabel": "Street name and number",
       "addressPlaceholder": "Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "Berlin",
@@ -1788,7 +1788,7 @@
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
     "sheet": {
-      "addressLabel": "Street",
+      "streetLabel": "Street",
       "birthdayLabel": "Birthday",
       "cityLabel": "City",
       "emailLabel": "Email",

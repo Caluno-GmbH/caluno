@@ -691,7 +691,7 @@
       "partOf": "Teil von "
     },
     "form": {
-      "addressLabel": "Straße und Hausnummer",
+      "streetLabel": "Straße und Hausnummer",
       "addressPlaceholder": "z. B. Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "z. B. Berlin",
@@ -750,7 +750,7 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Straße und Hausnummer",
+      "streetLabel": "Straße und Hausnummer",
       "addressPlaceholder": "z. B. Musterstraße 1",
       "zipCodeLabel": "Postleitzahl",
       "zipCodePlaceholder": "z. B. 10115",
@@ -1216,7 +1216,7 @@
     "organizationProfile": {
       "title": "Organisationsprofil",
       "subtitle": "Aktualisiere die Adresse und Kontaktdaten deiner Organisation.",
-      "addressLabel": "Straße und Hausnummer",
+      "streetLabel": "Straße und Hausnummer",
       "addressPlaceholder": "Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "Berlin",
@@ -1788,7 +1788,7 @@
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
     "sheet": {
-      "addressLabel": "Strasse",
+      "streetLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
       "cityLabel": "Stadt",
       "emailLabel": "E-Mail",

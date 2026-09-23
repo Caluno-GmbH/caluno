@@ -183,7 +183,7 @@ export function OrgUnitFormContent({
       />
 
       <Field>
-        <FieldLabel htmlFor="address">{t('addressLabel')}</FieldLabel>
+        <FieldLabel htmlFor="address">{t('streetLabel')}</FieldLabel>
         <Input
           id="address"
           placeholder={t('addressPlaceholder')}
