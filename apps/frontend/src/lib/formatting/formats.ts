@@ -27,6 +27,20 @@ const supportedLocales: Record<string, Locale> = {
 const getLocale = (locale: string): Locale =>
   supportedLocales[locale.toLocaleLowerCase()] ?? de;
 
+/**
+ * Regional tags for the Intl paths below, kept in step with `supportedLocales`.
+ * A bare "en" resolves to en-US in Intl, which is month-first, while date-fns
+ * uses enGB, which is day-first. That split made one helper render the same
+ * date two ways: "9/12" from the options path and "12/09/2026" without.
+ */
+const supportedIntlLocales: Record<string, string> = {
+  en: 'en-GB',
+  de: 'de-DE',
+};
+
+const getIntlLocale = (locale: string): string =>
+  supportedIntlLocales[locale.toLocaleLowerCase()] ?? 'de-DE';
+
 export const formats = (locale: string) => {
   const format = (date: Date, formatting: string) =>
     dateFnsFormat(date, formatting, {
@@ -36,7 +50,7 @@ export const formats = (locale: string) => {
 
   const formatDate = (date: Date, options?: Intl.DateTimeFormatOptions) => {
     if (options) {
-      return new Intl.DateTimeFormat(locale, {
+      return new Intl.DateTimeFormat(getIntlLocale(locale), {
         timeZone: DEFAULT_TIMEZONE,
         ...options,
       }).format(date);
@@ -72,7 +86,7 @@ export const formats = (locale: string) => {
     const fromDate = new Date(from);
     const toDate = new Date(to);
 
-    return new Intl.DateTimeFormat(locale, {
+    return new Intl.DateTimeFormat(getIntlLocale(locale), {
       timeZone: DEFAULT_TIMEZONE,
       day: 'numeric',
       month: 'long',

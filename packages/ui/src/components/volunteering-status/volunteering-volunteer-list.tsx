@@ -80,6 +80,13 @@ function VolunteerRows({
   onAction?: (volunteerId: string, action: VolunteeringActionLabel) => void;
   onStatusChange?: (volunteerId: string, value: string) => void;
 }) {
+  // An empty ul still announces "list, 0 items", which is noise rather than
+  // information. The grouped branch filters empty groups out before this point;
+  // the flat branch does not, so guard here.
+  if (volunteers.length === 0) {
+    return null;
+  }
+
   return (
     <ul className="list-none">
       {volunteers.map((volunteer) => (

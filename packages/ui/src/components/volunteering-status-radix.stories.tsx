@@ -393,7 +393,7 @@ export const SurfaceComparison: Story = {
       </div>
       <div className="space-y-2">
         <p className="text-sm font-semibold">Instance detail</p>
-        <ul className="list-none">
+        <ul className="list-none rounded-xl border px-4">
           <VolunteeringVolunteerRow
             name="Tom Becker"
             state="requested"
