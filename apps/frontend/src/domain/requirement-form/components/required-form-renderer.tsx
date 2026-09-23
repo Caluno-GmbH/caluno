@@ -399,25 +399,20 @@ export function RequiredFormRenderer({
           />
         </div>
 
-        {/* Buttons carry whitespace-nowrap and shrink-0, so neither label can
-            wrap or shrink and a row that does not fit overflows the viewport.
-            Each button is given a half-width basis and allowed to grow, with no
-            breakpoint involved: while both halves are wide enough for their
-            labels the two sit side by side at matching widths, and as soon as
-            one label needs more than half the row it pushes the other onto a
-            second line, where growing fills the full width. Tracks the real
-            label widths rather than guessing a viewport at which German or
-            English stops fitting.
+        {/* Buttons keep shrink-0 + nowrap so labels stay full-width while
+            side-by-side. Each has a half-width basis and may grow; when a
+            label needs more than half the row, flex-wrap stacks them and
+            grow fills the full width. max-w-full caps a stacked button at
+            the container; only then does the submit label truncate.
 
-            The basis subtracts a whole gap rather than the half the arithmetic
-            calls for: at exactly 50% minus half a gap the pair totals precisely
-            100%, and on a container of odd pixel width each button rounds up
-            and the row wraps although it fits. The extra gap is slack against
-            that rounding. */}
+            The basis subtracts a whole gap rather than half: at exactly 50%
+            minus half a gap the pair totals 100%, and on an odd-pixel-wide
+            container each button rounds up and the row wraps although it fits.
+            The extra gap is slack against that rounding. */}
         <div className="flex flex-wrap gap-2 border-t pt-4">
           <Button
             variant="outline"
-            className="grow basis-[calc(50%-0.5rem)]"
+            className="max-w-full grow basis-[calc(50%-0.5rem)]"
             onClick={handlePrevious}
             disabled={isFirstStep || isSubmitting}
           >
@@ -427,18 +422,20 @@ export function RequiredFormRenderer({
 
           {isLastStep ? (
             <Button
-              className="grow basis-[calc(50%-0.5rem)]"
+              className="max-w-full grow basis-[calc(50%-0.5rem)]"
               onClick={handleSubmitAll}
               disabled={isSubmitting}
             >
               {isSubmitting && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
               )}
-              {isSubmitting ? t('submittingAll') : t('submitAll')}
+              <span className="min-w-0 truncate">
+                {isSubmitting ? t('submittingAll') : t('submitAll')}
+              </span>
             </Button>
           ) : (
             <Button
-              className="grow basis-[calc(50%-0.5rem)]"
+              className="max-w-full grow basis-[calc(50%-0.5rem)]"
               onClick={handleNext}
             >
               {tCommon('next')}
