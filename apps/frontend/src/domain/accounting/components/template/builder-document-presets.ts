@@ -167,7 +167,7 @@ export function getContractDocument(
         lines: [
           line(
             'hours-scope',
-            'Zeitraum: {contractLifespan}  Stundenzahl pro {hoursUnit}: ca. {hoursAmount}',
+            'Zeitraum: {contractLifespan}  Stundenzahl pro {hoursUnit}: in der Regel {hoursAmount}',
             [
               contractLifespan,
               manual('hours-unit', 'Monat', 'unit-tabs'),
@@ -316,7 +316,7 @@ export function getInvoiceDocument(
         locked: true,
         line: line(
           'jahresdeckel-hinweis-line',
-          '{volunteerFirstName} {volunteerLastName} hat im Zeitraum {alreadyReceivedPeriod} bereits {alreadyReceivedAmount} vom Jahresdeckel in Höhe von {yearlyLimitAmount} erhalten.',
+          '{volunteerFirstName} {volunteerLastName} hat im Zeitraum {alreadyReceivedPeriod} bereits {alreadyReceivedAmount} vom Jahresfreibetrag in Höhe von {yearlyLimitAmount} erhalten.',
           [
             bound('jahresdeckel-volunteer-first', 'volunteer_first_name'),
             bound('jahresdeckel-volunteer-last', 'volunteer_last_name'),
