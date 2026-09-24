@@ -37,6 +37,7 @@ import {
   createCompletedTimeEntry,
   createReimbursementType,
   createTwoStepTemplate,
+  stubInvoiceDocumentNumber,
 } from './factories/accounting.factory';
 import {
   addMembership,
@@ -373,6 +374,7 @@ describe('InvoiceService', () => {
           totalHours: 0,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(root.id),
         })
         .returning();
       if (!draft) throw new Error('failed to insert draft invoice');

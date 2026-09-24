@@ -28,6 +28,7 @@ import { PostHogService } from '../src/shared/observability/posthog.service';
 import {
   createDocumentTemplate,
   createReimbursementType,
+  stubInvoiceDocumentNumber,
 } from './factories/accounting.factory';
 import {
   addMembership,
@@ -558,10 +559,7 @@ describe('ReimbursementRateService', () => {
       const reimbursementType = await createReimbursementType(db, {
         yearlyLimitCents: 84_000,
       });
-      const { organization } = await createOrganizationWithType(
-        db,
-        `Yearly Usage Org ${crypto.randomUUID()}`,
-      );
+      const { organization, root } = await setupOrgWithRootUnit();
       const volunteer = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
@@ -586,6 +584,7 @@ describe('ReimbursementRateService', () => {
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: overrides.invoiceStatus,
           hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(root.id),
         });
 
       await insertInvoice({
@@ -618,7 +617,7 @@ describe('ReimbursementRateService', () => {
     });
 
     it('adds a manual baseline on top of tracked invoices for the same year', async () => {
-      const { organization } = await setupOrgWithRootUnit();
+      const { organization, root } = await setupOrgWithRootUnit();
       const reimbursementType = await createReimbursementType(db, {
         yearlyLimitCents: 84_000,
       });
@@ -641,6 +640,7 @@ describe('ReimbursementRateService', () => {
         resolvedBody: { header: {}, blocks: [], footer: {} },
         invoiceStatus: InvoiceStatus.READY,
         hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(root.id),
       });
       await service.setManualBaseline(
         organization.id,
@@ -668,10 +668,7 @@ describe('ReimbursementRateService', () => {
       const reimbursementType = await createReimbursementType(db, {
         yearlyLimitCents: 84_000,
       });
-      const { organization } = await createOrganizationWithType(
-        db,
-        `Yearly Usage Cutoff Org ${crypto.randomUUID()}`,
-      );
+      const { organization, root } = await setupOrgWithRootUnit();
       const volunteer = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
@@ -696,6 +693,7 @@ describe('ReimbursementRateService', () => {
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
           hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(root.id),
         });
 
       // January and March payouts land before the July cutoff; August lands after.
@@ -736,10 +734,7 @@ describe('ReimbursementRateService', () => {
         const reimbursementType = await createReimbursementType(db, {
           yearlyLimitCents: 84_000,
         });
-        const { organization } = await createOrganizationWithType(
-          db,
-          `Yearly Usage Exclude Org ${crypto.randomUUID()}`,
-        );
+        const { organization, root } = await setupOrgWithRootUnit();
         const volunteer = await createUser(db);
         const template = await createDocumentTemplate(db, {
           organizationId: organization.id,
@@ -764,6 +759,7 @@ describe('ReimbursementRateService', () => {
               resolvedBody: { header: {}, blocks: [], footer: {} },
               invoiceStatus: InvoiceStatus.READY,
               hourlyRateCents: 1000,
+              ...stubInvoiceDocumentNumber(root.id),
             })
             .returning();
           return invoice;
@@ -861,6 +857,7 @@ describe('ReimbursementRateService', () => {
         resolvedBody: { header: {}, blocks: [], footer: {} },
         invoiceStatus: InvoiceStatus.READY,
         hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(unit.id),
       });
 
       const usage = await service.getRosterYearlyUsage(unit.id, 2026);
@@ -934,6 +931,7 @@ describe('ReimbursementRateService', () => {
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: overrides.invoiceStatus,
           hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(unit.id),
         });
 
       // volunteerA: 5_000 ehrenamt (counted) + 2_000 declined ehrenamt (excluded)
@@ -1246,6 +1244,7 @@ describe('ReimbursementRateService', () => {
         templateId: string;
         volunteerId: string;
         reimbursementTypeId: string;
+        scopeUnitId: string;
         totalAmountCents?: number;
       },
     ) => {
@@ -1262,13 +1261,14 @@ describe('ReimbursementRateService', () => {
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
           hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(args.scopeUnitId),
         })
         .returning();
       return invoice;
     };
 
     it('stamps paidAt/paidByUserId on invoices included in the download', async () => {
-      const { organization } = await setupOrgWithRootUnit();
+      const { organization, root } = await setupOrgWithRootUnit();
       const reimbursementType = await createReimbursementType(db);
       const volunteer = await createUser(db);
       const downloader = await createUser(db);
@@ -1282,6 +1282,7 @@ describe('ReimbursementRateService', () => {
         templateId: template.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
@@ -1299,7 +1300,7 @@ describe('ReimbursementRateService', () => {
     });
 
     it('is idempotent — a second download never overwrites an already-paid invoice', async () => {
-      const { organization } = await setupOrgWithRootUnit();
+      const { organization, root } = await setupOrgWithRootUnit();
       const reimbursementType = await createReimbursementType(db);
       const volunteer = await createUser(db);
       const firstDownloader = await createUser(db);
@@ -1314,6 +1315,7 @@ describe('ReimbursementRateService', () => {
         templateId: template.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
@@ -1341,7 +1343,7 @@ describe('ReimbursementRateService', () => {
     });
 
     it('only marks the specific ids passed, leaving other ready invoices of the same type untouched', async () => {
-      const { organization } = await setupOrgWithRootUnit();
+      const { organization, root } = await setupOrgWithRootUnit();
       const reimbursementType = await createReimbursementType(db);
       const volunteer = await createUser(db);
       const downloader = await createUser(db);
@@ -1355,11 +1357,13 @@ describe('ReimbursementRateService', () => {
         templateId: template.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        scopeUnitId: root.id,
       });
       const excluded = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(
@@ -1376,7 +1380,7 @@ describe('ReimbursementRateService', () => {
     });
 
     it('never marks paid an invoice belonging to a different volunteer, even if its id is passed in', async () => {
-      const { organization } = await setupOrgWithRootUnit();
+      const { organization, root } = await setupOrgWithRootUnit();
       const reimbursementType = await createReimbursementType(db);
       const volunteer = await createUser(db);
       const otherVolunteer = await createUser(db);
@@ -1391,6 +1395,7 @@ describe('ReimbursementRateService', () => {
         templateId: template.id,
         volunteerId: otherVolunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        scopeUnitId: root.id,
       });
 
       await service.recordBundleDownload(

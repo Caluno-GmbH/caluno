@@ -17,7 +17,6 @@ import {
   billingYearOf,
   lastDayOfPeriod,
 } from '../utils/billing-period';
-import { formatInvoiceNumber } from '../utils/invoice-number';
 import { resolveFirstColumn } from '../utils/invoice-table';
 import { resolveOrgProfile, resolveOrgRootUnitId } from '../utils/org-profile';
 import {
@@ -632,22 +631,9 @@ export class DocumentRenderingService {
       yearly_limit_amount:
         yearlyLimitCents !== undefined ? this.formatEuro(yearlyLimitCents) : '',
       // The number an issued timesheet carries is the one it was issued under,
-      // stored when the invoice was created. Invoices from before numbering
-      // existed have none, so they keep rendering one from the template's
-      // format — a display fallback, never a number anything else relies on.
+      // stored when the invoice was created.
       document_number:
-        'invoiceStatus' in document
-          ? (document.documentNumber ??
-            formatInvoiceNumber({
-              invoiceFormat: template.invoiceNumberFormat,
-              periodStart: new Date(document.periodStart),
-              kostenstelle: findManualFieldValue(
-                (template.body ?? {}) as TemplateBodyShape,
-                'kostenstelle',
-              ),
-              sequence: 1,
-            }))
-          : '',
+        'invoiceStatus' in document ? document.documentNumber : '',
       generated_date: this.formatDate(new Date()),
     };
   }
