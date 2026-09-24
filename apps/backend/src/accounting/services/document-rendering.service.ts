@@ -584,20 +584,9 @@ export class DocumentRenderingService {
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,
       volunteer_last_name: lastName,
-      // The volunteer is the invoicing party on a Stundennachweis, so this is
-      // the sender's address: a street with no postcode or town identifies
-      // nobody. The profile collects address, zip and city as three separate
-      // system fields but only volunteer_street is exposed as a data source,
-      // so the other two could never reach a document. Composed here rather
-      // than added as two more placeholders, because the address occupies one
-      // line in both presets and a single value keeps it that way (VOLI-1351).
-      volunteer_street: formatAddress({
-        street: str(
-          profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
-        ),
-        zipCode: str(profileData.zip),
-        city: str(profileData.city),
-      }),
+      volunteer_street: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
+      ),
       volunteer_dob: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_dob],
       ),

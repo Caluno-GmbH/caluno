@@ -81,7 +81,7 @@ export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
  *
  * org_legal_rep is deliberately excluded: no shipped preset binds it (see
  * builder-document-presets.ts, which binds only org_name / org_street /
- * org_city), so gating setup on it would block orgs on a field their
+ * org_zip / org_city), so gating setup on it would block orgs on a field their
  * documents never render. A template that binds it manually is still caught
  * at save time by missingOrgProfileSources, which derives its requirements
  * from the actual body.
