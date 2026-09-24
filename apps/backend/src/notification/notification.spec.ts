@@ -506,7 +506,9 @@ describe('NotificationModule', () => {
     const payload = {
       organizationUnitId: 'unit-root-1',
       organizationUnitName: 'Acme Volunteers',
+      shiftId: 'shift-1',
       shiftTitle: 'Morning Kitchen',
+      instanceId: 'instance-1',
       joinedUserId: 'volunteer-1',
       recipientUserIds: ['manager-1', 'manager-2'],
       startsAt,
@@ -515,7 +517,9 @@ describe('NotificationModule', () => {
       {
         organizationUnitId: payload.organizationUnitId,
         organizationUnitName: payload.organizationUnitName,
+        shiftId: payload.shiftId,
         shiftTitle: payload.shiftTitle,
+        instanceId: payload.instanceId,
         volunteerName: 'Sam Volunteer',
         recipientFirstName: 'Alice',
         startsAt,
@@ -526,7 +530,9 @@ describe('NotificationModule', () => {
       {
         organizationUnitId: payload.organizationUnitId,
         organizationUnitName: payload.organizationUnitName,
+        shiftId: payload.shiftId,
         shiftTitle: payload.shiftTitle,
+        instanceId: payload.instanceId,
         volunteerName: 'Sam Volunteer',
         recipientFirstName: 'Bob',
         startsAt,
@@ -1129,6 +1135,7 @@ describe('NotificationModule', () => {
     const payload = {
       organizationUnitId: 'unit-root-1',
       organizationUnitName: 'Acme Volunteers',
+      eventId: 'event-1',
       eventTitle: 'Community Fair',
       joinedUserId: 'volunteer-1',
       recipientUserIds: ['manager-1', 'manager-2'],
@@ -1138,6 +1145,7 @@ describe('NotificationModule', () => {
       {
         organizationUnitId: payload.organizationUnitId,
         organizationUnitName: payload.organizationUnitName,
+        eventId: payload.eventId,
         eventTitle: payload.eventTitle,
         volunteerName: 'Sam Volunteer',
         recipientFirstName: 'Alice',
@@ -1149,6 +1157,7 @@ describe('NotificationModule', () => {
       {
         organizationUnitId: payload.organizationUnitId,
         organizationUnitName: payload.organizationUnitName,
+        eventId: payload.eventId,
         eventTitle: payload.eventTitle,
         volunteerName: 'Sam Volunteer',
         recipientFirstName: 'Bob',
@@ -1935,7 +1944,9 @@ describe('NotificationModule', () => {
     notificationService.notifyShiftInstanceJoined({
       organizationUnitId: 'unit-root-1',
       organizationUnitName: 'Acme Volunteers',
+      shiftId: 'shift-1',
       shiftTitle: 'Morning Kitchen',
+      instanceId: 'instance-1',
       joinedUserId: 'volunteer-1',
       recipientUserIds: ['manager-1'],
       startsAt: new Date('2026-07-10T09:00:00.000Z'),
