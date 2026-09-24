@@ -266,11 +266,15 @@ function ScrollDayStrip({
   formatDate,
   today,
   isScrolling,
+  hasNext,
+  onNext,
 }: DayStripProps & { formatDate: FormatDate; today: Date }) {
   const t = useTranslations('VolunteerHome');
   const stripRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const fetchRevealRef = useRef(false);
+  const prevDayCountRef = useRef(days.length);
 
   const todayIndex = days.findIndex((day) => isSameDay(day.date, today));
   const activeIsToday = isSameDay(activeDate, today);
@@ -312,6 +316,29 @@ function ScrollDayStrip({
       left: direction * strip.clientWidth * 0.8,
       behavior: 'smooth',
     });
+  };
+
+  // A next-click at the strip's end loads the next page; glide into the newly
+  // appended pills once they arrive so the click visibly produces days.
+  useEffect(() => {
+    if (fetchRevealRef.current && days.length > prevDayCountRef.current) {
+      const strip = stripRef.current;
+      strip?.scrollBy({
+        left: strip.clientWidth * 0.8,
+        behavior: 'smooth',
+      });
+    }
+    fetchRevealRef.current = false;
+    prevDayCountRef.current = days.length;
+  }, [days.length]);
+
+  const handleNext = () => {
+    if (canScrollRight) {
+      scrollByPage(1);
+    } else if (hasNext) {
+      fetchRevealRef.current = true;
+      onNext?.();
+    }
   };
 
   const scrollToToday = useCallback(() => {
@@ -406,9 +433,9 @@ function ScrollDayStrip({
 
         <ArrowButton
           direction="right"
-          enabled={canScrollRight}
+          enabled={canScrollRight || !!hasNext}
           label={t('dayStripNext')}
-          onClick={() => scrollByPage(1)}
+          onClick={handleNext}
         />
       </div>
 
