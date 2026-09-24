@@ -27,7 +27,7 @@ interface MyShiftsViewProps {
 
 export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
   const t = useTranslations('VolunteerHome');
-  const ct = useTranslations('Common');
+  const tCommon = useTranslations('Common');
   const today = startOfDay(new Date());
 
   const futureQuery = useMyShiftInstancesInfinite(
@@ -47,6 +47,7 @@ export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
   const [pastEnabled, setPastEnabled] = useState(false);
   const pastQuery = useMyShiftInstancesInfinite(
     {
+      includePast: true,
       endsBefore: today,
       order: SortOrder.Desc,
       limit: 15,
@@ -55,26 +56,35 @@ export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
     { enabled: pastEnabled },
   );
 
-  const isLoading = futureQuery.isLoading || pastQuery.isLoading;
+  // Only the initial future fetch blank-slates the page. Past pages load in
+  // place (button shows its own loading state) so the day strip / scroll-spy
+  // stay mounted and keep working after "Load past".
+  const isLoading = futureQuery.isLoading;
   const showLoading = useDelayedLoading(isLoading);
 
-  // Preserve the viewport position when past shifts are prepended above the
-  // fold. Measure scroll height before the fetch, then offset by the growth
-  // after the new page renders.
+  // Preserve the viewport when past shifts are prepended while the user is
+  // mid-list. If they are already at the top (Load past button visible), keep
+  // scrollY so the newly loaded days stay on screen.
   const previousScrollHeightRef = useRef(0);
+  const wasNearTopRef = useRef(false);
   useEffect(() => {
     if (pastQuery.isFetching) {
       previousScrollHeightRef.current = document.documentElement.scrollHeight;
+      wasNearTopRef.current = window.scrollY < 8;
     }
   }, [pastQuery.isFetching]);
   useEffect(() => {
     if (!pastQuery.isFetching && previousScrollHeightRef.current > 0) {
-      const heightDiff =
-        document.documentElement.scrollHeight - previousScrollHeightRef.current;
-      if (heightDiff > 0) {
-        window.scrollBy({ top: heightDiff, behavior: 'instant' });
+      if (!wasNearTopRef.current) {
+        const heightDiff =
+          document.documentElement.scrollHeight -
+          previousScrollHeightRef.current;
+        if (heightDiff > 0) {
+          window.scrollBy({ top: heightDiff, behavior: 'instant' });
+        }
       }
       previousScrollHeightRef.current = 0;
+      wasNearTopRef.current = false;
     }
   }, [pastQuery.isFetching]);
 
@@ -129,7 +139,7 @@ export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
         onClick={handleLoadPast}
         disabled={pastQuery.isFetching}
       >
-        {pastQuery.isFetching ? ct('loading') : t('loadPast')}
+        {pastQuery.isFetching ? tCommon('loading') : t('loadPast')}
       </Button>
     </div>
   );
@@ -144,7 +154,7 @@ export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
         onClick={() => futureQuery.fetchNextPage()}
         disabled={futureQuery.isFetching}
       >
-        {futureQuery.isFetching ? ct('loading') : t('loadMore')}
+        {futureQuery.isFetching ? tCommon('loading') : t('loadMore')}
       </Button>
     </div>
   );
@@ -156,6 +166,8 @@ export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
       days={dayStrip}
       sparseDays={sparseDayStrip}
       goToTopLabel={t('goToTop')}
+      initialScroll="top"
+      listPrefix={loadPastButton}
       groups={grouped}
       hasContent={myShiftList.length > 0}
       loading={
@@ -176,13 +188,10 @@ export function MyShiftsView({ initialFuturePage }: MyShiftsViewProps) {
         </Empty>
       }
       renderContent={(group) => {
-        const isFirstGroup =
-          group.date.getTime() === grouped[0]?.date.getTime();
         const isLastGroup =
           group.date.getTime() === grouped[grouped.length - 1]?.date.getTime();
         return (
           <>
-            {isFirstGroup && loadPastButton}
             <MyShiftsDayRows
               group={group}
               nextShiftId={nextShiftId}
