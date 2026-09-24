@@ -501,7 +501,7 @@
     "whenRange": "{date} · {timeRange}",
     "detailStaffing": "Besetzung",
     "staffingValue": "{filledCount} von {minVolunteers} bestätigt",
-    "noticeNotified": "Wir haben bereits {count} Freiwillige um Hilfe gebeten. Hier ist erstmal nichts weiter zu tun.",
+    "noticeNotified": "Wir haben bereits {count, plural, one {# Freiwillige:n} other {# Freiwillige}} um Hilfe gebeten. Hier ist erstmal nichts weiter zu tun.",
     "noticeNoneAvailable": "Wir konnten niemanden mehr automatisch benachrichtigen. Vielleicht fragst du direkt nach.",
     "buttonLabel": "Einsatz ansehen",
     "subject": "{shiftTitle} braucht noch Freiwillige",

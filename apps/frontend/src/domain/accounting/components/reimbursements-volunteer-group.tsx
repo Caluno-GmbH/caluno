@@ -420,6 +420,7 @@ function VolunteerTableGroup({
           const isGenerate =
             doc.status === 'contract-generate' ||
             doc.status === 'timesheet-generate';
+          const isDraft = doc.status === 'contract-draft';
           // Contract-generate has nothing to show yet (no signing chain has
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
@@ -459,7 +460,7 @@ function VolunteerTableGroup({
               <TableCell
                 className={cn(
                   'pl-6 py-3 align-top overflow-hidden',
-                  isGenerate && 'opacity-40',
+                  (isGenerate || isDraft) && 'opacity-40',
                 )}
               >
                 <DocTypeHeader

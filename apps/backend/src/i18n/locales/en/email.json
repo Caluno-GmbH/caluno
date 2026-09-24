@@ -501,7 +501,7 @@
     "whenRange": "{date} · {timeRange}",
     "detailStaffing": "Staffing",
     "staffingValue": "{filledCount} of {minVolunteers} confirmed",
-    "noticeNotified": "We've already emailed {count} volunteers asking for help. No action needed on that front yet.",
+    "noticeNotified": "We've already emailed {count, plural, one {# volunteer} other {# volunteers}} asking for help. No action needed on that front yet.",
     "noticeNoneAvailable": "We couldn't notify anyone else automatically. You may want to reach out directly.",
     "buttonLabel": "View assignment",
     "subject": "{shiftTitle} is short on volunteers",

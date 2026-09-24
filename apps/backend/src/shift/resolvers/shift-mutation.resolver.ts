@@ -171,6 +171,29 @@ export class ShiftMutationResolver {
   }
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => ShiftInstance)
+  async updateShiftInstanceApproval(
+    @Args('id', { type: () => String }) id: string,
+    @Args('joinRequiresApproval', { type: () => Boolean })
+    joinRequiresApproval: boolean,
+    @Args('applyToAllFuture', { type: () => Boolean, nullable: true })
+    applyToAllFuture: boolean | null | undefined,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
+  ): Promise<ShiftInstance> {
+    const instance = await this.shiftService.updateShiftInstanceApproval(
+      id,
+      context.organizationUnitId,
+      joinRequiresApproval,
+      {
+        applyToAllFuture: applyToAllFuture ?? false,
+        actorUserId: session.user.id,
+      },
+    );
+    return this.shiftInstanceMapper.toModelOrThrow(instance);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
   @Mutation(() => Shift)
   async deleteShift(
     @Args('id', { type: () => String }) id: string,

@@ -790,6 +790,7 @@ type Mutation {
   updateRole(id: ID!, input: CreateRoleInput!): Role!
   updateShift(id: String!, input: UpdateShiftInput!): Shift!
   updateShiftInstance(applyToAllFuture: Boolean, input: UpdateShiftInstanceInput!, instanceId: String!): ShiftInstance!
+  updateShiftInstanceApproval(applyToAllFuture: Boolean, id: String!, joinRequiresApproval: Boolean!): ShiftInstance!
   updateShiftInstanceInviteStatus(instanceId: String!, status: ShiftInviteStatus!, userId: String): ShiftInstanceInvite!
   updateShiftInviteStatus(shiftId: String!, status: ShiftInviteStatus!): ShiftInvite!
   updateTimeEntry(id: ID!, input: UpdateTimeEntryInput!): TimeEntry!
@@ -1367,6 +1368,7 @@ type ShiftInstance {
   myInvitedAt: DateTime
   occurrenceIndex: Int!
   overrideInstructions: String
+  overrideJoinRequiresApproval: Boolean
   overrideLocation: String
   overrideMaxVolunteers: Int
   overrideMinVolunteers: Int

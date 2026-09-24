@@ -1,5 +1,5 @@
-import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
+import { CheckInUnavailableCard } from '@/domain/shift/components/check-in-unavailable-card';
 import { ManualCheckInPage } from '@/domain/shift/components/manual-check-in/manual-check-in-page';
 import { resolveInitialCheckInOrgUnit } from '@/domain/shift/resolve-initial-check-in-org-unit';
 import { redirect } from '@/i18n/navigation';
@@ -26,7 +26,7 @@ export default async function VolunteeringCheckInPage({
   ]);
 
   if (!context) {
-    notFound();
+    return <CheckInUnavailableCard />;
   }
 
   // `eligibleOrganizationUnits` is the caller's check-in units intersected

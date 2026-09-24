@@ -200,6 +200,19 @@ export class ShiftRepository extends BaseRepository {
     return { id: data.deleteShiftInstance.id };
   }
 
+  async updateInstanceApproval(
+    instanceId: string,
+    joinRequiresApproval: boolean,
+    applyToAllFuture?: boolean,
+  ): Promise<{ id: string }> {
+    const data = await this.sdk.UpdateShiftInstanceApproval({
+      id: instanceId,
+      joinRequiresApproval,
+      applyToAllFuture,
+    });
+    return { id: data.updateShiftInstanceApproval.id };
+  }
+
   async joinInstance(
     instanceId: string,
   ): Promise<JoinShiftInstanceMutation['joinShiftInstance']> {

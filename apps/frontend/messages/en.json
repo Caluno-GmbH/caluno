@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Go to check-out",
     "alreadyCheckedInDescription": "This volunteer already has an open check-in for this assignment.",
     "alreadyCheckedInTitle": "Already checked in",
+    "backToCheckInButton": "Back to check-in",
     "checkInButton": "Check in",
     "checkInRunningTitle": "Check-in running",
     "checkInSectionDescription": "Check this volunteer in for a new assignment without closing the open entries.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Checking in without an assignment",
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
-    "today": "Today"
+    "today": "Today",
+    "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
+    "unavailableTitle": "Can't check in this person"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",
@@ -798,7 +801,7 @@
     "emailPlatformDescription": "Invitations, joining, cancellations, assignment changes and membership.",
     "emailSettings": "Emails",
     "emailUrgentCalls": "Urgent calls",
-    "emailUrgentCallsDescription": "Urgent call-outs for short-staffed assignments.",
+    "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Weekly update",
     "emailWeeklyUpdateDescription": "The Sunday weekly plan email.",
     "identity": {
@@ -1190,6 +1193,10 @@
     },
     "select": {
       "addCustom": "Add custom",
+      "confirm": {
+        "description": "You are about to change this person's role. This change is immediate. Are you sure?",
+        "title": "Change role?"
+      },
       "empty": "No roles found.",
       "searchPlaceholder": "Search roles..."
     },
@@ -1355,12 +1362,25 @@
       "timeRangeConstraint": "Assignments must start and end within {window}."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "error": "We couldn't update the approval requirement. {error}",
+        "futureDescription": "Applies to {date} and every upcoming occurrence in the series. Past occurrences are kept.",
+        "futureTitle": "This and all future occurrences",
+        "onlyThisDescription": "Applies to {date} only. Other occurrences stay untouched.",
+        "onlyThisTitle": "Only this occurrence",
+        "success": "Approval requirement updated.",
+        "title": "Change approval requirement",
+        "turnOffDescription": "Everyone currently awaiting approval will be admitted automatically, up to the assignment's capacity. Anyone who doesn't fit will move to the waitlist.",
+        "turnOnDescription": "Volunteers already signed up keep their spot. New sign-ups from now on will need your approval."
+      },
       "callOutCta": "Urgent call",
       "callOutDialog": {
         "confirm": "Urgent call",
         "description": "This sends an urgent call to everyone eligible to help with this assignment, asking them to join. It won't add anyone to the assignment.",
         "error": "We couldn't send the urgent call. {error}",
-        "noRecipients": "Nobody was left to ask. We've emailed you instead.",
+        "noRecipients": "Nobody could be notified. We've sent you an email with the details instead.",
         "success": "Urgent call sent to {count, plural, one {# volunteer} other {# volunteers}}.",
         "title": "Send an urgent call?"
       },
