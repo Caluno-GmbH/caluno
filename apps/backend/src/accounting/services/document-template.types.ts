@@ -52,7 +52,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
-  volunteer_address: 'address',
+  volunteer_address: 'street',
   volunteer_dob: 'birth-date',
   volunteer_tax_id: 'tax-id',
 };
@@ -64,7 +64,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
  */
 export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
   org_name: 'name',
-  org_address: 'address',
+  org_address: 'street',
   org_city: 'city',
   org_zip: 'zipCode',
   org_legal_rep: 'legalRep',

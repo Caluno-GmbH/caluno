@@ -53,9 +53,9 @@ describe('missingOrgProfileSourcesForOrg', () => {
   it('flags org_zip when the org has no postal code', () => {
     expect(
       missingOrgProfileSourcesForOrg(docWithOrgZip, {
-        address: 'Hauptstraße 1',
-        city: 'Berlin',
+        street: 'Hauptstraße 1',
         zipCode: '',
+        city: 'Berlin',
       }),
     ).toEqual(['org_zip']);
   });
@@ -63,9 +63,9 @@ describe('missingOrgProfileSourcesForOrg', () => {
   it('does not flag org_zip once the org has one', () => {
     expect(
       missingOrgProfileSourcesForOrg(docWithOrgZip, {
-        address: 'Hauptstraße 1',
-        city: 'Berlin',
+        street: 'Hauptstraße 1',
         zipCode: '10115',
+        city: 'Berlin',
       }),
     ).toEqual([]);
   });

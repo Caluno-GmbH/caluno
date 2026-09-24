@@ -7,7 +7,7 @@ export const SYSTEM_PROFILE_KEYS = new Set<string>([
   GENDER_SYSTEM_KEY,
   'email',
   'phone',
-  'address',
+  'street',
   'zip',
   'city',
   'birth-date',

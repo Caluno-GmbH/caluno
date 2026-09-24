@@ -691,8 +691,8 @@
       "partOf": "Part of "
     },
     "form": {
-      "addressLabel": "Street name and number",
-      "addressPlaceholder": "e.g. Musterstraße 1",
+      "streetLabel": "Street name and number",
+      "streetPlaceholder": "e.g. Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "e.g. Berlin",
       "zipCodeLabel": "Postal code",
@@ -750,8 +750,8 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Street name and number",
-      "addressPlaceholder": "e.g. Musterstraße 1",
+      "streetLabel": "Street name and number",
+      "streetPlaceholder": "e.g. Musterstraße 1",
       "zipCodeLabel": "Postal code",
       "zipCodePlaceholder": "e.g. 10115",
       "cityLabel": "City",
@@ -991,7 +991,7 @@
     },
     "fieldForm": {
       "add": "Add",
-      "address": "Street name and number",
+      "street": "Street name and number",
       "birthDate": "Birth date",
       "cancel": "Cancel",
       "checkbox": "Checkbox",
@@ -1216,8 +1216,8 @@
     "organizationProfile": {
       "title": "Organisation profile",
       "subtitle": "Update your organisation's address and contact details.",
-      "addressLabel": "Street name and number",
-      "addressPlaceholder": "Musterstraße 1",
+      "streetLabel": "Street name and number",
+      "streetPlaceholder": "Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postal code",
@@ -1788,8 +1788,9 @@
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
     "sheet": {
-      "addressLabel": "Address",
+      "streetLabel": "Street",
       "birthdayLabel": "Birthday",
+      "cityLabel": "City",
       "emailLabel": "Email",
       "formFallback": "Form",
       "idVerification": {
@@ -1804,7 +1805,8 @@
       "qrIdLabel": "QR ID",
       "submittedForms": "Submitted forms",
       "titleFallback": "Volunteer",
-      "userInfo": "Personal information"
+      "userInfo": "Personal information",
+      "zipLabel": "Postal code"
     },
     "table": {
       "email": "Email",

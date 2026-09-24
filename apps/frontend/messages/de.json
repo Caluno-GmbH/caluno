@@ -691,8 +691,8 @@
       "partOf": "Teil von "
     },
     "form": {
-      "addressLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "z. B. Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "z. B. Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -750,8 +750,8 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "z. B. Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "zipCodeLabel": "Postleitzahl",
       "zipCodePlaceholder": "z. B. 10115",
       "cityLabel": "Stadt",
@@ -991,7 +991,7 @@
     },
     "fieldForm": {
       "add": "Hinzufügen",
-      "address": "Straße und Hausnummer",
+      "street": "Straße und Hausnummer",
       "birthDate": "Geburtsdatum",
       "cancel": "Abbrechen",
       "checkbox": "Checkbox",
@@ -1216,8 +1216,8 @@
     "organizationProfile": {
       "title": "Organisationsprofil",
       "subtitle": "Aktualisiere die Adresse und Kontaktdaten deiner Organisation.",
-      "addressLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -1788,8 +1788,9 @@
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
     "sheet": {
-      "addressLabel": "Adresse",
+      "streetLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
+      "cityLabel": "Stadt",
       "emailLabel": "E-Mail",
       "formFallback": "Formular",
       "idVerification": {
@@ -1804,7 +1805,8 @@
       "qrIdLabel": "QR-ID",
       "submittedForms": "Eingereichte Formulare",
       "titleFallback": "Freiwillige:r",
-      "userInfo": "Persönliche Informationen"
+      "userInfo": "Persönliche Informationen",
+      "zipLabel": "PLZ"
     },
     "table": {
       "email": "E-Mail",
