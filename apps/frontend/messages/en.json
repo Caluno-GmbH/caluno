@@ -1136,6 +1136,7 @@
       "birthDateFormat": "DD/MM/YYYY",
       "checkboxYes": "Yes",
       "documentAcknowledgement": "I acknowledge and accept",
+      "documentOpenInNewTab": "Open in new tab",
       "failedToSubmit": "We couldn't submit the form. Please try again.",
       "membershipRequestNotice": "By submitting this form you will send a membership request to {orgName}. A coordinator will review your request.",
       "next": "Next",
@@ -2373,6 +2374,7 @@
           "hours-amount": "Hours",
           "hours-unit": "Hours unit",
           "freeform-text": "Freeform text",
+          "parties-additional-info": "Optional additional information",
           "kostenstelle": "Cost centre",
           "kostentraeger": "Cost unit",
           "rechtstraeger": "Legal entity"
@@ -2383,6 +2385,7 @@
           "hours-amount-month": "e.g. 20",
           "hours-amount-week": "e.g. 5",
           "freeform-text": "Add anything else you need to here",
+          "parties-additional-info": "Add further information about contractual partners here",
           "kostenstelle": "e.g. K-4200",
           "kostentraeger": "e.g. KT-100",
           "rechtstraeger": "e.g. Diakonisches Werk e.V."
@@ -2410,6 +2413,7 @@
           "volunteer_first_name": "First name (Volunteer)",
           "volunteer_last_name": "Last name (Volunteer)",
           "org_name": "Organisation name",
+          "org_facility_name": "Facility",
           "org_street": "Organisation address",
           "org_zip": "Postal code (Organisation)",
           "org_city": "City (Organisation)",

@@ -4,18 +4,57 @@ import {
   getInvoiceDocument,
 } from './builder-document-presets';
 
-describe('document preset org identity', () => {
-  it('Renders the org as the first contracting party with its address', () => {
-    const doc = getContractDocument('ehrenamt');
-    const partiesBlock = doc.blocks.find((b) => b.id === 'persoenliche-daten');
-    const partiesLine =
-      partiesBlock?.kind === 'text'
-        ? partiesBlock.lines.find((l) => l.id === 'parties')
-        : undefined;
+function contractLine(id: string) {
+  const block = getContractDocument('ehrenamt').blocks.find(
+    (b) => b.id === 'persoenliche-daten',
+  );
+  return block?.kind === 'text'
+    ? block.lines.find((line) => line.id === id)
+    : undefined;
+}
 
-    expect(partiesLine?.text).toBe(
-      'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity} und',
+describe('document preset org identity', () => {
+  it('Names the org as the first contracting party with its full address', () => {
+    // VOLI-1325 asked for the name and address separated by a comma, which this
+    // keeps. The postcode and town joined them under VOLI-1443: the letterhead
+    // above states all three, and a street alone does not identify the body
+    // signing the agreement.
+    expect(contractLine('parties')?.text).toBe(
+      'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity},',
     );
+  });
+
+  it('Carries the conjunction on the volunteer line, not the org one', () => {
+    // So the optional additional-information line can sit between the two
+    // parties without stranding an "und" on a line of its own.
+    expect(contractLine('parties')?.text.endsWith(', und')).toBe(false);
+    expect(contractLine('volunteer-name')?.text.startsWith('und ')).toBe(true);
+  });
+
+  it('Offers the additional-information line off by default', () => {
+    const line = contractLine('parties-additional');
+
+    expect(line?.optional).toBe(true);
+    expect(line?.enabled).toBe(false);
+    expect(line?.fields[0]?.control).toBe('textarea');
+  });
+
+  it('Reads the facility from its own source, not the organisation name', () => {
+    // Where a volunteer serves can differ from who signs the agreement, which
+    // is the whole point of the override.
+    const engagement = getContractDocument('ehrenamt').blocks.find(
+      (b) => b.id === 'zeitraum-taetigkeit',
+    );
+    const scope =
+      engagement?.kind === 'text'
+        ? engagement.lines.find((l) => l.id === 'engagement-scope')
+        : undefined;
+    const orgField = scope?.fields.find((f) => f.id === 'engagement-org-name');
+
+    expect(orgField?.value).toEqual({
+      kind: 'bound',
+      source: 'org_facility_name',
+    });
   });
 });
 

@@ -17,6 +17,7 @@ import {
   lastDayOfPeriod,
 } from '../utils/billing-period';
 import { resolveFirstColumn } from '../utils/invoice-table';
+import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile, resolveOrgRootUnitId } from '../utils/org-profile';
 import {
   findManualFieldValue,
@@ -574,11 +575,24 @@ export class DocumentRenderingService {
     const str = (value: unknown): string =>
       typeof value === 'string' ? value : '';
 
+    // A template may state the organisation by hand — for an agreement whose
+    // legal counterpart is not the body the volunteer sits in. Applied here,
+    // where every org value is resolved, so the letterhead (rendered from these
+    // values rather than from template fields), the document text and the
+    // signature seat can never name different organisations.
+    const orgValues = applyOrgOverrides(
+      {
+        org_name: rootUnit?.name ?? '',
+        org_street: orgProfile?.street ?? rootUnit?.street ?? '',
+        org_city: orgProfile?.city ?? rootUnit?.city ?? '',
+        org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      },
+      (template.body as { orgOverrides?: OrgOverrides } | undefined)
+        ?.orgOverrides,
+    );
+
     return {
-      org_name: rootUnit?.name ?? '',
-      org_street: orgProfile?.street ?? rootUnit?.street ?? '',
-      org_city: orgProfile?.city ?? rootUnit?.city ?? '',
-      org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      ...orgValues,
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,
