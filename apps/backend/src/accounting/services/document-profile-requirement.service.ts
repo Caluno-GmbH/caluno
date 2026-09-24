@@ -114,7 +114,7 @@ export class DocumentProfileRequirementService {
   }
 
   /**
-   * The org-profile source keys (e.g. org_city/org_street) a document's
+   * The org-profile source keys (e.g. org_city/org_zip/org_street) a document's
    * template needs that the given org unit has not yet supplied. Pure and
    * synchronous so callers that already have the unit (e.g. a batched
    * DataLoader) can skip the extra per-row query in `missingOrgProfileSources`.
@@ -147,7 +147,7 @@ export class DocumentProfileRequirementService {
   }
 
   /**
-   * The org-profile source keys (e.g. org_city/org_street) a document's
+   * The org-profile source keys (e.g. org_city/org_zip/org_street) a document's
    * template needs that the unit's resolved org details don't supply. Empty
    * when the document can be created.
    */
