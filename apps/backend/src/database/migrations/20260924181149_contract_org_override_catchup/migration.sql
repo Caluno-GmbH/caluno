@@ -14,6 +14,11 @@
 --     coordinator who edited the sentence keeps their version;
 --   * scope is "document_templates" only. Issued contracts carry a rendered
 --     file and are a legal record; they are never rewritten.
+--
+-- Runs after 20260924145529_rename_address_to_street, which rewrites stored
+-- bodies onto the org_street naming, so the sentence is matched in its
+-- post-rename form. Nothing upstream backfills the organisation's postcode and
+-- town into this line — the preset gained them, stored templates did not.
 
 -- 1. The parties sentence gains the postcode and town, the conjunction moves to
 --    the volunteer line, and the optional line is inserted between the two
@@ -40,7 +45,7 @@ SET "body" = jsonb_set(
                                jsonb_set(
                                  l.line,
                                  '{text}',
-                                 '"Zwischen dem {orgName}, {orgAddress}, {orgZip} {orgCity},"'::jsonb
+                                 '"Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity},"'::jsonb
                                ),
                                '{fields}',
                                (l.line->'fields') || jsonb_build_array(
@@ -90,7 +95,7 @@ SET "body" = jsonb_set(
   )
 )
 WHERE dt."kind" = 'CONTRACT'
-  AND dt."body"::text LIKE '%"Zwischen dem {orgName}, {orgAddress}, und"%'
+  AND dt."body"::text LIKE '%"Zwischen dem {orgName}, {orgStreet}, und"%'
   AND NOT EXISTS (
     SELECT 1
     FROM jsonb_array_elements(dt."body"->'blocks') AS blk,

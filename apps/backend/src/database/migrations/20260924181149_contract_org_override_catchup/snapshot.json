@@ -1,6 +1,6 @@
 {
-  "id": "b7fe9ff9-076d-49af-b2d8-feec606f7cdc",
-  "prevIds": ["b599cd7c-f7fe-4f62-9741-cedebda0837b"],
+  "id": "d5896480-fc44-402b-ad94-b87a402ad935",
+  "prevIds": ["ec4cd437-9dc6-432e-86f9-c90d38c636ed"],
   "version": "8",
   "dialect": "postgres",
   "ddl": [
@@ -1255,7 +1255,7 @@
     {
       "type": "integer",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -1398,7 +1398,7 @@
     {
       "type": "text",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -1411,7 +1411,7 @@
     {
       "type": "integer",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -1424,7 +1424,7 @@
     {
       "type": "integer",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -1437,7 +1437,7 @@
     {
       "type": "uuid",
       "typeSchema": null,
-      "notNull": false,
+      "notNull": true,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -6403,6 +6403,19 @@
     {
       "type": "boolean",
       "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "override_join_requires_approval",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "shift_instances"
+    },
+    {
+      "type": "boolean",
+      "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
       "default": "false",
@@ -7511,7 +7524,7 @@
         }
       ],
       "isUnique": true,
-      "where": "\"document_number_scope_unit_id\" IS NOT NULL AND \"document_number\" IS NOT NULL",
+      "where": null,
       "with": "",
       "method": "btree",
       "concurrently": false,

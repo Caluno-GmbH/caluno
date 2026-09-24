@@ -1,7 +1,7 @@
 -- VOLI-1443: the optional line about the contracting parties reads on from the
 -- address rather than dropping to a line of its own.
 --
--- 20260924170325_contract_org_override_catchup inserted it as an ordinary line,
+-- 20260924181149_contract_org_override_catchup inserted it as an ordinary line,
 -- which printed it under the town. It belongs to that sentence, so it is marked
 -- `inline` and the renderers join it to the line before, wrapping only when it
 -- runs out of room.
