@@ -144,7 +144,7 @@
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
     "today": "Heute",
-    "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten mit Check-in-Zugriff.",
+    "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
     "unavailableTitle": "Einchecken nicht möglich"
   },
   "Common": {

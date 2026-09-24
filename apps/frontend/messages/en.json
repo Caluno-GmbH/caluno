@@ -144,7 +144,7 @@
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
     "today": "Today",
-    "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units with check-in access.",
+    "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
     "unavailableTitle": "Can't check in this person"
   },
   "Common": {
