@@ -1355,6 +1355,19 @@
       "timeRangeConstraint": "Einsätze müssen innerhalb von {window} beginnen und enden."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "error": "Die Freigabepflicht konnte nicht geändert werden. {error}",
+        "futureDescription": "Gilt für {date} und alle kommenden Termine der Serie. Vergangene Termine bleiben erhalten.",
+        "futureTitle": "Diesen und alle zukünftigen Termine",
+        "onlyThisDescription": "Gilt nur für {date}. Andere Termine bleiben unberührt.",
+        "onlyThisTitle": "Nur diesen Termin",
+        "success": "Freigabepflicht aktualisiert.",
+        "title": "Freigabepflicht ändern",
+        "turnOffDescription": "Alle, die derzeit auf Freigabe warten, werden automatisch aufgenommen – bis zur maximalen Kapazität des Einsatzes. Wer nicht mehr reinpasst, kommt auf die Warteliste.",
+        "turnOnDescription": "Bereits angemeldete Freiwillige behalten ihren Platz. Neue Anmeldungen benötigen ab sofort deine Freigabe."
+      },
       "callOutCta": "Dringender Aufruf",
       "callOutDialog": {
         "confirm": "Dringender Aufruf",
