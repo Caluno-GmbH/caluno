@@ -318,8 +318,7 @@ function ScrollDayStrip({
     });
   };
 
-  // A next-click at the strip's end loads the next page; glide into the newly
-  // appended pills once they arrive so the click visibly produces days.
+  // A next-click at the strip's end loads the next page
   useEffect(() => {
     if (fetchRevealRef.current && days.length > prevDayCountRef.current) {
       const strip = stripRef.current;
