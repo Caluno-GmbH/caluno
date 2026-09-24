@@ -1980,22 +1980,20 @@ export class ShiftService {
   ): Promise<void> {
     const instances = await tx.query.shiftInstances.findMany({
       where: { id: { in: instanceIds } },
-      with: { master: true },
+      with: {
+        master: true,
+        invites: {
+          where: { status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
 
     for (const instance of instances) {
       const maxVolunteers =
         instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
 
-      const awaitingInvites = await tx.query.shiftInstanceInvites.findMany({
-        where: {
-          instanceId: instance.id,
-          status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      for (const invite of awaitingInvites) {
+      for (const invite of instance.invites) {
         const hasSeat = await this.hasAvailableSeat(
           instance.id,
           maxVolunteers,
