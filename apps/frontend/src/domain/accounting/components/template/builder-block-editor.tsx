@@ -105,7 +105,7 @@ export function collectContractEditorGroups(
 
   for (const block of doc.blocks) {
     if (block.kind !== 'text') continue;
-    if (block.id === 'sonstiges') {
+    if (block.id === EXTRA_BLOCK_ID) {
       extraBlock = block;
       continue;
     }
@@ -148,6 +148,9 @@ export function collectContractEditorGroups(
 
   return { org, volunteer, engagement, hours, extraBlock };
 }
+
+/** The one block a coordinator can switch off, on both document kinds. */
+const EXTRA_BLOCK_ID = 'sonstiges';
 
 const INVOICE_NUMBER_FORMATS: InvoiceNumberFormat[] = [
   'date-number',
@@ -654,6 +657,7 @@ function BlockEditorRow({
  */
 function ExtraClausesCard({
   block,
+  heading,
   firstOccurrenceByFieldId,
   profileGaps,
   knownValues,
@@ -662,6 +666,8 @@ function ExtraClausesCard({
   onFieldChange,
 }: {
   block: TemplateTextBlock;
+  /** Section heading — "Extra clauses" on a contract, "Other information" on a timesheet. */
+  heading: string;
   firstOccurrenceByFieldId: Map<string, string>;
   profileGaps: Set<DataSourceKey>;
   knownValues: Partial<Record<DataSourceKey, string>>;
@@ -677,7 +683,7 @@ function ExtraClausesCard({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className={SECTION_TITLE_CLASSNAME}>{t('editorGroups.extra')}</span>
+      <span className={SECTION_TITLE_CLASSNAME}>{heading}</span>
       <InfoPanel
         variant="outline"
         title={title}
@@ -916,6 +922,10 @@ export function TemplateBuilderBlockEditor({
   const hasHeaderConfig =
     templateDoc.header.metaLines.length > 0 ||
     templateDoc.invoiceNumberFormat !== undefined;
+  const extraBlock = templateDoc.blocks.find(
+    (block): block is TemplateTextBlock =>
+      block.kind === 'text' && block.id === EXTRA_BLOCK_ID,
+  );
 
   if (kind === 'contract') {
     const groups = collectContractEditorGroups(templateDoc);
@@ -964,6 +974,7 @@ export function TemplateBuilderBlockEditor({
         {groups.extraBlock && (
           <ExtraClausesCard
             block={groups.extraBlock}
+            heading={t('editorGroups.extra')}
             firstOccurrenceByFieldId={firstOccurrenceByFieldId}
             profileGaps={profileGaps}
             knownValues={knownValues}
@@ -1041,22 +1052,40 @@ export function TemplateBuilderBlockEditor({
         </div>
       )}
 
-      {templateDoc.blocks.map((block) => (
-        <BlockEditorRow
-          key={block.id}
-          block={block}
+      {templateDoc.blocks
+        .filter((block) => block.id !== EXTRA_BLOCK_ID)
+        .map((block) => (
+          <BlockEditorRow
+            key={block.id}
+            block={block}
+            firstOccurrenceByFieldId={firstOccurrenceByFieldId}
+            profileGaps={profileGaps}
+            knownValues={knownValues}
+            typeLabel={typeLabel}
+            onLineToggle={handleLineToggle}
+            onFieldChange={handleFieldChange}
+            onTableFirstColumnSourceChange={handleTableFirstColumnSourceChange}
+            onTableFirstColumnCustomLabelChange={
+              handleTableFirstColumnCustomLabelChange
+            }
+          />
+        ))}
+
+      {/* The one switchable block needs a card that carries its own on/off
+          switch, which BlockEditorRow has no notion of — the same card the
+          contract's extra clauses use, under a heading that fits a timesheet. */}
+      {extraBlock && (
+        <ExtraClausesCard
+          block={extraBlock}
+          heading={t('editorGroups.other')}
           firstOccurrenceByFieldId={firstOccurrenceByFieldId}
           profileGaps={profileGaps}
           knownValues={knownValues}
           typeLabel={typeLabel}
-          onLineToggle={handleLineToggle}
+          onBlockToggle={handleBlockToggle}
           onFieldChange={handleFieldChange}
-          onTableFirstColumnSourceChange={handleTableFirstColumnSourceChange}
-          onTableFirstColumnCustomLabelChange={
-            handleTableFirstColumnCustomLabelChange
-          }
         />
-      ))}
+      )}
     </div>
   );
 }

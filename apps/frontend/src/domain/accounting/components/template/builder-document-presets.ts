@@ -333,6 +333,20 @@ export function getInvoiceDocument(
           ],
         ),
       },
+      {
+        kind: 'text',
+        id: 'sonstiges',
+        title: 'Sonstiges',
+        locked: false,
+        // Opt-in, off by default — the same shape the contract uses. Sits last
+        // among the blocks, so it prints above the signatures.
+        enabled: false,
+        lines: [
+          line('freeform', '{freeformText}', [
+            manual('freeform-text', '', 'textarea'),
+          ]),
+        ],
+      },
     ],
     footer: {
       closingLine: line('closing', '{place}, {date}', [

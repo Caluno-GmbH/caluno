@@ -2322,7 +2322,8 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses"
+          "extra": "Extra clauses",
+          "other": "Other information"
         },
         "hoursUnit": {
           "month": "Month",
@@ -2353,7 +2354,7 @@
           "tasks": "Describe the main activities for {pauschale}",
           "hours-amount-month": "e.g. 20",
           "hours-amount-week": "e.g. 5",
-          "freeform-text": "Add other clauses here if you need to",
+          "freeform-text": "Add anything else you need to here",
           "kostenstelle": "e.g. K-4200",
           "kostentraeger": "e.g. KT-100",
           "rechtstraeger": "e.g. Diakonisches Werk e.V."

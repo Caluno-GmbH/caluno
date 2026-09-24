@@ -2322,7 +2322,8 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen"
+          "extra": "Weitere Vereinbarungen",
+          "other": "Sonstiges"
         },
         "hoursUnit": {
           "month": "Monat",
@@ -2353,7 +2354,7 @@
           "tasks": "Beschreibe die Haupttätigkeiten für {pauschale}",
           "hours-amount-month": "z. B. 20",
           "hours-amount-week": "z. B. 5",
-          "freeform-text": "Ergänze hier weitere Klauseln, falls nötig",
+          "freeform-text": "Ergänze hier weitere Angaben, falls nötig",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
           "rechtstraeger": "z. B. Diakonisches Werk e.V."
