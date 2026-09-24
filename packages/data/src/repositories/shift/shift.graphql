@@ -183,6 +183,25 @@ mutation DeleteShiftInstance($id: String!, $applyToAllFuture: Boolean) {
   }
 }
 
+mutation UpdateShiftInstanceApproval(
+  $id: String!
+  $joinRequiresApproval: Boolean!
+  $applyToAllFuture: Boolean
+) {
+  updateShiftInstanceApproval(
+    id: $id
+    joinRequiresApproval: $joinRequiresApproval
+    applyToAllFuture: $applyToAllFuture
+  ) {
+    id
+    overrideJoinRequiresApproval
+    master {
+      id
+      joinRequiresApproval
+    }
+  }
+}
+
 mutation UpdateShiftInstanceVolunteers(
   $instanceId: String!
   $memberIds: [String!]!
@@ -347,6 +366,7 @@ query GetShiftInstance($id: ID!) {
     overrideMaxVolunteers
     overrideMinVolunteers
     overrideReimbursementTypeId
+    overrideJoinRequiresApproval
     isCancelled
     filledCount
     spotsLeft
@@ -362,6 +382,7 @@ query GetShiftInstance($id: ID!) {
       minVolunteers
       maxVolunteers
       reimbursementTypeId
+      joinRequiresApproval
       visibility
       joinRequiresApproval
       rrule
