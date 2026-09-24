@@ -162,11 +162,7 @@ export function ShiftInstanceVolunteersPanel({
     const acceptedState =
       baseState === 'accepted' ? deriveAcceptedRowState(entries) : null;
     const state: ShiftVolunteeringDisplayState = acceptedState ?? baseState;
-    // A checked-in or checked-out volunteer has a time entry that removing
-    // them would orphan (see canRemoveAcceptedRow). Their only status path
-    // is Check out / re-Check in, so the admin removal dropdown is
-    // suppressed for those two states only -- adminChipTargetStatuses
-    // itself stays untouched, this only gates the call site.
+    // Removal would orphan an open or recorded time entry.
     const chipTargets =
       canManage && canRemoveAcceptedRow(acceptedState)
         ? adminChipTargetStatuses(invite.status)
@@ -199,12 +195,8 @@ export function ShiftInstanceVolunteersPanel({
       statusMenuAriaLabel: t('inviteStatus.changeStatusAria', {
         name: invite.user.name,
       }),
-      // Accepted rows get Check in / Check out (including re-check-in after
-      // checkout) from acceptedRowActions, gated on CHECK_IN_MANAGE. This is
-      // deliberately NOT the shared config's default actions for 'accepted'
-      // (['Uninvite']) — that default must stay generic for every other
-      // surface that shows an accepted volunteer. adminRowActions is empty
-      // for accepted invites, so there is nothing else to merge in.
+      // Not the shared config's default actions for 'accepted' (['Uninvite'])
+      // -- that default must stay generic for surfaces without check-in.
       actions: acceptedState
         ? acceptedRowActions(acceptedState, canCheckIn)
         : remindVisible
@@ -228,10 +220,8 @@ export function ShiftInstanceVolunteersPanel({
             }
           : {}),
       },
-      // Check in / Check out are text buttons (not icon-only), so their
-      // labels render as visible children in VolunteeringActionButtons.
-      // Their accessible name is provided separately via a hidden span so
-      // the button doesn't visibly read "Check in Jo Fischer".
+      // Text buttons render actionLabels as visible content, so the name
+      // goes here instead to avoid "Check in Jo Fischer" showing on screen.
       accessibleActionLabels: {
         'Check in': t('inviteStatus.checkInAriaNamed', {
           name: invite.user.name,
@@ -336,11 +326,8 @@ export function ShiftInstanceVolunteersPanel({
 
         router.refresh();
       } catch {
-        // A server action rejects rather than returning serverError when the
-        // RPC call itself fails, the plain case being an offline browser.
-        // Without this the loading toast is never resolved, and sonner gives
-        // loading toasts no auto-dismiss and no close button, so it would sit
-        // there forever with no way to clear it.
+        // A rejected action (e.g. offline) would otherwise leave this
+        // loading toast stuck forever -- sonner gives it no auto-dismiss.
         toast.error(
           t('inviteStatus.statusChangeError', { name: invite.user.name }),
           { id: toastId },
@@ -383,8 +370,6 @@ export function ShiftInstanceVolunteersPanel({
           toast.success(t('checkIn.checkInSuccess'), { id: toastId });
           router.refresh();
         } catch {
-          // See applyStatus: a rejected server action would otherwise strand an
-          // undismissible loading toast.
           toast.error(t('checkIn.checkInError'), { id: toastId });
         } finally {
           markBusy(volunteerId, false);
@@ -415,8 +400,6 @@ export function ShiftInstanceVolunteersPanel({
           toast.success(t('checkIn.volunteerCheckedOut'), { id: toastId });
           router.refresh();
         } catch {
-          // See applyStatus: a rejected server action would otherwise strand an
-          // undismissible loading toast.
           toast.error(t('checkIn.checkOutError'), { id: toastId });
         } finally {
           markBusy(volunteerId, false);
@@ -462,8 +445,6 @@ export function ShiftInstanceVolunteersPanel({
           toast.success(t('inviteStatus.remindSuccess'), { id: toastId });
           router.refresh();
         } catch {
-          // See applyStatus: a rejected server action would otherwise strand an
-          // undismissible loading toast.
           toast.error(
             t('inviteStatus.remindError', { name: invite.user.name }),
             { id: toastId },

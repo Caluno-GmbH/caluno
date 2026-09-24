@@ -7,13 +7,7 @@ export type VolunteeringActionLabels = Partial<
   Record<VolunteeringActionLabel, string>
 >;
 
-/**
- * What a single action button should render: either the plain visible
- * label (no accessible label configured), or a visible label hidden from
- * assistive tech alongside the full accessible phrase read instead. Kept
- * as a pure function so the "does the name leak into the visible text"
- * decision can be unit tested without rendering the component.
- */
+/** Pure so the visible-vs-accessible-text split can be unit tested without rendering. */
 export type ActionButtonContent =
   | { kind: 'plain'; text: string }
   | { kind: 'accessible'; visibleText: string; accessibleText: string };
@@ -35,13 +29,7 @@ export type VolunteeringActionButtonsProps = {
   actions: VolunteeringActionLabel[];
   /** Localized button labels keyed by action id (defaults to English labels). */
   labels?: VolunteeringActionLabels;
-  /**
-   * Full accessible phrase keyed by action id (e.g. "Jo Fischer einchecken"),
-   * used only when the visible label alone would not identify which
-   * volunteer the button acts on. When set for an action, the visible label
-   * is hidden from assistive tech and this phrase is exposed instead via a
-   * sr-only span, preserving natural word order in every locale.
-   */
+  /** Announced instead of the visible label, so word order stays natural per locale. */
   accessibleLabels?: VolunteeringActionLabels;
   disabledActions?: VolunteeringActionLabel[];
   onAction?: (action: VolunteeringActionLabel) => void;

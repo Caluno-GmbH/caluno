@@ -408,11 +408,6 @@ export const SurfaceComparison: Story = {
   ),
 };
 
-/**
- * No statusOptions here, so this also proves the checked-out tooltip still
- * works on the new trigger-shaped static chip (see
- * volunteering-volunteer-row.tsx's no-options fallback).
- */
 export const CheckedOutWithTooltip: Story = {
   name: 'Detail page / checked out (tooltip)',
   render: () => (
@@ -443,12 +438,7 @@ export const CheckedOutWithTooltip: Story = {
   ),
 };
 
-/**
- * Mobile row layout, pinned to 375px so the two-line behaviour is always visible.
- * Deliberately all-German: German is the widest locale, so this is the worst case
- * the layout has to survive. Row 2 is the stress case and is expected to spill onto
- * a third line; see the comment on that row.
- */
+/** 375px + German (widest locale) is the worst case. Row 2 spilling to three lines is expected. */
 export const MobileRowLayout: Story = {
   name: 'Detail page / mobile row layout',
   render: () => (
@@ -472,9 +462,7 @@ export const MobileRowLayout: Story = {
             iconActions: ['View', 'Check in'],
           },
           {
-            // Worst case: the longest German status label beside a text action.
-            // Line 2 needs more width than 375px leaves after the pl-11 indent,
-            // so the button wraps under the chip and this row takes three lines.
+            // Longest German label: overflows 375px after the pl-11 indent.
             id: '2',
             name: 'Jo Fischer',
             state: 'requested',
@@ -483,7 +471,6 @@ export const MobileRowLayout: Story = {
             iconActions: ['View', 'Check in'],
           },
           {
-            // No text action at all, so line 2 is a bare status chip.
             id: '3',
             name: 'Tom Becker',
             state: 'declined',
@@ -513,7 +500,6 @@ export const StatusDropdownOpen: Story = {
         onStatusChange={() => {}}
         volunteers={[
           {
-            // Two transitions offered.
             id: '1',
             name: 'Jo Fischer',
             state: 'requested',
@@ -527,7 +513,6 @@ export const StatusDropdownOpen: Story = {
             iconActions: ['View', 'Check in'],
           },
           {
-            // One transition offered, the case that reads worst today.
             id: '2',
             name: 'Katharina Zimmer',
             state: 'accepted',
@@ -540,10 +525,6 @@ export const StatusDropdownOpen: Story = {
             iconActions: ['View', 'Check in'],
           },
           {
-            // No transitions, so this row must stay a static, trigger-sized
-            // chip (not a Badge) with no chevron -- same height/padding as
-            // the open dropdown's trigger above, but without its border or
-            // shadow.
             id: '3',
             name: 'Tom Becker',
             state: 'declined',
@@ -558,14 +539,8 @@ export const StatusDropdownOpen: Story = {
 };
 
 /**
- * Regression coverage for the bug fixed by this story's PR: Check in / Check
- * out are *text* buttons (unlike the icon-only View button), so putting a
- * per-volunteer named phrase straight into `actionLabels` made the button
- * literally read "Check in Jo Fischer" (German: "Jo Fischer einchecken" —
- * see commit 1db71fed). The fix renders the plain visible label plus a
- * hidden (sr-only) span carrying the full accessible phrase, so sighted
- * users still see just "Check in" while screen readers announce the
- * volunteer's name.
+ * Regression guard: a per-volunteer name in `actionLabels` renders visibly
+ * on text buttons ("Check in Jo Fischer") instead of only being announced.
  */
 export const AccessibleCheckInName: Story = {
   name: 'Detail page / accessible check-in name (regression)',
@@ -581,8 +556,6 @@ export const AccessibleCheckInName: Story = {
             name: 'Jo Fischer',
             state: 'accepted',
             actions: ['Check in'],
-            // Per-volunteer accessible phrase — must NOT appear in the
-            // visible button text, only in the hidden sr-only span.
             accessibleActionLabels: {
               'Check in': 'Check in Jo Fischer',
             },
@@ -594,15 +567,12 @@ export const AccessibleCheckInName: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    // The visible label stays the plain action name — this is the assertion
-    // that fails if the accessible phrase leaks back into the visible text.
     const visibleLabel = await canvas.findByText('Check in', {
       selector: 'span[aria-hidden="true"]',
     });
     expect(visibleLabel.textContent).toBe('Check in');
     expect(visibleLabel.textContent).not.toContain('Jo Fischer');
 
-    // The full accessible phrase is still exposed, just hidden visually.
     const button = await canvas.findByRole('button', {
       name: 'Check in Jo Fischer',
     });
@@ -610,22 +580,7 @@ export const AccessibleCheckInName: Story = {
   },
 };
 
-/**
- * Checked-in/checked-out volunteers have a time entry that removal would
- * orphan, so the shift-instance panel gives them no chip dropdown options
- * at all (see shift-instance-volunteers-panel.tsx's canRemoveAcceptedRow
- * guard). The row component doesn't know why options are empty -- it only
- * ever renders a dropdown when it has statusOptions and a static,
- * non-interactive chip when it does not -- so this story simulates that by
- * simply omitting statusOptions on rows that would otherwise have offered
- * Removed. The chip must be exactly as tall/padded as the open dropdown's
- * closed trigger, but with no chevron and, per product-owner ruling, no
- * border or shadow either -- it should match a dropdown in size only, so
- * it reads as visibly lighter and non-interactive next to one. The chevron
- * is omitted entirely (not rendered invisible with its space reserved), so
- * this chip reads very slightly narrower than a real dropdown trigger.
- * That's a deliberate call, not a bug -- flag it if it looks wrong.
- */
+/** Omits statusOptions the way the panel does for checked-in/out rows, to render the static chip. */
 export const CheckInProtectedChip: Story = {
   name: 'Detail page / check-in protected (no removal)',
   render: () => (
@@ -636,16 +591,12 @@ export const CheckInProtectedChip: Story = {
         onStatusChange={() => {}}
         volunteers={[
           {
-            // Checked in: no statusOptions, so no Removed dropdown -- only
-            // the Check out action button, same as the real panel.
             id: '1',
             name: 'Jo Fischer',
             state: 'checked_in',
             actions: ['Check out'],
           },
           {
-            // Checked out, with the existing checked-out tooltip: proves the
-            // tooltip still works when the chip has no dropdown.
             id: '2',
             name: 'Amara Diallo',
             state: 'checked_out',
@@ -658,9 +609,6 @@ export const CheckInProtectedChip: Story = {
             ),
           },
           {
-            // Busy: the row wrapper dims via opacity while a mutation is in
-            // flight. The static chip itself carries no disabled/opacity
-            // styling of its own, so it must not look "double disabled".
             id: '3',
             name: 'Theo Nowak',
             state: 'checked_in',

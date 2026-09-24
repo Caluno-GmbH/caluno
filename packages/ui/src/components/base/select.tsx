@@ -24,17 +24,8 @@ function SelectValue({
 }
 
 /**
- * Sizing/geometry classes only -- height, horizontal/vertical padding,
- * font-size, inner gap, and border-radius -- shared by SelectTrigger and any
- * non-interactive element that must occupy the exact same footprint without
- * looking like a control. Deliberately excludes border, box-shadow, focus
- * rings, hover/disabled states, and the background fill that makes a
- * SelectTrigger read as clickable: a product-owner ruling requires a static
- * chip built from this constant to match a dropdown in size only, not in
- * shadow or border, so the two read as one family in size while the static
- * chip still reads as visibly non-interactive next to a real dropdown or on
- * its own. Those excluded classes live only in SelectTrigger's own
- * className below.
+ * Sizing only. Border, shadow and focus/hover stay on SelectTrigger so
+ * static elements can borrow the footprint without looking interactive.
  */
 const selectTriggerSizingClassName =
   'flex w-fit items-center justify-between gap-2 rounded-md px-3 py-2 text-base whitespace-nowrap data-[size=default]:h-9 data-[size=sm]:h-8';

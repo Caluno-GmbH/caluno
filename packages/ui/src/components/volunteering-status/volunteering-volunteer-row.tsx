@@ -75,12 +75,10 @@ export type VolunteeringVolunteerRowProps = {
   iconActions?: VolunteeringActionLabel[];
   /** Localized button labels keyed by action id. */
   actionLabels?: VolunteeringActionLabels;
-  /** Full accessible phrase keyed by action id, for text actions whose visible label alone would not identify the volunteer. */
   accessibleActionLabels?: VolunteeringActionLabels;
   onAction?: (action: VolunteeringActionLabel) => void;
   onStatusChange?: (value: string) => void;
   className?: string;
-  /** True while this volunteer has a mutation in flight. */
   busy?: boolean;
 };
 
@@ -145,10 +143,8 @@ export function VolunteeringVolunteerRow({
         </SelectContent>
       </Select>
     ) : (
-      // Sized like SelectTrigger (data-size drives the height class) so
-      // hiding a row's dropdown never shifts the layout. Keeps a 1px
-      // --border rule, but no shadow and no chevron, so it reads as a
-      // label rather than a disabled control.
+      // data-size is load-bearing: the shared sizing class keys its height
+      // off it, so the chip matches a trigger and rows never shift.
       <span
         data-size="default"
         className={cn(

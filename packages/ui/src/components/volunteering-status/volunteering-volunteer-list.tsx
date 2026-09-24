@@ -33,19 +33,16 @@ export type VolunteeringVolunteerListItem = {
   /** Far-right icon-only actions (e.g. View profile, Check in). */
   iconActions?: VolunteeringActionLabel[];
   actionLabels?: VolunteeringActionLabels;
-  /** Full accessible phrase keyed by action id, for text actions whose visible label alone would not identify the volunteer. */
   accessibleActionLabels?: VolunteeringActionLabels;
-  /** True while this volunteer has a mutation in flight. */
   busy?: boolean;
 };
 
 export type VolunteeringVolunteerGroup = {
-  /** Stable accordion value, e.g. "coming". */
+  /** Accordion value; must stay stable or fold state resets. */
   key: string;
-  /** Localized section heading, e.g. "Coming". */
   label: string;
   volunteers: VolunteeringVolunteerListItem[];
-  /** Sections default to open unless this is explicitly false. */
+  /** Open unless explicitly false. */
   defaultOpen?: boolean;
 };
 
@@ -54,19 +51,17 @@ export type VolunteeringVolunteerListProps = {
   phase?: ShiftVolunteeringPhase;
   /** Card title, defaults to "Volunteers". */
   title?: string;
-  /** Rendered immediately after the title, e.g. a capacity badge. */
   titleBadge?: ReactNode;
   /** Optional action rendered in the card header (e.g. Invite button). */
   headerAction?: ReactNode;
   /** Localized button labels keyed by action id. */
   actionLabels?: VolunteeringActionLabels;
-  /** Full accessible phrase keyed by action id, for text actions whose visible label alone would not identify the volunteer. */
   accessibleActionLabels?: VolunteeringActionLabels;
   onAction?: (volunteerId: string, action: VolunteeringActionLabel) => void;
   /** Chip dropdown selection: move volunteer to the chosen status value. */
   onStatusChange?: (volunteerId: string, value: string) => void;
   className?: string;
-  /** When set, renders foldable sections instead of one flat list. */
+  /** When set, replaces the flat `volunteers` list with foldable sections. */
   groups?: VolunteeringVolunteerGroup[];
 };
 
@@ -85,9 +80,7 @@ function VolunteerRows({
   onAction?: (volunteerId: string, action: VolunteeringActionLabel) => void;
   onStatusChange?: (volunteerId: string, value: string) => void;
 }) {
-  // An empty ul still announces "list, 0 items", which is noise rather than
-  // information. The grouped branch filters empty groups out before this point;
-  // the flat branch does not, so guard here.
+  // An empty <ul> still announces "list, 0 items".
   if (volunteers.length === 0) {
     return null;
   }
@@ -152,16 +145,9 @@ export function VolunteeringVolunteerList({
 }: VolunteeringVolunteerListProps) {
   return (
     <Card className={cn('gap-0 py-0', className)}>
-      {/*
-        grid-rows-[auto] collapses CardHeader's default two-row template to the one
-        row we actually fill. The empty second track still cost its 8px row gap.
-      */}
+      {/* grid-rows-[auto]: the unused second track costs an 8px row gap. */}
       <CardHeader className="grid-rows-[auto] border-b py-4">
-        {/*
-          Deliberately not CardAction: that slot is pinned to grid column 2, so the
-          actions can never drop below the title. This flex row keeps them on the
-          right when they fit and wraps them onto a second line when they do not.
-        */}
+        {/* Not CardAction: pinned to column 2, so it can't wrap below the title. */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <CardTitle className="flex flex-wrap items-center gap-x-2 gap-y-1 text-lg">
             <span>{title}</span>
