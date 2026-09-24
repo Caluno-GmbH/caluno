@@ -44,6 +44,21 @@ export function getVisibilityConfig(t: (key: string) => string) {
   };
 }
 
+export function getApprovalConfig(
+  t: (key: string) => string,
+  joinRequiresApproval: boolean,
+) {
+  return joinRequiresApproval
+    ? {
+        variant: 'secondary' as const,
+        label: t('detail.approvalRequiredLabel'),
+      }
+    : {
+        variant: 'outline' as const,
+        label: t('detail.approvalNotRequiredLabel'),
+      };
+}
+
 export async function ShiftsTable({
   shifts,
   orgUId,

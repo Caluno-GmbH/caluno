@@ -9,11 +9,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import {
-  getClosestShiftDayOnOrAfter,
-  isSameDay,
-  type SparseDayStripEntry,
-} from '../lib/date-helpers';
+import { isSameDay, type SparseDayStripEntry } from '../lib/date-helpers';
 
 export interface DayStripDay {
   date: Date;
@@ -433,10 +429,8 @@ function ScrollDayStrip({
 /**
  * Sparse day strip (my-shifts): only days with shifts, plus non-interactive
  * "…" gap dividers for stretches of empty days (see `sparseDays`). Mirrors
- * `ScrollDayStrip`'s scaffolding, but "go to top" always jumps to the
- * closest upcoming shift-day rather than specifically "today" — the label
- * and enabled state don't depend on whether the active day happens to be
- * today.
+ * `ScrollDayStrip`'s scaffolding; "go to top" scrolls the page to the top
+ * of the list (where "Load past" lives).
  */
 function SparseScrollDayStrip({
   sparseDays,
@@ -498,9 +492,8 @@ function SparseScrollDayStrip({
   };
 
   const scrollToTop = useCallback(() => {
-    const target = getClosestShiftDayOnOrAfter(dayEntries, new Date());
-    if (target) onSelect(target.date);
-  }, [dayEntries, onSelect]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Keep the active pill in view as the selection changes (e.g. scroll-spy).
   // Snapped instantly — see the equivalent effect in `ScrollDayStrip` for why.
