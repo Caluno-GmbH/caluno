@@ -140,7 +140,10 @@ function VolunteerSheetContent({
           </div>
         ) : (
           <div className="space-y-2">
-            <InfoRow label={t('emailLabel')} value={email} />
+            {/* Prefer the fetched user, as the check-in id below already
+                does: a caller that only knows the volunteer's id and name can
+                open this sheet without carrying their address around. */}
+            <InfoRow label={t('emailLabel')} value={user?.email ?? email} />
             {street && <InfoRow label={t('streetLabel')} value={street} />}
             {zip && <InfoRow label={t('zipLabel')} value={zip} />}
             {city && <InfoRow label={t('cityLabel')} value={city} />}
