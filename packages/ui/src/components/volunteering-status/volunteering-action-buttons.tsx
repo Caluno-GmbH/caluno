@@ -1,6 +1,5 @@
 import { cn } from '../../lib/utils';
 import { Button } from '../base/button';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../tooltip';
 import { volunteeringActionIcons } from './config';
 import type { VolunteeringActionLabel } from './types';
 
@@ -8,12 +7,31 @@ export type VolunteeringActionLabels = Partial<
   Record<VolunteeringActionLabel, string>
 >;
 
+/** Pure so the visible-vs-accessible-text split can be unit tested without rendering. */
+export type ActionButtonContent =
+  | { kind: 'plain'; text: string }
+  | { kind: 'accessible'; visibleText: string; accessibleText: string };
+
+export function resolveActionButtonContent(
+  visibleLabel: string,
+  accessibleLabel: string | undefined,
+): ActionButtonContent {
+  return accessibleLabel
+    ? {
+        kind: 'accessible',
+        visibleText: visibleLabel,
+        accessibleText: accessibleLabel,
+      }
+    : { kind: 'plain', text: visibleLabel };
+}
+
 export type VolunteeringActionButtonsProps = {
   actions: VolunteeringActionLabel[];
   /** Localized button labels keyed by action id (defaults to English labels). */
   labels?: VolunteeringActionLabels;
+  /** Announced instead of the visible label, so word order stays natural per locale. */
+  accessibleLabels?: VolunteeringActionLabels;
   disabledActions?: VolunteeringActionLabel[];
-  actionTooltips?: Partial<Record<VolunteeringActionLabel, string>>;
   onAction?: (action: VolunteeringActionLabel) => void;
   className?: string;
 };
@@ -21,8 +39,8 @@ export type VolunteeringActionButtonsProps = {
 export function VolunteeringActionButtons({
   actions,
   labels,
+  accessibleLabels,
   disabledActions,
-  actionTooltips,
   onAction,
   className,
 }: VolunteeringActionButtonsProps) {
@@ -34,9 +52,12 @@ export function VolunteeringActionButtons({
     >
       {actions.map((actionLabel) => {
         const ActionIcon = volunteeringActionIcons[actionLabel];
-        const tooltip = actionTooltips?.[actionLabel];
+        const content = resolveActionButtonContent(
+          labels?.[actionLabel] ?? actionLabel,
+          accessibleLabels?.[actionLabel],
+        );
 
-        const button = (
+        return (
           <Button
             key={actionLabel}
             type="button"
@@ -46,23 +67,15 @@ export function VolunteeringActionButtons({
             onClick={() => onAction?.(actionLabel)}
           >
             {ActionIcon ? <ActionIcon aria-hidden /> : null}
-            {labels?.[actionLabel] ?? actionLabel}
+            {content.kind === 'accessible' ? (
+              <>
+                <span aria-hidden="true">{content.visibleText}</span>
+                <span className="sr-only">{content.accessibleText}</span>
+              </>
+            ) : (
+              content.text
+            )}
           </Button>
-        );
-
-        if (!tooltip) {
-          return button;
-        }
-
-        return (
-          <Tooltip key={actionLabel}>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">{button}</span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-xs">
-              {tooltip}
-            </TooltipContent>
-          </Tooltip>
         );
       })}
     </div>
