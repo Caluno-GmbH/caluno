@@ -1,11 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "d9916940-3dd2-46b2-a0f9-84de1ac1c816",
-  "prevIds": [
-    "034c16f5-e490-41c5-ab73-5f237ba1331e",
-    "bcca988b-dfe6-4b44-af14-9d7465b275ec"
-  ],
+  "id": "0f0242c8-d61b-4967-8f3c-522459271c35",
+  "prevIds": ["e7a48451-9d65-47be-bf0b-b7bd0b67f7b6"],
   "ddl": [
     {
       "values": [
@@ -1256,6 +1253,19 @@
       "table": "invoices"
     },
     {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "hourly_rate_cents",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "invoices"
+    },
+    {
       "type": "numeric(10,2)",
       "typeSchema": null,
       "notNull": true,
@@ -1407,6 +1417,19 @@
       "generated": null,
       "identity": null,
       "name": "document_number_seq",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "invoices"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "document_number_year",
       "entityType": "columns",
       "schema": "public",
       "table": "invoices"
@@ -3668,20 +3691,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "address",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "organizations"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "city",
+      "name": "street",
       "entityType": "columns",
       "schema": "public",
       "table": "organizations"
@@ -3695,6 +3705,19 @@
       "generated": null,
       "identity": null,
       "name": "zip_code",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organizations"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
       "entityType": "columns",
       "schema": "public",
       "table": "organizations"
@@ -3941,20 +3964,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "address",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "organization_units"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "city",
+      "name": "street",
       "entityType": "columns",
       "schema": "public",
       "table": "organization_units"
@@ -3968,6 +3978,19 @@
       "generated": null,
       "identity": null,
       "name": "zip_code",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organization_units"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
       "entityType": "columns",
       "schema": "public",
       "table": "organization_units"

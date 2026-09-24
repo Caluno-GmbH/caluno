@@ -1,1 +1,0 @@
-ALTER TABLE "invoices" ADD COLUMN "hourly_rate_cents" integer;

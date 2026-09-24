@@ -1,8 +1,8 @@
 {
+  "id": "7598f2ea-9471-42ab-8d50-ac67dd95af11",
+  "prevIds": ["0f0242c8-d61b-4967-8f3c-522459271c35"],
   "version": "8",
   "dialect": "postgres",
-  "id": "7d1243d9-27f9-4d9b-a93d-7c7371e402a8",
-  "prevIds": ["f61ff89d-8db7-481f-8e7a-571caa8f72c1"],
   "ddl": [
     {
       "values": [
@@ -3691,20 +3691,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "address",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "organizations"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "city",
+      "name": "street",
       "entityType": "columns",
       "schema": "public",
       "table": "organizations"
@@ -3718,6 +3705,19 @@
       "generated": null,
       "identity": null,
       "name": "zip_code",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organizations"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
       "entityType": "columns",
       "schema": "public",
       "table": "organizations"
@@ -3964,20 +3964,7 @@
       "default": null,
       "generated": null,
       "identity": null,
-      "name": "address",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "organization_units"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "city",
+      "name": "street",
       "entityType": "columns",
       "schema": "public",
       "table": "organization_units"
@@ -3991,6 +3978,19 @@
       "generated": null,
       "identity": null,
       "name": "zip_code",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "organization_units"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "city",
       "entityType": "columns",
       "schema": "public",
       "table": "organization_units"
