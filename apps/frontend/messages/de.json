@@ -2305,6 +2305,14 @@
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
+        "orgOverride": {
+          "orgHint": "Aus den Organisationsdaten übernommen.",
+          "overriddenHint": "Für diese Vorlage manuell angegeben.",
+          "editingHint": "Leer lassen, um wieder die Organisationsdaten zu verwenden.",
+          "missingValue": "nicht hinterlegt",
+          "editButtonLabel": "Bearbeiten",
+          "saveButtonLabel": "Übernehmen"
+        },
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",

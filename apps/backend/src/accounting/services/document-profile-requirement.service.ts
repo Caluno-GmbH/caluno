@@ -61,6 +61,14 @@ export class DocumentProfileRequirementService {
     }
     collectLine(template.footer?.closingLine);
 
+    // A detail the template states by hand is no longer taken from the
+    // organisation, so the profile is not required to supply it.
+    const overrides = (template as { orgOverrides?: Record<string, string> })
+      .orgOverrides;
+    for (const [source, value] of Object.entries(overrides ?? {})) {
+      if (value?.trim()) sources.delete(source);
+    }
+
     return [...sources];
   }
 

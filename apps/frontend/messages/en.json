@@ -2305,6 +2305,14 @@
           "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         },
+        "orgOverride": {
+          "orgHint": "Taken from the organisation details.",
+          "overriddenHint": "Stated by hand for this template.",
+          "editingHint": "Leave empty to go back to the organisation details.",
+          "missingValue": "not set",
+          "editButtonLabel": "Edit",
+          "saveButtonLabel": "Apply"
+        },
         "blockEditor": {
           "headerTitle": "Header",
           "invoiceNumberFormatLabel": "Document number format",

@@ -15,6 +15,8 @@ import type {
 export type {
   DataSourceKey,
   InvoiceNumberFormat,
+  OrgOverrideSource,
+  OrgOverrides,
   TableFirstColumnSource,
   TemplateBlock,
   TemplateDocument,
@@ -27,6 +29,7 @@ export type {
   TemplateTableBlock,
   TemplateTextBlock,
 } from '@repo/data';
+export { ORG_OVERRIDE_SOURCES } from '@repo/data';
 
 export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
@@ -311,6 +314,10 @@ export function missingOrgProfileSourcesForOrg(
   };
 
   return [...bound].filter((source) => {
+    // A detail the template states by hand is no longer taken from the
+    // organisation, so the profile need not supply it.
+    const overrides: Partial<Record<string, string>> = doc.orgOverrides ?? {};
+    if (overrides[source]?.trim()) return false;
     const value = valueBySource[source];
     return typeof value !== 'string' || value.trim() === '';
   });

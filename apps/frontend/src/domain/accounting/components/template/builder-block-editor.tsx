@@ -26,6 +26,7 @@ import { useId } from 'react';
 import type { DocumentKind } from '../doc-type-header';
 import { InfoPanel } from '../info-panel';
 import { blockHeadingKey } from './builder-headings';
+import { BuilderOrgOverrideCard } from './builder-org-override-card';
 import { TemplateBuilderPeriodPicker } from './builder-period-picker';
 import {
   type DataSourceKey,
@@ -35,6 +36,8 @@ import {
   type InvoiceNumberFormat,
   invoiceNumberNeedsKostenstelle,
   KOSTENSTELLE_LINE_ID,
+  ORG_OVERRIDE_SOURCES,
+  type OrgOverrideSource,
   type TableFirstColumnSource,
   type TemplateBlock,
   type TemplateDocument,
@@ -51,13 +54,13 @@ import {
  * blocks. The legal text stays organized by clause; the editor groups the same fields by
  * what a coordinator is actually filling in (org info, volunteer info, engagement terms).
  */
-const ORG_SOURCES: DataSourceKey[] = [
-  'org_name',
-  'org_street',
-  'org_zip',
-  'org_city',
-  'org_legal_rep',
-];
+/**
+ * Organisation details are no longer listed field by field: they are stated
+ * once in the override section, which resolves them for the letterhead, the
+ * document text and the signature seat alike. Only the manual line about the
+ * contracting parties still belongs to that group.
+ */
+const ORG_MANUAL_FIELD_IDS = ['parties-additional-info'];
 const VOLUNTEER_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
   'volunteer_last_name',
@@ -129,13 +132,11 @@ export function collectContractEditorGroups(
         if (field.value.kind === 'bound') {
           const source = field.value.source;
           if (seenSources.has(source)) continue;
-          const target = ORG_SOURCES.includes(source)
-            ? org
-            : VOLUNTEER_SOURCES.includes(source)
-              ? volunteer
-              : ENGAGEMENT_SOURCES.includes(source)
-                ? engagement
-                : null;
+          const target = VOLUNTEER_SOURCES.includes(source)
+            ? volunteer
+            : ENGAGEMENT_SOURCES.includes(source)
+              ? engagement
+              : null;
           if (!target) continue;
           // Optional lines are toggled as a whole; one entry per line so the
           // editor never stacks N identical LineEditors for N fields on it.
@@ -150,6 +151,9 @@ export function collectContractEditorGroups(
           if (ENGAGEMENT_MANUAL_FIELD_IDS.includes(field.id)) {
             seenManualIds.add(field.id);
             engagement.push(entry);
+          } else if (ORG_MANUAL_FIELD_IDS.includes(field.id)) {
+            seenManualIds.add(field.id);
+            org.push(entry);
           }
         }
       }
@@ -794,6 +798,56 @@ interface ContractGroupSectionProps {
   extra?: ReactNode;
 }
 
+/** The organisation as this template states it — its own details, or a body the coordinator named. */
+function OrgOverrideSection({
+  kind,
+  templateDoc,
+  knownValues,
+  onChange,
+  extra,
+}: {
+  kind: DocumentKind;
+  templateDoc: TemplateDocument;
+  knownValues: Partial<Record<DataSourceKey, string>>;
+  onChange: (doc: TemplateDocument) => void;
+  extra?: ReactNode;
+}) {
+  const t = useTranslations('Accounting.templates.builder');
+  // A timesheet has no engagement sentence, so no facility to name separately.
+  const sources = ORG_OVERRIDE_SOURCES.filter(
+    (source) => kind === 'contract' || source !== 'org_facility_name',
+  );
+
+  const setOverride = (source: OrgOverrideSource, value: string) => {
+    const next = { ...(templateDoc.orgOverrides ?? {}) };
+    // An emptied field is an override withdrawn, not an empty one stored.
+    if (value.trim()) {
+      next[source] = value.trim();
+    } else {
+      delete next[source];
+    }
+    onChange({ ...templateDoc, orgOverrides: next });
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <span className={SECTION_TITLE_CLASSNAME}>{t('editorGroups.org')}</span>
+      <div className="flex flex-col gap-3">
+        {sources.map((source) => (
+          <BuilderOrgOverrideCard
+            key={source}
+            source={source}
+            orgValue={knownValues[source]}
+            override={templateDoc.orgOverrides?.[source]}
+            onChange={(value) => setOverride(source, value)}
+          />
+        ))}
+        {extra}
+      </div>
+    </div>
+  );
+}
+
 function ContractGroupSection({
   title,
   entries,
@@ -943,15 +997,27 @@ export function TemplateBuilderBlockEditor({
 
     return (
       <div className="flex flex-col gap-6">
-        <ContractGroupSection
-          title={t('editorGroups.org')}
-          entries={groups.org}
-          firstOccurrenceByFieldId={firstOccurrenceByFieldId}
-          profileGaps={profileGaps}
+        <OrgOverrideSection
+          kind="contract"
+          templateDoc={templateDoc}
           knownValues={knownValues}
-          typeLabel={typeLabel}
-          onLineToggle={handleLineToggle}
-          onFieldChange={handleFieldChange}
+          onChange={onChange}
+          // The optional line about the contracting parties sits with them,
+          // under the organisation it adds information to.
+          extra={groups.org.map(({ line, blockId }) => (
+            <LineEditor
+              key={line.id}
+              line={line}
+              firstOccurrenceByFieldId={firstOccurrenceByFieldId}
+              profileGaps={profileGaps}
+              knownValues={knownValues}
+              typeLabel={typeLabel}
+              onToggle={(lineId, enabled) =>
+                handleLineToggle(blockId, lineId, enabled)
+              }
+              onFieldChange={handleFieldChange}
+            />
+          ))}
         />
         <ContractGroupSection
           title={t('editorGroups.volunteer')}
@@ -1000,6 +1066,13 @@ export function TemplateBuilderBlockEditor({
 
   return (
     <div className="flex flex-col gap-6">
+      <OrgOverrideSection
+        kind="invoice"
+        templateDoc={templateDoc}
+        knownValues={knownValues}
+        onChange={onChange}
+      />
+
       {hasHeaderConfig && (
         <div className="flex flex-col gap-3">
           <span className={SECTION_TITLE_CLASSNAME}>
