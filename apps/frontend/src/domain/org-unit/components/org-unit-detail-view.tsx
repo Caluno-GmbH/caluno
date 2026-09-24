@@ -14,7 +14,7 @@ import {
   UserIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { formatOrgAddress } from '@/domain/org-unit/format-address';
+import { formatAddress } from '@/domain/org-unit/format-address';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { FORM_ID, OrgUnitCreateEditSheet } from './org-unit-create-edit-sheet';
 
@@ -37,7 +37,7 @@ export function OrgUnitDetailView({
   const t = useTranslations('OrgUnit.detail');
   const tNav = useTranslations('Navigation');
 
-  const addressText = formatOrgAddress(orgUnit);
+  const addressText = formatAddress(orgUnit);
   const hasContact =
     orgUnit.contactPersonName ||
     orgUnit.contactEmail ||

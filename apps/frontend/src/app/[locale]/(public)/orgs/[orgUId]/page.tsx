@@ -9,7 +9,7 @@ import { OrgEventsSection } from '@/domain/org-unit/components/org-events-sectio
 import { OrgJoinButton } from '@/domain/org-unit/components/org-join-button';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import { OrgShiftsSection } from '@/domain/org-unit/components/org-shifts-section';
-import { formatOrgAddress } from '@/domain/org-unit/format-address';
+import { formatAddress } from '@/domain/org-unit/format-address';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { getInitials } from '@/lib/get-initials';
@@ -52,7 +52,7 @@ export default async function OrgPage({ params }: OrgPageProps) {
     throw error;
   }
 
-  const addressText = formatOrgAddress(org);
+  const addressText = formatAddress(org);
 
   return (
     <div className="relative flex min-h-screen flex-col">

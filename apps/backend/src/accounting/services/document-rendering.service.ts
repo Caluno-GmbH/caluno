@@ -7,6 +7,7 @@ import * as schema from '../../database/schema';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
+import { formatAddress } from '../../utils/format-address';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
@@ -34,16 +35,6 @@ type RenderableDocument = ContractWithRelations | InvoiceWithRelations;
 const EUR = '€';
 
 const AMOUNT_COLUMN = 'Betrag';
-
-/**
- * "Musterstraße 1, 12345 Stadt" — the postcode and town follow the street on
- * one line, and any part the volunteer has not filled in is simply left out
- * rather than leaving a stray comma behind.
- */
-function joinAddress(street: string, zip: string, city: string): string {
-  const town = [zip.trim(), city.trim()].filter(Boolean).join(' ');
-  return [street.trim(), town].filter(Boolean).join(', ');
-}
 
 /** Human label for the reimbursement type key rendered for the `pauschalen_type` source. */
 const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
@@ -601,11 +592,13 @@ export class DocumentRenderingService {
       // so the other two could never reach a document. Composed here rather
       // than added as two more placeholders, because the address occupies one
       // line in both presets and a single value keeps it that way (VOLI-1351).
-      volunteer_address: joinAddress(
-        str(profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_address]),
-        str(profileData.zip),
-        str(profileData.city),
-      ),
+      volunteer_address: formatAddress({
+        street: str(
+          profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_address],
+        ),
+        zipCode: str(profileData.zip),
+        city: str(profileData.city),
+      }),
       volunteer_dob: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_dob],
       ),

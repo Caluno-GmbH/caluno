@@ -69,8 +69,8 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
 export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
   org_name: 'name',
   org_address: 'street',
-  org_city: 'city',
   org_zip: 'zipCode',
+  org_city: 'city',
   org_legal_rep: 'legalRep',
 };
 
@@ -89,6 +89,7 @@ export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
 export const REQUIRED_ORG_PROFILE_SOURCES = [
   'org_name',
   'org_address',
+  'org_zipCode',
   'org_city',
 ] as const;
 

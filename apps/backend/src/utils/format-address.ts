@@ -1,4 +1,4 @@
-// duplicated in the backend
+// duplicated in the frontend
 
 export type AddressParts = {
   street?: string | null | undefined;

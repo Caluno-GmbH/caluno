@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { formatAddress } from './format-address';
 
-// duplicated in the backend
+// duplicated in the frontend
 
 describe('formatOrgAddress', () => {
   it('joins street and zip+city with a comma by default', () => {

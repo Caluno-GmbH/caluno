@@ -587,7 +587,7 @@ export type Invoice = {
   declinedByUser?: Maybe<User>;
   documentTemplate: DocumentTemplate;
   downloadUrl?: Maybe<Scalars['String']['output']>;
-  hourlyRateCents?: Maybe<Scalars['Int']['output']>;
+  hourlyRateCents: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   invoiceStatus: InvoiceStatus;
   invoiceTimeEntries: Array<InvoiceTimeEntry>;
