@@ -14,7 +14,7 @@ export const EmptyVolunteerMatches = () => {
   const t = useTranslations('Volunteer');
 
   return (
-    <Empty className="border border-dashed">
+    <Empty>
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <SearchX />

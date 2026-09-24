@@ -12,6 +12,7 @@ import {
   AvatarImage,
   Badge,
   Button,
+  Checkbox,
   Input,
   Skeleton,
   Table,
@@ -25,7 +26,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui';
-import { ScanQrCode, Search, UserRound } from 'lucide-react';
+import { Copy, ScanQrCode, Search, UserRound, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -40,8 +41,14 @@ import {
 import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
 import { matchesVolunteerQuery } from '@/domain/volunteer/volunteer-search';
+import {
+  headerCheckedState,
+  joinEmails,
+  toggleVisible,
+} from '@/domain/volunteer/volunteer-selection';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { copyToClipboard } from '@/lib/clipboard';
 import { CopyableEmailCell } from './copyable-email-cell';
 import { VolunteerRequiredFormsPopover } from './required-forms-popover';
 import { RoleSelectCell } from './role-select-cell';
@@ -61,6 +68,9 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
   const [search, setSearch] = useState('');
+  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
 
   if (isPending) {
     return (
@@ -94,6 +104,17 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const visible = memberships.filter((membership) =>
     matchesVolunteerQuery(membership, search, roleLabel),
   );
+  const visibleIds = visible.map((m) => m.id);
+
+  const handleCopyEmails = () => {
+    const emails = memberships
+      .filter((membership) => selectedIds.has(membership.id))
+      .map((membership) => membership.user.email);
+    copyToClipboard(
+      joinEmails(emails),
+      t('table.emailsCopied', { count: emails.length }),
+    );
+  };
 
   return (
     <div className="space-y-2">
@@ -103,99 +124,157 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder={t('search.placeholder')}
-          className="pl-9"
+          className="pl-9 pr-10"
         />
+        {search && (
+          <Button
+            size="icon-xs"
+            variant="ghost"
+            onClick={() => setSearch('')}
+            tooltip={t('search.clearAria')}
+            className="absolute top-2 right-2"
+          >
+            <X />
+          </Button>
+        )}
       </div>
 
-      {visible.length === 0 ? (
-        <EmptyVolunteerMatches />
-      ) : (
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('table.name')}</TableHead>
-                <TableHead>{t('table.email')}</TableHead>
-                <TableHead>{t('table.roles')}</TableHead>
-                <TableHead></TableHead>
+      <div className="rounded-md border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={headerCheckedState(visibleIds, selectedIds)}
+                  onCheckedChange={() =>
+                    setSelectedIds(toggleVisible(visibleIds, selectedIds))
+                  }
+                  disabled={visibleIds.length === 0}
+                  aria-label={t('table.selectAllAria')}
+                />
+              </TableHead>
+              <TableHead>{t('table.name')}</TableHead>
+              <TableHead>
+                <div className="flex min-h-11 items-center gap-2">
+                  {selectedIds.size > 0 ? (
+                    <Button
+                      size="md"
+                      variant="ghost"
+                      onClick={handleCopyEmails}
+                      className="-ml-3"
+                    >
+                      {t('table.copySelectedEmails', {
+                        count: selectedIds.size,
+                      })}
+                      <Copy />
+                    </Button>
+                  ) : (
+                    t('table.email')
+                  )}
+                </div>
+              </TableHead>
+              <TableHead>{t('table.roles')}</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visible.length === 0 && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={5}>
+                  <EmptyVolunteerMatches />
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visible.map((membership) => {
-                const openProfile = () =>
-                  openVolunteerSheet({
-                    userId: membership.user.id,
-                    volunteerName: membership.user.name,
-                    volunteerStatus: MembershipRequestStatus.Accepted,
-                    volunteerEmail: membership.user.email,
-                    volunteerCheckInId: membership.user.checkInId,
-                  });
+            )}
+            {visible.map((membership) => {
+              const openProfile = () =>
+                openVolunteerSheet({
+                  userId: membership.user.id,
+                  volunteerName: membership.user.name,
+                  volunteerStatus: MembershipRequestStatus.Accepted,
+                  volunteerEmail: membership.user.email,
+                  volunteerCheckInId: membership.user.checkInId,
+                });
 
-                return (
-                  <TableRow key={membership.id}>
-                    <TableCell>
-                      <button
-                        type="button"
-                        onClick={openProfile}
-                        aria-label={t('table.openProfileAria', {
-                          name: membership.user.name,
-                        })}
-                        className="flex items-center gap-2 rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              return (
+                <TableRow key={membership.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(membership.id)}
+                      onCheckedChange={(checked) =>
+                        setSelectedIds((current) => {
+                          const next = new Set(current);
+                          if (checked) next.add(membership.id);
+                          else next.delete(membership.id);
+                          return next;
+                        })
+                      }
+                      aria-label={t('table.selectVolunteerAria', {
+                        name: membership.user.name,
+                      })}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <button
+                      type="button"
+                      onClick={openProfile}
+                      aria-label={t('table.openProfileAria', {
+                        name: membership.user.name,
+                      })}
+                      className="flex items-center gap-2 rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    >
+                      <Avatar size="sm">
+                        <AvatarImage
+                          src={membership.user.image ?? undefined}
+                          alt={tCommon('avatarAlt', {
+                            name: membership.user.name,
+                          })}
+                        />
+                        <AvatarFallback>
+                          <UserRound className="size-3" />
+                        </AvatarFallback>
+                      </Avatar>
+                      {membership.user.name}
+                    </button>
+                  </TableCell>
+                  <TableCell>
+                    <CopyableEmailCell
+                      email={membership.user.email}
+                      volunteerName={membership.user.name}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <RoleSelectCell
+                      membershipId={membership.id}
+                      roles={membership.roles}
+                      orgUId={orgUId}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
+                        aria-label={t('action.checkInAria')}
                       >
-                        <Avatar size="sm">
-                          <AvatarImage
-                            src={membership.user.image ?? undefined}
-                            alt={tCommon('avatarAlt', {
-                              name: membership.user.name,
-                            })}
-                          />
-                          <AvatarFallback>
-                            <UserRound className="size-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                        {membership.user.name}
-                      </button>
-                    </TableCell>
-                    <TableCell>
-                      <CopyableEmailCell
-                        email={membership.user.email}
+                        <Button
+                          size="icon-md"
+                          variant="outline"
+                          tooltip={t('action.checkInShiftAria')}
+                        >
+                          <ScanQrCode />
+                        </Button>
+                      </Link>
+                      <RemoveMembershipButton
+                        membershipId={membership.id}
                         volunteerName={membership.user.name}
                       />
-                    </TableCell>
-                    <TableCell>
-                      <RoleSelectCell
-                        membershipId={membership.id}
-                        roles={membership.roles}
-                        orgUId={orgUId}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
-                          aria-label={t('action.checkInAria')}
-                        >
-                          <Button
-                            size="icon-md"
-                            variant="outline"
-                            tooltip={t('action.checkInShiftAria')}
-                          >
-                            <ScanQrCode />
-                          </Button>
-                        </Link>
-                        <RemoveMembershipButton
-                          membershipId={membership.id}
-                          volunteerName={membership.user.name}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
