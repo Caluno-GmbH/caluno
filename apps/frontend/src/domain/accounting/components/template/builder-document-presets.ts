@@ -300,12 +300,16 @@ export function getInvoiceDocument(
         id: 'stundennachweis',
         title: 'Stundennachweis',
         locked: true,
+        // The rate column is headed "€/h" rather than "Stundensatz": the header
+        // was the widest thing in it by some margin, and the room it held came
+        // out of the task description beside it. "h" and not "Std" because the
+        // hours cells below already print "10h" — one abbreviation per unit.
         columns: [
           'Tätigkeit',
           'Beginn',
           'Ende',
           'Stunden gesamt',
-          'Stundensatz',
+          '€/h',
           'Betrag',
         ],
         previewRowCount: 10,

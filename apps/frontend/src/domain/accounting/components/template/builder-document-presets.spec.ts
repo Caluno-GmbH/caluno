@@ -49,3 +49,21 @@ describe('timesheet free text', () => {
     expect(fieldOf(invoiceBlock)?.control).toBe('textarea');
   });
 });
+
+describe('timesheet table columns', () => {
+  it('Heads the rate column with the same hours unit the cells below use', () => {
+    const doc = getInvoiceDocument('ehrenamt');
+    const table = doc.blocks.find((b) => b.id === 'stundennachweis');
+
+    expect(table?.kind).toBe('table');
+    if (table?.kind !== 'table') throw new Error('expected a table block');
+    expect(table.columns).toEqual([
+      'Tätigkeit',
+      'Beginn',
+      'Ende',
+      'Stunden gesamt',
+      '€/h',
+      'Betrag',
+    ]);
+  });
+});
