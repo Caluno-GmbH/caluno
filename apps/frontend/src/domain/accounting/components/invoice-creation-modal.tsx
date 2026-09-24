@@ -21,7 +21,7 @@ import {
 } from '@repo/data/react';
 import { Input } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
 import { useRouter } from '@/i18n/navigation';
@@ -340,10 +340,22 @@ export function InvoiceCreationModal({
         ? 'loaded'
         : 'loading';
 
-  // Seed the editable fields once from the loaded profile/template, then leave
-  // them alone — later re-renders shouldn't clobber a coordinator's edits.
+  // Which template, and for whom, the fields below were derived from. The modal
+  // stays mounted between openings, so seeding once and never again left it
+  // showing the fields of whichever template and volunteer it happened to open
+  // on first — a free-text block switched on afterwards never appeared.
+  const seedKey =
+    invoiceTemplateQuery.data && volunteerId
+      ? `${invoiceTemplateQuery.data.id}:${invoiceTemplateQuery.data.lastEditedAt ?? ''}:${volunteerId}`
+      : null;
+  const seededFor = useRef<string | null>(null);
+
+  // Re-derived when that changes, and otherwise left alone so a later re-render
+  // (rate data arriving, say) cannot clobber a coordinator's edits.
   useEffect(() => {
-    if (!dataReady || !template || derivedFields || !volunteerName) return;
+    if (!dataReady || !template || !volunteerName || !seedKey) return;
+    if (seededFor.current === seedKey) return;
+    seededFor.current = seedKey;
     const profileData = (profileQuery.data?.data ?? {}) as Record<
       string,
       unknown
@@ -351,7 +363,8 @@ export function InvoiceCreationModal({
     setDerivedFields(
       deriveEditableFields(template, profileData, volunteerName),
     );
-  }, [dataReady, template, derivedFields, profileQuery.data, volunteerName]);
+    setEditedValues({});
+  }, [dataReady, template, profileQuery.data, volunteerName, seedKey]);
 
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the
@@ -463,9 +476,18 @@ export function InvoiceCreationModal({
   const monthParam = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`;
   const timesheetsHref = `/admin/${orgUId}/timesheets?month=${monthParam}&volunteer=${volunteerId}`;
 
-  const kostenstelle = template
-    ? getManualFieldValue(template, 'kostenstelle')
-    : undefined;
+  // This document's own edit first, then the template's stored value — the same
+  // order the backend uses when it allocates the real number.
+  const manualOverrides: Record<string, string> = {};
+  for (const field of derivedFields ?? []) {
+    if (field.kind !== 'manual') continue;
+    const value = currentValue(field.fieldId, field.value);
+    if (value) manualOverrides[field.fieldId] = value;
+  }
+
+  const kostenstelle =
+    manualOverrides.kostenstelle ??
+    (template ? getManualFieldValue(template, 'kostenstelle') : undefined);
 
   const values: Partial<Record<DataSourceKey, string>> = {
     ...getKnownOrgValues({
@@ -665,6 +687,7 @@ export function InvoiceCreationModal({
             signerRightLabel={t('preview.signatureSupervisor')}
             unsignedLabel={t('preview.unsigned')}
             values={values}
+            manualOverrides={manualOverrides}
             tableRows={tableRows}
             tableTotalRow={tableTotalRow}
             tableNoteRow={tableVatRow}
