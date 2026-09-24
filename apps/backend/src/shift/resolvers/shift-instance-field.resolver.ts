@@ -17,6 +17,7 @@ import { Loader } from '../../graphql/decorators';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { RequiredFormRef } from '../../organization/models/organization-unit-required-form.model';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
+import { TimeEntry } from '../../time-tracking/models/time-entry.model';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
 import { ShiftInviteStatus } from '../enums';
@@ -212,6 +213,19 @@ export class ShiftInstanceFieldResolver {
   ): Promise<ShiftInstanceCallOutSummary[]> {
     const history = await loader.callOutsByInstanceId.load(instance.id);
     return history as unknown as ShiftInstanceCallOutSummary[];
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @ResolveField(() => [TimeEntry])
+  async timeEntries(
+    @Parent() instance: ShiftInstanceEntity,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
+  ): Promise<TimeEntry[]> {
+    const entries = await loader.timeEntriesByKey.load(
+      `${context.organizationUnitId}:${instance.id}`,
+    );
+    return entries as unknown as TimeEntry[];
   }
 
   @AllowAnonymous()

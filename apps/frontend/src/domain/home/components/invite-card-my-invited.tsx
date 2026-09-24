@@ -167,11 +167,11 @@ export function InviteCardMyInvited({ invite }: { invite: MergedInvitation }) {
           </div>
         </Link>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Button
             variant="outline"
             size="lg"
-            className="flex-1 text-lg"
+            className="min-w-0 flex-1 text-lg"
             disabled={isPending}
             onClick={() => respond(false)}
           >
@@ -180,7 +180,7 @@ export function InviteCardMyInvited({ invite }: { invite: MergedInvitation }) {
           </Button>
           <Button
             size="lg"
-            className="flex-1 text-lg"
+            className="min-w-0 flex-1 text-lg"
             disabled={isPending}
             onClick={() => respond(true)}
           >

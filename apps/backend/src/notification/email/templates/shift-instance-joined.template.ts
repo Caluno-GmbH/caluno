@@ -10,13 +10,15 @@ import {
   note,
   paragraph,
   renderEmail,
-  shiftsAdminUrl,
+  shiftInstanceAdminUrl,
 } from './shared';
 
 export interface ShiftInstanceJoinedTemplateData {
   organizationUnitId: string;
   organizationUnitName: string;
+  shiftId: string;
   shiftTitle: string;
+  instanceId: string;
   volunteerName: string;
   recipientFirstName: string;
   startsAt: Date;
@@ -31,7 +33,11 @@ export async function shiftInstanceJoinedTemplate(
   const shiftTitle = escapeHtml(data.shiftTitle);
   const volunteerName = escapeHtml(data.volunteerName);
   const startsAt = escapeHtml(formatDateTime(data.startsAt));
-  const shiftsUrl = shiftsAdminUrl(data.organizationUnitId);
+  const instanceUrl = shiftInstanceAdminUrl(
+    data.organizationUnitId,
+    data.shiftId,
+    data.instanceId,
+  );
   const brandName = emailTheme.brandName;
 
   const body = card(`
@@ -43,7 +49,7 @@ export async function shiftInstanceJoinedTemplate(
     ${detailItem(t('shiftInstanceJoined.detailShift'), shiftTitle)}
     ${detailItem(t('shiftInstanceJoined.detailOrganization'), organizationUnitName)}
     ${detailItem(t('shiftInstanceJoined.detailStarts'), startsAt, { last: true })}
-    ${button({ href: shiftsUrl, label: t('shiftInstanceJoined.buttonLabel') })}
+    ${button({ href: instanceUrl, label: t('shiftInstanceJoined.buttonLabel') })}
     ${divider()}
     ${note(t('shiftInstanceJoined.note'))}
   `);

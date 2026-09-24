@@ -110,6 +110,9 @@ const logFixtureSummary = (): void => {
     'Demo account also follows the Volunteer Fair event and has 4 more',
   );
   console.log('shifts across the next 3 weeks left to discover.');
+  console.log(
+    '\nDemo fixtures loaded: organization "Altonaer Lesepaten" (see apps/backend/src/database/demo-fixtures.ts).',
+  );
 };
 
 const main = (): void => {
@@ -130,6 +133,9 @@ const main = (): void => {
 
   console.log('Loading Playground fixtures…');
   run('bun', ['run', 'db:fixtures'], BACKEND_ROOT);
+
+  console.log('Loading demo fixtures…');
+  run('bun', ['run', 'db:fixtures:demo'], BACKEND_ROOT);
 
   logFixtureSummary();
 };

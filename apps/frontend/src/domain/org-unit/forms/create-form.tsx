@@ -62,9 +62,14 @@ export function CreateOrgUnitForm({
         logoFileId: formData.logoFileId,
         websiteUrl: formData.websiteUrl,
         contactEmail: formData.contactEmail,
+        contactPersonName: formData.contactPersonName,
         phone: formData.phone,
+        welcomeMessage: formData.welcomeMessage,
         description: formData.description,
-        address: formData.address,
+        street: formData.street,
+        city: formData.city,
+        zipCode: formData.zipCode,
+        legalRep: formData.legalRep,
       });
 
       if (result?.serverError) {

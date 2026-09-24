@@ -77,6 +77,7 @@ export class EventListener {
           {
             organizationUnitId: payload.organizationUnitId,
             organizationUnitName: payload.organizationUnitName,
+            eventId: payload.eventId,
             eventTitle: payload.eventTitle,
             volunteerName: volunteer.name,
             recipientFirstName: recipient.firstName,

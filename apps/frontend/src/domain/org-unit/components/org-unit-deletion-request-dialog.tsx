@@ -13,56 +13,56 @@ import {
   Field,
   FieldError,
   FieldLabel,
-  Input,
+  Textarea,
 } from '@repo/ui';
-import { Trash2, X } from 'lucide-react';
+import { Send, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
-import { deleteOrgUnit } from '@/domain/org-unit/actions';
-import { useRouter } from '@/i18n/navigation';
+import { requestOrgUnitDeletion } from '@/domain/org-unit/actions';
 
-interface DeleteOrgUnitDialogProps {
+interface OrgUnitDeletionRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationUnitId: string;
   unit: OrgUnitTreeNode | null;
 }
 
-export function DeleteOrgUnitDialog({
+export function OrgUnitDeletionRequestDialog({
   open,
   onOpenChange,
   organizationUnitId,
   unit,
-}: DeleteOrgUnitDialogProps) {
-  const router = useRouter();
+}: OrgUnitDeletionRequestDialogProps) {
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState('');
+  const [message, setMessage] = useState('');
+  const [sent, setSent] = useState(false);
   const t = useTranslations('OrgUnit.delete');
   const tCommon = useTranslations('Common');
 
-  const hasChildren = (unit?.children?.length ?? 0) > 0;
-  const confirmed = confirmation === 'DELETE';
-
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
-      setConfirmation('');
+      setMessage('');
       setServerError(null);
+      setSent(false);
     }
     onOpenChange(nextOpen);
   };
 
-  const handleDelete = () => {
-    if (!unit || !confirmed) return;
+  const handleRequest = () => {
+    if (!unit) return;
     setServerError(null);
 
     startTransition(async () => {
-      const result = await deleteOrgUnit({ id: unit.id, organizationUnitId });
+      const result = await requestOrgUnitDeletion({
+        id: unit.id,
+        organizationUnitId,
+        message: message.trim() || undefined,
+      });
       if (result?.serverError) {
         setServerError(result.serverError);
       } else {
-        handleClose(false);
-        router.refresh();
+        setSent(true);
       }
     });
   };
@@ -72,47 +72,47 @@ export function DeleteOrgUnitDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {t('title', { name: unit?.name ?? '' })}
+            {sent ? t('sentTitle') : t('title', { name: unit?.name ?? '' })}
           </AlertDialogTitle>
 
           <AlertDialogDescription>
-            {t('description')}
-            {hasChildren && (
-              <span className="mt-2 block font-medium text-destructive">
-                {t('childrenWarning')}
-              </span>
-            )}
+            {sent
+              ? t('sentDescription', { name: unit?.name ?? '' })
+              : t('description')}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <Field className="space-y-1">
-          <FieldLabel htmlFor="delete-confirm">{t('confirmLabel')}</FieldLabel>
+        {!sent && (
+          <Field>
+            <FieldLabel htmlFor="deletion-request-message">
+              {t('messageLabel')}
+            </FieldLabel>
 
-          <Input
-            id="delete-confirm"
-            value={confirmation}
-            onChange={(e) => setConfirmation(e.target.value)}
-            placeholder={t('confirmPlaceholder')}
-            disabled={isPending}
-          />
-        </Field>
+            <Textarea
+              id="deletion-request-message"
+              className="min-h-32"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              disabled={isPending}
+              rows={4}
+            />
+          </Field>
+        )}
 
         {serverError && <FieldError>{serverError}</FieldError>}
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isPending}>
             <X />
-            {tCommon('cancel')}
+            {sent ? tCommon('done') : tCommon('cancel')}
           </AlertDialogCancel>
 
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isPending || !confirmed}
-          >
-            <Trash2 />
-            {isPending ? tCommon('deleting') : tCommon('delete')}
-          </Button>
+          {!sent && (
+            <Button onClick={handleRequest} disabled={isPending}>
+              <Send />
+              {isPending ? t('requesting') : t('requestButton')}
+            </Button>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

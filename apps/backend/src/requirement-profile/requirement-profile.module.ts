@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import './enums/register-graphql-enums';
+import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../database/database.module';
 import { MembershipMapper } from '../membership/mappers/membership.mepper';
 import { MembershipRequestMapper } from '../membership/mappers/membership-request.mepper';
@@ -57,7 +58,13 @@ import {
 } from './services';
 
 @Module({
-  imports: [DatabaseModule, SharedModule, UserModule, StorageModule],
+  imports: [
+    AuthModule,
+    DatabaseModule,
+    SharedModule,
+    UserModule,
+    StorageModule,
+  ],
   providers: [
     RequirementService,
     RequirementProfileService,

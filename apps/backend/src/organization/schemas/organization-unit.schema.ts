@@ -39,11 +39,13 @@ export const organizationUnits = snakeCase.table(
     coverUrl: text('cover_url'),
     websiteUrl: text('website_url'),
     contactEmail: text('contact_email'),
+    contactPersonName: text('contact_person_name'),
     phone: text('phone'),
+    welcomeMessage: text('welcome_message'),
     description: text('description'),
-    address: text('address'),
-    city: text('city'),
+    street: text('street'),
     zipCode: text('zip_code'),
+    city: text('city'),
     legalRep: text('legal_rep'),
     idVerificationEnabled: boolean('id_verification_enabled')
       .notNull()

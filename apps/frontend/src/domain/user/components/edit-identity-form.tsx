@@ -38,9 +38,7 @@ const fieldToRenderable = (
   description: subtitle ?? null,
   placeholder: null,
   options: null,
-  documentFileId: null,
-  documentDownloadUrl: null,
-  documentFilename: null,
+  documents: [],
   documentLabel: null,
   minAge: null,
 });
@@ -61,6 +59,7 @@ const EditIdentityForm = ({ email, profile }: EditIdentityFormProps) => {
       name: tSubtitles('firstName'),
       lastname: tSubtitles('lastName'),
       iban: tSubtitles('iban'),
+      'account-holder': tSubtitles('accountHolder'),
       bic: tSubtitles('bic'),
       'tax-id': tSubtitles('taxId'),
     }),

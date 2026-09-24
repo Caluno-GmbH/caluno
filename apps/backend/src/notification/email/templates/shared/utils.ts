@@ -80,6 +80,14 @@ export function eventsAdminUrl(organizationUnitId: string): string {
   return `${resolveAppUrl()}/admin/${encodeURIComponent(organizationUnitId)}/events`;
 }
 
+/** Deep link to a specific event's admin detail page. */
+export function eventAdminUrl(
+  organizationUnitId: string,
+  eventId: string,
+): string {
+  return `${resolveAppUrl()}/admin/${encodeURIComponent(organizationUnitId)}/events/${encodeURIComponent(eventId)}`;
+}
+
 /** Public deep link to an organization unit's join page. */
 export function publicOrganizationUnitUrl(organizationUnitId: string): string {
   return `${resolveAppUrl()}/orgs/${encodeURIComponent(organizationUnitId)}`;

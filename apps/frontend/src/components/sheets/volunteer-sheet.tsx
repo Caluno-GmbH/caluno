@@ -67,6 +67,7 @@ function VolunteerSheetContent({
   status,
   email,
   checkInId,
+  canRemoveMembership,
   onRemoved,
 }: {
   userId: string;
@@ -74,6 +75,7 @@ function VolunteerSheetContent({
   status: MembershipRequestStatus;
   email: string;
   checkInId: string;
+  canRemoveMembership: boolean;
   onRemoved: () => void;
 }) {
   const t = useTranslations('Volunteer.sheet');
@@ -90,8 +92,10 @@ function VolunteerSheetContent({
   const membership = memberships?.find((item) => item.user.id === userId);
 
   const profileData = (userProfile?.data ?? {}) as Record<string, unknown>;
-  const address =
-    typeof profileData.address === 'string' ? profileData.address : null;
+  const street =
+    typeof profileData.street === 'string' ? profileData.street : null;
+  const zip = typeof profileData.zip === 'string' ? profileData.zip : null;
+  const city = typeof profileData.city === 'string' ? profileData.city : null;
   const birthday =
     typeof profileData['birth-date'] === 'string'
       ? profileData['birth-date']
@@ -137,7 +141,9 @@ function VolunteerSheetContent({
         ) : (
           <div className="space-y-2">
             <InfoRow label={t('emailLabel')} value={email} />
-            {address && <InfoRow label={t('addressLabel')} value={address} />}
+            {street && <InfoRow label={t('streetLabel')} value={street} />}
+            {zip && <InfoRow label={t('zipLabel')} value={zip} />}
+            {city && <InfoRow label={t('cityLabel')} value={city} />}
             {birthday && (
               <InfoRow label={t('birthdayLabel')} value={birthday} />
             )}
@@ -180,7 +186,7 @@ function VolunteerSheetContent({
         )}
       </div>
 
-      {membership && (
+      {membership && canRemoveMembership && (
         <>
           <Separator />
           <RemoveMembershipButton
@@ -204,6 +210,7 @@ export function VolunteerSheet() {
     'volunteerStatus',
     'volunteerEmail',
     'volunteerCheckInId',
+    'canRemoveMembership',
   );
 
   const userId = getParam('userId') ?? '';
@@ -213,6 +220,7 @@ export function VolunteerSheet() {
     MembershipRequestStatus.Pending;
   const email = getParam('volunteerEmail') ?? '';
   const checkInId = getParam('volunteerCheckInId') ?? '';
+  const canRemoveMembership = getParam('canRemoveMembership') === 'true';
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
@@ -229,6 +237,7 @@ export function VolunteerSheet() {
               status={status}
               email={email}
               checkInId={checkInId}
+              canRemoveMembership={canRemoveMembership}
               onRemoved={close}
             />
           )}

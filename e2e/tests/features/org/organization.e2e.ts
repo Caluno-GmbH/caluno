@@ -41,7 +41,7 @@ test.describe('Organization creation validation', () => {
       await expect(org.contactEmailInput).toBeVisible();
       await expect(org.phoneInput).toBeVisible();
       await expect(org.websiteUrlInput).toBeVisible();
-      await expect(org.addressInput).toBeVisible();
+      await expect(org.streetInput).toBeVisible();
       await expect(org.browseFilesButton).toBeVisible(); // logo upload control
       await expect(org.logoInput).toBeAttached();
       await expect(org.createButton).toBeVisible();

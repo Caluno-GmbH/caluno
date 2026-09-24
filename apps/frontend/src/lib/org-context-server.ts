@@ -1,4 +1,8 @@
-import { LAST_ORG_COOKIE, type MyOrganizationUnit } from '@repo/data';
+import {
+  isUnauthenticatedDataError,
+  LAST_ORG_COOKIE,
+  type MyOrganizationUnit,
+} from '@repo/data';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getDataClient } from './data-client';
@@ -9,7 +13,8 @@ export interface OrgContextData {
   name: string;
   description?: string | null;
   logoUrl?: string | null;
-  address?: string | null;
+  street?: string | null;
+  zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;
   organizationId: string;
@@ -28,7 +33,8 @@ function normalizeUnits(units: MyOrganizationUnit[]): OrgContextData[] {
           : `${unit.organization.name} › ${unit.name}`,
         description: unit.description ?? unit.organization.description ?? null,
         logoUrl: unit.logoUrl ?? unit.organization.logoUrl ?? null,
-        address: unit.address,
+        street: unit.street,
+        zipCode: unit.zipCode,
         city: unit.city,
         legalRep: unit.legalRep,
         organizationId: unit.organization.id,
@@ -61,7 +67,16 @@ export async function getMyCheckInOrgUnits(): Promise<OrgContextData[]> {
 }
 
 export async function isAnAdminstrator() {
-  return (await getMyAdministrableOrgUnits()).length > 0;
+  try {
+    const data = await getDataClient({ redirectOnUnauthenticated: false });
+    const units = await data.organization.findMyAdminstrableOrganizationUnits();
+    return normalizeUnits(units).length > 0;
+  } catch (error) {
+    if (isUnauthenticatedDataError(error)) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 export async function resolveOrgFromId(
@@ -130,7 +145,8 @@ export async function requireOrgAccess(
       name: unit.name,
       description: unit.description ?? null,
       logoUrl: unit.logoUrl ?? null,
-      address: unit.address ?? null,
+      street: unit.street ?? null,
+      zipCode: unit.zipCode ?? null,
       city: unit.city ?? null,
       legalRep: unit.legalRep ?? null,
       organizationId: unit.organizationId ?? '',

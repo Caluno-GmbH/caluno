@@ -49,7 +49,7 @@ function LifecycleSection({
             key={state}
             state={state}
             phase={phase}
-            completedDuration={state === 'completed' ? '3h 57m' : undefined}
+            completedDuration={state === 'checked_out' ? '3h 57m' : undefined}
           />
         ))}
       </div>
@@ -86,7 +86,7 @@ export const LifecycleReferenceBoard: Story = {
         subtitle="Final status is inferred automatically."
         phase="after"
         states={[
-          'completed',
+          'checked_out',
           'no_show',
           'invited_never_responded',
           'requested_never_responded',
@@ -111,7 +111,7 @@ export const StatusIcons: Story = {
           'declined',
           'checked_in',
           'not_checked_in',
-          'completed',
+          'checked_out',
           'no_show',
         ] as const
       ).map((state) => (
@@ -138,7 +138,7 @@ export const StatusBadges: Story = {
           'declined',
           'checked_in',
           'not_checked_in',
-          'completed',
+          'checked_out',
           'no_show',
           'invited_never_responded',
           'requested_never_responded',
@@ -147,7 +147,7 @@ export const StatusBadges: Story = {
         <VolunteeringStatusLabel
           key={state}
           state={state}
-          completedDuration={state === 'completed' ? '3h 57m' : undefined}
+          completedDuration={state === 'checked_out' ? '3h 57m' : undefined}
         />
       ))}
     </div>
@@ -209,7 +209,7 @@ export const DetailPageAfterShift: Story = {
           {
             id: '1',
             name: 'Katharina Zimmer',
-            state: 'completed',
+            state: 'checked_out',
             completedDuration: '3h 57m',
           },
           { id: '2', name: 'Hans Test', state: 'no_show' },
@@ -401,6 +401,37 @@ export const SurfaceComparison: Story = {
           />
         </div>
       </div>
+    </div>
+  ),
+};
+
+/** Checked-out chip with a multi-window tooltip, including the overflow line. */
+export const CheckedOutWithTooltip: Story = {
+  name: 'Detail page / checked out (tooltip)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="after"
+        summary="1 checked out"
+        volunteers={[
+          {
+            id: '1',
+            name: 'Katharina Zimmer',
+            state: 'checked_out',
+            completedDuration: '7h 12m',
+            statusTooltip: (
+              <div className="flex flex-col gap-0.5 text-xs">
+                <span>08:00 – 12:00</span>
+                <span>13:00 – 15:30</span>
+                <span>16:00 – 17:00</span>
+                <span>17:30 – 18:30</span>
+                <span>19:00 – 20:12</span>
+                <span>+2 more</span>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   ),
 };

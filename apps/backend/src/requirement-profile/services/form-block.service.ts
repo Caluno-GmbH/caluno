@@ -29,7 +29,11 @@ import type {
 } from '../schemas/form-block.schema';
 import type { FormBlockFieldInsert } from '../schemas/form-block-field.schema';
 import { isUnitInOrg } from './is-unit-in-org';
-import { assertValidFieldOptions } from './validate-field-options';
+import {
+  assertValidFieldOptions,
+  assertValidRequiredFlag,
+  assertValidSystemKeyBinding,
+} from './validate-field-options';
 
 @Injectable()
 export class FormBlockService {
@@ -131,6 +135,12 @@ export class FormBlockService {
       if (input.fields && input.fields.length > 0) {
         for (const field of input.fields) {
           assertValidFieldOptions(field.type, field.options);
+          assertValidSystemKeyBinding(
+            field.systemKey,
+            field.type,
+            field.options,
+          );
+          assertValidRequiredFlag(field.type, field.required);
         }
         await tx
           .insert(schema.formBlockFields)
@@ -259,15 +269,15 @@ export class FormBlockService {
     return deleted;
   }
 
-  private async validateDocumentFile(
-    fileId: string | null | undefined,
+  private async validateDocumentFiles(
+    fileIds: string[] | null | undefined,
   ): Promise<void> {
-    if (!fileId) return;
-
-    await this.fileService.assertUploadedFileForPurpose(
-      fileId,
-      FilePurpose.FORM_DOCUMENT,
-    );
+    for (const fileId of fileIds ?? []) {
+      await this.fileService.assertUploadedFileForPurpose(
+        fileId,
+        FilePurpose.FORM_DOCUMENT,
+      );
+    }
   }
 
   async createField(
@@ -282,7 +292,9 @@ export class FormBlockService {
       );
     }
     assertValidFieldOptions(input.type, input.options);
-    await this.validateDocumentFile(input.documentFileId);
+    assertValidSystemKeyBinding(input.systemKey, input.type, input.options);
+    assertValidRequiredFlag(input.type, input.required);
+    await this.validateDocumentFiles(input.documentFileIds);
 
     const block = await this.findById(blockId);
     if (!block) {
@@ -334,7 +346,7 @@ export class FormBlockService {
         `Invalid systemKey: "${input.systemKey}". Must be one of: ${[...SYSTEM_PROFILE_KEYS].join(', ')}`,
       );
     }
-    await this.validateDocumentFile(input.documentFileId);
+    await this.validateDocumentFiles(input.documentFileIds);
 
     const field = await this.db.query.formBlockFields.findFirst({
       where: { id: fieldId },
@@ -351,6 +363,16 @@ export class FormBlockService {
         input.options,
       );
     }
+
+    assertValidSystemKeyBinding(
+      input.systemKey === undefined ? field.systemKey : input.systemKey,
+      input.type ?? (field.type as FieldType),
+      input.options === undefined ? field.options : input.options,
+    );
+    assertValidRequiredFlag(
+      input.type ?? (field.type as FieldType),
+      input.required === undefined ? field.required : input.required,
+    );
 
     await isUnitInOrg(this.db, organizationUnitId, field.block.organizationId);
 
@@ -437,7 +459,7 @@ export class FormBlockService {
       lockType: input.lockType ?? false,
       systemKey: input.systemKey,
       options: input.options,
-      documentFileId: input.documentFileId,
+      documentFileIds: input.documentFileIds,
       documentLabel: input.documentLabel,
       minAge: input.minAge,
       fieldOrder: input.fieldOrder ?? order,

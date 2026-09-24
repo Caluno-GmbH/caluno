@@ -17,8 +17,8 @@ export type DataSourceKey =
   | 'volunteer_last_name'
   | 'org_name'
   | 'org_address'
-  | 'org_city'
   | 'org_zip'
+  | 'org_city'
   | 'org_legal_rep'
   | 'pauschalen_type'
   | 'hourly_rate'
@@ -29,6 +29,7 @@ export type DataSourceKey =
   | 'generated_date'
   | 'document_number'
   | 'volunteer_iban'
+  | 'volunteer_account_holder'
   | 'volunteer_bic'
   | 'volunteer_address'
   | 'volunteer_dob'
@@ -118,8 +119,7 @@ export type InvoiceNumberFormat =
 export type TemplateHeader = {
   /** Title text, resolved per pauschale type by the caller. */
   titleLines: string[];
-  /** Contract: org name + address, top-right. Invoice: org address, left. */
-  orgIdentityLine: TemplateLine;
+  orgIdentityLine?: TemplateLine;
   /** Invoice-only: document number, generation date, optional Kostenstelle — each its own line. Empty for contracts. */
   metaLines: TemplateLine[];
 };

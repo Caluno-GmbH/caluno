@@ -76,7 +76,7 @@ export class InvoiceService {
       with: {
         documentTemplate: true,
         reimbursementType: true,
-        signatures: true,
+        signatures: { orderBy: { order: 'asc' } },
         statusChanges: true,
         invoiceTimeEntries: true,
         organizationUnit: true,
@@ -691,12 +691,8 @@ export class InvoiceService {
       return signed;
     });
 
-    // The timesheet is complete — render its PDF so it can be downloaded.
-    // Failures are logged, never thrown: signing still succeeds.
-    if (isFinal) {
-      const full = await this.findInvoice(invoiceId);
-      await this.documentRenderingService.renderAndAttachPdf(full, userId);
-    }
+    const full = await this.findInvoice(invoiceId);
+    await this.documentRenderingService.renderAndAttachPdf(full, userId);
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.INVOICE_SIGN,

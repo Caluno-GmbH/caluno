@@ -190,9 +190,9 @@ export function TemplateBuilder({
   const knownValues = getKnownOrgValues({
     pauschale,
     orgName: orgProfile?.name ?? org.name,
-    orgAddress: orgProfile ? orgProfile.address : org.address,
+    orgAddress: orgProfile ? orgProfile.street : org.street,
+    orgZip: orgProfile ? orgProfile.zipCode : org.zipCode,
     orgCity: orgProfile ? orgProfile.city : org.city,
-    orgZip: orgProfile ? orgProfile.zipCode : null,
     orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
     hourlyRateCents: effectiveRate?.hourlyRateCents,
     yearlyLimitCents:

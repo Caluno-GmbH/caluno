@@ -79,33 +79,76 @@ export function OrgUnitFormContent({
       <input type="hidden" {...register('typeId')} />
       {errors.typeId && <FieldError>{errors.typeId.message}</FieldError>}
 
-      <Field>
-        <FieldLabel htmlFor="contactEmail">{t('emailLabel')}</FieldLabel>
-        <Input
-          id="contactEmail"
-          type="email"
-          placeholder={t('emailPlaceholder')}
-          disabled={isPending}
-          aria-invalid={!!errors.contactEmail}
-          {...register('contactEmail')}
-        />
-        {errors.contactEmail && (
-          <FieldError>{errors.contactEmail.message}</FieldError>
-        )}
-      </Field>
+      <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-foreground">
+            {t('contactPersonSectionTitle')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t('contactPersonSectionDescription')}
+          </p>
+        </div>
 
-      <Field>
-        <FieldLabel htmlFor="phone">{t('phoneLabel')}</FieldLabel>
-        <Input
-          id="phone"
-          type="tel"
-          placeholder={t('phonePlaceholder')}
-          disabled={isPending}
-          aria-invalid={!!errors.phone}
-          {...register('phone')}
-        />
-        {errors.phone && <FieldError>{errors.phone.message}</FieldError>}
-      </Field>
+        <Field>
+          <FieldLabel htmlFor="contactPersonName">
+            {t('contactPersonNameLabel')}
+          </FieldLabel>
+          <Input
+            id="contactPersonName"
+            placeholder={t('contactPersonNamePlaceholder')}
+            disabled={isPending}
+            aria-invalid={!!errors.contactPersonName}
+            {...register('contactPersonName')}
+          />
+          {errors.contactPersonName && (
+            <FieldError>{errors.contactPersonName.message}</FieldError>
+          )}
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="contactEmail">{t('emailLabel')}</FieldLabel>
+          <Input
+            id="contactEmail"
+            type="email"
+            placeholder={t('emailPlaceholder')}
+            disabled={isPending}
+            aria-invalid={!!errors.contactEmail}
+            {...register('contactEmail')}
+          />
+          {errors.contactEmail && (
+            <FieldError>{errors.contactEmail.message}</FieldError>
+          )}
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="phone">{t('phoneLabel')}</FieldLabel>
+          <Input
+            id="phone"
+            type="tel"
+            placeholder={t('phonePlaceholder')}
+            disabled={isPending}
+            aria-invalid={!!errors.phone}
+            {...register('phone')}
+          />
+          {errors.phone && <FieldError>{errors.phone.message}</FieldError>}
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="welcomeMessage">
+            {t('welcomeMessageLabel')}
+          </FieldLabel>
+          <Textarea
+            id="welcomeMessage"
+            placeholder={t('welcomeMessagePlaceholder')}
+            disabled={isPending}
+            aria-invalid={!!errors.welcomeMessage}
+            {...register('welcomeMessage')}
+          />
+          {errors.welcomeMessage && (
+            <FieldError>{errors.welcomeMessage.message}</FieldError>
+          )}
+        </Field>
+      </div>
 
       <Field>
         <FieldLabel htmlFor="website">{t('websiteLabel')}</FieldLabel>
@@ -140,27 +183,15 @@ export function OrgUnitFormContent({
       />
 
       <Field>
-        <FieldLabel htmlFor="address">{t('addressLabel')}</FieldLabel>
+        <FieldLabel htmlFor="street">{t('streetLabel')}</FieldLabel>
         <Input
-          id="address"
-          placeholder={t('addressPlaceholder')}
+          id="street"
+          placeholder={t('streetPlaceholder')}
           disabled={isPending}
-          aria-invalid={!!errors.address}
-          {...register('address')}
+          aria-invalid={!!errors.street}
+          {...register('street')}
         />
-        {errors.address && <FieldError>{errors.address.message}</FieldError>}
-      </Field>
-
-      <Field>
-        <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
-        <Input
-          id="city"
-          placeholder={t('cityPlaceholder')}
-          disabled={isPending}
-          aria-invalid={!!errors.city}
-          {...register('city')}
-        />
-        {errors.city && <FieldError>{errors.city.message}</FieldError>}
+        {errors.street && <FieldError>{errors.street.message}</FieldError>}
       </Field>
 
       <Field>
@@ -173,6 +204,18 @@ export function OrgUnitFormContent({
           {...register('zipCode')}
         />
         {errors.zipCode && <FieldError>{errors.zipCode.message}</FieldError>}
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
+        <Input
+          id="city"
+          placeholder={t('cityPlaceholder')}
+          disabled={isPending}
+          aria-invalid={!!errors.city}
+          {...register('city')}
+        />
+        {errors.city && <FieldError>{errors.city.message}</FieldError>}
       </Field>
 
       <Field>

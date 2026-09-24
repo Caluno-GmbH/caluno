@@ -36,13 +36,13 @@ const REIMBURSEMENT_TYPES: Array<
   {
     key: ReimbursementTypeKey.EHRENAMT,
     legalReference: '§3 Nr. 26a EStG',
-    yearlyLimitCents: 84_000,
+    yearlyLimitCents: 96_000,
     platformDefaultRateCents: 500,
   },
   {
     key: ReimbursementTypeKey.UEBUNGSLEITER,
     legalReference: '§3 Nr. 26 EStG',
-    yearlyLimitCents: 300_000,
+    yearlyLimitCents: 330_000,
     platformDefaultRateCents: 800,
   },
 ];

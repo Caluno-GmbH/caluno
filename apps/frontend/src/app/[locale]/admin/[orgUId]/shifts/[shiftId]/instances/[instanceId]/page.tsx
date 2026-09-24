@@ -28,9 +28,10 @@ export default async function ShiftInstanceDetailPage({
 }: ShiftInstanceDetailPageProps) {
   const { orgUId, shiftId, instanceId } = await params;
   await requireOrgAccess(orgUId);
-  const [canManage = false] = await checkPermission(
+  const [canManage = false, canCheckIn = false] = await checkPermission(
     orgUId,
     PermissionKey.ShiftEdit,
+    PermissionKey.CheckInManage,
   );
 
   const t = await getTranslations('Shift');
@@ -166,12 +167,14 @@ export default async function ShiftInstanceDetailPage({
         shiftId={shiftId}
         instanceId={instanceId}
         invites={instance.invites ?? []}
+        timeEntries={instance.timeEntries ?? []}
         spotsLeft={instance.spotsLeft}
         filledCount={instance.filledCount}
         maxVolunteers={
           instance.overrideMaxVolunteers ?? instance.master.maxVolunteers
         }
         canManage={canManage}
+        canCheckIn={canCheckIn}
         isInstanceInThePast={isInstanceInThePast}
       />
     </div>

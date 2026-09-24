@@ -34,16 +34,22 @@ export class OrganizationUnit {
   contactEmail?: string | null;
 
   @Field(() => String, { nullable: true })
+  contactPersonName?: string | null;
+
+  @Field(() => String, { nullable: true })
   phone?: string | null;
 
   @Field(() => String, { nullable: true })
-  address?: string | null;
+  welcomeMessage?: string | null;
 
   @Field(() => String, { nullable: true })
-  city?: string | null;
+  street?: string | null;
 
   @Field(() => String, { nullable: true })
   zipCode?: string | null;
+
+  @Field(() => String, { nullable: true })
+  city?: string | null;
 
   @Field(() => String, { nullable: true })
   legalRep?: string | null;

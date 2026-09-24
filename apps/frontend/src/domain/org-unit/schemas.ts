@@ -14,11 +14,13 @@ export function createOrgUnitSchema(t: OrgUnitSchemaMessages) {
     logoFileId: z.uuid().nullish(),
     websiteUrl: z.union([z.url(), z.literal('')]).optional(),
     contactEmail: z.union([z.email(), z.literal('')]).optional(),
+    contactPersonName: z.string().optional(),
     phone: z.string().optional(),
+    welcomeMessage: z.string().optional(),
     description: z.string().optional(),
-    address: z.string().optional(),
-    city: z.string().optional(),
+    street: z.string().optional(),
     zipCode: z.string().optional(),
+    city: z.string().optional(),
     legalRep: z.string().optional(),
   });
 }
@@ -29,10 +31,13 @@ export const serverCreateOrgUnitSchema = createOrgUnitSchema({
   typeRequired: 'Organization unit type is required',
 });
 
-export const deleteOrgUnitSchema = z.object({
+export const requestOrgUnitDeletionSchema = z.object({
   id: z.uuid(),
   organizationUnitId: z.uuid(),
+  message: z.string().optional(),
 });
 
 export type CreateOrgUnitFormValues = z.infer<typeof serverCreateOrgUnitSchema>;
-export type DeleteOrgUnitFormValues = z.infer<typeof deleteOrgUnitSchema>;
+export type RequestOrgUnitDeletionFormValues = z.infer<
+  typeof requestOrgUnitDeletionSchema
+>;

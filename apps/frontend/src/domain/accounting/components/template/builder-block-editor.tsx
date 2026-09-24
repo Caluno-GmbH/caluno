@@ -51,8 +51,8 @@ import {
 const ORG_SOURCES: DataSourceKey[] = [
   'org_name',
   'org_address',
-  'org_city',
   'org_zip',
+  'org_city',
   'org_legal_rep',
 ];
 const VOLUNTEER_SOURCES: DataSourceKey[] = [
@@ -61,6 +61,7 @@ const VOLUNTEER_SOURCES: DataSourceKey[] = [
   'volunteer_address',
   'volunteer_dob',
   'volunteer_iban',
+  'volunteer_account_holder',
   'volunteer_bic',
 ];
 const ENGAGEMENT_SOURCES: DataSourceKey[] = ['hourly_rate'];
@@ -191,6 +192,8 @@ const PLACEHOLDER_EXAMPLES: Partial<Record<DataSourceKey, string>> = {
 const PLACEHOLDER_EXAMPLE_KEYS: Partial<Record<DataSourceKey, string>> = {
   volunteer_first_name: 'blockEditor.placeholderExamples.volunteer_first_name',
   volunteer_last_name: 'blockEditor.placeholderExamples.volunteer_last_name',
+  volunteer_account_holder:
+    'blockEditor.placeholderExamples.volunteer_account_holder',
 };
 
 function placeholderExampleFor(

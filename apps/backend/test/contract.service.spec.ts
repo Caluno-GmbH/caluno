@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { eq } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
@@ -16,6 +17,7 @@ import { DocumentTemplateService } from '../src/accounting/services/document-tem
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
+import * as schema from '../src/database/schema';
 import {
   ConflictGraphQLError,
   ForbiddenGraphQLError,
@@ -160,6 +162,48 @@ describe('ContractService', () => {
       volunteer,
     };
   };
+
+  describe('findContract', () => {
+    it('returns signatures in signing order regardless of insertion order', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      // Rewrite rows coordinator-first: same `order` values, reversed
+      // physical insertion order (VOLI-1347).
+      const rows = await db.query.contractSignatures.findMany({
+        where: { contractId: contract.id },
+      });
+      await db
+        .delete(schema.contractSignatures)
+        .where(eq(schema.contractSignatures.contractId, contract.id));
+      for (const row of [...rows].reverse()) {
+        await db.insert(schema.contractSignatures).values({
+          contractId: row.contractId,
+          order: row.order,
+          signeeType: row.signeeType,
+          requiredPermissionId: row.requiredPermissionId,
+        });
+      }
+
+      const found = await service.findContract(contract.id);
+      expect(found.signatures.map((s) => s.order)).toEqual([0, 1]);
+      expect(found.signatures.map((s) => s.signeeType)).toEqual([
+        SigneeType.VOLUNTEER,
+        SigneeType.PERMISSION_HOLDER,
+      ]);
+    });
+  });
 
   describe('createContract', () => {
     it('starts at the first signee step and records a CREATED event', async () => {

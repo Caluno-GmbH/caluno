@@ -39,6 +39,26 @@ const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
   UEBUNGSLEITER: 'Übungsleiterpauschale',
 };
 
+const nonBlank = (value: string | undefined): string | undefined => {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+};
+
+export function letterheadLines(fieldValues: Record<string, string>): string[] {
+  const zipCity = [
+    nonBlank(fieldValues.org_zip),
+    nonBlank(fieldValues.org_city),
+  ]
+    .filter((part) => part !== undefined)
+    .join(' ');
+
+  return [
+    nonBlank(fieldValues.org_name),
+    nonBlank(fieldValues.org_address),
+    zipCity || undefined,
+  ].filter((line): line is string => line !== undefined);
+}
+
 /**
  * Renders a fully-signed contract or invoice to a PDF and stores it as a
  * file, attaching the fileId to the document row. The PDF carries the
@@ -108,14 +128,14 @@ export class DocumentRenderingService {
     if (!template) {
       throw new Error('Document is missing its template');
     }
-    const resolved = await this.resolveValues(document);
+    const resolvedValues = await this.resolveValues(document);
     // Render from the document's own creation-time snapshot, not the live
     // template: a template edit (e.g. the monthly Zeitraum the coordinators
     // change) must never rewrite an already-issued agreement (VOLI-1370).
     const body = this.snapshotBody(document);
     const fieldValues = this.buildFieldValueMap(
       body,
-      resolved,
+      resolvedValues,
       document.fieldOverrides ?? {},
     );
     const tableRows =
@@ -132,10 +152,10 @@ export class DocumentRenderingService {
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
       pdf.on('error', reject);
 
-      this.renderHeader(pdf, body, fieldValues);
+      this.renderHeader(pdf, body, fieldValues, resolvedValues);
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
-      this.renderSignatures(pdf, document, resolved);
+      this.renderSignatures(pdf, document, resolvedValues);
       pdf.end();
     });
   }
@@ -144,7 +164,16 @@ export class DocumentRenderingService {
     pdf: PDFKit.PDFDocument,
     body: TemplateBodyShape,
     fieldValues: Record<string, string>,
+    resolvedValues: Record<string, string>,
   ): void {
+    const letterhead = letterheadLines(resolvedValues);
+    if (letterhead.length > 0) {
+      pdf
+        .fontSize(10)
+        .font('Helvetica')
+        .text(letterhead.join('\n'), { align: 'left', lineGap: 1 });
+      pdf.moveDown(1);
+    }
     const title = (body.header?.titleLines ?? []).join(' ');
     if (title) {
       pdf.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
@@ -157,15 +186,6 @@ export class DocumentRenderingService {
         .text(this.resolveLine(metaLine, fieldValues), {
           align: 'right',
           lineGap: 1,
-        });
-    }
-    if (body.header?.orgIdentityLine) {
-      pdf
-        .moveDown(0.5)
-        .fontSize(10)
-        .font('Helvetica')
-        .text(this.resolveLine(body.header.orgIdentityLine, fieldValues), {
-          align: 'center',
         });
     }
     pdf.moveDown(1);
@@ -373,12 +393,14 @@ export class DocumentRenderingService {
         .stroke();
     }
 
-    pdf
-      .font('Helvetica')
-      .fontSize(11)
-      .text(seat.name, left + 10, top + 11, {
-        width: width - 20,
-      });
+    if (seat.signedAt) {
+      pdf
+        .font('Helvetica')
+        .fontSize(11)
+        .text(seat.name, left + 10, top + 11, {
+          width: width - 20,
+        });
+    }
 
     pdf.x = pdf.page.margins.left;
     pdf.y = top + height + 10;
@@ -545,7 +567,7 @@ export class DocumentRenderingService {
 
     return {
       org_name: rootUnit?.name ?? '',
-      org_address: orgProfile?.address ?? rootUnit?.address ?? '',
+      org_address: orgProfile?.street ?? rootUnit?.street ?? '',
       org_city: orgProfile?.city ?? rootUnit?.city ?? '',
       org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
@@ -560,6 +582,9 @@ export class DocumentRenderingService {
       ),
       volunteer_iban: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_iban],
+      ),
+      volunteer_account_holder: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_account_holder],
       ),
       volunteer_bic: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],

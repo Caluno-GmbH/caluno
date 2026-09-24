@@ -39,8 +39,8 @@ export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
   orgName?: string | null;
   orgAddress?: string | null;
-  orgCity?: string | null;
   orgZip?: string | null;
+  orgCity?: string | null;
   orgLegalRep?: string | null;
   hourlyRateCents?: number;
   yearlyLimitCents?: number;
@@ -50,8 +50,8 @@ export function getKnownOrgValues(args: {
   };
   if (args.orgName) values.org_name = args.orgName;
   if (args.orgAddress) values.org_address = args.orgAddress;
-  if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgZip) values.org_zip = args.orgZip;
+  if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
   if (args.hourlyRateCents !== undefined) {
     // German document content, formatted like the German legal text around it.
@@ -99,10 +99,6 @@ export function getContractDocument(
   return {
     header: {
       titleLines: ['Zusatzvereinbarung zur', PAUSCHALE_TITLE[pauschale]],
-      orgIdentityLine: line('header-org-identity', '{orgName} {orgAddress}', [
-        bound('header-org-name', 'org_name'),
-        bound('header-org-address', 'org_address'),
-      ]),
       metaLines: [],
     },
     blocks: [
@@ -113,7 +109,7 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName} {orgAddress}, und', [
+          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
             bound('parties-org-name', 'org_name'),
             bound('parties-org-address', 'org_address'),
           ]),
@@ -171,7 +167,7 @@ export function getContractDocument(
         lines: [
           line(
             'hours-scope',
-            'Zeitraum: {contractLifespan}  Stundenzahl pro {hoursUnit}: ca. {hoursAmount}',
+            'Zeitraum: {contractLifespan}  Stundenzahl pro {hoursUnit}: in der Regel {hoursAmount}',
             [
               contractLifespan,
               manual('hours-unit', 'Monat', 'unit-tabs'),
@@ -200,14 +196,9 @@ export function getContractDocument(
             'payout-intro',
             'Die Aufwandsentschädigung wird monatlich auf folgendes Konto überwiesen:',
           ),
-          line(
-            'payout-holder',
-            '{volunteerFirstName} {volunteerLastName}, (Kontoinhaber:in)',
-            [
-              bound('payout-holder-first', 'volunteer_first_name'),
-              bound('payout-holder-last', 'volunteer_last_name'),
-            ],
-          ),
+          line('payout-holder', '{volunteerAccountHolder} (Kontoinhaber:in)', [
+            bound('payout-holder-field', 'volunteer_account_holder'),
+          ]),
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),
@@ -248,9 +239,6 @@ export function getInvoiceDocument(
   return {
     header: {
       titleLines: [PAUSCHALE_INVOICE_TITLE[pauschale]],
-      orgIdentityLine: line('header-org-identity', '{orgAddress}', [
-        bound('header-org-address', 'org_address'),
-      ]),
       metaLines: [
         line('meta-invoice-number', '{documentNumber}', [
           bound('meta-invoice-number-field', 'document_number'),
@@ -328,7 +316,7 @@ export function getInvoiceDocument(
         locked: true,
         line: line(
           'jahresdeckel-hinweis-line',
-          '{volunteerFirstName} {volunteerLastName} hat im Zeitraum {alreadyReceivedPeriod} bereits {alreadyReceivedAmount} vom Jahresdeckel in Höhe von {yearlyLimitAmount} erhalten.',
+          '{volunteerFirstName} {volunteerLastName} hat im Zeitraum {alreadyReceivedPeriod} bereits {alreadyReceivedAmount} vom Jahresfreibetrag in Höhe von {yearlyLimitAmount} erhalten.',
           [
             bound('jahresdeckel-volunteer-first', 'volunteer_first_name'),
             bound('jahresdeckel-volunteer-last', 'volunteer_last_name'),

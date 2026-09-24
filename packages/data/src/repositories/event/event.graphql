@@ -47,9 +47,11 @@ fragment RequiredFormFields on RequirementForm {
           label
           value
         }
-        documentFileId
-        documentDownloadUrl
-        documentFilename
+        documents {
+          fileId
+          filename
+          downloadUrl
+        }
         documentLabel
         minAge
         fieldOrder

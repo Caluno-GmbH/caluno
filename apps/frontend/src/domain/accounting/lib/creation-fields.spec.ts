@@ -11,8 +11,10 @@ describe('deriveEditableFields', () => {
     const ids = fields.map((f) => f.fieldId);
     const sources = fields.map((f) => f.source);
 
-    // IBAN + BIC are both bound in the default contract preset (payout lines).
+    // IBAN, account holder and BIC are all bound in the default contract
+    // preset (payout lines).
     expect(sources).toContain('volunteer_iban');
+    expect(sources).toContain('volunteer_account_holder');
     expect(sources).toContain('volunteer_bic');
 
     // Manual-template fields are derived, not hardcoded.
@@ -73,16 +75,20 @@ describe('deriveEditableFields', () => {
   it('carries every field id bound to a source, not just the first', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'));
     const firstName = fields.find((f) => f.source === 'volunteer_first_name');
-    expect(firstName?.fieldIds).toEqual([
-      'volunteer-name-first',
-      'payout-holder-first',
-    ]);
+    expect(firstName?.fieldIds).toEqual(['volunteer-name-first']);
     const lastName = fields.find((f) => f.source === 'volunteer_last_name');
-    expect(lastName?.fieldIds).toEqual([
-      'volunteer-name-last',
-      'payout-holder-last',
-    ]);
+    expect(lastName?.fieldIds).toEqual(['volunteer-name-last']);
     expect(firstName?.fieldId).toBe('volunteer-name-first');
+  });
+
+  it('prefills the account holder from the profile like the other payout fields', () => {
+    const fields = deriveEditableFields(getContractDocument('ehrenamt'), {
+      'account-holder': 'Erika Musterfrau',
+    });
+    const holder = fields.find((f) => f.source === 'volunteer_account_holder');
+    expect(holder?.kind).toBe('bound');
+    expect(holder?.value).toBe('Erika Musterfrau');
+    expect(holder?.provenance).toBe('profile');
   });
 
   it('prefills first/last name from the volunteer name, not the profile', () => {

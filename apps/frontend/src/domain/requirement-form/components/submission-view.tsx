@@ -8,11 +8,14 @@ import {
 } from '@repo/ui';
 import { getTranslations } from 'next-intl/server';
 import { getFormatting } from '@/lib/formatting/formatting-server';
-import type {
-  SubmissionField,
-  SubmissionValue,
+import { GENDER_OPTION_VALUES } from '../gender-options';
+import {
+  isMaskedPaymentAnswer,
+  type SubmissionField,
+  type SubmissionValue,
 } from '../lib/resolve-field-answer';
 import { resolveSubmissionFieldAnswers } from '../lib/resolve-submission-field-answers';
+import { MaskedPaymentAnswer } from './masked-payment-answer';
 
 export const SubmissionView = async ({
   fields,
@@ -24,6 +27,7 @@ export const SubmissionView = async ({
   profileData?: Record<string, unknown>;
 }) => {
   const t = await getTranslations('RequirementForm.submission');
+  const tGender = await getTranslations('RequirementForm.genderOptions');
   const tCommon = await getTranslations('Common');
   const { formatDate } = await getFormatting();
 
@@ -35,6 +39,9 @@ export const SubmissionView = async ({
       dash: tCommon('dash'),
       accepted: t('accepted'),
       formatDate,
+      genderLabels: Object.fromEntries(
+        GENDER_OPTION_VALUES.map((v) => [v, tGender(v)]),
+      ),
     },
   );
 
@@ -61,7 +68,13 @@ export const SubmissionView = async ({
             fieldAnswers.map(({ field, answer }) => (
               <TableRow key={field.id}>
                 <TableCell className="font-medium">{field.label}</TableCell>
-                <TableCell>{answer}</TableCell>
+                <TableCell>
+                  {isMaskedPaymentAnswer(answer) ? (
+                    <MaskedPaymentAnswer value={answer} />
+                  ) : (
+                    answer
+                  )}
+                </TableCell>
               </TableRow>
             ))
           )}

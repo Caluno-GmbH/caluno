@@ -1,5 +1,6 @@
 import { Badge, cn, Separator } from '@repo/ui';
 import type { ReactNode } from 'react';
+import { letterheadLines } from '../../lib/letterhead';
 import type { DocumentKind, PauschalenType } from '../doc-type-header';
 import { DocTypeHeader } from '../doc-type-header';
 import type {
@@ -119,7 +120,7 @@ function LineRow({
   const fields = line.fields;
 
   return (
-    <p className="text-base leading-relaxed">
+    <p className="whitespace-pre-line text-base leading-relaxed">
       {parts.map((part, i) => {
         const field = fields[i];
         const value = field
@@ -199,6 +200,7 @@ export function GeneratedDocumentPreview({
   gapSources = new Set(),
   className,
 }: GeneratedDocumentPreviewProps) {
+  const letterhead = letterheadLines(values);
   return (
     <div className={className}>
       <div
@@ -218,7 +220,13 @@ export function GeneratedDocumentPreview({
 
         <Separator className="my-6" />
 
-        <div className="space-y-1 text-center">
+        {letterhead.length > 0 && (
+          <p className="whitespace-pre-line text-left text-sm leading-snug">
+            {letterhead.join('\n')}
+          </p>
+        )}
+
+        <div className="mt-4 space-y-1 text-center">
           {templateDoc.header.titleLines.map((titleLine, i) => (
             <p
               key={titleLine}
@@ -231,16 +239,6 @@ export function GeneratedDocumentPreview({
               {titleLine}
             </p>
           ))}
-        </div>
-
-        <div className="mt-4 text-right">
-          <LineRow
-            line={templateDoc.header.orgIdentityLine}
-            values={values}
-            manualOverrides={manualOverrides}
-            unresolvedLabels={unresolvedLabels}
-            gapSources={gapSources}
-          />
         </div>
 
         {templateDoc.header.metaLines.length > 0 && (

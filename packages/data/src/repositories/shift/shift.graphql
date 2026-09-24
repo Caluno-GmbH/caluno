@@ -124,6 +124,12 @@ mutation UpdateShift($id: String!, $input: UpdateShiftInput!) {
   }
 }
 
+mutation DuplicateShift($id: String!, $input: DuplicateShiftInput!) {
+  duplicateShift(id: $id, input: $input) {
+    id
+  }
+}
+
 mutation DeleteShift($id: String!) {
   deleteShift(id: $id) {
     id
@@ -377,6 +383,14 @@ query GetShiftInstance($id: ID!) {
         checkInId
       }
     }
+    timeEntries {
+      id
+      startedAt
+      endedAt
+      volunteer {
+        id
+      }
+    }
   }
 }
 
@@ -458,6 +472,7 @@ fragment VolunteerHomeShiftInstance on ShiftInstance {
   actualEndsAt
   isCheckedIn
   filledCount
+  spotsLeft
   myInviteStatus
   myInvitedAt
   isIntendingToJoin
