@@ -384,7 +384,6 @@ query GetShiftInstance($id: ID!) {
       reimbursementTypeId
       joinRequiresApproval
       visibility
-      joinRequiresApproval
       rrule
       createdAt
       imageUrl

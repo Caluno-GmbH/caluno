@@ -7237,7 +7237,6 @@ export const GetShiftInstanceDocument = gql`
       reimbursementTypeId
       joinRequiresApproval
       visibility
-      joinRequiresApproval
       rrule
       createdAt
       imageUrl
