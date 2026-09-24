@@ -1289,6 +1289,9 @@
       "uebungsleiter": "Vergütet über Übungsleiterpauschale"
     },
     "detail": {
+      "approvalLabel": "Freigabe",
+      "approvalNotRequiredLabel": "Keine Freigabe nötig",
+      "approvalRequiredLabel": "Freigabe erforderlich",
       "createdByLabel": "Erstellt von",
       "createdLabel": "Erstellt",
       "imageAlt": "Bild für {title}",

@@ -363,6 +363,7 @@ query GetShiftInstance($id: ID!) {
       maxVolunteers
       reimbursementTypeId
       visibility
+      joinRequiresApproval
       rrule
       createdAt
       imageUrl
