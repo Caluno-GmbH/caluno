@@ -1289,6 +1289,9 @@
       "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
     },
     "detail": {
+      "approvalLabel": "Approval",
+      "approvalNotRequiredLabel": "No approval needed",
+      "approvalRequiredLabel": "Approval required",
       "createdByLabel": "Created by",
       "createdLabel": "Created",
       "imageAlt": "Image for {title}",
