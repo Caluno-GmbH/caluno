@@ -49,7 +49,7 @@ export function getApprovalConfig(
   joinRequiresApproval: boolean,
 ) {
   return joinRequiresApproval
-    ? { variant: 'alert' as const, label: t('detail.approvalRequiredLabel') }
+    ? { variant: 'secondary' as const, label: t('detail.approvalRequiredLabel') }
     : {
         variant: 'outline' as const,
         label: t('detail.approvalNotRequiredLabel'),
