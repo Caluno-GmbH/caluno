@@ -1,4 +1,9 @@
-import type { DataSourceKey, TemplateDocument, TemplateLine } from '@repo/data';
+import type {
+  DataSourceKey,
+  TemplateDocument,
+  TemplateField,
+  TemplateLine,
+} from '@repo/data';
 
 export type DerivedFieldKind = 'bound' | 'manual';
 export type DerivedFieldProvenance = 'template' | 'profile' | 'gap';
@@ -13,11 +18,15 @@ export interface DerivedField {
   source?: DataSourceKey;
   value: string | null;
   provenance: DerivedFieldProvenance;
+  /** Manual fields only: which control the template asks for. A freeform block wants a textarea, not a one-line input. */
+  control?: TemplateField['control'];
 }
 
 /** Profile-bound sources other than first/last name — resolved from the volunteer's profile data. */
 const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
-  volunteer_address: 'street',
+  volunteer_street: 'street',
+  volunteer_zip: 'zip',
+  volunteer_city: 'city',
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
@@ -93,6 +102,7 @@ export function deriveEditableFields(
           kind: 'manual',
           value: field.value.value || null,
           provenance: 'template',
+          control: field.control,
         });
         continue;
       }

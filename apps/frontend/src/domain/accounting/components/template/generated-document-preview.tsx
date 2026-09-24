@@ -163,6 +163,8 @@ interface GeneratedDocumentPreviewProps {
   tableTotalRow?: string[];
   /** A fixed statement row shown under the total row — e.g. the 0% VAT notice, never bold like the total. */
   tableNoteRow?: string[];
+  /** The gross payout, closing the table under the VAT notice — bold like the net row. */
+  tableGrossRow?: string[];
   /**
    * Label for a bound source with no value yet (e.g. "IBAN (Volunteer)") — used by the
    * template builder, where most sources have no volunteer/period to resolve against.
@@ -196,6 +198,7 @@ export function GeneratedDocumentPreview({
   tableRows,
   tableTotalRow,
   tableNoteRow,
+  tableGrossRow,
   unresolvedLabels = {},
   gapSources = new Set(),
   className,
@@ -203,10 +206,13 @@ export function GeneratedDocumentPreview({
   const letterhead = letterheadLines(values);
   return (
     <div className={className}>
-      <div
-        className="mx-auto w-full max-w-[820px] rounded-sm border bg-card p-[7%] shadow-sm"
-        style={{ aspectRatio: '1 / 1.414' }}
-      >
+      {/*
+        A4 proportions (1:√2) as a FLOOR, not a fixed height: the zero-width
+        float holds an empty document to a full page, while a long one makes the
+        page taller instead of spilling its table past the border. The generated
+        PDF paginates properly; the preview is one continuous page.
+      */}
+      <div className="mx-auto w-full max-w-[820px] overflow-hidden rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
         <div className="flex items-start justify-between gap-4">
           <DocTypeHeader
             kind={kind}
@@ -220,10 +226,26 @@ export function GeneratedDocumentPreview({
 
         <Separator className="my-6" />
 
-        {letterhead.length > 0 && (
-          <p className="whitespace-pre-line text-left text-sm leading-snug">
-            {letterhead.join('\n')}
-          </p>
+        {/* The paying organisation and the document's own references sit in one
+            right-aligned block, matching the generated PDF's letterhead. */}
+        {(letterhead.length > 0 || templateDoc.header.metaLines.length > 0) && (
+          <div className="space-y-1 text-right">
+            {letterhead.length > 0 && (
+              <p className="whitespace-pre-line text-sm leading-snug">
+                {letterhead.join('\n')}
+              </p>
+            )}
+            {templateDoc.header.metaLines.map((line) => (
+              <LineRow
+                key={line.id}
+                line={line}
+                values={values}
+                manualOverrides={manualOverrides}
+                unresolvedLabels={unresolvedLabels}
+                gapSources={gapSources}
+              />
+            ))}
+          </div>
         )}
 
         <div className="mt-4 space-y-1 text-center">
@@ -241,21 +263,6 @@ export function GeneratedDocumentPreview({
           ))}
         </div>
 
-        {templateDoc.header.metaLines.length > 0 && (
-          <div className="mt-1 text-right">
-            {templateDoc.header.metaLines.map((line) => (
-              <LineRow
-                key={line.id}
-                line={line}
-                values={values}
-                manualOverrides={manualOverrides}
-                unresolvedLabels={unresolvedLabels}
-                gapSources={gapSources}
-              />
-            ))}
-          </div>
-        )}
-
         <div className="mt-6 space-y-4">
           {templateDoc.blocks.map((block): ReactNode => {
             if (block.kind === 'table') {
@@ -270,7 +277,7 @@ export function GeneratedDocumentPreview({
                   <p className="mb-2 text-sm font-semibold italic text-muted-foreground">
                     {block.title}
                   </p>
-                  <table className="w-full border-collapse text-sm">
+                  <table className="w-full border-collapse break-words text-sm">
                     <thead>
                       <tr className="bg-muted">
                         {columns.map((col) => (
@@ -322,6 +329,18 @@ export function GeneratedDocumentPreview({
                       {tableNoteRow && (
                         <tr className="text-muted-foreground">
                           {tableNoteRow.map((cell, i) => (
+                            <td
+                              key={columns[i] ?? cell}
+                              className="border border-border px-2 py-1"
+                            >
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      )}
+                      {tableGrossRow && (
+                        <tr className="font-semibold">
+                          {tableGrossRow.map((cell, i) => (
                             <td
                               key={columns[i] ?? cell}
                               className="border border-border px-2 py-1"

@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { formatOrgAddress } from '@/domain/org-unit/format-address';
+import { formatAddress } from '@/domain/org-unit/format-address';
 import { createShift } from '@/domain/shift/actions';
 import { ShiftForm } from '@/domain/shift/components/shift-form';
 import { getDataClient } from '@/lib/data-client';
@@ -22,7 +22,7 @@ export default async function CreateShiftPage({
       description={t('createDescription')}
       orgUId={orgUId}
       mutate={createShift.bind(null, orgUId)}
-      defaultLocation={formatOrgAddress(unit)}
+      defaultLocation={formatAddress(unit)}
       redirectToInviteOnCreate
     />
   );

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'bun:test';
-import { formatOrgAddress } from './format-address';
+import { formatAddress } from './format-address';
 
-describe('formatOrgAddress', () => {
+// duplicated in the backend
+
+describe('formatorgStreet', () => {
   it('joins street and zip+city with a comma by default', () => {
     expect(
-      formatOrgAddress({
+      formatAddress({
         street: 'Musterstraße 1',
         zipCode: '10115',
         city: 'Berlin',
@@ -14,7 +16,7 @@ describe('formatOrgAddress', () => {
 
   it('uses the given separator between street and zip/city', () => {
     expect(
-      formatOrgAddress(
+      formatAddress(
         {
           street: 'Musterstraße 1',
           zipCode: '10115',
@@ -26,16 +28,16 @@ describe('formatOrgAddress', () => {
   });
 
   it('skips blank parts', () => {
-    expect(formatOrgAddress({ street: '  ', zipCode: '10115' })).toBe('10115');
-    expect(formatOrgAddress({ city: 'Berlin' })).toBe('Berlin');
-    expect(formatOrgAddress({ street: 'Street', city: 'Berlin' })).toBe(
+    expect(formatAddress({ street: '  ', zipCode: '10115' })).toBe('10115');
+    expect(formatAddress({ city: 'Berlin' })).toBe('Berlin');
+    expect(formatAddress({ street: 'Street', city: 'Berlin' })).toBe(
       'Street, Berlin',
     );
-    expect(formatOrgAddress({})).toBe('');
+    expect(formatAddress({})).toBe('');
   });
 
   it('returns empty string for null or undefined parts', () => {
-    expect(formatOrgAddress(null)).toBe('');
-    expect(formatOrgAddress(undefined)).toBe('');
+    expect(formatAddress(null)).toBe('');
+    expect(formatAddress(undefined)).toBe('');
   });
 });

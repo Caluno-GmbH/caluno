@@ -1953,7 +1953,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Adresse",
+      "org_street": "Adresse",
       "org_city": "Stadt",
       "org_zip": "Postleitzahl",
       "org_legal_rep": "Gesetzliche Vertretung"
@@ -2211,6 +2211,9 @@
         "editProfileCta": "Profil bearbeiten",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Stundennachweiszeitraum",
+        "rateFieldLabel": "Stundensatz für diesen Nachweis",
+        "rateFieldHint": "Entspricht dem Stundensatz Ihrer Einrichtung. Sie können ihn für diesen einzelnen Nachweis ändern.",
+        "rateFieldOverridden": "Gilt nur für diesen Nachweis. Ihre Einrichtung zahlt weiterhin {rate} pro Stunde.",
         "periodPicker": {
           "placeholder": "Zeitraum wählen",
           "thisMonth": "Dieser Monat",
@@ -2304,10 +2307,15 @@
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",
+          "kostenstelleRequiredByNumberFormat": "Das gewählte Format der Dokumentennummer enthält die Kostenstelle, deshalb muss sie hier angegeben werden.",
           "lockedHint": "Pflichtblock. Immer im generierten Dokument enthalten.",
           "tableFixedHint": "Die Zeilen werden beim Erstellen eines Stundennachweises aus den Zeiterfassungen befüllt.",
           "firstColumnSourceLabel": "Inhalt der ersten Spalte",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name des erfassten Einsatzes",
+              "hint": "Jede Zeile zeigt den Einsatz, aus dem die Stunden stammen. Ohne Einsatz erfasste Stunden zeigen stattdessen die Tätigkeitsbeschreibung aus der Vereinbarung."
+            },
             "agreement_task_description": {
               "label": "Tätigkeitsbeschreibung aus der Vereinbarung",
               "hint": "Jede Zeile zeigt die in der Vereinbarung hinterlegte Tätigkeitsbeschreibung."
@@ -2318,6 +2326,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Name des Einsatzes",
             "agreementTaskDescription": "Tätigkeitsbeschreibung",
             "custom": "z. B. Sonstige Tätigkeit"
           },
@@ -2341,7 +2350,8 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen"
+          "extra": "Weitere Vereinbarungen",
+          "other": "Sonstiges"
         },
         "hoursUnit": {
           "month": "Monat",
@@ -2372,7 +2382,7 @@
           "tasks": "Beschreibe die Haupttätigkeiten für {pauschale}",
           "hours-amount-month": "z. B. 20",
           "hours-amount-week": "z. B. 5",
-          "freeform-text": "Ergänze hier weitere Klauseln, falls nötig",
+          "freeform-text": "Ergänze hier weitere Angaben, falls nötig",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
           "rechtstraeger": "z. B. Diakonisches Werk e.V."
@@ -2400,9 +2410,9 @@
           "volunteer_first_name": "Vorname (Ehrenamtliche:r)",
           "volunteer_last_name": "Nachname (Ehrenamtliche:r)",
           "org_name": "Organisationsname",
-          "org_address": "Organisationsadresse",
-          "org_city": "Stadt (Organisation)",
+          "org_street": "Organisationsadresse",
           "org_zip": "Postleitzahl (Organisation)",
+          "org_city": "Stadt (Organisation)",
           "org_legal_rep": "Gesetzliche Vertretung",
           "pauschalen_type": "Pauschalentyp",
           "hourly_rate": "Vergütung pro Stunde",
@@ -2415,7 +2425,9 @@
           "volunteer_iban": "IBAN (Ehrenamtliche:r)",
           "volunteer_account_holder": "Kontoinhaber:in (Ehrenamtliche:r)",
           "volunteer_bic": "BIC (Ehrenamtliche:r)",
-          "volunteer_address": "Adresse (Ehrenamtliche:r)",
+          "volunteer_street": "Strasse und Hausnummer (Ehrenamtliche:r)",
+          "volunteer_zip": "Postleitzahl (Ehrenamtliche:r)",
+          "volunteer_city": "Stadt (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
           "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",

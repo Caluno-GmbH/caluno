@@ -13,7 +13,10 @@ import {
 import type { TemplateBodyShape } from './document-template.types';
 
 interface TimeEntryMock {
-  shiftInstance: { master: { title: string } };
+  shiftInstance: {
+    overrideTitle?: string | null;
+    master: { title: string };
+  } | null;
   startedAt: Date | null;
   endedAt: Date | null;
   notes?: string | null;
@@ -54,6 +57,10 @@ describe('DocumentRenderingService', () => {
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      contract?: {
+        resolvedBody?: unknown;
+        fieldOverrides?: Record<string, string>;
+      };
       unit?: Record<string, unknown>;
       yearlyUsage?: {
         usedCents: number;
@@ -83,6 +90,9 @@ describe('DocumentRenderingService', () => {
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
         },
+        contracts: {
+          findFirst: () => Promise.resolve(overrides.contract),
+        },
       },
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
     } as never;
@@ -108,11 +118,16 @@ describe('DocumentRenderingService', () => {
           ? overrides.saveFile(args)
           : Promise.resolve({ id: 'file-1' }),
     } as never;
+    const organizationService = {
+      requireRootUnit: () =>
+        Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
+    } as never;
     return new DocumentRenderingService(
       db,
       userProfileService,
       reimbursementRateService,
       fileService,
+      organizationService,
     );
   };
 
@@ -135,15 +150,15 @@ describe('DocumentRenderingService', () => {
             titleLines: ['Zusatzvereinbarung'],
             orgIdentityLine: {
               id: 'org-line',
-              text: '{org_name} — {org_address}',
+              text: '{org_name} — {org_street}',
               fields: [
                 {
                   id: 'org_name',
                   value: { kind: 'bound', source: 'org_name' },
                 },
                 {
-                  id: 'org_address',
-                  value: { kind: 'bound', source: 'org_address' },
+                  id: 'org_street',
+                  value: { kind: 'bound', source: 'org_street' },
                 },
               ],
             },
@@ -442,6 +457,95 @@ describe('DocumentRenderingService', () => {
       expect(rows[1][5]).toBe('52,50 €');
     });
 
+    it('names the shift each row’s hours came from, preferring a renamed occurrence', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: {
+              overrideTitle: 'Food Distribution (Weihnachten)',
+              master: { title: 'Food Distribution' },
+            },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Food Distribution (Weihnachten)');
+    });
+
+    it('falls back to the agreement’s task description for hours with no shift', async () => {
+      const service = createService({
+        rateCents: 1500,
+        contract: {
+          resolvedBody: {
+            blocks: [
+              {
+                id: 'zeitraum-taetigkeit',
+                lines: [
+                  {
+                    id: 'engagement-tasks',
+                    text: 'Tätigkeiten: {tasks}',
+                    fields: [
+                      {
+                        id: 'tasks',
+                        value: {
+                          kind: 'manual-template',
+                          value: 'Betreuung in der Tagespflege',
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        timeEntries: [
+          {
+            shiftInstance: null,
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Betreuung in der Tagespflege');
+    });
+
+    it('repeats the coordinator’s own label when the template asks for one', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: { master: { title: 'Food Distribution' } },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+      const doc = invoice();
+      const table = (
+        doc.documentTemplate as unknown as {
+          body: { blocks: Record<string, unknown>[] };
+        }
+      ).body.blocks[0];
+      table.firstColumnSource = 'custom';
+      table.firstColumnCustomLabel = 'Ehrenamtliche Tätigkeit';
+
+      const rows = await resolveInvoiceTableRows(service, doc);
+
+      expect(rows[0][0]).toBe('Ehrenamtliche Tätigkeit');
+    });
+
     it('renders an empty amount cell when there is no rate', async () => {
       const service = createService({
         rateCents: undefined,
@@ -463,15 +567,30 @@ describe('DocumentRenderingService', () => {
   });
 
   describe('invoiceTotalRowCells', () => {
-    it('renders a bold Gesamtbetrag row carrying the formatted total amount', () => {
-      const service = createService();
-      const cells = (
+    const invoiceTotalRowCells = (
+      service: DocumentRenderingService,
+      totalAmountCents: number,
+    ): string[][] =>
+      (
         service as unknown as {
-          invoiceTotalRowCells: (totalAmountCents: number) => string[];
+          invoiceTotalRowCells: (total: number) => string[][];
         }
-      ).invoiceTotalRowCells(8250);
+      ).invoiceTotalRowCells(totalAmountCents);
 
-      expect(cells).toEqual(['', '', 'Gesamtbetrag', '', '', '82,50 €']);
+    it('states the payout as net and gross with the VAT rate between them', () => {
+      const cells = invoiceTotalRowCells(createService(), 8250);
+
+      expect(cells).toEqual([
+        ['', '', 'Nettobetrag', '', '', '82,50 €'],
+        ['', '', 'zzgl. 0 % USt.', '', '', '0,00 €'],
+        ['', '', 'Gesamtbetrag (brutto)', '', '', '82,50 €'],
+      ]);
+    });
+
+    it('states the same figure twice, because a Pauschale carries no VAT', () => {
+      const [net, , gross] = invoiceTotalRowCells(createService(), 12_345);
+
+      expect(net?.[5]).toBe(gross?.[5]);
     });
   });
 
@@ -593,7 +712,7 @@ describe('DocumentRenderingService', () => {
       expect(
         letterheadLines({
           org_name: 'Altonaer Lesepaten',
-          org_address: 'Adress eintrag 1',
+          org_street: 'Adress eintrag 1',
           org_zip: '22245',
           org_city: 'Berlin',
         }),
@@ -604,7 +723,7 @@ describe('DocumentRenderingService', () => {
       expect(
         letterheadLines({
           org_name: 'Verein',
-          org_address: '   ',
+          org_street: '   ',
           org_zip: '',
           org_city: '',
         }),

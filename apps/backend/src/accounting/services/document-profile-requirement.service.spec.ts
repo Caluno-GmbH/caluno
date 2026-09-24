@@ -27,10 +27,10 @@ describe('DocumentProfileRequirementService', () => {
               fields: [{ value: { kind: 'bound', source: 'volunteer_iban' } }],
             },
             {
-              text: '{volunteerAddress}',
+              text: '{volunteerStreet}',
               enabled: false,
               fields: [
-                { value: { kind: 'bound', source: 'volunteer_address' } },
+                { value: { kind: 'bound', source: 'volunteer_street' } },
               ],
             },
           ],
@@ -125,7 +125,7 @@ describe('DocumentProfileRequirementService', () => {
           enabled: true,
           fields: [
             { value: { kind: 'bound', source: 'org_name' } },
-            { value: { kind: 'bound', source: 'org_address' } },
+            { value: { kind: 'bound', source: 'org_street' } },
             { value: { kind: 'bound', source: 'org_city' } },
           ],
         },
@@ -227,13 +227,13 @@ describe('DocumentProfileRequirementService', () => {
       header: {
         orgIdentityLine: {
           enabled: true,
-          fields: [{ value: { kind: 'bound', source: 'org_address' } }],
+          fields: [{ value: { kind: 'bound', source: 'org_street' } }],
         },
       },
     };
     expect(
       await serviceWithOrg.missingOrgProfileSources('org-1', undefined, body),
-    ).toEqual(['org_address']);
+    ).toEqual(['org_street']);
   });
 
   it('treats volunteer tax id as a profile-required source', async () => {
@@ -290,7 +290,7 @@ describe('DocumentProfileRequirementService', () => {
       );
 
       // org_name maps to `name`, which is always present, so it never appears.
-      expect(missing.sort()).toEqual(['org_address', 'org_city']);
+      expect(missing.sort()).toEqual(['org_city', 'org_street', 'org_zip']);
     });
 
     it('is empty when every baseline field is filled', async () => {
@@ -298,6 +298,7 @@ describe('DocumentProfileRequirementService', () => {
         unit: {
           name: 'Playground',
           street: 'Hauptstraße 1',
+          zipCode: '23456',
           city: 'Berlin',
         },
       });
@@ -315,8 +316,8 @@ describe('DocumentProfileRequirementService', () => {
           id: 'unit-1',
           name: 'Playground',
           street: 'Hauptstraße 1',
+          zipCode: '12345',
           city: '  ',
-          zipCode: null,
           legalRep: null,
         }),
       ).toEqual(['org_city']);
@@ -330,6 +331,7 @@ describe('DocumentProfileRequirementService', () => {
         parentId: null,
         name: 'Testing org',
         street: 'Hauptstraße 1',
+        zipCode: '23456',
         city: 'Berlin',
         legalRep: 'Erika Mustermann',
       },
@@ -366,7 +368,8 @@ describe('DocumentProfileRequirementService', () => {
         orgIdentityLine: {
           enabled: true,
           fields: [
-            { value: { kind: 'bound', source: 'org_address' } },
+            { value: { kind: 'bound', source: 'org_street' } },
+            { value: { kind: 'bound', source: 'org_zip' } },
             { value: { kind: 'bound', source: 'org_city' } },
             { value: { kind: 'bound', source: 'org_legal_rep' } },
           ],

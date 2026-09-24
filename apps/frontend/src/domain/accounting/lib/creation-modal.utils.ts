@@ -21,6 +21,21 @@ export function contractPeriodForLifespan(
 }
 
 /** Hours between two ISO timestamps, rounded to hundredths so display never shows floating-point noise. */
+/**
+ * Hours as the document prints them — German decimal comma, two places at most:
+ * 10, 5,58. Rounding here is what keeps a sum of already-rounded rows from
+ * printing its binary-float tail (10 + 5,58 + 12,48 is 28.060000000000002 in
+ * IEEE 754, and the page said so).
+ */
+export function formatHours(hours: number): string {
+  return `${Math.round(hours * 100) / 100}`.replace('.', ',');
+}
+
+/** The selection's total hours, rounded the way each row already is. */
+export function sumHours(hours: number[]): number {
+  return Math.round(hours.reduce((total, one) => total + one, 0) * 100) / 100;
+}
+
 export function hoursBetween(startedAt: string, endedAt: string): number {
   const diffMs = new Date(endedAt).getTime() - new Date(startedAt).getTime();
   return Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
@@ -32,6 +47,17 @@ export function hoursBetween(startedAt: string, endedAt: string): number {
  * previous mock data used, so `EligibleHoursCard`'s check/uncheck behavior
  * keeps working unchanged.
  */
+/**
+ * The name this one occurrence goes by — its own title when a coordinator
+ * renamed it, otherwise the shift it repeats from. Undefined when the hours
+ * were tracked without a shift at all.
+ */
+function shiftInstanceName(entry: EligibleTimeEntry): string | undefined {
+  const instance = entry.shiftInstance;
+  if (!instance) return undefined;
+  return instance.overrideTitle ?? instance.master.title;
+}
+
 export function mapEligibleTimeEntry(
   entry: EligibleTimeEntry,
   formatting: {
@@ -47,7 +73,7 @@ export function mapEligibleTimeEntry(
   if (!entry.endedAt) {
     return {
       id: entry.id,
-      shiftName: entry.shiftInstance?.master.title ?? entry.notes ?? '',
+      shiftName: shiftInstanceName(entry) ?? entry.notes ?? '',
       dateTime: `${datePart}, ${startTime}`,
       hours: 0,
     };
@@ -56,7 +82,7 @@ export function mapEligibleTimeEntry(
   const end = new Date(entry.endedAt);
   return {
     id: entry.id,
-    shiftName: entry.shiftInstance?.master.title ?? entry.notes ?? '',
+    shiftName: shiftInstanceName(entry) ?? entry.notes ?? '',
     dateTime: `${datePart}, ${startTime}–${formatTime(end)}`,
     hours: hoursBetween(entry.startedAt, entry.endedAt),
   };

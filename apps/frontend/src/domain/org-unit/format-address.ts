@@ -1,15 +1,17 @@
-export type OrgAddressParts = {
-  street?: string | null;
-  zipCode?: string | null;
-  city?: string | null;
+// duplicated in the backend
+
+export type AddressParts = {
+  street?: string | null | undefined;
+  zipCode?: string | null | undefined;
+  city?: string | null | undefined;
 };
 
 /**
  * Formats street + zip/city for display. Blank parts are skipped.
  * Default separator is a newline (multi-line block); pass e.g. `', '` for inline.
  */
-export function formatOrgAddress(
-  parts: OrgAddressParts | null | undefined,
+export function formatAddress(
+  parts: AddressParts | null | undefined,
   separator = ', ',
 ): string {
   if (parts == null) return '';

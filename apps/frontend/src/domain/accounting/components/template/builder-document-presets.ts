@@ -38,7 +38,7 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
   orgName?: string | null;
-  orgAddress?: string | null;
+  orgStreet?: string | null;
   orgZip?: string | null;
   orgCity?: string | null;
   orgLegalRep?: string | null;
@@ -49,7 +49,7 @@ export function getKnownOrgValues(args: {
     pauschalen_type: KNOWN_PAUSCHALE_LABEL[args.pauschale],
   };
   if (args.orgName) values.org_name = args.orgName;
-  if (args.orgAddress) values.org_address = args.orgAddress;
+  if (args.orgStreet) values.org_street = args.orgStreet;
   if (args.orgZip) values.org_zip = args.orgZip;
   if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
@@ -109,10 +109,16 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
-            bound('parties-org-name', 'org_name'),
-            bound('parties-org-address', 'org_address'),
-          ]),
+          line(
+            'parties',
+            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity} und',
+            [
+              bound('parties-org-name', 'org_name'),
+              bound('parties-org-street', 'org_street'),
+              bound('parties-org-zip', 'org_zip'),
+              bound('parties-org-city', 'org_city'),
+            ],
+          ),
           line(
             'volunteer-name',
             '{volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
@@ -123,9 +129,12 @@ export function getContractDocument(
           ),
           line(
             'volunteer-address',
-            'wohnhaft in {volunteerAddress},',
-            [bound('volunteer-address-field', 'volunteer_address')],
-            { optional: true },
+            'wohnhaft in {volunteerStreet}, {volunteerZip} {volunteerCity}',
+            [
+              bound('volunteer-street-field', 'volunteer_street'),
+              bound('volunteer-zip-field', 'volunteer_zip'),
+              bound('volunteer-city-field', 'volunteer_city'),
+            ],
           ),
           line(
             'volunteer-dob',
@@ -240,10 +249,13 @@ export function getInvoiceDocument(
     header: {
       titleLines: [PAUSCHALE_INVOICE_TITLE[pauschale]],
       metaLines: [
-        line('meta-invoice-number', '{documentNumber}', [
+        // Labelled rather than bare: these sit in the header group next to the
+        // organisation's letterhead, where a lone number and a lone date say
+        // nothing about which is which.
+        line('meta-invoice-number', 'Rechnungsnummer: {documentNumber}', [
           bound('meta-invoice-number-field', 'document_number'),
         ]),
-        line('meta-date', '{date}', [
+        line('meta-date', 'Datum: {date}', [
           bound('meta-date-field', 'generated_date'),
         ]),
         line(
@@ -284,8 +296,14 @@ export function getInvoiceDocument(
             bound('volunteer-name-first', 'volunteer_first_name'),
             bound('volunteer-name-last', 'volunteer_last_name'),
           ]),
-          line('volunteer-address', '{volunteerAddress}', [
-            bound('volunteer-address-field', 'volunteer_address'),
+          line('volunteer-street', '{volunteerStreet}', [
+            bound('volunteer-street-field', 'volunteer_street'),
+          ]),
+          line('volunteer-zip', '{volunteerZip}', [
+            bound('volunteer-zip-field', 'volunteer_zip'),
+          ]),
+          line('volunteer-city', '{volunteerCity}', [
+            bound('volunteer-city-field', 'volunteer_city'),
           ]),
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),
@@ -297,16 +315,20 @@ export function getInvoiceDocument(
         id: 'stundennachweis',
         title: 'Stundennachweis',
         locked: true,
+        // The rate column is headed "€/h" rather than "Stundensatz": the header
+        // was the widest thing in it by some margin, and the room it held came
+        // out of the task description beside it. "h" and not "Std" because the
+        // hours cells below already print "10h" — one abbreviation per unit.
         columns: [
           'Tätigkeit',
           'Beginn',
           'Ende',
           'Stunden gesamt',
-          'Stundensatz',
+          '€/h',
           'Betrag',
         ],
         previewRowCount: 10,
-        firstColumnSource: 'agreement_task_description',
+        firstColumnSource: 'shift_name',
         firstColumnCustomLabel: '',
       },
       {
@@ -329,6 +351,20 @@ export function getInvoiceDocument(
             bound('jahresdeckel-limit', 'yearly_limit_amount'),
           ],
         ),
+      },
+      {
+        kind: 'text',
+        id: 'sonstiges',
+        title: 'Sonstiges',
+        locked: false,
+        // Opt-in, off by default — the same shape the contract uses. Sits last
+        // among the blocks, so it prints above the signatures.
+        enabled: false,
+        lines: [
+          line('freeform', '{freeformText}', [
+            manual('freeform-text', '', 'textarea'),
+          ]),
+        ],
       },
     ],
     footer: {
