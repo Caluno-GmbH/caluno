@@ -24,7 +24,7 @@ export interface DerivedField {
 
 /** Profile-bound sources other than first/last name — resolved from the volunteer's profile data. */
 const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
-  volunteer_address: 'street',
+  volunteer_street: 'street',
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',

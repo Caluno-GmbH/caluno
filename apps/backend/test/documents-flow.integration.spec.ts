@@ -186,7 +186,7 @@ const CONTRACTS = `
 const ACCOUNTING_SETUP_STATUS = `
   query {
     accountingSetupStatus {
-      orgProfile { name street city zipCode legalRep }
+      orgProfile { name street zipCode city legalRep }
       orgProfileComplete
       missingOrgProfileFields
       canManageTemplates
@@ -340,13 +340,13 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
     .set({
       accountingEnabled: true,
       street: 'Teststraße 1',
-      city: 'Berlin',
       zipCode: '10115',
+      city: 'Berlin',
     })
     .where(eq(schema.organizations.id, organization.id));
   await db
     .update(schema.organizationUnits)
-    .set({ street: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
+    .set({ street: 'Teststraße 1', zipCode: '10115', city: 'Berlin' })
     .where(eq(schema.organizationUnits.id, root.id));
 
   const permission =
@@ -1244,15 +1244,15 @@ describe('documents flow — admin + volunteer', () => {
         ],
         orgIdentityLine: {
           id: 'header-org-identity',
-          text: '{orgName} {orgAddress}',
+          text: '{orgName} {orgStreet}',
           fields: [
             {
               id: 'header-org-name',
               value: { kind: 'bound', source: 'org_name' },
             },
             {
-              id: 'header-org-address',
-              value: { kind: 'bound', source: 'org_address' },
+              id: 'header-org-street',
+              value: { kind: 'bound', source: 'org_street' },
             },
           ],
           enabled: true,
@@ -2064,12 +2064,12 @@ describe('documents flow — admin + volunteer', () => {
       const body = {
         header: {
           orgIdentityLine: {
-            text: '{orgName} {orgAddress} {orgCity}',
+            text: '{orgName} {orgStreet} {orgCity}',
             fields: [
               { id: 'org-name', value: { kind: 'bound', source: 'org_name' } },
               {
-                id: 'org-address',
-                value: { kind: 'bound', source: 'org_address' },
+                id: 'org-street',
+                value: { kind: 'bound', source: 'org_street' },
               },
               { id: 'org-city', value: { kind: 'bound', source: 'org_city' } },
             ],
@@ -2109,7 +2109,7 @@ describe('documents flow — admin + volunteer', () => {
         },
         headers: orgGatedHeader,
       });
-      // The org has no city/address → creating is refused (org_city, org_address).
+      // The org has no city/address → creating is refused (org_city, org_street).
       expect(refused.errors?.[0]?.message ?? '').toMatch(
         /organization is missing/i,
       );
@@ -2185,12 +2185,12 @@ describe('documents flow — admin + volunteer', () => {
       const body = {
         header: {
           orgIdentityLine: {
-            text: '{orgName} {orgAddress} {orgCity}',
+            text: '{orgName} {orgStreet} {orgCity}',
             fields: [
               { id: 'org-name', value: { kind: 'bound', source: 'org_name' } },
               {
-                id: 'org-address',
-                value: { kind: 'bound', source: 'org_address' },
+                id: 'org-street',
+                value: { kind: 'bound', source: 'org_street' },
               },
               { id: 'org-city', value: { kind: 'bound', source: 'org_city' } },
             ],
@@ -2433,6 +2433,8 @@ describe('documents flow — admin + volunteer', () => {
         },
         'accountingSetupStatus',
       );
+
+      console.log(subUnitStatus.accountingSetupStatus);
 
       // The sub-unit has none of its own, so the gate and the rendered
       // profile fall back to its parent's details.

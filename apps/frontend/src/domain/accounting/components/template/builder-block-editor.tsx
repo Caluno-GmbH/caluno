@@ -53,7 +53,7 @@ import {
  */
 const ORG_SOURCES: DataSourceKey[] = [
   'org_name',
-  'org_address',
+  'org_street',
   'org_zip',
   'org_city',
   'org_legal_rep',
@@ -61,7 +61,7 @@ const ORG_SOURCES: DataSourceKey[] = [
 const VOLUNTEER_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
   'volunteer_last_name',
-  'volunteer_address',
+  'volunteer_street',
   'volunteer_dob',
   'volunteer_iban',
   'volunteer_account_holder',
@@ -180,7 +180,7 @@ const SECTION_TITLE_CLASSNAME = 'text-lg font-semibold text-foreground';
  *   interface (a first/last name) come from the catalog instead, via `PLACEHOLDER_EXAMPLE_KEYS`.
  */
 const PLACEHOLDER_EXAMPLES: Partial<Record<DataSourceKey, string>> = {
-  volunteer_address: 'Musterstraße 1, 12345 Stadt',
+  volunteer_street: 'Musterstraße 1, 12345 Stadt',
   org_zip: '12345',
   volunteer_dob: 'TT.MM.JJJJ',
   volunteer_iban: 'DE00 0000 0000 0000 0000 00',

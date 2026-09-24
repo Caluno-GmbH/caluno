@@ -25,7 +25,7 @@ describe('deriveEditableFields', () => {
     // key, or the disabled optional address/dob/freeform lines).
     expect(ids).not.toContain('dob');
     expect(ids).not.toContain('volunteer-dob-field');
-    expect(ids).not.toContain('volunteer-address-field');
+    expect(ids).not.toContain('volunteer-street-field');
     expect(ids).not.toContain('freeform-text');
   });
 
@@ -102,7 +102,7 @@ describe('deriveEditableFields', () => {
     const fields = deriveEditableFields(getInvoiceDocument('ehrenamt'));
     const sources = fields.map((f) => f.source);
     expect(sources).not.toContain('org_name');
-    expect(sources).not.toContain('org_address');
+    expect(sources).not.toContain('org_street');
     expect(sources).not.toContain('org_city');
     expect(sources).not.toContain('generated_date');
     expect(sources).not.toContain('document_number');
@@ -114,7 +114,7 @@ describe('deriveEditableFields', () => {
     const sources = fields.map((f) => f.source);
     expect(sources).toContain('volunteer_first_name');
     expect(sources).toContain('volunteer_last_name');
-    expect(sources).toContain('volunteer_address');
+    expect(sources).toContain('volunteer_street');
     expect(sources).toContain('volunteer_iban');
   });
 });

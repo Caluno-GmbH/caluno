@@ -408,6 +408,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
+          hourlyRateCents: 1000,
         })
         .returning();
 
@@ -554,6 +555,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: input.invoiceStatus,
+          hourlyRateCents: 1000,
         })
         .returning();
       return invoice;

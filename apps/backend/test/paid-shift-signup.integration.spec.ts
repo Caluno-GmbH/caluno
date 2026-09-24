@@ -272,6 +272,7 @@ describe('paidShiftSignupVolunteers', () => {
       totalAmountCents: 100,
       totalHours: 1,
       resolvedBody: { header: {}, blocks: [], footer: {} },
+      hourlyRateCents: 1000,
     });
 
     const { paidShiftSignupVolunteers } = await query(2026);

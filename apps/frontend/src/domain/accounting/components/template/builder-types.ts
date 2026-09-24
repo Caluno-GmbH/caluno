@@ -32,7 +32,7 @@ export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
   'volunteer_last_name',
   'org_name',
-  'org_address',
+  'org_street',
   'org_zip',
   'org_city',
   'org_legal_rep',
@@ -54,7 +54,7 @@ export const PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
   'volunteer_iban',
   'volunteer_account_holder',
   'volunteer_bic',
-  'volunteer_address',
+  'volunteer_street',
   'volunteer_dob',
   'volunteer_tax_id',
 ];
@@ -79,7 +79,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   volunteer_iban: 'volunteer_profile',
   volunteer_account_holder: 'volunteer_profile',
   volunteer_bic: 'volunteer_profile',
-  volunteer_address: 'volunteer_profile',
+  volunteer_street: 'volunteer_profile',
   volunteer_dob: 'volunteer_profile',
   volunteer_tax_id: 'volunteer_profile',
   generated_date: 'generation_time',
@@ -93,7 +93,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   already_received_period: 'generation_time',
   hourly_rate: 'rate_settings',
   org_name: 'organization_profile',
-  org_address: 'organization_profile',
+  org_street: 'organization_profile',
   org_city: 'organization_profile',
   org_zip: 'organization_profile',
   org_legal_rep: 'organization_profile',
@@ -248,7 +248,7 @@ export function countIncompleteManualFields(doc: TemplateDocument): number {
 
 /** Org-profile data sources the document gate actually enforces (name always present). */
 const ORG_PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
-  'org_address',
+  'org_street',
   'org_city',
   'org_zip',
   'org_legal_rep',
@@ -298,7 +298,7 @@ export function missingOrgProfileSourcesForOrg(
   const valueBySource: Partial<
     Record<DataSourceKey, string | null | undefined>
   > = {
-    org_address: org.street,
+    org_street: org.street,
     org_city: org.city,
     org_zip: org.zipCode,
     org_legal_rep: org.legalRep,

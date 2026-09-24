@@ -372,6 +372,7 @@ describe('InvoiceService', () => {
           totalAmountCents: 0,
           totalHours: 0,
           resolvedBody: { header: {}, blocks: [], footer: {} },
+          hourlyRateCents: 1000,
         })
         .returning();
       if (!draft) throw new Error('failed to insert draft invoice');

@@ -145,15 +145,15 @@ describe('DocumentRenderingService', () => {
             titleLines: ['Zusatzvereinbarung'],
             orgIdentityLine: {
               id: 'org-line',
-              text: '{org_name} — {org_address}',
+              text: '{org_name} — {org_street}',
               fields: [
                 {
                   id: 'org_name',
                   value: { kind: 'bound', source: 'org_name' },
                 },
                 {
-                  id: 'org_address',
-                  value: { kind: 'bound', source: 'org_address' },
+                  id: 'org_street',
+                  value: { kind: 'bound', source: 'org_street' },
                 },
               ],
             },
@@ -707,7 +707,7 @@ describe('DocumentRenderingService', () => {
       expect(
         letterheadLines({
           org_name: 'Altonaer Lesepaten',
-          org_address: 'Adress eintrag 1',
+          org_street: 'Adress eintrag 1',
           org_zip: '22245',
           org_city: 'Berlin',
         }),
@@ -718,7 +718,7 @@ describe('DocumentRenderingService', () => {
       expect(
         letterheadLines({
           org_name: 'Verein',
-          org_address: '   ',
+          org_street: '   ',
           org_zip: '',
           org_city: '',
         }),

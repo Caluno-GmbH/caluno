@@ -3,7 +3,7 @@ import { formatAddress } from './format-address';
 
 // duplicated in the frontend
 
-describe('formatOrgAddress', () => {
+describe('formatorgStreet', () => {
   it('joins street and zip+city with a comma by default', () => {
     expect(
       formatAddress({

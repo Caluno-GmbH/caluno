@@ -56,7 +56,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
-  volunteer_address: 'street',
+  volunteer_street: 'street',
   volunteer_dob: 'birth-date',
   volunteer_tax_id: 'tax-id',
 };
@@ -68,7 +68,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
  */
 export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
   org_name: 'name',
-  org_address: 'street',
+  org_street: 'street',
   org_zip: 'zipCode',
   org_city: 'city',
   org_legal_rep: 'legalRep',
@@ -80,7 +80,7 @@ export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
  * body the way missingOrgProfileSources does.
  *
  * org_legal_rep is deliberately excluded: no shipped preset binds it (see
- * builder-document-presets.ts, which binds only org_name / org_address /
+ * builder-document-presets.ts, which binds only org_name / org_street /
  * org_city), so gating setup on it would block orgs on a field their
  * documents never render. A template that binds it manually is still caught
  * at save time by missingOrgProfileSources, which derives its requirements
@@ -88,8 +88,8 @@ export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
  */
 export const REQUIRED_ORG_PROFILE_SOURCES = [
   'org_name',
-  'org_address',
-  'org_zipCode',
+  'org_street',
+  'org_zip',
   'org_city',
 ] as const;
 

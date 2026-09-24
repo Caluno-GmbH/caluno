@@ -13,7 +13,7 @@ describe('document preset org identity', () => {
         ? partiesBlock.lines.find((l) => l.id === 'parties')
         : undefined;
 
-    expect(partiesLine?.text).toBe('Zwischen dem {orgName}, {orgAddress}, und');
+    expect(partiesLine?.text).toBe('Zwischen dem {orgName}, {orgStreet}, und');
   });
 });
 

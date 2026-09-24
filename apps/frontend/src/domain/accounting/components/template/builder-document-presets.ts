@@ -38,7 +38,7 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
   orgName?: string | null;
-  orgAddress?: string | null;
+  orgStreet?: string | null;
   orgZip?: string | null;
   orgCity?: string | null;
   orgLegalRep?: string | null;
@@ -49,7 +49,7 @@ export function getKnownOrgValues(args: {
     pauschalen_type: KNOWN_PAUSCHALE_LABEL[args.pauschale],
   };
   if (args.orgName) values.org_name = args.orgName;
-  if (args.orgAddress) values.org_address = args.orgAddress;
+  if (args.orgStreet) values.org_street = args.orgStreet;
   if (args.orgZip) values.org_zip = args.orgZip;
   if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
@@ -109,9 +109,9 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
+          line('parties', 'Zwischen dem {orgName}, {orgStreet}, und', [
             bound('parties-org-name', 'org_name'),
-            bound('parties-org-address', 'org_address'),
+            bound('parties-org-street', 'org_street'),
           ]),
           line(
             'volunteer-name',
@@ -122,9 +122,9 @@ export function getContractDocument(
             ],
           ),
           line(
-            'volunteer-address',
-            'wohnhaft in {volunteerAddress},',
-            [bound('volunteer-address-field', 'volunteer_address')],
+            'volunteer-street',
+            'wohnhaft in {volunteerStreet},',
+            [bound('volunteer-street-field', 'volunteer_street')],
             { optional: true },
           ),
           line(
@@ -287,8 +287,8 @@ export function getInvoiceDocument(
             bound('volunteer-name-first', 'volunteer_first_name'),
             bound('volunteer-name-last', 'volunteer_last_name'),
           ]),
-          line('volunteer-address', '{volunteerAddress}', [
-            bound('volunteer-address-field', 'volunteer_address'),
+          line('volunteer-street', '{volunteerStreet}', [
+            bound('volunteer-street-field', 'volunteer_street'),
           ]),
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),

@@ -1947,7 +1947,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Address",
+      "org_street": "Address",
       "org_city": "City",
       "org_zip": "Postal code",
       "org_legal_rep": "Legal representative"
@@ -2404,7 +2404,7 @@
           "volunteer_first_name": "First name (Volunteer)",
           "volunteer_last_name": "Last name (Volunteer)",
           "org_name": "Organisation name",
-          "org_address": "Organisation address",
+          "org_street": "Organisation address",
           "org_city": "City (Organisation)",
           "org_zip": "Postal code (Organisation)",
           "org_legal_rep": "Legal representative",
@@ -2419,7 +2419,7 @@
           "volunteer_iban": "IBAN (Volunteer)",
           "volunteer_account_holder": "Account holder (Volunteer)",
           "volunteer_bic": "BIC (Volunteer)",
-          "volunteer_address": "Address (Volunteer)",
+          "volunteer_street": "Address (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",
           "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Agreement period",

@@ -1947,7 +1947,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Adresse",
+      "org_street": "Adresse",
       "org_city": "Stadt",
       "org_zip": "Postleitzahl",
       "org_legal_rep": "Gesetzliche Vertretung"
@@ -2404,7 +2404,7 @@
           "volunteer_first_name": "Vorname (Ehrenamtliche:r)",
           "volunteer_last_name": "Nachname (Ehrenamtliche:r)",
           "org_name": "Organisationsname",
-          "org_address": "Organisationsadresse",
+          "org_street": "Organisationsadresse",
           "org_city": "Stadt (Organisation)",
           "org_zip": "Postleitzahl (Organisation)",
           "org_legal_rep": "Gesetzliche Vertretung",
@@ -2419,7 +2419,7 @@
           "volunteer_iban": "IBAN (Ehrenamtliche:r)",
           "volunteer_account_holder": "Kontoinhaber:in (Ehrenamtliche:r)",
           "volunteer_bic": "BIC (Ehrenamtliche:r)",
-          "volunteer_address": "Adresse (Ehrenamtliche:r)",
+          "volunteer_street": "Adresse (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
           "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",

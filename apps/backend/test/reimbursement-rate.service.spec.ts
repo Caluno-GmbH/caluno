@@ -585,6 +585,7 @@ describe('ReimbursementRateService', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: overrides.invoiceStatus,
+          hourlyRateCents: 1000,
         });
 
       await insertInvoice({
@@ -639,6 +640,7 @@ describe('ReimbursementRateService', () => {
         totalHours: 1,
         resolvedBody: { header: {}, blocks: [], footer: {} },
         invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
       });
       await service.setManualBaseline(
         organization.id,
@@ -693,6 +695,7 @@ describe('ReimbursementRateService', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
+          hourlyRateCents: 1000,
         });
 
       // January and March payouts land before the July cutoff; August lands after.
@@ -760,6 +763,7 @@ describe('ReimbursementRateService', () => {
               totalHours: 1,
               resolvedBody: { header: {}, blocks: [], footer: {} },
               invoiceStatus: InvoiceStatus.READY,
+              hourlyRateCents: 1000,
             })
             .returning();
           return invoice;
@@ -856,6 +860,7 @@ describe('ReimbursementRateService', () => {
         totalHours: 1,
         resolvedBody: { header: {}, blocks: [], footer: {} },
         invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
       });
 
       const usage = await service.getRosterYearlyUsage(unit.id, 2026);
@@ -928,6 +933,7 @@ describe('ReimbursementRateService', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: overrides.invoiceStatus,
+          hourlyRateCents: 1000,
         });
 
       // volunteerA: 5_000 ehrenamt (counted) + 2_000 declined ehrenamt (excluded)
@@ -1255,6 +1261,7 @@ describe('ReimbursementRateService', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
+          hourlyRateCents: 1000,
         })
         .returning();
       return invoice;

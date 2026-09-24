@@ -57,7 +57,7 @@ export function letterheadLines(fieldValues: Record<string, string>): string[] {
 
   return [
     nonBlank(fieldValues.org_name),
-    nonBlank(fieldValues.org_address),
+    nonBlank(fieldValues.org_street),
     zipCity || undefined,
   ].filter((line): line is string => line !== undefined);
 }
@@ -578,7 +578,7 @@ export class DocumentRenderingService {
 
     return {
       org_name: rootUnit?.name ?? '',
-      org_address: orgProfile?.street ?? rootUnit?.street ?? '',
+      org_street: orgProfile?.street ?? rootUnit?.street ?? '',
       org_city: orgProfile?.city ?? rootUnit?.city ?? '',
       org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
@@ -588,13 +588,13 @@ export class DocumentRenderingService {
       // The volunteer is the invoicing party on a Stundennachweis, so this is
       // the sender's address: a street with no postcode or town identifies
       // nobody. The profile collects address, zip and city as three separate
-      // system fields but only volunteer_address is exposed as a data source,
+      // system fields but only volunteer_street is exposed as a data source,
       // so the other two could never reach a document. Composed here rather
       // than added as two more placeholders, because the address occupies one
       // line in both presets and a single value keeps it that way (VOLI-1351).
-      volunteer_address: formatAddress({
+      volunteer_street: formatAddress({
         street: str(
-          profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_address],
+          profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
         ),
         zipCode: str(profileData.zip),
         city: str(profileData.city),
