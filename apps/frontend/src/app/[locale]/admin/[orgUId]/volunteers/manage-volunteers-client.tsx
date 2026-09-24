@@ -24,7 +24,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui';
-import { LogIn, UserRound } from 'lucide-react';
+import { ScanQrCode, UserRound } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ButtonClipboard } from '@/components/button-clipboard';
@@ -131,25 +131,17 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
                   />
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon-xs"
-                      variant="outline"
-                      tooltip={t('action.viewProfileAria')}
-                      onClick={openProfile}
-                    >
-                      <UserRound />
-                    </Button>
+                  <div className="flex items-center gap-2">
                     <Link
                       href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
                       aria-label={t('action.checkInAria')}
                     >
                       <Button
-                        size="icon-xs"
+                        size="icon-md"
                         variant="outline"
                         tooltip={t('action.checkInShiftAria')}
                       >
-                        <LogIn />
+                        <ScanQrCode />
                       </Button>
                     </Link>
                     <RemoveMembershipButton
