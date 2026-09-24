@@ -1785,6 +1785,11 @@
       "title": "Formulare, die zum Beitritt benötigt werden",
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
+    "search": {
+      "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
+      "emptyTitle": "Keine Freiwilligen gefunden",
+      "placeholder": "Nach Name, E-Mail oder Rolle suchen"
+    },
     "sheet": {
       "addressLabel": "Adresse",
       "birthdayLabel": "Geburtstag",
@@ -1810,7 +1815,7 @@
       "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
       "name": "Name",
       "openProfileAria": "Profil von {name} öffnen",
-      "roles": "Rollen"
+      "roles": "Rolle"
     }
   },
   "VolunteerHome": {

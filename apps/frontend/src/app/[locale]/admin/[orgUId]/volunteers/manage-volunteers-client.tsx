@@ -12,6 +12,7 @@ import {
   AvatarImage,
   Badge,
   Button,
+  Input,
   Skeleton,
   Table,
   TableBody,
@@ -24,14 +25,21 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui';
-import { ScanQrCode, UserRound } from 'lucide-react';
+import { ScanQrCode, Search, UserRound } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 import { ButtonClipboard } from '@/components/button-clipboard';
 import MembershipRequestCard from '@/domain/membership-requests/components/membership-request-card';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
 import { organizationUnitUrl } from '@/domain/organization/share';
+import {
+  internalRoleKey,
+  type TranslatableRole,
+} from '@/domain/role/lib/role-label';
+import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
+import { matchesVolunteerQuery } from '@/domain/volunteer/volunteer-search';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { CopyableEmailCell } from './copyable-email-cell';
@@ -49,8 +57,10 @@ interface Props {
 function ApprovedTab({ orgUId }: { orgUId: string }) {
   const t = useTranslations('Volunteer');
   const tCommon = useTranslations('Common');
+  const tRole = useTranslations('Role');
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
+  const [search, setSearch] = useState('');
 
   if (isPending) {
     return (
@@ -76,91 +86,116 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     );
   }
 
-  return (
-    <div className="rounded-md border overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('table.name')}</TableHead>
-            <TableHead>{t('table.email')}</TableHead>
-            <TableHead>{t('table.roles')}</TableHead>
-            <TableHead></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {memberships.map((membership) => {
-            const openProfile = () =>
-              openVolunteerSheet({
-                userId: membership.user.id,
-                volunteerName: membership.user.name,
-                volunteerStatus: MembershipRequestStatus.Accepted,
-                volunteerEmail: membership.user.email,
-                volunteerCheckInId: membership.user.checkInId,
-              });
+  const roleLabel = (role: TranslatableRole) => {
+    const key = internalRoleKey(role);
+    return key ? tRole(key) : role.name;
+  };
 
-            return (
-              <TableRow key={membership.id}>
-                <TableCell>
-                  <button
-                    type="button"
-                    onClick={openProfile}
-                    aria-label={t('table.openProfileAria', {
-                      name: membership.user.name,
-                    })}
-                    className="flex items-center gap-2 rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                  >
-                    <Avatar size="sm">
-                      <AvatarImage
-                        src={membership.user.image ?? undefined}
-                        alt={tCommon('avatarAlt', {
+  const visible = memberships.filter((membership) =>
+    matchesVolunteerQuery(membership, search, roleLabel),
+  );
+
+  return (
+    <div className="space-y-2">
+      <div className="relative max-w-sm">
+        <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('search.placeholder')}
+          className="pl-9"
+        />
+      </div>
+
+      {visible.length === 0 ? (
+        <EmptyVolunteerMatches />
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('table.name')}</TableHead>
+                <TableHead>{t('table.email')}</TableHead>
+                <TableHead>{t('table.roles')}</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {visible.map((membership) => {
+                const openProfile = () =>
+                  openVolunteerSheet({
+                    userId: membership.user.id,
+                    volunteerName: membership.user.name,
+                    volunteerStatus: MembershipRequestStatus.Accepted,
+                    volunteerEmail: membership.user.email,
+                    volunteerCheckInId: membership.user.checkInId,
+                  });
+
+                return (
+                  <TableRow key={membership.id}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        onClick={openProfile}
+                        aria-label={t('table.openProfileAria', {
                           name: membership.user.name,
                         })}
-                      />
-                      <AvatarFallback>
-                        <UserRound className="size-3" />
-                      </AvatarFallback>
-                    </Avatar>
-                    {membership.user.name}
-                  </button>
-                </TableCell>
-                <TableCell>
-                  <CopyableEmailCell
-                    email={membership.user.email}
-                    volunteerName={membership.user.name}
-                  />
-                </TableCell>
-                <TableCell>
-                  <RoleSelectCell
-                    membershipId={membership.id}
-                    roles={membership.roles}
-                    orgUId={orgUId}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
-                      aria-label={t('action.checkInAria')}
-                    >
-                      <Button
-                        size="icon-md"
-                        variant="outline"
-                        tooltip={t('action.checkInShiftAria')}
+                        className="flex items-center gap-2 rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                       >
-                        <ScanQrCode />
-                      </Button>
-                    </Link>
-                    <RemoveMembershipButton
-                      membershipId={membership.id}
-                      volunteerName={membership.user.name}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                        <Avatar size="sm">
+                          <AvatarImage
+                            src={membership.user.image ?? undefined}
+                            alt={tCommon('avatarAlt', {
+                              name: membership.user.name,
+                            })}
+                          />
+                          <AvatarFallback>
+                            <UserRound className="size-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        {membership.user.name}
+                      </button>
+                    </TableCell>
+                    <TableCell>
+                      <CopyableEmailCell
+                        email={membership.user.email}
+                        volunteerName={membership.user.name}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <RoleSelectCell
+                        membershipId={membership.id}
+                        roles={membership.roles}
+                        orgUId={orgUId}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
+                          aria-label={t('action.checkInAria')}
+                        >
+                          <Button
+                            size="icon-md"
+                            variant="outline"
+                            tooltip={t('action.checkInShiftAria')}
+                          >
+                            <ScanQrCode />
+                          </Button>
+                        </Link>
+                        <RemoveMembershipButton
+                          membershipId={membership.id}
+                          volunteerName={membership.user.name}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

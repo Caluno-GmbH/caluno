@@ -1785,6 +1785,11 @@
       "title": "Forms required to join",
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
+    "search": {
+      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
+      "emptyTitle": "No volunteers found",
+      "placeholder": "Search by name, email or role"
+    },
     "sheet": {
       "addressLabel": "Address",
       "birthdayLabel": "Birthday",
@@ -1810,7 +1815,7 @@
       "emailCopied": "Email address copied to clipboard",
       "name": "Name",
       "openProfileAria": "Open {name}'s profile",
-      "roles": "Roles"
+      "roles": "Role"
     }
   },
   "VolunteerHome": {
