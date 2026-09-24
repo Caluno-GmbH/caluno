@@ -7,23 +7,19 @@ import {
   type UseInfiniteQueryOptions,
   useInfiniteQuery,
 } from '@tanstack/react-query';
-import type { ShiftInviteStatus, SortOrder } from '../../generated/graphql';
 import { useSdk } from './use-graphql-client';
 
 export type MyShiftInstancesInfiniteResult = Awaited<
   ReturnType<ShiftRepository['findMyShiftInstances']>
 >;
 
+type MyShiftInstancesOptions = Omit<
+  NonNullable<Parameters<ShiftRepository['findMyShiftInstances']>[0]>,
+  'offset'
+>;
+
 export function useMyShiftInstancesInfinite(
-  options: {
-    includePast?: boolean;
-    from?: Date;
-    to?: Date;
-    order?: SortOrder;
-    limit?: number;
-    statuses?: ShiftInviteStatus[];
-    includeIntended?: boolean;
-  } = {},
+  options: MyShiftInstancesOptions = {},
   queryOptions?: Omit<
     UseInfiniteQueryOptions<
       MyShiftInstancesInfiniteResult,
