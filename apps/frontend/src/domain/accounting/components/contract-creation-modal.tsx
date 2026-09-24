@@ -14,7 +14,7 @@ import {
 } from '@repo/data/react';
 import { Input } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
 import { useRouter } from '@/i18n/navigation';
@@ -108,13 +108,21 @@ export function ContractCreationModal({
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
 
-  // Reset local edits whenever a different volunteer/pauschale is targeted —
-  // the fields get re-seeded from the freshly loaded profile/template below.
+  /** Changes when the coordinator edits the template, which the fields follow. */
+  const templateIdentity = templateQuery.data
+    ? `${templateQuery.data.id}:${templateQuery.data.lastEditedAt ?? ''}`
+    : null;
+
+  // Reset local edits whenever a different volunteer, pauschale or template is
+  // targeted — the fields get re-seeded from the freshly loaded profile and
+  // template below. The template belongs in here because the dialog stays
+  // mounted between openings: a block switched on in the builder afterwards
+  // would otherwise never reach the fields.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset keyed on identity change, not a dependency read by the effect body
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-  }, [volunteerId, pauschale]);
+  }, [volunteerId, pauschale, templateIdentity]);
 
   const profileLoaded = !!volunteerId && profileQuery.isSuccess;
   const reimbursementTypeMissing =
@@ -157,21 +165,11 @@ export function ContractCreationModal({
         ? 'loaded'
         : 'loading';
 
-  // Which template, and for whom, the fields below were derived from. The modal
-  // stays mounted between openings, so seeding once and never again left it
-  // showing the fields of whichever template and volunteer it first opened on.
-  const seedKey =
-    templateQuery.data && volunteerId
-      ? `${templateQuery.data.id}:${templateQuery.data.lastEditedAt ?? ''}:${volunteerId}`
-      : null;
-  const seededFor = useRef<string | null>(null);
-
-  // Re-derived when that changes, and otherwise left alone so a later re-render
-  // (rate data arriving, say) cannot clobber a coordinator's edits.
+  // Seeded once per identity above, then left alone — a later re-render (rate
+  // data arriving, say) must not clobber a coordinator's edits. The reset
+  // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !templateDoc || !volunteerName || !seedKey) return;
-    if (seededFor.current === seedKey) return;
-    seededFor.current = seedKey;
+    if (!dataReady || !templateDoc || derivedFields || !volunteerName) return;
     const profileData = (profileQuery.data?.data ?? {}) as Record<
       string,
       unknown
@@ -179,8 +177,7 @@ export function ContractCreationModal({
     setDerivedFields(
       deriveEditableFields(templateDoc, profileData, volunteerName),
     );
-    setEditedValues({});
-  }, [dataReady, templateDoc, profileQuery.data, volunteerName, seedKey]);
+  }, [dataReady, templateDoc, derivedFields, profileQuery.data, volunteerName]);
 
   const { formatDate } = useFormatting();
 

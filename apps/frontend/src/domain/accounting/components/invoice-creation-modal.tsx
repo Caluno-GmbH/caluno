@@ -21,7 +21,7 @@ import {
 } from '@repo/data/react';
 import { Input, Textarea } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
 import { useRouter } from '@/i18n/navigation';
@@ -272,14 +272,22 @@ export function InvoiceCreationModal({
 
   const createInvoice = useCreateInvoice();
 
-  // Reset local edits and the period whenever a different document/volunteer
-  // is targeted — everything gets re-seeded from the freshly loaded data below.
+  /** Changes when the coordinator edits the template, which the fields follow. */
+  const templateIdentity = invoiceTemplateQuery.data
+    ? `${invoiceTemplateQuery.data.id}:${invoiceTemplateQuery.data.lastEditedAt ?? ''}`
+    : null;
+
+  // Reset local edits and the period whenever a different document, volunteer
+  // or template is targeted — everything gets re-seeded from the freshly
+  // loaded data below. The template belongs in here because the dialog stays
+  // mounted between openings: a block switched on in the builder afterwards
+  // would otherwise never reach the fields.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset keyed on identity change, not a dependency read by the effect body
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
     setPeriod(periodToOpen(initialPeriod));
-  }, [volunteerId, docId]);
+  }, [volunteerId, docId, templateIdentity]);
 
   // Every eligible entry starts checked — unchecking removes it from the
   // invoice being created (see EligibleHoursCard). Re-syncs whenever the
@@ -343,22 +351,11 @@ export function InvoiceCreationModal({
         ? 'loaded'
         : 'loading';
 
-  // Which template, and for whom, the fields below were derived from. The modal
-  // stays mounted between openings, so seeding once and never again left it
-  // showing the fields of whichever template and volunteer it happened to open
-  // on first — a free-text block switched on afterwards never appeared.
-  const seedKey =
-    invoiceTemplateQuery.data && volunteerId
-      ? `${invoiceTemplateQuery.data.id}:${invoiceTemplateQuery.data.lastEditedAt ?? ''}:${volunteerId}`
-      : null;
-  const seededFor = useRef<string | null>(null);
-
-  // Re-derived when that changes, and otherwise left alone so a later re-render
-  // (rate data arriving, say) cannot clobber a coordinator's edits.
+  // Seeded once per identity above, then left alone — a later re-render (rate
+  // data arriving, say) must not clobber a coordinator's edits. The reset
+  // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !template || !volunteerName || !seedKey) return;
-    if (seededFor.current === seedKey) return;
-    seededFor.current = seedKey;
+    if (!dataReady || !template || derivedFields || !volunteerName) return;
     const profileData = (profileQuery.data?.data ?? {}) as Record<
       string,
       unknown
@@ -366,8 +363,7 @@ export function InvoiceCreationModal({
     setDerivedFields(
       deriveEditableFields(template, profileData, volunteerName),
     );
-    setEditedValues({});
-  }, [dataReady, template, profileQuery.data, volunteerName, seedKey]);
+  }, [dataReady, template, derivedFields, profileQuery.data, volunteerName]);
 
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the
