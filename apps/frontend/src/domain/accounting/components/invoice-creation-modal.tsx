@@ -31,7 +31,11 @@ import {
   type DerivedField,
   deriveEditableFields,
 } from '../lib/creation-fields';
-import { mapEligibleTimeEntry } from '../lib/creation-modal.utils';
+import {
+  formatHours,
+  mapEligibleTimeEntry,
+  sumHours,
+} from '../lib/creation-modal.utils';
 import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
 import { formatRateInput, parseRateCents } from '../lib/invoice-rate';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
@@ -366,10 +370,7 @@ export function InvoiceCreationModal({
   };
 
   const selectedLines = lines.filter((line) => checkedIds.has(line.id));
-  const selectedHours = selectedLines.reduce(
-    (sum, line) => sum + line.hours,
-    0,
-  );
+  const selectedHours = sumHours(selectedLines.map((line) => line.hours));
   const selectedAmount = selectedHours * ratePerHour;
   // One source for the cap card, the projection and the Jahresdeckel
   // sentence, with the same cutoff the PDF uses. The dialog waits for it
@@ -566,8 +567,8 @@ export function InvoiceCreationModal({
       }),
       begin,
       end,
-      `${line.hours}h`,
-      `${ratePerHour.toFixed(2)} €`,
+      `${formatHours(line.hours)}h`,
+      formatHourlyRate(ratePerHour),
       formatHourlyRate(line.hours * ratePerHour),
     ];
   });
@@ -575,7 +576,7 @@ export function InvoiceCreationModal({
     '',
     '',
     'Nettobetrag',
-    `${selectedHours}h`,
+    `${formatHours(selectedHours)}h`,
     '',
     formatHourlyRate(selectedAmount),
   ];

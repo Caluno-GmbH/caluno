@@ -206,10 +206,13 @@ export function GeneratedDocumentPreview({
   const letterhead = letterheadLines(values);
   return (
     <div className={className}>
-      <div
-        className="mx-auto w-full max-w-[820px] rounded-sm border bg-card p-[7%] shadow-sm"
-        style={{ aspectRatio: '1 / 1.414' }}
-      >
+      {/*
+        A4 proportions (1:√2) as a FLOOR, not a fixed height: the zero-width
+        float holds an empty document to a full page, while a long one makes the
+        page taller instead of spilling its table past the border. The generated
+        PDF paginates properly; the preview is one continuous page.
+      */}
+      <div className="mx-auto w-full max-w-[820px] overflow-hidden rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
         <div className="flex items-start justify-between gap-4">
           <DocTypeHeader
             kind={kind}
@@ -274,7 +277,7 @@ export function GeneratedDocumentPreview({
                   <p className="mb-2 text-sm font-semibold italic text-muted-foreground">
                     {block.title}
                   </p>
-                  <table className="w-full border-collapse text-sm">
+                  <table className="w-full border-collapse break-words text-sm">
                     <thead>
                       <tr className="bg-muted">
                         {columns.map((col) => (
