@@ -143,6 +143,7 @@ describe('InvoiceService', () => {
       {
         renderAndAttachPdf: () => Promise.resolve(null),
       } as unknown as DocumentRenderingService,
+      organizationService,
       { capture: () => {} } as unknown as PostHogService,
     );
 

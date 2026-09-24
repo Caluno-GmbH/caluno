@@ -4,6 +4,7 @@ import PDFDocument from 'pdfkit';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
+import { OrganizationService } from '../../organization/organization.service';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
@@ -17,7 +18,7 @@ import {
   lastDayOfPeriod,
 } from '../utils/billing-period';
 import { resolveFirstColumn } from '../utils/invoice-table';
-import { resolveOrgProfile, resolveOrgRootUnitId } from '../utils/org-profile';
+import { resolveOrgProfile } from '../utils/org-profile';
 import {
   findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
@@ -76,6 +77,7 @@ export class DocumentRenderingService {
     private readonly userProfileService: UserProfileService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly fileService: FileService,
+    private readonly organizationService: OrganizationService,
   ) {}
 
   /**
@@ -96,7 +98,7 @@ export class DocumentRenderingService {
       const isContract = 'contractStatus' in document;
       const organizationUnitId =
         template.organizationUnitId ??
-        (await resolveOrgRootUnitId(this.db, template.organizationId));
+        (await this.requireOrgRootUnitId(template.organizationId));
 
       const file = await this.fileService.saveGeneratedFile({
         organizationUnitId,
@@ -767,7 +769,7 @@ export class DocumentRenderingService {
       const organizationUnitId =
         document.organizationUnitId ??
         template.organizationUnitId ??
-        (await resolveOrgRootUnitId(this.db, organizationId));
+        (await this.requireOrgRootUnitId(organizationId));
       return await this.reimbursementRateService.getEffectiveRateCents(
         organizationId,
         organizationUnitId,
@@ -783,10 +785,24 @@ export class DocumentRenderingService {
   ) {
     const organizationUnitId =
       template?.organizationUnitId ??
-      (await resolveOrgRootUnitId(this.db, template?.organizationId ?? null));
+      (await this.requireOrgRootUnitId(template?.organizationId));
     return this.db.query.organizationUnits.findFirst({
       where: { id: organizationUnitId },
     });
+  }
+
+  /**
+   * Org-wide templates have no unit of their own; documents still need a
+   * concrete unit to file under (PDF storage, rate lookup), so "no unit"
+   * resolves to the organisation's root unit.
+   */
+  private async requireOrgRootUnitId(
+    organizationId: string | null | undefined,
+  ): Promise<string> {
+    if (!organizationId) {
+      throw new Error('Organization is missing its id');
+    }
+    return (await this.organizationService.requireRootUnit(organizationId)).id;
   }
 
   private splitName(name: string | undefined): [string, string] {
