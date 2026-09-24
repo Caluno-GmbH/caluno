@@ -32,6 +32,8 @@ export type DataSourceKey =
   | 'volunteer_account_holder'
   | 'volunteer_bic'
   | 'volunteer_street'
+  | 'volunteer_zip'
+  | 'volunteer_city'
   | 'volunteer_dob'
   | 'volunteer_tax_id'
   | 'contract_period'

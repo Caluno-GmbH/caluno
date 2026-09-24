@@ -55,6 +55,8 @@ export const PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
   'volunteer_account_holder',
   'volunteer_bic',
   'volunteer_street',
+  'volunteer_zip',
+  'volunteer_city',
   'volunteer_dob',
   'volunteer_tax_id',
 ];
@@ -80,6 +82,8 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   volunteer_account_holder: 'volunteer_profile',
   volunteer_bic: 'volunteer_profile',
   volunteer_street: 'volunteer_profile',
+  volunteer_zip: 'volunteer_profile',
+  volunteer_city: 'volunteer_profile',
   volunteer_dob: 'volunteer_profile',
   volunteer_tax_id: 'volunteer_profile',
   generated_date: 'generation_time',

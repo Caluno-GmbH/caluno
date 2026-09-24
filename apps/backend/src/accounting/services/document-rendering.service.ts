@@ -587,6 +587,12 @@ export class DocumentRenderingService {
       volunteer_street: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
       ),
+      volunteer_zip: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_zip],
+      ),
+      volunteer_city: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_city],
+      ),
       volunteer_dob: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_dob],
       ),

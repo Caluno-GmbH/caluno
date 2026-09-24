@@ -115,6 +115,8 @@ describe('deriveEditableFields', () => {
     expect(sources).toContain('volunteer_first_name');
     expect(sources).toContain('volunteer_last_name');
     expect(sources).toContain('volunteer_street');
+    expect(sources).toContain('volunteer_zip');
+    expect(sources).toContain('volunteer_city');
     expect(sources).toContain('volunteer_iban');
   });
 });

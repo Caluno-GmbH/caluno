@@ -109,10 +109,16 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName}, {orgStreet}, und', [
-            bound('parties-org-name', 'org_name'),
-            bound('parties-org-street', 'org_street'),
-          ]),
+          line(
+            'parties',
+            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity} und',
+            [
+              bound('parties-org-name', 'org_name'),
+              bound('parties-org-street', 'org_street'),
+              bound('parties-org-zip', 'org_zip'),
+              bound('parties-org-city', 'org_city'),
+            ],
+          ),
           line(
             'volunteer-name',
             '{volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
@@ -122,10 +128,13 @@ export function getContractDocument(
             ],
           ),
           line(
-            'volunteer-street',
-            'wohnhaft in {volunteerStreet},',
-            [bound('volunteer-street-field', 'volunteer_street')],
-            { optional: true },
+            'volunteer-address',
+            'wohnhaft in {volunteerStreet}, {volunteerZip} {volunteerCity}',
+            [
+              bound('volunteer-street-field', 'volunteer_street'),
+              bound('volunteer-zip-field', 'volunteer_zip'),
+              bound('volunteer-city-field', 'volunteer_city'),
+            ],
           ),
           line(
             'volunteer-dob',
@@ -289,6 +298,12 @@ export function getInvoiceDocument(
           ]),
           line('volunteer-street', '{volunteerStreet}', [
             bound('volunteer-street-field', 'volunteer_street'),
+          ]),
+          line('volunteer-zip', '{volunteerZip}', [
+            bound('volunteer-zip-field', 'volunteer_zip'),
+          ]),
+          line('volunteer-city', '{volunteerCity}', [
+            bound('volunteer-city-field', 'volunteer_city'),
           ]),
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),

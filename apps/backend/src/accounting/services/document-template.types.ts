@@ -57,6 +57,8 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
   volunteer_street: 'street',
+  volunteer_zip: 'zip',
+  volunteer_city: 'city',
   volunteer_dob: 'birth-date',
   volunteer_tax_id: 'tax-id',
 };

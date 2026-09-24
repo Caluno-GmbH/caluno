@@ -62,6 +62,8 @@ const VOLUNTEER_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
   'volunteer_last_name',
   'volunteer_street',
+  'volunteer_zip',
+  'volunteer_city',
   'volunteer_dob',
   'volunteer_iban',
   'volunteer_account_holder',
@@ -98,6 +100,8 @@ export function collectContractEditorGroups(
   const volunteer: EditorFieldEntry[] = [];
   const engagement: EditorFieldEntry[] = [];
   const seenSources = new Set<DataSourceKey>();
+  /** Optional lines render as one LineEditor per line — not one card per field on that line. */
+  const seenOptionalLineIds = new Set<string>();
   const seenManualIds = new Set<string>();
   let extraBlock: TemplateTextBlock | undefined;
   let hours: HoursEditorEntry | undefined;
@@ -125,16 +129,22 @@ export function collectContractEditorGroups(
         if (field.value.kind === 'bound') {
           const source = field.value.source;
           if (seenSources.has(source)) continue;
-          if (ORG_SOURCES.includes(source)) {
-            seenSources.add(source);
-            org.push(entry);
-          } else if (VOLUNTEER_SOURCES.includes(source)) {
-            seenSources.add(source);
-            volunteer.push(entry);
-          } else if (ENGAGEMENT_SOURCES.includes(source)) {
-            seenSources.add(source);
-            engagement.push(entry);
+          const target = ORG_SOURCES.includes(source)
+            ? org
+            : VOLUNTEER_SOURCES.includes(source)
+              ? volunteer
+              : ENGAGEMENT_SOURCES.includes(source)
+                ? engagement
+                : null;
+          if (!target) continue;
+          // Optional lines are toggled as a whole; one entry per line so the
+          // editor never stacks N identical LineEditors for N fields on it.
+          if (line.optional) {
+            if (seenOptionalLineIds.has(line.id)) continue;
+            seenOptionalLineIds.add(line.id);
           }
+          seenSources.add(source);
+          target.push(entry);
         } else {
           if (seenManualIds.has(field.id)) continue;
           if (ENGAGEMENT_MANUAL_FIELD_IDS.includes(field.id)) {
@@ -145,7 +155,6 @@ export function collectContractEditorGroups(
       }
     }
   }
-
   return { org, volunteer, engagement, hours, extraBlock };
 }
 
@@ -180,7 +189,9 @@ const SECTION_TITLE_CLASSNAME = 'text-lg font-semibold text-foreground';
  *   interface (a first/last name) come from the catalog instead, via `PLACEHOLDER_EXAMPLE_KEYS`.
  */
 const PLACEHOLDER_EXAMPLES: Partial<Record<DataSourceKey, string>> = {
-  volunteer_street: 'Musterstraße 1, 12345 Stadt',
+  volunteer_street: 'Musterstraße 1',
+  volunteer_zip: '12345',
+  volunteer_city: 'Stadt',
   org_zip: '12345',
   volunteer_dob: 'TT.MM.JJJJ',
   volunteer_iban: 'DE00 0000 0000 0000 0000 00',
