@@ -10,6 +10,7 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
+  Badge,
   Button,
   Skeleton,
   Table,
@@ -247,9 +248,9 @@ export default function ManageVolunteersClient({ orgUId }: Props) {
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}
               {tab.value === TAB_PENDING && (pendingCount ?? 0) > 0 && (
-                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
+                <Badge className="h-5 min-w-5 rounded-full px-1.5">
                   {pendingCount}
-                </span>
+                </Badge>
               )}
             </TabsTrigger>
           ))}
