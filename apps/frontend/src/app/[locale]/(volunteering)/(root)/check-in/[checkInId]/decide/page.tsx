@@ -13,9 +13,9 @@ import {
   LogIn,
   ScanQrCode,
 } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { UserCard } from '@/components/user-card';
+import { CheckInUnavailableCard } from '@/domain/shift/components/check-in-unavailable-card';
 import { Link, redirect } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
@@ -41,7 +41,7 @@ export default async function VolunteeringDecidePage({
   const data = await getDataClient();
   const context = await data.timeEntry.getCheckInContext(checkInId);
   if (!context) {
-    notFound();
+    return <CheckInUnavailableCard />;
   }
 
   // The check-in page resolves its own org unit from the caller's

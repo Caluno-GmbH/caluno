@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Zum Check-out",
     "alreadyCheckedInDescription": "Diese Person ist für diesen Einsatz bereits eingecheckt.",
     "alreadyCheckedInTitle": "Bereits eingecheckt",
+    "backToCheckInButton": "Zurück zum Check-in",
     "checkInButton": "Einchecken",
     "checkInRunningTitle": "Check-in läuft",
     "checkInSectionDescription": "Checke diese Person für einen neuen Einsatz ein, ohne die offenen Einträge zu schließen.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
-    "today": "Heute"
+    "today": "Heute",
+    "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
+    "unavailableTitle": "Einchecken nicht möglich"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
@@ -691,8 +694,8 @@
       "partOf": "Teil von "
     },
     "form": {
-      "addressLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "z. B. Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "z. B. Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -750,8 +753,8 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "z. B. Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "zipCodeLabel": "Postleitzahl",
       "zipCodePlaceholder": "z. B. 10115",
       "cityLabel": "Stadt",
@@ -991,7 +994,7 @@
     },
     "fieldForm": {
       "add": "Hinzufügen",
-      "address": "Straße und Hausnummer",
+      "street": "Straße und Hausnummer",
       "birthDate": "Geburtsdatum",
       "cancel": "Abbrechen",
       "checkbox": "Checkbox",
@@ -1190,6 +1193,10 @@
     },
     "select": {
       "addCustom": "Benutzerdefiniert hinzufügen",
+      "confirm": {
+        "description": "Du bist dabei, die Rolle dieser Person zu ändern. Diese Änderung tritt sofort in Kraft. Bist du sicher?",
+        "title": "Rolle ändern?"
+      },
       "empty": "Keine Rollen gefunden.",
       "searchPlaceholder": "Rollen suchen..."
     },
@@ -1216,8 +1223,8 @@
     "organizationProfile": {
       "title": "Organisationsprofil",
       "subtitle": "Aktualisiere die Adresse und Kontaktdaten deiner Organisation.",
-      "addressLabel": "Straße und Hausnummer",
-      "addressPlaceholder": "Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -1801,8 +1808,9 @@
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
     "sheet": {
-      "addressLabel": "Adresse",
+      "streetLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
+      "cityLabel": "Stadt",
       "emailLabel": "E-Mail",
       "formFallback": "Formular",
       "idVerification": {
@@ -1817,7 +1825,8 @@
       "qrIdLabel": "QR-ID",
       "submittedForms": "Eingereichte Formulare",
       "titleFallback": "Freiwillige:r",
-      "userInfo": "Persönliche Informationen"
+      "userInfo": "Persönliche Informationen",
+      "zipLabel": "PLZ"
     },
     "table": {
       "email": "E-Mail",

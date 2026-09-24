@@ -32,8 +32,8 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
     type: FieldType.Date,
   },
   {
-    key: 'address',
-    labelKey: 'address',
+    key: 'street',
+    labelKey: 'street',
     type: FieldType.Text,
   },
   { key: 'zip', labelKey: 'zipCode', type: FieldType.Zip },

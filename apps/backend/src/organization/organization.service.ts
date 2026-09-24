@@ -429,7 +429,9 @@ export class OrganizationService {
           contactEmail: createdOrganization.contactEmail,
           phone: createdOrganization.phone,
           description: createdOrganization.description,
-          address: createdOrganization.address,
+          street: createdOrganization.street,
+          zipCode: createdOrganization.zipCode,
+          city: createdOrganization.city,
         })
         .returning();
 

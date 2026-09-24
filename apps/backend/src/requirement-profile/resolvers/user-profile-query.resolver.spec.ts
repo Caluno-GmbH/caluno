@@ -17,7 +17,7 @@ const profile = {
   id: 'profile-1',
   userId: 'volunteer-1',
   data: {
-    address: 'Musterstraße 1',
+    street: 'Musterstraße 1',
     iban: 'DE89 3704 0044 0532 0130 00',
     'account-holder': 'Erika Musterfrau',
     bic: 'COBADEFFXXX',
@@ -64,7 +64,7 @@ describe('UserProfileQueryResolver.adminUserProfile payment-data visibility', ()
     expect(result?.data.iban).toBe(MASKED_IBAN);
     expect(result?.data['account-holder']).toBe(MASKED_ACCOUNT_HOLDER);
     expect(result?.data.bic).toBe(MASKED_BIC);
-    expect(result?.data.address).toBe('Musterstraße 1');
+    expect(result?.data.street).toBe('Musterstraße 1');
   });
 
   it('returns real bank data for a viewer with the accounting permission', async () => {
@@ -97,7 +97,7 @@ describe('UserProfileQueryResolver.adminUserProfile payment-data visibility', ()
   it('does not invent masked values when no bank data exists', async () => {
     userProfileService.findByUserIdInOrgUnit.mockResolvedValue({
       ...profile,
-      data: { address: 'Musterstraße 1' },
+      data: { street: 'Musterstraße 1' },
     });
     authService.hasRequiredPermissions.mockResolvedValue(false);
 

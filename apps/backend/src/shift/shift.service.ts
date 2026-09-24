@@ -3830,7 +3830,9 @@ export class ShiftService {
       this.notificationService.notifyShiftInstanceJoined({
         organizationUnitId: shift.organizationUnitId,
         organizationUnitName: organizationUnit.name,
+        shiftId: shift.id,
         shiftTitle: shift.title,
+        instanceId: instance.id,
         joinedUserId: userId,
         recipientUserIds,
         startsAt: instance.actualStartsAt,
