@@ -358,6 +358,16 @@ export class InvoiceService {
 
     // Only entries inside the invoice's own period can go on it, so the
     // document never lists hours from outside the period it states.
+    //
+    // There is deliberately no check for an existing timesheet over the same
+    // period. Hours arrive across a month, so a volunteer who serves again
+    // after one has been issued needs a second document for the new hours —
+    // and refusing that stranded them, since no period both surfaces those
+    // hours and avoids overlapping the issued document (VOLI-1469). What
+    // must never happen is an hour being paid twice, and that is enforced
+    // below by eligibility: `findEligibleTimeEntries` omits anything already
+    // claimed, and `uq_invoice_time_entries_time_entry_id` makes the claim
+    // exclusive in the database rather than by reasoning about dates.
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
@@ -376,28 +386,6 @@ export class InvoiceService {
       }
       return entry;
     });
-
-    // One timesheet per volunteer, reimbursement type and period: the board
-    // models a month as a single "to invoice" row, so a second overlapping
-    // document would split it. A declined timesheet does not block a reissue.
-    const overlapping = await this.db.query.invoices.findFirst({
-      where: {
-        volunteerId: input.volunteerId,
-        reimbursementTypeId: input.reimbursementTypeId,
-        organizationUnitId: input.organizationUnitId
-          ? input.organizationUnitId
-          : { isNull: true },
-        invoiceStatus: { ne: InvoiceStatus.DECLINED },
-        periodStart: { lt: input.periodEnd },
-        periodEnd: { gt: input.periodStart },
-      },
-      columns: { id: true },
-    });
-    if (overlapping) {
-      throw new ConflictGraphQLError(
-        'A timesheet already exists for this volunteer and reimbursement type in this period',
-      );
-    }
 
     const totalHours =
       Math.round(
