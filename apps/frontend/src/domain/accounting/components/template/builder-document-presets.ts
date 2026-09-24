@@ -73,7 +73,7 @@ function line(
   id: string,
   text: string,
   fields: TemplateField[] = [],
-  options: { optional?: boolean; enabled?: boolean } = {},
+  options: { optional?: boolean; enabled?: boolean; inline?: boolean } = {},
 ): TemplateLine {
   return {
     id,
@@ -82,6 +82,7 @@ function line(
     optional: options.optional ?? false,
     // Optional lines are opt-in — default off unless the caller says otherwise.
     enabled: options.enabled ?? !options.optional,
+    ...(options.inline ? { inline: true } : {}),
   };
 }
 
@@ -128,11 +129,14 @@ export function getContractDocument(
               bound('parties-org-city', 'org_city'),
             ],
           ),
+          // Continues the parties line rather than starting its own: the
+          // addition belongs to that sentence, so it reads on from the town
+          // and wraps only when it runs out of room.
           line(
             'parties-additional',
             '{additionalInfo},',
             [manual('parties-additional-info', '', 'textarea')],
-            { optional: true },
+            { optional: true, inline: true },
           ),
           line(
             'volunteer-name',

@@ -39,6 +39,13 @@ describe('document preset org identity', () => {
     expect(line?.fields[0]?.control).toBe('textarea');
   });
 
+  it('Reads on from the address rather than dropping to its own line', () => {
+    // It belongs to the parties sentence, so it follows the town and wraps
+    // only when it runs out of room.
+    expect(contractLine('parties-additional')?.inline).toBe(true);
+    expect(contractLine('parties')?.inline).toBeUndefined();
+  });
+
   it('Reads the facility from its own source, not the organisation name', () => {
     // Where a volunteer serves can differ from who signs the agreement, which
     // is the whole point of the override.

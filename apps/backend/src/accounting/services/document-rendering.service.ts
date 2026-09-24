@@ -221,16 +221,37 @@ export class DocumentRenderingService {
       }
       // Note blocks carry a single `line`; text blocks a `lines` array.
       const lines = block.line ? [block.line] : (block.lines ?? []);
-      for (const line of lines) {
-        if (line.enabled === false) continue;
-        const text = this.resolveLine(line, fieldValues).trim();
-        if (text) {
-          pdf.fontSize(11).font('Helvetica').text(text, { lineGap: 3 });
-          pdf.moveDown(0.25);
-        }
+      for (const paragraph of this.resolveParagraphs(lines, fieldValues)) {
+        pdf.fontSize(11).font('Helvetica').text(paragraph, { lineGap: 3 });
+        pdf.moveDown(0.25);
       }
       pdf.moveDown(0.5);
     }
+  }
+
+  /**
+   * A block's enabled lines as the paragraphs it prints. A line marked `inline`
+   * continues the one before it instead of starting its own, so an optional
+   * insertion reads on from the sentence it belongs to and wraps only when it
+   * runs out of room.
+   */
+  private resolveParagraphs(
+    lines: TemplateLineShape[],
+    fieldValues: Record<string, string>,
+  ): string[] {
+    const paragraphs: string[] = [];
+    for (const line of lines) {
+      if (line.enabled === false) continue;
+      const text = this.resolveLine(line, fieldValues).trim();
+      if (!text) continue;
+      const previous = paragraphs[paragraphs.length - 1];
+      if (line.inline && previous !== undefined) {
+        paragraphs[paragraphs.length - 1] = `${previous} ${text}`;
+      } else {
+        paragraphs.push(text);
+      }
+    }
+    return paragraphs;
   }
 
   private renderTableBlock(

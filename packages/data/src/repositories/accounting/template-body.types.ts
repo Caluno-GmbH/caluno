@@ -68,6 +68,12 @@ export type TemplateLine = {
   /** Whether this specific line can be turned off even though its parent block is locked. */
   optional: boolean;
   enabled: boolean;
+  /**
+   * Continues the line before it instead of starting a new paragraph, so an
+   * optional insertion reads as part of the sentence and wraps only when it
+   * runs out of room. Ignored on the first line of a block.
+   */
+  inline?: boolean;
 };
 
 export type TemplateTextBlock = {
