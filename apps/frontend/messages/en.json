@@ -1190,6 +1190,10 @@
     },
     "select": {
       "addCustom": "Add custom",
+      "confirm": {
+        "description": "You are about to change this person's role. This change is immediate. Are you sure?",
+        "title": "Change role?"
+      },
       "empty": "No roles found.",
       "searchPlaceholder": "Search roles..."
     },
