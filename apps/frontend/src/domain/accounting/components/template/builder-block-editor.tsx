@@ -54,8 +54,8 @@ import {
 const ORG_SOURCES: DataSourceKey[] = [
   'org_name',
   'org_address',
-  'org_city',
   'org_zip',
+  'org_city',
   'org_legal_rep',
 ];
 const VOLUNTEER_SOURCES: DataSourceKey[] = [

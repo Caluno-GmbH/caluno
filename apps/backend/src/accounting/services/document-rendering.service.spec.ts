@@ -76,7 +76,7 @@ describe('DocumentRenderingService', () => {
             Promise.resolve({
               id: 'org-1',
               name: 'Playground',
-              address: 'Musterstraße 1',
+              street: 'Musterstraße 1',
             }),
         },
         users: {
@@ -99,7 +99,7 @@ describe('DocumentRenderingService', () => {
     const userProfileService = {
       findByUserId: () =>
         Promise.resolve({
-          data: overrides.profileData ?? { address: 'Testweg 2' },
+          data: overrides.profileData ?? { street: 'Testweg 2' },
         }),
     } as never;
     const reimbursementRateService = {
@@ -646,7 +646,7 @@ describe('DocumentRenderingService', () => {
         unit: {
           id: 'unit-1',
           name: 'Branch',
-          address: 'Hauptstraße 1',
+          street: 'Hauptstraße 1',
           city: 'Berlin',
           zipCode: '10115',
           legalRep: 'Erika Mustermann',
@@ -675,7 +675,7 @@ describe('DocumentRenderingService', () => {
         unit: {
           id: 'unit-1',
           name: 'Branch',
-          address: 'Hauptstrasse 1',
+          street: 'Hauptstrasse 1',
           city: 'Berlin',
           zipCode: '10115',
         },

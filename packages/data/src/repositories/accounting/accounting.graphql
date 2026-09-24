@@ -595,9 +595,9 @@ query GetAccountingSetupStatus {
   accountingSetupStatus {
     orgProfile {
       name
-      address
-      city
+      street
       zipCode
+      city
       legalRep
     }
     orgProfileComplete

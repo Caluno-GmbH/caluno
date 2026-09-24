@@ -5,9 +5,9 @@ fragment PublicOrganizationUnitFields on OrganizationUnit {
   description
   logoUrl
   coverUrl
-  address
-  city
+  street
   zipCode
+  city
   memberCount
   openShiftsCount
   myMembershipState

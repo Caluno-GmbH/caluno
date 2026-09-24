@@ -471,7 +471,7 @@ export function InvoiceCreationModal({
     ...getKnownOrgValues({
       pauschale,
       orgName: orgProfile?.name ?? org.name,
-      orgAddress: orgProfile ? orgProfile.address : org.address,
+      orgAddress: orgProfile ? orgProfile.street : org.street,
       orgCity: orgProfile ? orgProfile.city : org.city,
       orgZip: orgProfile ? orgProfile.zipCode : null,
       orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,

@@ -1329,6 +1329,7 @@ export class EventService {
       this.notificationService.notifyEventJoined({
         organizationUnitId: event.organizationUnitId,
         organizationUnitName: organizationUnit.name,
+        eventId: event.id,
         eventTitle: event.title,
         joinedUserId: userId,
         recipientUserIds,

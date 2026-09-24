@@ -39,8 +39,8 @@ export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
   orgName?: string | null;
   orgAddress?: string | null;
-  orgCity?: string | null;
   orgZip?: string | null;
+  orgCity?: string | null;
   orgLegalRep?: string | null;
   hourlyRateCents?: number;
   yearlyLimitCents?: number;
@@ -50,8 +50,8 @@ export function getKnownOrgValues(args: {
   };
   if (args.orgName) values.org_name = args.orgName;
   if (args.orgAddress) values.org_address = args.orgAddress;
-  if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgZip) values.org_zip = args.orgZip;
+  if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
   if (args.hourlyRateCents !== undefined) {
     // German document content, formatted like the German legal text around it.

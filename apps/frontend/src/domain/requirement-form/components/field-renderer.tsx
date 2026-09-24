@@ -255,7 +255,7 @@ export function buildFieldSchema(
     s = s.refine((v) => !v || PHONE_RE.test(v), {
       message: messages.mustBeValidPhone(label),
     }) as z.ZodString;
-  } else if (sk === 'address') {
+  } else if (sk === 'street') {
     s = s.max(200, messages.maxChars(label, 200)) as z.ZodString;
   } else if (sk === 'zip') {
     s = s.refine((v) => !v || ZIP_RE.test(v), {

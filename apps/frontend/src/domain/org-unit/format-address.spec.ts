@@ -5,7 +5,7 @@ describe('formatOrgAddress', () => {
   it('joins street and zip+city with a comma by default', () => {
     expect(
       formatOrgAddress({
-        address: 'Musterstraße 1',
+        street: 'Musterstraße 1',
         zipCode: '10115',
         city: 'Berlin',
       }),
@@ -16,7 +16,7 @@ describe('formatOrgAddress', () => {
     expect(
       formatOrgAddress(
         {
-          address: 'Musterstraße 1',
+          street: 'Musterstraße 1',
           zipCode: '10115',
           city: 'Berlin',
         },
@@ -26,9 +26,9 @@ describe('formatOrgAddress', () => {
   });
 
   it('skips blank parts', () => {
-    expect(formatOrgAddress({ address: '  ', zipCode: '10115' })).toBe('10115');
+    expect(formatOrgAddress({ street: '  ', zipCode: '10115' })).toBe('10115');
     expect(formatOrgAddress({ city: 'Berlin' })).toBe('Berlin');
-    expect(formatOrgAddress({ address: 'Street', city: 'Berlin' })).toBe(
+    expect(formatOrgAddress({ street: 'Street', city: 'Berlin' })).toBe(
       'Street, Berlin',
     );
     expect(formatOrgAddress({})).toBe('');

@@ -3,10 +3,10 @@
 # ------------------------------------------------------
 
 type AccountingOrgProfile {
-  address: String
   city: String
   legalRep: String
   name: String!
+  street: String
   zipCode: String
 }
 
@@ -192,7 +192,6 @@ input CreateInvoiceInput {
 }
 
 input CreateOrganizationInput {
-  address: String
   city: String
   contactEmail: String
   description: String
@@ -201,12 +200,12 @@ input CreateOrganizationInput {
   name: String!
   parentId: String
   phone: String
+  street: String
   websiteUrl: String
   zipCode: String
 }
 
 input CreateOrganizationUnitInput {
-  address: String
   city: String
   contactEmail: String
   contactPersonName: String
@@ -217,6 +216,7 @@ input CreateOrganizationUnitInput {
   organizationId: String!
   parentId: String!
   phone: String
+  street: String
   typeId: String!
   websiteUrl: String
   welcomeMessage: String
@@ -812,7 +812,6 @@ type MyDocumentsGroup {
 
 type Organization {
   accountingEnabled: Boolean!
-  address: String
   city: String
   contactEmail: String
   createdAt: DateTime!
@@ -823,6 +822,7 @@ type Organization {
   phone: String
   root: OrganizationUnit!
   slug: String!
+  street: String
   units: [OrganizationUnit!]!
   updatedAt: DateTime
   websiteUrl: String
@@ -839,7 +839,6 @@ type OrganizationTree {
 }
 
 type OrganizationUnit {
-  address: String
   children: [OrganizationUnit!]!
   city: String
   contactEmail: String
@@ -862,6 +861,7 @@ type OrganizationUnit {
   requiredForms: [RequiredFormRef!]!
   requiredMembershipRequirementProfile: RequirementProfile
   slug: String!
+  street: String
   type: OrganizationUnitType!
   websiteUrl: String
   welcomeMessage: String
@@ -1532,19 +1532,18 @@ input UpdateMyImageInput {
 }
 
 input UpdateOrganizationInput {
-  address: String
   city: String
   contactEmail: String
   description: String
   logoFileId: String
   logoUrl: String
   phone: String
+  street: String
   websiteUrl: String
   zipCode: String
 }
 
 input UpdateOrganizationUnitInput {
-  address: String
   city: String
   contactEmail: String
   contactPersonName: String
@@ -1557,6 +1556,7 @@ input UpdateOrganizationUnitInput {
   parentId: String
   phone: String
   requiredMembershipRequirementProfileId: String
+  street: String
   typeId: String
   websiteUrl: String
   welcomeMessage: String
