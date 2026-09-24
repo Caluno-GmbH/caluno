@@ -549,7 +549,7 @@ type Invoice {
   declinedByUser: User
   documentTemplate: DocumentTemplate!
   downloadUrl: String
-  hourlyRateCents: Int
+  hourlyRateCents: Int!
   id: ID!
   invoiceStatus: InvoiceStatus!
   invoiceTimeEntries: [InvoiceTimeEntry!]!

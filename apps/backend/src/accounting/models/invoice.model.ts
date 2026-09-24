@@ -34,9 +34,9 @@ export class Invoice {
   @Field(() => Int)
   totalAmountCents!: number;
 
-  /** The rate this timesheet was issued at. Null on ones issued before it was stored. */
-  @Field(() => Int, { nullable: true })
-  hourlyRateCents?: number | null;
+  /** The rate this timesheet was issued at. */
+  @Field(() => Int)
+  hourlyRateCents!: number;
 
   @Field(() => Float)
   totalHours!: number;
