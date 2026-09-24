@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Go to check-out",
     "alreadyCheckedInDescription": "This volunteer already has an open check-in for this assignment.",
     "alreadyCheckedInTitle": "Already checked in",
+    "backToCheckInButton": "Back to check-in",
     "checkInButton": "Check in",
     "checkInRunningTitle": "Check-in running",
     "checkInSectionDescription": "Check this volunteer in for a new assignment without closing the open entries.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Checking in without an assignment",
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
-    "today": "Today"
+    "today": "Today",
+    "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
+    "unavailableTitle": "Can't check in this person"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",
