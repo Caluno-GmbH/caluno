@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Zum Check-out",
     "alreadyCheckedInDescription": "Diese Person ist für diesen Einsatz bereits eingecheckt.",
     "alreadyCheckedInTitle": "Bereits eingecheckt",
+    "backToCheckInButton": "Zurück zum Check-in",
     "checkInButton": "Einchecken",
     "checkInRunningTitle": "Check-in läuft",
     "checkInSectionDescription": "Checke diese Person für einen neuen Einsatz ein, ohne die offenen Einträge zu schließen.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
-    "today": "Heute"
+    "today": "Heute",
+    "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten mit Check-in-Zugriff.",
+    "unavailableTitle": "Einchecken nicht möglich"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
