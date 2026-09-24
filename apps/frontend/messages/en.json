@@ -1807,6 +1807,7 @@
     "table": {
       "email": "Email",
       "name": "Name",
+      "openProfileAria": "Open {name}'s profile",
       "roles": "Roles"
     }
   },

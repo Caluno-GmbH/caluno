@@ -87,68 +87,80 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {memberships.map((membership) => (
-            <TableRow key={membership.id}>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Avatar size="sm">
-                    <AvatarImage
-                      src={membership.user.image ?? undefined}
-                      alt={tCommon('avatarAlt', { name: membership.user.name })}
-                    />
-                    <AvatarFallback>
-                      <UserRound className="size-3" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {membership.user.name}
-                </div>
-              </TableCell>
-              <TableCell>{membership.user.email}</TableCell>
-              <TableCell>
-                <RoleSelectCell
-                  membershipId={membership.id}
-                  roles={membership.roles}
-                  orgUId={orgUId}
-                />
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="icon-xs"
-                    variant="outline"
-                    tooltip={t('action.viewProfileAria')}
-                    onClick={() =>
-                      openVolunteerSheet({
-                        userId: membership.user.id,
-                        volunteerName: membership.user.name,
-                        volunteerStatus: MembershipRequestStatus.Accepted,
-                        volunteerEmail: membership.user.email,
-                        volunteerCheckInId: membership.user.checkInId,
-                      })
-                    }
+          {memberships.map((membership) => {
+            const openProfile = () =>
+              openVolunteerSheet({
+                userId: membership.user.id,
+                volunteerName: membership.user.name,
+                volunteerStatus: MembershipRequestStatus.Accepted,
+                volunteerEmail: membership.user.email,
+                volunteerCheckInId: membership.user.checkInId,
+              });
+
+            return (
+              <TableRow key={membership.id}>
+                <TableCell>
+                  <button
+                    type="button"
+                    onClick={openProfile}
+                    aria-label={t('table.openProfileAria', {
+                      name: membership.user.name,
+                    })}
+                    className="flex items-center gap-2 rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   >
-                    <UserRound />
-                  </Button>
-                  <Link
-                    href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
-                    aria-label={t('action.checkInAria')}
-                  >
+                    <Avatar size="sm">
+                      <AvatarImage
+                        src={membership.user.image ?? undefined}
+                        alt={tCommon('avatarAlt', {
+                          name: membership.user.name,
+                        })}
+                      />
+                      <AvatarFallback>
+                        <UserRound className="size-3" />
+                      </AvatarFallback>
+                    </Avatar>
+                    {membership.user.name}
+                  </button>
+                </TableCell>
+                <TableCell>{membership.user.email}</TableCell>
+                <TableCell>
+                  <RoleSelectCell
+                    membershipId={membership.id}
+                    roles={membership.roles}
+                    orgUId={orgUId}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
                     <Button
                       size="icon-xs"
                       variant="outline"
-                      tooltip={t('action.checkInShiftAria')}
+                      tooltip={t('action.viewProfileAria')}
+                      onClick={openProfile}
                     >
-                      <LogIn />
+                      <UserRound />
                     </Button>
-                  </Link>
-                  <RemoveMembershipButton
-                    membershipId={membership.id}
-                    volunteerName={membership.user.name}
-                  />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+                    <Link
+                      href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
+                      aria-label={t('action.checkInAria')}
+                    >
+                      <Button
+                        size="icon-xs"
+                        variant="outline"
+                        tooltip={t('action.checkInShiftAria')}
+                      >
+                        <LogIn />
+                      </Button>
+                    </Link>
+                    <RemoveMembershipButton
+                      membershipId={membership.id}
+                      volunteerName={membership.user.name}
+                    />
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
