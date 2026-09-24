@@ -34,6 +34,7 @@ import { organizationUnitUrl } from '@/domain/organization/share';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { CopyableEmailCell } from './copyable-email-cell';
 import { VolunteerRequiredFormsPopover } from './required-forms-popover';
 import { RoleSelectCell } from './role-select-cell';
 
@@ -122,7 +123,12 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
                     {membership.user.name}
                   </button>
                 </TableCell>
-                <TableCell>{membership.user.email}</TableCell>
+                <TableCell>
+                  <CopyableEmailCell
+                    email={membership.user.email}
+                    volunteerName={membership.user.name}
+                  />
+                </TableCell>
                 <TableCell>
                   <RoleSelectCell
                     membershipId={membership.id}

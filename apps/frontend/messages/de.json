@@ -1805,7 +1805,9 @@
       "userInfo": "Persönliche Informationen"
     },
     "table": {
+      "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
       "email": "E-Mail",
+      "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
       "name": "Name",
       "openProfileAria": "Profil von {name} öffnen",
       "roles": "Rollen"
