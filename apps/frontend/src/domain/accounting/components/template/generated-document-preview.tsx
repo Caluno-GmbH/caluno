@@ -240,7 +240,7 @@ export function GeneratedDocumentPreview({
         page taller instead of spilling its table past the border. The generated
         PDF paginates properly; the preview is one continuous page.
       */}
-      <div className="mx-auto w-full max-w-[820px] overflow-hidden rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
+      <div className="mx-auto w-full max-w-[820px] overflow-hidden break-words rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
         <div className="flex items-start justify-between gap-4">
           <DocTypeHeader
             kind={kind}
