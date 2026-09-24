@@ -47,16 +47,19 @@ import {
   RecurrenceEndSelect,
 } from './recurrence-end-select';
 import { RecurrenceSelect } from './recurrence-select';
+import { ShiftApprovalToggle } from './shift-approval-toggle';
 import { ShiftInstanceSummaryCard } from './shift-instance-summary-card';
 
 const NO_REIMBURSEMENT_TYPE = 'none';
 
 interface EditShiftInstanceFormProps {
   orgUId: string;
+  instanceId: string;
   shift: { id: string; title: string; isRecurring: boolean };
   initialValues: Partial<EditShiftInstanceFormValues>;
   initialRequiredFormIds?: string[];
   imagePreviewUrl?: string | null;
+  joinRequiresApproval: boolean;
   mutate: (
     data: EditShiftInstanceFormValues,
   ) => Promise<{ serverError?: string }>;
@@ -64,10 +67,12 @@ interface EditShiftInstanceFormProps {
 
 export const EditShiftInstanceForm = ({
   orgUId,
+  instanceId,
   shift,
   initialValues,
   initialRequiredFormIds = [],
   imagePreviewUrl,
+  joinRequiresApproval,
   mutate,
 }: EditShiftInstanceFormProps) => {
   const router = useRouter();
@@ -386,6 +391,15 @@ export const EditShiftInstanceForm = ({
           </Field>
         </Card>
       )}
+
+      <ShiftApprovalToggle
+        orgUId={orgUId}
+        instanceId={instanceId}
+        isRecurring={shift.isRecurring}
+        instanceDate={instanceDate ?? new Date()}
+        joinRequiresApproval={joinRequiresApproval}
+        disabled={pending}
+      />
 
       <div className="flex gap-3">
         <Field className="flex-1">

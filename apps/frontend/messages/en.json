@@ -1362,6 +1362,19 @@
       "timeRangeConstraint": "Assignments must start and end within {window}."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "error": "We couldn't update the approval requirement. {error}",
+        "futureDescription": "Applies to {date} and every upcoming occurrence in the series. Past occurrences are kept.",
+        "futureTitle": "This and all future occurrences",
+        "onlyThisDescription": "Applies to {date} only. Other occurrences stay untouched.",
+        "onlyThisTitle": "Only this occurrence",
+        "success": "Approval requirement updated.",
+        "title": "Change approval requirement",
+        "turnOffDescription": "Everyone currently awaiting approval will be admitted automatically, up to the assignment's capacity. Anyone who doesn't fit will move to the waitlist.",
+        "turnOnDescription": "Volunteers already signed up keep their spot. New sign-ups from now on will need your approval."
+      },
       "callOutCta": "Urgent call",
       "callOutDialog": {
         "confirm": "Urgent call",

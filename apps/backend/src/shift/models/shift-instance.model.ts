@@ -41,6 +41,9 @@ export class ShiftInstance {
   @Field(() => ID, { nullable: true })
   overrideReimbursementTypeId?: string | null;
 
+  @Field(() => Boolean, { nullable: true })
+  overrideJoinRequiresApproval?: boolean | null;
+
   @Field(() => Boolean)
   isException!: boolean;
 
