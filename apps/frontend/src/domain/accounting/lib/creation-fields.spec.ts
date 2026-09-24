@@ -21,11 +21,14 @@ describe('deriveEditableFields', () => {
     expect(ids).toContain('contract-lifespan');
     expect(ids).toContain('hours-amount');
 
+    expect(ids).toContain('volunteer-street-field');
+    expect(ids).toContain('volunteer-zip-field');
+    expect(ids).toContain('volunteer-city-field');
+
     // No invented ids that aren't bound by the template (e.g. a bare `dob`
     // key, or the disabled optional address/dob/freeform lines).
     expect(ids).not.toContain('dob');
     expect(ids).not.toContain('volunteer-dob-field');
-    expect(ids).not.toContain('volunteer-street-field');
     expect(ids).not.toContain('freeform-text');
   });
 

@@ -7,7 +7,6 @@ import * as schema from '../../database/schema';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
-import { formatAddress } from '../../utils/format-address';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
