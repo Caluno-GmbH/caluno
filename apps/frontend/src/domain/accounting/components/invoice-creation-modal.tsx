@@ -19,7 +19,7 @@ import {
   useVolunteersNeedingTimesheets,
   useYearlyUsage,
 } from '@repo/data/react';
-import { Input } from '@repo/ui';
+import { Input, Textarea } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -163,6 +163,9 @@ export function InvoiceCreationModal({
   const tFields = useTranslations('Accounting.templates.builder.dataSources');
   const tManual = useTranslations(
     'Accounting.templates.builder.manualFieldLabels',
+  );
+  const tPlaceholders = useTranslations(
+    'Accounting.templates.builder.manualFieldPlaceholders',
   );
   const tPauschale = useTranslations('Accounting.reimbursements.toolbar');
   const tPeriod = useTranslations(
@@ -698,42 +701,44 @@ export function InvoiceCreationModal({
       fields={
         derivedFields && (
           <>
-            {derivedFields.map((field) =>
-              field.kind === 'bound' ? (
-                <AccountingProfileFieldCard
-                  key={field.fieldId}
-                  label={tFields(
-                    field.labelKey as Parameters<typeof tFields>[0],
-                  )}
-                  value={currentValue(field.fieldId, field.value)}
-                  provenance={
-                    isEdited(field.fieldId)
-                      ? 'override'
-                      : field.provenance === 'template'
-                        ? 'gap'
-                        : field.provenance
-                  }
-                  volunteerName={volunteerName}
-                  docType="invoice"
-                  onSave={handleFieldChange(field.fieldId)}
-                />
-              ) : (
-                <InfoPanel
-                  key={field.fieldId}
-                  title={tManual(
-                    field.labelKey as Parameters<typeof tManual>[0],
-                  )}
-                >
-                  <Input
-                    className="mt-2"
-                    value={currentValue(field.fieldId, field.value) ?? ''}
-                    onChange={(e) =>
-                      handleFieldChange(field.fieldId)(e.target.value)
+            {derivedFields
+              .filter((field) => field.control !== 'textarea')
+              .map((field) =>
+                field.kind === 'bound' ? (
+                  <AccountingProfileFieldCard
+                    key={field.fieldId}
+                    label={tFields(
+                      field.labelKey as Parameters<typeof tFields>[0],
+                    )}
+                    value={currentValue(field.fieldId, field.value)}
+                    provenance={
+                      isEdited(field.fieldId)
+                        ? 'override'
+                        : field.provenance === 'template'
+                          ? 'gap'
+                          : field.provenance
                     }
+                    volunteerName={volunteerName}
+                    docType="invoice"
+                    onSave={handleFieldChange(field.fieldId)}
                   />
-                </InfoPanel>
-              ),
-            )}
+                ) : (
+                  <InfoPanel
+                    key={field.fieldId}
+                    title={tManual(
+                      field.labelKey as Parameters<typeof tManual>[0],
+                    )}
+                  >
+                    <Input
+                      className="mt-2"
+                      value={currentValue(field.fieldId, field.value) ?? ''}
+                      onChange={(e) =>
+                        handleFieldChange(field.fieldId)(e.target.value)
+                      }
+                    />
+                  </InfoPanel>
+                ),
+              )}
             <InfoPanel title={t('rateFieldLabel')}>
               <div className="mt-2 flex flex-col gap-1.5">
                 <Input
@@ -774,6 +779,28 @@ export function InvoiceCreationModal({
                 />
               </div>
             </InfoPanel>
+            {derivedFields
+              .filter((field) => field.control === 'textarea')
+              .map((field) => (
+                <InfoPanel
+                  key={field.fieldId}
+                  title={tManual(
+                    field.labelKey as Parameters<typeof tManual>[0],
+                  )}
+                >
+                  <Textarea
+                    className="mt-2"
+                    rows={4}
+                    placeholder={tPlaceholders(
+                      field.labelKey as Parameters<typeof tPlaceholders>[0],
+                    )}
+                    value={currentValue(field.fieldId, field.value) ?? ''}
+                    onChange={(e) =>
+                      handleFieldChange(field.fieldId)(e.target.value)
+                    }
+                  />
+                </InfoPanel>
+              ))}
             <InvoiceCapCard
               usedBefore={usedBefore}
               projectedAfter={projectedAfter}

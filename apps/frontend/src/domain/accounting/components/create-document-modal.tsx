@@ -311,12 +311,10 @@ export function CreateDocumentModal({
                           <button
                             type="button"
                             onClick={() => {
-                              // The profile sheet lives in the admin layout,
-                              // outside this dialog. Closing the dialog first
-                              // keeps the two from stacking — the coordinator
-                              // reads the profile, closes it, and is back on
-                              // the board.
-                              onOpenChange(false);
+                              // Opened over this dialog rather than instead of
+                              // it: the sheet takes the top layer and closing
+                              // it hands focus and pointer events straight
+                              // back, so the coordinator keeps their place.
                               openVolunteerSheet({
                                 userId: volunteer.id,
                                 volunteerName: volunteer.name,
