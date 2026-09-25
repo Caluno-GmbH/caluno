@@ -1520,6 +1520,7 @@ export type Query = {
   adminUserProfile?: Maybe<UserProfile>;
   adminVolunteerSubmission?: Maybe<FormSubmission>;
   availableEvents: EventPaginatedResponse;
+  availableShiftInstanceDayCounts: Array<ShiftInstanceDayCount>;
   availableShiftInstances: ShiftInstancePaginatedResponse;
   bundleDownloadStatus?: Maybe<BundleDownloadStatus>;
   checkInContext?: Maybe<CheckInContext>;
@@ -1645,6 +1646,14 @@ export type QueryAvailableEventsArgs = {
   endsBefore?: InputMaybe<Scalars['DateTime']['input']>;
   limit?: Scalars['Int']['input'];
   offset?: Scalars['Int']['input'];
+  organizationUnitIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  startsAfter?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+
+export type QueryAvailableShiftInstanceDayCountsArgs = {
+  endsBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  excludeIntended?: Scalars['Boolean']['input'];
   organizationUnitIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   startsAfter?: InputMaybe<Scalars['DateTime']['input']>;
 };
@@ -2512,6 +2521,12 @@ export type ShiftInstanceCallOutSummary = {
   sentAt: Scalars['DateTime']['output'];
   sentBy: User;
   source: ShiftCallOutSource;
+};
+
+export type ShiftInstanceDayCount = {
+  __typename?: 'ShiftInstanceDayCount';
+  count: Scalars['Int']['output'];
+  date: Scalars['DateTime']['output'];
 };
 
 export type ShiftInstanceInvite = {
@@ -4040,6 +4055,16 @@ export type GetAvailableShiftInstancesQueryVariables = Exact<{
 
 
 export type GetAvailableShiftInstancesQuery = { __typename?: 'Query', availableShiftInstances: { __typename?: 'ShiftInstancePaginatedResponse', items: Array<{ __typename?: 'ShiftInstance', id: string, overrideTitle?: string | null, actualStartsAt: string, actualEndsAt: string, isCheckedIn: boolean, filledCount: number, spotsLeft?: number | null, myInviteStatus?: ShiftInviteStatus | null, myInvitedAt?: string | null, isIntendingToJoin: boolean, master: { __typename?: 'Shift', id: string, title: string, location?: string | null, rrule?: string | null, maxVolunteers?: number | null, reimbursementTypeKey?: ReimbursementTypeKey | null, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, logoUrl?: string | null }, event?: { __typename?: 'Event', id: string, title: string, coverImageUrl?: string | null } | null } }>, pagination: { __typename?: 'PaginationInfo', total: number, limit: number, offset: number, hasMore: boolean } } };
+
+export type GetAvailableShiftInstanceDayCountsQueryVariables = Exact<{
+  startsAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  endsBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  organizationUnitIds?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  excludeIntended?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetAvailableShiftInstanceDayCountsQuery = { __typename?: 'Query', availableShiftInstanceDayCounts: Array<{ __typename?: 'ShiftInstanceDayCount', date: string, count: number }> };
 
 export type CheckInMutationVariables = Exact<{
   shiftInstanceId: Scalars['ID']['input'];
@@ -7376,6 +7401,19 @@ export const GetAvailableShiftInstancesDocument = gql`
   }
 }
     ${VolunteerHomeShiftInstanceFragmentDoc}`;
+export const GetAvailableShiftInstanceDayCountsDocument = gql`
+    query GetAvailableShiftInstanceDayCounts($startsAfter: DateTime, $endsBefore: DateTime, $organizationUnitIds: [ID!], $excludeIntended: Boolean = false) {
+  availableShiftInstanceDayCounts(
+    startsAfter: $startsAfter
+    endsBefore: $endsBefore
+    organizationUnitIds: $organizationUnitIds
+    excludeIntended: $excludeIntended
+  ) {
+    date
+    count
+  }
+}
+    `;
 export const CheckInDocument = gql`
     mutation CheckIn($shiftInstanceId: ID!) {
   checkIn(shiftInstanceId: $shiftInstanceId) {
@@ -8258,6 +8296,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetAvailableShiftInstances(variables?: GetAvailableShiftInstancesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAvailableShiftInstancesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetAvailableShiftInstancesQuery>({ document: GetAvailableShiftInstancesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAvailableShiftInstances', 'query', variables);
+    },
+    GetAvailableShiftInstanceDayCounts(variables?: GetAvailableShiftInstanceDayCountsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAvailableShiftInstanceDayCountsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetAvailableShiftInstanceDayCountsQuery>({ document: GetAvailableShiftInstanceDayCountsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAvailableShiftInstanceDayCounts', 'query', variables);
     },
     CheckIn(variables: CheckInMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInMutation>({ document: CheckInDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckIn', 'mutation', variables);
