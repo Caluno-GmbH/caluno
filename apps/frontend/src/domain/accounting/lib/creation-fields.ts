@@ -16,15 +16,18 @@ export interface DerivedField {
   labelKey: string;
   kind: DerivedFieldKind;
   /** Manual fields only: which control the template declares (e.g. `period`), so the modal can render the right editor. */
-  control?: TemplateField['control'];
   source?: DataSourceKey;
   value: string | null;
   provenance: DerivedFieldProvenance;
+  /** Manual fields only: which control the template asks for. A freeform block wants a textarea, not a one-line input. */
+  control?: TemplateField['control'];
 }
 
 /** Profile-bound sources other than first/last name — resolved from the volunteer's profile data. */
 const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
-  volunteer_address: 'street',
+  volunteer_street: 'street',
+  volunteer_zip: 'zip',
+  volunteer_city: 'city',
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',

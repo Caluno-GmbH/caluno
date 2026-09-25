@@ -3,8 +3,10 @@ import type { EligibleTimeEntry } from '@repo/data';
 import { formats } from '../../../lib/formatting/formats';
 import {
   contractPeriodForLifespan,
+  formatHours,
   hoursBetween,
   mapEligibleTimeEntry,
+  sumHours,
 } from './creation-modal.utils';
 
 describe('contractPeriodForLifespan', () => {
@@ -76,6 +78,20 @@ describe('mapEligibleTimeEntry', () => {
     });
   });
 
+  it('uses the occurrence’s own title when a coordinator renamed that one shift', () => {
+    const entry = mapEligibleTimeEntry(
+      makeEntry({
+        shiftInstance: {
+          id: 'si-1',
+          overrideTitle: 'Sonntagsdienst (Sondereinsatz)',
+          master: { title: 'Sonntagsdienst' },
+        },
+      }),
+      formats('de'),
+    );
+    expect(entry.shiftName).toBe('Sonntagsdienst (Sondereinsatz)');
+  });
+
   it('falls back to notes when there is no shift instance', () => {
     const entry = mapEligibleTimeEntry(
       makeEntry({ shiftInstance: null, notes: 'Ad-hoc Einsatz' }),
@@ -91,5 +107,31 @@ describe('mapEligibleTimeEntry', () => {
     );
     expect(entry.hours).toBe(0);
     expect(entry.dateTime).toBe('05.07.2026, 11:00');
+  });
+});
+
+describe('formatHours', () => {
+  it('Writes a German decimal comma, as the document does', () => {
+    expect(formatHours(5.58)).toBe('5,58');
+  });
+
+  it('Leaves a whole number whole', () => {
+    expect(formatHours(10)).toBe('10');
+  });
+
+  it('Never prints a binary-float tail', () => {
+    expect(formatHours(0.1 + 0.2)).toBe('0,3');
+    expect(formatHours(28.060000000000002)).toBe('28,06');
+  });
+});
+
+describe('sumHours', () => {
+  it('Adds already-rounded rows without accumulating float error', () => {
+    // 10 + 5.58 + 12.48 is 28.060000000000002 in IEEE 754.
+    expect(sumHours([10, 5.58, 12.48])).toBe(28.06);
+  });
+
+  it('Is zero for an empty selection', () => {
+    expect(sumHours([])).toBe(0);
   });
 });

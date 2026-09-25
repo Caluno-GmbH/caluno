@@ -1,7 +1,7 @@
 import { getTranslations } from 'next-intl/server';
 import { createEvent } from '@/domain/event/actions';
 import { EventForm } from '@/domain/event/components/event-form';
-import { formatOrgAddress } from '@/domain/org-unit/format-address';
+import { formatAddress } from '@/domain/org-unit/format-address';
 import { getDataClient } from '@/lib/data-client';
 
 interface CreateEventPageProps {
@@ -24,7 +24,7 @@ export default async function CreateEventPage({
       mutate={createEvent.bind(null, orgUId)}
       redirectToInviteOnCreate
       initialValues={{
-        location: formatOrgAddress(unit),
+        location: formatAddress(unit),
       }}
     />
   );

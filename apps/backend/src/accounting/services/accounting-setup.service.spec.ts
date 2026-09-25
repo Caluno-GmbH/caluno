@@ -44,12 +44,12 @@ describe('AccountingSetupService.getSetupStatus', () => {
   });
 
   it('blocks template management while org profile fields are missing', async () => {
-    const service = makeService({ missingOrgFields: ['org_address'] });
+    const service = makeService({ missingOrgFields: ['org_street'] });
 
     const status = await service.getSetupStatus('org-1', 'unit-1');
 
     expect(status.orgProfileComplete).toBe(false);
-    expect(status.missingOrgProfileFields).toEqual(['org_address']);
+    expect(status.missingOrgProfileFields).toEqual(['org_street']);
     expect(status.canManageTemplates).toBe(false);
   });
 

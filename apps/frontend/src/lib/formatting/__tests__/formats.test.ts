@@ -35,6 +35,39 @@ describe('formats', () => {
         '15.06.2026',
       );
     });
+
+    // The options path goes through Intl rather than date-fns. A bare "en"
+    // resolves to en-US there, which is month-first, so the two paths used to
+    // disagree: "12/9" with options against "09/12/2026" without.
+    it('keeps the options path day-first in English, matching the plain path', () => {
+      const december9 = new Date('2026-12-09T10:00:00Z');
+
+      expect(
+        formats('en').formatDate(december9, {
+          day: 'numeric',
+          month: 'numeric',
+        }),
+      ).toBe('09/12');
+      expect(formats('en').formatDate(december9)).toBe('09/12/2026');
+    });
+
+    it('keeps the options path day-first in German', () => {
+      expect(
+        formats('de').formatDate(new Date('2026-12-09T10:00:00Z'), {
+          day: 'numeric',
+          month: 'numeric',
+        }),
+      ).toBe('9.12.');
+    });
+
+    it('falls back to German for an unsupported locale on the options path', () => {
+      expect(
+        formats('fr').formatDate(new Date('2026-12-09T10:00:00Z'), {
+          day: 'numeric',
+          month: 'numeric',
+        }),
+      ).toBe('9.12.');
+    });
   });
 
   describe('Adheres to Europe/Berlin Timezone', () => {

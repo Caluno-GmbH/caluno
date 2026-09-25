@@ -290,7 +290,7 @@ describe('DocumentTemplateService', () => {
         db,
         `Org Wide Gate Org ${crypto.randomUUID()}`,
       );
-      // Root unit has no address; the body binds org_address.
+      // Root unit has no address; the body binds org_street.
       await createUnit(db, {
         organizationId: organization.id,
         typeId: type.id,
@@ -313,8 +313,8 @@ describe('DocumentTemplateService', () => {
             enabled: true,
             fields: [
               {
-                id: 'header-org-address',
-                value: { kind: 'bound', source: 'org_address' },
+                id: 'header-org-street',
+                value: { kind: 'bound', source: 'org_street' },
               },
             ],
           },

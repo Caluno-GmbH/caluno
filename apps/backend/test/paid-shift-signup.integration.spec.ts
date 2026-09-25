@@ -17,7 +17,10 @@ import {
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { ShiftInviteStatus } from '../src/shift/enums';
-import { createReimbursementType } from './factories/accounting.factory';
+import {
+  createReimbursementType,
+  stubInvoiceDocumentNumber,
+} from './factories/accounting.factory';
 import {
   addMembership,
   createOrganizationWithType,
@@ -328,6 +331,8 @@ describe('paidShiftSignupVolunteers', () => {
       totalAmountCents: 100,
       totalHours: 1,
       resolvedBody: { header: {}, blocks: [], footer: {} },
+      hourlyRateCents: 1000,
+      ...stubInvoiceDocumentNumber(org.organizationUnitId),
     });
 
     const { paidShiftSignupVolunteers } = await query(2026);

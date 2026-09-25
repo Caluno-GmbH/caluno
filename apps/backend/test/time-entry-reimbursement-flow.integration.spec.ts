@@ -96,6 +96,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       { capture: () => {} } as unknown as PostHogService,
     );
 

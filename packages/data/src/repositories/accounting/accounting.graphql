@@ -291,6 +291,7 @@ query GetInvoice($id: ID!) {
         notes
         shiftInstance {
           id
+          overrideTitle
           master {
             title
           }
@@ -365,6 +366,7 @@ query GetEligibleTimeEntriesForInvoice(
     notes
     shiftInstance {
       id
+      overrideTitle
       master {
         title
       }

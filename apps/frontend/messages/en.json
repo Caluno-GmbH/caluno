@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Go to check-out",
     "alreadyCheckedInDescription": "This volunteer already has an open check-in for this assignment.",
     "alreadyCheckedInTitle": "Already checked in",
+    "backToCheckInButton": "Back to check-in",
     "checkInButton": "Check in",
     "checkInRunningTitle": "Check-in running",
     "checkInSectionDescription": "Check this volunteer in for a new assignment without closing the open entries.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Checking in without an assignment",
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
-    "today": "Today"
+    "today": "Today",
+    "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
+    "unavailableTitle": "Can't check in this person"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",
@@ -267,10 +270,10 @@
           "signedUp": "Signed up",
           "accepted": "Accepted",
           "declined": "Declined",
-          "cancelled": "Cancelled",
-          "rejected": "Rejected",
-          "requested": "Requested",
-          "waitlisted": "Waitlisted"
+          "cancelled": "Withdrawn",
+          "rejected": "Removed",
+          "requested": "Pending approval",
+          "waitlisted": "On waitlist"
         },
         "actionUninvite": "Uninvite",
         "uninviteSuccess": "Volunteer removed from event",
@@ -798,7 +801,7 @@
     "emailPlatformDescription": "Invitations, joining, cancellations, assignment changes and membership.",
     "emailSettings": "Emails",
     "emailUrgentCalls": "Urgent calls",
-    "emailUrgentCallsDescription": "Urgent call-outs for short-staffed assignments.",
+    "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Weekly update",
     "emailWeeklyUpdateDescription": "The Sunday weekly plan email.",
     "identity": {
@@ -1190,6 +1193,10 @@
     },
     "select": {
       "addCustom": "Add custom",
+      "confirm": {
+        "description": "You are about to change this person's role. This change is immediate. Are you sure?",
+        "title": "Change role?"
+      },
       "empty": "No roles found.",
       "searchPlaceholder": "Search roles..."
     },
@@ -1265,9 +1272,11 @@
     },
     "checkIn": {
       "checkInError": "Could not check in volunteer",
+      "checkInLoading": "Checking in {name}…",
       "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
+      "checkOutLoading": "Checking out {name}…",
       "checkOutTitle": "Check-out",
       "checkedInAt": "Checked in: {time}",
       "checkingOut": "Checking out...",
@@ -1282,6 +1291,9 @@
       "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
     },
     "detail": {
+      "approvalLabel": "Approval",
+      "approvalNotRequiredLabel": "No approval needed",
+      "approvalRequiredLabel": "Approval required",
       "createdByLabel": "Created by",
       "createdLabel": "Created",
       "imageAlt": "Image for {title}",
@@ -1355,12 +1367,25 @@
       "timeRangeConstraint": "Assignments must start and end within {window}."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "error": "We couldn't update the approval requirement. {error}",
+        "futureDescription": "Applies to {date} and every upcoming occurrence in the series. Past occurrences are kept.",
+        "futureTitle": "This and all future occurrences",
+        "onlyThisDescription": "Applies to {date} only. Other occurrences stay untouched.",
+        "onlyThisTitle": "Only this occurrence",
+        "success": "Approval requirement updated.",
+        "title": "Change approval requirement",
+        "turnOffDescription": "Everyone currently awaiting approval will be admitted automatically, up to the assignment's capacity. Anyone who doesn't fit will move to the waitlist.",
+        "turnOnDescription": "Volunteers already signed up keep their spot. New sign-ups from now on will need your approval."
+      },
       "callOutCta": "Urgent call",
       "callOutDialog": {
         "confirm": "Urgent call",
         "description": "This sends an urgent call to everyone eligible to help with this assignment, asking them to join. It won't add anyone to the assignment.",
         "error": "We couldn't send the urgent call. {error}",
-        "noRecipients": "Nobody was left to ask. We've emailed you instead.",
+        "noRecipients": "Nobody could be notified. We've sent you an email with the details instead.",
         "success": "Urgent call sent to {count, plural, one {# volunteer} other {# volunteers}}.",
         "title": "Send an urgent call?"
       },
@@ -1395,33 +1420,34 @@
       "actionApprove": "Approve",
       "actionInvite": "Invite",
       "actionRemind": "Remind",
-      "actionReminded": "Reminded",
       "actionUninvite": "Withdraw invite",
       "approveSuccess": "Volunteer approved",
       "approveWaitlistedSuccess": "Assignment is full. Volunteer added to the waitlist.",
-      "cancelled": "Cancelled",
-      "changeStatusAria": "Change volunteer status",
+      "cancelled": "Withdrawn",
+      "changeStatusAria": "Change status for {name}",
+      "checkInAriaNamed": "Check in {name}",
+      "checkOutAriaNamed": "Check out {name}",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
       "checkedIn": "Checked in",
       "checkedOut": "Checked out",
       "declined": "Declined",
-      "declineSuccess": "Volunteer declined",
+      "groupComing": "Coming",
+      "groupNotComing": "Not coming",
+      "groupPending": "Pending",
+      "removeSuccess": "Volunteer removed from this shift",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
-      "notCheckedIn": "Not here yet",
       "pendingApproval": "Pending approval",
-      "rejected": "Rejected",
-      "remindedAtTooltip": "Reminded on {when}",
-      "remindError": "We couldn't send the reminder. Please try again.",
+      "rejected": "Removed",
+      "actionRemindedOn": "Reminded on {when}",
+      "remindError": "We couldn't send a reminder to {name}. Please try again.",
+      "remindLoading": "Sending reminder to {name}…",
       "remindSuccess": "Reminder sent to volunteer",
       "signedUp": "Signed up",
-      "statusChangeError": "We couldn't change the status. Please try again.",
-      "summaryAccepted": "accepted",
-      "summaryInvited": "invited",
-      "summarySignedUp": "signed up",
-      "summarySpots": "spots",
-      "summaryWaitlisted": "waitlisted",
+      "statusChangeError": "We couldn't update {name}. Please try again.",
+      "statusChangeLoading": "Updating {name}…",
+      "viewProfileAriaNamed": "View {name}'s profile",
       "volunteersTitle": "Volunteers",
       "waitlisted": "On waitlist"
     },
@@ -1927,7 +1953,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Address",
+      "org_street": "Address",
       "org_city": "City",
       "org_zip": "Postal code",
       "org_legal_rep": "Legal representative"
@@ -2189,6 +2215,9 @@
         "editProfileCta": "Edit your profile",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Timesheet period",
+        "rateFieldLabel": "Hourly rate for this timesheet",
+        "rateFieldHint": "Matches your organisation's hourly rate. You can change it for this one timesheet.",
+        "rateFieldOverridden": "Applies to this timesheet only. Your organisation still pays {rate} per hour.",
         "periodPicker": {
           "placeholder": "Select a period",
           "thisMonth": "This month",
@@ -2282,10 +2311,15 @@
         "blockEditor": {
           "headerTitle": "Header",
           "invoiceNumberFormatLabel": "Document number format",
+          "kostenstelleRequiredByNumberFormat": "The selected document number format contains the cost centre, so it has to be filled in here.",
           "lockedHint": "Mandatory. Always included in the generated document.",
           "tableFixedHint": "Rows are filled from tracked times when a timesheet is generated.",
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name of the tracked shift",
+              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+            },
             "agreement_task_description": {
               "label": "Task description from the agreement",
               "hint": "Each row shows the task description stored in the agreement."
@@ -2296,6 +2330,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Shift name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },
@@ -2319,7 +2354,8 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses"
+          "extra": "Extra clauses",
+          "other": "Other information"
         },
         "hoursUnit": {
           "month": "Month",
@@ -2350,7 +2386,7 @@
           "tasks": "Describe the main activities for {pauschale}",
           "hours-amount-month": "e.g. 20",
           "hours-amount-week": "e.g. 5",
-          "freeform-text": "Add other clauses here if you need to",
+          "freeform-text": "Add anything else you need to here",
           "kostenstelle": "e.g. K-4200",
           "kostentraeger": "e.g. KT-100",
           "rechtstraeger": "e.g. Diakonisches Werk e.V."
@@ -2378,9 +2414,9 @@
           "volunteer_first_name": "First name (Volunteer)",
           "volunteer_last_name": "Last name (Volunteer)",
           "org_name": "Organisation name",
-          "org_address": "Organisation address",
-          "org_city": "City (Organisation)",
+          "org_street": "Organisation address",
           "org_zip": "Postal code (Organisation)",
+          "org_city": "City (Organisation)",
           "org_legal_rep": "Legal representative",
           "pauschalen_type": "Allowance type",
           "hourly_rate": "Compensation per hour",
@@ -2393,7 +2429,9 @@
           "volunteer_iban": "IBAN (Volunteer)",
           "volunteer_account_holder": "Account holder (Volunteer)",
           "volunteer_bic": "BIC (Volunteer)",
-          "volunteer_address": "Address (Volunteer)",
+          "volunteer_street": "Street name and number (Volunteer)",
+          "volunteer_zip": "Postal code (Volunteer)",
+          "volunteer_city": "City (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",
           "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Agreement period",

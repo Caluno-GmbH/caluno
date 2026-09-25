@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Zum Check-out",
     "alreadyCheckedInDescription": "Diese Person ist für diesen Einsatz bereits eingecheckt.",
     "alreadyCheckedInTitle": "Bereits eingecheckt",
+    "backToCheckInButton": "Zurück zum Check-in",
     "checkInButton": "Einchecken",
     "checkInRunningTitle": "Check-in läuft",
     "checkInSectionDescription": "Checke diese Person für einen neuen Einsatz ein, ohne die offenen Einträge zu schließen.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
-    "today": "Heute"
+    "today": "Heute",
+    "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
+    "unavailableTitle": "Einchecken nicht möglich"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
@@ -264,12 +267,12 @@
         "inviteButton": "Einladen",
         "status": {
           "invited": "Eingeladen",
-          "signedUp": "Angemeldet",
+          "signedUp": "Selbst angemeldet",
           "accepted": "Angenommen",
           "declined": "Abgelehnt",
           "cancelled": "Zurückgezogen",
-          "rejected": "Zurückgewiesen",
-          "requested": "Angefragt",
+          "rejected": "Entfernt",
+          "requested": "Genehmigung ausstehend",
           "waitlisted": "Auf der Warteliste"
         },
         "actionUninvite": "Einladung zurückziehen",
@@ -1190,6 +1193,10 @@
     },
     "select": {
       "addCustom": "Benutzerdefiniert hinzufügen",
+      "confirm": {
+        "description": "Du bist dabei, die Rolle dieser Person zu ändern. Diese Änderung tritt sofort in Kraft. Bist du sicher?",
+        "title": "Rolle ändern?"
+      },
       "empty": "Keine Rollen gefunden.",
       "searchPlaceholder": "Rollen suchen..."
     },
@@ -1265,9 +1272,11 @@
     },
     "checkIn": {
       "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
+      "checkInLoading": "{name} wird eingecheckt…",
       "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
+      "checkOutLoading": "{name} wird ausgecheckt…",
       "checkOutTitle": "Auschecken",
       "checkedInAt": "Eingecheckt: {time}",
       "checkingOut": "Wird ausgecheckt...",
@@ -1282,6 +1291,9 @@
       "uebungsleiter": "Vergütet über Übungsleiterpauschale"
     },
     "detail": {
+      "approvalLabel": "Freigabe",
+      "approvalNotRequiredLabel": "Keine Freigabe nötig",
+      "approvalRequiredLabel": "Freigabe erforderlich",
       "createdByLabel": "Erstellt von",
       "createdLabel": "Erstellt",
       "imageAlt": "Bild für {title}",
@@ -1355,6 +1367,19 @@
       "timeRangeConstraint": "Einsätze müssen innerhalb von {window} beginnen und enden."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "error": "Die Freigabepflicht konnte nicht geändert werden. {error}",
+        "futureDescription": "Gilt für {date} und alle kommenden Termine der Serie. Vergangene Termine bleiben erhalten.",
+        "futureTitle": "Diesen und alle zukünftigen Termine",
+        "onlyThisDescription": "Gilt nur für {date}. Andere Termine bleiben unberührt.",
+        "onlyThisTitle": "Nur diesen Termin",
+        "success": "Freigabepflicht aktualisiert.",
+        "title": "Freigabepflicht ändern",
+        "turnOffDescription": "Alle, die derzeit auf Freigabe warten, werden automatisch aufgenommen – bis zur maximalen Kapazität des Einsatzes. Wer nicht mehr reinpasst, kommt auf die Warteliste.",
+        "turnOnDescription": "Bereits angemeldete Freiwillige behalten ihren Platz. Neue Anmeldungen benötigen ab sofort deine Freigabe."
+      },
       "callOutCta": "Dringender Aufruf",
       "callOutDialog": {
         "confirm": "Dringender Aufruf",
@@ -1395,33 +1420,34 @@
       "actionApprove": "Genehmigen",
       "actionInvite": "Einladen",
       "actionRemind": "Erinnern",
-      "actionReminded": "Erinnert",
       "actionUninvite": "Einladung zurückziehen",
       "approveSuccess": "Freiwillige:r genehmigt",
       "approveWaitlistedSuccess": "Der Einsatz ist voll besetzt. Freiwillige:r steht jetzt auf der Warteliste.",
       "cancelled": "Zurückgezogen",
-      "changeStatusAria": "Status ändern",
+      "changeStatusAria": "Status von {name} ändern",
+      "checkInAriaNamed": "{name} einchecken",
+      "checkOutAriaNamed": "{name} auschecken",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
       "checkedIn": "Eingecheckt",
       "checkedOut": "Ausgecheckt",
       "declined": "Abgelehnt",
-      "declineSuccess": "Freiwillige:r abgelehnt",
+      "groupComing": "Zugesagt",
+      "groupNotComing": "Nicht dabei",
+      "groupPending": "Ausstehend",
+      "removeSuccess": "Freiwillige:r von dieser Schicht entfernt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
-      "notCheckedIn": "Noch nicht da",
       "pendingApproval": "Genehmigung ausstehend",
-      "rejected": "Zurückgewiesen",
-      "remindedAtTooltip": "Erinnert am {when}",
-      "remindError": "Die Erinnerung ließ sich nicht senden. Versuch es bitte erneut.",
+      "rejected": "Entfernt",
+      "actionRemindedOn": "Erinnert am {when}",
+      "remindError": "Die Erinnerung an {name} ließ sich nicht senden. Versuch es bitte erneut.",
+      "remindLoading": "Erinnerung an {name} wird gesendet…",
       "remindSuccess": "Erinnerung an Freiwillige:n gesendet",
       "signedUp": "Selbst angemeldet",
-      "statusChangeError": "Der Status ließ sich nicht ändern. Versuch es bitte erneut.",
-      "summaryAccepted": "angenommen",
-      "summaryInvited": "eingeladen",
-      "summarySignedUp": "selbst angemeldet",
-      "summarySpots": "Plätze",
-      "summaryWaitlisted": "auf der Warteliste",
+      "statusChangeError": "Der Status von {name} ließ sich nicht ändern. Versuch es bitte erneut.",
+      "statusChangeLoading": "{name} wird aktualisiert…",
+      "viewProfileAriaNamed": "Profil von {name} ansehen",
       "volunteersTitle": "Freiwillige",
       "waitlisted": "Auf der Warteliste"
     },
@@ -1927,7 +1953,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Adresse",
+      "org_street": "Adresse",
       "org_city": "Stadt",
       "org_zip": "Postleitzahl",
       "org_legal_rep": "Gesetzliche Vertretung"
@@ -2189,6 +2215,9 @@
         "editProfileCta": "Profil bearbeiten",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Stundennachweiszeitraum",
+        "rateFieldLabel": "Stundensatz für diesen Nachweis",
+        "rateFieldHint": "Entspricht dem Stundensatz Ihrer Einrichtung. Sie können ihn für diesen einzelnen Nachweis ändern.",
+        "rateFieldOverridden": "Gilt nur für diesen Nachweis. Ihre Einrichtung zahlt weiterhin {rate} pro Stunde.",
         "periodPicker": {
           "placeholder": "Zeitraum wählen",
           "thisMonth": "Dieser Monat",
@@ -2282,10 +2311,15 @@
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",
+          "kostenstelleRequiredByNumberFormat": "Das gewählte Format der Dokumentennummer enthält die Kostenstelle, deshalb muss sie hier angegeben werden.",
           "lockedHint": "Pflichtblock. Immer im generierten Dokument enthalten.",
           "tableFixedHint": "Die Zeilen werden beim Erstellen eines Stundennachweises aus den Zeiterfassungen befüllt.",
           "firstColumnSourceLabel": "Inhalt der ersten Spalte",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name des erfassten Einsatzes",
+              "hint": "Jede Zeile zeigt den Einsatz, aus dem die Stunden stammen. Ohne Einsatz erfasste Stunden zeigen stattdessen die Tätigkeitsbeschreibung aus der Vereinbarung."
+            },
             "agreement_task_description": {
               "label": "Tätigkeitsbeschreibung aus der Vereinbarung",
               "hint": "Jede Zeile zeigt die in der Vereinbarung hinterlegte Tätigkeitsbeschreibung."
@@ -2296,6 +2330,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Name des Einsatzes",
             "agreementTaskDescription": "Tätigkeitsbeschreibung",
             "custom": "z. B. Sonstige Tätigkeit"
           },
@@ -2319,7 +2354,8 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen"
+          "extra": "Weitere Vereinbarungen",
+          "other": "Sonstiges"
         },
         "hoursUnit": {
           "month": "Monat",
@@ -2350,7 +2386,7 @@
           "tasks": "Beschreibe die Haupttätigkeiten für {pauschale}",
           "hours-amount-month": "z. B. 20",
           "hours-amount-week": "z. B. 5",
-          "freeform-text": "Ergänze hier weitere Klauseln, falls nötig",
+          "freeform-text": "Ergänze hier weitere Angaben, falls nötig",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
           "rechtstraeger": "z. B. Diakonisches Werk e.V."
@@ -2378,9 +2414,9 @@
           "volunteer_first_name": "Vorname (Ehrenamtliche:r)",
           "volunteer_last_name": "Nachname (Ehrenamtliche:r)",
           "org_name": "Organisationsname",
-          "org_address": "Organisationsadresse",
-          "org_city": "Stadt (Organisation)",
+          "org_street": "Organisationsadresse",
           "org_zip": "Postleitzahl (Organisation)",
+          "org_city": "Stadt (Organisation)",
           "org_legal_rep": "Gesetzliche Vertretung",
           "pauschalen_type": "Pauschalentyp",
           "hourly_rate": "Vergütung pro Stunde",
@@ -2393,7 +2429,9 @@
           "volunteer_iban": "IBAN (Ehrenamtliche:r)",
           "volunteer_account_holder": "Kontoinhaber:in (Ehrenamtliche:r)",
           "volunteer_bic": "BIC (Ehrenamtliche:r)",
-          "volunteer_address": "Adresse (Ehrenamtliche:r)",
+          "volunteer_street": "Strasse und Hausnummer (Ehrenamtliche:r)",
+          "volunteer_zip": "Postleitzahl (Ehrenamtliche:r)",
+          "volunteer_city": "Stadt (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
           "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",

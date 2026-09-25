@@ -4,9 +4,8 @@ import {
   formatDuration as dateFnsFormatDuration,
   intervalToDuration,
   isSameDay,
-  type Locale,
 } from 'date-fns';
-import { de, enGB } from 'date-fns/locale';
+import { intlLocaleTag, localeDateFns } from '@/i18n/locales';
 
 export const DEFAULT_TIMEZONE = 'Europe/Berlin';
 
@@ -19,24 +18,16 @@ export function formatEuro(amount: number): string {
   }).format(amount);
 }
 
-const supportedLocales: Record<string, Locale> = {
-  en: enGB,
-  de,
-};
-
-const getLocale = (locale: string): Locale =>
-  supportedLocales[locale.toLocaleLowerCase()] ?? de;
-
 export const formats = (locale: string) => {
   const format = (date: Date, formatting: string) =>
     dateFnsFormat(date, formatting, {
-      locale: getLocale(locale),
+      locale: localeDateFns(locale),
       in: tz(DEFAULT_TIMEZONE),
     });
 
   const formatDate = (date: Date, options?: Intl.DateTimeFormatOptions) => {
     if (options) {
-      return new Intl.DateTimeFormat(locale, {
+      return new Intl.DateTimeFormat(intlLocaleTag(locale), {
         timeZone: DEFAULT_TIMEZONE,
         ...options,
       }).format(date);
@@ -72,7 +63,7 @@ export const formats = (locale: string) => {
     const fromDate = new Date(from);
     const toDate = new Date(to);
 
-    return new Intl.DateTimeFormat(locale, {
+    return new Intl.DateTimeFormat(intlLocaleTag(locale), {
       timeZone: DEFAULT_TIMEZONE,
       day: 'numeric',
       month: 'long',
@@ -99,7 +90,7 @@ export const formats = (locale: string) => {
     return dateFnsFormatDuration(duration, {
       zero: false,
       format: ['days', 'hours', 'minutes'],
-      locale: getLocale(locale),
+      locale: localeDateFns(locale),
     });
   };
 
@@ -112,7 +103,7 @@ export const formats = (locale: string) => {
     return dateFnsFormatDuration(duration, {
       zero: false,
       format: ['days', 'hours', 'minutes'],
-      locale: getLocale(locale),
+      locale: localeDateFns(locale),
     });
   };
 
