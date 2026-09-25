@@ -19,7 +19,6 @@ import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-
 import { useRouter } from '@/i18n/navigation';
 
 type EditIdentityFormProps = {
-  email: string;
   profile: { data: Record<string, unknown> } | null;
 };
 
@@ -43,7 +42,7 @@ const fieldToRenderable = (
   minAge: null,
 });
 
-const EditIdentityForm = ({ email, profile }: EditIdentityFormProps) => {
+const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const tFields = useTranslations('RequirementForm.fieldForm');
   const tSubtitles = useTranslations('Profile.identity.subtitles');
   const tProfile = useTranslations('Profile');
@@ -131,7 +130,7 @@ const EditIdentityForm = ({ email, profile }: EditIdentityFormProps) => {
                 <div className="flex items-center gap-2">
                   <Input
                     id="email-locked"
-                    value={email}
+                    value={data.email as string}
                     readOnly
                     disabled
                     className="flex-1"
