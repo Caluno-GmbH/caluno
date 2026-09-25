@@ -35,7 +35,8 @@ function rootOrgUnit(id: string, organizationId: string): MyOrganizationUnit {
     parent: null,
     description: null,
     logoUrl: null,
-    address: null,
+    street: null,
+    zipCode: null,
     city: null,
     legalRep: null,
     organization: {
@@ -88,14 +89,14 @@ describe('resolveAuthPageRedirects', () => {
       expect(await authenticatedRedirect()).toBe('/invite/token-abc');
     });
 
-    it('prefers explicit redirect over pending_invite cookie', async () => {
+    it('prefers pending_invite cookie over explicit redirect', async () => {
       cookieValues.set('pending_invite', 'token-abc');
 
       const { authenticatedRedirect } = await resolveAuthPageRedirects({
         redirectTo: '/admin/org-1',
       });
 
-      expect(await authenticatedRedirect()).toBe('/admin/org-1');
+      expect(await authenticatedRedirect()).toBe('/invite/token-abc');
     });
 
     it('prefers pending_redirect cookie over url redirectTo', async () => {
@@ -128,6 +129,16 @@ describe('resolveAuthPageRedirects', () => {
       cookieValues.set('pending_invite', 'token-abc');
 
       const { formRedirectTo } = await resolveAuthPageRedirects({});
+
+      expect(formRedirectTo).toBe('/invite/token-abc');
+    });
+
+    it('prefers pending_invite cookie over explicit redirectTo', async () => {
+      cookieValues.set('pending_invite', 'token-abc');
+
+      const { formRedirectTo } = await resolveAuthPageRedirects({
+        redirectTo: '/admin/org-1',
+      });
 
       expect(formRedirectTo).toBe('/invite/token-abc');
     });

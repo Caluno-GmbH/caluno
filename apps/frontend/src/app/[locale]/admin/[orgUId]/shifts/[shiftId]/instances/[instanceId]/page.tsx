@@ -1,6 +1,6 @@
 import { DataError, PermissionKey, ShiftVisibility } from '@repo/data';
 import { Button } from '@repo/ui';
-import { Trash2 } from 'lucide-react';
+import { Copy, Trash2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import {
@@ -13,7 +13,10 @@ import { ShiftInstanceInformationCard } from '@/domain/shift/components/shift-in
 import { ShiftInstanceMetaCard } from '@/domain/shift/components/shift-instance-meta-card';
 import { ShiftInstanceVolunteersPanel } from '@/domain/shift/components/shift-instance-volunteers-panel';
 import { ShiftRequiredFormsPopover } from '@/domain/shift/components/shift-required-forms-popover';
-import { shiftInstanceEditPath } from '@/domain/shift/routes';
+import {
+  shiftDuplicatePath,
+  shiftInstanceEditPath,
+} from '@/domain/shift/routes';
 import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
@@ -86,6 +89,22 @@ export default async function ShiftInstanceDetailPage({
           )}
 
           {canManage ? (
+            <Link
+              href={shiftDuplicatePath(orgUId, shiftId, {
+                redirectToDetail: true,
+              })}
+            >
+              <Button
+                variant="outline"
+                size="icon-sm"
+                tooltip={t('action.duplicateAria')}
+              >
+                <Copy />
+              </Button>
+            </Link>
+          ) : null}
+
+          {canManage ? (
             <DeleteShiftInstanceDialog
               orgUId={orgUId}
               instanceId={instanceId}
@@ -144,6 +163,7 @@ export default async function ShiftInstanceDetailPage({
             }
             rrule={instance.master.rrule}
             visibility={instance.master.visibility}
+            joinRequiresApproval={instance.master.joinRequiresApproval}
             filledCount={instance.filledCount}
             maxVolunteers={
               instance.overrideMaxVolunteers ?? instance.master.maxVolunteers

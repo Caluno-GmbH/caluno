@@ -28,6 +28,7 @@ export const shiftInstances = snakeCase.table(
     overrideReimbursementTypeId: uuid(
       'override_reimbursement_type_id',
     ).references(() => reimbursementTypes.id, { onDelete: 'restrict' }),
+    overrideJoinRequiresApproval: boolean('override_join_requires_approval'),
     isException: boolean('is_exception').notNull().default(false),
     isCancelled: boolean('is_cancelled').notNull().default(false),
     cancelledBySync: boolean('cancelled_by_sync').notNull().default(false),

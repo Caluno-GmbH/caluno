@@ -81,7 +81,11 @@ import type { ShiftEntity } from './schemas/shift.schema';
 import type { ShiftInstanceEntity } from './schemas/shift-instance.schema';
 import type { ShiftInviteEntity } from './schemas/shift-invite.schema';
 import { propagateShiftInviteStatusToFutureInstances } from './shift-invite-propagation';
-import { startOfTodayInAppTimeZone } from './utils/app-time';
+import {
+  appDateParts,
+  startOfAppDay,
+  startOfTodayInAppTimeZone,
+} from './utils/app-time';
 import {
   getDurationMinutes,
   isValidShiftDurationMinutes,
@@ -598,10 +602,7 @@ export class ShiftService {
     return result;
   }
 
-  private async findMyIntendedShiftInstances(
-    userId: string,
-    dateCondition: Record<string, unknown>,
-  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+  private async getIntendedInstanceIds(userId: string): Promise<string[]> {
     const requests = await this.db.query.membershipRequests.findMany({
       where: {
         userId,
@@ -610,11 +611,18 @@ export class ShiftService {
       columns: { metadata: true },
     });
 
-    const intendedIds = requests.flatMap(
+    return requests.flatMap(
       (request) =>
         (request.metadata as { intendedShiftInstanceIds?: string[] } | null)
           ?.intendedShiftInstanceIds ?? [],
     );
+  }
+
+  private async findMyIntendedShiftInstances(
+    userId: string,
+    dateCondition: Record<string, unknown>,
+  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+    const intendedIds = await this.getIntendedInstanceIds(userId);
 
     if (intendedIds.length === 0) {
       return EMPTY_SHIFT_INSTANCE_PAGE;
@@ -702,14 +710,12 @@ export class ShiftService {
     return actualStartsAt.gte || actualStartsAt.lt ? { actualStartsAt } : {};
   }
 
-  async findAvailableShiftInstances(
+  private async buildAvailableShiftInstancesWhere(
     userId: string,
     startsAfter: Date | null,
     endsBefore: Date | null,
     organizationUnitIds: string[] | null,
-    limit: number,
-    offset: number,
-  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+  ): Promise<Record<string, unknown> | null> {
     const [acceptedOrganizationUnitIds, pendingOrganizationUnitIds] =
       await Promise.all([
         this.getAccessibleOrganizationUnitIds(userId),
@@ -722,7 +728,7 @@ export class ShiftService {
     ];
 
     if (accessibleOrganizationUnitIds.length === 0) {
-      return EMPTY_SHIFT_INSTANCE_PAGE;
+      return null;
     }
 
     const requestedOrgUnitIds = organizationUnitIds?.length
@@ -732,7 +738,7 @@ export class ShiftService {
       : accessibleOrganizationUnitIds;
 
     if (requestedOrgUnitIds.length === 0) {
-      return EMPTY_SHIFT_INSTANCE_PAGE;
+      return null;
     }
 
     const acceptedIds = requestedOrgUnitIds.filter((id) =>
@@ -768,7 +774,7 @@ export class ShiftService {
       });
     }
 
-    const where = {
+    return {
       isCancelled: false,
       ...dateCondition,
       master: { isDeleted: false },
@@ -780,6 +786,26 @@ export class ShiftService {
       },
       OR: visibilityBranches,
     };
+  }
+
+  async findAvailableShiftInstances(
+    userId: string,
+    startsAfter: Date | null,
+    endsBefore: Date | null,
+    organizationUnitIds: string[] | null,
+    limit: number,
+    offset: number,
+  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+    const where = await this.buildAvailableShiftInstancesWhere(
+      userId,
+      startsAfter,
+      endsBefore,
+      organizationUnitIds,
+    );
+
+    if (!where) {
+      return EMPTY_SHIFT_INSTANCE_PAGE;
+    }
 
     const [instances, totalResult] = await Promise.all([
       this.db.query.shiftInstances.findMany({
@@ -799,6 +825,54 @@ export class ShiftService {
     ]);
 
     return { instances, total: totalResult[0]?.total ?? 0 };
+  }
+
+  async findAvailableShiftInstanceDayCounts(
+    userId: string,
+    startsAfter: Date | null,
+    endsBefore: Date | null,
+    organizationUnitIds: string[] | null,
+    excludeIntended = false,
+  ): Promise<{ date: Date; count: number }[]> {
+    const where = await this.buildAvailableShiftInstancesWhere(
+      userId,
+      startsAfter,
+      endsBefore,
+      organizationUnitIds,
+    );
+
+    if (!where) {
+      return [];
+    }
+
+    const [instances, intendedIds] = await Promise.all([
+      this.db.query.shiftInstances.findMany({
+        where,
+        columns: { id: true, actualStartsAt: true },
+      }),
+      excludeIntended
+        ? this.getIntendedInstanceIds(userId)
+        : Promise.resolve<string[]>([]),
+    ]);
+    const intendedIdSet = new Set(intendedIds);
+
+    const counts = new Map<string, { date: Date; count: number }>();
+    for (const { id, actualStartsAt } of instances) {
+      if (intendedIdSet.has(id)) continue;
+
+      const { year, month, day } = appDateParts(actualStartsAt);
+      const key = `${year}-${month}-${day}`;
+      const existing = counts.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        counts.set(key, { date: startOfAppDay(year, month, day), count: 1 });
+      }
+    }
+
+    return [...counts.values()].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
   }
 
   async findAll(
@@ -1836,6 +1910,194 @@ export class ShiftService {
     }
 
     return instance;
+  }
+
+  async updateShiftInstanceApproval(
+    instanceId: string,
+    organizationUnitId: string,
+    joinRequiresApproval: boolean,
+    options: { applyToAllFuture?: boolean; actorUserId?: string } = {},
+  ): Promise<ShiftInstanceEntity> {
+    const applyToAllFuture = options.applyToAllFuture ?? false;
+
+    const instance = await this.db.transaction(async (tx) => {
+      const instance = await tx.query.shiftInstances.findFirst({
+        where: { id: instanceId },
+        with: { master: true },
+      });
+
+      if (
+        !instance ||
+        instance.master.organizationUnitId !== organizationUnitId
+      ) {
+        throw new NotFoundGraphQLError(
+          `Shift instance with ID ${instanceId} not found`,
+        );
+      }
+
+      if (instance.actualEndsAt.getTime() < Date.now()) {
+        throw new ConflictGraphQLError(
+          'Cannot edit a past or completed shift instance',
+        );
+      }
+
+      const applyToSeries = applyToAllFuture || instance.master.rrule === null;
+
+      let updated: ShiftInstanceEntity;
+      let sweepInstanceIds: string[];
+
+      if (applyToSeries) {
+        const [updatedShift] = await tx
+          .update(schema.shifts)
+          .set({ joinRequiresApproval })
+          .where(
+            and(
+              eq(schema.shifts.id, instance.masterId),
+              eq(schema.shifts.organizationUnitId, organizationUnitId),
+            ),
+          )
+          .returning();
+
+        if (!updatedShift) {
+          throw new NotFoundGraphQLError(
+            `Shift with ID ${instance.masterId} not found`,
+          );
+        }
+
+        // Re-select as a plain row (no `master` relation attached) — the
+        // GraphQL `master` field resolver uses `instance.master` directly
+        // when present, which would otherwise serve the stale pre-update
+        // master fetched above.
+        const [refreshedInstance] = await tx
+          .select()
+          .from(schema.shiftInstances)
+          .where(eq(schema.shiftInstances.id, instance.id));
+
+        if (!refreshedInstance) {
+          throw new NotFoundGraphQLError(
+            `Shift instance with ID ${instance.id} not found`,
+          );
+        }
+
+        updated = refreshedInstance;
+
+        sweepInstanceIds = joinRequiresApproval
+          ? []
+          : (
+              await tx.query.shiftInstances.findMany({
+                where: {
+                  masterId: instance.masterId,
+                  actualStartsAt: { gte: instance.actualStartsAt },
+                  isCancelled: false,
+                },
+                columns: { id: true, overrideJoinRequiresApproval: true },
+              })
+            )
+              .filter(
+                (candidate) =>
+                  (candidate.overrideJoinRequiresApproval ??
+                    joinRequiresApproval) === false,
+              )
+              .map((candidate) => candidate.id);
+      } else {
+        const [updatedInstance] = await tx
+          .update(schema.shiftInstances)
+          .set({ overrideJoinRequiresApproval: joinRequiresApproval })
+          .where(eq(schema.shiftInstances.id, instance.id))
+          .returning();
+
+        if (!updatedInstance) {
+          throw new NotFoundGraphQLError(
+            `Shift instance with ID ${instance.id} not found`,
+          );
+        }
+
+        updated = updatedInstance;
+        sweepInstanceIds = joinRequiresApproval ? [] : [instance.id];
+      }
+
+      if (sweepInstanceIds.length > 0) {
+        await this.autoResolveAwaitingApprovalInvites(tx, sweepInstanceIds);
+      }
+
+      return updated;
+    });
+
+    if (options.actorUserId) {
+      this.postHogService.capture({
+        event: POSTHOG_EVENT.SHIFT_INSTANCE_UPDATE,
+        userId: options.actorUserId,
+        properties: {
+          surface: POSTHOG_SURFACE.BACKOFFICE,
+          organization_id: await this.resolveOrganizationId(organizationUnitId),
+          organization_unit_id: organizationUnitId,
+          shift_id: instance.masterId,
+          shift_instance_id: instance.id,
+          apply_to_all_future: applyToAllFuture,
+        },
+      });
+    }
+
+    return instance;
+  }
+
+  /**
+   * Resolves every AWAITING_ADMIN_APPROVAL invite on the given instances,
+   * oldest-first, now that approval is no longer required for them: admits
+   * up to capacity, waitlists the overflow. Mirrors the single-invite admin
+   * approval path (resolveAdminApprovalTargetStatus + the same notifications)
+   * but as a bulk sweep triggered by turning approval off.
+   */
+  private async autoResolveAwaitingApprovalInvites(
+    tx: Database,
+    instanceIds: string[],
+  ): Promise<void> {
+    const instances = await tx.query.shiftInstances.findMany({
+      where: { id: { in: instanceIds } },
+      with: {
+        master: true,
+        invites: {
+          where: { status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    for (const instance of instances) {
+      const maxVolunteers =
+        instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
+
+      for (const invite of instance.invites) {
+        const hasSeat = await this.hasAvailableSeat(
+          instance.id,
+          maxVolunteers,
+          tx,
+        );
+        const targetStatus = resolveAdminApprovalTargetStatus({
+          hasAvailableSeat: hasSeat,
+          allowWaitlist: true,
+        }) as ShiftInviteStatus;
+
+        await tx
+          .update(schema.shiftInstanceInvites)
+          .set({ status: targetStatus, remindedAt: null })
+          .where(eq(schema.shiftInstanceInvites.id, invite.id));
+
+        if (targetStatus === ShiftInviteStatus.JOINED) {
+          void this.loadAndEmitShiftInstanceJoinApprovedNotification(
+            instance.master,
+            instance,
+            invite.userId,
+          );
+        } else {
+          void this.loadAndEmitShiftInstanceWaitlistJoinedNotification(
+            instance.master,
+            instance,
+            invite.userId,
+          );
+        }
+      }
+    }
   }
 
   private async updateSingleShiftInstance(
@@ -3642,7 +3904,9 @@ export class ShiftService {
       this.notificationService.notifyShiftInstanceJoined({
         organizationUnitId: shift.organizationUnitId,
         organizationUnitName: organizationUnit.name,
+        shiftId: shift.id,
         shiftTitle: shift.title,
+        instanceId: instance.id,
         joinedUserId: userId,
         recipientUserIds,
         startsAt: instance.actualStartsAt,
@@ -3821,7 +4085,8 @@ export class ShiftService {
         existingInvite.status === ShiftInviteStatus.ADMIN_INVITED
       ) {
         const targetStatus = resolveVolunteerJoinTargetStatus({
-          joinRequiresApproval: shift.joinRequiresApproval,
+          joinRequiresApproval:
+            instance.overrideJoinRequiresApproval ?? shift.joinRequiresApproval,
           hasAvailableSeat: hasSeat,
           allowWaitlist: true,
           considerApproval:
@@ -3862,7 +4127,8 @@ export class ShiftService {
     }
 
     const targetStatus = resolveVolunteerJoinTargetStatus({
-      joinRequiresApproval: shift.joinRequiresApproval,
+      joinRequiresApproval:
+        instance.overrideJoinRequiresApproval ?? shift.joinRequiresApproval,
       hasAvailableSeat: hasSeat,
       allowWaitlist: true,
       considerApproval: true,
@@ -4610,7 +4876,9 @@ export class ShiftService {
         status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL)
     ) {
       targetStatus = resolveVolunteerJoinTargetStatus({
-        joinRequiresApproval: instance.master.joinRequiresApproval,
+        joinRequiresApproval:
+          instance.overrideJoinRequiresApproval ??
+          instance.master.joinRequiresApproval,
         hasAvailableSeat: hasSeat,
         allowWaitlist: true,
         considerApproval:

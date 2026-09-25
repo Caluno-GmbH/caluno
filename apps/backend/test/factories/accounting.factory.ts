@@ -15,6 +15,20 @@ export type TimeEntry = typeof schema.timeEntries.$inferSelect;
 const EMPTY_BODY: DocumentTemplateBody = { header: {}, blocks: [], footer: {} };
 
 /**
+ * Required document-number columns for tests that insert invoices directly
+ * (bypassing InvoiceService.createInvoice). The number itself is a random
+ * stub — uniqueness within the scope unit is all the unique index needs.
+ */
+export function stubInvoiceDocumentNumber(scopeUnitId: string) {
+  return {
+    documentNumber: `test-${crypto.randomUUID()}`,
+    documentNumberSeq: 1,
+    documentNumberYear: 2026,
+    documentNumberScopeUnitId: scopeUnitId,
+  };
+}
+
+/**
  * There are only ever two reimbursement type keys, so this upserts on `key`
  * instead of inserting - callers within the same test file share one row per
  * key, matching how this reference data actually behaves in production.

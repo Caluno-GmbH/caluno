@@ -1,3 +1,4 @@
+import { applyOrgOverrides, type OrgOverrides } from '@repo/data';
 import { centsToEuros } from '../../lib/money';
 import type { PauschalenType } from '../doc-type-header';
 import type {
@@ -37,10 +38,11 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
  */
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
+  orgOverrides?: OrgOverrides;
   orgName?: string | null;
-  orgAddress?: string | null;
-  orgCity?: string | null;
+  orgStreet?: string | null;
   orgZip?: string | null;
+  orgCity?: string | null;
   orgLegalRep?: string | null;
   hourlyRateCents?: number;
   yearlyLimitCents?: number;
@@ -49,9 +51,9 @@ export function getKnownOrgValues(args: {
     pauschalen_type: KNOWN_PAUSCHALE_LABEL[args.pauschale],
   };
   if (args.orgName) values.org_name = args.orgName;
-  if (args.orgAddress) values.org_address = args.orgAddress;
-  if (args.orgCity) values.org_city = args.orgCity;
+  if (args.orgStreet) values.org_street = args.orgStreet;
   if (args.orgZip) values.org_zip = args.orgZip;
+  if (args.orgCity) values.org_city = args.orgCity;
   if (args.orgLegalRep) values.org_legal_rep = args.orgLegalRep;
   if (args.hourlyRateCents !== undefined) {
     // German document content, formatted like the German legal text around it.
@@ -60,14 +62,17 @@ export function getKnownOrgValues(args: {
   if (args.yearlyLimitCents !== undefined) {
     values.yearly_limit_amount = `${centsToEuros(args.yearlyLimitCents).toLocaleString('de-DE')} €`;
   }
-  return values;
+  // Applied last and in one place, so the letterhead — which is rendered from
+  // these values rather than from template fields — cannot end up naming a
+  // different organisation than the document's own text.
+  return applyOrgOverrides(values, args.orgOverrides);
 }
 
 function line(
   id: string,
   text: string,
   fields: TemplateField[] = [],
-  options: { optional?: boolean; enabled?: boolean } = {},
+  options: { optional?: boolean; enabled?: boolean; inline?: boolean } = {},
 ): TemplateLine {
   return {
     id,
@@ -76,6 +81,7 @@ function line(
     optional: options.optional ?? false,
     // Optional lines are opt-in — default off unless the caller says otherwise.
     enabled: options.enabled ?? !options.optional,
+    ...(options.inline ? { inline: true } : {}),
   };
 }
 
@@ -109,13 +115,25 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          line('parties', 'Zwischen dem {orgName}, {orgAddress}, und', [
-            bound('parties-org-name', 'org_name'),
-            bound('parties-org-address', 'org_address'),
-          ]),
+          line(
+            'parties',
+            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity}',
+            [
+              bound('parties-org-name', 'org_name'),
+              bound('parties-org-street', 'org_street'),
+              bound('parties-org-zip', 'org_zip'),
+              bound('parties-org-city', 'org_city'),
+            ],
+          ),
+          line(
+            'parties-additional',
+            ', {additionalInfo}',
+            [manual('parties-additional-info', '', 'textarea')],
+            { optional: true, inline: true }, // Continues the parties line rather than starting its own
+          ),
           line(
             'volunteer-name',
-            '{volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
+            'und {volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
             [
               bound('volunteer-name-first', 'volunteer_first_name'),
               bound('volunteer-name-last', 'volunteer_last_name'),
@@ -123,9 +141,12 @@ export function getContractDocument(
           ),
           line(
             'volunteer-address',
-            'wohnhaft in {volunteerAddress},',
-            [bound('volunteer-address-field', 'volunteer_address')],
-            { optional: true },
+            'wohnhaft in {volunteerStreet}, {volunteerZip} {volunteerCity}',
+            [
+              bound('volunteer-street-field', 'volunteer_street'),
+              bound('volunteer-zip-field', 'volunteer_zip'),
+              bound('volunteer-city-field', 'volunteer_city'),
+            ],
           ),
           line(
             'volunteer-dob',
@@ -149,7 +170,10 @@ export function getContractDocument(
           line(
             'engagement-scope',
             'Die ehrenamtlich tätige Person übt im Zeitraum {contractLifespan} für die Einrichtung {orgName} eine nebenberufliche Tätigkeit aus.',
-            [contractLifespan, bound('engagement-org-name', 'org_name')],
+            [
+              contractLifespan,
+              bound('engagement-org-name', 'org_facility_name'),
+            ],
           ),
           line(
             'engagement-tasks',
@@ -240,10 +264,13 @@ export function getInvoiceDocument(
     header: {
       titleLines: [PAUSCHALE_INVOICE_TITLE[pauschale]],
       metaLines: [
-        line('meta-invoice-number', '{documentNumber}', [
+        // Labelled rather than bare: these sit in the header group next to the
+        // organisation's letterhead, where a lone number and a lone date say
+        // nothing about which is which.
+        line('meta-invoice-number', 'Rechnungsnummer: {documentNumber}', [
           bound('meta-invoice-number-field', 'document_number'),
         ]),
-        line('meta-date', '{date}', [
+        line('meta-date', 'Datum: {date}', [
           bound('meta-date-field', 'generated_date'),
         ]),
         line(
@@ -284,8 +311,14 @@ export function getInvoiceDocument(
             bound('volunteer-name-first', 'volunteer_first_name'),
             bound('volunteer-name-last', 'volunteer_last_name'),
           ]),
-          line('volunteer-address', '{volunteerAddress}', [
-            bound('volunteer-address-field', 'volunteer_address'),
+          line('volunteer-street', '{volunteerStreet}', [
+            bound('volunteer-street-field', 'volunteer_street'),
+          ]),
+          line('volunteer-zip', '{volunteerZip}', [
+            bound('volunteer-zip-field', 'volunteer_zip'),
+          ]),
+          line('volunteer-city', '{volunteerCity}', [
+            bound('volunteer-city-field', 'volunteer_city'),
           ]),
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),
@@ -297,16 +330,20 @@ export function getInvoiceDocument(
         id: 'stundennachweis',
         title: 'Stundennachweis',
         locked: true,
+        // The rate column is headed "€/h" rather than "Stundensatz": the header
+        // was the widest thing in it by some margin, and the room it held came
+        // out of the task description beside it. "h" and not "Std" because the
+        // hours cells below already print "10h" — one abbreviation per unit.
         columns: [
           'Tätigkeit',
           'Beginn',
           'Ende',
           'Stunden gesamt',
-          'Stundensatz',
+          '€/h',
           'Betrag',
         ],
         previewRowCount: 10,
-        firstColumnSource: 'agreement_task_description',
+        firstColumnSource: 'shift_name',
         firstColumnCustomLabel: '',
       },
       {
@@ -329,6 +366,20 @@ export function getInvoiceDocument(
             bound('jahresdeckel-limit', 'yearly_limit_amount'),
           ],
         ),
+      },
+      {
+        kind: 'text',
+        id: 'sonstiges',
+        title: 'Sonstiges',
+        locked: false,
+        // Opt-in, off by default — the same shape the contract uses. Sits last
+        // among the blocks, so it prints above the signatures.
+        enabled: false,
+        lines: [
+          line('freeform', '{freeformText}', [
+            manual('freeform-text', '', 'textarea'),
+          ]),
+        ],
       },
     ],
     footer: {

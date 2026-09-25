@@ -23,10 +23,10 @@ export type Scalars = {
 
 export type AccountingOrgProfile = {
   __typename?: 'AccountingOrgProfile';
-  address?: Maybe<Scalars['String']['output']>;
   city?: Maybe<Scalars['String']['output']>;
   legalRep?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
+  street?: Maybe<Scalars['String']['output']>;
   zipCode?: Maybe<Scalars['String']['output']>;
 };
 
@@ -210,6 +210,7 @@ export type CreateFormBlockInput = {
 
 export type CreateInvoiceInput = {
   fieldOverrides?: InputMaybe<Array<DocumentFieldOverrideInput>>;
+  hourlyRateCents?: InputMaybe<Scalars['Int']['input']>;
   organizationUnitId?: InputMaybe<Scalars['ID']['input']>;
   periodEnd: Scalars['DateTime']['input'];
   periodStart: Scalars['DateTime']['input'];
@@ -219,7 +220,6 @@ export type CreateInvoiceInput = {
 };
 
 export type CreateOrganizationInput = {
-  address?: InputMaybe<Scalars['String']['input']>;
   city?: InputMaybe<Scalars['String']['input']>;
   contactEmail?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
@@ -228,12 +228,12 @@ export type CreateOrganizationInput = {
   name: Scalars['String']['input'];
   parentId?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  street?: InputMaybe<Scalars['String']['input']>;
   websiteUrl?: InputMaybe<Scalars['String']['input']>;
   zipCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type CreateOrganizationUnitInput = {
-  address?: InputMaybe<Scalars['String']['input']>;
   city?: InputMaybe<Scalars['String']['input']>;
   contactEmail?: InputMaybe<Scalars['String']['input']>;
   contactPersonName?: InputMaybe<Scalars['String']['input']>;
@@ -244,6 +244,7 @@ export type CreateOrganizationUnitInput = {
   organizationId: Scalars['String']['input'];
   parentId: Scalars['String']['input'];
   phone?: InputMaybe<Scalars['String']['input']>;
+  street?: InputMaybe<Scalars['String']['input']>;
   typeId: Scalars['String']['input'];
   websiteUrl?: InputMaybe<Scalars['String']['input']>;
   welcomeMessage?: InputMaybe<Scalars['String']['input']>;
@@ -586,6 +587,7 @@ export type Invoice = {
   declinedByUser?: Maybe<User>;
   documentTemplate: DocumentTemplate;
   downloadUrl?: Maybe<Scalars['String']['output']>;
+  hourlyRateCents: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   invoiceStatus: InvoiceStatus;
   invoiceTimeEntries: Array<InvoiceTimeEntry>;
@@ -833,6 +835,7 @@ export type Mutation = {
   updateRole: Role;
   updateShift: Shift;
   updateShiftInstance: ShiftInstance;
+  updateShiftInstanceApproval: ShiftInstance;
   updateShiftInstanceInviteStatus: ShiftInstanceInvite;
   updateShiftInviteStatus: ShiftInvite;
   updateTimeEntry: TimeEntry;
@@ -1321,6 +1324,13 @@ export type MutationUpdateShiftInstanceArgs = {
 };
 
 
+export type MutationUpdateShiftInstanceApprovalArgs = {
+  applyToAllFuture?: InputMaybe<Scalars['Boolean']['input']>;
+  id: Scalars['String']['input'];
+  joinRequiresApproval: Scalars['Boolean']['input'];
+};
+
+
 export type MutationUpdateShiftInstanceInviteStatusArgs = {
   instanceId: Scalars['String']['input'];
   status: ShiftInviteStatus;
@@ -1359,7 +1369,6 @@ export type MyDocumentsGroup = {
 export type Organization = {
   __typename?: 'Organization';
   accountingEnabled: Scalars['Boolean']['output'];
-  address?: Maybe<Scalars['String']['output']>;
   city?: Maybe<Scalars['String']['output']>;
   contactEmail?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['DateTime']['output'];
@@ -1370,6 +1379,7 @@ export type Organization = {
   phone?: Maybe<Scalars['String']['output']>;
   root: OrganizationUnit;
   slug: Scalars['String']['output'];
+  street?: Maybe<Scalars['String']['output']>;
   units: Array<OrganizationUnit>;
   updatedAt?: Maybe<Scalars['DateTime']['output']>;
   websiteUrl?: Maybe<Scalars['String']['output']>;
@@ -1389,7 +1399,6 @@ export type OrganizationTree = {
 
 export type OrganizationUnit = {
   __typename?: 'OrganizationUnit';
-  address?: Maybe<Scalars['String']['output']>;
   children: Array<OrganizationUnit>;
   city?: Maybe<Scalars['String']['output']>;
   contactEmail?: Maybe<Scalars['String']['output']>;
@@ -1412,6 +1421,7 @@ export type OrganizationUnit = {
   requiredForms: Array<RequiredFormRef>;
   requiredMembershipRequirementProfile?: Maybe<RequirementProfile>;
   slug: Scalars['String']['output'];
+  street?: Maybe<Scalars['String']['output']>;
   type: OrganizationUnitType;
   websiteUrl?: Maybe<Scalars['String']['output']>;
   welcomeMessage?: Maybe<Scalars['String']['output']>;
@@ -1510,6 +1520,7 @@ export type Query = {
   adminUserProfile?: Maybe<UserProfile>;
   adminVolunteerSubmission?: Maybe<FormSubmission>;
   availableEvents: EventPaginatedResponse;
+  availableShiftInstanceDayCounts: Array<ShiftInstanceDayCount>;
   availableShiftInstances: ShiftInstancePaginatedResponse;
   bundleDownloadStatus?: Maybe<BundleDownloadStatus>;
   checkInContext?: Maybe<CheckInContext>;
@@ -1635,6 +1646,14 @@ export type QueryAvailableEventsArgs = {
   endsBefore?: InputMaybe<Scalars['DateTime']['input']>;
   limit?: Scalars['Int']['input'];
   offset?: Scalars['Int']['input'];
+  organizationUnitIds?: InputMaybe<Array<Scalars['ID']['input']>>;
+  startsAfter?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+
+export type QueryAvailableShiftInstanceDayCountsArgs = {
+  endsBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  excludeIntended?: Scalars['Boolean']['input'];
   organizationUnitIds?: InputMaybe<Array<Scalars['ID']['input']>>;
   startsAfter?: InputMaybe<Scalars['DateTime']['input']>;
 };
@@ -2467,6 +2486,7 @@ export type ShiftInstance = {
   myInvitedAt?: Maybe<Scalars['DateTime']['output']>;
   occurrenceIndex: Scalars['Int']['output'];
   overrideInstructions?: Maybe<Scalars['String']['output']>;
+  overrideJoinRequiresApproval?: Maybe<Scalars['Boolean']['output']>;
   overrideLocation?: Maybe<Scalars['String']['output']>;
   overrideMaxVolunteers?: Maybe<Scalars['Int']['output']>;
   overrideMinVolunteers?: Maybe<Scalars['Int']['output']>;
@@ -2501,6 +2521,12 @@ export type ShiftInstanceCallOutSummary = {
   sentAt: Scalars['DateTime']['output'];
   sentBy: User;
   source: ShiftCallOutSource;
+};
+
+export type ShiftInstanceDayCount = {
+  __typename?: 'ShiftInstanceDayCount';
+  count: Scalars['Int']['output'];
+  date: Scalars['DateTime']['output'];
 };
 
 export type ShiftInstanceInvite = {
@@ -2652,19 +2678,18 @@ export type UpdateMyImageInput = {
 };
 
 export type UpdateOrganizationInput = {
-  address?: InputMaybe<Scalars['String']['input']>;
   city?: InputMaybe<Scalars['String']['input']>;
   contactEmail?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   logoFileId?: InputMaybe<Scalars['String']['input']>;
   logoUrl?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
+  street?: InputMaybe<Scalars['String']['input']>;
   websiteUrl?: InputMaybe<Scalars['String']['input']>;
   zipCode?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateOrganizationUnitInput = {
-  address?: InputMaybe<Scalars['String']['input']>;
   city?: InputMaybe<Scalars['String']['input']>;
   contactEmail?: InputMaybe<Scalars['String']['input']>;
   contactPersonName?: InputMaybe<Scalars['String']['input']>;
@@ -2677,6 +2702,7 @@ export type UpdateOrganizationUnitInput = {
   parentId?: InputMaybe<Scalars['String']['input']>;
   phone?: InputMaybe<Scalars['String']['input']>;
   requiredMembershipRequirementProfileId?: InputMaybe<Scalars['String']['input']>;
+  street?: InputMaybe<Scalars['String']['input']>;
   typeId?: InputMaybe<Scalars['String']['input']>;
   websiteUrl?: InputMaybe<Scalars['String']['input']>;
   welcomeMessage?: InputMaybe<Scalars['String']['input']>;
@@ -2946,7 +2972,7 @@ export type GetInvoiceQueryVariables = Exact<{
 }>;
 
 
-export type GetInvoiceQuery = { __typename?: 'Query', invoice: { __typename?: 'Invoice', resolvedBody: Record<string, unknown>, id: string, invoiceStatus: InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason?: string | null, declinedAt?: string | null, declinedAtSigneeType?: SigneeType | null, downloadUrl?: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt?: string | null, invoiceTimeEntries: Array<{ __typename?: 'InvoiceTimeEntry', id: string, timeEntry: { __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, master: { __typename?: 'Shift', title: string } } | null } }>, declinedByUser?: { __typename?: 'User', id: string, name: string } | null, volunteer: { __typename?: 'User', id: string, name: string, image?: string | null }, reimbursementType: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey }, documentTemplate: { __typename?: 'DocumentTemplate', id: string, kind: DocumentKind }, signatures: Array<{ __typename?: 'InvoiceSignature', id: string, order: number, signeeType: SigneeType, signedAt?: string | null, signedByUser?: { __typename?: 'User', id: string, name: string } | null, requiredPermission?: { __typename?: 'Permission', id: string, key: PermissionKey } | null }>, statusChanges: Array<{ __typename?: 'InvoiceStatusChange', id: string, type: DocumentStatusChange, occurredAt: string, actorUser?: { __typename?: 'User', id: string, name: string } | null }> } };
+export type GetInvoiceQuery = { __typename?: 'Query', invoice: { __typename?: 'Invoice', resolvedBody: Record<string, unknown>, id: string, invoiceStatus: InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason?: string | null, declinedAt?: string | null, declinedAtSigneeType?: SigneeType | null, downloadUrl?: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt?: string | null, invoiceTimeEntries: Array<{ __typename?: 'InvoiceTimeEntry', id: string, timeEntry: { __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, overrideTitle?: string | null, master: { __typename?: 'Shift', title: string } } | null } }>, declinedByUser?: { __typename?: 'User', id: string, name: string } | null, volunteer: { __typename?: 'User', id: string, name: string, image?: string | null }, reimbursementType: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey }, documentTemplate: { __typename?: 'DocumentTemplate', id: string, kind: DocumentKind }, signatures: Array<{ __typename?: 'InvoiceSignature', id: string, order: number, signeeType: SigneeType, signedAt?: string | null, signedByUser?: { __typename?: 'User', id: string, name: string } | null, requiredPermission?: { __typename?: 'Permission', id: string, key: PermissionKey } | null }>, statusChanges: Array<{ __typename?: 'InvoiceStatusChange', id: string, type: DocumentStatusChange, occurredAt: string, actorUser?: { __typename?: 'User', id: string, name: string } | null }> } };
 
 export type GetPendingInvoiceSigneeQueryVariables = Exact<{
   invoiceId: Scalars['ID']['input'];
@@ -2978,7 +3004,7 @@ export type GetEligibleTimeEntriesForInvoiceQueryVariables = Exact<{
 }>;
 
 
-export type GetEligibleTimeEntriesForInvoiceQuery = { __typename?: 'Query', eligibleTimeEntriesForInvoice: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, master: { __typename?: 'Shift', title: string } } | null }> };
+export type GetEligibleTimeEntriesForInvoiceQuery = { __typename?: 'Query', eligibleTimeEntriesForInvoice: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, shiftInstance?: { __typename?: 'ShiftInstance', id: string, overrideTitle?: string | null, master: { __typename?: 'Shift', title: string } } | null }> };
 
 export type CreateInvoiceMutationVariables = Exact<{
   input: CreateInvoiceInput;
@@ -3096,7 +3122,7 @@ export type MyDocumentSummaryQuery = { __typename?: 'Query', myDocumentSummary: 
 export type GetAccountingSetupStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAccountingSetupStatusQuery = { __typename?: 'Query', accountingSetupStatus: { __typename?: 'AccountingSetupStatus', orgProfileComplete: boolean, missingOrgProfileFields: Array<string>, canCreateDocuments: boolean, orgProfile?: { __typename?: 'AccountingOrgProfile', name: string, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null } | null, slots: Array<{ __typename?: 'AccountingTemplateSlotStatus', reimbursementTypeId: string, reimbursementTypeKey: ReimbursementTypeKey, hasContractTemplate: boolean, hasInvoiceTemplate: boolean, ready: boolean }> } };
+export type GetAccountingSetupStatusQuery = { __typename?: 'Query', accountingSetupStatus: { __typename?: 'AccountingSetupStatus', orgProfileComplete: boolean, missingOrgProfileFields: Array<string>, canCreateDocuments: boolean, orgProfile?: { __typename?: 'AccountingOrgProfile', name: string, street?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null } | null, slots: Array<{ __typename?: 'AccountingTemplateSlotStatus', reimbursementTypeId: string, reimbursementTypeKey: ReimbursementTypeKey, hasContractTemplate: boolean, hasInvoiceTemplate: boolean, ready: boolean }> } };
 
 export type EventListFieldsFragment = { __typename?: 'Event', id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, coverUrl?: string | null, signedUpCount: number };
 
@@ -3356,14 +3382,14 @@ export type GetOrganizationQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationQuery = { __typename?: 'Query', organization?: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, createdAt: string, updatedAt?: string | null } | null };
+export type GetOrganizationQuery = { __typename?: 'Query', organization?: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, createdAt: string, updatedAt?: string | null } | null };
 
 export type GetOrganizationBySlugQueryVariables = Exact<{
   slug: Scalars['String']['input'];
 }>;
 
 
-export type GetOrganizationBySlugQuery = { __typename?: 'Query', organizationBySlug: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, address?: string | null, createdAt: string } };
+export type GetOrganizationBySlugQuery = { __typename?: 'Query', organizationBySlug: { __typename?: 'Organization', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, phone?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, createdAt: string } };
 
 export type GetOrganizationRootQueryVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3377,7 +3403,7 @@ export type GetOrganizationUnitQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationUnitQuery = { __typename?: 'Query', organizationUnit?: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, contactPersonName?: string | null, phone?: string | null, welcomeMessage?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, organizationId: string, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null, documents: Array<{ __typename?: 'FormBlockFieldDocument', fileId: string, filename?: string | null, downloadUrl?: string | null }> }> | null } | null }> | null } }>, parent?: { __typename?: 'OrganizationUnit', id: string, name: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } | null };
+export type GetOrganizationUnitQuery = { __typename?: 'Query', organizationUnit?: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, websiteUrl?: string | null, contactEmail?: string | null, contactPersonName?: string | null, phone?: string | null, welcomeMessage?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, organizationId: string, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null, documents: Array<{ __typename?: 'FormBlockFieldDocument', fileId: string, filename?: string | null, downloadUrl?: string | null }> }> | null } | null }> | null } }>, parent?: { __typename?: 'OrganizationUnit', id: string, name: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } | null };
 
 export type GetOrganizationVolunteersByUnitQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -3406,22 +3432,22 @@ export type GetOrganizationsWithRootQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationsWithRootQuery = { __typename?: 'Query', organizations: { __typename?: 'OrganizationPaginatedResponse', items: Array<{ __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, root: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null } }> } };
+export type GetOrganizationsWithRootQuery = { __typename?: 'Query', organizations: { __typename?: 'OrganizationPaginatedResponse', items: Array<{ __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, root: { __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null } }> } };
 
 export type GetMyOrganizationUnitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyOrganizationUnitsQuery = { __typename?: 'Query', myOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
+export type GetMyOrganizationUnitsQuery = { __typename?: 'Query', myOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
 
 export type GetMyAdminstableOrganizationUnitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyAdminstableOrganizationUnitsQuery = { __typename?: 'Query', myAdminstableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
+export type GetMyAdminstableOrganizationUnitsQuery = { __typename?: 'Query', myAdminstableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
 
 export type GetMyCheckInAdministrableOrganizationUnitsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyCheckInAdministrableOrganizationUnitsQuery = { __typename?: 'Query', myCheckInAdministrableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, address?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
+export type GetMyCheckInAdministrableOrganizationUnitsQuery = { __typename?: 'Query', myCheckInAdministrableOrganizationUnits: Array<{ __typename?: 'OrganizationUnit', id: string, slug: string, name: string, description?: string | null, logoUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, parent?: { __typename?: 'OrganizationUnit', id: string } | null, organization: { __typename?: 'Organization', id: string, name: string, description?: string | null, logoUrl?: string | null, accountingEnabled: boolean } }> };
 
 export type GetOrganizationsQueryVariables = Exact<{
   limit: Scalars['Int']['input'];
@@ -3444,7 +3470,7 @@ export type UpdateOrganizationMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOrganizationMutation = { __typename?: 'Mutation', updateOrganization: { __typename?: 'Organization', id: string, name: string, address?: string | null, city?: string | null, zipCode?: string | null } };
+export type UpdateOrganizationMutation = { __typename?: 'Mutation', updateOrganization: { __typename?: 'Organization', id: string, name: string, street?: string | null, zipCode?: string | null, city?: string | null } };
 
 export type GetOrganizationTreeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3469,7 +3495,7 @@ export type UpdateOrganizationUnitMutationVariables = Exact<{
 }>;
 
 
-export type UpdateOrganizationUnitMutation = { __typename?: 'Mutation', updateOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, deletedAt?: string | null, address?: string | null, city?: string | null, zipCode?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, parent?: { __typename?: 'OrganizationUnit', id: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } };
+export type UpdateOrganizationUnitMutation = { __typename?: 'Mutation', updateOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, deletedAt?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, legalRep?: string | null, idVerificationEnabled: boolean, parent?: { __typename?: 'OrganizationUnit', id: string } | null, type: { __typename?: 'OrganizationUnitType', id: string, name: string, icon: string } } };
 
 export type RequestOrganizationUnitDeletionMutationVariables = Exact<{
   id: Scalars['String']['input'];
@@ -3495,7 +3521,7 @@ export type SetRequiredFormsMutationVariables = Exact<{
 
 export type SetRequiredFormsMutation = { __typename?: 'Mutation', setRequiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null } }> };
 
-export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
+export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
 
 export type PublicOrgEventFieldsFragment = { __typename?: 'Event', id: string, title: string, slug: string, startsAt: string, endsAt: string, location?: string | null, shiftsCount: number, shifts: Array<{ __typename?: 'Shift', id: string, instances: Array<{ __typename?: 'ShiftInstance', id: string, spotsLeft?: number | null }> }> };
 
@@ -3508,7 +3534,7 @@ export type GetPublicOrganizationUnitQueryVariables = Exact<{
 }>;
 
 
-export type GetPublicOrganizationUnitQuery = { __typename?: 'Query', publicOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, address?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus } };
+export type GetPublicOrganizationUnitQuery = { __typename?: 'Query', publicOrganizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus } };
 
 export type GetPublicEventsByOrganizationUnitQueryVariables = Exact<{
   organizationUnitId: Scalars['ID']['input'];
@@ -3887,6 +3913,15 @@ export type DeleteShiftInstanceMutationVariables = Exact<{
 
 export type DeleteShiftInstanceMutation = { __typename?: 'Mutation', deleteShiftInstance: { __typename?: 'ShiftInstance', id: string, isCancelled: boolean } };
 
+export type UpdateShiftInstanceApprovalMutationVariables = Exact<{
+  id: Scalars['String']['input'];
+  joinRequiresApproval: Scalars['Boolean']['input'];
+  applyToAllFuture?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type UpdateShiftInstanceApprovalMutation = { __typename?: 'Mutation', updateShiftInstanceApproval: { __typename?: 'ShiftInstance', id: string, overrideJoinRequiresApproval?: boolean | null, master: { __typename?: 'Shift', id: string, joinRequiresApproval: boolean } } };
+
 export type UpdateShiftInstanceVolunteersMutationVariables = Exact<{
   instanceId: Scalars['String']['input'];
   memberIds: Array<Scalars['String']['input']> | Scalars['String']['input'];
@@ -3967,7 +4002,7 @@ export type GetShiftInstanceQueryVariables = Exact<{
 }>;
 
 
-export type GetShiftInstanceQuery = { __typename?: 'Query', shiftInstance: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, overrideLocation?: string | null, overrideInstructions?: string | null, overrideMaxVolunteers?: number | null, overrideMinVolunteers?: number | null, overrideReimbursementTypeId?: string | null, isCancelled: boolean, filledCount: number, spotsLeft?: number | null, requiredFormsCount: number, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null, documents: Array<{ __typename?: 'FormBlockFieldDocument', fileId: string, filename?: string | null, downloadUrl?: string | null }> }> | null } | null }> | null } }>, master: { __typename?: 'Shift', id: string, title: string, location?: string | null, instructions?: string | null, minVolunteers?: number | null, maxVolunteers?: number | null, reimbursementTypeId?: string | null, visibility: ShiftVisibility, rrule?: string | null, createdAt: string, imageUrl?: string | null, createdBy?: { __typename?: 'User', id: string, name: string, image?: string | null } | null }, invites?: Array<{ __typename?: 'ShiftInstanceInvite', status: ShiftInviteStatus, remindedAt?: string | null, user: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string } }> | null, timeEntries: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, volunteer: { __typename?: 'User', id: string } }> } };
+export type GetShiftInstanceQuery = { __typename?: 'Query', shiftInstance: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, overrideLocation?: string | null, overrideInstructions?: string | null, overrideMaxVolunteers?: number | null, overrideMinVolunteers?: number | null, overrideReimbursementTypeId?: string | null, overrideJoinRequiresApproval?: boolean | null, isCancelled: boolean, filledCount: number, spotsLeft?: number | null, requiredFormsCount: number, requiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, settings: { __typename?: 'FormSettings', submitButtonLabel?: string | null, successTitle?: string | null, successMessage?: string | null }, blockRefs?: Array<{ __typename?: 'RequirementFormBlockRef', id: string, formId: string, blockId: string, fieldOrder: number, required?: boolean | null, block?: { __typename?: 'FormBlock', id: string, organizationId: string, title: string, description?: string | null, icon?: string | null, required: boolean, isEditable: boolean, fields?: Array<{ __typename?: 'FormBlockField', id: string, blockId: string, type: FieldType, label: string, placeholder?: string | null, description?: string | null, required: boolean, lockType: boolean, systemKey?: string | null, documentLabel?: string | null, minAge?: number | null, fieldOrder: number, options?: Array<{ __typename?: 'SelectOption', label: string, value: string }> | null, documents: Array<{ __typename?: 'FormBlockFieldDocument', fileId: string, filename?: string | null, downloadUrl?: string | null }> }> | null } | null }> | null } }>, master: { __typename?: 'Shift', id: string, title: string, location?: string | null, instructions?: string | null, minVolunteers?: number | null, maxVolunteers?: number | null, reimbursementTypeId?: string | null, joinRequiresApproval: boolean, visibility: ShiftVisibility, rrule?: string | null, createdAt: string, imageUrl?: string | null, createdBy?: { __typename?: 'User', id: string, name: string, image?: string | null } | null }, invites?: Array<{ __typename?: 'ShiftInstanceInvite', status: ShiftInviteStatus, remindedAt?: string | null, user: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string } }> | null, timeEntries: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, volunteer: { __typename?: 'User', id: string } }> } };
 
 export type GetWeeklyShiftsQueryVariables = Exact<{
   startsAfter: Scalars['DateTime']['input'];
@@ -4020,6 +4055,16 @@ export type GetAvailableShiftInstancesQueryVariables = Exact<{
 
 
 export type GetAvailableShiftInstancesQuery = { __typename?: 'Query', availableShiftInstances: { __typename?: 'ShiftInstancePaginatedResponse', items: Array<{ __typename?: 'ShiftInstance', id: string, overrideTitle?: string | null, actualStartsAt: string, actualEndsAt: string, isCheckedIn: boolean, filledCount: number, spotsLeft?: number | null, myInviteStatus?: ShiftInviteStatus | null, myInvitedAt?: string | null, isIntendingToJoin: boolean, master: { __typename?: 'Shift', id: string, title: string, location?: string | null, rrule?: string | null, maxVolunteers?: number | null, reimbursementTypeKey?: ReimbursementTypeKey | null, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, logoUrl?: string | null }, event?: { __typename?: 'Event', id: string, title: string, coverImageUrl?: string | null } | null } }>, pagination: { __typename?: 'PaginationInfo', total: number, limit: number, offset: number, hasMore: boolean } } };
+
+export type GetAvailableShiftInstanceDayCountsQueryVariables = Exact<{
+  startsAfter?: InputMaybe<Scalars['DateTime']['input']>;
+  endsBefore?: InputMaybe<Scalars['DateTime']['input']>;
+  organizationUnitIds?: InputMaybe<Array<Scalars['ID']['input']> | Scalars['ID']['input']>;
+  excludeIntended?: InputMaybe<Scalars['Boolean']['input']>;
+}>;
+
+
+export type GetAvailableShiftInstanceDayCountsQuery = { __typename?: 'Query', availableShiftInstanceDayCounts: Array<{ __typename?: 'ShiftInstanceDayCount', date: string, count: number }> };
 
 export type CheckInMutationVariables = Exact<{
   shiftInstanceId: Scalars['ID']['input'];
@@ -4566,7 +4611,9 @@ export const PublicOrganizationUnitFieldsFragmentDoc = gql`
   description
   logoUrl
   coverUrl
-  address
+  street
+  zipCode
+  city
   memberCount
   openShiftsCount
   myMembershipState
@@ -4834,6 +4881,7 @@ export const GetInvoiceDocument = gql`
         notes
         shiftInstance {
           id
+          overrideTitle
           master {
             title
           }
@@ -4899,6 +4947,7 @@ export const GetEligibleTimeEntriesForInvoiceDocument = gql`
     notes
     shiftInstance {
       id
+      overrideTitle
       master {
         title
       }
@@ -5100,9 +5149,9 @@ export const GetAccountingSetupStatusDocument = gql`
   accountingSetupStatus {
     orgProfile {
       name
-      address
-      city
+      street
       zipCode
+      city
       legalRep
     }
     orgProfileComplete
@@ -5570,9 +5619,9 @@ export const GetOrganizationDocument = gql`
     websiteUrl
     contactEmail
     phone
-    address
-    city
+    street
     zipCode
+    city
     createdAt
     updatedAt
   }
@@ -5589,7 +5638,9 @@ export const GetOrganizationBySlugDocument = gql`
     websiteUrl
     contactEmail
     phone
-    address
+    street
+    zipCode
+    city
     createdAt
   }
 }
@@ -5617,9 +5668,9 @@ export const GetOrganizationUnitDocument = gql`
     contactPersonName
     phone
     welcomeMessage
-    address
-    city
+    street
     zipCode
+    city
     legalRep
     idVerificationEnabled
     organizationId
@@ -5736,7 +5787,9 @@ export const GetOrganizationsWithRootDocument = gql`
         name
         description
         logoUrl
-        address
+        street
+        zipCode
+        city
       }
     }
   }
@@ -5750,7 +5803,8 @@ export const GetMyOrganizationUnitsDocument = gql`
     name
     description
     logoUrl
-    address
+    street
+    zipCode
     city
     legalRep
     parent {
@@ -5774,7 +5828,8 @@ export const GetMyAdminstableOrganizationUnitsDocument = gql`
     name
     description
     logoUrl
-    address
+    street
+    zipCode
     city
     legalRep
     parent {
@@ -5798,7 +5853,8 @@ export const GetMyCheckInAdministrableOrganizationUnitsDocument = gql`
     name
     description
     logoUrl
-    address
+    street
+    zipCode
     city
     legalRep
     parent {
@@ -5855,9 +5911,9 @@ export const UpdateOrganizationDocument = gql`
   updateOrganization(id: $id, input: $input) {
     id
     name
-    address
-    city
+    street
     zipCode
+    city
   }
 }
     `;
@@ -5904,9 +5960,9 @@ export const UpdateOrganizationUnitDocument = gql`
     name
     slug
     deletedAt
-    address
-    city
+    street
     zipCode
+    city
     legalRep
     idVerificationEnabled
     parent {
@@ -7010,6 +7066,22 @@ export const DeleteShiftInstanceDocument = gql`
   }
 }
     `;
+export const UpdateShiftInstanceApprovalDocument = gql`
+    mutation UpdateShiftInstanceApproval($id: String!, $joinRequiresApproval: Boolean!, $applyToAllFuture: Boolean) {
+  updateShiftInstanceApproval(
+    id: $id
+    joinRequiresApproval: $joinRequiresApproval
+    applyToAllFuture: $applyToAllFuture
+  ) {
+    id
+    overrideJoinRequiresApproval
+    master {
+      id
+      joinRequiresApproval
+    }
+  }
+}
+    `;
 export const UpdateShiftInstanceVolunteersDocument = gql`
     mutation UpdateShiftInstanceVolunteers($instanceId: String!, $memberIds: [String!]!) {
   updateMembersForShiftInstance(instanceId: $instanceId, memberIds: $memberIds) {
@@ -7176,6 +7248,7 @@ export const GetShiftInstanceDocument = gql`
     overrideMaxVolunteers
     overrideMinVolunteers
     overrideReimbursementTypeId
+    overrideJoinRequiresApproval
     isCancelled
     filledCount
     spotsLeft
@@ -7191,6 +7264,7 @@ export const GetShiftInstanceDocument = gql`
       minVolunteers
       maxVolunteers
       reimbursementTypeId
+      joinRequiresApproval
       visibility
       rrule
       createdAt
@@ -7327,6 +7401,19 @@ export const GetAvailableShiftInstancesDocument = gql`
   }
 }
     ${VolunteerHomeShiftInstanceFragmentDoc}`;
+export const GetAvailableShiftInstanceDayCountsDocument = gql`
+    query GetAvailableShiftInstanceDayCounts($startsAfter: DateTime, $endsBefore: DateTime, $organizationUnitIds: [ID!], $excludeIntended: Boolean = false) {
+  availableShiftInstanceDayCounts(
+    startsAfter: $startsAfter
+    endsBefore: $endsBefore
+    organizationUnitIds: $organizationUnitIds
+    excludeIntended: $excludeIntended
+  ) {
+    date
+    count
+  }
+}
+    `;
 export const CheckInDocument = gql`
     mutation CheckIn($shiftInstanceId: ID!) {
   checkIn(shiftInstanceId: $shiftInstanceId) {
@@ -8159,6 +8246,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     DeleteShiftInstance(variables: DeleteShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteShiftInstanceMutation>({ document: DeleteShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteShiftInstance', 'mutation', variables);
     },
+    UpdateShiftInstanceApproval(variables: UpdateShiftInstanceApprovalMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateShiftInstanceApprovalMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateShiftInstanceApprovalMutation>({ document: UpdateShiftInstanceApprovalDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateShiftInstanceApproval', 'mutation', variables);
+    },
     UpdateShiftInstanceVolunteers(variables: UpdateShiftInstanceVolunteersMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateShiftInstanceVolunteersMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateShiftInstanceVolunteersMutation>({ document: UpdateShiftInstanceVolunteersDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateShiftInstanceVolunteers', 'mutation', variables);
     },
@@ -8206,6 +8296,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetAvailableShiftInstances(variables?: GetAvailableShiftInstancesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAvailableShiftInstancesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetAvailableShiftInstancesQuery>({ document: GetAvailableShiftInstancesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAvailableShiftInstances', 'query', variables);
+    },
+    GetAvailableShiftInstanceDayCounts(variables?: GetAvailableShiftInstanceDayCountsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAvailableShiftInstanceDayCountsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetAvailableShiftInstanceDayCountsQuery>({ document: GetAvailableShiftInstanceDayCountsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAvailableShiftInstanceDayCounts', 'query', variables);
     },
     CheckIn(variables: CheckInMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInMutation>({ document: CheckInDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckIn', 'mutation', variables);

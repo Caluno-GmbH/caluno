@@ -3,6 +3,10 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import {
+  ORG_OVERRIDE_SOURCES,
+  type OrgOverrides,
+} from '../utils/org-overrides';
+import {
   type ResolvedOrgProfile,
   resolveOrgProfile,
 } from '../utils/org-profile';
@@ -110,11 +114,20 @@ export class DocumentProfileRequirementService {
     }
     collectLine(template.footer?.closingLine);
 
+    // A detail the template states by hand is no longer taken from the
+    // organisation, so the org profile need not supply it. Only known
+    // override keys count — the body is opaque GraphQLJSON.
+    const overrides = (template as { orgOverrides?: OrgOverrides })
+      .orgOverrides;
+    for (const source of ORG_OVERRIDE_SOURCES) {
+      if (overrides?.[source]?.trim()) sources.delete(source);
+    }
+
     return [...sources];
   }
 
   /**
-   * The org-profile source keys (e.g. org_city/org_address) a document's
+   * The org-profile source keys (e.g. org_city/org_zip/org_street) a document's
    * template needs that the given org unit has not yet supplied. Pure and
    * synchronous so callers that already have the unit (e.g. a batched
    * DataLoader) can skip the extra per-row query in `missingOrgProfileSources`.
@@ -147,7 +160,7 @@ export class DocumentProfileRequirementService {
   }
 
   /**
-   * The org-profile source keys (e.g. org_city/org_address) a document's
+   * The org-profile source keys (e.g. org_city/org_zip/org_street) a document's
    * template needs that the unit's resolved org details don't supply. Empty
    * when the document can be created.
    */

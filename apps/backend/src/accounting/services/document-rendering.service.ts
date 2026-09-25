@@ -4,8 +4,8 @@ import PDFDocument from 'pdfkit';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
+import { OrganizationService } from '../../organization/organization.service';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
-import { appDateParts } from '../../shift/utils/app-time';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
 import type {
@@ -17,8 +17,11 @@ import {
   billingYearOf,
   lastDayOfPeriod,
 } from '../utils/billing-period';
+import { resolveFirstColumn } from '../utils/invoice-table';
+import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
 import {
+  findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
   type TemplateBodyShape,
@@ -54,7 +57,7 @@ export function letterheadLines(fieldValues: Record<string, string>): string[] {
 
   return [
     nonBlank(fieldValues.org_name),
-    nonBlank(fieldValues.org_address),
+    nonBlank(fieldValues.org_street),
     zipCity || undefined,
   ].filter((line): line is string => line !== undefined);
 }
@@ -75,6 +78,7 @@ export class DocumentRenderingService {
     private readonly userProfileService: UserProfileService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly fileService: FileService,
+    private readonly organizationService: OrganizationService,
   ) {}
 
   /**
@@ -95,7 +99,7 @@ export class DocumentRenderingService {
       const isContract = 'contractStatus' in document;
       const organizationUnitId =
         template.organizationUnitId ??
-        (await this.resolveOrgRootUnitId(template.organizationId));
+        (await this.requireOrgRootUnitId(template.organizationId));
 
       const file = await this.fileService.saveGeneratedFile({
         organizationUnitId,
@@ -163,20 +167,20 @@ export class DocumentRenderingService {
     fieldValues: Record<string, string>,
     resolvedValues: Record<string, string>,
   ): void {
+    // The paying organisation and the document's own references (number, date,
+    // Kostenstelle) belong together in one right-aligned block, the way a
+    // letterhead sits on an invoice. The title then heads the document below it.
     const letterhead = letterheadLines(resolvedValues);
     if (letterhead.length > 0) {
       pdf
         .fontSize(10)
         .font('Helvetica')
-        .text(letterhead.join('\n'), { align: 'left', lineGap: 1 });
-      pdf.moveDown(1);
+        .text(letterhead.join('\n'), { align: 'right', lineGap: 1 });
     }
-    const title = (body.header?.titleLines ?? []).join(' ');
-    if (title) {
-      pdf.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
-    }
-    for (const metaLine of body.header?.metaLines ?? []) {
-      if (metaLine.enabled === false) continue;
+    const metaLines = (body.header?.metaLines ?? []).filter(
+      (metaLine) => metaLine.enabled !== false,
+    );
+    for (const metaLine of metaLines) {
       pdf
         .fontSize(9)
         .font('Helvetica')
@@ -184,6 +188,13 @@ export class DocumentRenderingService {
           align: 'right',
           lineGap: 1,
         });
+    }
+    if (letterhead.length > 0 || metaLines.length > 0) {
+      pdf.moveDown(1);
+    }
+    const title = (body.header?.titleLines ?? []).join(' ');
+    if (title) {
+      pdf.fontSize(16).font('Helvetica-Bold').text(title, { align: 'center' });
     }
     pdf.moveDown(1);
     pdf
@@ -212,16 +223,31 @@ export class DocumentRenderingService {
       }
       // Note blocks carry a single `line`; text blocks a `lines` array.
       const lines = block.line ? [block.line] : (block.lines ?? []);
-      for (const line of lines) {
-        if (line.enabled === false) continue;
-        const text = this.resolveLine(line, fieldValues).trim();
-        if (text) {
-          pdf.fontSize(11).font('Helvetica').text(text, { lineGap: 3 });
-          pdf.moveDown(0.25);
-        }
+      for (const paragraph of this.resolveParagraphs(lines, fieldValues)) {
+        pdf.fontSize(11).font('Helvetica').text(paragraph, { lineGap: 3 });
+        pdf.moveDown(0.25);
       }
       pdf.moveDown(0.5);
     }
+  }
+
+  private resolveParagraphs(
+    lines: TemplateLineShape[],
+    fieldValues: Record<string, string>,
+  ): string[] {
+    const paragraphs: string[] = [];
+    for (const line of lines) {
+      if (line.enabled === false) continue;
+      const text = this.resolveLine(line, fieldValues);
+      if (!text) continue;
+      const previous = paragraphs[paragraphs.length - 1];
+      if (line.inline && previous !== undefined) {
+        paragraphs[paragraphs.length - 1] = `${previous}${text}`;
+      } else {
+        paragraphs.push(text);
+      }
+    }
+    return paragraphs;
   }
 
   private renderTableBlock(
@@ -292,8 +318,10 @@ export class DocumentRenderingService {
       drawRow(row, false);
     }
     if (isInvoiceTable && totalAmountCents !== undefined) {
-      if (pdf.y > pdf.page.height - 120) pdf.addPage();
-      drawRow(this.invoiceTotalRowCells(totalAmountCents), true);
+      for (const totalRow of this.invoiceTotalRowCells(totalAmountCents)) {
+        if (pdf.y > pdf.page.height - 120) pdf.addPage();
+        drawRow(totalRow, true);
+      }
     }
     pdf.moveDown(0.5);
     pdf.x = pdf.page.margins.left;
@@ -403,8 +431,21 @@ export class DocumentRenderingService {
     pdf.y = top + height + 10;
   }
 
-  private invoiceTotalRowCells(totalAmountCents: number): string[] {
-    return ['', '', 'Gesamtbetrag', '', '', this.formatEuro(totalAmountCents)];
+  /**
+   * The three closing rows of a Stundennachweis: net, VAT, gross.
+   *
+   * The Pauschale is not a VAT-liable supply, so the rate is always 0 % and the
+   * two amounts are always equal — which is exactly why both are stated. A
+   * single unlabelled figure leaves the paying organisation and the volunteer's
+   * tax office to infer that no VAT was applied; these rows say it.
+   */
+  private invoiceTotalRowCells(totalAmountCents: number): string[][] {
+    const amount = this.formatEuro(totalAmountCents);
+    return [
+      ['', '', 'Nettobetrag', '', '', amount],
+      ['', '', 'zzgl. 0 % USt.', '', '', this.formatEuro(0)],
+      ['', '', 'Gesamtbetrag (brutto)', '', '', amount],
+    ];
   }
 
   private signatureTimestampFor(
@@ -551,17 +592,36 @@ export class DocumentRenderingService {
     const str = (value: unknown): string =>
       typeof value === 'string' ? value : '';
 
+    // A template may state the organisation by hand — for an agreement whose
+    // legal counterpart is not the body the volunteer sits in. Applied here,
+    // where every org value is resolved, so the letterhead (rendered from these
+    // values rather than from template fields), the document text and the
+    // signature seat can never name different organisations.
+    const orgValues = applyOrgOverrides(
+      {
+        org_name: rootUnit?.name ?? '',
+        org_street: orgProfile?.street ?? rootUnit?.street ?? '',
+        org_city: orgProfile?.city ?? rootUnit?.city ?? '',
+        org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      },
+      (template.body as { orgOverrides?: OrgOverrides } | undefined)
+        ?.orgOverrides,
+    );
+
     return {
-      org_name: rootUnit?.name ?? '',
-      org_address: orgProfile?.address ?? rootUnit?.address ?? '',
-      org_city: orgProfile?.city ?? rootUnit?.city ?? '',
-      org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      ...orgValues,
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,
       volunteer_last_name: lastName,
-      volunteer_address: str(
-        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_address],
+      volunteer_street: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
+      ),
+      volunteer_zip: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_zip],
+      ),
+      volunteer_city: str(
+        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_city],
       ),
       volunteer_dob: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_dob],
@@ -595,77 +655,12 @@ export class DocumentRenderingService {
       already_received_period: alreadyReceivedPeriod ?? '',
       yearly_limit_amount:
         yearlyLimitCents !== undefined ? this.formatEuro(yearlyLimitCents) : '',
+      // The number an issued timesheet carries is the one it was issued under,
+      // stored when the invoice was created.
       document_number:
-        'invoiceStatus' in document
-          ? this.formatInvoiceNumber(
-              template.invoiceNumberFormat,
-              new Date(document.periodStart),
-              this.findManualFieldValue(
-                (template.body ?? {}) as TemplateBodyShape,
-                'kostenstelle',
-              ),
-            )
-          : '',
+        'invoiceStatus' in document ? document.documentNumber : '',
       generated_date: this.formatDate(new Date()),
     };
-  }
-
-  /**
-   * Mock document-number generation — no real sequence counter exists yet, so
-   * this only has to look plausible for the chosen format (mirrors the
-   * frontend's formatDocumentNumber).
-   */
-  private formatInvoiceNumber(
-    invoiceFormat: string | null | undefined,
-    periodStart: Date,
-    kostenstelle: string | undefined,
-  ): string {
-    const { year, month, day } = appDateParts(periodStart);
-    const yyyy = year;
-    const mm = String(month + 1).padStart(2, '0');
-    const dd = String(day).padStart(2, '0');
-    const seq = '001';
-    switch (invoiceFormat) {
-      case 'date-number':
-        return `${yyyy}${mm}${dd}-${seq}`;
-      case 'date-kostenstelle-number':
-        return `${yyyy}${mm}${dd}-${kostenstelle ?? '—'}-${seq}`;
-      case 'compact-date-number':
-        return `${String(yyyy).slice(2)}${mm}${dd}${seq}`;
-      case 'kostenstelle-month-year-number':
-        return `${kostenstelle ?? '—'}-${mm}.${yyyy}-${seq}`;
-      default:
-        return `${yyyy}${mm}${dd}-${seq}`;
-    }
-  }
-
-  private findManualFieldValue(
-    body: TemplateBodyShape,
-    fieldId: string,
-  ): string | undefined {
-    const findIn = (fields?: TemplateFieldShape[]): string | undefined => {
-      const field = fields?.find(
-        (f) => f.id === fieldId && f.value.kind === 'manual-template',
-      );
-      return field?.value.kind === 'manual-template'
-        ? field.value.value
-        : undefined;
-    };
-
-    const lines: (TemplateLineShape | undefined)[] = [
-      body.header?.orgIdentityLine,
-      ...(body.header?.metaLines ?? []),
-      ...(body.blocks ?? []).flatMap((block) => [
-        block.line,
-        ...(block.lines ?? []),
-      ]),
-      body.footer?.closingLine,
-    ];
-    for (const line of lines) {
-      const value = findIn(line?.fields);
-      if (value !== undefined) return value;
-    }
-    return undefined;
   }
 
   /** Invoice table rows: task, begin, end, hours, rate — mirroring the frontend's eligible-hours preview. */
@@ -687,8 +682,20 @@ export class DocumentRenderingService {
         document.documentTemplate?.organizationId ?? '',
       );
 
+      const tableBlock = (
+        (document.documentTemplate?.body ?? {}) as TemplateBodyShape
+      ).blocks?.find((block) => block.kind === 'table');
+      // Templates stored before the shift-name source existed name no source at
+      // all in some cases; the shift name is what those documents have always
+      // printed, so it stays the default.
+      const firstColumnSource = tableBlock?.firstColumnSource ?? 'shift_name';
+      const agreementTaskDescription =
+        firstColumnSource === 'shift_name' ||
+        firstColumnSource === 'agreement_task_description'
+          ? await this.resolveAgreementTaskDescription(document)
+          : undefined;
+
       return timeEntries.map((entry) => {
-        const shiftTitle = entry.shiftInstance?.master?.title;
         const begin = entry.startedAt
           ? this.formatDateTime(new Date(entry.startedAt))
           : '';
@@ -701,7 +708,18 @@ export class DocumentRenderingService {
             ? Math.round(hours * rateCents)
             : undefined;
         return [
-          shiftTitle ?? entry.notes ?? '',
+          resolveFirstColumn({
+            source: firstColumnSource,
+            customLabel: tableBlock?.firstColumnCustomLabel,
+            // The instance's own title when a coordinator renamed that one
+            // occurrence, otherwise the shift it repeats from.
+            shiftName:
+              entry.shiftInstance?.overrideTitle ??
+              entry.shiftInstance?.master?.title ??
+              undefined,
+            agreementTaskDescription,
+            notes: entry.notes ?? undefined,
+          }),
           begin,
           end,
           hours !== undefined ? `${this.formatHours(hours)}h` : '',
@@ -717,6 +735,33 @@ export class DocumentRenderingService {
       );
       return [];
     }
+  }
+
+  /**
+   * The task description from the agreement covering this timesheet's period —
+   * the coordinator's per-document edit first, then the value frozen into the
+   * agreement when it was issued.
+   */
+  private async resolveAgreementTaskDescription(
+    document: InvoiceWithRelations,
+  ): Promise<string | undefined> {
+    const contract = await this.db.query.contracts.findFirst({
+      where: {
+        volunteerId: document.volunteerId,
+        reimbursementTypeId: document.reimbursementTypeId,
+        periodStart: { lte: document.periodEnd },
+        periodEnd: { gte: document.periodStart },
+      },
+      orderBy: { periodStart: 'desc' },
+    });
+    if (!contract) return undefined;
+    return (
+      contract.fieldOverrides?.tasks ??
+      findManualFieldValue(
+        (contract.resolvedBody ?? {}) as TemplateBodyShape,
+        'tasks',
+      )
+    );
   }
 
   private hoursBetweenValue(
@@ -735,6 +780,13 @@ export class DocumentRenderingService {
     document: RenderableDocument,
     organizationId: string,
   ): Promise<number | undefined> {
+    // An issued timesheet was issued at a rate, and that is the rate its page
+    // states — whatever the organisation pays today. Only documents from before
+    // the rate was stored, and contracts (which carry no rate of their own),
+    // fall through to the organisation's current one.
+    if ('hourlyRateCents' in document && document.hourlyRateCents != null) {
+      return document.hourlyRateCents;
+    }
     try {
       const template = document.documentTemplate;
       if (!template) {
@@ -746,7 +798,7 @@ export class DocumentRenderingService {
       const organizationUnitId =
         document.organizationUnitId ??
         template.organizationUnitId ??
-        (await this.resolveOrgRootUnitId(organizationId));
+        (await this.requireOrgRootUnitId(organizationId));
       return await this.reimbursementRateService.getEffectiveRateCents(
         organizationId,
         organizationUnitId,
@@ -762,26 +814,24 @@ export class DocumentRenderingService {
   ) {
     const organizationUnitId =
       template?.organizationUnitId ??
-      (await this.resolveOrgRootUnitId(template?.organizationId ?? null));
+      (await this.requireOrgRootUnitId(template?.organizationId));
     return this.db.query.organizationUnits.findFirst({
       where: { id: organizationUnitId },
     });
   }
 
-  private async resolveOrgRootUnitId(
-    organizationId: string | null,
+  /**
+   * Org-wide templates have no unit of their own; documents still need a
+   * concrete unit to file under (PDF storage, rate lookup), so "no unit"
+   * resolves to the organisation's root unit.
+   */
+  private async requireOrgRootUnitId(
+    organizationId: string | null | undefined,
   ): Promise<string> {
     if (!organizationId) {
       throw new Error('Organization is missing its id');
     }
-    const root = await this.db.query.organizationUnits.findFirst({
-      where: { organizationId, parentId: { isNull: true } },
-      columns: { id: true },
-    });
-    if (!root) {
-      throw new Error(`No root unit found for organization ${organizationId}`);
-    }
-    return root.id;
+    return (await this.organizationService.requireRootUnit(organizationId)).id;
   }
 
   private splitName(name: string | undefined): [string, string] {

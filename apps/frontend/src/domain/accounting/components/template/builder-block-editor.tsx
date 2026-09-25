@@ -26,6 +26,7 @@ import { useId } from 'react';
 import type { DocumentKind } from '../doc-type-header';
 import { InfoPanel } from '../info-panel';
 import { blockHeadingKey } from './builder-headings';
+import { BuilderOrgOverrideCard } from './builder-org-override-card';
 import { TemplateBuilderPeriodPicker } from './builder-period-picker';
 import {
   type DataSourceKey,
@@ -33,6 +34,10 @@ import {
   type FieldOrigin,
   getFirstOccurrenceLineByFieldId,
   type InvoiceNumberFormat,
+  invoiceNumberNeedsKostenstelle,
+  KOSTENSTELLE_LINE_ID,
+  ORG_OVERRIDE_SOURCES,
+  type OrgOverrideSource,
   type TableFirstColumnSource,
   type TemplateBlock,
   type TemplateDocument,
@@ -41,6 +46,7 @@ import {
   type TemplateTableBlock,
   type TemplateTextBlock,
   updateManualFieldValue,
+  withKostenstelleForNumberFormat,
 } from './builder-types';
 
 /**
@@ -48,17 +54,13 @@ import {
  * blocks. The legal text stays organized by clause; the editor groups the same fields by
  * what a coordinator is actually filling in (org info, volunteer info, engagement terms).
  */
-const ORG_SOURCES: DataSourceKey[] = [
-  'org_name',
-  'org_address',
-  'org_city',
-  'org_zip',
-  'org_legal_rep',
-];
+const ORG_MANUAL_FIELD_IDS = ['parties-additional-info'];
 const VOLUNTEER_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
   'volunteer_last_name',
-  'volunteer_address',
+  'volunteer_street',
+  'volunteer_zip',
+  'volunteer_city',
   'volunteer_dob',
   'volunteer_iban',
   'volunteer_account_holder',
@@ -95,6 +97,8 @@ export function collectContractEditorGroups(
   const volunteer: EditorFieldEntry[] = [];
   const engagement: EditorFieldEntry[] = [];
   const seenSources = new Set<DataSourceKey>();
+  /** Optional lines render as one LineEditor per line — not one card per field on that line. */
+  const seenOptionalLineIds = new Set<string>();
   const seenManualIds = new Set<string>();
   let extraBlock: TemplateTextBlock | undefined;
   let hours: HoursEditorEntry | undefined;
@@ -102,7 +106,7 @@ export function collectContractEditorGroups(
 
   for (const block of doc.blocks) {
     if (block.kind !== 'text') continue;
-    if (block.id === 'sonstiges') {
+    if (block.id === EXTRA_BLOCK_ID) {
       extraBlock = block;
       continue;
     }
@@ -122,29 +126,38 @@ export function collectContractEditorGroups(
         if (field.value.kind === 'bound') {
           const source = field.value.source;
           if (seenSources.has(source)) continue;
-          if (ORG_SOURCES.includes(source)) {
-            seenSources.add(source);
-            org.push(entry);
-          } else if (VOLUNTEER_SOURCES.includes(source)) {
-            seenSources.add(source);
-            volunteer.push(entry);
-          } else if (ENGAGEMENT_SOURCES.includes(source)) {
-            seenSources.add(source);
-            engagement.push(entry);
+          const target = VOLUNTEER_SOURCES.includes(source)
+            ? volunteer
+            : ENGAGEMENT_SOURCES.includes(source)
+              ? engagement
+              : null;
+          if (!target) continue;
+          // Optional lines are toggled as a whole; one entry per line so the
+          // editor never stacks N identical LineEditors for N fields on it.
+          if (line.optional) {
+            if (seenOptionalLineIds.has(line.id)) continue;
+            seenOptionalLineIds.add(line.id);
           }
+          seenSources.add(source);
+          target.push(entry);
         } else {
           if (seenManualIds.has(field.id)) continue;
           if (ENGAGEMENT_MANUAL_FIELD_IDS.includes(field.id)) {
             seenManualIds.add(field.id);
             engagement.push(entry);
+          } else if (ORG_MANUAL_FIELD_IDS.includes(field.id)) {
+            seenManualIds.add(field.id);
+            org.push(entry);
           }
         }
       }
     }
   }
-
   return { org, volunteer, engagement, hours, extraBlock };
 }
+
+/** The one block a coordinator can switch off, on both document kinds. */
+const EXTRA_BLOCK_ID = 'sonstiges';
 
 const INVOICE_NUMBER_FORMATS: InvoiceNumberFormat[] = [
   'date-number',
@@ -174,7 +187,9 @@ const SECTION_TITLE_CLASSNAME = 'text-lg font-semibold text-foreground';
  *   interface (a first/last name) come from the catalog instead, via `PLACEHOLDER_EXAMPLE_KEYS`.
  */
 const PLACEHOLDER_EXAMPLES: Partial<Record<DataSourceKey, string>> = {
-  volunteer_address: 'Musterstraße 1, 12345 Stadt',
+  volunteer_street: 'Musterstraße 1',
+  volunteer_zip: '12345',
+  volunteer_city: 'Stadt',
   org_zip: '12345',
   volunteer_dob: 'TT.MM.JJJJ',
   volunteer_iban: 'DE00 0000 0000 0000 0000 00',
@@ -393,6 +408,8 @@ interface LineEditorProps {
   typeLabel: string;
   onToggle: (lineId: string, enabled: boolean) => void;
   onFieldChange: (fieldId: string, value: string) => void;
+  /** Set when the line cannot be switched off — explains why, and locks the switch. */
+  requiredReason?: string;
 }
 
 function LineEditor({
@@ -403,6 +420,7 @@ function LineEditor({
   typeLabel,
   onToggle,
   onFieldChange,
+  requiredReason,
 }: LineEditorProps) {
   const t = useTranslations('Accounting.templates.builder');
 
@@ -422,11 +440,15 @@ function LineEditor({
         headerRight={
           <Switch
             checked={line.enabled}
+            disabled={requiredReason !== undefined}
             onCheckedChange={(checked) => onToggle(line.id, checked)}
             aria-label={title}
           />
         }
       >
+        {requiredReason && (
+          <p className="mb-3 text-sm text-muted-foreground">{requiredReason}</p>
+        )}
         {line.enabled && line.fields.length > 0 && (
           <div className="flex flex-col gap-3">
             {line.fields.map((field) => (
@@ -469,6 +491,7 @@ function LineEditor({
 }
 
 const TABLE_FIRST_COLUMN_SOURCES: TableFirstColumnSource[] = [
+  'shift_name',
   'agreement_task_description',
   'custom',
 ];
@@ -643,6 +666,7 @@ function BlockEditorRow({
  */
 function ExtraClausesCard({
   block,
+  heading,
   firstOccurrenceByFieldId,
   profileGaps,
   knownValues,
@@ -651,6 +675,8 @@ function ExtraClausesCard({
   onFieldChange,
 }: {
   block: TemplateTextBlock;
+  /** Section heading — "Extra clauses" on a contract, "Other information" on a timesheet. */
+  heading: string;
   firstOccurrenceByFieldId: Map<string, string>;
   profileGaps: Set<DataSourceKey>;
   knownValues: Partial<Record<DataSourceKey, string>>;
@@ -666,7 +692,7 @@ function ExtraClausesCard({
 
   return (
     <div className="flex flex-col gap-3">
-      <span className={SECTION_TITLE_CLASSNAME}>{t('editorGroups.extra')}</span>
+      <span className={SECTION_TITLE_CLASSNAME}>{heading}</span>
       <InfoPanel
         variant="outline"
         title={title}
@@ -764,6 +790,56 @@ interface ContractGroupSectionProps {
   onFieldChange: (fieldId: string, value: string) => void;
   /** Trailing card that doesn't fit the generic field/line entry shape (e.g. the paired hours-unit/hours-amount card). */
   extra?: ReactNode;
+}
+
+/** The organisation as this template states it — its own details, or a body the coordinator named. */
+function OrgOverrideSection({
+  kind,
+  templateDoc,
+  knownValues,
+  onChange,
+  extra,
+}: {
+  kind: DocumentKind;
+  templateDoc: TemplateDocument;
+  knownValues: Partial<Record<DataSourceKey, string>>;
+  onChange: (doc: TemplateDocument) => void;
+  extra?: ReactNode;
+}) {
+  const t = useTranslations('Accounting.templates.builder');
+  // A timesheet has no engagement sentence, so no facility to name separately.
+  const sources = ORG_OVERRIDE_SOURCES.filter(
+    (source) => kind === 'contract' || source !== 'org_facility_name',
+  );
+
+  const setOverride = (source: OrgOverrideSource, value: string) => {
+    const next = { ...(templateDoc.orgOverrides ?? {}) };
+    // An emptied field is an override withdrawn, not an empty one stored.
+    if (value.trim()) {
+      next[source] = value.trim();
+    } else {
+      delete next[source];
+    }
+    onChange({ ...templateDoc, orgOverrides: next });
+  };
+
+  return (
+    <div className="flex flex-col gap-3">
+      <span className={SECTION_TITLE_CLASSNAME}>{t('editorGroups.org')}</span>
+      <div className="flex flex-col gap-3">
+        {sources.map((source) => (
+          <BuilderOrgOverrideCard
+            key={source}
+            source={source}
+            orgValue={knownValues[source]}
+            override={templateDoc.orgOverrides?.[source]}
+            onChange={(value) => setOverride(source, value)}
+          />
+        ))}
+        {extra}
+      </div>
+    </div>
+  );
 }
 
 function ContractGroupSection({
@@ -905,21 +981,35 @@ export function TemplateBuilderBlockEditor({
   const hasHeaderConfig =
     templateDoc.header.metaLines.length > 0 ||
     templateDoc.invoiceNumberFormat !== undefined;
+  const extraBlock = templateDoc.blocks.find(
+    (block): block is TemplateTextBlock =>
+      block.kind === 'text' && block.id === EXTRA_BLOCK_ID,
+  );
 
   if (kind === 'contract') {
     const groups = collectContractEditorGroups(templateDoc);
 
     return (
       <div className="flex flex-col gap-6">
-        <ContractGroupSection
-          title={t('editorGroups.org')}
-          entries={groups.org}
-          firstOccurrenceByFieldId={firstOccurrenceByFieldId}
-          profileGaps={profileGaps}
+        <OrgOverrideSection
+          kind="contract"
+          templateDoc={templateDoc}
           knownValues={knownValues}
-          typeLabel={typeLabel}
-          onLineToggle={handleLineToggle}
-          onFieldChange={handleFieldChange}
+          onChange={onChange}
+          extra={groups.org.map(({ line, blockId }) => (
+            <LineEditor
+              key={line.id}
+              line={line}
+              firstOccurrenceByFieldId={firstOccurrenceByFieldId}
+              profileGaps={profileGaps}
+              knownValues={knownValues}
+              typeLabel={typeLabel}
+              onToggle={(lineId, enabled) =>
+                handleLineToggle(blockId, lineId, enabled)
+              }
+              onFieldChange={handleFieldChange}
+            />
+          ))}
         />
         <ContractGroupSection
           title={t('editorGroups.volunteer')}
@@ -953,6 +1043,7 @@ export function TemplateBuilderBlockEditor({
         {groups.extraBlock && (
           <ExtraClausesCard
             block={groups.extraBlock}
+            heading={t('editorGroups.extra')}
             firstOccurrenceByFieldId={firstOccurrenceByFieldId}
             profileGaps={profileGaps}
             knownValues={knownValues}
@@ -967,6 +1058,13 @@ export function TemplateBuilderBlockEditor({
 
   return (
     <div className="flex flex-col gap-6">
+      <OrgOverrideSection
+        kind="invoice"
+        templateDoc={templateDoc}
+        knownValues={knownValues}
+        onChange={onChange}
+      />
+
       {hasHeaderConfig && (
         <div className="flex flex-col gap-3">
           <span className={SECTION_TITLE_CLASSNAME}>
@@ -981,10 +1079,12 @@ export function TemplateBuilderBlockEditor({
                 <Select
                   value={templateDoc.invoiceNumberFormat}
                   onValueChange={(value) =>
-                    onChange({
-                      ...templateDoc,
-                      invoiceNumberFormat: value as InvoiceNumberFormat,
-                    })
+                    onChange(
+                      withKostenstelleForNumberFormat({
+                        ...templateDoc,
+                        invoiceNumberFormat: value as InvoiceNumberFormat,
+                      }),
+                    )
                   }
                 >
                   <SelectTrigger className="w-full text-sm">
@@ -1014,28 +1114,54 @@ export function TemplateBuilderBlockEditor({
                 typeLabel={typeLabel}
                 onToggle={handleHeaderLineToggle}
                 onFieldChange={handleFieldChange}
+                requiredReason={
+                  line.id === KOSTENSTELLE_LINE_ID &&
+                  invoiceNumberNeedsKostenstelle(
+                    templateDoc.invoiceNumberFormat,
+                  )
+                    ? t('blockEditor.kostenstelleRequiredByNumberFormat')
+                    : undefined
+                }
               />
             ))}
           </div>
         </div>
       )}
 
-      {templateDoc.blocks.map((block) => (
-        <BlockEditorRow
-          key={block.id}
-          block={block}
+      {templateDoc.blocks
+        .filter((block) => block.id !== EXTRA_BLOCK_ID)
+        .map((block) => (
+          <BlockEditorRow
+            key={block.id}
+            block={block}
+            firstOccurrenceByFieldId={firstOccurrenceByFieldId}
+            profileGaps={profileGaps}
+            knownValues={knownValues}
+            typeLabel={typeLabel}
+            onLineToggle={handleLineToggle}
+            onFieldChange={handleFieldChange}
+            onTableFirstColumnSourceChange={handleTableFirstColumnSourceChange}
+            onTableFirstColumnCustomLabelChange={
+              handleTableFirstColumnCustomLabelChange
+            }
+          />
+        ))}
+
+      {/* The one switchable block needs a card that carries its own on/off
+          switch, which BlockEditorRow has no notion of — the same card the
+          contract's extra clauses use, under a heading that fits a timesheet. */}
+      {extraBlock && (
+        <ExtraClausesCard
+          block={extraBlock}
+          heading={t('editorGroups.other')}
           firstOccurrenceByFieldId={firstOccurrenceByFieldId}
           profileGaps={profileGaps}
           knownValues={knownValues}
           typeLabel={typeLabel}
-          onLineToggle={handleLineToggle}
+          onBlockToggle={handleBlockToggle}
           onFieldChange={handleFieldChange}
-          onTableFirstColumnSourceChange={handleTableFirstColumnSourceChange}
-          onTableFirstColumnCustomLabelChange={
-            handleTableFirstColumnCustomLabelChange
-          }
         />
-      ))}
+      )}
     </div>
   );
 }

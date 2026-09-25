@@ -1,5 +1,6 @@
 'use client';
 
+import { MembershipRequestStatus } from '@repo/data';
 import {
   Button,
   Combobox,
@@ -18,6 +19,7 @@ import {
 import { UserIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSheetTrigger } from '@/hooks/use-sheet';
 import {
   getDocLineSummary,
   getPickerAnnotations,
@@ -98,6 +100,7 @@ export function CreateDocumentModal({
   const tDocs = useTranslations('Accounting.reimbursements.docs');
   const tSections = useTranslations('Accounting.templates.sections');
 
+  const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
   const [step, setStep] = useState<1 | 2>(1);
   const [volunteerId, setVolunteerId] = useState<string | null>(null);
   const [selectedLine, setSelectedLine] = useState<DocLine | null>(null);
@@ -238,10 +241,10 @@ export function CreateDocumentModal({
                       line.kind,
                     );
                     return (
-                      // The "view volunteer" stub button below sits as a
-                      // sibling overlay, not a descendant: nesting a
-                      // <button> inside this row's <button> would be
-                      // invalid HTML (and breaks hydration).
+                      // The "view volunteer" button below sits as a sibling
+                      // overlay, not a descendant: nesting a <button> inside
+                      // this row's <button> would be invalid HTML (and breaks
+                      // hydration).
                       <div key={lineKey(line)} className="relative">
                         <button
                           type="button"
@@ -305,11 +308,24 @@ export function CreateDocumentModal({
                         </button>
 
                         {count > 0 && !blocked && (
-                          // A stub for now — needs a real userId to open
-                          // the volunteer-profile sheet.
                           <button
                             type="button"
-                            className="absolute inset-y-0 right-3 my-auto inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium whitespace-nowrap text-foreground shadow-xs"
+                            onClick={() => {
+                              // Opened over this dialog rather than instead of
+                              // it: the sheet takes the top layer and closing
+                              // it hands focus and pointer events straight
+                              // back, so the coordinator keeps their place.
+                              openVolunteerSheet({
+                                userId: volunteer.id,
+                                volunteerName: volunteer.name,
+                                // Everyone on the reimbursements board is an
+                                // accepted member; that is how they came to
+                                // have documents at all.
+                                volunteerStatus:
+                                  MembershipRequestStatus.Accepted,
+                              });
+                            }}
+                            className="absolute inset-y-0 right-3 my-auto inline-flex h-8 shrink-0 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-sm font-medium whitespace-nowrap text-foreground shadow-xs hover:bg-muted"
                           >
                             {t('createDocumentModal.viewVolunteer')}
                           </button>

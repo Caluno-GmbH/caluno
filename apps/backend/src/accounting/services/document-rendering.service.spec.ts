@@ -13,7 +13,10 @@ import {
 import type { TemplateBodyShape } from './document-template.types';
 
 interface TimeEntryMock {
-  shiftInstance: { master: { title: string } };
+  shiftInstance: {
+    overrideTitle?: string | null;
+    master: { title: string };
+  } | null;
   startedAt: Date | null;
   endedAt: Date | null;
   notes?: string | null;
@@ -54,6 +57,10 @@ describe('DocumentRenderingService', () => {
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      contract?: {
+        resolvedBody?: unknown;
+        fieldOverrides?: Record<string, string>;
+      };
       unit?: Record<string, unknown>;
       yearlyUsage?: {
         usedCents: number;
@@ -69,7 +76,7 @@ describe('DocumentRenderingService', () => {
             Promise.resolve({
               id: 'org-1',
               name: 'Playground',
-              address: 'Musterstraße 1',
+              street: 'Musterstraße 1',
             }),
         },
         users: {
@@ -83,13 +90,16 @@ describe('DocumentRenderingService', () => {
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
         },
+        contracts: {
+          findFirst: () => Promise.resolve(overrides.contract),
+        },
       },
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
     } as never;
     const userProfileService = {
       findByUserId: () =>
         Promise.resolve({
-          data: overrides.profileData ?? { address: 'Testweg 2' },
+          data: overrides.profileData ?? { street: 'Testweg 2' },
         }),
     } as never;
     const reimbursementRateService = {
@@ -108,11 +118,16 @@ describe('DocumentRenderingService', () => {
           ? overrides.saveFile(args)
           : Promise.resolve({ id: 'file-1' }),
     } as never;
+    const organizationService = {
+      requireRootUnit: () =>
+        Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
+    } as never;
     return new DocumentRenderingService(
       db,
       userProfileService,
       reimbursementRateService,
       fileService,
+      organizationService,
     );
   };
 
@@ -135,15 +150,15 @@ describe('DocumentRenderingService', () => {
             titleLines: ['Zusatzvereinbarung'],
             orgIdentityLine: {
               id: 'org-line',
-              text: '{org_name} — {org_address}',
+              text: '{org_name} — {org_street}',
               fields: [
                 {
                   id: 'org_name',
                   value: { kind: 'bound', source: 'org_name' },
                 },
                 {
-                  id: 'org_address',
-                  value: { kind: 'bound', source: 'org_address' },
+                  id: 'org_street',
+                  value: { kind: 'bound', source: 'org_street' },
                 },
               ],
             },
@@ -442,6 +457,95 @@ describe('DocumentRenderingService', () => {
       expect(rows[1][5]).toBe('52,50 €');
     });
 
+    it('names the shift each row’s hours came from, preferring a renamed occurrence', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: {
+              overrideTitle: 'Food Distribution (Weihnachten)',
+              master: { title: 'Food Distribution' },
+            },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Food Distribution (Weihnachten)');
+    });
+
+    it('falls back to the agreement’s task description for hours with no shift', async () => {
+      const service = createService({
+        rateCents: 1500,
+        contract: {
+          resolvedBody: {
+            blocks: [
+              {
+                id: 'zeitraum-taetigkeit',
+                lines: [
+                  {
+                    id: 'engagement-tasks',
+                    text: 'Tätigkeiten: {tasks}',
+                    fields: [
+                      {
+                        id: 'tasks',
+                        value: {
+                          kind: 'manual-template',
+                          value: 'Betreuung in der Tagespflege',
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        timeEntries: [
+          {
+            shiftInstance: null,
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Betreuung in der Tagespflege');
+    });
+
+    it('repeats the coordinator’s own label when the template asks for one', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: { master: { title: 'Food Distribution' } },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+      const doc = invoice();
+      const table = (
+        doc.documentTemplate as unknown as {
+          body: { blocks: Record<string, unknown>[] };
+        }
+      ).body.blocks[0];
+      table.firstColumnSource = 'custom';
+      table.firstColumnCustomLabel = 'Ehrenamtliche Tätigkeit';
+
+      const rows = await resolveInvoiceTableRows(service, doc);
+
+      expect(rows[0][0]).toBe('Ehrenamtliche Tätigkeit');
+    });
+
     it('renders an empty amount cell when there is no rate', async () => {
       const service = createService({
         rateCents: undefined,
@@ -462,16 +566,104 @@ describe('DocumentRenderingService', () => {
     });
   });
 
-  describe('invoiceTotalRowCells', () => {
-    it('renders a bold Gesamtbetrag row carrying the formatted total amount', () => {
-      const service = createService();
-      const cells = (
+  describe('resolveParagraphs', () => {
+    const resolveParagraphs = (
+      service: DocumentRenderingService,
+      lines: unknown[],
+      values: Record<string, string>,
+    ): string[] =>
+      (
         service as unknown as {
-          invoiceTotalRowCells: (totalAmountCents: number) => string[];
+          resolveParagraphs: (
+            l: unknown[],
+            v: Record<string, string>,
+          ) => string[];
         }
-      ).invoiceTotalRowCells(8250);
+      ).resolveParagraphs(lines, values);
 
-      expect(cells).toEqual(['', '', 'Gesamtbetrag', '', '', '82,50 €']);
+    const parties = {
+      id: 'parties',
+      text: 'Zwischen dem {orgName}, {orgCity},',
+      fields: [
+        { id: 'n', value: { kind: 'bound', source: 'org_name' } },
+        { id: 'c', value: { kind: 'bound', source: 'org_city' } },
+      ],
+    };
+    const additional = {
+      id: 'parties-additional',
+      text: ' {info},',
+      inline: true,
+      fields: [{ id: 'i', value: { kind: 'manual-template', value: '' } }],
+    };
+    const volunteer = {
+      id: 'volunteer-name',
+      text: 'und Anna Muster,',
+      fields: [],
+    };
+    const values = {
+      n: 'Lesepaten Nord',
+      c: 'Hamburg',
+      i: 'vertreten durch H. Meier',
+    };
+
+    it('Reads an inline line on from the sentence it belongs to', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, additional, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg, vertreten durch H. Meier,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Leaves the sentence alone when the inline line is switched off', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, { ...additional, enabled: false }, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Starts a paragraph of its own when nothing precedes it', () => {
+      expect(resolveParagraphs(createService(), [additional], values)).toEqual([
+        ' vertreten durch H. Meier,',
+      ]);
+    });
+  });
+
+  describe('invoiceTotalRowCells', () => {
+    const invoiceTotalRowCells = (
+      service: DocumentRenderingService,
+      totalAmountCents: number,
+    ): string[][] =>
+      (
+        service as unknown as {
+          invoiceTotalRowCells: (total: number) => string[][];
+        }
+      ).invoiceTotalRowCells(totalAmountCents);
+
+    it('states the payout as net and gross with the VAT rate between them', () => {
+      const cells = invoiceTotalRowCells(createService(), 8250);
+
+      expect(cells).toEqual([
+        ['', '', 'Nettobetrag', '', '', '82,50 €'],
+        ['', '', 'zzgl. 0 % USt.', '', '', '0,00 €'],
+        ['', '', 'Gesamtbetrag (brutto)', '', '', '82,50 €'],
+      ]);
+    });
+
+    it('states the same figure twice, because a Pauschale carries no VAT', () => {
+      const [net, , gross] = invoiceTotalRowCells(createService(), 12_345);
+
+      expect(net?.[5]).toBe(gross?.[5]);
     });
   });
 
@@ -532,7 +724,7 @@ describe('DocumentRenderingService', () => {
         unit: {
           id: 'unit-1',
           name: 'Branch',
-          address: 'Hauptstraße 1',
+          street: 'Hauptstraße 1',
           city: 'Berlin',
           zipCode: '10115',
           legalRep: 'Erika Mustermann',
@@ -561,7 +753,7 @@ describe('DocumentRenderingService', () => {
         unit: {
           id: 'unit-1',
           name: 'Branch',
-          address: 'Hauptstrasse 1',
+          street: 'Hauptstrasse 1',
           city: 'Berlin',
           zipCode: '10115',
         },
@@ -593,7 +785,7 @@ describe('DocumentRenderingService', () => {
       expect(
         letterheadLines({
           org_name: 'Altonaer Lesepaten',
-          org_address: 'Adress eintrag 1',
+          org_street: 'Adress eintrag 1',
           org_zip: '22245',
           org_city: 'Berlin',
         }),
@@ -604,7 +796,7 @@ describe('DocumentRenderingService', () => {
       expect(
         letterheadLines({
           org_name: 'Verein',
-          org_address: '   ',
+          org_street: '   ',
           org_zip: '',
           org_city: '',
         }),

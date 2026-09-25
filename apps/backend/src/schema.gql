@@ -3,10 +3,10 @@
 # ------------------------------------------------------
 
 type AccountingOrgProfile {
-  address: String
   city: String
   legalRep: String
   name: String!
+  street: String
   zipCode: String
 }
 
@@ -182,6 +182,7 @@ input CreateFormBlockInput {
 
 input CreateInvoiceInput {
   fieldOverrides: [DocumentFieldOverrideInput!]
+  hourlyRateCents: Int
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!
@@ -191,7 +192,6 @@ input CreateInvoiceInput {
 }
 
 input CreateOrganizationInput {
-  address: String
   city: String
   contactEmail: String
   description: String
@@ -200,12 +200,12 @@ input CreateOrganizationInput {
   name: String!
   parentId: String
   phone: String
+  street: String
   websiteUrl: String
   zipCode: String
 }
 
 input CreateOrganizationUnitInput {
-  address: String
   city: String
   contactEmail: String
   contactPersonName: String
@@ -216,6 +216,7 @@ input CreateOrganizationUnitInput {
   organizationId: String!
   parentId: String!
   phone: String
+  street: String
   typeId: String!
   websiteUrl: String
   welcomeMessage: String
@@ -548,6 +549,7 @@ type Invoice {
   declinedByUser: User
   documentTemplate: DocumentTemplate!
   downloadUrl: String
+  hourlyRateCents: Int!
   id: ID!
   invoiceStatus: InvoiceStatus!
   invoiceTimeEntries: [InvoiceTimeEntry!]!
@@ -788,6 +790,7 @@ type Mutation {
   updateRole(id: ID!, input: CreateRoleInput!): Role!
   updateShift(id: String!, input: UpdateShiftInput!): Shift!
   updateShiftInstance(applyToAllFuture: Boolean, input: UpdateShiftInstanceInput!, instanceId: String!): ShiftInstance!
+  updateShiftInstanceApproval(applyToAllFuture: Boolean, id: String!, joinRequiresApproval: Boolean!): ShiftInstance!
   updateShiftInstanceInviteStatus(instanceId: String!, status: ShiftInviteStatus!, userId: String): ShiftInstanceInvite!
   updateShiftInviteStatus(shiftId: String!, status: ShiftInviteStatus!): ShiftInvite!
   updateTimeEntry(id: ID!, input: UpdateTimeEntryInput!): TimeEntry!
@@ -810,7 +813,6 @@ type MyDocumentsGroup {
 
 type Organization {
   accountingEnabled: Boolean!
-  address: String
   city: String
   contactEmail: String
   createdAt: DateTime!
@@ -821,6 +823,7 @@ type Organization {
   phone: String
   root: OrganizationUnit!
   slug: String!
+  street: String
   units: [OrganizationUnit!]!
   updatedAt: DateTime
   websiteUrl: String
@@ -837,7 +840,6 @@ type OrganizationTree {
 }
 
 type OrganizationUnit {
-  address: String
   children: [OrganizationUnit!]!
   city: String
   contactEmail: String
@@ -860,6 +862,7 @@ type OrganizationUnit {
   requiredForms: [RequiredFormRef!]!
   requiredMembershipRequirementProfile: RequirementProfile
   slug: String!
+  street: String
   type: OrganizationUnitType!
   websiteUrl: String
   welcomeMessage: String
@@ -948,6 +951,7 @@ type Query {
   adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
+  availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
   bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
   checkInContext(checkInId: String!): CheckInContext
@@ -1365,6 +1369,7 @@ type ShiftInstance {
   myInvitedAt: DateTime
   occurrenceIndex: Int!
   overrideInstructions: String
+  overrideJoinRequiresApproval: Boolean
   overrideLocation: String
   overrideMaxVolunteers: Int
   overrideMinVolunteers: Int
@@ -1387,6 +1392,11 @@ type ShiftInstanceCallOutSummary {
   sentAt: DateTime!
   sentBy: User!
   source: ShiftCallOutSource!
+}
+
+type ShiftInstanceDayCount {
+  count: Int!
+  date: DateTime!
 }
 
 type ShiftInstanceInvite {
@@ -1530,19 +1540,18 @@ input UpdateMyImageInput {
 }
 
 input UpdateOrganizationInput {
-  address: String
   city: String
   contactEmail: String
   description: String
   logoFileId: String
   logoUrl: String
   phone: String
+  street: String
   websiteUrl: String
   zipCode: String
 }
 
 input UpdateOrganizationUnitInput {
-  address: String
   city: String
   contactEmail: String
   contactPersonName: String
@@ -1555,6 +1564,7 @@ input UpdateOrganizationUnitInput {
   parentId: String
   phone: String
   requiredMembershipRequirementProfileId: String
+  street: String
   typeId: String
   websiteUrl: String
   welcomeMessage: String

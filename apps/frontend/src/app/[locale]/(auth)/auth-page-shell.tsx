@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PendingInviteOrg } from '@/lib/pending-invite-org';
 import { AuthBrand } from './auth-brand';
 import { AuthJoinHeader } from './auth-join-header';
+import { AuthLocaleToggle } from './auth-locale-toggle';
 
 interface AuthPageShellProps {
   title: string;
@@ -24,26 +25,33 @@ export function AuthPageShell({
   children,
 }: AuthPageShellProps) {
   return (
-    <div className="flex min-h-screen justify-center bg-background px-4 py-10 md:py-16">
-      <div className="flex w-full max-w-md flex-col gap-8">
-        {joiningOrg ? (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AuthJoinHeader org={joiningOrg} />
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-8 text-center">
-            <AuthBrand />
-            <div className="space-y-2">
-              <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-              {description ? (
-                <p className="text-sm text-muted-foreground text-pretty">
-                  {description}
-                </p>
-              ) : null}
+    <div className="flex min-h-screen justify-center bg-background px-4 py-10 md:px-6 md:py-16">
+      <div className="mx-auto flex w-full max-w-4xl flex-col">
+        <div className="mx-auto flex w-full max-w-md flex-col gap-8">
+          {joiningOrg ? (
+            <div className="flex flex-col items-center gap-4 text-center">
+              <AuthJoinHeader org={joiningOrg} />
             </div>
+          ) : (
+            <div className="flex flex-col items-center gap-8 text-center">
+              <AuthBrand />
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold tracking-tight">
+                  {title}
+                </h1>
+                {description ? (
+                  <p className="text-sm text-muted-foreground text-pretty">
+                    {description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          )}
+          <div className="flex flex-col gap-6">
+            {children}
+            <AuthLocaleToggle />
           </div>
-        )}
-        {children}
+        </div>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ describe('letterheadLines', () => {
     expect(
       letterheadLines({
         org_name: 'Altonaer Lesepaten',
-        org_address: 'Adress eintrag 1',
+        org_street: 'Adress eintrag 1',
         org_zip: '22245',
         org_city: 'Berlin',
       }),
@@ -17,7 +17,7 @@ describe('letterheadLines', () => {
     expect(
       letterheadLines({
         org_name: 'Verein',
-        org_address: '   ',
+        org_street: '   ',
         org_zip: undefined,
         org_city: null as never,
       }),

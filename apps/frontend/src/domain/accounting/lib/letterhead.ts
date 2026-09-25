@@ -19,7 +19,7 @@ export const letterheadLines = (
     .join(' ');
   return [
     nonBlank(values.org_name),
-    nonBlank(values.org_address),
+    nonBlank(values.org_street),
     zipCity || undefined,
   ].filter((line): line is string => line !== undefined);
 };

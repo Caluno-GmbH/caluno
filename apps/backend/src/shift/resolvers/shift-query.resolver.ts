@@ -8,6 +8,7 @@ import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import {
+  DateRangeInput,
   DateRangePaginationInput,
   PaginationInput,
 } from '../../graphql/pagination.input';
@@ -22,6 +23,7 @@ import {
   ShiftInstance,
   ShiftInstancePaginatedResponse,
 } from '../models/shift-instance.model';
+import { ShiftInstanceDayCount } from '../models/shift-instance-day-count.model';
 import { ShiftInstancesByMaster } from '../models/shift-instances-by-master.model';
 import { ShiftService } from '../shift.service';
 
@@ -270,5 +272,23 @@ export class ShiftQueryResolver {
       limit: pagination.limit,
       offset: pagination.offset,
     });
+  }
+
+  @Query(() => [ShiftInstanceDayCount])
+  async availableShiftInstanceDayCounts(
+    @Args() range: DateRangeInput,
+    @Args('organizationUnitIds', { type: () => [ID], nullable: true })
+    organizationUnitIds: string[] | null,
+    @Args('excludeIntended', { type: () => Boolean, defaultValue: false })
+    excludeIntended: boolean,
+    @Session() session: UserSession,
+  ): Promise<ShiftInstanceDayCount[]> {
+    return this.shiftService.findAvailableShiftInstanceDayCounts(
+      session.user.id,
+      range.startsAfter,
+      range.endsBefore,
+      organizationUnitIds,
+      excludeIntended,
+    );
   }
 }

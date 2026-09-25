@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Go to check-out",
     "alreadyCheckedInDescription": "This volunteer already has an open check-in for this assignment.",
     "alreadyCheckedInTitle": "Already checked in",
+    "backToCheckInButton": "Back to check-in",
     "checkInButton": "Check in",
     "checkInRunningTitle": "Check-in running",
     "checkInSectionDescription": "Check this volunteer in for a new assignment without closing the open entries.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Checking in without an assignment",
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
-    "today": "Today"
+    "today": "Today",
+    "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
+    "unavailableTitle": "Can't check in this person"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",
@@ -691,8 +694,8 @@
       "partOf": "Part of "
     },
     "form": {
-      "addressLabel": "Address",
-      "addressPlaceholder": "e.g. Musterstraße 1, Berlin",
+      "streetLabel": "Street name and number",
+      "streetPlaceholder": "e.g. Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "e.g. Berlin",
       "zipCodeLabel": "Postal code",
@@ -750,8 +753,12 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Address",
-      "addressPlaceholder": "Musterstraße 1, 10115 Berlin",
+      "streetLabel": "Street name and number",
+      "streetPlaceholder": "e.g. Musterstraße 1",
+      "zipCodeLabel": "Postal code",
+      "zipCodePlaceholder": "e.g. 10115",
+      "cityLabel": "City",
+      "cityPlaceholder": "e.g. Berlin",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "What does your organisation do?",
       "emailLabel": "Email",
@@ -794,7 +801,7 @@
     "emailPlatformDescription": "Invitations, joining, cancellations, assignment changes and membership.",
     "emailSettings": "Emails",
     "emailUrgentCalls": "Urgent calls",
-    "emailUrgentCallsDescription": "Urgent call-outs for short-staffed assignments.",
+    "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Weekly update",
     "emailWeeklyUpdateDescription": "The Sunday weekly plan email.",
     "identity": {
@@ -987,7 +994,7 @@
     },
     "fieldForm": {
       "add": "Add",
-      "address": "Address",
+      "street": "Street name and number",
       "birthDate": "Birth date",
       "cancel": "Cancel",
       "checkbox": "Checkbox",
@@ -1129,6 +1136,7 @@
       "birthDateFormat": "DD/MM/YYYY",
       "checkboxYes": "Yes",
       "documentAcknowledgement": "I acknowledge and accept",
+      "documentOpenInNewTab": "Open in new tab",
       "failedToSubmit": "We couldn't submit the form. Please try again.",
       "membershipRequestNotice": "By submitting this form you will send a membership request to {orgName}. A coordinator will review your request.",
       "next": "Next",
@@ -1186,6 +1194,10 @@
     },
     "select": {
       "addCustom": "Add custom",
+      "confirm": {
+        "description": "You are about to change this person's role. This change is immediate. Are you sure?",
+        "title": "Change role?"
+      },
       "empty": "No roles found.",
       "searchPlaceholder": "Search roles..."
     },
@@ -1212,8 +1224,8 @@
     "organizationProfile": {
       "title": "Organisation profile",
       "subtitle": "Update your organisation's address and contact details.",
-      "addressLabel": "Organisation address",
-      "addressPlaceholder": "Musterstraße 1",
+      "streetLabel": "Street name and number",
+      "streetPlaceholder": "Musterstraße 1",
       "cityLabel": "City",
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postal code",
@@ -1280,6 +1292,9 @@
       "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
     },
     "detail": {
+      "approvalLabel": "Approval",
+      "approvalNotRequiredLabel": "No approval needed",
+      "approvalRequiredLabel": "Approval required",
       "createdByLabel": "Created by",
       "createdLabel": "Created",
       "imageAlt": "Image for {title}",
@@ -1353,12 +1368,25 @@
       "timeRangeConstraint": "Assignments must start and end within {window}."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "error": "We couldn't update the approval requirement. {error}",
+        "futureDescription": "Applies to {date} and every upcoming occurrence in the series. Past occurrences are kept.",
+        "futureTitle": "This and all future occurrences",
+        "onlyThisDescription": "Applies to {date} only. Other occurrences stay untouched.",
+        "onlyThisTitle": "Only this occurrence",
+        "success": "Approval requirement updated.",
+        "title": "Change approval requirement",
+        "turnOffDescription": "Everyone currently awaiting approval will be admitted automatically, up to the assignment's capacity. Anyone who doesn't fit will move to the waitlist.",
+        "turnOnDescription": "Volunteers already signed up keep their spot. New sign-ups from now on will need your approval."
+      },
       "callOutCta": "Urgent call",
       "callOutDialog": {
         "confirm": "Urgent call",
         "description": "This sends an urgent call to everyone eligible to help with this assignment, asking them to join. It won't add anyone to the assignment.",
         "error": "We couldn't send the urgent call. {error}",
-        "noRecipients": "Nobody was left to ask. We've emailed you instead.",
+        "noRecipients": "Nobody could be notified. We've sent you an email with the details instead.",
         "success": "Urgent call sent to {count, plural, one {# volunteer} other {# volunteers}}.",
         "title": "Send an urgent call?"
       },
@@ -1520,7 +1548,7 @@
     },
     "successDialog": {
       "bodyInvited": "Your assignment is active. Invited volunteers have been notified.",
-      "bodyOpen": "Your open assignment is active. All volunteers in your organisation have been notified and can now sign up.",
+      "bodyOpen": "Your open assignment is active. All volunteers in your organisation unit can now discover it and sign up.",
       "copyInviteLink": "Copy invite link",
       "recurrence": {
         "daily": "Daily",
@@ -1695,6 +1723,7 @@
       "selectShiftLabel": "Select assignment",
       "selectVolunteerLabel": "Select volunteer",
       "selectVolunteerPlaceholder": "Select a volunteer",
+      "noVolunteersFound": "No volunteers found",
       "shiftDatePlaceholder": "Pick a date",
       "shiftSearchPlaceholder": "Search assignment",
       "startEndTimeLabel": "Start and end time"
@@ -1793,8 +1822,9 @@
       "placeholder": "Search by name, email or role"
     },
     "sheet": {
-      "addressLabel": "Address",
+      "streetLabel": "Street",
       "birthdayLabel": "Birthday",
+      "cityLabel": "City",
       "emailLabel": "Email",
       "formFallback": "Form",
       "idVerification": {
@@ -1809,7 +1839,8 @@
       "qrIdLabel": "QR ID",
       "submittedForms": "Submitted forms",
       "titleFallback": "Volunteer",
-      "userInfo": "Personal information"
+      "userInfo": "Personal information",
+      "zipLabel": "Postal code"
     },
     "table": {
       "copyEmailAria": "Copy {name}'s email address",
@@ -1935,7 +1966,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Address",
+      "org_street": "Address",
       "org_city": "City",
       "org_zip": "Postal code",
       "org_legal_rep": "Legal representative"
@@ -2193,6 +2224,9 @@
         "editProfileCta": "Edit your profile",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Timesheet period",
+        "rateFieldLabel": "Hourly rate for this timesheet",
+        "rateFieldHint": "Matches your organisation's hourly rate. You can change it for this one timesheet.",
+        "rateFieldOverridden": "Applies to this timesheet only. Your organisation still pays {rate} per hour.",
         "periodPicker": {
           "placeholder": "Select a period",
           "thisMonth": "This month",
@@ -2283,13 +2317,26 @@
           "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         },
+        "orgOverride": {
+          "orgHint": "Taken from the organisation details.",
+          "overriddenHint": "Stated by hand for this template.",
+          "editingHint": "Leave empty to go back to the organisation details.",
+          "missingValue": "not set",
+          "editButtonLabel": "Edit",
+          "saveButtonLabel": "Apply"
+        },
         "blockEditor": {
           "headerTitle": "Header",
           "invoiceNumberFormatLabel": "Document number format",
+          "kostenstelleRequiredByNumberFormat": "The selected document number format contains the cost centre, so it has to be filled in here.",
           "lockedHint": "Mandatory. Always included in the generated document.",
           "tableFixedHint": "Rows are filled from tracked times when a timesheet is generated.",
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name of the tracked shift",
+              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+            },
             "agreement_task_description": {
               "label": "Task description from the agreement",
               "hint": "Each row shows the task description stored in the agreement."
@@ -2300,6 +2347,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Shift name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },
@@ -2323,7 +2371,8 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses"
+          "extra": "Extra clauses",
+          "other": "Other information"
         },
         "hoursUnit": {
           "month": "Month",
@@ -2345,6 +2394,7 @@
           "hours-amount": "Hours",
           "hours-unit": "Hours unit",
           "freeform-text": "Freeform text",
+          "parties-additional-info": "Optional additional information",
           "kostenstelle": "Cost centre",
           "kostentraeger": "Cost unit",
           "rechtstraeger": "Legal entity"
@@ -2354,7 +2404,8 @@
           "tasks": "Describe the main activities for {pauschale}",
           "hours-amount-month": "e.g. 20",
           "hours-amount-week": "e.g. 5",
-          "freeform-text": "Add other clauses here if you need to",
+          "freeform-text": "Add anything else you need to here",
+          "parties-additional-info": "Add further information about contractual partners here",
           "kostenstelle": "e.g. K-4200",
           "kostentraeger": "e.g. KT-100",
           "rechtstraeger": "e.g. Diakonisches Werk e.V."
@@ -2382,9 +2433,10 @@
           "volunteer_first_name": "First name (Volunteer)",
           "volunteer_last_name": "Last name (Volunteer)",
           "org_name": "Organisation name",
-          "org_address": "Organisation address",
-          "org_city": "City (Organisation)",
+          "org_facility_name": "Facility",
+          "org_street": "Organisation address",
           "org_zip": "Postal code (Organisation)",
+          "org_city": "City (Organisation)",
           "org_legal_rep": "Legal representative",
           "pauschalen_type": "Allowance type",
           "hourly_rate": "Compensation per hour",
@@ -2397,7 +2449,9 @@
           "volunteer_iban": "IBAN (Volunteer)",
           "volunteer_account_holder": "Account holder (Volunteer)",
           "volunteer_bic": "BIC (Volunteer)",
-          "volunteer_address": "Address (Volunteer)",
+          "volunteer_street": "Street name and number (Volunteer)",
+          "volunteer_zip": "Postal code (Volunteer)",
+          "volunteer_city": "City (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",
           "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Agreement period",

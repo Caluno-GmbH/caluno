@@ -93,6 +93,7 @@
     "alreadyCheckedInButton": "Zum Check-out",
     "alreadyCheckedInDescription": "Diese Person ist für diesen Einsatz bereits eingecheckt.",
     "alreadyCheckedInTitle": "Bereits eingecheckt",
+    "backToCheckInButton": "Zurück zum Check-in",
     "checkInButton": "Einchecken",
     "checkInRunningTitle": "Check-in läuft",
     "checkInSectionDescription": "Checke diese Person für einen neuen Einsatz ein, ohne die offenen Einträge zu schließen.",
@@ -142,7 +143,9 @@
     "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
-    "today": "Heute"
+    "today": "Heute",
+    "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
+    "unavailableTitle": "Einchecken nicht möglich"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
@@ -691,8 +694,8 @@
       "partOf": "Teil von "
     },
     "form": {
-      "addressLabel": "Adresse",
-      "addressPlaceholder": "z. B. Musterstraße 1, Berlin",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "z. B. Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "z. B. Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -750,8 +753,12 @@
   },
   "Organization": {
     "create": {
-      "addressLabel": "Adresse",
-      "addressPlaceholder": "Musterstraße 1, 12345 Berlin",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "z. B. Musterstraße 1",
+      "zipCodeLabel": "Postleitzahl",
+      "zipCodePlaceholder": "z. B. 10115",
+      "cityLabel": "Stadt",
+      "cityPlaceholder": "z. B. Berlin",
       "descriptionLabel": "Beschreibung",
       "descriptionPlaceholder": "Wofür steht deine Organisation?",
       "emailLabel": "E-Mail",
@@ -987,7 +994,7 @@
     },
     "fieldForm": {
       "add": "Hinzufügen",
-      "address": "Adresse",
+      "street": "Straße und Hausnummer",
       "birthDate": "Geburtsdatum",
       "cancel": "Abbrechen",
       "checkbox": "Checkbox",
@@ -1129,6 +1136,7 @@
       "birthDateFormat": "TT.MM.JJJJ",
       "checkboxYes": "Ja",
       "documentAcknowledgement": "Ich bestätige und akzeptiere",
+      "documentOpenInNewTab": "In neuem Tab öffnen",
       "failedToSubmit": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
       "membershipRequestNotice": "Mit dem Absenden dieses Formulars sendest du eine Mitgliedschaftsanfrage an {orgName}. Ein:e Koordinator:in prüft deine Anfrage.",
       "next": "Weiter",
@@ -1186,6 +1194,10 @@
     },
     "select": {
       "addCustom": "Benutzerdefiniert hinzufügen",
+      "confirm": {
+        "description": "Du bist dabei, die Rolle dieser Person zu ändern. Diese Änderung tritt sofort in Kraft. Bist du sicher?",
+        "title": "Rolle ändern?"
+      },
       "empty": "Keine Rollen gefunden.",
       "searchPlaceholder": "Rollen suchen..."
     },
@@ -1212,8 +1224,8 @@
     "organizationProfile": {
       "title": "Organisationsprofil",
       "subtitle": "Aktualisiere die Adresse und Kontaktdaten deiner Organisation.",
-      "addressLabel": "Adresse der Organisation",
-      "addressPlaceholder": "Musterstraße 1",
+      "streetLabel": "Straße und Hausnummer",
+      "streetPlaceholder": "Musterstraße 1",
       "cityLabel": "Stadt",
       "cityPlaceholder": "Berlin",
       "zipCodeLabel": "Postleitzahl",
@@ -1280,6 +1292,9 @@
       "uebungsleiter": "Vergütet über Übungsleiterpauschale"
     },
     "detail": {
+      "approvalLabel": "Freigabe",
+      "approvalNotRequiredLabel": "Keine Freigabe nötig",
+      "approvalRequiredLabel": "Freigabe erforderlich",
       "createdByLabel": "Erstellt von",
       "createdLabel": "Erstellt",
       "imageAlt": "Bild für {title}",
@@ -1353,6 +1368,19 @@
       "timeRangeConstraint": "Einsätze müssen innerhalb von {window} beginnen und enden."
     },
     "instanceDetail": {
+      "approvalDialog": {
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "error": "Die Freigabepflicht konnte nicht geändert werden. {error}",
+        "futureDescription": "Gilt für {date} und alle kommenden Termine der Serie. Vergangene Termine bleiben erhalten.",
+        "futureTitle": "Diesen und alle zukünftigen Termine",
+        "onlyThisDescription": "Gilt nur für {date}. Andere Termine bleiben unberührt.",
+        "onlyThisTitle": "Nur diesen Termin",
+        "success": "Freigabepflicht aktualisiert.",
+        "title": "Freigabepflicht ändern",
+        "turnOffDescription": "Alle, die derzeit auf Freigabe warten, werden automatisch aufgenommen – bis zur maximalen Kapazität des Einsatzes. Wer nicht mehr reinpasst, kommt auf die Warteliste.",
+        "turnOnDescription": "Bereits angemeldete Freiwillige behalten ihren Platz. Neue Anmeldungen benötigen ab sofort deine Freigabe."
+      },
       "callOutCta": "Dringender Aufruf",
       "callOutDialog": {
         "confirm": "Dringender Aufruf",
@@ -1520,7 +1548,7 @@
     },
     "successDialog": {
       "bodyInvited": "Dein Einsatz ist aktiv. Die eingeladenen Freiwilligen sind benachrichtigt.",
-      "bodyOpen": "Dein offener Einsatz ist aktiv. Alle Freiwilligen in deiner Organisation sind benachrichtigt und können sich jetzt anmelden.",
+      "bodyOpen": "Dein offener Einsatz ist aktiv. Alle Freiwilligen deiner Organisationseinheit können ihn jetzt entdecken und sich anmelden.",
       "copyInviteLink": "Einladungslink kopieren",
       "recurrence": {
         "daily": "Täglich",
@@ -1695,6 +1723,7 @@
       "selectShiftLabel": "Einsatz auswählen",
       "selectVolunteerLabel": "Freiwillige:n auswählen",
       "selectVolunteerPlaceholder": "Freiwillige:n auswählen",
+      "noVolunteersFound": "Keine Freiwilligen gefunden",
       "shiftDatePlaceholder": "Datum wählen",
       "shiftSearchPlaceholder": "Einsatz suchen",
       "startEndTimeLabel": "Start- und Endzeit"
@@ -1793,8 +1822,9 @@
       "placeholder": "Nach Name, E-Mail oder Rolle suchen"
     },
     "sheet": {
-      "addressLabel": "Adresse",
+      "streetLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
+      "cityLabel": "Stadt",
       "emailLabel": "E-Mail",
       "formFallback": "Formular",
       "idVerification": {
@@ -1809,7 +1839,8 @@
       "qrIdLabel": "QR-ID",
       "submittedForms": "Eingereichte Formulare",
       "titleFallback": "Freiwillige:r",
-      "userInfo": "Persönliche Informationen"
+      "userInfo": "Persönliche Informationen",
+      "zipLabel": "PLZ"
     },
     "table": {
       "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
@@ -1935,7 +1966,7 @@
     },
     "orgProfileFields": {
       "org_name": "Name",
-      "org_address": "Adresse",
+      "org_street": "Adresse",
       "org_city": "Stadt",
       "org_zip": "Postleitzahl",
       "org_legal_rep": "Gesetzliche Vertretung"
@@ -2193,6 +2224,9 @@
         "editProfileCta": "Profil bearbeiten",
         "nameFieldLabel": "Name",
         "periodFieldLabel": "Stundennachweiszeitraum",
+        "rateFieldLabel": "Stundensatz für diesen Nachweis",
+        "rateFieldHint": "Entspricht dem Stundensatz Ihrer Einrichtung. Sie können ihn für diesen einzelnen Nachweis ändern.",
+        "rateFieldOverridden": "Gilt nur für diesen Nachweis. Ihre Einrichtung zahlt weiterhin {rate} pro Stunde.",
         "periodPicker": {
           "placeholder": "Zeitraum wählen",
           "thisMonth": "Dieser Monat",
@@ -2283,13 +2317,26 @@
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
+        "orgOverride": {
+          "orgHint": "Aus den Organisationsdaten übernommen.",
+          "overriddenHint": "Für diese Vorlage manuell angegeben.",
+          "editingHint": "Leer lassen, um wieder die Organisationsdaten zu verwenden.",
+          "missingValue": "nicht hinterlegt",
+          "editButtonLabel": "Bearbeiten",
+          "saveButtonLabel": "Übernehmen"
+        },
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",
+          "kostenstelleRequiredByNumberFormat": "Das gewählte Format der Dokumentennummer enthält die Kostenstelle, deshalb muss sie hier angegeben werden.",
           "lockedHint": "Pflichtblock. Immer im generierten Dokument enthalten.",
           "tableFixedHint": "Die Zeilen werden beim Erstellen eines Stundennachweises aus den Zeiterfassungen befüllt.",
           "firstColumnSourceLabel": "Inhalt der ersten Spalte",
           "firstColumnSourceOptions": {
+            "shift_name": {
+              "label": "Name des erfassten Einsatzes",
+              "hint": "Jede Zeile zeigt den Einsatz, aus dem die Stunden stammen. Ohne Einsatz erfasste Stunden zeigen stattdessen die Tätigkeitsbeschreibung aus der Vereinbarung."
+            },
             "agreement_task_description": {
               "label": "Tätigkeitsbeschreibung aus der Vereinbarung",
               "hint": "Jede Zeile zeigt die in der Vereinbarung hinterlegte Tätigkeitsbeschreibung."
@@ -2300,6 +2347,7 @@
             }
           },
           "firstColumnPlaceholders": {
+            "shiftName": "Name des Einsatzes",
             "agreementTaskDescription": "Tätigkeitsbeschreibung",
             "custom": "z. B. Sonstige Tätigkeit"
           },
@@ -2323,7 +2371,8 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen"
+          "extra": "Weitere Vereinbarungen",
+          "other": "Sonstiges"
         },
         "hoursUnit": {
           "month": "Monat",
@@ -2345,6 +2394,7 @@
           "hours-amount": "Stundenzahl",
           "hours-unit": "Stundeneinheit",
           "freeform-text": "Freitext",
+          "parties-additional-info": "Optionale Zusatzinformationen",
           "kostenstelle": "Kostenstelle",
           "kostentraeger": "Kostenträger",
           "rechtstraeger": "Rechtsträger"
@@ -2354,7 +2404,8 @@
           "tasks": "Beschreibe die Haupttätigkeiten für {pauschale}",
           "hours-amount-month": "z. B. 20",
           "hours-amount-week": "z. B. 5",
-          "freeform-text": "Ergänze hier weitere Klauseln, falls nötig",
+          "freeform-text": "Ergänze hier weitere Angaben, falls nötig",
+          "parties-additional-info": "Ergänze hier weitere Informationen zu Vertragspartnern",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
           "rechtstraeger": "z. B. Diakonisches Werk e.V."
@@ -2382,9 +2433,10 @@
           "volunteer_first_name": "Vorname (Ehrenamtliche:r)",
           "volunteer_last_name": "Nachname (Ehrenamtliche:r)",
           "org_name": "Organisationsname",
-          "org_address": "Organisationsadresse",
-          "org_city": "Stadt (Organisation)",
+          "org_facility_name": "Einrichtung",
+          "org_street": "Organisationsadresse",
           "org_zip": "Postleitzahl (Organisation)",
+          "org_city": "Stadt (Organisation)",
           "org_legal_rep": "Gesetzliche Vertretung",
           "pauschalen_type": "Pauschalentyp",
           "hourly_rate": "Vergütung pro Stunde",
@@ -2397,7 +2449,9 @@
           "volunteer_iban": "IBAN (Ehrenamtliche:r)",
           "volunteer_account_holder": "Kontoinhaber:in (Ehrenamtliche:r)",
           "volunteer_bic": "BIC (Ehrenamtliche:r)",
-          "volunteer_address": "Adresse (Ehrenamtliche:r)",
+          "volunteer_street": "Strasse und Hausnummer (Ehrenamtliche:r)",
+          "volunteer_zip": "Postleitzahl (Ehrenamtliche:r)",
+          "volunteer_city": "Stadt (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
           "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",

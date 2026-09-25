@@ -14,7 +14,6 @@ export function useCheckIn() {
       repository.checkIn(shiftInstanceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myShiftInstances'] });
-      queryClient.invalidateQueries({ queryKey: ['availableShiftInstances'] });
     },
   });
 }

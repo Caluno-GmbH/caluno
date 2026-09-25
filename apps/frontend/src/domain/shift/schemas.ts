@@ -214,6 +214,26 @@ export type ShiftInstanceDeleteValues = z.infer<
   typeof serverShiftInstanceDeleteSchema
 >;
 
+export function shiftInstanceApprovalSchema(
+  t: ShiftInstanceDeleteSchemaMessages,
+) {
+  return z.object({
+    instanceId: z.string().min(1, t.instanceIdRequired),
+    organizationUnitId: z.string().min(1, t.organizationUnitIdRequired),
+    joinRequiresApproval: z.boolean(),
+    applyToAllFuture: z.boolean().optional(),
+  });
+}
+
+export const serverShiftInstanceApprovalSchema = shiftInstanceApprovalSchema({
+  instanceIdRequired: 'Shift instance ID is required',
+  organizationUnitIdRequired: 'Organization unit ID is required',
+});
+
+export type ShiftInstanceApprovalValues = z.infer<
+  typeof serverShiftInstanceApprovalSchema
+>;
+
 export function inviteShiftFormSchema() {
   return z.object({
     invitedMemberIds: z.array(z.string()),

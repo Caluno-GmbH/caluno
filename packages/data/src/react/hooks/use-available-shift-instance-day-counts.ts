@@ -4,17 +4,18 @@ import { ShiftRepository } from '@repo/data';
 import { type UseQueryOptions, useQuery } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
 
-export function useAvailableShiftInstances(
+export function useAvailableShiftInstanceDayCounts(
   options: {
     startsAfter?: Date;
     endsBefore?: Date;
     organizationUnitIds?: string[];
-    limit?: number;
-    offset?: number;
+    excludeIntended?: boolean;
   } = {},
   queryOptions?: Omit<
     UseQueryOptions<
-      Awaited<ReturnType<ShiftRepository['findAvailableShiftInstances']>>
+      Awaited<
+        ReturnType<ShiftRepository['findAvailableShiftInstanceDayCounts']>
+      >
     >,
     'queryKey' | 'queryFn'
   >,
@@ -23,8 +24,8 @@ export function useAvailableShiftInstances(
   const repository = new ShiftRepository(sdk);
 
   return useQuery({
-    queryKey: ['availableShiftInstances', options],
-    queryFn: () => repository.findAvailableShiftInstances(options),
+    queryKey: ['availableShiftInstanceDayCounts', options],
+    queryFn: () => repository.findAvailableShiftInstanceDayCounts(options),
     staleTime: 0,
     ...queryOptions,
   });

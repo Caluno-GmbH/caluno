@@ -186,7 +186,7 @@ const CONTRACTS = `
 const ACCOUNTING_SETUP_STATUS = `
   query {
     accountingSetupStatus {
-      orgProfile { name address city zipCode legalRep }
+      orgProfile { name street zipCode city legalRep }
       orgProfileComplete
       missingOrgProfileFields
       canManageTemplates
@@ -260,7 +260,7 @@ const setupFlowOrg = async (db: Database) => {
     .update(schema.organizations)
     .set({
       accountingEnabled: true,
-      address: 'Teststraße 1',
+      street: 'Teststraße 1',
       city: 'Berlin',
       zipCode: '10115',
     })
@@ -269,7 +269,7 @@ const setupFlowOrg = async (db: Database) => {
   // Edit edits), so give the root unit the org's details too.
   await db
     .update(schema.organizationUnits)
-    .set({ address: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
+    .set({ street: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
     .where(eq(schema.organizationUnits.id, root.id));
 
   // The real seeded permission: resolvers check it by key (e.g. viewing a
@@ -339,14 +339,14 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
     .update(schema.organizations)
     .set({
       accountingEnabled: true,
-      address: 'Teststraße 1',
-      city: 'Berlin',
+      street: 'Teststraße 1',
       zipCode: '10115',
+      city: 'Berlin',
     })
     .where(eq(schema.organizations.id, organization.id));
   await db
     .update(schema.organizationUnits)
-    .set({ address: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
+    .set({ street: 'Teststraße 1', zipCode: '10115', city: 'Berlin' })
     .where(eq(schema.organizationUnits.id, root.id));
 
   const permission =
@@ -1244,15 +1244,15 @@ describe('documents flow — admin + volunteer', () => {
         ],
         orgIdentityLine: {
           id: 'header-org-identity',
-          text: '{orgName} {orgAddress}',
+          text: '{orgName} {orgStreet}',
           fields: [
             {
               id: 'header-org-name',
               value: { kind: 'bound', source: 'org_name' },
             },
             {
-              id: 'header-org-address',
-              value: { kind: 'bound', source: 'org_address' },
+              id: 'header-org-street',
+              value: { kind: 'bound', source: 'org_street' },
             },
           ],
           enabled: true,
@@ -2059,17 +2059,17 @@ describe('documents flow — admin + volunteer', () => {
       // The org unit is accounting-enabled but has no city/address yet.
       await db
         .update(schema.organizationUnits)
-        .set({ address: null, city: null, zipCode: null })
+        .set({ street: null, zipCode: null, city: null })
         .where(eq(schema.organizationUnits.id, orgGated.organizationUnitId));
       const body = {
         header: {
           orgIdentityLine: {
-            text: '{orgName} {orgAddress} {orgCity}',
+            text: '{orgName} {orgStreet} {orgCity}',
             fields: [
               { id: 'org-name', value: { kind: 'bound', source: 'org_name' } },
               {
-                id: 'org-address',
-                value: { kind: 'bound', source: 'org_address' },
+                id: 'org-street',
+                value: { kind: 'bound', source: 'org_street' },
               },
               { id: 'org-city', value: { kind: 'bound', source: 'org_city' } },
             ],
@@ -2109,7 +2109,7 @@ describe('documents flow — admin + volunteer', () => {
         },
         headers: orgGatedHeader,
       });
-      // The org has no city/address → creating is refused (org_city, org_address).
+      // The org has no city/address → creating is refused (org_city, org_street).
       expect(refused.errors?.[0]?.message ?? '').toMatch(
         /organization is missing/i,
       );
@@ -2118,7 +2118,7 @@ describe('documents flow — admin + volunteer', () => {
       // Completing the org unit profile unblocks creation.
       await db
         .update(schema.organizationUnits)
-        .set({ address: 'Teststraße 1', city: 'Berlin', zipCode: '10115' })
+        .set({ street: 'Teststraße 1', zipCode: '10115', city: 'Berlin' })
         .where(eq(schema.organizationUnits.id, orgGated.organizationUnitId));
 
       setAuthMockUserId(orgGated.adminId);
@@ -2166,31 +2166,31 @@ describe('documents flow — admin + volunteer', () => {
       });
       await db
         .update(schema.organizationUnits)
-        .set({ address: 'Rootweg 1', city: 'Rootstadt', zipCode: '10111' })
+        .set({ street: 'Rootweg 1', zipCode: '10111', city: 'Rootstadt' })
         .where(eq(schema.organizationUnits.id, rootUnit));
       await db
         .update(schema.organizationUnits)
         .set({
-          address: 'Siblingweg 2',
-          city: 'Siblingstadt',
+          street: 'Siblingweg 2',
           zipCode: '10122',
+          city: 'Siblingstadt',
         })
         .where(eq(schema.organizationUnits.id, siblingUnit.id));
       // Also make the org row carry a third address to prove the doc uses the unit.
       await db
         .update(schema.organizations)
-        .set({ address: 'Orgweg 3', city: 'Orgstadt' })
+        .set({ street: 'Orgweg 3', city: 'Orgstadt' })
         .where(eq(schema.organizations.id, orgTwoUnits.organizationId));
 
       const body = {
         header: {
           orgIdentityLine: {
-            text: '{orgName} {orgAddress} {orgCity}',
+            text: '{orgName} {orgStreet} {orgCity}',
             fields: [
               { id: 'org-name', value: { kind: 'bound', source: 'org_name' } },
               {
-                id: 'org-address',
-                value: { kind: 'bound', source: 'org_address' },
+                id: 'org-street',
+                value: { kind: 'bound', source: 'org_street' },
               },
               { id: 'org-city', value: { kind: 'bound', source: 'org_city' } },
             ],
@@ -2404,9 +2404,9 @@ describe('documents flow — admin + volunteer', () => {
       await db
         .update(schema.organizationUnits)
         .set({
-          address: 'Hauptstraße 1',
-          city: 'Berlin',
+          street: 'Hauptstraße 1',
           zipCode: '10115',
+          city: 'Berlin',
           legalRep: 'Erika Mustermann',
         })
         .where(eq(schema.organizationUnits.id, rootUnitId));
@@ -2417,9 +2417,9 @@ describe('documents flow — admin + volunteer', () => {
         accountingSetupStatus: {
           orgProfile: {
             name: string;
-            address: string | null;
-            city: string | null;
+            street: string | null;
             zipCode: string | null;
+            city: string | null;
             legalRep: string | null;
           } | null;
           orgProfileComplete: boolean;
@@ -2442,9 +2442,9 @@ describe('documents flow — admin + volunteer', () => {
       ).toEqual([]);
       expect(subUnitStatus.accountingSetupStatus.orgProfile).toMatchObject({
         name: 'Sub Unit',
-        address: 'Hauptstraße 1',
-        city: 'Berlin',
+        street: 'Hauptstraße 1',
         zipCode: '10115',
+        city: 'Berlin',
         legalRep: 'Erika Mustermann',
       });
     });

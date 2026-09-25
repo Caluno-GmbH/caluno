@@ -34,6 +34,10 @@ export class Invoice {
   @Field(() => Int)
   totalAmountCents!: number;
 
+  /** The rate this timesheet was issued at. */
+  @Field(() => Int)
+  hourlyRateCents!: number;
+
   @Field(() => Float)
   totalHours!: number;
 
@@ -82,7 +86,7 @@ export class Invoice {
   missingProfileFields!: string[];
 
   /**
-   * The org-profile sources (e.g. org_city/org_address) this document's
+   * The org-profile sources (e.g. org_city/org_zip/org_street) this document's
    * template needs that the organization has not yet supplied. Empty once the
    * org profile is complete enough to create the document.
    */
