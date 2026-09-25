@@ -18,12 +18,12 @@ import {
 import {
   ArrowUpRight,
   BuildingIcon,
+  CalendarCog,
   CalendarIcon,
   ClipboardListIcon,
   ClockIcon,
   CoinsIcon,
   HeartHandshake,
-  IdCard,
   LayoutListIcon,
   LogOutIcon,
   NetworkIcon,
@@ -130,9 +130,9 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
         permission: PermissionKey.OrgView,
       },
       {
-        titleKey: 'idVerification',
-        href: `/admin/${orgUId}/settings/id-verification`,
-        icon: IdCard,
+        titleKey: 'shiftSettings',
+        href: `/admin/${orgUId}/settings/shifts`,
+        icon: CalendarCog,
         permission: PermissionKey.OrgView,
       },
     ].filter((item) => !item.permission || permissionSet.has(item.permission));
