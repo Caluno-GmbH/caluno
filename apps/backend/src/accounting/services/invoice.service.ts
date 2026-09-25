@@ -19,6 +19,7 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
+import { OrganizationService } from '../../organization/organization.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -46,7 +47,6 @@ import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
 import { billingMonthBounds, billingYearBounds } from '../utils/billing-period';
 import { formatInvoiceNumber } from '../utils/invoice-number';
-import { resolveOrgRootUnitId } from '../utils/org-profile';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -71,6 +71,7 @@ export class InvoiceService {
     private readonly documentNotificationService: DocumentNotificationService,
     private readonly documentProfileRequirementService: DocumentProfileRequirementService,
     private readonly documentRenderingService: DocumentRenderingService,
+    private readonly organizationService: OrganizationService,
     private readonly postHogService: PostHogService,
   ) {}
 
@@ -463,7 +464,7 @@ export class InvoiceService {
     // to the unit if there is one, and to the organisation's root unit if not.
     const documentNumberScopeUnitId =
       input.organizationUnitId ??
-      (await resolveOrgRootUnitId(this.db, organizationId));
+      (await this.organizationService.requireRootUnit(organizationId)).id;
     // The series restarts each January, so a document's year is part of which
     // counter it draws from. Taken from the period the timesheet covers rather
     // than from today, so a January document issued in February still belongs

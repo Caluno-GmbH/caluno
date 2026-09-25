@@ -26,7 +26,6 @@ export * from './react/hooks/use-accounting-setup-status';
 export * from './react/hooks/use-admin-user-profile';
 export * from './react/hooks/use-available-events';
 export * from './react/hooks/use-available-events-infinite';
-export * from './react/hooks/use-available-shift-instances';
 export * from './react/hooks/use-available-shift-instances-infinite';
 export * from './react/hooks/use-block';
 export * from './react/hooks/use-bundle-download';

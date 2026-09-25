@@ -55,6 +55,8 @@ interface DayTimelineViewProps<T> {
    */
   sparseDays?: SparseDayStripEntry[];
   goToTopLabel?: string;
+  stripHasNext?: boolean;
+  onStripNext?: () => void;
   /**
    * Where to land the viewport on first paint. Discover lands on the closest
    * upcoming day; my-shifts stays at the top so "Load past" is visible.
@@ -76,6 +78,8 @@ export function DayTimelineView<T>({
   isDayDimmed,
   sparseDays,
   goToTopLabel,
+  stripHasNext,
+  onStripNext,
   initialScroll = 'closestUpcoming',
 }: DayTimelineViewProps<T>) {
   const t = useTranslations('VolunteerHome');
@@ -224,6 +228,8 @@ export function DayTimelineView<T>({
                   sparse={!!sparseDays}
                   sparseDays={sparseDays}
                   goToTopLabel={goToTopLabel}
+                  hasNext={stripHasNext}
+                  onNext={onStripNext}
                 />
               )}
             </div>
