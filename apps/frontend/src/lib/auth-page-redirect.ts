@@ -22,11 +22,11 @@ export async function resolveAuthPageRedirects(searchParams: {
     ? `/invite/${pendingInvite}`
     : undefined;
 
-  const formRedirectTo = explicitRedirect ?? inviteDestination ?? '/';
+  const formRedirectTo = inviteDestination ?? explicitRedirect ?? '/';
 
   async function authenticatedRedirect(): Promise<string> {
-    if (explicitRedirect) return explicitRedirect;
     if (inviteDestination) return inviteDestination;
+    if (explicitRedirect) return explicitRedirect;
     return resolvePostAuthDestination();
   }
 
