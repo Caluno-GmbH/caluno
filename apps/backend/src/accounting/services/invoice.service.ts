@@ -45,7 +45,11 @@ import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
-import { billingMonthBounds, billingYearBounds } from '../utils/billing-period';
+import {
+  billingMonthBoundsOf,
+  billingYearBounds,
+  periodCovers,
+} from '../utils/billing-period';
 import { formatInvoiceNumber } from '../utils/invoice-number';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
@@ -218,7 +222,7 @@ export class InvoiceService {
     for (const row of rows) {
       const entry = row.timeEntry;
       if (!entry.endedAt || !entry.reimbursementTypeId) continue;
-      const month = billingMonthBounds(entry.startedAt);
+      const month = billingMonthBoundsOf(entry.startedAt);
       const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
       const group = groups.get(key) ?? {
         volunteerId: entry.volunteerId,
@@ -254,7 +258,14 @@ export class InvoiceService {
   async findPaidShiftSignupVolunteers(
     organizationId: string,
     year: number,
-  ): Promise<Array<{ volunteerId: string; reimbursementTypeId: string }>> {
+  ): Promise<
+    Array<{
+      volunteerId: string;
+      reimbursementTypeId: string;
+      periodStart: Date;
+      periodEnd: Date;
+    }>
+  > {
     const { start: yearStart, end: yearEnd } = billingYearBounds(year);
 
     const rows = await this.db
@@ -263,6 +274,7 @@ export class InvoiceService {
         overrideReimbursementTypeId:
           schema.shiftInstances.overrideReimbursementTypeId,
         shiftReimbursementTypeId: schema.shifts.reimbursementTypeId,
+        actualStartsAt: schema.shiftInstances.actualStartsAt,
       })
       .from(schema.shiftInstanceInvites)
       .innerJoin(
@@ -289,16 +301,25 @@ export class InvoiceService {
 
     const signups = new Map<
       string,
-      { volunteerId: string; reimbursementTypeId: string }
+      {
+        volunteerId: string;
+        reimbursementTypeId: string;
+        /** One instant per paid shift the volunteer joined. */
+        dates: Date[];
+      }
     >();
     for (const row of rows) {
       const reimbursementTypeId =
         row.overrideReimbursementTypeId ?? row.shiftReimbursementTypeId;
       if (!reimbursementTypeId) continue;
       const key = `${row.volunteerId}:${reimbursementTypeId}`;
-      if (!signups.has(key)) {
-        signups.set(key, { volunteerId: row.volunteerId, reimbursementTypeId });
-      }
+      const entry = signups.get(key) ?? {
+        volunteerId: row.volunteerId,
+        reimbursementTypeId,
+        dates: [],
+      };
+      if (row.actualStartsAt) entry.dates.push(row.actualStartsAt);
+      signups.set(key, entry);
     }
     if (signups.size === 0) return [];
 
@@ -315,11 +336,20 @@ export class InvoiceService {
         where: {
           volunteerId: { in: volunteerIds },
           reimbursementTypeId: { in: reimbursementTypeIds },
+          // An open (non-declined) contract is this pair's contract *task* —
+          // create it if DRAFT, countersign it otherwise. That is distinct from
+          // the ACTIVE-only "valid cover" predicate the payment checks use; the
+          // board routes the task to Create or Countersign accordingly.
           contractStatus: { ne: ContractStatus.DECLINED },
           periodStart: { lt: yearEnd },
           periodEnd: { gt: yearStart },
         },
-        columns: { volunteerId: true, reimbursementTypeId: true },
+        columns: {
+          volunteerId: true,
+          reimbursementTypeId: true,
+          periodStart: true,
+          periodEnd: true,
+        },
       }),
       this.db.query.invoices.findMany({
         where: {
@@ -328,22 +358,59 @@ export class InvoiceService {
           periodStart: { lt: yearEnd },
           periodEnd: { gt: yearStart },
         },
-        columns: { volunteerId: true, reimbursementTypeId: true },
+        columns: {
+          volunteerId: true,
+          reimbursementTypeId: true,
+          periodStart: true,
+          periodEnd: true,
+        },
       }),
     ]);
 
-    const excluded = new Set<string>();
-    for (const contract of contracts) {
-      excluded.add(`${contract.volunteerId}:${contract.reimbursementTypeId}`);
-    }
-    for (const invoice of invoices) {
-      excluded.add(`${invoice.volunteerId}:${invoice.reimbursementTypeId}`);
-    }
+    // A signup is covered only when a contract/invoice period actually contains
+    // the shift's date — an OPEN contract for another month must not make a
+    // later paid shift look covered (VOLI-1370).
+    const isCovered = (
+      entry: (typeof entries)[number],
+      date: Date,
+    ): boolean => {
+      const contractsForPair = contracts.filter(
+        (c) =>
+          c.volunteerId === entry.volunteerId &&
+          c.reimbursementTypeId === entry.reimbursementTypeId,
+      );
+      const invoicesForPair = invoices.filter(
+        (i) =>
+          i.volunteerId === entry.volunteerId &&
+          i.reimbursementTypeId === entry.reimbursementTypeId,
+      );
+      return (
+        contractsForPair.some((c) =>
+          periodCovers(c.periodStart, c.periodEnd, date, date),
+        ) ||
+        invoicesForPair.some((i) =>
+          periodCovers(i.periodStart, i.periodEnd, date, date),
+        )
+      );
+    };
 
-    return entries.filter(
-      (entry) =>
-        !excluded.has(`${entry.volunteerId}:${entry.reimbursementTypeId}`),
-    );
+    return entries.flatMap((entry) => {
+      const firstUncovered = entry.dates
+        .filter((date) => !isCovered(entry, date))
+        .sort((a, b) => a.getTime() - b.getTime())[0];
+      if (!firstUncovered) return [];
+      // The task is scoped to the uncovered month, so the board can say which
+      // month has no valid contract instead of the whole year (VOLI-1370).
+      const month = billingMonthBoundsOf(firstUncovered);
+      return [
+        {
+          volunteerId: entry.volunteerId,
+          reimbursementTypeId: entry.reimbursementTypeId,
+          periodStart: month.start,
+          periodEnd: month.end,
+        },
+      ];
+    });
   }
 
   async createInvoice(
@@ -443,6 +510,7 @@ export class InvoiceService {
     const activeContract = await this.contractService.findActiveContract(
       input.volunteerId,
       input.reimbursementTypeId,
+      { start: input.periodStart, end: input.periodEnd },
     );
 
     if (!activeContract) {

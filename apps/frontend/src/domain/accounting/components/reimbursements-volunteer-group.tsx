@@ -81,6 +81,11 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
     actionKey: null,
     isYourAction: false,
   },
+  'contract-expired': {
+    labelKey: 'contractExpired',
+    actionKey: 'create',
+    isYourAction: true,
+  },
   'contract-missing': {
     labelKey: 'contractMissing',
     actionKey: 'create',
@@ -145,6 +150,7 @@ function abbreviateName(name: string): string {
 const STATUS_SORT_ORDER: DocStatus[] = [
   'contract-generate',
   'contract-draft',
+  'contract-expired',
   'timesheet-generate',
   'contract-missing',
   'contract-signing-coord',

@@ -36,6 +36,7 @@ import {
 } from './document-creation-dialog';
 import { InfoPanel } from './info-panel';
 import { getKnownOrgValues } from './template/builder-document-presets';
+import { TemplateBuilderPeriodPicker } from './template/builder-period-picker';
 import type { DataSourceKey } from './template/builder-types';
 import { getManualFieldValue } from './template/builder-types';
 import { GeneratedDocumentPreview } from './template/generated-document-preview';
@@ -65,6 +66,7 @@ export function ContractCreationModal({
   const tManual = useTranslations(
     'Accounting.templates.builder.manualFieldLabels',
   );
+  const tPeriod = useTranslations('Accounting.templates.builder.periodPicker');
   const tPauschale = useTranslations('Accounting.reimbursements.toolbar');
 
   const orgUId = useOrgUId();
@@ -199,21 +201,29 @@ export function ContractCreationModal({
 
   const handleSend = async () => {
     if (!reimbursementType || !templateDoc) return;
-    setIsSending(true);
-    setSendError(null);
-    setSendErrorCode(null);
     const lifespan =
       (isEdited('contract-lifespan')
         ? editedValues['contract-lifespan']
         : getManualFieldValue(templateDoc, 'contract-lifespan')) ?? '';
-    const { periodStart, periodEnd } = contractPeriodForLifespan(lifespan);
+    const period = contractPeriodForLifespan(lifespan);
+    // The agreement's printed Zeitraum and its stored validity must come from
+    // the same value. If we can't read one, block instead of silently
+    // persisting a whole-year contract (VOLI-1370).
+    if (!period) {
+      setSendErrorCode('INVALID_PERIOD');
+      setSendError('invalid-period');
+      return;
+    }
+    setIsSending(true);
+    setSendError(null);
+    setSendErrorCode(null);
     try {
       await createContract.mutateAsync({
         organizationUnitId: orgUId,
         reimbursementTypeId: reimbursementType.id,
         volunteerId,
-        periodStart,
-        periodEnd,
+        periodStart: period.periodStart,
+        periodEnd: period.periodEnd,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({
@@ -250,6 +260,7 @@ export function ContractCreationModal({
   // the dedicated copy + CTA and never the raw server message (it carries the
   // internal reimbursement-type id).
   const noTemplate = noContractTemplate || sendErrorIsNoTemplate;
+  const sendErrorIsInvalidPeriod = sendErrorCode === 'INVALID_PERIOD';
   const sendErrorIsOrgProfile = /organization is missing/i.test(
     sendError ?? '',
   );
@@ -307,21 +318,25 @@ export function ContractCreationModal({
           ? t('orgProfileErrorTitle')
           : noTemplate
             ? t('noTemplateTitle')
-            : sendError
-              ? t('sendErrorTitle')
-              : t('loadErrorTitle')
+            : sendErrorIsInvalidPeriod
+              ? t('invalidPeriodTitle')
+              : sendError
+                ? t('sendErrorTitle')
+                : t('loadErrorTitle')
       }
       errorDescription={
         sendErrorIsOrgProfile
           ? t('orgProfileErrorDescription')
           : noTemplate
             ? t('noTemplateDescription', { pauschale: pauschaleLabel })
-            : sendError
-              ? t('sendError', { name: volunteerName })
-              : t('loadError', { name: volunteerName })
+            : sendErrorIsInvalidPeriod
+              ? t('invalidPeriodDescription')
+              : sendError
+                ? t('sendError', { name: volunteerName })
+                : t('loadError', { name: volunteerName })
       }
       errorMessage={
-        sendErrorIsOrgProfile || noTemplate
+        sendErrorIsOrgProfile || noTemplate || sendErrorIsInvalidPeriod
           ? undefined
           : (sendError ??
             (loadError instanceof Error ? loadError.message : undefined))
@@ -391,11 +406,21 @@ export function ContractCreationModal({
             key={field.fieldId}
             title={tManual(field.labelKey as Parameters<typeof tManual>[0])}
           >
-            <Input
-              className="mt-2"
-              value={currentValue(field.fieldId, field.value) ?? ''}
-              onChange={(e) => handleFieldChange(field.fieldId)(e.target.value)}
-            />
+            {field.control === 'period' ? (
+              <TemplateBuilderPeriodPicker
+                value={currentValue(field.fieldId, field.value) ?? ''}
+                placeholder={tPeriod('placeholder')}
+                onChange={handleFieldChange(field.fieldId)}
+              />
+            ) : (
+              <Input
+                className="mt-2"
+                value={currentValue(field.fieldId, field.value) ?? ''}
+                onChange={(e) =>
+                  handleFieldChange(field.fieldId)(e.target.value)
+                }
+              />
+            )}
           </InfoPanel>
         ),
       )}

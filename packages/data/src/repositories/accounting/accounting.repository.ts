@@ -136,6 +136,8 @@ export class AccountingRepository extends BaseRepository {
     organizationUnitId: string;
     reimbursementTypeId: string;
     shiftDurationMinutes: number;
+    periodStart?: string | null;
+    periodEnd?: string | null;
   }): Promise<RawVolunteerInviteAllowance[]> {
     const data = await this.sdk.GetInviteAllowanceEligibility(input);
     return data.inviteAllowanceEligibility;
