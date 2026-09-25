@@ -66,7 +66,7 @@ export function DiscoverView({
     <SegmentedControl
       size="lg"
       variant="line"
-      triggerClassName="group-data-[size=lg]/tabs-list:text-base"
+      triggerClassName="px-1 text-[18px] sm:px-3.5 sm:text-lg"
       value={tab}
       onChange={handleTabChange}
       options={[
@@ -210,6 +210,10 @@ export function DiscoverView({
       days={dayStrip}
       groups={grouped}
       hasContent={availableShiftList.length > 0}
+      stripHasNext={hasNextShiftsPage}
+      onStripNext={() => {
+        if (!isFetchingShifts) fetchNextShiftsPage();
+      }}
       loading={
         <div className="space-y-3">
           <Skeleton className="h-24 w-full rounded-xl" />

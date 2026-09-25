@@ -16,9 +16,9 @@ export type DataSourceKey =
   | 'volunteer_first_name'
   | 'volunteer_last_name'
   | 'org_name'
-  | 'org_address'
-  | 'org_city'
+  | 'org_street'
   | 'org_zip'
+  | 'org_city'
   | 'org_legal_rep'
   | 'pauschalen_type'
   | 'hourly_rate'
@@ -31,7 +31,9 @@ export type DataSourceKey =
   | 'volunteer_iban'
   | 'volunteer_account_holder'
   | 'volunteer_bic'
-  | 'volunteer_address'
+  | 'volunteer_street'
+  | 'volunteer_zip'
+  | 'volunteer_city'
   | 'volunteer_dob'
   | 'volunteer_tax_id'
   | 'contract_period'
@@ -78,8 +80,18 @@ export type TemplateTextBlock = {
   lines: TemplateLine[];
 };
 
-/** What populates the Stundennachweis table's first column — the task description written into the volunteer's agreement, or a coordinator-typed custom label. */
-export type TableFirstColumnSource = 'agreement_task_description' | 'custom';
+/**
+ * What populates the Stundennachweis table's first column — the name of the
+ * shift each row's hours came from, the task description written into the
+ * volunteer's agreement, or a coordinator-typed custom label.
+ *
+ * `shift_name` is the only one that differs from row to row; hours tracked
+ * without a shift behind them fall back to the agreement's task description.
+ */
+export type TableFirstColumnSource =
+  | 'shift_name'
+  | 'agreement_task_description'
+  | 'custom';
 
 export type TemplateTableBlock = {
   kind: 'table';
@@ -119,8 +131,7 @@ export type InvoiceNumberFormat =
 export type TemplateHeader = {
   /** Title text, resolved per pauschale type by the caller. */
   titleLines: string[];
-  /** Contract: org name + address, top-right. Invoice: org address, left. */
-  orgIdentityLine: TemplateLine;
+  orgIdentityLine?: TemplateLine;
   /** Invoice-only: document number, generation date, optional Kostenstelle — each its own line. Empty for contracts. */
   metaLines: TemplateLine[];
 };

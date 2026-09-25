@@ -28,7 +28,8 @@
     "db:seed": "node dist/src/database/seed.js",
     "db:seed:dev": "ts-node -r tsconfig-paths/register src/database/seed.ts",
     "db:fixtures": "bun run src/database/fixtures.ts",
-    "db:fixtures:staging": "bun run src/database/fixtures.ts",
+    "db:fixtures:staging": "bun run db:fixtures",
+    "db:fixtures:demo": "bun run src/database/demo-fixtures.ts",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {

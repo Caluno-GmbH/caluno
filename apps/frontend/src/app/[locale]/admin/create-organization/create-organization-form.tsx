@@ -109,15 +109,43 @@ export function CreateOrganizationForm() {
         </div>
 
         <div>
-          <label htmlFor="address" className="block text-sm font-medium">
-            {t('addressLabel')}
+          <label htmlFor="street" className="block text-sm font-medium">
+            {t('streetLabel')}
           </label>
           <Input
-            id="address"
-            name="address"
+            id="street"
+            name="street"
             type="text"
             className="mt-1"
-            placeholder={t('addressPlaceholder')}
+            placeholder={t('streetPlaceholder')}
+            disabled={isPending}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="zipCode" className="block text-sm font-medium">
+            {t('zipCodeLabel')}
+          </label>
+          <Input
+            id="zipCode"
+            name="zipCode"
+            type="text"
+            className="mt-1"
+            placeholder={t('zipCodePlaceholder')}
+            disabled={isPending}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="city" className="block text-sm font-medium">
+            {t('cityLabel')}
+          </label>
+          <Input
+            id="city"
+            name="city"
+            type="text"
+            className="mt-1"
+            placeholder={t('cityPlaceholder')}
             disabled={isPending}
           />
         </div>

@@ -287,6 +287,7 @@ query GetInvoice($id: ID!) {
         notes
         shiftInstance {
           id
+          overrideTitle
           master {
             title
           }
@@ -359,6 +360,7 @@ query GetEligibleTimeEntriesForInvoice(
     notes
     shiftInstance {
       id
+      overrideTitle
       master {
         title
       }
@@ -593,9 +595,9 @@ query GetAccountingSetupStatus {
   accountingSetupStatus {
     orgProfile {
       name
-      address
-      city
+      street
       zipCode
+      city
       legalRep
     }
     orgProfileComplete

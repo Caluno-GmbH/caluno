@@ -124,6 +124,12 @@ mutation UpdateShift($id: String!, $input: UpdateShiftInput!) {
   }
 }
 
+mutation DuplicateShift($id: String!, $input: DuplicateShiftInput!) {
+  duplicateShift(id: $id, input: $input) {
+    id
+  }
+}
+
 mutation DeleteShift($id: String!) {
   deleteShift(id: $id) {
     id
@@ -174,6 +180,25 @@ mutation DeleteShiftInstance($id: String!, $applyToAllFuture: Boolean) {
   deleteShiftInstance(id: $id, applyToAllFuture: $applyToAllFuture) {
     id
     isCancelled
+  }
+}
+
+mutation UpdateShiftInstanceApproval(
+  $id: String!
+  $joinRequiresApproval: Boolean!
+  $applyToAllFuture: Boolean
+) {
+  updateShiftInstanceApproval(
+    id: $id
+    joinRequiresApproval: $joinRequiresApproval
+    applyToAllFuture: $applyToAllFuture
+  ) {
+    id
+    overrideJoinRequiresApproval
+    master {
+      id
+      joinRequiresApproval
+    }
   }
 }
 
@@ -341,6 +366,7 @@ query GetShiftInstance($id: ID!) {
     overrideMaxVolunteers
     overrideMinVolunteers
     overrideReimbursementTypeId
+    overrideJoinRequiresApproval
     isCancelled
     filledCount
     spotsLeft
@@ -356,6 +382,7 @@ query GetShiftInstance($id: ID!) {
       minVolunteers
       maxVolunteers
       reimbursementTypeId
+      joinRequiresApproval
       visibility
       rrule
       createdAt
@@ -375,6 +402,14 @@ query GetShiftInstance($id: ID!) {
         email
         image
         checkInId
+      }
+    }
+    timeEntries {
+      id
+      startedAt
+      endedAt
+      volunteer {
+        id
       }
     }
   }
@@ -458,6 +493,7 @@ fragment VolunteerHomeShiftInstance on ShiftInstance {
   actualEndsAt
   isCheckedIn
   filledCount
+  spotsLeft
   myInviteStatus
   myInvitedAt
   isIntendingToJoin

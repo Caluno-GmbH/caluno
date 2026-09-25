@@ -5,6 +5,7 @@ import {
 } from '../../constants';
 import {
   type CreateShiftInput,
+  type DuplicateShiftInput,
   type GetActiveShiftInstancesQuery,
   type GetAvailableShiftInstancesQuery,
   type GetCheckInShiftInstancesQuery,
@@ -131,6 +132,11 @@ export class ShiftRepository extends BaseRepository {
     return data.updateShift;
   }
 
+  async duplicate(id: string, input: DuplicateShiftInput) {
+    const data = await this.sdk.DuplicateShift({ id, input });
+    return data.duplicateShift;
+  }
+
   async delete(id: string): Promise<{ id: string }> {
     const data = await this.sdk.DeleteShift({ id });
     return { id: data.deleteShift.id };
@@ -192,6 +198,19 @@ export class ShiftRepository extends BaseRepository {
       applyToAllFuture,
     });
     return { id: data.deleteShiftInstance.id };
+  }
+
+  async updateInstanceApproval(
+    instanceId: string,
+    joinRequiresApproval: boolean,
+    applyToAllFuture?: boolean,
+  ): Promise<{ id: string }> {
+    const data = await this.sdk.UpdateShiftInstanceApproval({
+      id: instanceId,
+      joinRequiresApproval,
+      applyToAllFuture,
+    });
+    return { id: data.updateShiftInstanceApproval.id };
   }
 
   async joinInstance(

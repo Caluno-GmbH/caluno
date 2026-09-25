@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UserPlus, UsersRound } from 'lucide-react';
+import { expect, within } from 'storybook/test';
 import { Badge } from '@/components/base/badge';
 import { Button } from '@/components/base/button';
 import { Card } from '@/components/base/card';
@@ -49,7 +50,7 @@ function LifecycleSection({
             key={state}
             state={state}
             phase={phase}
-            completedDuration={state === 'completed' ? '3h 57m' : undefined}
+            completedDuration={state === 'checked_out' ? '3h 57m' : undefined}
           />
         ))}
       </div>
@@ -74,7 +75,6 @@ export const LifecycleReferenceBoard: Story = {
         phase="during"
         states={[
           'checked_in',
-          'not_checked_in',
           'invited',
           'requested',
           'waitlisted',
@@ -86,7 +86,7 @@ export const LifecycleReferenceBoard: Story = {
         subtitle="Final status is inferred automatically."
         phase="after"
         states={[
-          'completed',
+          'checked_out',
           'no_show',
           'invited_never_responded',
           'requested_never_responded',
@@ -110,8 +110,7 @@ export const StatusIcons: Story = {
           'accepted',
           'declined',
           'checked_in',
-          'not_checked_in',
-          'completed',
+          'checked_out',
           'no_show',
         ] as const
       ).map((state) => (
@@ -137,8 +136,7 @@ export const StatusBadges: Story = {
           'accepted',
           'declined',
           'checked_in',
-          'not_checked_in',
-          'completed',
+          'checked_out',
           'no_show',
           'invited_never_responded',
           'requested_never_responded',
@@ -147,7 +145,7 @@ export const StatusBadges: Story = {
         <VolunteeringStatusLabel
           key={state}
           state={state}
-          completedDuration={state === 'completed' ? '3h 57m' : undefined}
+          completedDuration={state === 'checked_out' ? '3h 57m' : undefined}
         />
       ))}
     </div>
@@ -170,7 +168,7 @@ export const DetailPageBeforeShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="before"
-        summary="1 invited · 2 accepted · 1 waitlisted · 12 spots"
+        titleBadge={<Badge variant="outline">2 / 8 spots filled</Badge>}
         volunteers={sampleVolunteers}
       />
     </div>
@@ -184,10 +182,15 @@ export const DetailPageDuringShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="during"
-        summary="2 checked in · 5 accepted"
+        titleBadge={<Badge variant="outline">3 / 5 spots filled</Badge>}
         volunteers={[
           { id: '1', name: 'Katharina Zimmer', state: 'checked_in' },
-          { id: '2', name: 'Hans Test', state: 'not_checked_in' },
+          {
+            id: '2',
+            name: 'Hans Test',
+            state: 'accepted',
+            actions: ['Check in'],
+          },
           { id: '3', name: 'Lena Müller', state: 'invited' },
           { id: '4', name: 'Tom Becker', state: 'requested' },
           { id: '5', name: 'Sara Klein', state: 'declined' },
@@ -204,12 +207,12 @@ export const DetailPageAfterShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="after"
-        summary="1 completed · 1 no-show"
+        titleBadge={<Badge variant="outline">2 / 4 spots filled</Badge>}
         volunteers={[
           {
             id: '1',
             name: 'Katharina Zimmer',
-            state: 'completed',
+            state: 'checked_out',
             completedDuration: '3h 57m',
           },
           { id: '2', name: 'Hans Test', state: 'no_show' },
@@ -226,22 +229,22 @@ export const SingleRow: Story = {
   name: 'Single volunteer row',
   render: () => (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <div className="rounded-xl border px-4">
+      <ul className="list-none rounded-xl border px-4">
         <VolunteeringVolunteerRow
           name="Tom Becker"
           state="requested"
           phase="before"
           onAction={() => {}}
         />
-      </div>
-      <div className="rounded-xl border px-4">
+      </ul>
+      <ul className="list-none rounded-xl border px-4">
         <VolunteeringVolunteerRow
           name="Katharina Zimmer"
           state="accepted"
           phase="before"
           onAction={() => {}}
         />
-      </div>
+      </ul>
     </div>
   ),
 };
@@ -393,14 +396,227 @@ export const SurfaceComparison: Story = {
       </div>
       <div className="space-y-2">
         <p className="text-sm font-semibold">Instance detail</p>
-        <div className="rounded-xl border px-4">
+        <ul className="list-none rounded-xl border px-4">
           <VolunteeringVolunteerRow
             name="Tom Becker"
             state="requested"
             phase="before"
           />
-        </div>
+        </ul>
       </div>
+    </div>
+  ),
+};
+
+export const CheckedOutWithTooltip: Story = {
+  name: 'Detail page / checked out (tooltip)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="after"
+        titleBadge={<Badge variant="outline">1 checked out</Badge>}
+        volunteers={[
+          {
+            id: '1',
+            name: 'Katharina Zimmer',
+            state: 'checked_out',
+            completedDuration: '7h 12m',
+            statusTooltip: (
+              <div className="flex flex-col gap-0.5 text-xs">
+                <span>08:00 – 12:00</span>
+                <span>13:00 – 15:30</span>
+                <span>16:00 – 17:00</span>
+                <span>17:30 – 18:30</span>
+                <span>19:00 – 20:12</span>
+                <span>+2 more</span>
+              </div>
+            ),
+          },
+        ]}
+      />
+    </div>
+  ),
+};
+
+/** 375px + German (widest locale) is the worst case. Row 2 spilling to three lines is expected. */
+export const MobileRowLayout: Story = {
+  name: 'Detail page / mobile row layout',
+  render: () => (
+    <div className="w-[375px] border border-dashed border-border p-4">
+      <VolunteeringVolunteerList
+        phase="before"
+        titleBadge={<Badge variant="outline">2 / 8 Plätze besetzt</Badge>}
+        actionLabels={{
+          View: 'Ansehen',
+          'Check in': 'Einchecken',
+          Approve: 'Genehmigen',
+          Uninvite: 'Entfernen',
+        }}
+        volunteers={[
+          {
+            // Long name, to prove truncation behaves on line 1.
+            id: '1',
+            name: 'Alexandra Schmidt-Hohenberg',
+            state: 'accepted',
+            statusLabel: 'Angenommen',
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            // Longest German label: overflows 375px after the pl-11 indent.
+            id: '2',
+            name: 'Jo Fischer',
+            state: 'requested',
+            statusLabel: 'Genehmigung ausstehend',
+            actions: ['Approve'],
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            id: '3',
+            name: 'Tom Becker',
+            state: 'declined',
+            statusLabel: 'Abgelehnt',
+            actions: [],
+            iconActions: ['View'],
+          },
+        ]}
+      />
+    </div>
+  ),
+};
+
+/** Open status dropdown — options must look identical to the closed trigger. */
+export const StatusDropdownOpen: Story = {
+  name: 'Detail page / status dropdown',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="before"
+        titleBadge={<Badge variant="outline">1 / 8 spots filled</Badge>}
+        actionLabels={{
+          View: 'View',
+          'Check in': 'Check in',
+          Approve: 'Approve',
+        }}
+        onStatusChange={() => {}}
+        volunteers={[
+          {
+            id: '1',
+            name: 'Jo Fischer',
+            state: 'requested',
+            statusLabel: 'Pending approval',
+            statusMenuAriaLabel: 'Change volunteer status',
+            statusOptions: [
+              { value: 'JOINED', label: 'Accepted', state: 'accepted' },
+              { value: 'ADMIN_REJECTED', label: 'Removed', state: 'rejected' },
+            ],
+            actions: ['Approve'],
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            id: '2',
+            name: 'Katharina Zimmer',
+            state: 'accepted',
+            statusLabel: 'Accepted',
+            statusMenuAriaLabel: 'Change volunteer status',
+            statusOptions: [
+              { value: 'ADMIN_REJECTED', label: 'Removed', state: 'rejected' },
+            ],
+            actions: [],
+            iconActions: ['View', 'Check in'],
+          },
+          {
+            id: '3',
+            name: 'Tom Becker',
+            state: 'declined',
+            statusLabel: 'Declined',
+            actions: [],
+            iconActions: ['View'],
+          },
+        ]}
+      />
+    </div>
+  ),
+};
+
+/**
+ * Regression guard: a per-volunteer name in `actionLabels` renders visibly
+ * on text buttons ("Check in Jo Fischer") instead of only being announced.
+ */
+export const AccessibleCheckInName: Story = {
+  name: 'Detail page / accessible check-in name (regression)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="during"
+        titleBadge={<Badge variant="outline">1 / 1 spots filled</Badge>}
+        actionLabels={{ 'Check in': 'Check in' }}
+        volunteers={[
+          {
+            id: '1',
+            name: 'Jo Fischer',
+            state: 'accepted',
+            actions: ['Check in'],
+            accessibleActionLabels: {
+              'Check in': 'Check in Jo Fischer',
+            },
+          },
+        ]}
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    const visibleLabel = await canvas.findByText('Check in', {
+      selector: 'span[aria-hidden="true"]',
+    });
+    expect(visibleLabel.textContent).toBe('Check in');
+    expect(visibleLabel.textContent).not.toContain('Jo Fischer');
+
+    const button = await canvas.findByRole('button', {
+      name: 'Check in Jo Fischer',
+    });
+    expect(button).toBeInTheDocument();
+  },
+};
+
+/** Omits statusOptions the way the panel does for checked-in/out rows, to render the static chip. */
+export const CheckInProtectedChip: Story = {
+  name: 'Detail page / check-in protected (no removal)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="during"
+        titleBadge={<Badge variant="outline">3 / 4 spots filled</Badge>}
+        onStatusChange={() => {}}
+        volunteers={[
+          {
+            id: '1',
+            name: 'Jo Fischer',
+            state: 'checked_in',
+            actions: ['Check out'],
+          },
+          {
+            id: '2',
+            name: 'Amara Diallo',
+            state: 'checked_out',
+            completedDuration: '4h 03m',
+            actions: ['Check in'],
+            statusTooltip: (
+              <div className="flex flex-col gap-0.5 text-xs">
+                <span>09:00 – 13:03</span>
+              </div>
+            ),
+          },
+          {
+            id: '3',
+            name: 'Theo Nowak',
+            state: 'checked_in',
+            actions: ['Check out'],
+            busy: true,
+          },
+        ]}
+      />
     </div>
   ),
 };

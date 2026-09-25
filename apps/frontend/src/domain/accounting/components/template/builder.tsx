@@ -49,6 +49,7 @@ import {
   missingOrgProfileSourcesForOrg,
   PROFILE_REQUIRED_SOURCES,
   type TemplateDocument,
+  withKostenstelleForNumberFormat,
 } from './builder-types';
 import { GeneratedDocumentPreview } from './generated-document-preview';
 import { TemplateListingPageError } from './listing-page';
@@ -65,7 +66,18 @@ const ALL_DATA_SOURCES: DataSourceKey[] = [
   ...PROFILE_REQUIRED_SOURCES,
 ];
 
-const PLACEHOLDER_TABLE_TOTAL_ROW = ['', '', 'Summe', '—', '', '—'];
+const PLACEHOLDER_TABLE_TOTAL_ROW = ['', '', 'Nettobetrag', '—', '', '—'];
+
+// Equal to the net figure by definition at 0% VAT, and stated anyway: it is
+// what says no VAT was applied, rather than leaving a reader to infer it.
+const PLACEHOLDER_TABLE_GROSS_ROW = [
+  '',
+  '',
+  'Gesamtbetrag (brutto)',
+  '',
+  '',
+  '—',
+];
 
 // The Pauschale reimbursement itself isn't a VAT-liable supply, but the rate is always 0% —
 // stated on every invoice regardless, never computed from the total.
@@ -80,11 +92,15 @@ function getPlaceholderTableRows(
   t: ReturnType<typeof useTranslations>,
 ): string[][] {
   const tableBlock = templateDoc.blocks.find((b) => b.kind === 'table');
+  const firstColumnSource =
+    tableBlock?.kind === 'table' ? tableBlock.firstColumnSource : undefined;
   const firstColumnPlaceholder =
-    tableBlock?.kind === 'table' && tableBlock.firstColumnSource === 'custom'
+    firstColumnSource === 'custom' && tableBlock?.kind === 'table'
       ? tableBlock.firstColumnCustomLabel ||
         t('blockEditor.firstColumnPlaceholders.custom')
-      : t('blockEditor.firstColumnPlaceholders.agreementTaskDescription');
+      : firstColumnSource === 'agreement_task_description'
+        ? t('blockEditor.firstColumnPlaceholders.agreementTaskDescription')
+        : t('blockEditor.firstColumnPlaceholders.shiftName');
   return [
     [firstColumnPlaceholder, '', '', '', '', ''],
     [firstColumnPlaceholder, '', '', '', '', ''],
@@ -162,13 +178,19 @@ export function TemplateBuilder({
     if (initialized.current) return;
     if (detailQuery.data) {
       initialized.current = true;
-      setTemplateDoc(parseTemplateBody(detailQuery.data.body));
+      // A stored template may predate the rule that a Kostenstelle number format
+      // must collect one, so normalise on the way in as well as on every change.
+      setTemplateDoc(
+        withKostenstelleForNumberFormat(
+          parseTemplateBody(detailQuery.data.body),
+        ),
+      );
     } else if (templatesQuery.isSuccess && !existingTemplate) {
       initialized.current = true;
       setTemplateDoc(
         slotKind === 'contract'
           ? getContractDocument(pauschale)
-          : getInvoiceDocument(pauschale),
+          : withKostenstelleForNumberFormat(getInvoiceDocument(pauschale)),
       );
     }
   }, [
@@ -190,9 +212,9 @@ export function TemplateBuilder({
   const knownValues = getKnownOrgValues({
     pauschale,
     orgName: orgProfile?.name ?? org.name,
-    orgAddress: orgProfile ? orgProfile.address : org.address,
+    orgStreet: orgProfile ? orgProfile.street : org.street,
+    orgZip: orgProfile ? orgProfile.zipCode : org.zipCode,
     orgCity: orgProfile ? orgProfile.city : org.city,
-    orgZip: orgProfile ? orgProfile.zipCode : null,
     orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
     hourlyRateCents: effectiveRate?.hourlyRateCents,
     yearlyLimitCents:
@@ -384,6 +406,9 @@ export function TemplateBuilder({
               kind === 'invoice' ? PLACEHOLDER_TABLE_TOTAL_ROW : undefined
             }
             tableNoteRow={kind === 'invoice' ? TABLE_VAT_ROW : undefined}
+            tableGrossRow={
+              kind === 'invoice' ? PLACEHOLDER_TABLE_GROSS_ROW : undefined
+            }
           />
         </section>
         <section

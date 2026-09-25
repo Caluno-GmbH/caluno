@@ -15,8 +15,7 @@ export type ShiftVolunteeringDisplayState =
   | 'rejected'
   | 'cancelled'
   | 'checked_in'
-  | 'not_checked_in'
-  | 'completed'
+  | 'checked_out'
   | 'no_show'
   | 'invited_never_responded'
   | 'requested_never_responded';
@@ -38,13 +37,16 @@ export type VolunteeringActionLabel =
   | 'View'
   | 'Check in'
   | 'Check out'
-  | 'Add timesheet'
-  | 'Edit time';
+  | 'Add timesheet';
 
 /** A status the chip dropdown can move a volunteer to. */
 export type VolunteeringStatusOption = {
+  /** Raw status value submitted on selection, e.g. "ADMIN_REJECTED". */
   value: string;
+  /** Localized label, e.g. "Removed". */
   label: string;
+  /** Display state this option would move the volunteer to, used for icon and tone. */
+  state: ShiftVolunteeringDisplayState;
 };
 
 export type VolunteeringStatusPresentation = {

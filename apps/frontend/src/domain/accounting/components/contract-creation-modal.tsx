@@ -108,13 +108,21 @@ export function ContractCreationModal({
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
 
-  // Reset local edits whenever a different volunteer/pauschale is targeted —
-  // the fields get re-seeded from the freshly loaded profile/template below.
+  /** Changes when the coordinator edits the template, which the fields follow. */
+  const templateIdentity = templateQuery.data
+    ? `${templateQuery.data.id}:${templateQuery.data.lastEditedAt ?? ''}`
+    : null;
+
+  // Reset local edits whenever a different volunteer, pauschale or template is
+  // targeted — the fields get re-seeded from the freshly loaded profile and
+  // template below. The template belongs in here because the dialog stays
+  // mounted between openings: a block switched on in the builder afterwards
+  // would otherwise never reach the fields.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset keyed on identity change, not a dependency read by the effect body
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
-  }, [volunteerId, pauschale]);
+  }, [volunteerId, pauschale, templateIdentity]);
 
   const profileLoaded = !!volunteerId && profileQuery.isSuccess;
   const reimbursementTypeMissing =
@@ -157,9 +165,9 @@ export function ContractCreationModal({
         ? 'loaded'
         : 'loading';
 
-  // Seed the editable fields once from the loaded profile/template, then
-  // leave them alone — further re-renders (e.g. rate data arriving late)
-  // shouldn't clobber anything the coordinator already edited.
+  // Seeded once per identity above, then left alone — a later re-render (rate
+  // data arriving, say) must not clobber a coordinator's edits. The reset
+  // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
     if (!dataReady || !templateDoc || derivedFields || !volunteerName) return;
     const profileData = (profileQuery.data?.data ?? {}) as Record<
@@ -263,7 +271,7 @@ export function ContractCreationModal({
     ...getKnownOrgValues({
       pauschale,
       orgName: orgProfile?.name ?? org.name,
-      orgAddress: orgProfile ? orgProfile.address : org.address,
+      orgStreet: orgProfile ? orgProfile.street : org.street,
       orgCity: orgProfile ? orgProfile.city : org.city,
       orgZip: orgProfile ? orgProfile.zipCode : null,
       orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,

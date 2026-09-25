@@ -2,6 +2,7 @@
 
 import type {
   CreateShiftInput,
+  DuplicateShiftInput,
   UpdateShiftInput,
   UpdateShiftInstanceInput,
 } from '@repo/data';
@@ -15,6 +16,7 @@ import {
   serverEditShiftInstanceFormSchema,
   serverShiftDeleteSchema,
   serverShiftFormSchema,
+  serverShiftInstanceApprovalSchema,
   serverShiftInstanceDeleteSchema,
 } from './schemas';
 
@@ -97,6 +99,51 @@ export const updateShift = actionClient
     return await data.shift.update(shiftId, input);
   });
 
+export const duplicateShift = actionClient
+  .inputSchema(serverShiftFormSchema)
+  .bindArgsSchemas([z.string(), z.string(), z.string().nullable()])
+  .action(
+    async ({
+      parsedInput,
+      bindArgsParsedInputs: [orgUId, sourceShiftId, eventId],
+    }) => {
+      const data = await getDataClient({ orgUId });
+
+      const rrule = generateRrule(
+        parsedInput.startsAt,
+        parsedInput.recurrenceDays,
+        parsedInput.recurrenceEndsAt,
+      );
+
+      const input: DuplicateShiftInput = {
+        title: parsedInput.name,
+        startsAt: parsedInput.startsAt.toISOString(),
+        endsAt: parsedInput.endsAt.toISOString(),
+        instructions: parsedInput.instructions,
+        location: parsedInput.location,
+        visibility: parsedInput.openShift
+          ? ShiftVisibility.AllMembers
+          : ShiftVisibility.InvitedMembers,
+        joinRequiresApproval: parsedInput.joinRequiresApproval ?? false,
+        rrule,
+        eventId,
+        imageFileId: parsedInput.imageFileId,
+        minVolunteers: parsedInput.minVolunteers ?? null,
+        maxVolunteers: parsedInput.maxVolunteers ?? null,
+        reimbursementTypeId: parsedInput.reimbursementTypeId ?? null,
+        requiredFormIds: parsedInput.requiredFormIds,
+      };
+
+      const shift = await data.shift.duplicate(sourceShiftId, input);
+      const instances = await data.shift.findInstances(shift.id);
+
+      return {
+        id: shift.id,
+        instanceId: pickFirstShiftInstanceId(instances),
+      };
+    },
+  );
+
 export const updateShiftInstance = actionClient
   .inputSchema(serverEditShiftInstanceFormSchema)
   .bindArgsSchemas([z.string(), z.string()])
@@ -169,6 +216,22 @@ export const deleteShiftInstance = actionClient
       parsedInput.instanceId,
       parsedInput.applyToAllFuture,
     );
+  });
+
+export const updateShiftInstanceApproval = actionClient
+  .inputSchema(serverShiftInstanceApprovalSchema)
+  .action(async ({ parsedInput }) => {
+    const data = await getDataClient({
+      orgUId: parsedInput.organizationUnitId,
+    });
+
+    const result = await data.shift.updateInstanceApproval(
+      parsedInput.instanceId,
+      parsedInput.joinRequiresApproval,
+      parsedInput.applyToAllFuture,
+    );
+
+    return result;
   });
 
 const updateShiftVolunteersSchema = z.object({

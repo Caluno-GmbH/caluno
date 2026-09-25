@@ -8,6 +8,7 @@ import {
   isNotNull,
   isNull,
   lt,
+  max,
   ne,
 } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
@@ -18,12 +19,14 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
+import { OrganizationService } from '../../organization/organization.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../../shift/enums';
+import { appDateParts } from '../../shift/utils/app-time';
 import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 import type {
   EligibleTimesheetVolunteer,
@@ -43,12 +46,17 @@ import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
 import { billingMonthBounds, billingYearBounds } from '../utils/billing-period';
+import { formatInvoiceNumber } from '../utils/invoice-number';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
 import { DocumentSigningService } from './document-signing.service';
 import { DocumentTemplateService } from './document-template.service';
+import {
+  findManualFieldValue,
+  type TemplateBodyShape,
+} from './document-template.types';
 import { ReimbursementRateService } from './reimbursement-rate.service';
 
 @Injectable()
@@ -63,6 +71,7 @@ export class InvoiceService {
     private readonly documentNotificationService: DocumentNotificationService,
     private readonly documentProfileRequirementService: DocumentProfileRequirementService,
     private readonly documentRenderingService: DocumentRenderingService,
+    private readonly organizationService: OrganizationService,
     private readonly postHogService: PostHogService,
   ) {}
 
@@ -72,7 +81,7 @@ export class InvoiceService {
       with: {
         documentTemplate: true,
         reimbursementType: true,
-        signatures: true,
+        signatures: { orderBy: { order: 'asc' } },
         statusChanges: true,
         invoiceTimeEntries: true,
         organizationUnit: true,
@@ -350,6 +359,16 @@ export class InvoiceService {
 
     // Only entries inside the invoice's own period can go on it, so the
     // document never lists hours from outside the period it states.
+    //
+    // There is deliberately no check for an existing timesheet over the same
+    // period. Hours arrive across a month, so a volunteer who serves again
+    // after one has been issued needs a second document for the new hours —
+    // and refusing that stranded them, since no period both surfaces those
+    // hours and avoids overlapping the issued document (VOLI-1469). What
+    // must never happen is an hour being paid twice, and that is enforced
+    // below by eligibility: `findEligibleTimeEntries` omits anything already
+    // claimed, and `uq_invoice_time_entries_time_entry_id` makes the claim
+    // exclusive in the database rather than by reasoning about dates.
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
@@ -369,38 +388,27 @@ export class InvoiceService {
       return entry;
     });
 
-    // One timesheet per volunteer, reimbursement type and period: the board
-    // models a month as a single "to invoice" row, so a second overlapping
-    // document would split it. A declined timesheet does not block a reissue.
-    const overlapping = await this.db.query.invoices.findFirst({
-      where: {
-        volunteerId: input.volunteerId,
-        reimbursementTypeId: input.reimbursementTypeId,
-        organizationUnitId: input.organizationUnitId
-          ? input.organizationUnitId
-          : { isNull: true },
-        invoiceStatus: { ne: InvoiceStatus.DECLINED },
-        periodStart: { lt: input.periodEnd },
-        periodEnd: { gt: input.periodStart },
-      },
-      columns: { id: true },
-    });
-    if (overlapping) {
-      throw new ConflictGraphQLError(
-        'A timesheet already exists for this volunteer and reimbursement type in this period',
-      );
-    }
-
     const totalHours =
       Math.round(
         selected.reduce((sum, entry) => sum + this.durationHours(entry), 0) *
           100,
       ) / 100;
-    const rateCents = await this.reimbursementRateService.getEffectiveRateCents(
-      organizationId,
-      input.organizationUnitId,
-      input.reimbursementTypeId,
-    );
+    // A coordinator can pay this one timesheet at a different rate — for a
+    // single person or a single month — without moving what the organisation
+    // pays everyone else. The figure below is what the yearly allowance then
+    // counts, because it is what is actually paid out.
+    const rateCents =
+      input.hourlyRateCents ??
+      (await this.reimbursementRateService.getEffectiveRateCents(
+        organizationId,
+        input.organizationUnitId,
+        input.reimbursementTypeId,
+      ));
+    if (!Number.isInteger(rateCents) || rateCents <= 0) {
+      throw new BadRequestGraphQLError(
+        'The hourly rate for this timesheet must be a positive amount in cents',
+      );
+    }
     const totalAmountCents = Math.round(totalHours * rateCents);
 
     const template = await this.documentTemplateService.findActiveTemplate(
@@ -450,7 +458,37 @@ export class InvoiceService {
       );
     }
 
+    const fieldOverrides = toFieldOverridesMap(input.fieldOverrides);
+    // An org-wide template leaves `organizationUnitId` null, but the number
+    // still has to be unique within the body issuing it — so the series belongs
+    // to the unit if there is one, and to the organisation's root unit if not.
+    const documentNumberScopeUnitId =
+      input.organizationUnitId ??
+      (await this.organizationService.requireRootUnit(organizationId)).id;
+    // The series restarts each January, so a document's year is part of which
+    // counter it draws from. Taken from the period the timesheet covers rather
+    // than from today, so a January document issued in February still belongs
+    // to January's books.
+    const documentNumberYear = appDateParts(input.periodStart).year;
+
     const invoice = await this.db.transaction(async (tx) => {
+      // Allocated inside the transaction so two coordinators issuing at once
+      // cannot read the same counter; the unique index on
+      // (scope unit, document number) is the backstop if they do.
+      const [{ highest } = { highest: null }] = await tx
+        .select({ highest: max(schema.invoices.documentNumberSeq) })
+        .from(schema.invoices)
+        .where(
+          and(
+            eq(
+              schema.invoices.documentNumberScopeUnitId,
+              documentNumberScopeUnitId,
+            ),
+            eq(schema.invoices.documentNumberYear, documentNumberYear),
+          ),
+        );
+      const documentNumberSeq = (highest ?? 0) + 1;
+
       const [created] = await tx
         .insert(schema.invoices)
         .values({
@@ -463,9 +501,26 @@ export class InvoiceService {
           periodEnd: input.periodEnd,
           totalAmountCents,
           totalHours,
+          hourlyRateCents: rateCents,
           isNonCompliant: !activeContract,
           resolvedBody: structuredClone(template.body),
-          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
+          fieldOverrides,
+          documentNumberScopeUnitId,
+          documentNumberSeq,
+          documentNumberYear,
+          documentNumber: formatInvoiceNumber({
+            invoiceFormat: template.invoiceNumberFormat,
+            periodStart: input.periodStart,
+            // The coordinator may have typed a cost centre for this one
+            // document; the template's own value is the default behind it.
+            kostenstelle:
+              fieldOverrides.kostenstelle ??
+              findManualFieldValue(
+                (template.body ?? {}) as TemplateBodyShape,
+                'kostenstelle',
+              ),
+            sequence: documentNumberSeq,
+          }),
         })
         .returning();
 
@@ -623,12 +678,8 @@ export class InvoiceService {
       return signed;
     });
 
-    // The timesheet is complete — render its PDF so it can be downloaded.
-    // Failures are logged, never thrown: signing still succeeds.
-    if (isFinal) {
-      const full = await this.findInvoice(invoiceId);
-      await this.documentRenderingService.renderAndAttachPdf(full, userId);
-    }
+    const full = await this.findInvoice(invoiceId);
+    await this.documentRenderingService.renderAndAttachPdf(full, userId);
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.INVOICE_SIGN,

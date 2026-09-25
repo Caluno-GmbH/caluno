@@ -15,6 +15,7 @@ import { UserRequirementStatus } from '../../requirement-profile/models/user-req
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { ShiftInviteStatus } from '../enums';
 import { CreateShiftInput } from '../inputs/create-shift.input';
+import { DuplicateShiftInput } from '../inputs/duplicate-shift.input';
 import { UpdateShiftInput } from '../inputs/update-shift.input';
 import { UpdateShiftInstanceInput } from '../inputs/update-shift-instance.input';
 import { ShiftMapper } from '../mappers/shift.mapper';
@@ -52,21 +53,21 @@ export class ShiftMutationResolver {
     instanceId: string,
     organizationUnitId: string,
     status: ShiftInviteStatus,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const isSelf = actorUserId === targetUserId;
     const isAdminOnlyTarget =
       status === ShiftInviteStatus.ADMIN_REJECTED ||
       status === ShiftInviteStatus.ADMIN_INVITED;
-
-    if (isSelf && !isAdminOnlyTarget) {
-      return;
-    }
 
     const hasPermission = await this.authService.hasRequiredPermissions(
       actorUserId,
       organizationUnitId,
       [PERMISSIONS.SHIFT_EDIT],
     );
+
+    if (isSelf && !isAdminOnlyTarget) {
+      return hasPermission;
+    }
 
     if (!hasPermission) {
       throw new ForbiddenGraphQLError(
@@ -75,6 +76,7 @@ export class ShiftMutationResolver {
     }
 
     await this.shiftService.findInstanceById(instanceId, organizationUnitId);
+    return hasPermission;
   }
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
@@ -87,6 +89,23 @@ export class ShiftMutationResolver {
     const shift = await this.shiftService.create(
       session.user.id,
       context.organizationUnitId,
+      input,
+    );
+    return this.shiftMapper.toModelOrThrow(shift);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => Shift)
+  async duplicateShift(
+    @Session() session: UserSession,
+    @Args('id', { type: () => String }) id: string,
+    @Args('input') input: DuplicateShiftInput,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<Shift> {
+    const shift = await this.shiftService.duplicate(
+      session.user.id,
+      context.organizationUnitId,
+      id,
       input,
     );
     return this.shiftMapper.toModelOrThrow(shift);
@@ -143,6 +162,29 @@ export class ShiftMutationResolver {
       instanceId,
       input,
       context.organizationUnitId,
+      {
+        applyToAllFuture: applyToAllFuture ?? false,
+        actorUserId: session.user.id,
+      },
+    );
+    return this.shiftInstanceMapper.toModelOrThrow(instance);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => ShiftInstance)
+  async updateShiftInstanceApproval(
+    @Args('id', { type: () => String }) id: string,
+    @Args('joinRequiresApproval', { type: () => Boolean })
+    joinRequiresApproval: boolean,
+    @Args('applyToAllFuture', { type: () => Boolean, nullable: true })
+    applyToAllFuture: boolean | null | undefined,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
+  ): Promise<ShiftInstance> {
+    const instance = await this.shiftService.updateShiftInstanceApproval(
+      id,
+      context.organizationUnitId,
+      joinRequiresApproval,
       {
         applyToAllFuture: applyToAllFuture ?? false,
         actorUserId: session.user.id,
@@ -280,18 +322,16 @@ export class ShiftMutationResolver {
       status === ShiftInviteStatus.ADMIN_REJECTED ||
       status === ShiftInviteStatus.ADMIN_INVITED;
 
-    if (isAdminOnlyTarget) {
-      const hasPermission = await this.authService.hasRequiredPermissions(
-        session.user.id,
-        context.organizationUnitId,
-        [PERMISSIONS.SHIFT_EDIT],
-      );
+    const hasPermission = await this.authService.hasRequiredPermissions(
+      session.user.id,
+      context.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
 
-      if (!hasPermission) {
-        throw new ForbiddenGraphQLError(
-          'You do not have permission to manage invites for other users',
-        );
-      }
+    if (isAdminOnlyTarget && !hasPermission) {
+      throw new ForbiddenGraphQLError(
+        'You do not have permission to manage invites for other users',
+      );
     }
 
     const invite = await this.shiftService.updateShiftInviteStatus(
@@ -299,6 +339,7 @@ export class ShiftMutationResolver {
       shiftId,
       status,
       session.user.id,
+      hasPermission,
     );
     return this.shiftInviteMapper.toModelOrThrow(invite);
   }
@@ -345,7 +386,7 @@ export class ShiftMutationResolver {
   ): Promise<ShiftInstanceInvite> {
     const targetUserId = userId ?? session.user.id;
 
-    await this.assertCanManageInviteForUser(
+    const hasPermission = await this.assertCanManageInviteForUser(
       session.user.id,
       targetUserId,
       instanceId,
@@ -358,6 +399,7 @@ export class ShiftMutationResolver {
       instanceId,
       status,
       session.user.id,
+      hasPermission,
     );
     return this.shiftInstanceInviteMapper.toModelOrThrow(invite);
   }

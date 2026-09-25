@@ -32,6 +32,11 @@ interface DayTimelineViewProps<T> {
   title: string;
   /** Rendered once, right after the header title/back row and before the day strip. */
   headerContent?: ReactNode;
+  /**
+   * Rendered once above the first day group (e.g. "Load past"). Stays outside
+   * the day headings so it sits above the first date label.
+   */
+  listPrefix?: ReactNode;
   isLoading: boolean;
   days: DayStripDay[];
   groups: DayGroup<T>[];
@@ -50,11 +55,19 @@ interface DayTimelineViewProps<T> {
    */
   sparseDays?: SparseDayStripEntry[];
   goToTopLabel?: string;
+  stripHasNext?: boolean;
+  onStripNext?: () => void;
+  /**
+   * Where to land the viewport on first paint. Discover lands on the closest
+   * upcoming day; my-shifts stays at the top so "Load past" is visible.
+   */
+  initialScroll?: 'closestUpcoming' | 'top';
 }
 
 export function DayTimelineView<T>({
   title,
   headerContent,
+  listPrefix,
   isLoading,
   days,
   groups,
@@ -65,6 +78,9 @@ export function DayTimelineView<T>({
   isDayDimmed,
   sparseDays,
   goToTopLabel,
+  stripHasNext,
+  onStripNext,
+  initialScroll = 'closestUpcoming',
 }: DayTimelineViewProps<T>) {
   const t = useTranslations('VolunteerHome');
   const ct = useTranslations('Common');
@@ -124,16 +140,23 @@ export function DayTimelineView<T>({
   // Scroll-spy: the active day is the first one whose heading sits below the
   // sticky header. As a heading tucks up behind the header the next day takes
   // over; once every heading is above it (bottom of the list) the last day wins.
+  //
+  // Re-bind when `isLoading` flips so we don't attach against a null listRef
+  // while the skeleton is showing and then skip re-attaching after the list
+  // remounts (groups may already be stable by then).
   useEffect(() => {
-    const root = listRef.current;
-    if (!root || groups.length === 0) return;
-    const headings = Array.from(
-      root.querySelectorAll<HTMLElement>('[data-day]'),
-    );
+    if (isLoading || groups.length === 0) return;
 
     let raf = 0;
     const update = () => {
       raf = 0;
+      const root = listRef.current;
+      if (!root) return;
+      // Re-query on every tick — DOM nodes are replaced when groups prepend.
+      const headings = Array.from(
+        root.querySelectorAll<HTMLElement>('[data-day]'),
+      );
+      if (headings.length === 0) return;
       // Measure the header's live bottom edge so the line is always exact.
       const headerBottom =
         headerRef.current?.getBoundingClientRect().bottom ?? 0;
@@ -162,16 +185,21 @@ export function DayTimelineView<T>({
       if (raf) cancelAnimationFrame(raf);
       clearTimeout(scrollEndTimeout);
     };
-  }, [groups]);
+  }, [groups, isLoading]);
 
-  // On first load, land on today (or the closest upcoming day).
+  // On first load, either stay at the top (my-shifts) or land on today /
+  // the closest upcoming day (discover).
   useEffect(() => {
     if (didInitialScroll.current || groups.length === 0) return;
+    didInitialScroll.current = true;
+    if (initialScroll === 'top') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
     const target = getClosestShiftDayOnOrAfter(groups, new Date());
     if (!target) return;
-    didInitialScroll.current = true;
     scrollToDay(target.date, false);
-  }, [groups, scrollToDay]);
+  }, [groups, scrollToDay, initialScroll]);
 
   return (
     <div>
@@ -195,11 +223,13 @@ export function DayTimelineView<T>({
                   onSelect={handleSelectDay}
                   todayLabel={t('todayButton')}
                   goToTodayLabel={t('goToToday')}
-                  shiftCountLabel={(n) => t('yourShiftsCount', { n })}
+                  shiftCountLabel={(n) => t('dayStripCount', { n })}
                   isScrolling={isScrolling}
                   sparse={!!sparseDays}
                   sparseDays={sparseDays}
                   goToTopLabel={goToTopLabel}
+                  hasNext={stripHasNext}
+                  onNext={onStripNext}
                 />
               )}
             </div>
@@ -213,34 +243,37 @@ export function DayTimelineView<T>({
         ) : !hasContent ? (
           empty
         ) : (
-          <div ref={listRef} className="flex flex-col gap-6">
-            {groups.map((group) => (
-              <div
-                key={group.date.toISOString()}
-                data-day={group.date.getTime()}
-                className="space-y-4"
-                style={{ scrollMarginTop }}
-              >
+          <div className="flex flex-col gap-6">
+            {listPrefix}
+            <div ref={listRef} className="flex flex-col gap-6">
+              {groups.map((group) => (
                 <div
-                  className={cn(
-                    'flex items-center justify-between gap-2',
-                    isDayDimmed?.(group) && 'opacity-55',
-                  )}
+                  key={group.date.toISOString()}
+                  data-day={group.date.getTime()}
+                  className="space-y-4"
+                  style={{ scrollMarginTop }}
                 >
-                  <h3 className="text-lg font-semibold text-foreground">
-                    {formatDate(group.date, {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                    })}
-                  </h3>
-                  <span className="shrink-0 text-base text-muted-foreground">
-                    {t('yourShiftsCount', { n: group.items.length })}
-                  </span>
+                  <div
+                    className={cn(
+                      'flex items-center justify-between gap-2',
+                      isDayDimmed?.(group) && 'opacity-55',
+                    )}
+                  >
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {formatDate(group.date, {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                      })}
+                    </h3>
+                    <span className="shrink-0 text-base text-muted-foreground">
+                      {t('yourShiftsCount', { n: group.items.length })}
+                    </span>
+                  </div>
+                  {renderContent(group)}
                 </div>
-                {renderContent(group)}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </div>

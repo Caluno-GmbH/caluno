@@ -102,7 +102,6 @@ export class ShiftCallOutService {
       const sentFallback = await this.sendNoRecipientsFallback(
         instance,
         organizationUnit,
-        actorUserId,
       );
       if (sentFallback) {
         this.captureCallOutSend({
@@ -113,7 +112,7 @@ export class ShiftCallOutService {
           sentToManagerFallback: true,
         });
       }
-      return { recipientCount: 0, sentToManagerFallback: true };
+      return { recipientCount: 0, sentToManagerFallback: sentFallback };
     }
 
     const recipientCount = await this.sendCallOutEmails(
@@ -270,8 +269,7 @@ export class ShiftCallOutService {
         if (excluded.has(userId)) return false;
         const status = resolvedStatuses.get(userId);
         return (
-          status === undefined ||
-          status === ShiftInviteStatus.VOLUNTEER_CANCELLED
+          status === undefined || status === ShiftInviteStatus.ADMIN_INVITED
         );
       });
   }
@@ -399,43 +397,61 @@ export class ShiftCallOutService {
       name: string;
       organizationId?: string | null;
     },
-    actorUserId: string,
   ): Promise<boolean> {
-    const manager = await this.notificationService.resolveUserNotificationData(
-      actorUserId,
-      { event: NotificationEvent.SHIFT_INSTANCE_CALL_OUT_NO_RECIPIENTS },
+    const managers = await this.authService.findUsersWithPermission(
+      organizationUnit.id,
+      PERMISSIONS.SHIFT_EDIT,
     );
-    if (!manager) {
+    if (managers.length === 0) {
+      this.logger.warn(
+        `No managers to notify that there was nobody left to ask for instance ${instance.id}`,
+      );
+      return false;
+    }
+
+    const recipients =
+      await this.notificationService.resolveUsersNotificationData(
+        managers.map((manager) => manager.id),
+        { event: NotificationEvent.SHIFT_INSTANCE_CALL_OUT_NO_RECIPIENTS },
+      );
+    if (recipients.length === 0) {
       return false;
     }
 
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
 
-    try {
-      const templateContext = createEmailTemplateContext(
-        this.appI18n,
-        manager.locale,
-      );
-      const { subject, html } = await shiftInstanceCallOutNoRecipientsTemplate(
-        {
-          organizationUnitId: organizationUnit.id,
-          organizationUnitName: organizationUnit.name,
-          shiftTitle,
-          recipientFirstName: manager.firstName,
-          startsAt: instance.actualStartsAt,
-          endsAt: instance.actualEndsAt,
-        },
-        templateContext,
-      );
-      await this.emailService.send({ to: manager.email, subject, html });
-      return true;
-    } catch (error) {
-      this.logger.error(
-        `Failed to send "nobody left to ask" email to user ${actorUserId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-      return false;
-    }
+    const results = await Promise.all(
+      recipients.map(async (recipient) => {
+        try {
+          const templateContext = createEmailTemplateContext(
+            this.appI18n,
+            recipient.locale,
+          );
+          const { subject, html } =
+            await shiftInstanceCallOutNoRecipientsTemplate(
+              {
+                organizationUnitId: organizationUnit.id,
+                organizationUnitName: organizationUnit.name,
+                shiftTitle,
+                recipientFirstName: recipient.firstName,
+                startsAt: instance.actualStartsAt,
+                endsAt: instance.actualEndsAt,
+              },
+              templateContext,
+            );
+          await this.emailService.send({ to: recipient.email, subject, html });
+          return true;
+        } catch (error) {
+          this.logger.error(
+            `Failed to send "nobody left to ask" email to user ${recipient.userId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+          return false;
+        }
+      }),
+    );
+
+    return results.some(Boolean);
   }
 }

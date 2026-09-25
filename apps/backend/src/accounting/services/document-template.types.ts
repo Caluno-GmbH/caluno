@@ -28,6 +28,10 @@ export interface TemplateBlockShape {
   line?: TemplateLineShape;
   /** Table blocks. */
   columns?: string[];
+  /** Table blocks: what fills the first column of each row. */
+  firstColumnSource?: string;
+  /** Table blocks: the coordinator's own label, used when the source is 'custom'. */
+  firstColumnCustomLabel?: string;
 }
 
 export interface TemplateBodyShape {
@@ -52,7 +56,9 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
-  volunteer_address: 'address',
+  volunteer_street: 'street',
+  volunteer_zip: 'zip',
+  volunteer_city: 'city',
   volunteer_dob: 'birth-date',
   volunteer_tax_id: 'tax-id',
 };
@@ -64,9 +70,9 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
  */
 export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
   org_name: 'name',
-  org_address: 'address',
-  org_city: 'city',
+  org_street: 'street',
   org_zip: 'zipCode',
+  org_city: 'city',
   org_legal_rep: 'legalRep',
 };
 
@@ -76,14 +82,50 @@ export const ORG_SOURCE_TO_ORG_COLUMN: Record<string, string> = {
  * body the way missingOrgProfileSources does.
  *
  * org_legal_rep is deliberately excluded: no shipped preset binds it (see
- * builder-document-presets.ts, which binds only org_name / org_address /
- * org_city), so gating setup on it would block orgs on a field their
+ * builder-document-presets.ts, which binds only org_name / org_street /
+ * org_zip / org_city), so gating setup on it would block orgs on a field their
  * documents never render. A template that binds it manually is still caught
  * at save time by missingOrgProfileSources, which derives its requirements
  * from the actual body.
  */
 export const REQUIRED_ORG_PROFILE_SOURCES = [
   'org_name',
-  'org_address',
+  'org_street',
+  'org_zip',
   'org_city',
 ] as const;
+
+/**
+ * Reads a manual (coordinator-typed) field's value out of a template body,
+ * wherever in the document it sits. Used for values that have to be read
+ * outside the render pass — the Kostenstelle, for one, is needed when an
+ * invoice number is allocated at creation.
+ */
+export function findManualFieldValue(
+  body: TemplateBodyShape,
+  fieldId: string,
+): string | undefined {
+  const findIn = (fields?: TemplateFieldShape[]): string | undefined => {
+    const field = fields?.find(
+      (f) => f.id === fieldId && f.value.kind === 'manual-template',
+    );
+    return field?.value.kind === 'manual-template'
+      ? field.value.value
+      : undefined;
+  };
+
+  const lines: (TemplateLineShape | undefined)[] = [
+    body.header?.orgIdentityLine,
+    ...(body.header?.metaLines ?? []),
+    ...(body.blocks ?? []).flatMap((block) => [
+      block.line,
+      ...(block.lines ?? []),
+    ]),
+    body.footer?.closingLine,
+  ];
+  for (const line of lines) {
+    const value = findIn(line?.fields);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}

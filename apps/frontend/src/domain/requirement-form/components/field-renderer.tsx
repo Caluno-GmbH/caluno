@@ -255,7 +255,7 @@ export function buildFieldSchema(
     s = s.refine((v) => !v || PHONE_RE.test(v), {
       message: messages.mustBeValidPhone(label),
     }) as z.ZodString;
-  } else if (sk === 'address') {
+  } else if (sk === 'street') {
     s = s.max(200, messages.maxChars(label, 200)) as z.ZodString;
   } else if (sk === 'zip') {
     s = s.refine((v) => !v || ZIP_RE.test(v), {
@@ -290,9 +290,7 @@ export type RenderableField = Pick<
   | 'placeholder'
   | 'systemKey'
   | 'options'
-  | 'documentFileId'
-  | 'documentDownloadUrl'
-  | 'documentFilename'
+  | 'documents'
   | 'documentLabel'
   | 'minAge'
 >;
@@ -331,28 +329,31 @@ export function FieldRenderer({
 
   if (field.type === 'DOCUMENT_ACKNOWLEDGEMENT') {
     const descriptionId = description ? `${field.id}-description` : undefined;
+    const docCount = field.documents?.length ?? 0;
     return (
       <Field>
         <FieldLabel>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.documentLabel && (
+        {docCount > 0 && (
           <FieldDescription>
-            {field.documentDownloadUrl ? (
-              <span className="flex items-center gap-1">
-                <a
-                  href={field.documentDownloadUrl}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  {field.documentLabel}
-                </a>
-                <Link className="size-3" />
-              </span>
-            ) : (
-              field.documentLabel
-            )}
+            <span className="flex flex-col items-start gap-1">
+              {field.documents?.map((doc, i) => {
+                const text = `${docCount > 1 ? `${i + 1}: ` : ''}${doc.filename || ''}`;
+                if (!text) return null;
+                return doc.downloadUrl ? (
+                  <span key={doc.fileId} className="flex items-center gap-1">
+                    <a href={doc.downloadUrl} target="_blank" rel="noopener">
+                      {text}
+                    </a>
+                    <Link className="size-3" />
+                  </span>
+                ) : (
+                  <span key={doc.fileId}>{text}</span>
+                );
+              })}
+            </span>
           </FieldDescription>
         )}
         <div className="flex gap-2 items-center">
@@ -378,7 +379,7 @@ export function FieldRenderer({
   }
 
   if (field.type === 'CHECKBOX') {
-    const descriptionId = description ? `${field.id}-description` : undefined;
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel>
@@ -405,7 +406,7 @@ export function FieldRenderer({
   }
 
   if (field.type === 'SINGLE_CHOICE') {
-    const descriptionId = description ? `${field.id}-description` : undefined;
+    const descriptionId = description ? `$field.id-description` : undefined;
     const opts = hasFixedGenderOptions(field.systemKey)
       ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
       : (field.options ?? []);
@@ -441,7 +442,7 @@ export function FieldRenderer({
 
   if (field.type === 'MULTI_CHOICE') {
     const selected = parseMultiChoiceValue(value);
-    const descriptionId = description ? `${field.id}-description` : undefined;
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel>
@@ -453,10 +454,10 @@ export function FieldRenderer({
             <label
               key={opt.value}
               className="flex items-center gap-2 text-sm"
-              htmlFor={`${field.id}-${opt.value}`}
+              htmlFor={`$field.id-$opt.value`}
             >
               <Checkbox
-                id={`${field.id}-${opt.value}`}
+                id={`$field.id-$opt.value`}
                 checked={selected.includes(opt.value)}
                 disabled={readOnly}
                 onCheckedChange={(checked) => {
@@ -480,9 +481,9 @@ export function FieldRenderer({
 
   if (field.type === 'DATE') {
     const dateValue = value ? new Date(value) : undefined;
-    const labelId = `${field.id}-label`;
+    const labelId = `$field.id-label`;
     const isBirthDate = field.systemKey === 'birth-date';
-    const descriptionId = description ? `${field.id}-description` : undefined;
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel id={isBirthDate ? labelId : undefined} htmlFor={field.id}>
@@ -534,7 +535,7 @@ export function FieldRenderer({
   }
 
   if (field.type === 'TEXTAREA') {
-    const descriptionId = description ? `${field.id}-description` : undefined;
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel htmlFor={field.id}>
@@ -566,7 +567,7 @@ export function FieldRenderer({
         ? 'number'
         : 'text';
 
-  const descriptionId = description ? `${field.id}-description` : undefined;
+  const descriptionId = description ? `$field.id-description` : undefined;
 
   const paymentDataVisibilityHint =
     field.systemKey && Object.hasOwn(RESTRICTED_PAYMENT_MASKS, field.systemKey)

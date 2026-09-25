@@ -9,11 +9,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import {
-  getClosestShiftDayOnOrAfter,
-  isSameDay,
-  type SparseDayStripEntry,
-} from '../lib/date-helpers';
+import { isSameDay, type SparseDayStripEntry } from '../lib/date-helpers';
 
 export interface DayStripDay {
   date: Date;
@@ -244,7 +240,7 @@ function PagedDayStrip({
             dayLabel={formatDate(day.date, { day: 'numeric' })}
             shiftCountLabel={shiftCountLabel}
             onSelect={onSelect}
-            className="min-w-[84px] flex-1"
+            className="min-w-[92px] flex-1"
           />
         ))}
       </div>
@@ -270,11 +266,15 @@ function ScrollDayStrip({
   formatDate,
   today,
   isScrolling,
+  hasNext,
+  onNext,
 }: DayStripProps & { formatDate: FormatDate; today: Date }) {
   const t = useTranslations('VolunteerHome');
   const stripRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const fetchRevealRef = useRef(false);
+  const prevDayCountRef = useRef(days.length);
 
   const todayIndex = days.findIndex((day) => isSameDay(day.date, today));
   const activeIsToday = isSameDay(activeDate, today);
@@ -316,6 +316,28 @@ function ScrollDayStrip({
       left: direction * strip.clientWidth * 0.8,
       behavior: 'smooth',
     });
+  };
+
+  // A next-click at the strip's end loads the next page
+  useEffect(() => {
+    if (fetchRevealRef.current && days.length > prevDayCountRef.current) {
+      const strip = stripRef.current;
+      strip?.scrollBy({
+        left: strip.clientWidth * 0.8,
+        behavior: 'smooth',
+      });
+    }
+    fetchRevealRef.current = false;
+    prevDayCountRef.current = days.length;
+  }, [days.length]);
+
+  const handleNext = () => {
+    if (canScrollRight) {
+      scrollByPage(1);
+    } else if (hasNext) {
+      fetchRevealRef.current = true;
+      onNext?.();
+    }
   };
 
   const scrollToToday = useCallback(() => {
@@ -403,16 +425,16 @@ function ScrollDayStrip({
               dayLabel={formatDate(day.date, { day: 'numeric' })}
               shiftCountLabel={shiftCountLabel}
               onSelect={onSelect}
-              className="min-w-[84px] flex-1"
+              className="min-w-[92px] flex-1"
             />
           ))}
         </div>
 
         <ArrowButton
           direction="right"
-          enabled={canScrollRight}
+          enabled={canScrollRight || !!hasNext}
           label={t('dayStripNext')}
-          onClick={() => scrollByPage(1)}
+          onClick={handleNext}
         />
       </div>
 
@@ -433,10 +455,8 @@ function ScrollDayStrip({
 /**
  * Sparse day strip (my-shifts): only days with shifts, plus non-interactive
  * "…" gap dividers for stretches of empty days (see `sparseDays`). Mirrors
- * `ScrollDayStrip`'s scaffolding, but "go to top" always jumps to the
- * closest upcoming shift-day rather than specifically "today" — the label
- * and enabled state don't depend on whether the active day happens to be
- * today.
+ * `ScrollDayStrip`'s scaffolding; "go to top" scrolls the page to the top
+ * of the list (where "Load past" lives).
  */
 function SparseScrollDayStrip({
   sparseDays,
@@ -498,9 +518,8 @@ function SparseScrollDayStrip({
   };
 
   const scrollToTop = useCallback(() => {
-    const target = getClosestShiftDayOnOrAfter(dayEntries, new Date());
-    if (target) onSelect(target.date);
-  }, [dayEntries, onSelect]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   // Keep the active pill in view as the selection changes (e.g. scroll-spy).
   // Snapped instantly — see the equivalent effect in `ScrollDayStrip` for why.
@@ -564,7 +583,7 @@ function SparseScrollDayStrip({
                 dayLabel={formatDate(entry.date, { day: 'numeric' })}
                 shiftCountLabel={shiftCountLabel}
                 onSelect={onSelect}
-                className="min-w-[84px] flex-1"
+                className="min-w-[92px] flex-1"
               />
             ),
           )}

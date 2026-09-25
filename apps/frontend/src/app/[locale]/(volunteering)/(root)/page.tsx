@@ -56,7 +56,7 @@ export default async function VolunteeringHomePage({
   return (
     <VolunteerHomeContent
       initialMyShiftInstances={myShiftInstancesPage.items}
-      initialAvailableShiftInstances={availableShiftInstancesPage.items}
+      initialAvailableShiftInstancesPage={availableShiftInstancesPage}
       initialAvailableEvents={availableEventsPage.items}
       initialShiftInvitations={shiftInvitationsPage.items}
       initialEventInvitations={eventInvitationsPage.items}
@@ -69,6 +69,8 @@ export default async function VolunteeringHomePage({
               organizationName:
                 pendingRequest.organizationUnit.organization.name,
               contactName: pendingRequest.contact?.name,
+              contactEmail: pendingRequest.contact?.email,
+              contactPhone: pendingRequest.contact?.phone,
             }
           : null
       }

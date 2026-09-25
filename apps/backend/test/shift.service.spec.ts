@@ -78,6 +78,8 @@ describe('ShiftService', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
+      {} as never,
     );
     const accountingOrgAccessService = new AccountingOrgAccessService(
       db,
@@ -2966,6 +2968,120 @@ describe('ShiftService', () => {
           instance.actualEndsAt.getTime() - instance.actualStartsAt.getTime(),
         ).toBe(5 * 60 * 60 * 1000);
       }
+    });
+  });
+
+  describe('findTimeEntriesForInstances', () => {
+    it('returns an empty array when the instance has no time entries', async () => {
+      const shiftId = await createNoneRecurringShift(
+        new Date('2026-09-01T08:00:00.000Z'),
+        new Date('2026-09-01T10:00:00.000Z'),
+      );
+      const [instance] = await getInstances(shiftId);
+
+      const result = await shiftService.findTimeEntriesForInstances(
+        [instance.id],
+        organizationUnitId,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns entries for the requested instance ordered by startedAt ascending', async () => {
+      const shiftId = await createNoneRecurringShift(
+        new Date('2026-09-02T08:00:00.000Z'),
+        new Date('2026-09-02T10:00:00.000Z'),
+      );
+      const [instance] = await getInstances(shiftId);
+      const volunteer = await createUser(db);
+      const earlier = new Date('2026-09-02T08:00:00.000Z');
+      const later = new Date('2026-09-02T09:00:00.000Z');
+
+      await db.insert(schema.timeEntries).values({
+        shiftInstanceId: instance.id,
+        organizationUnitId,
+        volunteerId: volunteer.id,
+        startedAt: later,
+        endedAt: null,
+      });
+      await db.insert(schema.timeEntries).values({
+        shiftInstanceId: instance.id,
+        organizationUnitId,
+        volunteerId: volunteer.id,
+        startedAt: earlier,
+        endedAt: new Date('2026-09-02T08:30:00.000Z'),
+      });
+
+      const result = await shiftService.findTimeEntriesForInstances(
+        [instance.id],
+        organizationUnitId,
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0]?.startedAt).toEqual(earlier);
+      expect(result[1]?.startedAt).toEqual(later);
+    });
+
+    it('only returns entries belonging to the requested instance ids', async () => {
+      const shiftIdA = await createNoneRecurringShift(
+        new Date('2026-09-03T08:00:00.000Z'),
+        new Date('2026-09-03T10:00:00.000Z'),
+      );
+      const [instanceA] = await getInstances(shiftIdA);
+      const shiftIdB = await createNoneRecurringShift(
+        new Date('2026-09-04T08:00:00.000Z'),
+        new Date('2026-09-04T10:00:00.000Z'),
+      );
+      const [instanceB] = await getInstances(shiftIdB);
+      const volunteer = await createUser(db);
+
+      await db.insert(schema.timeEntries).values({
+        shiftInstanceId: instanceB.id,
+        organizationUnitId,
+        volunteerId: volunteer.id,
+        startedAt: new Date('2026-09-04T08:00:00.000Z'),
+        endedAt: null,
+      });
+
+      const result = await shiftService.findTimeEntriesForInstances(
+        [instanceA.id],
+        organizationUnitId,
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('excludes entries from another org unit', async () => {
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Other Org ${crypto.randomUUID()}`,
+      );
+      const otherUnit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'root',
+      });
+      const shiftId = await createNoneRecurringShift(
+        new Date('2026-09-05T08:00:00.000Z'),
+        new Date('2026-09-05T10:00:00.000Z'),
+      );
+      const [instance] = await getInstances(shiftId);
+      const volunteer = await createUser(db);
+
+      await db.insert(schema.timeEntries).values({
+        shiftInstanceId: instance.id,
+        organizationUnitId: otherUnit.id,
+        volunteerId: volunteer.id,
+        startedAt: new Date('2026-09-05T08:00:00.000Z'),
+        endedAt: null,
+      });
+
+      const result = await shiftService.findTimeEntriesForInstances(
+        [instance.id],
+        organizationUnitId,
+      );
+
+      expect(result).toEqual([]);
     });
   });
 });

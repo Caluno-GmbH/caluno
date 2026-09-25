@@ -19,6 +19,7 @@ import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { ShiftInviteStatus, ShiftVisibility } from '../src/shift/enums';
+import { ShiftInstanceFieldResolver } from '../src/shift/resolvers/shift-instance-field.resolver';
 import { ShiftMutationResolver } from '../src/shift/resolvers/shift-mutation.resolver';
 import { ShiftService } from '../src/shift/shift.service';
 import {
@@ -5410,5 +5411,161 @@ describe('remindShiftInstanceInvite (VOLI-1236)', () => {
         ShiftMutationResolver.prototype.remindShiftInstanceInvite,
       ),
     ).toEqual([PERMISSIONS.SHIFT_EDIT]);
+  });
+});
+
+describe('ShiftInstance.timeEntries (VOLI-1360)', () => {
+  let app: INestApplication;
+  let db: Database;
+  let organizationUnitId: string;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+    organizationUnitId = context.organizationUnitId;
+  });
+
+  const TIME_ENTRIES_QUERY = `
+    query ShiftInstanceTimeEntries($shiftId: ID!) {
+      shiftInstances(shiftId: $shiftId) {
+        id
+        timeEntries {
+          id
+          startedAt
+          endedAt
+          volunteer { id }
+        }
+      }
+    }
+  `;
+
+  it('returns the instance time entries with resolved volunteers', async () => {
+    const { id: shiftId } = await createShift(db, { organizationUnitId });
+    const instances = await db.query.shiftInstances.findMany({
+      where: { masterId: shiftId },
+    });
+    const instanceId = instances[0]?.id;
+    expect(instanceId).toBeDefined();
+    if (!instanceId) {
+      throw new Error('Expected shift instance');
+    }
+
+    const volunteer = await createUser(db);
+    const startedAt = new Date('2026-09-02T08:00:00.000Z');
+    const [entry] = await db
+      .insert(schema.timeEntries)
+      .values({
+        shiftInstanceId: instanceId,
+        organizationUnitId,
+        volunteerId: volunteer.id,
+        startedAt,
+        endedAt: null,
+      })
+      .returning();
+    expect(entry).toBeDefined();
+
+    const data = await graphqlRequestRequiringData<{
+      shiftInstances: Array<{
+        id: string;
+        timeEntries: Array<{
+          id: string;
+          startedAt: string;
+          endedAt: string | null;
+          volunteer: { id: string };
+        }>;
+      }>;
+    }>(
+      app,
+      {
+        query: TIME_ENTRIES_QUERY,
+        variables: { shiftId },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'shiftInstances',
+    );
+
+    const instance = data.shiftInstances.find((row) => row.id === instanceId);
+    expect(instance?.timeEntries).toHaveLength(1);
+    expect(instance?.timeEntries[0]?.id).toBe(entry?.id);
+    expect(instance?.timeEntries[0]?.volunteer.id).toBe(volunteer.id);
+    expect(instance?.timeEntries[0]?.endedAt).toBeNull();
+  });
+
+  it('hides entries belonging to another org unit on the same instance', async () => {
+    const { organization, type } = await createOrganizationWithType(
+      db,
+      `Time Entries Org ${crypto.randomUUID()}`,
+    );
+    const otherUnit = await createUnit(db, {
+      organizationId: organization.id,
+      typeId: type.id,
+      name: 'root',
+    });
+
+    const { id: shiftId } = await createShift(db, { organizationUnitId });
+    const instances = await db.query.shiftInstances.findMany({
+      where: { masterId: shiftId },
+    });
+    const instanceId = instances[0]?.id;
+    expect(instanceId).toBeDefined();
+    if (!instanceId) {
+      throw new Error('Expected shift instance');
+    }
+
+    const ownVolunteer = await createUser(db);
+    const otherVolunteer = await createUser(db);
+    const startedAt = new Date('2026-09-02T08:00:00.000Z');
+
+    const [ownEntry] = await db
+      .insert(schema.timeEntries)
+      .values({
+        shiftInstanceId: instanceId,
+        organizationUnitId,
+        volunteerId: ownVolunteer.id,
+        startedAt,
+        endedAt: null,
+      })
+      .returning();
+    // Same instance, but recorded under another org unit's id.
+    await db.insert(schema.timeEntries).values({
+      shiftInstanceId: instanceId,
+      organizationUnitId: otherUnit.id,
+      volunteerId: otherVolunteer.id,
+      startedAt,
+      endedAt: null,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      shiftInstances: Array<{
+        id: string;
+        timeEntries: Array<{ id: string; volunteer: { id: string } }>;
+      }>;
+    }>(
+      app,
+      {
+        query: TIME_ENTRIES_QUERY,
+        variables: { shiftId },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'shiftInstances',
+    );
+
+    const instance = data.shiftInstances.find((row) => row.id === instanceId);
+    expect(instance?.timeEntries).toHaveLength(1);
+    expect(instance?.timeEntries[0]?.id).toBe(ownEntry?.id);
+    expect(instance?.timeEntries[0]?.volunteer.id).toBe(ownVolunteer.id);
+  });
+
+  // The integration test app bypasses PermissionGuard by design
+  // (create-graphql-full-app.ts), so guard coverage follows the suite's
+  // metadata convention instead of a live rejection.
+  it('gates timeEntries on shift:view', () => {
+    expect(
+      Reflect.getMetadata(
+        PERMISSIONS_KEY,
+        ShiftInstanceFieldResolver.prototype.timeEntries,
+      ),
+    ).toEqual([PERMISSIONS.SHIFT_VIEW]);
   });
 });

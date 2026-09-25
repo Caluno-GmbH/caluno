@@ -3,6 +3,7 @@ import { Calendar, Hand, ScanQrCode } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { UserCard } from '@/components/user-card';
+import { CheckInUnavailableCard } from '@/domain/shift/components/check-in-unavailable-card';
 import { CheckOutButton } from '@/domain/shift/components/checkout-button';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
@@ -23,7 +24,7 @@ export default async function VolunteeringCheckOutPage({
   const context = await data.timeEntry.getCheckInContext(checkInId);
 
   if (!context) {
-    notFound();
+    return <CheckInUnavailableCard />;
   }
 
   const entry = context.openTimeEntries.find((item) => item.id === entryId);

@@ -63,12 +63,11 @@ export function getDocLineSummary(
 export type DocumentRowAction = 'open' | 'create' | 'none';
 
 /**
- * What a board row's body click should do. A timesheet still to create has no
- * persisted document — its row id is synthetic — so it opens the creation
- * modal rather than fetching an id that is not a UUID.
+ * What a board row's body click should do.
  */
 export function documentRowAction(doc: BoardDocument): DocumentRowAction {
-  if (doc.status === 'contract-generate') return 'none';
+  if (doc.status === 'contract-generate' || doc.status === 'contract-draft')
+    return 'none';
   if (doc.status === 'timesheet-generate') return 'create';
   return 'open';
 }
@@ -253,6 +252,7 @@ export function mapSignatureToSignee(
       id: signature.requiredPermission?.id ?? `role-${role}`,
       name: signature.requiredPermission?.key ?? PermissionKey.AccountingManage,
     },
+    signedByName: signature.signedByUser?.name,
   };
 }
 

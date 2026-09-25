@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'bun:test';
 import { filterRecipientsForEvent } from '../../notification/email-preferences';
 import { PostHogService } from '../../shared/observability/posthog.service';
-import { ShiftCallOutSource, ShiftVisibility } from '../enums';
+import {
+  ShiftCallOutSource,
+  ShiftInviteStatus,
+  ShiftVisibility,
+} from '../enums';
 import { ShiftCallOutService } from './shift-call-out.service';
 
 const ORG_UNIT_ID = 'org-1';
 const INSTANCE_ID = 'instance-1';
 
-function makeInstance() {
+function makeInstance(
+  visibility: ShiftVisibility = ShiftVisibility.ALL_MEMBERS,
+) {
   return {
     id: INSTANCE_ID,
     masterId: 'shift-1',
@@ -20,33 +26,53 @@ function makeInstance() {
     overrideLocation: null,
     master: {
       organizationUnitId: ORG_UNIT_ID,
-      visibility: ShiftVisibility.ALL_MEMBERS,
+      visibility,
       title: 'Test Shift',
       location: null,
     },
   };
 }
 
-function setup(
-  recipientPreferences: Record<
-    string,
-    { emailUrgentCallsEnabled?: boolean }
-  > = {},
-) {
+type SetupOptions = {
+  recipientPreferences?: Record<string, { emailUrgentCallsEnabled?: boolean }>;
+  members?: Array<{ id: string }>;
+  managers?: Array<{ id: string }>;
+  instanceInvites?: Array<{ userId: string; status: ShiftInviteStatus }>;
+  seriesInvites?: Array<{ userId: string; status: ShiftInviteStatus }>;
+  visibility?: ShiftVisibility;
+  failEmailSend?: boolean;
+};
+
+function setup({
+  recipientPreferences = {},
+  members = [{ id: 'vol-1' }, { id: 'vol-2' }, { id: 'vol-3' }],
+  managers = [{ id: 'manager-1' }],
+  instanceInvites = [],
+  seriesInvites = [],
+  visibility = ShiftVisibility.ALL_MEMBERS,
+  failEmailSend = false,
+}: SetupOptions = {}) {
   const insertedRows: Array<Record<string, unknown>> = [];
   const sentEmails: Array<{ to: string; subject: string; html: string }> = [];
+  const resolvedUserIds: string[] = [];
 
+  let selectIndex = 0;
   const db = {
     query: {
       organizationUnits: {
         findFirst: async () => ({ id: ORG_UNIT_ID, name: 'Org One' }),
       },
     },
-    select: () => ({
-      from: () => ({
-        where: async () => [],
-      }),
-    }),
+    select: () => {
+      const queryIndex = selectIndex;
+      selectIndex += 1;
+      return {
+        from: () => ({
+          where: async () =>
+            queryIndex === 0 ? instanceInvites : seriesInvites,
+        }),
+      };
+    },
     insert: () => ({
       values: (rows: Array<Record<string, unknown>>) => {
         insertedRows.push(...rows);
@@ -56,34 +82,48 @@ function setup(
   };
 
   const shiftService = {
-    findInstanceById: async () => makeInstance(),
+    findInstanceById: async () => makeInstance(visibility),
   };
 
   const authService = {
-    findUsersWithPermission: async () => [
-      { id: 'manager-1', email: 'manager@example.com', name: 'Manager One' },
-    ],
+    findUsersWithPermission: async () => managers,
   };
 
   const membershipService = {
-    getMembers: async () => [{ id: 'vol-1' }, { id: 'vol-2' }, { id: 'vol-3' }],
+    getMembers: async () => members,
   };
 
   const notificationService = {
-    resolveUsersNotificationData: async (userIds: string[]) =>
-      userIds.map((userId) => ({
+    resolveUsersNotificationData: async (userIds: string[]) => {
+      resolvedUserIds.push(...userIds);
+      return userIds.map((userId) => ({
         userId,
         email: `${userId}@example.com`,
         name: userId,
         firstName: userId,
         locale: 'en',
         ...recipientPreferences[userId],
-      })),
+      }));
+    },
+    resolveUserNotificationData: async (userId: string) => {
+      resolvedUserIds.push(userId);
+      return {
+        userId,
+        email: `${userId}@example.com`,
+        name: userId,
+        firstName: userId,
+        locale: 'en',
+        ...recipientPreferences[userId],
+      };
+    },
     filterRecipientsByEmailPreferences: filterRecipientsForEvent,
   };
 
   const emailService = {
     send: async (options: { to: string; subject: string; html: string }) => {
+      if (failEmailSend) {
+        throw new Error('transport down');
+      }
       sentEmails.push(options);
     },
   };
@@ -107,7 +147,7 @@ function setup(
     postHogService as never,
   );
 
-  return { service, insertedRows, sentEmails };
+  return { service, insertedRows, sentEmails, resolvedUserIds };
 }
 
 describe('ShiftCallOutService.sendCallOut', () => {
@@ -130,7 +170,9 @@ describe('ShiftCallOutService.sendCallOut', () => {
 
   it('skips volunteers who switched Urgent calls off and records no delivery for them', async () => {
     const { service, insertedRows, sentEmails } = setup({
-      'vol-2': { emailUrgentCallsEnabled: false },
+      recipientPreferences: {
+        'vol-2': { emailUrgentCallsEnabled: false },
+      },
     });
 
     const result = await service.sendCallOut(
@@ -152,7 +194,9 @@ describe('ShiftCallOutService.sendCallOut', () => {
 
   it('still emails a volunteer whose Urgent calls setting is on', async () => {
     const { service, sentEmails } = setup({
-      'vol-2': { emailUrgentCallsEnabled: true },
+      recipientPreferences: {
+        'vol-2': { emailUrgentCallsEnabled: true },
+      },
     });
 
     await service.sendCallOut(INSTANCE_ID, ORG_UNIT_ID, 'actor-1');
@@ -182,6 +226,198 @@ describe('ShiftCallOutService.sendCallOut', () => {
     for (const row of insertedRows) {
       expect(row.source).toBe(ShiftCallOutSource.AUTOMATIC);
     }
+  });
+
+  it('emails the unit managers — never the synthetic actor — when an automatic call-out has nobody left to ask', async () => {
+    const { service, sentEmails, insertedRows, resolvedUserIds } = setup({
+      members: [],
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'system-automated',
+      { source: ShiftCallOutSource.AUTOMATIC },
+    );
+
+    expect(result).toEqual({ recipientCount: 0, sentToManagerFallback: true });
+    expect(resolvedUserIds).toEqual(['manager-1']);
+    expect(sentEmails.map((email) => email.to)).toEqual([
+      'manager-1@example.com',
+    ]);
+    expect(insertedRows).toEqual([]);
+  });
+
+  it('does not attempt to email anyone when a call-out has nobody left to ask and no managers exist', async () => {
+    const { service, sentEmails, resolvedUserIds } = setup({
+      members: [],
+      managers: [],
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result).toEqual({ recipientCount: 0, sentToManagerFallback: false });
+    expect(resolvedUserIds).toEqual([]);
+    expect(sentEmails).toEqual([]);
+  });
+
+  it('does not claim a manager was notified when the notification email fails', async () => {
+    const { service, sentEmails } = setup({
+      members: [],
+      failEmailSend: true,
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result).toEqual({ recipientCount: 0, sentToManagerFallback: false });
+    expect(sentEmails).toEqual([]);
+  });
+
+  it('for ALL_MEMBERS shifts, emails members without an invite or with re-askable invite statuses only', async () => {
+    const members = [
+      { id: 'vol-no-invite' },
+      { id: 'vol-admin-invited' },
+      { id: 'vol-awaiting-admin-approval' },
+      { id: 'vol-joined' },
+      { id: 'vol-volunteer-rejected' },
+      { id: 'vol-volunteer-cancelled' },
+      { id: 'vol-admin-rejected' },
+      { id: 'vol-waitlist-joined' },
+    ];
+    const instanceInvites = [
+      {
+        userId: 'vol-admin-invited',
+        status: ShiftInviteStatus.ADMIN_INVITED,
+      },
+      {
+        userId: 'vol-awaiting-admin-approval',
+        status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+      },
+      { userId: 'vol-joined', status: ShiftInviteStatus.JOINED },
+      {
+        userId: 'vol-volunteer-rejected',
+        status: ShiftInviteStatus.VOLUNTEER_REJECTED,
+      },
+      {
+        userId: 'vol-volunteer-cancelled',
+        status: ShiftInviteStatus.VOLUNTEER_CANCELLED,
+      },
+      {
+        userId: 'vol-admin-rejected',
+        status: ShiftInviteStatus.ADMIN_REJECTED,
+      },
+      {
+        userId: 'vol-waitlist-joined',
+        status: ShiftInviteStatus.WAITLIST_JOINED,
+      },
+    ];
+
+    const { service, insertedRows, sentEmails } = setup({
+      members,
+      instanceInvites,
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result.recipientCount).toBe(2);
+    expect(sentEmails.map((email) => email.to).sort()).toEqual([
+      'vol-admin-invited@example.com',
+      'vol-no-invite@example.com',
+    ]);
+    expect(insertedRows.map((row) => row.recipientId).sort()).toEqual([
+      'vol-admin-invited',
+      'vol-no-invite',
+    ]);
+  });
+
+  it('for INVITED_MEMBERS shifts, emails only ADMIN_INVITED instance invites', async () => {
+    const members = [
+      { id: 'vol-admin-invited' },
+      { id: 'vol-awaiting-admin-approval' },
+      { id: 'vol-joined' },
+      { id: 'vol-volunteer-rejected' },
+      { id: 'vol-volunteer-cancelled' },
+      { id: 'vol-admin-rejected' },
+      { id: 'vol-waitlist-joined' },
+    ];
+    const instanceInvites = [
+      {
+        userId: 'vol-admin-invited',
+        status: ShiftInviteStatus.ADMIN_INVITED,
+      },
+      {
+        userId: 'vol-awaiting-admin-approval',
+        status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+      },
+      { userId: 'vol-joined', status: ShiftInviteStatus.JOINED },
+      {
+        userId: 'vol-volunteer-rejected',
+        status: ShiftInviteStatus.VOLUNTEER_REJECTED,
+      },
+      {
+        userId: 'vol-volunteer-cancelled',
+        status: ShiftInviteStatus.VOLUNTEER_CANCELLED,
+      },
+      {
+        userId: 'vol-admin-rejected',
+        status: ShiftInviteStatus.ADMIN_REJECTED,
+      },
+      {
+        userId: 'vol-waitlist-joined',
+        status: ShiftInviteStatus.WAITLIST_JOINED,
+      },
+    ];
+
+    const { service, insertedRows, sentEmails } = setup({
+      members,
+      instanceInvites,
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result.recipientCount).toBe(1);
+    expect(sentEmails.map((email) => email.to)).toEqual([
+      'vol-admin-invited@example.com',
+    ]);
+    expect(insertedRows.map((row) => row.recipientId)).toEqual([
+      'vol-admin-invited',
+    ]);
+  });
+
+  it('prefers instance-level invite status over series-level invite status', async () => {
+    const { service, insertedRows } = setup({
+      members: [{ id: 'vol-1' }],
+      instanceInvites: [
+        { userId: 'vol-1', status: ShiftInviteStatus.ADMIN_INVITED },
+      ],
+      seriesInvites: [{ userId: 'vol-1', status: ShiftInviteStatus.JOINED }],
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result.recipientCount).toBe(1);
+    expect(insertedRows.map((row) => row.recipientId)).toEqual(['vol-1']);
   });
 });
 

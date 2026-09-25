@@ -26,21 +26,21 @@ describe('resolveSubmissionFieldAnswers', () => {
         systemKey: 'name',
       }),
       field({
-        id: 'f-address',
+        id: 'f-street',
         type: 'TEXT',
         label: 'Address',
-        systemKey: 'address',
+        systemKey: 'street',
       }),
       field({ id: 'f-custom', type: 'TEXT', label: 'Motivation' }),
     ];
     const submissionValues: SubmissionValue[] = [
       { fieldId: 'f-name', value: 'Name at submission time' },
-      { fieldId: 'f-address', value: 'Old street 1' },
+      { fieldId: 'f-street', value: 'Old street 1' },
       { fieldId: 'f-custom', value: 'Because I care' },
     ];
     const profileData = {
       name: 'Current profile name',
-      address: 'Current profile address',
+      street: 'Current profile address',
     };
 
     const answers = resolveSubmissionFieldAnswers(

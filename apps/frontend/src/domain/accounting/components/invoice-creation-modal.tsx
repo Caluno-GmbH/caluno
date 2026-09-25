@@ -1,6 +1,11 @@
 'use client';
 
-import { DataError, PermissionKey, parseTemplateBody } from '@repo/data';
+import {
+  DataError,
+  PermissionKey,
+  parseTemplateBody,
+  type TableFirstColumnSource,
+} from '@repo/data';
 import {
   useAccountingSetupStatus,
   useActiveDocumentTemplate,
@@ -14,7 +19,7 @@ import {
   useVolunteersNeedingTimesheets,
   useYearlyUsage,
 } from '@repo/data/react';
-import { Input } from '@repo/ui';
+import { Input, Textarea } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -26,8 +31,13 @@ import {
   type DerivedField,
   deriveEditableFields,
 } from '../lib/creation-fields';
-import { mapEligibleTimeEntry } from '../lib/creation-modal.utils';
+import {
+  formatHours,
+  mapEligibleTimeEntry,
+  sumHours,
+} from '../lib/creation-modal.utils';
 import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
+import { formatRateInput, parseRateCents } from '../lib/invoice-rate';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
 import {
   apiDocumentKindFor,
@@ -64,7 +74,11 @@ function splitDateTimeRange(dateTime: string): { begin: string; end: string } {
   };
 }
 
-/** Mock document-number generation — no real sequence counter exists yet, so this only has to look plausible for the chosen format. */
+/**
+ * The shape of the number this timesheet will carry, for the preview only. The
+ * real one is allocated when the timesheet is created — a counter per
+ * sub-organisation — so the sequence shown here is always the first.
+ */
 function formatDocumentNumber(
   invoiceFormat: InvoiceNumberFormat,
   period: DateRange,
@@ -87,6 +101,32 @@ function formatDocumentNumber(
   }
 }
 
+/**
+ * The first cell of one Stundennachweis row, mirroring the generated PDF. Only
+ * `shift_name` differs from row to row; hours with no shift behind them fall
+ * back to the agreement's task description.
+ */
+function firstColumnLabel(args: {
+  source: TableFirstColumnSource;
+  customLabel: string;
+  shiftName: string;
+  agreementTaskDescription: string | undefined;
+}): string {
+  switch (args.source) {
+    case 'custom':
+      return args.customLabel;
+    case 'agreement_task_description':
+      return args.agreementTaskDescription || args.shiftName;
+    default:
+      return args.shiftName || args.agreementTaskDescription || '';
+  }
+}
+
+/**
+ * A coordinator-typed rate in euros ("12", "12,50", "12.50") as whole cents.
+ * Undefined while the field is empty or half-typed, which leaves the
+ * organisation's own rate in charge rather than briefly charging zero.
+ */
 interface InvoiceCreationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -124,6 +164,9 @@ export function InvoiceCreationModal({
   const tManual = useTranslations(
     'Accounting.templates.builder.manualFieldLabels',
   );
+  const tPlaceholders = useTranslations(
+    'Accounting.templates.builder.manualFieldPlaceholders',
+  );
   const tPauschale = useTranslations('Accounting.reimbursements.toolbar');
   const tPeriod = useTranslations(
     'Accounting.reimbursements.invoiceModal.periodPicker',
@@ -152,9 +195,15 @@ export function InvoiceCreationModal({
   const effectiveRate = ratesQuery.data?.find(
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,
   );
-  const ratePerHour = effectiveRate
-    ? centsToEuros(effectiveRate.hourlyRateCents)
-    : 0;
+  const orgRateCents = effectiveRate?.hourlyRateCents;
+  // A coordinator may pay this one timesheet differently — for a single person
+  // or a single month — without moving what the organisation pays anyone else.
+  // Held as the typed string so a half-finished "12," survives a re-render.
+  const [rateInput, setRateInput] = useState<string | null>(null);
+  const rateCents = parseRateCents(rateInput) ?? orgRateCents ?? 0;
+  const rateIsOverridden =
+    orgRateCents !== undefined && rateCents !== orgRateCents;
+  const ratePerHour = centsToEuros(rateCents);
 
   const invoiceTemplateQuery = useActiveDocumentTemplate(
     apiDocumentKindFor('invoice'),
@@ -223,14 +272,22 @@ export function InvoiceCreationModal({
 
   const createInvoice = useCreateInvoice();
 
-  // Reset local edits and the period whenever a different document/volunteer
-  // is targeted — everything gets re-seeded from the freshly loaded data below.
+  /** Changes when the coordinator edits the template, which the fields follow. */
+  const templateIdentity = invoiceTemplateQuery.data
+    ? `${invoiceTemplateQuery.data.id}:${invoiceTemplateQuery.data.lastEditedAt ?? ''}`
+    : null;
+
+  // Reset local edits and the period whenever a different document, volunteer
+  // or template is targeted — everything gets re-seeded from the freshly
+  // loaded data below. The template belongs in here because the dialog stays
+  // mounted between openings: a block switched on in the builder afterwards
+  // would otherwise never reach the fields.
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset keyed on identity change, not a dependency read by the effect body
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
     setPeriod(periodToOpen(initialPeriod));
-  }, [volunteerId, docId]);
+  }, [volunteerId, docId, templateIdentity]);
 
   // Every eligible entry starts checked — unchecking removes it from the
   // invoice being created (see EligibleHoursCard). Re-syncs whenever the
@@ -294,8 +351,9 @@ export function InvoiceCreationModal({
         ? 'loaded'
         : 'loading';
 
-  // Seed the editable fields once from the loaded profile/template, then leave
-  // them alone — later re-renders shouldn't clobber a coordinator's edits.
+  // Seeded once per identity above, then left alone — a later re-render (rate
+  // data arriving, say) must not clobber a coordinator's edits. The reset
+  // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
     if (!dataReady || !template || derivedFields || !volunteerName) return;
     const profileData = (profileQuery.data?.data ?? {}) as Record<
@@ -324,10 +382,7 @@ export function InvoiceCreationModal({
   };
 
   const selectedLines = lines.filter((line) => checkedIds.has(line.id));
-  const selectedHours = selectedLines.reduce(
-    (sum, line) => sum + line.hours,
-    0,
-  );
+  const selectedHours = sumHours(selectedLines.map((line) => line.hours));
   const selectedAmount = selectedHours * ratePerHour;
   // One source for the cap card, the projection and the Jahresdeckel
   // sentence, with the same cutoff the PDF uses. The dialog waits for it
@@ -358,6 +413,7 @@ export function InvoiceCreationModal({
         periodStart: periodBounds.periodStart,
         periodEnd: periodBounds.periodEnd,
         timeEntryIds: selectedLines.map((line) => line.id),
+        hourlyRateCents: rateIsOverridden ? rateCents : undefined,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({
@@ -419,15 +475,24 @@ export function InvoiceCreationModal({
   const monthParam = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`;
   const timesheetsHref = `/admin/${orgUId}/timesheets?month=${monthParam}&volunteer=${volunteerId}`;
 
-  const kostenstelle = template
-    ? getManualFieldValue(template, 'kostenstelle')
-    : undefined;
+  // This document's own edit first, then the template's stored value — the same
+  // order the backend uses when it allocates the real number.
+  const manualOverrides: Record<string, string> = {};
+  for (const field of derivedFields ?? []) {
+    if (field.kind !== 'manual') continue;
+    const value = currentValue(field.fieldId, field.value);
+    if (value) manualOverrides[field.fieldId] = value;
+  }
+
+  const kostenstelle =
+    manualOverrides.kostenstelle ??
+    (template ? getManualFieldValue(template, 'kostenstelle') : undefined);
 
   const values: Partial<Record<DataSourceKey, string>> = {
     ...getKnownOrgValues({
       pauschale,
       orgName: orgProfile?.name ?? org.name,
-      orgAddress: orgProfile ? orgProfile.address : org.address,
+      orgStreet: orgProfile ? orgProfile.street : org.street,
       orgCity: orgProfile ? orgProfile.city : org.city,
       orgZip: orgProfile ? orgProfile.zipCode : null,
       orgLegalRep: orgProfile ? orgProfile.legalRep : org.legalRep,
@@ -502,42 +567,53 @@ export function InvoiceCreationModal({
 
   const tableBlock = template?.blocks.find((b) => b.kind === 'table');
   const firstColumnSource =
-    tableBlock?.kind === 'table'
-      ? tableBlock.firstColumnSource
-      : 'agreement_task_description';
+    tableBlock?.kind === 'table' ? tableBlock.firstColumnSource : 'shift_name';
   const firstColumnCustomLabel =
     tableBlock?.kind === 'table' ? tableBlock.firstColumnCustomLabel : '';
   // The agreement's task description is baked into the volunteer's contract template, not
   // this invoice's own — read from the sibling contract template for this pauschale.
   const agreementTaskDescription =
-    firstColumnSource === 'agreement_task_description' && contractTemplate
+    firstColumnSource !== 'custom' && contractTemplate
       ? getManualFieldValue(contractTemplate, 'tasks')
       : undefined;
 
   const tableRows = selectedLines.map((line) => {
     const { begin, end } = splitDateTimeRange(line.dateTime);
     return [
-      firstColumnSource === 'agreement_task_description'
-        ? (agreementTaskDescription ?? line.shiftName)
-        : firstColumnCustomLabel,
+      firstColumnLabel({
+        source: firstColumnSource,
+        customLabel: firstColumnCustomLabel,
+        shiftName: line.shiftName,
+        agreementTaskDescription,
+      }),
       begin,
       end,
-      `${line.hours}h`,
-      `${ratePerHour.toFixed(2)} €`,
+      `${formatHours(line.hours)}h`,
+      formatHourlyRate(ratePerHour),
       formatHourlyRate(line.hours * ratePerHour),
     ];
   });
   const tableTotalRow = [
     '',
     '',
-    'Summe',
-    `${selectedHours}h`,
+    'Nettobetrag',
+    `${formatHours(selectedHours)}h`,
     '',
     formatHourlyRate(selectedAmount),
   ];
   // The Pauschale reimbursement itself isn't a VAT-liable supply, but the rate is always 0% —
   // stated on every invoice regardless, never computed from the total.
   const tableVatRow = ['', '', 'zzgl. 0 % USt.', '', '', '0,00 €'];
+  // Equal to the net figure by definition, and stated anyway: it is what says
+  // no VAT was applied, rather than leaving a reader to infer it.
+  const tableGrossRow = [
+    '',
+    '',
+    'Gesamtbetrag (brutto)',
+    '',
+    '',
+    formatHourlyRate(selectedAmount),
+  ];
 
   return (
     <DocumentCreationDialog
@@ -610,51 +686,72 @@ export function InvoiceCreationModal({
             signerRightLabel={t('preview.signatureSupervisor')}
             unsignedLabel={t('preview.unsigned')}
             values={values}
+            manualOverrides={manualOverrides}
             tableRows={tableRows}
             tableTotalRow={tableTotalRow}
             tableNoteRow={tableVatRow}
+            tableGrossRow={tableGrossRow}
           />
         )
       }
       fields={
         derivedFields && (
           <>
-            {derivedFields.map((field) =>
-              field.kind === 'bound' ? (
-                <AccountingProfileFieldCard
-                  key={field.fieldId}
-                  label={tFields(
-                    field.labelKey as Parameters<typeof tFields>[0],
-                  )}
-                  value={currentValue(field.fieldId, field.value)}
-                  provenance={
-                    isEdited(field.fieldId)
-                      ? 'override'
-                      : field.provenance === 'template'
-                        ? 'gap'
-                        : field.provenance
-                  }
-                  volunteerName={volunteerName}
-                  docType="invoice"
-                  onSave={handleFieldChange(field.fieldId)}
-                />
-              ) : (
-                <InfoPanel
-                  key={field.fieldId}
-                  title={tManual(
-                    field.labelKey as Parameters<typeof tManual>[0],
-                  )}
-                >
-                  <Input
-                    className="mt-2"
-                    value={currentValue(field.fieldId, field.value) ?? ''}
-                    onChange={(e) =>
-                      handleFieldChange(field.fieldId)(e.target.value)
+            {derivedFields
+              .filter((field) => field.control !== 'textarea')
+              .map((field) =>
+                field.kind === 'bound' ? (
+                  <AccountingProfileFieldCard
+                    key={field.fieldId}
+                    label={tFields(
+                      field.labelKey as Parameters<typeof tFields>[0],
+                    )}
+                    value={currentValue(field.fieldId, field.value)}
+                    provenance={
+                      isEdited(field.fieldId)
+                        ? 'override'
+                        : field.provenance === 'template'
+                          ? 'gap'
+                          : field.provenance
                     }
+                    volunteerName={volunteerName}
+                    docType="invoice"
+                    onSave={handleFieldChange(field.fieldId)}
                   />
-                </InfoPanel>
-              ),
-            )}
+                ) : (
+                  <InfoPanel
+                    key={field.fieldId}
+                    title={tManual(
+                      field.labelKey as Parameters<typeof tManual>[0],
+                    )}
+                  >
+                    <Input
+                      className="mt-2"
+                      value={currentValue(field.fieldId, field.value) ?? ''}
+                      onChange={(e) =>
+                        handleFieldChange(field.fieldId)(e.target.value)
+                      }
+                    />
+                  </InfoPanel>
+                ),
+              )}
+            <InfoPanel title={t('rateFieldLabel')}>
+              <div className="mt-2 flex flex-col gap-1.5">
+                <Input
+                  inputMode="decimal"
+                  value={rateInput ?? formatRateInput(orgRateCents)}
+                  onChange={(e) => setRateInput(e.target.value)}
+                  aria-label={t('rateFieldLabel')}
+                />
+                <p className="text-sm text-muted-foreground">
+                  {rateIsOverridden
+                    ? t('rateFieldOverridden', {
+                        rate: formatHourlyRate(centsToEuros(orgRateCents ?? 0)),
+                      })
+                    : t('rateFieldHint')}
+                </p>
+              </div>
+            </InfoPanel>
             <InfoPanel title={t('periodFieldLabel')}>
               <div className="mt-2">
                 <PeriodPicker
@@ -678,6 +775,28 @@ export function InvoiceCreationModal({
                 />
               </div>
             </InfoPanel>
+            {derivedFields
+              .filter((field) => field.control === 'textarea')
+              .map((field) => (
+                <InfoPanel
+                  key={field.fieldId}
+                  title={tManual(
+                    field.labelKey as Parameters<typeof tManual>[0],
+                  )}
+                >
+                  <Textarea
+                    className="mt-2"
+                    rows={4}
+                    placeholder={tPlaceholders(
+                      field.labelKey as Parameters<typeof tPlaceholders>[0],
+                    )}
+                    value={currentValue(field.fieldId, field.value) ?? ''}
+                    onChange={(e) =>
+                      handleFieldChange(field.fieldId)(e.target.value)
+                    }
+                  />
+                </InfoPanel>
+              ))}
             <InvoiceCapCard
               usedBefore={usedBefore}
               projectedAfter={projectedAfter}

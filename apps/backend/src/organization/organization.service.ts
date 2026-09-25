@@ -349,6 +349,22 @@ export class OrganizationService {
     });
   }
 
+  /**
+   * The organisation's root unit, or a not-found error. Prefer this over
+   * `findRootUnit` when the caller cannot continue without a root.
+   */
+  async requireRootUnit(
+    organizationId: string,
+  ): Promise<OrganizationUnitEntity> {
+    const root = await this.findRootUnit(organizationId);
+    if (!root) {
+      throw new NotFoundGraphQLError(
+        `No root organization unit found for organization ${organizationId}`,
+      );
+    }
+    return root;
+  }
+
   async findChildrenUnits(
     organizationId: string,
   ): Promise<OrganizationUnitEntity[]> {
@@ -429,7 +445,9 @@ export class OrganizationService {
           contactEmail: createdOrganization.contactEmail,
           phone: createdOrganization.phone,
           description: createdOrganization.description,
-          address: createdOrganization.address,
+          street: createdOrganization.street,
+          zipCode: createdOrganization.zipCode,
+          city: createdOrganization.city,
         })
         .returning();
 

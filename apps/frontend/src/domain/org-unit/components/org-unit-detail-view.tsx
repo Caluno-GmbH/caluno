@@ -11,8 +11,10 @@ import {
   MapPinIcon,
   PencilIcon,
   PhoneIcon,
+  UserIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { formatAddress } from '@/domain/org-unit/format-address';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { FORM_ID, OrgUnitCreateEditSheet } from './org-unit-create-edit-sheet';
 
@@ -35,11 +37,13 @@ export function OrgUnitDetailView({
   const t = useTranslations('OrgUnit.detail');
   const tNav = useTranslations('Navigation');
 
+  const addressText = formatAddress(orgUnit);
   const hasContact =
+    orgUnit.contactPersonName ||
     orgUnit.contactEmail ||
     orgUnit.phone ||
     orgUnit.websiteUrl ||
-    orgUnit.address;
+    addressText;
 
   return (
     <>
@@ -76,6 +80,12 @@ export function OrgUnitDetailView({
             <CardTitle>{t('contactTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {orgUnit.contactPersonName && (
+              <div className="flex items-center gap-2 text-sm">
+                <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span>{orgUnit.contactPersonName}</span>
+              </div>
+            )}
             {orgUnit.contactEmail && (
               <div className="flex items-center gap-2 text-sm">
                 <MailIcon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -106,12 +116,12 @@ export function OrgUnitDetailView({
                 </a>
               </div>
             )}
-            {orgUnit.address && (
+            {addressText ? (
               <div className="flex items-center gap-2 text-sm">
                 <MapPinIcon className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>{orgUnit.address}</span>
+                <span>{addressText}</span>
               </div>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       )}

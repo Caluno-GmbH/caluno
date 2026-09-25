@@ -3,6 +3,7 @@
 import { Combobox as ComboboxPrimitive } from '@base-ui/react';
 import { CheckIcon, ChevronDownIcon, XIcon } from 'lucide-react';
 import * as React from 'react';
+import { RemoveScroll } from 'react-remove-scroll';
 
 import { cn } from '../../lib/utils';
 import { Button } from './button';
@@ -112,7 +113,9 @@ function ComboboxContent({
         align={align}
         alignOffset={alignOffset}
         anchor={anchor}
-        className="isolate z-50"
+        // Radix Sheet/Dialog sets pointer-events:none on body; body-portaled
+        // popups stay visible but unclickable without this (Base UI × Radix).
+        className="pointer-events-auto isolate z-50"
       >
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
@@ -129,15 +132,19 @@ function ComboboxContent({
 }
 
 function ComboboxList({ className, ...props }: ComboboxPrimitive.List.Props) {
+  // Nested RemoveScroll lets the list accept wheel events while Radix Sheet/Dialog
+  // has locked document scroll (body-portaled popup is outside that allow-list).
   return (
-    <ComboboxPrimitive.List
-      data-slot="combobox-list"
-      className={cn(
-        'max-h-[min(calc(--spacing(96)---spacing(9)),calc(var(--available-height)---spacing(9)))] scroll-py-1 overflow-y-auto p-1 data-empty:p-0',
-        className,
-      )}
-      {...props}
-    />
+    <RemoveScroll allowPinchZoom forwardProps>
+      <ComboboxPrimitive.List
+        data-slot="combobox-list"
+        className={cn(
+          'max-h-[min(calc(--spacing(96)---spacing(9)),calc(var(--available-height)---spacing(9)))] scroll-py-1 overflow-y-auto overscroll-contain p-1 data-empty:p-0',
+          className,
+        )}
+        {...props}
+      />
+    </RemoveScroll>
   );
 }
 

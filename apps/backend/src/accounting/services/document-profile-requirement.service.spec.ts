@@ -27,10 +27,10 @@ describe('DocumentProfileRequirementService', () => {
               fields: [{ value: { kind: 'bound', source: 'volunteer_iban' } }],
             },
             {
-              text: '{volunteerAddress}',
+              text: '{volunteerStreet}',
               enabled: false,
               fields: [
-                { value: { kind: 'bound', source: 'volunteer_address' } },
+                { value: { kind: 'bound', source: 'volunteer_street' } },
               ],
             },
           ],
@@ -109,7 +109,7 @@ describe('DocumentProfileRequirementService', () => {
             Promise.resolve({
               id: 'unit-1',
               name: 'Playground',
-              address: 'Straße 1',
+              street: 'Straße 1',
               city: '',
             }),
         },
@@ -125,7 +125,7 @@ describe('DocumentProfileRequirementService', () => {
           enabled: true,
           fields: [
             { value: { kind: 'bound', source: 'org_name' } },
-            { value: { kind: 'bound', source: 'org_address' } },
+            { value: { kind: 'bound', source: 'org_street' } },
             { value: { kind: 'bound', source: 'org_city' } },
           ],
         },
@@ -145,7 +145,7 @@ describe('DocumentProfileRequirementService', () => {
             Promise.resolve({
               id: 'unit-1',
               name: 'Playground',
-              address: 'Straße 1',
+              street: 'Straße 1',
               city: 'Berlin',
               legalRep: '',
             }),
@@ -177,7 +177,7 @@ describe('DocumentProfileRequirementService', () => {
             Promise.resolve({
               id: 'unit-1',
               name: 'Playground',
-              address: 'Straße 1',
+              street: 'Straße 1',
               city: 'Berlin',
               zipCode: '',
             }),
@@ -212,7 +212,7 @@ describe('DocumentProfileRequirementService', () => {
       return Promise.resolve({
         id: 'root-unit',
         name: 'Root',
-        address: '',
+        street: '',
         city: '',
       });
     };
@@ -227,13 +227,13 @@ describe('DocumentProfileRequirementService', () => {
       header: {
         orgIdentityLine: {
           enabled: true,
-          fields: [{ value: { kind: 'bound', source: 'org_address' } }],
+          fields: [{ value: { kind: 'bound', source: 'org_street' } }],
         },
       },
     };
     expect(
       await serviceWithOrg.missingOrgProfileSources('org-1', undefined, body),
-    ).toEqual(['org_address']);
+    ).toEqual(['org_street']);
   });
 
   it('treats volunteer tax id as a profile-required source', async () => {
@@ -281,7 +281,7 @@ describe('DocumentProfileRequirementService', () => {
 
     it('reports every baseline org field the unit has not filled in', async () => {
       const service = makeService({
-        unit: { name: 'Playground', address: null, city: '  ' },
+        unit: { name: 'Playground', street: null, city: '  ' },
       });
 
       const missing = await service.missingBaselineOrgProfileSources(
@@ -290,14 +290,15 @@ describe('DocumentProfileRequirementService', () => {
       );
 
       // org_name maps to `name`, which is always present, so it never appears.
-      expect(missing.sort()).toEqual(['org_address', 'org_city']);
+      expect(missing.sort()).toEqual(['org_city', 'org_street', 'org_zip']);
     });
 
     it('is empty when every baseline field is filled', async () => {
       const service = makeService({
         unit: {
           name: 'Playground',
-          address: 'Hauptstraße 1',
+          street: 'Hauptstraße 1',
+          zipCode: '23456',
           city: 'Berlin',
         },
       });
@@ -314,9 +315,9 @@ describe('DocumentProfileRequirementService', () => {
         service.missingBaselineOrgProfileSourcesForProfile({
           id: 'unit-1',
           name: 'Playground',
-          address: 'Hauptstraße 1',
+          street: 'Hauptstraße 1',
+          zipCode: '12345',
           city: '  ',
-          zipCode: null,
           legalRep: null,
         }),
       ).toEqual(['org_city']);
@@ -329,7 +330,8 @@ describe('DocumentProfileRequirementService', () => {
         id: 'root',
         parentId: null,
         name: 'Testing org',
-        address: 'Hauptstraße 1',
+        street: 'Hauptstraße 1',
+        zipCode: '23456',
         city: 'Berlin',
         legalRep: 'Erika Mustermann',
       },
@@ -337,7 +339,7 @@ describe('DocumentProfileRequirementService', () => {
         id: 'branch',
         parentId: 'root',
         name: 'Branch',
-        address: null,
+        street: null,
         city: '',
         legalRep: null,
       },
@@ -345,7 +347,7 @@ describe('DocumentProfileRequirementService', () => {
         id: 'suborg',
         parentId: 'branch',
         name: 'Testing suborg',
-        address: 'Nebenweg 2',
+        street: 'Nebenweg 2',
         city: null,
         legalRep: null,
       },
@@ -366,7 +368,8 @@ describe('DocumentProfileRequirementService', () => {
         orgIdentityLine: {
           enabled: true,
           fields: [
-            { value: { kind: 'bound', source: 'org_address' } },
+            { value: { kind: 'bound', source: 'org_street' } },
+            { value: { kind: 'bound', source: 'org_zip' } },
             { value: { kind: 'bound', source: 'org_city' } },
             { value: { kind: 'bound', source: 'org_legal_rep' } },
           ],
@@ -391,7 +394,7 @@ describe('DocumentProfileRequirementService', () => {
         await serviceWithTree.resolveOrgProfile('org-1', 'suborg'),
       ).toMatchObject({
         name: 'Testing suborg',
-        address: 'Nebenweg 2',
+        street: 'Nebenweg 2',
         city: 'Berlin',
         legalRep: 'Erika Mustermann',
       });

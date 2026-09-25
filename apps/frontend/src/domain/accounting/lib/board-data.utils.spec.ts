@@ -230,6 +230,36 @@ describe('mapSignatureToSignee', () => {
     );
     expect(signee.role).toBe('coordinator');
   });
+
+  it('carries the signing users name, when the agreement has been signed', () => {
+    const signee = mapSignatureToSignee(
+      {
+        id: 's-3',
+        order: 1,
+        signeeType: SigneeType.PermissionHolder,
+        signedAt: '2026-03-02T00:00:00.000Z',
+        signedByUser: { id: 'u-1', name: 'Boo-Boo' },
+        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+      },
+      'contract',
+    );
+    expect(signee.signedByName).toBe('Boo-Boo');
+  });
+
+  it('leaves the signing users name empty, when the agreement has not signed', () => {
+    const signee = mapSignatureToSignee(
+      {
+        id: 's-4',
+        order: 1,
+        signeeType: SigneeType.PermissionHolder,
+        signedAt: null,
+        signedByUser: null,
+        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+      },
+      'invoice',
+    );
+    expect(signee.signedByName).toBeUndefined();
+  });
 });
 
 describe('mapContractToBoardDoc', () => {
@@ -1139,9 +1169,12 @@ describe('documentRowAction', () => {
     expect(documentRowAction(doc('contract-generate'))).toBe('none');
   });
 
+  it('makes an auto-drafted contract inert on the row body', () => {
+    expect(documentRowAction(doc('contract-draft'))).toBe('none');
+  });
+
   it('opens the detail sheet for rows backed by a persisted document', () => {
     const persisted: DocStatus[] = [
-      'contract-draft',
       'contract-signing-vol',
       'contract-signing-coord',
       'contract-active',

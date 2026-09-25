@@ -50,6 +50,8 @@ describe('Time entry -> eligible timesheet flow', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
+      {} as never,
     );
     const accountingOrgAccessService = new AccountingOrgAccessService(
       db,
@@ -87,6 +89,7 @@ describe('Time entry -> eligible timesheet flow', () => {
     // only touch `db`, so every other dependency is safely stubbed.
     invoiceService = new InvoiceService(
       db,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
