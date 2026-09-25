@@ -3,6 +3,10 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import {
+  ORG_OVERRIDE_SOURCES,
+  type OrgOverrides,
+} from '../utils/org-overrides';
+import {
   type ResolvedOrgProfile,
   resolveOrgProfile,
 } from '../utils/org-profile';
@@ -61,14 +65,6 @@ export class DocumentProfileRequirementService {
     }
     collectLine(template.footer?.closingLine);
 
-    // A detail the template states by hand is no longer taken from the
-    // organisation, so the profile is not required to supply it.
-    const overrides = (template as { orgOverrides?: Record<string, string> })
-      .orgOverrides;
-    for (const [source, value] of Object.entries(overrides ?? {})) {
-      if (value?.trim()) sources.delete(source);
-    }
-
     return [...sources];
   }
 
@@ -117,6 +113,15 @@ export class DocumentProfileRequirementService {
       for (const line of block.lines ?? []) collectLine(line);
     }
     collectLine(template.footer?.closingLine);
+
+    // A detail the template states by hand is no longer taken from the
+    // organisation, so the org profile need not supply it. Only known
+    // override keys count — the body is opaque GraphQLJSON.
+    const overrides = (template as { orgOverrides?: OrgOverrides })
+      .orgOverrides;
+    for (const source of ORG_OVERRIDE_SOURCES) {
+      if (overrides?.[source]?.trim()) sources.delete(source);
+    }
 
     return [...sources];
   }
