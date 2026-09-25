@@ -81,7 +81,11 @@ import type { ShiftEntity } from './schemas/shift.schema';
 import type { ShiftInstanceEntity } from './schemas/shift-instance.schema';
 import type { ShiftInviteEntity } from './schemas/shift-invite.schema';
 import { propagateShiftInviteStatusToFutureInstances } from './shift-invite-propagation';
-import { startOfTodayInAppTimeZone } from './utils/app-time';
+import {
+  appDateParts,
+  startOfAppDay,
+  startOfTodayInAppTimeZone,
+} from './utils/app-time';
 import {
   getDurationMinutes,
   isValidShiftDurationMinutes,
@@ -598,10 +602,7 @@ export class ShiftService {
     return result;
   }
 
-  private async findMyIntendedShiftInstances(
-    userId: string,
-    dateCondition: Record<string, unknown>,
-  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+  private async getIntendedInstanceIds(userId: string): Promise<string[]> {
     const requests = await this.db.query.membershipRequests.findMany({
       where: {
         userId,
@@ -610,11 +611,18 @@ export class ShiftService {
       columns: { metadata: true },
     });
 
-    const intendedIds = requests.flatMap(
+    return requests.flatMap(
       (request) =>
         (request.metadata as { intendedShiftInstanceIds?: string[] } | null)
           ?.intendedShiftInstanceIds ?? [],
     );
+  }
+
+  private async findMyIntendedShiftInstances(
+    userId: string,
+    dateCondition: Record<string, unknown>,
+  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+    const intendedIds = await this.getIntendedInstanceIds(userId);
 
     if (intendedIds.length === 0) {
       return EMPTY_SHIFT_INSTANCE_PAGE;
@@ -702,14 +710,12 @@ export class ShiftService {
     return actualStartsAt.gte || actualStartsAt.lt ? { actualStartsAt } : {};
   }
 
-  async findAvailableShiftInstances(
+  private async buildAvailableShiftInstancesWhere(
     userId: string,
     startsAfter: Date | null,
     endsBefore: Date | null,
     organizationUnitIds: string[] | null,
-    limit: number,
-    offset: number,
-  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+  ): Promise<Record<string, unknown> | null> {
     const [acceptedOrganizationUnitIds, pendingOrganizationUnitIds] =
       await Promise.all([
         this.getAccessibleOrganizationUnitIds(userId),
@@ -722,7 +728,7 @@ export class ShiftService {
     ];
 
     if (accessibleOrganizationUnitIds.length === 0) {
-      return EMPTY_SHIFT_INSTANCE_PAGE;
+      return null;
     }
 
     const requestedOrgUnitIds = organizationUnitIds?.length
@@ -732,7 +738,7 @@ export class ShiftService {
       : accessibleOrganizationUnitIds;
 
     if (requestedOrgUnitIds.length === 0) {
-      return EMPTY_SHIFT_INSTANCE_PAGE;
+      return null;
     }
 
     const acceptedIds = requestedOrgUnitIds.filter((id) =>
@@ -768,7 +774,7 @@ export class ShiftService {
       });
     }
 
-    const where = {
+    return {
       isCancelled: false,
       ...dateCondition,
       master: { isDeleted: false },
@@ -780,6 +786,26 @@ export class ShiftService {
       },
       OR: visibilityBranches,
     };
+  }
+
+  async findAvailableShiftInstances(
+    userId: string,
+    startsAfter: Date | null,
+    endsBefore: Date | null,
+    organizationUnitIds: string[] | null,
+    limit: number,
+    offset: number,
+  ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
+    const where = await this.buildAvailableShiftInstancesWhere(
+      userId,
+      startsAfter,
+      endsBefore,
+      organizationUnitIds,
+    );
+
+    if (!where) {
+      return EMPTY_SHIFT_INSTANCE_PAGE;
+    }
 
     const [instances, totalResult] = await Promise.all([
       this.db.query.shiftInstances.findMany({
@@ -799,6 +825,54 @@ export class ShiftService {
     ]);
 
     return { instances, total: totalResult[0]?.total ?? 0 };
+  }
+
+  async findAvailableShiftInstanceDayCounts(
+    userId: string,
+    startsAfter: Date | null,
+    endsBefore: Date | null,
+    organizationUnitIds: string[] | null,
+    excludeIntended = false,
+  ): Promise<{ date: Date; count: number }[]> {
+    const where = await this.buildAvailableShiftInstancesWhere(
+      userId,
+      startsAfter,
+      endsBefore,
+      organizationUnitIds,
+    );
+
+    if (!where) {
+      return [];
+    }
+
+    const [instances, intendedIds] = await Promise.all([
+      this.db.query.shiftInstances.findMany({
+        where,
+        columns: { id: true, actualStartsAt: true },
+      }),
+      excludeIntended
+        ? this.getIntendedInstanceIds(userId)
+        : Promise.resolve<string[]>([]),
+    ]);
+    const intendedIdSet = new Set(intendedIds);
+
+    const counts = new Map<string, { date: Date; count: number }>();
+    for (const { id, actualStartsAt } of instances) {
+      if (intendedIdSet.has(id)) continue;
+
+      const { year, month, day } = appDateParts(actualStartsAt);
+      const key = `${year}-${month}-${day}`;
+      const existing = counts.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        counts.set(key, { date: startOfAppDay(year, month, day), count: 1 });
+      }
+    }
+
+    return [...counts.values()].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
+    );
   }
 
   async findAll(
