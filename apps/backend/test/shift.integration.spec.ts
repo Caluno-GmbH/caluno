@@ -3027,6 +3027,272 @@ describe('Volunteer shifts pagination', () => {
   });
 });
 
+describe('availableShiftInstanceDayCounts (VOLI day-strip undercount fix)', () => {
+  let app: INestApplication;
+  let db: Database;
+  let organizationUnitId: string;
+  let testUserId: string;
+
+  const query = `
+    query AvailableShiftInstanceDayCounts(
+      $startsAfter: DateTime
+      $endsBefore: DateTime
+      $excludeIntended: Boolean
+    ) {
+      availableShiftInstanceDayCounts(
+        startsAfter: $startsAfter
+        endsBefore: $endsBefore
+        excludeIntended: $excludeIntended
+      ) {
+        date
+        count
+      }
+    }
+  `;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+    organizationUnitId = context.organizationUnitId;
+    testUserId = context.testUserId;
+  });
+
+  it('reports the true per-day count even though the list query truncates at its default limit', async () => {
+    const user = await createUser(db);
+    await db.insert(schema.memberships).values({
+      userId: user.id,
+      organizationUnitId,
+    });
+    setAuthMockUserId(user.id);
+
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() + 30);
+    windowStart.setHours(8, 0, 0, 0);
+
+    await createShift(db, {
+      organizationUnitId,
+      startsAt: windowStart,
+      endsAt: new Date(windowStart.getTime() + 60 * 60 * 1000),
+      rrule: 'FREQ=DAILY;COUNT=20',
+    });
+
+    const targetDay = new Date(windowStart);
+    targetDay.setDate(targetDay.getDate() + 25);
+    targetDay.setHours(8, 0, 0, 0);
+
+    const targetInstanceIds: string[] = [];
+    for (let hour = 0; hour < 6; hour++) {
+      const { id: shiftId } = await createShift(db, {
+        organizationUnitId,
+        startsAt: new Date(targetDay.getTime() + hour * 60 * 60 * 1000),
+        endsAt: new Date(targetDay.getTime() + (hour + 1) * 60 * 60 * 1000),
+      });
+      const instances = await db.query.shiftInstances.findMany({
+        where: { masterId: shiftId },
+      });
+      const instanceId = instances[0]?.id;
+      expect(instanceId).toBeDefined();
+      if (instanceId) targetInstanceIds.push(instanceId);
+    }
+    expect(targetInstanceIds).toHaveLength(6);
+
+    const startsAfter = windowStart.toISOString();
+    const endsBefore = new Date(
+      targetDay.getTime() + 5 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const dayCountsData = await graphqlRequestRequiringData<{
+      availableShiftInstanceDayCounts: Array<{ date: string; count: number }>;
+    }>(
+      app,
+      {
+        query,
+        variables: { startsAfter, endsBefore },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'availableShiftInstanceDayCounts',
+    );
+
+    const sixCountEntries =
+      dayCountsData.availableShiftInstanceDayCounts.filter(
+        (entry) => entry.count === 6,
+      );
+    expect(sixCountEntries).toHaveLength(1);
+    const oneCountEntries =
+      dayCountsData.availableShiftInstanceDayCounts.filter(
+        (entry) => entry.count === 1,
+      );
+    expect(oneCountEntries).toHaveLength(20);
+
+    const listData = await graphqlRequestRequiringData<{
+      availableShiftInstances: { items: Array<{ id: string }> };
+    }>(
+      app,
+      {
+        query: `
+          query AvailableShiftInstances($startsAfter: DateTime, $endsBefore: DateTime) {
+            availableShiftInstances(startsAfter: $startsAfter, endsBefore: $endsBefore) {
+              items { id }
+            }
+          }
+        `,
+        variables: { startsAfter, endsBefore },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'availableShiftInstances',
+    );
+    const loadedTargetCount = listData.availableShiftInstances.items.filter(
+      (item) => targetInstanceIds.includes(item.id),
+    ).length;
+    expect(loadedTargetCount).toBeLessThan(6);
+
+    setAuthMockUserId(testUserId);
+  });
+
+  it('excludes shifts the user has already joined, same as availableShiftInstances', async () => {
+    const user = await createUser(db);
+    await db.insert(schema.memberships).values({
+      userId: user.id,
+      organizationUnitId,
+    });
+    setAuthMockUserId(user.id);
+
+    const targetDay = new Date();
+    targetDay.setDate(targetDay.getDate() + 60);
+    targetDay.setHours(9, 0, 0, 0);
+
+    const { id: openShiftId } = await createShift(db, {
+      organizationUnitId,
+      startsAt: targetDay,
+      endsAt: new Date(targetDay.getTime() + 60 * 60 * 1000),
+    });
+    const { id: joinedShiftId } = await createShift(db, {
+      organizationUnitId,
+      startsAt: new Date(targetDay.getTime() + 2 * 60 * 60 * 1000),
+      endsAt: new Date(targetDay.getTime() + 3 * 60 * 60 * 1000),
+    });
+    const [openInstance] = await db.query.shiftInstances.findMany({
+      where: { masterId: openShiftId },
+    });
+    const [joinedInstance] = await db.query.shiftInstances.findMany({
+      where: { masterId: joinedShiftId },
+    });
+    expect(openInstance).toBeDefined();
+    expect(joinedInstance).toBeDefined();
+
+    await db.insert(schema.shiftInstanceInvites).values({
+      instanceId: joinedInstance?.id ?? '',
+      userId: user.id,
+      status: ShiftInviteStatus.JOINED,
+    });
+
+    const startsAfter = new Date(targetDay);
+    startsAfter.setHours(0, 0, 0, 0);
+    const endsBefore = new Date(
+      startsAfter.getTime() + 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const data = await graphqlRequestRequiringData<{
+      availableShiftInstanceDayCounts: Array<{ date: string; count: number }>;
+    }>(
+      app,
+      {
+        query,
+        variables: {
+          startsAfter: startsAfter.toISOString(),
+          endsBefore,
+        },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'availableShiftInstanceDayCounts',
+    );
+
+    expect(data.availableShiftInstanceDayCounts).toHaveLength(1);
+    expect(data.availableShiftInstanceDayCounts[0]?.count).toBe(1);
+
+    setAuthMockUserId(testUserId);
+  });
+
+  it("excludeIntended drops shifts named in the user's pending membership request", async () => {
+    const user = await createUser(db);
+    setAuthMockUserId(user.id);
+
+    const targetDay = new Date();
+    targetDay.setDate(targetDay.getDate() + 65);
+    targetDay.setHours(9, 0, 0, 0);
+
+    const { id: shiftAId } = await createShift(db, {
+      organizationUnitId,
+      startsAt: targetDay,
+      endsAt: new Date(targetDay.getTime() + 60 * 60 * 1000),
+    });
+    const { id: shiftBId } = await createShift(db, {
+      organizationUnitId,
+      startsAt: new Date(targetDay.getTime() + 2 * 60 * 60 * 1000),
+      endsAt: new Date(targetDay.getTime() + 3 * 60 * 60 * 1000),
+    });
+    const [instanceA] = await db.query.shiftInstances.findMany({
+      where: { masterId: shiftAId },
+    });
+    const [instanceB] = await db.query.shiftInstances.findMany({
+      where: { masterId: shiftBId },
+    });
+    expect(instanceA).toBeDefined();
+    expect(instanceB).toBeDefined();
+
+    await createMembershipRequest(db, {
+      userId: user.id,
+      organizationUnitId,
+      metadata: { intendedShiftInstanceIds: [instanceA?.id ?? ''] },
+    });
+
+    const startsAfter = new Date(targetDay);
+    startsAfter.setHours(0, 0, 0, 0);
+    const endsBefore = new Date(
+      startsAfter.getTime() + 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const withIntended = await graphqlRequestRequiringData<{
+      availableShiftInstanceDayCounts: Array<{ date: string; count: number }>;
+    }>(
+      app,
+      {
+        query,
+        variables: {
+          startsAfter: startsAfter.toISOString(),
+          endsBefore,
+          excludeIntended: false,
+        },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'availableShiftInstanceDayCounts',
+    );
+    expect(withIntended.availableShiftInstanceDayCounts).toHaveLength(1);
+    expect(withIntended.availableShiftInstanceDayCounts[0]?.count).toBe(2);
+
+    const withoutIntended = await graphqlRequestRequiringData<{
+      availableShiftInstanceDayCounts: Array<{ date: string; count: number }>;
+    }>(
+      app,
+      {
+        query,
+        variables: {
+          startsAfter: startsAfter.toISOString(),
+          endsBefore,
+          excludeIntended: true,
+        },
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'availableShiftInstanceDayCounts',
+    );
+    expect(withoutIntended.availableShiftInstanceDayCounts).toHaveLength(1);
+    expect(withoutIntended.availableShiftInstanceDayCounts[0]?.count).toBe(1);
+
+    setAuthMockUserId(testUserId);
+  });
+});
+
 describe('Shift invite status model', () => {
   let app: INestApplication;
   let db: Database;

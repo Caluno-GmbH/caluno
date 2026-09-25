@@ -951,6 +951,7 @@ type Query {
   adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
+  availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
   bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
   checkInContext(checkInId: String!): CheckInContext
@@ -1391,6 +1392,11 @@ type ShiftInstanceCallOutSummary {
   sentAt: DateTime!
   sentBy: User!
   source: ShiftCallOutSource!
+}
+
+type ShiftInstanceDayCount {
+  count: Int!
+  date: DateTime!
 }
 
 type ShiftInstanceInvite {

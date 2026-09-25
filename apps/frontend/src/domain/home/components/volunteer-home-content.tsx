@@ -9,6 +9,7 @@ import type {
 } from '@repo/data/react';
 import {
   useAvailableEvents,
+  useAvailableShiftInstanceDayCounts,
   useAvailableShiftInstancesInfinite,
   useMyEvents,
   useMyShiftInstances,
@@ -36,7 +37,7 @@ import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   addDays,
-  getDayStripDays,
+  getDayStripDaysFromCounts,
   getDiscoverWindow,
   groupByDay,
   intervalsOverlap,
@@ -131,6 +132,11 @@ export function VolunteerHomeContent({
       pages: [initialAvailableShiftInstancesPage],
       pageParams: [0],
     },
+  });
+
+  const { data: availableShiftDayCounts } = useAvailableShiftInstanceDayCounts({
+    ...discoverOptions,
+    excludeIntended: true,
   });
 
   const { data: availableEventsPage, isLoading: isLoadingAvailableEvents } =
@@ -229,8 +235,11 @@ export function VolunteerHomeContent({
   );
 
   const discoverDayStrip = useMemo(
-    () => getDayStripDays(filteredAvailableShiftList, { minDays: 7 }),
-    [filteredAvailableShiftList],
+    () =>
+      getDayStripDaysFromCounts(availableShiftDayCounts ?? [], {
+        minDays: 7,
+      }),
+    [availableShiftDayCounts],
   );
 
   const availableGrouped = useMemo(
