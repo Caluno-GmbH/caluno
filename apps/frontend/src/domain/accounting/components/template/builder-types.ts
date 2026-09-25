@@ -15,6 +15,8 @@ import type {
 export type {
   DataSourceKey,
   InvoiceNumberFormat,
+  OrgOverrideSource,
+  OrgOverrides,
   TableFirstColumnSource,
   TemplateBlock,
   TemplateDocument,
@@ -27,11 +29,13 @@ export type {
   TemplateTableBlock,
   TemplateTextBlock,
 } from '@repo/data';
+export { ORG_OVERRIDE_SOURCES } from '@repo/data';
 
 export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
   'volunteer_last_name',
   'org_name',
+  'org_facility_name',
   'org_street',
   'org_zip',
   'org_city',
@@ -97,6 +101,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   already_received_period: 'generation_time',
   hourly_rate: 'rate_settings',
   org_name: 'organization_profile',
+  org_facility_name: 'organization_profile',
   org_street: 'organization_profile',
   org_city: 'organization_profile',
   org_zip: 'organization_profile',
@@ -309,6 +314,10 @@ export function missingOrgProfileSourcesForOrg(
   };
 
   return [...bound].filter((source) => {
+    // A detail the template states by hand is no longer taken from the
+    // organisation, so the profile need not supply it.
+    const overrides: Partial<Record<string, string>> = doc.orgOverrides ?? {};
+    if (overrides[source]?.trim()) return false;
     const value = valueBySource[source];
     return typeof value !== 'string' || value.trim() === '';
   });

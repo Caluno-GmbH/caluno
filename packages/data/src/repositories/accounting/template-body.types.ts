@@ -16,6 +16,7 @@ export type DataSourceKey =
   | 'volunteer_first_name'
   | 'volunteer_last_name'
   | 'org_name'
+  | 'org_facility_name'
   | 'org_street'
   | 'org_zip'
   | 'org_city'
@@ -62,6 +63,8 @@ export type TemplateLine = {
   /** Whether this specific line can be turned off even though its parent block is locked. */
   optional: boolean;
   enabled: boolean;
+  // Continues the line before it instead of starting a new paragraph
+  inline?: boolean;
 };
 
 export type TemplateTextBlock = {
@@ -143,13 +146,54 @@ export type TemplateFooter = {
   showSignatures: boolean;
 };
 
+/**
+ * Organisation details a coordinator may state by hand instead of taking them
+ * from the org unit.
+ */
+export type OrgOverrideSource =
+  | 'org_name'
+  | 'org_facility_name'
+  | 'org_street'
+  | 'org_zip'
+  | 'org_city';
+
+export const ORG_OVERRIDE_SOURCES: readonly OrgOverrideSource[] = [
+  'org_name',
+  'org_facility_name',
+  'org_street',
+  'org_zip',
+  'org_city',
+];
+
+export type OrgOverrides = Partial<Record<OrgOverrideSource, string>>;
+
 export type TemplateDocument = {
   header: TemplateHeader;
   blocks: TemplateBlock[];
   footer: TemplateFooter;
   /** Invoice-only: how the generated document number is formatted. Undefined for contracts. */
   invoiceNumberFormat?: InvoiceNumberFormat;
+  /** Coordinator-stated organisation details; absent entries fall back to the org unit. */
+  orgOverrides?: OrgOverrides;
 };
+
+/**
+ * The org values a document renders, with any coordinator override applied.
+ * Blank overrides are ignored so an emptied field falls back rather than
+ * printing nothing, and `org_facility_name` falls back to the org's own name.
+ */
+export function applyOrgOverrides<T extends Partial<Record<string, string>>>(
+  values: T,
+  overrides: OrgOverrides | undefined,
+): T {
+  const resolved: Record<string, string | undefined> = { ...values };
+  resolved.org_facility_name = resolved.org_facility_name ?? resolved.org_name;
+  for (const source of ORG_OVERRIDE_SOURCES) {
+    const override = overrides?.[source]?.trim();
+    if (override) resolved[source] = override;
+  }
+  return resolved as T;
+}
 
 export function serializeTemplateBody(
   document: TemplateDocument,
@@ -169,5 +213,8 @@ export function parseTemplateBody(
   const invoiceNumberFormat = raw.invoiceNumberFormat as
     | InvoiceNumberFormat
     | undefined;
-  return { header, blocks, footer, invoiceNumberFormat };
+  const orgOverrides = (raw.orgOverrides ?? undefined) as
+    | OrgOverrides
+    | undefined;
+  return { header, blocks, footer, invoiceNumberFormat, orgOverrides };
 }

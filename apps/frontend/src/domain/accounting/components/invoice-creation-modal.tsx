@@ -491,6 +491,7 @@ export function InvoiceCreationModal({
   const values: Partial<Record<DataSourceKey, string>> = {
     ...getKnownOrgValues({
       pauschale,
+      orgOverrides: template?.orgOverrides,
       orgName: orgProfile?.name ?? org.name,
       orgStreet: orgProfile ? orgProfile.street : org.street,
       orgCity: orgProfile ? orgProfile.city : org.city,

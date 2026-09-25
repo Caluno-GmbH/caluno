@@ -1136,6 +1136,7 @@
       "birthDateFormat": "TT.MM.JJJJ",
       "checkboxYes": "Ja",
       "documentAcknowledgement": "Ich bestätige und akzeptiere",
+      "documentOpenInNewTab": "In neuem Tab öffnen",
       "failedToSubmit": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
       "membershipRequestNotice": "Mit dem Absenden dieses Formulars sendest du eine Mitgliedschaftsanfrage an {orgName}. Ein:e Koordinator:in prüft deine Anfrage.",
       "next": "Weiter",
@@ -2304,6 +2305,14 @@
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
+        "orgOverride": {
+          "orgHint": "Aus den Organisationsdaten übernommen.",
+          "overriddenHint": "Für diese Vorlage manuell angegeben.",
+          "editingHint": "Leer lassen, um wieder die Organisationsdaten zu verwenden.",
+          "missingValue": "nicht hinterlegt",
+          "editButtonLabel": "Bearbeiten",
+          "saveButtonLabel": "Übernehmen"
+        },
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",
@@ -2373,6 +2382,7 @@
           "hours-amount": "Stundenzahl",
           "hours-unit": "Stundeneinheit",
           "freeform-text": "Freitext",
+          "parties-additional-info": "Optionale Zusatzinformationen",
           "kostenstelle": "Kostenstelle",
           "kostentraeger": "Kostenträger",
           "rechtstraeger": "Rechtsträger"
@@ -2383,6 +2393,7 @@
           "hours-amount-month": "z. B. 20",
           "hours-amount-week": "z. B. 5",
           "freeform-text": "Ergänze hier weitere Angaben, falls nötig",
+          "parties-additional-info": "Ergänze hier weitere Informationen zu Vertragspartnern",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
           "rechtstraeger": "z. B. Diakonisches Werk e.V."
@@ -2410,6 +2421,7 @@
           "volunteer_first_name": "Vorname (Ehrenamtliche:r)",
           "volunteer_last_name": "Nachname (Ehrenamtliche:r)",
           "org_name": "Organisationsname",
+          "org_facility_name": "Einrichtung",
           "org_street": "Organisationsadresse",
           "org_zip": "Postleitzahl (Organisation)",
           "org_city": "Stadt (Organisation)",
