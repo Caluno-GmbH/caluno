@@ -106,17 +106,11 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   };
 
   const query = search.trim();
-  const countLabel = query
-    ? t('search.countFiltered', {
-        count: visible.length,
-        total: memberships.length,
-      })
-    : t('search.countAll', { count: memberships.length });
 
   return (
     <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:max-w-sm">
+        <div className="relative w-full sm:max-w-md">
           <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
           <Input
             value={search}
@@ -138,9 +132,14 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         </div>
 
         <div className="flex items-center gap-2 sm:flex-1">
-          <p className="text-sm text-muted-foreground tabular-nums">
-            {countLabel}
-          </p>
+          {query && (
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {t('search.countFiltered', {
+                count: visible.length,
+                total: memberships.length,
+              })}
+            </p>
+          )}
           {visible.length > 0 && (
             <Button
               size="md"

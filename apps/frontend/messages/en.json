@@ -1787,7 +1787,6 @@
     },
     "search": {
       "clearAria": "Clear search",
-      "countAll": "{count, plural, one {1 volunteer} other {# volunteers}}",
       "countFiltered": "{count} of {total}",
       "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
       "emptyTitle": "No volunteers found",
