@@ -16,7 +16,7 @@ export interface TemplateLineShape {
   text: string;
   fields: TemplateFieldShape[];
   enabled?: boolean;
-  /** Continues the previous line instead of starting a new paragraph. */
+  // Continues the previous line instead of starting a new paragraph.
   inline?: boolean;
 }
 

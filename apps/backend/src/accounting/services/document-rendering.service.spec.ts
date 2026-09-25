@@ -591,7 +591,7 @@ describe('DocumentRenderingService', () => {
     };
     const additional = {
       id: 'parties-additional',
-      text: '{info},',
+      text: ' {info},',
       inline: true,
       fields: [{ id: 'i', value: { kind: 'manual-template', value: '' } }],
     };
@@ -634,7 +634,7 @@ describe('DocumentRenderingService', () => {
 
     it('Starts a paragraph of its own when nothing precedes it', () => {
       expect(resolveParagraphs(createService(), [additional], values)).toEqual([
-        'vertreten durch H. Meier,',
+        ' vertreten durch H. Meier,',
       ]);
     });
   });

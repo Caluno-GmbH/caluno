@@ -54,12 +54,6 @@ import {
  * blocks. The legal text stays organized by clause; the editor groups the same fields by
  * what a coordinator is actually filling in (org info, volunteer info, engagement terms).
  */
-/**
- * Organisation details are no longer listed field by field: they are stated
- * once in the override section, which resolves them for the letterhead, the
- * document text and the signature seat alike. Only the manual line about the
- * contracting parties still belongs to that group.
- */
 const ORG_MANUAL_FIELD_IDS = ['parties-additional-info'];
 const VOLUNTEER_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
@@ -1002,8 +996,6 @@ export function TemplateBuilderBlockEditor({
           templateDoc={templateDoc}
           knownValues={knownValues}
           onChange={onChange}
-          // The optional line about the contracting parties sits with them,
-          // under the organisation it adds information to.
           extra={groups.org.map(({ line, blockId }) => (
             <LineEditor
               key={line.id}

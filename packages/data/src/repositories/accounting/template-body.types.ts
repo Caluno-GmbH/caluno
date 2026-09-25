@@ -16,11 +16,6 @@ export type DataSourceKey =
   | 'volunteer_first_name'
   | 'volunteer_last_name'
   | 'org_name'
-  /**
-   * The body the volunteer actually serves at, which can differ from the one
-   * that signs the agreement — a local Einrichtung under a parent Verein.
-   * Falls back to the organisation's own name when not overridden.
-   */
   | 'org_facility_name'
   | 'org_street'
   | 'org_zip'
@@ -68,11 +63,7 @@ export type TemplateLine = {
   /** Whether this specific line can be turned off even though its parent block is locked. */
   optional: boolean;
   enabled: boolean;
-  /**
-   * Continues the line before it instead of starting a new paragraph, so an
-   * optional insertion reads as part of the sentence and wraps only when it
-   * runs out of room. Ignored on the first line of a block.
-   */
+  // Continues the line before it instead of starting a new paragraph
   inline?: boolean;
 };
 
@@ -157,14 +148,7 @@ export type TemplateFooter = {
 
 /**
  * Organisation details a coordinator may state by hand instead of taking them
- * from the org unit — for a document whose legal counterpart is not the body
- * the volunteer sits in.
- *
- * Keyed by data source rather than by field, because the letterhead is
- * rendered from resolved values rather than from template fields: overriding
- * a field alone would leave the header naming one organisation while the text
- * named another. An absent or blank entry means "use the organisation's own",
- * which is how clearing the field restores the default.
+ * from the org unit.
  */
 export type OrgOverrideSource =
   | 'org_name'

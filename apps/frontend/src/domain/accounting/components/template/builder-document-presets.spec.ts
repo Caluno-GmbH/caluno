@@ -20,7 +20,7 @@ describe('document preset org identity', () => {
     // above states all three, and a street alone does not identify the body
     // signing the agreement.
     expect(contractLine('parties')?.text).toBe(
-      'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity},',
+      'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity}',
     );
   });
 

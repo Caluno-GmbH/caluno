@@ -38,7 +38,6 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
  */
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
-  /** The template's coordinator-stated organisation details, if it has any. */
   orgOverrides?: OrgOverrides;
   orgName?: string | null;
   orgStreet?: string | null;
@@ -116,12 +115,9 @@ export function getContractDocument(
         locked: true,
         enabled: true,
         lines: [
-          // Ends on a comma rather than "und": the conjunction moved to the
-          // volunteer line so the optional line below can sit between the two
-          // parties without stranding it.
           line(
             'parties',
-            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity},',
+            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity}',
             [
               bound('parties-org-name', 'org_name'),
               bound('parties-org-street', 'org_street'),
@@ -129,14 +125,11 @@ export function getContractDocument(
               bound('parties-org-city', 'org_city'),
             ],
           ),
-          // Continues the parties line rather than starting its own: the
-          // addition belongs to that sentence, so it reads on from the town
-          // and wraps only when it runs out of room.
           line(
             'parties-additional',
-            '{additionalInfo},',
+            ', {additionalInfo}',
             [manual('parties-additional-info', '', 'textarea')],
-            { optional: true, inline: true },
+            { optional: true, inline: true }, // Continues the parties line rather than starting its own
           ),
           line(
             'volunteer-name',
@@ -177,8 +170,6 @@ export function getContractDocument(
           line(
             'engagement-scope',
             'Die ehrenamtlich tätige Person übt im Zeitraum {contractLifespan} für die Einrichtung {orgName} eine nebenberufliche Tätigkeit aus.',
-            // Deliberately its own source: where a volunteer serves can differ
-            // from who signs the agreement, which is the point of this field.
             [
               contractLifespan,
               bound('engagement-org-name', 'org_facility_name'),

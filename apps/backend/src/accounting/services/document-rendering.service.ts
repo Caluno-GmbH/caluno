@@ -231,12 +231,6 @@ export class DocumentRenderingService {
     }
   }
 
-  /**
-   * A block's enabled lines as the paragraphs it prints. A line marked `inline`
-   * continues the one before it instead of starting its own, so an optional
-   * insertion reads on from the sentence it belongs to and wraps only when it
-   * runs out of room.
-   */
   private resolveParagraphs(
     lines: TemplateLineShape[],
     fieldValues: Record<string, string>,
@@ -244,11 +238,11 @@ export class DocumentRenderingService {
     const paragraphs: string[] = [];
     for (const line of lines) {
       if (line.enabled === false) continue;
-      const text = this.resolveLine(line, fieldValues).trim();
+      const text = this.resolveLine(line, fieldValues);
       if (!text) continue;
       const previous = paragraphs[paragraphs.length - 1];
       if (line.inline && previous !== undefined) {
-        paragraphs[paragraphs.length - 1] = `${previous} ${text}`;
+        paragraphs[paragraphs.length - 1] = `${previous}${text}`;
       } else {
         paragraphs.push(text);
       }

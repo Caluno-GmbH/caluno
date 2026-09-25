@@ -99,7 +99,7 @@ function LineRow({
   manualOverrides: Record<string, string>;
   unresolvedLabels: Partial<Record<DataSourceKey, string>>;
   gapSources: Set<DataSourceKey>;
-  /** Render as part of a surrounding paragraph rather than as one of its own. */
+  // Render as part of a surrounding paragraph rather than as one of its own.
   inline?: boolean;
 }) {
   if (!line.enabled) return null;
@@ -158,8 +158,7 @@ function LineRow({
 
 /**
  * A block's lines grouped into the paragraphs they print. A line marked
- * `inline` continues the one before it, so an optional insertion reads on from
- * the sentence it belongs to instead of dropping to a line of its own.
+ * `inline` continues the one before it.
  */
 function paragraphRuns(lines: TemplateLine[]): TemplateLine[][] {
   const runs: TemplateLine[][] = [];
@@ -423,9 +422,8 @@ export function GeneratedDocumentPreview({
                         key={run[0]?.id}
                         className="whitespace-pre-line text-base leading-relaxed"
                       >
-                        {run.map((line, i) => (
+                        {run.map((line) => (
                           <Fragment key={line.id}>
-                            {i > 0 && ' '}
                             <LineRow
                               line={line}
                               values={values}
