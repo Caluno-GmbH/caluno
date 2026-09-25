@@ -2434,8 +2434,6 @@ describe('documents flow — admin + volunteer', () => {
         'accountingSetupStatus',
       );
 
-      console.log(subUnitStatus.accountingSetupStatus);
-
       // The sub-unit has none of its own, so the gate and the rendered
       // profile fall back to its parent's details.
       expect(subUnitStatus.accountingSetupStatus.orgProfileComplete).toBe(true);

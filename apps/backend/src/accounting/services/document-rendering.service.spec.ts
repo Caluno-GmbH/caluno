@@ -118,11 +118,16 @@ describe('DocumentRenderingService', () => {
           ? overrides.saveFile(args)
           : Promise.resolve({ id: 'file-1' }),
     } as never;
+    const organizationService = {
+      requireRootUnit: () =>
+        Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
+    } as never;
     return new DocumentRenderingService(
       db,
       userProfileService,
       reimbursementRateService,
       fileService,
+      organizationService,
     );
   };
 

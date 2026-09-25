@@ -14,7 +14,6 @@ export function useCheckOut() {
       repository.checkOut(shiftInstanceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['myShiftInstances'] });
-      queryClient.invalidateQueries({ queryKey: ['availableShiftInstances'] });
     },
   });
 }
