@@ -1787,6 +1787,8 @@
     },
     "search": {
       "clearAria": "Clear search",
+      "countAll": "{count, plural, one {1 volunteer} other {# volunteers}}",
+      "countFiltered": "{count} of {total}",
       "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
       "emptyTitle": "No volunteers found",
       "placeholder": "Search by name, email or role"
@@ -1812,15 +1814,13 @@
     },
     "table": {
       "copyEmailAria": "Copy {name}'s email address",
-      "copySelectedEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
       "email": "Email",
       "emailCopied": "Email address copied to clipboard",
       "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "name": "Name",
       "openProfileAria": "Open {name}'s profile",
-      "roles": "Role",
-      "selectAllAria": "Select all volunteers shown",
-      "selectVolunteerAria": "Select {name}"
+      "roles": "Role"
     }
   },
   "VolunteerHome": {

@@ -12,7 +12,6 @@ import {
   AvatarImage,
   Badge,
   Button,
-  Checkbox,
   Input,
   Skeleton,
   Table,
@@ -41,11 +40,6 @@ import {
 import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
 import { matchesVolunteerQuery } from '@/domain/volunteer/volunteer-search';
-import {
-  headerCheckedState,
-  joinEmails,
-  toggleVisible,
-} from '@/domain/volunteer/volunteer-selection';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { copyToClipboard } from '@/lib/clipboard';
@@ -56,6 +50,7 @@ import { RoleSelectCell } from './role-select-cell';
 const TAB_APPROVED = 'APPROVED';
 const TAB_PENDING = MembershipRequestStatus.Pending;
 const TAB_REJECTED = MembershipRequestStatus.Rejected;
+const TABLE_COLUMN_COUNT = 4;
 
 interface Props {
   orgUId: string;
@@ -68,9 +63,6 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
   const [search, setSearch] = useState('');
-  const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(
-    new Set(),
-  );
 
   if (isPending) {
     return (
@@ -104,75 +96,71 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const visible = memberships.filter((membership) =>
     matchesVolunteerQuery(membership, search, roleLabel),
   );
-  const visibleIds = visible.map((m) => m.id);
 
   const handleCopyEmails = () => {
-    const emails = memberships
-      .filter((membership) => selectedIds.has(membership.id))
-      .map((membership) => membership.user.email);
+    const emails = visible.map((membership) => membership.user.email);
     copyToClipboard(
-      joinEmails(emails),
+      emails.join(', '),
       t('table.emailsCopied', { count: emails.length }),
     );
   };
 
+  const query = search.trim();
+  const countLabel = query
+    ? t('search.countFiltered', {
+        count: visible.length,
+        total: memberships.length,
+      })
+    : t('search.countAll', { count: memberships.length });
+
   return (
     <div className="space-y-2">
-      <div className="relative max-w-sm">
-        <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('search.placeholder')}
-          className="pl-9 pr-10"
-        />
-        {search && (
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => setSearch('')}
-            tooltip={t('search.clearAria')}
-            className="absolute top-2 right-2"
-          >
-            <X />
-          </Button>
-        )}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:max-w-sm">
+          <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('search.placeholder')}
+            className="pl-9 pr-10"
+          />
+          {search && (
+            <Button
+              size="icon-xs"
+              variant="ghost"
+              onClick={() => setSearch('')}
+              tooltip={t('search.clearAria')}
+              className="absolute top-2 right-2"
+            >
+              <X />
+            </Button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 sm:flex-1">
+          <p className="text-sm text-muted-foreground tabular-nums">
+            {countLabel}
+          </p>
+          {visible.length > 0 && (
+            <Button
+              size="md"
+              variant={query ? 'secondary' : 'outline'}
+              onClick={handleCopyEmails}
+              className="ml-auto"
+            >
+              {t('table.copyEmails', { count: visible.length })}
+              <Copy />
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={headerCheckedState(visibleIds, selectedIds)}
-                  onCheckedChange={() =>
-                    setSelectedIds(toggleVisible(visibleIds, selectedIds))
-                  }
-                  disabled={visibleIds.length === 0}
-                  aria-label={t('table.selectAllAria')}
-                />
-              </TableHead>
               <TableHead>{t('table.name')}</TableHead>
-              <TableHead>
-                <div className="flex min-h-11 items-center gap-2">
-                  {selectedIds.size > 0 ? (
-                    <Button
-                      size="md"
-                      variant="ghost"
-                      onClick={handleCopyEmails}
-                      className="-ml-3"
-                    >
-                      {t('table.copySelectedEmails', {
-                        count: selectedIds.size,
-                      })}
-                      <Copy />
-                    </Button>
-                  ) : (
-                    t('table.email')
-                  )}
-                </div>
-              </TableHead>
+              <TableHead>{t('table.email')}</TableHead>
               <TableHead>{t('table.roles')}</TableHead>
               <TableHead></TableHead>
             </TableRow>
@@ -180,7 +168,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           <TableBody>
             {visible.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={5}>
+                <TableCell colSpan={TABLE_COLUMN_COUNT}>
                   <EmptyVolunteerMatches />
                 </TableCell>
               </TableRow>
@@ -197,22 +185,6 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
 
               return (
                 <TableRow key={membership.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedIds.has(membership.id)}
-                      onCheckedChange={(checked) =>
-                        setSelectedIds((current) => {
-                          const next = new Set(current);
-                          if (checked) next.add(membership.id);
-                          else next.delete(membership.id);
-                          return next;
-                        })
-                      }
-                      aria-label={t('table.selectVolunteerAria', {
-                        name: membership.user.name,
-                      })}
-                    />
-                  </TableCell>
                   <TableCell>
                     <button
                       type="button"

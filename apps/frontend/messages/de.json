@@ -1787,6 +1787,8 @@
     },
     "search": {
       "clearAria": "Suche zurücksetzen",
+      "countAll": "{count, plural, one {1 Freiwillige:r} other {# Freiwillige}}",
+      "countFiltered": "{count} von {total}",
       "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
       "emptyTitle": "Keine Freiwilligen gefunden",
       "placeholder": "Nach Name, E-Mail oder Rolle suchen"
@@ -1812,15 +1814,13 @@
     },
     "table": {
       "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
-      "copySelectedEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
+      "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
       "email": "E-Mail",
       "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
       "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
       "name": "Name",
       "openProfileAria": "Profil von {name} öffnen",
-      "roles": "Rolle",
-      "selectAllAria": "Alle angezeigten Freiwilligen auswählen",
-      "selectVolunteerAria": "{name} auswählen"
+      "roles": "Rolle"
     }
   },
   "VolunteerHome": {
