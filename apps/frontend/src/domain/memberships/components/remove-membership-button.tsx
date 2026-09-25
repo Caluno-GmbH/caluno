@@ -42,7 +42,7 @@ export function RemoveMembershipButton({
       </Button>
     ) : (
       <Button
-        size="icon-xs"
+        size="icon-md"
         variant="outline"
         tooltip={t('action.removeAria')}
         disabled={isPending}

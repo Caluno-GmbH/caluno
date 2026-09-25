@@ -1814,6 +1814,13 @@
       "title": "Forms required to join",
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
+    "search": {
+      "clearAria": "Clear search",
+      "countFiltered": "{count} of {total}",
+      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
+      "emptyTitle": "No volunteers found",
+      "placeholder": "Search by name, email or role"
+    },
     "sheet": {
       "streetLabel": "Street",
       "birthdayLabel": "Birthday",
@@ -1836,9 +1843,14 @@
       "zipLabel": "Postal code"
     },
     "table": {
+      "copyEmailAria": "Copy {name}'s email address",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
       "email": "Email",
+      "emailCopied": "Email address copied to clipboard",
+      "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "name": "Name",
-      "roles": "Roles"
+      "openProfileAria": "Open {name}'s profile",
+      "roles": "Role"
     }
   },
   "VolunteerHome": {
