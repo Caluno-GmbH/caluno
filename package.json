@@ -38,8 +38,5 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
-  "overrides": {
-    "@sentry/core": "10.74.0"
-  }
+  ]
 }
