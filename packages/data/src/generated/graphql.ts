@@ -827,6 +827,7 @@ export type Mutation = {
   updateMyUserProfile: UserProfile;
   updateOrganization: Organization;
   updateOrganizationUnit: OrganizationUnit;
+  updateOrganizationUnitAutomation: OrganizationUnitAutomation;
   updateRequirement: Requirement;
   updateRequirementForm: RequirementForm;
   updateRequirementFulfillment: RequirementFulfillment;
@@ -1275,6 +1276,13 @@ export type MutationUpdateOrganizationUnitArgs = {
 };
 
 
+export type MutationUpdateOrganizationUnitAutomationArgs = {
+  input: UpdateOrganizationUnitAutomationInput;
+  kind: OrganizationUnitAutomationKind;
+  organizationUnitId: Scalars['ID']['input'];
+};
+
+
 export type MutationUpdateRequirementArgs = {
   id: Scalars['String']['input'];
   input: UpdateRequirementInput;
@@ -1428,6 +1436,22 @@ export type OrganizationUnit = {
   zipCode?: Maybe<Scalars['String']['output']>;
 };
 
+export type OrganizationUnitAutomation = {
+  __typename?: 'OrganizationUnitAutomation';
+  activeDays: Array<Weekday>;
+  enabled: Scalars['Boolean']['output'];
+  kind: OrganizationUnitAutomationKind;
+  leadTimeHours?: Maybe<Scalars['Int']['output']>;
+  organizationUnitId: Scalars['ID']['output'];
+  sendAtTime?: Maybe<Scalars['String']['output']>;
+};
+
+export enum OrganizationUnitAutomationKind {
+  DiscoveryEmail = 'DISCOVERY_EMAIL',
+  PauseApproval = 'PAUSE_APPROVAL',
+  UrgentCall = 'URGENT_CALL'
+}
+
 export type OrganizationUnitPaginatedResponse = {
   __typename?: 'OrganizationUnitPaginatedResponse';
   items: Array<OrganizationUnit>;
@@ -1580,6 +1604,7 @@ export type Query = {
   organizationBySlug: Organization;
   organizationTree?: Maybe<OrganizationTree>;
   organizationUnit?: Maybe<OrganizationUnit>;
+  organizationUnitAutomations: Array<OrganizationUnitAutomation>;
   organizationUnitBySlug?: Maybe<OrganizationUnit>;
   organizationUnitTypes: Array<OrganizationUnitType>;
   organizationUnits: OrganizationUnitPaginatedResponse;
@@ -1931,6 +1956,11 @@ export type QueryOrganizationBySlugArgs = {
 
 export type QueryOrganizationUnitArgs = {
   id: Scalars['String']['input'];
+};
+
+
+export type QueryOrganizationUnitAutomationsArgs = {
+  organizationUnitId: Scalars['ID']['input'];
 };
 
 
@@ -2693,6 +2723,13 @@ export type UpdateOrganizationInput = {
   zipCode?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateOrganizationUnitAutomationInput = {
+  activeDays?: InputMaybe<Array<Weekday>>;
+  enabled?: InputMaybe<Scalars['Boolean']['input']>;
+  leadTimeHours?: InputMaybe<Scalars['Int']['input']>;
+  sendAtTime?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateOrganizationUnitInput = {
   city?: InputMaybe<Scalars['String']['input']>;
   contactEmail?: InputMaybe<Scalars['String']['input']>;
@@ -2846,6 +2883,16 @@ export type VolunteerYearlyUsage = {
   usageByType: Array<ReimbursementTypeUsage>;
   volunteer: User;
 };
+
+export enum Weekday {
+  Friday = 'FRIDAY',
+  Monday = 'MONDAY',
+  Saturday = 'SATURDAY',
+  Sunday = 'SUNDAY',
+  Thursday = 'THURSDAY',
+  Tuesday = 'TUESDAY',
+  Wednesday = 'WEDNESDAY'
+}
 
 export type YearlyUsage = {
   __typename?: 'YearlyUsage';

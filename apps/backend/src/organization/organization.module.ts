@@ -10,12 +10,14 @@ import { OrganizationUnitMapper } from './mappers/organization-unit.mapper';
 import { OrganizationUnitTypeMapper } from './mappers/organization-unit-type.mapper';
 import { OrganizationService } from './organization.service';
 import { OrganizationUnitService } from './organization-unit.service';
+import { OrganizationUnitAutomationService } from './organization-unit-automation.service';
 import { OrganizationUnitDataModule } from './organization-unit-data.module';
 import {
   OrganizationFieldResolver,
   OrganizationLoader,
   OrganizationMutationResolver,
   OrganizationQueryResolver,
+  OrganizationUnitAutomationResolver,
   OrganizationUnitFieldResolver,
   OrganizationUnitMutationResolver,
   OrganizationUnitQueryResolver,
@@ -34,6 +36,7 @@ import {
   providers: [
     OrganizationService,
     OrganizationUnitService,
+    OrganizationUnitAutomationService,
     OrganizationQueryResolver,
     OrganizationMutationResolver,
     OrganizationFieldResolver,
@@ -41,6 +44,7 @@ import {
     OrganizationUnitQueryResolver,
     OrganizationUnitMutationResolver,
     OrganizationUnitFieldResolver,
+    OrganizationUnitAutomationResolver,
     OrganizationMapper,
     OrganizationUnitMapper,
     OrganizationUnitTypeMapper,
@@ -48,6 +52,7 @@ import {
   exports: [
     OrganizationService,
     OrganizationUnitService,
+    OrganizationUnitAutomationService,
     OrganizationMapper,
     OrganizationUnitMapper,
   ],
