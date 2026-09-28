@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { clientTimeEntrySchema } from './schemas';
+import { clientTimeEntrySchema, serverCheckInVolunteerSchema } from './schemas';
 
 const messages = {
   organizationUnitRequired: 'Organization Unit is required',
@@ -61,5 +61,34 @@ describe('clientTimeEntrySchema', () => {
       );
       expect(issue?.message).toBe('Shift date is required');
     }
+  });
+});
+
+describe('serverCheckInVolunteerSchema', () => {
+  const base = {
+    organizationUnitId: 'org-unit-1',
+    volunteerId: 'volunteer-1',
+    shiftInstanceId: null,
+  };
+
+  it('accepts a valid start time', () => {
+    const result = serverCheckInVolunteerSchema.safeParse({
+      ...base,
+      startedAt: new Date('2026-09-28T08:00:00.000Z'),
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects a missing start time', () => {
+    const result = serverCheckInVolunteerSchema.safeParse(base);
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects an invalid start time', () => {
+    const result = serverCheckInVolunteerSchema.safeParse({
+      ...base,
+      startedAt: new Date('not-a-date'),
+    });
+    expect(result.success).toBe(false);
   });
 });

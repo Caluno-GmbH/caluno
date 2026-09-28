@@ -1,7 +1,7 @@
 'use client';
 
-import { Checkbox, Separator } from '@repo/ui';
-import { Building2, CalendarDays } from 'lucide-react';
+import { Checkbox, Input, Separator } from '@repo/ui';
+import { Building2, CalendarDays, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import type { CheckInSelection } from '../../check-in-selection';
@@ -16,6 +16,9 @@ type ShiftInstanceStepperProps = {
   onOpenOrgUnit: () => void;
   onOpenDate: () => void;
   onOpenShift: () => void;
+  startTime: string;
+  onStartTimeChange: (startTime: string) => void;
+  startTimeError: string | null;
 };
 
 export function ShiftInstanceStepper({
@@ -26,6 +29,9 @@ export function ShiftInstanceStepper({
   onOpenOrgUnit,
   onOpenDate,
   onOpenShift,
+  startTime,
+  onStartTimeChange,
+  startTimeError,
 }: ShiftInstanceStepperProps) {
   const t = useTranslations('CheckIn');
   const { formatDate, formatTimeRange } = useFormatting();
@@ -81,9 +87,32 @@ export function ShiftInstanceStepper({
             isEmpty={!selectedInstance}
             onClick={onOpenShift}
           />
-          <Separator />
         </>
       )}
+
+      <Separator />
+
+      <div className="py-2">
+        <div className="flex w-full items-center gap-2">
+          <Clock className="size-4 shrink-0 text-muted-foreground" />
+          <label htmlFor="check-in-start-time" className="flex-1 font-semibold">
+            {t('startTimeLabel')}
+          </label>
+          <Input
+            id="check-in-start-time"
+            type="time"
+            className="w-32"
+            value={startTime}
+            onChange={(event) => onStartTimeChange(event.target.value)}
+            aria-invalid={startTimeError ? true : undefined}
+          />
+        </div>
+        {startTimeError && (
+          <p className="pt-1 text-sm text-destructive">{startTimeError}</p>
+        )}
+      </div>
+
+      <Separator />
 
       <label
         className="flex w-full items-center gap-2 py-2 font-semibold"

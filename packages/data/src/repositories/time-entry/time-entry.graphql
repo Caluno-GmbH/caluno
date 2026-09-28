@@ -236,10 +236,15 @@ query GetCheckInVolunteerRequiredForms($volunteerId: ID!) {
   }
 }
 
-mutation CheckInVolunteer($volunteerId: ID!, $shiftInstanceId: ID) {
+mutation CheckInVolunteer(
+  $volunteerId: ID!
+  $shiftInstanceId: ID
+  $startedAt: DateTime
+) {
   checkInVolunteer(
     volunteerId: $volunteerId
     shiftInstanceId: $shiftInstanceId
+    startedAt: $startedAt
   ) {
     id
   }
