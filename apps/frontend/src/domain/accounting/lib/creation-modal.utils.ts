@@ -1,23 +1,54 @@
 import type { EligibleTimeEntry } from '@repo/data';
 import type { EligibleHourLine } from '../components/eligible-hours-card';
-import { billingYearBounds } from './billing-period';
+import {
+  billingMonthBounds,
+  billingYearBounds,
+  type PeriodBounds,
+  toPeriodBounds,
+} from './billing-period';
+
+const RANGE_PATTERN =
+  /^(\d{2})\.(\d{2})\.(\d{4})\s*[–-]\s*(\d{2})\.(\d{2})\.(\d{4})$/;
+const MONTH_PATTERN = /^(\d{2})\/(\d{4})$/;
+const YEAR_PATTERN = /^(\d{4})$/;
 
 /**
- * Extracts the year from the contract's manual "Vertragslaufzeit" field
- * (a coordinator-typed "MM/YYYY" string, e.g. "01/2026") and returns the full
- * calendar-year period the backend contract row covers — contracts always run
- * a whole calendar year, never just the entered month (see
- * board-data.utils.ts's `contractPeriodOverlapsYear`). Falls back to `now`'s year
- * when the string doesn't parse, so a malformed manual entry never blocks
- * contract creation.
+ * The period the contract's manual "Vertragslaufzeit" field states. The field
+ * is the same "period" value the template builder produces, so it can be a
+ * single month ("08/2026"), a whole year ("2026") or a day range
+ * ("01.08.2026–15.08.2026"). The contract row must cover exactly what the
+ * signed agreement states — a month agreement is valid for that month only
+ * (VOLI-1370).
+ */
+function parseLifespan(lifespan: string): PeriodBounds | undefined {
+  const range = lifespan.match(RANGE_PATTERN);
+  if (range) {
+    const [, fromDay, fromMonth, fromYear, toDay, toMonth, toYear] = range;
+    return toPeriodBounds({
+      from: new Date(Number(fromYear), Number(fromMonth) - 1, Number(fromDay)),
+      to: new Date(Number(toYear), Number(toMonth) - 1, Number(toDay)),
+    });
+  }
+
+  const month = lifespan.match(MONTH_PATTERN);
+  if (month) return billingMonthBounds(Number(month[2]), Number(month[1]) - 1);
+
+  const year = lifespan.match(YEAR_PATTERN);
+  if (year) return billingYearBounds(Number(year[1]));
+
+  return undefined;
+}
+
+/**
+ * The validity period for a contract created with the given "Vertragslaufzeit"
+ * string. Returns `undefined` when the string is empty or not a period we can
+ * read, so the caller blocks creation with a clear message instead of silently
+ * persisting a whole-year contract (VOLI-1370).
  */
 export function contractPeriodForLifespan(
   lifespan: string,
-  now: Date = new Date(),
-): { periodStart: string; periodEnd: string } {
-  const match = lifespan.match(/(\d{4})\s*$/);
-  const year = match ? Number(match[1]) : now.getFullYear();
-  return billingYearBounds(year);
+): PeriodBounds | undefined {
+  return parseLifespan(lifespan.trim());
 }
 
 /** Hours between two ISO timestamps, rounded to hundredths so display never shows floating-point noise. */

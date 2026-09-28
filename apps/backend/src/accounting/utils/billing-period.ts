@@ -17,7 +17,7 @@ export function billingYearBounds(year: number): BillingPeriod {
 }
 
 /** The Berlin calendar month an instant falls in. */
-export function billingMonthBounds(instant: Date): BillingPeriod {
+export function billingMonthBoundsOf(instant: Date): BillingPeriod {
   const { year, month } = appDateParts(instant);
   return {
     start: startOfAppDay(year, month, 1),
@@ -28,6 +28,35 @@ export function billingMonthBounds(instant: Date): BillingPeriod {
 /** The Berlin calendar year an instant falls in. */
 export function billingYearOf(instant: Date): number {
   return appDateParts(instant).year;
+}
+
+/** Whether two half-open periods `[aStart, aEnd)` and `[bStart, bEnd)` overlap. */
+export function periodsOverlap(
+  aStart: Date,
+  aEnd: Date,
+  bStart: Date,
+  bEnd: Date,
+): boolean {
+  return aStart.getTime() < bEnd.getTime() && aEnd.getTime() > bStart.getTime();
+}
+
+/**
+ * Whether the contract period `[cStart, cEnd)` fully covers the target period
+ * `[tStart, tEnd)`. A period covers an instant when `tStart === tEnd`. Requiring
+ * full coverage (not mere overlap) is what stops a contract for one month from
+ * covering a multi-month timesheet (VOLI-1370).
+ */
+export function periodCovers(
+  cStart: Date,
+  cEnd: Date,
+  tStart: Date,
+  tEnd: Date,
+): boolean {
+  return (
+    cStart.getTime() <= tStart.getTime() &&
+    cEnd.getTime() > tStart.getTime() &&
+    cEnd.getTime() >= tEnd.getTime()
+  );
 }
 
 /** The last instant a period still contains; format it as the period's last day. */

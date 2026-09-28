@@ -63,11 +63,18 @@ export function useInviteAllowanceEligibility(input: {
   organizationUnitId?: string;
   reimbursementTypeId?: string;
   shiftDurationMinutes?: number;
+  periodStart?: string | null;
+  periodEnd?: string | null;
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
-  const { organizationUnitId, reimbursementTypeId, shiftDurationMinutes } =
-    input;
+  const {
+    organizationUnitId,
+    reimbursementTypeId,
+    shiftDurationMinutes,
+    periodStart,
+    periodEnd,
+  } = input;
 
   return useQuery<RawVolunteerInviteAllowance[]>({
     queryKey: [
@@ -76,12 +83,16 @@ export function useInviteAllowanceEligibility(input: {
       organizationUnitId,
       reimbursementTypeId,
       shiftDurationMinutes,
+      periodStart,
+      periodEnd,
     ],
     queryFn: () =>
       repository.findInviteAllowanceEligibility({
         organizationUnitId: organizationUnitId ?? '',
         reimbursementTypeId: reimbursementTypeId ?? '',
         shiftDurationMinutes: shiftDurationMinutes ?? 0,
+        periodStart,
+        periodEnd,
       }),
     staleTime: 30 * 1000,
     enabled: Boolean(

@@ -21,6 +21,7 @@ const formatMonth = (date: Date) =>
   new Intl.DateTimeFormat('de-DE', {
     month: 'long',
     year: 'numeric',
+    timeZone: 'Europe/Berlin',
   }).format(date);
 
 function signature(overrides: Record<string, unknown> = {}) {
@@ -131,6 +132,18 @@ describe('periodLabel', () => {
     ).toBe('2026');
   });
 
+  // VOLI-1370: a month-scoped agreement is labelled by its month.
+  it('renders month + year for a month-scoped contract', () => {
+    expect(
+      periodLabel(
+        'contract',
+        '2026-07-31T22:00:00.000Z',
+        formatMonth,
+        '2026-08-31T22:00:00.000Z',
+      ),
+    ).toBe('August 2026');
+  });
+
   it('renders month + year for an invoice', () => {
     expect(
       periodLabel('invoice', '2026-07-01T00:00:00.000Z', formatMonth),
@@ -236,6 +249,38 @@ describe('contractToVolunteerDocument', () => {
     expect(doc?.state).toBe('awaiting-signature');
     expect(doc?.figures).toBeUndefined();
     expect(doc?.lines[0]?.kind).toBe('generated');
+  });
+
+  // VOLI-1370: an ACTIVE contract past its period reads as expired, not active.
+  it('marks an ACTIVE contract whose period has ended as expired', () => {
+    const doc = contractToVolunteerDocument(
+      {
+        id: 'contract-1',
+        contractStatus: ContractStatus.Active,
+        // August 2026 as Berlin bounds.
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+        isNonCompliant: false,
+        declineReason: null,
+        declinedAt: null,
+        declinedAtSigneeType: null,
+        declinedByUser: null,
+        renewDate: null,
+        downloadUrl: null,
+        missingProfileFields: [],
+        missingOrgProfileFields: [],
+        createdAt: '2026-07-01T00:00:00.000Z',
+        updatedAt: null,
+        volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
+        reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
+        documentTemplate: { id: 'dt-1', kind: DocumentKind.Contract },
+        signatures: [],
+        statusChanges: [statusChange()],
+      },
+      formatMonth,
+      new Date('2026-09-15T12:00:00.000Z'),
+    );
+    expect(doc?.state).toBe('expired');
   });
 
   it('returns null for a draft contract summary', () => {
