@@ -61,7 +61,6 @@ const EditIdentityForm = ({ email, profile }: EditIdentityFormProps) => {
       iban: tSubtitles('iban'),
       'account-holder': tSubtitles('accountHolder'),
       bic: tSubtitles('bic'),
-      'tax-id': tSubtitles('taxId'),
     }),
     [tSubtitles],
   );

@@ -194,7 +194,6 @@ const PLACEHOLDER_EXAMPLES: Partial<Record<DataSourceKey, string>> = {
   volunteer_dob: 'TT.MM.JJJJ',
   volunteer_iban: 'DE00 0000 0000 0000 0000 00',
   volunteer_bic: 'XXXXXXXX',
-  volunteer_tax_id: 'XX XXX XXX XXX',
   period_start: 'TT.MM.JJJJ',
   period_end: 'TT.MM.JJJJ',
   total_hours: '0',

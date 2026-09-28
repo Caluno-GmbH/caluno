@@ -14,7 +14,6 @@ export const SYSTEM_PROFILE_KEYS = new Set<string>([
   'iban',
   'account-holder',
   'bic',
-  'tax-id',
 ]);
 
 /** Fixed option values for the gender system field. Mirrored in the frontend (gender-options.ts). */

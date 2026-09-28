@@ -811,8 +811,7 @@
         "accountHolder": "Name auf dem Bankkonto",
         "lastName": "Wie auf deinem Ausweis",
         "preferredName": "Falls du anders angesprochen werden möchtest",
-        "bic": "BIC deines Kontos",
-        "taxId": "Deine Steuer-ID (für Spendenbescheinigungen)"
+        "bic": "BIC deines Kontos"
       }
     },
     "language": "Sprache",
@@ -1022,7 +1021,6 @@
       "iban": "IBAN",
       "accountHolder": "Kontoinhaber:in",
       "bic": "BIC",
-      "taxId": "Steuer-ID",
       "infoText": "Infotext",
       "labelLabel": "Bezeichnung",
       "labelPlaceholder": "z. B. Lieblingsfarbe",
@@ -2445,7 +2443,6 @@
           "volunteer_zip": "Postleitzahl (Ehrenamtliche:r)",
           "volunteer_city": "Stadt (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
-          "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
