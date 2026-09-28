@@ -1064,7 +1064,7 @@ type Query {
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
-  timeEntries(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
+  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   user(id: String!): User
@@ -1490,6 +1490,7 @@ type TemplateSignee {
 
 type TimeEntry {
   createdAt: DateTime!
+  createdBy: User
   endedAt: DateTime
   id: ID!
   isPaid: Boolean!
@@ -1504,6 +1505,14 @@ type TimeEntry {
 type TimeEntryPaginatedResponse {
   items: [TimeEntry!]!
   pagination: PaginationInfo!
+}
+
+enum TimeEntrySortField {
+  CREATED_AT
+  DURATION
+  SHIFT
+  STARTED_AT
+  VOLUNTEER
 }
 
 input UpdateDocumentTemplateInput {

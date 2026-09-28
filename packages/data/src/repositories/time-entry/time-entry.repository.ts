@@ -8,12 +8,23 @@ import type {
   GetTimeEntryQuery,
   UpdateTimeEntryInput,
 } from '../../generated/graphql';
+// SortOrder / TimeEntrySortField are string enums used as values below, so
+// they must be value imports (not part of the `import type` above).
+import {
+  SortOrder,
+  TimeEntrySortField,
+} from '../../generated/graphql';
 import {
   BaseRepository,
   type PaginationOptions,
 } from '../base/base.repository';
 
 export type TimeEntryDetail = GetTimeEntryQuery['timeEntry'];
+
+export interface TimeEntryListOptions extends PaginationOptions {
+  sort?: TimeEntrySortField;
+  order?: SortOrder;
+}
 
 export class TimeEntryRepository extends BaseRepository {
   async findById(id: string): Promise<TimeEntryDetail | null> {
@@ -51,10 +62,12 @@ export class TimeEntryRepository extends BaseRepository {
     return data.updateTimeEntry;
   }
 
-  async findAll(options: PaginationOptions = {}) {
+  async findAll(options: TimeEntryListOptions = {}) {
     const data = await this.sdk.GetTimeEntries({
       limit: options.limit ?? 10,
       offset: options.offset ?? 0,
+      sort: options.sort ?? TimeEntrySortField.CreatedAt,
+      order: options.order ?? SortOrder.Desc,
     });
     return data.timeEntries;
   }
