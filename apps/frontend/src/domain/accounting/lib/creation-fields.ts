@@ -32,7 +32,6 @@ const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
   volunteer_dob: 'birth-date',
-  volunteer_tax_id: 'tax-id',
 };
 
 function isEditableSource(source: DataSourceKey): boolean {
