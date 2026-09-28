@@ -3,6 +3,11 @@
 import type { GetPermissionGroupsQuery } from '@repo/data';
 import { Card, Label, Separator, Switch } from '@repo/ui';
 import { useTranslations } from 'next-intl';
+import {
+  permissionDescriptionKey,
+  permissionLabelKey,
+  permissionTitleKey,
+} from '../lib/role-label';
 
 type PermissionGroup = GetPermissionGroupsQuery['permissionGroups'][number];
 
@@ -51,7 +56,9 @@ export function PermissionPicker({
         return (
           <Card key={group.key} className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <Label className="text-lg font-semibold">{group.label}</Label>
+              <Label className="text-lg font-semibold">
+                {t(permissionTitleKey(group.key))}
+              </Label>
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground">
                   {allSelected
@@ -69,7 +76,11 @@ export function PermissionPicker({
               </div>
             </div>
             <Separator className="mb-3" />
-            <div className="grid grid-cols-2 gap-2">
+            <div
+              className={`grid gap-2 ${
+                group.items.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
+              }`}
+            >
               {group.items.map((item) => (
                 <div
                   key={item.permission.id}
@@ -77,7 +88,7 @@ export function PermissionPicker({
                 >
                   <div className="flex items-center justify-between">
                     <Label className="text-base font-bold cursor-pointer">
-                      {item.label}
+                      {t(permissionLabelKey(item.permission.key))}
                     </Label>
                     <Switch
                       size="sm"
@@ -89,7 +100,7 @@ export function PermissionPicker({
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {t(`descriptions.${item.permission.key}`)}
+                    {t(permissionDescriptionKey(item.permission.key))}
                   </p>
                 </div>
               ))}
