@@ -782,6 +782,7 @@ type Mutation {
   updateMyUserProfile(input: UpdateUserProfileInput!): UserProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
+  updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
   updateRequirement(id: String!, input: UpdateRequirementInput!): Requirement!
   updateRequirementForm(id: String!, input: UpdateRequirementFormInput!): RequirementForm!
   updateRequirementFulfillment(id: String!, input: UpdateRequirementFulfillmentInput!): RequirementFulfillment!
@@ -867,6 +868,21 @@ type OrganizationUnit {
   websiteUrl: String
   welcomeMessage: String
   zipCode: String
+}
+
+type OrganizationUnitAutomation {
+  activeDays: [Weekday!]!
+  enabled: Boolean!
+  kind: OrganizationUnitAutomationKind!
+  leadTimeHours: Int
+  organizationUnitId: ID!
+  sendAtTime: String
+}
+
+enum OrganizationUnitAutomationKind {
+  DISCOVERY_EMAIL
+  PAUSE_APPROVAL
+  URGENT_CALL
 }
 
 type OrganizationUnitPaginatedResponse {
@@ -1011,6 +1027,7 @@ type Query {
   organizationBySlug(slug: String!): Organization!
   organizationTree: OrganizationTree
   organizationUnit(id: String!): OrganizationUnit
+  organizationUnitAutomations(organizationUnitId: ID!): [OrganizationUnitAutomation!]!
   organizationUnitBySlug(slug: String!): OrganizationUnit
   organizationUnitTypes: [OrganizationUnitType!]!
   organizationUnits(limit: Int! = 10, offset: Int! = 0, organizationId: String!): OrganizationUnitPaginatedResponse!
@@ -1553,6 +1570,13 @@ input UpdateOrganizationInput {
   zipCode: String
 }
 
+input UpdateOrganizationUnitAutomationInput {
+  activeDays: [Weekday!]
+  enabled: Boolean
+  leadTimeHours: Int
+  sendAtTime: String
+}
+
 input UpdateOrganizationUnitInput {
   city: String
   contactEmail: String
@@ -1704,6 +1728,16 @@ type VolunteerNeedsTimesheet {
 type VolunteerYearlyUsage {
   usageByType: [ReimbursementTypeUsage!]!
   volunteer: User!
+}
+
+enum Weekday {
+  FRIDAY
+  MONDAY
+  SATURDAY
+  SUNDAY
+  THURSDAY
+  TUESDAY
+  WEDNESDAY
 }
 
 type YearlyUsage {
