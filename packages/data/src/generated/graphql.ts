@@ -883,6 +883,7 @@ export type MutationCheckInInviteToShiftInstanceArgs = {
 
 export type MutationCheckInVolunteerArgs = {
   shiftInstanceId?: InputMaybe<Scalars['ID']['input']>;
+  startedAt?: InputMaybe<Scalars['DateTime']['input']>;
   volunteerId: Scalars['ID']['input'];
 };
 
@@ -4243,6 +4244,7 @@ export type GetCheckInVolunteerRequiredFormsQuery = { __typename?: 'Query', chec
 export type CheckInVolunteerMutationVariables = Exact<{
   volunteerId: Scalars['ID']['input'];
   shiftInstanceId?: InputMaybe<Scalars['ID']['input']>;
+  startedAt?: InputMaybe<Scalars['DateTime']['input']>;
 }>;
 
 
@@ -7764,8 +7766,12 @@ export const GetCheckInVolunteerRequiredFormsDocument = gql`
 }
     `;
 export const CheckInVolunteerDocument = gql`
-    mutation CheckInVolunteer($volunteerId: ID!, $shiftInstanceId: ID) {
-  checkInVolunteer(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
+    mutation CheckInVolunteer($volunteerId: ID!, $shiftInstanceId: ID, $startedAt: DateTime) {
+  checkInVolunteer(
+    volunteerId: $volunteerId
+    shiftInstanceId: $shiftInstanceId
+    startedAt: $startedAt
+  ) {
     id
   }
 }

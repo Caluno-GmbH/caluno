@@ -362,6 +362,7 @@ export function ShiftInstanceVolunteersPanel({
             organizationUnitId: orgUId,
             volunteerId,
             shiftInstanceId: instanceId,
+            startedAt: new Date(),
           });
           if (result?.serverError) {
             toast.error(t('checkIn.checkInError'), { id: toastId });

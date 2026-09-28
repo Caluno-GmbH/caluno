@@ -115,10 +115,12 @@ export class TimeEntryRepository extends BaseRepository {
   async checkInVolunteer(
     volunteerId: string,
     shiftInstanceId: string | null,
+    startedAt: string | null,
   ): Promise<{ id: string }> {
     const data = await this.sdk.CheckInVolunteer({
       volunteerId,
       shiftInstanceId,
+      startedAt,
     });
     return data.checkInVolunteer;
   }
