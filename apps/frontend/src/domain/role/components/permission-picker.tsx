@@ -51,7 +51,7 @@ export function PermissionPicker({
         return (
           <Card key={group.key} className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <Label className="text-sm font-semibold">{group.label}</Label>
+              <Label className="text-lg font-semibold">{group.label}</Label>
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground">
                   {allSelected
@@ -73,17 +73,24 @@ export function PermissionPicker({
               {group.items.map((item) => (
                 <div
                   key={item.permission.id}
-                  className="flex items-center justify-between rounded-md px-2 py-1.5"
+                  className="rounded-md px-2 py-1.5"
                 >
-                  <Label className="text-sm font-normal cursor-pointer">
-                    {item.label}
-                  </Label>
-                  <Switch
-                    size="sm"
-                    checked={selectedIds.includes(item.permission.id)}
-                    onCheckedChange={() => togglePermission(item.permission.id)}
-                    disabled={disabled}
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-bold cursor-pointer">
+                      {item.label}
+                    </Label>
+                    <Switch
+                      size="sm"
+                      checked={selectedIds.includes(item.permission.id)}
+                      onCheckedChange={() =>
+                        togglePermission(item.permission.id)
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t(`descriptions.${item.permission.key}`)}
+                  </p>
                 </div>
               ))}
             </div>

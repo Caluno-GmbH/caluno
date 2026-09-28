@@ -1189,6 +1189,18 @@
     },
     "permissions": {
       "all": "All",
+      "descriptions": {
+        "ACCOUNTING_MANAGE": "Manage accounting records and financial data for the organization.",
+        "CHECK_IN_MANAGE": "Manage the check-in process for volunteers at shifts.",
+        "ORG_EDIT": "Change organization details and settings.",
+        "ORG_VIEW": "See organization details and settings.",
+        "REQUIREMENT_PROFILE_EDIT": "Change requirement profiles used for volunteer matching.",
+        "REQUIREMENT_PROFILE_VIEW": "See requirement profiles used for volunteer matching.",
+        "SHIFT_EDIT": "Change shift details, times, and assignments.",
+        "SHIFT_VIEW": "See shift details, times, and assignments.",
+        "VOLUNTEER_EDIT": "Change volunteer profiles and personal information.",
+        "VOLUNTEER_VIEW": "See volunteer profiles and personal information."
+      },
       "none": "None",
       "partial": "Partial"
     },
