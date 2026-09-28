@@ -7,8 +7,8 @@ import {
   useCheckInShiftInstances,
   useQueryClient,
 } from '@repo/data/react';
-import { Button, Card, CardContent } from '@repo/ui';
-import { endOfMonth, startOfMonth } from 'date-fns';
+import { applyTimeToDate, Button, Card, CardContent } from '@repo/ui';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState, useTransition } from 'react';
@@ -79,6 +79,8 @@ export function ManualCheckInPage({
   const [openSheet, setOpenSheet] = useState<
     'orgUnit' | 'date' | 'shift' | 'acceptMembership' | null
   >(null);
+  const [startTime, setStartTime] = useState(() => format(new Date(), 'HH:mm'));
+  const [startTimeError, setStartTimeError] = useState<string | null>(null);
 
   // The visible month drives the fetch; it also feeds the calendar dots and
   // the day list, so one range query serves every consumer on the page.
@@ -196,11 +198,19 @@ export function ManualCheckInPage({
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
+    const startedAt = startTime ? applyTimeToDate(new Date(), startTime) : null;
+    if (!startedAt || Number.isNaN(startedAt.getTime())) {
+      setStartTimeError(t('startTimeInvalid'));
+      return;
+    }
+    setStartTimeError(null);
+
     startSubmitTransition(async () => {
       const result = await checkInVolunteer({
         organizationUnitId: selection.orgUnitId,
         volunteerId: volunteer.id,
         shiftInstanceId: effectiveShiftInstanceId,
+        startedAt,
       });
 
       if (result?.serverError) {
@@ -266,6 +276,9 @@ export function ManualCheckInPage({
             setOpenSheet('date');
           }}
           onOpenShift={() => setOpenSheet('shift')}
+          startTime={startTime}
+          onStartTimeChange={setStartTime}
+          startTimeError={startTimeError}
         />
 
         <UserCard user={volunteer} size="lg" />

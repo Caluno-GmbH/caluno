@@ -591,6 +591,7 @@ export class TimeTrackingService {
     volunteerId: string,
     shiftInstanceId: string | null,
     actorUserId: string,
+    startedAt: Date | null,
   ): Promise<TimeEntryEntity> {
     const isMember = await this._membershipService.isMemberOfUnitOrAncestor(
       volunteerId,
@@ -603,7 +604,7 @@ export class TimeTrackingService {
     const input = new AddTimeEntryInput();
     input.volunteerId = volunteerId;
     input.shiftInstanceId = shiftInstanceId;
-    input.startedAt = new Date();
+    input.startedAt = startedAt ?? new Date();
     input.endedAt = null;
     input.notes = null;
 
