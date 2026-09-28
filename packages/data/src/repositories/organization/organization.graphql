@@ -374,3 +374,32 @@ mutation SetRequiredForms($organizationUnitId: String!, $formIds: [String!]!) {
     order
   }
 }
+
+fragment OrganizationUnitAutomationFields on OrganizationUnitAutomation {
+  organizationUnitId
+  kind
+  enabled
+  activeDays
+  leadTimeHours
+  sendAtTime
+}
+
+query GetOrganizationUnitAutomations($organizationUnitId: ID!) {
+  organizationUnitAutomations(organizationUnitId: $organizationUnitId) {
+    ...OrganizationUnitAutomationFields
+  }
+}
+
+mutation UpdateOrganizationUnitAutomation(
+  $organizationUnitId: ID!
+  $kind: OrganizationUnitAutomationKind!
+  $input: UpdateOrganizationUnitAutomationInput!
+) {
+  updateOrganizationUnitAutomation(
+    organizationUnitId: $organizationUnitId
+    kind: $kind
+    input: $input
+  ) {
+    ...OrganizationUnitAutomationFields
+  }
+}
