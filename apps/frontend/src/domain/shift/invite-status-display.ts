@@ -135,6 +135,58 @@ export function toInviteDisplayState(
   }
 }
 
+export type RosterGroupKey = 'coming' | 'pending' | 'notComing';
+
+/** Ordered so the group a supervisor must act on renders first. */
+export const ROSTER_GROUP_ORDER: readonly RosterGroupKey[] = [
+  'coming',
+  'pending',
+  'notComing',
+];
+
+export function toRosterGroup(status: InviteStatus): RosterGroupKey {
+  switch (toInviteDisplayState(status)) {
+    case 'accepted':
+    case 'signed_up':
+      return 'coming';
+    case 'invited':
+    case 'requested':
+    case 'waitlisted':
+      return 'pending';
+    default:
+      return 'notComing';
+  }
+}
+
+/** Approval requests are the only state blocked on the coordinator, so they lead. */
+const PENDING_RANK: Record<string, number> = {
+  requested: 0,
+  invited: 1,
+  waitlisted: 2,
+};
+
+export function groupInvitesByRosterGroup<T extends { status: InviteStatus }>(
+  invites: readonly T[],
+): Record<RosterGroupKey, T[]> {
+  const groups: Record<RosterGroupKey, T[]> = {
+    coming: [],
+    pending: [],
+    notComing: [],
+  };
+
+  for (const invite of invites) {
+    groups[toRosterGroup(invite.status)].push(invite);
+  }
+
+  groups.pending.sort(
+    (a, b) =>
+      (PENDING_RANK[toInviteDisplayState(a.status)] ?? 99) -
+      (PENDING_RANK[toInviteDisplayState(b.status)] ?? 99),
+  );
+
+  return groups;
+}
+
 export function partitionInvitesByWaitlist<T extends { status: InviteStatus }>(
   volunteers: readonly T[],
 ): { invites: T[]; waitlisted: T[] } {
@@ -148,88 +200,4 @@ export function partitionInvitesByWaitlist<T extends { status: InviteStatus }>(
     invites,
     waitlisted,
   };
-}
-
-export type InviteStatusCounts = {
-  invited: number;
-  accepted: number;
-  signedUp: number;
-  declined: number;
-  cancelled: number;
-  rejected: number;
-  waitlisted: number;
-};
-
-export function countInviteDisplayStates(
-  statuses: readonly InviteStatus[],
-): InviteStatusCounts {
-  const counts: InviteStatusCounts = {
-    invited: 0,
-    accepted: 0,
-    signedUp: 0,
-    declined: 0,
-    cancelled: 0,
-    rejected: 0,
-    waitlisted: 0,
-  };
-
-  for (const status of statuses) {
-    switch (toInviteDisplayState(status)) {
-      case 'invited':
-        counts.invited += 1;
-        break;
-      case 'accepted':
-        counts.accepted += 1;
-        break;
-      case 'signed_up':
-        counts.signedUp += 1;
-        break;
-      case 'declined':
-        counts.declined += 1;
-        break;
-      case 'cancelled':
-        counts.cancelled += 1;
-        break;
-      case 'rejected':
-        counts.rejected += 1;
-        break;
-      case 'requested':
-        // Count approval requests under invited for summary until UI splits
-        counts.invited += 1;
-        break;
-      case 'waitlisted':
-        counts.waitlisted += 1;
-        break;
-      default:
-        break;
-    }
-  }
-
-  return counts;
-}
-
-/** Summary line for instance detail, e.g. "4 invited · 2 accepted · 1 signed up · 12 spots". */
-export function formatInviteStatusSummary(
-  counts: InviteStatusCounts,
-  spots: number | null | undefined,
-  labels: {
-    invited: string;
-    accepted: string;
-    signedUp: string;
-    waitlisted: string;
-    spots: string;
-  },
-): string {
-  const parts = [
-    `${counts.invited} ${labels.invited}`,
-    `${counts.accepted} ${labels.accepted}`,
-    `${counts.signedUp} ${labels.signedUp}`,
-  ];
-  if (counts.waitlisted > 0) {
-    parts.push(`${counts.waitlisted} ${labels.waitlisted}`);
-  }
-  if (spots != null) {
-    parts.push(`${spots} ${labels.spots}`);
-  }
-  return parts.join(' · ');
 }

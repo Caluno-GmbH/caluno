@@ -74,8 +74,8 @@ export class OrgPage {
     return this.page.getByLabel('Website');
   }
 
-  get addressInput() {
-    return this.page.getByLabel('Address');
+  get streetInput() {
+    return this.page.getByLabel('Street name and number');
   }
 
   async submit() {
@@ -89,7 +89,7 @@ export class OrgPage {
     contactEmail?: string;
     phone?: string;
     websiteUrl?: string;
-    address?: string;
+    street?: string;
   }) {
     if (values.name !== undefined) await this.nameInput.fill(values.name);
     if (values.description !== undefined) {
@@ -102,8 +102,8 @@ export class OrgPage {
     if (values.websiteUrl !== undefined) {
       await this.websiteUrlInput.fill(values.websiteUrl);
     }
-    if (values.address !== undefined) {
-      await this.addressInput.fill(values.address);
+    if (values.street !== undefined) {
+      await this.streetInput.fill(values.street);
     }
   }
 

@@ -21,7 +21,7 @@ import {
   SelectValue,
   Textarea,
 } from '@repo/ui';
-import { CalendarIcon, Link } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
@@ -33,6 +33,7 @@ import {
   serializeMultiChoiceValue,
 } from '../option-values';
 import { BirthDateInput } from './birth-date-input';
+import { DocumentPreviewSheet } from './document-preview-sheet';
 
 const PHONE_RE = /^\+?[\d\s\-().]{7,20}$/;
 const NAME_RE = /^[\p{L}\p{M}'\- ]+$/u;
@@ -255,7 +256,7 @@ export function buildFieldSchema(
     s = s.refine((v) => !v || PHONE_RE.test(v), {
       message: messages.mustBeValidPhone(label),
     }) as z.ZodString;
-  } else if (sk === 'address') {
+  } else if (sk === 'street') {
     s = s.max(200, messages.maxChars(label, 200)) as z.ZodString;
   } else if (sk === 'zip') {
     s = s.refine((v) => !v || ZIP_RE.test(v), {
@@ -343,14 +344,16 @@ export function FieldRenderer({
                 const text = `${docCount > 1 ? `${i + 1}: ` : ''}${doc.filename || ''}`;
                 if (!text) return null;
                 return doc.downloadUrl ? (
-                  <span key={doc.fileId} className="flex items-center gap-1">
-                    <a href={doc.downloadUrl} target="_blank" rel="noopener">
-                      {text}
-                    </a>
-                    <Link className="size-3" />
-                  </span>
+                  <DocumentPreviewSheet
+                    key={doc.fileId}
+                    label={text}
+                    filename={doc.filename || text}
+                    downloadUrl={doc.downloadUrl}
+                  />
                 ) : (
-                  <span key={doc.fileId}>{text}</span>
+                  <span key={doc.fileId} className="max-w-full break-all">
+                    {text}
+                  </span>
                 );
               })}
             </span>

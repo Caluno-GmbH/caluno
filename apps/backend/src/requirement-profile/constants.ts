@@ -7,14 +7,13 @@ export const SYSTEM_PROFILE_KEYS = new Set<string>([
   GENDER_SYSTEM_KEY,
   'email',
   'phone',
-  'address',
+  'street',
   'zip',
   'city',
   'birth-date',
   'iban',
   'account-holder',
   'bic',
-  'tax-id',
 ]);
 
 /** Fixed option values for the gender system field. Mirrored in the frontend (gender-options.ts). */

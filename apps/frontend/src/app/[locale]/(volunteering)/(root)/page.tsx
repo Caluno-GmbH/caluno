@@ -56,7 +56,7 @@ export default async function VolunteeringHomePage({
   return (
     <VolunteerHomeContent
       initialMyShiftInstances={myShiftInstancesPage.items}
-      initialAvailableShiftInstances={availableShiftInstancesPage.items}
+      initialAvailableShiftInstancesPage={availableShiftInstancesPage}
       initialAvailableEvents={availableEventsPage.items}
       initialShiftInvitations={shiftInvitationsPage.items}
       initialEventInvitations={eventInvitationsPage.items}

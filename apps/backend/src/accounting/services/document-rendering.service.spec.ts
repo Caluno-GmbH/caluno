@@ -1,18 +1,63 @@
 import { describe, expect, it } from 'bun:test';
+import { inflateSync } from 'node:zlib';
 import { FilePurpose } from '../../storage/enums';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
-import { DocumentRenderingService } from './document-rendering.service';
+import { SigneeType } from '../enums';
+import {
+  DocumentRenderingService,
+  letterheadLines,
+} from './document-rendering.service';
 import type { TemplateBodyShape } from './document-template.types';
 
 interface TimeEntryMock {
-  shiftInstance: { master: { title: string } };
+  shiftInstance: {
+    overrideTitle?: string | null;
+    master: { title: string };
+  } | null;
   startedAt: Date | null;
   endedAt: Date | null;
   notes?: string | null;
 }
+
+/** Inflates the PDF's content streams and decodes their hex TJ strings so assertions can read the rendered text. */
+const extractPdfText = (buffer: Buffer): string => {
+  const raw = buffer.toString('latin1');
+  const chunks: string[] = [];
+  for (const match of raw.matchAll(/stream\r?\n([\s\S]*?)endstream/g)) {
+    let content: string;
+    try {
+      content = inflateSync(Buffer.from(match[1], 'latin1')).toString('latin1');
+    } catch {
+      content = match[1];
+    }
+    // pdfkit splits words into kerning-separated hex strings: "[<4272> 10 <616e6368>] TJ".
+    chunks.push(
+      [...content.matchAll(/<([0-9A-Fa-f]+)>/g)]
+        .map((m) =>
+          Buffer.from(m[1].length % 2 ? `${m[1]}0` : m[1], 'hex').toString(
+            'latin1',
+          ),
+        )
+        .join(''),
+    );
+  }
+  return chunks.join('\n');
+};
+
+/** The text of a rendered PDF; content streams are Flate-compressed and glyph runs hex-encoded. */
+const pdfGlyphs = (pdfBytes: Buffer): string => {
+  const content = [
+    ...pdfBytes.toString('latin1').matchAll(/stream\r?\n([\s\S]*?)endstream/g),
+  ]
+    .map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
+    .join('\n');
+  return [...content.matchAll(/<([0-9a-f]+)>/g)]
+    .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
+    .join('');
+};
 
 describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
@@ -24,6 +69,10 @@ describe('DocumentRenderingService', () => {
       rateCents?: number | undefined;
       profileData?: Record<string, unknown>;
       timeEntries?: TimeEntryMock[];
+      contract?: {
+        resolvedBody?: unknown;
+        fieldOverrides?: Record<string, string>;
+      };
       unit?: Record<string, unknown>;
       yearlyUsage?: {
         usedCents: number;
@@ -39,7 +88,7 @@ describe('DocumentRenderingService', () => {
             Promise.resolve({
               id: 'org-1',
               name: 'Playground',
-              address: 'Musterstraße 1',
+              street: 'Musterstraße 1',
             }),
         },
         users: {
@@ -53,13 +102,16 @@ describe('DocumentRenderingService', () => {
         timeEntries: {
           findMany: () => Promise.resolve(overrides.timeEntries ?? []),
         },
+        contracts: {
+          findFirst: () => Promise.resolve(overrides.contract),
+        },
       },
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
     } as never;
     const userProfileService = {
       findByUserId: () =>
         Promise.resolve({
-          data: overrides.profileData ?? { address: 'Testweg 2' },
+          data: overrides.profileData ?? { street: 'Testweg 2' },
         }),
     } as never;
     const reimbursementRateService = {
@@ -78,11 +130,16 @@ describe('DocumentRenderingService', () => {
           ? overrides.saveFile(args)
           : Promise.resolve({ id: 'file-1' }),
     } as never;
+    const organizationService = {
+      requireRootUnit: () =>
+        Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
+    } as never;
     return new DocumentRenderingService(
       db,
       userProfileService,
       reimbursementRateService,
       fileService,
+      organizationService,
     );
   };
 
@@ -105,15 +162,15 @@ describe('DocumentRenderingService', () => {
             titleLines: ['Zusatzvereinbarung'],
             orgIdentityLine: {
               id: 'org-line',
-              text: '{org_name} — {org_address}',
+              text: '{org_name} — {org_street}',
               fields: [
                 {
                   id: 'org_name',
                   value: { kind: 'bound', source: 'org_name' },
                 },
                 {
-                  id: 'org_address',
-                  value: { kind: 'bound', source: 'org_address' },
+                  id: 'org_street',
+                  value: { kind: 'bound', source: 'org_street' },
                 },
               ],
             },
@@ -199,6 +256,35 @@ describe('DocumentRenderingService', () => {
     expect(buffer.subarray(0, 5).toString()).toBe('%PDF-');
   });
 
+  // VOLI-1370: an issued document must render from its creation-time snapshot,
+  // so a later template edit never rewrites it.
+  it('renders the resolvedBody snapshot, not the live template body', async () => {
+    const body = (title: string) => ({
+      header: {
+        titleLines: [title],
+        orgIdentityLine: { id: 'org-line', text: '', fields: [] },
+        metaLines: [],
+      },
+      blocks: [],
+      footer: { closingLine: { id: 'closing', text: '', fields: [] } },
+    });
+    const service = createService({ rateCents: 1500 });
+    const buffer = await service.generatePdf(
+      contract({
+        resolvedBody: body('SnapshotTitle'),
+        documentTemplate: {
+          organizationId: 'org-1',
+          organizationUnitId: 'unit-1',
+          body: body('LiveTemplateTitle'),
+        } as unknown as ContractWithRelations['documentTemplate'],
+      }),
+    );
+
+    const glyphs = pdfGlyphs(buffer);
+    expect(glyphs).toContain('SnapshotTitle');
+    expect(glyphs).not.toContain('LiveTemplateTitle');
+  });
+
   it('generatePdf renders an invoice with a valid PDF buffer', async () => {
     const service = createService({
       rateCents: 1500,
@@ -265,6 +351,39 @@ describe('DocumentRenderingService', () => {
       'actor-1',
     );
     expect(fileId).toBeNull();
+  });
+
+  describe('signature seats', () => {
+    it('renders name and signing date only for parties that have signed', async () => {
+      const service = createService({ rateCents: 1500 });
+      const text = extractPdfText(
+        await service.generatePdf(
+          contract({
+            signatures: [
+              {
+                signeeType: SigneeType.VOLUNTEER,
+                signedAt: new Date('2025-02-01T10:00:00Z'),
+              },
+              { signeeType: SigneeType.PERMISSION_HOLDER, signedAt: null },
+            ] as unknown as ContractWithRelations['signatures'],
+          }),
+        ),
+      );
+      expect(text).toContain('Unterschrift');
+      expect(text).toContain('Max Mustermann');
+      expect(text).toContain('01.02.2025 11:00:00');
+      expect(text).not.toContain('02.02.2025');
+    });
+
+    it('leaves signature seats blank while nobody has signed', async () => {
+      const service = createService({ rateCents: 1500 });
+      const text = extractPdfText(
+        await service.generatePdf(contract({ signatures: [] })),
+      );
+      expect(text).toContain('Unterschrift');
+      expect(text).not.toContain('Max Mustermann');
+      expect(text).not.toContain('01.02.2025');
+    });
   });
 
   describe('buildFieldValueMap', () => {
@@ -379,6 +498,95 @@ describe('DocumentRenderingService', () => {
       expect(rows[1][5]).toBe('52,50 €');
     });
 
+    it('names the shift each row’s hours came from, preferring a renamed occurrence', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: {
+              overrideTitle: 'Food Distribution (Weihnachten)',
+              master: { title: 'Food Distribution' },
+            },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Food Distribution (Weihnachten)');
+    });
+
+    it('falls back to the agreement’s task description for hours with no shift', async () => {
+      const service = createService({
+        rateCents: 1500,
+        contract: {
+          resolvedBody: {
+            blocks: [
+              {
+                id: 'zeitraum-taetigkeit',
+                lines: [
+                  {
+                    id: 'engagement-tasks',
+                    text: 'Tätigkeiten: {tasks}',
+                    fields: [
+                      {
+                        id: 'tasks',
+                        value: {
+                          kind: 'manual-template',
+                          value: 'Betreuung in der Tagespflege',
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        timeEntries: [
+          {
+            shiftInstance: null,
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+
+      const rows = await resolveInvoiceTableRows(service, invoice());
+
+      expect(rows[0][0]).toBe('Betreuung in der Tagespflege');
+    });
+
+    it('repeats the coordinator’s own label when the template asks for one', async () => {
+      const service = createService({
+        rateCents: 1500,
+        timeEntries: [
+          {
+            shiftInstance: { master: { title: 'Food Distribution' } },
+            startedAt: new Date('2025-01-10T08:00:00Z'),
+            endedAt: new Date('2025-01-10T10:00:00Z'),
+            notes: '',
+          },
+        ],
+      });
+      const doc = invoice();
+      const table = (
+        doc.documentTemplate as unknown as {
+          body: { blocks: Record<string, unknown>[] };
+        }
+      ).body.blocks[0];
+      table.firstColumnSource = 'custom';
+      table.firstColumnCustomLabel = 'Ehrenamtliche Tätigkeit';
+
+      const rows = await resolveInvoiceTableRows(service, doc);
+
+      expect(rows[0][0]).toBe('Ehrenamtliche Tätigkeit');
+    });
+
     it('renders an empty amount cell when there is no rate', async () => {
       const service = createService({
         rateCents: undefined,
@@ -399,16 +607,104 @@ describe('DocumentRenderingService', () => {
     });
   });
 
-  describe('invoiceTotalRowCells', () => {
-    it('renders a bold Gesamtbetrag row carrying the formatted total amount', () => {
-      const service = createService();
-      const cells = (
+  describe('resolveParagraphs', () => {
+    const resolveParagraphs = (
+      service: DocumentRenderingService,
+      lines: unknown[],
+      values: Record<string, string>,
+    ): string[] =>
+      (
         service as unknown as {
-          invoiceTotalRowCells: (totalAmountCents: number) => string[];
+          resolveParagraphs: (
+            l: unknown[],
+            v: Record<string, string>,
+          ) => string[];
         }
-      ).invoiceTotalRowCells(8250);
+      ).resolveParagraphs(lines, values);
 
-      expect(cells).toEqual(['', '', 'Gesamtbetrag', '', '', '82,50 €']);
+    const parties = {
+      id: 'parties',
+      text: 'Zwischen dem {orgName}, {orgCity},',
+      fields: [
+        { id: 'n', value: { kind: 'bound', source: 'org_name' } },
+        { id: 'c', value: { kind: 'bound', source: 'org_city' } },
+      ],
+    };
+    const additional = {
+      id: 'parties-additional',
+      text: ' {info},',
+      inline: true,
+      fields: [{ id: 'i', value: { kind: 'manual-template', value: '' } }],
+    };
+    const volunteer = {
+      id: 'volunteer-name',
+      text: 'und Anna Muster,',
+      fields: [],
+    };
+    const values = {
+      n: 'Lesepaten Nord',
+      c: 'Hamburg',
+      i: 'vertreten durch H. Meier',
+    };
+
+    it('Reads an inline line on from the sentence it belongs to', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, additional, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg, vertreten durch H. Meier,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Leaves the sentence alone when the inline line is switched off', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, { ...additional, enabled: false }, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Starts a paragraph of its own when nothing precedes it', () => {
+      expect(resolveParagraphs(createService(), [additional], values)).toEqual([
+        ' vertreten durch H. Meier,',
+      ]);
+    });
+  });
+
+  describe('invoiceTotalRowCells', () => {
+    const invoiceTotalRowCells = (
+      service: DocumentRenderingService,
+      totalAmountCents: number,
+    ): string[][] =>
+      (
+        service as unknown as {
+          invoiceTotalRowCells: (total: number) => string[][];
+        }
+      ).invoiceTotalRowCells(totalAmountCents);
+
+    it('states the payout as net and gross with the VAT rate between them', () => {
+      const cells = invoiceTotalRowCells(createService(), 8250);
+
+      expect(cells).toEqual([
+        ['', '', 'Nettobetrag', '', '', '82,50 €'],
+        ['', '', 'zzgl. 0 % USt.', '', '', '0,00 €'],
+        ['', '', 'Gesamtbetrag (brutto)', '', '', '82,50 €'],
+      ]);
+    });
+
+    it('states the same figure twice, because a Pauschale carries no VAT', () => {
+      const [net, , gross] = invoiceTotalRowCells(createService(), 12_345);
+
+      expect(net?.[5]).toBe(gross?.[5]);
     });
   });
 
@@ -469,7 +765,7 @@ describe('DocumentRenderingService', () => {
         unit: {
           id: 'unit-1',
           name: 'Branch',
-          address: 'Hauptstraße 1',
+          street: 'Hauptstraße 1',
           city: 'Berlin',
           zipCode: '10115',
           legalRep: 'Erika Mustermann',
@@ -489,6 +785,63 @@ describe('DocumentRenderingService', () => {
       const values = await resolveValues(service, contract());
 
       expect(values.org_zip).toBe('');
+    });
+  });
+
+  describe('letterheadLines', () => {
+    it('renders the org letterhead above the title in the PDF', async () => {
+      const service = createService({
+        unit: {
+          id: 'unit-1',
+          name: 'Branch',
+          street: 'Hauptstrasse 1',
+          city: 'Berlin',
+          zipCode: '10115',
+        },
+      });
+      // New-preset body shape: no header.orgIdentityLine, and org data bound on
+      // block lines whose field ids differ from their sources.
+      const document = contract({
+        documentTemplate: {
+          organizationId: 'org-1',
+          organizationUnitId: 'unit-1',
+          body: {
+            header: { titleLines: ['Zusatzvereinbarung'] },
+            blocks: [],
+            footer: {
+              closingLine: { id: 'closing', text: 'Vielen Dank', fields: [] },
+            },
+          },
+        },
+      } as never);
+
+      const text = extractPdfText(await service.generatePdf(document));
+
+      expect(text).toContain('Branch');
+      expect(text).toContain('Hauptstrasse 1');
+      expect(text).toContain('10115 Berlin');
+    });
+
+    it('composes name, address, and zip+city lines', () => {
+      expect(
+        letterheadLines({
+          org_name: 'Altonaer Lesepaten',
+          org_street: 'Adress eintrag 1',
+          org_zip: '22245',
+          org_city: 'Berlin',
+        }),
+      ).toEqual(['Altonaer Lesepaten', 'Adress eintrag 1', '22245 Berlin']);
+    });
+
+    it('skips blank org values line-wise', () => {
+      expect(
+        letterheadLines({
+          org_name: 'Verein',
+          org_street: '   ',
+          org_zip: '',
+          org_city: '',
+        }),
+      ).toEqual(['Verein']);
     });
   });
 });

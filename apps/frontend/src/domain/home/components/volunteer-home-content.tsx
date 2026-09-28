@@ -2,14 +2,15 @@
 
 import { EventInviteStatus, ShiftInviteStatus } from '@repo/data';
 import type {
-  AvailableShiftInstance,
+  AvailableShiftInstancesInfiniteResult,
   DiscoverEvent,
   MyEvent,
   MyShiftInstance,
 } from '@repo/data/react';
 import {
   useAvailableEvents,
-  useAvailableShiftInstances,
+  useAvailableShiftInstanceDayCounts,
+  useAvailableShiftInstancesInfinite,
   useMyEvents,
   useMyShiftInstances,
 } from '@repo/data/react';
@@ -31,18 +32,22 @@ import {
   ChevronRightIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
   addDays,
-  getDayStripDays,
+  getDayStripDaysFromCounts,
   getDiscoverWindow,
   groupByDay,
   intervalsOverlap,
   isSameDay,
   startOfDay,
 } from '../lib/date-helpers';
+import {
+  hasNextDiscoverDay,
+  shouldFetchNextDiscoverPage,
+} from '../lib/discover-paging';
 import type { DiscoverTab } from '../lib/discover-tabs';
 import { mergeInvitations } from '../lib/merge-invitations';
 import {
@@ -72,7 +77,7 @@ interface PendingRequest {
 
 interface VolunteerHomeContentProps {
   initialMyShiftInstances: MyShiftInstance[];
-  initialAvailableShiftInstances: AvailableShiftInstance[];
+  initialAvailableShiftInstancesPage: AvailableShiftInstancesInfiniteResult;
   initialAvailableEvents: DiscoverEvent[];
   initialShiftInvitations: MyShiftInstance[];
   initialEventInvitations: MyEvent[];
@@ -83,7 +88,7 @@ interface VolunteerHomeContentProps {
 
 export function VolunteerHomeContent({
   initialMyShiftInstances,
-  initialAvailableShiftInstances,
+  initialAvailableShiftInstancesPage,
   initialAvailableEvents,
   initialShiftInvitations,
   initialEventInvitations,
@@ -116,18 +121,23 @@ export function VolunteerHomeContent({
 
   const discoverOptions = useMemo(() => getDiscoverWindow(), []);
 
-  const { data: availableShiftInstancesPage, isLoading: isLoadingAvailable } =
-    useAvailableShiftInstances(discoverOptions, {
-      initialData: {
-        items: initialAvailableShiftInstances,
-        pagination: {
-          total: initialAvailableShiftInstances.length,
-          limit: 15,
-          offset: 0,
-          hasMore: false,
-        },
-      },
-    });
+  const {
+    data: availableShiftInstancesData,
+    isLoading: isLoadingAvailable,
+    isFetching: isFetchingAvailable,
+    hasNextPage: hasMoreAvailablePages,
+    fetchNextPage: fetchNextAvailablePage,
+  } = useAvailableShiftInstancesInfinite(discoverOptions, {
+    initialData: {
+      pages: [initialAvailableShiftInstancesPage],
+      pageParams: [0],
+    },
+  });
+
+  const { data: availableShiftDayCounts } = useAvailableShiftInstanceDayCounts({
+    ...discoverOptions,
+    excludeIntended: true,
+  });
 
   const { data: availableEventsPage, isLoading: isLoadingAvailableEvents } =
     useAvailableEvents(
@@ -207,7 +217,11 @@ export function VolunteerHomeContent({
   );
 
   const myShiftList = myShiftInstancesPage?.items ?? [];
-  const availableShiftList = availableShiftInstancesPage?.items ?? [];
+  const availableShiftList = useMemo(
+    () =>
+      availableShiftInstancesData?.pages.flatMap((page) => page.items) ?? [],
+    [availableShiftInstancesData],
+  );
   const availableEventList = availableEventsPage?.items ?? [];
 
   const myShiftIds = useMemo(
@@ -221,8 +235,11 @@ export function VolunteerHomeContent({
   );
 
   const discoverDayStrip = useMemo(
-    () => getDayStripDays(filteredAvailableShiftList, { minDays: 7 }),
-    [filteredAvailableShiftList],
+    () =>
+      getDayStripDaysFromCounts(availableShiftDayCounts ?? [], {
+        minDays: 7,
+      }),
+    [availableShiftDayCounts],
   );
 
   const availableGrouped = useMemo(
@@ -276,12 +293,37 @@ export function VolunteerHomeContent({
   );
   const resolvedIndex = activeGroupIndex >= 0 ? activeGroupIndex : 0;
   const selectedGroup = availableGrouped[resolvedIndex];
+  const availableDayCount = availableGrouped.length;
   const hasPrevDay = resolvedIndex > 0;
-  const hasNextDay = resolvedIndex < availableGrouped.length - 1;
+  const hasNextDay = hasNextDiscoverDay({
+    loadedDayCount: availableDayCount,
+    activeIndex: resolvedIndex,
+    hasMorePages: hasMoreAvailablePages,
+    isFetching: isFetchingAvailable,
+  });
   const goToDay = (delta: number) => {
     const group = availableGrouped[resolvedIndex + delta];
     if (group) setActiveDiscoverDay(group.date);
   };
+
+  useEffect(() => {
+    if (
+      shouldFetchNextDiscoverPage({
+        loadedDayCount: availableDayCount,
+        activeIndex: resolvedIndex,
+        hasMorePages: hasMoreAvailablePages,
+        isFetching: isFetchingAvailable,
+      })
+    ) {
+      fetchNextAvailablePage();
+    }
+  }, [
+    availableDayCount,
+    resolvedIndex,
+    hasMoreAvailablePages,
+    isFetchingAvailable,
+    fetchNextAvailablePage,
+  ]);
 
   // The soonest shift that hasn't ended yet — a shift that started today but
   // already finished must not be shown as the actionable "next" card.

@@ -17,8 +17,6 @@ import {
   adminUninviteTargetStatus,
   canAdminReinvite,
   canAdminUninvite,
-  countInviteDisplayStates,
-  formatInviteStatusSummary,
   toInviteDisplayState,
 } from '@/domain/shift/invite-status-display';
 import { useSheetTrigger } from '@/hooks/use-sheet';
@@ -50,7 +48,6 @@ export function EventVolunteersSection({
   canEdit,
 }: EventVolunteersSectionProps) {
   const t = useTranslations('Event.detail.volunteersCard');
-  const tShift = useTranslations('Shift');
   const tVolunteer = useTranslations('Volunteer.action');
   const router = useRouter();
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
@@ -89,15 +86,6 @@ export function EventVolunteersSection({
     actions: manageActions(invite.status, canEdit),
     iconActions: ['View'],
   }));
-
-  const counts = countInviteDisplayStates(invites.map((i) => i.status));
-  const summary = formatInviteStatusSummary(counts, null, {
-    invited: tShift('inviteStatus.summaryInvited'),
-    accepted: tShift('inviteStatus.summaryAccepted'),
-    signedUp: tShift('inviteStatus.summarySignedUp'),
-    waitlisted: tShift('inviteStatus.summaryWaitlisted'),
-    spots: tShift('inviteStatus.summarySpots'),
-  });
 
   const openProfile = (invite: EventInviteItem) => {
     openVolunteerSheet({
@@ -157,7 +145,6 @@ export function EventVolunteersSection({
       volunteers={volunteers}
       phase="before"
       title={t('title')}
-      summary={summary}
       headerAction={
         canEdit ? (
           <Button asChild size="sm">

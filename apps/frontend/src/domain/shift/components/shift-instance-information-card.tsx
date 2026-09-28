@@ -13,6 +13,7 @@ import {
   CalendarSync,
   Clock10Icon,
   FileText,
+  Inbox,
   LockKeyholeOpen,
   MapPin,
   SquarePen,
@@ -22,7 +23,7 @@ import { getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { shiftInstanceEditPath } from '../routes';
-import { getVisibilityConfig } from './shifts-table';
+import { getApprovalConfig, getVisibilityConfig } from './shifts-table';
 
 type ShiftInstanceInformationCardProps = {
   orgUId: string;
@@ -34,6 +35,7 @@ type ShiftInstanceInformationCardProps = {
   instructions: string | null | undefined;
   rrule: string | null | undefined;
   visibility: ShiftVisibility;
+  joinRequiresApproval: boolean;
   filledCount: number;
   maxVolunteers: number | null | undefined;
   canManage: boolean;
@@ -50,6 +52,7 @@ export async function ShiftInstanceInformationCard({
   instructions,
   rrule,
   visibility,
+  joinRequiresApproval,
   filledCount,
   maxVolunteers,
   canManage,
@@ -58,6 +61,7 @@ export async function ShiftInstanceInformationCard({
   const t = await getTranslations('Shift');
   const { formatDate, formatTimeRange } = await getFormatting();
   const visibilityConfig = getVisibilityConfig(t);
+  const approvalConfig = getApprovalConfig(t, joinRequiresApproval);
   const startsAt = new Date(actualStartsAt);
   const endsAt = new Date(actualEndsAt);
 
@@ -103,6 +107,12 @@ export async function ShiftInstanceInformationCard({
             <LockKeyholeOpen className="text-muted-foreground shrink-0" />
             <Badge variant={visibilityConfig[visibility].variant}>
               {visibilityConfig[visibility].label}
+            </Badge>
+          </li>
+          <li className="flex gap-2 items-center">
+            <Inbox className="text-muted-foreground shrink-0" />
+            <Badge variant={approvalConfig.variant}>
+              {approvalConfig.label}
             </Badge>
           </li>
           <li className="flex gap-2">

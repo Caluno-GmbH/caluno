@@ -67,11 +67,15 @@ query GetInviteAllowanceEligibility(
   $organizationUnitId: ID!
   $reimbursementTypeId: ID!
   $shiftDurationMinutes: Int!
+  $periodStart: DateTime
+  $periodEnd: DateTime
 ) {
   inviteAllowanceEligibility(
     organizationUnitId: $organizationUnitId
     reimbursementTypeId: $reimbursementTypeId
     shiftDurationMinutes: $shiftDurationMinutes
+    periodStart: $periodStart
+    periodEnd: $periodEnd
   ) {
     volunteerId
     state
@@ -287,6 +291,7 @@ query GetInvoice($id: ID!) {
         notes
         shiftInstance {
           id
+          overrideTitle
           master {
             title
           }
@@ -338,6 +343,8 @@ query GetPaidShiftSignupVolunteers($year: Int!) {
       id
       key
     }
+    periodStart
+    periodEnd
   }
 }
 
@@ -359,6 +366,7 @@ query GetEligibleTimeEntriesForInvoice(
     notes
     shiftInstance {
       id
+      overrideTitle
       master {
         title
       }
@@ -593,9 +601,9 @@ query GetAccountingSetupStatus {
   accountingSetupStatus {
     orgProfile {
       name
-      address
-      city
+      street
       zipCode
+      city
       legalRep
     }
     orgProfileComplete

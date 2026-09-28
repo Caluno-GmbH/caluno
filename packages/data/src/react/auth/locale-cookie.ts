@@ -9,5 +9,5 @@ import { LOCALE_COOKIE } from '../../constants';
  * proxy only applies the preference while authenticated anyway.
  */
 export function clearLocaleCookie(): void {
-  Cookies.remove(LOCALE_COOKIE, { path: '/' });
+  Cookies.remove(LOCALE_COOKIE, { path: '/', sameSite: 'lax' });
 }

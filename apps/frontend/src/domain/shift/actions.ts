@@ -16,6 +16,7 @@ import {
   serverEditShiftInstanceFormSchema,
   serverShiftDeleteSchema,
   serverShiftFormSchema,
+  serverShiftInstanceApprovalSchema,
   serverShiftInstanceDeleteSchema,
 } from './schemas';
 
@@ -215,6 +216,22 @@ export const deleteShiftInstance = actionClient
       parsedInput.instanceId,
       parsedInput.applyToAllFuture,
     );
+  });
+
+export const updateShiftInstanceApproval = actionClient
+  .inputSchema(serverShiftInstanceApprovalSchema)
+  .action(async ({ parsedInput }) => {
+    const data = await getDataClient({
+      orgUId: parsedInput.organizationUnitId,
+    });
+
+    const result = await data.shift.updateInstanceApproval(
+      parsedInput.instanceId,
+      parsedInput.joinRequiresApproval,
+      parsedInput.applyToAllFuture,
+    );
+
+    return result;
   });
 
 const updateShiftVolunteersSchema = z.object({

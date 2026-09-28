@@ -66,7 +66,7 @@ export const validateSystemKeyValue = (
           `"${label}": must be a valid phone number`,
         );
       break;
-    case 'address':
+    case 'street':
       if (value.length > 200)
         throw new BadRequestGraphQLError(
           `"${label}": must be 200 characters or fewer`,

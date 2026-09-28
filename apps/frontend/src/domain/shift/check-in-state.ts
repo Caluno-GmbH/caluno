@@ -1,3 +1,5 @@
+import type { VolunteeringActionLabel } from '@repo/ui';
+
 export type CheckInTimeEntry = {
   id: string;
   startedAt: string;
@@ -5,10 +7,7 @@ export type CheckInTimeEntry = {
   volunteer: { id: string };
 };
 
-export type AcceptedRowCheckInState =
-  | 'checked_in'
-  | 'not_checked_in'
-  | 'checked_out';
+export type AcceptedRowCheckInState = 'accepted' | 'checked_in' | 'checked_out';
 
 const MAX_CHECKED_OUT_TOOLTIP_LINES = 5;
 
@@ -29,10 +28,46 @@ export function deriveAcceptedRowState(
   entries: readonly CheckInTimeEntry[] | undefined,
 ): AcceptedRowCheckInState {
   if (!entries || entries.length === 0) {
-    return 'not_checked_in';
+    return 'accepted';
   }
   const hasOpenEntry = entries.some((entry) => entry.endedAt == null);
   return hasOpenEntry ? 'checked_in' : 'checked_out';
+}
+
+/**
+ * Which actions an accepted row's check-in state offers, gated on the
+ * CHECK_IN_MANAGE permission. Deliberately NOT part of the shared status
+ * config's default actions for 'accepted' (which stay ['Uninvite']):
+ * every other surface that shows an accepted volunteer — before-shift
+ * rosters, the event roster, volunteer-facing views — must keep that
+ * generic default. This function is called from exactly one place,
+ * the shift instance volunteers panel, so Check in/Check out can never
+ * leak onto those other surfaces.
+ */
+export function acceptedRowActions(
+  state: AcceptedRowCheckInState,
+  canCheckIn: boolean,
+): VolunteeringActionLabel[] {
+  if (!canCheckIn) {
+    return [];
+  }
+  return state === 'checked_in' ? ['Check out'] : ['Check in'];
+}
+
+/**
+ * Whether an accepted row's check-in state permits the admin removal
+ * dropdown target (ADMIN_REJECTED, displayed as "Removed"). A volunteer
+ * who is checked in or checked out has a time entry -- open or recorded --
+ * that removing them would orphan; their only status path from there is
+ * Check out or re-Check in. Plain 'accepted' (no time entry yet) is
+ * unaffected and keeps its normal removal option. `null` covers rows that
+ * never had an accepted check-in state to begin with (invited, waitlisted,
+ * etc.), which must also keep their normal removal option.
+ */
+export function canRemoveAcceptedRow(
+  acceptedState: AcceptedRowCheckInState | null,
+): boolean {
+  return acceptedState !== 'checked_in' && acceptedState !== 'checked_out';
 }
 
 export function openTimeEntryId(

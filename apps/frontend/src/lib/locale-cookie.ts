@@ -35,5 +35,5 @@ export function setLocaleCookieIfSupported(value: unknown): Locale | null {
 }
 
 export function deleteLocaleCookie(): void {
-  Cookies.remove(USER_LOCALE_COOKIE, { path: '/' });
+  Cookies.remove(USER_LOCALE_COOKIE, { path: '/', sameSite: 'lax' });
 }

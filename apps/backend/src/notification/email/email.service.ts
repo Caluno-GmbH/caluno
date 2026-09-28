@@ -33,6 +33,13 @@ interface SmtpConfig {
   fromName?: string;
 }
 
+function summarize(text: string, maxLength = 300): string {
+  const collapsed = text.replace(/\s+/g, ' ').trim();
+  return collapsed.length > maxLength
+    ? `${collapsed.slice(0, maxLength)}…`
+    : collapsed;
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
@@ -100,7 +107,10 @@ export class EmailService {
         this.logger.error(
           `Failed to send email to ${maskedTo} via SMTP: ${message}`,
         );
-        throw new Error('Failed to send email');
+        throw new Error(
+          `Failed to send email to ${maskedTo} via SMTP: ${summarize(message)}`,
+          { cause: error },
+        );
       }
     }
 
@@ -150,7 +160,10 @@ export class EmailService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to send email to ${maskedTo}: ${message}`);
-      throw new Error('Failed to send email');
+      throw new Error(
+        `Failed to send email to ${maskedTo}: ${summarize(message)}`,
+        { cause: error },
+      );
     }
 
     if (!response.ok) {
@@ -158,7 +171,11 @@ export class EmailService {
       this.logger.error(
         `Scaleway Transactional Email responded ${response.status} for ${maskedTo}: ${body}`,
       );
-      throw new Error('Failed to send email');
+      throw new Error(
+        `Failed to send email to ${maskedTo}: Scaleway responded ${response.status}${
+          body ? ` — ${summarize(body)}` : ''
+        }`,
+      );
     }
 
     this.logger.debug(`Email sent to ${maskedTo}`);

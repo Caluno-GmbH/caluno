@@ -7,6 +7,14 @@ import {
   useUpdateMembershipRoles,
 } from '@repo/data/react';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   Command,
   CommandEmpty,
@@ -40,6 +48,7 @@ export function RoleSelectCell({
   orgUId,
 }: RoleSelectCellProps) {
   const [open, setOpen] = useState(false);
+  const [pendingRole, setPendingRole] = useState<{ id: string } | null>(null);
   const router = useRouter();
   const canEdit = useHasPermission(PermissionKey.VolunteerEdit);
   const {
@@ -69,82 +78,114 @@ export function RoleSelectCell({
   }
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={(isOpen) => {
-        setOpen(isOpen);
-        if (isOpen) refetchRoles();
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-40 h-auto min-h-8 px-2 py-1 justify-between"
-          disabled={rolesLoading || isUpdating}
-        >
-          <span className="truncate">
-            {currentRole ? roleLabel(currentRole) : t('noRole')}
-          </span>
-          <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="w-40 p-0"
-        align="start"
-        side="bottom"
-        sideOffset={4}
+    <>
+      <Popover
+        open={open}
+        onOpenChange={(isOpen) => {
+          setOpen(isOpen);
+          if (isOpen) refetchRoles();
+        }}
       >
-        <Command>
-          <CommandInput placeholder={t('select.searchPlaceholder')} />
-          <CommandList>
-            <CommandEmpty>{t('select.empty')}</CommandEmpty>
-            <CommandGroup>
-              {availableRoles?.map((role) => {
-                const isSelected = role.id === currentRole?.id;
-                return (
-                  <CommandItem
-                    key={role.id}
-                    value={roleLabel(role)}
-                    onSelect={() => {
-                      if (!isSelected) {
-                        updateRoles({
-                          membershipId,
-                          roleIds: [role.id],
-                        });
-                      }
-                      setOpen(false);
-                    }}
-                    className="cursor-pointer"
-                  >
-                    {isSelected && (
-                      <CheckIcon className="mr-2 size-4 text-primary" />
-                    )}
-                    <span
-                      className={`truncate ${isSelected ? 'font-medium' : ''}`}
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-40 h-auto min-h-8 px-2 py-1 justify-between"
+            disabled={rolesLoading || isUpdating}
+          >
+            <span className="truncate">
+              {currentRole ? roleLabel(currentRole) : t('noRole')}
+            </span>
+            <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="w-40 p-0"
+          align="start"
+          side="bottom"
+          sideOffset={4}
+        >
+          <Command>
+            <CommandInput placeholder={t('select.searchPlaceholder')} />
+            <CommandList>
+              <CommandEmpty>{t('select.empty')}</CommandEmpty>
+              <CommandGroup>
+                {availableRoles?.map((role) => {
+                  const isSelected = role.id === currentRole?.id;
+                  return (
+                    <CommandItem
+                      key={role.id}
+                      value={roleLabel(role)}
+                      onSelect={() => {
+                        if (!isSelected) {
+                          setPendingRole({ id: role.id });
+                        }
+                        setOpen(false);
+                      }}
+                      className="cursor-pointer"
                     >
-                      {roleLabel(role)}
-                    </span>
-                  </CommandItem>
-                );
-              })}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup>
-              <CommandItem
-                className="cursor-pointer"
-                onSelect={() => {
-                  setOpen(false);
-                  router.push(`/admin/${orgUId}/settings/roles/new`);
-                }}
-              >
-                <PlusIcon className="mr-2 size-4" />
-                {t('select.addCustom')}
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                      {isSelected && (
+                        <CheckIcon className="mr-2 size-4 text-primary" />
+                      )}
+                      <span
+                        className={`truncate ${isSelected ? 'font-medium' : ''}`}
+                      >
+                        {roleLabel(role)}
+                      </span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+              <CommandSeparator />
+              <CommandGroup>
+                <CommandItem
+                  className="cursor-pointer"
+                  onSelect={() => {
+                    setOpen(false);
+                    router.push(`/admin/${orgUId}/settings/roles/new`);
+                  }}
+                >
+                  <PlusIcon className="mr-2 size-4" />
+                  {t('select.addCustom')}
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <AlertDialog
+        open={pendingRole !== null}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setPendingRole(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('select.confirm.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('select.confirm.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingRole(null)}>
+              {tCommon('no')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingRole) {
+                  updateRoles({
+                    membershipId,
+                    roleIds: [pendingRole.id],
+                  });
+                }
+                setPendingRole(null);
+              }}
+            >
+              {tCommon('yes')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

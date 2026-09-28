@@ -52,12 +52,12 @@ describe('templateSetupBlocker', () => {
       templateSetupBlocker(
         status({
           orgProfileComplete: false,
-          missingOrgProfileFields: ['org_address', 'org_city'],
+          missingOrgProfileFields: ['org_street', 'org_city'],
         }),
       ),
     ).toEqual({
       kind: 'org-profile',
-      missingFields: ['org_address', 'org_city'],
+      missingFields: ['org_street', 'org_city'],
     });
   });
 
@@ -78,7 +78,7 @@ describe('documentCreationBlocker', () => {
       documentCreationBlocker(
         status({
           orgProfileComplete: false,
-          missingOrgProfileFields: ['org_address'],
+          missingOrgProfileFields: ['org_street'],
           canCreateDocuments: false,
           slots: [
             slot(ReimbursementTypeKey.Ehrenamt, false),
@@ -86,7 +86,7 @@ describe('documentCreationBlocker', () => {
           ],
         }),
       ),
-    ).toEqual({ kind: 'org-profile', missingFields: ['org_address'] });
+    ).toEqual({ kind: 'org-profile', missingFields: ['org_street'] });
   });
 
   it('names the Pauschale types whose templates are incomplete', () => {

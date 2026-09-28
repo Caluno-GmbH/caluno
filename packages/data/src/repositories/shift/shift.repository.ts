@@ -7,6 +7,7 @@ import {
   type CreateShiftInput,
   type DuplicateShiftInput,
   type GetActiveShiftInstancesQuery,
+  type GetAvailableShiftInstanceDayCountsQuery,
   type GetAvailableShiftInstancesQuery,
   type GetCheckInShiftInstancesQuery,
   type GetCheckInShiftsQuery,
@@ -43,6 +44,8 @@ export type MyShiftInstance =
   GetMyShiftInstancesQuery['myShiftInstances']['items'][number];
 export type AvailableShiftInstance =
   GetAvailableShiftInstancesQuery['availableShiftInstances']['items'][number];
+export type AvailableShiftInstanceDayCount =
+  GetAvailableShiftInstanceDayCountsQuery['availableShiftInstanceDayCounts'][number];
 export type PublicShiftInstance =
   GetPublicShiftInstancesQuery['publicShiftInstances'][number];
 export type RawPublicShiftInstance =
@@ -198,6 +201,19 @@ export class ShiftRepository extends BaseRepository {
       applyToAllFuture,
     });
     return { id: data.deleteShiftInstance.id };
+  }
+
+  async updateInstanceApproval(
+    instanceId: string,
+    joinRequiresApproval: boolean,
+    applyToAllFuture?: boolean,
+  ): Promise<{ id: string }> {
+    const data = await this.sdk.UpdateShiftInstanceApproval({
+      id: instanceId,
+      joinRequiresApproval,
+      applyToAllFuture,
+    });
+    return { id: data.updateShiftInstanceApproval.id };
   }
 
   async joinInstance(
@@ -391,6 +407,23 @@ export class ShiftRepository extends BaseRepository {
       offset: options.offset ?? 0,
     });
     return data.availableShiftInstances;
+  }
+
+  async findAvailableShiftInstanceDayCounts(
+    options: {
+      startsAfter?: Date;
+      endsBefore?: Date;
+      organizationUnitIds?: string[];
+      excludeIntended?: boolean;
+    } = {},
+  ): Promise<AvailableShiftInstanceDayCount[]> {
+    const data = await this.sdk.GetAvailableShiftInstanceDayCounts({
+      startsAfter: options.startsAfter?.toISOString(),
+      endsBefore: options.endsBefore?.toISOString(),
+      organizationUnitIds: options.organizationUnitIds,
+      excludeIntended: options.excludeIntended ?? false,
+    });
+    return data.availableShiftInstanceDayCounts;
   }
 
   async checkIn(shiftInstanceId: string): Promise<string> {

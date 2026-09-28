@@ -81,9 +81,7 @@ function signeeActorName(
   t: SheetTranslations,
 ): string {
   if (signee.role === 'volunteer') return volunteerName;
-  // Coordinator / supervisor are org roles: show the human role label, not
-  // the raw permission key the template signee references. The real actor's
-  // name is in the status-change timeline below the pipeline.
+  if (signee.signedByName) return signee.signedByName;
   return signee.role === 'supervisor'
     ? t('pipeline.superSign')
     : t('pipeline.coordSign');
@@ -147,7 +145,7 @@ function buildDocSteps(
       if (idx < declinedIdx) {
         steps.push({
           id: signee.id,
-          labelKey: t('pipeline.sign'),
+          labelKey: i === 0 ? t('pipeline.signFirst') : t('pipeline.sign'),
           actorName: signeeActorName(signee, volunteerName, t),
           state: 'done',
         });
@@ -180,7 +178,7 @@ function buildDocSteps(
     const idx = i + 1;
     steps.push({
       id: signee.id,
-      labelKey: t('pipeline.sign'),
+      labelKey: i === 0 ? t('pipeline.signFirst') : t('pipeline.sign'),
       actorName: signeeActorName(signee, volunteerName, t),
       state:
         idx < activeIdx ? 'done' : idx === activeIdx ? 'active' : 'pending',

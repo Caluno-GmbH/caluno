@@ -12,6 +12,7 @@ export interface Signee {
   id: string;
   role: SigneeRole;
   orgRole: OrgRole;
+  signedByName?: string | undefined;
 }
 
 export type TemplateSlug =

@@ -5,6 +5,12 @@ import { ReimbursementTypeKey } from '@repo/data';
 import { useReimbursementTypes } from '@repo/data/react';
 import {
   Checkbox,
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
   DatePickerWithTimeRange,
   Field,
   FieldError,
@@ -17,7 +23,13 @@ import {
   Textarea,
 } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from 'react';
 import { useForm } from 'react-hook-form';
 import { FormSheet, useFormSheet } from '@/components/form-sheet';
 import { useRouter } from '@/i18n/navigation';
@@ -29,6 +41,13 @@ import {
   ShiftPicker,
 } from './shift-instance-picker/shift-instance-picker';
 
+/**
+ * The combobox matches on the option label, so the label is what the coordinator
+ * can search. Volunteers without a name fall back to their email, preserving the
+ * display the plain Select had.
+ */
+type VolunteerOption = { value: string; label: string };
+
 interface TimeEntryFormProps {
   organizationUnitId: string;
   volunteers?: Array<{ id: string; name: string; email: string }>;
@@ -36,6 +55,7 @@ interface TimeEntryFormProps {
   mutate: (formData: TimeEntryFormValues) => Promise<{ serverError?: string }>;
   title: string;
   description: string;
+  isEdit?: boolean;
 }
 
 export const TimeEntryForm = ({
@@ -45,6 +65,7 @@ export const TimeEntryForm = ({
   initialValues,
   title,
   description,
+  isEdit = false,
 }: TimeEntryFormProps) => {
   const router = useRouter();
   const t = useTranslations('TimeEntry.form');
@@ -94,6 +115,18 @@ export const TimeEntryForm = ({
   const endedAt = watch('endedAt');
   const isPaidTime = watch('isPaidTime');
   const reimbursementTypeId = watch('reimbursementTypeId');
+  const volunteerId = watch('volunteerId');
+
+  const volunteerOptions = useMemo<VolunteerOption[]>(
+    () =>
+      volunteers.map((volunteer) => ({
+        value: volunteer.id,
+        label: volunteer.name || volunteer.email,
+      })),
+    [volunteers],
+  );
+  const selectedVolunteer =
+    volunteerOptions.find((option) => option.value === volunteerId) ?? null;
 
   const pauschaleLabel = (key: string) =>
     key === ReimbursementTypeKey.Uebungsleiter
@@ -251,22 +284,33 @@ export const TimeEntryForm = ({
           {t('selectVolunteerLabel')}{' '}
           <span className="text-destructive">*</span>
         </FieldLabel>
-        <Select
-          value={watch('volunteerId')}
-          onValueChange={(value) => setValue('volunteerId', value)}
-          disabled={pending}
+        <Combobox
+          items={volunteerOptions}
+          value={selectedVolunteer}
+          onValueChange={(option: VolunteerOption | null) =>
+            setValue('volunteerId', option?.value ?? '', {
+              shouldValidate: true,
+            })
+          }
+          disabled={pending || isEdit}
         >
-          <SelectTrigger>
-            <SelectValue placeholder={t('selectVolunteerPlaceholder')} />
-          </SelectTrigger>
-          <SelectContent>
-            {volunteers.map((volunteer) => (
-              <SelectItem key={volunteer.id} value={volunteer.id}>
-                {volunteer.name || volunteer.email}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <ComboboxInput
+            id="volunteerId"
+            placeholder={t('selectVolunteerPlaceholder')}
+            className="w-full"
+            disabled={pending || isEdit}
+          />
+          <ComboboxContent>
+            <ComboboxEmpty>{t('noVolunteersFound')}</ComboboxEmpty>
+            <ComboboxList>
+              {(option: VolunteerOption) => (
+                <ComboboxItem key={option.value} value={option}>
+                  {option.label}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
         {errors.volunteerId && (
           <FieldError>{errors.volunteerId.message}</FieldError>
         )}

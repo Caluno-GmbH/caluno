@@ -33,6 +33,10 @@ export class InviteAllowanceQueryResolver {
     reimbursementTypeId: string,
     @Args('shiftDurationMinutes', { type: () => Int })
     shiftDurationMinutes: number,
+    @Args('periodStart', { type: () => Date, nullable: true })
+    periodStart: Date | null | undefined,
+    @Args('periodEnd', { type: () => Date, nullable: true })
+    periodEnd: Date | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<VolunteerInviteAllowance[]> {
     // Scoped to the caller's own unit, same as inviting itself: the invite
@@ -51,6 +55,10 @@ export class InviteAllowanceQueryResolver {
       organizationUnitId,
       reimbursementTypeId,
       shiftDurationMinutes,
+      period:
+        periodStart && periodEnd
+          ? { start: periodStart, end: periodEnd }
+          : undefined,
     });
   }
 }

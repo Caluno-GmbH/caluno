@@ -59,7 +59,9 @@ export class ShiftListener {
           {
             organizationUnitId: payload.organizationUnitId,
             organizationUnitName: payload.organizationUnitName,
+            shiftId: payload.shiftId,
             shiftTitle: payload.shiftTitle,
+            instanceId: payload.instanceId,
             volunteerName: volunteer.name,
             recipientFirstName: recipient.firstName,
             startsAt: payload.startsAt,
