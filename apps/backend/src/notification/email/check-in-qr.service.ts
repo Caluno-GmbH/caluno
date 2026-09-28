@@ -11,7 +11,7 @@ export interface CheckInQrAttachments {
 const QR_PNG_SIZE_PX = 512;
 const QR_PDF_IMAGE_SIZE_PT = 300;
 
-export const CHECK_IN_QR_IMAGE_CID = 'check-in-qr-code';
+export const CHECK_IN_QR_IMAGE_CID = 'check-in-qr-code.png';
 
 @Injectable()
 export class CheckInQrService {

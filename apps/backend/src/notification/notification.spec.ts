@@ -357,7 +357,7 @@ describe('NotificationModule', () => {
         }),
         expect.objectContaining({
           contentType: 'image/png',
-          cid: 'check-in-qr-code',
+          cid: 'check-in-qr-code.png',
         }),
       ],
     });
