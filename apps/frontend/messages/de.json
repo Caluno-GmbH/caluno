@@ -1688,6 +1688,13 @@
       "uploading": "Wird hochgeladen..."
     }
   },
+  "DataTable": {
+    "sortAscending": "Aufsteigend sortieren",
+    "sortDescending": "Absteigend sortieren",
+    "sortedAscending": "Aufsteigend sortiert",
+    "sortedDescending": "Absteigend sortiert",
+    "unsorted": "Nicht sortiert"
+  },
   "TimeEntry": {
     "action": {
       "deleteDescription": "Bist du sicher, dass du diesen Zeiteintrag löschen möchtest?",

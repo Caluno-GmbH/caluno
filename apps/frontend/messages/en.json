@@ -1688,6 +1688,13 @@
       "uploading": "Uploading..."
     }
   },
+  "DataTable": {
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "sortedAscending": "Sorted ascending",
+    "sortedDescending": "Sorted descending",
+    "unsorted": "Not sorted"
+  },
   "TimeEntry": {
     "action": {
       "deleteDescription": "Are you sure you want to delete this time entry?",
