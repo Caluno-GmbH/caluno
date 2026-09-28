@@ -32,7 +32,7 @@ export const createForm = actionClient
 const updateFormSchema = z.object({
   organizationUnitId: z.string().min(1),
   formId: z.string().min(1),
-  name: z.string().optional(),
+  name: z.string().trim().min(1).optional(),
   description: zOptionalNullableTrimmedString,
   blockRefs: z
     .array(
@@ -58,6 +58,9 @@ export const updateForm = actionClient
     });
     revalidatePath(
       `/admin/${parsedInput.organizationUnitId}/requirement-forms`,
+    );
+    revalidatePath(
+      `/admin/${parsedInput.organizationUnitId}/requirement-forms/${parsedInput.formId}/builder`,
     );
     return form;
   });

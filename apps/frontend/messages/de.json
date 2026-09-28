@@ -868,6 +868,7 @@
       "fieldAdded": "Feld hinzugefügt",
       "fieldDeleted": "Feld gelöscht",
       "fieldUpdated": "Feld aktualisiert",
+      "formDetailsSaved": "Formulardetails gespeichert",
       "formSaved": "Formular gespeichert",
       "linkCopied": "Link kopiert",
       "linkCopiedDescription": "{url}"
@@ -954,7 +955,7 @@
       "saving": "Wird gespeichert...",
       "shareLinkCopied": "Freigabelink in die Zwischenablage kopiert",
       "submissionsWarning": "Dieses Formular hat Einsendungen",
-      "submissionsWarningDescription": "Du kannst dieses Formular nicht mehr bearbeiten, weil Freiwillige bereits Antworten eingereicht haben. Erstelle eine Kopie, wenn du eine neue Version brauchst.",
+      "submissionsWarningDescription": "Du kannst die Blöcke dieses Formulars nicht mehr ändern, weil Freiwillige bereits Antworten eingereicht haben. Name und Beschreibung lassen sich weiterhin bearbeiten. Erstelle eine Kopie, wenn du eine neue Version brauchst.",
       "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
       "unsavedChangesLeave": "Ohne Speichern verlassen",
       "unsavedChangesStay": "Weiter bearbeiten",
@@ -1056,8 +1057,12 @@
       "descriptionLabel": "Beschreibung",
       "descriptionOptional": "Beschreibung (optional)",
       "descriptionPlaceholder": "Wofür ist dieses Formular?",
+      "editDetailsAria": "Formularname und Beschreibung bearbeiten",
+      "editDialogTitle": "Formulardetails bearbeiten",
       "nameLabel": "Name",
-      "namePlaceholder": "z. B. Onboarding-Formular"
+      "namePlaceholder": "z. B. Onboarding-Formular",
+      "save": "Speichern",
+      "saving": "Wird gespeichert..."
     },
     "genderOptions": {
       "female": "Weiblich",
