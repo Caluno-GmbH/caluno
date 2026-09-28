@@ -48,7 +48,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
     redirect(getSafeRedirect(pendingRedirect, `/admin/${organizationUnitId}`));
   }
 
-  if (result.status === JoinStatus.Pending) {
+  if (result.status === JoinStatus.PendingMembership) {
     return <RequestPending orgName={orgUnit.name} />;
   }
 

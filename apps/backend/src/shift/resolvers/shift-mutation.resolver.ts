@@ -284,6 +284,7 @@ export class ShiftMutationResolver {
       session.user.id,
       instanceId,
     );
+    console.log(result);
 
     return {
       status: result.status,

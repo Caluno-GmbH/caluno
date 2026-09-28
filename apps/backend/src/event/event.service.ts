@@ -872,7 +872,7 @@ export class EventService {
       }
 
       return {
-        status: JoinStatus.PENDING,
+        status: JoinStatus.PENDING_MEMBERSHIP,
         event,
         membershipRequest: result.membershipRequest,
       };
@@ -1090,7 +1090,7 @@ export class EventService {
   /**
    * Volunteer JoinStatus for an event (GLOSSARY § Join Status).
    * Org membership wins for non-members; once the user is a member, the
-   * event invite status drives INVITED / PENDING / JOINED / etc.
+   * event invite status drives INVITED / PENDING_APPROVAL / JOINED / etc.
    */
   async resolveEventJoinStatus(
     userId: string,
@@ -1110,8 +1110,8 @@ export class EventService {
       return JoinStatus.REJECTED;
     }
 
-    if (membershipState === JoinStatus.PENDING) {
-      return JoinStatus.PENDING;
+    if (membershipState === JoinStatus.PENDING_MEMBERSHIP) {
+      return JoinStatus.PENDING_MEMBERSHIP;
     }
 
     if (membershipState === JoinStatus.NONE) {

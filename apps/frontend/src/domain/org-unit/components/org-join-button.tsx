@@ -46,7 +46,7 @@ export function OrgJoinButton({
 
       setStatus(result.status);
 
-      if (result.status === JoinStatus.Pending) {
+      if (result.status === JoinStatus.PendingMembership) {
         toast.success(t('requestSentToast'));
       }
     } catch (error) {
@@ -58,7 +58,7 @@ export function OrgJoinButton({
     return null;
   }
 
-  if (status === JoinStatus.Pending) {
+  if (status === JoinStatus.PendingMembership) {
     return (
       <div>
         <Button

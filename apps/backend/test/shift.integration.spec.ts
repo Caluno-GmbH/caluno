@@ -4906,7 +4906,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
     return { user, shiftId, instance };
   };
 
-  it('returns PENDING when joinRequiresApproval is enabled', async () => {
+  it('returns PENDING_APPROVAL when joinRequiresApproval is enabled', async () => {
     const { user, instance } = await setupJoinableInstance({
       joinRequiresApproval: true,
     });
@@ -4916,7 +4916,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       instance.id,
     );
 
-    expect(result.status).toBe(JoinStatus.PENDING);
+    expect(result.status).toBe(JoinStatus.PENDING_APPROVAL);
 
     const invite = await db.query.shiftInstanceInvites.findFirst({
       where: { instanceId: instance.id, userId: user.id },
@@ -4949,7 +4949,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
     expect(invite?.status).toBe(ShiftInviteStatus.WAITLIST_JOINED);
   });
 
-  it('returns PENDING for ADMIN_INVITED when joinRequiresApproval is enabled', async () => {
+  it('returns PENDING_APPROVAL for ADMIN_INVITED when joinRequiresApproval is enabled', async () => {
     const { user, instance } = await setupJoinableInstance({
       joinRequiresApproval: true,
     });
@@ -4965,7 +4965,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       instance.id,
     );
 
-    expect(result.status).toBe(JoinStatus.PENDING);
+    expect(result.status).toBe(JoinStatus.PENDING_APPROVAL);
 
     const invite = await db.query.shiftInstanceInvites.findFirst({
       where: { instanceId: instance.id, userId: user.id },
@@ -4987,7 +4987,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       instance.id,
     );
 
-    expect(result.status).toBe(JoinStatus.PENDING);
+    expect(result.status).toBe(JoinStatus.PENDING_APPROVAL);
 
     const invite = await db.query.shiftInstanceInvites.findFirst({
       where: { instanceId: instance.id, userId: user.id },

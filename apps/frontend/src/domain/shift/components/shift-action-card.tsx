@@ -131,12 +131,12 @@ export function ShiftActionCard({
       case ShiftInviteStatus.VolunteerRejected:
         return showWaitlistCta ? t('waitlistNote') : t('declinedNote');
       case ShiftInviteStatus.AwaitingAdminApproval:
-        return t('pendingNote');
+        return t('pendingApprovalNote');
       case ShiftInviteStatus.WaitlistJoined:
         return full ? t('waitlistNote') : t('waitlistSpotOpenNote');
       default:
-        if (effectiveMembershipState === JoinStatus.Pending) {
-          return t('pendingNote');
+        if (effectiveMembershipState === JoinStatus.PendingMembership) {
+          return t('pendingMembershipNote');
         }
         return full
           ? showWaitlistCta
@@ -237,7 +237,7 @@ export function ShiftActionCard({
           membershipState={effectiveMembershipState}
           onMembershipStateChange={(nextStatus) => {
             setMembershipStateOverride(nextStatus);
-            if (nextStatus === JoinStatus.Pending) {
+            if (nextStatus === JoinStatus.PendingMembership) {
               setPendingInstanceIds((previous) =>
                 new Set(previous).add(selected.id),
               );
