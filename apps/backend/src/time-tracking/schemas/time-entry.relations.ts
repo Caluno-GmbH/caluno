@@ -7,6 +7,10 @@ export const timeEntryRelations = defineRelationsPart(schema, (r) => ({
       from: r.timeEntries.volunteerId,
       to: r.users.id,
     }),
+    createdBy: r.one.users({
+      from: r.timeEntries.createdById,
+      to: r.users.id,
+    }),
     shiftInstance: r.one.shiftInstances({
       from: r.timeEntries.shiftInstanceId,
       to: r.shiftInstances.id,

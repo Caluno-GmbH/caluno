@@ -53,7 +53,7 @@ export class TimeTrackingService {
   async addTimeEntry(
     organizationUnitId: string,
     input: AddTimeEntryInput,
-    _actorUserId: string,
+    actorUserId: string,
     options?: { skipCapture?: boolean },
   ): Promise<TimeEntryEntity> {
     let reimbursementTypeId: string | null = null;
@@ -95,6 +95,7 @@ export class TimeTrackingService {
           endedAt: input.endedAt ?? null,
           notes: input.notes,
           reimbursementTypeId,
+          createdById: actorUserId,
         })
         .returning();
       if (!options?.skipCapture) {

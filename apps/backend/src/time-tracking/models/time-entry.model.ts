@@ -28,6 +28,9 @@ export class TimeEntry {
   @Field(() => Date)
   createdAt!: Date;
 
+  @Field(() => User, { nullable: true })
+  createdBy?: User | null;
+
   @Field(() => User)
   volunteer!: User;
 
