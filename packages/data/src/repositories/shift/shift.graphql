@@ -464,6 +464,7 @@ fragment PublicShiftDetailInstanceFields on ShiftInstance {
   actualEndsAt
   overrideTitle
   overrideMaxVolunteers
+  overrideJoinRequiresApproval
   filledCount
   spotsLeft
   myInviteStatus
