@@ -10,10 +10,7 @@ import type {
 } from '../../generated/graphql';
 // SortOrder / TimeEntrySortField are string enums used as values below, so
 // they must be value imports (not part of the `import type` above).
-import {
-  SortOrder,
-  TimeEntrySortField,
-} from '../../generated/graphql';
+import { SortOrder, TimeEntrySortField } from '../../generated/graphql';
 import {
   BaseRepository,
   type PaginationOptions,
