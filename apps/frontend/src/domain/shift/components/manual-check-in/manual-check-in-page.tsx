@@ -72,10 +72,6 @@ export function ManualCheckInPage({
     selectedInstance: null,
   }));
   const [didPreselect, setDidPreselect] = useState(false);
-  // Kept beside the selection rather than in it: the date/shift the user
-  // already picked survives untouched while the shift row shows the
-  // without-assignment choice, so picking an assignment brings it back
-  // exactly as it was.
   const [withoutShift, setWithoutShift] = useState(false);
   const [openSheet, setOpenSheet] = useState<
     'orgUnit' | 'date' | 'shift' | 'acceptMembership' | null
