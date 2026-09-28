@@ -1306,9 +1306,6 @@
       "waitlistInviteSuccess": "Volunteer invited to the assignment"
     },
     "checkIn": {
-      "checkInError": "Could not check in volunteer",
-      "checkInLoading": "Checking in {name}…",
-      "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
       "checkOutLoading": "Checking out {name}…",
@@ -1460,7 +1457,6 @@
       "approveWaitlistedSuccess": "Assignment is full. Volunteer added to the waitlist.",
       "cancelled": "Withdrawn",
       "changeStatusAria": "Change status for {name}",
-      "checkInAriaNamed": "Check in {name}",
       "checkOutAriaNamed": "Check out {name}",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",

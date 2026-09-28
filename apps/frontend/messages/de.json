@@ -1306,9 +1306,6 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
-      "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
-      "checkInLoading": "{name} wird eingecheckt…",
-      "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutLoading": "{name} wird ausgecheckt…",
@@ -1460,7 +1457,6 @@
       "approveWaitlistedSuccess": "Der Einsatz ist voll besetzt. Freiwillige:r steht jetzt auf der Warteliste.",
       "cancelled": "Zurückgezogen",
       "changeStatusAria": "Status von {name} ändern",
-      "checkInAriaNamed": "{name} einchecken",
       "checkOutAriaNamed": "{name} auschecken",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
