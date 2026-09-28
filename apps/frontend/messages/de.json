@@ -2020,7 +2020,7 @@
         "action": "Aktion"
       },
       "tiles": {
-        "all": "Alle offenen Aufgaben",
+        "all": "Alle Dokumente",
         "docCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
         "waitingOnYou": "{count, plural, one {# wartet auf dich} other {# warten auf dich}}",
         "contractGenerate": "Vereinbarungen erstellen",
