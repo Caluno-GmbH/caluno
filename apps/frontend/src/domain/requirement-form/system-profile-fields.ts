@@ -45,9 +45,4 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
     type: FieldType.Text,
   },
   { key: 'bic', labelKey: 'bic', type: FieldType.Text },
-  {
-    key: 'tax-id',
-    labelKey: 'taxId',
-    type: FieldType.Text,
-  },
 ];

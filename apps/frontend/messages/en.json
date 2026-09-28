@@ -811,8 +811,7 @@
         "accountHolder": "Name on the bank account",
         "lastName": "As on your ID",
         "preferredName": "If you'd like to be called something else",
-        "bic": "Bank identifier code (BIC) for your account",
-        "taxId": "Your tax identification number (for expense reports)"
+        "bic": "Bank identifier code (BIC) for your account"
       }
     },
     "language": "Language",
@@ -1022,7 +1021,6 @@
       "iban": "IBAN",
       "accountHolder": "Account holder",
       "bic": "BIC",
-      "taxId": "Tax ID",
       "infoText": "Info text",
       "labelLabel": "Label",
       "labelPlaceholder": "e.g. Favourite colour",
@@ -2441,7 +2439,6 @@
           "volunteer_zip": "Postal code (Volunteer)",
           "volunteer_city": "City (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",
-          "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Agreement period",
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",

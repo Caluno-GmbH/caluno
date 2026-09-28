@@ -55,7 +55,7 @@ import { GeneratedDocumentPreview } from './generated-document-preview';
 import { TemplateListingPageError } from './listing-page';
 
 // Mock: profile-required sources this org hasn't collected yet.
-const MOCK_PROFILE_GAPS = new Set<DataSourceKey>(['volunteer_tax_id']);
+const MOCK_PROFILE_GAPS = new Set<DataSourceKey>(['volunteer_bic']);
 
 // The org-unit edit sheet's URL id — mirrors FORM_ID in
 // org-unit-create-edit-sheet.tsx, so the org-profile CTA opens it directly.

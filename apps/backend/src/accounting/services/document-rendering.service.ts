@@ -635,9 +635,6 @@ export class DocumentRenderingService {
       volunteer_bic: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
       ),
-      volunteer_tax_id: str(
-        profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_tax_id],
-      ),
       pauschalen_type: document.reimbursementType
         ? (PAUSCHALE_TYPE_LABELS[document.reimbursementType.key] ?? '')
         : '',

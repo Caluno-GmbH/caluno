@@ -36,7 +36,6 @@ export type DataSourceKey =
   | 'volunteer_zip'
   | 'volunteer_city'
   | 'volunteer_dob'
-  | 'volunteer_tax_id'
   | 'contract_period'
   | 'already_received_amount'
   | 'already_received_period'

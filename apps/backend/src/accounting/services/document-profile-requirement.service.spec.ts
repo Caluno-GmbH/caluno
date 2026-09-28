@@ -294,11 +294,11 @@ describe('DocumentProfileRequirementService', () => {
     ).toEqual(['org_street']);
   });
 
-  it('treats volunteer tax id as a profile-required source', async () => {
+  it('reports a profile-required source the volunteer has left blank', async () => {
     const serviceWithProfile = new DocumentProfileRequirementService(db, {
       findByUserId: () =>
         Promise.resolve({
-          data: { taxId: '', 'tax-id': '' },
+          data: { bic: '' },
         }),
     } as never);
     const body = {
@@ -307,16 +307,14 @@ describe('DocumentProfileRequirementService', () => {
           lines: [
             {
               enabled: true,
-              fields: [
-                { value: { kind: 'bound', source: 'volunteer_tax_id' } },
-              ],
+              fields: [{ value: { kind: 'bound', source: 'volunteer_bic' } }],
             },
           ],
         },
       ],
     };
     expect(await serviceWithProfile.missingProfileSources('v-1', body)).toEqual(
-      ['volunteer_tax_id'],
+      ['volunteer_bic'],
     );
   });
 
