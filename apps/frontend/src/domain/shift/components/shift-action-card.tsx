@@ -19,6 +19,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { CompensationNotice } from './compensation-notice';
 import { JoinShiftButton } from './join-shift-button';
 import { ShiftDayPicker } from './shift-day-picker';
 
@@ -218,6 +219,10 @@ export function ShiftActionCard({
           </div>
         </div>
       )}
+
+      <CompensationNotice
+        reimbursementTypeKey={selected.reimbursementTypeKey}
+      />
 
       <div className="space-y-2">
         <JoinShiftButton

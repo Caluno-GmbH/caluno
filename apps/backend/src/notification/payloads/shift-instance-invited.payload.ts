@@ -1,3 +1,5 @@
+import type { ReimbursementTypeKey } from '../../accounting/enums';
+
 export interface ShiftInstanceInvitedPayload {
   organizationUnitId: string;
   organizationUnitName: string;
@@ -9,4 +11,5 @@ export interface ShiftInstanceInvitedPayload {
   startsAt: Date;
   endsAt: Date;
   instanceId: string;
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 }

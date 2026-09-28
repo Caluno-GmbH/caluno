@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { ReimbursementTypeKey } from '@repo/data';
 import type { MergedInvitation } from './merge-invitations';
 import { normalizeInvitation } from './normalize-invitation';
 
@@ -61,7 +62,31 @@ describe('normalizeInvitation', () => {
       endsAt: '2026-08-19T16:00:00.000Z',
       isMultiDay: false,
       rrule: 'FREQ=WEEKLY',
+      reimbursementTypeKey: null,
     });
+  });
+
+  it('carries the occurrence reimbursement type key for a paid shift', () => {
+    const result = normalizeInvitation(
+      shiftInvite({
+        shift: {
+          id: 'instance-1',
+          actualStartsAt: '2026-08-19T12:00:00.000Z',
+          actualEndsAt: '2026-08-19T16:00:00.000Z',
+          myInvitedAt: '2026-08-12T09:00:00.000Z',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
+          master: {
+            id: 'shift-1',
+            title: 'Food Distribution',
+            location: 'Playground Community Center',
+            rrule: 'FREQ=WEEKLY',
+            organizationUnit: { name: 'Helping Hands', logoUrl: null },
+          },
+        },
+      } as never),
+    );
+
+    expect(result.reimbursementTypeKey).toBe(ReimbursementTypeKey.Ehrenamt);
   });
 
   it('normalizes a same-day event invite as not multi-day', () => {

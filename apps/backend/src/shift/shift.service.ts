@@ -90,6 +90,7 @@ import {
   getDurationMinutes,
   isValidShiftDurationMinutes,
 } from './utils/duration';
+import { resolveEffectiveReimbursementTypeId } from './utils/effective-reimbursement-type';
 import { parseRruleDays, parseRruleUntil } from './utils/parse-rrule';
 import { expandShift } from './utils/rrule-expander';
 import { localDateKey, syncShiftInstances } from './utils/shift-instance-sync';
@@ -3226,6 +3227,23 @@ export class ShiftService {
     });
   }
 
+  /**
+   * Volunteer-safe reimbursement type key for an id. Returns null when the id
+   * is absent (unpaid) or no longer resolves, so callers can omit the paid
+   * indicator entirely.
+   */
+  private async resolveReimbursementTypeKey(
+    reimbursementTypeId: string | null | undefined,
+  ): Promise<ReimbursementTypeKey | null> {
+    if (!reimbursementTypeId) {
+      return null;
+    }
+    const rows = await this.findReimbursementTypeKeysByIds([
+      reimbursementTypeId,
+    ]);
+    return rows[0]?.key ?? null;
+  }
+
   private async loadAndEmitShiftInstanceInvitedNotification(
     shift: ShiftEntity,
     instance: ShiftInstanceEntity,
@@ -3244,6 +3262,13 @@ export class ShiftService {
         return;
       }
 
+      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
+        resolveEffectiveReimbursementTypeId(
+          instance.overrideReimbursementTypeId,
+          shift.reimbursementTypeId,
+        ),
+      );
+
       this.notificationService.notifyShiftInstanceInvited({
         organizationUnitId: organizationUnit.id,
         organizationUnitName: organizationUnit.name,
@@ -3256,6 +3281,7 @@ export class ShiftService {
         startsAt: instance.actualStartsAt,
         endsAt: instance.actualEndsAt,
         instanceId: instance.id,
+        reimbursementTypeKey,
       });
     } catch (error) {
       this.logger.error(
@@ -3857,6 +3883,10 @@ export class ShiftService {
         })),
       );
 
+      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
+        shift.reimbursementTypeId,
+      );
+
       this.notificationService.notifyShiftInvited({
         organizationUnitId: organizationUnit.id,
         organizationUnitName: organizationUnit.name,
@@ -3866,6 +3896,7 @@ export class ShiftService {
         shiftInstructions: shift.instructions ?? null,
         recipientUserIds: invitedUserIds,
         schedule,
+        reimbursementTypeKey,
       });
     } catch (error) {
       this.logger.error(

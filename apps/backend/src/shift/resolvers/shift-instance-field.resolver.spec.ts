@@ -9,6 +9,7 @@ jest.mock('@thallesp/nestjs-better-auth', () => ({
 
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
+import type { ShiftLoader } from './shift.loader';
 import type { ShiftInstanceLoader } from './shift-instance.loader';
 import { ShiftInstanceFieldResolver } from './shift-instance-field.resolver';
 
@@ -90,6 +91,79 @@ describe('ShiftInstanceFieldResolver', () => {
 
       expect(result).toEqual(entries);
       expect(load).toHaveBeenCalledWith('ou-1:instance-1');
+    });
+  });
+
+  describe('reimbursementTypeKey', () => {
+    it('resolves the occurrence override without loading the master shift', async () => {
+      const resolver = newResolver();
+      const shiftLoad = jest.fn();
+      const keyLoad = jest.fn().mockResolvedValue('EHRENAMT');
+      const loader = {
+        shiftById: { load: shiftLoad },
+        reimbursementTypeKeyById: { load: keyLoad },
+      } as unknown as ShiftLoader;
+
+      const result = await resolver.reimbursementTypeKey(
+        instance({
+          id: 'instance-1',
+          overrideReimbursementTypeId: 'rt-override',
+        }),
+        loader,
+      );
+
+      expect(result).toBe('EHRENAMT');
+      expect(keyLoad).toHaveBeenCalledWith('rt-override');
+      expect(shiftLoad).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the master shift type when there is no override', async () => {
+      const resolver = newResolver();
+      const shiftLoad = jest
+        .fn()
+        .mockResolvedValue({ reimbursementTypeId: 'rt-master' });
+      const keyLoad = jest.fn().mockResolvedValue('UEBUNGSLEITER');
+      const loader = {
+        shiftById: { load: shiftLoad },
+        reimbursementTypeKeyById: { load: keyLoad },
+      } as unknown as ShiftLoader;
+
+      const result = await resolver.reimbursementTypeKey(
+        instance({
+          id: 'instance-1',
+          masterId: 'shift-1',
+          overrideReimbursementTypeId: null,
+        }),
+        loader,
+      );
+
+      expect(result).toBe('UEBUNGSLEITER');
+      expect(shiftLoad).toHaveBeenCalledWith('shift-1');
+      expect(keyLoad).toHaveBeenCalledWith('rt-master');
+    });
+
+    it('returns null without resolving a key when the occurrence is unpaid', async () => {
+      const resolver = newResolver();
+      const shiftLoad = jest
+        .fn()
+        .mockResolvedValue({ reimbursementTypeId: null });
+      const keyLoad = jest.fn();
+      const loader = {
+        shiftById: { load: shiftLoad },
+        reimbursementTypeKeyById: { load: keyLoad },
+      } as unknown as ShiftLoader;
+
+      const result = await resolver.reimbursementTypeKey(
+        instance({
+          id: 'instance-1',
+          masterId: 'shift-1',
+          overrideReimbursementTypeId: null,
+        }),
+        loader,
+      );
+
+      expect(result).toBeNull();
+      expect(keyLoad).not.toHaveBeenCalled();
     });
   });
 });
