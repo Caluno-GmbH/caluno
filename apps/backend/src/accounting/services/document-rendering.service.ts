@@ -18,6 +18,7 @@ import {
   lastDayOfPeriod,
 } from '../utils/billing-period';
 import { resolveFirstColumn } from '../utils/invoice-table';
+import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
 import {
   findManualFieldValue,
@@ -222,16 +223,31 @@ export class DocumentRenderingService {
       }
       // Note blocks carry a single `line`; text blocks a `lines` array.
       const lines = block.line ? [block.line] : (block.lines ?? []);
-      for (const line of lines) {
-        if (line.enabled === false) continue;
-        const text = this.resolveLine(line, fieldValues).trim();
-        if (text) {
-          pdf.fontSize(11).font('Helvetica').text(text, { lineGap: 3 });
-          pdf.moveDown(0.25);
-        }
+      for (const paragraph of this.resolveParagraphs(lines, fieldValues)) {
+        pdf.fontSize(11).font('Helvetica').text(paragraph, { lineGap: 3 });
+        pdf.moveDown(0.25);
       }
       pdf.moveDown(0.5);
     }
+  }
+
+  private resolveParagraphs(
+    lines: TemplateLineShape[],
+    fieldValues: Record<string, string>,
+  ): string[] {
+    const paragraphs: string[] = [];
+    for (const line of lines) {
+      if (line.enabled === false) continue;
+      const text = this.resolveLine(line, fieldValues);
+      if (!text) continue;
+      const previous = paragraphs[paragraphs.length - 1];
+      if (line.inline && previous !== undefined) {
+        paragraphs[paragraphs.length - 1] = `${previous}${text}`;
+      } else {
+        paragraphs.push(text);
+      }
+    }
+    return paragraphs;
   }
 
   private renderTableBlock(
@@ -576,11 +592,24 @@ export class DocumentRenderingService {
     const str = (value: unknown): string =>
       typeof value === 'string' ? value : '';
 
+    // A template may state the organisation by hand — for an agreement whose
+    // legal counterpart is not the body the volunteer sits in. Applied here,
+    // where every org value is resolved, so the letterhead (rendered from these
+    // values rather than from template fields), the document text and the
+    // signature seat can never name different organisations.
+    const orgValues = applyOrgOverrides(
+      {
+        org_name: rootUnit?.name ?? '',
+        org_street: orgProfile?.street ?? rootUnit?.street ?? '',
+        org_city: orgProfile?.city ?? rootUnit?.city ?? '',
+        org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      },
+      (template.body as { orgOverrides?: OrgOverrides } | undefined)
+        ?.orgOverrides,
+    );
+
     return {
-      org_name: rootUnit?.name ?? '',
-      org_street: orgProfile?.street ?? rootUnit?.street ?? '',
-      org_city: orgProfile?.city ?? rootUnit?.city ?? '',
-      org_zip: orgProfile?.zipCode ?? rootUnit?.zipCode ?? '',
+      ...orgValues,
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
       volunteer_name: volunteer?.name ?? '',
       volunteer_first_name: firstName,

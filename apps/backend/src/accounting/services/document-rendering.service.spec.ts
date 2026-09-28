@@ -566,6 +566,79 @@ describe('DocumentRenderingService', () => {
     });
   });
 
+  describe('resolveParagraphs', () => {
+    const resolveParagraphs = (
+      service: DocumentRenderingService,
+      lines: unknown[],
+      values: Record<string, string>,
+    ): string[] =>
+      (
+        service as unknown as {
+          resolveParagraphs: (
+            l: unknown[],
+            v: Record<string, string>,
+          ) => string[];
+        }
+      ).resolveParagraphs(lines, values);
+
+    const parties = {
+      id: 'parties',
+      text: 'Zwischen dem {orgName}, {orgCity},',
+      fields: [
+        { id: 'n', value: { kind: 'bound', source: 'org_name' } },
+        { id: 'c', value: { kind: 'bound', source: 'org_city' } },
+      ],
+    };
+    const additional = {
+      id: 'parties-additional',
+      text: ' {info},',
+      inline: true,
+      fields: [{ id: 'i', value: { kind: 'manual-template', value: '' } }],
+    };
+    const volunteer = {
+      id: 'volunteer-name',
+      text: 'und Anna Muster,',
+      fields: [],
+    };
+    const values = {
+      n: 'Lesepaten Nord',
+      c: 'Hamburg',
+      i: 'vertreten durch H. Meier',
+    };
+
+    it('Reads an inline line on from the sentence it belongs to', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, additional, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg, vertreten durch H. Meier,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Leaves the sentence alone when the inline line is switched off', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, { ...additional, enabled: false }, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Starts a paragraph of its own when nothing precedes it', () => {
+      expect(resolveParagraphs(createService(), [additional], values)).toEqual([
+        ' vertreten durch H. Meier,',
+      ]);
+    });
+  });
+
   describe('invoiceTotalRowCells', () => {
     const invoiceTotalRowCells = (
       service: DocumentRenderingService,

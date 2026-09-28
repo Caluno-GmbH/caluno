@@ -575,6 +575,23 @@ query GetAvailableShiftInstances(
   }
 }
 
+query GetAvailableShiftInstanceDayCounts(
+  $startsAfter: DateTime
+  $endsBefore: DateTime
+  $organizationUnitIds: [ID!]
+  $excludeIntended: Boolean = false
+) {
+  availableShiftInstanceDayCounts(
+    startsAfter: $startsAfter
+    endsBefore: $endsBefore
+    organizationUnitIds: $organizationUnitIds
+    excludeIntended: $excludeIntended
+  ) {
+    date
+    count
+  }
+}
+
 mutation CheckIn($shiftInstanceId: ID!) {
   checkIn(shiftInstanceId: $shiftInstanceId) {
     id

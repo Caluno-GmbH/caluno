@@ -1,3 +1,4 @@
+import { applyOrgOverrides, type OrgOverrides } from '@repo/data';
 import { centsToEuros } from '../../lib/money';
 import type { PauschalenType } from '../doc-type-header';
 import type {
@@ -37,6 +38,7 @@ const KNOWN_PAUSCHALE_LABEL: Record<PauschalenType, string> = {
  */
 export function getKnownOrgValues(args: {
   pauschale: PauschalenType;
+  orgOverrides?: OrgOverrides;
   orgName?: string | null;
   orgStreet?: string | null;
   orgZip?: string | null;
@@ -60,14 +62,17 @@ export function getKnownOrgValues(args: {
   if (args.yearlyLimitCents !== undefined) {
     values.yearly_limit_amount = `${centsToEuros(args.yearlyLimitCents).toLocaleString('de-DE')} €`;
   }
-  return values;
+  // Applied last and in one place, so the letterhead — which is rendered from
+  // these values rather than from template fields — cannot end up naming a
+  // different organisation than the document's own text.
+  return applyOrgOverrides(values, args.orgOverrides);
 }
 
 function line(
   id: string,
   text: string,
   fields: TemplateField[] = [],
-  options: { optional?: boolean; enabled?: boolean } = {},
+  options: { optional?: boolean; enabled?: boolean; inline?: boolean } = {},
 ): TemplateLine {
   return {
     id,
@@ -76,6 +81,7 @@ function line(
     optional: options.optional ?? false,
     // Optional lines are opt-in — default off unless the caller says otherwise.
     enabled: options.enabled ?? !options.optional,
+    ...(options.inline ? { inline: true } : {}),
   };
 }
 
@@ -111,7 +117,7 @@ export function getContractDocument(
         lines: [
           line(
             'parties',
-            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity} und',
+            'Zwischen dem {orgName}, {orgStreet}, {orgZip} {orgCity}',
             [
               bound('parties-org-name', 'org_name'),
               bound('parties-org-street', 'org_street'),
@@ -120,8 +126,14 @@ export function getContractDocument(
             ],
           ),
           line(
+            'parties-additional',
+            ', {additionalInfo}',
+            [manual('parties-additional-info', '', 'textarea')],
+            { optional: true, inline: true }, // Continues the parties line rather than starting its own
+          ),
+          line(
             'volunteer-name',
-            '{volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
+            'und {volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
             [
               bound('volunteer-name-first', 'volunteer_first_name'),
               bound('volunteer-name-last', 'volunteer_last_name'),
@@ -158,7 +170,10 @@ export function getContractDocument(
           line(
             'engagement-scope',
             'Die ehrenamtlich tätige Person übt im Zeitraum {contractLifespan} für die Einrichtung {orgName} eine nebenberufliche Tätigkeit aus.',
-            [contractLifespan, bound('engagement-org-name', 'org_name')],
+            [
+              contractLifespan,
+              bound('engagement-org-name', 'org_facility_name'),
+            ],
           ),
           line(
             'engagement-tasks',

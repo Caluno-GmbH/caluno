@@ -211,6 +211,7 @@ export function TemplateBuilder({
 
   const knownValues = getKnownOrgValues({
     pauschale,
+    orgOverrides: templateDoc?.orgOverrides,
     orgName: orgProfile?.name ?? org.name,
     orgStreet: orgProfile ? orgProfile.street : org.street,
     orgZip: orgProfile ? orgProfile.zipCode : org.zipCode,
