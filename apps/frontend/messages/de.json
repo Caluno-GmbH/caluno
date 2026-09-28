@@ -106,7 +106,7 @@
     "idVerificationError": "Der Ausweis konnte nicht bestätigt werden.",
     "idVerificationTitle": "Ausweis noch nicht geprüft",
     "startTimeInvalid": "Gib eine gültige Startzeit ein",
-    "startTimeLabel": "Startzeit",
+    "startTimeLabel": "Check-in-Zeit",
     "inviteSentConfirmation": "Einladung gesendet",
     "manualCheckin": "Manuelles Einchecken",
     "myQrCodeTab": "Mein QR-Code",

@@ -106,7 +106,7 @@
     "idVerificationError": "Could not confirm the ID.",
     "idVerificationTitle": "ID not verified yet",
     "startTimeInvalid": "Enter a valid start time",
-    "startTimeLabel": "Start time",
+    "startTimeLabel": "Check-in time",
     "inviteSentConfirmation": "Invitation sent",
     "manualCheckin": "Manual check-in",
     "myQrCodeTab": "My QR code",
