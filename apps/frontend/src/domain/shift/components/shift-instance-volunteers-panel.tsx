@@ -13,10 +13,7 @@ import { Megaphone, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import {
-  checkInVolunteer,
-  checkOutVolunteer,
-} from '@/domain/time-entry/actions';
+import { checkOutVolunteer } from '@/domain/time-entry/actions';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -221,11 +218,8 @@ export function ShiftInstanceVolunteersPanel({
           : {}),
       },
       // Text buttons render actionLabels as visible content, so the name
-      // goes here instead to avoid "Check in Jo Fischer" showing on screen.
+      // goes here instead to avoid "Check out Jo Fischer" showing on screen.
       accessibleActionLabels: {
-        'Check in': t('inviteStatus.checkInAriaNamed', {
-          name: invite.user.name,
-        }),
         'Check out': t('inviteStatus.checkOutAriaNamed', {
           name: invite.user.name,
         }),
@@ -346,36 +340,6 @@ export function ShiftInstanceVolunteersPanel({
 
     if (action === 'View') {
       openProfile(invite);
-      return;
-    }
-
-    if (action === 'Check in') {
-      if (!canCheckIn || busyIds.has(volunteerId)) return;
-      const toastId = `check-in-${volunteerId}`;
-      toast.loading(t('checkIn.checkInLoading', { name: invite.user.name }), {
-        id: toastId,
-      });
-      markBusy(volunteerId, true);
-      startTransition(async () => {
-        try {
-          const result = await checkInVolunteer({
-            organizationUnitId: orgUId,
-            volunteerId,
-            shiftInstanceId: instanceId,
-            startedAt: new Date(),
-          });
-          if (result?.serverError) {
-            toast.error(t('checkIn.checkInError'), { id: toastId });
-            return;
-          }
-          toast.success(t('checkIn.checkInSuccess'), { id: toastId });
-          router.refresh();
-        } catch {
-          toast.error(t('checkIn.checkInError'), { id: toastId });
-        } finally {
-          markBusy(volunteerId, false);
-        }
-      });
       return;
     }
 
