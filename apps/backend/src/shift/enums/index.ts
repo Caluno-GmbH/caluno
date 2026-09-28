@@ -6,7 +6,7 @@ export enum ShiftVisibility {
   ALL_MEMBERS = 'ALL_MEMBERS',
 }
 
-export { SortOrder } from './sort-order.enum';
+export { SortOrder } from '../../graphql/enums/sort-order.enum';
 
 export enum ShiftInviteStatus {
   ADMIN_INVITED = 'ADMIN_INVITED',

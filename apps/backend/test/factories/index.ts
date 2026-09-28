@@ -13,4 +13,5 @@ export {
   createShiftInstance,
 } from './shift-instance.factory';
 export { createShiftInstanceInvite } from './shift-instance-invite.factory';
+export { createTimeEntry } from './time-entry.factory';
 export { createUser } from './user.factory';

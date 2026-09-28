@@ -3,6 +3,7 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { plainToInstance } from 'class-transformer';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { SortOrder } from '../../graphql/enums/sort-order.enum';
 import { ForbiddenGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { PaginationInput } from '../../graphql/pagination.input';
@@ -13,6 +14,7 @@ import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequirementForm } from '../../requirement-profile/models/requirement-form.model';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
+import { TimeEntrySortField } from '../enums';
 import { TimeEntryMapper } from '../mappers/time-entry.mapper';
 import { CheckInContext } from '../models/check-in-context.model';
 import { CheckInReadiness } from '../models/check-in-readiness.model';
@@ -50,11 +52,23 @@ export class TimeTrackingQueryResolver {
   @Query(() => TimeEntryPaginatedResponse)
   async timeEntries(
     @Args() pagination: PaginationInput,
+    @Args('sort', {
+      type: () => TimeEntrySortField,
+      defaultValue: TimeEntrySortField.CREATED_AT,
+    })
+    sort: TimeEntrySortField,
+    @Args('order', {
+      type: () => SortOrder,
+      defaultValue: SortOrder.DESC,
+    })
+    order: SortOrder,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntryPaginatedResponse> {
     const { entries, total } = await this.timeTrackingService.findAll(
       context.organizationUnitId,
       pagination,
+      sort,
+      order,
     );
     return new TimeEntryPaginatedResponse({
       items: this.timeEntryMapper.toArray(entries),
