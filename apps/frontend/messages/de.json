@@ -1178,8 +1178,10 @@
     },
     "noRole": "Keine Rolle",
     "internal": {
+      "member": "Mitglied",
+      "memberDescription": "Mitglieder haben keine Admin-Ansicht oder Berechtigungen.",
       "owner": "Leitung",
-      "member": "Mitglied"
+      "ownerDescription": "Leitung hat standardmäßig alle Berechtigungen."
     },
     "page": {
       "createButton": "Rolle erstellen",

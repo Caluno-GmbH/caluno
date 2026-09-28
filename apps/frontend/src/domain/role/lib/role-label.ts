@@ -32,6 +32,22 @@ export function internalRoleKey(
   return INTERNAL_ROLE_KEYS[role.name] ?? null;
 }
 
+export type InternalRoleDescriptionKey =
+  | 'internal.ownerDescription'
+  | 'internal.memberDescription';
+
+/**
+ * The `Role` message key for an internal role's description, or `null` when the
+ * role is org-defined and its stored `description` (the org's own words) should
+ * be used. Derived from {@link internalRoleKey} so the two stay in lockstep.
+ */
+export function internalRoleDescriptionKey(
+  role: TranslatableRole,
+): InternalRoleDescriptionKey | null {
+  const key = internalRoleKey(role);
+  return key ? (`${key}Description` as InternalRoleDescriptionKey) : null;
+}
+
 /**
  * Backend permission group keys (`organization`, `check-in`, …) and permission
  * keys (`ORG_VIEW`, `REQUIREMENT_PROFILE_EDIT`, …) reach us as stored strings,

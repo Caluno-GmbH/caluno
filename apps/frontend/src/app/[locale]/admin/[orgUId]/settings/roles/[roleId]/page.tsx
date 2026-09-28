@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/role/components/action-bar';
 import {
+  internalRoleDescriptionKey,
   internalRoleKey,
   permissionLabelKey,
   permissionTitleKey,
@@ -42,6 +43,7 @@ export default async function RoleDetailsPage({
     .filter((group) => group.items.length > 0);
 
   const roleNameKey = internalRoleKey(role);
+  const roleDescriptionKey = internalRoleDescriptionKey(role);
 
   return (
     <div className="space-y-6">
@@ -50,7 +52,9 @@ export default async function RoleDetailsPage({
           <h1 className="page-title mb-1">
             {roleNameKey ? t(roleNameKey) : role.name}
           </h1>
-          <p className="text-muted-foreground">{role.description}</p>
+          <p className="text-muted-foreground">
+            {roleDescriptionKey ? t(roleDescriptionKey) : role.description}
+          </p>
         </div>
         <ActionBar
           id={role.id}

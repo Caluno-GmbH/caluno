@@ -1178,8 +1178,10 @@
     },
     "noRole": "No role",
     "internal": {
+      "member": "Member",
+      "memberDescription": "Members have no admin view or permissions.",
       "owner": "Owner",
-      "member": "Member"
+      "ownerDescription": "Owner has all permissions by default."
     },
     "page": {
       "createButton": "Create role",
