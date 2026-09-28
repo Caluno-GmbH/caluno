@@ -3577,6 +3577,24 @@ export type SetRequiredFormsMutationVariables = Exact<{
 
 export type SetRequiredFormsMutation = { __typename?: 'Mutation', setRequiredForms: Array<{ __typename?: 'RequiredFormRef', order: number, form: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null } }> };
 
+export type OrganizationUnitAutomationFieldsFragment = { __typename?: 'OrganizationUnitAutomation', organizationUnitId: string, kind: OrganizationUnitAutomationKind, enabled: boolean, activeDays: Array<Weekday>, leadTimeHours?: number | null, sendAtTime?: string | null };
+
+export type GetOrganizationUnitAutomationsQueryVariables = Exact<{
+  organizationUnitId: Scalars['ID']['input'];
+}>;
+
+
+export type GetOrganizationUnitAutomationsQuery = { __typename?: 'Query', organizationUnitAutomations: Array<{ __typename?: 'OrganizationUnitAutomation', organizationUnitId: string, kind: OrganizationUnitAutomationKind, enabled: boolean, activeDays: Array<Weekday>, leadTimeHours?: number | null, sendAtTime?: string | null }> };
+
+export type UpdateOrganizationUnitAutomationMutationVariables = Exact<{
+  organizationUnitId: Scalars['ID']['input'];
+  kind: OrganizationUnitAutomationKind;
+  input: UpdateOrganizationUnitAutomationInput;
+}>;
+
+
+export type UpdateOrganizationUnitAutomationMutation = { __typename?: 'Mutation', updateOrganizationUnitAutomation: { __typename?: 'OrganizationUnitAutomation', organizationUnitId: string, kind: OrganizationUnitAutomationKind, enabled: boolean, activeDays: Array<Weekday>, leadTimeHours?: number | null, sendAtTime?: string | null } };
+
 export type PublicOrganizationUnitFieldsFragment = { __typename?: 'OrganizationUnit', id: string, name: string, slug: string, description?: string | null, logoUrl?: string | null, coverUrl?: string | null, street?: string | null, zipCode?: string | null, city?: string | null, memberCount: number, openShiftsCount: number, myMembershipState: JoinStatus };
 
 export type PublicOrgEventFieldsFragment = { __typename?: 'Event', id: string, title: string, slug: string, startsAt: string, endsAt: string, location?: string | null, shiftsCount: number, shifts: Array<{ __typename?: 'Shift', id: string, instances: Array<{ __typename?: 'ShiftInstance', id: string, spotsLeft?: number | null }> }> };
@@ -4658,6 +4676,16 @@ export const PublicEventFieldsFragmentDoc = gql`
   requiredForms {
     ...RequiredFormRefFields
   }
+}
+    `;
+export const OrganizationUnitAutomationFieldsFragmentDoc = gql`
+    fragment OrganizationUnitAutomationFields on OrganizationUnitAutomation {
+  organizationUnitId
+  kind
+  enabled
+  activeDays
+  leadTimeHours
+  sendAtTime
 }
     `;
 export const PublicOrganizationUnitFieldsFragmentDoc = gql`
@@ -6066,6 +6094,24 @@ export const SetRequiredFormsDocument = gql`
   }
 }
     `;
+export const GetOrganizationUnitAutomationsDocument = gql`
+    query GetOrganizationUnitAutomations($organizationUnitId: ID!) {
+  organizationUnitAutomations(organizationUnitId: $organizationUnitId) {
+    ...OrganizationUnitAutomationFields
+  }
+}
+    ${OrganizationUnitAutomationFieldsFragmentDoc}`;
+export const UpdateOrganizationUnitAutomationDocument = gql`
+    mutation UpdateOrganizationUnitAutomation($organizationUnitId: ID!, $kind: OrganizationUnitAutomationKind!, $input: UpdateOrganizationUnitAutomationInput!) {
+  updateOrganizationUnitAutomation(
+    organizationUnitId: $organizationUnitId
+    kind: $kind
+    input: $input
+  ) {
+    ...OrganizationUnitAutomationFields
+  }
+}
+    ${OrganizationUnitAutomationFieldsFragmentDoc}`;
 export const GetPublicOrganizationUnitDocument = gql`
     query GetPublicOrganizationUnit($id: ID!) {
   publicOrganizationUnit(id: $id) {
@@ -8155,6 +8201,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     SetRequiredForms(variables: SetRequiredFormsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SetRequiredFormsMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<SetRequiredFormsMutation>({ document: SetRequiredFormsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SetRequiredForms', 'mutation', variables);
+    },
+    GetOrganizationUnitAutomations(variables: GetOrganizationUnitAutomationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationUnitAutomationsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationUnitAutomationsQuery>({ document: GetOrganizationUnitAutomationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationUnitAutomations', 'query', variables);
+    },
+    UpdateOrganizationUnitAutomation(variables: UpdateOrganizationUnitAutomationMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateOrganizationUnitAutomationMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateOrganizationUnitAutomationMutation>({ document: UpdateOrganizationUnitAutomationDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateOrganizationUnitAutomation', 'mutation', variables);
     },
     GetPublicOrganizationUnit(variables: GetPublicOrganizationUnitQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetPublicOrganizationUnitQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetPublicOrganizationUnitQuery>({ document: GetPublicOrganizationUnitDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetPublicOrganizationUnit', 'query', variables);

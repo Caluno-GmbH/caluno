@@ -482,6 +482,57 @@
       "updateError": "We couldn't save the setting. Please try again."
     }
   },
+  "ShiftSettings": {
+    "page": {
+      "title": "Shifts and check-in",
+      "subtitle": "Settings for shifts in {orgName}."
+    },
+    "sections": {
+      "moderation": {
+        "title": "Moderation",
+        "description": "Rules for who gets into a shift."
+      },
+      "checkIn": {
+        "title": "Check-in",
+        "description": "How volunteers are checked in on site."
+      }
+    }
+  },
+  "Automations": {
+    "days": {
+      "label": "Active days",
+      "short": {
+        "MONDAY": "Mon",
+        "TUESDAY": "Tue",
+        "WEDNESDAY": "Wed",
+        "THURSDAY": "Thu",
+        "FRIDAY": "Fri",
+        "SATURDAY": "Sat",
+        "SUNDAY": "Sun"
+      },
+      "long": {
+        "MONDAY": "Monday",
+        "TUESDAY": "Tuesday",
+        "WEDNESDAY": "Wednesday",
+        "THURSDAY": "Thursday",
+        "FRIDAY": "Friday",
+        "SATURDAY": "Saturday",
+        "SUNDAY": "Sunday"
+      }
+    },
+    "stepIn": {
+      "label": "When to step in",
+      "option": "{hours} hours before"
+    },
+    "approval": {
+      "title": "Pause approval",
+      "description": "Confirms sign-ups straight away when a shift is below its minimum shortly before it starts. Approval applies again once the shift reaches its minimum. Shifts without a minimum are never affected.",
+      "daysDescription": "Shifts on these days can have approval paused.",
+      "stepInDescription": "How long before its start a shift below its minimum stops needing approval.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "Could not save this automation."
+    }
+  },
   "MembershipRequest": {
     "actions": {
       "approve": "Approve",
@@ -650,7 +701,8 @@
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
-    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}"
+    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
+    "shiftSettings": "Shifts and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",

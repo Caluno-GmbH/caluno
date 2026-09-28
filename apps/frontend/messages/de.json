@@ -482,6 +482,57 @@
       "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
     }
   },
+  "ShiftSettings": {
+    "page": {
+      "title": "Schichten und Check-in",
+      "subtitle": "Einstellungen für Schichten in {orgName}."
+    },
+    "sections": {
+      "moderation": {
+        "title": "Moderation",
+        "description": "Regeln dafür, wer in eine Schicht kommt."
+      },
+      "checkIn": {
+        "title": "Check-in",
+        "description": "Wie Freiwillige vor Ort eingecheckt werden."
+      }
+    }
+  },
+  "Automations": {
+    "days": {
+      "label": "Aktive Tage",
+      "short": {
+        "MONDAY": "Mo",
+        "TUESDAY": "Di",
+        "WEDNESDAY": "Mi",
+        "THURSDAY": "Do",
+        "FRIDAY": "Fr",
+        "SATURDAY": "Sa",
+        "SUNDAY": "So"
+      },
+      "long": {
+        "MONDAY": "Montag",
+        "TUESDAY": "Dienstag",
+        "WEDNESDAY": "Mittwoch",
+        "THURSDAY": "Donnerstag",
+        "FRIDAY": "Freitag",
+        "SATURDAY": "Samstag",
+        "SUNDAY": "Sonntag"
+      }
+    },
+    "stepIn": {
+      "label": "Wann eingegriffen wird",
+      "option": "{hours} Stunden vorher"
+    },
+    "approval": {
+      "title": "Freigabe pausieren",
+      "description": "Bestätigt Anmeldungen sofort, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Sobald die Schicht ihre Mindestbesetzung erreicht, gilt die Freigabe wieder. Schichten ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Bei Schichten an diesen Tagen kann die Freigabe pausiert werden.",
+      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung keine Freigabe mehr braucht.",
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
+      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+    }
+  },
   "MembershipRequest": {
     "actions": {
       "approve": "Genehmigen",
@@ -650,7 +701,8 @@
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
-    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}"
+    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}",
+    "shiftSettings": "Schichten und Check-in"
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",
