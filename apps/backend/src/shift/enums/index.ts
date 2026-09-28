@@ -24,7 +24,7 @@ export const INVITE_STATUS_TO_JOIN_SHIFT_STATUS: Record<
   JoinStatus
 > = {
   [ShiftInviteStatus.ADMIN_INVITED]: JoinStatus.INVITED,
-  [ShiftInviteStatus.AWAITING_ADMIN_APPROVAL]: JoinStatus.PENDING,
+  [ShiftInviteStatus.AWAITING_ADMIN_APPROVAL]: JoinStatus.PENDING_APPROVAL,
   [ShiftInviteStatus.WAITLIST_JOINED]: JoinStatus.WAITLIST_JOINED,
   [ShiftInviteStatus.JOINED]: JoinStatus.JOINED,
   [ShiftInviteStatus.VOLUNTEER_REJECTED]: JoinStatus.VOLUNTEER_REJECTED,
