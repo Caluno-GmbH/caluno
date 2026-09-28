@@ -1659,6 +1659,7 @@
     "pickDayLabel": "Choose a day",
     "respondBeforeNote": "Respond before {date}. You can change your mind until the assignment starts.",
     "signUpCta": "Sign up for {date}",
+    "signUpApprovalNote": "After sign-up the admin will review your request.",
     "signUpNote": "You can cancel at any time.",
     "spotsFree": "· {n} free",
     "spotsFull": "· full",

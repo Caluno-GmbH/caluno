@@ -47,6 +47,7 @@ export const ShiftInstancesSidebar = async ({
       autoJoin={autoJoin}
       preselectedInstanceId={preselectedInstanceId}
       masterMaxVolunteers={shift.maxVolunteers}
+      masterJoinRequiresApproval={shift.joinRequiresApproval}
       membershipState={
         shift.organizationUnit?.myMembershipState ?? JoinStatus.None
       }
