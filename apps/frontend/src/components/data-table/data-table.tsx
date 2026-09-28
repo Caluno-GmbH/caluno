@@ -41,6 +41,9 @@ export function DataTable<TData, TValue>({
     onSortingChange,
     manualSorting: true,
     manualPagination: true,
+    // Keep a column always sorted: without this, clicking the active header
+    // cycles to "no sort" and the sort silently resets instead of reversing.
+    enableSortingRemoval: false,
     pageCount,
     getCoreRowModel: getCoreRowModel(),
   });
