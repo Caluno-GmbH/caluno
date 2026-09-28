@@ -1178,8 +1178,10 @@
     },
     "noRole": "No role",
     "internal": {
+      "member": "Member",
+      "memberDescription": "Members have no admin view or permissions.",
       "owner": "Owner",
-      "member": "Member"
+      "ownerDescription": "Owner has all permissions by default."
     },
     "page": {
       "createButton": "Create role",
@@ -1189,8 +1191,40 @@
     },
     "permissions": {
       "all": "All",
+      "descriptions": {
+        "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
+        "checkInManage": "Look up volunteers; see which shifts are available for check-in; check volunteers in or out; add people to shifts; invite people to the organisation and approve join requests from this screen.",
+        "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
+        "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
+        "requirementProfileEdit": "Create and change forms and blocks.",
+        "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
+        "shiftEdit": "Create, change, and delete shifts and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
+        "shiftView": "See shifts and their occurrences, events, who is invited or signed up, and timesheet entries.",
+        "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
+        "volunteerView": "See members, pending and past join requests, and volunteer profiles, including submitted forms (excluding payment-related data)."
+      },
+      "labels": {
+        "accountingManage": "Manage",
+        "checkInManage": "Manage",
+        "orgEdit": "Edit",
+        "orgView": "View",
+        "requirementProfileEdit": "Edit",
+        "requirementProfileView": "View",
+        "shiftEdit": "Edit",
+        "shiftView": "View",
+        "volunteerEdit": "Edit",
+        "volunteerView": "View"
+      },
       "none": "None",
-      "partial": "Partial"
+      "partial": "Partial",
+      "titles": {
+        "accounting": "Accounting",
+        "checkIn": "Check-in",
+        "organization": "Organisation wide settings",
+        "requirementProfile": "Requirement forms and blocks",
+        "shift": "Shifts, events, timesheets",
+        "volunteer": "Volunteer information and membership"
+      }
     },
     "select": {
       "addCustom": "Add custom",
@@ -2001,7 +2035,7 @@
         "action": "Action"
       },
       "tiles": {
-        "all": "All open tasks",
+        "all": "All documents",
         "docCount": "{count, plural, one {# document} other {# documents}}",
         "waitingOnYou": "{count, plural, one {# waiting on you} other {# waiting on you}}",
         "contractGenerate": "Create agreements",

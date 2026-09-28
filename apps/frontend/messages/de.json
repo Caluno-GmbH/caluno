@@ -1178,8 +1178,10 @@
     },
     "noRole": "Keine Rolle",
     "internal": {
+      "member": "Mitglied",
+      "memberDescription": "Mitglieder haben keine Admin-Ansicht oder Berechtigungen.",
       "owner": "Leitung",
-      "member": "Mitglied"
+      "ownerDescription": "Leitung hat standardmäßig alle Berechtigungen."
     },
     "page": {
       "createButton": "Rolle erstellen",
@@ -1189,8 +1191,40 @@
     },
     "permissions": {
       "all": "Alle",
+      "descriptions": {
+        "accountingManage": "Vereinbarungen und Stundenzettel erstellen und unterschreiben; Dokumentvorlagen und Stundensätze bearbeiten; zahlungsbezogene Daten von Freiwilligen einsehen (z. B. IBAN).",
+        "checkInManage": "Freiwillige suchen; sehen, für welche Einsätze ein Check-in möglich ist; Freiwillige ein- und auschecken; Personen zu Einsätzen hinzufügen; direkt aus dieser Ansicht Personen in die Organisation einladen und Beitrittsanfragen annehmen.",
+        "orgEdit": "Organisationsprofil ändern; Einheiten, denen sie angehören, erstellen, umbenennen oder löschen; Rollentypen erstellen und ändern; ID-Verifizierung pro Einheit ein- oder ausschalten; Anforderungsformulare zur Organisation hinzufügen.",
+        "orgView": "Übersicht der Organisation, Einheitenstruktur, Rollenliste und Einstellung zur ID-Verifizierung, für Organisationen, denen sie angehören.",
+        "requirementProfileEdit": "Formulare und Blocks erstellen und ändern.",
+        "requirementProfileView": "Formulare, Formular-Blocks und ob Freiwillige ein Formular eingereicht haben.",
+        "shiftEdit": "Einsätze und Events erstellen, ändern und löschen; Personen einladen; Aufrufe und Erinnerungen senden; festlegen, welche Formulare ein Einsatz oder Event erfordert; Einträge in Stundenzetteln hinzufügen, abschließen, ändern und löschen.",
+        "shiftView": "Einsätze, Events, wer eingeladen oder angemeldet ist, sowie Einträge in Stundenzetteln.",
+        "volunteerEdit": "Beitrittsanfragen annehmen oder ablehnen, Mitgliedschaften entfernen, Nutzer*innen Rollen und Berechtigungen zuweisen.",
+        "volunteerView": "Mitglieder, offene und vergangene Beitrittsanfragen sowie Profile von Freiwilligen, inklusive eingereichter Formulare (ohne zahlungsbezogene Daten)."
+      },
+      "labels": {
+        "accountingManage": "Ansehen und Bearbeiten",
+        "checkInManage": "Ansehen und Bearbeiten",
+        "orgEdit": "Bearbeiten",
+        "orgView": "Ansehen",
+        "requirementProfileEdit": "Bearbeiten",
+        "requirementProfileView": "Ansehen",
+        "shiftEdit": "Bearbeiten",
+        "shiftView": "Ansehen",
+        "volunteerEdit": "Bearbeiten",
+        "volunteerView": "Ansehen"
+      },
       "none": "Keine",
-      "partial": "Teilweise"
+      "partial": "Teilweise",
+      "titles": {
+        "accounting": "Abrechnung",
+        "checkIn": "Check-in",
+        "organization": "Organisationsweite Einstellungen",
+        "requirementProfile": "Anforderungsformulare und Blocks",
+        "shift": "Einsätze, Events und Stundenzettel",
+        "volunteer": "Informationen zu Freiwilligen und Mitgliedschaft"
+      }
     },
     "select": {
       "addCustom": "Benutzerdefiniert hinzufügen",
@@ -2001,7 +2035,7 @@
         "action": "Aktion"
       },
       "tiles": {
-        "all": "Alle offenen Aufgaben",
+        "all": "Alle Dokumente",
         "docCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
         "waitingOnYou": "{count, plural, one {# wartet auf dich} other {# warten auf dich}}",
         "contractGenerate": "Vereinbarungen erstellen",

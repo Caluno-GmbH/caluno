@@ -31,3 +31,46 @@ export function internalRoleKey(
   if (!role.isInternal) return null;
   return INTERNAL_ROLE_KEYS[role.name] ?? null;
 }
+
+export type InternalRoleDescriptionKey =
+  | 'internal.ownerDescription'
+  | 'internal.memberDescription';
+
+/**
+ * The `Role` message key for an internal role's description, or `null` when the
+ * role is org-defined and its stored `description` (the org's own words) should
+ * be used. Derived from {@link internalRoleKey} so the two stay in lockstep.
+ */
+export function internalRoleDescriptionKey(
+  role: TranslatableRole,
+): InternalRoleDescriptionKey | null {
+  const key = internalRoleKey(role);
+  return key ? (`${key}Description` as InternalRoleDescriptionKey) : null;
+}
+
+/**
+ * Backend permission group keys (`organization`, `check-in`, …) and permission
+ * keys (`ORG_VIEW`, `REQUIREMENT_PROFILE_EDIT`, …) reach us as stored strings,
+ * not message keys. These helpers map them onto the camelCase `Role.permissions`
+ * i18n keys so the card titles, row labels, and descriptions are translatable.
+ */
+function toCamelCase(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[-_]([a-z0-9])/g, (_match, char: string) => char.toUpperCase());
+}
+
+/** `Role.permissions` sub-key for a permission group's card title, from `group.key`. */
+export function permissionTitleKey(groupKey: string): string {
+  return `titles.${toCamelCase(groupKey)}`;
+}
+
+/** `Role.permissions` sub-key for a permission's row label, from `permission.key`. */
+export function permissionLabelKey(permissionKey: string): string {
+  return `labels.${toCamelCase(permissionKey)}`;
+}
+
+/** `Role.permissions` sub-key for a permission's description, from `permission.key`. */
+export function permissionDescriptionKey(permissionKey: string): string {
+  return `descriptions.${toCamelCase(permissionKey)}`;
+}
