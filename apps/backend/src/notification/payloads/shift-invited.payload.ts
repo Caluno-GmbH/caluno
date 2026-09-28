@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '../../accounting/enums';
 import type { ShiftInviteSchedule } from '../shift-invite-schedule';
 
 export interface ShiftInvitedPayload {
@@ -9,4 +10,5 @@ export interface ShiftInvitedPayload {
   shiftInstructions?: string | null;
   recipientUserIds: string[];
   schedule: ShiftInviteSchedule;
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 }

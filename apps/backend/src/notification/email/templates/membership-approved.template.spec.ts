@@ -1,39 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import type { EmailTemplateContext } from '../../../i18n/email-translate';
-import {
-  formatLocaleDate,
-  formatLocaleDateTime,
-  formatLocaleList,
-  formatLocaleTime,
-} from '../../../i18n/format-date-time';
-import enEmail from '../../../i18n/locales/en/email.json';
+import { createEmailTemplateFixture } from '../../../../test/helpers/email-template-fixture';
 import { membershipApprovedTemplate } from './membership-approved.template';
-
-function createFixtureTranslator(locale: 'en'): EmailTemplateContext {
-  const catalog = locale === 'en' ? enEmail : enEmail;
-
-  return {
-    t: (key, params) => {
-      const parts = key.split('.');
-      let value: unknown = catalog;
-      for (const part of parts) {
-        value = (value as Record<string, unknown>)[part];
-      }
-      if (typeof value !== 'string') {
-        throw new Error(`Missing email translation for ${key}`);
-      }
-      return Object.entries(params ?? {}).reduce(
-        (result, [paramKey, paramValue]) =>
-          result.replace(`{${paramKey}}`, String(paramValue)),
-        value,
-      );
-    },
-    formatDateTime: (date) => formatLocaleDateTime(date, locale),
-    formatDate: (date) => formatLocaleDate(date, locale),
-    formatTime: (date) => formatLocaleTime(date, locale),
-    formatList: (items) => formatLocaleList(items, locale),
-  };
-}
 
 describe('membershipApprovedTemplate', () => {
   const baseData = {
@@ -45,7 +12,7 @@ describe('membershipApprovedTemplate', () => {
   it('omits welcome and contact sections when unset', async () => {
     const { html } = await membershipApprovedTemplate(
       baseData,
-      createFixtureTranslator('en'),
+      createEmailTemplateFixture(),
     );
 
     expect(html).not.toContain('A message from the team');
@@ -63,7 +30,7 @@ describe('membershipApprovedTemplate', () => {
           phone: '+49 30 123456',
         },
       },
-      createFixtureTranslator('en'),
+      createEmailTemplateFixture(),
     );
 
     expect(html).toContain('A message from the team');
@@ -84,7 +51,7 @@ describe('membershipApprovedTemplate', () => {
           phone: null,
         },
       },
-      createFixtureTranslator('en'),
+      createEmailTemplateFixture(),
     );
 
     expect(html).toContain('Alex Contact');

@@ -1,4 +1,5 @@
 import { tz } from '@date-fns/tz';
+import type { ReimbursementTypeKey } from '@repo/data';
 import { isSameDay } from 'date-fns';
 import { shiftPublicPath } from '@/domain/shift/share';
 import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
@@ -17,6 +18,7 @@ export interface NormalizedInvite {
   endsAt: string;
   isMultiDay: boolean;
   rrule: string | null;
+  reimbursementTypeKey: ReimbursementTypeKey | null;
 }
 
 export function normalizeInvitation(
@@ -37,6 +39,7 @@ export function normalizeInvitation(
       endsAt: shift.actualEndsAt,
       isMultiDay: false,
       rrule: shift.master.rrule ?? null,
+      reimbursementTypeKey: shift.reimbursementTypeKey ?? null,
     };
   }
 
@@ -56,5 +59,6 @@ export function normalizeInvitation(
       in: tz(DEFAULT_TIMEZONE),
     }),
     rrule: null,
+    reimbursementTypeKey: null,
   };
 }
