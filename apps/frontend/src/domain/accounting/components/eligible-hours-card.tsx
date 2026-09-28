@@ -15,6 +15,8 @@ interface EligibleHoursCardProps {
   selectedIds: Set<string>;
   onToggle: (id: string) => void;
   timesheetsHref: string;
+  /** Shown instead of the empty list, explaining why nothing is eligible. */
+  emptyMessage?: string;
   className?: string;
 }
 
@@ -28,12 +30,16 @@ export function EligibleHoursCard({
   selectedIds,
   onToggle,
   timesheetsHref,
+  emptyMessage,
   className,
 }: EligibleHoursCardProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal.hoursCard');
 
   return (
     <InfoPanel title={t('title')} className={className}>
+      {lines.length === 0 && emptyMessage && (
+        <p className="mt-2 text-sm text-muted-foreground">{emptyMessage}</p>
+      )}
       <ul className="mt-2 space-y-3">
         {lines.map((line) => (
           <li key={line.id} className="flex items-center gap-3">

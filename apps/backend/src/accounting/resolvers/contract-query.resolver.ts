@@ -10,11 +10,13 @@ import {
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
 import type { ContractFilter } from '../accounting.types';
+import { isIssuedDocument } from '../document-visibility';
+import { ContractStatus, DocumentKind } from '../enums';
 import { ContractFilterInput } from '../inputs/contract-filter.input';
 import { ContractMapper } from '../mappers';
 import { Contract } from '../models/contract.model';
 import { PendingSignee } from '../models/pending-signee.model';
-import { ContractService } from '../services';
+import { AccountingOrgAccessService, ContractService } from '../services';
 
 function toContractFilter(
   filter: ContractFilterInput | null | undefined,
@@ -35,6 +37,7 @@ export class ContractQueryResolver {
     private readonly contractMapper: ContractMapper,
     private readonly authService: AuthService,
     private readonly organizationUnitService: OrganizationUnitService,
+    private readonly accountingOrgAccessService: AccountingOrgAccessService,
   ) {}
 
   @Query(() => Contract)
@@ -44,7 +47,12 @@ export class ContractQueryResolver {
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Contract> {
     const contract = await this.contractService.findContract(id);
-    await this.assertCanViewDocument(contract.volunteerId, session, context);
+    await this.assertCanViewDocument(
+      contract.volunteerId,
+      contract.contractStatus,
+      session,
+      context,
+    );
     return this.contractMapper.toModelOrThrow(contract);
   }
 
@@ -55,10 +63,16 @@ export class ContractQueryResolver {
     filter: ContractFilterInput | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Contract[]> {
-    const organizationId = await this.resolveOrganizationId(context);
+    const organizationId =
+      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+        context.organizationUnitId,
+      );
     const contracts = await this.contractService.findContractsForOrganization(
       organizationId,
-      toContractFilter(filter),
+      {
+        ...toContractFilter(filter),
+        organizationUnitId: context.organizationUnitId,
+      },
     );
     return this.contractMapper.toArray(contracts);
   }
@@ -73,7 +87,11 @@ export class ContractQueryResolver {
     const organizationId = await this.resolveOrganizationId(context);
     const contracts = await this.contractService.findContractsForOrganization(
       organizationId,
-      { ...toContractFilter(filter), volunteerId: session.user.id },
+      {
+        ...toContractFilter(filter),
+        volunteerId: session.user.id,
+        issuedOnly: true,
+      },
     );
     return this.contractMapper.toArray(contracts);
   }
@@ -85,27 +103,39 @@ export class ContractQueryResolver {
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<PendingSignee | null> {
     const contract = await this.contractService.findContract(contractId);
-    await this.assertCanViewDocument(contract.volunteerId, session, context);
+    await this.assertCanViewDocument(
+      contract.volunteerId,
+      contract.contractStatus,
+      session,
+      context,
+    );
     return this.contractService.findPendingContractSignee(contractId);
   }
 
   private async assertCanViewDocument(
     volunteerId: string,
+    status: ContractStatus | undefined,
     session: UserSession,
     context: AuthenticatedGraphQLContext,
   ): Promise<void> {
-    if (session.user.id === volunteerId) {
-      return;
-    }
+    const isOwner = session.user.id === volunteerId;
     const hasPermission = await this.authService.hasRequiredPermissions(
       session.user.id,
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
-    if (!hasPermission) {
+    if (!isOwner && !hasPermission) {
       throw new ForbiddenGraphQLError(
         'You do not have permission to view this document',
       );
+    }
+    if (
+      isOwner &&
+      !hasPermission &&
+      status !== undefined &&
+      !isIssuedDocument(DocumentKind.CONTRACT, status)
+    ) {
+      throw new NotFoundGraphQLError('Contract not found');
     }
   }
 

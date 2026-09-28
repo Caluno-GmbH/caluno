@@ -66,7 +66,7 @@ export function DiscoverView({
     <SegmentedControl
       size="lg"
       variant="line"
-      triggerClassName="group-data-[size=lg]/tabs-list:text-base"
+      triggerClassName="px-1 text-[18px] sm:px-3.5 sm:text-lg"
       value={tab}
       onChange={handleTabChange}
       options={[

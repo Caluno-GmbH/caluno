@@ -10,6 +10,9 @@ bun run db:seed
 if [ "${RUN_STAGING_FIXTURES}" = "true" ]; then
   echo "Loading staging fixtures…"
   bun run db:fixtures:staging
+
+  echo "Loading demo fixtures…"
+  bun run db:fixtures:demo
 fi
 
 echo "Starting backend…"

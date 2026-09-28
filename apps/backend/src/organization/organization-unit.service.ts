@@ -9,7 +9,13 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../graphql/errors';
+import type { Locale } from '../graphql/locale';
 import type { PaginationInput } from '../graphql/pagination.input';
+import { AppI18nService } from '../i18n/app-i18n.service';
+import { EmailService } from '../notification/email/email.service';
+import { createEmailTemplateContext } from '../notification/email/email-template-context';
+import { organizationUnitDeletionRequestTemplate } from '../notification/email/templates/organization-unit-deletion-request.template';
+import { emailTheme } from '../notification/email/templates/shared';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -34,6 +40,8 @@ export class OrganizationUnitService {
     private readonly fileService: FileService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly postHogService: PostHogService,
+    private readonly emailService: EmailService,
+    private readonly appI18n: AppI18nService,
   ) {}
 
   async findById(id: string): Promise<OrganizationUnitEntity | undefined> {
@@ -288,6 +296,13 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
+    if (updated.parentId === null && input.name !== undefined) {
+      await this.db
+        .update(schema.organizations)
+        .set({ name: updated.name })
+        .where(eq(schema.organizations.id, updated.organizationId));
+    }
+
     this.postHogService.capture({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_UPDATE,
       userId,
@@ -363,39 +378,41 @@ export class OrganizationUnitService {
     return row?.total ?? 0;
   }
 
-  async delete(id: string, userId: string): Promise<OrganizationUnitEntity> {
+  async requestDeletion(
+    id: string,
+    requester: { name: string; email: string },
+    message: string | undefined,
+    locale: Locale,
+  ): Promise<OrganizationUnitEntity> {
     const unit = await this.findById(id);
 
     if (!unit) {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
-    if (unit.parentId === null) {
-      throw new ConflictGraphQLError(
-        'Root organization unit cannot be deleted',
-      );
-    }
+    const organization = await this.findOrganization(unit.organizationId);
 
-    const [deleted] = await this.db
-      .update(schema.organizationUnits)
-      .set({ deletedAt: new Date() })
-      .where(eq(schema.organizationUnits.id, id))
-      .returning();
+    const templateContext = createEmailTemplateContext(this.appI18n, locale);
 
-    if (!deleted) {
-      throw new NotFoundGraphQLError('Organization unit not found');
-    }
-
-    this.postHogService.capture({
-      event: POSTHOG_EVENT.ORGANIZATION_UNIT_DELETE,
-      userId,
-      properties: {
-        surface: POSTHOG_SURFACE.BACKOFFICE,
-        organization_id: deleted.organizationId ?? undefined,
-        organization_unit_id: deleted.id,
+    const { subject, html } = await organizationUnitDeletionRequestTemplate(
+      {
+        organizationUnitId: unit.id,
+        organizationUnitName: unit.name,
+        organizationName: organization?.name ?? '',
+        requesterName: requester.name,
+        requesterEmail: requester.email,
+        message,
+        requestedAt: new Date(),
       },
+      templateContext,
+    );
+
+    await this.emailService.send({
+      to: emailTheme.supportEmail,
+      subject,
+      html,
     });
 
-    return deleted;
+    return unit;
   }
 }

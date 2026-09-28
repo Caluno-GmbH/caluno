@@ -127,7 +127,7 @@ exported by `cache-to`, and CI runners are ephemeral.
    `cancel-in-progress: false`.
 
 5. **Image mirror (`mirror-images.yml`)** — mirrors `postgres:17` and
-   `oven/bun:1` into `ghcr.io/holi-social/mirror/*` weekly, so CI's pulls aren't
+   `oven/bun:1` into `ghcr.io/caluno-gmbh/mirror/*` weekly, so CI's pulls aren't
    subject to Docker Hub rate limits.
    - **Run it once via `workflow_dispatch` before the first CI/CD build** — the
      Dockerfiles' `FROM` lines pull from the mirror.

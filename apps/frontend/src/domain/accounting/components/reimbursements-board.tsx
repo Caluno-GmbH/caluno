@@ -22,6 +22,7 @@ import {
   Skeleton,
 } from '@repo/ui';
 import {
+  AlertCircleIcon,
   ArrowUpDownIcon,
   CheckCircle2Icon,
   ChevronRightIcon,
@@ -32,6 +33,11 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useReimbursementBoardData } from '../hooks/use-reimbursement-board-data';
+import { creationTargetFor } from '../lib/board-data.utils';
+import {
+  documentCreationBlockedFor,
+  type TemplateReadinessByPauschale,
+} from '../lib/setup-status';
 import { ContractCreationModal } from './contract-creation-modal';
 import { CreateDocumentModal } from './create-document-modal';
 import type { PauschalenType } from './doc-type-header';
@@ -50,6 +56,7 @@ import type { SigneeRole } from './template/types';
 
 export type DocStatus =
   | 'contract-generate'
+  | 'contract-draft'
   | 'contract-signing-vol'
   | 'contract-signing-coord'
   | 'contract-active'
@@ -93,6 +100,14 @@ const TILE_IDS: Exclude<TileFilter, null>[] = [
   'ready-to-go',
 ];
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = [
+  CURRENT_YEAR - 2,
+  CURRENT_YEAR - 1,
+  CURRENT_YEAR,
+  CURRENT_YEAR + 1,
+];
+
 export interface BoardDocument {
   id: string;
   status: DocStatus;
@@ -100,6 +115,9 @@ export interface BoardDocument {
   hours?: number;
   lastActionDate?: Date;
   periodLabel: string;
+  /** The document's own period: a to-invoice row opens on this month, a declined timesheet on the period it was issued for. */
+  periodStart?: Date;
+  periodEnd?: Date;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
   isOverCap?: boolean;
   pauschale?: PauschalenType;
@@ -278,7 +296,7 @@ function matchesTile(status: DocStatus, tile: TileFilter): boolean {
   if (!tile) return false;
   switch (tile) {
     case 'contract-generate':
-      return status === 'contract-generate';
+      return status === 'contract-generate' || status === 'contract-draft';
     case 'contract-signing':
       return (
         status === 'contract-signing-vol' || status === 'contract-signing-coord'
@@ -292,6 +310,8 @@ function matchesTile(status: DocStatus, tile: TileFilter): boolean {
       );
     case 'ready-to-go':
       return status === 'timesheet-ready';
+    default:
+      return false;
   }
 }
 
@@ -425,25 +445,35 @@ interface ReimbursementsBoardProps {
   /** Owned by the page header — see reimbursements-page-header.tsx. */
   dateRange: DateRange | undefined;
   onDateRangeChange: (range: DateRange | undefined) => void;
+  year: number;
+  onYearChange: (year: number) => void;
   /** Fired when the "Ready to go" tile is selected — the page header narrows its own range to this month. */
   onReadyToGoSelected: () => void;
   createDocOpen: boolean;
   onCreateDocOpenChange: (open: boolean) => void;
+  canCreateDocuments: boolean;
+  /** Per-Pauschale template state — blocks a create action whose template is missing. */
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 export function ReimbursementsBoard({
   orgUId,
   dateRange,
   onDateRangeChange,
+  year,
+  onYearChange,
   onReadyToGoSelected,
   createDocOpen,
   onCreateDocOpenChange,
+  canCreateDocuments,
+  templateReadiness,
 }: ReimbursementsBoardProps) {
   const t = useTranslations('Accounting.reimbursements');
 
-  const { volunteers, isLoading } = useReimbursementBoardData({
+  const { volunteers, isLoading, error } = useReimbursementBoardData({
     orgUId,
     dateRange,
+    year,
   });
 
   const signContract = useSignContract();
@@ -470,20 +500,27 @@ export function ReimbursementsBoard({
     useState<DocVolPair | null>(null);
 
   function handleRequestCreate(pair: DocVolPair) {
+    if (!canCreateDocuments) return;
+    const target = creationTargetFor(pair.doc.status);
+    // Never open a create modal whose template is missing — the admin would
+    // only reach the raw "no template" dead end.
+    const pauschale = pair.doc.pauschale ?? pair.vol.pauschale;
     if (
-      pair.doc.status === 'contract-generate' ||
-      pair.doc.status === 'contract-declined' ||
-      pair.doc.status === 'contract-missing'
+      target &&
+      documentCreationBlockedFor(templateReadiness, pauschale, target)
     ) {
+      return;
+    }
+    if (target === 'contract') {
       setContractCreationTarget(pair);
       return;
     }
-    if (
-      pair.doc.status === 'timesheet-generate' ||
-      pair.doc.status === 'timesheet-declined'
-    ) {
+    if (target === 'invoice') {
       setInvoiceCreationTarget(pair);
+      return;
     }
+    // Never swallow a click: tell the admin why nothing opens.
+    toast.error(t('createUnavailable', { name: pair.vol.name }));
   }
 
   function handleSign(pair: DocVolPair) {
@@ -551,12 +588,10 @@ export function ReimbursementsBoard({
   const baseFilteredVols = useMemo(
     () =>
       volunteers.filter((v) => {
-        if (
-          pauschale !== 'all' &&
-          !v.documents.some((d) => (d.pauschale ?? v.pauschale) === pauschale)
-        )
-          return false;
-        return true;
+        if (pauschale === 'all') return true;
+        return v.documents.some(
+          (d) => (d.pauschale ?? v.pauschale) === pauschale,
+        );
       }),
     [volunteers, pauschale],
   );
@@ -628,10 +663,23 @@ export function ReimbursementsBoard({
     return <ReimbursementsBoardSkeleton />;
   }
 
+  if (error) {
+    return (
+      <Empty className="border-border py-16">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <AlertCircleIcon className="size-5 text-destructive" />
+          </EmptyMedia>
+          <EmptyTitle>{t('loadError')}</EmptyTitle>
+          <EmptyDescription>{t('loadErrorHint')}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
   return (
     <div className="space-y-6 pb-24">
-      {/* Calendar only — nothing else belongs in this row */}
-      <div className="flex justify-start">
+      <div className="flex flex-wrap items-center gap-3">
         <PeriodPicker
           value={dateRange}
           onChange={onDateRangeChange}
@@ -660,6 +708,24 @@ export function ReimbursementsBoard({
           align="start"
           className="h-10 gap-2 shrink-0"
         />
+        <Select
+          value={String(year)}
+          onValueChange={(v) => onYearChange(Number(v))}
+        >
+          <SelectTrigger
+            className="h-10 min-w-28 shrink-0"
+            aria-label={t('yearLabel')}
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {YEAR_OPTIONS.map((option) => (
+              <SelectItem key={option} value={String(option)}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Pipeline steps (connected filter tiles) */}
@@ -783,12 +849,14 @@ export function ReimbursementsBoard({
       ) : (
         <ReimbursementsTable
           vols={sortedFilteredVols}
+          orgUId={orgUId}
           onDocumentClick={(doc, vol) => setSelectedDoc({ doc, vol })}
           onRequestCreate={handleRequestCreate}
-          onRequestSign={handleSign}
           docTypeFilter={docTypeFilter}
           dateRange={dateRange}
           activeTile={activeTile}
+          canCreateDocuments={canCreateDocuments}
+          templateReadiness={templateReadiness}
         />
       )}
 
@@ -804,6 +872,8 @@ export function ReimbursementsBoard({
         onDecline={handleDecline}
         selectedDate={selectedDate}
         orgUId={orgUId}
+        canCreateDocuments={canCreateDocuments}
+        templateReadiness={templateReadiness}
       />
 
       <ContractCreationModal
@@ -829,28 +899,23 @@ export function ReimbursementsBoard({
         }}
         orgUId={orgUId}
         docId={invoiceCreationTarget?.doc.id ?? null}
+        // A "to invoice" row opens on its month; a declined timesheet on the
+        // period it was issued for, so its released hours are listed.
+        initialPeriod={
+          invoiceCreationTarget?.doc.periodStart &&
+          invoiceCreationTarget.doc.periodEnd
+            ? {
+                start: invoiceCreationTarget.doc.periodStart,
+                end: invoiceCreationTarget.doc.periodEnd,
+              }
+            : null
+        }
         volunteerId={invoiceCreationTarget?.vol.id ?? null}
         volunteerName={invoiceCreationTarget?.vol.name ?? null}
         pauschale={
           invoiceCreationTarget
             ? (invoiceCreationTarget.doc.pauschale ??
               invoiceCreationTarget.vol.pauschale)
-            : null
-        }
-        usedBeforeAmount={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.vol.limits?.[
-                invoiceCreationTarget.doc.pauschale ??
-                  invoiceCreationTarget.vol.pauschale
-              ]?.used ?? invoiceCreationTarget.vol.usedAmount)
-            : null
-        }
-        totalCapAmount={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.vol.limits?.[
-                invoiceCreationTarget.doc.pauschale ??
-                  invoiceCreationTarget.vol.pauschale
-              ]?.total ?? invoiceCreationTarget.vol.totalCap)
             : null
         }
         onSent={() => setInvoiceCreationTarget(null)}
@@ -863,6 +928,7 @@ export function ReimbursementsBoard({
         volunteers={volunteers}
         onContractSent={() => {}}
         onInvoiceSent={() => {}}
+        templateReadiness={templateReadiness}
       />
     </div>
   );
@@ -870,7 +936,14 @@ export function ReimbursementsBoard({
 
 // ─── Board skeleton ───────────────────────────────────────────────────────────
 
-const TILE_SKELETON_KEYS = ['tile-1', 'tile-2', 'tile-3', 'tile-4', 'tile-5'];
+const TILE_SKELETON_KEYS = [
+  'tile-1',
+  'tile-2',
+  'tile-3',
+  'tile-4',
+  'tile-5',
+  'tile-6',
+];
 const ROW_SKELETON_KEYS = ['row-1', 'row-2', 'row-3'];
 
 export function ReimbursementsBoardSkeleton() {

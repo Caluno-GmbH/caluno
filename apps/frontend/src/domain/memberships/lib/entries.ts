@@ -22,7 +22,7 @@ type MyRequestItem = {
 type MyMembershipItem = {
   id: string;
   createdAt: string;
-  roles: { id: string; name: string }[];
+  roles: { id: string; name: string; isInternal?: boolean | null }[];
   organizationUnit: OrgUnitInput;
 };
 
@@ -56,7 +56,10 @@ export function buildMembershipEntries(
       id: membership.id,
       organizationName: orgUnit.organization.name,
       orgUnit: toOrgUnit(orgUnit),
-      roles: membership.roles.map((role) => role.name),
+      roles: membership.roles.map((role) => ({
+        name: role.name,
+        isInternal: role.isInternal,
+      })),
       date: new Date(membership.createdAt),
     });
   }

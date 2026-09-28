@@ -2,6 +2,7 @@
 
 import type {
   CreateShiftInput,
+  DuplicateShiftInput,
   UpdateShiftInput,
   UpdateShiftInstanceInput,
 } from '@repo/data';
@@ -44,11 +45,13 @@ export const createShift = actionClient
       visibility: parsedInput.openShift
         ? ShiftVisibility.AllMembers
         : ShiftVisibility.InvitedMembers,
+      joinRequiresApproval: parsedInput.joinRequiresApproval ?? false,
       invitedMemberIds: parsedInput.invitedMemberIds,
       rrule,
       imageFileId: parsedInput.imageFileId ?? null,
       minVolunteers: parsedInput.minVolunteers ?? null,
       maxVolunteers: parsedInput.maxVolunteers ?? null,
+      reimbursementTypeId: parsedInput.reimbursementTypeId ?? null,
       requiredFormIds: parsedInput.requiredFormIds,
     };
 
@@ -82,16 +85,63 @@ export const updateShift = actionClient
       visibility: parsedInput.openShift
         ? ShiftVisibility.AllMembers
         : ShiftVisibility.InvitedMembers,
+      joinRequiresApproval: parsedInput.joinRequiresApproval ?? false,
       invitedMemberIds: parsedInput.invitedMemberIds,
       rrule,
       imageFileId: parsedInput.imageFileId,
       minVolunteers: parsedInput.minVolunteers ?? null,
       maxVolunteers: parsedInput.maxVolunteers ?? null,
+      reimbursementTypeId: parsedInput.reimbursementTypeId ?? null,
       requiredFormIds: parsedInput.requiredFormIds,
     };
 
     return await data.shift.update(shiftId, input);
   });
+
+export const duplicateShift = actionClient
+  .inputSchema(serverShiftFormSchema)
+  .bindArgsSchemas([z.string(), z.string(), z.string().nullable()])
+  .action(
+    async ({
+      parsedInput,
+      bindArgsParsedInputs: [orgUId, sourceShiftId, eventId],
+    }) => {
+      const data = await getDataClient({ orgUId });
+
+      const rrule = generateRrule(
+        parsedInput.startsAt,
+        parsedInput.recurrenceDays,
+        parsedInput.recurrenceEndsAt,
+      );
+
+      const input: DuplicateShiftInput = {
+        title: parsedInput.name,
+        startsAt: parsedInput.startsAt.toISOString(),
+        endsAt: parsedInput.endsAt.toISOString(),
+        instructions: parsedInput.instructions,
+        location: parsedInput.location,
+        visibility: parsedInput.openShift
+          ? ShiftVisibility.AllMembers
+          : ShiftVisibility.InvitedMembers,
+        joinRequiresApproval: parsedInput.joinRequiresApproval ?? false,
+        rrule,
+        eventId,
+        imageFileId: parsedInput.imageFileId,
+        minVolunteers: parsedInput.minVolunteers ?? null,
+        maxVolunteers: parsedInput.maxVolunteers ?? null,
+        reimbursementTypeId: parsedInput.reimbursementTypeId ?? null,
+        requiredFormIds: parsedInput.requiredFormIds,
+      };
+
+      const shift = await data.shift.duplicate(sourceShiftId, input);
+      const instances = await data.shift.findInstances(shift.id);
+
+      return {
+        id: shift.id,
+        instanceId: pickFirstShiftInstanceId(instances),
+      };
+    },
+  );
 
 export const updateShiftInstance = actionClient
   .inputSchema(serverEditShiftInstanceFormSchema)
@@ -117,6 +167,7 @@ export const updateShiftInstance = actionClient
         instructions: parsedInput.instructions,
         minVolunteers: parsedInput.minVolunteers ?? null,
         maxVolunteers: parsedInput.maxVolunteers ?? null,
+        reimbursementTypeId: parsedInput.reimbursementTypeId ?? null,
         requiredFormIds: parsedInput.requiredFormIds,
         // Image always lands on the shift master (backend keeps a one-off
         // instance's master in sync even without applyToAllFuture), so it
@@ -197,6 +248,27 @@ export const updateShiftInstanceInviteStatus = actionClient
       return await data.shift.updateShiftInstanceInviteStatus(
         instanceId,
         parsedInput.status,
+        parsedInput.userId,
+      );
+    },
+  );
+
+export const sendShiftInstanceCallOut = actionClient
+  .inputSchema(z.object({}))
+  .bindArgsSchemas([z.string(), z.string()])
+  .action(async ({ bindArgsParsedInputs: [orgUId, instanceId] }) => {
+    const data = await getDataClient({ orgUId });
+    return await data.shift.sendCallOut(instanceId);
+  });
+
+export const remindShiftInstanceInvite = actionClient
+  .inputSchema(z.object({ userId: z.string() }))
+  .bindArgsSchemas([z.string(), z.string()])
+  .action(
+    async ({ parsedInput, bindArgsParsedInputs: [orgUId, instanceId] }) => {
+      const data = await getDataClient({ orgUId });
+      return await data.shift.remindVolunteerAboutInvite(
+        instanceId,
         parsedInput.userId,
       );
     },

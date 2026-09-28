@@ -17,6 +17,7 @@ import { Loader } from '../../graphql/decorators';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { RequiredFormRef } from '../../organization/models/organization-unit-required-form.model';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
+import { TimeEntry } from '../../time-tracking/models/time-entry.model';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
 import { ShiftInviteStatus } from '../enums';
@@ -24,6 +25,7 @@ import { ShiftMapper } from '../mappers/shift.mapper';
 import { ShiftInstanceInviteMapper } from '../mappers/shift-instance-invite.mapper';
 import { Shift as ShiftModel } from '../models/shift.model';
 import { ShiftInstance } from '../models/shift-instance.model';
+import { ShiftInstanceCallOutSummary } from '../models/shift-instance-call-out.model';
 import { ShiftInstanceInvite } from '../models/shift-instance-invite.model';
 import type { ShiftEntity } from '../schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
@@ -187,6 +189,43 @@ export class ShiftInstanceFieldResolver {
     return loader.isIntendingToJoinByKey.load(
       `${instance.id}:${session.user.id}`,
     );
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @ResolveField(() => ShiftInstanceCallOutSummary, { nullable: true })
+  async lastCallOut(
+    @Parent() instance: ShiftInstanceEntity,
+    @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
+  ): Promise<ShiftInstanceCallOutSummary | null> {
+    // `sentBy` isn't populated here — it's resolved separately by
+    // ShiftInstanceCallOutSummaryFieldResolver from the `sentById` carried
+    // on the loader's result.
+    return loader.lastCallOutByInstanceId.load(
+      instance.id,
+    ) as Promise<ShiftInstanceCallOutSummary | null>;
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @ResolveField(() => [ShiftInstanceCallOutSummary], { nullable: true })
+  async callOuts(
+    @Parent() instance: ShiftInstanceEntity,
+    @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
+  ): Promise<ShiftInstanceCallOutSummary[]> {
+    const history = await loader.callOutsByInstanceId.load(instance.id);
+    return history as unknown as ShiftInstanceCallOutSummary[];
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @ResolveField(() => [TimeEntry])
+  async timeEntries(
+    @Parent() instance: ShiftInstanceEntity,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
+  ): Promise<TimeEntry[]> {
+    const entries = await loader.timeEntriesByKey.load(
+      `${context.organizationUnitId}:${instance.id}`,
+    );
+    return entries as unknown as TimeEntry[];
   }
 
   @AllowAnonymous()

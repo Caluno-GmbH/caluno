@@ -22,9 +22,12 @@ import {
   Textarea,
 } from '@repo/ui';
 import { CalendarIcon, Link } from 'lucide-react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { z } from 'zod';
+import { useFormatting } from '@/lib/formatting/use-formatting';
+import { GENDER_OPTION_VALUES, hasFixedGenderOptions } from '../gender-options';
+import { RESTRICTED_PAYMENT_MASKS } from '../lib/resolve-field-answer';
 import {
   parseMultiChoiceValue,
   serializeMultiChoiceValue,
@@ -46,12 +49,16 @@ export const validateIban = (value: string): boolean => {
     .join('');
   let remainder = '';
   for (const digit of numeric) {
-    remainder = `${remainder}${digit}`.replace(/^0+/, '');
-    const n = Number.parseInt(remainder, 10);
-    if (Number.isNaN(n)) return false;
+    const n = Number.parseInt(`${remainder}${digit}`, 10);
     remainder = (n % 97).toString();
   }
   return remainder === '1';
+};
+
+/** BIC / SWIFT-BIC: 8 or 11 chars, `AAAA BB CC` (+ optional `DDD`), no spaces. */
+export const validateBic = (value: string): boolean => {
+  const bic = value.replace(/\s+/g, '').toUpperCase();
+  return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(bic);
 };
 
 export type ValidationMessages = {
@@ -66,6 +73,7 @@ export type ValidationMessages = {
   validPostalCode: (label: string) => string;
   minAge: (minAge: number) => string;
   invalidIban: (label: string) => string;
+  invalidBic: (label: string) => string;
   dateNotFuture: (label: string) => string;
 };
 
@@ -177,6 +185,12 @@ export function buildFieldSchema(
   }
 
   if (type === FieldType.SingleChoice) {
+    if (hasFixedGenderOptions(systemKey)) {
+      const e = z.enum(GENDER_OPTION_VALUES, {
+        message: messages.fieldRequired(label),
+      });
+      return isRequired ? e : z.preprocess(emptyAsUndefined, e.optional());
+    }
     const vals = (options ?? []).map((o) => o.value);
     if (vals.length > 0) {
       const e = z.enum(vals as [string, ...string[]], {
@@ -247,13 +261,17 @@ export function buildFieldSchema(
     s = s.refine((v) => !v || ZIP_RE.test(v), {
       message: messages.validPostalCode(label),
     }) as z.ZodString;
-  } else if (sk === 'gender') {
-    s = s.max(50, messages.maxChars(label, 50)) as z.ZodString;
   }
 
   if (type === FieldType.Iban || systemKey === 'iban') {
     s = s.refine((v) => !v || validateIban(v), {
       message: messages.invalidIban(label),
+    }) as z.ZodString;
+  }
+
+  if (systemKey === 'bic') {
+    s = s.refine((v) => !v || validateBic(v), {
+      message: messages.invalidBic(label),
     }) as z.ZodString;
   }
 
@@ -272,56 +290,78 @@ export type RenderableField = Pick<
   | 'placeholder'
   | 'systemKey'
   | 'options'
-  | 'documentFileId'
-  | 'documentDownloadUrl'
-  | 'documentFilename'
+  | 'documents'
   | 'documentLabel'
   | 'minAge'
 >;
+
+function fieldDescription(field: RenderableField): string | null {
+  return field.description?.trim() ?? null;
+}
 
 export function FieldRenderer({
   field,
   value,
   onChange,
   error,
+  readOnly = false,
 }: {
   field: RenderableField;
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  readOnly?: boolean;
 }) {
   const t = useTranslations('RequirementForm.volunteerForm');
-  const formatter = useFormatter();
+  const tGender = useTranslations('RequirementForm.genderOptions');
+  const { formatDate } = useFormatting();
+  const description = fieldDescription(field);
+
+  if (field.type === 'STATIC_TEXT') {
+    const text = field.label.trim();
+    if (!text) return null;
+    return (
+      <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+        {text}
+      </p>
+    );
+  }
 
   if (field.type === 'DOCUMENT_ACKNOWLEDGEMENT') {
+    const descriptionId = description ? `${field.id}-description` : undefined;
+    const docCount = field.documents?.length ?? 0;
     return (
       <Field>
         <FieldLabel>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.documentLabel && (
+        {docCount > 0 && (
           <FieldDescription>
-            {field.documentDownloadUrl ? (
-              <span className="flex items-center gap-1">
-                <a
-                  href={field.documentDownloadUrl}
-                  target="_blank"
-                  rel="noopener"
-                >
-                  {field.documentLabel}
-                </a>
-                <Link className="size-3" />
-              </span>
-            ) : (
-              field.documentLabel
-            )}
+            <span className="flex flex-col items-start gap-1">
+              {field.documents?.map((doc, i) => {
+                const text = `${docCount > 1 ? `${i + 1}: ` : ''}${doc.filename || ''}`;
+                if (!text) return null;
+                return doc.downloadUrl ? (
+                  <span key={doc.fileId} className="flex items-center gap-1">
+                    <a href={doc.downloadUrl} target="_blank" rel="noopener">
+                      {text}
+                    </a>
+                    <Link className="size-3" />
+                  </span>
+                ) : (
+                  <span key={doc.fileId}>{text}</span>
+                );
+              })}
+            </span>
           </FieldDescription>
         )}
         <div className="flex gap-2 items-center">
           <Checkbox
             id={field.id}
             checked={value === 'true'}
+            disabled={readOnly}
+            aria-describedby={descriptionId}
             onCheckedChange={(checked) =>
               onChange(checked === true ? 'true' : 'false')
             }
@@ -330,12 +370,16 @@ export function FieldRenderer({
             {t('documentAcknowledgement')}
           </label>
         </div>
+        {description && (
+          <FieldDescription id={descriptionId}>{description}</FieldDescription>
+        )}
         {error && <FieldError>{error}</FieldError>}
       </Field>
     );
   }
 
   if (field.type === 'CHECKBOX') {
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel>
@@ -345,41 +389,52 @@ export function FieldRenderer({
         <div className="flex items-start gap-2">
           <Checkbox
             checked={value === 'true'}
+            disabled={readOnly}
+            aria-describedby={descriptionId}
             onCheckedChange={(checked) =>
               onChange(checked === true ? 'true' : 'false')
             }
           />
-          <span className="text-sm">
-            {field.description || t('checkboxYes')}
-          </span>
+          <span className="text-sm">{t('checkboxYes')}</span>
         </div>
+        {description && (
+          <FieldDescription id={descriptionId}>{description}</FieldDescription>
+        )}
         {error && <FieldError>{error}</FieldError>}
       </Field>
     );
   }
 
   if (field.type === 'SINGLE_CHOICE') {
+    const descriptionId = description ? `$field.id-description` : undefined;
+    const opts = hasFixedGenderOptions(field.systemKey)
+      ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
+      : (field.options ?? []);
     return (
       <Field>
         <FieldLabel>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.description && (
-          <FieldDescription>{field.description}</FieldDescription>
-        )}
-        <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger className="w-full">
+        <Select
+          value={value || undefined}
+          onValueChange={onChange}
+          disabled={readOnly}
+        >
+          <SelectTrigger className="w-full" aria-describedby={descriptionId}>
             <SelectValue placeholder={t('selectOption')} />
           </SelectTrigger>
           <SelectContent>
-            {field.options?.map((opt) => (
+            {opts.map((opt) => (
               <SelectItem key={opt.value} value={opt.value}>
                 {opt.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {description && (
+          <FieldDescription id={descriptionId}>{description}</FieldDescription>
+        )}
         {error && <FieldError>{error}</FieldError>}
       </Field>
     );
@@ -387,25 +442,24 @@ export function FieldRenderer({
 
   if (field.type === 'MULTI_CHOICE') {
     const selected = parseMultiChoiceValue(value);
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.description && (
-          <FieldDescription>{field.description}</FieldDescription>
-        )}
         <div className="space-y-2">
           {field.options?.map((opt) => (
             <label
               key={opt.value}
               className="flex items-center gap-2 text-sm"
-              htmlFor={`${field.id}-${opt.value}`}
+              htmlFor={`$field.id-$opt.value`}
             >
               <Checkbox
-                id={`${field.id}-${opt.value}`}
+                id={`$field.id-$opt.value`}
                 checked={selected.includes(opt.value)}
+                disabled={readOnly}
                 onCheckedChange={(checked) => {
                   const next = checked
                     ? [...selected, opt.value]
@@ -417,6 +471,9 @@ export function FieldRenderer({
             </label>
           ))}
         </div>
+        {description && (
+          <FieldDescription id={descriptionId}>{description}</FieldDescription>
+        )}
         {error && <FieldError>{error}</FieldError>}
       </Field>
     );
@@ -424,27 +481,21 @@ export function FieldRenderer({
 
   if (field.type === 'DATE') {
     const dateValue = value ? new Date(value) : undefined;
-    const labelId = `${field.id}-label`;
+    const labelId = `$field.id-label`;
     const isBirthDate = field.systemKey === 'birth-date';
-    const descriptionId = field.description
-      ? `${field.id}-description`
-      : undefined;
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel id={isBirthDate ? labelId : undefined} htmlFor={field.id}>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.description && (
-          <FieldDescription id={descriptionId}>
-            {field.description}
-          </FieldDescription>
-        )}
         {isBirthDate ? (
           <BirthDateInput
             id={field.id}
             value={value}
             onChange={onChange}
+            disabled={readOnly}
             aria-invalid={!!error}
             aria-labelledby={labelId}
             aria-describedby={descriptionId}
@@ -455,11 +506,13 @@ export function FieldRenderer({
               <Button
                 type="button"
                 variant="outline"
+                disabled={readOnly}
+                aria-describedby={descriptionId}
                 className="w-full justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 size-4" />
                 {dateValue
-                  ? formatter.dateTime(dateValue, { dateStyle: 'long' })
+                  ? formatDate(dateValue, { dateStyle: 'long' })
                   : t('pickDate')}
               </Button>
             </PopoverTrigger>
@@ -473,29 +526,35 @@ export function FieldRenderer({
             </PopoverContent>
           </Popover>
         )}
+        {description && (
+          <FieldDescription id={descriptionId}>{description}</FieldDescription>
+        )}
         {error && <FieldError>{error}</FieldError>}
       </Field>
     );
   }
 
   if (field.type === 'TEXTAREA') {
+    const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>
         <FieldLabel htmlFor={field.id}>
           {field.label}
           {field.required && <span className="text-destructive">*</span>}
         </FieldLabel>
-        {field.description && (
-          <FieldDescription>{field.description}</FieldDescription>
-        )}
         <Textarea
           id={field.id}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder || ''}
           rows={4}
+          disabled={readOnly}
           aria-invalid={!!error}
+          aria-describedby={descriptionId}
         />
+        {description && (
+          <FieldDescription id={descriptionId}>{description}</FieldDescription>
+        )}
         {error && <FieldError>{error}</FieldError>}
       </Field>
     );
@@ -508,23 +567,35 @@ export function FieldRenderer({
         ? 'number'
         : 'text';
 
+  const descriptionId = description ? `$field.id-description` : undefined;
+
+  const paymentDataVisibilityHint =
+    field.systemKey && Object.hasOwn(RESTRICTED_PAYMENT_MASKS, field.systemKey)
+      ? t('paymentDataVisibilityHint')
+      : null;
+
   return (
     <Field>
       <FieldLabel htmlFor={field.id}>
         {field.label}
         {field.required && <span className="text-destructive">*</span>}
       </FieldLabel>
-      {field.description && (
-        <FieldDescription>{field.description}</FieldDescription>
-      )}
       <Input
         id={field.id}
         type={inputType}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.placeholder || ''}
+        disabled={readOnly}
         aria-invalid={!!error}
+        aria-describedby={descriptionId}
       />
+      {description && (
+        <FieldDescription id={descriptionId}>{description}</FieldDescription>
+      )}
+      {paymentDataVisibilityHint && (
+        <FieldDescription>{paymentDataVisibilityHint}</FieldDescription>
+      )}
       {error && <FieldError>{error}</FieldError>}
     </Field>
   );
@@ -545,6 +616,7 @@ export const useValidationMessages = (): ValidationMessages => {
       validPostalCode: (label) => tValidation('validPostalCode', { label }),
       minAge: (minAge) => tValidation('minAge', { minAge }),
       invalidIban: (label) => tValidation('invalidIban', { label }),
+      invalidBic: (label) => tValidation('invalidBic', { label }),
       dateNotFuture: (label) => tValidation('dateNotFuture', { label }),
     }),
     [tValidation],

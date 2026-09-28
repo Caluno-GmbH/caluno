@@ -1,11 +1,13 @@
 import {
   Ban,
+  BellRing,
   Check,
   CircleCheck,
   CircleDashed,
   CircleMinus,
   CircleSlash,
   Clock,
+  Hourglass,
   Inbox,
   LogOut,
   type LucideIcon,
@@ -33,6 +35,7 @@ export const volunteeringStatusIcons: Record<
 > = {
   invited: Clock,
   requested: Inbox,
+  waitlisted: Hourglass,
   accepted: Check,
   signed_up: Check,
   declined: CircleSlash,
@@ -40,7 +43,7 @@ export const volunteeringStatusIcons: Record<
   cancelled: CircleMinus,
   checked_in: CircleCheck,
   not_checked_in: CircleDashed,
-  completed: Timer,
+  checked_out: Timer,
   no_show: UserX,
   invited_never_responded: Clock,
   requested_never_responded: Inbox,
@@ -53,6 +56,7 @@ export const volunteeringStatusIconTone: Record<
 > = {
   invited: 'neutral',
   requested: 'neutral',
+  waitlisted: 'warning',
   accepted: 'positive',
   signed_up: 'positive',
   declined: 'neutral',
@@ -60,7 +64,7 @@ export const volunteeringStatusIconTone: Record<
   cancelled: 'warning',
   checked_in: 'positive',
   not_checked_in: 'warning',
-  completed: 'positive',
+  checked_out: 'positive',
   no_show: 'warning',
   invited_never_responded: 'neutral',
   requested_never_responded: 'neutral',
@@ -99,6 +103,7 @@ export const volunteeringLifecycleDescriptions: Record<
 > = {
   invited: 'Waiting for their reply.',
   requested: 'Accept or decline to add them.',
+  waitlisted: 'On the waitlist — joins when a spot frees up.',
   accepted: 'Accepted your invite.',
   signed_up: 'Joined without an invite.',
   declined: 'Not joining this shift.',
@@ -106,7 +111,7 @@ export const volunteeringLifecycleDescriptions: Record<
   cancelled: 'No longer joining this shift.',
   checked_in: 'Here — time is tracking.',
   not_checked_in: 'Expected but not here yet.',
-  completed: 'Volunteer time recorded.',
+  checked_out: 'Volunteer time recorded.',
   no_show: "Didn't check in.",
   invited_never_responded: 'No reply before shift ended.',
   requested_never_responded: "You didn't review in time.",
@@ -118,6 +123,7 @@ export const passiveDuringShiftHints: Partial<
 > = {
   invited: 'Not in check-in — awaiting reply.',
   requested: 'Not in check-in — needs your decision.',
+  waitlisted: 'Not in check-in — on the waitlist.',
   declined: 'Not on this shift.',
   rejected: 'Not on this shift.',
   cancelled: 'Invite no longer active.',
@@ -149,6 +155,13 @@ export function getVolunteeringStatusPresentation(
         label: 'Requested',
         description: volunteeringLifecycleDescriptions.requested,
         actions: phase === 'after' ? ['Add timesheet'] : ['Accept', 'Decline'],
+      };
+    case 'waitlisted':
+      return {
+        iconTone: volunteeringStatusIconTone.waitlisted,
+        label: 'Waitlisted',
+        description: volunteeringLifecycleDescriptions.waitlisted,
+        actions: phase === 'after' ? ['Add timesheet'] : ['Uninvite'],
       };
     case 'accepted':
       return {
@@ -199,12 +212,12 @@ export function getVolunteeringStatusPresentation(
         description: volunteeringLifecycleDescriptions.not_checked_in,
         actions: ['Check in'],
       };
-    case 'completed':
+    case 'checked_out':
       return {
-        iconTone: volunteeringStatusIconTone.completed,
+        iconTone: volunteeringStatusIconTone.checked_out,
         label: completedDuration ?? 'Completed',
-        description: volunteeringLifecycleDescriptions.completed,
-        actions: ['Edit time'],
+        description: volunteeringLifecycleDescriptions.checked_out,
+        actions: ['Check in'],
       };
     case 'no_show':
       return {
@@ -246,47 +259,17 @@ export const volunteeringActionIcons: Partial<
   Record<VolunteeringActionLabel, VolunteeringStatusLucideIcon>
 > = {
   Accept: Check,
+  Approve: CircleCheck,
   Decline: X,
   Invite: UserPlus,
   View: UserRound,
   'Check in': ScanQrCode,
   'Check out': LogOut,
   Uninvite: Ban,
+  Remind: BellRing,
 };
-
-/** Meets 44px minimum touch target while keeping sm visual scale. */
-export const volunteeringActionButtonClass = 'min-h-11';
 
 export type VolunteeringActionButtonStyle = {
   variant: 'default' | 'outline';
   className?: string;
 };
-
-/** Check-in/out and Accept use filled buttons; Accept is success green. */
-export function getVolunteeringActionButtonStyle(
-  actionLabel: VolunteeringActionLabel,
-): VolunteeringActionButtonStyle {
-  if (
-    actionLabel === 'Check in' ||
-    actionLabel === 'Check out' ||
-    actionLabel === 'Accept'
-  ) {
-    return {
-      variant: 'default',
-      className:
-        actionLabel === 'Accept'
-          ? 'bg-success text-success-foreground hover:bg-success/90'
-          : undefined,
-    };
-  }
-
-  if (actionLabel === 'Decline') {
-    return {
-      variant: 'outline',
-      className:
-        'border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive',
-    };
-  }
-
-  return { variant: 'outline' };
-}

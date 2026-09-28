@@ -4,26 +4,17 @@ import type {
   GetOrganizationUnitQuery,
   OrganizationUnitType,
 } from '@repo/data';
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@repo/ui';
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@repo/ui';
-import {
-  BuildingIcon,
   GlobeIcon,
   MailIcon,
   MapPinIcon,
   PencilIcon,
   PhoneIcon,
+  UserIcon,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useSheetTrigger } from '@/hooks/use-sheet';
-import { getDynamicIcon } from '@/lib/dynamic-icon';
 import { FORM_ID, OrgUnitCreateEditSheet } from './org-unit-create-edit-sheet';
 
 type OrganizationUnit = NonNullable<
@@ -42,10 +33,11 @@ export function OrgUnitDetailView({
   canEdit,
 }: OrgUnitDetailViewProps) {
   const { open } = useSheetTrigger(FORM_ID);
-  const TypeIcon = getDynamicIcon(orgUnit.type.icon, BuildingIcon);
   const t = useTranslations('OrgUnit.detail');
+  const tNav = useTranslations('Navigation');
 
   const hasContact =
+    orgUnit.contactPersonName ||
     orgUnit.contactEmail ||
     orgUnit.phone ||
     orgUnit.websiteUrl ||
@@ -54,25 +46,7 @@ export function OrgUnitDetailView({
   return (
     <>
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center h-14 w-14 rounded-xl bg-muted shrink-0">
-            {orgUnit.logoUrl ? (
-              <Image
-                src={orgUnit.logoUrl}
-                alt={orgUnit.name}
-                width={56}
-                height={56}
-                className="h-14 w-14 rounded-xl object-cover"
-              />
-            ) : (
-              <TypeIcon className="h-7 w-7 text-muted-foreground" />
-            )}
-          </div>
-          <div className="space-y-1">
-            <h1 className="page-title">{orgUnit.name}</h1>
-            <Badge variant="secondary">{orgUnit.type.name}</Badge>
-          </div>
-        </div>
+        <h1 className="page-title">{tNav('overview')}</h1>
         {canEdit && (
           <Button
             variant="outline"
@@ -86,7 +60,7 @@ export function OrgUnitDetailView({
       </div>
 
       {orgUnit.description && (
-        <Card>
+        <Card className="gap-2 py-4">
           <CardHeader>
             <CardTitle>{t('aboutTitle')}</CardTitle>
           </CardHeader>
@@ -99,11 +73,17 @@ export function OrgUnitDetailView({
       )}
 
       {hasContact && (
-        <Card>
+        <Card className="gap-2 py-4">
           <CardHeader>
             <CardTitle>{t('contactTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {orgUnit.contactPersonName && (
+              <div className="flex items-center gap-2 text-sm">
+                <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span>{orgUnit.contactPersonName}</span>
+              </div>
+            )}
             {orgUnit.contactEmail && (
               <div className="flex items-center gap-2 text-sm">
                 <MailIcon className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -145,7 +125,7 @@ export function OrgUnitDetailView({
       )}
 
       {orgUnit.parent && (
-        <Card>
+        <Card className="gap-2 py-4">
           <CardHeader>
             <CardTitle>{t('hierarchyTitle')}</CardTitle>
           </CardHeader>

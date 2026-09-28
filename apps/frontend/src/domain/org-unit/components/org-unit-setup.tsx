@@ -4,11 +4,11 @@ import type { OrganizationUnitType, OrgUnitTreeNode } from '@repo/data';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useSheetTrigger } from '@/hooks/use-sheet';
-import { DeleteOrgUnitDialog } from './delete-org-unit-dialog';
 import {
   FORM_ID as CREATE_EDIT_FORM_ID,
   OrgUnitCreateEditSheet,
 } from './org-unit-create-edit-sheet';
+import { OrgUnitDeletionRequestDialog } from './org-unit-deletion-request-dialog';
 import { OrgUnitTree } from './org-unit-tree';
 
 interface OrgUnitSetupClientProps {
@@ -46,7 +46,7 @@ export function OrgUnitSetup({
 
       <OrgUnitCreateEditSheet types={types} />
 
-      <DeleteOrgUnitDialog
+      <OrgUnitDeletionRequestDialog
         open={orgUnitToDelete !== null}
         onOpenChange={(open) => {
           if (!open) setOrgUnitToDelete(null);

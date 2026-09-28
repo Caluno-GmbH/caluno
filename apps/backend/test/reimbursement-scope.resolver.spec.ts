@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
+import { eq } from 'drizzle-orm';
 import {
   DocumentKind,
   InvoiceStatus,
@@ -11,6 +12,7 @@ import { ReimbursementTypeMapper } from '../src/accounting/mappers';
 import { ReimbursementRateMapper } from '../src/accounting/mappers/reimbursement-rate.mapper';
 import { ReimbursementMutationResolver } from '../src/accounting/resolvers/reimbursement-mutation.resolver';
 import { ReimbursementQueryResolver } from '../src/accounting/resolvers/reimbursement-query.resolver';
+import { AccountingOrgAccessService } from '../src/accounting/services/accounting-org-access.service';
 import { ReimbursementRateService } from '../src/accounting/services/reimbursement-rate.service';
 import type { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
@@ -78,6 +80,8 @@ describe('reimbursement-rate resolver unit scoping', () => {
       {} as FileService,
       organizationUnitDataService,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
+      {} as never,
     );
     const membershipService = new MembershipService(
       db,
@@ -87,6 +91,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       {} as RequiredFormService,
       { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
     );
     const reimbursementRateService = new ReimbursementRateService(
       db,
@@ -97,10 +102,15 @@ describe('reimbursement-rate resolver unit scoping', () => {
     const userService = new UserService(db, {
       capture: () => {},
     } as unknown as PostHogService);
+    const accountingOrgAccessService = new AccountingOrgAccessService(
+      db,
+      organizationUnitService,
+    );
     queryResolver = new ReimbursementQueryResolver(
       reimbursementRateService,
       new ReimbursementTypeMapper(),
       organizationUnitService,
+      accountingOrgAccessService,
       new UserMapper(),
       membershipService,
       userService,
@@ -108,6 +118,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
     mutationResolver = new ReimbursementMutationResolver(
       reimbursementRateService,
       new ReimbursementRateMapper(),
+      accountingOrgAccessService,
       organizationUnitService,
       membershipService,
       new UserMapper(),
@@ -129,6 +140,11 @@ describe('reimbursement-rate resolver unit scoping', () => {
       db,
       `Scope Org ${crypto.randomUUID()}`,
     );
+    // The resolver under test is now gated on accountingEnabled.
+    await db
+      .update(schema.organizations)
+      .set({ accountingEnabled: true })
+      .where(eq(schema.organizations.id, organization.id));
     const root = await createUnit(db, {
       organizationId: organization.id,
       typeId: type.id,
@@ -504,6 +520,136 @@ describe('reimbursement-rate resolver unit scoping', () => {
           contextFor(branchA.id),
         ),
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+    });
+  });
+
+  describe('yearlyUsage', () => {
+    const createInvoiceTemplate = (
+      organizationId: string,
+      reimbursementTypeId: string,
+    ) =>
+      createDocumentTemplate(db, {
+        organizationId,
+        reimbursementTypeId,
+        kind: DocumentKind.INVOICE,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+
+    const insertInvoice = async (input: {
+      documentTemplateId: string;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      totalAmountCents: number;
+      invoiceStatus: InvoiceStatus;
+    }) => {
+      const [invoice] = await db
+        .insert(schema.invoices)
+        .values({
+          documentTemplateId: input.documentTemplateId,
+          volunteerId: input.volunteerId,
+          reimbursementTypeId: input.reimbursementTypeId,
+          periodStart: new Date('2026-03-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-04-01T00:00:00.000Z'),
+          totalAmountCents: input.totalAmountCents,
+          totalHours: 1,
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+          invoiceStatus: input.invoiceStatus,
+        })
+        .returning();
+      return invoice;
+    };
+
+    it("rejects a volunteer outside the caller's org subtree", async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { branchA, branchB } = await setupOrgTree();
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, branchB.id);
+
+      await expect(
+        queryResolver.yearlyUsage(
+          volunteer.id,
+          reimbursementType.id,
+          2026,
+          undefined,
+          undefined,
+          contextFor(branchA.id),
+        ),
+      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+    });
+
+    it("returns the volunteer's usage including the initial amount, not the caller's", async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { organization, branchA, branchASub } = await setupOrgTree();
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, branchASub.id);
+      const caller = await createUser(db);
+      await mutationResolver.setManualBaseline(
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        5_000,
+        contextFor(branchA.id),
+        { user: { id: caller.id } } as UserSession,
+      );
+      const template = await createInvoiceTemplate(
+        organization.id,
+        reimbursementType.id,
+      );
+      await insertInvoice({
+        documentTemplateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        totalAmountCents: 10_000,
+        invoiceStatus: InvoiceStatus.READY,
+      });
+
+      const usage = await queryResolver.yearlyUsage(
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        undefined,
+        undefined,
+        contextFor(branchA.id),
+      );
+
+      expect(usage.usedCents).toBe(15_000);
+      expect(usage.remainingCents).toBe(usage.limitCents - 15_000);
+    });
+
+    it('leaves out the invoice being completed', async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { organization, branchA } = await setupOrgTree();
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, branchA.id);
+      const template = await createInvoiceTemplate(
+        organization.id,
+        reimbursementType.id,
+      );
+      await insertInvoice({
+        documentTemplateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        totalAmountCents: 10_000,
+        invoiceStatus: InvoiceStatus.READY,
+      });
+      const draft = await insertInvoice({
+        documentTemplateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        totalAmountCents: 4_000,
+        invoiceStatus: InvoiceStatus.DRAFT,
+      });
+
+      const usage = await queryResolver.yearlyUsage(
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        undefined,
+        draft.id,
+        contextFor(branchA.id),
+      );
+
+      expect(usage.usedCents).toBe(10_000);
     });
   });
 });

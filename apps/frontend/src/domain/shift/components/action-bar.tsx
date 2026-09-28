@@ -1,14 +1,14 @@
 'use client';
 
 import { Button } from '@repo/ui';
-import { Edit, Loader2, Trash, UserPlus } from 'lucide-react';
+import { Copy, Edit, Loader2, Trash, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { toast } from 'sonner';
 import { DeleteAlertDialog } from '@/components/delete-alert-dialog';
 import { Link, useRouter } from '@/i18n/navigation';
 import { deleteShift } from '../actions';
-import { shiftEditPath } from '../routes';
+import { shiftDuplicatePath, shiftEditPath } from '../routes';
 
 type ActionBarProps = {
   id: string;
@@ -17,6 +17,8 @@ type ActionBarProps = {
   hideEdit?: boolean;
   editHref?: string;
   inviteHref?: string;
+  /** After duplicating, land on the copy's detail page instead of back here (e.g. the shift's own detail view). Leave off for surfaces like the shift list, which should stay put. */
+  duplicateRedirectsToDetail?: boolean;
   onDeleteSuccess?: () => void;
 };
 
@@ -27,6 +29,7 @@ export const ActionBar = ({
   hideEdit = false,
   editHref,
   inviteHref,
+  duplicateRedirectsToDetail = false,
   onDeleteSuccess,
 }: ActionBarProps) => {
   const router = useRouter();
@@ -77,6 +80,20 @@ export const ActionBar = ({
           </Button>
         </Link>
       )}
+
+      <Link
+        href={shiftDuplicatePath(organizationUnitId, id, {
+          redirectToDetail: duplicateRedirectsToDetail,
+        })}
+      >
+        <Button
+          size={buttonSize}
+          variant="outline"
+          tooltip={t('action.duplicateAria')}
+        >
+          <Copy />
+        </Button>
+      </Link>
 
       <DeleteAlertDialog
         title={t('action.deleteTitle')}

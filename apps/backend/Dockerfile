@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/holi-social/mirror/oven-bun:1 AS builder
+FROM ghcr.io/caluno-gmbh/mirror/oven-bun:1 AS builder
 
 WORKDIR /app
 
@@ -52,7 +52,7 @@ RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
     fi
 
 
-FROM ghcr.io/holi-social/mirror/oven-bun:1 AS runner
+FROM ghcr.io/caluno-gmbh/mirror/oven-bun:1 AS runner
 
 WORKDIR /app
 

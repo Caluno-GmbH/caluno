@@ -1,5 +1,5 @@
 import { hashPassword } from 'better-auth/crypto';
-import { inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import {
@@ -215,7 +215,10 @@ const createAuthUser = async (
 
   await db.insert(schema.accounts).values({
     id: crypto.randomUUID(),
-    accountId: input.email,
+    // better-auth resolves a credential account by `accountId === user.id`
+    // (see its sign-in route), so the account id must be the user id — the
+    // email here makes the fixture account unreachable for sign-in.
+    accountId: id,
     providerId: 'credential',
     userId: id,
     password: hashedPassword,
@@ -360,6 +363,9 @@ const ensurePlaygroundOrganization = async (
         slug: ORG_SLUG,
         contactEmail: 'testing@caluno.org',
         description: 'Local development playground organization',
+        address: 'Hauptstraße 1',
+        city: 'Berlin',
+        zipCode: '10115',
       })
       .returning();
 
@@ -392,7 +398,10 @@ const ensurePlaygroundOrganization = async (
         contactEmail: organization.contactEmail,
         description: organization.description,
         coverUrl: ORG_COVER_IMAGE_URL,
-        address: 'Hauptstraße 1, 10115 Berlin',
+        address: 'Hauptstraße 1',
+        city: 'Berlin',
+        zipCode: '10115',
+        legalRep: 'Max Mustermann',
       })
       .returning();
 
@@ -518,13 +527,11 @@ type ShiftFixture = {
   instructions?: string;
   location?: string;
   imageUrl?: string;
-  /** Invites inserted with this status instead of ACCEPTED (does not count toward capacity). */
+  /** Invites inserted with this status instead of JOINED (does not count toward capacity). */
   pendingInviteUserIds?: string[];
   /**
-   * Invites at explicit statuses (e.g. VOLUNTEER_REJECTED, CANCELLED,
-   * SELF_JOINED), seeded to every instance. Lets fixtures cover the full invite
-   * lifecycle beyond ACCEPTED/INVITED. Only participating statuses
-   * (ACCEPTED/SELF_JOINED) count toward capacity.
+   * Invites at explicit statuses (e.g. VOLUNTEER_REJECTED, VOLUNTEER_CANCELLED,
+   * WAITLIST_JOINED), seeded to every instance. Only JOINED counts toward capacity.
    */
   extraInvites?: Array<{ userIds: string[]; status: ShiftInviteStatus }>;
 };
@@ -619,7 +626,7 @@ const ensureShiftWithInvites = async (
         shift.inviteUserIds.map((userId) => ({
           instanceId: instance.id,
           userId,
-          status: ShiftInviteStatus.ACCEPTED,
+          status: ShiftInviteStatus.JOINED,
         })),
       ),
     );
@@ -631,7 +638,7 @@ const ensureShiftWithInvites = async (
         (shift.pendingInviteUserIds ?? []).map((userId) => ({
           instanceId: instance.id,
           userId,
-          status: ShiftInviteStatus.INVITED,
+          status: ShiftInviteStatus.ADMIN_INVITED,
         })),
       ),
     );
@@ -966,15 +973,25 @@ const ensureBankingInformationForm = async (
         blockId: block.id,
         type: FieldType.IBAN,
         label: 'IBAN',
+        systemKey: 'iban',
         required: true,
         fieldOrder: 0,
       },
       {
         blockId: block.id,
         type: FieldType.TEXT,
-        label: 'BIC',
+        label: 'Account holder',
+        systemKey: 'account-holder',
         required: true,
         fieldOrder: 1,
+      },
+      {
+        blockId: block.id,
+        type: FieldType.TEXT,
+        label: 'BIC',
+        systemKey: 'bic',
+        required: true,
+        fieldOrder: 2,
       },
     ]);
 
@@ -1172,6 +1189,30 @@ async function seedFixtures() {
     email: 'testing+rejected01@caluno.org',
     name: 'Rejected Applicant',
   });
+
+  // The document signing chain requires the volunteer's bank/personal profile
+  // fields before a contract/invoice can be signed (otherwise the rendered
+  // PDF comes out with gaps). Seed a complete profile for the members so the
+  // fixture accounts can sign documents out of the box.
+  for (const [index, member] of members.entries()) {
+    const existing = await db.query.userProfiles.findFirst({
+      where: { userId: member.id },
+    });
+    if (!existing) {
+      await db.insert(schema.userProfiles).values({
+        userId: member.id,
+        data: {
+          // A valid German IBAN (mod-97 checksum). Same account for the
+          // fixture members so it round-trips the validator.
+          iban: 'DE89 3704 0044 0532 0130 00',
+          'account-holder': `Erika Musterfrau ${index + 1}`,
+          bic: 'COBADEFFXXX',
+          address: `Musterstraße ${index + 1}`,
+          'birth-date': '1990-08-02',
+        },
+      });
+    }
+  }
 
   const ensureMembershipRequest = async (
     userId: string,
@@ -1447,7 +1488,7 @@ async function seedFixtures() {
     await db.insert(schema.eventInvites).values({
       eventId: showcaseEvent.id,
       userId: demoUser.id,
-      status: EventInviteStatus.ACCEPTED,
+      status: EventInviteStatus.JOINED,
     });
   }
 
@@ -1647,10 +1688,10 @@ async function seedFixtures() {
     pendingInviteUserIds: [demoUser.id],
   });
 
-  // Terminal invite states. ACCEPTED and SELF_JOINED surface under "Your
-  // shifts"; VOLUNTEER_REJECTED and CANCELLED are filtered off home but remain
+  // Terminal invite states. JOINED surfaces under "Your shifts";
+  // VOLUNTEER_REJECTED and VOLUNTEER_CANCELLED are filtered off home but remain
   // reachable at their shift-detail URL (logged in the fixtures summary) to
-  // demo the accepted/declined/cancelled detail states directly.
+  // demo the joined/declined/cancelled detail states directly.
   const acceptedDay = discoverDay(5);
   const acceptedInvite = await ensureShiftWithInvites(
     db,
@@ -1721,7 +1762,10 @@ async function seedFixtures() {
       location: 'Exhibition Hall B',
       inviteUserIds: [],
       extraInvites: [
-        { userIds: [demoUser.id], status: ShiftInviteStatus.CANCELLED },
+        {
+          userIds: [demoUser.id],
+          status: ShiftInviteStatus.VOLUNTEER_CANCELLED,
+        },
       ],
     },
   );
@@ -1746,7 +1790,7 @@ async function seedFixtures() {
       location: 'Community Garden',
       inviteUserIds: [],
       extraInvites: [
-        { userIds: [demoUser.id], status: ShiftInviteStatus.SELF_JOINED },
+        { userIds: [demoUser.id], status: ShiftInviteStatus.JOINED },
       ],
     },
   );
@@ -1878,7 +1922,7 @@ async function seedFixtures() {
       `  accepted → /shifts/${acceptedInvite.shiftId} (Accepted badge + Cancel)`,
       `  declined → /shifts/${declinedInvite.shiftId} (VOLUNTEER_REJECTED)`,
       `  cancelled → /shifts/${cancelledInvite.shiftId} (CANCELLED, post-withdrawal)`,
-      `  self-joined → /shifts/${selfJoinedShift.shiftId} (SELF_JOINED, no Cancel)`,
+      `  joined → /shifts/${selfJoinedShift.shiftId} (JOINED)`,
     ].join('\n'),
   );
 
@@ -1888,6 +1932,28 @@ async function seedFixtures() {
     .set({ accountingEnabled: true })
     .returning({ id: schema.organizations.id });
   console.log(`Accounting enabled on ${enabledOrgs.length} organization(s).`);
+
+  // Backfill missing unit postal fields so accounting documents have an org
+  // address/city/zip to render (a document with "—" in the footer is a hard
+  // dead-end the org can't fix without an edit form). The document renders the
+  // UNIT's profile, so patch the org's root unit. Only fills gaps.
+  for (const enabledOrg of enabledOrgs) {
+    const rootUnit = await db.query.organizationUnits.findFirst({
+      where: { organizationId: enabledOrg.id, parentId: { isNull: true } },
+    });
+    if (!rootUnit) continue;
+    const patch: Partial<typeof schema.organizationUnits.$inferInsert> = {};
+    if (!rootUnit.address) patch.address = 'Hauptstraße 1';
+    if (!rootUnit.city) patch.city = 'Berlin';
+    if (!rootUnit.zipCode) patch.zipCode = '10115';
+    if (!rootUnit.legalRep) patch.legalRep = 'Max Mustermann';
+    if (Object.keys(patch).length > 0) {
+      await db
+        .update(schema.organizationUnits)
+        .set(patch)
+        .where(eq(schema.organizationUnits.id, rootUnit.id));
+    }
+  }
 
   await pool.end();
 }

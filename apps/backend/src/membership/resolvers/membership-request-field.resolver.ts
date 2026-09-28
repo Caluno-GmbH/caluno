@@ -2,10 +2,16 @@ import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import type { UserEntity } from '../../auth/schemas/auth.schema';
-import { UserMapper } from '../../user/mappers/user.mapper';
-import { User } from '../../user/models/user.model';
+import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import type { User } from '../../user/models/user.model';
 import { UserService } from '../../user/user.service';
+import {
+  adminContactFromUser,
+  hasConfiguredOrgUnitContact,
+  orgUnitContactFromEntity,
+} from '../membership-request-contact';
 import { MembershipRequest } from '../models/membership-request.model';
+import { MembershipRequestContact } from '../models/membership-request-contact.model';
 import type { MembershipRequestEntity } from '../schemas/membership-request.schema';
 
 type MembershipRequestParent = MembershipRequestEntity & {
@@ -18,20 +24,23 @@ export class MembershipRequestFieldResolver {
   constructor(
     private readonly authService: AuthService,
     private readonly userService: UserService,
-    private readonly userMapper: UserMapper,
+    private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
 
-  @ResolveField(() => User, { nullable: true })
+  @ResolveField(() => MembershipRequestContact, { nullable: true })
   async contact(
     @Parent() request: MembershipRequestParent,
-  ): Promise<User | null> {
-    if (request.reviewedBy) {
-      return request.reviewedBy as User;
-    }
-
+  ): Promise<MembershipRequestContact | null> {
     const organizationUnitId = request.organizationUnit?.id;
     if (!organizationUnitId) {
       return null;
+    }
+
+    const organizationUnit =
+      await this.organizationUnitDataService.findById(organizationUnitId);
+
+    if (organizationUnit && hasConfiguredOrgUnitContact(organizationUnit)) {
+      return orgUnitContactFromEntity(organizationUnit);
     }
 
     const admins = await this.authService.findUsersWithPermission(
@@ -49,6 +58,6 @@ export class MembershipRequestFieldResolver {
       return null;
     }
 
-    return this.userMapper.toModelOrThrow(user);
+    return adminContactFromUser(user);
   }
 }

@@ -153,19 +153,17 @@ function OrgUnitNodeItem({
                   <PencilIcon />
                 </Button>
 
-                {!!node.parentId && (
-                  <Button
-                    size="icon-xs"
-                    variant="destructive"
-                    tooltip={t('deleteAria')}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(node);
-                    }}
-                  >
-                    <TrashIcon />
-                  </Button>
-                )}
+                <Button
+                  size="icon-xs"
+                  variant="destructive"
+                  tooltip={t('deleteAria')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(node);
+                  }}
+                >
+                  <TrashIcon />
+                </Button>
               </>
             )}
           </span>

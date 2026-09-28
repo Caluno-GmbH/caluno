@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { isGenderOptionValue } from '@/domain/requirement-form/gender-options';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { ProfileField } from './profile-field';
@@ -20,6 +21,7 @@ export const PersonalInformationSection = async ({
 }: PersonalInformationSectionProps) => {
   const tFields = await getTranslations('RequirementForm.fieldForm');
   const tSubtitles = await getTranslations('Profile.identity.subtitles');
+  const tGender = await getTranslations('RequirementForm.genderOptions');
   const { formatDate } = await getFormatting();
 
   const data = (profile?.data ?? {}) as Record<string, unknown>;
@@ -42,7 +44,11 @@ export const PersonalInformationSection = async ({
     name: tSubtitles('firstName'),
     lastname: tSubtitles('lastName'),
     iban: tSubtitles('iban'),
+    'account-holder': tSubtitles('accountHolder'),
   };
+
+  const genderLabel = (value: string | null): string | null =>
+    value && isGenderOptionValue(value) ? tGender(value) : value;
 
   const fields: FieldItem[] = SYSTEM_PROFILE_FIELDS.map((field) => {
     let value: string | null;
@@ -50,6 +56,8 @@ export const PersonalInformationSection = async ({
       value = user.email;
     } else if (field.key === 'birth-date') {
       value = formattedBirthDate;
+    } else if (field.key === 'gender') {
+      value = genderLabel(str(field.key));
     } else {
       value = str(field.key);
     }

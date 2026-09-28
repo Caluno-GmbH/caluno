@@ -1,5 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, inArray, isNotNull, isNull, lt } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  ne,
+} from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -13,22 +23,30 @@ import {
   POSTHOG_SURFACE,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
+import { ShiftInviteStatus } from '../../shift/enums';
 import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
 import type {
+  EligibleTimesheetVolunteer,
   InvoiceFilter,
   InvoiceWithRelations,
   PendingSignee,
 } from '../accounting.types';
 import {
+  ContractStatus,
   DocumentKind,
   DocumentStatusChange,
   InvoiceStatus,
   SigneeType,
 } from '../enums';
 import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
+import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { InvoiceEntity } from '../schemas/invoice.schema';
 import type { InvoiceStatusChangeEntity } from '../schemas/invoice-status-change.schema';
+import { billingMonthBounds, billingYearBounds } from '../utils/billing-period';
 import { ContractService } from './contract.service';
+import { DocumentNotificationService } from './document-notification.service';
+import { DocumentProfileRequirementService } from './document-profile-requirement.service';
+import { DocumentRenderingService } from './document-rendering.service';
 import { DocumentSigningService } from './document-signing.service';
 import { DocumentTemplateService } from './document-template.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
@@ -42,6 +60,9 @@ export class InvoiceService {
     private readonly documentSigningService: DocumentSigningService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly contractService: ContractService,
+    private readonly documentNotificationService: DocumentNotificationService,
+    private readonly documentProfileRequirementService: DocumentProfileRequirementService,
+    private readonly documentRenderingService: DocumentRenderingService,
     private readonly postHogService: PostHogService,
   ) {}
 
@@ -54,6 +75,7 @@ export class InvoiceService {
         signatures: true,
         statusChanges: true,
         invoiceTimeEntries: true,
+        organizationUnit: true,
       },
     });
     if (!invoice) {
@@ -80,11 +102,21 @@ export class InvoiceService {
     if (filter.status) {
       conditions.push(eq(schema.invoices.invoiceStatus, filter.status));
     }
+    if (filter.issuedOnly) {
+      conditions.push(ne(schema.invoices.invoiceStatus, InvoiceStatus.DRAFT));
+    }
+    // Periods end exclusively, so one ending exactly at the range start
+    // doesn't overlap it.
     if (filter.periodStart) {
-      conditions.push(gte(schema.invoices.periodEnd, filter.periodStart));
+      conditions.push(gt(schema.invoices.periodEnd, filter.periodStart));
     }
     if (filter.periodEnd) {
       conditions.push(lt(schema.invoices.periodStart, filter.periodEnd));
+    }
+    if (filter.organizationUnitId) {
+      conditions.push(
+        eq(schema.invoices.organizationUnitId, filter.organizationUnitId),
+      );
     }
 
     const rows = await this.db
@@ -109,8 +141,9 @@ export class InvoiceService {
       eq(schema.timeEntries.volunteerId, volunteerId),
       eq(schema.timeEntries.reimbursementTypeId, reimbursementTypeId),
       isNotNull(schema.timeEntries.endedAt),
-      // Time entries stay claimed once pulled into any invoice, even a
-      // declined one - reissuing means picking up fresh, unclaimed hours.
+      // Time entries stay claimed while tied to a live (non-declined)
+      // invoice. Declining releases the claim (see declineInvoice), so a
+      // released row no longer excludes the entry here.
       isNull(schema.invoiceTimeEntries.id),
     ];
     if (periodStart) {
@@ -125,11 +158,183 @@ export class InvoiceService {
       .from(schema.timeEntries)
       .leftJoin(
         schema.invoiceTimeEntries,
-        eq(schema.invoiceTimeEntries.timeEntryId, schema.timeEntries.id),
+        and(
+          eq(schema.invoiceTimeEntries.timeEntryId, schema.timeEntries.id),
+          eq(schema.invoiceTimeEntries.released, false),
+        ),
       )
       .where(and(...conditions));
 
     return rows.map((row) => row.timeEntry);
+  }
+
+  /**
+   * Timesheets still to be created in the unit: eligible (unclaimed,
+   * completed, in-period) hours grouped by volunteer, reimbursement type and
+   * Berlin calendar month, with the month's bounds and summed hours. Entries
+   * are only claimed once a timesheet is issued, so these rows always reflect
+   * the current time entries.
+   */
+  async findVolunteersNeedingTimesheets(
+    organizationUnitId: string,
+    periodStart?: Date,
+    periodEnd?: Date,
+  ): Promise<EligibleTimesheetVolunteer[]> {
+    const conditions = [
+      eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+      isNotNull(schema.timeEntries.endedAt),
+      isNotNull(schema.timeEntries.reimbursementTypeId),
+      isNull(schema.invoiceTimeEntries.id),
+    ];
+    if (periodStart) {
+      conditions.push(gte(schema.timeEntries.startedAt, periodStart));
+    }
+    if (periodEnd) {
+      conditions.push(lt(schema.timeEntries.startedAt, periodEnd));
+    }
+
+    const rows = await this.db
+      .select({ timeEntry: schema.timeEntries })
+      .from(schema.timeEntries)
+      .leftJoin(
+        schema.invoiceTimeEntries,
+        and(
+          eq(schema.invoiceTimeEntries.timeEntryId, schema.timeEntries.id),
+          eq(schema.invoiceTimeEntries.released, false),
+        ),
+      )
+      .where(and(...conditions));
+
+    const groups = new Map<string, EligibleTimesheetVolunteer>();
+    for (const row of rows) {
+      const entry = row.timeEntry;
+      if (!entry.endedAt || !entry.reimbursementTypeId) continue;
+      const month = billingMonthBounds(entry.startedAt);
+      const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
+      const group = groups.get(key) ?? {
+        volunteerId: entry.volunteerId,
+        reimbursementTypeId: entry.reimbursementTypeId,
+        periodStart: month.start,
+        periodEnd: month.end,
+        eligibleHours: 0,
+      };
+      group.eligibleHours +=
+        (entry.endedAt.getTime() - entry.startedAt.getTime()) / 3_600_000;
+      groups.set(key, group);
+    }
+
+    return [...groups.values()].map((group) => ({
+      ...group,
+      eligibleHours: Math.round(group.eligibleHours * 100) / 100,
+    }));
+  }
+
+  /**
+   * Volunteers who signed up for (JOINED) a paid shift instance in the given
+   * year but have no contract or invoice for that reimbursement type yet.
+   * Scoped org-wide: a shift counts when its organization unit belongs to
+   * `organizationId`, mirroring how the accounting board scopes contracts and
+   * invoices to the organization rather than a single unit.
+   *
+   * "Paid" = the instance's effective reimbursement type is non-null
+   * (`shiftInstances.overrideReimbursementTypeId ?? shifts.reimbursementTypeId`).
+   * Returns one row per (volunteer, reimbursement type), excluding any pair
+   * that already has a non-declined contract or an invoice overlapping the
+   * requested year — those are already surfaced by the contract/invoice maps.
+   */
+  async findPaidShiftSignupVolunteers(
+    organizationId: string,
+    year: number,
+  ): Promise<Array<{ volunteerId: string; reimbursementTypeId: string }>> {
+    const { start: yearStart, end: yearEnd } = billingYearBounds(year);
+
+    const rows = await this.db
+      .select({
+        volunteerId: schema.shiftInstanceInvites.userId,
+        overrideReimbursementTypeId:
+          schema.shiftInstances.overrideReimbursementTypeId,
+        shiftReimbursementTypeId: schema.shifts.reimbursementTypeId,
+      })
+      .from(schema.shiftInstanceInvites)
+      .innerJoin(
+        schema.shiftInstances,
+        eq(schema.shiftInstances.id, schema.shiftInstanceInvites.instanceId),
+      )
+      .innerJoin(
+        schema.shifts,
+        eq(schema.shifts.id, schema.shiftInstances.masterId),
+      )
+      .innerJoin(
+        schema.organizationUnits,
+        eq(schema.organizationUnits.id, schema.shifts.organizationUnitId),
+      )
+      .where(
+        and(
+          eq(schema.shiftInstanceInvites.status, ShiftInviteStatus.JOINED),
+          eq(schema.shiftInstances.isCancelled, false),
+          eq(schema.organizationUnits.organizationId, organizationId),
+          gte(schema.shiftInstances.actualStartsAt, yearStart),
+          lt(schema.shiftInstances.actualStartsAt, yearEnd),
+        ),
+      );
+
+    const signups = new Map<
+      string,
+      { volunteerId: string; reimbursementTypeId: string }
+    >();
+    for (const row of rows) {
+      const reimbursementTypeId =
+        row.overrideReimbursementTypeId ?? row.shiftReimbursementTypeId;
+      if (!reimbursementTypeId) continue;
+      const key = `${row.volunteerId}:${reimbursementTypeId}`;
+      if (!signups.has(key)) {
+        signups.set(key, { volunteerId: row.volunteerId, reimbursementTypeId });
+      }
+    }
+    if (signups.size === 0) return [];
+
+    const entries = [...signups.values()];
+    const volunteerIds = [
+      ...new Set(entries.map((entry) => entry.volunteerId)),
+    ];
+    const reimbursementTypeIds = [
+      ...new Set(entries.map((entry) => entry.reimbursementTypeId)),
+    ];
+
+    const [contracts, invoices] = await Promise.all([
+      this.db.query.contracts.findMany({
+        where: {
+          volunteerId: { in: volunteerIds },
+          reimbursementTypeId: { in: reimbursementTypeIds },
+          contractStatus: { ne: ContractStatus.DECLINED },
+          periodStart: { lt: yearEnd },
+          periodEnd: { gt: yearStart },
+        },
+        columns: { volunteerId: true, reimbursementTypeId: true },
+      }),
+      this.db.query.invoices.findMany({
+        where: {
+          volunteerId: { in: volunteerIds },
+          reimbursementTypeId: { in: reimbursementTypeIds },
+          periodStart: { lt: yearEnd },
+          periodEnd: { gt: yearStart },
+        },
+        columns: { volunteerId: true, reimbursementTypeId: true },
+      }),
+    ]);
+
+    const excluded = new Set<string>();
+    for (const contract of contracts) {
+      excluded.add(`${contract.volunteerId}:${contract.reimbursementTypeId}`);
+    }
+    for (const invoice of invoices) {
+      excluded.add(`${invoice.volunteerId}:${invoice.reimbursementTypeId}`);
+    }
+
+    return entries.filter(
+      (entry) =>
+        !excluded.has(`${entry.volunteerId}:${entry.reimbursementTypeId}`),
+    );
   }
 
   async createInvoice(
@@ -143,9 +348,13 @@ export class InvoiceService {
       );
     }
 
+    // Only entries inside the invoice's own period can go on it, so the
+    // document never lists hours from outside the period it states.
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
+      input.periodStart,
+      input.periodEnd,
     );
     const eligibleById = new Map(
       eligibleEntries.map((entry) => [entry.id, entry]),
@@ -159,6 +368,28 @@ export class InvoiceService {
       }
       return entry;
     });
+
+    // One timesheet per volunteer, reimbursement type and period: the board
+    // models a month as a single "to invoice" row, so a second overlapping
+    // document would split it. A declined timesheet does not block a reissue.
+    const overlapping = await this.db.query.invoices.findFirst({
+      where: {
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        organizationUnitId: input.organizationUnitId
+          ? input.organizationUnitId
+          : { isNull: true },
+        invoiceStatus: { ne: InvoiceStatus.DECLINED },
+        periodStart: { lt: input.periodEnd },
+        periodEnd: { gt: input.periodStart },
+      },
+      columns: { id: true },
+    });
+    if (overlapping) {
+      throw new ConflictGraphQLError(
+        'A timesheet already exists for this volunteer and reimbursement type in this period',
+      );
+    }
 
     const totalHours =
       Math.round(
@@ -182,10 +413,42 @@ export class InvoiceService {
       await this.documentTemplateService.findOrderedTemplateSignees(
         template.id,
       );
+
+    // The unit must have the profile fields its documents render (e.g. city /
+    // address) before one is created — otherwise the PDF comes out with gaps
+    // the org can't fix inline. The account manager is told to complete the
+    // unit's profile first.
+    const missingOrg =
+      await this.documentProfileRequirementService.missingOrgProfileSources(
+        organizationId,
+        input.organizationUnitId,
+        template.body,
+      );
+    if (missingOrg.length > 0) {
+      throw new BadRequestGraphQLError(
+        'Your organization is missing details required for this document: ' +
+          missingOrg.join(', ') +
+          '. Please complete your organization profile before creating documents.',
+      );
+    }
+
     const activeContract = await this.contractService.findActiveContract(
       input.volunteerId,
       input.reimbursementTypeId,
     );
+
+    if (!activeContract) {
+      await this.contractService.ensureDraftContract(
+        organizationId,
+        {
+          organizationUnitId: input.organizationUnitId,
+          volunteerId: input.volunteerId,
+          reimbursementTypeId: input.reimbursementTypeId,
+          anchorDate: input.periodStart,
+        },
+        actorUserId,
+      );
+    }
 
     const invoice = await this.db.transaction(async (tx) => {
       const [created] = await tx
@@ -194,6 +457,7 @@ export class InvoiceService {
           documentTemplateId: template.id,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
+          organizationUnitId: input.organizationUnitId,
           invoiceStatus: this.nextInvoiceStatus(orderedSignees[0].signeeType),
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
@@ -201,6 +465,7 @@ export class InvoiceService {
           totalHours,
           isNonCompliant: !activeContract,
           resolvedBody: structuredClone(template.body),
+          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
         })
         .returning();
 
@@ -231,6 +496,17 @@ export class InvoiceService {
       return created;
     });
 
+    // Render the unsigned PDF now so the volunteer can preview the document
+    // before they sign it. Previously the file was only produced after the
+    // final signature, so the volunteer was asked to sign/decline content
+    // they could never see (VOLI-1216). Rendering here is best-effort — a
+    // storage/config failure just leaves downloadUrl unset for now.
+    const fullInvoice = await this.findInvoice(invoice.id);
+    await this.documentRenderingService.renderAndAttachPdf(
+      fullInvoice,
+      actorUserId,
+    );
+
     this.postHogService.capture({
       event: POSTHOG_EVENT.INVOICE_CREATE,
       userId: invoice.volunteerId || actorUserId,
@@ -240,6 +516,17 @@ export class InvoiceService {
         organization_unit_id: input.organizationUnitId ?? undefined,
       },
     });
+
+    // The volunteer only hears about the document when it needs their
+    // signature — generation itself is not news (accounting-volunteer-documents).
+    if (invoice.invoiceStatus === InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE) {
+      await this.documentNotificationService.notifyAwaitingVolunteerSignature({
+        organizationId,
+        volunteerUserId: invoice.volunteerId,
+        documentId: invoice.id,
+        documentKind: DocumentKind.INVOICE,
+      });
+    }
 
     return invoice;
   }
@@ -267,6 +554,24 @@ export class InvoiceService {
       pending.requiredPermissionId,
       this.documentSigningService.organizationIdOf(invoice.documentTemplate),
     );
+
+    // The volunteer's own signature is the first step of the chain. Require
+    // the profile fields the template reads before they can sign, so the
+    // signed document never comes out with "—" gaps in place of them.
+    if (pending.signeeType === SigneeType.VOLUNTEER) {
+      const missing =
+        await this.documentProfileRequirementService.missingProfileSources(
+          invoice.volunteerId,
+          invoice.documentTemplate?.body,
+        );
+      if (missing.length > 0) {
+        throw new BadRequestGraphQLError(
+          'Your profile is missing details required for this document: ' +
+            missing.join(', ') +
+            '. Please complete your profile before signing.',
+        );
+      }
+    }
 
     const isFinal = pendingIndex === orderedSignatures.length - 1;
 
@@ -317,6 +622,13 @@ export class InvoiceService {
 
       return signed;
     });
+
+    // The timesheet is complete — render its PDF so it can be downloaded.
+    // Failures are logged, never thrown: signing still succeeds.
+    if (isFinal) {
+      const full = await this.findInvoice(invoiceId);
+      await this.documentRenderingService.renderAndAttachPdf(full, userId);
+    }
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.INVOICE_SIGN,
@@ -380,6 +692,15 @@ export class InvoiceService {
         actorUserId: userId,
       });
 
+      // Release the time entries this invoice had claimed. The declined
+      // invoice and its invoiceTimeEntries rows stay around as a record
+      // (and still show what was declined), but the entries themselves
+      // become selectable again for a replacement document.
+      await tx
+        .update(schema.invoiceTimeEntries)
+        .set({ released: true })
+        .where(eq(schema.invoiceTimeEntries.invoiceId, invoiceId));
+
       return declined;
     });
 
@@ -393,6 +714,32 @@ export class InvoiceService {
         ),
       },
     });
+
+    const organizationId = this.documentSigningService.organizationIdOf(
+      invoice.documentTemplate,
+    );
+
+    // The org-side decline is news to the volunteer — they had signed and
+    // would otherwise never learn the document is dead. The volunteer-side
+    // decline is news to whoever manages accounting — they need to correct
+    // and reissue the document (VOLI-1246).
+    if (updated.declinedAtSigneeType === SigneeType.PERMISSION_HOLDER) {
+      await this.documentNotificationService.notifyDeclinedByOrg({
+        organizationId,
+        volunteerUserId: invoice.volunteerId,
+        documentId: invoiceId,
+        documentKind: DocumentKind.INVOICE,
+        reason,
+      });
+    } else {
+      await this.documentNotificationService.notifyDeclinedByVolunteer({
+        organizationId,
+        volunteerUserId: invoice.volunteerId,
+        documentId: invoiceId,
+        documentKind: DocumentKind.INVOICE,
+        reason,
+      });
+    }
 
     return updated;
   }

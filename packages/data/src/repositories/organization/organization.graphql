@@ -9,6 +9,8 @@ query GetOrganization($id: String!) {
     contactEmail
     phone
     address
+    city
+    zipCode
     createdAt
     updatedAt
   }
@@ -47,8 +49,14 @@ query GetOrganizationUnit($id: String!) {
     logoUrl
     websiteUrl
     contactEmail
+    contactPersonName
     phone
+    welcomeMessage
     address
+    city
+    zipCode
+    legalRep
+    idVerificationEnabled
     organizationId
     requiredForms {
       form {
@@ -88,9 +96,11 @@ query GetOrganizationUnit($id: String!) {
                 label
                 value
               }
-              documentFileId
-              documentDownloadUrl
-              documentFilename
+              documents {
+                fileId
+                filename
+                downloadUrl
+              }
               documentLabel
               minAge
               fieldOrder
@@ -171,6 +181,8 @@ query GetMyOrganizationUnits {
     description
     logoUrl
     address
+    city
+    legalRep
     parent {
       id
     }
@@ -192,6 +204,8 @@ query GetMyAdminstableOrganizationUnits {
     description
     logoUrl
     address
+    city
+    legalRep
     parent {
       id
     }
@@ -213,6 +227,8 @@ query GetMyCheckInAdministrableOrganizationUnits {
     description
     logoUrl
     address
+    city
+    legalRep
     parent {
       id
     }
@@ -260,6 +276,16 @@ mutation CreateOrganization($input: CreateOrganizationInput!) {
   }
 }
 
+mutation UpdateOrganization($id: ID!, $input: UpdateOrganizationInput!) {
+  updateOrganization(id: $id, input: $input) {
+    id
+    name
+    address
+    city
+    zipCode
+  }
+}
+
 query GetOrganizationTree {
   organizationTree {
     root
@@ -302,6 +328,11 @@ mutation UpdateOrganizationUnit(
     name
     slug
     deletedAt
+    address
+    city
+    zipCode
+    legalRep
+    idVerificationEnabled
     parent {
       id
     }
@@ -313,8 +344,8 @@ mutation UpdateOrganizationUnit(
   }
 }
 
-mutation DeleteOrganizationUnit($id: String!) {
-  deleteOrganizationUnit(id: $id) {
+mutation RequestOrganizationUnitDeletion($id: String!, $message: String) {
+  requestOrganizationUnitDeletion(id: $id, message: $message) {
     id
     name
   }

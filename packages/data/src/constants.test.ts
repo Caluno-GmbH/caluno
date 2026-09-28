@@ -2,17 +2,14 @@ import { describe, expect, it } from 'bun:test';
 import {
   ALL_RECURRENCE_DAYS,
   formatRrulePattern,
+  isRecurringRrule,
   isSingleOccurrenceRrule,
   parseRruleDays,
+  parseRruleEndDate,
   type RecurrenceDayValue,
   WEEKEND_DAYS,
   WORKING_DAYS,
 } from './constants';
-
-/** Mirrors Edit/Invite page gating for apply/invite-to-all-future checkboxes. */
-function isRecurring(rrule: string | null | undefined): boolean {
-  return Boolean(rrule) && !isSingleOccurrenceRrule(rrule);
-}
 
 const ALL_DAYS: RecurrenceDayValue[] = [...ALL_RECURRENCE_DAYS];
 
@@ -30,7 +27,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
     it('is not recurring (no apply/invite-to-all)', () => {
       expect(isSingleOccurrenceRrule(rrule)).toBe(true);
-      expect(isRecurring(rrule)).toBe(false);
+      expect(isRecurringRrule(rrule)).toBe(false);
     });
   });
 
@@ -47,7 +44,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
     it('is not recurring (no apply/invite-to-all)', () => {
       expect(isSingleOccurrenceRrule(rrule)).toBe(true);
-      expect(isRecurring(rrule)).toBe(false);
+      expect(isRecurringRrule(rrule)).toBe(false);
     });
   });
 
@@ -69,7 +66,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
       it(`is recurring (apply/invite-to-all shown) for ${JSON.stringify(rrule)}`, () => {
         expect(isSingleOccurrenceRrule(rrule)).toBe(false);
-        expect(isRecurring(rrule)).toBe(true);
+        expect(isRecurringRrule(rrule)).toBe(true);
       });
     }
   });
@@ -87,7 +84,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
     it('is recurring (apply/invite-to-all shown)', () => {
       expect(isSingleOccurrenceRrule(rrule)).toBe(false);
-      expect(isRecurring(rrule)).toBe(true);
+      expect(isRecurringRrule(rrule)).toBe(true);
     });
   });
 
@@ -104,7 +101,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
     it('is recurring (apply/invite-to-all shown)', () => {
       expect(isSingleOccurrenceRrule(rrule)).toBe(false);
-      expect(isRecurring(rrule)).toBe(true);
+      expect(isRecurringRrule(rrule)).toBe(true);
     });
   });
 
@@ -121,7 +118,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
     it('is recurring (apply/invite-to-all shown)', () => {
       expect(isSingleOccurrenceRrule(rrule)).toBe(false);
-      expect(isRecurring(rrule)).toBe(true);
+      expect(isRecurringRrule(rrule)).toBe(true);
     });
   });
 
@@ -139,7 +136,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
       it(`is recurring (apply/invite-to-all shown) for ${rrule}`, () => {
         expect(isSingleOccurrenceRrule(rrule)).toBe(false);
-        expect(isRecurring(rrule)).toBe(true);
+        expect(isRecurringRrule(rrule)).toBe(true);
       });
     }
   });
@@ -157,7 +154,7 @@ describe('rrule helpers — recurring / apply-to-all-future scenarios', () => {
 
     it('is recurring (apply/invite-to-all shown)', () => {
       expect(isSingleOccurrenceRrule(rrule)).toBe(false);
-      expect(isRecurring(rrule)).toBe(true);
+      expect(isRecurringRrule(rrule)).toBe(true);
     });
   });
 });
@@ -177,5 +174,67 @@ describe('isSingleOccurrenceRrule', () => {
   it('does not treat COUNT=10 or COUNT=11 as single-occurrence', () => {
     expect(isSingleOccurrenceRrule('FREQ=DAILY;COUNT=10')).toBe(false);
     expect(isSingleOccurrenceRrule('FREQ=DAILY;COUNT=11')).toBe(false);
+  });
+});
+
+describe('isRecurringRrule', () => {
+  it('is false for one-time shifts (no rrule, empty, or COUNT=1)', () => {
+    expect(isRecurringRrule(null)).toBe(false);
+    expect(isRecurringRrule(undefined)).toBe(false);
+    expect(isRecurringRrule('')).toBe(false);
+    expect(isRecurringRrule('FREQ=DAILY;COUNT=1')).toBe(false);
+    expect(
+      isRecurringRrule('DTSTART:20260302T100000Z\nRRULE:FREQ=DAILY;COUNT=1'),
+    ).toBe(false);
+  });
+
+  it('is true for recurring rrules', () => {
+    expect(isRecurringRrule('FREQ=WEEKLY;BYDAY=MO,TU')).toBe(true);
+    expect(isRecurringRrule('FREQ=WEEKLY;COUNT=3')).toBe(true);
+    expect(isRecurringRrule('FREQ=DAILY;COUNT=5')).toBe(true);
+  });
+
+  it('matches the card-icon gating: recurring iff the pattern label is not One-time', () => {
+    const cases = [
+      null,
+      '',
+      'FREQ=DAILY;COUNT=1',
+      'FREQ=WEEKLY;BYDAY=MO,TU',
+      'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU',
+      'FREQ=WEEKLY;COUNT=3',
+    ];
+
+    for (const rrule of cases) {
+      expect(isRecurringRrule(rrule)).toBe(
+        formatRrulePattern(rrule) !== 'One-time',
+      );
+    }
+  });
+});
+
+describe('parseRruleEndDate', () => {
+  it('is the End Date for UNITL', () => {
+    expect(
+      parseRruleEndDate(`DTSTART:20260917T111700Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=20260923T111700Z`),
+    ).toEqual(new Date('2026-09-23:11:17:00Z'));
+  });
+
+  it('is undefined for invalid rule', () => {
+    expect(parseRruleEndDate('WAT')).toBeUndefined();
+    expect(parseRruleEndDate('')).toBeUndefined();
+    expect(parseRruleEndDate('1223/24/24')).toBeUndefined();
+  });
+
+  it('is undefined for no UNITL', () => {
+    expect(
+      parseRruleEndDate(`DTSTART:20260915T124600Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU`),
+    ).toBeUndefined();
+
+    expect(
+      parseRruleEndDate(`DTSTART:20260917T111700Z
+RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR;UNTIL=`),
+    ).toBeUndefined();
   });
 });

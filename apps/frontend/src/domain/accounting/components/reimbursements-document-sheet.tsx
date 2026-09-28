@@ -36,7 +36,16 @@ import { toast } from 'sonner';
 import { useSession } from '@/lib/auth';
 import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { mapSignatureToSignee } from '../lib/board-data.utils';
+import {
+  contractStatusToDocStatus,
+  creationTargetFor,
+  invoiceStatusToDocStatus,
+  mapSignatureToSignee,
+} from '../lib/board-data.utils';
+import {
+  documentCreationBlockedFor,
+  type TemplateReadinessByPauschale,
+} from '../lib/setup-status';
 import { AlertIconTooltip } from './alert-icon-tooltip';
 import { DeclineReasonDialog } from './decline-reason-dialog';
 import { getPauschaleKey, TYPE_COLOR } from './doc-type-header';
@@ -44,6 +53,7 @@ import { LimitHeadroomBar } from './limit-headroom-bar';
 import type {
   BoardDocument,
   BoardVolunteer,
+  DocStatus,
   DocVolPair,
 } from './reimbursements-board';
 import { isTimesheetNonCompliant } from './reimbursements-board';
@@ -61,11 +71,22 @@ interface PipelineStep {
   state: StepState;
 }
 
-function signeeActorName(signee: Signee, volunteerName: string): string {
+type SheetTranslations = ReturnType<
+  typeof useTranslations<'Accounting.reimbursements.docs.sheet'>
+>;
+
+function signeeActorName(
+  signee: Signee,
+  volunteerName: string,
+  t: SheetTranslations,
+): string {
   if (signee.role === 'volunteer') return volunteerName;
-  // Coordinator / supervisor are org roles; the real actor name comes from
-  // the status-change timeline, not from the static role label.
-  return signee.orgRole.name;
+  // Coordinator / supervisor are org roles: show the human role label, not
+  // the raw permission key the template signee references. The real actor's
+  // name is in the status-change timeline below the pipeline.
+  return signee.role === 'supervisor'
+    ? t('pipeline.superSign')
+    : t('pipeline.coordSign');
 }
 
 function getActiveStepIdx(status: string, signees: Signee[]): number {
@@ -106,7 +127,7 @@ function buildDocSteps(
   signees: Signee[],
   isContract: boolean,
   volunteerName: string,
-  t: ReturnType<typeof useTranslations<'Accounting.reimbursements.docs.sheet'>>,
+  t: SheetTranslations,
 ): PipelineStep[] {
   if (
     doc.status === 'contract-declined' ||
@@ -127,14 +148,14 @@ function buildDocSteps(
         steps.push({
           id: signee.id,
           labelKey: t('pipeline.sign'),
-          actorName: signeeActorName(signee, volunteerName),
+          actorName: signeeActorName(signee, volunteerName, t),
           state: 'done',
         });
       } else if (idx === declinedIdx) {
         steps.push({
           id: `declined-${signee.id}`,
           labelKey: t('pipeline.declined'),
-          actorName: signeeActorName(signee, volunteerName),
+          actorName: signeeActorName(signee, volunteerName, t),
           state: 'declined',
         });
       }
@@ -160,7 +181,7 @@ function buildDocSteps(
     steps.push({
       id: signee.id,
       labelKey: t('pipeline.sign'),
-      actorName: signeeActorName(signee, volunteerName),
+      actorName: signeeActorName(signee, volunteerName, t),
       state:
         idx < activeIdx ? 'done' : idx === activeIdx ? 'active' : 'pending',
     });
@@ -333,6 +354,8 @@ interface DocumentSheetProps {
   onDecline: (pair: DocVolPair, reason: string) => void;
   selectedDate: Date;
   orgUId: string;
+  canCreateDocuments: boolean;
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 export function DocumentSheet({
@@ -345,6 +368,8 @@ export function DocumentSheet({
   onDecline,
   selectedDate,
   orgUId,
+  canCreateDocuments,
+  templateReadiness,
 }: DocumentSheetProps) {
   const t = useTranslations('Accounting.reimbursements.docs');
   const ts = useTranslations('Accounting.reimbursements.docs.sheet');
@@ -400,15 +425,27 @@ export function DocumentSheet({
 
   if (!doc || !vol) return null;
 
+  const detail = isContract ? contractDetail : invoiceDetail;
+  const currentStatus: DocStatus | undefined = isContract
+    ? contractDetail
+      ? contractStatusToDocStatus(contractDetail.contractStatus)
+      : undefined
+    : invoiceDetail
+      ? invoiceStatusToDocStatus(invoiceDetail.invoiceStatus)
+      : undefined;
+  const effectiveDoc: BoardDocument = currentStatus
+    ? { ...doc, status: currentStatus }
+    : doc;
+
   const isDeclined =
-    doc.status === 'contract-declined' || doc.status === 'timesheet-declined';
+    effectiveDoc.status === 'contract-declined' ||
+    effectiveDoc.status === 'timesheet-declined';
   const kindLabel = t(
     `kindLabel.${isContract ? 'contract' : 'timesheet'}` as Parameters<
       typeof t
     >[0],
   );
-  const detail = isContract ? contractDetail : invoiceDetail;
-  const steps = buildDocSteps(doc, signees, isContract, vol.name, ts);
+  const steps = buildDocSteps(effectiveDoc, signees, isContract, vol.name, ts);
   const timeline = buildTimeline(doc, detail, ts);
 
   const periodLabel = formatDate(selectedDate, {
@@ -425,16 +462,22 @@ export function DocumentSheet({
   };
 
   const actionKey =
-    doc.status === 'contract-generate' ||
-    doc.status === 'timesheet-generate' ||
-    doc.status === 'contract-declined' ||
-    doc.status === 'timesheet-declined' ||
-    doc.status === 'contract-missing'
+    creationTargetFor(effectiveDoc.status) !== null
       ? 'create'
-      : doc.status === 'contract-signing-coord' ||
-          doc.status === 'timesheet-signing-super'
+      : effectiveDoc.status === 'contract-signing-coord' ||
+          effectiveDoc.status === 'timesheet-signing-super'
         ? 'countersign'
         : null;
+
+  // A create action whose template is missing is disabled before it is
+  // clicked — the alternative is the raw "no template" dead end.
+  const createBlocked =
+    actionKey === 'create' &&
+    documentCreationBlockedFor(
+      templateReadiness,
+      effectivePauschale,
+      isContract ? 'contract' : 'invoice',
+    );
 
   // Real invoices already have totalHours; for generated rows the backend does
   // not yet exist, so we show nothing.
@@ -532,6 +575,18 @@ export function DocumentSheet({
         </SheetHeader>
 
         <div className="flex flex-col gap-6 px-6 py-6 flex-1 min-h-0 overflow-y-auto">
+          {/* PDF preview */}
+          {detail?.downloadUrl && (
+            <section>
+              <iframe
+                key={detail.downloadUrl}
+                src={detail.downloadUrl}
+                title={ts('pdfView')}
+                className="h-72 w-full rounded-lg border border-border bg-card"
+              />
+            </section>
+          )}
+
           {/* Pipeline tracker */}
           <section>
             <p className="text-sm font-semibold text-muted-foreground mb-4">
@@ -755,7 +810,9 @@ export function DocumentSheet({
           {isDeclined ? (
             <Button
               className="w-full"
+              disabled={!canCreateDocuments || createBlocked}
               onClick={() => {
+                if (!canCreateDocuments || createBlocked) return;
                 onRequestCreate({ doc, vol });
                 onOpenChange(false);
               }}
@@ -770,20 +827,29 @@ export function DocumentSheet({
                   className="text-alert"
                 />
               )}
+              {createBlocked && (
+                <AlertIconTooltip
+                  hint={t('statusLabel.templateMissingHint')}
+                  className="text-alert"
+                />
+              )}
               <Button
                 className="flex-1"
                 variant={actionKey === 'create' ? 'default' : 'outline'}
                 disabled={
-                  actionKey === 'countersign' &&
-                  (!canUserSign || isDetailLoading)
+                  (actionKey === 'countersign' &&
+                    (!canUserSign || isDetailLoading)) ||
+                  (actionKey === 'create' &&
+                    (!canCreateDocuments || createBlocked))
                 }
                 onClick={() => {
                   if (actionKey === 'create') {
+                    if (!canCreateDocuments || createBlocked) return;
                     onRequestCreate({ doc, vol });
+                    onOpenChange(false);
                   } else {
                     onRequestSign({ doc, vol });
                   }
-                  onOpenChange(false);
                 }}
               >
                 {t(`actions.${actionKey}` as Parameters<typeof t>[0])}

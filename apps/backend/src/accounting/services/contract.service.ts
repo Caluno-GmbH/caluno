@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gte, lt } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt, ne } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import {
+  BadRequestGraphQLError,
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
@@ -24,10 +25,24 @@ import {
   SigneeType,
 } from '../enums';
 import type { CreateContractInput } from '../inputs/create-contract.input';
+import { toFieldOverridesMap } from '../inputs/document-field-override.input';
 import type { ContractEntity } from '../schemas/contract.schema';
 import type { ContractStatusChangeEntity } from '../schemas/contract-status-change.schema';
+import { billingYearBounds, billingYearOf } from '../utils/billing-period';
+import { DocumentNotificationService } from './document-notification.service';
+import { DocumentProfileRequirementService } from './document-profile-requirement.service';
+import { DocumentRenderingService } from './document-rendering.service';
 import { DocumentSigningService } from './document-signing.service';
 import { DocumentTemplateService } from './document-template.service';
+
+// Periods end exclusively, so one ending exactly at the range start doesn't
+// overlap it.
+function contractOverlapsPeriod(periodStart: Date, periodEnd: Date) {
+  return [
+    gt(schema.contracts.periodEnd, periodStart),
+    lt(schema.contracts.periodStart, periodEnd),
+  ];
+}
 
 @Injectable()
 export class ContractService {
@@ -36,6 +51,9 @@ export class ContractService {
     private readonly db: Database,
     private readonly documentTemplateService: DocumentTemplateService,
     private readonly documentSigningService: DocumentSigningService,
+    private readonly documentNotificationService: DocumentNotificationService,
+    private readonly documentProfileRequirementService: DocumentProfileRequirementService,
+    private readonly documentRenderingService: DocumentRenderingService,
     private readonly postHogService: PostHogService,
   ) {}
 
@@ -47,6 +65,7 @@ export class ContractService {
         reimbursementType: true,
         signatures: true,
         statusChanges: true,
+        organizationUnit: true,
       },
     });
     if (!contract) {
@@ -73,11 +92,24 @@ export class ContractService {
     if (filter.status) {
       conditions.push(eq(schema.contracts.contractStatus, filter.status));
     }
-    if (filter.periodStart) {
-      conditions.push(gte(schema.contracts.periodEnd, filter.periodStart));
+    if (filter.issuedOnly) {
+      conditions.push(
+        ne(schema.contracts.contractStatus, ContractStatus.DRAFT),
+      );
     }
-    if (filter.periodEnd) {
+    if (filter.periodStart && filter.periodEnd) {
+      conditions.push(
+        ...contractOverlapsPeriod(filter.periodStart, filter.periodEnd),
+      );
+    } else if (filter.periodStart) {
+      conditions.push(gt(schema.contracts.periodEnd, filter.periodStart));
+    } else if (filter.periodEnd) {
       conditions.push(lt(schema.contracts.periodStart, filter.periodEnd));
+    }
+    if (filter.organizationUnitId) {
+      conditions.push(
+        eq(schema.contracts.organizationUnitId, filter.organizationUnitId),
+      );
     }
 
     const rows = await this.db
@@ -104,7 +136,7 @@ export class ContractService {
         volunteerId,
         reimbursementTypeId,
         contractStatus: ContractStatus.ACTIVE,
-        periodEnd: { gte: new Date() },
+        periodEnd: { gt: new Date() },
       },
     });
   }
@@ -125,14 +157,204 @@ export class ContractService {
         template.id,
       );
 
+    // The unit must have the profile fields its documents render (e.g. city /
+    // address) before one is created — otherwise the PDF comes out with gaps
+    // the org can't fix inline. The account manager is told to complete the
+    // unit's profile first.
+    const missingOrg =
+      await this.documentProfileRequirementService.missingOrgProfileSources(
+        organizationId,
+        input.organizationUnitId,
+        template.body,
+      );
+    if (missingOrg.length > 0) {
+      throw new BadRequestGraphQLError(
+        'Your organization is missing details required for this document: ' +
+          missingOrg.join(', ') +
+          '. Please complete your organization profile before creating documents.',
+      );
+    }
+
     const contract = await this.db.transaction(async (tx) => {
+      // The draft queued by ensureDraftContract stands in for this contract
+      // until it exists. Drop it so the board shows one row, not two. Scoped
+      // to this organization's templates: reimbursement types are global, so
+      // without this join a volunteer with a draft in another org could lose
+      // it here.
+      const overlappingDrafts = await tx
+        .select({ id: schema.contracts.id })
+        .from(schema.contracts)
+        .innerJoin(
+          schema.documentTemplates,
+          eq(schema.documentTemplates.id, schema.contracts.documentTemplateId),
+        )
+        .where(
+          and(
+            eq(schema.documentTemplates.organizationId, organizationId),
+            eq(schema.contracts.volunteerId, input.volunteerId),
+            eq(schema.contracts.reimbursementTypeId, input.reimbursementTypeId),
+            eq(schema.contracts.contractStatus, ContractStatus.DRAFT),
+            ...contractOverlapsPeriod(input.periodStart, input.periodEnd),
+          ),
+        );
+
+      if (overlappingDrafts.length > 0) {
+        await tx.delete(schema.contracts).where(
+          inArray(
+            schema.contracts.id,
+            overlappingDrafts.map((draft) => draft.id),
+          ),
+        );
+      }
+
       const [created] = await tx
         .insert(schema.contracts)
         .values({
           documentTemplateId: template.id,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
+          organizationUnitId: input.organizationUnitId,
           contractStatus: this.nextContractStatus(orderedSignees[0].signeeType),
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          resolvedBody: structuredClone(template.body),
+          fieldOverrides: toFieldOverridesMap(input.fieldOverrides),
+        })
+        .returning();
+
+      await tx.insert(schema.contractSignatures).values(
+        orderedSignees.map((signee) => ({
+          contractId: created.id,
+          order: signee.order,
+          signeeType: signee.signeeType,
+          requiredPermissionId: signee.requiredPermissionId,
+        })),
+      );
+
+      await tx.insert(schema.contractStatusChanges).values({
+        contractId: created.id,
+        type: DocumentStatusChange.CREATED,
+        actorUserId,
+      });
+
+      // The draft's own history is gone (its status changes cascade-deleted
+      // with it), so record the replacement on the surviving contract.
+      if (overlappingDrafts.length > 0) {
+        await tx.insert(schema.contractStatusChanges).values({
+          contractId: created.id,
+          type: DocumentStatusChange.DRAFT_SUPERSEDED,
+          actorUserId,
+        });
+      }
+
+      return created;
+    });
+
+    // Render the unsigned PDF now so the volunteer can preview the document
+    // before they sign it. Previously the file was only produced after the
+    // final signature, so the volunteer was asked to sign/decline content
+    // they could never see (VOLI-1216). Rendering here is best-effort — a
+    // storage/config failure just leaves downloadUrl unset for now.
+    const fullContract = await this.findContract(contract.id);
+    await this.documentRenderingService.renderAndAttachPdf(
+      fullContract,
+      actorUserId,
+    );
+
+    this.postHogService.capture({
+      event: POSTHOG_EVENT.CONTRACT_CREATE,
+      userId: contract.volunteerId || actorUserId,
+      properties: {
+        surface: POSTHOG_SURFACE.BACKOFFICE,
+        organization_id: organizationId,
+        organization_unit_id: input.organizationUnitId ?? undefined,
+      },
+    });
+
+    // The volunteer only hears about the document when it needs their
+    // signature — generation itself is not news (accounting-volunteer-documents).
+    if (
+      contract.contractStatus === ContractStatus.AWAITING_VOLUNTEER_SIGNATURE
+    ) {
+      await this.documentNotificationService.notifyAwaitingVolunteerSignature({
+        organizationId,
+        volunteerUserId: contract.volunteerId,
+        documentId: contract.id,
+        documentKind: DocumentKind.CONTRACT,
+      });
+    }
+
+    return contract;
+  }
+
+  /**
+   * Queues the volunteer's yearly Vereinbarung as a DRAFT when they have no
+   * contract (other than a declined one) for the reimbursement type in the
+   * Berlin year of `anchorDate`. Runs when paid hours first appear and when
+   * a timesheet is created, so a volunteer without a contract always lands
+   * under "Create contracts". Returns the draft, or undefined if one exists.
+   */
+  async ensureDraftContract(
+    organizationId: string,
+    input: {
+      organizationUnitId?: string | null;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      /** Any instant in the target Berlin year; only the year is used. */
+      anchorDate: Date;
+    },
+    actorUserId: string,
+  ): Promise<ContractEntity | undefined> {
+    const year = billingYearBounds(billingYearOf(input.anchorDate));
+    const existing = await this.db.query.contracts.findFirst({
+      where: {
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        contractStatus: { ne: ContractStatus.DECLINED },
+        periodEnd: { gt: year.start },
+        periodStart: { lt: year.end },
+      },
+    });
+    if (existing) return undefined;
+
+    return this.createDraftContract(
+      organizationId,
+      {
+        organizationUnitId: input.organizationUnitId,
+        volunteerId: input.volunteerId,
+        reimbursementTypeId: input.reimbursementTypeId,
+        periodStart: year.start,
+        periodEnd: year.end,
+      },
+      actorUserId,
+    );
+  }
+
+  async createDraftContract(
+    organizationId: string,
+    input: CreateContractInput,
+    actorUserId: string,
+  ): Promise<ContractEntity> {
+    const template = await this.documentTemplateService.findActiveTemplate(
+      organizationId,
+      input.reimbursementTypeId,
+      DocumentKind.CONTRACT,
+      input.organizationUnitId,
+    );
+    const orderedSignees =
+      await this.documentTemplateService.findOrderedTemplateSignees(
+        template.id,
+      );
+
+    return this.db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(schema.contracts)
+        .values({
+          documentTemplateId: template.id,
+          volunteerId: input.volunteerId,
+          reimbursementTypeId: input.reimbursementTypeId,
+          organizationUnitId: input.organizationUnitId,
+          contractStatus: ContractStatus.DRAFT,
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
           resolvedBody: structuredClone(template.body),
@@ -156,18 +378,6 @@ export class ContractService {
 
       return created;
     });
-
-    this.postHogService.capture({
-      event: POSTHOG_EVENT.CONTRACT_CREATE,
-      userId: contract.volunteerId || actorUserId,
-      properties: {
-        surface: POSTHOG_SURFACE.BACKOFFICE,
-        organization_id: organizationId,
-        organization_unit_id: input.organizationUnitId ?? undefined,
-      },
-    });
-
-    return contract;
   }
 
   async signContract(
@@ -199,6 +409,24 @@ export class ContractService {
       pending.requiredPermissionId,
       this.documentSigningService.organizationIdOf(contract.documentTemplate),
     );
+
+    // The volunteer's own signature is the first step of the chain. Require
+    // the profile fields the template reads before they can sign, so the
+    // signed document never comes out with "—" gaps in place of them.
+    if (pending.signeeType === SigneeType.VOLUNTEER) {
+      const missing =
+        await this.documentProfileRequirementService.missingProfileSources(
+          contract.volunteerId,
+          contract.documentTemplate?.body,
+        );
+      if (missing.length > 0) {
+        throw new BadRequestGraphQLError(
+          'Your profile is missing details required for this document: ' +
+            missing.join(', ') +
+            '. Please complete your profile before signing.',
+        );
+      }
+    }
 
     const isFinal = pendingIndex === orderedSignatures.length - 1;
 
@@ -238,6 +466,13 @@ export class ContractService {
 
       return signed;
     });
+
+    // The document is complete — render its PDF so it can be downloaded.
+    // Failures are logged, never thrown: signing still succeeds.
+    if (isFinal) {
+      const full = await this.findContract(contractId);
+      await this.documentRenderingService.renderAndAttachPdf(full, userId);
+    }
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.CONTRACT_SIGN,
@@ -317,6 +552,32 @@ export class ContractService {
         ),
       },
     });
+
+    const organizationId = this.documentSigningService.organizationIdOf(
+      contract.documentTemplate,
+    );
+
+    // The org-side decline is news to the volunteer — they had signed and
+    // would otherwise never learn the document is dead. The volunteer-side
+    // decline is news to whoever manages accounting — they need to correct
+    // and reissue the document (VOLI-1246).
+    if (updated.declinedAtSigneeType === SigneeType.PERMISSION_HOLDER) {
+      await this.documentNotificationService.notifyDeclinedByOrg({
+        organizationId,
+        volunteerUserId: contract.volunteerId,
+        documentId: contractId,
+        documentKind: DocumentKind.CONTRACT,
+        reason,
+      });
+    } else {
+      await this.documentNotificationService.notifyDeclinedByVolunteer({
+        organizationId,
+        volunteerUserId: contract.volunteerId,
+        documentId: contractId,
+        documentKind: DocumentKind.CONTRACT,
+        reason,
+      });
+    }
 
     return updated;
   }

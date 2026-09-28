@@ -22,6 +22,10 @@ import {
 import { CheckIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import {
+  internalRoleKey,
+  type TranslatableRole,
+} from '@/domain/role/lib/role-label';
 import { useRouter } from '@/i18n/navigation';
 
 interface RoleSelectCellProps {
@@ -47,6 +51,10 @@ export function RoleSelectCell({
     useUpdateMembershipRoles();
 
   const t = useTranslations('Role');
+  const roleLabel = (role: TranslatableRole) => {
+    const key = internalRoleKey(role);
+    return key ? t(key) : role.name;
+  };
   const tCommon = useTranslations('Common');
   const customRole = roles.find((role) => !role.isInternal);
   const currentRole = customRole || roles[0];
@@ -54,7 +62,7 @@ export function RoleSelectCell({
   // Read-only users see custom role name or nothing
   if (!canEdit) {
     return currentRole ? (
-      <span className="text-sm">{currentRole.name}</span>
+      <span className="text-sm">{roleLabel(currentRole)}</span>
     ) : (
       <span className="text-sm text-muted-foreground">{tCommon('dash')}</span>
     );
@@ -76,7 +84,7 @@ export function RoleSelectCell({
           disabled={rolesLoading || isUpdating}
         >
           <span className="truncate">
-            {currentRole ? currentRole.name : t('noRole')}
+            {currentRole ? roleLabel(currentRole) : t('noRole')}
           </span>
           <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
@@ -97,7 +105,7 @@ export function RoleSelectCell({
                 return (
                   <CommandItem
                     key={role.id}
-                    value={role.name}
+                    value={roleLabel(role)}
                     onSelect={() => {
                       if (!isSelected) {
                         updateRoles({
@@ -115,7 +123,7 @@ export function RoleSelectCell({
                     <span
                       className={`truncate ${isSelected ? 'font-medium' : ''}`}
                     >
-                      {role.name}
+                      {roleLabel(role)}
                     </span>
                   </CommandItem>
                 );

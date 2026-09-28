@@ -1,4 +1,4 @@
-import { withSentryConfig } from '@sentry/nextjs';
+import { withSentryConfig } from '@sentry/nextjs/config';
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
@@ -65,6 +65,14 @@ const nextConfig: NextConfig = {
     remotePatterns: storageImagePatterns(),
   },
   turbopack: {
+    // Bun's isolated linker installs one copy per workspace (apps/frontend +
+    // packages/ui resolve to different store entries). Without these aliases:
+    // - `toast` and `<Toaster/>` use two sonner stores and toasts never render
+    // - `@repo/ui`'s `useTheme()` misses the app's ThemeProvider context
+    resolveAlias: {
+      sonner: './node_modules/sonner',
+      '@teispace/next-themes': './node_modules/@teispace/next-themes',
+    },
     rules: {
       '*.svg': {
         loaders: ['@svgr/webpack'],
@@ -84,10 +92,12 @@ export default withSentryConfig(withNextIntl(nextConfig), {
   sourcemaps: { deleteSourcemapsAfterUpload: true },
   // Bypass ad blockers by tunnelling events through the Next server.
   tunnelRoute: '/sentry-tunnel',
-  reactComponentAnnotation: { enabled: true },
   // Only print upload logs in CI.
   silent: !process.env.CI,
-  disableLogger: true,
+  webpack: {
+    treeshake: { removeDebugLogging: true },
+    reactComponentAnnotation: { enabled: true },
+  },
   ...(process.env.SENTRY_RELEASE
     ? { release: { name: process.env.SENTRY_RELEASE } }
     : {}),

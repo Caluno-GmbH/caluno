@@ -1,4 +1,5 @@
 import { emailTheme } from './theme';
+import { escapeHtml } from './utils';
 
 const { colors } = emailTheme;
 
@@ -134,6 +135,7 @@ export interface HeadingOptions {
   size?: string;
   padding?: string;
   letterSpacing?: string;
+  color?: string;
 }
 
 /** Section heading. */
@@ -142,11 +144,13 @@ export function heading(content: string, options: HeadingOptions = {}): string {
     size = '26px',
     padding = '0 0 12px',
     letterSpacing = '-0.02em',
+    color = colors.ink,
   } = options;
 
   return text(content, {
     size,
     weight: 700,
+    color,
     padding,
     letterSpacing,
     lineHeight: '1.25',
@@ -163,7 +167,7 @@ export interface ButtonOptions {
 export function button(options: ButtonOptions): string {
   const { href, label, padding = '0 0 24px' } = options;
 
-  return `<mj-button href="${href}" background-color="${colors.greenDark}" color="${colors.onBrand}" font-size="16px" font-weight="600" border-radius="8px" inner-padding="14px 28px" align="left" padding="${padding}">${label}</mj-button>`;
+  return `<mj-button href="${href}" background-color="${colors.primary}" color="${colors.onBrand}" font-size="16px" font-weight="600" border-radius="8px" inner-padding="14px 28px" align="left" padding="${padding}">${label}</mj-button>`;
 }
 
 /** Horizontal rule. */
@@ -178,8 +182,57 @@ export function orderedListItem(
   options: { last?: boolean } = {},
 ): string {
   const padding = options.last ? '0' : '0 0 12px';
-  const marker = `<span style="color:${colors.green};font-weight:700">${index}.</span>`;
+  const marker = `<span style="color:${colors.primary};font-weight:700">${index}.</span>`;
   return text(`${marker}&nbsp;&nbsp;${content}`, { padding });
+}
+
+export interface ShiftCardOptions {
+  href: string;
+  /** The shift's cover image — omitted entirely when null, leaving just the text card. */
+  imageUrl: string | null;
+  title: string;
+  subtitle: string;
+  /** Extra line for row-specific context, rendered as a pill badge — e.g. why a shift needs volunteers. */
+  meta?: string;
+  /** Omits the bottom margin — pass for the last card in a stack. */
+  last?: boolean;
+}
+
+const SHIFT_CARD_IMAGE_HEIGHT_PX = 120;
+const CONTENT_PADDING_TOP_PX = 12;
+const CONTENT_PADDING_BOTTOM_PX = 14;
+const CONTENT_PADDING_SIDE_PX = 14;
+
+const SHIFT_CARD_SHADOW =
+  '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)';
+
+const SHIFT_CARD_BADGE_TEXT = '#9c2f34';
+
+export function shiftCard(options: ShiftCardOptions): string {
+  const { href, imageUrl, title, subtitle, meta, last = false } = options;
+  const marginBottom = last ? '0' : '12px';
+
+  const imageBlock = imageUrl
+    ? `<img src="${escapeHtml(imageUrl)}" width="600" alt="" style="display:block;width:100%;height:${SHIFT_CARD_IMAGE_HEIGHT_PX}px;object-fit:cover;background-color:${colors.border};" />`
+    : '';
+
+  const contentPadding = `${CONTENT_PADDING_TOP_PX}px ${CONTENT_PADDING_SIDE_PX}px ${CONTENT_PADDING_BOTTOM_PX}px`;
+
+  const metaBadge = meta
+    ? `<span style="display:inline-block;background-color:${colors.primarySoft};color:${SHIFT_CARD_BADGE_TEXT};border-radius:9999px;padding:3px 10px;font-size:12px;font-weight:600;margin-top:8px;">${meta}</span>`
+    : '';
+
+  return text(
+    `<a href="${href}" style="text-decoration:none;display:block;border:1px solid ${colors.border};border-radius:12px;overflow:hidden;margin:0 0 ${marginBottom};box-shadow:${SHIFT_CARD_SHADOW};">
+      ${imageBlock}
+      <div style="padding:${contentPadding};">
+        <div style="font-weight:600;color:${colors.ink};font-size:15px;line-height:1.4;">${title}</div>
+        <div style="color:${colors.muted};font-size:13px;line-height:1.4;margin-top:2px;">${subtitle}</div>
+        ${metaBadge}
+      </div>
+    </a>`,
+    { padding: '0' },
+  );
 }
 
 /**

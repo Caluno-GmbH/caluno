@@ -10,51 +10,82 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-caluno}
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  minio:
-    image: minio/minio:latest
-    container_name: minio
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: rustfs
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin}
+      RUSTFS_CONSOLE_ENABLE: true
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-s3admin}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_KEY:-s3admin}
+      RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS: "*"
+      RUSTFS_CORS_ALLOWED_ORIGINS: "*"
     ports:
-      - '9000:9000'
-      - '9001:9001'
-    volumes:
-      - minio_data:/data
+      - "9000:9000"
+      - "9001:9001"
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  minio-init:
-    image: minio/mc:latest
-    container_name: minio-init
+  s3-init:
+    image: d3fk/s3cmd:latest
+    container_name: s3-init
     depends_on:
-      minio:
+      rustfs:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
-      mc mb --ignore-existing local/$${STORAGE_BUCKET};
-      mc anonymous set download local/$${STORAGE_BUCKET}/public;
-      exit 0;
-      "
     environment:
-      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-minioadmin}
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY:-s3admin}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY:-s3admin}
       STORAGE_BUCKET: ${STORAGE_BUCKET:-caluno}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        S3="s3cmd --no-ssl --host=rustfs:9000 --host-bucket=rustfs:9000 \
+          --access_key=$${STORAGE_ACCESS_KEY} --secret_key=$${STORAGE_SECRET_KEY} --region=us-east-1"
+
+        # create bucket (ignore "already exists")
+        $$S3 mb s3://$${STORAGE_BUCKET} || true
+
+        # anonymous read-only access to the public/ prefix
+        cat > /tmp/policy.json <<EOF
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {"AWS": ["*"]},
+              "Action": ["s3:GetBucketLocation"],
+              "Resource": ["arn:aws:s3:::$${STORAGE_BUCKET}"]
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {"AWS": ["*"]},
+              "Action": ["s3:ListBucket"],
+              "Resource": ["arn:aws:s3:::$${STORAGE_BUCKET}"],
+              "Condition": {"StringEquals": {"s3:prefix": ["public/"]}}
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {"AWS": ["*"]},
+              "Action": ["s3:GetObject"],
+              "Resource": ["arn:aws:s3:::$${STORAGE_BUCKET}/public/*"]
+            }
+          ]
+        }
+        EOF
+        $$S3 setpolicy /tmp/policy.json s3://$${STORAGE_BUCKET}
+        exit 0
 
   mailpit:
     image: axllent/mailpit:latest
@@ -66,6 +97,4 @@ services:
 
 volumes:
   postgres_data:
-    driver: local
-  minio_data:
     driver: local

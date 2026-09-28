@@ -15,6 +15,7 @@ import { UserRequirementStatus } from '../../requirement-profile/models/user-req
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { ShiftInviteStatus } from '../enums';
 import { CreateShiftInput } from '../inputs/create-shift.input';
+import { DuplicateShiftInput } from '../inputs/duplicate-shift.input';
 import { UpdateShiftInput } from '../inputs/update-shift.input';
 import { UpdateShiftInstanceInput } from '../inputs/update-shift-instance.input';
 import { ShiftMapper } from '../mappers/shift.mapper';
@@ -24,14 +25,19 @@ import { ShiftInviteMapper } from '../mappers/shift-invite.mapper';
 import { JoinShiftInstanceResult } from '../models/join-shift-instance-result.model';
 import { Shift } from '../models/shift.model';
 import { ShiftInstance } from '../models/shift-instance.model';
+import { ShiftInstanceCallOutResult } from '../models/shift-instance-call-out.model';
 import { ShiftInstanceInvite } from '../models/shift-instance-invite.model';
 import { ShiftInvite } from '../models/shift-invite.model';
+import { ShiftCallOutService } from '../services/shift-call-out.service';
+import { ShiftInviteReminderService } from '../services/shift-invite-reminder.service';
 import { ShiftService } from '../shift.service';
 
 @Resolver(() => Shift)
 export class ShiftMutationResolver {
   constructor(
     private readonly shiftService: ShiftService,
+    private readonly shiftCallOutService: ShiftCallOutService,
+    private readonly shiftInviteReminderService: ShiftInviteReminderService,
     private readonly shiftMapper: ShiftMapper,
     private readonly shiftInstanceMapper: ShiftInstanceMapper,
     private readonly shiftInviteMapper: ShiftInviteMapper,
@@ -51,7 +57,7 @@ export class ShiftMutationResolver {
     const isSelf = actorUserId === targetUserId;
     const isAdminOnlyTarget =
       status === ShiftInviteStatus.ADMIN_REJECTED ||
-      status === ShiftInviteStatus.INVITED;
+      status === ShiftInviteStatus.ADMIN_INVITED;
 
     if (isSelf && !isAdminOnlyTarget) {
       return;
@@ -82,6 +88,23 @@ export class ShiftMutationResolver {
     const shift = await this.shiftService.create(
       session.user.id,
       context.organizationUnitId,
+      input,
+    );
+    return this.shiftMapper.toModelOrThrow(shift);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => Shift)
+  async duplicateShift(
+    @Session() session: UserSession,
+    @Args('id', { type: () => String }) id: string,
+    @Args('input') input: DuplicateShiftInput,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<Shift> {
+    const shift = await this.shiftService.duplicate(
+      session.user.id,
+      context.organizationUnitId,
+      id,
       input,
     );
     return this.shiftMapper.toModelOrThrow(shift);
@@ -273,7 +296,7 @@ export class ShiftMutationResolver {
   ): Promise<ShiftInvite> {
     const isAdminOnlyTarget =
       status === ShiftInviteStatus.ADMIN_REJECTED ||
-      status === ShiftInviteStatus.INVITED;
+      status === ShiftInviteStatus.ADMIN_INVITED;
 
     if (isAdminOnlyTarget) {
       const hasPermission = await this.authService.hasRequiredPermissions(
@@ -296,6 +319,36 @@ export class ShiftMutationResolver {
       session.user.id,
     );
     return this.shiftInviteMapper.toModelOrThrow(invite);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => ShiftInstanceCallOutResult)
+  async sendShiftInstanceCallOut(
+    @Args('instanceId', { type: () => String }) instanceId: string,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
+  ): Promise<ShiftInstanceCallOutResult> {
+    return this.shiftCallOutService.sendCallOut(
+      instanceId,
+      context.organizationUnitId,
+      session.user.id,
+    );
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => Date)
+  async remindShiftInstanceInvite(
+    @Args('instanceId', { type: () => String }) instanceId: string,
+    @Args('userId', { type: () => String }) userId: string,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
+  ): Promise<Date> {
+    return this.shiftInviteReminderService.sendInviteReminder(
+      instanceId,
+      userId,
+      context.organizationUnitId,
+      session.user.id,
+    );
   }
 
   @Mutation(() => ShiftInstanceInvite)
@@ -325,5 +378,20 @@ export class ShiftMutationResolver {
       session.user.id,
     );
     return this.shiftInstanceInviteMapper.toModelOrThrow(invite);
+  }
+
+  @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
+  @Mutation(() => ShiftInstance)
+  async checkInInviteToShiftInstance(
+    @Args('shiftInstanceId', { type: () => ID }) shiftInstanceId: string,
+    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<ShiftInstance> {
+    const instance = await this.shiftService.inviteVolunteerToShiftInstance(
+      shiftInstanceId,
+      volunteerId,
+      context.organizationUnitId,
+    );
+    return this.shiftInstanceMapper.toModelOrThrow(instance);
   }
 }

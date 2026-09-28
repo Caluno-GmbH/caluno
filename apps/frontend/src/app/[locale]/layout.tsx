@@ -11,7 +11,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { routing } from '@/i18n/routing';
 
 import '../globals.css';
-import { Toaster } from '@repo/ui';
+import { Toaster } from '@/components/toaster';
 
 const geologica = Geologica({
   variable: '--font-geologica-sans',

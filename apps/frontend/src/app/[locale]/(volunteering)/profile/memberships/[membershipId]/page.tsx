@@ -2,14 +2,19 @@ import type {
   GetMyFormSubmissionsQuery,
   MyRequiredOrgUnitFormsQuery,
 } from '@repo/data';
+import { DataProvider } from '@repo/data/react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { VolunteerDocumentsSection } from '@/domain/accounting/components/volunteer-documents-section';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
 import {
   type FormSubmission,
   MembershipFormCard,
 } from '@/domain/memberships/components/membership-form-card';
 import { MembershipStatusBadge } from '@/domain/memberships/components/membership-status-badge';
+import { internalRoleKey } from '@/domain/role/lib/role-label';
+import { resolveLocale } from '@/i18n/routing';
+import { GRAPHQL_API_URL } from '@/lib/constants';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 
@@ -47,10 +52,13 @@ const mergeOrgUnitFormsWithSubmissions = (
   return [...mergedByFormId.values()];
 };
 
-type Props = { params: Promise<{ membershipId: string }> };
+type Props = {
+  params: Promise<{ locale: string; membershipId: string }>;
+};
 
 export default async function MembershipDetailPage({ params }: Props) {
-  const { membershipId } = await params;
+  const { locale: rawLocale, membershipId } = await params;
+  const locale = resolveLocale(rawLocale);
 
   const data = await getDataClient();
   const membership = await data.membership.findMineById(membershipId);
@@ -68,6 +76,7 @@ export default async function MembershipDetailPage({ params }: Props) {
   );
 
   const t = await getTranslations('MembershipDetail');
+  const tRole = await getTranslations('Role');
   const { formatDate } = await getFormatting();
 
   const orgUnit = membership.organizationUnit;
@@ -85,7 +94,13 @@ export default async function MembershipDetailPage({ params }: Props) {
         <section className="space-y-1">
           <MembershipStatusBadge state="accepted" />
           <p className="text-muted-foreground">
-            {t('role')} · {membership.roles.map((r) => r.name).join(', ')}
+            {t('role')} ·{' '}
+            {membership.roles
+              .map((r) => {
+                const key = internalRoleKey(r);
+                return key ? tRole(key) : r.name;
+              })
+              .join(', ')}
           </p>
           <p className="text-muted-foreground">
             {t('joinedDate', {
@@ -110,6 +125,19 @@ export default async function MembershipDetailPage({ params }: Props) {
             ))}
           </div>
         </section>
+
+        {/* Scoped to the membership's org unit so each organisation's page
+            lists only its own documents (see accounting-volunteer-documents). */}
+        <DataProvider
+          apiUrl={GRAPHQL_API_URL}
+          organizationUnitId={organizationUnitId}
+          locale={locale}
+        >
+          <VolunteerDocumentsSection
+            membershipId={membershipId}
+            organizationUnitId={organizationUnitId}
+          />
+        </DataProvider>
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import {
   TableRow,
 } from '@repo/ui';
 import { useTranslations } from 'next-intl';
+import { internalRoleKey } from '@/domain/role/lib/role-label';
 import { Link } from '@/i18n/navigation';
 import { ActionBar } from './action-bar';
 
@@ -22,6 +23,10 @@ interface RolesTableProps {
 export function RolesTable({ roles }: RolesTableProps) {
   const orgUId = useOrgUId();
   const t = useTranslations('Role');
+  const roleLabel = (role: RoleListItem) => {
+    const key = internalRoleKey(role);
+    return key ? t(key) : role.name;
+  };
   const tCommon = useTranslations('Common');
 
   return (
@@ -44,7 +49,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                     href={`/admin/${orgUId}/settings/roles/${role.id}`}
                     className="hover:underline"
                   >
-                    {role.name}
+                    {roleLabel(role)}
                   </Link>
                   {role.isInternal && (
                     <Badge variant="secondary">{t('table.systemBadge')}</Badge>

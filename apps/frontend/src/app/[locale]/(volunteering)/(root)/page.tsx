@@ -33,11 +33,11 @@ export default async function VolunteeringHomePage({
     client.event.findAvailableEvents({ limit: 10 }),
     client.shift.findMyShiftInstances({
       limit: 10,
-      statuses: [ShiftInviteStatus.Invited],
+      statuses: [ShiftInviteStatus.AdminInvited],
     }),
     client.event.findMyEvents({
       limit: 10,
-      statuses: [EventInviteStatus.Invited],
+      statuses: [EventInviteStatus.AdminInvited],
     }),
     client.event.findMyEvents({
       limit: 10,
@@ -69,6 +69,8 @@ export default async function VolunteeringHomePage({
               organizationName:
                 pendingRequest.organizationUnit.organization.name,
               contactName: pendingRequest.contact?.name,
+              contactEmail: pendingRequest.contact?.email,
+              contactPhone: pendingRequest.contact?.phone,
             }
           : null
       }

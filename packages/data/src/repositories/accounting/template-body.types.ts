@@ -18,6 +18,7 @@ export type DataSourceKey =
   | 'org_name'
   | 'org_address'
   | 'org_city'
+  | 'org_zip'
   | 'org_legal_rep'
   | 'pauschalen_type'
   | 'hourly_rate'
@@ -28,12 +29,14 @@ export type DataSourceKey =
   | 'generated_date'
   | 'document_number'
   | 'volunteer_iban'
+  | 'volunteer_account_holder'
   | 'volunteer_bic'
   | 'volunteer_address'
   | 'volunteer_dob'
   | 'volunteer_tax_id'
   | 'contract_period'
   | 'already_received_amount'
+  | 'already_received_period'
   | 'yearly_limit_amount';
 
 /** Coordinator-typed once, in the builder — reused verbatim on every document generated from this template. */
@@ -62,7 +65,11 @@ export type TemplateLine = {
 export type TemplateTextBlock = {
   kind: 'text';
   id: string;
-  /** Literal German heading — documents are always German, never i18n'd. */
+  /**
+   * Literal German heading — documents are always German, never i18n'd. Rendered as-is in the
+   * document preview and the generated PDF; the template editor renders its own translated
+   * heading instead (`builder-headings.ts`), so interface copy never leaks from here (VOLI-1336).
+   */
   title: string;
   /** true = mandatory, no block-level toggle (lines may still have their own `optional` toggle). */
   locked: boolean;
@@ -77,6 +84,7 @@ export type TableFirstColumnSource = 'agreement_task_description' | 'custom';
 export type TemplateTableBlock = {
   kind: 'table';
   id: string;
+  /** Literal German heading — document content, same interface-versus-document rule as `TemplateTextBlock.title`. */
   title: string;
   locked: true;
   columns: string[];
@@ -91,6 +99,7 @@ export type TemplateTableBlock = {
 export type TemplateNoteBlock = {
   kind: 'note';
   id: string;
+  /** Literal German heading — document content, same interface-versus-document rule as `TemplateTextBlock.title`. */
   title: string;
   locked: true;
   line: TemplateLine;
@@ -141,6 +150,7 @@ export function parseTemplateBody(
   raw: Record<string, unknown>,
 ): TemplateDocument {
   const header = (raw.header ?? {}) as TemplateHeader;
+  header.metaLines = header.metaLines ?? [];
   const blocks = (
     Array.isArray(raw.blocks) ? raw.blocks : []
   ) as TemplateBlock[];

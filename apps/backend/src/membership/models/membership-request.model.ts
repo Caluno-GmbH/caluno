@@ -3,6 +3,7 @@ import { createPaginatedResponseType } from '../../graphql/paginated-response.mo
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { User } from '../../user/models/user.model';
 import { MembershipRequestStatus } from '../enums';
+import { MembershipRequestContact } from './membership-request-contact.model';
 
 registerEnumType(MembershipRequestStatus, {
   name: 'MembershipRequestStatus',
@@ -22,8 +23,8 @@ export class MembershipRequest {
   @Field(() => User, { nullable: true })
   reviewedBy?: User | null;
 
-  @Field(() => User, { nullable: true })
-  contact?: User | null;
+  @Field(() => MembershipRequestContact, { nullable: true })
+  contact?: MembershipRequestContact | null;
 
   @Field(() => Date, { nullable: true })
   reviewedAt?: Date | null;

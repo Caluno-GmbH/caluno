@@ -31,20 +31,43 @@ function timeZoneOffsetMs(date: Date): number {
   return asUtc - date.getTime();
 }
 
-/** Start of the current day in the app timezone, returned as a UTC instant. */
-export function startOfTodayInAppTimeZone(now: Date = new Date()): Date {
+/** The calendar date of an instant in the app timezone (month is 0-based). */
+export function appDateParts(date: Date): {
+  year: number;
+  month: number;
+  day: number;
+} {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: APP_TIME_ZONE,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(now);
-  const utcMidnight = Date.UTC(
-    partsToNumber(parts, 'year'),
-    partsToNumber(parts, 'month') - 1,
-    partsToNumber(parts, 'day'),
-  );
+  }).formatToParts(date);
+  return {
+    year: partsToNumber(parts, 'year'),
+    month: partsToNumber(parts, 'month') - 1,
+    day: partsToNumber(parts, 'day'),
+  };
+}
+
+/**
+ * Midnight of a calendar date in the app timezone, as a UTC instant. Month
+ * and day overflow roll over like `Date.UTC` (month 12 is January next year).
+ */
+export function startOfAppDay(year: number, month: number, day: number): Date {
+  const utcMidnight = Date.UTC(year, month, day);
   // Midnight is never a DST transition point in Berlin, so the offset at the
   // naive UTC-midnight instant equals the offset at local midnight.
   return new Date(utcMidnight - timeZoneOffsetMs(new Date(utcMidnight)));
+}
+
+/** Start of the current day in the app timezone, returned as a UTC instant. */
+export function startOfTodayInAppTimeZone(now: Date = new Date()): Date {
+  const { year, month, day } = appDateParts(now);
+  return startOfAppDay(year, month, day);
+}
+
+/** Hours from `now` until `target` (negative once `target` is in the past). Both are absolute instants, so no timezone handling is needed here. */
+export function hoursUntil(target: Date, now: Date = new Date()): number {
+  return (target.getTime() - now.getTime()) / 3_600_000;
 }

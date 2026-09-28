@@ -31,18 +31,21 @@ export function SegmentedControl({
     <Tabs
       value={value}
       onValueChange={onChange}
-      className={cn('w-full', className)}
+      className={cn('w-full min-w-0', className)}
     >
       <TabsList
         size={size}
         variant={variant}
-        className="grid w-full grid-cols-2"
+        className="grid min-w-full"
+        style={{
+          gridTemplateColumns: `repeat(${options.length}, minmax(max-content, 1fr))`,
+        }}
       >
         {options.map((option) => (
           <TabsTrigger
             key={option.value}
             value={option.value}
-            className={triggerClassName}
+            className={cn('min-w-max', triggerClassName)}
           >
             {option.label}
           </TabsTrigger>

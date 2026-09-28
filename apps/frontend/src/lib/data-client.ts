@@ -1,13 +1,13 @@
 import {
   createDataClient,
   type DataClient,
-  ForbiddenDataError,
   LOCALE_HEADER,
   type Locale,
 } from '@repo/data';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { GRAPHQL_API_URL } from './constants';
+import { handleServerDataClientError } from './data-client-errors';
 
 const globalForData = globalThis as unknown as {
   dataClient: DataClient | undefined;
@@ -27,12 +27,17 @@ if (process.env.NODE_ENV !== 'production') {
 interface GetDataClientOptions {
   orgUId?: string;
   locale?: Locale;
+  /**
+   * When false, UNAUTHENTICATED GraphQL errors are thrown for the caller to
+   * handle (e.g. optional admin nav). Default: redirect to login.
+   */
+  redirectOnUnauthenticated?: boolean;
 }
 
 export async function getDataClient(
   options?: GetDataClientOptions,
 ): Promise<DataClient> {
-  const { orgUId, locale } = options ?? {};
+  const { orgUId, locale, redirectOnUnauthenticated = true } = options ?? {};
   const headersList = await headers();
   const cookieHeader = headersList.get('cookie');
 
@@ -54,13 +59,12 @@ export async function getDataClient(
     url: GRAPHQL_API_URL,
     headers: clientHeaders,
     onError: (error) => {
-      if (error instanceof ForbiddenDataError) {
-        //  This is less than ideal, as error handling code is not given the chance to handle the error themselves.
-        //  They're just booted out to the unauthorized page. So as a fallback it's too broad - it's handling all 403 errors handled and unhandled.
-        //  But... the FE shouldn't allow unauthorized GQL in the first place, so as a fallback maybe it's ok. Let's see, revisit later :|
-        redirect(`/unauthorized?message=${encodeURIComponent(error.message)}`);
-      }
-      throw error;
+      // Fallback only — callers should guard auth before hitting protected GQL.
+      handleServerDataClientError(
+        error,
+        { redirectOnUnauthenticated },
+        redirect,
+      );
     },
   });
 }

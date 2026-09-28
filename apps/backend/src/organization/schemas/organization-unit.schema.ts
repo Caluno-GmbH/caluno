@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
   foreignKey,
   index,
@@ -38,9 +39,17 @@ export const organizationUnits = snakeCase.table(
     coverUrl: text('cover_url'),
     websiteUrl: text('website_url'),
     contactEmail: text('contact_email'),
+    contactPersonName: text('contact_person_name'),
     phone: text('phone'),
+    welcomeMessage: text('welcome_message'),
     description: text('description'),
     address: text('address'),
+    city: text('city'),
+    zipCode: text('zip_code'),
+    legalRep: text('legal_rep'),
+    idVerificationEnabled: boolean('id_verification_enabled')
+      .notNull()
+      .default(false),
     requiredMembershipRequirementProfileId: uuid(
       'required_membership_requirement_profile_id',
     ).references(() => requirementProfiles.id, { onDelete: 'set null' }),

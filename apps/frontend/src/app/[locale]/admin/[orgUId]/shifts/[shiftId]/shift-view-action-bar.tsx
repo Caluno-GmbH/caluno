@@ -24,6 +24,7 @@ export function ShiftViewActionBar({
       id={id}
       organizationUnitId={organizationUnitId}
       size={size}
+      duplicateRedirectsToDetail
       onDeleteSuccess={() =>
         router.push(shiftsListPath(organizationUnitId, returnQuery))
       }

@@ -82,10 +82,10 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
-      packages: read # Postgres comes from the ghcr.io/holi-social mirror
+      packages: read # Postgres comes from the ghcr.io/caluno-gmbh mirror
     services:
       postgres:
-        image: ghcr.io/holi-social/mirror/postgres:17
+        image: ghcr.io/caluno-gmbh/mirror/postgres:17
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}

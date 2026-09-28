@@ -1,6 +1,9 @@
 import { BadRequestGraphQLError } from '../../graphql/errors';
 import { FieldType } from '../enums';
-import { assertValidFieldOptions } from './validate-field-options';
+import {
+  assertValidFieldOptions,
+  assertValidSystemKeyBinding,
+} from './validate-field-options';
 
 describe('assertValidFieldOptions', () => {
   it('throws for a MULTI_CHOICE option with an empty value', () => {
@@ -48,6 +51,48 @@ describe('assertValidFieldOptions', () => {
     ).not.toThrow();
     expect(() =>
       assertValidFieldOptions(FieldType.MULTI_CHOICE, undefined),
+    ).not.toThrow();
+  });
+});
+
+describe('assertValidSystemKeyBinding', () => {
+  it('accepts a gender single-choice field without options', () => {
+    expect(() =>
+      assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, null),
+    ).not.toThrow();
+    expect(() =>
+      assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, []),
+    ).not.toThrow();
+  });
+
+  it('rejects a gender field with a non-choice type', () => {
+    expect(() =>
+      assertValidSystemKeyBinding('gender', FieldType.TEXT, null),
+    ).toThrow(BadRequestGraphQLError);
+    expect(() =>
+      assertValidSystemKeyBinding('gender', FieldType.MULTI_CHOICE, null),
+    ).toThrow(BadRequestGraphQLError);
+  });
+
+  it('rejects a gender field with custom options', () => {
+    expect(() =>
+      assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, [
+        { label: 'Female', value: 'female' },
+      ]),
+    ).toThrow(BadRequestGraphQLError);
+  });
+
+  it('ignores other system keys and missing keys', () => {
+    expect(() =>
+      assertValidSystemKeyBinding('name', FieldType.TEXT, null),
+    ).not.toThrow();
+    expect(() =>
+      assertValidSystemKeyBinding(null, FieldType.TEXT, null),
+    ).not.toThrow();
+    expect(() =>
+      assertValidSystemKeyBinding(undefined, FieldType.SINGLE_CHOICE, [
+        { label: 'A', value: 'a' },
+      ]),
     ).not.toThrow();
   });
 });

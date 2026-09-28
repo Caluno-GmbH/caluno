@@ -60,9 +60,14 @@ export function EditOrgUnitForm({
       typeId: organizationUnit?.type.id,
       websiteUrl: organizationUnit?.websiteUrl ?? undefined,
       contactEmail: organizationUnit?.contactEmail ?? undefined,
+      contactPersonName: organizationUnit?.contactPersonName ?? undefined,
       phone: organizationUnit?.phone ?? undefined,
+      welcomeMessage: organizationUnit?.welcomeMessage ?? undefined,
       description: organizationUnit?.description ?? undefined,
       address: organizationUnit?.address ?? undefined,
+      city: organizationUnit?.city ?? undefined,
+      zipCode: organizationUnit?.zipCode ?? undefined,
+      legalRep: organizationUnit?.legalRep ?? undefined,
     },
   });
 
@@ -76,9 +81,14 @@ export function EditOrgUnitForm({
         logoFileId: formData.logoFileId,
         websiteUrl: formData.websiteUrl,
         contactEmail: formData.contactEmail,
+        contactPersonName: formData.contactPersonName,
         phone: formData.phone,
+        welcomeMessage: formData.welcomeMessage,
         description: formData.description,
         address: formData.address,
+        city: formData.city,
+        zipCode: formData.zipCode,
+        legalRep: formData.legalRep,
       });
 
       if (result?.serverError) {
@@ -86,6 +96,11 @@ export function EditOrgUnitForm({
       } else {
         await queryClient.invalidateQueries({
           queryKey: ['organization-unit', editOrgUnitId],
+        });
+        // The accounting setup gate reads the org profile, so a profile edit
+        // must clear the cached readiness result.
+        await queryClient.invalidateQueries({
+          queryKey: ['accounting', 'setup-status'],
         });
         onSuccess?.();
       }

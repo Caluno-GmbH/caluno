@@ -71,6 +71,10 @@ export function EventVolunteersSection({
         return t('status.cancelled');
       case 'rejected':
         return t('status.rejected');
+      case 'requested':
+        return t('status.requested');
+      case 'waitlisted':
+        return t('status.waitlisted');
       default:
         return state;
     }
@@ -83,7 +87,7 @@ export function EventVolunteersSection({
     state: toInviteDisplayState(invite.status),
     statusLabel: statusLabel(invite.status),
     actions: manageActions(invite.status, canEdit),
-    iconActions: ['View', 'Check in'],
+    iconActions: ['View'],
   }));
 
   const counts = countInviteDisplayStates(invites.map((i) => i.status));
@@ -91,6 +95,7 @@ export function EventVolunteersSection({
     invited: tShift('inviteStatus.summaryInvited'),
     accepted: tShift('inviteStatus.summaryAccepted'),
     signedUp: tShift('inviteStatus.summarySignedUp'),
+    waitlisted: tShift('inviteStatus.summaryWaitlisted'),
     spots: tShift('inviteStatus.summarySpots'),
   });
 
@@ -112,13 +117,6 @@ export function EventVolunteersSection({
 
     if (action === 'View') {
       openProfile(invite);
-      return;
-    }
-
-    if (action === 'Check in') {
-      router.push(
-        `/admin/${orgUId}/check-in/${invite.user.checkInId}/check-in`,
-      );
       return;
     }
 
@@ -172,7 +170,6 @@ export function EventVolunteersSection({
       }
       actionLabels={{
         View: tVolunteer('viewProfileAria'),
-        'Check in': tVolunteer('checkInAria'),
         Invite: t('actionInvite'),
         Uninvite: t('actionUninvite'),
       }}

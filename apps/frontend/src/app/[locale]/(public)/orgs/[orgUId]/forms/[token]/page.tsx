@@ -35,7 +35,7 @@ export default async function PublicFormPage({ params }: Props) {
     await Promise.all([
       isMemberOfOrgUnit(orgUId),
       data.requirementForm.getMyUserProfile(),
-      data.organizationUnit.findById(orgUId),
+      data.publicOrganizationUnit.findById(orgUId),
       data.requirementForm.getMyFormSubmissionByToken(token),
     ]);
 

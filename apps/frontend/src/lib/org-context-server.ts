@@ -1,4 +1,8 @@
-import { LAST_ORG_COOKIE, type MyOrganizationUnit } from '@repo/data';
+import {
+  isUnauthenticatedDataError,
+  LAST_ORG_COOKIE,
+  type MyOrganizationUnit,
+} from '@repo/data';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getDataClient } from './data-client';
@@ -10,6 +14,8 @@ export interface OrgContextData {
   description?: string | null;
   logoUrl?: string | null;
   address?: string | null;
+  city?: string | null;
+  legalRep?: string | null;
   organizationId: string;
   accountingEnabled: boolean;
 }
@@ -27,6 +33,8 @@ function normalizeUnits(units: MyOrganizationUnit[]): OrgContextData[] {
         description: unit.description ?? unit.organization.description ?? null,
         logoUrl: unit.logoUrl ?? unit.organization.logoUrl ?? null,
         address: unit.address,
+        city: unit.city,
+        legalRep: unit.legalRep,
         organizationId: unit.organization.id,
         accountingEnabled: unit.organization.accountingEnabled,
       };
@@ -57,7 +65,16 @@ export async function getMyCheckInOrgUnits(): Promise<OrgContextData[]> {
 }
 
 export async function isAnAdminstrator() {
-  return (await getMyAdministrableOrgUnits()).length > 0;
+  try {
+    const data = await getDataClient({ redirectOnUnauthenticated: false });
+    const units = await data.organization.findMyAdminstrableOrganizationUnits();
+    return normalizeUnits(units).length > 0;
+  } catch (error) {
+    if (isUnauthenticatedDataError(error)) {
+      return false;
+    }
+    throw error;
+  }
 }
 
 export async function resolveOrgFromId(
@@ -127,6 +144,8 @@ export async function requireOrgAccess(
       description: unit.description ?? null,
       logoUrl: unit.logoUrl ?? null,
       address: unit.address ?? null,
+      city: unit.city ?? null,
+      legalRep: unit.legalRep ?? null,
       organizationId: unit.organizationId ?? '',
       accountingEnabled: false,
     },

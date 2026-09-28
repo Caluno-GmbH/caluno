@@ -6,13 +6,18 @@ export type MembershipCardOrgUnit = {
   isRoot: boolean;
 };
 
+export type MembershipEntryRole = {
+  name: string;
+  isInternal?: boolean | null;
+};
+
 export type MembershipEntry =
   | {
       state: 'accepted';
       id: string;
       organizationName: string;
       orgUnit: MembershipCardOrgUnit;
-      roles: string[];
+      roles: MembershipEntryRole[];
       date: Date;
     }
   | {

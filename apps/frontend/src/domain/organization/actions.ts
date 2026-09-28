@@ -1,9 +1,14 @@
 'use server';
 
-import type { CreateOrganizationInput } from '@repo/data';
+import type {
+  CreateOrganizationInput,
+  UpdateOrganizationUnitInput,
+} from '@repo/data';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { getDataClient } from '@/lib/data-client';
+import { actionClient } from '@/lib/safe-action';
+import { updateOrganizationSchema } from './schemas';
 
 interface CreateOrganizationResult {
   success: boolean;
@@ -59,3 +64,38 @@ export async function createOrganization(
 
   redirect(`/admin/${org.root.id}`);
 }
+
+export const updateOrganizationProfile = actionClient
+  .inputSchema(updateOrganizationSchema)
+  .action(async ({ parsedInput }) => {
+    const data = await getDataClient({
+      orgUId: parsedInput.organizationUnitId,
+    });
+
+    // Only the profile fields: the unit update leaves omitted fields (name,
+    // type, description, logo) untouched.
+    const input: UpdateOrganizationUnitInput = {
+      organizationId: parsedInput.organizationId,
+      address: parsedInput.address || null,
+      city: parsedInput.city || null,
+      zipCode: parsedInput.zipCode || null,
+      legalRep: parsedInput.legalRep || null,
+      contactEmail: parsedInput.contactEmail || null,
+      phone: parsedInput.phone || null,
+      websiteUrl: parsedInput.websiteUrl || null,
+    };
+
+    const unit = await data.organizationUnit.update(
+      parsedInput.rootUnitId,
+      input,
+    );
+
+    // Settings isn't a logo editor, but the organization row's logo is still
+    // read elsewhere (e.g. the join header). Carry the existing value through
+    // so saving the profile doesn't silently drop it.
+    await data.organization.update(parsedInput.organizationId, {
+      logoUrl: parsedInput.logoUrl ?? null,
+    });
+
+    return unit;
+  });

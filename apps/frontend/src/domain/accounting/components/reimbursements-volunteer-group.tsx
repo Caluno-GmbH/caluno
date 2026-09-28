@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  useBundleDownloadStatus,
-  useRecordBundleDownload,
-} from '@repo/data/react';
+import { useBundleDownloadStatus, useQueryClient } from '@repo/data/react';
 import {
   Button,
   cn,
@@ -14,12 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui';
-import { format } from 'date-fns';
 import { ChevronDownIcon, FileTextIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
+import { useFormatting } from '@/lib/formatting/use-formatting';
+import { documentRowAction } from '../lib/board-data.utils';
+import {
+  documentCreationBlockedFor,
+  type TemplateReadinessByPauschale,
+} from '../lib/setup-status';
 import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
@@ -38,7 +41,6 @@ import {
   getReadyToGoDocs,
   isTimesheetNonCompliant,
 } from './reimbursements-board';
-
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
@@ -56,6 +58,11 @@ interface StatusMeta {
 export const STATUS_META: Record<DocStatus, StatusMeta> = {
   'contract-generate': {
     labelKey: 'contractGenerate',
+    actionKey: 'create',
+    isYourAction: true,
+  },
+  'contract-draft': {
+    labelKey: 'contractDraft',
     actionKey: 'create',
     isYourAction: true,
   },
@@ -137,6 +144,7 @@ function abbreviateName(name: string): string {
 
 const STATUS_SORT_ORDER: DocStatus[] = [
   'contract-generate',
+  'contract-draft',
   'timesheet-generate',
   'contract-missing',
   'contract-signing-coord',
@@ -157,25 +165,65 @@ interface BundleDownloadButtonProps {
   reimbursementTypeId: string | undefined;
   typeLabel: string;
   readyCount: number;
+  orgUId: string;
 }
 
 /**
  * Own component (not inlined in the readyTypes.map()) because it calls
- * hooks — useBundleDownloadStatus/useRecordBundleDownload can't live
- * inside a .map() callback per rules-of-hooks.
+ * hooks — useBundleDownloadStatus can't live inside a .map() callback
+ * per rules-of-hooks.
  */
 function BundleDownloadButton({
   volunteerId,
   reimbursementTypeId,
   typeLabel,
   readyCount,
+  orgUId,
 }: BundleDownloadButtonProps) {
   const t = useTranslations('Accounting.reimbursements');
+  const { formatDate } = useFormatting();
+  const queryClient = useQueryClient();
   const { data: status, isLoading } = useBundleDownloadStatus(
     volunteerId,
     reimbursementTypeId,
   );
-  const recordDownload = useRecordBundleDownload();
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const downloadBundle = async () => {
+    if (!reimbursementTypeId || isDownloading) return;
+    const url =
+      `${API_URL}/accounting/reimbursement-bundle/download` +
+      `?volunteerId=${encodeURIComponent(volunteerId)}` +
+      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}`;
+    setIsDownloading(true);
+    try {
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: { 'x-organization-unit-id': orgUId },
+      });
+      if (!response.ok) {
+        toast.error(t('bundle.downloadError'));
+        return;
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = `Abrechnung-${volunteerId.slice(0, 8)}.zip`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      // The bundle download records the audit row and marks the READY
+      // invoices as paid, so refresh the board + "last downloaded" hint.
+      queryClient.invalidateQueries({ queryKey: ['accounting'] });
+      toast.success(t('batchBar.bundleDownloadToast', { count: readyCount }));
+    } catch {
+      toast.error(t('bundle.downloadError'));
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col items-end gap-1 max-w-[220px]">
@@ -183,20 +231,10 @@ function BundleDownloadButton({
         size="sm"
         variant="outline"
         className="gap-1.5 shrink-0"
-        disabled={!reimbursementTypeId || recordDownload.isPending}
+        disabled={!reimbursementTypeId || isDownloading}
         onClick={(e) => {
           e.stopPropagation();
-          if (!reimbursementTypeId || recordDownload.isPending) return;
-          recordDownload.mutate(
-            { volunteerId, reimbursementTypeId },
-            {
-              onSuccess: () => {
-                toast.success(
-                  t('batchBar.bundleDownloadToast', { count: readyCount }),
-                );
-              },
-            },
-          );
+          downloadBundle();
         }}
       >
         <FileTextIcon size={13} />
@@ -211,7 +249,7 @@ function BundleDownloadButton({
                 by: status.downloadedByUser?.name
                   ? abbreviateName(status.downloadedByUser.name)
                   : t('bundle.unknownUser'),
-                at: format(new Date(status.downloadedAt), 'dd.MM.yyyy'),
+                at: formatDate(new Date(status.downloadedAt)),
                 // Stubbed: no volunteer-profile route exists yet
                 // in this prototype — becomes a real link there.
                 name: (chunks) => (
@@ -234,22 +272,26 @@ function BundleDownloadButton({
 
 interface VolunteerTableGroupProps {
   vol: BoardVolunteer;
+  orgUId: string;
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
-  onRequestSign: (pair: DocVolPair) => void;
   docTypeFilter: DocTypeFilter;
   dateRange: DateRange | undefined;
   activeTile: TileFilter;
+  canCreateDocuments: boolean;
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 function VolunteerTableGroup({
   vol,
+  orgUId,
   onDocumentClick,
   onRequestCreate,
-  onRequestSign,
   docTypeFilter,
   dateRange,
   activeTile,
+  canCreateDocuments,
+  templateReadiness,
 }: VolunteerTableGroupProps) {
   const t = useTranslations('Accounting.reimbursements');
   const tSections = useTranslations('Accounting.templates.sections');
@@ -352,6 +394,7 @@ function VolunteerTableGroup({
                     reimbursementTypeId={vol.reimbursementTypeIds?.[type]}
                     typeLabel={TYPE_LABEL[type]}
                     readyCount={readyByType[type] ?? 0}
+                    orgUId={orgUId}
                   />
                 ))}
               </div>
@@ -378,11 +421,18 @@ function VolunteerTableGroup({
             doc.status === 'contract-generate' ||
             doc.status === 'timesheet-generate';
           // Contract-generate has nothing to show yet (no signing chain has
-          // started); timesheet-generate already has computed hours/amount,
-          // so it stays visually dimmed but is still openable.
-          const canOpenSheet = doc.status !== 'contract-generate';
+          // started); timesheet-generate already has computed hours/amount.
+          const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale ?? vol.pauschale;
           const docNonCompliant = isTimesheetNonCompliant(vol, doc);
+          const createBlocked =
+            actionKey === 'create' &&
+            documentCreationBlockedFor(
+              templateReadiness,
+              effectivePauschale,
+              isTimesheet ? 'invoice' : 'contract',
+            );
+          const canOpenSheet = rowAction !== 'none' && !createBlocked;
           const isDeclined =
             doc.status === 'contract-declined' ||
             doc.status === 'timesheet-declined';
@@ -397,7 +447,14 @@ function VolunteerTableGroup({
                   : 'cursor-default',
                 !isActive && !meta.isYourAction && !isGenerate && 'bg-muted/20',
               )}
-              onClick={() => canOpenSheet && onDocumentClick(doc, vol)}
+              onClick={() => {
+                if (rowAction === 'create') {
+                  if (createBlocked) return;
+                  onRequestCreate({ doc, vol });
+                  return;
+                }
+                if (rowAction === 'open') onDocumentClick(doc, vol);
+              }}
             >
               <TableCell
                 className={cn(
@@ -502,6 +559,16 @@ function VolunteerTableGroup({
                       className="text-alert"
                     />
                   )}
+                  {createBlocked && (
+                    <AlertIconTooltip
+                      hint={t(
+                        'docs.statusLabel.templateMissingHint' as Parameters<
+                          typeof t
+                        >[0],
+                      )}
+                      className="text-alert"
+                    />
+                  )}
                   {isDeclined && (
                     <Button
                       size="sm"
@@ -518,12 +585,17 @@ function VolunteerTableGroup({
                     <Button
                       size="sm"
                       variant={actionKey === 'create' ? 'default' : 'outline'}
+                      disabled={
+                        actionKey === 'create' &&
+                        (!canCreateDocuments || createBlocked)
+                      }
                       onClick={(e) => {
                         e.stopPropagation();
                         if (actionKey === 'create') {
+                          if (!canCreateDocuments || createBlocked) return;
                           onRequestCreate({ doc, vol });
                         } else {
-                          onRequestSign({ doc, vol });
+                          onDocumentClick(doc, vol);
                         }
                       }}
                     >
@@ -545,22 +617,26 @@ function VolunteerTableGroup({
 
 interface ReimbursementsTableProps {
   vols: BoardVolunteer[];
+  orgUId: string;
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
-  onRequestSign: (pair: DocVolPair) => void;
   docTypeFilter: DocTypeFilter;
   dateRange: DateRange | undefined;
   activeTile: TileFilter;
+  canCreateDocuments: boolean;
+  templateReadiness: TemplateReadinessByPauschale;
 }
 
 export function ReimbursementsTable({
   vols,
+  orgUId,
   onDocumentClick,
   onRequestCreate,
-  onRequestSign,
   docTypeFilter,
   dateRange,
   activeTile,
+  canCreateDocuments,
+  templateReadiness,
 }: ReimbursementsTableProps) {
   const t = useTranslations('Accounting.reimbursements');
 
@@ -587,12 +663,14 @@ export function ReimbursementsTable({
             <VolunteerTableGroup
               key={vol.id}
               vol={vol}
+              orgUId={orgUId}
               onDocumentClick={onDocumentClick}
               onRequestCreate={onRequestCreate}
-              onRequestSign={onRequestSign}
               docTypeFilter={docTypeFilter}
               dateRange={dateRange}
               activeTile={activeTile}
+              canCreateDocuments={canCreateDocuments}
+              templateReadiness={templateReadiness}
             />
           ))}
         </TableBody>

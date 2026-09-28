@@ -8,6 +8,7 @@ export type ShiftVolunteeringPhase = 'before' | 'during' | 'after';
 export type ShiftVolunteeringDisplayState =
   | 'invited'
   | 'requested'
+  | 'waitlisted'
   | 'accepted'
   | 'signed_up'
   | 'declined'
@@ -15,7 +16,7 @@ export type ShiftVolunteeringDisplayState =
   | 'cancelled'
   | 'checked_in'
   | 'not_checked_in'
-  | 'completed'
+  | 'checked_out'
   | 'no_show'
   | 'invited_never_responded'
   | 'requested_never_responded';
@@ -29,14 +30,21 @@ export type VolunteeringStatusIconTone =
 
 export type VolunteeringActionLabel =
   | 'Accept'
+  | 'Approve'
   | 'Decline'
   | 'Invite'
   | 'Uninvite'
+  | 'Remind'
   | 'View'
   | 'Check in'
   | 'Check out'
-  | 'Add timesheet'
-  | 'Edit time';
+  | 'Add timesheet';
+
+/** A status the chip dropdown can move a volunteer to. */
+export type VolunteeringStatusOption = {
+  value: string;
+  label: string;
+};
 
 export type VolunteeringStatusPresentation = {
   iconTone: VolunteeringStatusIconTone;

@@ -33,6 +33,7 @@ export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'org_name',
   'org_address',
   'org_city',
+  'org_zip',
   'org_legal_rep',
   'pauschalen_type',
   'hourly_rate',
@@ -44,11 +45,13 @@ export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'document_number',
   'contract_period',
   'already_received_amount',
+  'already_received_period',
   'yearly_limit_amount',
 ];
 
 export const PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
   'volunteer_iban',
+  'volunteer_account_holder',
   'volunteer_bic',
   'volunteer_address',
   'volunteer_dob',
@@ -73,6 +76,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   volunteer_first_name: 'volunteer_profile',
   volunteer_last_name: 'volunteer_profile',
   volunteer_iban: 'volunteer_profile',
+  volunteer_account_holder: 'volunteer_profile',
   volunteer_bic: 'volunteer_profile',
   volunteer_address: 'volunteer_profile',
   volunteer_dob: 'volunteer_profile',
@@ -85,10 +89,12 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
   total_amount: 'generation_time',
   contract_period: 'generation_time',
   already_received_amount: 'generation_time',
+  already_received_period: 'generation_time',
   hourly_rate: 'rate_settings',
   org_name: 'organization_profile',
   org_address: 'organization_profile',
   org_city: 'organization_profile',
+  org_zip: 'organization_profile',
   org_legal_rep: 'organization_profile',
   yearly_limit_amount: 'yearly_limit',
 };
@@ -101,7 +107,7 @@ export const FIELD_ORIGIN: Partial<Record<DataSourceKey, FieldOrigin>> = {
  * occurrence" slot either.
  */
 function allLines(doc: TemplateDocument): TemplateLine[] {
-  const lines = [doc.header.orgIdentityLine, ...doc.header.metaLines];
+  const lines = [doc.header.orgIdentityLine, ...(doc.header.metaLines ?? [])];
   for (const block of doc.blocks) {
     if (block.kind === 'text' && (block.locked || block.enabled)) {
       lines.push(...block.lines);
@@ -232,4 +238,68 @@ export function countIncompleteManualFields(doc: TemplateDocument): number {
     }
   }
   return count;
+}
+
+/** Org-profile data sources the document gate actually enforces (name always present). */
+const ORG_PROFILE_REQUIRED_SOURCES: DataSourceKey[] = [
+  'org_address',
+  'org_city',
+  'org_zip',
+  'org_legal_rep',
+];
+
+/**
+ * The org-profile sources bound on enabled lines/blocks that the org unit is
+ * currently missing. Mirrors the backend's `missingOrgProfileSources` gate so
+ * the template builder can block Save up front and point the coordinator at the
+ * unit's edit sheet instead of failing the request.
+ */
+export function missingOrgProfileSourcesForOrg(
+  doc: TemplateDocument,
+  org: {
+    address?: string | null;
+    city?: string | null;
+    zipCode?: string | null;
+    legalRep?: string | null;
+  },
+): DataSourceKey[] {
+  const bound = new Set<DataSourceKey>();
+
+  const collectLine = (line: TemplateLine | undefined) => {
+    if (!line || line.enabled === false) return;
+    for (const field of line.fields) {
+      if (
+        field.value.kind === 'bound' &&
+        ORG_PROFILE_REQUIRED_SOURCES.includes(field.value.source)
+      ) {
+        bound.add(field.value.source);
+      }
+    }
+  };
+
+  collectLine(doc.header.orgIdentityLine);
+  for (const metaLine of doc.header.metaLines) collectLine(metaLine);
+  for (const block of doc.blocks) {
+    if (block.kind === 'table') continue;
+    if (block.kind === 'note') {
+      collectLine(block.line);
+    } else if (block.kind === 'text' && block.enabled !== false) {
+      for (const line of block.lines) collectLine(line);
+    }
+  }
+  collectLine(doc.footer.closingLine);
+
+  const valueBySource: Partial<
+    Record<DataSourceKey, string | null | undefined>
+  > = {
+    org_address: org.address,
+    org_city: org.city,
+    org_zip: org.zipCode,
+    org_legal_rep: org.legalRep,
+  };
+
+  return [...bound].filter((source) => {
+    const value = valueBySource[source];
+    return typeof value !== 'string' || value.trim() === '';
+  });
 }

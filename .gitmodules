@@ -1,6 +1,6 @@
 [submodule "packages/infra"]
 	path = packages/infra
-	url = git@github.com:holi-social/caluno-infra.git
+	url = git@github.com:caluno-gmbh/caluno-infra.git
 [submodule ".ai"]
 	path = .ai
-	url = git@github.com:holi-social/caluno-ai.git
+	url = git@github.com:caluno-gmbh/caluno-ai.git

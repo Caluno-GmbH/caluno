@@ -1,4 +1,4 @@
-# Mirrors pinned base images into ghcr.io/holi-social so CI pulls from GHCR
+# Mirrors pinned base images into ghcr.io/caluno-gmbh so CI pulls from GHCR
 # instead of Docker Hub. Bump a tag below and re-run manually for a newer image.
 name: Mirror base images to GHCR
 
@@ -28,10 +28,10 @@ jobs:
         include:
           - image: postgres:17
             src: docker.io/library/postgres:17
-            dest: ghcr.io/holi-social/mirror/postgres:17
+            dest: ghcr.io/caluno-gmbh/mirror/postgres:17
           - image: oven/bun:1
             src: docker.io/oven/bun:1
-            dest: ghcr.io/holi-social/mirror/oven-bun:1
+            dest: ghcr.io/caluno-gmbh/mirror/oven-bun:1
     steps:
       - uses: docker/login-action@v4
         with:

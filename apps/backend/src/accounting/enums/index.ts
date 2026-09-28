@@ -19,6 +19,7 @@ export enum SigneeType {
 }
 
 export enum ContractStatus {
+  DRAFT = 'DRAFT',
   AWAITING_VOLUNTEER_SIGNATURE = 'AWAITING_VOLUNTEER_SIGNATURE',
   AWAITING_NGO_SIGNATURE = 'AWAITING_NGO_SIGNATURE',
   ACTIVE = 'ACTIVE',
@@ -27,6 +28,7 @@ export enum ContractStatus {
 }
 
 export enum InvoiceStatus {
+  DRAFT = 'DRAFT',
   AWAITING_VOLUNTEER_SIGNATURE = 'AWAITING_VOLUNTEER_SIGNATURE',
   AWAITING_SUPERVISOR_SIGNATURE = 'AWAITING_SUPERVISOR_SIGNATURE',
   READY = 'READY',
@@ -40,4 +42,11 @@ export enum DocumentStatusChange {
   ACTIVATED = 'ACTIVATED',
   DECLINED = 'DECLINED',
   EXPIRED = 'EXPIRED',
+  DRAFT_SUPERSEDED = 'DRAFT_SUPERSEDED',
+}
+
+export enum RateProvenanceKind {
+  OWN = 'OWN',
+  INHERITED = 'INHERITED',
+  DEFAULT = 'DEFAULT',
 }

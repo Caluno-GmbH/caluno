@@ -22,6 +22,7 @@ import type {
   DocumentTemplateEntity,
 } from '../schemas/document-template.schema';
 import type { TemplateSigneeEntity } from '../schemas/template-signee.schema';
+import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 
 @Injectable()
 export class DocumentTemplateService {
@@ -29,6 +30,7 @@ export class DocumentTemplateService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
     private readonly postHogService: PostHogService,
+    private readonly documentProfileRequirementService: DocumentProfileRequirementService,
   ) {}
 
   async findDocumentTemplates(
@@ -72,6 +74,15 @@ export class DocumentTemplateService {
         throw new NotFoundGraphQLError('Organization unit not found');
       }
     }
+    // The unit (or org root unit, for an org-wide template) must already
+    // carry the org-profile fields the template's bound org sources render —
+    // otherwise the PDF comes out with "—" gaps the org can't fix inline
+    // after the fact.
+    await this.assertOrgProfileComplete(
+      organizationId,
+      input.organizationUnitId ?? null,
+      input.body,
+    );
 
     const existing = await this.db.query.documentTemplates.findFirst({
       where: {
@@ -137,9 +148,23 @@ export class DocumentTemplateService {
     input: UpdateDocumentTemplateInput,
     editedByUserId: string,
   ): Promise<DocumentTemplateEntity> {
-    await this.findDocumentTemplate(organizationId, templateId);
+    const existingTemplate = await this.findDocumentTemplate(
+      organizationId,
+      templateId,
+    );
     if (input.signees) {
       this.assertValidSignees(input.signees);
+    }
+
+    // Org-data can be removed after a template is created, so re-check the
+    // unit (or org root unit, for an org-wide template) the template is
+    // scoped to before overwriting its body.
+    if (input.body !== undefined) {
+      await this.assertOrgProfileComplete(
+        organizationId,
+        existingTemplate.organizationUnitId,
+        input.body,
+      );
     }
 
     const template = await this.db.transaction(async (tx) => {
@@ -269,6 +294,29 @@ export class DocumentTemplateService {
       );
     }
     return [...signees].sort((a, b) => a.order - b.order);
+  }
+
+  private async assertOrgProfileComplete(
+    organizationId: string,
+    organizationUnitId: string | null,
+    body: unknown,
+  ): Promise<void> {
+    // No early return on a null unit: an org-wide template still renders the
+    // org root unit's profile, so it must meet the same bar as a unit-scoped
+    // one. missingOrgProfileSources resolves null to the root unit for us.
+    const missing =
+      await this.documentProfileRequirementService.missingOrgProfileSources(
+        organizationId,
+        organizationUnitId,
+        body,
+      );
+    if (missing.length > 0) {
+      throw new BadRequestGraphQLError(
+        'Your organization is missing details required for this template: ' +
+          missing.join(', ') +
+          '. Please complete your organization profile before saving this template.',
+      );
+    }
   }
 
   private assertValidSignees(signees: CreateTemplateSigneeInput[]): void {

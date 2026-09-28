@@ -1,6 +1,6 @@
 import type { EligibleTimeEntry } from '@repo/data';
-import { format } from 'date-fns';
 import type { EligibleHourLine } from '../components/eligible-hours-card';
+import { billingYearBounds } from './billing-period';
 
 /**
  * Extracts the year from the contract's manual "Vertragslaufzeit" field
@@ -17,10 +17,7 @@ export function contractPeriodForLifespan(
 ): { periodStart: string; periodEnd: string } {
   const match = lifespan.match(/(\d{4})\s*$/);
   const year = match ? Number(match[1]) : now.getFullYear();
-  return {
-    periodStart: new Date(Date.UTC(year, 0, 1)).toISOString(),
-    periodEnd: new Date(Date.UTC(year + 1, 0, 1)).toISOString(),
-  };
+  return billingYearBounds(year);
 }
 
 /** Hours between two ISO timestamps, rounded to hundredths so display never shows floating-point noise. */
@@ -37,10 +34,15 @@ export function hoursBetween(startedAt: string, endedAt: string): number {
  */
 export function mapEligibleTimeEntry(
   entry: EligibleTimeEntry,
+  formatting: {
+    formatDate: (date: Date, options?: Intl.DateTimeFormatOptions) => string;
+    formatTime: (date: Date) => string;
+  },
 ): EligibleHourLine {
+  const { formatDate, formatTime } = formatting;
   const start = new Date(entry.startedAt);
-  const datePart = format(start, 'dd.MM.yyyy');
-  const startTime = format(start, 'HH:mm');
+  const datePart = formatDate(start);
+  const startTime = formatTime(start);
 
   if (!entry.endedAt) {
     return {
@@ -55,7 +57,7 @@ export function mapEligibleTimeEntry(
   return {
     id: entry.id,
     shiftName: entry.shiftInstance?.master.title ?? entry.notes ?? '',
-    dateTime: `${datePart}, ${startTime}–${format(end, 'HH:mm')}`,
+    dateTime: `${datePart}, ${startTime}–${formatTime(end)}`,
     hours: hoursBetween(entry.startedAt, entry.endedAt),
   };
 }

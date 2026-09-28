@@ -52,7 +52,7 @@ jobs:
     timeout-minutes: 40
     permissions:
       contents: read
-      packages: read # base images come from the ghcr.io/holi-social mirror
+      packages: read # base images come from the ghcr.io/caluno-gmbh mirror
     steps:
       - uses: actions/checkout@v5
         with:

@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM ghcr.io/holi-social/mirror/oven-bun:1 AS builder
+FROM ghcr.io/caluno-gmbh/mirror/oven-bun:1 AS builder
 
 # sentry-cli needs this during `next build`; kept at the top so it stays cached.
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
@@ -65,7 +65,7 @@ RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
     bun run build
 
 
-FROM ghcr.io/holi-social/mirror/oven-bun:1 AS runner
+FROM ghcr.io/caluno-gmbh/mirror/oven-bun:1 AS runner
 
 WORKDIR /app
 

@@ -7,8 +7,8 @@ import {
   VolunteeringLifecyclePanel,
   VolunteeringMemberListPanel,
   VolunteeringShiftCardVolunteers,
-  VolunteeringStatusBadge,
   VolunteeringStatusIcon,
+  VolunteeringStatusLabel,
   VolunteeringVolunteerList,
   VolunteeringVolunteerRow,
 } from '@/components/volunteering-status';
@@ -49,7 +49,7 @@ function LifecycleSection({
             key={state}
             state={state}
             phase={phase}
-            completedDuration={state === 'completed' ? '3h 57m' : undefined}
+            completedDuration={state === 'checked_out' ? '3h 57m' : undefined}
           />
         ))}
       </div>
@@ -66,7 +66,7 @@ export const LifecycleReferenceBoard: Story = {
         title="Before shift"
         subtitle="Status depends on how they joined."
         phase="before"
-        states={['invited', 'requested', 'accepted', 'declined']}
+        states={['invited', 'requested', 'waitlisted', 'accepted', 'declined']}
       />
       <LifecycleSection
         title="During shift"
@@ -77,6 +77,7 @@ export const LifecycleReferenceBoard: Story = {
           'not_checked_in',
           'invited',
           'requested',
+          'waitlisted',
           'declined',
         ]}
       />
@@ -85,7 +86,7 @@ export const LifecycleReferenceBoard: Story = {
         subtitle="Final status is inferred automatically."
         phase="after"
         states={[
-          'completed',
+          'checked_out',
           'no_show',
           'invited_never_responded',
           'requested_never_responded',
@@ -105,11 +106,12 @@ export const StatusIcons: Story = {
         [
           'invited',
           'requested',
+          'waitlisted',
           'accepted',
           'declined',
           'checked_in',
           'not_checked_in',
-          'completed',
+          'checked_out',
           'no_show',
         ] as const
       ).map((state) => (
@@ -131,20 +133,21 @@ export const StatusBadges: Story = {
         [
           'invited',
           'requested',
+          'waitlisted',
           'accepted',
           'declined',
           'checked_in',
           'not_checked_in',
-          'completed',
+          'checked_out',
           'no_show',
           'invited_never_responded',
           'requested_never_responded',
         ] as const
       ).map((state) => (
-        <VolunteeringStatusBadge
+        <VolunteeringStatusLabel
           key={state}
           state={state}
-          completedDuration={state === 'completed' ? '3h 57m' : undefined}
+          completedDuration={state === 'checked_out' ? '3h 57m' : undefined}
         />
       ))}
     </div>
@@ -157,6 +160,7 @@ const sampleVolunteers = [
   { id: '3', name: 'Lena Müller', state: 'declined' as const },
   { id: '4', name: 'Tom Becker', state: 'requested' as const },
   { id: '5', name: 'Sara Klein', state: 'accepted' as const },
+  { id: '6', name: 'Jana Vogel', state: 'waitlisted' as const },
 ];
 
 /** Detail page volunteers card — before shift (matches product mockup). */
@@ -166,7 +170,7 @@ export const DetailPageBeforeShift: Story = {
     <div className="mx-auto max-w-2xl">
       <VolunteeringVolunteerList
         phase="before"
-        summary="5 invited · 12 spots"
+        summary="1 invited · 2 accepted · 1 waitlisted · 12 spots"
         volunteers={sampleVolunteers}
       />
     </div>
@@ -205,7 +209,7 @@ export const DetailPageAfterShift: Story = {
           {
             id: '1',
             name: 'Katharina Zimmer',
-            state: 'completed',
+            state: 'checked_out',
             completedDuration: '3h 57m',
           },
           { id: '2', name: 'Hans Test', state: 'no_show' },
@@ -297,6 +301,49 @@ export const ShiftCardVolunteers: Story = {
           { id: '1', name: 'Sofie Gabius', state: 'accepted' },
           { id: '2', name: 'Elia Grams', state: 'accepted' },
           { id: '3', name: 'Rico Schaefer', state: 'declined' },
+          { id: '4', name: 'Mira Wolf', state: 'waitlisted' },
+        ]}
+      />
+    </Card>
+  ),
+};
+
+export const ShiftCardWaitlist: Story = {
+  name: 'Shift card / waitlist accordion',
+  render: () => (
+    <Card className="mx-auto max-w-xs gap-1 overflow-hidden rounded-xl px-2 pb-2 pt-4 shadow-sm">
+      <VolunteeringShiftCardVolunteers
+        sectionLabel="Waitlist"
+        phase="before"
+        volunteers={[
+          {
+            id: '1',
+            name: 'Jonas M.',
+            state: 'waitlisted',
+            action: (
+              <Button
+                size="icon-sm"
+                variant="outline"
+                tooltip="Invite to the shift"
+              >
+                <UserPlus className="size-4" />
+              </Button>
+            ),
+          },
+          {
+            id: '2',
+            name: 'Mira Wolf',
+            state: 'waitlisted',
+            action: (
+              <Button
+                size="icon-sm"
+                variant="outline"
+                tooltip="Invite to the shift"
+              >
+                <UserPlus className="size-4" />
+              </Button>
+            ),
+          },
         ]}
       />
     </Card>
@@ -331,6 +378,7 @@ export const SurfaceComparison: Story = {
             volunteers={[
               { id: '1', name: 'Sofie Gabius', state: 'accepted' },
               { id: '2', name: 'Rico Schaefer', state: 'declined' },
+              { id: '3', name: 'Mira Wolf', state: 'waitlisted' },
             ]}
           />
         </Card>
@@ -353,6 +401,37 @@ export const SurfaceComparison: Story = {
           />
         </div>
       </div>
+    </div>
+  ),
+};
+
+/** Checked-out chip with a multi-window tooltip, including the overflow line. */
+export const CheckedOutWithTooltip: Story = {
+  name: 'Detail page / checked out (tooltip)',
+  render: () => (
+    <div className="mx-auto max-w-2xl">
+      <VolunteeringVolunteerList
+        phase="after"
+        summary="1 checked out"
+        volunteers={[
+          {
+            id: '1',
+            name: 'Katharina Zimmer',
+            state: 'checked_out',
+            completedDuration: '7h 12m',
+            statusTooltip: (
+              <div className="flex flex-col gap-0.5 text-xs">
+                <span>08:00 – 12:00</span>
+                <span>13:00 – 15:30</span>
+                <span>16:00 – 17:00</span>
+                <span>17:30 – 18:30</span>
+                <span>19:00 – 20:12</span>
+                <span>+2 more</span>
+              </div>
+            ),
+          },
+        ]}
+      />
     </div>
   ),
 };

@@ -3,6 +3,7 @@ import { FieldType } from '@repo/data';
 import {
   buildFieldSchema,
   type RenderableField,
+  validateBic,
   validateIban,
 } from './field-renderer';
 
@@ -14,9 +15,7 @@ const makeField = (
   placeholder: null,
   systemKey: null,
   options: null,
-  documentFileId: null,
-  documentDownloadUrl: null,
-  documentFilename: null,
+  documents: [],
   documentLabel: null,
   minAge: null,
   ...o,
@@ -34,6 +33,7 @@ const msgs = {
   validPostalCode: (l: string) => `${l} zip`,
   minAge: (a: number) => `min ${a}`,
   invalidIban: (l: string) => `${l} iban`,
+  invalidBic: (l: string) => `${l} bic`,
   dateNotFuture: (l: string) => `${l} not future`,
 };
 
@@ -116,6 +116,42 @@ describe('buildFieldSchema IBAN', () => {
   });
 });
 
+describe('validateBic', () => {
+  it('accepts 8- and 11-char SWIFT-BIC values', () => {
+    expect(validateBic('COBADEFFXXX')).toBe(true);
+    expect(validateBic('COBADEFF')).toBe(true);
+  });
+  it('accepts lowercase and whitespace', () => {
+    expect(validateBic('cobadeffxxx')).toBe(true);
+    expect(validateBic('COBA DEFF XXX')).toBe(true);
+  });
+  it('rejects malformed BICs', () => {
+    expect(validateBic('')).toBe(false);
+    expect(validateBic('COB')).toBe(false);
+    expect(validateBic('COBADEFFXXXX')).toBe(false);
+    expect(validateBic('COBA-DEFF')).toBe(false);
+  });
+});
+
+describe('buildFieldSchema BIC', () => {
+  const field = makeField({
+    id: 'bic',
+    type: FieldType.Text,
+    label: 'BIC',
+    systemKey: 'bic',
+  });
+  it('rejects an invalid BIC', () => {
+    expect(
+      buildFieldSchema(field, true, msgs).safeParse('not-a-bic').success,
+    ).toBe(false);
+  });
+  it('accepts a valid BIC', () => {
+    expect(
+      buildFieldSchema(field, true, msgs).safeParse('COBADEFFXXX').success,
+    ).toBe(true);
+  });
+});
+
 describe('buildFieldSchema birth-date', () => {
   const field = makeField({
     id: 'dob',
@@ -176,5 +212,34 @@ describe('buildFieldSchema MULTI_CHOICE', () => {
   it('reads the legacy comma-joined format', () => {
     const schema = buildFieldSchema(field, true, msgs);
     expect(schema.safeParse('10:30').success).toBe(true);
+  });
+});
+
+describe('buildFieldSchema gender', () => {
+  const genderField = makeField({
+    id: 'gender',
+    type: FieldType.SingleChoice,
+    label: 'Gender',
+    systemKey: 'gender',
+  });
+
+  it('accepts each fixed option value when optional', () => {
+    const schema = buildFieldSchema(genderField, false, msgs);
+    for (const v of ['female', 'male', 'diverse', 'prefer-not-to-say']) {
+      expect(schema.safeParse(v).success).toBe(true);
+    }
+    expect(schema.safeParse('').success).toBe(true);
+  });
+
+  it('rejects free text and values outside the fixed list', () => {
+    const schema = buildFieldSchema(genderField, false, msgs);
+    expect(schema.safeParse('Weiblich').success).toBe(false);
+    expect(schema.safeParse('attack').success).toBe(false);
+  });
+
+  it('requires a value when the field is required', () => {
+    const schema = buildFieldSchema(genderField, true, msgs);
+    expect(schema.safeParse('').success).toBe(false);
+    expect(schema.safeParse('prefer-not-to-say').success).toBe(true);
   });
 });
