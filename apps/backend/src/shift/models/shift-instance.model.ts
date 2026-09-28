@@ -1,4 +1,5 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { createPaginatedResponseType } from '../../graphql/paginated-response.model';
 import { User } from '../../user/models/user.model';
 import { ShiftInviteStatus } from '../enums';
@@ -40,6 +41,13 @@ export class ShiftInstance {
 
   @Field(() => ID, { nullable: true })
   overrideReimbursementTypeId?: string | null;
+
+  // Which Pauschalentyp compensates this occurrence, if any. Resolves the
+  // occurrence's own override, falling back to the master shift's type; null
+  // means unpaid. Volunteer-safe: exposes only the key, never rate/limit
+  // amounts.
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 
   @Field(() => Boolean, { nullable: true })
   overrideJoinRequiresApproval?: boolean | null;

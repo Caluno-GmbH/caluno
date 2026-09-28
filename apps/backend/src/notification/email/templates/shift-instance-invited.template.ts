@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '../../../accounting/enums';
 import type { EmailTemplateContext } from '../../../i18n/email-translate';
 import {
   button,
@@ -5,6 +6,7 @@ import {
   type DetailTableRow,
   detailTable,
   divider,
+  emailCompensationLabel,
   emailTheme,
   escapeHtml,
   heading,
@@ -26,6 +28,7 @@ export interface ShiftInstanceInvitedTemplateData {
   startsAt: Date;
   endsAt: Date;
   instanceId: string;
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 }
 
 function buildDetailRows(
@@ -62,6 +65,18 @@ function buildDetailRows(
     },
   ];
 
+  const compensationLabel = emailCompensationLabel(
+    data.reimbursementTypeKey,
+    t,
+  );
+  if (compensationLabel) {
+    rows.push({
+      kind: 'pair',
+      label: t('compensation.detail'),
+      value: escapeHtml(compensationLabel),
+    });
+  }
+
   if (shiftLocation) {
     rows.push({
       kind: 'pair',
@@ -89,6 +104,9 @@ export async function shiftInstanceInvitedTemplate(
   const firstName = escapeHtml(data.recipientFirstName);
   const shiftUrl = shiftPublicUrl(data.shiftId, data.instanceId);
   const brandName = emailTheme.brandName;
+  const compensationNote = data.reimbursementTypeKey
+    ? paragraph(t('compensation.agreementNote'), { padding: '0 0 16px' })
+    : '';
 
   const body = card(`
     ${heading(t('shiftInstanceInvited.heading'))}
@@ -96,6 +114,7 @@ export async function shiftInstanceInvitedTemplate(
       padding: '0 0 16px',
     })}
     ${detailTable(buildDetailRows(data, context))}
+    ${compensationNote}
     ${button({ href: shiftUrl, label: t('shiftInstanceInvited.buttonLabel') })}
     ${divider('0 0 16px')}
     ${note(t('shiftInstanceInvited.note'))}
