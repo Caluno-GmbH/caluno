@@ -73,8 +73,9 @@ export function ManualCheckInPage({
   }));
   const [didPreselect, setDidPreselect] = useState(false);
   // Kept beside the selection rather than in it: the date/shift the user
-  // already picked survives untouched while the rows are hidden, so
-  // unchecking the box brings them back exactly as they were.
+  // already picked survives untouched while the shift row shows the
+  // without-assignment choice, so picking an assignment brings it back
+  // exactly as it was.
   const [withoutShift, setWithoutShift] = useState(false);
   const [openSheet, setOpenSheet] = useState<
     'orgUnit' | 'date' | 'shift' | 'acceptMembership' | null
@@ -269,7 +270,6 @@ export function ManualCheckInPage({
           selection={selection}
           orgUnits={orgUnits}
           withoutShift={withoutShift}
-          onWithoutShiftChange={setWithoutShift}
           onOpenOrgUnit={() => setOpenSheet('orgUnit')}
           onOpenDate={() => {
             setVisibleMonth(selection.date ?? new Date());
@@ -358,18 +358,22 @@ export function ManualCheckInPage({
           instances={instances}
           selectedDate={selection.date}
           selectedShiftInstanceId={selection.shiftInstanceId}
+          withoutShift={withoutShift}
           onSelectInstance={(instance) => {
             // Instances are stale while the range query is in flight —
             // applying one would resolve against the wrong month.
             if (instancesStale) return;
+            setWithoutShift(false);
             setSelection((current) => applyShiftInstance(current, instance));
           }}
           onSelectShift={(shiftId) => {
             if (instancesStale) return;
+            setWithoutShift(false);
             setSelection((current) =>
               applyShift(current, shiftId, instances, new Date()),
             );
           }}
+          onSelectWithoutShift={() => setWithoutShift(true)}
         />
 
         <AcceptMembershipSheet

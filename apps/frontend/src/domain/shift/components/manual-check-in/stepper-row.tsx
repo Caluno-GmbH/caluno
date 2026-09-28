@@ -9,6 +9,8 @@ type StepperRowProps = {
   sublabel?: string | undefined;
   /** Renders the orange "still to be chosen" state from the design. */
   isEmpty?: boolean | undefined;
+  /** Renders the row as a quiet alternative rather than a picked value. */
+  isMuted?: boolean | undefined;
   icon?: ReactNode | undefined;
   onClick: () => void;
 };
@@ -17,6 +19,7 @@ export function StepperRow({
   label,
   sublabel,
   isEmpty,
+  isMuted,
   icon,
   onClick,
 }: StepperRowProps) {
@@ -31,6 +34,7 @@ export function StepperRow({
           className={cn(
             'flex items-center gap-2 truncate',
             isEmpty ? 'font-semibold text-orange-600' : 'font-semibold',
+            isMuted && 'text-muted-foreground',
           )}
         >
           {icon}

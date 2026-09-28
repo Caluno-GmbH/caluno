@@ -9,8 +9,9 @@ import {
   CommandItem,
   CommandList,
   cn,
+  Separator,
 } from '@repo/ui';
-import { Check } from 'lucide-react';
+import { Check, CircleSlash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -27,8 +28,10 @@ type ShiftSheetProps = {
   instances: CheckInInstance[];
   selectedDate: Date | null;
   selectedShiftInstanceId: string | null;
+  withoutShift: boolean;
   onSelectInstance: (instance: CheckInInstance) => void;
   onSelectShift: (shiftId: string) => void;
+  onSelectWithoutShift: () => void;
 };
 
 export function ShiftSheet({
@@ -38,8 +41,10 @@ export function ShiftSheet({
   instances,
   selectedDate,
   selectedShiftInstanceId,
+  withoutShift,
   onSelectInstance,
   onSelectShift,
+  onSelectWithoutShift,
 }: ShiftSheetProps) {
   const t = useTranslations('CheckIn');
   const { formatTimeRange } = useFormatting();
@@ -154,6 +159,35 @@ export function ShiftSheet({
           )}
         </CommandList>
       </Command>
+
+      <div>
+        <div className="flex items-center gap-3 pb-2">
+          <Separator className="flex-1" />
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('orDivider')}
+          </p>
+          <Separator className="flex-1" />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            onSelectWithoutShift();
+            handleOpenChange(false);
+          }}
+          className={cn(
+            'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm',
+            withoutShift
+              ? 'bg-accent text-accent-foreground'
+              : 'text-muted-foreground',
+          )}
+        >
+          <CircleSlash className="size-4 shrink-0" />
+          <span className="min-w-0 flex-1 truncate">
+            {t('checkInWithoutShift')}
+          </span>
+          {withoutShift && <Check className="size-4 shrink-0" />}
+        </button>
+      </div>
     </CheckInSheet>
   );
 }
