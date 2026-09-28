@@ -480,6 +480,79 @@
       "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
     }
   },
+  "ShiftSettings": {
+    "page": {
+      "title": "Einsätze und Check-in",
+      "subtitle": "Einstellungen für Einsätze in {orgName}."
+    },
+    "sections": {
+      "checkIn": {
+        "title": "Check-in",
+        "description": "Wie Freiwillige vor Ort eingecheckt werden."
+      }
+    }
+  },
+  "Automations": {
+    "updateError": "Die Automatisierung konnte nicht gespeichert werden.",
+    "days": {
+      "label": "Aktive Tage",
+      "short": {
+        "MO": "Mo",
+        "TU": "Di",
+        "WE": "Mi",
+        "TH": "Do",
+        "FR": "Fr",
+        "SA": "Sa",
+        "SU": "So"
+      },
+      "long": {
+        "MO": "Montag",
+        "TU": "Dienstag",
+        "WE": "Mittwoch",
+        "TH": "Donnerstag",
+        "FR": "Freitag",
+        "SA": "Samstag",
+        "SU": "Sonntag"
+      }
+    },
+    "stepIn": {
+      "label": "Wann sie greift",
+      "description": "Wie lange vor Beginn ein Einsatz unter seiner Mindestanzahl diese Hilfe bekommt.",
+      "option": "{hours} Stunden vorher"
+    },
+    "callOut": {
+      "title": "Automatischer dringender Aufruf",
+      "description": "Sendet einen dringenden Aufruf an alle, die für den Einsatz infrage kommen, wenn er kurz vor Beginn unter seiner Mindestanzahl liegt. Einsätze ohne Mindestanzahl sind nie betroffen.",
+      "daysDescription": "Einsätze an diesen Tagen können einen dringenden Aufruf auslösen."
+    },
+    "approval": {
+      "title": "Freigabe aussetzen",
+      "description": "Bestätigt Anmeldungen sofort, wenn ein Einsatz kurz vor Beginn unter seiner Mindestanzahl liegt. Sobald die Mindestanzahl erreicht ist, gilt die Freigabe wieder.",
+      "daysDescription": "An diesen Tagen kann die Freigabe ausgesetzt werden."
+    },
+    "discovery": {
+      "title": "Übersichts-E-Mail",
+      "description": "Schickt Freiwilligen eine Übersicht ihrer nächsten Einsätze und der Einsätze, die noch Leute brauchen. Freiwillige können sie in ihren Kontoeinstellungen abbestellen.",
+      "sendOn": {
+        "label": "Senden am",
+        "description": "An diesen Tagen geht die E-Mail raus."
+      },
+      "time": {
+        "label": "Uhrzeit",
+        "description": "Um diese Uhrzeit geht die E-Mail raus."
+      }
+    },
+    "sections": {
+      "staffing": {
+        "title": "Besetzung",
+        "description": "E-Mails, die helfen, Einsätze mit Freiwilligen zu besetzen."
+      },
+      "moderation": {
+        "title": "Moderation",
+        "description": "Regeln dafür, wer in einen Einsatz kommt."
+      }
+    }
+  },
   "MembershipRequest": {
     "actions": {
       "approve": "Genehmigen",
@@ -648,7 +721,8 @@
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
-    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}"
+    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}",
+    "shiftSettings": "Einsätze und Check-in"
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",

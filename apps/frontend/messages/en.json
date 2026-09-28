@@ -480,6 +480,79 @@
       "updateError": "We couldn't save the setting. Please try again."
     }
   },
+  "ShiftSettings": {
+    "page": {
+      "title": "Shifts and check-in",
+      "subtitle": "Settings for shifts in {orgName}."
+    },
+    "sections": {
+      "checkIn": {
+        "title": "Check-in",
+        "description": "How volunteers are checked in on site."
+      }
+    }
+  },
+  "Automations": {
+    "updateError": "Could not save this automation.",
+    "days": {
+      "label": "Active days",
+      "short": {
+        "MO": "Mon",
+        "TU": "Tue",
+        "WE": "Wed",
+        "TH": "Thu",
+        "FR": "Fri",
+        "SA": "Sat",
+        "SU": "Sun"
+      },
+      "long": {
+        "MO": "Monday",
+        "TU": "Tuesday",
+        "WE": "Wednesday",
+        "TH": "Thursday",
+        "FR": "Friday",
+        "SA": "Saturday",
+        "SU": "Sunday"
+      }
+    },
+    "stepIn": {
+      "label": "When to step in",
+      "description": "How long before its start a shift below its minimum gets this help.",
+      "option": "{hours} hours before"
+    },
+    "callOut": {
+      "title": "Automatic urgent call",
+      "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
+      "daysDescription": "Shifts on these days can trigger an urgent call."
+    },
+    "approval": {
+      "title": "Pause approval",
+      "description": "Confirms sign-ups straight away when a shift is below its minimum shortly before it starts. Approval applies again once the shift reaches its minimum.",
+      "daysDescription": "Shifts on these days can have approval paused."
+    },
+    "discovery": {
+      "title": "Discovery email",
+      "description": "Sends volunteers an overview of their upcoming shifts and the shifts that still need people. Volunteers can turn it off in their account settings.",
+      "sendOn": {
+        "label": "Send on",
+        "description": "Days the email goes out."
+      },
+      "time": {
+        "label": "Time",
+        "description": "Time of day the email goes out."
+      }
+    },
+    "sections": {
+      "staffing": {
+        "title": "Staffing",
+        "description": "Emails that help fill shifts with volunteers."
+      },
+      "moderation": {
+        "title": "Moderation",
+        "description": "Rules for who gets into a shift."
+      }
+    }
+  },
   "MembershipRequest": {
     "actions": {
       "approve": "Approve",
@@ -648,7 +721,8 @@
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
-    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}"
+    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
+    "shiftSettings": "Shifts and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",

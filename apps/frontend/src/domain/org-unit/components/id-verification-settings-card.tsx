@@ -2,6 +2,7 @@
 
 import { useUpdateOrganizationUnit } from '@repo/data/react';
 import { Card, CardContent, Switch } from '@repo/ui';
+import { IdCard } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -40,17 +41,27 @@ export function IdVerificationSettingsCard({
   };
 
   return (
-    <Card className="max-w-xl">
+    <Card>
       <CardContent className="flex items-center gap-4 py-4">
-        <div className="flex-1 space-y-1">
-          <p className="font-medium">{t('card.label')}</p>
-          <p className="text-sm text-muted-foreground">
-            {t('card.description')}
-          </p>
+        <div className="flex flex-1 gap-2">
+          <IdCard className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+          <div className="space-y-1">
+            <p id="id-verification-label" className="font-medium">
+              {t('card.label')}
+            </p>
+            <p
+              id="id-verification-description"
+              className="text-sm text-muted-foreground"
+            >
+              {t('card.description')}
+            </p>
+          </div>
         </div>
         <Switch
           checked={enabled}
           disabled={!canEdit || mutation.isPending}
+          aria-labelledby="id-verification-label"
+          aria-describedby="id-verification-description"
           onCheckedChange={handleToggle}
         />
       </CardContent>
