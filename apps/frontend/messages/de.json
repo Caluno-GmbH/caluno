@@ -1814,6 +1814,13 @@
       "title": "Formulare, die zum Beitritt benötigt werden",
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
+    "search": {
+      "clearAria": "Suche zurücksetzen",
+      "countFiltered": "{count} von {total}",
+      "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
+      "emptyTitle": "Keine Freiwilligen gefunden",
+      "placeholder": "Nach Name, E-Mail oder Rolle suchen"
+    },
     "sheet": {
       "streetLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
@@ -1836,9 +1843,14 @@
       "zipLabel": "PLZ"
     },
     "table": {
+      "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
+      "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
       "email": "E-Mail",
+      "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
+      "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
       "name": "Name",
-      "roles": "Rollen"
+      "openProfileAria": "Profil von {name} öffnen",
+      "roles": "Rolle"
     }
   },
   "VolunteerHome": {
