@@ -1394,6 +1394,7 @@ type ShiftInstance {
   overrideMinVolunteers: Int
   overrideReimbursementTypeId: ID
   overrideTitle: String
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredForms: [RequiredFormRef!]!
   requiredFormsCount: Int!
   spotsLeft: Int
