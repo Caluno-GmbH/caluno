@@ -353,7 +353,9 @@ export function ManualCheckInPage({
           orgUnitId={selection.orgUnitId}
           instances={instances}
           selectedDate={selection.date}
-          selectedShiftInstanceId={selection.shiftInstanceId}
+          selectedShiftInstanceId={
+            withoutShift ? null : selection.shiftInstanceId
+          }
           withoutShift={withoutShift}
           onSelectInstance={(instance) => {
             // Instances are stale while the range query is in flight —
