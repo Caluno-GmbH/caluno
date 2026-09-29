@@ -4,7 +4,7 @@ import { GENDER_OPTION_VALUES } from './constants';
 /** A human label for a system key, used in validation error messages. */
 export const formatSystemKeyLabel = (systemKey: string): string => {
   switch (systemKey) {
-    case 'name':
+    case 'firstname':
       return 'First name';
     case 'lastname':
       return 'Last name';
@@ -41,7 +41,7 @@ export const validateSystemKeyValue = (
   if (!value) return;
 
   switch (systemKey) {
-    case 'name':
+    case 'firstname':
     case 'lastname':
     case 'preferred-name':
     case 'city':

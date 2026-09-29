@@ -40,7 +40,7 @@ describe('UserProfileService.findByUserId', () => {
     await db.insert(schema.userProfiles).values({
       userId: user.id,
       data: {
-        firstName: 'Ada',
+        firstname: 'Ada',
         email: 'stale@example.com',
       },
     });
@@ -48,7 +48,7 @@ describe('UserProfileService.findByUserId', () => {
     const result = await userProfileService.findByUserId(user.id);
 
     expect(result?.data).toEqual({
-      firstName: 'Ada',
+      firstname: 'Ada',
       email,
     });
   });

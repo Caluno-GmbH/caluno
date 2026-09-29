@@ -111,7 +111,7 @@ describe('DocumentRenderingService', () => {
       findByUserId: () =>
         Promise.resolve({
           data: overrides.profileData ?? {
-            name: 'Max',
+            firstname: 'Max',
             lastname: 'Mustermann',
             street: 'Testweg 2',
           },

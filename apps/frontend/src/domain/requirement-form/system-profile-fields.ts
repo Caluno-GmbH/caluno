@@ -12,7 +12,7 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
     labelKey: 'preferredName',
     type: FieldType.Text,
   },
-  { key: 'name', labelKey: 'firstName', type: FieldType.Name },
+  { key: 'firstname', labelKey: 'firstName', type: FieldType.Name },
   {
     key: 'lastname',
     labelKey: 'lastName',

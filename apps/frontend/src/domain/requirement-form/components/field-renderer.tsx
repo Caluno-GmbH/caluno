@@ -238,7 +238,7 @@ export function buildFieldSchema(
   // System-key extra rules (applied regardless of FieldType for defensive coverage)
   const sk = systemKey ?? '';
   if (
-    sk === 'name' ||
+    sk === 'firstname' ||
     sk === 'lastname' ||
     sk === 'preferred-name' ||
     sk === 'city'

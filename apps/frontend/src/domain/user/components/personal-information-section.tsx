@@ -39,7 +39,7 @@ export const PersonalInformationSection = async ({
 
   const subtitleByKey: Record<string, string> = {
     'preferred-name': tSubtitles('preferredName'),
-    name: tSubtitles('firstName'),
+    firstname: tSubtitles('firstName'),
     lastname: tSubtitles('lastName'),
     iban: tSubtitles('iban'),
     'account-holder': tSubtitles('accountHolder'),
