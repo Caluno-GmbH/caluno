@@ -36,9 +36,15 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Metadata' });
 
+  const isProduction =
+    process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT === 'production';
+
   return {
     title: t('title'),
     description: t('description'),
+    icons: {
+      icon: isProduction ? '/favicon.png' : '/favicon-dev.png',
+    },
   };
 }
 
