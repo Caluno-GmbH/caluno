@@ -80,6 +80,7 @@ the tests actually exercise:
 - **`createShiftInstance(db, shiftId, overrides?)`** — inserts into `shiftInstances` directly for cases that need extra instances beyond the ones created by `createShift`.
 - **`createEvent(db, options)`** — inserts into `events` directly.
 - **`createMembershipRequest(db, { userId, organizationUnitId, metadata? })`** — inserts into `membershipRequests` directly.
+- **`createTimeEntry(db, { organizationUnitId, volunteerId, startedAt?, endedAt?, shiftInstanceId?, createdById? })`** — inserts into `timeEntries` directly.
 - **`cancelShiftInstance(db, instanceId)`** — helper to set `isCancelled = true`.
 
 Guidelines:
@@ -137,6 +138,14 @@ Password for all fixture accounts: `abcd1234` (override with `FIXTURE_PASSWORD`)
 3. **NEVER** return cross-org data, including from field resolvers
 4. Permission checks via `authService.hasRequiredPermissions` (inherits through the org unit hierarchy) — never raw DB lookups
 5. All mutations carry `@Permissions()` — no unguarded writes. Input validation via class-validator on all `@InputType()` classes
+
+Exemption (documented, narrow): the global `users` directory may be read by a
+server-set id with no org scope when resolving a display field on an
+already-org-scoped record — e.g. `Shift.createdBy`, `TimeEntry.createdBy` /
+`TimeEntry.volunteer` (see `shift-field.resolver.ts`, `time-entry-field.resolver.ts`,
+`time-entry.loader.ts`). The id never comes from GraphQL input for an auth
+decision, and the row being rendered is already scoped. This does **not** license
+unscoped reads of org-owned data — do not extend it beyond the identity lookup.
 
 ## Project Structure
 ```
@@ -205,6 +214,11 @@ const users = await db.query.users.findMany({ where: { id: 1 } });
 Do **not** use Query v1 (`db._query…findMany({ where: (t,{eq}) => … })`).
 
 `select().innerJoin()` is the accepted pattern **only** for aggregations and multi-table projections that RQ v2 can't express — counts, custom column projections, permission joins (see `auth.service.ts`, `organization.service.ts`, `membership.service.ts`). For plain entity/relation fetching, RQ v2 wins. When in doubt, RQ v2.
+
+A second accepted gap: `orderBy` on a column from a joined relation (sorting time
+entries by volunteer name or shift title). RQ v2's `orderBy` object form accepts
+only base-table columns, so those sorts use `select().leftJoin()` with an explicit
+`orderBy` — see `time-tracking.service.ts` `buildTimeEntryOrderBy`.
 
 ## Known constraints (decision-log extracts — architectural, must stay)
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
