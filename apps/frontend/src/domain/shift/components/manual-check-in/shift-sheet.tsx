@@ -93,7 +93,7 @@ export function ShiftSheet({
       <Command
         forceShowInput
         shouldFilter={false}
-        className="flex min-h-0 flex-1 flex-col"
+        className="flex h-auto min-h-0 flex-col"
       >
         <CommandInput
           value={search}
