@@ -978,15 +978,19 @@ describe('buildBoardVolunteers', () => {
   // document line off the volunteer's documents — an awaiting-countersignature
   // invoice must count as already created, not as a fresh create prompt.
   it('flags a timesheet as over-cap regardless of its status', () => {
+    // usedCents already includes this invoice (getRosterYearlyUsage sums all
+    // non-declined invoices), so the correct check is limit.used > limit.total
+    // rather than limit.used + invoice.amount > limit.total (double-counting).
+    // Use usedCents > limitCents to represent a volunteer already over cap.
     const volunteers = buildBoardVolunteers({
       rosterUsage: [
         {
           volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
           usageByType: [
             {
-              usedCents: 90_000,
+              usedCents: 110_000,
               limitCents: 100_000,
-              remainingCents: 10_000,
+              remainingCents: -10_000,
               reimbursementType: ehrenamtType,
             },
           ],

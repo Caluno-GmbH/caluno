@@ -533,9 +533,7 @@ export function buildBoardVolunteers({
           const doc = mapInvoiceToBoardDoc(invoice, type, locale);
           if (invoice.invoiceStatus !== InvoiceStatus.Declined) {
             const limit = limits[type];
-            doc.isOverCap =
-              limit !== undefined &&
-              limit.used + centsToEuros(invoice.totalAmountCents) > limit.total;
+            doc.isOverCap = limit !== undefined && limit.used > limit.total;
           }
           documents.push(doc);
         }
