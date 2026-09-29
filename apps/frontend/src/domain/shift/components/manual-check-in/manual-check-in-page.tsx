@@ -95,8 +95,9 @@ export function ManualCheckInPage({
     [rawInstances],
   );
 
-  // Preselect the instance nearest to now, once, after the first load.
-  if (!didPreselect && rawInstances) {
+  // Preselect the instance nearest to now, once, after the first load —
+  // unless the user already chose without-assignment.
+  if (!didPreselect && rawInstances && !withoutShift) {
     setDidPreselect(true);
     const initial = pickInitialInstance(instances, new Date());
     if (initial) {
@@ -104,23 +105,15 @@ export function ManualCheckInPage({
     }
   }
 
-  // Without a shift the whole flow — the readiness query, the mutation and
-  // the success payload — runs on a null instance, so it is resolved once
-  // here instead of at each call site.
-  const effectiveShiftInstanceId = withoutShift
-    ? null
-    : selection.shiftInstanceId;
-  const effectiveInstance = withoutShift ? null : selection.selectedInstance;
-
-  // Readiness: enabled once a shift instance is chosen, or as soon as the
-  // without-shift box is ticked, where a null instance is the point and only
+  // Readiness: enabled once a shift instance is chosen, or as soon as
+  // without-assignment is chosen, where a null instance is the point and only
   // the membership facts come back. Every mutator in check-in-selection.ts
   // writes shiftInstanceId and selectedInstance together, so they never
   // disagree about which instance is current.
   const { data: readiness } = useCheckInReadiness(
     selection.orgUnitId,
     volunteer.id,
-    effectiveShiftInstanceId,
+    selection.shiftInstanceId,
     { enabled: withoutShift || !!selection.shiftInstanceId },
   );
   const readinessState = readiness
@@ -206,7 +199,7 @@ export function ManualCheckInPage({
       const result = await checkInVolunteer({
         organizationUnitId: selection.orgUnitId,
         volunteerId: volunteer.id,
-        shiftInstanceId: effectiveShiftInstanceId,
+        shiftInstanceId: selection.shiftInstanceId,
         startedAt,
       });
 
@@ -218,8 +211,8 @@ export function ManualCheckInPage({
         return;
       }
 
-      const startsAt = effectiveInstance
-        ? new Date(effectiveInstance.actualStartsAt)
+      const startsAt = selection.selectedInstance
+        ? new Date(selection.selectedInstance.actualStartsAt)
         : null;
       const isToday =
         !!startsAt && startsAt.toDateString() === new Date().toDateString();
@@ -227,11 +220,11 @@ export function ManualCheckInPage({
       setCheckInSuccessPayload({
         volunteerName: volunteer.name,
         volunteerImage: volunteer.image ?? null,
-        shiftTitle: effectiveInstance?.title ?? null,
-        timeRange: effectiveInstance
+        shiftTitle: selection.selectedInstance?.title ?? null,
+        timeRange: selection.selectedInstance
           ? formatTimeRange(
-              effectiveInstance.actualStartsAt,
-              effectiveInstance.actualEndsAt,
+              selection.selectedInstance.actualStartsAt,
+              selection.selectedInstance.actualEndsAt,
             )
           : null,
         dateLabel: startsAt
@@ -353,9 +346,7 @@ export function ManualCheckInPage({
           orgUnitId={selection.orgUnitId}
           instances={instances}
           selectedDate={selection.date}
-          selectedShiftInstanceId={
-            withoutShift ? null : selection.shiftInstanceId
-          }
+          selectedShiftInstanceId={selection.shiftInstanceId}
           withoutShift={withoutShift}
           onSelectInstance={(instance) => {
             // Instances are stale while the range query is in flight —
@@ -371,7 +362,15 @@ export function ManualCheckInPage({
               applyShift(current, shiftId, instances, new Date()),
             );
           }}
-          onSelectWithoutShift={() => setWithoutShift(true)}
+          onSelectWithoutShift={() => {
+            setWithoutShift(true);
+            setSelection((current) => ({
+              ...current,
+              shiftId: null,
+              shiftInstanceId: null,
+              selectedInstance: null,
+            }));
+          }}
         />
 
         <AcceptMembershipSheet
