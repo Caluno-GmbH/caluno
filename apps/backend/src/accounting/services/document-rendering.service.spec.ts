@@ -47,6 +47,18 @@ const extractPdfText = (buffer: Buffer): string => {
   return chunks.join('\n');
 };
 
+/** The text of a rendered PDF; content streams are Flate-compressed and glyph runs hex-encoded. */
+const pdfGlyphs = (pdfBytes: Buffer): string => {
+  const content = [
+    ...pdfBytes.toString('latin1').matchAll(/stream\r?\n([\s\S]*?)endstream/g),
+  ]
+    .map((m) => inflateSync(Buffer.from(m[1], 'latin1')).toString('latin1'))
+    .join('\n');
+  return [...content.matchAll(/<([0-9a-f]+)>/g)]
+    .map((m) => Buffer.from(m[1], 'hex').toString('latin1'))
+    .join('');
+};
+
 describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
   let rateCallArgs: unknown[] = [];
@@ -242,6 +254,35 @@ describe('DocumentRenderingService', () => {
     const buffer = await service.generatePdf(contract());
     expect(buffer).toBeInstanceOf(Buffer);
     expect(buffer.subarray(0, 5).toString()).toBe('%PDF-');
+  });
+
+  // VOLI-1370: an issued document must render from its creation-time snapshot,
+  // so a later template edit never rewrites it.
+  it('renders the resolvedBody snapshot, not the live template body', async () => {
+    const body = (title: string) => ({
+      header: {
+        titleLines: [title],
+        orgIdentityLine: { id: 'org-line', text: '', fields: [] },
+        metaLines: [],
+      },
+      blocks: [],
+      footer: { closingLine: { id: 'closing', text: '', fields: [] } },
+    });
+    const service = createService({ rateCents: 1500 });
+    const buffer = await service.generatePdf(
+      contract({
+        resolvedBody: body('SnapshotTitle'),
+        documentTemplate: {
+          organizationId: 'org-1',
+          organizationUnitId: 'unit-1',
+          body: body('LiveTemplateTitle'),
+        } as unknown as ContractWithRelations['documentTemplate'],
+      }),
+    );
+
+    const glyphs = pdfGlyphs(buffer);
+    expect(glyphs).toContain('SnapshotTitle');
+    expect(glyphs).not.toContain('LiveTemplateTitle');
   });
 
   it('generatePdf renders an invoice with a valid PDF buffer', async () => {
@@ -563,6 +604,79 @@ describe('DocumentRenderingService', () => {
 
       expect(rows[0]).toHaveLength(6);
       expect(rows[0][5]).toBe('');
+    });
+  });
+
+  describe('resolveParagraphs', () => {
+    const resolveParagraphs = (
+      service: DocumentRenderingService,
+      lines: unknown[],
+      values: Record<string, string>,
+    ): string[] =>
+      (
+        service as unknown as {
+          resolveParagraphs: (
+            l: unknown[],
+            v: Record<string, string>,
+          ) => string[];
+        }
+      ).resolveParagraphs(lines, values);
+
+    const parties = {
+      id: 'parties',
+      text: 'Zwischen dem {orgName}, {orgCity},',
+      fields: [
+        { id: 'n', value: { kind: 'bound', source: 'org_name' } },
+        { id: 'c', value: { kind: 'bound', source: 'org_city' } },
+      ],
+    };
+    const additional = {
+      id: 'parties-additional',
+      text: ' {info},',
+      inline: true,
+      fields: [{ id: 'i', value: { kind: 'manual-template', value: '' } }],
+    };
+    const volunteer = {
+      id: 'volunteer-name',
+      text: 'und Anna Muster,',
+      fields: [],
+    };
+    const values = {
+      n: 'Lesepaten Nord',
+      c: 'Hamburg',
+      i: 'vertreten durch H. Meier',
+    };
+
+    it('Reads an inline line on from the sentence it belongs to', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, additional, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg, vertreten durch H. Meier,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Leaves the sentence alone when the inline line is switched off', () => {
+      const paragraphs = resolveParagraphs(
+        createService(),
+        [parties, { ...additional, enabled: false }, volunteer],
+        values,
+      );
+
+      expect(paragraphs).toEqual([
+        'Zwischen dem Lesepaten Nord, Hamburg,',
+        'und Anna Muster,',
+      ]);
+    });
+
+    it('Starts a paragraph of its own when nothing precedes it', () => {
+      expect(resolveParagraphs(createService(), [additional], values)).toEqual([
+        ' vertreten durch H. Meier,',
+      ]);
     });
   });
 

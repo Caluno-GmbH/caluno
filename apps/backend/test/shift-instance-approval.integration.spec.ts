@@ -83,6 +83,7 @@ describe('ShiftService.updateShiftInstanceApproval', () => {
       { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: mock(() => {}) } as unknown as PostHogService,
       accountingOrgAccessService,
+      { resolve: async () => ({ enabled: false }) } as never,
     );
 
     userId = (await createUser(db)).id;

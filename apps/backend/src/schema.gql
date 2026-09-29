@@ -646,7 +646,8 @@ enum JoinStatus {
   INVITED
   JOINED
   NONE
-  PENDING
+  PENDING_APPROVAL
+  PENDING_MEMBERSHIP
   REJECTED
   REQUIREMENTS_NEEDED
   VOLUNTEER_REJECTED
@@ -711,7 +712,7 @@ type Mutation {
   checkInApproveMembershipRequest(requestId: ID!): MembershipRequest!
   checkInInviteToOrganization(volunteerId: ID!): Boolean!
   checkInInviteToShiftInstance(shiftInstanceId: ID!, volunteerId: ID!): ShiftInstance!
-  checkInVolunteer(shiftInstanceId: ID, volunteerId: ID!): TimeEntry!
+  checkInVolunteer(shiftInstanceId: ID, startedAt: DateTime, volunteerId: ID!): TimeEntry!
   checkOut(shiftInstanceId: ID!): TimeEntry!
   checkOutVolunteer(timeEntryId: ID!): TimeEntry!
   closeTimeEntry(id: ID!, input: CloseTimeEntryInput!): TimeEntry!
@@ -782,6 +783,7 @@ type Mutation {
   updateMyUserProfile(input: UpdateUserProfileInput!): UserProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
+  updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
   updateRequirement(id: String!, input: UpdateRequirementInput!): Requirement!
   updateRequirementForm(id: String!, input: UpdateRequirementFormInput!): RequirementForm!
   updateRequirementFulfillment(id: String!, input: UpdateRequirementFulfillmentInput!): RequirementFulfillment!
@@ -869,6 +871,21 @@ type OrganizationUnit {
   zipCode: String
 }
 
+type OrganizationUnitAutomation {
+  activeDays: [Weekday!]!
+  enabled: Boolean!
+  kind: OrganizationUnitAutomationKind!
+  leadTimeHours: Int
+  organizationUnitId: ID!
+  sendAtTime: String
+}
+
+enum OrganizationUnitAutomationKind {
+  DISCOVERY_EMAIL
+  PAUSE_APPROVAL
+  URGENT_CALL
+}
+
 type OrganizationUnitPaginatedResponse {
   items: [OrganizationUnit!]!
   pagination: PaginationInfo!
@@ -903,6 +920,8 @@ type PaginationInfo {
 }
 
 type PaidShiftSignupVolunteer {
+  periodEnd: DateTime!
+  periodStart: DateTime!
   reimbursementType: ReimbursementType!
   volunteer: User!
 }
@@ -951,6 +970,7 @@ type Query {
   adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
+  availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
   bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
   checkInContext(checkInId: String!): CheckInContext
@@ -974,7 +994,7 @@ type Query {
   formSubmissionsByForm(formId: String!, limit: Int! = 10, offset: Int! = 0): FormSubmissionPaginatedResponse!
   formSubmissionsByMembershipRequest(membershipRequestId: String!): [FormSubmission!]!
   formSubmissionsForVolunteer(userId: String!): [FormSubmission!]!
-  inviteAllowanceEligibility(organizationUnitId: ID!, reimbursementTypeId: ID!, shiftDurationMinutes: Int!): [VolunteerInviteAllowance!]!
+  inviteAllowanceEligibility(organizationUnitId: ID!, periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, shiftDurationMinutes: Int!): [VolunteerInviteAllowance!]!
   invoice(id: ID!): Invoice!
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
@@ -1008,6 +1028,7 @@ type Query {
   organizationBySlug(slug: String!): Organization!
   organizationTree: OrganizationTree
   organizationUnit(id: String!): OrganizationUnit
+  organizationUnitAutomations(organizationUnitId: ID!): [OrganizationUnitAutomation!]!
   organizationUnitBySlug(slug: String!): OrganizationUnit
   organizationUnitTypes: [OrganizationUnitType!]!
   organizationUnits(limit: Int! = 10, offset: Int! = 0, organizationId: String!): OrganizationUnitPaginatedResponse!
@@ -1044,7 +1065,7 @@ type Query {
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
-  timeEntries(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
+  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   user(id: String!): User
@@ -1374,6 +1395,7 @@ type ShiftInstance {
   overrideMinVolunteers: Int
   overrideReimbursementTypeId: ID
   overrideTitle: String
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredForms: [RequiredFormRef!]!
   requiredFormsCount: Int!
   spotsLeft: Int
@@ -1391,6 +1413,11 @@ type ShiftInstanceCallOutSummary {
   sentAt: DateTime!
   sentBy: User!
   source: ShiftCallOutSource!
+}
+
+type ShiftInstanceDayCount {
+  count: Int!
+  date: DateTime!
 }
 
 type ShiftInstanceInvite {
@@ -1464,6 +1491,7 @@ type TemplateSignee {
 
 type TimeEntry {
   createdAt: DateTime!
+  createdBy: User
   endedAt: DateTime
   id: ID!
   isPaid: Boolean!
@@ -1478,6 +1506,14 @@ type TimeEntry {
 type TimeEntryPaginatedResponse {
   items: [TimeEntry!]!
   pagination: PaginationInfo!
+}
+
+enum TimeEntrySortField {
+  CREATED_AT
+  DURATION
+  SHIFT
+  STARTED_AT
+  VOLUNTEER
 }
 
 input UpdateDocumentTemplateInput {
@@ -1543,6 +1579,13 @@ input UpdateOrganizationInput {
   street: String
   websiteUrl: String
   zipCode: String
+}
+
+input UpdateOrganizationUnitAutomationInput {
+  activeDays: [Weekday!]
+  enabled: Boolean
+  leadTimeHours: Int
+  sendAtTime: String
 }
 
 input UpdateOrganizationUnitInput {
@@ -1696,6 +1739,16 @@ type VolunteerNeedsTimesheet {
 type VolunteerYearlyUsage {
   usageByType: [ReimbursementTypeUsage!]!
   volunteer: User!
+}
+
+enum Weekday {
+  FRIDAY
+  MONDAY
+  SATURDAY
+  SUNDAY
+  THURSDAY
+  TUESDAY
+  WEDNESDAY
 }
 
 type YearlyUsage {

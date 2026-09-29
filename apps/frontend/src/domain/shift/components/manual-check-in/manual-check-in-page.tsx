@@ -7,8 +7,8 @@ import {
   useCheckInShiftInstances,
   useQueryClient,
 } from '@repo/data/react';
-import { Button, Card, CardContent } from '@repo/ui';
-import { endOfMonth, startOfMonth } from 'date-fns';
+import { applyTimeToDate, Button, Card, CardContent } from '@repo/ui';
+import { endOfMonth, format, startOfMonth } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState, useTransition } from 'react';
@@ -72,13 +72,12 @@ export function ManualCheckInPage({
     selectedInstance: null,
   }));
   const [didPreselect, setDidPreselect] = useState(false);
-  // Kept beside the selection rather than in it: the date/shift the user
-  // already picked survives untouched while the rows are hidden, so
-  // unchecking the box brings them back exactly as they were.
   const [withoutShift, setWithoutShift] = useState(false);
   const [openSheet, setOpenSheet] = useState<
     'orgUnit' | 'date' | 'shift' | 'acceptMembership' | null
   >(null);
+  const [startTime, setStartTime] = useState(() => format(new Date(), 'HH:mm'));
+  const [startTimeError, setStartTimeError] = useState<string | null>(null);
 
   // The visible month drives the fetch; it also feeds the calendar dots and
   // the day list, so one range query serves every consumer on the page.
@@ -96,8 +95,9 @@ export function ManualCheckInPage({
     [rawInstances],
   );
 
-  // Preselect the instance nearest to now, once, after the first load.
-  if (!didPreselect && rawInstances) {
+  // Preselect the instance nearest to now, once, after the first load —
+  // unless the user already chose without-assignment.
+  if (!didPreselect && rawInstances && !withoutShift) {
     setDidPreselect(true);
     const initial = pickInitialInstance(instances, new Date());
     if (initial) {
@@ -105,23 +105,15 @@ export function ManualCheckInPage({
     }
   }
 
-  // Without a shift the whole flow — the readiness query, the mutation and
-  // the success payload — runs on a null instance, so it is resolved once
-  // here instead of at each call site.
-  const effectiveShiftInstanceId = withoutShift
-    ? null
-    : selection.shiftInstanceId;
-  const effectiveInstance = withoutShift ? null : selection.selectedInstance;
-
-  // Readiness: enabled once a shift instance is chosen, or as soon as the
-  // without-shift box is ticked, where a null instance is the point and only
+  // Readiness: enabled once a shift instance is chosen, or as soon as
+  // without-assignment is chosen, where a null instance is the point and only
   // the membership facts come back. Every mutator in check-in-selection.ts
   // writes shiftInstanceId and selectedInstance together, so they never
   // disagree about which instance is current.
   const { data: readiness } = useCheckInReadiness(
     selection.orgUnitId,
     volunteer.id,
-    effectiveShiftInstanceId,
+    selection.shiftInstanceId,
     { enabled: withoutShift || !!selection.shiftInstanceId },
   );
   const readinessState = readiness
@@ -196,11 +188,21 @@ export function ManualCheckInPage({
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
+    const startedAt = startTime
+      ? applyTimeToDate(selection.date ?? new Date(), startTime)
+      : null;
+    if (!startedAt || Number.isNaN(startedAt.getTime())) {
+      setStartTimeError(t('startTimeInvalid'));
+      return;
+    }
+    setStartTimeError(null);
+
     startSubmitTransition(async () => {
       const result = await checkInVolunteer({
         organizationUnitId: selection.orgUnitId,
         volunteerId: volunteer.id,
-        shiftInstanceId: effectiveShiftInstanceId,
+        shiftInstanceId: selection.shiftInstanceId,
+        startedAt,
       });
 
       if (result?.serverError) {
@@ -211,8 +213,8 @@ export function ManualCheckInPage({
         return;
       }
 
-      const startsAt = effectiveInstance
-        ? new Date(effectiveInstance.actualStartsAt)
+      const startsAt = selection.selectedInstance
+        ? new Date(selection.selectedInstance.actualStartsAt)
         : null;
       const isToday =
         !!startsAt && startsAt.toDateString() === new Date().toDateString();
@@ -220,11 +222,11 @@ export function ManualCheckInPage({
       setCheckInSuccessPayload({
         volunteerName: volunteer.name,
         volunteerImage: volunteer.image ?? null,
-        shiftTitle: effectiveInstance?.title ?? null,
-        timeRange: effectiveInstance
+        shiftTitle: selection.selectedInstance?.title ?? null,
+        timeRange: selection.selectedInstance
           ? formatTimeRange(
-              effectiveInstance.actualStartsAt,
-              effectiveInstance.actualEndsAt,
+              selection.selectedInstance.actualStartsAt,
+              selection.selectedInstance.actualEndsAt,
             )
           : null,
         dateLabel: startsAt
@@ -259,13 +261,15 @@ export function ManualCheckInPage({
           selection={selection}
           orgUnits={orgUnits}
           withoutShift={withoutShift}
-          onWithoutShiftChange={setWithoutShift}
           onOpenOrgUnit={() => setOpenSheet('orgUnit')}
           onOpenDate={() => {
             setVisibleMonth(selection.date ?? new Date());
             setOpenSheet('date');
           }}
           onOpenShift={() => setOpenSheet('shift')}
+          startTime={startTime}
+          onStartTimeChange={setStartTime}
+          startTimeError={startTimeError}
         />
 
         <UserCard user={volunteer} size="lg" />
@@ -345,17 +349,29 @@ export function ManualCheckInPage({
           instances={instances}
           selectedDate={selection.date}
           selectedShiftInstanceId={selection.shiftInstanceId}
+          withoutShift={withoutShift}
           onSelectInstance={(instance) => {
             // Instances are stale while the range query is in flight —
             // applying one would resolve against the wrong month.
             if (instancesStale) return;
+            setWithoutShift(false);
             setSelection((current) => applyShiftInstance(current, instance));
           }}
           onSelectShift={(shiftId) => {
             if (instancesStale) return;
+            setWithoutShift(false);
             setSelection((current) =>
               applyShift(current, shiftId, instances, new Date()),
             );
+          }}
+          onSelectWithoutShift={() => {
+            setWithoutShift(true);
+            setSelection((current) => ({
+              ...current,
+              shiftId: null,
+              shiftInstanceId: null,
+              selectedInstance: null,
+            }));
           }}
         />
 

@@ -19,9 +19,20 @@ export class UserProfileService {
   ) {}
 
   async findByUserId(userId: string): Promise<UserProfileEntity | undefined> {
-    return this.db.query.userProfiles.findFirst({
+    const profile = await this.db.query.userProfiles.findFirst({
       where: { userId },
+      with: { user: { columns: { email: true } } },
     });
+    if (!profile) {
+      return;
+    }
+    return {
+      ...profile,
+      data: {
+        ...profile.data,
+        email: profile.user.email,
+      },
+    };
   }
 
   async findByUserIdInOrgUnit(

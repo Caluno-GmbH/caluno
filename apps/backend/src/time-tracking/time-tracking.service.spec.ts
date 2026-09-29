@@ -376,3 +376,86 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     expect(shift.hasOpenTimeEntry).toHaveBeenCalledWith('si-1', 'volunteer-1');
   });
 });
+
+describe('TimeTrackingService.checkInVolunteer start time', () => {
+  it('uses the given start time instead of now', async () => {
+    const start = new Date('2026-09-28T08:00:00.000Z');
+    const insertValues = jest.fn().mockReturnValue({
+      returning: jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'te-1', shiftInstanceId: null, volunteerId: 'volunteer-1' },
+        ]),
+    });
+    const db = {
+      query: { shiftInstances: { findFirst: jest.fn() } },
+      insert: jest.fn().mockReturnValue({ values: insertValues }),
+    };
+    const service = new TimeTrackingService(
+      db as never,
+      {
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
+      } as never,
+      { hasOpenTimeEntry: jest.fn().mockResolvedValue(false) } as never,
+      { capture: jest.fn() } as unknown as PostHogService,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { emit: jest.fn() } as never,
+    );
+
+    await service.checkInVolunteer(
+      'ou-1',
+      'volunteer-1',
+      null,
+      'admin-1',
+      start,
+    );
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ startedAt: start }),
+    );
+  });
+
+  it('falls back to now when no start time is given', async () => {
+    const before = new Date();
+    const insertValues = jest.fn().mockReturnValue({
+      returning: jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'te-2', shiftInstanceId: null, volunteerId: 'volunteer-1' },
+        ]),
+    });
+    const db = {
+      query: { shiftInstances: { findFirst: jest.fn() } },
+      insert: jest.fn().mockReturnValue({ values: insertValues }),
+    };
+    const service = new TimeTrackingService(
+      db as never,
+      {
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
+      } as never,
+      { hasOpenTimeEntry: jest.fn().mockResolvedValue(false) } as never,
+      { capture: jest.fn() } as unknown as PostHogService,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { emit: jest.fn() } as never,
+    );
+
+    await service.checkInVolunteer(
+      'ou-1',
+      'volunteer-1',
+      null,
+      'admin-1',
+      null,
+    );
+
+    const inserted = insertValues.mock.calls[0][0] as { startedAt: Date };
+    expect(inserted.startedAt.getTime()).toBeGreaterThanOrEqual(
+      before.getTime(),
+    );
+  });
+});

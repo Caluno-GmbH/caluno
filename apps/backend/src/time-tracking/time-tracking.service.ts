@@ -1,11 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, count, eq, isNull } from 'drizzle-orm';
+import { and, count, eq, isNull, type SQL, sql } from 'drizzle-orm';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
 import { DATABASE_CONNECTION } from '../database/database-connection';
 import * as schema from '../database/schema';
+import { SortOrder } from '../graphql/enums/sort-order.enum';
 import {
   BadRequestGraphQLError,
   ConflictGraphQLError,
@@ -28,6 +29,7 @@ import { ShiftInviteStatus } from '../shift/enums';
 import { ShiftService } from '../shift/shift.service';
 import { UserService } from '../user/user.service';
 import { isUniqueConstraintViolation } from '../utils/constraint-violation.util';
+import { TimeEntrySortField } from './enums';
 import { AddTimeEntryInput } from './inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from './inputs/close-time-enty-input';
 import { UpdateTimeEntryInput } from './inputs/update-time-entry.input';
@@ -53,7 +55,7 @@ export class TimeTrackingService {
   async addTimeEntry(
     organizationUnitId: string,
     input: AddTimeEntryInput,
-    _actorUserId: string,
+    actorUserId: string,
     options?: { skipCapture?: boolean },
   ): Promise<TimeEntryEntity> {
     let reimbursementTypeId: string | null = null;
@@ -95,6 +97,7 @@ export class TimeTrackingService {
           endedAt: input.endedAt ?? null,
           notes: input.notes,
           reimbursementTypeId,
+          createdById: actorUserId,
         })
         .returning();
       if (!options?.skipCapture) {
@@ -314,23 +317,68 @@ export class TimeTrackingService {
     return entry;
   }
 
+  private buildTimeEntryOrderBy(
+    sort: TimeEntrySortField,
+    order: SortOrder,
+  ): SQL[] {
+    const direction =
+      order === SortOrder.ASC ? sql.raw('asc') : sql.raw('desc');
+    const { timeEntries, shifts, organizationUnits, users } = schema;
+
+    const primary = (() => {
+      switch (sort) {
+        case TimeEntrySortField.SHIFT:
+          return sql`coalesce(${shifts.title}, ${organizationUnits.name}) ${direction}`;
+        case TimeEntrySortField.VOLUNTEER:
+          return sql`${users.name} ${direction}`;
+        case TimeEntrySortField.STARTED_AT:
+          return sql`${timeEntries.startedAt} ${direction}`;
+        case TimeEntrySortField.DURATION:
+          return sql`(${timeEntries.endedAt} - ${timeEntries.startedAt}) ${direction} nulls last`;
+        case TimeEntrySortField.CREATED_AT:
+          return sql`${timeEntries.createdAt} ${direction}`;
+      }
+    })();
+
+    return [primary, sql`${timeEntries.id} asc`];
+  }
+
   async findAll(
     organizationUnitId: string,
     pagination: PaginationInput,
+    sort: TimeEntrySortField = TimeEntrySortField.CREATED_AT,
+    order: SortOrder = SortOrder.DESC,
   ): Promise<{ entries: TimeEntryEntity[]; total: number }> {
-    const entries = await this.db.query.timeEntries.findMany({
-      where: { organizationUnitId },
-      orderBy: { startedAt: 'desc' },
-      limit: pagination.limit,
-      offset: pagination.offset,
-    });
+    const rows = await this.db
+      .select({ timeEntry: schema.timeEntries })
+      .from(schema.timeEntries)
+      .leftJoin(
+        schema.shiftInstances,
+        eq(schema.timeEntries.shiftInstanceId, schema.shiftInstances.id),
+      )
+      .leftJoin(
+        schema.shifts,
+        eq(schema.shiftInstances.masterId, schema.shifts.id),
+      )
+      .leftJoin(
+        schema.organizationUnits,
+        eq(schema.timeEntries.organizationUnitId, schema.organizationUnits.id),
+      )
+      .leftJoin(
+        schema.users,
+        eq(schema.timeEntries.volunteerId, schema.users.id),
+      )
+      .where(eq(schema.timeEntries.organizationUnitId, organizationUnitId))
+      .orderBy(...this.buildTimeEntryOrderBy(sort, order))
+      .limit(pagination.limit)
+      .offset(pagination.offset);
 
     const [{ total }] = await this.db
       .select({ total: count() })
       .from(schema.timeEntries)
       .where(eq(schema.timeEntries.organizationUnitId, organizationUnitId));
 
-    return { entries: entries as TimeEntryEntity[], total };
+    return { entries: rows.map((row) => row.timeEntry), total };
   }
 
   async findByUser(
@@ -591,6 +639,7 @@ export class TimeTrackingService {
     volunteerId: string,
     shiftInstanceId: string | null,
     actorUserId: string,
+    startedAt: Date | null,
   ): Promise<TimeEntryEntity> {
     const isMember = await this._membershipService.isMemberOfUnitOrAncestor(
       volunteerId,
@@ -603,7 +652,7 @@ export class TimeTrackingService {
     const input = new AddTimeEntryInput();
     input.volunteerId = volunteerId;
     input.shiftInstanceId = shiftInstanceId;
-    input.startedAt = new Date();
+    input.startedAt = startedAt ?? new Date();
     input.endedAt = null;
     input.notes = null;
 

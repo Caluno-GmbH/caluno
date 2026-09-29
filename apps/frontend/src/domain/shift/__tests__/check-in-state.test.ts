@@ -171,16 +171,16 @@ describe('formatCheckedOutWindows', () => {
 });
 
 describe('acceptedRowActions', () => {
-  it('offers Check in for an accepted row that has not checked in', () => {
-    expect(acceptedRowActions('accepted', true)).toEqual(['Check in']);
+  it('offers no actions for an accepted row that has not checked in', () => {
+    expect(acceptedRowActions('accepted', true)).toEqual([]);
   });
 
   it('offers Check out for a checked-in row', () => {
     expect(acceptedRowActions('checked_in', true)).toEqual(['Check out']);
   });
 
-  it('offers Check in again for a checked-out row', () => {
-    expect(acceptedRowActions('checked_out', true)).toEqual(['Check in']);
+  it('offers no actions for a checked-out row', () => {
+    expect(acceptedRowActions('checked_out', true)).toEqual([]);
   });
 
   it('offers nothing when the viewer lacks CHECK_IN_MANAGE, regardless of state', () => {

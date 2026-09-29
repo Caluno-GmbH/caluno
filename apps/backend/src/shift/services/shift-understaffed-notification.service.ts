@@ -13,7 +13,10 @@ import { shiftInstanceCallOutSummaryTemplate } from '../../notification/email/te
 import { shiftInstanceUnderstaffedReminderTemplate } from '../../notification/email/templates/shift-instance-understaffed-reminder.template';
 import { NotificationService } from '../../notification/notification.service';
 import { NotificationEvent } from '../../notification/notification-events';
+import { OrganizationUnitAutomationKind } from '../../organization/enums';
+import { OrganizationUnitAutomationService } from '../../organization/organization-unit-automation.service';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import type { Weekday } from '../../shared/enums/weekday.enum';
 import {
   ShiftCallOutDeliveryStatus,
   ShiftCallOutSource,
@@ -24,11 +27,16 @@ import type { ShiftEntity } from '../schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import type { ShiftInstanceUnderstaffedStateEntity } from '../schemas/shift-instance-understaffed-state.schema';
 import { ShiftService } from '../shift.service';
-import { hoursUntil } from '../utils/app-time';
-import { decideUnderstaffedTick } from '../utils/understaffed-tick-decision';
+import { appWeekday, hoursUntil } from '../utils/app-time';
+import {
+  decideUnderstaffedTick,
+  type UnderstaffedTickDecision,
+} from '../utils/understaffed-tick-decision';
 import { ShiftCallOutService } from './shift-call-out.service';
 
-const WINDOW_HOURS = 48;
+// Widest lead time a coordinator can choose (VOLI-1487); the per-unit
+// automation decides which candidates in this window actually fire.
+const WINDOW_HOURS = 72;
 const REMINDER_THRESHOLD_HOURS = 24;
 const SYSTEM_ACTOR_USER_ID = 'system-automated';
 
@@ -43,6 +51,23 @@ type UnderstaffedTrackingState = Pick<
   ShiftInstanceUnderstaffedStateEntity,
   'instanceId' | 'lastCheckedAt' | 'callOutFiredAt' | 'reminderFiredAt'
 >;
+
+export interface UnderstaffedTickSummary {
+  candidates: number;
+  below_minimum: number;
+  call_outs_fired: number;
+  reminders_fired: number;
+  rearmed: number;
+  skipped_no_minimum: number;
+  skipped_automation_off: number;
+  failed: number;
+}
+
+interface UrgentCallAutomation {
+  enabled: boolean;
+  activeDays: readonly Weekday[];
+  leadTimeHours: number | null;
+}
 
 @Injectable()
 export class ShiftUnderstaffedNotificationService {
@@ -60,26 +85,44 @@ export class ShiftUnderstaffedNotificationService {
     private readonly notificationService: NotificationService,
     private readonly emailService: EmailService,
     private readonly appI18n: AppI18nService,
+    private readonly automationService: OrganizationUnitAutomationService,
   ) {}
 
-  async runTick(now: Date = new Date()): Promise<void> {
+  async runTick(now: Date = new Date()): Promise<UnderstaffedTickSummary> {
     const candidates =
       await this.shiftService.findUnderstaffedCandidateInstances(
         now,
         WINDOW_HOURS,
       );
-    if (candidates.length === 0) return;
+    const summary: UnderstaffedTickSummary = {
+      candidates: candidates.length,
+      below_minimum: 0,
+      call_outs_fired: 0,
+      reminders_fired: 0,
+      rearmed: 0,
+      skipped_no_minimum: 0,
+      skipped_automation_off: 0,
+      failed: 0,
+    };
+    if (candidates.length === 0) return summary;
 
     const instanceIds = candidates.map((instance) => instance.id);
-    const [filledCounts, states] = await Promise.all([
+    const [filledCounts, states, automations] = await Promise.all([
       this.shiftService.getFilledCounts(instanceIds),
       this.loadStates(instanceIds),
+      this.automationService.resolveMany(
+        candidates.map((instance) => instance.master.organizationUnitId),
+        OrganizationUnitAutomationKind.URGENT_CALL,
+      ),
     ]);
 
     for (const instance of candidates) {
       const effectiveMin =
         instance.overrideMinVolunteers ?? instance.master.minVolunteers;
-      if (effectiveMin == null) continue;
+      if (effectiveMin == null) {
+        summary.skipped_no_minimum += 1;
+        continue;
+      }
 
       const state = states.get(instance.id) ?? {
         instanceId: instance.id,
@@ -88,20 +131,43 @@ export class ShiftUnderstaffedNotificationService {
         reminderFiredAt: null,
       };
       const filledCount = filledCounts.get(instance.id) ?? 0;
+      const automation = automations.get(instance.master.organizationUnitId);
 
       try {
-        await this.processInstance(instance, state, now, {
-          effectiveMin,
-          filledCount,
-        });
+        const decision = await this.processInstance(
+          instance,
+          state,
+          now,
+          { effectiveMin, filledCount },
+          {
+            enabled: automation?.enabled ?? false,
+            activeDays: automation?.activeDays ?? [],
+            leadTimeHours: automation?.leadTimeHours ?? null,
+          },
+        );
+        if (decision.rearm) summary.rearmed += 1;
+        else {
+          summary.below_minimum += 1;
+          if (!automation?.enabled) summary.skipped_automation_off += 1;
+        }
+        if (decision.fireCallOut) summary.call_outs_fired += 1;
+        if (decision.fireReminder) summary.reminders_fired += 1;
       } catch (error) {
+        summary.failed += 1;
         this.logger.error(
-          `Failed to process understaffed check for instance ${instance.id}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          {
+            event: 'understaffed_tick.instance_failed',
+            instance_id: instance.id,
+            shift_id: instance.masterId,
+            organization_unit_id: instance.master.organizationUnitId,
+            err: error,
+          },
+          'Failed to process understaffed check for instance',
         );
       }
     }
+
+    return summary;
   }
 
   private async loadStates(
@@ -124,14 +190,41 @@ export class ShiftUnderstaffedNotificationService {
     state: UnderstaffedTrackingState,
     now: Date,
     staffing: StaffingContext,
-  ): Promise<void> {
+    automation: UrgentCallAutomation,
+  ): Promise<UnderstaffedTickDecision> {
+    const hoursUntilStart = hoursUntil(instance.actualStartsAt, now);
+    const shiftWeekday = appWeekday(instance.actualStartsAt);
     const decision = decideUnderstaffedTick({
       belowMinimum: staffing.filledCount < staffing.effectiveMin,
-      hoursUntilStart: hoursUntil(instance.actualStartsAt, now),
+      hoursUntilStart,
       callOutAlreadyFired: state.callOutFiredAt != null,
       reminderAlreadyFired: state.reminderFiredAt != null,
       reminderThresholdHours: REMINDER_THRESHOLD_HOURS,
+      automationEnabled: automation.enabled,
+      isActiveDay: automation.activeDays.includes(shiftWeekday),
+      leadTimeHours: automation.leadTimeHours,
     });
+
+    this.logger.debug(
+      {
+        event: 'understaffed_tick.instance_evaluated',
+        instance_id: instance.id,
+        shift_id: instance.masterId,
+        organization_unit_id: instance.master.organizationUnitId,
+        hours_until_start: Math.round(hoursUntilStart * 10) / 10,
+        shift_weekday: shiftWeekday,
+        automation_enabled: automation.enabled,
+        automation_lead_time_hours: automation.leadTimeHours,
+        filled_count: staffing.filledCount,
+        min_volunteers: staffing.effectiveMin,
+        call_out_already_fired: state.callOutFiredAt != null,
+        reminder_already_fired: state.reminderFiredAt != null,
+        rearm: decision.rearm,
+        fire_call_out: decision.fireCallOut,
+        fire_reminder: decision.fireReminder,
+      },
+      'Understaffed check evaluated',
+    );
 
     if (decision.rearm) {
       await this.upsertState(instance.id, {
@@ -139,7 +232,7 @@ export class ShiftUnderstaffedNotificationService {
         callOutFiredAt: null,
         reminderFiredAt: state.reminderFiredAt,
       });
-      return;
+      return decision;
     }
 
     if (decision.fireCallOut) {
@@ -154,6 +247,8 @@ export class ShiftUnderstaffedNotificationService {
       callOutFiredAt: decision.fireCallOut ? now : state.callOutFiredAt,
       reminderFiredAt: decision.fireReminder ? now : state.reminderFiredAt,
     });
+
+    return decision;
   }
 
   private async upsertState(
@@ -257,7 +352,13 @@ export class ShiftUnderstaffedNotificationService {
     );
     if (managers.length === 0) {
       this.logger.warn(
-        `No managers to notify for instance ${instance.id} (${kind})`,
+        {
+          event: 'understaffed_tick.no_managers',
+          instance_id: instance.id,
+          organization_unit_id: instance.master.organizationUnitId,
+          kind,
+        },
+        'No managers to notify for instance',
       );
       return;
     }
@@ -267,7 +368,13 @@ export class ShiftUnderstaffedNotificationService {
     );
     if (!organizationUnit) {
       this.logger.warn(
-        `Organization unit ${instance.master.organizationUnitId} not found for instance ${instance.id}`,
+        {
+          event: 'understaffed_tick.organization_unit_missing',
+          instance_id: instance.id,
+          organization_unit_id: instance.master.organizationUnitId,
+          kind,
+        },
+        'Organization unit not found for instance',
       );
       return;
     }
@@ -299,9 +406,15 @@ export class ShiftUnderstaffedNotificationService {
           };
         } catch (error) {
           this.logger.error(
-            `Failed to send ${kind} email to user ${recipient.userId}: ${
-              error instanceof Error ? error.message : String(error)
-            }`,
+            {
+              event: 'understaffed_tick.email_failed',
+              instance_id: instance.id,
+              organization_unit_id: instance.master.organizationUnitId,
+              kind,
+              recipient_user_id: recipient.userId,
+              err: error,
+            },
+            'Failed to send manager email',
           );
           return {
             userId: recipient.userId,

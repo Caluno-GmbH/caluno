@@ -1,4 +1,5 @@
 import { Badge, Card, CardContent } from '@repo/ui';
+import { parseISO } from 'date-fns';
 import {
   Calendar,
   CalendarFold,
@@ -11,6 +12,7 @@ import {
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/time-entry/components/action-bar';
+import { describeRecorder } from '@/domain/time-entry/recorder';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 
@@ -34,6 +36,7 @@ export default async function TimeEntryDetailPage({
   const { formatDateTime, formatRange, formatDuration } = await getFormatting();
 
   const isOpen = !entry.endedAt;
+  const recorder = describeRecorder(entry);
 
   return (
     <div className="space-y-6">
@@ -121,7 +124,15 @@ export default async function TimeEntryDetailPage({
                     {t('detail.createdLabel')}
                   </dt>
                   <dd className="ml-6">
-                    {formatDateTime(new Date(entry.createdAt))}
+                    {formatDateTime(parseISO(entry.createdAt))}
+                    <span className="text-muted-foreground mt-1 block text-sm">
+                      {recorder.name
+                        ? t('table.recordedBy', { name: recorder.name })
+                        : t('table.recordedByUnknown')}
+                      {recorder.onBehalf
+                        ? ` · ${t('table.recordedOnBehalf')}`
+                        : ''}
+                    </span>
                   </dd>
                 </div>
               </dl>

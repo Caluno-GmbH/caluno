@@ -39,7 +39,7 @@ export function JoinFormsClient({
       if (result.status === JoinStatus.Joined) {
         toast.success(t('joined'));
         router.push(getSafeRedirect(redirectTo, `/admin/${orgUId}`));
-      } else if (result.status === JoinStatus.Pending) {
+      } else if (result.status === JoinStatus.PendingMembership) {
         toast.success(t('requestPending'));
         router.push(getSafeRedirect(redirectTo));
       } else if (result.status === JoinStatus.Rejected) {

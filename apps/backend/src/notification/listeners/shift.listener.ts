@@ -232,6 +232,7 @@ export class ShiftListener {
             startsAt: payload.startsAt,
             endsAt: payload.endsAt,
             instanceId: payload.instanceId,
+            reimbursementTypeKey: payload.reimbursementTypeKey,
           },
           templateContext,
         );
@@ -350,6 +351,7 @@ export class ShiftListener {
             shiftInstructions: payload.shiftInstructions,
             recipientFirstName: recipient.firstName,
             schedule: payload.schedule,
+            reimbursementTypeKey: payload.reimbursementTypeKey,
           },
           templateContext,
         );

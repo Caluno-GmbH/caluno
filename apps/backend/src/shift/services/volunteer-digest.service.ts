@@ -39,6 +39,18 @@ const NEEDS_VOLUNTEERS_CANDIDATE_FETCH_LIMIT = 1000;
 
 type InstanceWithMaster = ShiftInstanceEntity & { master: ShiftEntity };
 
+type VolunteerDigestOutcome =
+  | 'sent'
+  | 'skipped_no_units'
+  | 'skipped_no_content'
+  | 'skipped_no_notification_data'
+  | 'failed';
+
+export interface VolunteerDigestSummary
+  extends Record<VolunteerDigestOutcome, number> {
+  recipients: number;
+}
+
 @Injectable()
 export class VolunteerDigestService {
   private readonly logger = new Logger(VolunteerDigestService.name);
@@ -54,20 +66,37 @@ export class VolunteerDigestService {
   ) {}
 
   /** Builds and sends the Sunday digest to every user with at least one organisation membership. */
-  async sendDigests(sendAt: Date = new Date()): Promise<void> {
+  async sendDigests(
+    sendAt: Date = new Date(),
+  ): Promise<VolunteerDigestSummary> {
     const userIds = await this.findDigestRecipientIds();
+    const summary: VolunteerDigestSummary = {
+      recipients: userIds.length,
+      sent: 0,
+      skipped_no_units: 0,
+      skipped_no_content: 0,
+      skipped_no_notification_data: 0,
+      failed: 0,
+    };
 
     for (const userId of userIds) {
       try {
-        await this.sendDigestForUser(userId, sendAt);
+        const outcome = await this.sendDigestForUser(userId, sendAt);
+        summary[outcome] += 1;
       } catch (error) {
+        summary.failed += 1;
         this.logger.error(
-          `Failed to build/send volunteer digest for user ${userId}: ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          {
+            event: 'volunteer_digest.user_failed',
+            user_id: userId,
+            err: error,
+          },
+          'Failed to build/send volunteer digest for user',
         );
       }
     }
+
+    return summary;
   }
 
   private async findDigestRecipientIds(): Promise<string[]> {
@@ -82,9 +111,12 @@ export class VolunteerDigestService {
       .filter((id): id is string => id != null);
   }
 
-  private async sendDigestForUser(userId: string, sendAt: Date): Promise<void> {
+  private async sendDigestForUser(
+    userId: string,
+    sendAt: Date,
+  ): Promise<VolunteerDigestOutcome> {
     const orgUnits = await this.organizationService.findUnits(userId);
-    if (orgUnits.length === 0) return;
+    if (orgUnits.length === 0) return 'skipped_no_units';
 
     const upcomingWindowEndsAt = addDays(sendAt, UPCOMING_WINDOW_DAYS);
     const needsVolunteersStartsAfter = addHours(
@@ -130,7 +162,13 @@ export class VolunteerDigestService {
 
     if (needsVolunteersPage.total > NEEDS_VOLUNTEERS_CANDIDATE_FETCH_LIMIT) {
       this.logger.warn(
-        `Volunteer digest for user ${userId}: needs-volunteers candidate pool (${needsVolunteersPage.total}) exceeds the fetch limit (${NEEDS_VOLUNTEERS_CANDIDATE_FETCH_LIMIT}); some eligible shifts may be missing from this send.`,
+        {
+          event: 'volunteer_digest.candidate_pool_truncated',
+          user_id: userId,
+          candidate_total: needsVolunteersPage.total,
+          fetch_limit: NEEDS_VOLUNTEERS_CANDIDATE_FETCH_LIMIT,
+        },
+        'Needs-volunteers candidate pool exceeds the fetch limit; some eligible shifts may be missing from this send',
       );
     }
 
@@ -159,13 +197,13 @@ export class VolunteerDigestService {
       myShiftInstances.length > 0 ||
       pendingInviteInstances.length > 0 ||
       needsVolunteersGroups.some((group) => group.rows.length > 0);
-    if (!hasAnyContent) return;
+    if (!hasAnyContent) return 'skipped_no_content';
 
     const recipient =
       await this.notificationService.resolveUserNotificationData(userId, {
         event: NotificationEvent.VOLUNTEER_DIGEST_SENT,
       });
-    if (!recipient) return;
+    if (!recipient) return 'skipped_no_notification_data';
 
     const templateContext = createEmailTemplateContext(
       this.appI18n,
@@ -199,15 +237,20 @@ export class VolunteerDigestService {
       await this.emailService.send({ to: recipient.email, subject, html });
     } catch (error) {
       this.logger.error(
-        `Failed to send volunteer digest to user ${userId}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        {
+          event: 'volunteer_digest.send_failed',
+          user_id: userId,
+          err: error,
+        },
+        'Failed to send volunteer digest to user',
       );
       // Don't log needs-volunteers rows as sent if the send itself failed.
-      return;
+      return 'failed';
     }
 
     await this.logNeedsVolunteersRows(userId, sendAt, needsVolunteersGroups);
+
+    return 'sent';
   }
 
   private async excludeActivelyInvitedInstances(

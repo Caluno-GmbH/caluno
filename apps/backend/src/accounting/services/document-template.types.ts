@@ -16,6 +16,8 @@ export interface TemplateLineShape {
   text: string;
   fields: TemplateFieldShape[];
   enabled?: boolean;
+  // Continues the previous line instead of starting a new paragraph.
+  inline?: boolean;
 }
 
 export interface TemplateBlockShape {
@@ -60,7 +62,6 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_zip: 'zip',
   volunteer_city: 'city',
   volunteer_dob: 'birth-date',
-  volunteer_tax_id: 'tax-id',
 };
 
 /**

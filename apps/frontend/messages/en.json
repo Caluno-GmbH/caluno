@@ -105,6 +105,8 @@
     "idVerificationDescription": "Ask the volunteer for their ID and confirm the name matches.",
     "idVerificationError": "Could not confirm the ID.",
     "idVerificationTitle": "ID not verified yet",
+    "startTimeInvalid": "Enter a valid start time",
+    "startTimeLabel": "Check-in time",
     "inviteSentConfirmation": "Invitation sent",
     "manualCheckin": "Manual check-in",
     "myQrCodeTab": "My QR code",
@@ -120,6 +122,7 @@
     "notMemberTitle": "Not in your organisation",
     "openEntriesDescription": "This volunteer is still checked in. Select an entry to check them out.",
     "openEntriesTitle": "Open check-ins",
+    "orDivider": "or",
     "orgUnitRowLabel": "Org unit",
     "orgUnitSheetTitle": "Select org unit",
     "pendingMembershipDescription": "This volunteer has asked to join. Accept their request to continue.",
@@ -359,7 +362,7 @@
     "noShifts": "No assignments planned yet.",
     "noShiftsOnDay": "No assignments on this day.",
     "pendingCta": "Pending request",
-    "pendingNote": "A coordinator will confirm your request.",
+    "pendingMembershipNote": "A coordinator will confirm your request.",
     "rejectedCta": "You cannot join this event",
     "requestSentToast": "Request sent. A coordinator will confirm it.",
     "requiredFormsTitle": "Required forms",
@@ -478,6 +481,69 @@
       "label": "Enable ID verification",
       "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in.",
       "updateError": "We couldn't save the setting. Please try again."
+    }
+  },
+  "ShiftSettings": {
+    "page": {
+      "title": "Shifts and check-in",
+      "subtitle": "Settings for shifts in {orgName}."
+    },
+    "sections": {
+      "staffing": {
+        "title": "Staffing",
+        "description": "How volunteers are asked to fill shifts."
+      },
+      "moderation": {
+        "title": "Moderation",
+        "description": "Rules for who gets into a shift."
+      },
+      "checkIn": {
+        "title": "Check-in",
+        "description": "How volunteers are checked in on site."
+      }
+    }
+  },
+  "Automations": {
+    "days": {
+      "label": "Active days",
+      "short": {
+        "MONDAY": "Mon",
+        "TUESDAY": "Tue",
+        "WEDNESDAY": "Wed",
+        "THURSDAY": "Thu",
+        "FRIDAY": "Fri",
+        "SATURDAY": "Sat",
+        "SUNDAY": "Sun"
+      },
+      "long": {
+        "MONDAY": "Monday",
+        "TUESDAY": "Tuesday",
+        "WEDNESDAY": "Wednesday",
+        "THURSDAY": "Thursday",
+        "FRIDAY": "Friday",
+        "SATURDAY": "Saturday",
+        "SUNDAY": "Sunday"
+      }
+    },
+    "stepIn": {
+      "label": "When to step in",
+      "option": "{hours} hours before"
+    },
+    "callOut": {
+      "title": "Automatic urgent call",
+      "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
+      "daysDescription": "Shifts on these days can trigger an urgent call.",
+      "stepInDescription": "How long before its start a shift below its minimum gets an urgent call.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "Could not save this automation."
+    },
+    "approval": {
+      "title": "Pause approval",
+      "description": "Confirms sign-ups straight away when a shift is below its minimum shortly before it starts. Approval applies again once the shift reaches its minimum. Shifts without a minimum are never affected.",
+      "daysDescription": "Shifts on these days can have approval paused.",
+      "stepInDescription": "How long before its start a shift below its minimum stops needing approval.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "Could not save this automation."
     }
   },
   "MembershipRequest": {
@@ -648,7 +714,8 @@
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
-    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}"
+    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
+    "shiftSettings": "Shifts and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",
@@ -811,8 +878,7 @@
         "accountHolder": "Name on the bank account",
         "lastName": "As on your ID",
         "preferredName": "If you'd like to be called something else",
-        "bic": "Bank identifier code (BIC) for your account",
-        "taxId": "Your tax identification number (for expense reports)"
+        "bic": "Bank identifier code (BIC) for your account"
       }
     },
     "language": "Language",
@@ -869,6 +935,7 @@
       "fieldAdded": "Field added",
       "fieldDeleted": "Field deleted",
       "fieldUpdated": "Field updated",
+      "formDetailsSaved": "Form details saved",
       "formSaved": "Form saved",
       "linkCopied": "Link copied",
       "linkCopiedDescription": "{url}"
@@ -955,7 +1022,7 @@
       "saving": "Saving...",
       "shareLinkCopied": "Share link copied to clipboard",
       "submissionsWarning": "This form has submissions",
-      "submissionsWarningDescription": "You can't edit this form because volunteers have already submitted responses. Create a copy if you need a new version.",
+      "submissionsWarningDescription": "You can't change this form's blocks because volunteers have already submitted responses. Name and description can still be edited. Create a copy if you need a new version.",
       "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
       "unsavedChangesLeave": "Leave without saving",
       "unsavedChangesStay": "Keep editing",
@@ -1022,7 +1089,6 @@
       "iban": "IBAN",
       "accountHolder": "Account holder",
       "bic": "BIC",
-      "taxId": "Tax ID",
       "infoText": "Info text",
       "labelLabel": "Label",
       "labelPlaceholder": "e.g. Favourite colour",
@@ -1058,8 +1124,12 @@
       "descriptionLabel": "Description",
       "descriptionOptional": "Description (optional)",
       "descriptionPlaceholder": "What is this form for?",
+      "editDetailsAria": "Edit form name and description",
+      "editDialogTitle": "Edit form details",
       "nameLabel": "Name",
-      "namePlaceholder": "e.g. Onboarding form"
+      "namePlaceholder": "e.g. Onboarding form",
+      "save": "Save",
+      "saving": "Saving..."
     },
     "genderOptions": {
       "female": "Female",
@@ -1136,6 +1206,7 @@
       "birthDateFormat": "DD/MM/YYYY",
       "checkboxYes": "Yes",
       "documentAcknowledgement": "I acknowledge and accept",
+      "documentOpenInNewTab": "Open in new tab",
       "failedToSubmit": "We couldn't submit the form. Please try again.",
       "membershipRequestNotice": "By submitting this form you will send a membership request to {orgName}. A coordinator will review your request.",
       "next": "Next",
@@ -1177,8 +1248,10 @@
     },
     "noRole": "No role",
     "internal": {
+      "member": "Member",
+      "memberDescription": "Members have no admin view or permissions.",
       "owner": "Owner",
-      "member": "Member"
+      "ownerDescription": "Owner has all permissions by default."
     },
     "page": {
       "createButton": "Create role",
@@ -1188,8 +1261,40 @@
     },
     "permissions": {
       "all": "All",
+      "descriptions": {
+        "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
+        "checkInManage": "Look up volunteers; see which shifts are available for check-in; check volunteers in or out; add people to shifts; invite people to the organisation and approve join requests from this screen.",
+        "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
+        "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
+        "requirementProfileEdit": "Create and change forms and blocks.",
+        "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
+        "shiftEdit": "Create, change, and delete shifts and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
+        "shiftView": "See shifts and their occurrences, events, who is invited or signed up, and timesheet entries.",
+        "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
+        "volunteerView": "See members, pending and past join requests, and volunteer profiles, including submitted forms (excluding payment-related data)."
+      },
+      "labels": {
+        "accountingManage": "Manage",
+        "checkInManage": "Manage",
+        "orgEdit": "Edit",
+        "orgView": "View",
+        "requirementProfileEdit": "Edit",
+        "requirementProfileView": "View",
+        "shiftEdit": "Edit",
+        "shiftView": "View",
+        "volunteerEdit": "Edit",
+        "volunteerView": "View"
+      },
       "none": "None",
-      "partial": "Partial"
+      "partial": "Partial",
+      "titles": {
+        "accounting": "Accounting",
+        "checkIn": "Check-in",
+        "organization": "Organisation wide settings",
+        "requirementProfile": "Requirement forms and blocks",
+        "shift": "Shifts, events, timesheets",
+        "volunteer": "Volunteer information and membership"
+      }
     },
     "select": {
       "addCustom": "Add custom",
@@ -1271,9 +1376,6 @@
       "waitlistInviteSuccess": "Volunteer invited to the assignment"
     },
     "checkIn": {
-      "checkInError": "Could not check in volunteer",
-      "checkInLoading": "Checking in {name}…",
-      "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
       "checkOutLoading": "Checking out {name}…",
@@ -1287,8 +1389,8 @@
     },
     "compensation": {
       "agreementNote": "If you accept this assignment, you'll get an agreement to sign.",
-      "ehrenamt": "Compensated via volunteer allowance (Ehrenamtspauschale)",
-      "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
+      "ehrenamt": "Volunteer allowance (Ehrenamtspauschale)",
+      "uebungsleiter": "Trainer's allowance (Übungsleiterpauschale)"
     },
     "detail": {
       "approvalLabel": "Approval",
@@ -1425,7 +1527,6 @@
       "approveWaitlistedSuccess": "Assignment is full. Volunteer added to the waitlist.",
       "cancelled": "Withdrawn",
       "changeStatusAria": "Change status for {name}",
-      "checkInAriaNamed": "Check in {name}",
       "checkOutAriaNamed": "Check out {name}",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
@@ -1656,7 +1757,8 @@
     "joinedNote": "You're signed up for this assignment.",
     "later": "Later",
     "locationDivider": "·",
-    "pendingNote": "Your membership request is pending. You will be added to this assignment once approved.",
+    "pendingMembershipNote": "Your membership request is pending. You will be added to this assignment once approved.",
+    "pendingApprovalNote": "Your request is pending. You will be notified, once your request was decided.",
     "pickDayLabel": "Choose a day",
     "respondBeforeNote": "Respond before {date}. You can change your mind until the assignment starts.",
     "signUpCta": "Sign up for {date}",
@@ -1686,6 +1788,13 @@
       "uploaded": "File uploaded",
       "uploading": "Uploading..."
     }
+  },
+  "DataTable": {
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "sortedAscending": "Sorted ascending",
+    "sortedDescending": "Sorted descending",
+    "unsorted": "Not sorted"
   },
   "TimeEntry": {
     "action": {
@@ -1732,6 +1841,7 @@
     },
     "page": {
       "createButton": "Add time entry",
+      "paginationName": "time entries",
       "title": "Tracked times"
     },
     "pauschaleType": {
@@ -1747,8 +1857,12 @@
     "table": {
       "duration": "Duration",
       "notAvailable": "N/A",
+      "recorded": "Recorded",
+      "recordedBy": "by {name}",
+      "recordedByUnknown": "Unknown",
+      "recordedOnBehalf": "entered on behalf",
+      "date": "Date",
       "shift": "Assignment",
-      "time": "Time",
       "volunteer": "Volunteer"
     },
     "validation": {
@@ -1813,6 +1927,13 @@
       "title": "Forms required to join",
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
+    "search": {
+      "clearAria": "Clear search",
+      "countFiltered": "{count} of {total}",
+      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
+      "emptyTitle": "No volunteers found",
+      "placeholder": "Search by name, email or role"
+    },
     "sheet": {
       "streetLabel": "Street",
       "birthdayLabel": "Birthday",
@@ -1835,9 +1956,14 @@
       "zipLabel": "Postal code"
     },
     "table": {
+      "copyEmailAria": "Copy {name}'s email address",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
       "email": "Email",
+      "emailCopied": "Email address copied to clipboard",
+      "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "name": "Name",
-      "roles": "Roles"
+      "openProfileAria": "Open {name}'s profile",
+      "roles": "Role"
     }
   },
   "VolunteerHome": {
@@ -1987,7 +2113,7 @@
         "action": "Action"
       },
       "tiles": {
-        "all": "All open tasks",
+        "all": "All documents",
         "docCount": "{count, plural, one {# document} other {# documents}}",
         "waitingOnYou": "{count, plural, one {# waiting on you} other {# waiting on you}}",
         "contractGenerate": "Create agreements",
@@ -2030,6 +2156,7 @@
           "awaiting-signature": "Awaiting signature",
           "awaiting-countersignature": "Awaiting countersignature",
           "active": "Active",
+          "expired": "Expired",
           "declined": "Declined"
         },
         "latestTimesheet": "Last timesheet covers · {period}",
@@ -2111,6 +2238,7 @@
           "contractSigningVol": "Waiting for signature",
           "contractSigningCoord": "Countersignature required",
           "contractActive": "Active agreement",
+          "contractExpired": "Expired contract",
           "timesheetGenerate": "Create timesheet",
           "timesheetSigningVol": "Waiting for signature",
           "timesheetSigningSuper": "Supervisor signature",
@@ -2181,6 +2309,8 @@
         "orgProfileErrorTitle": "Complete your organisation profile",
         "orgProfileErrorDescription": "Your organisation is missing details needed to create this document. Add them to continue.",
         "editProfileCta": "Edit your profile",
+        "invalidPeriodTitle": "Set the contract period",
+        "invalidPeriodDescription": "The period this agreement covers isn't set (or can't be read). Pick the period above before sending — the contract's validity and the printed Zeitraum must match.",
         "hoursUnitMonth": "month",
         "hoursUnitWeek": "week",
         "hoursUnitHint": "per {unit}",
@@ -2304,6 +2434,14 @@
           "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         },
+        "orgOverride": {
+          "orgHint": "Taken from the organisation details.",
+          "overriddenHint": "Stated by hand for this template.",
+          "editingHint": "Leave empty to go back to the organisation details.",
+          "missingValue": "not set",
+          "editButtonLabel": "Edit",
+          "saveButtonLabel": "Apply"
+        },
         "blockEditor": {
           "headerTitle": "Header",
           "invoiceNumberFormatLabel": "Document number format",
@@ -2373,6 +2511,7 @@
           "hours-amount": "Hours",
           "hours-unit": "Hours unit",
           "freeform-text": "Freeform text",
+          "parties-additional-info": "Optional additional information",
           "kostenstelle": "Cost centre",
           "kostentraeger": "Cost unit",
           "rechtstraeger": "Legal entity"
@@ -2383,6 +2522,7 @@
           "hours-amount-month": "e.g. 20",
           "hours-amount-week": "e.g. 5",
           "freeform-text": "Add anything else you need to here",
+          "parties-additional-info": "Add further information about contractual partners here",
           "kostenstelle": "e.g. K-4200",
           "kostentraeger": "e.g. KT-100",
           "rechtstraeger": "e.g. Diakonisches Werk e.V."
@@ -2410,6 +2550,7 @@
           "volunteer_first_name": "First name (Volunteer)",
           "volunteer_last_name": "Last name (Volunteer)",
           "org_name": "Organisation name",
+          "org_facility_name": "Facility",
           "org_street": "Organisation address",
           "org_zip": "Postal code (Organisation)",
           "org_city": "City (Organisation)",
@@ -2429,7 +2570,6 @@
           "volunteer_zip": "Postal code (Volunteer)",
           "volunteer_city": "City (Volunteer)",
           "volunteer_dob": "Date of birth (Volunteer)",
-          "volunteer_tax_id": "Tax ID (Volunteer)",
           "contract_period": "Agreement period",
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",

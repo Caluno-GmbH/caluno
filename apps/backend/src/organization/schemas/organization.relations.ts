@@ -54,6 +54,16 @@ export const organizationRelations = defineRelationsPart(schema, (r) => ({
       from: r.organizationUnits.id,
       to: r.organizationUnitRequiredForms.organizationUnitId,
     }),
+    automations: r.many.organizationUnitAutomations({
+      from: r.organizationUnits.id,
+      to: r.organizationUnitAutomations.organizationUnitId,
+    }),
+  },
+  organizationUnitAutomations: {
+    organizationUnit: r.one.organizationUnits({
+      from: r.organizationUnitAutomations.organizationUnitId,
+      to: r.organizationUnits.id,
+    }),
   },
   organizationUnitRequiredForms: {
     organizationUnit: r.one.organizationUnits({

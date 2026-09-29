@@ -89,6 +89,8 @@ export async function InviteShiftPageContent({
               organizationUnitId: orgUId,
               reimbursementTypeId: paidReimbursementTypeId,
               shiftDurationMinutes: shift.durationMinutes,
+              periodStart: new Date(instance.actualStartsAt).toISOString(),
+              periodEnd: new Date(instance.actualEndsAt).toISOString(),
             }
           : undefined
       }

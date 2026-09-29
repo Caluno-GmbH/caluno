@@ -102,6 +102,7 @@ export const requirementProfilesRelations = defineRelationsPart(
       user: r.one.users({
         from: r.userProfiles.userId,
         to: r.users.id,
+        optional: false,
       }),
     },
     formBlocks: {

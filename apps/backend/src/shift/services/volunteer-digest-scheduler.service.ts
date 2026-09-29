@@ -18,13 +18,30 @@ export class VolunteerDigestSchedulerService {
 
   @Cron('0 8 * * 0', { timeZone: 'Europe/Berlin' })
   async handleSundayDigest(): Promise<void> {
+    const startedAt = Date.now();
+    this.logger.log(
+      { event: 'volunteer_digest.started' },
+      'Digest run started',
+    );
+
     try {
-      await this.volunteerDigestService.sendDigests();
+      const summary = await this.volunteerDigestService.sendDigests();
+      this.logger.log(
+        {
+          event: 'volunteer_digest.finished',
+          duration_ms: Date.now() - startedAt,
+          ...summary,
+        },
+        'Digest run finished',
+      );
     } catch (error) {
       this.logger.error(
-        `Volunteer digest scheduler run failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        {
+          event: 'volunteer_digest.failed',
+          duration_ms: Date.now() - startedAt,
+          err: error,
+        },
+        'Digest run failed',
       );
     }
   }

@@ -3,7 +3,12 @@ import { Lock, Shield, ShieldCheck, Unlock } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/role/components/action-bar';
-import { internalRoleKey } from '@/domain/role/lib/role-label';
+import {
+  internalRoleDescriptionKey,
+  internalRoleKey,
+  permissionLabelKey,
+  permissionTitleKey,
+} from '@/domain/role/lib/role-label';
 import { getDataClient } from '@/lib/data-client';
 
 interface RoleDetailsPageProps {
@@ -17,6 +22,7 @@ export default async function RoleDetailsPage({
 
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Role' });
+  const tp = await getTranslations({ locale, namespace: 'Role.permissions' });
   const [role, permissionGroups] = await Promise.all([
     data.role.findById(roleId),
     data.role.findPermissionGroups(),
@@ -37,6 +43,7 @@ export default async function RoleDetailsPage({
     .filter((group) => group.items.length > 0);
 
   const roleNameKey = internalRoleKey(role);
+  const roleDescriptionKey = internalRoleDescriptionKey(role);
 
   return (
     <div className="space-y-6">
@@ -45,7 +52,9 @@ export default async function RoleDetailsPage({
           <h1 className="page-title mb-1">
             {roleNameKey ? t(roleNameKey) : role.name}
           </h1>
-          <p className="text-muted-foreground">{role.description}</p>
+          <p className="text-muted-foreground">
+            {roleDescriptionKey ? t(roleDescriptionKey) : role.description}
+          </p>
         </div>
         <ActionBar
           id={role.id}
@@ -66,7 +75,9 @@ export default async function RoleDetailsPage({
                 <div className="space-y-4">
                   {assignedGroups.map((group) => (
                     <div key={group.key}>
-                      <h3 className="text-sm mb-2">{group.label}</h3>
+                      <h3 className="text-sm mb-2">
+                        {tp(permissionTitleKey(group.key))}
+                      </h3>
                       <div className="flex flex-wrap gap-2">
                         {group.items.map((item) => (
                           <Badge
@@ -74,7 +85,7 @@ export default async function RoleDetailsPage({
                             variant="secondary"
                             title={item.permission.description ?? undefined}
                           >
-                            {item.label}
+                            {tp(permissionLabelKey(item.permission.key))}
                           </Badge>
                         ))}
                       </div>

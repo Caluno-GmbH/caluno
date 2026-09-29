@@ -13,6 +13,9 @@ function makeInput(
     callOutAlreadyFired: false,
     reminderAlreadyFired: false,
     reminderThresholdHours: 24,
+    automationEnabled: true,
+    isActiveDay: true,
+    leadTimeHours: 48,
     ...overrides,
   };
 }
@@ -54,9 +57,7 @@ describe('decideUnderstaffedTick', () => {
     expect(decision.fireCallOut).toBe(true);
   });
 
-  it('a drop outside the 48h window never reaches this function, so nothing fires (AC6)', () => {
-    // The 48h window filter happens in the candidate query upstream — this
-    // just documents that an instance never below minimum never fires.
+  it('an instance never below minimum never fires (AC6)', () => {
     const decision = decideUnderstaffedTick(makeInput({ belowMinimum: false }));
     expect(decision.fireCallOut).toBe(false);
     expect(decision.fireReminder).toBe(false);
@@ -103,5 +104,61 @@ describe('decideUnderstaffedTick', () => {
     const decision = decideUnderstaffedTick(makeInput({ hoursUntilStart: 10 }));
     expect(decision.fireCallOut).toBe(true);
     expect(decision.fireReminder).toBe(true);
+  });
+
+  describe('automatic urgent call automation (VOLI-1487)', () => {
+    it('stays silent for a unit that has not switched the automation on', () => {
+      const decision = decideUnderstaffedTick(
+        makeInput({ automationEnabled: false, hoursUntilStart: 10 }),
+      );
+      expect(decision).toEqual({
+        rearm: false,
+        fireCallOut: false,
+        fireReminder: false,
+      });
+    });
+
+    it('stays silent for a shift falling outside the active days', () => {
+      const decision = decideUnderstaffedTick(
+        makeInput({ isActiveDay: false, hoursUntilStart: 10 }),
+      );
+      expect(decision.fireCallOut).toBe(false);
+      expect(decision.fireReminder).toBe(false);
+    });
+
+    it('stays silent when no lead time is configured', () => {
+      const decision = decideUnderstaffedTick(
+        makeInput({ leadTimeHours: null, hoursUntilStart: 10 }),
+      );
+      expect(decision.fireCallOut).toBe(false);
+    });
+
+    it('waits until the shift is inside the chosen lead time', () => {
+      expect(
+        decideUnderstaffedTick(
+          makeInput({ leadTimeHours: 12, hoursUntilStart: 13 }),
+        ).fireCallOut,
+      ).toBe(false);
+      expect(
+        decideUnderstaffedTick(
+          makeInput({ leadTimeHours: 12, hoursUntilStart: 12 }),
+        ).fireCallOut,
+      ).toBe(true);
+    });
+
+    it('honours a longer lead time than the old fixed 48 hours', () => {
+      expect(
+        decideUnderstaffedTick(
+          makeInput({ leadTimeHours: 72, hoursUntilStart: 60 }),
+        ).fireCallOut,
+      ).toBe(true);
+    });
+
+    it('still re-arms when back at minimum even with the automation off', () => {
+      const decision = decideUnderstaffedTick(
+        makeInput({ belowMinimum: false, automationEnabled: false }),
+      );
+      expect(decision.rearm).toBe(true);
+    });
   });
 });

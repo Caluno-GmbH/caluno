@@ -20,3 +20,12 @@ export class DateRangePaginationInput extends PaginationInput {
   @Field(() => Date, { nullable: true })
   endsBefore: Date | null = null;
 }
+
+@ArgsType()
+export class DateRangeInput {
+  @Field(() => Date, { nullable: true })
+  startsAfter: Date | null = null;
+
+  @Field(() => Date, { nullable: true })
+  endsBefore: Date | null = null;
+}

@@ -78,6 +78,11 @@ export const serverCheckInVolunteerSchema = z.object({
   organizationUnitId: z.string().min(1, 'Organization Unit is required'),
   volunteerId: z.string().min(1, 'Volunteer is required'),
   shiftInstanceId: z.string().min(1).nullable(),
+  startedAt: z
+    .date('Start time is required')
+    .refine((date) => !Number.isNaN(date.getTime()), {
+      message: 'Start time is required',
+    }),
 });
 
 export const serverCheckOutVolunteerSchema = z.object({

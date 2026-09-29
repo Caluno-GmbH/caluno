@@ -41,9 +41,9 @@ export class MembershipMutationResolver {
       };
     }
 
-    if (result.status === JoinStatus.PENDING) {
+    if (result.status === JoinStatus.PENDING_MEMBERSHIP) {
       return {
-        status: JoinStatus.PENDING,
+        status: JoinStatus.PENDING_MEMBERSHIP,
         membershipRequestId: result.membershipRequest.id,
         requirementProfile: null,
         requirementStatuses: null,

@@ -201,6 +201,64 @@ describe('DocumentProfileRequirementService', () => {
     ).toEqual(['org_zip']);
   });
 
+  it('skips an org source the template overrides by hand', async () => {
+    const dbWithOrg = {
+      query: {
+        organizationUnits: {
+          findFirst: () =>
+            Promise.resolve({
+              id: 'unit-1',
+              name: 'Playground',
+              street: 'Strasse 1',
+              city: 'Berlin',
+              zipCode: '',
+            }),
+        },
+      },
+    } as never;
+    const serviceWithOrg = new DocumentProfileRequirementService(
+      dbWithOrg,
+      userProfileService,
+    );
+    const body = {
+      header: {
+        orgIdentityLine: {
+          enabled: true,
+          fields: [{ value: { kind: 'bound', source: 'org_zip' } }],
+        },
+      },
+      orgOverrides: { org_zip: '22765' },
+    };
+    expect(
+      await serviceWithOrg.missingOrgProfileSources('org-1', 'unit-1', body),
+    ).toEqual([]);
+  });
+
+  it('does not let orgOverrides clear volunteer profile requirements', async () => {
+    const serviceWithProfile = new DocumentProfileRequirementService(db, {
+      findByUserId: () => Promise.resolve({ data: {} }),
+    } as never);
+    const body = {
+      blocks: [
+        {
+          lines: [
+            {
+              enabled: true,
+              fields: [{ value: { kind: 'bound', source: 'volunteer_iban' } }],
+            },
+          ],
+        },
+      ],
+      orgOverrides: { volunteer_iban: 'DE00' },
+    };
+    expect(serviceWithProfile.requiredProfileSources(body)).toEqual([
+      'volunteer_iban',
+    ]);
+    expect(await serviceWithProfile.missingProfileSources('v-1', body)).toEqual(
+      ['volunteer_iban'],
+    );
+  });
+
   it('falls back to the org root unit when no organization unit id is given', async () => {
     const findFirst = (args: {
       where: { organizationId?: string; parentId?: { isNull: boolean } };
@@ -236,11 +294,11 @@ describe('DocumentProfileRequirementService', () => {
     ).toEqual(['org_street']);
   });
 
-  it('treats volunteer tax id as a profile-required source', async () => {
+  it('reports a profile-required source the volunteer has left blank', async () => {
     const serviceWithProfile = new DocumentProfileRequirementService(db, {
       findByUserId: () =>
         Promise.resolve({
-          data: { taxId: '', 'tax-id': '' },
+          data: { bic: '' },
         }),
     } as never);
     const body = {
@@ -249,16 +307,14 @@ describe('DocumentProfileRequirementService', () => {
           lines: [
             {
               enabled: true,
-              fields: [
-                { value: { kind: 'bound', source: 'volunteer_tax_id' } },
-              ],
+              fields: [{ value: { kind: 'bound', source: 'volunteer_bic' } }],
             },
           ],
         },
       ],
     };
     expect(await serviceWithProfile.missingProfileSources('v-1', body)).toEqual(
-      ['volunteer_tax_id'],
+      ['volunteer_bic'],
     );
   });
 

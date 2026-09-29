@@ -19,6 +19,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { CompensationNotice } from './compensation-notice';
 import { JoinShiftButton } from './join-shift-button';
 import { ShiftDayPicker } from './shift-day-picker';
 
@@ -130,12 +131,12 @@ export function ShiftActionCard({
       case ShiftInviteStatus.VolunteerRejected:
         return showWaitlistCta ? t('waitlistNote') : t('declinedNote');
       case ShiftInviteStatus.AwaitingAdminApproval:
-        return t('pendingNote');
+        return t('pendingApprovalNote');
       case ShiftInviteStatus.WaitlistJoined:
         return full ? t('waitlistNote') : t('waitlistSpotOpenNote');
       default:
-        if (effectiveMembershipState === JoinStatus.Pending) {
-          return t('pendingNote');
+        if (effectiveMembershipState === JoinStatus.PendingMembership) {
+          return t('pendingMembershipNote');
         }
         return full
           ? showWaitlistCta
@@ -219,6 +220,10 @@ export function ShiftActionCard({
         </div>
       )}
 
+      <CompensationNotice
+        reimbursementTypeKey={selected.reimbursementTypeKey}
+      />
+
       <div className="space-y-2">
         <JoinShiftButton
           key={selected.id}
@@ -232,7 +237,7 @@ export function ShiftActionCard({
           membershipState={effectiveMembershipState}
           onMembershipStateChange={(nextStatus) => {
             setMembershipStateOverride(nextStatus);
-            if (nextStatus === JoinStatus.Pending) {
+            if (nextStatus === JoinStatus.PendingMembership) {
               setPendingInstanceIds((previous) =>
                 new Set(previous).add(selected.id),
               );

@@ -1,4 +1,10 @@
 {
+  "compensation": {
+    "agreementNote": "If you accept this assignment, you'll get an agreement to sign.",
+    "detail": "Compensation",
+    "ehrenamt": "Compensated via volunteer allowance (Ehrenamtspauschale)",
+    "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
+  },
   "accountVerificationOtp": {
     "expiry": "This code expires in {minutes} minutes.",
     "footerNote": "You're receiving this because this email was used to create an account on {brandName}.",

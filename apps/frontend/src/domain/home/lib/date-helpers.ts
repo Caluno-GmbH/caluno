@@ -57,53 +57,71 @@ export function groupByDay<T extends { actualStartsAt: string }>(
   );
 }
 
-export function getDayStripDays<T extends { actualStartsAt: string }>(
-  items: T[],
+function buildDayStripWindow(
+  entries: Array<{ date: Date; count: number }>,
   options: { includePast?: boolean; minDays?: number } = {},
 ): Array<{ date: Date; shiftCount: number }> {
   const today = startOfDay(new Date());
   const minDays = Math.max(1, options.minDays ?? 1);
-  const grouped = groupByDay(items);
 
-  // Default window: at least `minDays` starting today.
   let firstDate = today;
   let lastDate = addDays(today, minDays - 1);
 
-  const firstGroup = grouped[0];
-  const lastGroup = grouped[grouped.length - 1];
-  if (firstGroup && lastGroup) {
-    firstDate = firstGroup.date;
-    lastDate = lastGroup.date;
+  const first = entries[0];
+  const last = entries[entries.length - 1];
+  if (first && last) {
+    firstDate = first.date;
+    lastDate = last.date;
 
     if (!options.includePast && firstDate.getTime() < today.getTime()) {
       firstDate = today;
     }
 
-    // Guarantee the strip always spans at least `minDays` from its start.
     const minLast = addDays(firstDate, minDays - 1);
     if (lastDate.getTime() < minLast.getTime()) {
       lastDate = minLast;
     }
   }
 
-  const days: Array<{ date: Date; shiftCount: number }> = [];
-  const groupMap = new Map(
-    grouped.map((group) => [
-      startOfDay(group.date).toISOString(),
-      group.items.length,
-    ]),
+  const countMap = new Map(
+    entries.map((entry) => [entry.date.toISOString(), entry.count]),
   );
 
+  const days: Array<{ date: Date; shiftCount: number }> = [];
   for (
     let date = new Date(firstDate);
     date.getTime() <= lastDate.getTime();
     date = addDays(date, 1)
   ) {
     const key = startOfDay(date).toISOString();
-    days.push({ date: new Date(date), shiftCount: groupMap.get(key) ?? 0 });
+    days.push({ date: new Date(date), shiftCount: countMap.get(key) ?? 0 });
   }
 
   return days;
+}
+
+export function getDayStripDays<T extends { actualStartsAt: string }>(
+  items: T[],
+  options: { includePast?: boolean; minDays?: number } = {},
+): Array<{ date: Date; shiftCount: number }> {
+  const grouped = groupByDay(items);
+  return buildDayStripWindow(
+    grouped.map((group) => ({ date: group.date, count: group.items.length })),
+    options,
+  );
+}
+
+export function getDayStripDaysFromCounts(
+  counts: Array<{ date: string; count: number }>,
+  options: { includePast?: boolean; minDays?: number } = {},
+): Array<{ date: Date; shiftCount: number }> {
+  const entries = counts
+    .map((entry) => ({
+      date: startOfDay(new Date(entry.date)),
+      count: entry.count,
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+  return buildDayStripWindow(entries, options);
 }
 
 export function intervalsOverlap(

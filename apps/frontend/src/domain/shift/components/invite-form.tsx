@@ -69,6 +69,9 @@ interface InviteShiftFormProps {
     organizationUnitId: string;
     reimbursementTypeId: string;
     shiftDurationMinutes: number;
+    /** The shift's period, so a contract is only counted when it covers it. */
+    periodStart: string;
+    periodEnd: string;
   };
 }
 
@@ -95,6 +98,8 @@ export function InviteShiftForm({
     organizationUnitId: paidAllowance?.organizationUnitId,
     reimbursementTypeId: paidAllowance?.reimbursementTypeId,
     shiftDurationMinutes: paidAllowance?.shiftDurationMinutes,
+    periodStart: paidAllowance?.periodStart,
+    periodEnd: paidAllowance?.periodEnd,
   });
 
   const allowanceStateByVolunteerId = new Map(

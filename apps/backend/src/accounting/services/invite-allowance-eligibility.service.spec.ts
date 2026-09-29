@@ -92,6 +92,48 @@ describe('InviteAllowanceEligibilityService', () => {
     expect(findActiveContract).toHaveBeenCalledWith(
       'vol-1',
       REIMBURSEMENT_TYPE_ID,
+      undefined,
+    );
+  });
+
+  // VOLI-1370: the agreement check must use the shift's period, so a contract
+  // for another month doesn't look valid.
+  it('checks the contract against the shift period when one is given', async () => {
+    const period = {
+      start: new Date('2026-09-01T00:00:00.000Z'),
+      end: new Date('2026-10-01T00:00:00.000Z'),
+    };
+    const { service, findActiveContract } = buildService({
+      members: [{ id: 'vol-1' }],
+      rosterUsage: [
+        {
+          volunteer: { id: 'vol-1' },
+          usageByType: [
+            {
+              reimbursementType: { id: REIMBURSEMENT_TYPE_ID },
+              usedCents: 0,
+              limitCents: 840_00,
+              remainingCents: 840_00,
+            },
+          ],
+        },
+      ],
+      hourlyRateCents: 20_00,
+      activeContractsByVolunteerId: { 'vol-1': true },
+    });
+
+    await service.getInviteAllowanceStates({
+      organizationId: ORGANIZATION_ID,
+      organizationUnitId: ORGANIZATION_UNIT_ID,
+      reimbursementTypeId: REIMBURSEMENT_TYPE_ID,
+      shiftDurationMinutes: 60,
+      period,
+    });
+
+    expect(findActiveContract).toHaveBeenCalledWith(
+      'vol-1',
+      REIMBURSEMENT_TYPE_ID,
+      period,
     );
   });
 

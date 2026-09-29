@@ -87,6 +87,8 @@ export class TimeTrackingMutationResolver {
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('shiftInstanceId', { type: () => ID, nullable: true })
     shiftInstanceId: string | null | undefined,
+    @Args('startedAt', { type: () => Date, nullable: true })
+    startedAt: Date | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<TimeEntry> {
@@ -95,6 +97,7 @@ export class TimeTrackingMutationResolver {
       volunteerId,
       shiftInstanceId ?? null,
       session.user.id,
+      startedAt ?? null,
     );
     return this.entryMapper.toModelOrThrow(entity);
   }

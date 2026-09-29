@@ -245,7 +245,7 @@ export class MembershipService {
     });
 
     if (existing?.status === MembershipRequestStatus.PENDING) {
-      return JoinStatus.PENDING;
+      return JoinStatus.PENDING_MEMBERSHIP;
     }
 
     if (
@@ -1220,7 +1220,7 @@ export class MembershipService {
   ): Promise<
     | { status: 'JOINED' }
     | {
-        status: 'PENDING';
+        status: 'PENDING_MEMBERSHIP';
         membershipRequest: MembershipRequestEntity;
       }
     | {
@@ -1329,10 +1329,16 @@ export class MembershipService {
             .where(eq(schema.membershipRequests.id, existing.id))
             .returning();
 
-          return { status: JoinStatus.PENDING, membershipRequest: updated };
+          return {
+            status: JoinStatus.PENDING_MEMBERSHIP,
+            membershipRequest: updated,
+          };
         }
 
-        return { status: JoinStatus.PENDING, membershipRequest: existing };
+        return {
+          status: JoinStatus.PENDING_MEMBERSHIP,
+          membershipRequest: existing,
+        };
       }
 
       if (existing.status === MembershipRequestStatus.REJECTED) {
@@ -1364,7 +1370,10 @@ export class MembershipService {
       intendedEventId,
       intendedShiftId,
     );
-    return { status: 'PENDING', membershipRequest: request };
+    return {
+      status: JoinStatus.PENDING_MEMBERSHIP,
+      membershipRequest: request,
+    };
   }
 
   async assignRoleToMembership(

@@ -70,6 +70,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       {} as never,
       { capture: () => {} } as unknown as PostHogService,
       accountingOrgAccessService,
+      { resolve: async () => ({ enabled: false }) } as never,
     );
     timeTrackingService = new TimeTrackingService(
       db,

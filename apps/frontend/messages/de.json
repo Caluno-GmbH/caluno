@@ -105,6 +105,8 @@
     "idVerificationDescription": "Lass dir den Ausweis zeigen und gleiche den Namen ab.",
     "idVerificationError": "Der Ausweis konnte nicht bestätigt werden.",
     "idVerificationTitle": "Ausweis noch nicht geprüft",
+    "startTimeInvalid": "Gib eine gültige Startzeit ein",
+    "startTimeLabel": "Check-in-Zeit",
     "inviteSentConfirmation": "Einladung gesendet",
     "manualCheckin": "Manuelles Einchecken",
     "myQrCodeTab": "Mein QR-Code",
@@ -120,6 +122,7 @@
     "notMemberTitle": "Nicht in deiner Organisation",
     "openEntriesDescription": "Diese Person ist noch eingecheckt. Wähle einen Eintrag, um sie auszuchecken.",
     "openEntriesTitle": "Offene Check-ins",
+    "orDivider": "oder",
     "orgUnitRowLabel": "Organisationseinheit",
     "orgUnitSheetTitle": "Organisationseinheit wählen",
     "pendingMembershipDescription": "Diese Person hat um Mitgliedschaft gebeten. Akzeptiere die Anfrage, um fortzufahren.",
@@ -359,7 +362,7 @@
     "noShifts": "Noch keine Einsätze geplant.",
     "noShiftsOnDay": "Keine Einsätze an diesem Tag.",
     "pendingCta": "Ausstehende Anfrage",
-    "pendingNote": "Ein:e Koordinator:in bestätigt deine Anfrage.",
+    "pendingMembershipNote": "Ein:e Koordinator:in bestätigt deine Anfrage.",
     "rejectedCta": "Du kannst dieser Veranstaltung nicht beitreten",
     "requestSentToast": "Anfrage gesendet. Ein:e Koordinator:in bestätigt sie.",
     "requiredFormsTitle": "Erforderliche Formulare",
@@ -478,6 +481,69 @@
       "label": "Ausweisprüfung aktivieren",
       "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht.",
       "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
+    }
+  },
+  "ShiftSettings": {
+    "page": {
+      "title": "Schichten und Check-in",
+      "subtitle": "Einstellungen für Schichten in {orgName}."
+    },
+    "sections": {
+      "staffing": {
+        "title": "Besetzung",
+        "description": "Wie Freiwillige gebeten werden, Schichten zu besetzen."
+      },
+      "moderation": {
+        "title": "Moderation",
+        "description": "Regeln dafür, wer in eine Schicht kommt."
+      },
+      "checkIn": {
+        "title": "Check-in",
+        "description": "Wie Freiwillige vor Ort eingecheckt werden."
+      }
+    }
+  },
+  "Automations": {
+    "days": {
+      "label": "Aktive Tage",
+      "short": {
+        "MONDAY": "Mo",
+        "TUESDAY": "Di",
+        "WEDNESDAY": "Mi",
+        "THURSDAY": "Do",
+        "FRIDAY": "Fr",
+        "SATURDAY": "Sa",
+        "SUNDAY": "So"
+      },
+      "long": {
+        "MONDAY": "Montag",
+        "TUESDAY": "Dienstag",
+        "WEDNESDAY": "Mittwoch",
+        "THURSDAY": "Donnerstag",
+        "FRIDAY": "Freitag",
+        "SATURDAY": "Samstag",
+        "SUNDAY": "Sonntag"
+      }
+    },
+    "stepIn": {
+      "label": "Wann eingegriffen wird",
+      "option": "{hours} Stunden vorher"
+    },
+    "callOut": {
+      "title": "Automatischer dringender Aufruf",
+      "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Schichten ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Schichten an diesen Tagen können einen dringenden Aufruf auslösen.",
+      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung einen dringenden Aufruf erhält.",
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
+      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+    },
+    "approval": {
+      "title": "Freigabe pausieren",
+      "description": "Bestätigt Anmeldungen sofort, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Sobald die Schicht ihre Mindestbesetzung erreicht, gilt die Freigabe wieder. Schichten ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Bei Schichten an diesen Tagen kann die Freigabe pausiert werden.",
+      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung keine Freigabe mehr braucht.",
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
+      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
     }
   },
   "MembershipRequest": {
@@ -648,7 +714,8 @@
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
-    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}"
+    "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}",
+    "shiftSettings": "Schichten und Check-in"
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",
@@ -811,8 +878,7 @@
         "accountHolder": "Name auf dem Bankkonto",
         "lastName": "Wie auf deinem Ausweis",
         "preferredName": "Falls du anders angesprochen werden möchtest",
-        "bic": "BIC deines Kontos",
-        "taxId": "Deine Steuer-ID (für Spendenbescheinigungen)"
+        "bic": "BIC deines Kontos"
       }
     },
     "language": "Sprache",
@@ -869,6 +935,7 @@
       "fieldAdded": "Feld hinzugefügt",
       "fieldDeleted": "Feld gelöscht",
       "fieldUpdated": "Feld aktualisiert",
+      "formDetailsSaved": "Formulardetails gespeichert",
       "formSaved": "Formular gespeichert",
       "linkCopied": "Link kopiert",
       "linkCopiedDescription": "{url}"
@@ -955,7 +1022,7 @@
       "saving": "Wird gespeichert...",
       "shareLinkCopied": "Freigabelink in die Zwischenablage kopiert",
       "submissionsWarning": "Dieses Formular hat Einsendungen",
-      "submissionsWarningDescription": "Du kannst dieses Formular nicht mehr bearbeiten, weil Freiwillige bereits Antworten eingereicht haben. Erstelle eine Kopie, wenn du eine neue Version brauchst.",
+      "submissionsWarningDescription": "Du kannst die Blöcke dieses Formulars nicht mehr ändern, weil Freiwillige bereits Antworten eingereicht haben. Name und Beschreibung lassen sich weiterhin bearbeiten. Erstelle eine Kopie, wenn du eine neue Version brauchst.",
       "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
       "unsavedChangesLeave": "Ohne Speichern verlassen",
       "unsavedChangesStay": "Weiter bearbeiten",
@@ -1022,7 +1089,6 @@
       "iban": "IBAN",
       "accountHolder": "Kontoinhaber:in",
       "bic": "BIC",
-      "taxId": "Steuer-ID",
       "infoText": "Infotext",
       "labelLabel": "Bezeichnung",
       "labelPlaceholder": "z. B. Lieblingsfarbe",
@@ -1058,8 +1124,12 @@
       "descriptionLabel": "Beschreibung",
       "descriptionOptional": "Beschreibung (optional)",
       "descriptionPlaceholder": "Wofür ist dieses Formular?",
+      "editDetailsAria": "Formularname und Beschreibung bearbeiten",
+      "editDialogTitle": "Formulardetails bearbeiten",
       "nameLabel": "Name",
-      "namePlaceholder": "z. B. Onboarding-Formular"
+      "namePlaceholder": "z. B. Onboarding-Formular",
+      "save": "Speichern",
+      "saving": "Wird gespeichert..."
     },
     "genderOptions": {
       "female": "Weiblich",
@@ -1136,6 +1206,7 @@
       "birthDateFormat": "TT.MM.JJJJ",
       "checkboxYes": "Ja",
       "documentAcknowledgement": "Ich bestätige und akzeptiere",
+      "documentOpenInNewTab": "In neuem Tab öffnen",
       "failedToSubmit": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
       "membershipRequestNotice": "Mit dem Absenden dieses Formulars sendest du eine Mitgliedschaftsanfrage an {orgName}. Ein:e Koordinator:in prüft deine Anfrage.",
       "next": "Weiter",
@@ -1177,8 +1248,10 @@
     },
     "noRole": "Keine Rolle",
     "internal": {
+      "member": "Mitglied",
+      "memberDescription": "Mitglieder haben keine Admin-Ansicht oder Berechtigungen.",
       "owner": "Leitung",
-      "member": "Mitglied"
+      "ownerDescription": "Leitung hat standardmäßig alle Berechtigungen."
     },
     "page": {
       "createButton": "Rolle erstellen",
@@ -1188,8 +1261,40 @@
     },
     "permissions": {
       "all": "Alle",
+      "descriptions": {
+        "accountingManage": "Vereinbarungen und Stundenzettel erstellen und unterschreiben; Dokumentvorlagen und Stundensätze bearbeiten; zahlungsbezogene Daten von Freiwilligen einsehen (z. B. IBAN).",
+        "checkInManage": "Freiwillige suchen; sehen, für welche Einsätze ein Check-in möglich ist; Freiwillige ein- und auschecken; Personen zu Einsätzen hinzufügen; direkt aus dieser Ansicht Personen in die Organisation einladen und Beitrittsanfragen annehmen.",
+        "orgEdit": "Organisationsprofil ändern; Einheiten, denen sie angehören, erstellen, umbenennen oder löschen; Rollentypen erstellen und ändern; ID-Verifizierung pro Einheit ein- oder ausschalten; Anforderungsformulare zur Organisation hinzufügen.",
+        "orgView": "Übersicht der Organisation, Einheitenstruktur, Rollenliste und Einstellung zur ID-Verifizierung, für Organisationen, denen sie angehören.",
+        "requirementProfileEdit": "Formulare und Blocks erstellen und ändern.",
+        "requirementProfileView": "Formulare, Formular-Blocks und ob Freiwillige ein Formular eingereicht haben.",
+        "shiftEdit": "Einsätze und Events erstellen, ändern und löschen; Personen einladen; Aufrufe und Erinnerungen senden; festlegen, welche Formulare ein Einsatz oder Event erfordert; Einträge in Stundenzetteln hinzufügen, abschließen, ändern und löschen.",
+        "shiftView": "Einsätze, Events, wer eingeladen oder angemeldet ist, sowie Einträge in Stundenzetteln.",
+        "volunteerEdit": "Beitrittsanfragen annehmen oder ablehnen, Mitgliedschaften entfernen, Nutzer*innen Rollen und Berechtigungen zuweisen.",
+        "volunteerView": "Mitglieder, offene und vergangene Beitrittsanfragen sowie Profile von Freiwilligen, inklusive eingereichter Formulare (ohne zahlungsbezogene Daten)."
+      },
+      "labels": {
+        "accountingManage": "Ansehen und Bearbeiten",
+        "checkInManage": "Ansehen und Bearbeiten",
+        "orgEdit": "Bearbeiten",
+        "orgView": "Ansehen",
+        "requirementProfileEdit": "Bearbeiten",
+        "requirementProfileView": "Ansehen",
+        "shiftEdit": "Bearbeiten",
+        "shiftView": "Ansehen",
+        "volunteerEdit": "Bearbeiten",
+        "volunteerView": "Ansehen"
+      },
       "none": "Keine",
-      "partial": "Teilweise"
+      "partial": "Teilweise",
+      "titles": {
+        "accounting": "Abrechnung",
+        "checkIn": "Check-in",
+        "organization": "Organisationsweite Einstellungen",
+        "requirementProfile": "Anforderungsformulare und Blocks",
+        "shift": "Einsätze, Events und Stundenzettel",
+        "volunteer": "Informationen zu Freiwilligen und Mitgliedschaft"
+      }
     },
     "select": {
       "addCustom": "Benutzerdefiniert hinzufügen",
@@ -1271,9 +1376,6 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
-      "checkInError": "Freiwillige:r konnte nicht eingecheckt werden",
-      "checkInLoading": "{name} wird eingecheckt…",
-      "checkInSuccess": "Freiwillige:r eingecheckt",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutLoading": "{name} wird ausgecheckt…",
@@ -1425,7 +1527,6 @@
       "approveWaitlistedSuccess": "Der Einsatz ist voll besetzt. Freiwillige:r steht jetzt auf der Warteliste.",
       "cancelled": "Zurückgezogen",
       "changeStatusAria": "Status von {name} ändern",
-      "checkInAriaNamed": "{name} einchecken",
       "checkOutAriaNamed": "{name} auschecken",
       "capacityBadge": "{filled} / {max} Plätze besetzt",
       "capacityBadgeNoMax": "{filled} Freiwillige",
@@ -1656,7 +1757,8 @@
     "joinedNote": "Du bist für diesen Einsatz angemeldet.",
     "later": "Später",
     "locationDivider": "·",
-    "pendingNote": "Deine Mitgliedschaftsanfrage ist ausstehend. Du wirst diesem Einsatz hinzugefügt, sobald sie genehmigt wurde.",
+    "pendingMembershipNote": "Deine Mitgliedschaftsanfrage ist ausstehend. Du wirst diesem Einsatz hinzugefügt, sobald sie genehmigt wurde.",
+    "pendingApprovalNote": "Deine Zulassung zu diesem Einsatz steht noch aus. Du wirst benachrichtigt, sobald über Deine Zulassung entschieden wurde.",
     "pickDayLabel": "Wähle einen Tag",
     "respondBeforeNote": "Antworte bis {date}. Du kannst es dir bis zum Einsatzbeginn anders überlegen.",
     "signUpCta": "Anmelden für {date}",
@@ -1686,6 +1788,13 @@
       "uploaded": "Datei hochgeladen",
       "uploading": "Wird hochgeladen..."
     }
+  },
+  "DataTable": {
+    "sortAscending": "Aufsteigend sortieren",
+    "sortDescending": "Absteigend sortieren",
+    "sortedAscending": "Aufsteigend sortiert",
+    "sortedDescending": "Absteigend sortiert",
+    "unsorted": "Nicht sortiert"
   },
   "TimeEntry": {
     "action": {
@@ -1732,6 +1841,7 @@
     },
     "page": {
       "createButton": "Zeiteintrag hinzufügen",
+      "paginationName": "Zeiteinträge",
       "title": "Erfasste Zeiten"
     },
     "pauschaleType": {
@@ -1747,8 +1857,12 @@
     "table": {
       "duration": "Dauer",
       "notAvailable": "k. A.",
+      "recorded": "Erfasst",
+      "recordedBy": "von {name}",
+      "recordedByUnknown": "Unbekannt",
+      "recordedOnBehalf": "im Auftrag erfasst",
+      "date": "Datum",
       "shift": "Einsatz",
-      "time": "Zeit",
       "volunteer": "Freiwillige:r"
     },
     "validation": {
@@ -1813,6 +1927,13 @@
       "title": "Formulare, die zum Beitritt benötigt werden",
       "updateFailedToast": "Die Formulare ließen sich nicht aktualisieren. Versuch es bitte erneut."
     },
+    "search": {
+      "clearAria": "Suche zurücksetzen",
+      "countFiltered": "{count} von {total}",
+      "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
+      "emptyTitle": "Keine Freiwilligen gefunden",
+      "placeholder": "Nach Name, E-Mail oder Rolle suchen"
+    },
     "sheet": {
       "streetLabel": "Strasse",
       "birthdayLabel": "Geburtstag",
@@ -1835,9 +1956,14 @@
       "zipLabel": "PLZ"
     },
     "table": {
+      "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
+      "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
       "email": "E-Mail",
+      "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
+      "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
       "name": "Name",
-      "roles": "Rollen"
+      "openProfileAria": "Profil von {name} öffnen",
+      "roles": "Rolle"
     }
   },
   "VolunteerHome": {
@@ -1987,7 +2113,7 @@
         "action": "Aktion"
       },
       "tiles": {
-        "all": "Alle offenen Aufgaben",
+        "all": "Alle Dokumente",
         "docCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
         "waitingOnYou": "{count, plural, one {# wartet auf dich} other {# warten auf dich}}",
         "contractGenerate": "Vereinbarungen erstellen",
@@ -2030,6 +2156,7 @@
           "awaiting-signature": "Wartet auf Unterschrift",
           "awaiting-countersignature": "Wartet auf Gegenzeichnung",
           "active": "Aktiv",
+          "expired": "Abgelaufen",
           "declined": "Abgelehnt"
         },
         "latestTimesheet": "Letzter Stundennachweis umfasst · {period}",
@@ -2111,6 +2238,7 @@
           "contractSigningVol": "Wartet auf Unterschrift",
           "contractSigningCoord": "Gegenzeichnung erforderlich",
           "contractActive": "Aktive Vereinbarung",
+          "contractExpired": "Abgelaufene Vereinbarung",
           "timesheetGenerate": "Stundennachweis erstellen",
           "timesheetSigningVol": "Wartet auf Unterschrift",
           "timesheetSigningSuper": "Supervisorunterschrift",
@@ -2181,6 +2309,8 @@
         "orgProfileErrorTitle": "Organisationsprofil vervollständigen",
         "orgProfileErrorDescription": "Deiner Organisation fehlen Angaben, die für dieses Dokument benötigt werden. Ergänze sie, um fortzufahren.",
         "editProfileCta": "Profil bearbeiten",
+        "invalidPeriodTitle": "Vertragszeitraum festlegen",
+        "invalidPeriodDescription": "Der Zeitraum dieser Vereinbarung ist nicht gesetzt (oder nicht lesbar). Bitte wählen Sie den Zeitraum oben aus, bevor Sie senden — Gültigkeit und gedruckter Zeitraum müssen übereinstimmen.",
         "hoursUnitMonth": "Monat",
         "hoursUnitWeek": "Woche",
         "hoursUnitHint": "pro {unit}",
@@ -2304,6 +2434,14 @@
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
+        "orgOverride": {
+          "orgHint": "Aus den Organisationsdaten übernommen.",
+          "overriddenHint": "Für diese Vorlage manuell angegeben.",
+          "editingHint": "Leer lassen, um wieder die Organisationsdaten zu verwenden.",
+          "missingValue": "nicht hinterlegt",
+          "editButtonLabel": "Bearbeiten",
+          "saveButtonLabel": "Übernehmen"
+        },
         "blockEditor": {
           "headerTitle": "Kopfbereich",
           "invoiceNumberFormatLabel": "Format der Dokumentennummer",
@@ -2373,6 +2511,7 @@
           "hours-amount": "Stundenzahl",
           "hours-unit": "Stundeneinheit",
           "freeform-text": "Freitext",
+          "parties-additional-info": "Optionale Zusatzinformationen",
           "kostenstelle": "Kostenstelle",
           "kostentraeger": "Kostenträger",
           "rechtstraeger": "Rechtsträger"
@@ -2383,6 +2522,7 @@
           "hours-amount-month": "z. B. 20",
           "hours-amount-week": "z. B. 5",
           "freeform-text": "Ergänze hier weitere Angaben, falls nötig",
+          "parties-additional-info": "Ergänze hier weitere Informationen zu Vertragspartnern",
           "kostenstelle": "z. B. K-4200",
           "kostentraeger": "z. B. KT-100",
           "rechtstraeger": "z. B. Diakonisches Werk e.V."
@@ -2410,6 +2550,7 @@
           "volunteer_first_name": "Vorname (Ehrenamtliche:r)",
           "volunteer_last_name": "Nachname (Ehrenamtliche:r)",
           "org_name": "Organisationsname",
+          "org_facility_name": "Einrichtung",
           "org_street": "Organisationsadresse",
           "org_zip": "Postleitzahl (Organisation)",
           "org_city": "Stadt (Organisation)",
@@ -2429,7 +2570,6 @@
           "volunteer_zip": "Postleitzahl (Ehrenamtliche:r)",
           "volunteer_city": "Stadt (Ehrenamtliche:r)",
           "volunteer_dob": "Geburtsdatum (Ehrenamtliche:r)",
-          "volunteer_tax_id": "Steuer-ID (Ehrenamtliche:r)",
           "contract_period": "Vereinbarungszeitraum",
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",

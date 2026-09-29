@@ -80,6 +80,7 @@ the tests actually exercise:
 - **`createShiftInstance(db, shiftId, overrides?)`** — inserts into `shiftInstances` directly for cases that need extra instances beyond the ones created by `createShift`.
 - **`createEvent(db, options)`** — inserts into `events` directly.
 - **`createMembershipRequest(db, { userId, organizationUnitId, metadata? })`** — inserts into `membershipRequests` directly.
+- **`createTimeEntry(db, { organizationUnitId, volunteerId, startedAt?, endedAt?, shiftInstanceId?, createdById? })`** — inserts into `timeEntries` directly.
 - **`cancelShiftInstance(db, instanceId)`** — helper to set `isCancelled = true`.
 
 Guidelines:
@@ -137,6 +138,14 @@ Password for all fixture accounts: `abcd1234` (override with `FIXTURE_PASSWORD`)
 3. **NEVER** return cross-org data, including from field resolvers
 4. Permission checks via `authService.hasRequiredPermissions` (inherits through the org unit hierarchy) — never raw DB lookups
 5. All mutations carry `@Permissions()` — no unguarded writes. Input validation via class-validator on all `@InputType()` classes
+
+Exemption (documented, narrow): the global `users` directory may be read by a
+server-set id with no org scope when resolving a display field on an
+already-org-scoped record — e.g. `Shift.createdBy`, `TimeEntry.createdBy` /
+`TimeEntry.volunteer` (see `shift-field.resolver.ts`, `time-entry-field.resolver.ts`,
+`time-entry.loader.ts`). The id never comes from GraphQL input for an auth
+decision, and the row being rendered is already scoped. This does **not** license
+unscoped reads of org-owned data — do not extend it beyond the identity lookup.
 
 ## Project Structure
 ```
@@ -206,6 +215,11 @@ Do **not** use Query v1 (`db._query…findMany({ where: (t,{eq}) => … })`).
 
 `select().innerJoin()` is the accepted pattern **only** for aggregations and multi-table projections that RQ v2 can't express — counts, custom column projections, permission joins (see `auth.service.ts`, `organization.service.ts`, `membership.service.ts`). For plain entity/relation fetching, RQ v2 wins. When in doubt, RQ v2.
 
+A second accepted gap: `orderBy` on a column from a joined relation (sorting time
+entries by volunteer name or shift title). RQ v2's `orderBy` object form accepts
+only base-table columns, so those sorts use `select().leftJoin()` with an explicit
+`orderBy` — see `time-tracking.service.ts` `buildTimeEntryOrderBy`.
+
 ## Known constraints (decision-log extracts — architectural, must stay)
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
 - **`UserProfile.data` is `@Field(() => GraphQLJSON)`**, not `String`. graphql-js v16 throws serializing an object as a String; returning it as String silently yielded `null`. (VOLI-592)
@@ -221,3 +235,4 @@ Update this section when a decision changes one of these (pipeline Decision rout
 - **Ending a membership hard-deletes org-unit invites and the membership request.** `leaveMembership` and `removeMembership` share one path: after deleting the membership row, hard-delete that user's membership request for that unit, all `shift_invites` on that unit (past or future — they seed instance expansion), `shift_instance_invites` for instances that have not ended, and `event_invites` for events that have not ended. Past events/instances keep their invites. Sibling/child units, other organizations, and other users are untouched. This is complete removal, not `ADMIN_REJECTED`. Time entries, form submissions, and remaining memberships in other units of the same org are not part of this path yet. (VOLI-1109)
 - **Privacy policy PDFs live in `apps/backend/legal/`** as `datenschutzhinweise-YYYY-MM-DD.pdf`. The current version is the newest matching filename. `GET /legal/privacy-policy.pdf` (`@AllowAnonymous()`) serves that file. Signup sends `privacyPolicyAccepted: true` on the request body only — it is not a Better Auth `additionalField` (those must exist on the Drizzle `users` table, and create hooks merge rather than replace). A non-null `privacyPolicyAcceptedAt` is the stored proof of acceptance; the server also stamps `privacyPolicyVersion`. The client does not send a version. (privacy-policy-backend-source)
 - **Gender is a fixed single-choice system field.** Four option values (`female`/`male`/`diverse`/`prefer-not-to-say`) are defined in code and mirrored frontend (`src/domain/requirement-form/gender-options.ts`) and backend (`GENDER_OPTION_VALUES` in `src/requirement-profile/constants.ts`); labels are localised client-side from `RequirementForm.genderOptions`. Gender field rows carry empty DB options — rendering and validation inject the fixed list by `systemKey`. (VOLI-1267)
+- **`email` system profile key is backed by `users.email`, not `user_profiles.data`.** Identity edit shows it locked from the account. Account email is merged into the profile map so requirement forms and submission views can prefill/display it. Do not treat a missing `data.email` as "volunteer has no email".

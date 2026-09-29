@@ -1,5 +1,5 @@
 import { Badge, cn, Separator } from '@repo/ui';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { letterheadLines } from '../../lib/letterhead';
 import type { DocumentKind, PauschalenType } from '../doc-type-header';
 import { DocTypeHeader } from '../doc-type-header';
@@ -92,18 +92,25 @@ function LineRow({
   manualOverrides,
   unresolvedLabels,
   gapSources,
+  inline = false,
 }: {
   line: TemplateLine;
   values: Partial<Record<DataSourceKey, string>>;
   manualOverrides: Record<string, string>;
   unresolvedLabels: Partial<Record<DataSourceKey, string>>;
   gapSources: Set<DataSourceKey>;
+  // Render as part of a surrounding paragraph rather than as one of its own.
+  inline?: boolean;
 }) {
   if (!line.enabled) return null;
 
   // A line that's just one multiline field (the "Sonstiges" freeform block) renders as its own paragraph.
   const [soleField] = line.fields;
-  if (line.fields.length === 1 && soleField?.control === 'textarea') {
+  if (
+    !inline &&
+    line.fields.length === 1 &&
+    soleField?.control === 'textarea'
+  ) {
     const value = resolveField(soleField, values, manualOverrides);
     return (
       <p className="whitespace-pre-wrap text-base leading-relaxed">
@@ -118,9 +125,14 @@ function LineRow({
 
   const parts = line.text.split(/\{[^}]+\}/g);
   const fields = line.fields;
+  const Wrapper = inline ? 'span' : 'p';
 
   return (
-    <p className="whitespace-pre-line text-base leading-relaxed">
+    <Wrapper
+      className={
+        inline ? undefined : 'whitespace-pre-line text-base leading-relaxed'
+      }
+    >
       {parts.map((part, i) => {
         const field = fields[i];
         const value = field
@@ -140,8 +152,23 @@ function LineRow({
           </span>
         );
       })}
-    </p>
+    </Wrapper>
   );
+}
+
+/**
+ * A block's lines grouped into the paragraphs they print. A line marked
+ * `inline` continues the one before it.
+ */
+function paragraphRuns(lines: TemplateLine[]): TemplateLine[][] {
+  const runs: TemplateLine[][] = [];
+  for (const line of lines) {
+    if (!line.enabled) continue;
+    const current = runs[runs.length - 1];
+    if (line.inline && current) current.push(line);
+    else runs.push([line]);
+  }
+  return runs;
 }
 
 interface GeneratedDocumentPreviewProps {
@@ -212,7 +239,7 @@ export function GeneratedDocumentPreview({
         page taller instead of spilling its table past the border. The generated
         PDF paginates properly; the preview is one continuous page.
       */}
-      <div className="mx-auto w-full max-w-[820px] overflow-hidden rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
+      <div className="mx-auto w-full max-w-[820px] overflow-hidden break-words rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
         <div className="flex items-start justify-between gap-4">
           <DocTypeHeader
             kind={kind}
@@ -380,16 +407,36 @@ export function GeneratedDocumentPreview({
                   </p>
                 )}
                 <div className="space-y-1">
-                  {block.lines.map((line) => (
-                    <LineRow
-                      key={line.id}
-                      line={line}
-                      values={values}
-                      manualOverrides={manualOverrides}
-                      unresolvedLabels={unresolvedLabels}
-                      gapSources={gapSources}
-                    />
-                  ))}
+                  {paragraphRuns(block.lines).map((run) =>
+                    run.length === 1 && run[0] ? (
+                      <LineRow
+                        key={run[0].id}
+                        line={run[0]}
+                        values={values}
+                        manualOverrides={manualOverrides}
+                        unresolvedLabels={unresolvedLabels}
+                        gapSources={gapSources}
+                      />
+                    ) : (
+                      <p
+                        key={run[0]?.id}
+                        className="whitespace-pre-line text-base leading-relaxed"
+                      >
+                        {run.map((line) => (
+                          <Fragment key={line.id}>
+                            <LineRow
+                              line={line}
+                              values={values}
+                              manualOverrides={manualOverrides}
+                              unresolvedLabels={unresolvedLabels}
+                              gapSources={gapSources}
+                              inline
+                            />
+                          </Fragment>
+                        ))}
+                      </p>
+                    ),
+                  )}
                 </div>
               </div>
             );

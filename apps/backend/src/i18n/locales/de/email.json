@@ -1,4 +1,10 @@
 {
+  "compensation": {
+    "agreementNote": "Wenn du diesen Einsatz annimmst, bekommst du eine Vereinbarung zur Unterschrift.",
+    "detail": "Vergütung",
+    "ehrenamt": "Vergütet über Ehrenamtspauschale",
+    "uebungsleiter": "Vergütet über Übungsleiterpauschale"
+  },
   "accountVerificationOtp": {
     "expiry": "Dieser Code läuft in {minutes} Minuten ab.",
     "footerNote": "Du erhältst diese E-Mail, weil diese Adresse zur Kontoerstellung auf {brandName} verwendet wurde.",

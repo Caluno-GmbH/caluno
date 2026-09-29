@@ -1,7 +1,7 @@
 'use client';
 
-import { Checkbox, Separator } from '@repo/ui';
-import { Building2, CalendarDays } from 'lucide-react';
+import { Input, Separator } from '@repo/ui';
+import { Building2, CalendarDays, CircleSlash, Clock } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import type { CheckInSelection } from '../../check-in-selection';
@@ -10,22 +10,26 @@ import { StepperRow } from './stepper-row';
 type ShiftInstanceStepperProps = {
   selection: CheckInSelection;
   orgUnits: Array<{ id: string; name: string }>;
-  /** Hides the date and shift rows; the org unit still scopes the entry. */
+  /** Renders the shift row as the without-assignment choice. */
   withoutShift: boolean;
-  onWithoutShiftChange: (withoutShift: boolean) => void;
   onOpenOrgUnit: () => void;
   onOpenDate: () => void;
   onOpenShift: () => void;
+  startTime: string;
+  onStartTimeChange: (startTime: string) => void;
+  startTimeError: string | null;
 };
 
 export function ShiftInstanceStepper({
   selection,
   orgUnits,
   withoutShift,
-  onWithoutShiftChange,
   onOpenOrgUnit,
   onOpenDate,
   onOpenShift,
+  startTime,
+  onStartTimeChange,
+  startTimeError,
 }: ShiftInstanceStepperProps) {
   const t = useTranslations('CheckIn');
   const { formatDate, formatTimeRange } = useFormatting();
@@ -42,15 +46,18 @@ export function ShiftInstanceStepper({
       : formatDate(selection.date)
     : t('selectDatePlaceholder');
 
-  const shiftLabel = selectedInstance
-    ? selectedInstance.title
-    : t('selectShiftPlaceholder');
-  const shiftSublabel = selectedInstance
-    ? formatTimeRange(
-        selectedInstance.actualStartsAt,
-        selectedInstance.actualEndsAt,
-      )
-    : undefined;
+  const shiftLabel = withoutShift
+    ? t('checkInWithoutShift')
+    : selectedInstance
+      ? selectedInstance.title
+      : t('selectShiftPlaceholder');
+  const shiftSublabel =
+    !withoutShift && selectedInstance
+      ? formatTimeRange(
+          selectedInstance.actualStartsAt,
+          selectedInstance.actualEndsAt,
+        )
+      : undefined;
 
   return (
     <div className="rounded-xl bg-muted px-3 py-1 shadow-sm">
@@ -65,37 +72,47 @@ export function ShiftInstanceStepper({
         </>
       )}
 
-      {!withoutShift && (
-        <>
-          <StepperRow
-            label={dateLabel}
-            isEmpty={!selection.date}
-            icon={<CalendarDays className="size-4 text-muted-foreground" />}
-            onClick={onOpenDate}
-          />
-          <Separator />
+      <StepperRow
+        label={dateLabel}
+        isEmpty={!selection.date}
+        icon={<CalendarDays className="size-4 text-muted-foreground" />}
+        onClick={onOpenDate}
+      />
+      <Separator />
 
-          <StepperRow
-            label={shiftLabel}
-            sublabel={shiftSublabel}
-            isEmpty={!selectedInstance}
-            onClick={onOpenShift}
-          />
-          <Separator />
-        </>
-      )}
+      <StepperRow
+        label={shiftLabel}
+        sublabel={shiftSublabel}
+        isEmpty={!withoutShift && !selectedInstance}
+        icon={
+          withoutShift ? (
+            <CircleSlash className="size-4 text-muted-foreground" />
+          ) : undefined
+        }
+        onClick={onOpenShift}
+      />
 
-      <label
-        className="flex w-full items-center gap-2 py-2 font-semibold"
-        htmlFor="check-in-without-shift"
-      >
-        <Checkbox
-          id="check-in-without-shift"
-          checked={withoutShift}
-          onCheckedChange={(checked) => onWithoutShiftChange(checked === true)}
-        />
-        {t('checkInWithoutShift')}
-      </label>
+      <Separator />
+
+      <div className="py-2">
+        <div className="flex w-full items-center gap-2">
+          <Clock className="size-4 shrink-0 text-muted-foreground" />
+          <label htmlFor="check-in-start-time" className="flex-1 font-semibold">
+            {t('startTimeLabel')}
+          </label>
+          <Input
+            id="check-in-start-time"
+            type="time"
+            className="w-32"
+            value={startTime}
+            onChange={(event) => onStartTimeChange(event.target.value)}
+            aria-invalid={startTimeError ? true : undefined}
+          />
+        </div>
+        {startTimeError && (
+          <p className="pt-1 text-sm text-destructive">{startTimeError}</p>
+        )}
+      </div>
     </div>
   );
 }

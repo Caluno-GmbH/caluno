@@ -5,7 +5,6 @@ import { getFormatting } from '@/lib/formatting/formatting-server';
 import { ProfileField } from './profile-field';
 
 type PersonalInformationSectionProps = {
-  user: { email: string };
   profile: { data: Record<string, unknown> } | null;
 };
 
@@ -16,7 +15,6 @@ type FieldItem = {
 };
 
 export const PersonalInformationSection = async ({
-  user,
   profile,
 }: PersonalInformationSectionProps) => {
   const tFields = await getTranslations('RequirementForm.fieldForm');
@@ -52,9 +50,7 @@ export const PersonalInformationSection = async ({
 
   const fields: FieldItem[] = SYSTEM_PROFILE_FIELDS.map((field) => {
     let value: string | null;
-    if (field.key === 'email') {
-      value = user.email;
-    } else if (field.key === 'birth-date') {
+    if (field.key === 'birth-date') {
       value = formattedBirthDate;
     } else if (field.key === 'gender') {
       value = genderLabel(str(field.key));

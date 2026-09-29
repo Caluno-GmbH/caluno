@@ -464,6 +464,7 @@ fragment PublicShiftDetailInstanceFields on ShiftInstance {
   actualEndsAt
   overrideTitle
   overrideMaxVolunteers
+  reimbursementTypeKey
   filledCount
   spotsLeft
   myInviteStatus
@@ -492,6 +493,7 @@ fragment VolunteerHomeShiftInstance on ShiftInstance {
   actualStartsAt
   actualEndsAt
   isCheckedIn
+  reimbursementTypeKey
   filledCount
   spotsLeft
   myInviteStatus
@@ -503,7 +505,6 @@ fragment VolunteerHomeShiftInstance on ShiftInstance {
     location
     rrule
     maxVolunteers
-    reimbursementTypeKey
     organizationUnit {
       id
       name
@@ -572,6 +573,23 @@ query GetAvailableShiftInstances(
       offset
       hasMore
     }
+  }
+}
+
+query GetAvailableShiftInstanceDayCounts(
+  $startsAfter: DateTime
+  $endsBefore: DateTime
+  $organizationUnitIds: [ID!]
+  $excludeIntended: Boolean = false
+) {
+  availableShiftInstanceDayCounts(
+    startsAfter: $startsAfter
+    endsBefore: $endsBefore
+    organizationUnitIds: $organizationUnitIds
+    excludeIntended: $excludeIntended
+  ) {
+    date
+    count
   }
 }
 
