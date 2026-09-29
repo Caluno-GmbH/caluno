@@ -10,6 +10,7 @@ const SUMMARY: UnderstaffedTickSummary = {
   reminders_fired: 1,
   rearmed: 35,
   skipped_no_minimum: 0,
+  skipped_automation_off: 2,
   failed: 0,
 };
 
