@@ -7,6 +7,7 @@ import {
   getTranslations,
   setRequestLocale,
 } from 'next-intl/server';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { ThemeProvider } from '@/components/theme-provider';
 import { routing } from '@/i18n/routing';
 
@@ -76,10 +77,12 @@ export default async function LocaleLayout({
         className={`${geologica.variable} ${merriweather.variable} ${sourceCodePro.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
-          <ThemeProvider>
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <NuqsAdapter>
+            <ThemeProvider>
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </NuqsAdapter>
         </NextIntlClientProvider>
       </body>
     </html>

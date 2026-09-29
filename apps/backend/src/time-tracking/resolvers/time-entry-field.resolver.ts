@@ -31,6 +31,17 @@ export class TimeEntryFieldResolver {
     return this.userMapper.toModelOrThrow(creator);
   }
 
+  @ResolveField(() => User, { nullable: true })
+  async createdBy(
+    @Parent() timeEntry: TimeEntryEntity,
+    @Loader(TimeEntryLoader) loader: TimeEntryLoader,
+  ): Promise<User | null> {
+    if (!timeEntry.createdById) {
+      return null;
+    }
+    return loader.userById.load(timeEntry.createdById);
+  }
+
   @ResolveField(() => ShiftInstance, { nullable: true })
   async shiftInstance(
     @Parent() timeEntry: TimeEntryEntityWithRelations,

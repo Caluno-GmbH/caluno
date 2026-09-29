@@ -9,6 +9,8 @@ import { RegisterLoader } from '../../graphql/interceptors';
 import { OrganizationUnitMapper } from '../../organization/mappers/organization-unit.mapper';
 import type { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import { UserMapper } from '../../user/mappers/user.mapper';
+import type { User } from '../../user/models/user.model';
 
 @RegisterLoader()
 @Injectable({ scope: Scope.REQUEST })
@@ -17,6 +19,7 @@ export class TimeEntryLoader {
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly organizationUnitMapper: OrganizationUnitMapper,
     private readonly reimbursementTypeMapper: ReimbursementTypeMapper,
+    private readonly userMapper: UserMapper,
     @Inject(DATABASE_CONNECTION) private readonly db: Database,
   ) {}
 
@@ -59,4 +62,20 @@ export class TimeEntryLoader {
       return this.reimbursementTypeMapper.toModelOrThrow(type);
     });
   });
+
+  // Intentionally not org-scoped: createdById is always the server-set acting
+  // user for an already org-scoped entry, so the id is safe to resolve globally.
+  public readonly userById = new DataLoader<string, User | null>(
+    async (ids) => {
+      const users = await this.db.query.users.findMany({
+        where: { id: { in: [...ids] } },
+      });
+      const byId = new Map(users.map((user) => [user.id, user]));
+
+      return ids.map((id) => {
+        const user = byId.get(id);
+        return user ? this.userMapper.toModelOrThrow(user) : null;
+      });
+    },
+  );
 }

@@ -1777,6 +1777,13 @@
       "uploading": "Uploading..."
     }
   },
+  "DataTable": {
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "sortedAscending": "Sorted ascending",
+    "sortedDescending": "Sorted descending",
+    "unsorted": "Not sorted"
+  },
   "TimeEntry": {
     "action": {
       "deleteDescription": "Are you sure you want to delete this time entry?",
@@ -1822,6 +1829,7 @@
     },
     "page": {
       "createButton": "Add time entry",
+      "paginationName": "time entries",
       "title": "Tracked times"
     },
     "pauschaleType": {
@@ -1837,8 +1845,12 @@
     "table": {
       "duration": "Duration",
       "notAvailable": "N/A",
+      "recorded": "Recorded",
+      "recordedBy": "by {name}",
+      "recordedByUnknown": "Unknown",
+      "recordedOnBehalf": "entered on behalf",
+      "date": "Date",
       "shift": "Assignment",
-      "time": "Time",
       "volunteer": "Volunteer"
     },
     "validation": {

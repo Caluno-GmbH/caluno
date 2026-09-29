@@ -2136,6 +2136,8 @@ export type QueryShiftsArgs = {
 export type QueryTimeEntriesArgs = {
   limit?: Scalars['Int']['input'];
   offset?: Scalars['Int']['input'];
+  order?: SortOrder;
+  sort?: TimeEntrySortField;
 };
 
 
@@ -2644,6 +2646,7 @@ export type TemplateSignee = {
 export type TimeEntry = {
   __typename?: 'TimeEntry';
   createdAt: Scalars['DateTime']['output'];
+  createdBy?: Maybe<User>;
   endedAt?: Maybe<Scalars['DateTime']['output']>;
   id: Scalars['ID']['output'];
   isPaid: Scalars['Boolean']['output'];
@@ -2660,6 +2663,14 @@ export type TimeEntryPaginatedResponse = {
   items: Array<TimeEntry>;
   pagination: PaginationInfo;
 };
+
+export enum TimeEntrySortField {
+  CreatedAt = 'CREATED_AT',
+  Duration = 'DURATION',
+  Shift = 'SHIFT',
+  StartedAt = 'STARTED_AT',
+  Volunteer = 'VOLUNTEER'
+}
 
 export type UpdateDocumentTemplateInput = {
   body?: InputMaybe<Scalars['JSON']['input']>;
@@ -4204,7 +4215,7 @@ export type GetTimeEntryQueryVariables = Exact<{
 }>;
 
 
-export type GetTimeEntryQuery = { __typename?: 'Query', timeEntry: { __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, createdAt: string, isPaid: boolean, reimbursementType?: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey } | null, volunteer: { __typename?: 'User', id: string, name: string, email: string }, shiftInstance?: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, master: { __typename?: 'Shift', id: string, title: string } } | null, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, organization: { __typename?: 'Organization', id: string, name: string } } } };
+export type GetTimeEntryQuery = { __typename?: 'Query', timeEntry: { __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, notes?: string | null, createdAt: string, isPaid: boolean, createdBy?: { __typename?: 'User', id: string, name: string, email: string } | null, reimbursementType?: { __typename?: 'ReimbursementType', id: string, key: ReimbursementTypeKey } | null, volunteer: { __typename?: 'User', id: string, name: string, email: string }, shiftInstance?: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, master: { __typename?: 'Shift', id: string, title: string } } | null, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, organization: { __typename?: 'Organization', id: string, name: string } } } };
 
 export type UpdateTimeEntryMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -4217,10 +4228,12 @@ export type UpdateTimeEntryMutation = { __typename?: 'Mutation', updateTimeEntry
 export type GetTimeEntriesQueryVariables = Exact<{
   limit: Scalars['Int']['input'];
   offset: Scalars['Int']['input'];
+  sort?: InputMaybe<TimeEntrySortField>;
+  order?: InputMaybe<SortOrder>;
 }>;
 
 
-export type GetTimeEntriesQuery = { __typename?: 'Query', timeEntries: { __typename?: 'TimeEntryPaginatedResponse', items: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, volunteer: { __typename?: 'User', id: string, name: string, email: string }, shiftInstance?: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, master: { __typename?: 'Shift', id: string, title: string } } | null, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, organization: { __typename?: 'Organization', id: string, name: string } } }>, pagination: { __typename?: 'PaginationInfo', total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetTimeEntriesQuery = { __typename?: 'Query', timeEntries: { __typename?: 'TimeEntryPaginatedResponse', items: Array<{ __typename?: 'TimeEntry', id: string, startedAt: string, endedAt?: string | null, createdAt: string, createdBy?: { __typename?: 'User', id: string, name: string, email: string } | null, volunteer: { __typename?: 'User', id: string, name: string, email: string }, shiftInstance?: { __typename?: 'ShiftInstance', id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle?: string | null, master: { __typename?: 'Shift', id: string, title: string } } | null, organizationUnit: { __typename?: 'OrganizationUnit', id: string, name: string, organization: { __typename?: 'Organization', id: string, name: string } } }>, pagination: { __typename?: 'PaginationInfo', total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type GetTimeEntriesByUserQueryVariables = Exact<{
   userId: Scalars['String']['input'];
@@ -7597,6 +7610,11 @@ export const GetTimeEntryDocument = gql`
     endedAt
     notes
     createdAt
+    createdBy {
+      id
+      name
+      email
+    }
     isPaid
     reimbursementType {
       id
@@ -7636,12 +7654,18 @@ export const UpdateTimeEntryDocument = gql`
 }
     `;
 export const GetTimeEntriesDocument = gql`
-    query GetTimeEntries($limit: Int!, $offset: Int!) {
-  timeEntries(limit: $limit, offset: $offset) {
+    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder) {
+  timeEntries(limit: $limit, offset: $offset, sort: $sort, order: $order) {
     items {
       id
       startedAt
       endedAt
+      createdAt
+      createdBy {
+        id
+        name
+        email
+      }
       volunteer {
         id
         name
