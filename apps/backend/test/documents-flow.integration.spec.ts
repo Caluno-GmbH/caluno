@@ -375,6 +375,31 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
   };
 };
 
+/**
+ * Seeds (or merges into) the volunteer's `user_profiles.data`. Document name
+ * fields (`volunteer_first_name` / `volunteer_last_name`) now read `name` /
+ * `lastname` from here, not from `users.name`.
+ */
+const seedVolunteerProfile = async (
+  db: Database,
+  userId: string,
+  data: Record<string, unknown>,
+) => {
+  const existing = await db.query.userProfiles.findFirst({
+    where: { userId },
+  });
+  if (existing) {
+    await db
+      .update(userProfiles)
+      .set({
+        data: { ...(existing.data as Record<string, unknown>), ...data },
+      })
+      .where(eq(userProfiles.userId, userId));
+    return;
+  }
+  await db.insert(userProfiles).values({ userId, data });
+};
+
 /** A completed, unclaimed, paid time entry — the raw material for an invoice. */
 const createCompletedTimeEntry = async (
   db: Database,
@@ -1370,6 +1395,11 @@ describe('documents flow — admin + volunteer', () => {
         .where(
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
+      // Template binds volunteer_first_name / volunteer_last_name from profile.
+      await seedVolunteerProfile(db, pdfOrg.volunteerId, {
+        name: 'Ada',
+        lastname: 'Lovelace',
+      });
 
       setAuthMockUserId(pdfOrg.adminId);
       const { createContract } = await graphqlRequestRequiringData<{
@@ -1451,12 +1481,10 @@ describe('documents flow — admin + volunteer', () => {
       expect(pdfBytes.subarray(0, 5).toString()).toBe('%PDF-');
       expect(pdfBytes.length).toBeGreaterThan(500);
 
-      // The PDF carries the resolved volunteer name.
-      const volunteer = await db.query.users.findFirst({
-        where: { id: pdfOrg.volunteerId },
-      });
+      // The PDF carries the resolved volunteer name from the profile.
       const glyphs = pdfGlyphs(pdfBytes);
-      expect(glyphs).toContain(volunteer?.name ?? '');
+      expect(glyphs).toContain('Ada');
+      expect(glyphs).toContain('Lovelace');
       expect(glyphs).toContain('Unterschrift');
     });
 
@@ -1533,6 +1561,10 @@ describe('documents flow — admin + volunteer', () => {
         .where(
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
+      await seedVolunteerProfile(db, pdfOrg.volunteerId, {
+        name: 'Ada',
+        lastname: 'Lovelace',
+      });
 
       setAuthMockUserId(pdfOrg.adminId);
       const { createContract } = await graphqlRequestRequiringData<{
@@ -1627,6 +1659,10 @@ describe('documents flow — admin + volunteer', () => {
         .where(
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
+      await seedVolunteerProfile(db, pdfOrg.volunteerId, {
+        name: 'Ada',
+        lastname: 'Lovelace',
+      });
 
       // Active contract (compliance) + a completed paid time entry.
       setAuthMockUserId(pdfOrg.adminId);
@@ -1796,6 +1832,10 @@ describe('documents flow — admin + volunteer', () => {
             eq(schema.documentTemplates.kind, DocumentKind.INVOICE),
           ),
         );
+      await seedVolunteerProfile(db, nested.volunteerId, {
+        name: 'Ada',
+        lastname: 'Lovelace',
+      });
       const unitTypeId =
         (
           await db.query.organizationUnitTypes.findFirst({
@@ -2013,12 +2053,10 @@ describe('documents flow — admin + volunteer', () => {
       expect(refused.data?.signContract).toBeUndefined();
 
       // Filling in the required profile fields unblocks signing.
-      await db.insert(userProfiles).values({
-        userId: gatedOrg.volunteerId,
-        data: {
-          iban: 'DE89 3704 0044 0532 0130 00',
-          bic: 'COBADEFFXXX',
-        },
+      // The refused sign already ensured an empty profile row exists.
+      await seedVolunteerProfile(db, gatedOrg.volunteerId, {
+        iban: 'DE89 3704 0044 0532 0130 00',
+        bic: 'COBADEFFXXX',
       });
       setAuthMockUserId(gatedOrg.volunteerId);
       const signed = await graphqlRequestRequiringData<{
