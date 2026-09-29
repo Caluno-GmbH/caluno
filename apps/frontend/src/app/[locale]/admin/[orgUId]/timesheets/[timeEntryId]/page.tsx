@@ -122,6 +122,17 @@ export default async function TimeEntryDetailPage({
                   </dt>
                   <dd className="ml-6">
                     {formatDateTime(new Date(entry.createdAt))}
+                    <span className="text-muted-foreground mt-1 block text-sm">
+                      {entry.createdBy
+                        ? t('table.recordedBy', {
+                            name: entry.createdBy.name ?? entry.createdBy.email,
+                          })
+                        : t('table.recordedByUnknown')}
+                      {entry.createdBy &&
+                      entry.createdBy.id !== entry.volunteer?.id
+                        ? ` · ${t('table.recordedOnBehalf')}`
+                        : ''}
+                    </span>
                   </dd>
                 </div>
               </dl>
