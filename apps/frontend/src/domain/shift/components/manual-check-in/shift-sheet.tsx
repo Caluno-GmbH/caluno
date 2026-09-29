@@ -4,7 +4,6 @@ import { useCheckInShifts } from '@repo/data/react';
 import {
   Button,
   Command,
-  CommandEmpty,
   CommandInput,
   CommandItem,
   CommandList,
@@ -102,7 +101,7 @@ export function ShiftSheet({
         />
         <CommandList className="max-h-none flex-1">
           {visibleDayInstances.length === 0 && otherDayShifts.length === 0 && (
-            <CommandEmpty>{t('noShiftsFound')}</CommandEmpty>
+            <p className="py-6 text-center text-sm">{t('noShiftsFound')}</p>
           )}
 
           {visibleDayInstances.map((instance) => {
@@ -158,36 +157,36 @@ export function ShiftSheet({
             </>
           )}
         </CommandList>
-      </Command>
 
-      <div>
-        <div className="flex items-center gap-3 pb-2">
-          <Separator className="flex-1" />
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {t('orDivider')}
-          </p>
-          <Separator className="flex-1" />
+        <div>
+          <div className="flex items-center gap-3 pb-2">
+            <Separator className="flex-1" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('orDivider')}
+            </p>
+            <Separator className="flex-1" />
+          </div>
+          <CommandItem
+            value="check-in-without-assignment"
+            onSelect={() => {
+              onSelectWithoutShift();
+              handleOpenChange(false);
+            }}
+            className={cn(
+              'cursor-pointer',
+              withoutShift
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground',
+            )}
+          >
+            <CircleSlash className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">
+              {t('checkInWithoutShift')}
+            </span>
+            {withoutShift && <Check className="size-4 shrink-0" />}
+          </CommandItem>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            onSelectWithoutShift();
-            handleOpenChange(false);
-          }}
-          className={cn(
-            'flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm',
-            withoutShift
-              ? 'bg-accent text-accent-foreground'
-              : 'text-muted-foreground',
-          )}
-        >
-          <CircleSlash className="size-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">
-            {t('checkInWithoutShift')}
-          </span>
-          {withoutShift && <Check className="size-4 shrink-0" />}
-        </button>
-      </div>
+      </Command>
     </CheckInSheet>
   );
 }
