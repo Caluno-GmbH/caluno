@@ -922,6 +922,7 @@
       "fieldAdded": "Field added",
       "fieldDeleted": "Field deleted",
       "fieldUpdated": "Field updated",
+      "formDetailsSaved": "Form details saved",
       "formSaved": "Form saved",
       "linkCopied": "Link copied",
       "linkCopiedDescription": "{url}"
@@ -1008,7 +1009,7 @@
       "saving": "Saving...",
       "shareLinkCopied": "Share link copied to clipboard",
       "submissionsWarning": "This form has submissions",
-      "submissionsWarningDescription": "You can't edit this form because volunteers have already submitted responses. Create a copy if you need a new version.",
+      "submissionsWarningDescription": "You can't change this form's blocks because volunteers have already submitted responses. Name and description can still be edited. Create a copy if you need a new version.",
       "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
       "unsavedChangesLeave": "Leave without saving",
       "unsavedChangesStay": "Keep editing",
@@ -1110,8 +1111,12 @@
       "descriptionLabel": "Description",
       "descriptionOptional": "Description (optional)",
       "descriptionPlaceholder": "What is this form for?",
+      "editDetailsAria": "Edit form name and description",
+      "editDialogTitle": "Edit form details",
       "nameLabel": "Name",
-      "namePlaceholder": "e.g. Onboarding form"
+      "namePlaceholder": "e.g. Onboarding form",
+      "save": "Save",
+      "saving": "Saving..."
     },
     "genderOptions": {
       "female": "Female",
