@@ -133,7 +133,7 @@ export function getContractDocument(
           ),
           line(
             'volunteer-name',
-            'und {volunteerFirstName} {volunteerLastName} (Vorname Nachname),',
+            'und {volunteerFirstName} {volunteerLastName},',
             [
               bound('volunteer-name-first', 'volunteer_first_name'),
               bound('volunteer-name-last', 'volunteer_last_name'),
