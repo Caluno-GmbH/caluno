@@ -160,6 +160,7 @@ export const TimesheetsTable = ({
         sorting={sorting}
         onSortingChange={onSortingChange}
         emptyMessage={t('empty.title')}
+        getRowClassName={(entry) => (entry.endedAt ? undefined : 'bg-muted/80')}
       />
       {pagination.total > pagination.limit && (
         <Pagination

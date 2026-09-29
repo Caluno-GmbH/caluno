@@ -24,6 +24,7 @@ interface DataTableProps<TData, TValue> {
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
   emptyMessage: string;
+  getRowClassName?: (row: TData) => string | undefined;
 }
 
 export function DataTable<TData, TValue>({
@@ -33,6 +34,7 @@ export function DataTable<TData, TValue>({
   sorting,
   onSortingChange,
   emptyMessage,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
@@ -91,7 +93,10 @@ export function DataTable<TData, TValue>({
             </TableRow>
           ) : (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                className={getRowClassName?.(row.original)}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
