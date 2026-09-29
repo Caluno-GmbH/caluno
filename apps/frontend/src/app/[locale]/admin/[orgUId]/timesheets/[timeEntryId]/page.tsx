@@ -1,4 +1,5 @@
 import { Badge, Card, CardContent } from '@repo/ui';
+import { parseISO } from 'date-fns';
 import {
   Calendar,
   CalendarFold,
@@ -121,7 +122,7 @@ export default async function TimeEntryDetailPage({
                     {t('detail.createdLabel')}
                   </dt>
                   <dd className="ml-6">
-                    {formatDateTime(new Date(entry.createdAt))}
+                    {formatDateTime(parseISO(entry.createdAt))}
                     <span className="text-muted-foreground mt-1 block text-sm">
                       {entry.createdBy
                         ? t('table.recordedBy', {

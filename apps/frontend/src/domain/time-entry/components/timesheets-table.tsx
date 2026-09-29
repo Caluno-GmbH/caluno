@@ -10,6 +10,7 @@ import type {
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
+import { parseISO } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
@@ -122,7 +123,7 @@ export const TimesheetsTable = ({
             entry.createdBy && entry.createdBy.id !== entry.volunteer?.id;
           return (
             <div className="flex flex-col">
-              <span>{formatDateTime(new Date(entry.createdAt))}</span>
+              <span>{formatDateTime(parseISO(entry.createdAt))}</span>
               <span className="text-muted-foreground text-xs">
                 {recorder
                   ? t('table.recordedBy', { name: recorder })
