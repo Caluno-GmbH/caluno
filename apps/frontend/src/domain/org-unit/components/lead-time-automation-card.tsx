@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  OrganizationUnitAutomationKind,
+  type OrganizationUnitAutomationKind,
   useUpdateOrganizationUnitAutomation,
   Weekday,
 } from '@repo/data/react';
@@ -18,7 +18,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@repo/ui';
-import { TriangleAlert, UserCheck } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useId, useState } from 'react';
 import { toast } from 'sonner';
@@ -35,43 +35,51 @@ export const WEEKDAYS: readonly Weekday[] = [
 
 export const LEAD_TIME_HOURS = [12, 24, 48, 72] as const;
 
-export interface PauseApprovalSettings {
+export interface LeadTimeAutomationSettings {
   enabled: boolean;
   activeDays: Weekday[];
   leadTimeHours: number | null;
 }
 
-interface PauseApprovalSettingsCardProps {
+interface LeadTimeAutomationCardProps {
   organizationUnitId: string;
-  initialSettings: PauseApprovalSettings;
+  kind: OrganizationUnitAutomationKind;
+  /** Key under the `Automations` namespace holding this card's copy. */
+  copyKey: 'callOut' | 'approval';
+  /** Rendered element, not a component: a component cannot cross the RSC boundary. */
+  icon: ReactNode;
+  initialSettings: LeadTimeAutomationSettings;
   canEdit: boolean;
 }
 
-export function PauseApprovalSettingsCard({
+/**
+ * An automation configured by weekdays plus how long before a shift starts it
+ * steps in — shared by pause approval (VOLI-1485) and the automatic urgent
+ * call (VOLI-1487).
+ */
+export function LeadTimeAutomationCard({
   organizationUnitId,
+  kind,
+  copyKey,
+  icon,
   initialSettings,
   canEdit,
-}: PauseApprovalSettingsCardProps) {
+}: LeadTimeAutomationCardProps) {
   const t = useTranslations('Automations');
   const [settings, setSettings] = useState(initialSettings);
   const mutation = useUpdateOrganizationUnitAutomation();
   const titleId = useId();
   const descriptionId = useId();
 
-  const update = async (patch: Partial<PauseApprovalSettings>) => {
+  const update = async (patch: Partial<LeadTimeAutomationSettings>) => {
     const previous = settings;
-    const next = { ...settings, ...patch };
-    setSettings(next);
+    setSettings({ ...settings, ...patch });
 
     try {
-      await mutation.mutateAsync({
-        organizationUnitId,
-        kind: OrganizationUnitAutomationKind.PauseApproval,
-        input: patch,
-      });
+      await mutation.mutateAsync({ organizationUnitId, kind, input: patch });
     } catch {
       setSettings(previous);
-      toast.error(t('approval.updateError'));
+      toast.error(t(`${copyKey}.updateError`));
     }
   };
 
@@ -83,13 +91,15 @@ export function PauseApprovalSettingsCard({
       <CardContent className="@container/automation space-y-6 py-4">
         <div className="flex items-center gap-4">
           <div className="flex flex-1 gap-2">
-            <UserCheck className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+            <span className="mt-0.5 shrink-0 text-muted-foreground [&>svg]:size-5">
+              {icon}
+            </span>
             <div className="space-y-1">
               <p id={titleId} className="font-medium">
-                {t('approval.title')}
+                {t(`${copyKey}.title`)}
               </p>
               <p id={descriptionId} className="text-sm text-muted-foreground">
-                {t('approval.description')}
+                {t(`${copyKey}.description`)}
               </p>
             </div>
           </div>
@@ -116,11 +126,13 @@ export function PauseApprovalSettingsCard({
           )}
         >
           <WeekdayField
+            description={t(`${copyKey}.daysDescription`)}
             value={enabled ? activeDays : []}
             disabled={controlsDisabled}
             onChange={(days) => update({ activeDays: days })}
           />
           <LeadTimeField
+            description={t(`${copyKey}.stepInDescription`)}
             value={enabled ? leadTimeHours : null}
             disabled={controlsDisabled}
             onChange={(hours) => update({ leadTimeHours: hours })}
@@ -133,7 +145,7 @@ export function PauseApprovalSettingsCard({
             className="flex items-start gap-2 text-sm text-muted-foreground"
           >
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-            {t('approval.noDaysHint')}
+            {t(`${copyKey}.noDaysHint`)}
           </p>
         )}
       </CardContent>
@@ -171,10 +183,12 @@ function SettingField({
 }
 
 function WeekdayField({
+  description,
   value,
   disabled,
   onChange,
 }: {
+  description: string;
   value: Weekday[];
   disabled: boolean;
   onChange: (days: Weekday[]) => void;
@@ -183,7 +197,7 @@ function WeekdayField({
   return (
     <SettingField
       label={t('days.label')}
-      description={t('approval.daysDescription')}
+      description={description}
       disabled={disabled}
     >
       {({ legendId, descriptionId }) => (
@@ -217,10 +231,12 @@ function WeekdayField({
 }
 
 function LeadTimeField({
+  description,
   value,
   disabled,
   onChange,
 }: {
+  description: string;
   value: number | null;
   disabled: boolean;
   onChange: (hours: number) => void;
@@ -230,7 +246,7 @@ function LeadTimeField({
   return (
     <SettingField
       label={t('stepIn.label')}
-      description={t('approval.stepInDescription')}
+      description={description}
       disabled={disabled}
     >
       {({ legendId, descriptionId }) => (
