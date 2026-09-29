@@ -4,13 +4,13 @@ import { useCheckInShifts } from '@repo/data/react';
 import {
   Button,
   Command,
-  CommandEmpty,
   CommandInput,
   CommandItem,
   CommandList,
   cn,
+  Separator,
 } from '@repo/ui';
-import { Check } from 'lucide-react';
+import { Check, CircleSlash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -27,8 +27,10 @@ type ShiftSheetProps = {
   instances: CheckInInstance[];
   selectedDate: Date | null;
   selectedShiftInstanceId: string | null;
+  withoutShift: boolean;
   onSelectInstance: (instance: CheckInInstance) => void;
   onSelectShift: (shiftId: string) => void;
+  onSelectWithoutShift: () => void;
 };
 
 export function ShiftSheet({
@@ -38,8 +40,10 @@ export function ShiftSheet({
   instances,
   selectedDate,
   selectedShiftInstanceId,
+  withoutShift,
   onSelectInstance,
   onSelectShift,
+  onSelectWithoutShift,
 }: ShiftSheetProps) {
   const t = useTranslations('CheckIn');
   const { formatTimeRange } = useFormatting();
@@ -88,7 +92,7 @@ export function ShiftSheet({
       <Command
         forceShowInput
         shouldFilter={false}
-        className="flex min-h-0 flex-1 flex-col"
+        className="flex h-auto min-h-0 flex-col"
       >
         <CommandInput
           value={search}
@@ -97,7 +101,7 @@ export function ShiftSheet({
         />
         <CommandList className="max-h-none flex-1">
           {visibleDayInstances.length === 0 && otherDayShifts.length === 0 && (
-            <CommandEmpty>{t('noShiftsFound')}</CommandEmpty>
+            <p className="py-6 text-center text-sm">{t('noShiftsFound')}</p>
           )}
 
           {visibleDayInstances.map((instance) => {
@@ -153,6 +157,35 @@ export function ShiftSheet({
             </>
           )}
         </CommandList>
+
+        <div>
+          <div className="flex items-center gap-3 pb-2">
+            <Separator className="flex-1" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('orDivider')}
+            </p>
+            <Separator className="flex-1" />
+          </div>
+          <CommandItem
+            value="check-in-without-assignment"
+            onSelect={() => {
+              onSelectWithoutShift();
+              handleOpenChange(false);
+            }}
+            className={cn(
+              'cursor-pointer',
+              withoutShift
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground',
+            )}
+          >
+            <CircleSlash className="size-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate">
+              {t('checkInWithoutShift')}
+            </span>
+            {withoutShift && <Check className="size-4 shrink-0" />}
+          </CommandItem>
+        </div>
       </Command>
     </CheckInSheet>
   );
