@@ -1,4 +1,8 @@
-import { parseAsInteger, parseAsStringEnum, parseAsStringLiteral } from 'nuqs';
+import {
+  parseAsInteger,
+  parseAsStringEnum,
+  parseAsStringLiteral,
+} from 'nuqs/server';
 import type { SortDir } from './table-sort';
 
 export function createTableParsers<T extends string>(

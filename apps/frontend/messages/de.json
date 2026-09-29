@@ -1740,6 +1740,7 @@
     },
     "page": {
       "createButton": "Zeiteintrag hinzufügen",
+      "paginationName": "Zeiteinträge",
       "title": "Erfasste Zeiten"
     },
     "pauschaleType": {
@@ -1755,6 +1756,10 @@
     "table": {
       "duration": "Dauer",
       "notAvailable": "k. A.",
+      "recorded": "Erfasst",
+      "recordedBy": "von {name}",
+      "recordedByUnknown": "Unbekannt",
+      "recordedOnBehalf": "im Auftrag erfasst",
       "shift": "Einsatz",
       "time": "Zeit",
       "volunteer": "Freiwillige:r"

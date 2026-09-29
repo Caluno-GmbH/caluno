@@ -1740,6 +1740,7 @@
     },
     "page": {
       "createButton": "Add time entry",
+      "paginationName": "time entries",
       "title": "Tracked times"
     },
     "pauschaleType": {
@@ -1755,6 +1756,10 @@
     "table": {
       "duration": "Duration",
       "notAvailable": "N/A",
+      "recorded": "Recorded",
+      "recordedBy": "by {name}",
+      "recordedByUnknown": "Unknown",
+      "recordedOnBehalf": "entered on behalf",
       "shift": "Assignment",
       "time": "Time",
       "volunteer": "Volunteer"
