@@ -511,9 +511,11 @@ export function buildBoardVolunteers({
             new Date(a.periodStart).getTime() -
             new Date(b.periodStart).getTime(),
         );
-      // Months with eligible hours that no contract (other than a declined
-      // one) covers. They get no timesheet row (no payment for an uncovered
-      // period, VOLI-1370) but do surface a "create contract" reminder below.
+      // Months with eligible hours that no ACTIVE contract covers. The
+      // timesheet task still shows (hours may be why a contract is needed);
+      // creation flags non-compliant / auto-drafts. These months also feed
+      // the "create contract" reminder below when no open contract covers
+      // them at all (VOLI-1370 period scoping).
       const uncoveredMonths: DateInterval[] = [];
 
       // An existing timesheet is a real document in the workflow and must be
@@ -547,10 +549,10 @@ export function buildBoardVolunteers({
           }
           const start = new Date(timesheet.periodStart);
           const end = new Date(timesheet.periodEnd);
-          // Only a fully signed (ACTIVE) contract is valid cover: until both
-          // parties have signed there is "no valid contract" for the period
-          // (VOLI-1370). Drafts / awaiting-countersignature rows still surface
-          // as their own contract task below, but they never release payment.
+          // Track months without ACTIVE cover for the contract reminder.
+          // Drafts / awaiting-signature still surface as their own contract
+          // task below and do not suppress the timesheet row — creating a
+          // timesheet without an active contract is allowed (non-compliant).
           if (
             !contractsForType.some(
               (c) =>
@@ -559,7 +561,6 @@ export function buildBoardVolunteers({
             )
           ) {
             uncoveredMonths.push({ start, end });
-            continue;
           }
           documents.push({
             id: `${entry.volunteer.id}-timesheet-generate-${type}-${y}-${String(month + 1).padStart(2, '0')}`,

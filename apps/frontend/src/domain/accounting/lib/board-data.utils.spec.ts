@@ -533,7 +533,7 @@ describe('buildBoardVolunteers', () => {
       ]);
     });
 
-    it('suppresses the timesheet and queues the contract when hours have no covering contract', () => {
+    it('shows the timesheet and queues the contract when hours have no covering contract', () => {
       const volunteers = buildBoardVolunteers({
         rosterUsage: [noDocsVolunteer],
         contracts: [],
@@ -544,13 +544,20 @@ describe('buildBoardVolunteers', () => {
       });
 
       const docs = volunteers[0]?.documents ?? [];
-      expect(docs.map((d) => d.status)).toEqual(['contract-generate']);
-      expect(docs[0]?.periodLabel).toBe('Juli 2026');
+      expect(docs.map((d) => d.status)).toEqual([
+        'timesheet-generate',
+        'timesheet-generate',
+        'contract-generate',
+      ]);
+      expect(
+        docs.find((d) => d.status === 'contract-generate')?.periodLabel,
+      ).toBe('Juli 2026');
     });
 
     // VOLI-1370: an ACTIVE contract for one month must not cover hours in
-    // another month. The uncovered month gets a reminder instead of a payment.
-    it('does not create a timesheet for a month outside the active contract', () => {
+    // another month — that month still gets a timesheet task (hours may be
+    // why a contract is needed) plus a create-contract reminder.
+    it('shows timesheet and contract reminder for a month outside the active contract', () => {
       const augustContract = makeContract({
         id: 'c-august',
         contractStatus: ContractStatus.Active,
@@ -579,7 +586,9 @@ describe('buildBoardVolunteers', () => {
       });
 
       const docs = volunteers[0]?.documents ?? [];
-      expect(docs.some((d) => d.status === 'timesheet-generate')).toBe(false);
+      expect(
+        docs.filter((d) => d.status === 'timesheet-generate'),
+      ).toHaveLength(1);
       const reminder = docs.find((d) => d.status === 'contract-generate');
       expect(reminder?.periodLabel).toBe('September 2026');
     });
@@ -617,9 +626,9 @@ describe('buildBoardVolunteers', () => {
       expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
     });
 
-    // VOLI-1370 / PM: until both parties have signed there is no valid
-    // contract, so a covering draft must not release the payment.
-    it('does not create a timesheet for a month only a DRAFT contract covers', () => {
+    // A covering draft is not ACTIVE cover, but the timesheet task still
+    // shows; the draft is its own contract task (no duplicate reminder).
+    it('shows a timesheet alongside a covering DRAFT contract', () => {
       const september = {
         volunteerId: 'v-1',
         reimbursementTypeId: 'rt-ehrenamt',
@@ -646,13 +655,15 @@ describe('buildBoardVolunteers', () => {
       });
 
       const docs = volunteers[0]?.documents ?? [];
-      expect(docs.some((d) => d.status === 'timesheet-generate')).toBe(false);
+      expect(
+        docs.filter((d) => d.status === 'timesheet-generate'),
+      ).toHaveLength(1);
       // The draft is its own "create contract" task; no duplicate reminder.
       expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
       expect(docs.some((d) => d.status === 'contract-draft')).toBe(true);
     });
 
-    it('does not create a timesheet for a month only an awaiting-signature contract covers', () => {
+    it('shows a timesheet alongside a covering awaiting-signature contract', () => {
       const september = {
         volunteerId: 'v-1',
         reimbursementTypeId: 'rt-ehrenamt',
@@ -678,7 +689,9 @@ describe('buildBoardVolunteers', () => {
       });
 
       const docs = volunteers[0]?.documents ?? [];
-      expect(docs.some((d) => d.status === 'timesheet-generate')).toBe(false);
+      expect(
+        docs.filter((d) => d.status === 'timesheet-generate'),
+      ).toHaveLength(1);
       expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
       expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(
         true,
