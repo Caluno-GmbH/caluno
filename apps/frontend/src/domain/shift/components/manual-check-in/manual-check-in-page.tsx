@@ -188,7 +188,9 @@ export function ManualCheckInPage({
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
-    const startedAt = startTime ? applyTimeToDate(new Date(), startTime) : null;
+    const startedAt = startTime
+      ? applyTimeToDate(selection.date ?? new Date(), startTime)
+      : null;
     if (!startedAt || Number.isNaN(startedAt.getTime())) {
       setStartTimeError(t('startTimeInvalid'));
       return;
