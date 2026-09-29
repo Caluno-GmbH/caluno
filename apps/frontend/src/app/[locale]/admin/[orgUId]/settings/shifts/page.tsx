@@ -1,8 +1,12 @@
 import { OrganizationUnitAutomationKind, PermissionKey } from '@repo/data';
+import { Megaphone, UserCheck } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { IdVerificationSettingsCard } from '@/domain/org-unit/components/id-verification-settings-card';
-import { PauseApprovalSettingsCard } from '@/domain/org-unit/components/pause-approval-settings';
+import {
+  LeadTimeAutomationCard,
+  type LeadTimeAutomationSettings,
+} from '@/domain/org-unit/components/lead-time-automation-card';
 import { SettingsSection } from '@/domain/org-unit/components/settings-section';
 import { getDataClient } from '@/lib/data-client';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
@@ -29,9 +33,21 @@ export default async function ShiftSettingsPage({
   ]);
   if (!orgUnit) notFound();
 
-  const pauseApproval = automations.find(
-    (automation) =>
-      automation.kind === OrganizationUnitAutomationKind.PauseApproval,
+  const settingsFor = (
+    kind: OrganizationUnitAutomationKind,
+  ): LeadTimeAutomationSettings | null => {
+    const automation = automations.find((entry) => entry.kind === kind);
+    if (!automation) return null;
+    return {
+      enabled: automation.enabled,
+      activeDays: [...automation.activeDays],
+      leadTimeHours: automation.leadTimeHours ?? null,
+    };
+  };
+
+  const urgentCall = settingsFor(OrganizationUnitAutomationKind.UrgentCall);
+  const pauseApproval = settingsFor(
+    OrganizationUnitAutomationKind.PauseApproval,
   );
 
   return (
@@ -43,18 +59,33 @@ export default async function ShiftSettingsPage({
         </p>
       </div>
 
+      {urgentCall && (
+        <SettingsSection
+          title={t('sections.staffing.title')}
+          description={t('sections.staffing.description')}
+        >
+          <LeadTimeAutomationCard
+            organizationUnitId={orgUId}
+            kind={OrganizationUnitAutomationKind.UrgentCall}
+            copyKey="callOut"
+            icon={<Megaphone />}
+            initialSettings={urgentCall}
+            canEdit={canEdit}
+          />
+        </SettingsSection>
+      )}
+
       {pauseApproval && (
         <SettingsSection
           title={t('sections.moderation.title')}
           description={t('sections.moderation.description')}
         >
-          <PauseApprovalSettingsCard
+          <LeadTimeAutomationCard
             organizationUnitId={orgUId}
-            initialSettings={{
-              enabled: pauseApproval.enabled,
-              activeDays: [...pauseApproval.activeDays],
-              leadTimeHours: pauseApproval.leadTimeHours ?? null,
-            }}
+            kind={OrganizationUnitAutomationKind.PauseApproval}
+            copyKey="approval"
+            icon={<UserCheck />}
+            initialSettings={pauseApproval}
             canEdit={canEdit}
           />
         </SettingsSection>

@@ -489,6 +489,10 @@
       "subtitle": "Settings for shifts in {orgName}."
     },
     "sections": {
+      "staffing": {
+        "title": "Staffing",
+        "description": "How volunteers are asked to fill shifts."
+      },
       "moderation": {
         "title": "Moderation",
         "description": "Rules for who gets into a shift."
@@ -524,6 +528,14 @@
     "stepIn": {
       "label": "When to step in",
       "option": "{hours} hours before"
+    },
+    "callOut": {
+      "title": "Automatic urgent call",
+      "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
+      "daysDescription": "Shifts on these days can trigger an urgent call.",
+      "stepInDescription": "How long before its start a shift below its minimum gets an urgent call.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "Could not save this automation."
     },
     "approval": {
       "title": "Pause approval",

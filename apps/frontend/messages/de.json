@@ -489,6 +489,10 @@
       "subtitle": "Einstellungen für Schichten in {orgName}."
     },
     "sections": {
+      "staffing": {
+        "title": "Besetzung",
+        "description": "Wie Freiwillige gebeten werden, Schichten zu besetzen."
+      },
       "moderation": {
         "title": "Moderation",
         "description": "Regeln dafür, wer in eine Schicht kommt."
@@ -524,6 +528,14 @@
     "stepIn": {
       "label": "Wann eingegriffen wird",
       "option": "{hours} Stunden vorher"
+    },
+    "callOut": {
+      "title": "Automatischer dringender Aufruf",
+      "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Schichten ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Schichten an diesen Tagen können einen dringenden Aufruf auslösen.",
+      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung einen dringenden Aufruf erhält.",
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
+      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
     },
     "approval": {
       "title": "Freigabe pausieren",

@@ -4,10 +4,13 @@ export interface UnderstaffedTickInput {
   callOutAlreadyFired: boolean;
   reminderAlreadyFired: boolean;
   reminderThresholdHours: number;
+  automationEnabled: boolean;
+  isActiveDay: boolean;
+  leadTimeHours: number | null;
 }
 
 export interface UnderstaffedTickDecision {
-  /** True when the instance is back at/above minimum: the 48h call-out re-arms (its "fired" state is cleared) for the next crossing. */
+  /** True when the instance is back at/above minimum: the call-out re-arms (its "fired" state is cleared) for the next crossing. */
   rearm: boolean;
   fireCallOut: boolean;
   fireReminder: boolean;
@@ -16,8 +19,11 @@ export interface UnderstaffedTickDecision {
 /**
  * Pure state-transition logic for one instance on one scheduler tick — the
  * single hourly poll is the only trigger path (no event-driven dropout
- * hook), so this function is the whole rulebook for when the 48h call-out and
- * the 24h reminder fire, re-fire, or stay silent.
+ * hook), so this function is the whole rulebook for when the call-out and the
+ * manager reminder fire, re-fire, or stay silent.
+ *
+ * Both are gated on the org unit's automatic urgent call automation: a unit
+ * that has not switched it on gets neither.
  */
 export function decideUnderstaffedTick(
   input: UnderstaffedTickInput,
@@ -26,7 +32,13 @@ export function decideUnderstaffedTick(
     return { rearm: true, fireCallOut: false, fireReminder: false };
   }
 
-  const fireCallOut = !input.callOutAlreadyFired;
+  const { leadTimeHours } = input;
+  if (!input.automationEnabled || !input.isActiveDay || leadTimeHours == null) {
+    return { rearm: false, fireCallOut: false, fireReminder: false };
+  }
+
+  const fireCallOut =
+    !input.callOutAlreadyFired && input.hoursUntilStart <= leadTimeHours;
   const fireReminder =
     !input.reminderAlreadyFired &&
     input.hoursUntilStart <= input.reminderThresholdHours;
