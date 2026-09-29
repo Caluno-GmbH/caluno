@@ -41,7 +41,7 @@ export class VolunteerDocumentsService {
     private readonly invoiceService: InvoiceService,
   ) {}
 
-  /** The user's orgs, deduplicated by organization (one membership each). */
+  /** The user's memberships, one entry per org unit (all units across orgs). */
   private async findMembershipOrgUnitInfos(
     userId: string,
   ): Promise<MembershipOrgUnitInfo[]> {
