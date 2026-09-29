@@ -4,6 +4,7 @@ import { Button } from '@repo/ui';
 import type { Column } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { activeDir } from './table-sort';
 
 interface DataTableColumnHeaderProps<TData, TValue> {
   column: Column<TData, TValue>;
@@ -20,12 +21,12 @@ export function DataTableColumnHeader<TData, TValue>({
     return <span>{title}</span>;
   }
 
-  const sorted = column.getIsSorted();
+  const dir = activeDir(column.getIsSorted());
 
   const label =
-    sorted === 'asc'
+    dir === 'asc'
       ? t('sortedAscending')
-      : sorted === 'desc'
+      : dir === 'desc'
         ? t('sortedDescending')
         : t('unsorted');
 
@@ -37,9 +38,9 @@ export function DataTableColumnHeader<TData, TValue>({
       onClick={column.getToggleSortingHandler()}
     >
       <span>{title}</span>
-      {sorted === 'asc' ? (
+      {dir === 'asc' ? (
         <ArrowUp className="ml-2 size-3.5" />
-      ) : sorted === 'desc' ? (
+      ) : dir === 'desc' ? (
         <ArrowDown className="ml-2 size-3.5" />
       ) : (
         <ArrowUpDown className="text-muted-foreground ml-2 size-3.5" />

@@ -1,10 +1,6 @@
 'use client';
 
-import type {
-  GetTimeEntriesQuery,
-  PaginationInfo,
-  TimeEntrySortField,
-} from '@repo/data';
+import type { GetTimeEntriesQuery, PaginationInfo } from '@repo/data';
 import type {
   ColumnDef,
   OnChangeFn,
@@ -19,6 +15,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
 import { Pagination } from '@/components/pagination';
+import { describeRecorder } from '@/domain/time-entry/recorder';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -51,17 +48,15 @@ export const TimesheetsTable = ({
   const onSortingChange: OnChangeFn<SortingState> = (updater) => {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
     const resolved = readSort(next, { sort, dir });
-    void setParams({
-      ...resolved,
-      sort: resolved.sort as TimeEntrySortField,
-      page: 1,
-    });
+    void setParams({ ...resolved, page: 1 });
   };
 
   const columns = useMemo<ColumnDef<TimeEntry>[]>(
     () => [
       {
         id: 'SHIFT',
+        accessorFn: (row) =>
+          row.shiftInstance?.master?.title ?? row.organizationUnit?.name,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.shift')} />
         ),
@@ -81,6 +76,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'VOLUNTEER',
+        accessorFn: (row) => row.volunteer?.name ?? row.volunteer?.email,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
         ),
@@ -91,6 +87,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'STARTED_AT',
+        accessorFn: (row) => row.startedAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.time')} />
         ),
@@ -103,6 +100,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'DURATION',
+        accessorFn: (row) => row.endedAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
         ),
@@ -111,24 +109,21 @@ export const TimesheetsTable = ({
       },
       {
         id: 'CREATED_AT',
+        accessorFn: (row) => row.createdAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.recorded')} />
         ),
         cell: ({ row }) => {
           const entry = row.original;
-          const recorder = entry.createdBy
-            ? (entry.createdBy.name ?? entry.createdBy.email)
-            : null;
-          const onBehalf =
-            entry.createdBy && entry.createdBy.id !== entry.volunteer?.id;
+          const recorder = describeRecorder(entry);
           return (
             <div className="flex flex-col">
               <span>{formatDateTime(parseISO(entry.createdAt))}</span>
               <span className="text-muted-foreground text-xs">
-                {recorder
-                  ? t('table.recordedBy', { name: recorder })
+                {recorder.name
+                  ? t('table.recordedBy', { name: recorder.name })
                   : t('table.recordedByUnknown')}
-                {onBehalf ? ` · ${t('table.recordedOnBehalf')}` : ''}
+                {recorder.onBehalf ? ` · ${t('table.recordedOnBehalf')}` : ''}
               </span>
             </div>
           );

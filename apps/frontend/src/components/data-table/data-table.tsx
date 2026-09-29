@@ -16,6 +16,7 @@ import {
   type SortingState,
   useReactTable,
 } from '@tanstack/react-table';
+import { activeDir, ariaSort } from './table-sort';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -57,18 +58,9 @@ export function DataTable<TData, TValue>({
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => {
-                const sorted = header.column.getIsSorted();
+                const dir = activeDir(header.column.getIsSorted());
                 return (
-                  <TableHead
-                    key={header.id}
-                    aria-sort={
-                      sorted === 'asc'
-                        ? 'ascending'
-                        : sorted === 'desc'
-                          ? 'descending'
-                          : undefined
-                    }
-                  >
+                  <TableHead key={header.id} aria-sort={ariaSort(dir)}>
                     {header.isPlaceholder
                       ? null
                       : flexRender(

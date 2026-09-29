@@ -12,6 +12,7 @@ import {
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/time-entry/components/action-bar';
+import { describeRecorder } from '@/domain/time-entry/recorder';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 
@@ -35,6 +36,7 @@ export default async function TimeEntryDetailPage({
   const { formatDateTime, formatRange, formatDuration } = await getFormatting();
 
   const isOpen = !entry.endedAt;
+  const recorder = describeRecorder(entry);
 
   return (
     <div className="space-y-6">
@@ -124,13 +126,10 @@ export default async function TimeEntryDetailPage({
                   <dd className="ml-6">
                     {formatDateTime(parseISO(entry.createdAt))}
                     <span className="text-muted-foreground mt-1 block text-sm">
-                      {entry.createdBy
-                        ? t('table.recordedBy', {
-                            name: entry.createdBy.name ?? entry.createdBy.email,
-                          })
+                      {recorder.name
+                        ? t('table.recordedBy', { name: recorder.name })
                         : t('table.recordedByUnknown')}
-                      {entry.createdBy &&
-                      entry.createdBy.id !== entry.volunteer?.id
+                      {recorder.onBehalf
                         ? ` · ${t('table.recordedOnBehalf')}`
                         : ''}
                     </span>
