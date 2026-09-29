@@ -64,7 +64,7 @@
         "@nestjs/schematics": "^11.0.0",
         "@nestjs/testing": "^11.0.1",
         "@repo/typescript-config": "*",
-        "@sentry/cli": "^3.6.2",
+        "@sentry/cli": "^3.8.0",
         "@types/adm-zip": "^0.5.8",
         "@types/express": "^5.0.0",
         "@types/jest": "^30.0.0",
@@ -1374,23 +1374,23 @@
 
     "@sentry/bundler-plugins": ["@sentry/bundler-plugins@10.73.0", "", { "dependencies": { "@babel/core": "^7.18.5", "@sentry/cli": "^2.58.6", "@sentry/core": "10.73.0", "dotenv": "^17.4.2", "find-up": "^5.0.0", "glob": "^13.0.6", "magic-string": "~0.30.8" }, "peerDependencies": { "rollup": ">=3.2.0", "webpack": ">=5.0.0" }, "optionalPeers": ["rollup", "webpack"] }, "sha512-4X5m2hoqgKO6SxHR7MF9QnvxPNk0hwTJFixDJ/pzQGVM+C34j/rSabouBqd0M+ZdxFeAt/9kA5X0TyeceNo9YQ=="],
 
-    "@sentry/cli": ["@sentry/cli@3.7.0", "", { "dependencies": { "progress": "^2.0.3", "proxy-from-env": "^1.1.0", "undici": "^6.22.0", "which": "^2.0.2" }, "optionalDependencies": { "@sentry/cli-darwin": "3.7.0", "@sentry/cli-linux-arm": "3.7.0", "@sentry/cli-linux-arm64": "3.7.0", "@sentry/cli-linux-i686": "3.7.0", "@sentry/cli-linux-x64": "3.7.0", "@sentry/cli-win32-arm64": "3.7.0", "@sentry/cli-win32-i686": "3.7.0", "@sentry/cli-win32-x64": "3.7.0" }, "bin": { "sentry-cli": "bin/sentry-cli" } }, "sha512-UV6/hUaEL7X1ATx5RHPfDEObh+nTRwOeUkNwF6R+HDo6iAki063GiLOmkfroemkVD0L4370SSvGtc5+Y7MZkhQ=="],
+    "@sentry/cli": ["@sentry/cli@3.8.0", "", { "dependencies": { "progress": "^2.0.3", "proxy-from-env": "^1.1.0", "undici": "^6.22.0", "which": "^2.0.2" }, "optionalDependencies": { "@sentry/cli-darwin": "3.8.0", "@sentry/cli-linux-arm": "3.8.0", "@sentry/cli-linux-arm64": "3.8.0", "@sentry/cli-linux-i686": "3.8.0", "@sentry/cli-linux-x64": "3.8.0", "@sentry/cli-win32-arm64": "3.8.0", "@sentry/cli-win32-i686": "3.8.0", "@sentry/cli-win32-x64": "3.8.0" }, "bin": { "sentry-cli": "bin/sentry-cli" } }, "sha512-P/Zq0QEXnBbNX8oxd1maHKD06oAH5fxHsxt8QjEzi2J14w4hvwUi6FcMDf7eyuUkdQs8+OvOKeq/9pLuZxVVxQ=="],
 
-    "@sentry/cli-darwin": ["@sentry/cli-darwin@3.7.0", "", { "os": "darwin" }, "sha512-Kb6Oem+6lfxkWSH8iz8DHwYmbMtYxFoTk3VHfeTkpz60TRj+0OPga/0ZEsCCgG/Df17E7z2kbkoe5Ld+dEj3Tw=="],
+    "@sentry/cli-darwin": ["@sentry/cli-darwin@3.8.0", "", { "os": "darwin" }, "sha512-i+qTGaHqL6LaIfMYuEohExJyzZwvRRsiQm+vrol/WfFGvqogeijXAU2wXn3xBglszUK/ia1xWH4KxcnqNLOpdQ=="],
 
-    "@sentry/cli-linux-arm": ["@sentry/cli-linux-arm@3.7.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "arm" }, "sha512-PKEFwwRCOG92u2dXusLbRK4cZ7XXlaUY8TkhaZy/PJ/FNsST7Sh+MbdWQCgPB0FsvZrgImcKIEyCJZtc0GunJg=="],
+    "@sentry/cli-linux-arm": ["@sentry/cli-linux-arm@3.8.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "arm" }, "sha512-wcpKNI22usaf7ZIHLaWofHVN5wOlmTdVjnQO5pYqDZNHRvhbO7HwZfLghR/p7aLuhETtePIFhcgjWlyU4uvWZQ=="],
 
-    "@sentry/cli-linux-arm64": ["@sentry/cli-linux-arm64@3.7.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "arm64" }, "sha512-m6VlsDJBo9/9ufASv4m4heKS0zfgUJdcSvKgIQerZaLwKOfhY8OP7zhlJPkFmnFjOjyvNyaqzoR00EnlprdwFw=="],
+    "@sentry/cli-linux-arm64": ["@sentry/cli-linux-arm64@3.8.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "arm64" }, "sha512-CS43j4vbLJBoB4c5MRZS7/nCf62yCnPIMQj7N+ZC50ze6EM8efEy4jq1ZZjz4G9u6AKuo6sntuaOlOGdZL5l6g=="],
 
-    "@sentry/cli-linux-i686": ["@sentry/cli-linux-i686@3.7.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "ia32" }, "sha512-6NeOPqsPuyrOgVGPFunPxgqHCes+a8r6pbCgq9+qSD3oa5fk9H0KOKB0sIC0YyH43OGzdzmwn0XNbdF6jwJO6A=="],
+    "@sentry/cli-linux-i686": ["@sentry/cli-linux-i686@3.8.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "ia32" }, "sha512-ckQ5XeY+D5ISyFKrGnmYt5xarqQ1VHPMBJQnwnG0Hb1V116efAIusK5NqoHMP0o5Bu17BRlaxYA1l81HmvKqFQ=="],
 
-    "@sentry/cli-linux-x64": ["@sentry/cli-linux-x64@3.7.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "x64" }, "sha512-74R9fuAldhC38Aoco8XQWTBvs2T2NatrDvI/ISHihej2oSnbQmL7krJF3yWn33MchQWrsFKgg7mboqemJnreZA=="],
+    "@sentry/cli-linux-x64": ["@sentry/cli-linux-x64@3.8.0", "", { "os": [ "linux", "android", "freebsd", ], "cpu": "x64" }, "sha512-jMXbyLIuGFW1uuFSByy54edkHPIaiCVyymKW0ia+lgA6nfFEH4Y1Z+bxXyK6BBr8TD6/P5ROqiPivg0oFEDciQ=="],
 
-    "@sentry/cli-win32-arm64": ["@sentry/cli-win32-arm64@3.7.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-xhmTUW3N3m8iZ4mkV8SrNOr5UN8+6zpvlvJxCK6Z15Tp8S14N1T+hfKeyL2xpLxBcd7Q7oW1dYXUl5b7BHNqjw=="],
+    "@sentry/cli-win32-arm64": ["@sentry/cli-win32-arm64@3.8.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-AtfvaIZ9hK/l2Q2It6PLTtLlQTRe7179kZVi++qd98iE7Ix4ysdgshhozW5uUu4gI9kauJC/fhe21p9lr0uwlA=="],
 
-    "@sentry/cli-win32-i686": ["@sentry/cli-win32-i686@3.7.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-/CvFzrCWUB0URWKYQeoNs8UbPJcBz6KD/AX27reyQxPd8S3AnTwcaYfCf8SRHEH9Iu+1IKzi5tUUNUB18b7ijg=="],
+    "@sentry/cli-win32-i686": ["@sentry/cli-win32-i686@3.8.0", "", { "os": "win32", "cpu": "ia32" }, "sha512-lIbGRYAM4DZPzwLiqOsT/vwhOr0o1qqx46buxdMnH05KZAYzMtGDbK0X9iGdhWQLOOp1/2vuUNVgMgCzSDyHXA=="],
 
-    "@sentry/cli-win32-x64": ["@sentry/cli-win32-x64@3.7.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PNW1O6sZw3JXhhJFgOiW7isFHX/qbniIDxswM7kb0wF2aVUpLXLltbezchWwTAxIRXo9gcu/oMTK0rntdqL5Eg=="],
+    "@sentry/cli-win32-x64": ["@sentry/cli-win32-x64@3.8.0", "", { "os": "win32", "cpu": "x64" }, "sha512-PJk9uYZsVnUcf7BfeJZcmgRIymRWojIVYCx3704VlOr65JFP5KmeKBVgHzfwPqLfjZaeerL81NO0fG3recDjqA=="],
 
     "@sentry/conventions": ["@sentry/conventions@0.16.0", "", {}, "sha512-fO9PLmHdVURcSPUpWCItWAtgKiMwGdJHbovoSEyLplX5sxs2ugvI4CBPTrkkgqhObnZOD0CnWBKDzSVQYBKEyQ=="],
 
