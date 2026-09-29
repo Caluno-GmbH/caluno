@@ -10,7 +10,7 @@ import { StepperRow } from './stepper-row';
 type ShiftInstanceStepperProps = {
   selection: CheckInSelection;
   orgUnits: Array<{ id: string; name: string }>;
-  /** Hides the date row; the org unit still scopes the entry. */
+  /** Renders the shift row as the without-assignment choice. */
   withoutShift: boolean;
   onOpenOrgUnit: () => void;
   onOpenDate: () => void;
@@ -72,17 +72,13 @@ export function ShiftInstanceStepper({
         </>
       )}
 
-      {!withoutShift && (
-        <>
-          <StepperRow
-            label={dateLabel}
-            isEmpty={!selection.date}
-            icon={<CalendarDays className="size-4 text-muted-foreground" />}
-            onClick={onOpenDate}
-          />
-          <Separator />
-        </>
-      )}
+      <StepperRow
+        label={dateLabel}
+        isEmpty={!selection.date}
+        icon={<CalendarDays className="size-4 text-muted-foreground" />}
+        onClick={onOpenDate}
+      />
+      <Separator />
 
       <StepperRow
         label={shiftLabel}
