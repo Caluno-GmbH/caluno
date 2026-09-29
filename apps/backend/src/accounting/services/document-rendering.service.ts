@@ -536,14 +536,10 @@ export class DocumentRenderingService {
     if (!template) {
       throw new Error('Document is missing its template');
     }
-    const [rootUnit, volunteer] = await Promise.all([
+    const rootUnit =
       'organizationUnit' in document && document.organizationUnit
-        ? Promise.resolve(document.organizationUnit)
-        : this.resolveTemplateOrgUnit(template),
-      this.db.query.users.findFirst({
-        where: { id: document.volunteerId },
-      }),
-    ]);
+        ? document.organizationUnit
+        : await this.resolveTemplateOrgUnit(template);
     const [profile, orgProfile] = await Promise.all([
       this.userProfileService.findByUserId(document.volunteerId),
       // The same resolved org details the create gate checked, so a sub-org's
@@ -554,7 +550,6 @@ export class DocumentRenderingService {
     ]);
     const profileData = (profile?.data ?? {}) as Record<string, unknown>;
 
-    const [firstName, lastName] = this.splitName(volunteer?.name);
     const rateCents = await this.resolveRateCents(
       document,
       template.organizationId,
@@ -622,12 +617,26 @@ export class DocumentRenderingService {
         ?.orgOverrides,
     );
 
+    const volunteerFirstName = str(
+      profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_first_name],
+    );
+    const volunteerLastName = str(
+      profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_last_name],
+    );
+
+    const volunteerName = [
+      nonBlank(volunteerFirstName),
+      nonBlank(volunteerLastName),
+    ]
+      .filter((part): part is string => part !== undefined)
+      .join(' ');
+
     return {
       ...orgValues,
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
-      volunteer_name: volunteer?.name ?? '',
-      volunteer_first_name: firstName,
-      volunteer_last_name: lastName,
+      volunteer_first_name: volunteerFirstName,
+      volunteer_last_name: volunteerLastName,
+      volunteer_name: volunteerName,
       volunteer_street: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
       ),
@@ -843,11 +852,6 @@ export class DocumentRenderingService {
       throw new Error('Organization is missing its id');
     }
     return (await this.organizationService.requireRootUnit(organizationId)).id;
-  }
-
-  private splitName(name: string | undefined): [string, string] {
-    const parts = (name ?? '').trim().split(/\s+/);
-    return [parts[0] ?? '', parts.slice(1).join(' ')];
   }
 
   /**

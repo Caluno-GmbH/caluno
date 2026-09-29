@@ -92,8 +92,7 @@ describe('DocumentRenderingService', () => {
             }),
         },
         users: {
-          findFirst: () =>
-            Promise.resolve({ id: 'vol-1', name: 'Max Mustermann' }),
+          findFirst: () => Promise.resolve({ id: 'vol-1' }),
         },
         organizationUnits: {
           findFirst: () =>
@@ -111,7 +110,11 @@ describe('DocumentRenderingService', () => {
     const userProfileService = {
       findByUserId: () =>
         Promise.resolve({
-          data: overrides.profileData ?? { street: 'Testweg 2' },
+          data: overrides.profileData ?? {
+            name: 'Max',
+            lastname: 'Mustermann',
+            street: 'Testweg 2',
+          },
         }),
     } as never;
     const reimbursementRateService = {
