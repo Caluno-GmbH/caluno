@@ -63,6 +63,8 @@ export class TimeEntryLoader {
     });
   });
 
+  // Intentionally not org-scoped: createdById is always the server-set acting
+  // user for an already org-scoped entry, so the id is safe to resolve globally.
   public readonly userById = new DataLoader<string, User | null>(
     async (ids) => {
       const users = await this.db.query.users.findMany({

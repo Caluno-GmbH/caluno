@@ -335,7 +335,6 @@ export class TimeTrackingService {
           return sql`${timeEntries.startedAt} ${direction}`;
         case TimeEntrySortField.DURATION:
           return sql`(${timeEntries.endedAt} - ${timeEntries.startedAt}) ${direction} nulls last`;
-        case TimeEntrySortField.CREATED_AT:
         default:
           return sql`${timeEntries.createdAt} ${direction}`;
       }
