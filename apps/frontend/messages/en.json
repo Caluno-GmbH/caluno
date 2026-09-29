@@ -1371,8 +1371,8 @@
     },
     "compensation": {
       "agreementNote": "If you accept this assignment, you'll get an agreement to sign.",
-      "ehrenamt": "Compensated via volunteer allowance (Ehrenamtspauschale)",
-      "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
+      "ehrenamt": "Volunteer allowance (Ehrenamtspauschale)",
+      "uebungsleiter": "Trainer's allowance (Übungsleiterpauschale)"
     },
     "detail": {
       "approvalLabel": "Approval",
