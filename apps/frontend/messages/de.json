@@ -1760,8 +1760,8 @@
       "recordedBy": "von {name}",
       "recordedByUnknown": "Unbekannt",
       "recordedOnBehalf": "im Auftrag erfasst",
+      "date": "Datum",
       "shift": "Einsatz",
-      "time": "Zeit",
       "volunteer": "Freiwillige:r"
     },
     "validation": {

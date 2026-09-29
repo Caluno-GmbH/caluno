@@ -35,7 +35,8 @@ export const TimesheetsTable = ({
   organizationUnitId,
 }: TimesheetsTableProps) => {
   const t = useTranslations('TimeEntry');
-  const { formatRange, formatDuration, formatDateTime } = useFormatting();
+  const { formatWorkedPeriod, formatDuration, formatDateTime } =
+    useFormatting();
   const searchParams = useSearchParams();
 
   const [{ sort, dir, page }, setParams] = useQueryStates(
@@ -92,14 +93,21 @@ export const TimesheetsTable = ({
         meta: { headerClassName: 'w-[19%]' },
         accessorFn: (row) => row.startedAt,
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('table.time')} />
+          <DataTableColumnHeader column={column} title={t('table.date')} />
         ),
-        cell: ({ row }) =>
-          formatRange(
+        cell: ({ row }) => {
+          const { date, time } = formatWorkedPeriod(
             row.original.startedAt,
             row.original.endedAt,
             t('format.open'),
-          ),
+          );
+          return (
+            <div className="flex flex-col">
+              <span>{date}</span>
+              <span className="text-muted-foreground text-xs">{time}</span>
+            </div>
+          );
+        },
       },
       {
         id: 'DURATION',
@@ -151,7 +159,7 @@ export const TimesheetsTable = ({
         ),
       },
     ],
-    [t, formatRange, formatDuration, formatDateTime, organizationUnitId],
+    [t, formatWorkedPeriod, formatDuration, formatDateTime, organizationUnitId],
   );
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
