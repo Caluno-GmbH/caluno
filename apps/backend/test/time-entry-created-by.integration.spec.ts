@@ -101,7 +101,11 @@ describe('TimeEntry createdBy (who recorded it)', () => {
     setAuthMockUserId(editor.id);
 
     const updated = await graphqlRequestRequiringData<{
-      updateTimeEntry: { id: string; createdBy: { id: string } | null };
+      updateTimeEntry: {
+        id: string;
+        createdBy: { id: string } | null;
+        notes: string | null;
+      };
     }>(
       app,
       {
@@ -110,6 +114,7 @@ describe('TimeEntry createdBy (who recorded it)', () => {
             updateTimeEntry(id: $id, input: $input) {
               id
               createdBy { id }
+              notes
             }
           }
         `,
@@ -126,6 +131,7 @@ describe('TimeEntry createdBy (who recorded it)', () => {
     );
 
     expect(updated.updateTimeEntry.createdBy?.id).toBe(admin.id);
+    expect(updated.updateTimeEntry.notes).toBe('edited');
   });
 
   it('returns null createdBy for entries without a recorder', async () => {
