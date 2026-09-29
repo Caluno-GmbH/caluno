@@ -55,6 +55,7 @@ export const TimesheetsTable = ({
     () => [
       {
         id: 'SHIFT',
+        meta: { headerClassName: 'w-[17%]' },
         accessorFn: (row) =>
           row.shiftInstance?.master?.title ?? row.organizationUnit?.name,
         header: ({ column }) => (
@@ -76,6 +77,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'VOLUNTEER',
+        meta: { headerClassName: 'w-[15%]' },
         accessorFn: (row) => row.volunteer?.name ?? row.volunteer?.email,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
@@ -87,6 +89,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'STARTED_AT',
+        meta: { headerClassName: 'w-[19%]' },
         accessorFn: (row) => row.startedAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.time')} />
@@ -100,6 +103,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'DURATION',
+        meta: { headerClassName: 'w-[12%]' },
         accessorFn: (row) => row.endedAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
@@ -109,6 +113,7 @@ export const TimesheetsTable = ({
       },
       {
         id: 'CREATED_AT',
+        meta: { headerClassName: 'w-[27%]' },
         accessorFn: (row) => row.createdAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.recorded')} />
@@ -132,6 +137,10 @@ export const TimesheetsTable = ({
       {
         id: 'actions',
         enableSorting: false,
+        meta: {
+          headerClassName: 'w-[10%]',
+          cellClassName: 'whitespace-nowrap',
+        },
         header: () => null,
         cell: ({ row }) => (
           <ActionBar
