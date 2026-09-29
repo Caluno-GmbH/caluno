@@ -497,6 +497,7 @@ describe('buildBoardVolunteers', () => {
           ),
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+          isOverCap: false,
         },
         {
           id: 'v-1-timesheet-generate-ehrenamt-2026-08',
@@ -510,6 +511,7 @@ describe('buildBoardVolunteers', () => {
           ),
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+          isOverCap: false,
         },
       ]);
     });
@@ -1069,6 +1071,84 @@ describe('buildBoardVolunteers', () => {
       (d) => d.status === 'timesheet-declined',
     );
     expect(doc?.isOverCap).toBeUndefined();
+  });
+
+  it('sets isOverCap on a timesheet-generate row when estimated amount would exceed cap', () => {
+    const volunteers = buildBoardVolunteers({
+      rosterUsage: [
+        {
+          volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
+          usageByType: [
+            {
+              usedCents: 80_000,
+              limitCents: 84_000,
+              remainingCents: 4_000,
+              reimbursementType: ehrenamtType,
+            },
+          ],
+        },
+      ],
+      contracts: [
+        makeContract({ id: 'c-active', contractStatus: ContractStatus.Active }),
+      ],
+      invoices: [],
+      year: 2026,
+      locale: 'de',
+      timesheetsToCreate: [
+        {
+          volunteerId: 'v-1',
+          reimbursementTypeId: 'rt-ehrenamt',
+          periodStart: '2026-06-30T22:00:00.000Z',
+          periodEnd: '2026-07-31T22:00:00.000Z',
+          eligibleHours: 12,
+          estimatedAmountCents: 5_400, // 54 € — pushes 800 + 54 = 854 > 840
+        },
+      ],
+    });
+
+    const doc = volunteers[0]?.documents.find(
+      (d) => d.status === 'timesheet-generate',
+    );
+    expect(doc?.isOverCap).toBe(true);
+  });
+
+  it('does not set isOverCap on a timesheet-generate row when estimated amount stays within cap', () => {
+    const volunteers = buildBoardVolunteers({
+      rosterUsage: [
+        {
+          volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
+          usageByType: [
+            {
+              usedCents: 80_000,
+              limitCents: 84_000,
+              remainingCents: 4_000,
+              reimbursementType: ehrenamtType,
+            },
+          ],
+        },
+      ],
+      contracts: [
+        makeContract({ id: 'c-active', contractStatus: ContractStatus.Active }),
+      ],
+      invoices: [],
+      year: 2026,
+      locale: 'de',
+      timesheetsToCreate: [
+        {
+          volunteerId: 'v-1',
+          reimbursementTypeId: 'rt-ehrenamt',
+          periodStart: '2026-06-30T22:00:00.000Z',
+          periodEnd: '2026-07-31T22:00:00.000Z',
+          eligibleHours: 4,
+          estimatedAmountCents: 1_800, // 18 € — 800 + 18 = 818 ≤ 840
+        },
+      ],
+    });
+
+    const doc = volunteers[0]?.documents.find(
+      (d) => d.status === 'timesheet-generate',
+    );
+    expect(doc?.isOverCap).toBe(false);
   });
 
   it('counts an awaiting-countersignature invoice as created in the documents-creation summary', () => {
