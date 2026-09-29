@@ -84,7 +84,6 @@ export function ShiftInstanceStepper({
         label={shiftLabel}
         sublabel={shiftSublabel}
         isEmpty={!withoutShift && !selectedInstance}
-        isMuted={withoutShift}
         icon={
           withoutShift ? (
             <CircleSlash className="size-4 text-muted-foreground" />
