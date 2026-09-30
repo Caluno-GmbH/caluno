@@ -25,7 +25,7 @@ export const getEntryState = (entry: TimeEntry): EntryState =>
 
 export const entryDurationMinutes = (entry: TimeEntry): number => {
   if (!entry.endedAt) return 0;
-  return Math.round(
+  return Math.floor(
     (new Date(entry.endedAt).getTime() - new Date(entry.startedAt).getTime()) /
       60000,
   );

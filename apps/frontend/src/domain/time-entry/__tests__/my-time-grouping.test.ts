@@ -160,3 +160,16 @@ describe('week header label', () => {
     ).toBe('14 Sep - 20 Sep 2026');
   });
 });
+
+describe('minute truncation', () => {
+  it('truncates seconds so group totals match the displayed entry durations', () => {
+    const { weeks, allTimeMinutes } = groupMyTime([
+      entry({
+        startedAt: '2026-09-15T12:18:40Z',
+        endedAt: '2026-09-15T12:22:10Z',
+      }),
+    ]);
+    expect(weeks[0].totalMinutes).toBe(3);
+    expect(allTimeMinutes).toBe(3);
+  });
+});
