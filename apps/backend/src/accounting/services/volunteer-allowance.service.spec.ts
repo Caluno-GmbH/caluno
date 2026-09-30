@@ -200,7 +200,7 @@ describe('VolunteerAllowanceService', () => {
   });
 
   it('only returns members of the unit', async () => {
-    const { service } = build({
+    const { service, findActiveContractTypeIds } = build({
       contracts: { a: [EHREN], outsider: [EHREN] },
       usage: { a: [ehren(840_00)] },
     });
@@ -208,6 +208,7 @@ describe('VolunteerAllowanceService', () => {
     const result = await call(service, ['a', 'outsider']);
 
     expect(result.map((r) => r.volunteerId)).toEqual(['a']);
+    expect(findActiveContractTypeIds).toHaveBeenCalledWith(['a'], undefined);
   });
 
   it('rejects an instance from another unit', async () => {

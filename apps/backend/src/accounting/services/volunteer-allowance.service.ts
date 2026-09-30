@@ -64,61 +64,61 @@ export class VolunteerAllowanceService {
       : undefined;
     const paidTypeId = shift?.reimbursementTypeId ?? undefined;
 
-    const [members, usage, typeIdsByVolunteerId, hourlyRateCents] =
-      await Promise.all([
-        this.membershipService.getMembers(input.organizationUnitId),
-        this.reimbursementRateService.getRosterYearlyUsage(
-          input.organizationUnitId,
-          year,
-        ),
-        this.contractService.findActiveContractTypeIds(
-          input.volunteerIds,
-          shift?.period,
-        ),
-        paidTypeId
-          ? this.reimbursementRateService.getEffectiveRateCents(
-              input.organizationId,
-              input.organizationUnitId,
-              paidTypeId,
-            )
-          : Promise.resolve(0),
-      ]);
+    const members = await this.membershipService.getMembers(
+      input.organizationUnitId,
+    );
+    const memberIds = new Set(members.map((member) => member.id));
+    // Never look anything up for people outside the caller's unit.
+    const volunteerIds = input.volunteerIds.filter((id) => memberIds.has(id));
+
+    const [usage, typeIdsByVolunteerId, hourlyRateCents] = await Promise.all([
+      this.reimbursementRateService.getRosterYearlyUsage(
+        input.organizationUnitId,
+        year,
+      ),
+      this.contractService.findActiveContractTypeIds(
+        volunteerIds,
+        shift?.period,
+      ),
+      paidTypeId
+        ? this.reimbursementRateService.getEffectiveRateCents(
+            input.organizationId,
+            input.organizationUnitId,
+            paidTypeId,
+          )
+        : Promise.resolve(0),
+    ]);
 
     const projectedCostCents = shift
       ? Math.round((hourlyRateCents * shift.durationMinutes) / 60)
       : 0;
-    const memberIds = new Set(members.map((member) => member.id));
     const usageByVolunteerId = new Map(
       usage.map((entry) => [entry.volunteer.id, entry.usageByType]),
     );
 
-    return input.volunteerIds
-      .filter((volunteerId) => memberIds.has(volunteerId))
-      .map((volunteerId) => {
-        const contractTypeIds = typeIdsByVolunteerId.get(volunteerId);
-        const typeIds = paidTypeId
-          ? [paidTypeId]
-          : [...(contractTypeIds ?? [])];
+    return volunteerIds.map((volunteerId) => {
+      const contractTypeIds = typeIdsByVolunteerId.get(volunteerId);
+      const typeIds = paidTypeId ? [paidTypeId] : [...(contractTypeIds ?? [])];
 
-        if (typeIds.length === 0) {
-          return { volunteerId, state: VolunteerAllowanceState.NO_AGREEMENT };
-        }
+      if (typeIds.length === 0) {
+        return { volunteerId, state: VolunteerAllowanceState.NO_AGREEMENT };
+      }
 
-        const state = mostRestrictiveAllowanceState(
-          typeIds.map((typeId) => {
-            const typeUsage = usageByVolunteerId
-              .get(volunteerId)
-              ?.find((entry) => entry.reimbursementType.id === typeId);
-            return computeVolunteerAllowanceState({
-              hasActiveAgreement: Boolean(contractTypeIds?.has(typeId)),
-              remainingCents: typeUsage?.remainingCents ?? 0,
-              limitCents: typeUsage?.limitCents ?? 0,
-              projectedCostCents,
-            });
-          }),
-        );
-        return { volunteerId, state };
-      });
+      const state = mostRestrictiveAllowanceState(
+        typeIds.map((typeId) => {
+          const typeUsage = usageByVolunteerId
+            .get(volunteerId)
+            ?.find((entry) => entry.reimbursementType.id === typeId);
+          return computeVolunteerAllowanceState({
+            hasActiveAgreement: Boolean(contractTypeIds?.has(typeId)),
+            remainingCents: typeUsage?.remainingCents ?? 0,
+            limitCents: typeUsage?.limitCents ?? 0,
+            projectedCostCents,
+          });
+        }),
+      );
+      return { volunteerId, state };
+    });
   }
 
   private async loadShiftContext(
