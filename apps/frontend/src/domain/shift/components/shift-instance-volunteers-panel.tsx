@@ -1,6 +1,7 @@
 'use client';
 
 import { MembershipRequestStatus, ShiftInviteStatus } from '@repo/data';
+import { useVolunteerAllowanceStates } from '@repo/data/react';
 import {
   Badge,
   Button,
@@ -21,6 +22,7 @@ import {
   remindShiftInstanceInvite,
   updateShiftInstanceInviteStatus,
 } from '../actions';
+import type { VolunteerAllowanceState } from '../allowance-display';
 import {
   acceptedRowActions,
   type CheckInTimeEntry,
@@ -37,6 +39,7 @@ import {
   toInviteDisplayState,
 } from '../invite-status-display';
 import { shiftInvitePath } from '../routes';
+import { AllowanceBadge } from './allowance-badge';
 import { CheckedOutStatusTooltip } from './checked-out-status-tooltip';
 import { SendCallOutDialog } from './send-call-out-dialog';
 
@@ -99,6 +102,14 @@ export function ShiftInstanceVolunteersPanel({
   };
 
   const timeEntriesByVolunteer = groupTimeEntriesByVolunteer(timeEntries);
+
+  const { data: allowanceStates } = useVolunteerAllowanceStates({
+    volunteerIds: invites.map((invite) => invite.user.id),
+    shiftInstanceId: instanceId,
+  });
+  const allowanceStateByVolunteerId = new Map(
+    (allowanceStates ?? []).map((entry) => [entry.volunteerId, entry.state]),
+  );
 
   const stateLabel = (state: ShiftVolunteeringDisplayState) => {
     switch (state) {
@@ -181,6 +192,15 @@ export function ShiftInstanceVolunteersPanel({
       state,
       statusLabel: stateLabel(state),
       statusTooltip,
+      nameAdornment: allowanceStateByVolunteerId.has(invite.user.id) ? (
+        <AllowanceBadge
+          state={
+            allowanceStateByVolunteerId.get(
+              invite.user.id,
+            ) as VolunteerAllowanceState
+          }
+        />
+      ) : undefined,
       statusOptions:
         chipTargets.length > 0
           ? chipTargets.map((target) => ({
@@ -264,6 +284,7 @@ export function ShiftInstanceVolunteersPanel({
 
   const openProfile = (invite: InstanceInvite) => {
     openVolunteerSheet({
+      shiftInstanceId: instanceId,
       userId: invite.user.id,
       volunteerName: invite.user.name,
       volunteerStatus: MembershipRequestStatus.Accepted,

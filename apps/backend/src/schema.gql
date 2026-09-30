@@ -534,13 +534,6 @@ type FormSubmissionValue {
   value: String!
 }
 
-enum InviteAllowanceState {
-  ELIGIBLE
-  NEARLY_EXHAUSTED
-  NO_AGREEMENT
-  WOULD_EXCEED
-}
-
 type Invoice {
   createdAt: DateTime!
   declineReason: String
@@ -994,7 +987,6 @@ type Query {
   formSubmissionsByForm(formId: String!, limit: Int! = 10, offset: Int! = 0): FormSubmissionPaginatedResponse!
   formSubmissionsByMembershipRequest(membershipRequestId: String!): [FormSubmission!]!
   formSubmissionsForVolunteer(userId: String!): [FormSubmission!]!
-  inviteAllowanceEligibility(organizationUnitId: ID!, periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, shiftDurationMinutes: Int!): [VolunteerInviteAllowance!]!
   invoice(id: ID!): Invoice!
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
@@ -1070,6 +1062,7 @@ type Query {
   timeEntry(id: String!): TimeEntry!
   user(id: String!): User
   userByCheckInId(checkInId: String!): User
+  volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
@@ -1722,9 +1715,16 @@ type UserRequirementStatus {
   status: RequirementFulfillmentStatus!
 }
 
-type VolunteerInviteAllowance {
-  state: InviteAllowanceState!
+type VolunteerAllowance {
+  state: VolunteerAllowanceState!
   volunteerId: ID!
+}
+
+enum VolunteerAllowanceState {
+  ELIGIBLE
+  NEARLY_EXHAUSTED
+  NO_AGREEMENT
+  WOULD_EXCEED
 }
 
 type VolunteerNeedsTimesheet {

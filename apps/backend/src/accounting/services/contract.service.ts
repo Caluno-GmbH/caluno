@@ -164,6 +164,39 @@ export class ContractService {
     );
   }
 
+  /**
+   * The allowance types each volunteer has an ACTIVE contract for that covers
+   * the given period (same coverage rule as `findActiveContract`), in one
+   * query. Volunteers without any such contract are absent from the map.
+   */
+  async findActiveContractTypeIds(
+    volunteerIds: string[],
+    period: BillingPeriod = { start: new Date(), end: new Date() },
+  ): Promise<Map<string, Set<string>>> {
+    const typeIdsByVolunteerId = new Map<string, Set<string>>();
+    if (volunteerIds.length === 0) return typeIdsByVolunteerId;
+
+    const rows = await this.db.query.contracts.findMany({
+      where: {
+        volunteerId: { in: volunteerIds },
+        contractStatus: ContractStatus.ACTIVE,
+        periodStart: { lte: period.start },
+        periodEnd: { gte: period.end },
+      },
+    });
+    for (const row of rows) {
+      if (
+        !periodCovers(row.periodStart, row.periodEnd, period.start, period.end)
+      ) {
+        continue;
+      }
+      const typeIds = typeIdsByVolunteerId.get(row.volunteerId) ?? new Set();
+      typeIds.add(row.reimbursementTypeId);
+      typeIdsByVolunteerId.set(row.volunteerId, typeIds);
+    }
+    return typeIdsByVolunteerId;
+  }
+
   async createContract(
     organizationId: string,
     input: CreateContractInput,

@@ -8,6 +8,7 @@ import {
   useOrganizationUnit,
   useOrgUId,
   useUser,
+  useVolunteerAllowanceStates,
 } from '@repo/data/react';
 import {
   Avatar,
@@ -25,6 +26,8 @@ import { ExternalLink, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { IdVerificationToggle } from '@/domain/memberships/components/id-verification-toggle';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
+import type { VolunteerAllowanceState } from '@/domain/shift/allowance-display';
+import { AllowanceBadge } from '@/domain/shift/components/allowance-badge';
 import { useSheet } from '@/hooks/use-sheet';
 import { Link } from '@/i18n/navigation';
 
@@ -68,6 +71,7 @@ function VolunteerSheetContent({
   email,
   checkInId,
   canRemoveMembership,
+  shiftInstanceId,
   onRemoved,
 }: {
   userId: string;
@@ -76,6 +80,8 @@ function VolunteerSheetContent({
   email: string;
   checkInId: string;
   canRemoveMembership: boolean;
+  /** When opened from a shift instance, the allowance state is measured against it. */
+  shiftInstanceId?: string;
   onRemoved: () => void;
 }) {
   const t = useTranslations('Volunteer.sheet');
@@ -87,6 +93,13 @@ function VolunteerSheetContent({
     useAdminUserProfile(userId);
   const { data: submissions, isPending: submissionsPending } =
     useFormSubmissionsForVolunteer(userId);
+  const { data: allowanceStates } = useVolunteerAllowanceStates({
+    volunteerIds: [userId],
+    shiftInstanceId,
+  });
+  const allowanceState = allowanceStates?.[0]?.state as
+    | VolunteerAllowanceState
+    | undefined;
   const { data: memberships } = useMemberships(orgUId);
   const { data: orgUnit } = useOrganizationUnit(orgUId);
   const membership = memberships?.find((item) => item.user.id === userId);
@@ -120,6 +133,7 @@ function VolunteerSheetContent({
         <Badge variant={statusVariant(status)}>
           {statusLabel(tStatus, status)}
         </Badge>
+        {allowanceState && <AllowanceBadge state={allowanceState} />}
 
         {membership && orgUnit?.idVerificationEnabled && (
           <IdVerificationToggle
@@ -214,6 +228,7 @@ export function VolunteerSheet() {
     'volunteerEmail',
     'volunteerCheckInId',
     'canRemoveMembership',
+    'shiftInstanceId',
   );
 
   const userId = getParam('userId') ?? '';
@@ -224,6 +239,7 @@ export function VolunteerSheet() {
   const email = getParam('volunteerEmail') ?? '';
   const checkInId = getParam('volunteerCheckInId') ?? '';
   const canRemoveMembership = getParam('canRemoveMembership') === 'true';
+  const shiftInstanceId = getParam('shiftInstanceId') ?? undefined;
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
@@ -241,6 +257,7 @@ export function VolunteerSheet() {
               email={email}
               checkInId={checkInId}
               canRemoveMembership={canRemoveMembership}
+              shiftInstanceId={shiftInstanceId}
               onRemoved={close}
             />
           )}

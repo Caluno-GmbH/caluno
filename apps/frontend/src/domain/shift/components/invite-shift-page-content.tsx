@@ -40,13 +40,6 @@ export async function InviteShiftPageContent({
     notFound();
   }
 
-  const instanceStart = new Date(instance.actualStartsAt);
-  const instanceEnd = new Date(instance.actualEndsAt);
-  const instanceDurationMinutes = Math.max(
-    0,
-    Math.round((instanceEnd.getTime() - instanceStart.getTime()) / 60_000),
-  );
-
   const invitedMembers = (instance?.invites ?? []).map((invite) => ({
     id: invite.user.id,
     name: invite.user.name,
@@ -77,17 +70,6 @@ export async function InviteShiftPageContent({
       availableMembers={memberships.map((m) => m.user)}
       invitedMembers={invitedMembers}
       mutateVolunteers={updateShiftVolunteers.bind(null, orgUId, instanceId)}
-      paidAllowance={
-        shift.reimbursementTypeId
-          ? {
-              organizationUnitId: orgUId,
-              reimbursementTypeId: shift.reimbursementTypeId,
-              shiftDurationMinutes: instanceDurationMinutes,
-              periodStart: instanceStart.toISOString(),
-              periodEnd: instanceEnd.toISOString(),
-            }
-          : undefined
-      }
     />
   );
 }

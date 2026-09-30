@@ -1,0 +1,155 @@
+import { Inject, Injectable } from '@nestjs/common';
+import type { Database } from '../../database/database.module';
+import { DATABASE_CONNECTION } from '../../database/database-connection';
+import { NotFoundGraphQLError } from '../../graphql/errors';
+import { MembershipService } from '../../membership/membership.service';
+import type { BillingPeriod } from '../utils/billing-period';
+import { ContractService } from './contract.service';
+import { ReimbursementRateService } from './reimbursement-rate.service';
+import {
+  computeVolunteerAllowanceState,
+  mostRestrictiveAllowanceState,
+  VolunteerAllowanceState,
+} from './volunteer-allowance';
+
+export interface VolunteerAllowanceResult {
+  volunteerId: string;
+  state: VolunteerAllowanceState;
+}
+
+export interface GetVolunteerAllowanceStatesInput {
+  organizationId: string;
+  organizationUnitId: string;
+  volunteerIds: string[];
+  /**
+   * The shift instance the volunteers are being considered for. Without it the
+   * states describe the person only (nothing is projected).
+   */
+  shiftInstanceId?: string;
+  /** Defaults to the current calendar year. */
+  year?: number;
+}
+
+@Injectable()
+export class VolunteerAllowanceService {
+  constructor(
+    @Inject(DATABASE_CONNECTION) private readonly db: Database,
+    private readonly membershipService: MembershipService,
+    private readonly contractService: ContractService,
+    private readonly reimbursementRateService: ReimbursementRateService,
+  ) {}
+
+  /**
+   * One allowance state per requested member of `organizationUnitId`.
+   *
+   * With a paid shift instance the volunteer is judged against that shift's
+   * allowance type and its projected cost (planned duration × applicable
+   * hourly rate), so `WOULD_EXCEED` can appear. Otherwise (unpaid shift, or no
+   * shift) it is the person's own paperwork and ceiling: every allowance type
+   * they hold an active contract for, with nothing projected — the most
+   * restrictive state wins, and no contract at all is `NO_AGREEMENT`.
+   *
+   * Reuses the shared year-to-date usage (`getRosterYearlyUsage`) and contract
+   * coverage rule so the states stay consistent with the accounting surfaces.
+   */
+  async getVolunteerAllowanceStates(
+    input: GetVolunteerAllowanceStatesInput,
+  ): Promise<VolunteerAllowanceResult[]> {
+    const year = input.year ?? new Date().getFullYear();
+    const shift = input.shiftInstanceId
+      ? await this.loadShiftContext(
+          input.shiftInstanceId,
+          input.organizationUnitId,
+        )
+      : undefined;
+    const paidTypeId = shift?.reimbursementTypeId ?? undefined;
+
+    const [members, usage, typeIdsByVolunteerId, hourlyRateCents] =
+      await Promise.all([
+        this.membershipService.getMembers(input.organizationUnitId),
+        this.reimbursementRateService.getRosterYearlyUsage(
+          input.organizationUnitId,
+          year,
+        ),
+        this.contractService.findActiveContractTypeIds(
+          input.volunteerIds,
+          shift?.period,
+        ),
+        paidTypeId
+          ? this.reimbursementRateService.getEffectiveRateCents(
+              input.organizationId,
+              input.organizationUnitId,
+              paidTypeId,
+            )
+          : Promise.resolve(0),
+      ]);
+
+    const projectedCostCents = shift
+      ? Math.round((hourlyRateCents * shift.durationMinutes) / 60)
+      : 0;
+    const memberIds = new Set(members.map((member) => member.id));
+    const usageByVolunteerId = new Map(
+      usage.map((entry) => [entry.volunteer.id, entry.usageByType]),
+    );
+
+    return input.volunteerIds
+      .filter((volunteerId) => memberIds.has(volunteerId))
+      .map((volunteerId) => {
+        const contractTypeIds = typeIdsByVolunteerId.get(volunteerId);
+        const typeIds = paidTypeId
+          ? [paidTypeId]
+          : [...(contractTypeIds ?? [])];
+
+        if (typeIds.length === 0) {
+          return { volunteerId, state: VolunteerAllowanceState.NO_AGREEMENT };
+        }
+
+        const state = mostRestrictiveAllowanceState(
+          typeIds.map((typeId) => {
+            const typeUsage = usageByVolunteerId
+              .get(volunteerId)
+              ?.find((entry) => entry.reimbursementType.id === typeId);
+            return computeVolunteerAllowanceState({
+              hasActiveAgreement: Boolean(contractTypeIds?.has(typeId)),
+              remainingCents: typeUsage?.remainingCents ?? 0,
+              limitCents: typeUsage?.limitCents ?? 0,
+              projectedCostCents,
+            });
+          }),
+        );
+        return { volunteerId, state };
+      });
+  }
+
+  private async loadShiftContext(
+    shiftInstanceId: string,
+    organizationUnitId: string,
+  ): Promise<{
+    reimbursementTypeId: string | null;
+    durationMinutes: number;
+    period: BillingPeriod;
+  }> {
+    const instance = await this.db.query.shiftInstances.findFirst({
+      where: { id: shiftInstanceId },
+      with: { master: true },
+    });
+    if (
+      !instance ||
+      instance.master.organizationUnitId !== organizationUnitId
+    ) {
+      throw new NotFoundGraphQLError('Shift instance not found');
+    }
+    return {
+      reimbursementTypeId: instance.master.reimbursementTypeId,
+      durationMinutes: Math.max(
+        0,
+        Math.round(
+          (instance.actualEndsAt.getTime() -
+            instance.actualStartsAt.getTime()) /
+            60_000,
+        ),
+      ),
+      period: { start: instance.actualStartsAt, end: instance.actualEndsAt },
+    };
+  }
+}

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
   requiresInviteConfirmation,
-  toInviteAllowanceDisplay,
-} from './invite-allowance-display';
+  toAllowanceDisplay,
+} from './allowance-display';
 
 describe('requiresInviteConfirmation', () => {
   it('requires confirmation only for WOULD_EXCEED', () => {
@@ -15,12 +15,12 @@ describe('requiresInviteConfirmation', () => {
   });
 });
 
-describe('toInviteAllowanceDisplay', () => {
+describe('toAllowanceDisplay', () => {
   it('maps each state to a distinct label key and tone, never color-only', () => {
-    const eligible = toInviteAllowanceDisplay('ELIGIBLE');
-    const nearlyExhausted = toInviteAllowanceDisplay('NEARLY_EXHAUSTED');
-    const wouldExceed = toInviteAllowanceDisplay('WOULD_EXCEED');
-    const noAgreement = toInviteAllowanceDisplay('NO_AGREEMENT');
+    const eligible = toAllowanceDisplay('ELIGIBLE');
+    const nearlyExhausted = toAllowanceDisplay('NEARLY_EXHAUSTED');
+    const wouldExceed = toAllowanceDisplay('WOULD_EXCEED');
+    const noAgreement = toAllowanceDisplay('NO_AGREEMENT');
 
     const labelKeys = [
       eligible.labelKey,

@@ -1,9 +1,9 @@
 /**
- * Per-volunteer allowance status shown in the "invite volunteers" list for a
- * paid shift (VOLI-1248). Status signals only — never euro amounts, balances
- * or rates render anywhere downstream of this.
+ * Per-volunteer allowance status (VOLI-1248): a property of the person, shown
+ * wherever a volunteer is listed for a shift. Status signals only — never euro
+ * amounts, balances or rates render anywhere downstream of this.
  */
-export enum InviteAllowanceState {
+export enum VolunteerAllowanceState {
   /** Agreement in place, allowance has room for this shift. */
   ELIGIBLE = 'ELIGIBLE',
   /** Room for this shift, but little beyond it. */
@@ -24,7 +24,7 @@ export enum InviteAllowanceState {
  */
 export const NEARLY_EXHAUSTED_REMAINING_RATIO = 0.1;
 
-export interface InviteAllowanceInput {
+export interface VolunteerAllowanceInput {
   /** Whether the volunteer has an active contract for this allowance type. */
   hasActiveAgreement: boolean;
   /**
@@ -48,28 +48,45 @@ export interface InviteAllowanceInput {
  * reused by both the resolver-facing service and any future caller without
  * re-deriving the rule.
  */
-export function computeInviteAllowanceState(
-  input: InviteAllowanceInput,
-): InviteAllowanceState {
+export function computeVolunteerAllowanceState(
+  input: VolunteerAllowanceInput,
+): VolunteerAllowanceState {
   const { hasActiveAgreement, remainingCents, limitCents, projectedCostCents } =
     input;
 
   if (!hasActiveAgreement) {
-    return InviteAllowanceState.NO_AGREEMENT;
+    return VolunteerAllowanceState.NO_AGREEMENT;
   }
 
   const remainingAfterShiftCents = remainingCents - projectedCostCents;
 
   if (remainingAfterShiftCents < 0) {
-    return InviteAllowanceState.WOULD_EXCEED;
+    return VolunteerAllowanceState.WOULD_EXCEED;
   }
 
   if (
     remainingAfterShiftCents <
     limitCents * NEARLY_EXHAUSTED_REMAINING_RATIO
   ) {
-    return InviteAllowanceState.NEARLY_EXHAUSTED;
+    return VolunteerAllowanceState.NEARLY_EXHAUSTED;
   }
 
-  return InviteAllowanceState.ELIGIBLE;
+  return VolunteerAllowanceState.ELIGIBLE;
+}
+
+/** Most restrictive first — used to pick one state out of several types. */
+const SEVERITY: VolunteerAllowanceState[] = [
+  VolunteerAllowanceState.NO_AGREEMENT,
+  VolunteerAllowanceState.WOULD_EXCEED,
+  VolunteerAllowanceState.NEARLY_EXHAUSTED,
+  VolunteerAllowanceState.ELIGIBLE,
+];
+
+export function mostRestrictiveAllowanceState(
+  states: VolunteerAllowanceState[],
+): VolunteerAllowanceState {
+  return (
+    SEVERITY.find((state) => states.includes(state)) ??
+    VolunteerAllowanceState.NO_AGREEMENT
+  );
 }
