@@ -501,7 +501,7 @@ function VolunteerTableGroup({
                       {t('docs.statusLabel.overCap' as Parameters<typeof t>[0])}
                     </span>
                   )}
-                  {isGenerate && (
+                  {isGenerate && !doc.isOverCap && (
                     <span className="text-sm text-muted-foreground">
                       {t(
                         'docs.statusLabel.notYetCreated' as Parameters<

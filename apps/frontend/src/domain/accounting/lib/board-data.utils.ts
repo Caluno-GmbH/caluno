@@ -533,9 +533,7 @@ export function buildBoardVolunteers({
           const doc = mapInvoiceToBoardDoc(invoice, type, locale);
           if (invoice.invoiceStatus !== InvoiceStatus.Declined) {
             const limit = limits[type];
-            doc.isOverCap =
-              limit !== undefined &&
-              limit.used + centsToEuros(invoice.totalAmountCents) > limit.total;
+            doc.isOverCap = limit !== undefined && limit.used > limit.total;
           }
           documents.push(doc);
         }
@@ -561,6 +559,7 @@ export function buildBoardVolunteers({
             uncoveredMonths.push({ start, end });
             continue;
           }
+          const generateLimit = limits[type];
           documents.push({
             id: `${entry.volunteer.id}-timesheet-generate-${type}-${y}-${String(month + 1).padStart(2, '0')}`,
             status: 'timesheet-generate',
@@ -570,6 +569,11 @@ export function buildBoardVolunteers({
             periodLabel: formatMonthYear(start, locale),
             periodStart: start,
             periodEnd: end,
+            isOverCap:
+              generateLimit !== undefined &&
+              generateLimit.used +
+                centsToEuros(timesheet.estimatedAmountCents) >
+                generateLimit.total,
           });
         }
       }
