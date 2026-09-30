@@ -7,6 +7,7 @@ import {
   getTranslations,
   setRequestLocale,
 } from 'next-intl/server';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import { ThemeProvider } from '@/components/theme-provider';
 import { routing } from '@/i18n/routing';
 
@@ -36,9 +37,15 @@ export async function generateMetadata({
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'Metadata' });
 
+  const isProduction =
+    process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT === 'production';
+
   return {
     title: t('title'),
     description: t('description'),
+    icons: {
+      icon: isProduction ? '/favicon.png' : '/favicon-dev.png',
+    },
   };
 }
 
@@ -70,10 +77,12 @@ export default async function LocaleLayout({
         className={`${geologica.variable} ${merriweather.variable} ${sourceCodePro.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
-          <ThemeProvider>
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <NuqsAdapter>
+            <ThemeProvider>
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </NuqsAdapter>
         </NextIntlClientProvider>
       </body>
     </html>

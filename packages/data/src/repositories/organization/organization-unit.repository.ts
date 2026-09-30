@@ -1,5 +1,7 @@
 import type {
   CreateOrganizationUnitInput,
+  OrganizationUnitAutomationKind,
+  UpdateOrganizationUnitAutomationInput,
   UpdateOrganizationUnitInput,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
@@ -15,6 +17,26 @@ export interface OrgUnitTreeNode {
 }
 
 export class OrganizationUnitRepository extends BaseRepository {
+  async findAutomations(organizationUnitId: string) {
+    const data = await this.sdk.GetOrganizationUnitAutomations(
+      { organizationUnitId },
+      { 'x-organization-unit-id': organizationUnitId },
+    );
+    return data.organizationUnitAutomations;
+  }
+
+  async updateAutomation(
+    organizationUnitId: string,
+    kind: OrganizationUnitAutomationKind,
+    input: UpdateOrganizationUnitAutomationInput,
+  ) {
+    const data = await this.sdk.UpdateOrganizationUnitAutomation(
+      { organizationUnitId, kind, input },
+      { 'x-organization-unit-id': organizationUnitId },
+    );
+    return data.updateOrganizationUnitAutomation;
+  }
+
   async findById(id: string) {
     const data = await this.sdk.GetOrganizationUnit({ id });
     return data.organizationUnit;

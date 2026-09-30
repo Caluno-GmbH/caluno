@@ -60,6 +60,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - **Shared options**: `lib/date-time-options.ts` owns the `Intl.DateTimeFormatOptions` objects so client/server/legacy formatters stay consistent.
 - **Legacy / explicit-locale cases**: `lib/formatting.ts` still exports sync helpers that accept a `locale` string; default is the source locale `en`. Existing call sites that rely on the default render English dates until they are migrated to the active-locale helpers above.
 - **Rendered dates in shared components**: prefer `<FormattedDate date={...} />` from `@/components/formatted-date`.
+- **Parse/construct dates with `date-fns` (`parseISO`, `startOfDay`, …), never `new Date(string)`** — native parsing is engine- and timezone-dependent and causes SSR/hydration mismatches. Applies to both server components and client components. (Frontend only; the backend keeps its own date handling.)
 - Never call `toLocaleDateString()` directly.
 
 ## Localisation (i18n) — next-intl

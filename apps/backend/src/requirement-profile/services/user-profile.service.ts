@@ -19,20 +19,29 @@ export class UserProfileService {
   ) {}
 
   async findByUserId(userId: string): Promise<UserProfileEntity | undefined> {
-    const profile = await this.db.query.userProfiles.findFirst({
-      where: { userId },
-      with: { user: { columns: { email: true } } },
-    });
+    let profile = await this.getProfile(userId);
     if (!profile) {
-      return;
+      await this.ensureEmptyProfile(userId);
+      profile = await this.getProfile(userId);
+      if (!profile) {
+        return;
+      }
     }
+    const { user, ...rest } = profile;
     return {
-      ...profile,
+      ...rest,
       data: {
         ...profile.data,
         email: profile.user.email,
       },
     };
+  }
+
+  private async getProfile(userId: string) {
+    return this.db.query.userProfiles.findFirst({
+      where: { userId },
+      with: { user: { columns: { email: true } } },
+    });
   }
 
   async findByUserIdInOrgUnit(
@@ -59,6 +68,17 @@ export class UserProfileService {
   async getData(userId: string): Promise<Record<string, unknown>> {
     const profile = await this.findByUserId(userId);
     return (profile?.data as Record<string, unknown>) ?? {};
+  }
+
+  /**
+   * Ensures a user_profiles row exists for the user.
+   * idempotent for races / re-entry. Does not overwrite an existing profile
+   */
+  async ensureEmptyProfile(userId: string): Promise<void> {
+    await this.db
+      .insert(schema.userProfiles)
+      .values({ userId, data: {} })
+      .onConflictDoNothing({ target: schema.userProfiles.userId });
   }
 
   async upsertData(

@@ -848,7 +848,7 @@ describe('RequiredFormService', () => {
       ).toBe(false);
     });
 
-    it('creates a PENDING request when all required forms are submitted', async () => {
+    it('creates a PENDING_MEMBERSHIP request when all required forms are submitted', async () => {
       const { user, unit } = await setupOrg();
       const { form } = await createRequirementForm(db, {
         organizationId: unit.organizationId,
@@ -863,7 +863,7 @@ describe('RequiredFormService', () => {
 
       const result = await membershipService.requestOrgJoin(user.id, unit.id);
 
-      expect(result.status).toBe(JoinStatus.PENDING);
+      expect(result.status).toBe(JoinStatus.PENDING_MEMBERSHIP);
       expect('membershipRequest' in result).toBe(true);
     });
 
@@ -921,7 +921,7 @@ describe('RequiredFormService', () => {
       });
       await createFormSubmission(db, { formId: form.id, userId: user.id });
       const request = await membershipService.requestOrgJoin(user.id, unit.id);
-      expect(request.status).toBe(JoinStatus.PENDING);
+      expect(request.status).toBe(JoinStatus.PENDING_MEMBERSHIP);
 
       const reviewer = await createUser(db);
       await addMembership(db, reviewer.id, unit.id);

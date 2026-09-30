@@ -3,6 +3,11 @@
 import type { GetPermissionGroupsQuery } from '@repo/data';
 import { Card, Label, Separator, Switch } from '@repo/ui';
 import { useTranslations } from 'next-intl';
+import {
+  permissionDescriptionKey,
+  permissionLabelKey,
+  permissionTitleKey,
+} from '../lib/role-label';
 
 type PermissionGroup = GetPermissionGroupsQuery['permissionGroups'][number];
 
@@ -51,7 +56,9 @@ export function PermissionPicker({
         return (
           <Card key={group.key} className="p-4">
             <div className="flex items-center justify-between mb-3">
-              <Label className="text-sm font-semibold">{group.label}</Label>
+              <Label className="text-lg font-semibold">
+                {t(permissionTitleKey(group.key))}
+              </Label>
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground">
                   {allSelected
@@ -69,21 +76,32 @@ export function PermissionPicker({
               </div>
             </div>
             <Separator className="mb-3" />
-            <div className="grid grid-cols-2 gap-2">
+            <div
+              className={`grid gap-2 ${
+                group.items.length > 1 ? 'grid-cols-2' : 'grid-cols-1'
+              }`}
+            >
               {group.items.map((item) => (
                 <div
                   key={item.permission.id}
-                  className="flex items-center justify-between rounded-md px-2 py-1.5"
+                  className="rounded-md px-2 py-1.5"
                 >
-                  <Label className="text-sm font-normal cursor-pointer">
-                    {item.label}
-                  </Label>
-                  <Switch
-                    size="sm"
-                    checked={selectedIds.includes(item.permission.id)}
-                    onCheckedChange={() => togglePermission(item.permission.id)}
-                    disabled={disabled}
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-base font-bold cursor-pointer">
+                      {t(permissionLabelKey(item.permission.key))}
+                    </Label>
+                    <Switch
+                      size="sm"
+                      checked={selectedIds.includes(item.permission.id)}
+                      onCheckedChange={() =>
+                        togglePermission(item.permission.id)
+                      }
+                      disabled={disabled}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t(permissionDescriptionKey(item.permission.key))}
+                  </p>
                 </div>
               ))}
             </div>

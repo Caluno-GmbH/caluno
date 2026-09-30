@@ -11,6 +11,7 @@ import {
   Session,
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { Loader } from '../../graphql/decorators';
@@ -30,6 +31,7 @@ import { ShiftInstanceInvite } from '../models/shift-instance-invite.model';
 import type { ShiftEntity } from '../schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import { ShiftService } from '../shift.service';
+import { resolveEffectiveReimbursementTypeId } from '../utils/effective-reimbursement-type';
 import { ShiftInstanceInvitesLoader } from './loader';
 import { ShiftLoader } from './shift.loader';
 import { ShiftInstanceLoader } from './shift-instance.loader';
@@ -59,6 +61,28 @@ export class ShiftInstanceFieldResolver {
     }
 
     return loader.shiftById.load(instance.masterId);
+  }
+
+  @AllowAnonymous()
+  @ResolveField(() => ReimbursementTypeKey, { nullable: true })
+  async reimbursementTypeKey(
+    @Parent() instance: ShiftInstanceEntity,
+    @Loader(ShiftLoader) loader: ShiftLoader,
+  ): Promise<ReimbursementTypeKey | null> {
+    const master = instance.overrideReimbursementTypeId
+      ? null
+      : await loader.shiftById.load(instance.masterId);
+
+    const effectiveId = resolveEffectiveReimbursementTypeId(
+      instance.overrideReimbursementTypeId,
+      master?.reimbursementTypeId,
+    );
+
+    if (!effectiveId) {
+      return null;
+    }
+
+    return loader.reimbursementTypeKeyById.load(effectiveId);
   }
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)

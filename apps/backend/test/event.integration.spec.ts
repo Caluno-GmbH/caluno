@@ -320,7 +320,7 @@ describe('publicEvent', () => {
     expect(data.updateEvent.title).toBe('Updated Event Title');
   });
 
-  it('returns myJoinStatus PENDING for a pending membership', async () => {
+  it('returns myJoinStatus PENDING_MEMBERSHIP for a pending membership', async () => {
     const originalUserId = getAuthMockUserId();
     const user = await createUser(db);
     setAuthMockUserId(user.id);
@@ -347,12 +347,12 @@ describe('publicEvent', () => {
       'publicEvent',
     );
 
-    expect(data.publicEvent.myJoinStatus).toBe(JoinStatus.PENDING);
+    expect(data.publicEvent.myJoinStatus).toBe(JoinStatus.PENDING_MEMBERSHIP);
 
     setAuthMockUserId(originalUserId);
   });
 
-  it('returns myJoinStatus PENDING for a pending membership after starting to join this event', async () => {
+  it('returns myJoinStatus PENDING_MEMBERSHIP for a pending membership after starting to join this event', async () => {
     const originalUserId = getAuthMockUserId();
     const user = await createUser(db);
     setAuthMockUserId(user.id);
@@ -380,7 +380,7 @@ describe('publicEvent', () => {
       'publicEvent',
     );
 
-    expect(data.publicEvent.myJoinStatus).toBe(JoinStatus.PENDING);
+    expect(data.publicEvent.myJoinStatus).toBe(JoinStatus.PENDING_MEMBERSHIP);
 
     setAuthMockUserId(originalUserId);
   });
@@ -522,7 +522,7 @@ describe('publicEvent', () => {
       'joinEvent',
     );
 
-    expect(data.joinEvent.status).toBe(JoinStatus.PENDING);
+    expect(data.joinEvent.status).toBe(JoinStatus.PENDING_MEMBERSHIP);
 
     setAuthMockUserId(originalUserId);
   });
@@ -612,7 +612,7 @@ function expectedMyJoinStatus(
       return JoinStatus.NONE;
     case 'pending':
     case 'pending-intended':
-      return JoinStatus.PENDING;
+      return JoinStatus.PENDING_MEMBERSHIP;
     case 'rejected':
     case 'cancelled':
       return JoinStatus.REJECTED;
@@ -623,7 +623,7 @@ function expectedMyJoinStatus(
         case EventInviteStatus.ADMIN_INVITED:
           return JoinStatus.INVITED;
         case EventInviteStatus.AWAITING_ADMIN_APPROVAL:
-          return JoinStatus.PENDING;
+          return JoinStatus.PENDING_APPROVAL;
         case EventInviteStatus.WAITLIST_JOINED:
           return JoinStatus.WAITLIST_JOINED;
         case EventInviteStatus.JOINED:
@@ -641,12 +641,14 @@ function expectedJoinEventStatusWithoutInvite(
 ): JoinStatus {
   switch (membership) {
     case 'none':
-      return JoinStatus.PENDING;
+      return JoinStatus.PENDING_MEMBERSHIP;
     case 'member':
-      return joinRequiresApproval ? JoinStatus.PENDING : JoinStatus.JOINED;
+      return joinRequiresApproval
+        ? JoinStatus.PENDING_APPROVAL
+        : JoinStatus.JOINED;
     case 'pending':
     case 'pending-intended':
-      return JoinStatus.PENDING;
+      return JoinStatus.PENDING_MEMBERSHIP;
     case 'rejected':
     case 'cancelled':
       return JoinStatus.REJECTED;
@@ -675,7 +677,7 @@ function expectedJoinEventStatusWithInvite(
       if (inviteStatus === EventInviteStatus.VOLUNTEER_CANCELLED) {
         return JoinStatus.JOINED;
       }
-      return JoinStatus.PENDING;
+      return JoinStatus.PENDING_APPROVAL;
     }
     return JoinStatus.JOINED;
   }
@@ -930,7 +932,7 @@ describe('joinEvent — membership × invite combinations', () => {
     }
   });
 
-  it('membership=member with joinRequiresApproval → PENDING', async () => {
+  it('membership=member with joinRequiresApproval → PENDING_APPROVAL', async () => {
     const user = await createUser(db);
     await addMembership(db, user.id, organizationUnitId);
     const event = await createEvent(db, { organizationUnitId });
@@ -940,10 +942,10 @@ describe('joinEvent — membership × invite combinations', () => {
       .where(eq(schema.events.id, event.id));
 
     const status = await joinEvent(event.id, user.id);
-    expect(status).toBe(JoinStatus.PENDING);
+    expect(status).toBe(JoinStatus.PENDING_APPROVAL);
   });
 
-  it('membership=member with ADMIN_INVITED and joinRequiresApproval → PENDING', async () => {
+  it('membership=member with ADMIN_INVITED and joinRequiresApproval → PENDING_APPROVAL', async () => {
     const user = await createUser(db);
     await addMembership(db, user.id, organizationUnitId);
     const event = await createEvent(db, { organizationUnitId });
@@ -958,7 +960,7 @@ describe('joinEvent — membership × invite combinations', () => {
     });
 
     const status = await joinEvent(event.id, user.id);
-    expect(status).toBe(JoinStatus.PENDING);
+    expect(status).toBe(JoinStatus.PENDING_APPROVAL);
   });
 });
 

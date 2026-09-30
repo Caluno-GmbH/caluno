@@ -3,10 +3,9 @@ import { Contract } from './contract.model';
 import { Invoice } from './invoice.model';
 
 /**
- * One organization's worth of the volunteer's documents, as seen on the
- * cross-org "My documents" page. Grouped by organization (not by membership)
- * because documents are org-scoped — two memberships in the same org would
- * otherwise show the same documents twice.
+ * One org-unit's worth of the volunteer's documents, as seen on the
+ * cross-org "My documents" page. Grouped by membership/org unit so documents
+ * issued in different units of the same org stay separate.
  */
 @ObjectType()
 export class MyDocumentsGroup {

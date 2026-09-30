@@ -26,6 +26,7 @@ export * from './components/base/table';
 export * from './components/base/tabs';
 export * from './components/base/textarea';
 export * from './components/base/toggle';
+export * from './components/base/toggle-group';
 export * from './components/calendar';
 export * from './components/cobranding';
 export * from './components/date-picker';

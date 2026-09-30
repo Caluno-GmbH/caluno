@@ -4,7 +4,10 @@ import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
-import { BadRequestGraphQLError } from '../src/graphql/errors';
+import {
+  BadRequestGraphQLError,
+  ConflictGraphQLError,
+} from '../src/graphql/errors';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
@@ -13,7 +16,10 @@ import {
   createOrganizationWithType,
   createUnit,
 } from './factories/org.factory';
-import { createRequirementForm } from './factories/requirement-form.factory';
+import {
+  createFormSubmission,
+  createRequirementForm,
+} from './factories/requirement-form.factory';
 import {
   ensureTestDatabase,
   registerTestResourceCleanup,
@@ -211,5 +217,82 @@ describe('RequirementFormService block org scoping', () => {
         user.id,
       ),
     ).rejects.toBeInstanceOf(BadRequestGraphQLError);
+  });
+
+  it('update allows name and description when form has submissions', async () => {
+    const { user, organization, unit } = await setupOrg('Form Org');
+    const { form } = await createRequirementForm(db, {
+      organizationId: organization.id,
+      organizationUnitId: unit.id,
+      createdById: user.id,
+    });
+    await createFormSubmission(db, { formId: form.id, userId: user.id });
+
+    const updated = await requirementFormService.update(
+      form.id,
+      unit.id,
+      {
+        name: 'Renamed after submissions',
+        description: 'Updated description',
+      },
+      user.id,
+    );
+
+    expect(updated.name).toBe('Renamed after submissions');
+    expect(updated.description).toBe('Updated description');
+  });
+
+  it('update rejects blockRefs when form has submissions', async () => {
+    const { user, organization, unit } = await setupOrg('Form Org');
+    const { form, block } = await createRequirementForm(db, {
+      organizationId: organization.id,
+      organizationUnitId: unit.id,
+      createdById: user.id,
+    });
+    const { block: otherBlock } = await createRequirementForm(db, {
+      organizationId: organization.id,
+      organizationUnitId: unit.id,
+      createdById: user.id,
+      name: 'Second form',
+    });
+    await createFormSubmission(db, { formId: form.id, userId: user.id });
+
+    await expect(
+      requirementFormService.update(
+        form.id,
+        unit.id,
+        { blockRefs: [{ blockId: otherBlock.id, order: 0 }] },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(ConflictGraphQLError);
+
+    const refs = await db.query.requirementFormBlockRefs.findMany({
+      where: { formId: form.id },
+    });
+    expect(refs.map((r) => r.blockId)).toEqual([block.id]);
+  });
+
+  it('update rejects settings when form has submissions', async () => {
+    const { user, organization, unit } = await setupOrg('Form Org');
+    const { form } = await createRequirementForm(db, {
+      organizationId: organization.id,
+      organizationUnitId: unit.id,
+      createdById: user.id,
+    });
+    await createFormSubmission(db, { formId: form.id, userId: user.id });
+
+    await expect(
+      requirementFormService.update(
+        form.id,
+        unit.id,
+        { settings: { successTitle: 'Changed after submit' } },
+        user.id,
+      ),
+    ).rejects.toBeInstanceOf(ConflictGraphQLError);
+
+    const reloaded = await db.query.requirementForms.findFirst({
+      where: { id: form.id },
+    });
+    expect(reloaded?.settings).toEqual(form.settings);
   });
 });

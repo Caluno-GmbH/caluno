@@ -36,13 +36,14 @@ export function deriveAcceptedRowState(
 
 /**
  * Which actions an accepted row's check-in state offers, gated on the
- * CHECK_IN_MANAGE permission. Deliberately NOT part of the shared status
- * config's default actions for 'accepted' (which stay ['Uninvite']):
- * every other surface that shows an accepted volunteer — before-shift
- * rosters, the event roster, volunteer-facing views — must keep that
- * generic default. This function is called from exactly one place,
- * the shift instance volunteers panel, so Check in/Check out can never
- * leak onto those other surfaces.
+ * CHECK_IN_MANAGE permission. Check-in happens only through the QR/manual
+ * check-in flow, so this never offers 'Check in' — only Check out for an
+ * open entry. Deliberately NOT part of the shared status config's default
+ * actions for 'accepted' (which stay ['Uninvite']): every other surface
+ * that shows an accepted volunteer — before-shift rosters, the event
+ * roster, volunteer-facing views — must keep that generic default. This
+ * function is called from exactly one place, the shift instance
+ * volunteers panel, so Check out can never leak onto those other surfaces.
  */
 export function acceptedRowActions(
   state: AcceptedRowCheckInState,
@@ -51,7 +52,7 @@ export function acceptedRowActions(
   if (!canCheckIn) {
     return [];
   }
-  return state === 'checked_in' ? ['Check out'] : ['Check in'];
+  return state === 'checked_in' ? ['Check out'] : [];
 }
 
 /**

@@ -72,6 +72,7 @@ function createInviteService(options: {
     {} as never,
     { capture: options.capture } as unknown as PostHogService,
     {} as never,
+    { resolve: async () => ({ enabled: false }) } as never,
   );
 }
 
@@ -219,6 +220,7 @@ function createWaitlistService(options: {
     {} as never,
     { capture: options.capture } as unknown as PostHogService,
     {} as never,
+    { resolve: async () => ({ enabled: false }) } as never,
   );
 }
 
@@ -486,6 +488,7 @@ function createSeriesClaimService(options: { capture: jest.Mock }) {
     {} as never,
     { capture: options.capture } as unknown as PostHogService,
     {} as never,
+    { resolve: async () => ({ enabled: false }) } as never,
   );
 }
 

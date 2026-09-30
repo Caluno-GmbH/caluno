@@ -2,6 +2,7 @@ import type { ReimbursementTypeMapper } from '../../accounting/mappers/reimburse
 import type { Database } from '../../database/database.module';
 import type { OrganizationUnitMapper } from '../../organization/mappers/organization-unit.mapper';
 import type { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import type { UserMapper } from '../../user/mappers/user.mapper';
 import { TimeEntryLoader } from './time-entry.loader';
 
 describe('TimeEntryLoader', () => {
@@ -20,6 +21,7 @@ describe('TimeEntryLoader', () => {
         { findByIds } as unknown as OrganizationUnitDataService,
         { toModelOrThrow } as unknown as OrganizationUnitMapper,
         {} as unknown as ReimbursementTypeMapper,
+        {} as unknown as UserMapper,
         { query: {} } as unknown as Database,
       );
 
@@ -43,6 +45,7 @@ describe('TimeEntryLoader', () => {
         { findByIds } as unknown as OrganizationUnitDataService,
         { toModelOrThrow } as unknown as OrganizationUnitMapper,
         {} as unknown as ReimbursementTypeMapper,
+        {} as unknown as UserMapper,
         { query: {} } as unknown as Database,
       );
 

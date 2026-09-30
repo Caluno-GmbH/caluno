@@ -62,7 +62,8 @@ export function EventFollowButton({
 
   const isFinalFollowStatus =
     joinStatus === JoinStatus.Joined ||
-    joinStatus === JoinStatus.Pending ||
+    joinStatus === JoinStatus.PendingMembership ||
+    joinStatus === JoinStatus.PendingApproval ||
     joinStatus === JoinStatus.Rejected;
 
   const { needsCombinedForms, goToCombinedForms } = useRequiredFormsGate(
@@ -102,9 +103,13 @@ export function EventFollowButton({
           setJoinStatus(JoinStatus.Joined);
           setInviteStatus(EventInviteStatus.Joined);
           if (isAuto) router.push('/');
-        } else if (result.status === JoinStatus.Pending) {
-          setJoinStatus(JoinStatus.Pending);
+        } else if (result.status === JoinStatus.PendingApproval) {
+          setJoinStatus(JoinStatus.PendingApproval);
           setInviteStatus(EventInviteStatus.AwaitingAdminApproval);
+          toast.success(t('requestSentToast'));
+          if (isAuto) router.push('/');
+        } else if (result.status === JoinStatus.PendingMembership) {
+          setJoinStatus(JoinStatus.PendingMembership);
           toast.success(t('requestSentToast'));
           if (isAuto) router.push('/');
         } else if (result.status === JoinStatus.Rejected) {
@@ -194,7 +199,8 @@ export function EventFollowButton({
 
   const isPending =
     inviteStatus === EventInviteStatus.AwaitingAdminApproval ||
-    joinStatus === JoinStatus.Pending;
+    joinStatus === JoinStatus.PendingMembership ||
+    joinStatus === JoinStatus.PendingApproval;
 
   const isJoined =
     inviteStatus === EventInviteStatus.Joined ||
@@ -285,7 +291,9 @@ export function EventFollowButton({
           <BellRingIcon className="size-[18px]" />
           {t('pendingCta')}
         </Button>
-        <p className="text-sm text-muted-foreground">{t('pendingNote')}</p>
+        <p className="text-sm text-muted-foreground">
+          {t('pendingMembershipNote')}
+        </p>
         {canWithdrawOrCancel ? (
           <Button
             size="lg"

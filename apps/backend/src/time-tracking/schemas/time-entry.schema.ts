@@ -38,6 +38,9 @@ export const timeEntries = snakeCase.table(
       { onDelete: 'restrict' },
     ),
     isPaid: boolean('is_paid').notNull().default(false),
+    createdById: text('created_by_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
     ...timestampColumns,
   },
   (table) => [
@@ -45,6 +48,7 @@ export const timeEntries = snakeCase.table(
       table.organizationUnitId,
       table.startedAt,
     ),
+    index('idx_time_entries_created_by_id').on(table.createdById),
     uniqueIndex('uq_time_entries_open_per_instance_volunteer')
       .on(table.shiftInstanceId, table.volunteerId)
       .where(sql`${table.endedAt} IS NULL`),

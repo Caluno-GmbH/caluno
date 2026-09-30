@@ -15,7 +15,7 @@ export const INVITE_STATUS_TO_JOIN_EVENT_STATUS: Record<
   JoinStatus
 > = {
   [EventInviteStatus.ADMIN_INVITED]: JoinStatus.INVITED,
-  [EventInviteStatus.AWAITING_ADMIN_APPROVAL]: JoinStatus.PENDING,
+  [EventInviteStatus.AWAITING_ADMIN_APPROVAL]: JoinStatus.PENDING_APPROVAL,
   [EventInviteStatus.WAITLIST_JOINED]: JoinStatus.WAITLIST_JOINED,
   [EventInviteStatus.JOINED]: JoinStatus.JOINED,
   [EventInviteStatus.VOLUNTEER_REJECTED]: JoinStatus.VOLUNTEER_REJECTED,

@@ -107,6 +107,7 @@ describe('ShiftService', () => {
       { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture } as unknown as PostHogService,
       accountingOrgAccessService,
+      { resolve: async () => ({ enabled: false }) } as never,
     );
 
     userId = (await createUser(db)).id;

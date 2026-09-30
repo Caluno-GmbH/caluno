@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '../../../accounting/enums';
 import type { EmailTemplateContext } from '../../../i18n/email-translate';
 import type { ShiftInviteSchedule } from '../../shift-invite-schedule';
 import {
@@ -6,6 +7,7 @@ import {
   type DetailTableRow,
   detailTable,
   divider,
+  emailCompensationLabel,
   emailTheme,
   escapeHtml,
   heading,
@@ -25,6 +27,7 @@ export interface ShiftInvitedTemplateData {
   shiftInstructions?: string | null;
   recipientFirstName: string;
   schedule: ShiftInviteSchedule;
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 }
 
 function formatRecurrenceDays(
@@ -66,6 +69,18 @@ function buildDetailRows(
       value: organizationUnitName,
     },
   ];
+
+  const compensationLabel = emailCompensationLabel(
+    data.reimbursementTypeKey,
+    t,
+  );
+  if (compensationLabel) {
+    rows.push({
+      kind: 'pair',
+      label: t('compensation.detail'),
+      value: escapeHtml(compensationLabel),
+    });
+  }
 
   if (schedule.isRecurring && recurrenceDays) {
     rows.push({
@@ -146,6 +161,9 @@ export async function shiftInvitedTemplate(
   const brandName = emailTheme.brandName;
   const { schedule } = data;
   const recurrenceDays = formatRecurrenceDays(schedule, context);
+  const compensationNote = data.reimbursementTypeKey
+    ? paragraph(t('compensation.agreementNote'), { padding: '0 0 16px' })
+    : '';
 
   const greetingKey = schedule.isRecurring
     ? 'shiftInvited.greetingRecurring'
@@ -172,6 +190,7 @@ export async function shiftInvitedTemplate(
       padding: '0 0 16px',
     })}
     ${detailTable(buildDetailRows(data, context))}
+    ${compensationNote}
     ${button({ href: shiftUrl, label: t('shiftInvited.buttonLabel') })}
     ${divider('0 0 16px')}
     ${note(
