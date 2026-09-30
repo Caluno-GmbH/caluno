@@ -3,6 +3,7 @@
 import type { FormBlock } from '@repo/data';
 import {
   Badge,
+  cn,
   Dialog,
   DialogContent,
   DialogHeader,
@@ -11,6 +12,7 @@ import {
 } from '@repo/ui';
 import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { USER_TEXT_BADGE } from './user-text-badge';
 
 interface FormBuilderAddBlockDialogProps {
   open: boolean;
@@ -58,7 +60,11 @@ export function FormBuilderAddBlockDialog({
                 )}
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {block.fields?.map((f) => (
-                    <Badge key={f.id} variant="secondary" className="text-sm">
+                    <Badge
+                      key={f.id}
+                      variant="secondary"
+                      className={cn('text-sm', USER_TEXT_BADGE)}
+                    >
                       {f.label}
                     </Badge>
                   ))}

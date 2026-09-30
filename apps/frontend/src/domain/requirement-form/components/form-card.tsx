@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormBlock, RequirementForm } from '@repo/data';
-import { Badge, Button, Card, CardContent } from '@repo/ui';
+import { Badge, Button, Card, CardContent, cn } from '@repo/ui';
 import { Eye, Pencil, Share2, Trash2, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ConfirmDialog } from './confirm-dialog';
+import { USER_TEXT_BADGE } from './user-text-badge';
 
 export function FormCard({
   form,
@@ -81,15 +82,10 @@ export function FormCard({
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {usedBlocks.map((block) => (
-                  // Badge is nowrap and shrink-0 by default, which is right for
-                  // a status chip and wrong for a name a coordinator wrote: the
-                  // row wraps between chips, but a single chip longer than the
-                  // card could neither wrap nor shrink. Overridden here rather
-                  // than in the base, which every other badge relies on.
                   <Badge
                     key={block.id}
                     variant="outline"
-                    className="max-w-full shrink whitespace-normal break-words text-left text-xs"
+                    className={cn('text-xs', USER_TEXT_BADGE)}
                   >
                     {block.title}
                   </Badge>
