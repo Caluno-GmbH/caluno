@@ -20,7 +20,9 @@ function build(
   units: UnitPlan[],
   deletedUnitIds: string[] = [],
   alreadyClaimed: string[] = [],
+  recipientLookupFailsFor: string[] = [],
 ) {
+  const releaseRun = mock(async () => undefined);
   const findMyShiftInstances = mock(async () => EMPTY_PAGE);
   const findAvailableShiftInstances = mock(async () => EMPTY_PAGE);
   const send = mock(async () => undefined);
@@ -33,6 +35,9 @@ function build(
           where: async () => {
             const unit = units[recipientCall % units.length];
             recipientCall += 1;
+            if (unit && recipientLookupFailsFor.includes(unit.id)) {
+              throw new Error('recipient lookup exploded');
+            }
             return (unit?.members ?? []).map((userId) => ({ userId }));
           },
         }),
@@ -56,6 +61,7 @@ function build(
     } as never,
     {
       claimRun: async (unitId: string) => !alreadyClaimed.includes(unitId),
+      releaseRun,
       listEnabled: async () =>
         units.map((unit) => ({
           kind: 'DISCOVERY_EMAIL',
@@ -71,7 +77,13 @@ function build(
     {} as never,
   );
 
-  return { service, findMyShiftInstances, findAvailableShiftInstances, send };
+  return {
+    service,
+    findMyShiftInstances,
+    findAvailableShiftInstances,
+    send,
+    releaseRun,
+  };
 }
 
 const SUNDAY_UNIT: UnitPlan = {
@@ -164,6 +176,22 @@ describe('VolunteerDigestService scheduling', () => {
     expect(summary.due_units).toBe(1);
     expect(summary.recipients).toBe(0);
     expect(findMyShiftInstances).not.toHaveBeenCalled();
+  });
+
+  it('releases the claim and carries on when one unit cannot be processed', async () => {
+    const { service, releaseRun, findMyShiftInstances } = build(
+      [SUNDAY_UNIT, { ...SUNDAY_UNIT, id: 'unit-2', members: ['volunteer-2'] }],
+      [],
+      [],
+      ['unit-1'],
+    );
+
+    const summary = await service.sendDigests(SUNDAY_0800);
+
+    expect(summary.failed).toBe(1);
+    expect(releaseRun).toHaveBeenCalledTimes(1);
+    expect(findMyShiftInstances).toHaveBeenCalled();
+    expect(summary.recipients).toBe(1);
   });
 
   it('honours a unit that sends on several days', async () => {

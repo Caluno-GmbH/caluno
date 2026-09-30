@@ -112,6 +112,25 @@ export class OrganizationUnitAutomationService {
     return claimed.length > 0;
   }
 
+  async releaseRun(
+    organizationUnitId: string,
+    kind: OrganizationUnitAutomationKind,
+    runOn: string,
+  ): Promise<void> {
+    await this.db
+      .delete(schema.organizationUnitAutomationRuns)
+      .where(
+        and(
+          eq(
+            schema.organizationUnitAutomationRuns.organizationUnitId,
+            organizationUnitId,
+          ),
+          eq(schema.organizationUnitAutomationRuns.kind, kind),
+          eq(schema.organizationUnitAutomationRuns.runOn, runOn),
+        ),
+      );
+  }
+
   async update(
     organizationUnitId: string,
     kind: OrganizationUnitAutomationKind,

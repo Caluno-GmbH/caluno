@@ -133,7 +133,26 @@ export class VolunteerDigestService {
         continue;
       }
 
-      const userIds = await this.findUnitRecipientIds(unit.id);
+      let userIds: string[];
+      try {
+        userIds = await this.findUnitRecipientIds(unit.id);
+      } catch (error) {
+        await this.automationService.releaseRun(
+          unit.id,
+          OrganizationUnitAutomationKind.DISCOVERY_EMAIL,
+          runOn,
+        );
+        summary.failed += 1;
+        this.logger.error(
+          {
+            event: 'volunteer_digest.unit_failed',
+            organization_unit_id: unit.id,
+            err: error,
+          },
+          'Could not load recipients; releasing the claim so a later tick retries',
+        );
+        continue;
+      }
       summary.recipients += userIds.length;
 
       for (const userId of userIds) {
