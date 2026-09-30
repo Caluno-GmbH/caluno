@@ -129,9 +129,6 @@ export default async function TimeEntryDetailPage({
                       {recorder.name
                         ? t('table.recordedBy', { name: recorder.name })
                         : t('table.recordedByUnknown')}
-                      {recorder.onBehalf
-                        ? ` · ${t('table.recordedOnBehalf')}`
-                        : ''}
                     </span>
                   </dd>
                 </div>

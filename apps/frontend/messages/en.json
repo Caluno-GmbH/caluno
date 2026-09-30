@@ -485,17 +485,17 @@
   },
   "ShiftSettings": {
     "page": {
-      "title": "Shifts and check-in",
-      "subtitle": "Settings for shifts in {orgName}."
+      "title": "Assignments and check-in",
+      "subtitle": "Settings for assignments in {orgName}."
     },
     "sections": {
       "staffing": {
         "title": "Staffing",
-        "description": "How volunteers are asked to fill shifts."
+        "description": "How volunteers are asked to fill assignments."
       },
       "moderation": {
         "title": "Moderation",
-        "description": "Rules for who gets into a shift."
+        "description": "Rules for who gets into an assignment."
       },
       "checkIn": {
         "title": "Check-in",
@@ -526,24 +526,24 @@
       }
     },
     "stepIn": {
-      "label": "When to step in",
+      "label": "Time frame before the start",
       "option": "{hours} hours before"
     },
     "callOut": {
       "title": "Automatic urgent call",
-      "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
-      "daysDescription": "Shifts on these days can trigger an urgent call.",
-      "stepInDescription": "How long before its start a shift below its minimum gets an urgent call.",
+      "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can trigger an urgent call.",
+      "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
       "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "updateError": "We couldn't save this automation. Please try again."
     },
     "approval": {
       "title": "Pause approval",
-      "description": "Confirms sign-ups straight away when a shift is below its minimum shortly before it starts. Approval applies again once the shift reaches its minimum. Shifts without a minimum are never affected.",
-      "daysDescription": "Shifts on these days can have approval paused.",
-      "stepInDescription": "How long before its start a shift below its minimum stops needing approval.",
+      "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can have approval paused.",
+      "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
       "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "updateError": "We couldn't save this automation. Please try again."
     }
   },
   "MembershipRequest": {
@@ -715,7 +715,7 @@
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
     "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
-    "shiftSettings": "Shifts and check-in"
+    "shiftSettings": "Assignments and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",
@@ -1860,7 +1860,6 @@
       "recorded": "Recorded",
       "recordedBy": "by {name}",
       "recordedByUnknown": "Unknown",
-      "recordedOnBehalf": "entered on behalf",
       "date": "Date",
       "shift": "Assignment",
       "volunteer": "Volunteer"
@@ -2124,8 +2123,8 @@
       },
       "toolbar": {
         "typeAll": "All allowance types",
-        "typeEP": "Ehrenamt",
-        "typeUL": "Übungsleiter",
+        "typeEP": "Ehrenamtspauschale",
+        "typeUL": "Übungsleiterpauschale",
         "searchPlaceholder": "Search volunteers...",
         "sortActionNeeded": "Action needed first",
         "sortNewest": "Newest first"
@@ -2259,7 +2258,7 @@
           "countersign": "Countersign",
           "decline": "Decline",
           "seeDetails": "See details",
-          "createNew": "Create new {docType}"
+          "createNew": "Create new {kind, select, contract {Agreement} timesheet {Timesheet} other {Document}}"
         },
         "nonCompliantDialog": {
           "titleSingle": "{action, select, create {Create} remind {Send a reminder for} countersign {Countersign} other {Proceed with}} a timesheet without an active agreement?",
