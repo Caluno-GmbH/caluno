@@ -25,9 +25,6 @@ export function useJoinShiftInstance() {
         queryKey: ['myShiftInstancesInfinite'],
       });
       queryClient.invalidateQueries({
-        queryKey: ['availableShiftInstances'],
-      });
-      queryClient.invalidateQueries({
         queryKey: ['availableShiftInstancesInfinite'],
       });
     },

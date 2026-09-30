@@ -59,49 +59,55 @@ describe('createAuthConfig', () => {
     );
   });
 
-  it('sets user locale from x-locale on sign up', async () => {
-    const config = authConfig();
+  it.each([
+    [{ 'x-locale': 'de' }, 'de'],
+    [{ 'x-locale': 'en' }, 'en'],
+    [{ 'accept-language': 'en-US,en;q=0.9' }, 'en'],
+    [{ 'accept-language': 'de-DE,de;q=0.9' }, 'de'],
+    [{ 'accept-language': 'fr,nl;q=0.9' }, 'de'],
+    [{}, 'de'],
+  ] as const)(
+    'sets user locale from request headers on sign up (%j → %s)',
+    async (headers, expectedLocale) => {
+      const config = authConfig();
 
-    const beforeCreate = config.databaseHooks?.user?.create?.before;
-    expect(beforeCreate).toBeDefined();
+      const beforeCreate = config.databaseHooks?.user?.create?.before;
+      expect(beforeCreate).toBeDefined();
 
-    const request = new Request(
-      'http://localhost:8080/api/auth/sign-up/email',
-      {
-        headers: {
-          'x-locale': 'de',
+      const request = new Request(
+        'http://localhost:8080/api/auth/sign-up/email',
+        { headers: { ...headers } },
+      );
+
+      const result = await beforeCreate?.(
+        {
+          id: 'user-1',
+          email: 'volunteer@example.com',
+          name: 'Volunteer',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         },
-      },
-    );
+        {
+          request,
+          body: { privacyPolicyAccepted: true },
+        } as never,
+      );
 
-    const result = await beforeCreate?.(
-      {
-        id: 'user-1',
-        email: 'volunteer@example.com',
-        name: 'Volunteer',
-        emailVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      {
-        request,
-        body: { privacyPolicyAccepted: true },
-      } as never,
-    );
-
-    expect(result).toEqual({
-      data: expect.objectContaining({
-        locale: 'de',
-        privacyPolicyVersion: '2026-08-25',
-        privacyPolicyAcceptedAt: expect.any(Date),
-      }),
-    });
-    expect(result).toEqual({
-      data: expect.not.objectContaining({
-        privacyPolicyAccepted: expect.anything(),
-      }),
-    });
-  });
+      expect(result).toEqual({
+        data: expect.objectContaining({
+          locale: expectedLocale,
+          privacyPolicyVersion: '2026-08-25',
+          privacyPolicyAcceptedAt: expect.any(Date),
+        }),
+      });
+      expect(result).toEqual({
+        data: expect.not.objectContaining({
+          privacyPolicyAccepted: expect.anything(),
+        }),
+      });
+    },
+  );
 
   it('ignores privacyPolicyAccepted on the user payload', async () => {
     const config = authConfig();

@@ -37,6 +37,7 @@ import { UserService } from '../src/user/user.service';
 import {
   createDocumentTemplate,
   createReimbursementType,
+  stubInvoiceDocumentNumber,
 } from './factories/accounting.factory';
 import {
   addMembership,
@@ -408,6 +409,8 @@ describe('reimbursement-rate resolver unit scoping', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
+          hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(branchA.id),
         })
         .returning();
 
@@ -541,6 +544,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       reimbursementTypeId: string;
       totalAmountCents: number;
       invoiceStatus: InvoiceStatus;
+      scopeUnitId: string;
     }) => {
       const [invoice] = await db
         .insert(schema.invoices)
@@ -554,6 +558,8 @@ describe('reimbursement-rate resolver unit scoping', () => {
           totalHours: 1,
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: input.invoiceStatus,
+          hourlyRateCents: 1000,
+          ...stubInvoiceDocumentNumber(input.scopeUnitId),
         })
         .returning();
       return invoice;
@@ -601,6 +607,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         reimbursementTypeId: reimbursementType.id,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
+        scopeUnitId: branchA.id,
       });
 
       const usage = await queryResolver.yearlyUsage(
@@ -631,6 +638,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         reimbursementTypeId: reimbursementType.id,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
+        scopeUnitId: branchA.id,
       });
       const draft = await insertInvoice({
         documentTemplateId: template.id,
@@ -638,6 +646,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         reimbursementTypeId: reimbursementType.id,
         totalAmountCents: 4_000,
         invoiceStatus: InvoiceStatus.DRAFT,
+        scopeUnitId: branchA.id,
       });
 
       const usage = await queryResolver.yearlyUsage(

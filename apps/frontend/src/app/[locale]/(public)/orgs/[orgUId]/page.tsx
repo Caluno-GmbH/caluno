@@ -9,6 +9,7 @@ import { OrgEventsSection } from '@/domain/org-unit/components/org-events-sectio
 import { OrgJoinButton } from '@/domain/org-unit/components/org-join-button';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import { OrgShiftsSection } from '@/domain/org-unit/components/org-shifts-section';
+import { formatAddress } from '@/domain/org-unit/format-address';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { getInitials } from '@/lib/get-initials';
@@ -51,6 +52,8 @@ export default async function OrgPage({ params }: OrgPageProps) {
     throw error;
   }
 
+  const addressText = formatAddress(org);
+
   return (
     <div className="relative flex min-h-screen flex-col">
       <div className="absolute inset-x-0 top-0 z-10">
@@ -87,10 +90,10 @@ export default async function OrgPage({ params }: OrgPageProps) {
                   {t('openShiftsCount', { n: org.openShiftsCount })}
                 </p>
               </div>
-              {org.address ? (
+              {addressText ? (
                 <p className="flex items-start gap-2 whitespace-pre-line text-base text-foreground">
                   <MapPinIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  {org.address}
+                  {addressText}
                 </p>
               ) : null}
               {org.myMembershipState !== JoinStatus.Joined ? (

@@ -6,7 +6,7 @@ import {
   divider,
   emailTheme,
   escapeHtml,
-  eventsAdminUrl,
+  eventAdminUrl,
   heading,
   note,
   paragraph,
@@ -16,6 +16,7 @@ import {
 export interface EventJoinedTemplateData {
   organizationUnitId: string;
   organizationUnitName: string;
+  eventId: string;
   eventTitle: string;
   volunteerName: string;
   recipientFirstName: string;
@@ -31,7 +32,7 @@ export async function eventJoinedTemplate(
   const eventTitle = escapeHtml(data.eventTitle);
   const volunteerName = escapeHtml(data.volunteerName);
   const startsAt = escapeHtml(formatDateTime(data.startsAt));
-  const eventsUrl = eventsAdminUrl(data.organizationUnitId);
+  const eventUrl = eventAdminUrl(data.organizationUnitId, data.eventId);
   const brandName = emailTheme.brandName;
 
   const body = card(`
@@ -43,7 +44,7 @@ export async function eventJoinedTemplate(
     ${detailItem(t('eventJoined.detailEvent'), eventTitle)}
     ${detailItem(t('eventJoined.detailOrganization'), organizationUnitName)}
     ${detailItem(t('eventJoined.detailStarts'), startsAt, { last: true })}
-    ${button({ href: eventsUrl, label: t('eventJoined.buttonLabel') })}
+    ${button({ href: eventUrl, label: t('eventJoined.buttonLabel') })}
     ${divider()}
     ${note(t('eventJoined.note'))}
   `);

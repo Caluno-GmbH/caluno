@@ -149,12 +149,7 @@ export class DocumentSigningService {
     }
 
     const rootUnit =
-      await this.organizationService.findRootUnit(organizationId);
-    if (!rootUnit) {
-      throw new NotFoundGraphQLError(
-        `No root organization unit found for organization ${organizationId}`,
-      );
-    }
+      await this.organizationService.requireRootUnit(organizationId);
 
     const eligibleUsers = await this.authService.findUsersWithPermission(
       rootUnit.id,

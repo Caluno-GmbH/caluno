@@ -7,6 +7,7 @@ import {
   Clock,
   Clock10Icon,
   FileText,
+  Inbox,
   LockKeyholeOpen,
   MapPin,
   User,
@@ -16,7 +17,10 @@ import { getTranslations } from 'next-intl/server';
 import { DetailCoverImage } from '@/components/detail-entity-image';
 import { UserCard } from '@/components/user-card';
 import { ShiftRequiredFormsPopover } from '@/domain/shift/components/shift-required-forms-popover';
-import { getVisibilityConfig } from '@/domain/shift/components/shifts-table';
+import {
+  getApprovalConfig,
+  getVisibilityConfig,
+} from '@/domain/shift/components/shifts-table';
 import { parseShiftListQuery } from '@/domain/shift/routes';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
@@ -47,6 +51,8 @@ export default async function ShiftViewPage({
   if (!shift) {
     notFound();
   }
+
+  const approvalConfig = getApprovalConfig(t, shift.joinRequiresApproval);
 
   const startsAt = new Date(shift.originalStartsAt);
   const endsAt = new Date(startsAt.getTime() + shift.durationMinutes * 60000);
@@ -125,6 +131,18 @@ export default async function ShiftViewPage({
                   <dd className="ml-6">
                     <Badge variant={visibilityConfig[shift.visibility].variant}>
                       {visibilityConfig[shift.visibility].label}
+                    </Badge>
+                  </dd>
+                </div>
+
+                <div>
+                  <dt className="text-muted-foreground mb-2 flex gap-2 items-center">
+                    <Inbox className="size-4 shrink-0" />{' '}
+                    {t('detail.approvalLabel')}
+                  </dt>
+                  <dd className="ml-6">
+                    <Badge variant={approvalConfig.variant}>
+                      {approvalConfig.label}
                     </Badge>
                   </dd>
                 </div>

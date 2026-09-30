@@ -21,11 +21,14 @@ describe('deriveEditableFields', () => {
     expect(ids).toContain('contract-lifespan');
     expect(ids).toContain('hours-amount');
 
+    expect(ids).toContain('volunteer-street-field');
+    expect(ids).toContain('volunteer-zip-field');
+    expect(ids).toContain('volunteer-city-field');
+
     // No invented ids that aren't bound by the template (e.g. a bare `dob`
     // key, or the disabled optional address/dob/freeform lines).
     expect(ids).not.toContain('dob');
     expect(ids).not.toContain('volunteer-dob-field');
-    expect(ids).not.toContain('volunteer-address-field');
     expect(ids).not.toContain('freeform-text');
   });
 
@@ -58,6 +61,18 @@ describe('deriveEditableFields', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'));
     const ids = fields.map((f) => f.fieldId);
     expect(ids.filter((id) => id === 'contract-lifespan')).toHaveLength(1);
+  });
+
+  // VOLI-1370: the per-contract modal must render a period picker for the
+  // Zeitraum field, which it can only do if the template's `control` survives.
+  it('carries the manual field control (period) through to the modal', () => {
+    const fields = deriveEditableFields(getContractDocument('ehrenamt'));
+    const lifespan = fields.find((f) => f.fieldId === 'contract-lifespan');
+    expect(lifespan?.kind).toBe('manual');
+    expect(lifespan?.control).toBe('period');
+
+    const hoursUnit = fields.find((f) => f.fieldId === 'hours-unit');
+    expect(hoursUnit?.control).toBe('unit-tabs');
   });
 
   it('carries every field id bound to a source, not just the first', () => {
@@ -102,7 +117,7 @@ describe('deriveEditableFields', () => {
     const fields = deriveEditableFields(getInvoiceDocument('ehrenamt'));
     const sources = fields.map((f) => f.source);
     expect(sources).not.toContain('org_name');
-    expect(sources).not.toContain('org_address');
+    expect(sources).not.toContain('org_street');
     expect(sources).not.toContain('org_city');
     expect(sources).not.toContain('generated_date');
     expect(sources).not.toContain('document_number');
@@ -114,7 +129,9 @@ describe('deriveEditableFields', () => {
     const sources = fields.map((f) => f.source);
     expect(sources).toContain('volunteer_first_name');
     expect(sources).toContain('volunteer_last_name');
-    expect(sources).toContain('volunteer_address');
+    expect(sources).toContain('volunteer_street');
+    expect(sources).toContain('volunteer_zip');
+    expect(sources).toContain('volunteer_city');
     expect(sources).toContain('volunteer_iban');
   });
 });

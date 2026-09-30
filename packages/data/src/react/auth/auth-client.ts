@@ -58,13 +58,26 @@ export function createAuthClient(baseURL: string): AuthClient {
     },
   });
 
-  const signOut = async (...args: Parameters<typeof client.signOut>) => {
+  // Better Auth returns a Proxy whose get trap ignores own properties set via
+  // Object.assign — so a wrapped `signOut` assigned onto the client is never
+  // called. Capture the real sign-out callable, then wrap the client in an
+  // outer Proxy that intercepts `signOut`.
+  const betterAuthSignOut = client.signOut;
+
+  const signOut = (async (...args: Parameters<typeof client.signOut>) => {
     clearLastVisitedOrg();
     clearLocaleCookie();
-    return await client.signOut(...args);
-  };
+    return await betterAuthSignOut(...args);
+  }) as typeof client.signOut;
 
-  return Object.assign(client, { signOut });
+  return new Proxy(client, {
+    get(target, prop, receiver) {
+      if (prop === 'signOut') {
+        return signOut;
+      }
+      return Reflect.get(target, prop, receiver);
+    },
+  }) as AuthClient;
 }
 
 export type { Session };

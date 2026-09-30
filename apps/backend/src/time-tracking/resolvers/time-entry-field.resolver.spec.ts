@@ -50,6 +50,7 @@ const shiftInstance = {
   overrideMaxVolunteers: null,
   overrideMinVolunteers: null,
   overrideReimbursementTypeId: null,
+  overrideJoinRequiresApproval: null,
   isException: false,
   isCancelled: false,
   cancelledBySync: false,

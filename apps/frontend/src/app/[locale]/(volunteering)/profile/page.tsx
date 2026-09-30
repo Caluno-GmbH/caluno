@@ -74,7 +74,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </Link>
             </Button>
           </div>
-          <PersonalInformationSection user={me} profile={profile ?? null} />
+          <PersonalInformationSection profile={profile ?? null} />
         </section>
 
         <hr className="border-t border-border my-6" />

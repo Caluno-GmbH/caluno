@@ -36,20 +36,25 @@ function makeInstance(
 type SetupOptions = {
   recipientPreferences?: Record<string, { emailUrgentCallsEnabled?: boolean }>;
   members?: Array<{ id: string }>;
+  managers?: Array<{ id: string }>;
   instanceInvites?: Array<{ userId: string; status: ShiftInviteStatus }>;
   seriesInvites?: Array<{ userId: string; status: ShiftInviteStatus }>;
   visibility?: ShiftVisibility;
+  failEmailSend?: boolean;
 };
 
 function setup({
   recipientPreferences = {},
   members = [{ id: 'vol-1' }, { id: 'vol-2' }, { id: 'vol-3' }],
+  managers = [{ id: 'manager-1' }],
   instanceInvites = [],
   seriesInvites = [],
   visibility = ShiftVisibility.ALL_MEMBERS,
+  failEmailSend = false,
 }: SetupOptions = {}) {
   const insertedRows: Array<Record<string, unknown>> = [];
   const sentEmails: Array<{ to: string; subject: string; html: string }> = [];
+  const resolvedUserIds: string[] = [];
 
   let selectIndex = 0;
   const db = {
@@ -81,9 +86,7 @@ function setup({
   };
 
   const authService = {
-    findUsersWithPermission: async () => [
-      { id: 'manager-1', email: 'manager@example.com', name: 'Manager One' },
-    ],
+    findUsersWithPermission: async () => managers,
   };
 
   const membershipService = {
@@ -91,20 +94,36 @@ function setup({
   };
 
   const notificationService = {
-    resolveUsersNotificationData: async (userIds: string[]) =>
-      userIds.map((userId) => ({
+    resolveUsersNotificationData: async (userIds: string[]) => {
+      resolvedUserIds.push(...userIds);
+      return userIds.map((userId) => ({
         userId,
         email: `${userId}@example.com`,
         name: userId,
         firstName: userId,
         locale: 'en',
         ...recipientPreferences[userId],
-      })),
+      }));
+    },
+    resolveUserNotificationData: async (userId: string) => {
+      resolvedUserIds.push(userId);
+      return {
+        userId,
+        email: `${userId}@example.com`,
+        name: userId,
+        firstName: userId,
+        locale: 'en',
+        ...recipientPreferences[userId],
+      };
+    },
     filterRecipientsByEmailPreferences: filterRecipientsForEvent,
   };
 
   const emailService = {
     send: async (options: { to: string; subject: string; html: string }) => {
+      if (failEmailSend) {
+        throw new Error('transport down');
+      }
       sentEmails.push(options);
     },
   };
@@ -128,7 +147,7 @@ function setup({
     postHogService as never,
   );
 
-  return { service, insertedRows, sentEmails };
+  return { service, insertedRows, sentEmails, resolvedUserIds };
 }
 
 describe('ShiftCallOutService.sendCallOut', () => {
@@ -207,6 +226,59 @@ describe('ShiftCallOutService.sendCallOut', () => {
     for (const row of insertedRows) {
       expect(row.source).toBe(ShiftCallOutSource.AUTOMATIC);
     }
+  });
+
+  it('emails the unit managers — never the synthetic actor — when an automatic call-out has nobody left to ask', async () => {
+    const { service, sentEmails, insertedRows, resolvedUserIds } = setup({
+      members: [],
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'system-automated',
+      { source: ShiftCallOutSource.AUTOMATIC },
+    );
+
+    expect(result).toEqual({ recipientCount: 0, sentToManagerFallback: true });
+    expect(resolvedUserIds).toEqual(['manager-1']);
+    expect(sentEmails.map((email) => email.to)).toEqual([
+      'manager-1@example.com',
+    ]);
+    expect(insertedRows).toEqual([]);
+  });
+
+  it('does not attempt to email anyone when a call-out has nobody left to ask and no managers exist', async () => {
+    const { service, sentEmails, resolvedUserIds } = setup({
+      members: [],
+      managers: [],
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result).toEqual({ recipientCount: 0, sentToManagerFallback: false });
+    expect(resolvedUserIds).toEqual([]);
+    expect(sentEmails).toEqual([]);
+  });
+
+  it('does not claim a manager was notified when the notification email fails', async () => {
+    const { service, sentEmails } = setup({
+      members: [],
+      failEmailSend: true,
+    });
+
+    const result = await service.sendCallOut(
+      INSTANCE_ID,
+      ORG_UNIT_ID,
+      'actor-1',
+    );
+
+    expect(result).toEqual({ recipientCount: 0, sentToManagerFallback: false });
+    expect(sentEmails).toEqual([]);
   });
 
   it('for ALL_MEMBERS shifts, emails members without an invite or with re-askable invite statuses only', async () => {

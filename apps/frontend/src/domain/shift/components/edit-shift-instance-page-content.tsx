@@ -29,12 +29,16 @@ export async function EditShiftInstancePageContent({
   return (
     <EditShiftInstanceForm
       orgUId={orgUId}
+      instanceId={instanceId}
       shift={{
         id: shift.id,
         title: shift.title,
         isRecurring:
           Boolean(shift.rrule) && !isSingleOccurrenceRrule(shift.rrule),
       }}
+      joinRequiresApproval={
+        instance.overrideJoinRequiresApproval ?? shift.joinRequiresApproval
+      }
       initialValues={{
         name: instance.overrideTitle ?? shift.title,
         startsAt: new Date(instance.actualStartsAt),

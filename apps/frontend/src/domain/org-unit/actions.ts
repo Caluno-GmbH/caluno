@@ -32,9 +32,9 @@ export const createOrgUnit = actionClient
       phone: parsedInput.phone || null,
       welcomeMessage: parsedInput.welcomeMessage || null,
       description: parsedInput.description || null,
-      address: parsedInput.address || null,
-      city: parsedInput.city || null,
+      street: parsedInput.street || null,
       zipCode: parsedInput.zipCode || null,
+      city: parsedInput.city || null,
       legalRep: parsedInput.legalRep || null,
     };
 
@@ -60,9 +60,9 @@ export const updateOrgUnit = actionClient
       phone: parsedInput.phone || null,
       welcomeMessage: parsedInput.welcomeMessage || null,
       description: parsedInput.description || null,
-      address: parsedInput.address || null,
-      city: parsedInput.city || null,
+      street: parsedInput.street || null,
       zipCode: parsedInput.zipCode || null,
+      city: parsedInput.city || null,
       legalRep: parsedInput.legalRep || null,
     };
 

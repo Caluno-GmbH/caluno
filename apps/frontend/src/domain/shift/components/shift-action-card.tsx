@@ -34,6 +34,8 @@ interface ShiftActionCardProps {
   membershipState: JoinStatus;
   /** Master capacity, used when the instance has no override. */
   masterMaxVolunteers?: number | null;
+  /** Master approval requirement, used when the instance has no override. */
+  masterJoinRequiresApproval: boolean;
   /** Required forms configured on the shift itself. */
   shiftRequiredForms?: RequiredForm[];
   /** Required forms configured on the shift's organization unit. */
@@ -54,6 +56,7 @@ export function ShiftActionCard({
   preselectedInstanceId,
   membershipState,
   masterMaxVolunteers,
+  masterJoinRequiresApproval,
   shiftRequiredForms = [],
   organizationUnitRequiredForms = [],
 }: ShiftActionCardProps) {
@@ -92,6 +95,8 @@ export function ShiftActionCard({
   const isRecurring = instances.length > 1;
   const max =
     selected.overrideMaxVolunteers ?? masterMaxVolunteers ?? undefined;
+  const requiresApproval =
+    selected.overrideJoinRequiresApproval ?? masterJoinRequiresApproval;
   const inviteStatus =
     inviteStatusOverrides[selected.id] ?? selected.myInviteStatus ?? null;
   const effectiveMembershipState = membershipStateOverride ?? membershipState;
@@ -141,7 +146,9 @@ export function ShiftActionCard({
           ? showWaitlistCta
             ? t('waitlistNote')
             : t('fullNote')
-          : t('signUpNote');
+          : requiresApproval
+            ? t('signUpApprovalNote')
+            : t('signUpNote');
     }
   };
 

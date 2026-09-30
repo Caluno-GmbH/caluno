@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { eq } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
@@ -16,6 +17,7 @@ import { DocumentTemplateService } from '../src/accounting/services/document-tem
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
+import * as schema from '../src/database/schema';
 import {
   ConflictGraphQLError,
   ForbiddenGraphQLError,
@@ -160,6 +162,48 @@ describe('ContractService', () => {
       volunteer,
     };
   };
+
+  describe('findContract', () => {
+    it('returns signatures in signing order regardless of insertion order', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      // Rewrite rows coordinator-first: same `order` values, reversed
+      // physical insertion order (VOLI-1347).
+      const rows = await db.query.contractSignatures.findMany({
+        where: { contractId: contract.id },
+      });
+      await db
+        .delete(schema.contractSignatures)
+        .where(eq(schema.contractSignatures.contractId, contract.id));
+      for (const row of [...rows].reverse()) {
+        await db.insert(schema.contractSignatures).values({
+          contractId: row.contractId,
+          order: row.order,
+          signeeType: row.signeeType,
+          requiredPermissionId: row.requiredPermissionId,
+        });
+      }
+
+      const found = await service.findContract(contract.id);
+      expect(found.signatures.map((s) => s.order)).toEqual([0, 1]);
+      expect(found.signatures.map((s) => s.signeeType)).toEqual([
+        SigneeType.VOLUNTEER,
+        SigneeType.PERMISSION_HOLDER,
+      ]);
+    });
+  });
 
   describe('createContract', () => {
     it('starts at the first signee step and records a CREATED event', async () => {
@@ -392,6 +436,70 @@ describe('ContractService', () => {
       });
       expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
     });
+
+    // VOLI-1370: a contract issued for one month must not stop the system
+    // from queuing one for a later, uncovered month.
+    it('queues a draft for a month no existing contract covers', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          // August 2026 as Berlin bounds.
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      const draft = await service.ensureDraftContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2026-09-15T12:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+      // VOLI-1370: the draft is scoped to the uncovered month, not the year.
+      expect(draft?.periodStart).toEqual(new Date('2026-08-31T22:00:00.000Z'));
+      expect(draft?.periodEnd).toEqual(new Date('2026-09-30T22:00:00.000Z'));
+    });
+
+    it('does not queue a draft when an existing contract covers the anchor date', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      const draft = await service.ensureDraftContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          anchorDate: new Date('2026-08-15T12:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      expect(draft).toBeUndefined();
+    });
   });
 
   describe('signContract', () => {
@@ -611,6 +719,59 @@ describe('ContractService', () => {
         reimbursementType.id,
       );
       expect(active?.id).toBe(contract.id);
+    });
+
+    // VOLI-1370: a month-scoped contract only covers its own month.
+    it('only covers the target period the contract states', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          // August 2026 as Berlin bounds.
+          periodStart: new Date('2026-07-31T22:00:00.000Z'),
+          periodEnd: new Date('2026-08-31T22:00:00.000Z'),
+        },
+        signer.id,
+      );
+      await service.signContract(contract.id, volunteer.id);
+      await service.signContract(contract.id, signer.id);
+
+      const august = await service.findActiveContract(
+        volunteer.id,
+        reimbursementType.id,
+        {
+          // August 2026 as Berlin bounds.
+          start: new Date('2026-07-31T22:00:00.000Z'),
+          end: new Date('2026-08-31T22:00:00.000Z'),
+        },
+      );
+      expect(august?.id).toBe(contract.id);
+
+      const september = await service.findActiveContract(
+        volunteer.id,
+        reimbursementType.id,
+        {
+          start: new Date('2026-08-31T22:00:00.000Z'),
+          end: new Date('2026-09-30T22:00:00.000Z'),
+        },
+      );
+      expect(september).toBeUndefined();
+
+      // Overlap is not cover: a two-month (August–September) timesheet is not
+      // fully covered by an August-only contract.
+      const twoMonths = await service.findActiveContract(
+        volunteer.id,
+        reimbursementType.id,
+        {
+          start: new Date('2026-07-31T22:00:00.000Z'),
+          end: new Date('2026-09-30T22:00:00.000Z'),
+        },
+      );
+      expect(twoMonths).toBeUndefined();
     });
   });
 

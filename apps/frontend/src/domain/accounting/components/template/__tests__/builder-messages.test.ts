@@ -17,7 +17,7 @@ const ALL_SOURCES = [...ALWAYS_AVAILABLE_SOURCES, ...PROFILE_REQUIRED_SOURCES];
 
 function manualFieldIds(doc: TemplateDocument): string[] {
   const lines = [
-    doc.header.orgIdentityLine,
+    ...(doc.header.orgIdentityLine ? [doc.header.orgIdentityLine] : []),
     ...(doc.header.metaLines ?? []),
     ...doc.blocks.flatMap((block) =>
       block.kind === 'text' ? block.lines : [],

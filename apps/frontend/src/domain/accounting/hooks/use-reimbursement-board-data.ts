@@ -61,13 +61,14 @@ export function useReimbursementBoardData({
       eligibleHoursVolunteers.set(entry.volunteer.id, types);
     }
     // Volunteer id -> reimbursement type ids they signed up to a paid shift
-    // for but have no contract/invoice yet.
-    const paidShiftVolunteers = new Map<string, Set<string>>();
-    for (const entry of paidShiftQuery.data ?? []) {
-      const types = paidShiftVolunteers.get(entry.volunteer.id) ?? new Set();
-      types.add(entry.reimbursementType.id);
-      paidShiftVolunteers.set(entry.volunteer.id, types);
-    }
+    // for but have no contract/invoice covering that shift's month. The
+    // backend scopes each row to the uncovered month.
+    const paidShiftSignups = (paidShiftQuery.data ?? []).map((entry) => ({
+      volunteerId: entry.volunteer.id,
+      reimbursementTypeId: entry.reimbursementType.id,
+      periodStart: entry.periodStart,
+      periodEnd: entry.periodEnd,
+    }));
     return buildBoardVolunteers({
       rosterUsage: rosterQuery.data,
       contracts: contractsQuery.data ?? [],
@@ -76,7 +77,7 @@ export function useReimbursementBoardData({
       locale,
       dateRange,
       eligibleHoursVolunteers,
-      paidShiftVolunteers,
+      paidShiftSignups,
       timesheetsToCreate: (needsTimesheetQuery.data ?? []).map((row) => ({
         volunteerId: row.volunteer.id,
         reimbursementTypeId: row.reimbursementType.id,

@@ -8,6 +8,7 @@ import {
   type AvailableShiftInstance,
   type DiscoverEvent,
   useAvailableEventsInfinite,
+  useAvailableShiftInstanceDayCounts,
   useAvailableShiftInstancesInfinite,
 } from '@repo/data/react';
 import {
@@ -25,7 +26,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { usePathname, useRouter } from '@/i18n/navigation';
 import {
-  getDayStripDays,
+  getDayStripDaysFromCounts,
   getDiscoverWindow,
   groupByDay,
 } from '../lib/date-helpers';
@@ -96,9 +97,15 @@ export function DiscoverView({
     return shiftData.pages.flatMap((page) => page.items);
   }, [shiftData]);
 
+  const { data: availableShiftDayCounts } =
+    useAvailableShiftInstanceDayCounts(discoverOptions);
+
   const dayStrip = useMemo(
-    () => getDayStripDays(availableShiftList, { minDays: 7 }),
-    [availableShiftList],
+    () =>
+      getDayStripDaysFromCounts(availableShiftDayCounts ?? [], {
+        minDays: 7,
+      }),
+    [availableShiftDayCounts],
   );
   const grouped = useMemo(
     () => groupByDay(availableShiftList),
@@ -210,6 +217,10 @@ export function DiscoverView({
       days={dayStrip}
       groups={grouped}
       hasContent={availableShiftList.length > 0}
+      stripHasNext={hasNextShiftsPage}
+      onStripNext={() => {
+        if (!isFetchingShifts) fetchNextShiftsPage();
+      }}
       loading={
         <div className="space-y-3">
           <Skeleton className="h-24 w-full rounded-xl" />

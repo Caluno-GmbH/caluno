@@ -6,7 +6,11 @@ import {
   type InvoiceSummary,
   SigneeType,
 } from '@repo/data';
-import { billingMonthOf } from './billing-period';
+import {
+  billingMonthOf,
+  contractPeriodKind,
+  isContractExpired,
+} from './billing-period';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 
@@ -165,17 +169,22 @@ export function documentLines(args: {
 // ─── Period labels ────────────────────────────────────────────────────────────
 
 /**
- * "2026" for a year-long agreement; "Juli 2026" for a monthly timesheet.
- * Accepts an injected formatter so callers control the locale.
+ * "2026" for a year-long agreement, "August 2026" for a month-scoped one; a
+ * timesheet is always labelled by its month. Accepts an injected formatter so
+ * callers control the locale. `periodEnd` is what distinguishes a month
+ * agreement from a year one (VOLI-1370); without it the year is used.
  */
 export function periodLabel(
   kind: VolunteerDocumentKind,
   periodStart: string,
   formatMonth: (date: Date) => string,
+  periodEnd?: string,
 ): string {
-  return kind === 'contract'
-    ? String(billingMonthOf(periodStart).year)
-    : formatMonth(new Date(periodStart));
+  if (kind !== 'contract') return formatMonth(new Date(periodStart));
+  if (periodEnd && contractPeriodKind(periodStart, periodEnd) === 'month') {
+    return formatMonth(new Date(periodStart));
+  }
+  return String(billingMonthOf(periodStart).year);
 }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -255,11 +264,30 @@ export function canDecline(state: VolunteerDocumentState | null): boolean {
 
 // ─── Full mapping ─────────────────────────────────────────────────────────────
 
+/**
+ * A contract is only valid for the period it states; an ACTIVE contract whose
+ * period has ended reads as expired (VOLI-1370). Shared with the board via
+ * `isContractExpired`.
+ */
+function effectiveContractStatus(
+  contract: Pick<ContractSummary, 'contractStatus' | 'periodEnd'>,
+  referenceDate: Date,
+): ContractStatus {
+  return isContractExpired(
+    contract.contractStatus,
+    contract.periodEnd,
+    referenceDate,
+  )
+    ? ContractStatus.Expired
+    : contract.contractStatus;
+}
+
 export function contractToVolunteerDocument(
   contract: ContractSummary,
   formatMonth: (date: Date) => string,
+  referenceDate: Date = new Date(),
 ): VolunteerDocument | null {
-  const state = documentState(contract.contractStatus);
+  const state = documentState(effectiveContractStatus(contract, referenceDate));
   if (!state) return null;
   const declinedAt = contract.declinedAt
     ? new Date(contract.declinedAt)
@@ -267,7 +295,12 @@ export function contractToVolunteerDocument(
   return {
     id: contract.id,
     kind: 'contract',
-    periodLabel: periodLabel('contract', contract.periodStart, formatMonth),
+    periodLabel: periodLabel(
+      'contract',
+      contract.periodStart,
+      formatMonth,
+      contract.periodEnd,
+    ),
     nameKey: 'agreement',
     state,
     lines: documentLines({

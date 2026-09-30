@@ -25,9 +25,9 @@ interface OrganizationProfileFormProps {
    */
   logoUrl?: string | null;
   organization: {
-    address?: string | null;
-    city?: string | null;
+    street?: string | null;
     zipCode?: string | null;
+    city?: string | null;
     legalRep?: string | null;
     contactEmail?: string | null;
     phone?: string | null;
@@ -58,9 +58,9 @@ export function OrganizationProfileForm({
       organizationId,
       organizationUnitId,
       rootUnitId,
-      address: organization.address ?? '',
-      city: organization.city ?? '',
+      street: organization.street ?? '',
       zipCode: organization.zipCode ?? '',
+      city: organization.city ?? '',
       legalRep: organization.legalRep ?? '',
       contactEmail: organization.contactEmail ?? '',
       phone: organization.phone ?? '',
@@ -98,30 +98,18 @@ export function OrganizationProfileForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-4 rounded-lg border bg-card p-6">
         <Field>
-          <FieldLabel htmlFor="address">{t('addressLabel')}</FieldLabel>
+          <FieldLabel htmlFor="street">{t('streetLabel')}</FieldLabel>
           <Input
-            id="address"
-            placeholder={t('addressPlaceholder')}
+            id="street"
+            placeholder={t('streetPlaceholder')}
             disabled={isPending}
-            aria-invalid={!!errors.address}
-            {...register('address')}
+            aria-invalid={!!errors.street}
+            {...register('street')}
           />
-          {errors.address && <FieldError>{errors.address.message}</FieldError>}
+          {errors.street && <FieldError>{errors.street.message}</FieldError>}
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field>
-            <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
-            <Input
-              id="city"
-              placeholder={t('cityPlaceholder')}
-              disabled={isPending}
-              aria-invalid={!!errors.city}
-              {...register('city')}
-            />
-            {errors.city && <FieldError>{errors.city.message}</FieldError>}
-          </Field>
-
           <Field>
             <FieldLabel htmlFor="zipCode">{t('zipCodeLabel')}</FieldLabel>
             <Input
@@ -134,6 +122,18 @@ export function OrganizationProfileForm({
             {errors.zipCode && (
               <FieldError>{errors.zipCode.message}</FieldError>
             )}
+          </Field>
+
+          <Field>
+            <FieldLabel htmlFor="city">{t('cityLabel')}</FieldLabel>
+            <Input
+              id="city"
+              placeholder={t('cityPlaceholder')}
+              disabled={isPending}
+              aria-invalid={!!errors.city}
+              {...register('city')}
+            />
+            {errors.city && <FieldError>{errors.city.message}</FieldError>}
           </Field>
         </div>
 

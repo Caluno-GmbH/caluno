@@ -2,9 +2,9 @@ import type { Database } from '../../database/database.module';
 
 /** Org details a document renders and the accounting gates require. */
 export const INHERITED_ORG_PROFILE_COLUMNS = [
-  'address',
-  'city',
+  'street',
   'zipCode',
+  'city',
   'legalRep',
 ] as const;
 
@@ -42,9 +42,9 @@ export function resolveOrgProfileFromUnits(
   const profile: ResolvedOrgProfile = {
     id: unit.id,
     name: unit.name,
-    address: null,
-    city: null,
+    street: null,
     zipCode: null,
+    city: null,
     legalRep: null,
   };
   const fillFrom = (row: UnitRow) => {

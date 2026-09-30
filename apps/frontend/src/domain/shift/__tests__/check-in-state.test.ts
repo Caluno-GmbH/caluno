@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  acceptedRowActions,
   type CheckInTimeEntry,
+  canRemoveAcceptedRow,
   deriveAcceptedRowState,
   formatCheckedOutWindows,
   groupTimeEntriesByVolunteer,
@@ -39,9 +41,9 @@ describe('groupTimeEntriesByVolunteer', () => {
 });
 
 describe('deriveAcceptedRowState', () => {
-  it('returns not_checked_in when there are no entries', () => {
-    expect(deriveAcceptedRowState(undefined)).toBe('not_checked_in');
-    expect(deriveAcceptedRowState([])).toBe('not_checked_in');
+  it('returns accepted when there are no entries', () => {
+    expect(deriveAcceptedRowState(undefined)).toBe('accepted');
+    expect(deriveAcceptedRowState([])).toBe('accepted');
   });
 
   it('returns checked_in when there is an open entry', () => {
@@ -165,5 +167,45 @@ describe('formatCheckedOutWindows', () => {
 
     expect(result.lines).toHaveLength(5);
     expect(result.overflowCount).toBe(2);
+  });
+});
+
+describe('acceptedRowActions', () => {
+  it('offers Check in for an accepted row that has not checked in', () => {
+    expect(acceptedRowActions('accepted', true)).toEqual(['Check in']);
+  });
+
+  it('offers Check out for a checked-in row', () => {
+    expect(acceptedRowActions('checked_in', true)).toEqual(['Check out']);
+  });
+
+  it('offers Check in again for a checked-out row', () => {
+    expect(acceptedRowActions('checked_out', true)).toEqual(['Check in']);
+  });
+
+  it('offers nothing when the viewer lacks CHECK_IN_MANAGE, regardless of state', () => {
+    expect(acceptedRowActions('accepted', false)).toEqual([]);
+    expect(acceptedRowActions('checked_in', false)).toEqual([]);
+    expect(acceptedRowActions('checked_out', false)).toEqual([]);
+  });
+});
+
+describe('canRemoveAcceptedRow', () => {
+  it('allows removal for a plain accepted row with no time entry', () => {
+    expect(canRemoveAcceptedRow('accepted')).toBe(true);
+  });
+
+  it('forbids removal once the volunteer is checked in', () => {
+    expect(canRemoveAcceptedRow('checked_in')).toBe(false);
+  });
+
+  it('forbids removal after the volunteer has checked out', () => {
+    expect(canRemoveAcceptedRow('checked_out')).toBe(false);
+  });
+
+  it('allows removal when the row has no accepted check-in state at all', () => {
+    // e.g. an invited/waitlisted row, which never computes an
+    // AcceptedRowCheckInState in the panel.
+    expect(canRemoveAcceptedRow(null)).toBe(true);
   });
 });

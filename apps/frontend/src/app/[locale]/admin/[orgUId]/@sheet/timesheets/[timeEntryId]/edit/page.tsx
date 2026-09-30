@@ -31,6 +31,7 @@ export default async function TimeEntryUpdatePage({
       organizationUnitId={orgUId}
       volunteers={allVolunteers}
       mutate={updateTimeEntry.bind(null, entry.id)}
+      isEdit
       initialValues={{
         hasShift: !!entry.shiftInstance,
         shiftInstanceId: entry.shiftInstance?.id ?? '',

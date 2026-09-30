@@ -163,6 +163,10 @@ export default async function ShiftInstanceDetailPage({
             }
             rrule={instance.master.rrule}
             visibility={instance.master.visibility}
+            joinRequiresApproval={
+              instance.overrideJoinRequiresApproval ??
+              instance.master.joinRequiresApproval
+            }
             filledCount={instance.filledCount}
             maxVolunteers={
               instance.overrideMaxVolunteers ?? instance.master.maxVolunteers
@@ -187,7 +191,6 @@ export default async function ShiftInstanceDetailPage({
         instanceId={instanceId}
         invites={instance.invites ?? []}
         timeEntries={instance.timeEntries ?? []}
-        spotsLeft={instance.spotsLeft}
         filledCount={instance.filledCount}
         maxVolunteers={
           instance.overrideMaxVolunteers ?? instance.master.maxVolunteers

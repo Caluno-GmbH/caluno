@@ -206,7 +206,7 @@
     "whenRange": "{date} · {timeRange}"
   },
   "shiftInstanceInvited": {
-    "buttonLabel": "Einsatz ansehen",
+    "buttonLabel": "Einladung annehmen oder ablehnen",
     "detailInstructions": "Beschreibung",
     "detailLocation": "Ort",
     "detailOrganization": "Organisation",
@@ -215,7 +215,7 @@
     "footerNote": "Du erhältst diese E-Mail, weil du zu einem Einsatz auf {brandName} eingeladen wurdest.",
     "greeting": "Hallo {firstName}, du bist zu einem Einsatz eingeladen.",
     "heading": "Du bist zu einem Einsatz eingeladen",
-    "note": "Öffne den Einsatz, um alle Details und deinen Plan zu sehen.",
+    "note": "Du wurdest persönlich zu diesem Einsatz eingeladen. Bitte nimm die Einladung an oder lehne sie ab.",
     "previewText": "Du bist zu {shiftTitle} bei {organizationName} eingeladen.",
     "subject": "Du bist zu {shiftTitle} eingeladen",
     "whenRange": "{date} · {timeRange}"
@@ -261,7 +261,7 @@
     "subject": "{shiftTitle}: {volunteerName} möchte beitreten"
   },
   "shiftInstanceReminded": {
-    "buttonLabel": "Einsatz ansehen",
+    "buttonLabel": "Einladung annehmen oder ablehnen",
     "detailInstructions": "Beschreibung",
     "detailLocation": "Ort",
     "detailOrganization": "Organisation",
@@ -270,7 +270,7 @@
     "footerNote": "Du erhältst diese E-Mail, weil du zu einem Einsatz auf {brandName} eingeladen wurdest.",
     "greeting": "Hallo {firstName}, eine kurze Erinnerung an deine Einsatz-Einladung.",
     "heading": "Erinnerung: Du bist zu einem Einsatz eingeladen",
-    "note": "Öffne den Einsatz, um die Details zu sehen und an- oder abzusagen.",
+    "note": "Öffne den Einsatz, um die Details zu sehen und die Einladung anzunehmen oder abzulehnen.",
     "previewText": "Kurze Erinnerung: Du bist zu {shiftTitle} bei {organizationName} eingeladen.",
     "subject": "Erinnerung: Du bist zu {shiftTitle} eingeladen",
     "whenRange": "{date} · {timeRange}"
@@ -435,7 +435,7 @@
     "updated": "aktualisiert"
   },
   "shiftInvited": {
-    "buttonLabel": "Einsatz ansehen",
+    "buttonLabel": "Einladung annehmen oder ablehnen",
     "detailInstructions": "Beschreibung",
     "detailLocation": "Ort",
     "detailOrganization": "Organisation",
@@ -448,7 +448,7 @@
     "greeting": "Hallo {firstName}, du bist zu einem Einsatz eingeladen.",
     "greetingRecurring": "Hallo {firstName}, du bist zu einem wiederkehrenden Einsatz eingeladen.",
     "heading": "Du bist zu einem Einsatz eingeladen",
-    "note": "Öffne den Einsatz, um den vollständigen Plan zu sehen.",
+    "note": "Du wurdest persönlich zu diesem Einsatz eingeladen. Bitte nimm die Einladung an oder lehne sie ab.",
     "noteRecurring": "Die Einladung gilt für alle oben genannten Termine.",
     "periodOpenWithCount": "Ab {startDate} · {count, plural, one {# Einsatz} other {# Einsätze}}",
     "periodWithCount": "{startDate} – {endDate} · {count, plural, one {# Einsatz} other {# Einsätze}}",
@@ -501,7 +501,7 @@
     "whenRange": "{date} · {timeRange}",
     "detailStaffing": "Besetzung",
     "staffingValue": "{filledCount} von {minVolunteers} bestätigt",
-    "noticeNotified": "Wir haben bereits {count} Freiwillige um Hilfe gebeten. Hier ist erstmal nichts weiter zu tun.",
+    "noticeNotified": "Wir haben bereits {count, plural, one {# Freiwillige:n} other {# Freiwillige}} um Hilfe gebeten. Hier ist erstmal nichts weiter zu tun.",
     "noticeNoneAvailable": "Wir konnten niemanden mehr automatisch benachrichtigen. Vielleicht fragst du direkt nach.",
     "buttonLabel": "Einsatz ansehen",
     "subject": "{shiftTitle} braucht noch Freiwillige",

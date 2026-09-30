@@ -20,9 +20,14 @@ describe('resolveRequestLocale', () => {
 
   it.each([
     ['de', 'de'],
+    ['en', 'en'],
+    ['en-US', 'en'],
+    ['de-DE', 'de'],
     ['en-US,en;q=0.9,de;q=0.8', 'en'],
     ['de-DE,de;q=0.9,en-US;q=0.7', 'de'],
     ['fr,de;q=0.9', 'de'],
+    ['fr', 'de'],
+    ['fr,nl;q=0.9', 'de'],
   ] satisfies Array<[string, Locale]>)(
     'uses Accept-Language %s',
     (header, expected) => {
@@ -43,6 +48,7 @@ describe('resolveRequestLocale', () => {
 
   it('falls back to the default locale when no supported locale is present', () => {
     expect(resolveRequestLocale({ 'x-locale': 'fr' })).toBe(DEFAULT_LOCALE);
+    expect(resolveRequestLocale({})).toBe('de');
   });
 });
 

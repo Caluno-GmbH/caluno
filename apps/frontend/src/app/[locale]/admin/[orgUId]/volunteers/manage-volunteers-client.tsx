@@ -123,6 +123,9 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
                         volunteerStatus: MembershipRequestStatus.Accepted,
                         volunteerEmail: membership.user.email,
                         volunteerCheckInId: membership.user.checkInId,
+                        // Managing membership is the point of this screen, so
+                        // this is the one place that offers removal.
+                        canRemoveMembership: 'true',
                       })
                     }
                   >
