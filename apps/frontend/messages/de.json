@@ -1773,6 +1773,7 @@
     "pickDayLabel": "Wähle einen Tag",
     "respondBeforeNote": "Antworte bis {date}. Du kannst es dir bis zum Einsatzbeginn anders überlegen.",
     "signUpCta": "Anmelden für {date}",
+    "signUpApprovalNote": "Nach der Anmeldung prüft die Administration deine Anfrage.",
     "signUpNote": "Du kannst jederzeit absagen.",
     "spotsFree": "· {n} frei",
     "spotsFull": "· voll besetzt",
