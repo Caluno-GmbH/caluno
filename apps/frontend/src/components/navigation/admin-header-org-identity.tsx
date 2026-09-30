@@ -11,8 +11,6 @@ export function AdminHeaderOrgIdentity({
   name,
   logoUrl,
 }: AdminHeaderOrgIdentityProps) {
-  const unitName = headerUnitName(name);
-
   return (
     <div className="flex min-w-0 items-center gap-2">
       {logoUrl ? (
@@ -29,19 +27,12 @@ export function AdminHeaderOrgIdentity({
           aria-hidden
           className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold text-foreground"
         >
-          {getInitials(unitName)}
+          {getInitials(name)}
         </div>
       )}
       <span className="truncate text-lg font-semibold max-sm:sr-only">
-        {unitName}
+        {name}
       </span>
     </div>
   );
-}
-
-/** Switcher labels nested units as "Org › Unit"; the header shows the unit name. */
-function headerUnitName(name: string): string {
-  const separator = ' › ';
-  const index = name.lastIndexOf(separator);
-  return index === -1 ? name : name.slice(index + separator.length);
 }

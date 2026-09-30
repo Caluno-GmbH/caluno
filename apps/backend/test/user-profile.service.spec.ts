@@ -53,8 +53,69 @@ describe('UserProfileService.findByUserId', () => {
     });
   });
 
-  it('returns undefined when no profile exists', async () => {
+  it('returns a profile with email when no profile existed before', async () => {
     const user = await createUser(db);
-    expect(await userProfileService.findByUserId(user.id)).toBeUndefined();
+    const result = await userProfileService.findByUserId(user.id);
+    expect(result).not.toBeUndefined();
+    expect(result?.data).toEqual({
+      email: user.email,
+    });
+  });
+});
+
+describe('UserProfileService.ensureEmpty', () => {
+  let moduleRef: TestingModule;
+  let db: Database;
+  let userProfileService: UserProfileService;
+
+  beforeAll(async () => {
+    await ensureTestDatabase();
+    moduleRef = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+    }).compile();
+    db = moduleRef.get<Database>(DATABASE_CONNECTION);
+
+    userProfileService = new UserProfileService(db, {
+      capture: () => {},
+    } as unknown as PostHogService);
+
+    registerTestResourceCleanup(async () => {
+      await moduleRef.close();
+    });
+  });
+
+  it('creates an empty profile when missing', async () => {
+    const suffix = crypto.randomUUID();
+    const [user] = await db
+      .insert(schema.users)
+      .values({
+        id: `ensure-empty-${suffix}`,
+        name: `Ensure Empty ${suffix}`,
+        email: `ensure-empty-${suffix}@example.com`,
+      })
+      .returning();
+
+    await userProfileService.ensureEmptyProfile(user.id);
+    const profile = await db.query.userProfiles.findFirst({
+      where: { userId: user.id },
+    });
+
+    expect(profile?.userId).toBe(user.id);
+    expect(profile?.data).toEqual({});
+  });
+
+  it('is idempotent when a profile already exists', async () => {
+    const user = await createUser(db);
+    const data = { lastName: 'Kept' };
+    await db
+      .insert(schema.userProfiles)
+      .values({ userId: user.id, data: data });
+
+    await userProfileService.ensureEmptyProfile(user.id);
+    const profile = await db.query.userProfiles.findFirst({
+      where: { userId: user.id },
+    });
+
+    expect(profile?.data).toEqual(data);
   });
 });

@@ -3,34 +3,19 @@ import {
   LAST_ORG_COOKIE,
   type MyOrganizationUnit,
 } from '@repo/data';
+import type { OrgUnitContextData } from '@repo/data/react';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { getDataClient } from './data-client';
+import { getOrgUnitDisplayName } from './org-display-name';
 
-export interface OrgContextData {
-  id: string;
-  slug: string;
-  name: string;
-  description?: string | null;
-  logoUrl?: string | null;
-  street?: string | null;
-  zipCode?: string | null;
-  city?: string | null;
-  legalRep?: string | null;
-  organizationId: string;
-  accountingEnabled: boolean;
-}
-
-function normalizeUnits(units: MyOrganizationUnit[]): OrgContextData[] {
+function normalizeUnits(units: MyOrganizationUnit[]): OrgUnitContextData[] {
   return units
-    .map((unit) => {
-      const isRoot = unit.parent === null;
-      return {
+    .map((unit): OrgUnitContextData => {
+      const base = {
         id: unit.id,
         slug: unit.slug,
-        name: isRoot
-          ? unit.organization.name
-          : `${unit.organization.name} › ${unit.name}`,
+        name: unit.name,
         description: unit.description ?? unit.organization.description ?? null,
         logoUrl: unit.logoUrl ?? unit.organization.logoUrl ?? null,
         street: unit.street,
@@ -40,25 +25,36 @@ function normalizeUnits(units: MyOrganizationUnit[]): OrgContextData[] {
         organizationId: unit.organization.id,
         accountingEnabled: unit.organization.accountingEnabled,
       };
+      return unit.parent === null
+        ? { ...base, isRoot: true, rootOrganizationName: undefined }
+        : {
+            ...base,
+            isRoot: false,
+            rootOrganizationName: unit.organization.name,
+          };
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) =>
+      getOrgUnitDisplayName(a).localeCompare(getOrgUnitDisplayName(b)),
+    );
 }
 
-export async function getMyOrgUnits(): Promise<OrgContextData[]> {
+export async function getMyOrgUnits(): Promise<OrgUnitContextData[]> {
   const data = await getDataClient();
   const units = await data.organization.findMyOrganizationUnits();
 
   return normalizeUnits(units);
 }
 
-export async function getMyAdministrableOrgUnits(): Promise<OrgContextData[]> {
+export async function getMyAdministrableOrgUnits(): Promise<
+  OrgUnitContextData[]
+> {
   const data = await getDataClient();
   const units = await data.organization.findMyAdminstrableOrganizationUnits();
 
   return normalizeUnits(units);
 }
 
-export async function getMyCheckInOrgUnits(): Promise<OrgContextData[]> {
+export async function getMyCheckInOrgUnits(): Promise<OrgUnitContextData[]> {
   const data = await getDataClient();
   const units =
     await data.organization.findMyCheckInAdministrableOrganizationUnits();
@@ -81,7 +77,7 @@ export async function isAnAdminstrator() {
 
 export async function resolveOrgFromId(
   orgUId: string,
-): Promise<OrgContextData> {
+): Promise<OrgUnitContextData> {
   const organizations = await getMyAdministrableOrgUnits();
   const org =
     organizations.find((item) => item.id === orgUId) ??
@@ -94,7 +90,7 @@ export async function resolveOrgFromId(
 
 export async function resolveOrgFromSlug(
   orgSlug: string,
-): Promise<OrgContextData> {
+): Promise<OrgUnitContextData> {
   const organizations = await getMyAdministrableOrgUnits();
   const org = organizations.find((item) => item.slug === orgSlug);
   if (!org) {
@@ -112,7 +108,7 @@ export async function isMember(orgUId: string): Promise<boolean> {
 
 export async function requireOrgAccess(
   orgUId: string,
-): Promise<{ org: OrgContextData; organizations: OrgContextData[] }> {
+): Promise<{ org: OrgUnitContextData; organizations: OrgUnitContextData[] }> {
   const organizations = await getMyAdministrableOrgUnits();
   const org = organizations.find((item) => item.id === orgUId);
   const legacyOrg = organizations.find(
@@ -138,22 +134,29 @@ export async function requireOrgAccess(
     redirect('/unauthorized');
   }
 
-  return {
-    org: {
-      id: unit.id,
-      slug: unit.slug,
-      name: unit.name,
-      description: unit.description ?? null,
-      logoUrl: unit.logoUrl ?? null,
-      street: unit.street ?? null,
-      zipCode: unit.zipCode ?? null,
-      city: unit.city ?? null,
-      legalRep: unit.legalRep ?? null,
-      organizationId: unit.organizationId ?? '',
-      accountingEnabled: false,
-    },
-    organizations,
+  const base = {
+    id: unit.id,
+    slug: unit.slug,
+    name: unit.name,
+    description: unit.description ?? null,
+    logoUrl: unit.logoUrl ?? null,
+    street: unit.street ?? null,
+    zipCode: unit.zipCode ?? null,
+    city: unit.city ?? null,
+    legalRep: unit.legalRep ?? null,
+    organizationId: unit.organizationId ?? '',
+    accountingEnabled: false,
   };
+  const resolvedOrg: OrgUnitContextData =
+    unit.parent === null
+      ? { ...base, isRoot: true, rootOrganizationName: undefined }
+      : {
+          ...base,
+          isRoot: false,
+          rootOrganizationName: unit.organization.name,
+        };
+
+  return { org: resolvedOrg, organizations };
 }
 
 export async function getLastVisitedOrgServer(): Promise<string | null> {

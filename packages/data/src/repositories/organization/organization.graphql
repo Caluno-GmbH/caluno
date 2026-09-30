@@ -60,6 +60,10 @@ query GetOrganizationUnit($id: String!) {
     legalRep
     idVerificationEnabled
     organizationId
+    organization {
+      id
+      name
+    }
     requiredForms {
       form {
         id
