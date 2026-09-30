@@ -3,6 +3,9 @@ import { addDays, startOfWeek } from 'date-fns';
 
 export type TimeEntry = GetMyTimeQuery['myTime']['items'][number];
 
+export const WEEK_HEADER_FROM_FORMAT = 'd LLL';
+export const WEEK_HEADER_TO_FORMAT = 'd LLL y';
+
 export type EntryState = 'in-progress' | 'completed';
 
 export type WeekGroup = {

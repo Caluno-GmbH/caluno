@@ -4,7 +4,10 @@ import {
   getEntryState,
   groupMyTime,
   type TimeEntry,
+  WEEK_HEADER_FROM_FORMAT,
+  WEEK_HEADER_TO_FORMAT,
 } from '../my-time-grouping';
+import { formats } from '@/lib/formatting/formats';
 
 const entry = (
   over: Partial<TimeEntry> & { startedAt: string },
@@ -134,5 +137,26 @@ describe('groupMyTime', () => {
     expect(newer.weekStart.getTime()).toBeGreaterThan(
       older.weekStart.getTime(),
     );
+  });
+});
+
+describe('week header label', () => {
+  it('shows the calendar dates of the week containing the entry', () => {
+    const { weeks } = groupMyTime([
+      entry({
+        startedAt: '2026-09-15T12:18:00Z',
+        endedAt: '2026-09-15T12:21:00Z',
+      }),
+    ]);
+    const [week] = weeks;
+    expect(
+      formats('en').formatRange(
+        week.weekStart,
+        week.weekEnd,
+        '',
+        WEEK_HEADER_FROM_FORMAT,
+        WEEK_HEADER_TO_FORMAT,
+      ),
+    ).toBe('14 Sep - 20 Sep 2026');
   });
 });
