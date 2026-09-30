@@ -529,11 +529,22 @@
       "label": "Wann eingegriffen wird",
       "option": "{hours} Stunden vorher"
     },
+    "sendAt": {
+      "label": "Uhrzeit"
+    },
     "callOut": {
       "title": "Automatischer dringender Aufruf",
       "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Schichten ohne Mindestbesetzung sind nie betroffen.",
       "daysDescription": "Schichten an diesen Tagen können einen dringenden Aufruf auslösen.",
       "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung einen dringenden Aufruf erhält.",
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
+      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+    },
+    "discovery": {
+      "title": "Übersichts-E-Mail",
+      "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Schichten in dieser Einheit und der Schichten, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
+      "daysDescription": "Tage, an denen die E-Mail verschickt wird.",
+      "sendAtDescription": "Uhrzeit, zu der die E-Mail verschickt wird (Ortszeit).",
       "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
       "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
     },
@@ -869,8 +880,8 @@
     "emailSettings": "E-Mails",
     "emailUrgentCalls": "Dringende Aufrufe",
     "emailUrgentCallsDescription": "Dringende Aufrufe für unterbesetzte Einsätze.",
-    "emailWeeklyUpdate": "Wöchentliche Übersicht",
-    "emailWeeklyUpdateDescription": "Die wöchentliche Planungs-E-Mail am Sonntag.",
+    "emailWeeklyUpdate": "Übersichts-E-Mail",
+    "emailWeeklyUpdateDescription": "Eine Übersicht deiner bevorstehenden Schichten und der Schichten, für die noch Leute fehlen.",
     "identity": {
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
