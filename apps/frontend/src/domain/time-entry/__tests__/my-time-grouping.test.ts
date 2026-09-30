@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { formats } from '@/lib/formatting/formats';
 import {
   entryDurationMinutes,
   getEntryState,
@@ -7,7 +8,6 @@ import {
   WEEK_HEADER_FROM_FORMAT,
   WEEK_HEADER_TO_FORMAT,
 } from '../my-time-grouping';
-import { formats } from '@/lib/formatting/formats';
 
 const entry = (
   over: Partial<TimeEntry> & { startedAt: string },
