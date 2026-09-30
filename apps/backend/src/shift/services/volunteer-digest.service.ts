@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -14,14 +14,17 @@ import {
 } from '../../notification/email/templates/volunteer-digest.template';
 import { NotificationService } from '../../notification/notification.service';
 import { NotificationEvent } from '../../notification/notification-events';
-import { OrganizationService } from '../../organization/organization.service';
+import { OrganizationUnitAutomationKind } from '../../organization/enums';
+import { OrganizationUnitAutomationService } from '../../organization/organization-unit-automation.service';
+import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import type { OrganizationUnitEntity } from '../../organization/schemas/organization-unit.schema';
 import { ACTIVE_SHIFT_INVITE_STATUSES } from '../../shared/invite-status';
 import { ShiftInviteStatus, SortOrder } from '../enums';
 import type { ShiftEntity } from '../schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import { ShiftService } from '../shift.service';
-import { hoursUntil } from '../utils/app-time';
+import { appHourMinute, appWeekday, hoursUntil } from '../utils/app-time';
+import { isDiscoveryEmailDue } from '../utils/discovery-email-schedule';
 import {
   type NeedsVolunteersCandidate,
   rankShiftsNeedingVolunteers,
@@ -41,13 +44,13 @@ type InstanceWithMaster = ShiftInstanceEntity & { master: ShiftEntity };
 
 type VolunteerDigestOutcome =
   | 'sent'
-  | 'skipped_no_units'
   | 'skipped_no_content'
   | 'skipped_no_notification_data'
   | 'failed';
 
 export interface VolunteerDigestSummary
   extends Record<VolunteerDigestOutcome, number> {
+  due_units: number;
   recipients: number;
 }
 
@@ -59,64 +62,112 @@ export class VolunteerDigestService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
     private readonly shiftService: ShiftService,
-    private readonly organizationService: OrganizationService,
+    private readonly organizationUnitDataService: OrganizationUnitDataService,
+    private readonly automationService: OrganizationUnitAutomationService,
     private readonly notificationService: NotificationService,
     private readonly emailService: EmailService,
     private readonly appI18n: AppI18nService,
   ) {}
 
-  /** Builds and sends the Sunday digest to every user with at least one organisation membership. */
   async sendDigests(
     sendAt: Date = new Date(),
   ): Promise<VolunteerDigestSummary> {
-    const userIds = await this.findDigestRecipientIds();
     const summary: VolunteerDigestSummary = {
-      recipients: userIds.length,
+      due_units: 0,
+      recipients: 0,
       sent: 0,
-      skipped_no_units: 0,
       skipped_no_content: 0,
       skipped_no_notification_data: 0,
       failed: 0,
     };
 
-    for (const userId of userIds) {
-      try {
-        const outcome = await this.sendDigestForUser(userId, sendAt);
-        summary[outcome] += 1;
-      } catch (error) {
-        summary.failed += 1;
-        this.logger.error(
+    const nowWeekday = appWeekday(sendAt);
+    const nowHourMinute = appHourMinute(sendAt);
+    const scheduled = await this.automationService.listEnabled(
+      OrganizationUnitAutomationKind.DISCOVERY_EMAIL,
+    );
+    const due = scheduled.filter((automation) =>
+      isDiscoveryEmailDue({
+        enabled: automation.enabled,
+        activeDays: automation.activeDays,
+        sendAtTime: automation.sendAtTime,
+        nowWeekday,
+        nowHourMinute,
+      }),
+    );
+    summary.due_units = due.length;
+    if (due.length === 0) return summary;
+
+    for (const automation of due) {
+      const unit = await this.organizationUnitDataService.findById(
+        automation.organizationUnitId,
+      );
+      if (!unit || unit.deletedAt != null) {
+        this.logger.warn(
           {
-            event: 'volunteer_digest.user_failed',
-            user_id: userId,
-            err: error,
+            event: 'volunteer_digest.unit_unavailable',
+            organization_unit_id: automation.organizationUnitId,
+            deleted: unit?.deletedAt != null,
           },
-          'Failed to build/send volunteer digest for user',
+          'Skipping a scheduled discovery email for a missing or deleted org unit',
         );
+        continue;
+      }
+
+      const userIds = await this.findUnitRecipientIds(unit.id);
+      summary.recipients += userIds.length;
+
+      for (const userId of userIds) {
+        try {
+          const outcome = await this.sendDigestForUnitMember(
+            userId,
+            unit,
+            sendAt,
+          );
+          summary[outcome] += 1;
+        } catch (error) {
+          summary.failed += 1;
+          this.logger.error(
+            {
+              event: 'volunteer_digest.user_failed',
+              user_id: userId,
+              organization_unit_id: unit.id,
+              err: error,
+            },
+            'Failed to build/send the discovery email for a volunteer',
+          );
+        }
       }
     }
 
     return summary;
   }
 
-  private async findDigestRecipientIds(): Promise<string[]> {
+  private async findUnitRecipientIds(
+    organizationUnitId: string,
+  ): Promise<string[]> {
     const rows = await this.db
       .selectDistinct({ userId: schema.memberships.userId })
       .from(schema.memberships)
       .innerJoin(schema.users, eq(schema.users.id, schema.memberships.userId))
-      .where(eq(schema.users.emailWeeklyUpdateEnabled, true));
+      .where(
+        and(
+          eq(schema.memberships.organizationUnitId, organizationUnitId),
+          eq(schema.users.emailWeeklyUpdateEnabled, true),
+        ),
+      );
 
     return rows
       .map((row) => row.userId)
       .filter((id): id is string => id != null);
   }
 
-  private async sendDigestForUser(
+  private async sendDigestForUnitMember(
     userId: string,
+    unit: OrganizationUnitEntity,
     sendAt: Date,
   ): Promise<VolunteerDigestOutcome> {
-    const orgUnits = await this.organizationService.findUnits(userId);
-    if (orgUnits.length === 0) return 'skipped_no_units';
+    const orgUnits = [unit];
 
     const upcomingWindowEndsAt = addDays(sendAt, UPCOMING_WINDOW_DAYS);
     const needsVolunteersStartsAfter = addHours(
@@ -139,6 +190,8 @@ export class VolunteerDigestService {
           0,
           SortOrder.ASC,
           [ShiftInviteStatus.JOINED],
+          false,
+          [unit.id],
         ),
         this.shiftService.findMyShiftInstances(
           userId,
@@ -149,12 +202,14 @@ export class VolunteerDigestService {
           0,
           SortOrder.ASC,
           [ShiftInviteStatus.ADMIN_INVITED],
+          false,
+          [unit.id],
         ),
         this.shiftService.findAvailableShiftInstances(
           userId,
           needsVolunteersStartsAfter,
           needsVolunteersEndsBefore,
-          null,
+          [unit.id],
           NEEDS_VOLUNTEERS_CANDIDATE_FETCH_LIMIT,
           0,
         ),
@@ -165,6 +220,7 @@ export class VolunteerDigestService {
         {
           event: 'volunteer_digest.candidate_pool_truncated',
           user_id: userId,
+          organization_unit_id: unit.id,
           candidate_total: needsVolunteersPage.total,
           fetch_limit: NEEDS_VOLUNTEERS_CANDIDATE_FETCH_LIMIT,
         },

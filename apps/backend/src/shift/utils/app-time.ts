@@ -82,3 +82,15 @@ export function appWeekday(date: Date): Weekday {
   const utcDay = new Date(Date.UTC(year, month, day)).getUTCDay();
   return weekdayFromIsoDay(utcDay === 0 ? 7 : utcDay);
 }
+
+export function appHourMinute(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: APP_TIME_ZONE,
+    hourCycle: 'h23',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(date);
+  const hour = parts.find((part) => part.type === 'hour')?.value ?? '00';
+  const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
+  return `${hour}:${minute}`;
+}

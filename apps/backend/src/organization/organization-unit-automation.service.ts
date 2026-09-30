@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Database } from '../database/database.module';
 import { DATABASE_CONNECTION } from '../database/database-connection';
 import * as schema from '../database/schema';
@@ -71,6 +71,31 @@ export class OrganizationUnitAutomationService {
         resolveAutomation(unitId, kind, rowsByKey),
       ]),
     );
+  }
+
+  async listEnabled(
+    kind: OrganizationUnitAutomationKind,
+  ): Promise<ResolvedAutomation[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.organizationUnitAutomations)
+      .where(
+        and(
+          eq(schema.organizationUnitAutomations.kind, kind),
+          eq(schema.organizationUnitAutomations.enabled, true),
+        ),
+      );
+
+    return rows.map((row) => ({
+      kind,
+      organizationUnitId: row.organizationUnitId,
+      ...normalizeAutomationSettings(kind, {
+        enabled: row.enabled,
+        activeDays: row.activeDays,
+        leadTimeHours: row.leadTimeHours,
+        sendAtTime: normalizeSendAtTime(row.sendAtTime),
+      }),
+    }));
   }
 
   async update(
@@ -151,7 +176,7 @@ export class OrganizationUnitAutomationService {
       !AUTOMATION_SEND_AT_TIME_PATTERN.test(patch.sendAtTime)
     ) {
       throw new BadRequestGraphQLError(
-        `Send time must be in HH:MM format, got "${patch.sendAtTime}"`,
+        `Send time must be HH:MM on a quarter hour (00, 15, 30 or 45), got "${patch.sendAtTime}"`,
       );
     }
     if (patch.activeDays) {
