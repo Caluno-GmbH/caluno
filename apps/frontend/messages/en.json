@@ -542,7 +542,7 @@
     },
     "discovery": {
       "title": "Discovery email",
-      "description": "Sends volunteers an overview of their upcoming shifts in this unit and the shifts that still need people. Volunteers can turn it off in their account settings.",
+      "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
       "daysDescription": "Days the email goes out.",
       "sendAtDescription": "Time of day the email goes out, in local time.",
       "noDaysHint": "No days selected, so this automation will not run.",
@@ -881,7 +881,7 @@
     "emailUrgentCalls": "Urgent calls",
     "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Discovery email",
-    "emailWeeklyUpdateDescription": "An overview of your upcoming shifts and the shifts that still need people.",
+    "emailWeeklyUpdateDescription": "An overview of your upcoming assignments and the assignments that still need people.",
     "identity": {
       "subtitles": {
         "firstName": "As on your ID",

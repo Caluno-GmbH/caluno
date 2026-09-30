@@ -542,7 +542,7 @@
     },
     "discovery": {
       "title": "Übersichts-E-Mail",
-      "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Schichten in dieser Einheit und der Schichten, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
+      "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Einsätze in dieser Einheit und der Einsätze, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
       "daysDescription": "Tage, an denen die E-Mail verschickt wird.",
       "sendAtDescription": "Uhrzeit, zu der die E-Mail verschickt wird (Ortszeit).",
       "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
@@ -881,7 +881,7 @@
     "emailUrgentCalls": "Dringende Aufrufe",
     "emailUrgentCallsDescription": "Dringende Aufrufe für unterbesetzte Einsätze.",
     "emailWeeklyUpdate": "Übersichts-E-Mail",
-    "emailWeeklyUpdateDescription": "Eine Übersicht deiner bevorstehenden Schichten und der Schichten, für die noch Leute fehlen.",
+    "emailWeeklyUpdateDescription": "Eine Übersicht deiner bevorstehenden Einsätze und der Einsätze, für die noch Leute fehlen.",
     "identity": {
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
