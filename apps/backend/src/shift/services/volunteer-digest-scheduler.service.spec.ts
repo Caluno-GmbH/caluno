@@ -4,9 +4,9 @@ import type { VolunteerDigestSummary } from './volunteer-digest.service';
 import { VolunteerDigestSchedulerService } from './volunteer-digest-scheduler.service';
 
 const SUMMARY: VolunteerDigestSummary = {
+  due_units: 3,
   recipients: 120,
   sent: 88,
-  skipped_no_units: 2,
   skipped_no_content: 29,
   skipped_no_notification_data: 0,
   failed: 1,
@@ -23,7 +23,7 @@ describe('VolunteerDigestSchedulerService', () => {
   it('logs that the run started so a missing run is visible', async () => {
     const { service, records } = scheduler(() => Promise.resolve(SUMMARY));
 
-    await service.handleSundayDigest();
+    await service.handleDigestTick();
 
     expect(findLog(records, 'volunteer_digest.started')).toBeDefined();
   });
@@ -31,11 +31,12 @@ describe('VolunteerDigestSchedulerService', () => {
   it('logs the send counts and duration on success', async () => {
     const { service, records } = scheduler(() => Promise.resolve(SUMMARY));
 
-    await service.handleSundayDigest();
+    await service.handleDigestTick();
 
     const finished = findLog(records, 'volunteer_digest.finished');
     expect(finished?.level).toBe('log');
     expect(finished?.fields).toMatchObject({
+      due_units: 3,
       recipients: 120,
       sent: 88,
       skipped_no_content: 29,
@@ -48,7 +49,7 @@ describe('VolunteerDigestSchedulerService', () => {
     const boom = new Error('boom');
     const { service, records } = scheduler(() => Promise.reject(boom));
 
-    await service.handleSundayDigest();
+    await service.handleDigestTick();
 
     const failed = findLog(records, 'volunteer_digest.failed');
     expect(failed?.level).toBe('error');
