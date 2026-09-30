@@ -77,7 +77,16 @@ export function FormCard({
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {usedBlocks.map((block) => (
-                  <Badge key={block.id} variant="outline" className="text-xs">
+                  // Badge is nowrap and shrink-0 by default, which is right for
+                  // a status chip and wrong for a name a coordinator wrote: the
+                  // row wraps between chips, but a single chip longer than the
+                  // card could neither wrap nor shrink. Overridden here rather
+                  // than in the base, which every other badge relies on.
+                  <Badge
+                    key={block.id}
+                    variant="outline"
+                    className="max-w-full shrink whitespace-normal break-words text-left text-xs"
+                  >
                     {block.title}
                   </Badge>
                 ))}

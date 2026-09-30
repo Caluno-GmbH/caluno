@@ -58,8 +58,13 @@ export function BirthDateInput({
 
   return (
     <>
+      {/* The eight segments are a fixed width and cannot shrink, so in a narrow
+          column — the form editor's preview panel — they would run off the
+          edge. Wrapping lets day, month and year drop to the next line
+          together, which keeps each group readable as a unit. */}
       <InputOTP
         id={id}
+        containerClassName="flex-wrap"
         maxLength={8}
         pattern={REGEXP_ONLY_DIGITS}
         value={digits}
