@@ -301,7 +301,6 @@ function SendTimeField({
       {({ legendId, descriptionId }) => (
         <Input
           type="time"
-          step={900}
           className="w-36"
           value={value}
           disabled={disabled}
