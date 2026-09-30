@@ -780,7 +780,7 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
-  updateMyUserProfile(input: UpdateUserProfileInput!): UserProfile!
+  updateMyProfile(input: UpdateMyProfileInput!): User!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
   updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
@@ -967,7 +967,6 @@ type Query {
   accountingSetupStatus: AccountingSetupStatus!
   activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeId: ID!): DocumentTemplate!
   activeShiftInstances: [ShiftInstance!]!
-  adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
@@ -1023,7 +1022,6 @@ type Query {
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
-  myUserProfile: UserProfile
   organization(id: String!): Organization
   organizationBySlug(slug: String!): Organization!
   organizationTree: OrganizationTree
@@ -1569,6 +1567,21 @@ input UpdateMyImageInput {
   imageFileId: String
 }
 
+input UpdateMyProfileInput {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  city: String
+  firstname: String
+  gender: String
+  iban: String
+  lastname: String
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
 input UpdateOrganizationInput {
   city: String
   contactEmail: String
@@ -1683,12 +1696,12 @@ input UpdateTimeEntryInput {
   startedAt: DateTime!
 }
 
-input UpdateUserProfileInput {
-  data: String!
-}
-
 type User {
+  accountHolder: String
+  bic: String
+  birthdate: String
   checkInId: ID!
+  city: String
   email: String!
 
   """
@@ -1701,19 +1714,19 @@ type User {
 
   """Whether the volunteer receives the weekly plan email."""
   emailWeeklyUpdateEnabled: Boolean!
+  firstname: String
+  gender: String
+  iban: String
   id: ID!
   image: String
+  lastname: String
   locale: String
   name: String!
   permissions: [Permission!]
-}
-
-type UserProfile {
-  createdAt: DateTime!
-  data: JSON!
-  id: ID!
-  updatedAt: DateTime!
-  userId: String!
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
 }
 
 type UserRequirementStatus {

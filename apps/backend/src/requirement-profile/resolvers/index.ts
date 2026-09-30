@@ -19,5 +19,3 @@ export * from './requirement-profile-submission-field.resolver';
 export * from './requirement-profile-submission-mutation.resolver';
 export * from './requirement-profile-submission-query.resolver';
 export * from './requirement-query.resolver';
-export * from './user-profile-mutation.resolver';
-export * from './user-profile-query.resolver';

@@ -6,6 +6,7 @@ import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
 import { UpdateMyAccountSettingsInput } from '../inputs/update-my-account-settings.input';
 import { UpdateMyImageInput } from '../inputs/update-my-image.input';
+import { UpdateMyProfileInput } from '../inputs/update-my-profile.input';
 import { UserMapper } from '../mappers/user.mapper';
 import { User } from '../models/user.model';
 import { UserService } from '../user.service';
@@ -46,6 +47,15 @@ export class UserMutationResolver {
       emailUrgentCallsEnabled: input.emailUrgentCallsEnabled ?? undefined,
       emailPlatformEnabled: input.emailPlatformEnabled ?? undefined,
     });
+    return this.userMapper.toModelOrThrow(user);
+  }
+
+  @Mutation(() => User)
+  async updateMyProfile(
+    @Args('input') input: UpdateMyProfileInput,
+    @Session() session: UserSession,
+  ): Promise<User> {
+    const user = await this.userService.updateMyProfile(session.user.id, input);
     return this.userMapper.toModelOrThrow(user);
   }
 

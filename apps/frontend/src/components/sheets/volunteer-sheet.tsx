@@ -91,15 +91,10 @@ function VolunteerSheetContent({
   const { data: orgUnit } = useOrganizationUnit(orgUId);
   const membership = memberships?.find((item) => item.user.id === userId);
 
-  const profileData = (userProfile?.data ?? {}) as Record<string, unknown>;
-  const street =
-    typeof profileData.street === 'string' ? profileData.street : null;
-  const zip = typeof profileData.zip === 'string' ? profileData.zip : null;
-  const city = typeof profileData.city === 'string' ? profileData.city : null;
-  const birthday =
-    typeof profileData['birth-date'] === 'string'
-      ? profileData['birth-date']
-      : null;
+  const street = userProfile?.street ?? null;
+  const zip = userProfile?.zip ?? null;
+  const city = userProfile?.city ?? null;
+  const birthday = userProfile?.birthdate ?? null;
 
   return (
     <div className="flex flex-col gap-6 mt-4">

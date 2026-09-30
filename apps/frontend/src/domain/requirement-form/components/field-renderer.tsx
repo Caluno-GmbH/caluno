@@ -149,7 +149,7 @@ export function buildFieldSchema(
         { message: messages.minAge(minAge) },
       );
     }
-    if (systemKey === 'birth-date') {
+    if (systemKey === 'birthdate') {
       s = s.refine(
         (v) => {
           if (!v) return true;
@@ -485,7 +485,7 @@ export function FieldRenderer({
   if (field.type === 'DATE') {
     const dateValue = value ? new Date(value) : undefined;
     const labelId = `$field.id-label`;
-    const isBirthDate = field.systemKey === 'birth-date';
+    const isBirthDate = field.systemKey === 'birthdate';
     const descriptionId = description ? `$field.id-description` : undefined;
     return (
       <Field>

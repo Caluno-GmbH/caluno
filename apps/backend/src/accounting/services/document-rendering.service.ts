@@ -5,9 +5,9 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { OrganizationService } from '../../organization/organization.service';
-import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
+import { UserService } from '../../user/user.service';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
@@ -75,7 +75,7 @@ export class DocumentRenderingService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly userProfileService: UserProfileService,
+    private readonly userService: UserService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly fileService: FileService,
     private readonly organizationService: OrganizationService,
@@ -540,15 +540,14 @@ export class DocumentRenderingService {
       'organizationUnit' in document && document.organizationUnit
         ? document.organizationUnit
         : await this.resolveTemplateOrgUnit(template);
-    const [profile, orgProfile] = await Promise.all([
-      this.userProfileService.findByUserId(document.volunteerId),
+    const [profileData, orgProfile] = await Promise.all([
+      this.userService.getProfileDataByUserId(document.volunteerId),
       // The same resolved org details the create gate checked, so a sub-org's
       // document prints what its parents filled in rather than blanks.
       template.organizationId && rootUnit
         ? resolveOrgProfile(this.db, template.organizationId, rootUnit.id)
         : Promise.resolve(undefined),
     ]);
-    const profileData = (profile?.data ?? {}) as Record<string, unknown>;
 
     const rateCents = await this.resolveRateCents(
       document,

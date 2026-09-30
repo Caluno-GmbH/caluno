@@ -37,6 +37,42 @@ export class User {
   })
   emailPlatformEnabled!: boolean;
 
+  @Field(() => String, { nullable: true })
+  firstname?: string | null;
+
+  @Field(() => String, { nullable: true })
+  lastname?: string | null;
+
+  @Field(() => String, { nullable: true })
+  preferredName?: string | null;
+
+  @Field(() => String, { nullable: true })
+  gender?: string | null;
+
+  @Field(() => String, { nullable: true })
+  phone?: string | null;
+
+  @Field(() => String, { nullable: true })
+  street?: string | null;
+
+  @Field(() => String, { nullable: true })
+  zip?: string | null;
+
+  @Field(() => String, { nullable: true })
+  city?: string | null;
+
+  @Field(() => String, { nullable: true })
+  birthdate?: string | null;
+
+  @Field(() => String, { nullable: true })
+  iban?: string | null;
+
+  @Field(() => String, { nullable: true })
+  accountHolder?: string | null;
+
+  @Field(() => String, { nullable: true })
+  bic?: string | null;
+
   @Field(() => [Permission], { nullable: true })
   permissions?: Permission[] | null;
 }

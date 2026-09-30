@@ -10,7 +10,7 @@ export const SYSTEM_PROFILE_KEYS = new Set<string>([
   'street',
   'zip',
   'city',
-  'birth-date',
+  'birthdate',
   'iban',
   'account-holder',
   'bic',

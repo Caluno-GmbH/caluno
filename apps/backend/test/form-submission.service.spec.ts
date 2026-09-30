@@ -10,8 +10,8 @@ import { ForbiddenGraphQLError } from '../src/graphql/errors';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import { UserProfileService } from '../src/requirement-profile/services/user-profile.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
+import { UserService } from '../src/user/user.service';
 import {
   createFormSubmission,
   createRequirementForm,
@@ -46,7 +46,7 @@ describe('FormSubmissionService org-unit shares', () => {
     const requiredFormService = new RequiredFormService(db, postHogService);
     formSubmissionService = new FormSubmissionService(
       db,
-      new UserProfileService(db, postHogService),
+      new UserService(db, postHogService),
       requiredFormService,
       postHogService,
     );
@@ -534,10 +534,10 @@ describe('FormSubmissionService org-unit shares', () => {
       await submit(form.id, unitA.id, volunteer.id, [
         { fieldId: genderField.id, blockId: block.id, value: 'female' },
       ]);
-      const profile = await db.query.userProfiles.findFirst({
-        where: { userId: volunteer.id },
+      const user = await db.query.users.findFirst({
+        where: { id: volunteer.id },
       });
-      expect(profile?.data.gender).toBe('female');
+      expect(user?.gender).toBe('female');
     });
 
     it('rejects a value outside the fixed list', async () => {
@@ -563,10 +563,10 @@ describe('FormSubmissionService org-unit shares', () => {
           value: 'prefer-not-to-say',
         },
       ]);
-      const profile = await db.query.userProfiles.findFirst({
-        where: { userId: volunteer.id },
+      const user = await db.query.users.findFirst({
+        where: { id: volunteer.id },
       });
-      expect(profile?.data.gender).toBe('prefer-not-to-say');
+      expect(user?.gender).toBe('prefer-not-to-say');
     });
   });
 });

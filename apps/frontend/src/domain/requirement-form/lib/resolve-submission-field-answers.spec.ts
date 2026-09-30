@@ -39,7 +39,7 @@ describe('resolveSubmissionFieldAnswers', () => {
       { fieldId: 'f-custom', value: 'Because I care' },
     ];
     const profileData = {
-      name: 'Current profile name',
+      firstname: 'Current profile name',
       street: 'Current profile address',
     };
 

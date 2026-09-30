@@ -16,10 +16,11 @@ import {
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 
 type EditIdentityFormProps = {
-  profile: { data: Record<string, unknown> } | null;
+  profile: Parameters<typeof toProfileDataMap>[0];
 };
 
 const editableFields = SYSTEM_PROFILE_FIELDS.filter((f) => f.key !== 'email');
@@ -50,7 +51,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const router = useRouter();
   const messages = useValidationMessages();
 
-  const data = (profile?.data ?? {}) as Record<string, unknown>;
+  const data = toProfileDataMap(profile);
 
   const subtitleByKey = useMemo<Record<string, string>>(
     () => ({

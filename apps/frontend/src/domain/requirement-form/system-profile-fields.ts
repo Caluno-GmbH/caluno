@@ -27,7 +27,7 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   { key: 'email', labelKey: 'email', type: FieldType.Email },
   { key: 'phone', labelKey: 'phone', type: FieldType.Phone },
   {
-    key: 'birth-date',
+    key: 'birthdate',
     labelKey: 'birthDate',
     type: FieldType.Date,
   },

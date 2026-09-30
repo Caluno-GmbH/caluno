@@ -1195,23 +1195,18 @@ async function seedFixtures() {
   // PDF comes out with gaps). Seed a complete profile for the members so the
   // fixture accounts can sign documents out of the box.
   for (const [index, member] of members.entries()) {
-    const existing = await db.query.userProfiles.findFirst({
-      where: { userId: member.id },
-    });
-    if (!existing) {
-      await db.insert(schema.userProfiles).values({
-        userId: member.id,
-        data: {
-          // A valid German IBAN (mod-97 checksum). Same account for the
-          // fixture members so it round-trips the validator.
-          iban: 'DE89 3704 0044 0532 0130 00',
-          'account-holder': `Erika Musterfrau ${index + 1}`,
-          bic: 'COBADEFFXXX',
-          street: `Musterstraße ${index + 1}`,
-          'birth-date': '1990-08-02',
-        },
-      });
-    }
+    await db
+      .update(schema.users)
+      .set({
+        // A valid German IBAN (mod-97 checksum). Same account for the
+        // fixture members so it round-trips the validator.
+        iban: 'DE89 3704 0044 0532 0130 00',
+        accountHolder: `Erika Musterfrau ${index + 1}`,
+        bic: 'COBADEFFXXX',
+        street: `Musterstraße ${index + 1}`,
+        birthdate: '1990-08-02',
+      })
+      .where(eq(schema.users.id, member.id));
   }
 
   const ensureMembershipRequest = async (

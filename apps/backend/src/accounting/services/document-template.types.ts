@@ -50,7 +50,7 @@ export interface TemplateBodyShape {
 }
 
 /**
- * Maps a template field's bound `source` to the `user_profiles.data` key it
+ * Maps a template field's bound `source` to the user profile systemKey it
  * reads from. Shared by the renderer (fills the field in) and the sign gate /
  * `missingProfileFields` resolver (checks the volunteer has supplied it).
  */
@@ -63,7 +63,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_street: 'street',
   volunteer_zip: 'zip',
   volunteer_city: 'city',
-  volunteer_dob: 'birth-date',
+  volunteer_dob: 'birthdate',
 };
 
 /**

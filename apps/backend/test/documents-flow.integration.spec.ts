@@ -27,7 +27,7 @@ import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
 import type { DocumentAwaitingSignaturePayload } from '../src/notification/payloads/document-awaiting-signature.payload';
 import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/document-declined-by-org.payload';
-import { userProfiles } from '../src/requirement-profile/schemas/user-profile.schema';
+import { profileDataToUserColumns } from '../src/user/profile-fields';
 import {
   createDocumentTemplate,
   createReimbursementRate,
@@ -376,28 +376,17 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
 };
 
 /**
- * Seeds (or merges into) the volunteer's `user_profiles.data`. Document name
- * fields (`volunteer_first_name` / `volunteer_last_name`) now read `name` /
- * `lastname` from here, not from `users.name`.
+ * Seeds (or merges into) the volunteer's profile columns on `users`. Document
+ * name fields (`volunteer_first_name` / `volunteer_last_name`) read
+ * `firstname` / `lastname` from here, not from `users.name`.
  */
 const seedVolunteerProfile = async (
   db: Database,
   userId: string,
   data: Record<string, unknown>,
 ) => {
-  const existing = await db.query.userProfiles.findFirst({
-    where: { userId },
-  });
-  if (existing) {
-    await db
-      .update(userProfiles)
-      .set({
-        data: { ...(existing.data as Record<string, unknown>), ...data },
-      })
-      .where(eq(userProfiles.userId, userId));
-    return;
-  }
-  await db.insert(userProfiles).values({ userId, data });
+  const { email: _email, ...columns } = profileDataToUserColumns(data);
+  await db.update(schema.users).set(columns).where(eq(schema.users.id, userId));
 };
 
 /** A completed, unclaimed, paid time entry — the raw material for an invoice. */
@@ -1444,7 +1433,7 @@ describe('documents flow — admin + volunteer', () => {
         );
       // Template binds volunteer_first_name / volunteer_last_name from profile.
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1609,7 +1598,7 @@ describe('documents flow — admin + volunteer', () => {
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1707,7 +1696,7 @@ describe('documents flow — admin + volunteer', () => {
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1880,7 +1869,7 @@ describe('documents flow — admin + volunteer', () => {
           ),
         );
       await seedVolunteerProfile(db, nested.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
       const unitTypeId =

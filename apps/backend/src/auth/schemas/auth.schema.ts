@@ -30,6 +30,19 @@ export const users = snakeCase.table('users', {
     .notNull()
     .unique()
     .$defaultFn(generateCheckInId),
+  // Profile fields (formerly user_profiles.data) — VOLI-1524
+  firstname: text('firstname'),
+  lastname: text('lastname'),
+  preferredName: text('preferred_name'),
+  gender: text('gender'),
+  phone: text('phone'),
+  street: text('street'),
+  zip: text('zip'),
+  city: text('city'),
+  birthdate: text('birthdate'),
+  iban: text('iban'),
+  accountHolder: text('account_holder'),
+  bic: text('bic'),
   ...timestampColumns,
 });
 

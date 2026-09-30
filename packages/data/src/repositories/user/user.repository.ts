@@ -7,6 +7,8 @@ import type {
   UpdateMyAccountSettingsMutation,
   UpdateMyImageInput,
   UpdateMyLocaleMutation,
+  UpdateMyProfileInput,
+  UpdateMyProfileMutation,
   User,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
@@ -61,5 +63,12 @@ export class UserRepository extends BaseRepository {
   ): Promise<UpdateMyAccountSettingsMutation['updateMyAccountSettings']> {
     const data = await this.sdk.UpdateMyAccountSettings({ input });
     return data.updateMyAccountSettings;
+  }
+
+  async updateMyProfile(
+    input: UpdateMyProfileInput,
+  ): Promise<UpdateMyProfileMutation['updateMyProfile']> {
+    const data = await this.sdk.UpdateMyProfile({ input });
+    return data.updateMyProfile;
   }
 }

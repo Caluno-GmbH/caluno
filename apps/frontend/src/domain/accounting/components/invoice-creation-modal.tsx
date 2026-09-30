@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { fromPeriodBounds, toPeriodBounds } from '../lib/billing-period';
@@ -356,10 +357,7 @@ export function InvoiceCreationModal({
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
     if (!dataReady || !template || derivedFields || !volunteerName) return;
-    const profileData = (profileQuery.data?.data ?? {}) as Record<
-      string,
-      unknown
-    >;
+    const profileData = toProfileDataMap(profileQuery.data);
     setDerivedFields(
       deriveEditableFields(template, profileData, volunteerName),
     );

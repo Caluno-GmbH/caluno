@@ -825,7 +825,7 @@ export type Mutation = {
   updateMyAccountSettings: User;
   updateMyImage: User;
   updateMyLocale: User;
-  updateMyUserProfile: UserProfile;
+  updateMyProfile: User;
   updateOrganization: Organization;
   updateOrganizationUnit: OrganizationUnit;
   updateOrganizationUnitAutomation: OrganizationUnitAutomation;
@@ -1261,8 +1261,8 @@ export type MutationUpdateMyLocaleArgs = {
 };
 
 
-export type MutationUpdateMyUserProfileArgs = {
-  input: UpdateUserProfileInput;
+export type MutationUpdateMyProfileArgs = {
+  input: UpdateMyProfileInput;
 };
 
 
@@ -1545,7 +1545,6 @@ export type Query = {
   accountingSetupStatus: AccountingSetupStatus;
   activeDocumentTemplate: DocumentTemplate;
   activeShiftInstances: Array<ShiftInstance>;
-  adminUserProfile?: Maybe<UserProfile>;
   adminVolunteerSubmission?: Maybe<FormSubmission>;
   availableEvents: EventPaginatedResponse;
   availableShiftInstanceDayCounts: Array<ShiftInstanceDayCount>;
@@ -1601,7 +1600,6 @@ export type Query = {
   myRequiredOrgUnitForms: Array<RequirementForm>;
   myShiftInstances: ShiftInstancePaginatedResponse;
   myTime: TimeEntryPaginatedResponse;
-  myUserProfile?: Maybe<UserProfile>;
   organization?: Maybe<Organization>;
   organizationBySlug: Organization;
   organizationTree?: Maybe<OrganizationTree>;
@@ -1658,11 +1656,6 @@ export type QueryActiveDocumentTemplateArgs = {
   kind: DocumentKind;
   organizationUnitId?: InputMaybe<Scalars['ID']['input']>;
   reimbursementTypeId: Scalars['ID']['input'];
-};
-
-
-export type QueryAdminUserProfileArgs = {
-  userId: Scalars['String']['input'];
 };
 
 
@@ -2725,6 +2718,21 @@ export type UpdateMyImageInput = {
   imageFileId?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateMyProfileInput = {
+  accountHolder?: InputMaybe<Scalars['String']['input']>;
+  bic?: InputMaybe<Scalars['String']['input']>;
+  birthdate?: InputMaybe<Scalars['String']['input']>;
+  city?: InputMaybe<Scalars['String']['input']>;
+  firstname?: InputMaybe<Scalars['String']['input']>;
+  gender?: InputMaybe<Scalars['String']['input']>;
+  iban?: InputMaybe<Scalars['String']['input']>;
+  lastname?: InputMaybe<Scalars['String']['input']>;
+  phone?: InputMaybe<Scalars['String']['input']>;
+  preferredName?: InputMaybe<Scalars['String']['input']>;
+  street?: InputMaybe<Scalars['String']['input']>;
+  zip?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateOrganizationInput = {
   city?: InputMaybe<Scalars['String']['input']>;
   contactEmail?: InputMaybe<Scalars['String']['input']>;
@@ -2839,13 +2847,13 @@ export type UpdateTimeEntryInput = {
   startedAt: Scalars['DateTime']['input'];
 };
 
-export type UpdateUserProfileInput = {
-  data: Scalars['String']['input'];
-};
-
 export type User = {
   __typename?: 'User';
+  accountHolder?: Maybe<Scalars['String']['output']>;
+  bic?: Maybe<Scalars['String']['output']>;
+  birthdate?: Maybe<Scalars['String']['output']>;
   checkInId: Scalars['ID']['output'];
+  city?: Maybe<Scalars['String']['output']>;
   email: Scalars['String']['output'];
   /** Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership). */
   emailPlatformEnabled: Scalars['Boolean']['output'];
@@ -2853,20 +2861,19 @@ export type User = {
   emailUrgentCallsEnabled: Scalars['Boolean']['output'];
   /** Whether the volunteer receives the weekly plan email. */
   emailWeeklyUpdateEnabled: Scalars['Boolean']['output'];
+  firstname?: Maybe<Scalars['String']['output']>;
+  gender?: Maybe<Scalars['String']['output']>;
+  iban?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
+  lastname?: Maybe<Scalars['String']['output']>;
   locale?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   permissions?: Maybe<Array<Permission>>;
-};
-
-export type UserProfile = {
-  __typename?: 'UserProfile';
-  createdAt: Scalars['DateTime']['output'];
-  data: Scalars['JSON']['output'];
-  id: Scalars['ID']['output'];
-  updatedAt: Scalars['DateTime']['output'];
-  userId: Scalars['String']['output'];
+  phone?: Maybe<Scalars['String']['output']>;
+  preferredName?: Maybe<Scalars['String']['output']>;
+  street?: Maybe<Scalars['String']['output']>;
+  zip?: Maybe<Scalars['String']['output']>;
 };
 
 export type UserRequirementStatus = {
@@ -3781,18 +3788,6 @@ export type GetMyFormSubmissionsQueryVariables = Exact<{
 
 export type GetMyFormSubmissionsQuery = { __typename?: 'Query', myFormSubmissions: Array<{ __typename?: 'FormSubmission', id: string, submittedAt: string, form?: { __typename?: 'RequirementForm', id: string, name: string, description?: string | null, shareToken: string } | null }> };
 
-export type GetMyUserProfileQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GetMyUserProfileQuery = { __typename?: 'Query', myUserProfile?: { __typename?: 'UserProfile', id: string, userId: string, data: Record<string, unknown>, createdAt: string, updatedAt: string } | null };
-
-export type UpdateMyUserProfileMutationVariables = Exact<{
-  input: UpdateUserProfileInput;
-}>;
-
-
-export type UpdateMyUserProfileMutation = { __typename?: 'Mutation', updateMyUserProfile: { __typename?: 'UserProfile', id: string, userId: string, data: Record<string, unknown>, updatedAt: string } };
-
 export type GetFormSubmissionsByMembershipRequestQueryVariables = Exact<{
   membershipRequestId: Scalars['String']['input'];
 }>;
@@ -3842,7 +3837,7 @@ export type GetAdminUserProfileQueryVariables = Exact<{
 }>;
 
 
-export type GetAdminUserProfileQuery = { __typename?: 'Query', adminUserProfile?: { __typename?: 'UserProfile', id: string, userId: string, data: Record<string, unknown>, createdAt: string, updatedAt: string } | null };
+export type GetAdminUserProfileQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email: string, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
 
 export type CreateRequirementProfileSubmissionMutationVariables = Exact<{
   input: CreateRequirementProfileSubmissionInput;
@@ -4300,14 +4295,14 @@ export type CheckOutVolunteerMutation = { __typename?: 'Mutation', checkOutVolun
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean } };
+export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } };
 
 export type GetUserQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
 
 export type GetUserByCheckInIdQueryVariables = Exact<{
   checkInId: Scalars['String']['input'];
@@ -4349,6 +4344,13 @@ export type UpdateMyAccountSettingsMutationVariables = Exact<{
 
 
 export type UpdateMyAccountSettingsMutation = { __typename?: 'Mutation', updateMyAccountSettings: { __typename?: 'User', id: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean } };
+
+export type UpdateMyProfileMutationVariables = Exact<{
+  input: UpdateMyProfileInput;
+}>;
+
+
+export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null, email: string } };
 
 export const ContractSummaryFieldsFragmentDoc = gql`
     fragment ContractSummaryFields on Contract {
@@ -6739,27 +6741,6 @@ export const GetMyFormSubmissionsDocument = gql`
   }
 }
     `;
-export const GetMyUserProfileDocument = gql`
-    query GetMyUserProfile {
-  myUserProfile {
-    id
-    userId
-    data
-    createdAt
-    updatedAt
-  }
-}
-    `;
-export const UpdateMyUserProfileDocument = gql`
-    mutation UpdateMyUserProfile($input: UpdateUserProfileInput!) {
-  updateMyUserProfile(input: $input) {
-    id
-    userId
-    data
-    updatedAt
-  }
-}
-    `;
 export const GetFormSubmissionsByMembershipRequestDocument = gql`
     query GetFormSubmissionsByMembershipRequest($membershipRequestId: String!) {
   formSubmissionsByMembershipRequest(membershipRequestId: $membershipRequestId) {
@@ -6889,12 +6870,21 @@ export const MyFormSubmissionDocument = gql`
     `;
 export const GetAdminUserProfileDocument = gql`
     query GetAdminUserProfile($userId: String!) {
-  adminUserProfile(userId: $userId) {
+  user(id: $userId) {
     id
-    userId
-    data
-    createdAt
-    updatedAt
+    email
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
   }
 }
     `;
@@ -7878,6 +7868,18 @@ export const GetMeDocument = gql`
     emailWeeklyUpdateEnabled
     emailUrgentCallsEnabled
     emailPlatformEnabled
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
   }
 }
     `;
@@ -7890,6 +7892,18 @@ export const GetUserDocument = gql`
     image
     checkInId
     locale
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
   }
 }
     `;
@@ -7959,6 +7973,26 @@ export const UpdateMyAccountSettingsDocument = gql`
     emailWeeklyUpdateEnabled
     emailUrgentCallsEnabled
     emailPlatformEnabled
+  }
+}
+    `;
+export const UpdateMyProfileDocument = gql`
+    mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
+  updateMyProfile(input: $input) {
+    id
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
+    email
   }
 }
     `;
@@ -8303,12 +8337,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     GetMyFormSubmissions(variables: GetMyFormSubmissionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyFormSubmissionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMyFormSubmissionsQuery>({ document: GetMyFormSubmissionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyFormSubmissions', 'query', variables);
     },
-    GetMyUserProfile(variables?: GetMyUserProfileQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyUserProfileQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetMyUserProfileQuery>({ document: GetMyUserProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyUserProfile', 'query', variables);
-    },
-    UpdateMyUserProfile(variables: UpdateMyUserProfileMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyUserProfileMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyUserProfileMutation>({ document: UpdateMyUserProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyUserProfile', 'mutation', variables);
-    },
     GetFormSubmissionsByMembershipRequest(variables: GetFormSubmissionsByMembershipRequestQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetFormSubmissionsByMembershipRequestQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetFormSubmissionsByMembershipRequestQuery>({ document: GetFormSubmissionsByMembershipRequestDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetFormSubmissionsByMembershipRequest', 'query', variables);
     },
@@ -8527,6 +8555,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     UpdateMyAccountSettings(variables: UpdateMyAccountSettingsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyAccountSettingsMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyAccountSettingsMutation>({ document: UpdateMyAccountSettingsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyAccountSettings', 'mutation', variables);
+    },
+    UpdateMyProfile(variables: UpdateMyProfileMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyProfileMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyProfileMutation>({ document: UpdateMyProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyProfile', 'mutation', variables);
     }
   };
 }

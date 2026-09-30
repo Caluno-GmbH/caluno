@@ -9,12 +9,22 @@ import {
   NotFoundGraphQLError,
 } from '../graphql/errors';
 import { type Locale, resolveRequestLocale } from '../graphql/locale';
+import {
+  formatSystemKeyLabel,
+  validateSystemKeyValue,
+} from '../requirement-profile/profile-validation';
 import type { OrganizationUserProfileEntity } from '../requirement-profile/schemas/organization-user-profile.schema';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
 } from '../shared/observability/posthog.events';
 import { PostHogService } from '../shared/observability/posthog.service';
+import {
+  type ProfileFields,
+  profileDataToUserColumns,
+  toProfileDataMap,
+  WRITABLE_PROFILE_SYSTEM_KEYS,
+} from './profile-fields';
 
 @Injectable()
 export class UserService {
@@ -28,6 +38,31 @@ export class UserService {
     return this.db.query.users.findFirst({
       where: { id },
     });
+  }
+
+  /**
+   * Admin volunteer lookup: only when the target has a membership or
+   * membership request in the given org unit (former adminUserProfile gate).
+   */
+  async findByIdInOrgUnit(
+    userId: string,
+    orgUnitId: string,
+  ): Promise<UserEntity | undefined> {
+    const isMember = await this.db.query.memberships.findFirst({
+      where: { userId, organizationUnitId: orgUnitId },
+      columns: { id: true },
+    });
+    const hasRequest = isMember
+      ? null
+      : await this.db.query.membershipRequests.findFirst({
+          where: { userId, organizationUnitId: orgUnitId },
+          columns: { id: true },
+        });
+
+    if (!isMember && !hasRequest) {
+      return undefined;
+    }
+    return this.findById(userId);
   }
 
   async findByEmail(email: string): Promise<UserEntity | undefined> {
@@ -59,6 +94,114 @@ export class UserService {
 
     if (!user) {
       throw new NotFoundGraphQLError('User not found');
+    }
+
+    return user;
+  }
+
+  getProfileData(user: ProfileFields): Record<string, unknown> {
+    return toProfileDataMap(user);
+  }
+
+  async getProfileDataByUserId(
+    userId: string,
+  ): Promise<Record<string, unknown>> {
+    const user = await this.findById(userId);
+    if (!user) {
+      return {};
+    }
+    return toProfileDataMap(user);
+  }
+
+  /**
+   * Merge profile fields from a systemKey → value map onto the user row.
+   * Skips email. Validates writable system keys.
+   */
+  async updateProfileFields(
+    userId: string,
+    data: Record<string, unknown>,
+    tx?: Database,
+  ): Promise<UserEntity> {
+    const columns = profileDataToUserColumns(data);
+
+    for (const key of WRITABLE_PROFILE_SYSTEM_KEYS) {
+      if (!Object.hasOwn(data, key)) continue;
+      const value = data[key];
+      if (typeof value !== 'string') continue;
+      validateSystemKeyValue(value, key, formatSystemKeyLabel(key), null);
+    }
+
+    return this.applyProfileColumns(userId, columns, tx);
+  }
+
+  async updateMyProfile(
+    userId: string,
+    input: ProfileFields,
+  ): Promise<UserEntity> {
+    const data: Record<string, unknown> = {};
+    const reverse: Record<string, string> = {
+      firstname: 'firstname',
+      lastname: 'lastname',
+      preferredName: 'preferred-name',
+      gender: 'gender',
+      phone: 'phone',
+      street: 'street',
+      zip: 'zip',
+      city: 'city',
+      birthdate: 'birthdate',
+      iban: 'iban',
+      accountHolder: 'account-holder',
+      bic: 'bic',
+    };
+    for (const [column, systemKey] of Object.entries(reverse)) {
+      if (!Object.hasOwn(input, column)) continue;
+      const value = input[column as keyof ProfileFields];
+      if (value === undefined) continue;
+      data[systemKey] = value;
+    }
+    return this.updateProfileFields(userId, data);
+  }
+
+  private async applyProfileColumns(
+    userId: string,
+    columns: ProfileFields,
+    tx?: Database,
+  ): Promise<UserEntity> {
+    const db = tx ?? this.db;
+    const changes: Record<string, string | null> = {};
+    for (const [key, value] of Object.entries(columns)) {
+      if (value === undefined) continue;
+      changes[key] = value;
+    }
+
+    if (Object.keys(changes).length === 0) {
+      const existing = await db.query.users.findFirst({
+        where: { id: userId },
+      });
+      if (!existing) {
+        throw new NotFoundGraphQLError('User not found');
+      }
+      return existing;
+    }
+
+    const [user] = await db
+      .update(schema.users)
+      .set(changes)
+      .where(eq(schema.users.id, userId))
+      .returning();
+
+    if (!user) {
+      throw new NotFoundGraphQLError('User not found');
+    }
+
+    if (!tx) {
+      this.postHogService.capture({
+        event: POSTHOG_EVENT.USER_PROFILE_UPDATE,
+        userId,
+        properties: {
+          surface: POSTHOG_SURFACE.VOLUNTEERING,
+        },
+      });
     }
 
     return user;

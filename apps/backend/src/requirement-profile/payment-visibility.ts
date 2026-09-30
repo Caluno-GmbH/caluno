@@ -4,6 +4,12 @@ export const PAYMENT_DATA_MASKS = {
   'account-holder': 'XXXXXX XXXXXX',
 } as const;
 
+export const PAYMENT_USER_FIELD_MASKS = {
+  iban: PAYMENT_DATA_MASKS.iban,
+  bic: PAYMENT_DATA_MASKS.bic,
+  accountHolder: PAYMENT_DATA_MASKS['account-holder'],
+} as const;
+
 export function maskRestrictedPaymentData(
   data: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -12,6 +18,25 @@ export function maskRestrictedPaymentData(
     const value = masked[key];
     if (typeof value === 'string' && value.trim() !== '') {
       masked[key] = mask;
+    }
+  }
+  return masked;
+}
+
+export function maskRestrictedPaymentUserFields<
+  T extends {
+    iban?: string | null;
+    bic?: string | null;
+    accountHolder?: string | null;
+  },
+>(user: T): T {
+  const masked = { ...user };
+  for (const [field, mask] of Object.entries(PAYMENT_USER_FIELD_MASKS) as Array<
+    [keyof typeof PAYMENT_USER_FIELD_MASKS, string]
+  >) {
+    const value = masked[field];
+    if (typeof value === 'string' && value.trim() !== '') {
+      masked[field] = mask as T[typeof field];
     }
   }
   return masked;
