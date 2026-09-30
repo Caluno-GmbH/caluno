@@ -149,6 +149,7 @@ describe('week header label', () => {
       }),
     ]);
     const [week] = weeks;
+    if (!week) throw new Error('expected a week');
     expect(
       formats('en').formatRange(
         week.weekStart,
@@ -169,7 +170,7 @@ describe('minute truncation', () => {
         endedAt: '2026-09-15T12:22:10Z',
       }),
     ]);
-    expect(weeks[0].totalMinutes).toBe(3);
+    expect(weeks[0]?.totalMinutes).toBe(3);
     expect(allTimeMinutes).toBe(3);
   });
 });
