@@ -24,6 +24,7 @@ export * from '../membership/schemas/membership-role.schema';
 export * from '../organization/schemas/organization.schema';
 export * from '../organization/schemas/organization-unit.schema';
 export * from '../organization/schemas/organization-unit-automation.schema';
+export * from '../organization/schemas/organization-unit-automation-run.schema';
 export * from '../organization/schemas/organization-unit-required-form.schema';
 export * from '../organization/schemas/organization-unit-type.schema';
 export * from '../requirement-profile/schemas/document.schema';

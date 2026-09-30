@@ -1,12 +1,12 @@
 import { OrganizationUnitAutomationKind, PermissionKey } from '@repo/data';
-import { Megaphone, UserCheck } from 'lucide-react';
+import { Mail, Megaphone, UserCheck } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import { IdVerificationSettingsCard } from '@/domain/org-unit/components/id-verification-settings-card';
 import {
-  LeadTimeAutomationCard,
-  type LeadTimeAutomationSettings,
-} from '@/domain/org-unit/components/lead-time-automation-card';
+  AutomationCard,
+  type AutomationCardSettings,
+} from '@/domain/org-unit/components/automation-card';
+import { IdVerificationSettingsCard } from '@/domain/org-unit/components/id-verification-settings-card';
 import { SettingsSection } from '@/domain/org-unit/components/settings-section';
 import { getDataClient } from '@/lib/data-client';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
@@ -35,17 +35,21 @@ export default async function ShiftSettingsPage({
 
   const settingsFor = (
     kind: OrganizationUnitAutomationKind,
-  ): LeadTimeAutomationSettings | null => {
+  ): AutomationCardSettings | null => {
     const automation = automations.find((entry) => entry.kind === kind);
     if (!automation) return null;
     return {
       enabled: automation.enabled,
       activeDays: [...automation.activeDays],
       leadTimeHours: automation.leadTimeHours ?? null,
+      sendAtTime: automation.sendAtTime ?? null,
     };
   };
 
   const urgentCall = settingsFor(OrganizationUnitAutomationKind.UrgentCall);
+  const discoveryEmail = settingsFor(
+    OrganizationUnitAutomationKind.DiscoveryEmail,
+  );
   const pauseApproval = settingsFor(
     OrganizationUnitAutomationKind.PauseApproval,
   );
@@ -59,19 +63,33 @@ export default async function ShiftSettingsPage({
         </p>
       </div>
 
-      {urgentCall && (
+      {(urgentCall || discoveryEmail) && (
         <SettingsSection
           title={t('sections.staffing.title')}
           description={t('sections.staffing.description')}
         >
-          <LeadTimeAutomationCard
-            organizationUnitId={orgUId}
-            kind={OrganizationUnitAutomationKind.UrgentCall}
-            copyKey="callOut"
-            icon={<Megaphone />}
-            initialSettings={urgentCall}
-            canEdit={canEdit}
-          />
+          {urgentCall && (
+            <AutomationCard
+              organizationUnitId={orgUId}
+              kind={OrganizationUnitAutomationKind.UrgentCall}
+              copyKey="callOut"
+              icon={<Megaphone />}
+              control="leadTime"
+              initialSettings={urgentCall}
+              canEdit={canEdit}
+            />
+          )}
+          {discoveryEmail && (
+            <AutomationCard
+              organizationUnitId={orgUId}
+              kind={OrganizationUnitAutomationKind.DiscoveryEmail}
+              copyKey="discovery"
+              icon={<Mail />}
+              control="sendTime"
+              initialSettings={discoveryEmail}
+              canEdit={canEdit}
+            />
+          )}
         </SettingsSection>
       )}
 
@@ -80,11 +98,12 @@ export default async function ShiftSettingsPage({
           title={t('sections.moderation.title')}
           description={t('sections.moderation.description')}
         >
-          <LeadTimeAutomationCard
+          <AutomationCard
             organizationUnitId={orgUId}
             kind={OrganizationUnitAutomationKind.PauseApproval}
             copyKey="approval"
             icon={<UserCheck />}
+            control="leadTime"
             initialSettings={pauseApproval}
             canEdit={canEdit}
           />

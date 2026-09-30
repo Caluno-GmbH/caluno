@@ -199,15 +199,21 @@ export class FileService {
       args.mimeType,
     );
 
+    const visibility =
+      rule.visibility === 'public'
+        ? FileVisibility.PUBLIC
+        : FileVisibility.PRIVATE;
+    const publicUrl =
+      visibility === FileVisibility.PUBLIC
+        ? this.s3StorageService.buildPublicUrl(storageKey)
+        : null;
+
     const [file] = await this.db
       .insert(schema.files)
       .values({
         storageKey,
         bucket: this.s3StorageService.getBucket(),
-        visibility:
-          rule.visibility === 'public'
-            ? FileVisibility.PUBLIC
-            : FileVisibility.PRIVATE,
+        visibility,
         purpose: args.purpose,
         mimeType: args.mimeType,
         filename: sanitizedFilename,
@@ -215,6 +221,7 @@ export class FileService {
         status: FileStatus.UPLOADED,
         uploadedByUserId: args.uploadedByUserId,
         organizationUnitId: args.organizationUnitId,
+        publicUrl,
         uploadedAt: new Date(),
       })
       .returning();

@@ -529,11 +529,22 @@
       "label": "When to step in",
       "option": "{hours} hours before"
     },
+    "sendAt": {
+      "label": "Time"
+    },
     "callOut": {
       "title": "Automatic urgent call",
       "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
       "daysDescription": "Shifts on these days can trigger an urgent call.",
       "stepInDescription": "How long before its start a shift below its minimum gets an urgent call.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "Could not save this automation."
+    },
+    "discovery": {
+      "title": "Discovery email",
+      "description": "Sends volunteers an overview of their upcoming shifts in this unit and the shifts that still need people. Volunteers can turn it off in their account settings.",
+      "daysDescription": "Days the email goes out.",
+      "sendAtDescription": "Time of day the email goes out, in local time.",
       "noDaysHint": "No days selected, so this automation will not run.",
       "updateError": "Could not save this automation."
     },
@@ -869,8 +880,8 @@
     "emailSettings": "Emails",
     "emailUrgentCalls": "Urgent calls",
     "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
-    "emailWeeklyUpdate": "Weekly update",
-    "emailWeeklyUpdateDescription": "The Sunday weekly plan email.",
+    "emailWeeklyUpdate": "Discovery email",
+    "emailWeeklyUpdateDescription": "An overview of your upcoming shifts and the shifts that still need people.",
     "identity": {
       "subtitles": {
         "firstName": "As on your ID",
@@ -1762,6 +1773,7 @@
     "pickDayLabel": "Choose a day",
     "respondBeforeNote": "Respond before {date}. You can change your mind until the assignment starts.",
     "signUpCta": "Sign up for {date}",
+    "signUpApprovalNote": "After sign-up the admin will review your request.",
     "signUpNote": "You can cancel at any time.",
     "spotsFree": "· {n} free",
     "spotsFull": "· full",
@@ -2503,7 +2515,8 @@
           "nextYear": "Next year",
           "previousYearBlock": "Previous period",
           "nextYearBlock": "Next period",
-          "apply": "Apply"
+          "apply": "Apply",
+          "placeholder": "Period"
         },
         "manualFieldLabels": {
           "contract-lifespan": "Agreement period",

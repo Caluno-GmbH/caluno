@@ -467,9 +467,15 @@ export class ShiftService {
     order: SortOrder,
     statuses: readonly ShiftInviteStatus[] = MY_SHIFT_INVITE_STATUSES,
     includeIntended = false,
+    restrictToOrganizationUnitIds: readonly string[] | null = null,
   ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
-    const organizationUnitIds =
+    const accessibleOrganizationUnitIds =
       await this.getAccessibleOrganizationUnitIds(userId);
+    const organizationUnitIds = restrictToOrganizationUnitIds
+      ? accessibleOrganizationUnitIds.filter((id) =>
+          restrictToOrganizationUnitIds.includes(id),
+        )
+      : accessibleOrganizationUnitIds;
 
     const dateCondition = this.buildMyShiftDateCondition(
       startsAfter,
