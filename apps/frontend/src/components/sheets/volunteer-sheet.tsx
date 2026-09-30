@@ -26,7 +26,6 @@ import { ExternalLink, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { IdVerificationToggle } from '@/domain/memberships/components/id-verification-toggle';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
-import type { VolunteerAllowanceState } from '@/domain/shift/allowance-display';
 import { AllowanceBadge } from '@/domain/shift/components/allowance-badge';
 import { useSheet } from '@/hooks/use-sheet';
 import { Link } from '@/i18n/navigation';
@@ -97,9 +96,7 @@ function VolunteerSheetContent({
     volunteerIds: [userId],
     shiftInstanceId,
   });
-  const allowanceState = allowanceStates?.[0]?.state as
-    | VolunteerAllowanceState
-    | undefined;
+  const allowanceState = allowanceStates?.[0]?.state;
   const { data: memberships } = useMemberships(orgUId);
   const { data: orgUnit } = useOrganizationUnit(orgUId);
   const membership = memberships?.find((item) => item.user.id === userId);

@@ -3,6 +3,7 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { NotFoundGraphQLError } from '../../graphql/errors';
 import { MembershipService } from '../../membership/membership.service';
+import { appDateParts } from '../../shift/utils/app-time';
 import type { BillingPeriod } from '../utils/billing-period';
 import { ContractService } from './contract.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
@@ -26,8 +27,6 @@ export interface GetVolunteerAllowanceStatesInput {
    * states describe the person only (nothing is projected).
    */
   shiftInstanceId?: string;
-  /** Defaults to the current calendar year. */
-  year?: number;
 }
 
 @Injectable()
@@ -55,7 +54,6 @@ export class VolunteerAllowanceService {
   async getVolunteerAllowanceStates(
     input: GetVolunteerAllowanceStatesInput,
   ): Promise<VolunteerAllowanceResult[]> {
-    const year = input.year ?? new Date().getFullYear();
     const shift = input.shiftInstanceId
       ? await this.loadShiftContext(
           input.shiftInstanceId,
@@ -63,6 +61,8 @@ export class VolunteerAllowanceService {
         )
       : undefined;
     const paidTypeId = shift?.reimbursementTypeId ?? undefined;
+    // The ceiling is per calendar year, so measure against the shift's year.
+    const year = appDateParts(shift?.period.start ?? new Date()).year;
 
     const members = await this.membershipService.getMembers(
       input.organizationUnitId,

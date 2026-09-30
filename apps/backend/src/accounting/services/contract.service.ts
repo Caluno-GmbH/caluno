@@ -150,18 +150,11 @@ export class ContractService {
     reimbursementTypeId: string,
     period: BillingPeriod = { start: new Date(), end: new Date() },
   ): Promise<ContractEntity | undefined> {
-    const rows = await this.db.query.contracts.findMany({
-      where: {
-        volunteerId,
-        reimbursementTypeId,
-        contractStatus: ContractStatus.ACTIVE,
-        periodStart: { lte: period.start },
-        periodEnd: { gte: period.end },
-      },
-    });
-    return rows.find((c) =>
-      periodCovers(c.periodStart, c.periodEnd, period.start, period.end),
+    const rows = await this.findActiveCoveringContracts(
+      { volunteerId, reimbursementTypeId },
+      period,
     );
+    return rows[0];
   }
 
   /**
@@ -176,25 +169,37 @@ export class ContractService {
     const typeIdsByVolunteerId = new Map<string, Set<string>>();
     if (volunteerIds.length === 0) return typeIdsByVolunteerId;
 
-    const rows = await this.db.query.contracts.findMany({
-      where: {
-        volunteerId: { in: volunteerIds },
-        contractStatus: ContractStatus.ACTIVE,
-        periodStart: { lte: period.start },
-        periodEnd: { gte: period.end },
-      },
-    });
+    const rows = await this.findActiveCoveringContracts(
+      { volunteerId: { in: volunteerIds } },
+      period,
+    );
     for (const row of rows) {
-      if (
-        !periodCovers(row.periodStart, row.periodEnd, period.start, period.end)
-      ) {
-        continue;
-      }
       const typeIds = typeIdsByVolunteerId.get(row.volunteerId) ?? new Set();
       typeIds.add(row.reimbursementTypeId);
       typeIdsByVolunteerId.set(row.volunteerId, typeIds);
     }
     return typeIdsByVolunteerId;
+  }
+
+  /** The one place the "ACTIVE and covers the period" rule lives. */
+  private async findActiveCoveringContracts(
+    where: {
+      volunteerId: string | { in: string[] };
+      reimbursementTypeId?: string;
+    },
+    period: BillingPeriod,
+  ): Promise<ContractEntity[]> {
+    const rows = await this.db.query.contracts.findMany({
+      where: {
+        ...where,
+        contractStatus: ContractStatus.ACTIVE,
+        periodStart: { lte: period.start },
+        periodEnd: { gte: period.end },
+      },
+    });
+    return rows.filter((c) =>
+      periodCovers(c.periodStart, c.periodEnd, period.start, period.end),
+    );
   }
 
   async createContract(

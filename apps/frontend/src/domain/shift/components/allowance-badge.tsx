@@ -6,36 +6,41 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import {
-  toAllowanceDisplay,
-  type VolunteerAllowanceState,
-} from '../allowance-display';
+import type { VolunteerAllowanceState } from '../allowance-display';
 
-const ALLOWANCE_ICON: Record<VolunteerAllowanceState, typeof CircleCheck> = {
-  ELIGIBLE: CircleCheck,
-  NEARLY_EXHAUSTED: TriangleAlert,
-  WOULD_EXCEED: CircleAlert,
-  NO_AGREEMENT: FileWarning,
-};
-
-const ALLOWANCE_BADGE_VARIANT: Record<
+/**
+ * One row per state: never colour-only, each state has its own label and icon.
+ * `labelKey` is under `Shift.transferList.allowance`.
+ */
+const ALLOWANCE_BADGE: Record<
   VolunteerAllowanceState,
-  'success' | 'info' | 'destructive'
+  {
+    labelKey: 'eligible' | 'nearlyExhausted' | 'wouldExceed' | 'noAgreement';
+    icon: typeof CircleCheck;
+    variant: 'success' | 'info' | 'destructive';
+  }
 > = {
-  ELIGIBLE: 'success',
-  NEARLY_EXHAUSTED: 'info',
-  WOULD_EXCEED: 'destructive',
-  NO_AGREEMENT: 'info',
+  ELIGIBLE: { labelKey: 'eligible', icon: CircleCheck, variant: 'success' },
+  NEARLY_EXHAUSTED: {
+    labelKey: 'nearlyExhausted',
+    icon: TriangleAlert,
+    variant: 'info',
+  },
+  WOULD_EXCEED: {
+    labelKey: 'wouldExceed',
+    icon: CircleAlert,
+    variant: 'destructive',
+  },
+  NO_AGREEMENT: { labelKey: 'noAgreement', icon: FileWarning, variant: 'info' },
 };
 
 export function AllowanceBadge({ state }: { state: VolunteerAllowanceState }) {
   const t = useTranslations('Shift.transferList.allowance');
-  const display = toAllowanceDisplay(state);
-  const Icon = ALLOWANCE_ICON[state];
+  const { labelKey, icon: Icon, variant } = ALLOWANCE_BADGE[state];
   return (
-    <Badge variant={ALLOWANCE_BADGE_VARIANT[state]} className="gap-1 shrink-0">
+    <Badge variant={variant} className="gap-1 shrink-0">
       <Icon className="size-3" />
-      {t(display.labelKey)}
+      {t(labelKey)}
     </Badge>
   );
 }

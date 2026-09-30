@@ -1,6 +1,7 @@
 import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { ForbiddenGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { VolunteerAllowance } from '../models/volunteer-allowance.model';
 import {
@@ -35,10 +36,18 @@ export class VolunteerAllowanceQueryResolver {
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<VolunteerAllowance[]> {
     const organizationUnitId = context.organizationUnitId;
-    const organizationId =
-      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
-        organizationUnitId,
-      );
+    // Accounting off means there are no allowance states to show, not an error
+    // every list on the page would surface.
+    let organizationId: string;
+    try {
+      organizationId =
+        await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+          organizationUnitId,
+        );
+    } catch (error) {
+      if (error instanceof ForbiddenGraphQLError) return [];
+      throw error;
+    }
 
     return this.volunteerAllowanceService.getVolunteerAllowanceStates({
       organizationId,

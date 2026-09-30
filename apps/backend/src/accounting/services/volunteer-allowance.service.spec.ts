@@ -50,20 +50,21 @@ function build({
     ),
   );
   const contractService = { findActiveContractTypeIds } as never;
-  const reimbursementRateService = {
-    getRosterYearlyUsage: jest.fn(() =>
-      Promise.resolve(
-        Object.entries(usage).map(([id, types]) => ({
-          volunteer: { id },
-          usageByType: types.map((t) => ({
-            reimbursementType: { id: t.id },
-            usedCents: t.limitCents - t.remainingCents,
-            limitCents: t.limitCents,
-            remainingCents: t.remainingCents,
-          })),
+  const getRosterYearlyUsage = jest.fn(() =>
+    Promise.resolve(
+      Object.entries(usage).map(([id, types]) => ({
+        volunteer: { id },
+        usageByType: types.map((t) => ({
+          reimbursementType: { id: t.id },
+          usedCents: t.limitCents - t.remainingCents,
+          limitCents: t.limitCents,
+          remainingCents: t.remainingCents,
         })),
-      ),
+      })),
     ),
+  );
+  const reimbursementRateService = {
+    getRosterYearlyUsage,
     getEffectiveRateCents: jest.fn(() => Promise.resolve(hourlyRateCents)),
   } as never;
 
@@ -75,6 +76,7 @@ function build({
       reimbursementRateService,
     ),
     findActiveContractTypeIds,
+    getRosterYearlyUsage,
   };
 }
 
@@ -139,6 +141,22 @@ describe('VolunteerAllowanceService', () => {
         start: new Date(instance.start),
         end: new Date(instance.end),
       });
+    });
+
+    it("measures against the shift's own calendar year", async () => {
+      const { service, getRosterYearlyUsage } = build({
+        instance: {
+          reimbursementTypeId: EHREN,
+          start: '2027-01-15T08:00:00Z',
+          end: '2027-01-15T10:00:00Z',
+        },
+        contracts: { a: [EHREN] },
+        usage: { a: [ehren(500_00)] },
+      });
+
+      await call(service, ['a'], 'inst-1');
+
+      expect(getRosterYearlyUsage).toHaveBeenCalledWith(UNIT, 2027);
     });
 
     it('ignores contracts of another allowance type', async () => {

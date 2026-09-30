@@ -22,7 +22,6 @@ import {
   remindShiftInstanceInvite,
   updateShiftInstanceInviteStatus,
 } from '../actions';
-import type { VolunteerAllowanceState } from '../allowance-display';
 import {
   acceptedRowActions,
   type CheckInTimeEntry,
@@ -185,6 +184,8 @@ export function ShiftInstanceVolunteersPanel({
         />
       ) : undefined;
 
+    const allowanceState = allowanceStateByVolunteerId.get(invite.user.id);
+
     return {
       id: invite.user.id,
       name: invite.user.name,
@@ -192,14 +193,8 @@ export function ShiftInstanceVolunteersPanel({
       state,
       statusLabel: stateLabel(state),
       statusTooltip,
-      nameAdornment: allowanceStateByVolunteerId.has(invite.user.id) ? (
-        <AllowanceBadge
-          state={
-            allowanceStateByVolunteerId.get(
-              invite.user.id,
-            ) as VolunteerAllowanceState
-          }
-        />
+      nameAdornment: allowanceState ? (
+        <AllowanceBadge state={allowanceState} />
       ) : undefined,
       statusOptions:
         chipTargets.length > 0
