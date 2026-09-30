@@ -34,9 +34,22 @@ describe('isDiscoveryEmailDue', () => {
     );
   });
 
-  it('is not due at any other time of day', () => {
+  it('is not due before the chosen time', () => {
     expect(isDiscoveryEmailDue(input({ nowHourMinute: '07:45' }))).toBe(false);
-    expect(isDiscoveryEmailDue(input({ nowHourMinute: '08:15' }))).toBe(false);
+    expect(isDiscoveryEmailDue(input({ nowHourMinute: '00:00' }))).toBe(false);
+  });
+
+  it('catches up on the next tick after a missed send time', () => {
+    expect(
+      isDiscoveryEmailDue(
+        input({ sendAtTime: '08:30', nowHourMinute: '09:00' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('stays due through the catch-up window and stops after it', () => {
+    expect(isDiscoveryEmailDue(input({ nowHourMinute: '14:00' }))).toBe(true);
+    expect(isDiscoveryEmailDue(input({ nowHourMinute: '15:00' }))).toBe(false);
   });
 
   it('is not due when no send time is configured', () => {

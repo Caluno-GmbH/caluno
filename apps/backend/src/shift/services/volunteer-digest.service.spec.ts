@@ -4,6 +4,7 @@ import { VolunteerDigestService } from './volunteer-digest.service';
 
 const SUNDAY_0800 = new Date('2026-10-04T06:00:00Z');
 const SUNDAY_0900 = new Date('2026-10-04T07:00:00Z');
+const SUNDAY_2200 = new Date('2026-10-04T20:00:00Z');
 const MONDAY_0800 = new Date('2026-10-05T06:00:00Z');
 
 const EMPTY_PAGE = { instances: [], total: 0 };
@@ -15,7 +16,11 @@ interface UnitPlan {
   members: string[];
 }
 
-function build(units: UnitPlan[], deletedUnitIds: string[] = []) {
+function build(
+  units: UnitPlan[],
+  deletedUnitIds: string[] = [],
+  alreadyClaimed: string[] = [],
+) {
   const findMyShiftInstances = mock(async () => EMPTY_PAGE);
   const findAvailableShiftInstances = mock(async () => EMPTY_PAGE);
   const send = mock(async () => undefined);
@@ -50,6 +55,7 @@ function build(units: UnitPlan[], deletedUnitIds: string[] = []) {
           : { id, name: `Unit ${id}`, deletedAt: null },
     } as never,
     {
+      claimRun: async (unitId: string) => !alreadyClaimed.includes(unitId),
       listEnabled: async () =>
         units.map((unit) => ({
           kind: 'DISCOVERY_EMAIL',
@@ -86,10 +92,34 @@ describe('VolunteerDigestService scheduling', () => {
     expect(findMyShiftInstances).not.toHaveBeenCalled();
   });
 
-  it('sends nothing at any other time of day', async () => {
+  it('catches up on a later tick when the send time was missed', async () => {
+    const { service, findMyShiftInstances } = build([SUNDAY_UNIT]);
+
+    const summary = await service.sendDigests(SUNDAY_0900);
+
+    expect(summary.due_units).toBe(1);
+    expect(findMyShiftInstances).toHaveBeenCalled();
+  });
+
+  it('gives up once the catch-up window has passed', async () => {
     const { service } = build([SUNDAY_UNIT]);
 
-    expect((await service.sendDigests(SUNDAY_0900)).due_units).toBe(0);
+    expect((await service.sendDigests(SUNDAY_2200)).due_units).toBe(0);
+  });
+
+  it('sends only once a day, however many ticks find it due', async () => {
+    const { service, findMyShiftInstances } = build(
+      [SUNDAY_UNIT],
+      [],
+      ['unit-1'],
+    );
+
+    const summary = await service.sendDigests(SUNDAY_0900);
+
+    expect(summary.due_units).toBe(1);
+    expect(summary.already_sent_today).toBe(1);
+    expect(summary.recipients).toBe(0);
+    expect(findMyShiftInstances).not.toHaveBeenCalled();
   });
 
   it('builds the email for the unit due on this tick', async () => {

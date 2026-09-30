@@ -5,6 +5,7 @@ import { VolunteerDigestSchedulerService } from './volunteer-digest-scheduler.se
 
 const SUMMARY: VolunteerDigestSummary = {
   due_units: 3,
+  already_sent_today: 1,
   recipients: 120,
   sent: 88,
   skipped_no_content: 29,
