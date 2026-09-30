@@ -7,8 +7,8 @@ import { VolunteerDocumentsService } from '../services';
 
 /**
  * The volunteer's cross-org document views: the "My documents" page data
- * (grouped by organization) and the action-needed badge count. Both resolve
- * the user's organizations server-side, so they are not bound to the
+ * (grouped by org unit) and the action-needed badge count. Both resolve
+ * the user's memberships server-side, so they are not bound to the
  * `x-organization-unit-id` header.
  */
 @Resolver()

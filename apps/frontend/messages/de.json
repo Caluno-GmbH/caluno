@@ -2514,7 +2514,8 @@
           "nextYear": "Nächstes Jahr",
           "previousYearBlock": "Vorheriger Zeitraum",
           "nextYearBlock": "Nächster Zeitraum",
-          "apply": "Anwenden"
+          "apply": "Anwenden",
+          "placeholder": "Zeitraum"
         },
         "manualFieldLabels": {
           "contract-lifespan": "Vereinbarungslaufzeit",

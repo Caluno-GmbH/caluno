@@ -2514,7 +2514,8 @@
           "nextYear": "Next year",
           "previousYearBlock": "Previous period",
           "nextYearBlock": "Next period",
-          "apply": "Apply"
+          "apply": "Apply",
+          "placeholder": "Period"
         },
         "manualFieldLabels": {
           "contract-lifespan": "Agreement period",
