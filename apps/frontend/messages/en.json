@@ -1688,10 +1688,10 @@
     "transferList": {
       "addAria": "Add",
       "allowance": {
-        "eligible": "Allowance available",
-        "nearlyExhausted": "Allowance nearly exhausted",
-        "noAgreement": "Agreement needed",
-        "wouldExceed": "Would exceed allowance"
+        "eligible": "eligible for payout",
+        "nearlyExhausted": "close to limit",
+        "noAgreement": "contract needed",
+        "wouldExceed": "exceeds allowance!"
       },
       "available": "Available",
       "confirmExceedAllowance": {

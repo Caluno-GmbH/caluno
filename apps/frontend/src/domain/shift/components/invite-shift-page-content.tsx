@@ -12,18 +12,6 @@ interface InviteShiftPageContentProps {
   locale: string;
   eventId?: string;
   isCreationFlow?: boolean;
-  /**
-   * VOLI-1248: when this shift is paid, pass the allowance type it's paid
-   * under so each available volunteer gets an eligibility state. There is no
-   * "is this shift paid, and under which allowance type" signal on the shift
-   * yet — that's introduced by VOLI-1247/1249/1251, which are being built
-   * concurrently. Once one of those wires a real value in here, the
-   * eligibility states start rendering with zero further changes downstream
-   * (see `InviteShiftForm`, which already fetches and renders them whenever
-   * this is set). Until then this stays undefined and the invite list
-   * renders exactly as it does today (acceptance criterion 6).
-   */
-  paidReimbursementTypeId?: string;
 }
 
 export async function InviteShiftPageContent({
@@ -33,7 +21,6 @@ export async function InviteShiftPageContent({
   locale,
   eventId,
   isCreationFlow = false,
-  paidReimbursementTypeId,
 }: InviteShiftPageContentProps) {
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Shift.sheet' });
@@ -52,6 +39,13 @@ export async function InviteShiftPageContent({
   if (!instance) {
     notFound();
   }
+
+  const instanceStart = new Date(instance.actualStartsAt);
+  const instanceEnd = new Date(instance.actualEndsAt);
+  const instanceDurationMinutes = Math.max(
+    0,
+    Math.round((instanceEnd.getTime() - instanceStart.getTime()) / 60_000),
+  );
 
   const invitedMembers = (instance?.invites ?? []).map((invite) => ({
     id: invite.user.id,
@@ -84,13 +78,13 @@ export async function InviteShiftPageContent({
       invitedMembers={invitedMembers}
       mutateVolunteers={updateShiftVolunteers.bind(null, orgUId, instanceId)}
       paidAllowance={
-        paidReimbursementTypeId
+        shift.reimbursementTypeId
           ? {
               organizationUnitId: orgUId,
-              reimbursementTypeId: paidReimbursementTypeId,
-              shiftDurationMinutes: shift.durationMinutes,
-              periodStart: new Date(instance.actualStartsAt).toISOString(),
-              periodEnd: new Date(instance.actualEndsAt).toISOString(),
+              reimbursementTypeId: shift.reimbursementTypeId,
+              shiftDurationMinutes: instanceDurationMinutes,
+              periodStart: instanceStart.toISOString(),
+              periodEnd: instanceEnd.toISOString(),
             }
           : undefined
       }

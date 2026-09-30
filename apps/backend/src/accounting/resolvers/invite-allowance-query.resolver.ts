@@ -22,9 +22,11 @@ export class InviteAllowanceQueryResolver {
    * `reimbursementTypeId`. Only called for paid shifts — the frontend simply
    * doesn't query this (and shows no states) for an unpaid one.
    *
-   * Status signals only: never returns or implies a euro amount.
+   * Status signals only: never returns or implies a euro amount. Gated on
+   * the right to invite (shift edit), not accounting: shift planners see
+   * states, while amounts stay behind the accounting rights.
    */
-  @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
   @Query(() => [VolunteerInviteAllowance])
   async inviteAllowanceEligibility(
     @Args('organizationUnitId', { type: () => ID })
