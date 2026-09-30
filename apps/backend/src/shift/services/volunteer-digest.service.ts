@@ -23,7 +23,12 @@ import { ShiftInviteStatus, SortOrder } from '../enums';
 import type { ShiftEntity } from '../schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import { ShiftService } from '../shift.service';
-import { appHourMinute, appWeekday, hoursUntil } from '../utils/app-time';
+import {
+  appDateKey,
+  appHourMinute,
+  appWeekday,
+  hoursUntil,
+} from '../utils/app-time';
 import { isDiscoveryEmailDue } from '../utils/discovery-email-schedule';
 import {
   type NeedsVolunteersCandidate,
@@ -51,6 +56,7 @@ type VolunteerDigestOutcome =
 export interface VolunteerDigestSummary
   extends Record<VolunteerDigestOutcome, number> {
   due_units: number;
+  already_sent_today: number;
   recipients: number;
 }
 
@@ -74,6 +80,7 @@ export class VolunteerDigestService {
   ): Promise<VolunteerDigestSummary> {
     const summary: VolunteerDigestSummary = {
       due_units: 0,
+      already_sent_today: 0,
       recipients: 0,
       sent: 0,
       skipped_no_content: 0,
@@ -98,6 +105,8 @@ export class VolunteerDigestService {
     summary.due_units = due.length;
     if (due.length === 0) return summary;
 
+    const runOn = appDateKey(sendAt);
+
     for (const automation of due) {
       const unit = await this.organizationUnitDataService.findById(
         automation.organizationUnitId,
@@ -111,6 +120,16 @@ export class VolunteerDigestService {
           },
           'Skipping a scheduled discovery email for a missing or deleted org unit',
         );
+        continue;
+      }
+
+      const claimed = await this.automationService.claimRun(
+        unit.id,
+        OrganizationUnitAutomationKind.DISCOVERY_EMAIL,
+        runOn,
+      );
+      if (!claimed) {
+        summary.already_sent_today += 1;
         continue;
       }
 

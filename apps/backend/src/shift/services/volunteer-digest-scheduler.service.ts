@@ -10,7 +10,7 @@ export class VolunteerDigestSchedulerService {
     private readonly volunteerDigestService: VolunteerDigestService,
   ) {}
 
-  @Cron('*/15 * * * *', { timeZone: 'Europe/Berlin' })
+  @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
   async handleDigestTick(): Promise<void> {
     const startedAt = Date.now();
     this.logger.log(

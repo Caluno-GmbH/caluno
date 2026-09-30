@@ -94,3 +94,8 @@ export function appHourMinute(date: Date): string {
   const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
   return `${hour}:${minute}`;
 }
+
+export function appDateKey(date: Date): string {
+  const { year, month, day } = appDateParts(date);
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}

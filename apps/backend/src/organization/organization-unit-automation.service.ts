@@ -98,6 +98,20 @@ export class OrganizationUnitAutomationService {
     }));
   }
 
+  async claimRun(
+    organizationUnitId: string,
+    kind: OrganizationUnitAutomationKind,
+    runOn: string,
+  ): Promise<boolean> {
+    const claimed = await this.db
+      .insert(schema.organizationUnitAutomationRuns)
+      .values({ organizationUnitId, kind, runOn })
+      .onConflictDoNothing()
+      .returning({ id: schema.organizationUnitAutomationRuns.id });
+
+    return claimed.length > 0;
+  }
+
   async update(
     organizationUnitId: string,
     kind: OrganizationUnitAutomationKind,

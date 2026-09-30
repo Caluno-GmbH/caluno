@@ -9,8 +9,7 @@ export const AUTOMATION_LEAD_TIME_HOURS = [12, 24, 48, 72] as const;
 export type AutomationLeadTimeHours =
   (typeof AUTOMATION_LEAD_TIME_HOURS)[number];
 
-export const AUTOMATION_SEND_AT_TIME_PATTERN =
-  /^([01]\d|2[0-3]):(00|15|30|45)$/;
+export const AUTOMATION_SEND_AT_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export interface AutomationSettings {
   enabled: boolean;
