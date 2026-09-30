@@ -1263,13 +1263,13 @@
       "all": "All",
       "descriptions": {
         "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
-        "checkInManage": "Look up volunteers; see which shifts are available for check-in; check volunteers in or out; add people to shifts; invite people to the organisation and approve join requests from this screen.",
+        "checkInManage": "Look up volunteers; see which assignments are available for check-in; check volunteers in or out; add people to assignments; invite people to the organisation and approve join requests from this screen.",
         "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
         "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
         "requirementProfileEdit": "Create and change forms and blocks.",
         "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
-        "shiftEdit": "Create, change, and delete shifts and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
-        "shiftView": "See shifts and their occurrences, events, who is invited or signed up, and timesheet entries.",
+        "shiftEdit": "Create, change, and delete assignments and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
+        "shiftView": "See assignments and their occurrences, events, who is invited or signed up, and timesheet entries.",
         "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
         "volunteerView": "See members, pending and past join requests, and volunteer profiles, including submitted forms (excluding payment-related data)."
       },
@@ -1292,7 +1292,7 @@
         "checkIn": "Check-in",
         "organization": "Organisation wide settings",
         "requirementProfile": "Requirement forms and blocks",
-        "shift": "Shifts, events, timesheets",
+        "shift": "Assignments, events, timesheets",
         "volunteer": "Volunteer information and membership"
       }
     },
@@ -1536,7 +1536,7 @@
       "groupComing": "Coming",
       "groupNotComing": "Not coming",
       "groupPending": "Pending",
-      "removeSuccess": "Volunteer removed from this shift",
+      "removeSuccess": "Volunteer removed from this assignment",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
       "pendingApproval": "Pending approval",
@@ -2450,8 +2450,8 @@
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
             "shift_name": {
-              "label": "Name of the tracked shift",
-              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+              "label": "Name of the tracked assignment",
+              "hint": "Each row shows the assignment its hours came from. Hours tracked without an assignment show the agreement's task description instead."
             },
             "agreement_task_description": {
               "label": "Task description from the agreement",
@@ -2463,7 +2463,7 @@
             }
           },
           "firstColumnPlaceholders": {
-            "shiftName": "Shift name",
+            "shiftName": "Assignment name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },
