@@ -11,6 +11,7 @@ import {
   cn,
   FieldLegend,
   FieldSet,
+  Input,
   RadioGroup,
   RadioGroupItem,
   Separator,
@@ -35,43 +36,39 @@ export const WEEKDAYS: readonly Weekday[] = [
 
 export const LEAD_TIME_HOURS = [12, 24, 48, 72] as const;
 
-export interface LeadTimeAutomationSettings {
+export interface AutomationCardSettings {
   enabled: boolean;
   activeDays: Weekday[];
-  leadTimeHours: number | null;
+  leadTimeHours?: number | null;
+  sendAtTime?: string | null;
 }
 
-interface LeadTimeAutomationCardProps {
+interface AutomationCardProps {
   organizationUnitId: string;
   kind: OrganizationUnitAutomationKind;
-  /** Key under the `Automations` namespace holding this card's copy. */
-  copyKey: 'callOut' | 'approval';
-  /** Rendered element, not a component: a component cannot cross the RSC boundary. */
+  copyKey: 'callOut' | 'approval' | 'discovery';
   icon: ReactNode;
-  initialSettings: LeadTimeAutomationSettings;
+  control: 'leadTime' | 'sendTime';
+  initialSettings: AutomationCardSettings;
   canEdit: boolean;
 }
 
-/**
- * An automation configured by weekdays plus how long before a shift starts it
- * steps in — shared by pause approval (VOLI-1485) and the automatic urgent
- * call (VOLI-1487).
- */
-export function LeadTimeAutomationCard({
+export function AutomationCard({
   organizationUnitId,
   kind,
   copyKey,
   icon,
+  control,
   initialSettings,
   canEdit,
-}: LeadTimeAutomationCardProps) {
+}: AutomationCardProps) {
   const t = useTranslations('Automations');
   const [settings, setSettings] = useState(initialSettings);
   const mutation = useUpdateOrganizationUnitAutomation();
   const titleId = useId();
   const descriptionId = useId();
 
-  const update = async (patch: Partial<LeadTimeAutomationSettings>) => {
+  const update = async (patch: Partial<AutomationCardSettings>) => {
     const previous = settings;
     setSettings({ ...settings, ...patch });
 
@@ -83,7 +80,7 @@ export function LeadTimeAutomationCard({
     }
   };
 
-  const { enabled, activeDays, leadTimeHours } = settings;
+  const { enabled, activeDays, leadTimeHours, sendAtTime } = settings;
   const controlsDisabled = !canEdit || !enabled;
 
   return (
@@ -114,10 +111,6 @@ export function LeadTimeAutomationCard({
 
         <Separator />
 
-        {/* Always shown so admins see what they can tune before switching on;
-            inactive and showing no selection until the automation is on (the
-            stored choice returns when it is). One fade for the whole block:
-            the controls' own disabled fade would stack on top of it. */}
         <div
           aria-disabled={!enabled}
           className={cn(
@@ -131,12 +124,21 @@ export function LeadTimeAutomationCard({
             disabled={controlsDisabled}
             onChange={(days) => update({ activeDays: days })}
           />
-          <LeadTimeField
-            description={t(`${copyKey}.stepInDescription`)}
-            value={enabled ? leadTimeHours : null}
-            disabled={controlsDisabled}
-            onChange={(hours) => update({ leadTimeHours: hours })}
-          />
+          {control === 'leadTime' ? (
+            <LeadTimeField
+              description={t(`${copyKey}.stepInDescription`)}
+              value={enabled ? (leadTimeHours ?? null) : null}
+              disabled={controlsDisabled}
+              onChange={(hours) => update({ leadTimeHours: hours })}
+            />
+          ) : (
+            <SendTimeField
+              description={t(`${copyKey}.sendAtDescription`)}
+              value={enabled ? (sendAtTime ?? '') : ''}
+              disabled={controlsDisabled}
+              onChange={(time) => update({ sendAtTime: time })}
+            />
+          )}
         </div>
 
         {enabled && activeDays.length === 0 && (
@@ -273,6 +275,42 @@ function LeadTimeField({
             </div>
           ))}
         </RadioGroup>
+      )}
+    </SettingField>
+  );
+}
+
+function SendTimeField({
+  description,
+  value,
+  disabled,
+  onChange,
+}: {
+  description: string;
+  value: string;
+  disabled: boolean;
+  onChange: (time: string) => void;
+}) {
+  const t = useTranslations('Automations');
+  return (
+    <SettingField
+      label={t('sendAt.label')}
+      description={description}
+      disabled={disabled}
+    >
+      {({ legendId, descriptionId }) => (
+        <Input
+          type="time"
+          step={900}
+          className="w-36"
+          value={value}
+          disabled={disabled}
+          aria-labelledby={legendId}
+          aria-describedby={descriptionId}
+          onChange={(event) => {
+            if (event.target.value) onChange(event.target.value);
+          }}
+        />
       )}
     </SettingField>
   );
