@@ -110,6 +110,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
       }
       toast.success(tProfile('saved'));
       router.replace('/profile');
+      router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : tProfile('saveFailed'),

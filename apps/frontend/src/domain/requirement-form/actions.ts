@@ -469,11 +469,10 @@ export const updateUserProfile = actionClient
   .inputSchema(updateUserProfileSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient();
-    // const { profileDataToUpdateInput } = await import(
-    //   '@/domain/user/lib/profile-data-map'
-    // );
     const result = await data.user.updateMyProfile(
       profileDataToUpdateInput(parsedInput.data),
     );
+    revalidatePath('/');
+    revalidatePath('/profile');
     return result;
   });
