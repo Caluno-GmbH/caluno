@@ -97,4 +97,79 @@ describe('updateMyProfile name fields', () => {
 
     expect(response.errors?.[0]?.message).toMatch(/First and last name/i);
   });
+
+  it('returns profile fields on me and does not overwrite email via updateMyProfile', async () => {
+    const user = await createUser(db, {
+      phone: '+49 30 111',
+      street: 'Old St',
+      birthdate: '1990-01-01',
+    });
+    const originalEmail = user.email;
+    setAuthMockUserId(user.id);
+
+    const meData = await graphqlRequestRequiringData<{
+      me: {
+        id: string;
+        email: string;
+        phone: string | null;
+        street: string | null;
+        birthdate: string | null;
+        iban: string | null;
+      };
+    }>(
+      app,
+      {
+        query: `
+          query Me {
+            me {
+              id
+              email
+              phone
+              street
+              birthdate
+              iban
+            }
+          }
+        `,
+      },
+      'me',
+    );
+
+    expect(meData.me).toMatchObject({
+      id: user.id,
+      email: originalEmail,
+      phone: '+49 30 111',
+      street: 'Old St',
+      birthdate: '1990-01-01',
+    });
+
+    await graphqlRequestRequiringData<{
+      updateMyProfile: { id: string; phone: string | null; email: string };
+    }>(
+      app,
+      {
+        query: `
+          mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
+            updateMyProfile(input: $input) {
+              id
+              phone
+              email
+            }
+          }
+        `,
+        variables: {
+          input: {
+            phone: '+49 30 999',
+          },
+        },
+      },
+      'updateMyProfile',
+    );
+
+    const after = await db.query.users.findFirst({ where: { id: user.id } });
+    expect(after?.phone).toBe('+49 30 999');
+    expect(after?.email).toBe(originalEmail);
+    expect(after?.street).toBe('Old St');
+    expect(after?.birthdate).toBe('1990-01-01');
+  });
 });

@@ -41,4 +41,10 @@ describe('profileDataToUserColumns', () => {
       accountHolder: 'Ada Lovelace',
     });
   });
+
+  it('does not invent keys that were absent from the input (merge, not wipe)', () => {
+    expect(profileDataToUserColumns({ phone: '+49 30 123' })).toEqual({
+      phone: '+49 30 123',
+    });
+  });
 });

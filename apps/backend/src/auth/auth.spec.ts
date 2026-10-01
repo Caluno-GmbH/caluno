@@ -86,6 +86,37 @@ describe('createAuthConfig', () => {
     });
   });
 
+  it('trims firstname/lastname on sign up and syncs name', async () => {
+    const config = authConfig();
+    const beforeCreate = config.databaseHooks?.user?.create?.before;
+    expect(beforeCreate).toBeDefined();
+
+    const result = await beforeCreate?.(
+      {
+        id: 'user-1',
+        email: 'volunteer@example.com',
+        name: 'ignored',
+        firstname: '  Ada ',
+        lastname: ' Lovelace ',
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+        body: { privacyPolicyAccepted: true },
+      } as never,
+    );
+
+    expect(result).toEqual({
+      data: expect.objectContaining({
+        firstname: 'Ada',
+        lastname: 'Lovelace',
+        name: 'Ada Lovelace',
+      }),
+    });
+  });
+
   it('does not declare privacyPolicyAccepted as an additional user field', () => {
     const config = authConfig();
 
