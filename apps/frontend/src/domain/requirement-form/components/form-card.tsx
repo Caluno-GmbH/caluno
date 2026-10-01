@@ -59,10 +59,6 @@ export function FormCard({
   }
 
   return (
-    // A form's name is whatever a coordinator typed, and German compounds run
-    // long — "Interessensbekundung" has no break opportunity at all. overflow-wrap
-    // is inherited, so the title, the description and the chips below all get it
-    // from here, and each still breaks only when it would otherwise overflow.
     <Card className="flex flex-col break-words">
       <CardContent className="flex flex-1 flex-col pt-5">
         <div className="flex flex-1 flex-col">
