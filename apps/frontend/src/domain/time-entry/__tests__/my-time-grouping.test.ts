@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'bun:test';
+import { formats } from '@/lib/formatting/formats';
 import {
   entryDurationMinutes,
   getEntryState,
   groupMyTime,
   type TimeEntry,
+  WEEK_HEADER_FROM_FORMAT,
+  WEEK_HEADER_TO_FORMAT,
 } from '../my-time-grouping';
 
 const entry = (
@@ -134,5 +137,40 @@ describe('groupMyTime', () => {
     expect(newer.weekStart.getTime()).toBeGreaterThan(
       older.weekStart.getTime(),
     );
+  });
+});
+
+describe('week header label', () => {
+  it('shows the calendar dates of the week containing the entry', () => {
+    const { weeks } = groupMyTime([
+      entry({
+        startedAt: '2026-09-15T12:18:00Z',
+        endedAt: '2026-09-15T12:21:00Z',
+      }),
+    ]);
+    const [week] = weeks;
+    if (!week) throw new Error('expected a week');
+    expect(
+      formats('en').formatRange(
+        week.weekStart,
+        week.weekEnd,
+        '',
+        WEEK_HEADER_FROM_FORMAT,
+        WEEK_HEADER_TO_FORMAT,
+      ),
+    ).toBe('14 Sep - 20 Sep 2026');
+  });
+});
+
+describe('minute truncation', () => {
+  it('truncates seconds so group totals match the displayed entry durations', () => {
+    const { weeks, allTimeMinutes } = groupMyTime([
+      entry({
+        startedAt: '2026-09-15T12:18:40Z',
+        endedAt: '2026-09-15T12:22:10Z',
+      }),
+    ]);
+    expect(weeks[0]?.totalMinutes).toBe(3);
+    expect(allTimeMinutes).toBe(3);
   });
 });
