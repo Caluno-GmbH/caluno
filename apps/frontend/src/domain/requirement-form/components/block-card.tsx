@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormBlock, RequirementForm } from '@repo/data';
-import { Badge, Button, Card, CardContent } from '@repo/ui';
+import { Badge, Button, Card, CardContent, cn } from '@repo/ui';
 import type { LucideIcon } from 'lucide-react';
 import { Eye, FileCheck, MapPin, Pencil, Trash2, User } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ConfirmDialog } from './confirm-dialog';
+import { USER_TEXT_BADGE } from './user-text-badge';
 
 const BLOCK_ICONS: Record<string, LucideIcon> = {
   User,
@@ -51,7 +52,7 @@ export function BlockCard({
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col break-words">
       <CardContent className="flex flex-1 flex-col pt-5">
         <div className="flex flex-1 flex-col">
           <div className="flex items-center gap-2.5">
@@ -76,7 +77,11 @@ export function BlockCard({
             ) : (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {block.fields?.map((field) => (
-                  <Badge key={field.id} variant="outline" className="text-xs">
+                  <Badge
+                    key={field.id}
+                    variant="outline"
+                    className={cn('text-xs', USER_TEXT_BADGE)}
+                  >
                     {field.label}
                   </Badge>
                 ))}
@@ -91,7 +96,11 @@ export function BlockCard({
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {usedInForms.map((f) => (
-                  <Badge key={f.id} variant="secondary" className="text-xs">
+                  <Badge
+                    key={f.id}
+                    variant="secondary"
+                    className={cn('text-xs', USER_TEXT_BADGE)}
+                  >
                     {f.name}
                   </Badge>
                 ))}
@@ -162,7 +171,11 @@ export function BlockCard({
             </p>
             <div className="flex flex-wrap gap-1.5">
               {usedInForms.map((f) => (
-                <Badge key={f.id} variant="outline" className="text-sm">
+                <Badge
+                  key={f.id}
+                  variant="outline"
+                  className={cn('text-sm', USER_TEXT_BADGE)}
+                >
                   {f.name}
                 </Badge>
               ))}

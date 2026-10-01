@@ -4,6 +4,7 @@ import type { FormBlock, RequirementForm } from '@repo/data';
 import {
   Badge,
   Button,
+  cn,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +19,7 @@ import { DeleteAlertDialog } from '@/components/delete-alert-dialog';
 import { FormattedDate } from '@/components/formatted-date';
 import { Link } from '@/i18n/navigation';
 import { copyToClipboard } from '@/lib/clipboard';
+import { USER_TEXT_BADGE } from './user-text-badge';
 
 function FormActions({
   form,
@@ -160,7 +162,7 @@ export function FormsTable({
                         <Badge
                           key={block.id}
                           variant="outline"
-                          className="text-xs"
+                          className={cn('text-xs', USER_TEXT_BADGE)}
                         >
                           {block.title}
                         </Badge>

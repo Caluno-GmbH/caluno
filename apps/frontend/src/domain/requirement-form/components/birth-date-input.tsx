@@ -60,6 +60,7 @@ export function BirthDateInput({
     <>
       <InputOTP
         id={id}
+        containerClassName="flex-wrap"
         maxLength={8}
         pattern={REGEXP_ONLY_DIGITS}
         value={digits}

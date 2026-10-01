@@ -473,7 +473,7 @@
     "subject": "You're invited to {shiftTitle}"
   },
   "shiftInstanceCallOut": {
-    "buttonLabel": "I can help",
+    "buttonLabel": "View assignment",
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
     "detailShift": "Assignment",
