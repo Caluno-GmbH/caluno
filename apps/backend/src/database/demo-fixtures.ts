@@ -35,7 +35,7 @@ import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import { expandShift } from '../shift/utils/rrule-expander';
-import { resolveNamesForBackfill } from '../user/user-name';
+import { formatUserName } from '../user/user-name';
 import { slugify } from '../utils/slug.util';
 import { relations } from './relations';
 import * as schema from './schema';
@@ -187,7 +187,8 @@ type Database = NodePgDatabase<typeof relations>;
 type FixtureUser = {
   id: string;
   email: string;
-  name: string;
+  firstname: string;
+  lastname: string;
 };
 
 type FixtureDateParts = {
@@ -314,7 +315,7 @@ const addHours = (date: Date, hours: number): Date =>
 const createAuthUser = async (
   db: Database,
   hashedPassword: string,
-  input: { email: string; name: string; image?: string },
+  input: { email: string; firstname: string; lastname: string; image?: string },
 ): Promise<FixtureUser> => {
   const existing = await db.query.users.findFirst({
     where: { email: input.email },
@@ -327,21 +328,21 @@ const createAuthUser = async (
         .set({ image: input.image })
         .where(eq(schema.users.id, existing.id));
     }
-    return { id: existing.id, email: existing.email, name: existing.name };
+    return {
+      id: existing.id,
+      email: existing.email,
+      firstname: existing.firstname,
+      lastname: existing.lastname,
+    };
   }
 
   const id = crypto.randomUUID();
-  const names = resolveNamesForBackfill({
-    name: input.name,
-    firstname: null,
-    lastname: null,
-  });
 
   await db.insert(schema.users).values({
     id,
-    name: names.name,
-    firstname: names.firstname,
-    lastname: names.lastname,
+    name: formatUserName(input.firstname, input.lastname),
+    firstname: input.firstname,
+    lastname: input.lastname,
     email: input.email,
     emailVerified: true,
     locale: 'de',
@@ -356,7 +357,12 @@ const createAuthUser = async (
     password: hashedPassword,
   });
 
-  return { id, email: input.email, name: input.name };
+  return {
+    id,
+    email: input.email,
+    firstname: input.firstname,
+    lastname: input.lastname,
+  };
 };
 
 const ensureMembershipWithRole = async (
@@ -1173,7 +1179,8 @@ async function seedDemoFixtures() {
 
   const coordinator = await createAuthUser(db, hashedPassword, {
     email: email('friederike.lange'),
-    name: 'Friederike Lange',
+    firstname: 'Friederike',
+    lastname: 'Lange',
     image: PORTRAIT_URLS['friederike.lange'],
   });
 
@@ -1217,7 +1224,8 @@ async function seedDemoFixtures() {
 
   const supervisor = await createAuthUser(db, hashedPassword, {
     email: email('jonas.petersen'),
-    name: 'Jonas Petersen',
+    firstname: 'Jonas',
+    lastname: 'Petersen',
     image: PORTRAIT_URLS['jonas.petersen'],
   });
   await ensureMembershipWithRole(
@@ -1229,26 +1237,78 @@ async function seedDemoFixtures() {
 
   const memberDefinitions: Array<{
     localPart: string;
-    name: string;
+    firstname: string;
+    lastname: string;
     unit: 'nord' | 'sued' | 'west';
   }> = [
-    { localPart: 'hannah.reimers', name: 'Hannah Reimers', unit: 'nord' },
-    { localPart: 'mehmet.aydin', name: 'Mehmet Aydın', unit: 'nord' },
-    { localPart: 'sophie.brandt', name: 'Sophie Brandt', unit: 'nord' },
-    { localPart: 'klaus.dietrich', name: 'Klaus Dietrich', unit: 'sued' },
-    { localPart: 'layla.hoffmann', name: 'Layla Hoffmann', unit: 'sued' },
-    { localPart: 'tom.vogel', name: 'Tom Vogel', unit: 'sued' },
-    { localPart: 'ingrid.neumann', name: 'Ingrid Neumann', unit: 'sued' },
-    { localPart: 'noah.fischer', name: 'Noah Fischer', unit: 'west' },
-    { localPart: 'elif.yildiz', name: 'Elif Yıldız', unit: 'west' },
-    { localPart: 'peter.schulz', name: 'Peter Schulz', unit: 'west' },
+    {
+      localPart: 'hannah.reimers',
+      firstname: 'Hannah',
+      lastname: 'Reimers',
+      unit: 'nord',
+    },
+    {
+      localPart: 'mehmet.aydin',
+      firstname: 'Mehmet',
+      lastname: 'Aydın',
+      unit: 'nord',
+    },
+    {
+      localPart: 'sophie.brandt',
+      firstname: 'Sophie',
+      lastname: 'Brandt',
+      unit: 'nord',
+    },
+    {
+      localPart: 'klaus.dietrich',
+      firstname: 'Klaus',
+      lastname: 'Dietrich',
+      unit: 'sued',
+    },
+    {
+      localPart: 'layla.hoffmann',
+      firstname: 'Layla',
+      lastname: 'Hoffmann',
+      unit: 'sued',
+    },
+    {
+      localPart: 'tom.vogel',
+      firstname: 'Tom',
+      lastname: 'Vogel',
+      unit: 'sued',
+    },
+    {
+      localPart: 'ingrid.neumann',
+      firstname: 'Ingrid',
+      lastname: 'Neumann',
+      unit: 'sued',
+    },
+    {
+      localPart: 'noah.fischer',
+      firstname: 'Noah',
+      lastname: 'Fischer',
+      unit: 'west',
+    },
+    {
+      localPart: 'elif.yildiz',
+      firstname: 'Elif',
+      lastname: 'Yıldız',
+      unit: 'west',
+    },
+    {
+      localPart: 'peter.schulz',
+      firstname: 'Peter',
+      lastname: 'Schulz',
+      unit: 'west',
+    },
   ];
 
   const members: Array<FixtureUser & { unit: 'nord' | 'sued' | 'west' }> = [];
   for (const definition of memberDefinitions) {
     const user = await createAuthUser(db, hashedPassword, {
       email: email(definition.localPart),
-      name: definition.name,
+      firstname: definition.firstname,
+      lastname: definition.lastname,
       image: PORTRAIT_URLS[definition.localPart],
     });
     await ensureMembershipWithRole(
@@ -1265,7 +1325,8 @@ async function seedDemoFixtures() {
   // "Demo Volunteer" pattern), plus complete personal/banking-style data.
   const demoUser = await createAuthUser(db, hashedPassword, {
     email: email('lena.vogt'),
-    name: 'Lena Vogt',
+    firstname: 'Lena',
+    lastname: 'Vogt',
     image: PORTRAIT_URLS['lena.vogt'],
   });
   await ensureMembershipWithRole(
@@ -1283,34 +1344,36 @@ async function seedDemoFixtures() {
   // Mitgliederliste und tauchen unten in der Zeiterfassung auf.
   const additionalNordMemberDefinitions: Array<{
     localPart: string;
-    name: string;
+    firstname: string;
+    lastname: string;
   }> = [
-    { localPart: 'julia.schroeder', name: 'Julia Schröder' },
-    { localPart: 'finn.kowalski', name: 'Finn Kowalski' },
-    { localPart: 'amara.boateng', name: 'Amara Boateng' },
-    { localPart: 'paul.lehmann', name: 'Paul Lehmann' },
-    { localPart: 'zeynep.demir', name: 'Zeynep Demir' },
-    { localPart: 'clara.winkler', name: 'Clara Winkler' },
-    { localPart: 'leon.kraus', name: 'Leon Kraus' },
-    { localPart: 'fatima.elamin', name: 'Fatima El-Amin' },
-    { localPart: 'tobias.richter', name: 'Tobias Richter' },
-    { localPart: 'greta.sommer', name: 'Greta Sommer' },
-    { localPart: 'ali.hassan', name: 'Ali Hassan' },
-    { localPart: 'marlene.vogel', name: 'Marlene Vogel' },
-    { localPart: 'tarek.younes', name: 'Tarek Younes' },
-    { localPart: 'nele.krueger', name: 'Nele Krüger' },
-    { localPart: 'milan.petrov', name: 'Milan Petrov' },
-    { localPart: 'ida.wagner', name: 'Ida Wagner' },
-    { localPart: 'samuel.owusu', name: 'Samuel Owusu' },
-    { localPart: 'franziska.berg', name: 'Franziska Berg' },
-    { localPart: 'yusuf.kaya', name: 'Yusuf Kaya' },
+    { localPart: 'julia.schroeder', firstname: 'Julia', lastname: 'Schröder' },
+    { localPart: 'finn.kowalski', firstname: 'Finn', lastname: 'Kowalski' },
+    { localPart: 'amara.boateng', firstname: 'Amara', lastname: 'Boateng' },
+    { localPart: 'paul.lehmann', firstname: 'Paul', lastname: 'Lehmann' },
+    { localPart: 'zeynep.demir', firstname: 'Zeynep', lastname: 'Demir' },
+    { localPart: 'clara.winkler', firstname: 'Clara', lastname: 'Winkler' },
+    { localPart: 'leon.kraus', firstname: 'Leon', lastname: 'Kraus' },
+    { localPart: 'fatima.elamin', firstname: 'Fatima', lastname: 'El-Amin' },
+    { localPart: 'tobias.richter', firstname: 'Tobias', lastname: 'Richter' },
+    { localPart: 'greta.sommer', firstname: 'Greta', lastname: 'Sommer' },
+    { localPart: 'ali.hassan', firstname: 'Ali', lastname: 'Hassan' },
+    { localPart: 'marlene.vogel', firstname: 'Marlene', lastname: 'Vogel' },
+    { localPart: 'tarek.younes', firstname: 'Tarek', lastname: 'Younes' },
+    { localPart: 'nele.krueger', firstname: 'Nele', lastname: 'Krüger' },
+    { localPart: 'milan.petrov', firstname: 'Milan', lastname: 'Petrov' },
+    { localPart: 'ida.wagner', firstname: 'Ida', lastname: 'Wagner' },
+    { localPart: 'samuel.owusu', firstname: 'Samuel', lastname: 'Owusu' },
+    { localPart: 'franziska.berg', firstname: 'Franziska', lastname: 'Berg' },
+    { localPart: 'yusuf.kaya', firstname: 'Yusuf', lastname: 'Kaya' },
   ];
 
   const additionalNordMembers: FixtureUser[] = [];
   for (const definition of additionalNordMemberDefinitions) {
     const user = await createAuthUser(db, hashedPassword, {
       email: email(definition.localPart),
-      name: definition.name,
+      firstname: definition.firstname,
+      lastname: definition.lastname,
       image: PORTRAIT_URLS[definition.localPart],
     });
     await ensureMembershipWithRole(
@@ -1329,12 +1392,13 @@ async function seedDemoFixtures() {
   // Pending / rejected Interessensbekundungen (Use Case 1: Einladen & Verwalten)
   const pendingApplicants = await Promise.all(
     [
-      { localPart: 'marie.albrecht', name: 'Marie Albrecht' },
-      { localPart: 'david.kern', name: 'David Kern' },
+      { localPart: 'marie.albrecht', firstname: 'Marie', lastname: 'Albrecht' },
+      { localPart: 'david.kern', firstname: 'David', lastname: 'Kern' },
     ].map((applicant) =>
       createAuthUser(db, hashedPassword, {
         email: email(applicant.localPart),
-        name: applicant.name,
+        firstname: applicant.firstname,
+        lastname: applicant.lastname,
         image: PORTRAIT_URLS[applicant.localPart],
       }),
     ),
@@ -1342,7 +1406,8 @@ async function seedDemoFixtures() {
 
   const rejectedApplicant = await createAuthUser(db, hashedPassword, {
     email: email('sabine.wolff'),
-    name: 'Sabine Wolff',
+    firstname: 'Sabine',
+    lastname: 'Wolff',
     image: PORTRAIT_URLS['sabine.wolff'],
   });
 

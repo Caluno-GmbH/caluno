@@ -14,7 +14,7 @@ import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import { expandShift } from '../shift/utils/rrule-expander';
-import { resolveNamesForBackfill } from '../user/user-name';
+import { formatUserName } from '../user/user-name';
 import { slugify } from '../utils/slug.util';
 import { relations } from './relations';
 import * as schema from './schema';
@@ -68,7 +68,8 @@ type Database = NodePgDatabase<typeof relations>;
 type FixtureUser = {
   id: string;
   email: string;
-  name: string;
+  firstname: string;
+  lastname: string;
 };
 
 const memberEmail = (index: number): string =>
@@ -194,28 +195,28 @@ const addHours = (date: Date, hours: number): Date =>
 const createAuthUser = async (
   db: Database,
   hashedPassword: string,
-  input: { email: string; name: string },
+  input: { email: string; firstname: string; lastname: string },
 ): Promise<FixtureUser> => {
   const existing = await db.query.users.findFirst({
     where: { email: input.email },
   });
 
   if (existing) {
-    return { id: existing.id, email: existing.email, name: existing.name };
+    return {
+      id: existing.id,
+      email: existing.email,
+      firstname: existing.firstname,
+      lastname: existing.lastname,
+    };
   }
 
   const id = crypto.randomUUID();
-  const names = resolveNamesForBackfill({
-    name: input.name,
-    firstname: null,
-    lastname: null,
-  });
 
   await db.insert(schema.users).values({
     id,
-    name: names.name,
-    firstname: names.firstname,
-    lastname: names.lastname,
+    name: formatUserName(input.firstname, input.lastname),
+    firstname: input.firstname,
+    lastname: input.lastname,
     email: input.email,
     emailVerified: true,
     locale: 'en',
@@ -232,7 +233,12 @@ const createAuthUser = async (
     password: hashedPassword,
   });
 
-  return { id, email: input.email, name: input.name };
+  return {
+    id,
+    email: input.email,
+    firstname: input.firstname,
+    lastname: input.lastname,
+  };
 };
 
 const ensureMembershipWithRole = async (
@@ -1125,7 +1131,8 @@ async function seedFixtures() {
 
   const admin = await createAuthUser(db, hashedPassword, {
     email: 'testing+admin@caluno.org',
-    name: 'Playground Admin',
+    firstname: 'Playground',
+    lastname: 'Admin',
   });
 
   const org = await ensurePlaygroundOrganization(db, admin.id);
@@ -1139,7 +1146,8 @@ async function seedFixtures() {
 
   const supervisor = await createAuthUser(db, hashedPassword, {
     email: 'testing+supervisor@caluno.org',
-    name: 'Playground Supervisor',
+    firstname: 'Playground',
+    lastname: 'Supervisor',
   });
 
   const members: FixtureUser[] = [];
@@ -1147,7 +1155,8 @@ async function seedFixtures() {
     members.push(
       await createAuthUser(db, hashedPassword, {
         email: memberEmail(index),
-        name: `Playground Member ${String(index).padStart(2, '0')}`,
+        firstname: 'Playground',
+        lastname: `Member ${String(index).padStart(2, '0')}`,
       }),
     );
   }
@@ -1157,7 +1166,8 @@ async function seedFixtures() {
   // "my shifts" and "discover" flows have real content on first login.
   const demoUser = await createAuthUser(db, hashedPassword, {
     email: DEMO_USER_EMAIL,
-    name: 'Demo Volunteer',
+    firstname: 'Demo',
+    lastname: 'Volunteer',
   });
 
   await ensureMembershipWithRole(
@@ -1188,14 +1198,16 @@ async function seedFixtures() {
       (email, index) =>
         createAuthUser(db, hashedPassword, {
           email,
-          name: `Pending Applicant ${String(index + 1).padStart(2, '0')}`,
+          firstname: 'Pending',
+          lastname: `Applicant ${String(index + 1).padStart(2, '0')}`,
         }),
     ),
   );
 
   const rejectedUser = await createAuthUser(db, hashedPassword, {
     email: 'testing+rejected01@caluno.org',
-    name: 'Rejected Applicant',
+    firstname: 'Rejected',
+    lastname: 'Applicant',
   });
 
   // The document signing chain requires the volunteer's bank/personal profile

@@ -1,9 +1,7 @@
 import type { Database } from '../../src/database/database.module';
 import * as schema from '../../src/database/schema';
-import {
-  formatUserName,
-  resolveNamesForBackfill,
-} from '../../src/user/user-name';
+import { formatUserName } from '../../src/user/user-name';
+import { trimmed } from '../../src/utils';
 
 export type User = typeof schema.users.$inferSelect;
 
@@ -13,21 +11,9 @@ export const createUser = async (
 ): Promise<User> => {
   const suffix = crypto.randomUUID();
   const id = overrides?.id ?? `test-user-${suffix}`;
-  const displayName = overrides?.name ?? `Test User ${suffix}`;
-  const names = resolveNamesForBackfill({
-    name: displayName,
-    firstname: overrides?.firstname,
-    lastname: overrides?.lastname,
-  });
-
-  const firstname =
-    overrides?.firstname !== undefined && overrides.firstname !== null
-      ? String(overrides.firstname).trim()
-      : names.firstname;
-  const lastname =
-    overrides?.lastname !== undefined && overrides.lastname !== null
-      ? String(overrides.lastname).trim()
-      : names.lastname;
+  const firstname = trimmed(overrides?.firstname) ?? `Test`;
+  const lastname = trimmed(overrides?.lastname) ?? `User ${suffix}`;
+  const name = formatUserName(firstname, lastname);
 
   const [user] = await db
     .insert(schema.users)
@@ -37,7 +23,7 @@ export const createUser = async (
       ...overrides,
       firstname,
       lastname,
-      name: formatUserName(firstname, lastname),
+      name,
     })
     .returning();
 
