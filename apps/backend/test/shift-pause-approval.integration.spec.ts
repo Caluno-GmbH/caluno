@@ -17,6 +17,7 @@ import { OrganizationUnitAutomationService } from '../src/organization/organizat
 import { ALL_WEEKDAYS, type Weekday } from '../src/shared/enums/weekday.enum';
 import type { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
+import { ShiftPauseApprovalSweepService } from '../src/shift/services/shift-pause-approval-sweep.service';
 import { ShiftService } from '../src/shift/shift.service';
 import { appWeekday } from '../src/shift/utils/app-time';
 import { slugify } from '../src/utils/slug.util';
@@ -265,6 +266,264 @@ describe('ShiftService pause approval', () => {
     });
 
     expect(await joinAndReadStatus(instance.id)).toBe(
+      ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+    );
+  });
+});
+
+describe('ShiftPauseApprovalSweepService', () => {
+  let moduleRef: TestingModule;
+  let shiftService: ShiftService;
+  let sweepService: ShiftPauseApprovalSweepService;
+  let automationService: OrganizationUnitAutomationService;
+  let db: Database;
+  let organizationUnitId: string;
+
+  beforeAll(async () => {
+    await ensureTestDatabase();
+    moduleRef = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+    }).compile();
+    db = moduleRef.get<Database>(DATABASE_CONNECTION);
+
+    automationService = new OrganizationUnitAutomationService(db);
+
+    const organizationUnitService = new OrganizationUnitService(
+      db,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    shiftService = new ShiftService(
+      db,
+      { findUsersWithPermission: async () => [] } as unknown as AuthService,
+      {} as never,
+      {
+        isMemberOfUnitOrAncestor: async () => true,
+        getMembershipState: async () => 'JOINED',
+      } as unknown as MembershipService,
+      {
+        notifyShiftInstanceJoined: mock(() => {}),
+        notifyShiftInstanceJoinRequested: mock(() => {}),
+        notifyShiftInstanceJoinApproved: mock(() => {}),
+        notifyShiftInstanceWaitlistJoined: mock(() => {}),
+      } as unknown as NotificationService,
+      {} as OrganizationService,
+      {} as never,
+      { getRequiredFormStatuses: async () => [] } as never,
+      { shareSubmissionsWithOrgUnit: async () => {} } as never,
+      { capture: mock(() => {}) } as unknown as PostHogService,
+      new AccountingOrgAccessService(db, organizationUnitService),
+      automationService,
+    );
+
+    sweepService = new ShiftPauseApprovalSweepService(
+      shiftService,
+      automationService,
+    );
+
+    const orgName = `Pause Approval Sweep Org ${crypto.randomUUID()}`;
+    const [organization] = await db
+      .insert(schema.organizations)
+      .values({ name: orgName, slug: slugify(orgName) })
+      .returning();
+    const [rootType] = await db
+      .insert(schema.organizationUnitTypes)
+      .values({
+        organizationId: organization.id,
+        name: 'organisation unit',
+        description: `organization unit for ${orgName}`,
+        icon: 'building-2',
+      })
+      .returning();
+    const [rootUnit] = await db
+      .insert(schema.organizationUnits)
+      .values({
+        organizationId: organization.id,
+        parentId: null,
+        typeId: rootType.id,
+        name: organization.name,
+        slug: organization.slug,
+      })
+      .returning();
+
+    organizationUnitId = rootUnit.id;
+
+    registerTestResourceCleanup(async () => {
+      await moduleRef.close();
+    });
+  });
+
+  async function createApprovalShift(options: {
+    hoursFromNow: number;
+    minVolunteers: number | null;
+    maxVolunteers?: number | null;
+    joinedCount?: number;
+  }) {
+    const startsAt = new Date(Date.now() + options.hoursFromNow * HOURS);
+    const shift = await createShift(db, {
+      organizationUnitId,
+      startsAt,
+      endsAt: new Date(startsAt.getTime() + 2 * HOURS),
+      rrule: null,
+      minVolunteers: options.minVolunteers,
+      maxVolunteers: options.maxVolunteers,
+    });
+    await db
+      .update(schema.shifts)
+      .set({ joinRequiresApproval: true })
+      .where(eq(schema.shifts.id, shift.id));
+
+    const instance = await db.query.shiftInstances.findFirst({
+      where: { masterId: shift.id },
+    });
+    if (!instance) throw new Error('Expected the shift to expand an instance');
+
+    for (let i = 0; i < (options.joinedCount ?? 0); i++) {
+      await createShiftInstanceInvite(db, {
+        instanceId: instance.id,
+        userId: (await createUser(db)).id,
+        status: ShiftInviteStatus.JOINED,
+      });
+    }
+
+    return { shift, instance, weekday: appWeekday(instance.actualStartsAt) };
+  }
+
+  async function setPauseApproval(settings: {
+    enabled: boolean;
+    activeDays: Weekday[];
+    leadTimeHours: number;
+  }) {
+    await automationService.update(
+      organizationUnitId,
+      OrganizationUnitAutomationKind.PAUSE_APPROVAL,
+      settings,
+    );
+  }
+
+  async function createAwaitingInvite(instanceId: string) {
+    const volunteerId = (await createUser(db)).id;
+    await createShiftInstanceInvite(db, {
+      instanceId,
+      userId: volunteerId,
+      status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+    });
+    return volunteerId;
+  }
+
+  async function inviteStatus(instanceId: string, userId: string) {
+    const invite = await db.query.shiftInstanceInvites.findFirst({
+      where: { instanceId, userId },
+    });
+    return invite?.status;
+  }
+
+  it('admits a volunteer who was already waiting once the shift qualifies', async () => {
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 20,
+      minVolunteers: 3,
+    });
+    const waitingUserId = await createAwaitingInvite(instance.id);
+
+    await setPauseApproval({
+      enabled: true,
+      activeDays: [weekday],
+      leadTimeHours: 48,
+    });
+
+    await sweepService.runTick();
+
+    expect(await inviteStatus(instance.id, waitingUserId)).toBe(
+      ShiftInviteStatus.JOINED,
+    );
+  });
+
+  it('waitlists the overflow when there are more waiting volunteers than seats', async () => {
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 20,
+      minVolunteers: 3,
+      maxVolunteers: 1,
+    });
+    const firstUserId = await createAwaitingInvite(instance.id);
+    const secondUserId = await createAwaitingInvite(instance.id);
+
+    await setPauseApproval({
+      enabled: true,
+      activeDays: [weekday],
+      leadTimeHours: 48,
+    });
+
+    await sweepService.runTick();
+
+    expect(await inviteStatus(instance.id, firstUserId)).toBe(
+      ShiftInviteStatus.JOINED,
+    );
+    expect(await inviteStatus(instance.id, secondUserId)).toBe(
+      ShiftInviteStatus.WAITLIST_JOINED,
+    );
+  });
+
+  it('leaves a waiting volunteer alone when the automation is off', async () => {
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 20,
+      minVolunteers: 3,
+    });
+    const waitingUserId = await createAwaitingInvite(instance.id);
+
+    await setPauseApproval({
+      enabled: false,
+      activeDays: [weekday],
+      leadTimeHours: 48,
+    });
+
+    await sweepService.runTick();
+
+    expect(await inviteStatus(instance.id, waitingUserId)).toBe(
+      ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+    );
+  });
+
+  it('leaves a waiting volunteer alone once the shift reaches its minimum', async () => {
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 20,
+      minVolunteers: 1,
+      joinedCount: 1,
+    });
+    const waitingUserId = await createAwaitingInvite(instance.id);
+
+    await setPauseApproval({
+      enabled: true,
+      activeDays: [weekday],
+      leadTimeHours: 48,
+    });
+
+    await sweepService.runTick();
+
+    expect(await inviteStatus(instance.id, waitingUserId)).toBe(
+      ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+    );
+  });
+
+  it('leaves a waiting volunteer alone when the shift starts beyond the lead time', async () => {
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 30,
+      minVolunteers: 3,
+    });
+    const waitingUserId = await createAwaitingInvite(instance.id);
+
+    await setPauseApproval({
+      enabled: true,
+      activeDays: [weekday],
+      leadTimeHours: 24,
+    });
+
+    await sweepService.runTick();
+
+    expect(await inviteStatus(instance.id, waitingUserId)).toBe(
       ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
     );
   });
