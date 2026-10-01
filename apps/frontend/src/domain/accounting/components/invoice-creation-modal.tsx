@@ -356,12 +356,10 @@ export function InvoiceCreationModal({
   // data arriving, say) must not clobber a coordinator's edits. The reset
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !template || derivedFields || !volunteerName) return;
+    if (!dataReady || !template || derivedFields) return;
     const profileData = toProfileDataMap(profileQuery.data);
-    setDerivedFields(
-      deriveEditableFields(template, profileData, volunteerName),
-    );
-  }, [dataReady, template, derivedFields, profileQuery.data, volunteerName]);
+    setDerivedFields(deriveEditableFields(template, profileData));
+  }, [dataReady, template, derivedFields, profileQuery.data]);
 
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the

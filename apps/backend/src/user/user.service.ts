@@ -19,12 +19,14 @@ import {
   POSTHOG_SURFACE,
 } from '../shared/observability/posthog.events';
 import { PostHogService } from '../shared/observability/posthog.service';
+import { isBlank, trimmed } from '../utils';
 import {
   type ProfileFields,
   profileDataToUserColumns,
   toProfileDataMap,
   WRITABLE_PROFILE_SYSTEM_KEYS,
 } from './profile-fields';
+import { formatUserName } from './user-name';
 
 @Injectable()
 export class UserService {
@@ -87,8 +89,9 @@ export class UserService {
     });
   }
 
-  async findByIdOrThrow(id: string): Promise<UserEntity> {
-    const user = await this.db.query.users.findFirst({
+  async findByIdOrThrow(id: string, tx?: Database): Promise<UserEntity> {
+    const db = tx ?? this.db;
+    const user = await db.query.users.findFirst({
       where: { id },
     });
 
@@ -169,19 +172,30 @@ export class UserService {
   ): Promise<UserEntity> {
     const db = tx ?? this.db;
     const changes: Record<string, string | null> = {};
+
     for (const [key, value] of Object.entries(columns)) {
       if (value === undefined) continue;
-      changes[key] = value;
+      if (key === 'firstname' || key === 'lastname') {
+        const trimmedValue = trimmed(value);
+        if (isBlank(trimmedValue))
+          throw new BadRequestGraphQLError('First and last name are required');
+        changes[key] = trimmedValue;
+      } else {
+        changes[key] = value;
+      }
+    }
+
+    if (changes.firstname && changes.lastname) {
+      changes.name = formatUserName(changes.firstname, changes.lastname);
+    } else if (changes.firstname || changes.lastname) {
+      const existing = await this.findByIdOrThrow(userId, db);
+      const first = changes.firstname ? changes.firstname : existing.firstname;
+      const last = changes.lastname ? changes.lastname : existing.lastname;
+      changes.name = formatUserName(first, last);
     }
 
     if (Object.keys(changes).length === 0) {
-      const existing = await db.query.users.findFirst({
-        where: { id: userId },
-      });
-      if (!existing) {
-        throw new NotFoundGraphQLError('User not found');
-      }
-      return existing;
+      return await this.findByIdOrThrow(userId, db);
     }
 
     const [user] = await db

@@ -2861,12 +2861,12 @@ export type User = {
   emailUrgentCallsEnabled: Scalars['Boolean']['output'];
   /** Whether the volunteer receives the weekly plan email. */
   emailWeeklyUpdateEnabled: Scalars['Boolean']['output'];
-  firstname?: Maybe<Scalars['String']['output']>;
+  firstname: Scalars['String']['output'];
   gender?: Maybe<Scalars['String']['output']>;
   iban?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   image?: Maybe<Scalars['String']['output']>;
-  lastname?: Maybe<Scalars['String']['output']>;
+  lastname: Scalars['String']['output'];
   locale?: Maybe<Scalars['String']['output']>;
   name: Scalars['String']['output'];
   permissions?: Maybe<Array<Permission>>;
@@ -3837,7 +3837,7 @@ export type GetAdminUserProfileQueryVariables = Exact<{
 }>;
 
 
-export type GetAdminUserProfileQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email: string, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
+export type GetAdminUserProfileQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email: string, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
 
 export type CreateRequirementProfileSubmissionMutationVariables = Exact<{
   input: CreateRequirementProfileSubmissionInput;
@@ -4295,14 +4295,14 @@ export type CheckOutVolunteerMutation = { __typename?: 'Mutation', checkOutVolun
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } };
+export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } };
 
 export type GetUserQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
 
 export type GetUserByCheckInIdQueryVariables = Exact<{
   checkInId: Scalars['String']['input'];
@@ -4350,7 +4350,7 @@ export type UpdateMyProfileMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'User', id: string, firstname?: string | null, lastname?: string | null, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null, email: string } };
+export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'User', id: string, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null, email: string } };
 
 export const ContractSummaryFieldsFragmentDoc = gql`
     fragment ContractSummaryFields on Contract {

@@ -34,7 +34,7 @@ const fieldToRenderable = (
   systemKey: f.key,
   type: f.type,
   label,
-  required: false,
+  required: f.key === 'firstname' || f.key === 'lastname',
   description: subtitle ?? null,
   placeholder: null,
   options: null,
@@ -82,7 +82,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
             f.key,
             buildFieldSchema(
               fieldToRenderable(f, tFields(f.labelKey), subtitleByKey[f.key]),
-              false,
+              f.key === 'firstname' || f.key === 'lastname',
               messages,
             ),
           ]),

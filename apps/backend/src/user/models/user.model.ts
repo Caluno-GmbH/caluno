@@ -37,11 +37,11 @@ export class User {
   })
   emailPlatformEnabled!: boolean;
 
-  @Field(() => String, { nullable: true })
-  firstname?: string | null;
+  @Field(() => String)
+  firstname!: string;
 
-  @Field(() => String, { nullable: true })
-  lastname?: string | null;
+  @Field(() => String)
+  lastname!: string;
 
   @Field(() => String, { nullable: true })
   preferredName?: string | null;

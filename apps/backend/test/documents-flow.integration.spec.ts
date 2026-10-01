@@ -386,7 +386,22 @@ const seedVolunteerProfile = async (
   data: Record<string, unknown>,
 ) => {
   const { email: _email, ...columns } = profileDataToUserColumns(data);
-  await db.update(schema.users).set(columns).where(eq(schema.users.id, userId));
+  const changes: Record<string, string> = {};
+  for (const [key, value] of Object.entries(columns)) {
+    if (typeof value === 'string') {
+      changes[key] = value;
+    }
+  }
+  if (changes.firstname !== undefined || changes.lastname !== undefined) {
+    const existing = await db.query.users.findFirst({ where: { id: userId } });
+    const first = changes.firstname ?? existing?.firstname;
+    const last = changes.lastname ?? existing?.lastname;
+    if (first && last) {
+      changes.name = `${first} ${last}`;
+    }
+  }
+  if (Object.keys(changes).length === 0) return;
+  await db.update(schema.users).set(changes).where(eq(schema.users.id, userId));
 };
 
 /** A completed, unclaimed, paid time entry — the raw material for an invoice. */

@@ -94,12 +94,11 @@ describe('deriveEditableFields', () => {
     expect(holder?.provenance).toBe('profile');
   });
 
-  it('prefills first/last name from the volunteer name, not the profile', () => {
-    const fields = deriveEditableFields(
-      getContractDocument('ehrenamt'),
-      { name: 'Ignored', lastname: 'Ignored' },
-      'Anna Müller',
-    );
+  it('use firstname and lastname from profile and not volunteer name', () => {
+    const fields = deriveEditableFields(getContractDocument('ehrenamt'), {
+      firstname: 'Anna',
+      lastname: 'Müller',
+    });
     const first = fields.find((f) => f.source === 'volunteer_first_name');
     const last = fields.find((f) => f.source === 'volunteer_last_name');
     expect(first?.value).toBe('Anna');
@@ -108,9 +107,9 @@ describe('deriveEditableFields', () => {
 
   it('marks name sources gap when no volunteer name is supplied', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'), {});
-    const first = fields.find((f) => f.source === 'volunteer_first_name');
-    expect(first?.provenance).toBe('gap');
-    expect(first?.value).toBeNull();
+    const streetField = fields.find((f) => f.source === 'volunteer_street');
+    expect(streetField?.provenance).toBe('gap');
+    expect(streetField?.value).toBeNull();
   });
 
   it('excludes org/rate/generation-time sources (not per-document editable)', () => {

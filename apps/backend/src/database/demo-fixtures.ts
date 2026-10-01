@@ -35,6 +35,7 @@ import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import { expandShift } from '../shift/utils/rrule-expander';
+import { resolveNamesForBackfill } from '../user/user-name';
 import { slugify } from '../utils/slug.util';
 import { relations } from './relations';
 import * as schema from './schema';
@@ -330,10 +331,17 @@ const createAuthUser = async (
   }
 
   const id = crypto.randomUUID();
+  const names = resolveNamesForBackfill({
+    name: input.name,
+    firstname: null,
+    lastname: null,
+  });
 
   await db.insert(schema.users).values({
     id,
-    name: input.name,
+    name: names.name,
+    firstname: names.firstname,
+    lastname: names.lastname,
     email: input.email,
     emailVerified: true,
     locale: 'de',

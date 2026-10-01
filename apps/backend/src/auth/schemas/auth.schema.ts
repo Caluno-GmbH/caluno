@@ -31,8 +31,10 @@ export const users = snakeCase.table('users', {
     .unique()
     .$defaultFn(generateCheckInId),
   // Profile fields (formerly user_profiles.data) — VOLI-1524
-  firstname: text('firstname'),
-  lastname: text('lastname'),
+  // firstname/lastname are source of truth; `name` is always dual-written as
+  // `firstname + " " + lastname` for Better Auth + display.
+  firstname: text('firstname').notNull(),
+  lastname: text('lastname').notNull(),
   preferredName: text('preferred_name'),
   gender: text('gender'),
   phone: text('phone'),

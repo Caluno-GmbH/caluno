@@ -1714,12 +1714,12 @@ type User {
 
   """Whether the volunteer receives the weekly plan email."""
   emailWeeklyUpdateEnabled: Boolean!
-  firstname: String
+  firstname: String!
   gender: String
   iban: String
   id: ID!
   image: String
-  lastname: String
+  lastname: String!
   locale: String
   name: String!
   permissions: [Permission!]

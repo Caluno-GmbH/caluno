@@ -1,3 +1,5 @@
+import { isBlank } from '../utils';
+
 export const PAYMENT_DATA_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',
@@ -16,7 +18,7 @@ export function maskRestrictedPaymentData(
   const masked = { ...data };
   for (const [key, mask] of Object.entries(PAYMENT_DATA_MASKS)) {
     const value = masked[key];
-    if (typeof value === 'string' && value.trim() !== '') {
+    if (!isBlank(value)) {
       masked[key] = mask;
     }
   }
@@ -35,7 +37,7 @@ export function maskRestrictedPaymentUserFields<
     [keyof typeof PAYMENT_USER_FIELD_MASKS, string]
   >) {
     const value = masked[field];
-    if (typeof value === 'string' && value.trim() !== '') {
+    if (!isBlank(value)) {
       masked[field] = mask as T[typeof field];
     }
   }

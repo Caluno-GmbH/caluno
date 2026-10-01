@@ -51,6 +51,41 @@ const authConfig = () =>
   });
 
 describe('createAuthConfig', () => {
+  it('rejects sign up without firstname/lastname', async () => {
+    const config = authConfig();
+
+    const beforeCreate = config.databaseHooks?.user?.create?.before;
+    expect(beforeCreate).toBeDefined();
+
+    await expect(
+      beforeCreate?.(
+        {
+          id: 'user-1',
+          email: 'volunteer@example.com',
+          name: 'Volunteer',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+          body: { privacyPolicyAccepted: true },
+        } as never,
+      ),
+    ).rejects.toMatchObject({
+      message: 'First name and last name are required',
+    });
+  });
+
+  it('declares firstname and lastname as required additional fields', () => {
+    const config = authConfig();
+
+    expect(config.user?.additionalFields).toMatchObject({
+      firstname: { type: 'string', required: true },
+      lastname: { type: 'string', required: true },
+    });
+  });
+
   it('does not declare privacyPolicyAccepted as an additional user field', () => {
     const config = authConfig();
 
@@ -84,6 +119,8 @@ describe('createAuthConfig', () => {
           id: 'user-1',
           email: 'volunteer@example.com',
           name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
           emailVerified: false,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -97,6 +134,9 @@ describe('createAuthConfig', () => {
       expect(result).toEqual({
         data: expect.objectContaining({
           locale: expectedLocale,
+          firstname: 'Volun',
+          lastname: 'Teer',
+          name: 'Volun Teer',
           privacyPolicyVersion: '2026-08-25',
           privacyPolicyAcceptedAt: expect.any(Date),
         }),
@@ -121,6 +161,8 @@ describe('createAuthConfig', () => {
           id: 'user-1',
           email: 'volunteer@example.com',
           name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
           emailVerified: false,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -145,6 +187,8 @@ describe('createAuthConfig', () => {
           id: 'user-1',
           email: 'volunteer@example.com',
           name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
           emailVerified: false,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -168,6 +212,8 @@ describe('createAuthConfig', () => {
           id: 'user-1',
           email: 'volunteer@example.com',
           name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
           emailVerified: false,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -281,6 +327,8 @@ describe('createAuthConfig', () => {
         id: 'user-1',
         email: 'volunteer@example.com',
         name: 'Volunteer',
+        firstname: 'Volun',
+        lastname: 'Teer',
         emailVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -342,6 +390,8 @@ describe('createAuthConfig', () => {
         id: 'user-1',
         email: 'volunteer@example.com',
         name: 'Volunteer',
+        firstname: 'Volun',
+        lastname: 'Teer',
         emailVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -372,6 +422,8 @@ describe('createAuthConfig', () => {
         id: 'user-1',
         email: 'volunteer@example.com',
         name: 'Volunteer',
+        firstname: 'Volun',
+        lastname: 'Teer',
         emailVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),

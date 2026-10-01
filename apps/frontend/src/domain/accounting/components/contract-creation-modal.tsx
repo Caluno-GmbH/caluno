@@ -172,12 +172,10 @@ export function ContractCreationModal({
   // data arriving, say) must not clobber a coordinator's edits. The reset
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !templateDoc || derivedFields || !volunteerName) return;
+    if (!dataReady || !templateDoc || derivedFields) return;
     const profileData = toProfileDataMap(profileQuery.data);
-    setDerivedFields(
-      deriveEditableFields(templateDoc, profileData, volunteerName),
-    );
-  }, [dataReady, templateDoc, derivedFields, profileQuery.data, volunteerName]);
+    setDerivedFields(deriveEditableFields(templateDoc, profileData));
+  }, [dataReady, templateDoc, derivedFields, profileQuery.data]);
 
   const { formatDate } = useFormatting();
 

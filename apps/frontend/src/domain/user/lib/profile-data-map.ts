@@ -1,3 +1,5 @@
+import { isBlank } from '@/lib/string.util';
+
 /**
  * Map a User (or profile-shaped object) to the systemKey → value bag used by
  * requirement forms and personal-information UI.
@@ -40,7 +42,7 @@ export function toProfileDataMap(
   ];
   const data: Record<string, unknown> = {};
   for (const [key, value] of entries) {
-    if (typeof value === 'string' && value.trim() !== '') {
+    if (!isBlank(value)) {
       data[key] = value;
     }
   }

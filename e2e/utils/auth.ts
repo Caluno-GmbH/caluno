@@ -16,7 +16,7 @@ export async function signUpVerifyAndLogin(page: Page): Promise<TestAccount> {
 
   const signup = new SignupPage(page);
   await signup.goto();
-  await signup.signup('E2E User', emailAddress, TEST_PASSWORD);
+  await signup.signup('E2E', 'User', emailAddress, TEST_PASSWORD);
   await signup.expectVerificationPrompt();
 
   const code = await Mailbox.getVerificationCode(emailAddress);
