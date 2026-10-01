@@ -1,6 +1,6 @@
 import { hashPassword } from 'better-auth/crypto';
 import { eq, inArray } from 'drizzle-orm';
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import {
   DEFAULT_MEMBER_ROLE_NAME,
@@ -13,9 +13,20 @@ import { EventInviteStatus } from '../event/enums';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
-import { expandShift } from '../shift/utils/rrule-expander';
-import { formatUserName } from '../user/user-name';
-import { slugify } from '../utils/slug.util';
+import {
+  addDaysInFixtureTimezone,
+  addHours,
+  createAuthUser,
+  type Database,
+  DEFAULT_SHIFT_DURATION_MINUTES,
+  ensureEvent,
+  ensureMembershipWithRole,
+  ensureShiftWithInvites,
+  type FixtureUser,
+  findWeekdayWeeksAgo,
+  fixtureWallClockToUtc,
+  getDateInFixtureTimezone,
+} from './fixture-helpers';
 import { relations } from './relations';
 import * as schema from './schema';
 
@@ -24,8 +35,6 @@ process.env.TZ = 'Europe/Berlin';
 const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
 const ORG_NAME = 'Playground';
 const ORG_SLUG = 'playground';
-const FIXTURE_TIMEZONE = 'Europe/Berlin';
-const SHIFT_DURATION_MINUTES = 240;
 const RECURRENCE_WEEKS_BACK = 12;
 
 // Stable IDs so e2e specs can rely on fixture data without querying the DB.
@@ -63,222 +72,8 @@ const SUPERVISOR_PERMISSIONS = [
   PERMISSIONS.CHECK_IN_MANAGE,
 ] as const;
 
-type Database = NodePgDatabase<typeof relations>;
-
-type FixtureUser = {
-  id: string;
-  email: string;
-  firstname: string;
-  lastname: string;
-};
-
 const memberEmail = (index: number): string =>
   `testing+${String(index).padStart(3, '0')}@caluno.org`;
-
-type FixtureDateParts = {
-  year: number;
-  month: number;
-  day: number;
-  weekday: number;
-};
-
-const getDateInFixtureTimezone = (instant: Date): FixtureDateParts => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: FIXTURE_TIMEZONE,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-  }).formatToParts(instant);
-
-  const read = (type: string): string =>
-    parts.find((part) => part.type === type)?.value ?? '';
-
-  const weekdayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-
-  return {
-    year: Number(read('year')),
-    month: Number(read('month')),
-    day: Number(read('day')),
-    weekday: weekdayMap[read('weekday')] ?? 0,
-  };
-};
-
-const addDaysInFixtureTimezone = (
-  year: number,
-  month: number,
-  day: number,
-  days: number,
-): Omit<FixtureDateParts, 'weekday'> => {
-  const noonUtc = fixtureWallClockToUtc(year, month, day, 12);
-  return getDateInFixtureTimezone(
-    new Date(noonUtc.getTime() + days * 86_400_000),
-  );
-};
-
-const findWeekdayWeeksAgo = (
-  weekday: number,
-  weeksAgo: number,
-): Omit<FixtureDateParts, 'weekday'> => {
-  for (let daysBack = 0; daysBack < 7; daysBack += 1) {
-    const parts = getDateInFixtureTimezone(
-      new Date(Date.now() - daysBack * 86_400_000),
-    );
-
-    if (parts.weekday === weekday) {
-      return addDaysInFixtureTimezone(
-        parts.year,
-        parts.month,
-        parts.day,
-        -weeksAgo * 7,
-      );
-    }
-  }
-
-  throw new Error(
-    `Could not find weekday ${weekday} in ${FIXTURE_TIMEZONE} calendar`,
-  );
-};
-
-const fixtureWallClockToUtc = (
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute = 0,
-): Date => {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: FIXTURE_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
-
-  const baseUtc = Date.UTC(year, month - 1, day, hour, minute);
-
-  for (let offsetHours = -3; offsetHours <= 3; offsetHours += 0.25) {
-    const candidate = new Date(baseUtc - offsetHours * 3_600_000);
-    const formatted = formatter.formatToParts(candidate);
-    const read = (type: string): number =>
-      Number(formatted.find((part) => part.type === type)?.value);
-
-    if (
-      read('year') === year &&
-      read('month') === month &&
-      read('day') === day &&
-      read('hour') === hour &&
-      read('minute') === minute
-    ) {
-      return candidate;
-    }
-  }
-
-  throw new Error(
-    `Could not resolve ${year}-${month}-${day} ${hour}:${minute} in ${FIXTURE_TIMEZONE}`,
-  );
-};
-
-const addHours = (date: Date, hours: number): Date =>
-  new Date(date.getTime() + hours * 3_600_000);
-
-const createAuthUser = async (
-  db: Database,
-  hashedPassword: string,
-  input: { email: string; firstname: string; lastname: string },
-): Promise<FixtureUser> => {
-  const existing = await db.query.users.findFirst({
-    where: { email: input.email },
-  });
-
-  if (existing) {
-    return {
-      id: existing.id,
-      email: existing.email,
-      firstname: existing.firstname,
-      lastname: existing.lastname,
-    };
-  }
-
-  const id = crypto.randomUUID();
-
-  await db.insert(schema.users).values({
-    id,
-    name: formatUserName(input.firstname, input.lastname),
-    firstname: input.firstname,
-    lastname: input.lastname,
-    email: input.email,
-    emailVerified: true,
-    locale: 'en',
-  });
-
-  await db.insert(schema.accounts).values({
-    id: crypto.randomUUID(),
-    // better-auth resolves a credential account by `accountId === user.id`
-    // (see its sign-in route), so the account id must be the user id — the
-    // email here makes the fixture account unreachable for sign-in.
-    accountId: id,
-    providerId: 'credential',
-    userId: id,
-    password: hashedPassword,
-  });
-
-  return {
-    id,
-    email: input.email,
-    firstname: input.firstname,
-    lastname: input.lastname,
-  };
-};
-
-const ensureMembershipWithRole = async (
-  db: Database,
-  userId: string,
-  organizationUnitId: string,
-  roleId: string,
-): Promise<void> => {
-  const existingMembership = await db.query.memberships.findFirst({
-    where: { userId, organizationUnitId },
-  });
-
-  let membershipId: string;
-
-  if (existingMembership) {
-    membershipId = existingMembership.id;
-  } else {
-    const [membership] = await db
-      .insert(schema.memberships)
-      .values({ userId, organizationUnitId })
-      .returning();
-
-    if (!membership) {
-      throw new Error('Failed to create membership');
-    }
-
-    membershipId = membership.id;
-  }
-
-  const existingRole = await db.query.membershipRoles.findFirst({
-    where: { membershipId, roleId },
-  });
-
-  if (!existingRole) {
-    await db.insert(schema.membershipRoles).values({
-      membershipId,
-      roleId,
-    });
-  }
-};
 
 const ensurePlaygroundOrganization = async (
   db: Database,
@@ -521,212 +316,6 @@ const ensurePlaygroundOrganization = async (
       supervisorRoleId: supervisorRole.id,
     };
   });
-};
-
-type ShiftFixture = {
-  /** Defaults to a random UUID. */
-  id?: string;
-  title: string;
-  startsAt: Date;
-  rrule: string;
-  inviteUserIds: string[];
-  /** Defaults to `SHIFT_DURATION_MINUTES`; override for fixed-length overlap-test shifts. */
-  durationMinutes?: number;
-  /** Associates the shift with an event. */
-  eventId?: string;
-  /** Defaults to `ShiftVisibility.INVITED_MEMBERS`. */
-  visibility?: ShiftVisibility;
-  /** Capacity cap; omit for unlimited spots. */
-  maxVolunteers?: number;
-  instructions?: string;
-  location?: string;
-  imageUrl?: string;
-  /** Invites inserted with this status instead of JOINED (does not count toward capacity). */
-  pendingInviteUserIds?: string[];
-  /**
-   * Invites at explicit statuses (e.g. VOLUNTEER_REJECTED, VOLUNTEER_CANCELLED,
-   * WAITLIST_JOINED), seeded to every instance. Only JOINED counts toward capacity.
-   */
-  extraInvites?: Array<{ userIds: string[]; status: ShiftInviteStatus }>;
-};
-
-const pickRecentPastInstance = (
-  instances: Array<typeof schema.shiftInstances.$inferSelect>,
-): typeof schema.shiftInstances.$inferSelect => {
-  const now = Date.now();
-  const pastInstances = instances
-    .filter((instance) => instance.actualStartsAt.getTime() < now)
-    .sort(
-      (left, right) =>
-        right.actualStartsAt.getTime() - left.actualStartsAt.getTime(),
-    );
-
-  const instance = pastInstances[0] ?? instances[0];
-  if (!instance) {
-    throw new Error('Failed to resolve shift instance');
-  }
-
-  return instance;
-};
-
-const ensureShiftWithInvites = async (
-  db: Database,
-  organizationUnitId: string,
-  createdById: string,
-  shift: ShiftFixture,
-): Promise<{ shiftId: string; instanceId: string; instanceStartsAt: Date }> => {
-  const durationMinutes = shift.durationMinutes ?? SHIFT_DURATION_MINUTES;
-
-  const existingShift = shift.id
-    ? await db.query.shifts.findFirst({ where: { id: shift.id } })
-    : await db.query.shifts.findFirst({
-        where: { title: shift.title, organizationUnitId },
-      });
-
-  if (existingShift) {
-    const instances = await db.query.shiftInstances.findMany({
-      where: { masterId: existingShift.id },
-    });
-
-    const recentInstance = pickRecentPastInstance(instances);
-
-    return {
-      shiftId: existingShift.id,
-      instanceId: recentInstance.id,
-      instanceStartsAt: recentInstance.actualStartsAt,
-    };
-  }
-
-  const [createdShift] = await db
-    .insert(schema.shifts)
-    .values({
-      id: shift.id,
-      title: shift.title,
-      slug: slugify(shift.title),
-      instructions: shift.instructions ?? null,
-      location: shift.location ?? null,
-      imageUrl: shift.imageUrl ?? null,
-      organizationUnitId,
-      createdById,
-      visibility: shift.visibility ?? ShiftVisibility.INVITED_MEMBERS,
-      maxVolunteers: shift.maxVolunteers ?? null,
-      originalStartsAt: shift.startsAt,
-      durationMinutes,
-      rrule: shift.rrule,
-      eventId: shift.eventId ?? null,
-    })
-    .returning();
-
-  if (!createdShift) {
-    throw new Error(`Failed to create shift: ${shift.title}`);
-  }
-
-  const instances = expandShift(shift.rrule, shift.startsAt, durationMinutes);
-  const insertedInstances = await db
-    .insert(schema.shiftInstances)
-    .values(
-      instances.map((instance) => ({
-        masterId: createdShift.id,
-        actualStartsAt: instance.actualStartsAt,
-        actualEndsAt: instance.actualEndsAt,
-        occurrenceIndex: instance.occurrenceIndex,
-      })),
-    )
-    .returning();
-
-  if (shift.inviteUserIds.length > 0) {
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        shift.inviteUserIds.map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: ShiftInviteStatus.JOINED,
-        })),
-      ),
-    );
-  }
-
-  if (shift.pendingInviteUserIds && shift.pendingInviteUserIds.length > 0) {
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        (shift.pendingInviteUserIds ?? []).map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: ShiftInviteStatus.ADMIN_INVITED,
-        })),
-      ),
-    );
-  }
-
-  for (const group of shift.extraInvites ?? []) {
-    if (group.userIds.length === 0) {
-      continue;
-    }
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        group.userIds.map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: group.status,
-        })),
-      ),
-    );
-  }
-
-  const recentInstance = pickRecentPastInstance(insertedInstances);
-
-  return {
-    shiftId: createdShift.id,
-    instanceId: recentInstance.id,
-    instanceStartsAt: recentInstance.actualStartsAt,
-  };
-};
-
-const ensureEvent = async (
-  db: Database,
-  organizationUnitId: string,
-  createdById: string,
-  event: {
-    id: string;
-    title: string;
-    description?: string | null;
-    location?: string | null;
-    coverUrl?: string | null;
-    logoUrl?: string | null;
-    startsAt: Date;
-    endsAt: Date;
-  },
-): Promise<typeof schema.events.$inferSelect> => {
-  const existingEvent = await db.query.events.findFirst({
-    where: { id: event.id },
-  });
-
-  if (existingEvent) {
-    return existingEvent;
-  }
-
-  const [createdEvent] = await db
-    .insert(schema.events)
-    .values({
-      id: event.id,
-      title: event.title,
-      slug: slugify(event.title),
-      description: event.description ?? null,
-      location: event.location ?? null,
-      logoUrl: event.logoUrl ?? null,
-      coverUrl: event.coverUrl ?? null,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
-      organizationUnitId,
-      createdById,
-    })
-    .returning();
-
-  if (!createdEvent) {
-    throw new Error(`Failed to create event: ${event.title}`);
-  }
-
-  return createdEvent;
 };
 
 const ensureTimeEntries = async (
@@ -1130,6 +719,7 @@ async function seedFixtures() {
   const hashedPassword = await hashPassword(FIXTURE_PASSWORD);
 
   const admin = await createAuthUser(db, hashedPassword, {
+    locale: 'en',
     email: 'testing+admin@caluno.org',
     firstname: 'Playground',
     lastname: 'Admin',
@@ -1145,6 +735,7 @@ async function seedFixtures() {
   );
 
   const supervisor = await createAuthUser(db, hashedPassword, {
+    locale: 'en',
     email: 'testing+supervisor@caluno.org',
     firstname: 'Playground',
     lastname: 'Supervisor',
@@ -1154,6 +745,7 @@ async function seedFixtures() {
   for (let index = 1; index <= 10; index += 1) {
     members.push(
       await createAuthUser(db, hashedPassword, {
+        locale: 'en',
         email: memberEmail(index),
         firstname: 'Playground',
         lastname: `Member ${String(index).padStart(2, '0')}`,
@@ -1165,6 +757,7 @@ async function seedFixtures() {
   // invites plus untouched ALL_MEMBERS shifts left to discover, so both the
   // "my shifts" and "discover" flows have real content on first login.
   const demoUser = await createAuthUser(db, hashedPassword, {
+    locale: 'en',
     email: DEMO_USER_EMAIL,
     firstname: 'Demo',
     lastname: 'Volunteer',
@@ -1197,6 +790,7 @@ async function seedFixtures() {
     ['testing+pending01@caluno.org', 'testing+pending02@caluno.org'].map(
       (email, index) =>
         createAuthUser(db, hashedPassword, {
+          locale: 'en',
           email,
           firstname: 'Pending',
           lastname: `Applicant ${String(index + 1).padStart(2, '0')}`,
@@ -1205,6 +799,7 @@ async function seedFixtures() {
   );
 
   const rejectedUser = await createAuthUser(db, hashedPassword, {
+    locale: 'en',
     email: 'testing+rejected01@caluno.org',
     firstname: 'Rejected',
     lastname: 'Applicant',
@@ -1309,7 +904,10 @@ async function seedFixtures() {
     location: 'Playground Community Center, Hauptstraße 1, 10115 Berlin',
     coverUrl: ORG_COVER_IMAGE_URL,
     startsAt: communitySupportStart,
-    endsAt: addHours(eventAssistanceStart, SHIFT_DURATION_MINUTES / 60 + 4),
+    endsAt: addHours(
+      eventAssistanceStart,
+      DEFAULT_SHIFT_DURATION_MINUTES / 60 + 4,
+    ),
   });
 
   const communitySupport = await ensureShiftWithInvites(
@@ -1412,7 +1010,7 @@ async function seedFixtures() {
     location: 'Playground Exhibition Hall, Hauptstraße 1, 10115 Berlin',
     coverUrl: EVENT_COVER_IMAGE_URL,
     startsAt: showcaseOpenStart,
-    endsAt: addHours(showcaseFullStart, SHIFT_DURATION_MINUTES / 60),
+    endsAt: addHours(showcaseFullStart, DEFAULT_SHIFT_DURATION_MINUTES / 60),
   });
 
   await ensureCodeOfConductForm(
@@ -1432,7 +1030,7 @@ async function seedFixtures() {
     title: 'Welcome Desk',
     startsAt: showcaseOpenStart,
     rrule: ONE_TIME_RRULE,
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.ALL_MEMBERS,
     maxVolunteers: 12,
     instructions:
@@ -1464,7 +1062,7 @@ async function seedFixtures() {
     title: 'Stage Setup',
     startsAt: showcaseFullStart,
     rrule: ONE_TIME_RRULE,
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.ALL_MEMBERS,
     maxVolunteers: showcaseFullInviteIds.length,
     instructions:
@@ -1480,7 +1078,7 @@ async function seedFixtures() {
     title: 'Cleanup Crew',
     startsAt: showcaseUnlimitedStart,
     rrule: ONE_TIME_RRULE,
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.ALL_MEMBERS,
     instructions:
       'Help break down the exhibition hall after the fair: fold tables, bag trash, and load the van. As many hands as show up — no cap.',
@@ -1672,7 +1270,7 @@ async function seedFixtures() {
       title: entry.title,
       startsAt: fixtureWallClockToUtc(day.year, day.month, day.day, entry.hour),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: entry.maxVolunteers,
       location: entry.location,
@@ -1694,7 +1292,7 @@ async function seedFixtures() {
       17,
     ),
     rrule: 'FREQ=WEEKLY;COUNT=3',
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.INVITED_MEMBERS,
     maxVolunteers: 6,
     location: 'Community Center · Kitchen',
@@ -1721,7 +1319,7 @@ async function seedFixtures() {
         9,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: 5,
       location: 'Town Hall Foyer',
@@ -1743,7 +1341,7 @@ async function seedFixtures() {
         20,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: 4,
       location: 'City Shelter',
@@ -1771,7 +1369,7 @@ async function seedFixtures() {
         13,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: 6,
       location: 'Exhibition Hall B',
@@ -1799,7 +1397,7 @@ async function seedFixtures() {
         10,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.ALL_MEMBERS,
       maxVolunteers: 12,
       location: 'Community Garden',
