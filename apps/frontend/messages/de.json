@@ -1699,10 +1699,10 @@
     "transferList": {
       "addAria": "Hinzufügen",
       "allowance": {
-        "eligible": "Vergütung möglich",
-        "nearlyExhausted": "Freibetrag der Pauschale fast erreicht",
+        "eligible": "auszahlungsberechtigt",
+        "nearlyExhausted": "Limit fast erreicht",
         "noAgreement": "Vereinbarung nötig",
-        "wouldExceed": "Überschreitet den zulässigen Freibetrag"
+        "wouldExceed": "überschreitet Limit!"
       },
       "available": "Verfügbar",
       "confirmExceedAllowance": {
