@@ -8,7 +8,9 @@ import { UpdateMyAccountSettingsInput } from '../inputs/update-my-account-settin
 import { UpdateMyImageInput } from '../inputs/update-my-image.input';
 import { UpdateMyProfileInput } from '../inputs/update-my-profile.input';
 import { UserMapper } from '../mappers/user.mapper';
+import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
+import { UserWithProfile } from '../models/user-with-profile.model';
 import { UserService } from '../user.service';
 
 @Resolver(() => User)
@@ -16,6 +18,7 @@ export class UserMutationResolver {
   constructor(
     private readonly userService: UserService,
     private readonly userMapper: UserMapper,
+    private readonly userWithProfileMapper: UserWithProfileMapper,
     private readonly fileService: FileService,
   ) {}
 
@@ -50,13 +53,13 @@ export class UserMutationResolver {
     return this.userMapper.toModelOrThrow(user);
   }
 
-  @Mutation(() => User)
+  @Mutation(() => UserWithProfile)
   async updateMyProfile(
     @Args('input') input: UpdateMyProfileInput,
     @Session() session: UserSession,
-  ): Promise<User> {
+  ): Promise<UserWithProfile> {
     const user = await this.userService.updateMyProfile(session.user.id, input);
-    return this.userMapper.toModelOrThrow(user);
+    return this.userWithProfileMapper.toModelOrThrow(user);
   }
 
   @Mutation(() => User)

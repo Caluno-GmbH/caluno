@@ -4,7 +4,7 @@ import type { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import type { UserEntity } from '../../auth/schemas/auth.schema';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
-import { UserMapper } from '../mappers/user.mapper';
+import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import type { UserService } from '../user.service';
 import { UserQueryResolver } from './user-query.resolver';
 
@@ -66,7 +66,7 @@ describe('UserQueryResolver.user payment-data visibility', () => {
     };
     resolver = new UserQueryResolver(
       userService as unknown as UserService,
-      new UserMapper(),
+      new UserWithProfileMapper(),
       authService as unknown as AuthService,
     );
   });
@@ -164,7 +164,7 @@ describe('UserQueryResolver.me', () => {
     };
     const resolver = new UserQueryResolver(
       userService as unknown as UserService,
-      new UserMapper(),
+      new UserWithProfileMapper(),
       {} as unknown as AuthService,
     );
 

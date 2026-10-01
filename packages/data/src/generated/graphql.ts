@@ -825,7 +825,7 @@ export type Mutation = {
   updateMyAccountSettings: User;
   updateMyImage: User;
   updateMyLocale: User;
-  updateMyProfile: User;
+  updateMyProfile: UserWithProfile;
   updateOrganization: Organization;
   updateOrganizationUnit: OrganizationUnit;
   updateOrganizationUnitAutomation: OrganizationUnitAutomation;
@@ -1576,7 +1576,7 @@ export type Query = {
   invoices: Array<Invoice>;
   isMemberOfUnitOrAncestor: Scalars['Boolean']['output'];
   manualBaseline?: Maybe<ManualBaseline>;
-  me: User;
+  me: UserWithProfile;
   members: Array<User>;
   membership?: Maybe<Membership>;
   membershipRequestCount: Scalars['Int']['output'];
@@ -1644,8 +1644,7 @@ export type Query = {
   timeEntries: TimeEntryPaginatedResponse;
   timeEntriesByUser: TimeEntryPaginatedResponse;
   timeEntry: TimeEntry;
-  user?: Maybe<User>;
-  userByCheckInId?: Maybe<User>;
+  user?: Maybe<UserWithProfile>;
   volunteersNeedingTimesheets: Array<VolunteerNeedsTimesheet>;
   weeklyShifts: Array<ShiftInstance>;
   yearlyUsage: YearlyUsage;
@@ -2148,11 +2147,6 @@ export type QueryTimeEntryArgs = {
 
 export type QueryUserArgs = {
   id: Scalars['String']['input'];
-};
-
-
-export type QueryUserByCheckInIdArgs = {
-  checkInId: Scalars['String']['input'];
 };
 
 
@@ -2849,6 +2843,33 @@ export type UpdateTimeEntryInput = {
 
 export type User = {
   __typename?: 'User';
+  checkInId: Scalars['ID']['output'];
+  email: Scalars['String']['output'];
+  /** Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership). */
+  emailPlatformEnabled: Scalars['Boolean']['output'];
+  /** Whether the volunteer receives urgent call-out emails. */
+  emailUrgentCallsEnabled: Scalars['Boolean']['output'];
+  /** Whether the volunteer receives the weekly plan email. */
+  emailWeeklyUpdateEnabled: Scalars['Boolean']['output'];
+  firstname: Scalars['String']['output'];
+  id: Scalars['ID']['output'];
+  image?: Maybe<Scalars['String']['output']>;
+  lastname: Scalars['String']['output'];
+  locale?: Maybe<Scalars['String']['output']>;
+  name: Scalars['String']['output'];
+  permissions?: Maybe<Array<Permission>>;
+  preferredName?: Maybe<Scalars['String']['output']>;
+};
+
+export type UserRequirementStatus = {
+  __typename?: 'UserRequirementStatus';
+  name: Scalars['String']['output'];
+  requirementId: Scalars['ID']['output'];
+  status: RequirementFulfillmentStatus;
+};
+
+export type UserWithProfile = {
+  __typename?: 'UserWithProfile';
   accountHolder?: Maybe<Scalars['String']['output']>;
   bic?: Maybe<Scalars['String']['output']>;
   birthdate?: Maybe<Scalars['String']['output']>;
@@ -2874,13 +2895,6 @@ export type User = {
   preferredName?: Maybe<Scalars['String']['output']>;
   street?: Maybe<Scalars['String']['output']>;
   zip?: Maybe<Scalars['String']['output']>;
-};
-
-export type UserRequirementStatus = {
-  __typename?: 'UserRequirementStatus';
-  name: Scalars['String']['output'];
-  requirementId: Scalars['ID']['output'];
-  status: RequirementFulfillmentStatus;
 };
 
 export type VolunteerInviteAllowance = {
@@ -3837,7 +3851,7 @@ export type GetAdminUserProfileQueryVariables = Exact<{
 }>;
 
 
-export type GetAdminUserProfileQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, email: string, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
+export type GetAdminUserProfileQuery = { __typename?: 'Query', user?: { __typename?: 'UserWithProfile', id: string, email: string, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
 
 export type CreateRequirementProfileSubmissionMutationVariables = Exact<{
   input: CreateRequirementProfileSubmissionInput;
@@ -4295,26 +4309,19 @@ export type CheckOutVolunteerMutation = { __typename?: 'Mutation', checkOutVolun
 export type GetMeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } };
+export type GetMeQuery = { __typename?: 'Query', me: { __typename?: 'UserWithProfile', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } };
 
 export type GetUserQueryVariables = Exact<{
   id: Scalars['String']['input'];
 }>;
 
 
-export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
-
-export type GetUserByCheckInIdQueryVariables = Exact<{
-  checkInId: Scalars['String']['input'];
-}>;
-
-
-export type GetUserByCheckInIdQuery = { __typename?: 'Query', userByCheckInId?: { __typename?: 'User', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null } | null };
+export type GetUserQuery = { __typename?: 'Query', user?: { __typename?: 'UserWithProfile', id: string, name: string, email: string, image?: string | null, checkInId: string, locale?: string | null, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null } | null };
 
 export type GetMyPermissionsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyPermissionsQuery = { __typename?: 'Query', me: { __typename?: 'User', id: string, permissions?: Array<{ __typename?: 'Permission', id: string, key: PermissionKey }> | null } };
+export type GetMyPermissionsQuery = { __typename?: 'Query', me: { __typename?: 'UserWithProfile', id: string, permissions?: Array<{ __typename?: 'Permission', id: string, key: PermissionKey }> | null } };
 
 export type GetMyOrganizationsQueryVariables = Exact<{
   limit: Scalars['Int']['input'];
@@ -4350,7 +4357,7 @@ export type UpdateMyProfileMutationVariables = Exact<{
 }>;
 
 
-export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'User', id: string, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null, email: string } };
+export type UpdateMyProfileMutation = { __typename?: 'Mutation', updateMyProfile: { __typename?: 'UserWithProfile', id: string, firstname: string, lastname: string, preferredName?: string | null, gender?: string | null, phone?: string | null, street?: string | null, zip?: string | null, city?: string | null, birthdate?: string | null, iban?: string | null, accountHolder?: string | null, bic?: string | null, email: string } };
 
 export const ContractSummaryFieldsFragmentDoc = gql`
     fragment ContractSummaryFields on Contract {
@@ -7907,18 +7914,6 @@ export const GetUserDocument = gql`
   }
 }
     `;
-export const GetUserByCheckInIdDocument = gql`
-    query GetUserByCheckInId($checkInId: String!) {
-  userByCheckInId(checkInId: $checkInId) {
-    id
-    name
-    email
-    image
-    checkInId
-    locale
-  }
-}
-    `;
 export const GetMyPermissionsDocument = gql`
     query GetMyPermissions {
   me {
@@ -8537,9 +8532,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetUser(variables: GetUserQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetUserQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetUserQuery>({ document: GetUserDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetUser', 'query', variables);
-    },
-    GetUserByCheckInId(variables: GetUserByCheckInIdQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetUserByCheckInIdQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetUserByCheckInIdQuery>({ document: GetUserByCheckInIdDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetUserByCheckInId', 'query', variables);
     },
     GetMyPermissions(variables?: GetMyPermissionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyPermissionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMyPermissionsQuery>({ document: GetMyPermissionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyPermissions', 'query', variables);

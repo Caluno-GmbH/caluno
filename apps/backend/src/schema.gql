@@ -780,7 +780,7 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
-  updateMyProfile(input: UpdateMyProfileInput!): User!
+  updateMyProfile(input: UpdateMyProfileInput!): UserWithProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
   updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
@@ -998,7 +998,7 @@ type Query {
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
   manualBaseline(reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline
-  me: User!
+  me: UserWithProfile!
   members(organizationUnitId: ID!): [User!]!
   membership(organizationUnitId: ID!): Membership
   membershipRequestCount(status: MembershipRequestStatus): Int!
@@ -1066,8 +1066,7 @@ type Query {
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
-  user(id: String!): User
-  userByCheckInId(checkInId: String!): User
+  user(id: String!): UserWithProfile
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
@@ -1697,6 +1696,36 @@ input UpdateTimeEntryInput {
 }
 
 type User {
+  checkInId: ID!
+  email: String!
+
+  """
+  Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership).
+  """
+  emailPlatformEnabled: Boolean!
+
+  """Whether the volunteer receives urgent call-out emails."""
+  emailUrgentCallsEnabled: Boolean!
+
+  """Whether the volunteer receives the weekly plan email."""
+  emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
+  id: ID!
+  image: String
+  lastname: String!
+  locale: String
+  name: String!
+  permissions: [Permission!]
+  preferredName: String
+}
+
+type UserRequirementStatus {
+  name: String!
+  requirementId: ID!
+  status: RequirementFulfillmentStatus!
+}
+
+type UserWithProfile {
   accountHolder: String
   bic: String
   birthdate: String
@@ -1727,12 +1756,6 @@ type User {
   preferredName: String
   street: String
   zip: String
-}
-
-type UserRequirementStatus {
-  name: String!
-  requirementId: ID!
-  status: RequirementFulfillmentStatus!
 }
 
 type VolunteerInviteAllowance {

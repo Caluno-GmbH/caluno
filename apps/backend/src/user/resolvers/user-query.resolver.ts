@@ -5,31 +5,32 @@ import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { maskRestrictedPaymentUserFields } from '../../requirement-profile/payment-visibility';
-import { UserMapper } from '../mappers/user.mapper';
+import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
+import { UserWithProfile } from '../models/user-with-profile.model';
 import { UserService } from '../user.service';
 
 @Resolver(() => User)
 export class UserQueryResolver {
   constructor(
     private readonly userService: UserService,
-    private readonly userMapper: UserMapper,
+    private readonly userWithProfileMapper: UserWithProfileMapper,
     private readonly authService: AuthService,
   ) {}
 
-  @Query(() => User)
-  async me(@Session() session: UserSession): Promise<User> {
+  @Query(() => UserWithProfile)
+  async me(@Session() session: UserSession): Promise<UserWithProfile> {
     const me = await this.userService.findByIdOrThrow(session.user.id);
-    return this.userMapper.toModelOrThrow(me);
+    return this.userWithProfileMapper.toModelOrThrow(me);
   }
 
   @Permissions(PERMISSIONS.VOLUNTEER_VIEW)
-  @Query(() => User, { nullable: true })
+  @Query(() => UserWithProfile, { nullable: true })
   async user(
     @Args('id') id: string,
     @Session() session: UserSession,
     @Context() ctx: AuthenticatedGraphQLContext,
-  ): Promise<User | null> {
+  ): Promise<UserWithProfile | null> {
     const item = await this.userService.findByIdInOrgUnit(
       id,
       ctx.organizationUnitId,
@@ -46,17 +47,8 @@ export class UserQueryResolver {
         [PERMISSIONS.ACCOUNTING_MANAGE],
       ));
 
-    return this.userMapper.toModel(
+    return this.userWithProfileMapper.toModel(
       canSeePaymentData ? item : maskRestrictedPaymentUserFields(item),
     );
-  }
-
-  @Permissions(PERMISSIONS.SHIFT_VIEW)
-  @Query(() => User, { nullable: true })
-  async userByCheckInId(
-    @Args('checkInId') checkInId: string,
-  ): Promise<User | null> {
-    const user = await this.userService.findByCheckInId(checkInId);
-    return this.userMapper.toModel(user);
   }
 }

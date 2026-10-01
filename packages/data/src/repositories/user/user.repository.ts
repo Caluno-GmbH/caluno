@@ -1,7 +1,6 @@
 import type {
   GetMyOrganizationsQuery,
   GetMyPermissionsQuery,
-  GetUserByCheckInIdQuery,
   GetUserQuery,
   UpdateMyAccountSettingsInput,
   UpdateMyAccountSettingsMutation,
@@ -9,12 +8,12 @@ import type {
   UpdateMyLocaleMutation,
   UpdateMyProfileInput,
   UpdateMyProfileMutation,
-  User,
+  UserWithProfile,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 
 export class UserRepository extends BaseRepository {
-  async getMe(): Promise<User> {
+  async getMe(): Promise<UserWithProfile> {
     const data = await this.sdk.GetMe();
     return data.me;
   }
@@ -22,13 +21,6 @@ export class UserRepository extends BaseRepository {
   async findById(id: string): Promise<GetUserQuery['user']> {
     const data = await this.sdk.GetUser({ id });
     return data.user ?? null;
-  }
-
-  async findByCheckInId(
-    checkInId: string,
-  ): Promise<GetUserByCheckInIdQuery['userByCheckInId']> {
-    const data = await this.sdk.GetUserByCheckInId({ checkInId });
-    return data.userByCheckInId ?? null;
   }
 
   async getMyPermissions(): Promise<

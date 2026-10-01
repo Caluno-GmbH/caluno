@@ -47,17 +47,6 @@ query GetUser($id: String!) {
   }
 }
 
-query GetUserByCheckInId($checkInId: String!) {
-  userByCheckInId(checkInId: $checkInId) {
-    id
-    name
-    email
-    image
-    checkInId
-    locale
-  }
-}
-
 query GetMyPermissions {
   me {
     id
