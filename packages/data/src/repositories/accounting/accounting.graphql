@@ -63,19 +63,10 @@ query GetYearlyUsage(
   }
 }
 
-query GetInviteAllowanceEligibility(
-  $organizationUnitId: ID!
-  $reimbursementTypeId: ID!
-  $shiftDurationMinutes: Int!
-  $periodStart: DateTime
-  $periodEnd: DateTime
-) {
-  inviteAllowanceEligibility(
-    organizationUnitId: $organizationUnitId
-    reimbursementTypeId: $reimbursementTypeId
-    shiftDurationMinutes: $shiftDurationMinutes
-    periodStart: $periodStart
-    periodEnd: $periodEnd
+query GetVolunteerAllowanceStates($volunteerIds: [ID!]!, $shiftInstanceId: ID) {
+  volunteerAllowanceStates(
+    volunteerIds: $volunteerIds
+    shiftInstanceId: $shiftInstanceId
   ) {
     volunteerId
     state

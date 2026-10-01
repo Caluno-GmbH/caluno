@@ -485,17 +485,17 @@
   },
   "ShiftSettings": {
     "page": {
-      "title": "Shifts and check-in",
-      "subtitle": "Settings for shifts in {orgName}."
+      "title": "Assignments and check-in",
+      "subtitle": "Settings for assignments in {orgName}."
     },
     "sections": {
       "staffing": {
         "title": "Staffing",
-        "description": "How volunteers are asked to fill shifts."
+        "description": "How volunteers are asked to fill assignments."
       },
       "moderation": {
         "title": "Moderation",
-        "description": "Rules for who gets into a shift."
+        "description": "Rules for who gets into an assignment."
       },
       "checkIn": {
         "title": "Check-in",
@@ -526,7 +526,7 @@
       }
     },
     "stepIn": {
-      "label": "When to step in",
+      "label": "Time frame before the start",
       "option": "{hours} hours before"
     },
     "sendAt": {
@@ -534,15 +534,15 @@
     },
     "callOut": {
       "title": "Automatic urgent call",
-      "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
-      "daysDescription": "Shifts on these days can trigger an urgent call.",
-      "stepInDescription": "How long before its start a shift below its minimum gets an urgent call.",
+      "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can trigger an urgent call.",
+      "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
       "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "updateError": "We couldn't save this automation. Please try again."
     },
     "discovery": {
       "title": "Discovery email",
-      "description": "Sends volunteers an overview of their upcoming shifts in this unit and the shifts that still need people. Volunteers can turn it off in their account settings.",
+      "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
       "daysDescription": "Days the email goes out.",
       "sendAtDescription": "Time of day the email goes out, in local time.",
       "noDaysHint": "No days selected, so this automation will not run.",
@@ -550,11 +550,11 @@
     },
     "approval": {
       "title": "Pause approval",
-      "description": "Confirms sign-ups straight away when a shift is below its minimum shortly before it starts. Approval applies again once the shift reaches its minimum. Shifts without a minimum are never affected.",
-      "daysDescription": "Shifts on these days can have approval paused.",
-      "stepInDescription": "How long before its start a shift below its minimum stops needing approval.",
+      "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can have approval paused.",
+      "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
       "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "updateError": "We couldn't save this automation. Please try again."
     }
   },
   "MembershipRequest": {
@@ -726,7 +726,7 @@
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
     "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
-    "shiftSettings": "Shifts and check-in"
+    "shiftSettings": "Assignments and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",
@@ -881,7 +881,7 @@
     "emailUrgentCalls": "Urgent calls",
     "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Discovery email",
-    "emailWeeklyUpdateDescription": "An overview of your upcoming shifts and the shifts that still need people.",
+    "emailWeeklyUpdateDescription": "An overview of your upcoming assignments and the assignments that still need people.",
     "identity": {
       "subtitles": {
         "firstName": "As on your ID",
@@ -1274,13 +1274,13 @@
       "all": "All",
       "descriptions": {
         "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
-        "checkInManage": "Look up volunteers; see which shifts are available for check-in; check volunteers in or out; add people to shifts; invite people to the organisation and approve join requests from this screen.",
+        "checkInManage": "Look up volunteers; see which assignments are available for check-in; check volunteers in or out; add people to assignments; invite people to the organisation and approve join requests from this screen.",
         "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
         "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
         "requirementProfileEdit": "Create and change forms and blocks.",
         "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
-        "shiftEdit": "Create, change, and delete shifts and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
-        "shiftView": "See shifts and their occurrences, events, who is invited or signed up, and timesheet entries.",
+        "shiftEdit": "Create, change, and delete assignments and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
+        "shiftView": "See assignments and their occurrences, events, who is invited or signed up, and timesheet entries.",
         "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
         "volunteerView": "See members, pending and past join requests, and volunteer profiles, including submitted forms (excluding payment-related data)."
       },
@@ -1303,7 +1303,7 @@
         "checkIn": "Check-in",
         "organization": "Organisation wide settings",
         "requirementProfile": "Requirement forms and blocks",
-        "shift": "Shifts, events, timesheets",
+        "shift": "Assignments, events, timesheets",
         "volunteer": "Volunteer information and membership"
       }
     },
@@ -1547,7 +1547,7 @@
       "groupComing": "Coming",
       "groupNotComing": "Not coming",
       "groupPending": "Pending",
-      "removeSuccess": "Volunteer removed from this shift",
+      "removeSuccess": "Volunteer removed from this assignment",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
       "pendingApproval": "Pending approval",
@@ -1699,10 +1699,10 @@
     "transferList": {
       "addAria": "Add",
       "allowance": {
-        "eligible": "Allowance available",
-        "nearlyExhausted": "Allowance nearly exhausted",
-        "noAgreement": "Agreement needed",
-        "wouldExceed": "Would exceed allowance"
+        "eligible": "eligible for payout",
+        "nearlyExhausted": "close to limit",
+        "noAgreement": "contract needed",
+        "wouldExceed": "exceeds allowance!"
       },
       "available": "Available",
       "confirmExceedAllowance": {
@@ -1872,7 +1872,6 @@
       "recorded": "Recorded",
       "recordedBy": "by {name}",
       "recordedByUnknown": "Unknown",
-      "recordedOnBehalf": "entered on behalf",
       "date": "Date",
       "shift": "Assignment",
       "volunteer": "Volunteer"
@@ -2136,8 +2135,8 @@
       },
       "toolbar": {
         "typeAll": "All allowance types",
-        "typeEP": "Ehrenamt",
-        "typeUL": "Übungsleiter",
+        "typeEP": "Ehrenamtspauschale",
+        "typeUL": "Übungsleiterpauschale",
         "searchPlaceholder": "Search volunteers...",
         "sortActionNeeded": "Action needed first",
         "sortNewest": "Newest first"
@@ -2271,7 +2270,7 @@
           "countersign": "Countersign",
           "decline": "Decline",
           "seeDetails": "See details",
-          "createNew": "Create new {docType}"
+          "createNew": "Create new {kind, select, contract {Agreement} timesheet {Timesheet} other {Document}}"
         },
         "nonCompliantDialog": {
           "titleSingle": "{action, select, create {Create} remind {Send a reminder for} countersign {Countersign} other {Proceed with}} a timesheet without an active agreement?",
@@ -2463,8 +2462,8 @@
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
             "shift_name": {
-              "label": "Name of the tracked shift",
-              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+              "label": "Name of the tracked assignment",
+              "hint": "Each row shows the assignment its hours came from. Hours tracked without an assignment show the agreement's task description instead."
             },
             "agreement_task_description": {
               "label": "Task description from the agreement",
@@ -2476,7 +2475,7 @@
             }
           },
           "firstColumnPlaceholders": {
-            "shiftName": "Shift name",
+            "shiftName": "Assignment name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },

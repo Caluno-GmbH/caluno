@@ -150,16 +150,54 @@ export class ContractService {
     reimbursementTypeId: string,
     period: BillingPeriod = { start: new Date(), end: new Date() },
   ): Promise<ContractEntity | undefined> {
+    const rows = await this.findActiveCoveringContracts(
+      { volunteerId, reimbursementTypeId },
+      period,
+    );
+    return rows[0];
+  }
+
+  /**
+   * The allowance types each volunteer has an ACTIVE contract for that covers
+   * the given period (same coverage rule as `findActiveContract`), in one
+   * query. Volunteers without any such contract are absent from the map.
+   */
+  async findActiveContractTypeIds(
+    volunteerIds: string[],
+    period: BillingPeriod = { start: new Date(), end: new Date() },
+  ): Promise<Map<string, Set<string>>> {
+    const typeIdsByVolunteerId = new Map<string, Set<string>>();
+    if (volunteerIds.length === 0) return typeIdsByVolunteerId;
+
+    const rows = await this.findActiveCoveringContracts(
+      { volunteerId: { in: volunteerIds } },
+      period,
+    );
+    for (const row of rows) {
+      const typeIds = typeIdsByVolunteerId.get(row.volunteerId) ?? new Set();
+      typeIds.add(row.reimbursementTypeId);
+      typeIdsByVolunteerId.set(row.volunteerId, typeIds);
+    }
+    return typeIdsByVolunteerId;
+  }
+
+  /** The one place the "ACTIVE and covers the period" rule lives. */
+  private async findActiveCoveringContracts(
+    where: {
+      volunteerId: string | { in: string[] };
+      reimbursementTypeId?: string;
+    },
+    period: BillingPeriod,
+  ): Promise<ContractEntity[]> {
     const rows = await this.db.query.contracts.findMany({
       where: {
-        volunteerId,
-        reimbursementTypeId,
+        ...where,
         contractStatus: ContractStatus.ACTIVE,
         periodStart: { lte: period.start },
         periodEnd: { gte: period.end },
       },
     });
-    return rows.find((c) =>
+    return rows.filter((c) =>
       periodCovers(c.periodStart, c.periodEnd, period.start, period.end),
     );
   }
