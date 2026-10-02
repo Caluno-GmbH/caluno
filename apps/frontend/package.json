@@ -30,7 +30,7 @@
     "next-safe-action": "^8.0.11",
     "nuqs": "^2.10.1",
     "qrcode.react": "^4.2.0",
-    "react": "19.2.7",
+    "react": "19.3.0",
     "react-dom": "19.2.7",
     "react-hook-form": "^7.89.0",
     "rrule": "^2.8.1",
