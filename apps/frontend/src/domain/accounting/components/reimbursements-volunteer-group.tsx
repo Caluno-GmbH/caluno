@@ -81,10 +81,12 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
     actionKey: null,
     isYourAction: false,
   },
+  // A completed contract whose period has ended. Renewal is queued as its own
+  // contract-generate row, so this one has no action of its own.
   'contract-expired': {
     labelKey: 'contractExpired',
-    actionKey: 'create',
-    isYourAction: true,
+    actionKey: null,
+    isYourAction: false,
   },
   'contract-missing': {
     labelKey: 'contractMissing',
