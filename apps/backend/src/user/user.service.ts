@@ -102,10 +102,6 @@ export class UserService {
     return user;
   }
 
-  getProfileData(user: ProfileFields): Record<string, unknown> {
-    return toProfileDataMap(user);
-  }
-
   async getProfileDataByUserId(
     userId: string,
   ): Promise<Record<string, unknown>> {
