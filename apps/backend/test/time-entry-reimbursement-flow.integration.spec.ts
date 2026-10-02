@@ -166,6 +166,7 @@ describe('Time entry -> eligible timesheet flow', () => {
     const eligible = await invoiceService.findEligibleTimeEntries(
       volunteerId,
       reimbursementType.id,
+      organizationUnitId,
     );
     expect(eligible.map((e) => e.id)).toContain(entry.id);
 
