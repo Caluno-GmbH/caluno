@@ -24,11 +24,11 @@
     "setup:hooks": "bash .githooks/install-hooks.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.13",
+    "@biomejs/biome": "^2.5.15",
     "@svgr/webpack": "^8.1.0",
-    "turbo": "^2.9.9",
+    "turbo": "^2.11.7",
     "typescript": "6.0.3",
-    "typescript-language-server": "^6.0.0",
+    "typescript-language-server": "^6.0.1",
     "vite-plugin-svgr": "^5.2.0"
   },
   "engines": {
