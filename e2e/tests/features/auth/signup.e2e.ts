@@ -16,6 +16,8 @@ import { SignupPage } from '../../../pages/SignupPage';
  */
 
 // Valid filler values for the fields NOT under test (never submitted).
+const VALID_FIRSTNAME = 'E2E';
+const VALID_LASTNAME = 'User';
 const VALID_EMAIL = 'user@example.com';
 const VALID_PASSWORD = 'Test1234!aB';
 
@@ -43,15 +45,32 @@ test.describe('Signup validation', () => {
   });
 
   test.describe('required fields', () => {
-    test('name is required', async ({ page }) => {
+    test('firstname is required', async ({ page }) => {
       await signup.fillForm({
+        lastname: VALID_LASTNAME,
         email: VALID_EMAIL,
         password: VALID_PASSWORD,
         privacyAccepted: true,
       });
       await signup.submit();
 
-      expect(await signup.fieldValidity('name')).toMatchObject({
+      expect(await signup.fieldValidity('firstname')).toMatchObject({
+        valid: false,
+        valueMissing: true,
+      });
+      await expect(page).toHaveURL(/\/signup/);
+    });
+
+    test('lastname is required', async ({ page }) => {
+      await signup.fillForm({
+        firstname: VALID_FIRSTNAME,
+        email: VALID_EMAIL,
+        password: VALID_PASSWORD,
+        privacyAccepted: true,
+      });
+      await signup.submit();
+
+      expect(await signup.fieldValidity('lastname')).toMatchObject({
         valid: false,
         valueMissing: true,
       });
@@ -60,7 +79,8 @@ test.describe('Signup validation', () => {
 
     test('email is required', async ({ page }) => {
       await signup.fillForm({
-        name: 'E2E User',
+        firstname: VALID_FIRSTNAME,
+        lastname: VALID_LASTNAME,
         password: VALID_PASSWORD,
         privacyAccepted: true,
       });
@@ -75,7 +95,8 @@ test.describe('Signup validation', () => {
 
     test('password is required', async ({ page }) => {
       await signup.fillForm({
-        name: 'E2E User',
+        firstname: VALID_FIRSTNAME,
+        lastname: VALID_LASTNAME,
         email: VALID_EMAIL,
         privacyAccepted: true,
       });
@@ -94,7 +115,8 @@ test.describe('Signup validation', () => {
     for (const email of ['notanemail', 'test@', 'test@a.']) {
       test(`rejects malformed email "${email}"`, async ({ page }) => {
         await signup.fillForm({
-          name: 'E2E User',
+          firstname: VALID_FIRSTNAME,
+          lastname: VALID_LASTNAME,
           email,
           password: VALID_PASSWORD,
           privacyAccepted: true,
@@ -124,7 +146,8 @@ test.describe('Signup validation', () => {
         page,
       }) => {
         await signup.fillForm({
-          name: 'E2E User',
+          firstname: VALID_FIRSTNAME,
+          lastname: VALID_LASTNAME,
           email: VALID_EMAIL,
           password,
           privacyAccepted: true,
@@ -140,10 +163,12 @@ test.describe('Signup validation', () => {
   });
 
   test.describe('whitespace handling', () => {
-    test('whitespace-only name is not blocked client-side (no trim on text field)', async () => {
-      await signup.fillForm({ name: '   ' });
+    test('whitespace-only firstname is not blocked client-side (no trim on text field)', async () => {
+      await signup.fillForm({ firstname: '   ' });
       // Documents current behaviour: native `required` is satisfied by spaces.
-      expect(await signup.fieldValidity('name')).toMatchObject({ valid: true });
+      expect(await signup.fieldValidity('firstname')).toMatchObject({
+        valid: true,
+      });
     });
   });
 });

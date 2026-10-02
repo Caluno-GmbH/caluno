@@ -9,6 +9,18 @@ query GetMe {
     emailWeeklyUpdateEnabled
     emailUrgentCallsEnabled
     emailPlatformEnabled
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
   }
 }
 
@@ -20,17 +32,18 @@ query GetUser($id: String!) {
     image
     checkInId
     locale
-  }
-}
-
-query GetUserByCheckInId($checkInId: String!) {
-  userByCheckInId(checkInId: $checkInId) {
-    id
-    name
-    email
-    image
-    checkInId
-    locale
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
   }
 }
 
@@ -83,5 +96,24 @@ mutation UpdateMyAccountSettings($input: UpdateMyAccountSettingsInput!) {
     emailWeeklyUpdateEnabled
     emailUrgentCallsEnabled
     emailPlatformEnabled
+  }
+}
+
+mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
+  updateMyProfile(input: $input) {
+    id
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
+    email
   }
 }

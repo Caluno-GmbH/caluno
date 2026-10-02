@@ -7,6 +7,8 @@ import {
   defaultPrivacyPolicyDirectory,
   resolvePrivacyPolicyDocument,
 } from '../legal/privacy-policy-files';
+import { formatUserName } from '../user/user-name';
+import { isBlank, trimmed } from '../utils';
 import { headersFromRequest } from './auth-headers';
 import {
   applyPrivacyPolicyAcceptance,
@@ -110,6 +112,14 @@ export const createAuthConfig = ({
           type: 'string',
           required: false,
         },
+        firstname: {
+          type: 'string',
+          required: true,
+        },
+        lastname: {
+          type: 'string',
+          required: true,
+        },
         privacyPolicyVersion: {
           type: 'string',
           required: false,
@@ -130,6 +140,14 @@ export const createAuthConfig = ({
               headersFromRequest(ctx?.request),
             );
 
+            const firstname = trimmed(user.firstname);
+            const lastname = trimmed(user.lastname);
+            if (isBlank(firstname) || isBlank(lastname)) {
+              throw new APIError('BAD_REQUEST', {
+                message: 'First name and last name are required',
+              });
+            }
+
             try {
               const { version } = resolvePrivacyPolicyDocument(
                 privacyPolicyDirectory,
@@ -138,6 +156,9 @@ export const createAuthConfig = ({
                 data: applyPrivacyPolicyAcceptance(
                   {
                     ...user,
+                    firstname,
+                    lastname,
+                    name: formatUserName(firstname, lastname),
                     locale,
                     privacyPolicyAccepted: privacyPolicyAcceptedFromBody(
                       ctx?.body,

@@ -2,8 +2,12 @@ import { expect, type Response } from '@playwright/test';
 import { AuthPage } from './AuthPage';
 
 export class SignupPage extends AuthPage {
-  get nameInput() {
-    return this.page.getByLabel('Full Name');
+  get firstnameInput() {
+    return this.page.getByLabel('First name');
+  }
+
+  get lastnameInput() {
+    return this.page.getByLabel('Last name');
   }
 
   get submitButton() {
@@ -31,11 +35,13 @@ export class SignupPage extends AuthPage {
   }
 
   async signup(
-    name: string,
+    firstname: string,
+    lastname: string,
     email: string,
     password: string,
   ): Promise<Response> {
-    await this.nameInput.fill(name);
+    await this.firstnameInput.fill(firstname);
+    await this.lastnameInput.fill(lastname);
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.acceptPrivacyPolicy();
@@ -68,12 +74,18 @@ export class SignupPage extends AuthPage {
 
   // Fills only the provided fields; leaves the rest untouched.
   async fillForm(values: {
-    name?: string;
+    firstname?: string;
+    lastname?: string;
     email?: string;
     password?: string;
     privacyAccepted?: boolean;
   }) {
-    if (values.name !== undefined) await this.nameInput.fill(values.name);
+    if (values.firstname !== undefined) {
+      await this.firstnameInput.fill(values.firstname);
+    }
+    if (values.lastname !== undefined) {
+      await this.lastnameInput.fill(values.lastname);
+    }
     if (values.email !== undefined) await this.emailInput.fill(values.email);
     if (values.password !== undefined) {
       await this.passwordInput.fill(values.password);
@@ -81,14 +93,15 @@ export class SignupPage extends AuthPage {
     if (values.privacyAccepted) await this.acceptPrivacyPolicy();
   }
 
-  private fieldLocator(field: 'name' | 'email' | 'password') {
-    if (field === 'name') return this.nameInput;
+  private fieldLocator(field: 'firstname' | 'lastname' | 'email' | 'password') {
+    if (field === 'firstname') return this.firstnameInput;
+    if (field === 'lastname') return this.lastnameInput;
     if (field === 'email') return this.emailInput;
     return this.passwordInput;
   }
 
   // Native HTML5 constraint-validation state for a field.
-  fieldValidity(field: 'name' | 'email' | 'password') {
+  fieldValidity(field: 'firstname' | 'lastname' | 'email' | 'password') {
     return this.fieldLocator(field).evaluate((el) => {
       const input = el as HTMLInputElement;
       return {

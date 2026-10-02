@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { fromPeriodBounds, toPeriodBounds } from '../lib/billing-period';
@@ -355,15 +356,10 @@ export function InvoiceCreationModal({
   // data arriving, say) must not clobber a coordinator's edits. The reset
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !template || derivedFields || !volunteerName) return;
-    const profileData = (profileQuery.data?.data ?? {}) as Record<
-      string,
-      unknown
-    >;
-    setDerivedFields(
-      deriveEditableFields(template, profileData, volunteerName),
-    );
-  }, [dataReady, template, derivedFields, profileQuery.data, volunteerName]);
+    if (!dataReady || !template || derivedFields) return;
+    const profileData = toProfileDataMap(profileQuery.data);
+    setDerivedFields(deriveEditableFields(template, profileData));
+  }, [dataReady, template, derivedFields, profileQuery.data]);
 
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the

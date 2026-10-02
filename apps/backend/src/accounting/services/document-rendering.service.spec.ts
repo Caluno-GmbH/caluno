@@ -92,8 +92,7 @@ describe('DocumentRenderingService', () => {
             }),
         },
         users: {
-          findFirst: () =>
-            Promise.resolve({ id: 'vol-1', name: 'Max Mustermann' }),
+          findFirst: () => Promise.resolve({ id: 'vol-1' }),
         },
         organizationUnits: {
           findFirst: () =>
@@ -108,11 +107,15 @@ describe('DocumentRenderingService', () => {
       },
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
     } as never;
-    const userProfileService = {
-      findByUserId: () =>
-        Promise.resolve({
-          data: overrides.profileData ?? { street: 'Testweg 2' },
-        }),
+    const userService = {
+      getProfileDataByUserId: () =>
+        Promise.resolve(
+          overrides.profileData ?? {
+            firstname: 'Max',
+            lastname: 'Mustermann',
+            street: 'Testweg 2',
+          },
+        ),
     } as never;
     const reimbursementRateService = {
       getEffectiveRateCents: (...args: unknown[]) => {
@@ -136,7 +139,7 @@ describe('DocumentRenderingService', () => {
     } as never;
     return new DocumentRenderingService(
       db,
-      userProfileService,
+      userService,
       reimbursementRateService,
       fileService,
       organizationService,

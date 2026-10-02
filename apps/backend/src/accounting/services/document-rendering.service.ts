@@ -5,9 +5,9 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { OrganizationService } from '../../organization/organization.service';
-import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
+import { UserService } from '../../user/user.service';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
@@ -75,7 +75,7 @@ export class DocumentRenderingService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly userProfileService: UserProfileService,
+    private readonly userService: UserService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly fileService: FileService,
     private readonly organizationService: OrganizationService,
@@ -536,25 +536,19 @@ export class DocumentRenderingService {
     if (!template) {
       throw new Error('Document is missing its template');
     }
-    const [rootUnit, volunteer] = await Promise.all([
+    const rootUnit =
       'organizationUnit' in document && document.organizationUnit
-        ? Promise.resolve(document.organizationUnit)
-        : this.resolveTemplateOrgUnit(template),
-      this.db.query.users.findFirst({
-        where: { id: document.volunteerId },
-      }),
-    ]);
-    const [profile, orgProfile] = await Promise.all([
-      this.userProfileService.findByUserId(document.volunteerId),
+        ? document.organizationUnit
+        : await this.resolveTemplateOrgUnit(template);
+    const [profileData, orgProfile] = await Promise.all([
+      this.userService.getProfileDataByUserId(document.volunteerId),
       // The same resolved org details the create gate checked, so a sub-org's
       // document prints what its parents filled in rather than blanks.
       template.organizationId && rootUnit
         ? resolveOrgProfile(this.db, template.organizationId, rootUnit.id)
         : Promise.resolve(undefined),
     ]);
-    const profileData = (profile?.data ?? {}) as Record<string, unknown>;
 
-    const [firstName, lastName] = this.splitName(volunteer?.name);
     const rateCents = await this.resolveRateCents(
       document,
       template.organizationId,
@@ -622,12 +616,26 @@ export class DocumentRenderingService {
         ?.orgOverrides,
     );
 
+    const volunteerFirstName = str(
+      profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_first_name],
+    );
+    const volunteerLastName = str(
+      profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_last_name],
+    );
+
+    const volunteerName = [
+      nonBlank(volunteerFirstName),
+      nonBlank(volunteerLastName),
+    ]
+      .filter((part): part is string => part !== undefined)
+      .join(' ');
+
     return {
       ...orgValues,
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
-      volunteer_name: volunteer?.name ?? '',
-      volunteer_first_name: firstName,
-      volunteer_last_name: lastName,
+      volunteer_first_name: volunteerFirstName,
+      volunteer_last_name: volunteerLastName,
+      volunteer_name: volunteerName,
       volunteer_street: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
       ),
@@ -843,11 +851,6 @@ export class DocumentRenderingService {
       throw new Error('Organization is missing its id');
     }
     return (await this.organizationService.requireRootUnit(organizationId)).id;
-  }
-
-  private splitName(name: string | undefined): [string, string] {
-    const parts = (name ?? '').trim().split(/\s+/);
-    return [parts[0] ?? '', parts.slice(1).join(' ')];
   }
 
   /**

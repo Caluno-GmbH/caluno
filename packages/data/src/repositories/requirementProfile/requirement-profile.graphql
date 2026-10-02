@@ -1,10 +1,19 @@
 query GetAdminUserProfile($userId: String!) {
-  adminUserProfile(userId: $userId) {
+  user(id: $userId) {
     id
-    userId
-    data
-    createdAt
-    updatedAt
+    email
+    firstname
+    lastname
+    preferredName
+    gender
+    phone
+    street
+    zip
+    city
+    birthdate
+    iban
+    accountHolder
+    bic
   }
 }
 

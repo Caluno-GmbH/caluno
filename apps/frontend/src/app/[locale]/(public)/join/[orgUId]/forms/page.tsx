@@ -2,6 +2,7 @@ import { JoinStatus } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import { buildSubmittedFormIds } from '@/domain/requirement-form/resolve-required-forms';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { redirect } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
@@ -34,7 +35,7 @@ export default async function JoinFormsPage({
 
   const [orgUnit, userProfile, joinResult] = await Promise.all([
     data.organizationUnit.findById(orgUId),
-    data.requirementForm.getMyUserProfile(),
+    data.user.getMe(),
     data.membershipRequest.join(orgUId).catch(() => null),
   ]);
 
@@ -53,7 +54,7 @@ export default async function JoinFormsPage({
   const mySubmissions =
     await data.requirementForm.findMyFormSubmissions(orgUId);
 
-  const profileData = (userProfile?.data ?? {}) as Record<string, string>;
+  const profileData = toProfileDataMap(userProfile) as Record<string, string>;
 
   const submittedFormIds = buildSubmittedFormIds(mySubmissions);
 

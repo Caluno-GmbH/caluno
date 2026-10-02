@@ -27,10 +27,6 @@ export const authRelations = defineRelationsPart(schema, (r) => ({
       from: r.users.id,
       to: r.eventInvites.userId,
     }),
-    userProfile: r.one.userProfiles({
-      from: r.users.id,
-      to: r.userProfiles.userId,
-    }),
   },
   sessions: {
     users: r.one.users({
