@@ -905,6 +905,103 @@ describe('documents flow — admin + volunteer', () => {
   });
 
   describe('org scoping', () => {
+    it('createInvoice rejects a sibling organization unit in input', async () => {
+      const scoped = await setupFlowOrg(db);
+      const header = { 'x-organization-unit-id': scoped.organizationUnitId };
+      const unitTypeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: scoped.organizationId },
+          })
+        )?.id ?? '';
+      const sibling = await createUnit(db, {
+        organizationId: scoped.organizationId,
+        typeId: unitTypeId,
+        name: `Sibling ${crypto.randomUUID()}`,
+        parentId: scoped.organizationUnitId,
+      });
+      const rootEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: scoped.organizationUnitId,
+        volunteerId: scoped.volunteerId,
+        reimbursementTypeId: scoped.reimbursementTypeId,
+        startedAt: new Date('2026-09-01T09:00:00.000Z'),
+        endedAt: new Date('2026-09-01T13:00:00.000Z'),
+      });
+      const siblingEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: sibling.id,
+        volunteerId: scoped.volunteerId,
+        reimbursementTypeId: scoped.reimbursementTypeId,
+        startedAt: new Date('2026-09-02T09:00:00.000Z'),
+        endedAt: new Date('2026-09-02T13:00:00.000Z'),
+      });
+
+      setAuthMockUserId(scoped.adminId);
+
+      // A client-supplied unit that does not match the header is forbidden —
+      // do not silently retarget or claim sibling hours.
+      const rejected = await graphqlRequest(app, {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: sibling.id,
+            reimbursementTypeId: scoped.reimbursementTypeId,
+            volunteerId: scoped.volunteerId,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        },
+        headers: header,
+      });
+      expect(rejected.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(rejected.errors?.[0]?.message).toMatch(/organization unit/i);
+
+      // Matching the header unit still creates on that unit; sibling hours
+      // remain ineligible under the header scope.
+      const siblingHoursRejected = await graphqlRequest(app, {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: scoped.organizationUnitId,
+            reimbursementTypeId: scoped.reimbursementTypeId,
+            volunteerId: scoped.volunteerId,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        },
+        headers: header,
+      });
+      expect(siblingHoursRejected.errors?.[0]?.message).toMatch(
+        /not eligible/i,
+      );
+
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: scoped.organizationUnitId,
+              reimbursementTypeId: scoped.reimbursementTypeId,
+              volunteerId: scoped.volunteerId,
+              timeEntryIds: [rootEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: header,
+        },
+        'createInvoice',
+      );
+      const stored = await db.query.invoices.findFirst({
+        where: { id: createInvoice.id },
+      });
+      expect(stored?.organizationUnitId).toBe(scoped.organizationUnitId);
+    });
+
     it('a volunteer in two organisations only ever sees each org\u2019s own documents', async () => {
       // Two fresh orgs, each with its own admin and template — the shared
       // `org` already carries documents from the lifecycle tests above.
@@ -1958,6 +2055,9 @@ describe('documents flow — admin + volunteer', () => {
         reimbursementTypeId: nested.reimbursementTypeId,
       });
       setAuthMockUserId(nested.adminId);
+      const grandchildHeader = {
+        'x-organization-unit-id': grandchild.id,
+      };
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string; totalAmountCents: number };
       }>(
@@ -1974,7 +2074,7 @@ describe('documents flow — admin + volunteer', () => {
               periodEnd: '2026-07-31T22:00:00.000Z',
             },
           },
-          headers: nestedHeader,
+          headers: grandchildHeader,
         },
         'createInvoice',
       );
