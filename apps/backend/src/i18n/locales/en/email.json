@@ -90,7 +90,7 @@
   "membershipApproved": {
     "buttonLabel": "Open {organizationName}",
     "checkInQrAlt": "Your check-in QR code",
-    "checkInQrCaption": "Show this code at check-in, or have it scanned by a supervisor.",
+    "checkInQrCaption": "Show this QR code at check-in and have it scanned by the person responsible, if your organisation records attendance at assignments. You can also find it under Check in when you sign in at app.caluno.org.",
     "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Print it out or keep it on your phone. You can show it at check-in any time, even without your Caluno login.",
     "contactEmailLabel": "Email",
     "contactHeading": "Your contact person",
