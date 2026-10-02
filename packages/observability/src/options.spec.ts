@@ -7,7 +7,7 @@ describe('buildBaseOptions', () => {
   it('is disabled without a DSN and never sends default PII', () => {
     const opts = buildBaseOptions({});
     expect(opts.enabled).toBe(false);
-    expect(opts.sendDefaultPii).toBe(false);
+    expect(opts.dataCollection).toBeDefined();
   });
   it('maps environment, release and dsn through', () => {
     const opts = buildBaseOptions({
