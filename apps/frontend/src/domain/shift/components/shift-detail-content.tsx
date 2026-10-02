@@ -18,6 +18,7 @@ export type Shift = {
   originalStartsAt: string;
   durationMinutes: number;
   maxVolunteers?: number | null;
+  joinRequiresApproval: boolean;
   visibility: ShiftVisibility;
   requiredForms?: Array<{ form: RequiredForm; order: number }> | null;
   organizationUnit?: {

@@ -255,7 +255,8 @@ export function CreateDocumentModal({
                           }}
                           className={cn(
                             'flex w-full items-center gap-4 rounded-xl border p-3 text-left transition-colors',
-                            count > 0 && 'pr-28',
+                            count > 0 && !blocked && 'pr-28',
+                            blocked && 'pr-10',
                             blocked
                               ? 'cursor-not-allowed border-border bg-card opacity-50'
                               : selected
@@ -298,14 +299,19 @@ export function CreateDocumentModal({
                               </p>
                             )}
                           </div>
+                        </button>
 
-                          {blocked && (
+                        {/* Sibling of the row button — never a descendant:
+                            AlertIconTooltip is itself a <button>, and nesting
+                            buttons is invalid HTML (breaks hydration). */}
+                        {blocked && (
+                          <div className="pointer-events-auto absolute inset-y-0 right-3 my-auto flex items-center">
                             <AlertIconTooltip
                               hint={tDocs('statusLabel.templateMissingHint')}
                               className="text-alert"
                             />
-                          )}
-                        </button>
+                          </div>
+                        )}
 
                         {count > 0 && !blocked && (
                           <button

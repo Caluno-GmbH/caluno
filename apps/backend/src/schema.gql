@@ -534,13 +534,6 @@ type FormSubmissionValue {
   value: String!
 }
 
-enum InviteAllowanceState {
-  ELIGIBLE
-  NEARLY_EXHAUSTED
-  NO_AGREEMENT
-  WOULD_EXCEED
-}
-
 type Invoice {
   createdAt: DateTime!
   declineReason: String
@@ -780,7 +773,7 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
-  updateMyUserProfile(input: UpdateUserProfileInput!): UserProfile!
+  updateMyProfile(input: UpdateMyProfileInput!): UserWithProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
   updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
@@ -967,7 +960,6 @@ type Query {
   accountingSetupStatus: AccountingSetupStatus!
   activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeId: ID!): DocumentTemplate!
   activeShiftInstances: [ShiftInstance!]!
-  adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
@@ -994,12 +986,11 @@ type Query {
   formSubmissionsByForm(formId: String!, limit: Int! = 10, offset: Int! = 0): FormSubmissionPaginatedResponse!
   formSubmissionsByMembershipRequest(membershipRequestId: String!): [FormSubmission!]!
   formSubmissionsForVolunteer(userId: String!): [FormSubmission!]!
-  inviteAllowanceEligibility(organizationUnitId: ID!, periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, shiftDurationMinutes: Int!): [VolunteerInviteAllowance!]!
   invoice(id: ID!): Invoice!
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
   manualBaseline(reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline
-  me: User!
+  me: UserWithProfile!
   members(organizationUnitId: ID!): [User!]!
   membership(organizationUnitId: ID!): Membership
   membershipRequestCount(status: MembershipRequestStatus): Int!
@@ -1023,7 +1014,6 @@ type Query {
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
-  myUserProfile: UserProfile
   organization(id: String!): Organization
   organizationBySlug(slug: String!): Organization!
   organizationTree: OrganizationTree
@@ -1068,8 +1058,8 @@ type Query {
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
-  user(id: String!): User
-  userByCheckInId(checkInId: String!): User
+  user(id: String!): UserWithProfile
+  volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
@@ -1569,6 +1559,21 @@ input UpdateMyImageInput {
   imageFileId: String
 }
 
+input UpdateMyProfileInput {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  city: String
+  firstname: String
+  gender: String
+  iban: String
+  lastname: String
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
 input UpdateOrganizationInput {
   city: String
   contactEmail: String
@@ -1683,10 +1688,6 @@ input UpdateTimeEntryInput {
   startedAt: DateTime!
 }
 
-input UpdateUserProfileInput {
-  data: String!
-}
-
 type User {
   checkInId: ID!
   email: String!
@@ -1701,19 +1702,14 @@ type User {
 
   """Whether the volunteer receives the weekly plan email."""
   emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
   id: ID!
   image: String
+  lastname: String!
   locale: String
   name: String!
   permissions: [Permission!]
-}
-
-type UserProfile {
-  createdAt: DateTime!
-  data: JSON!
-  id: ID!
-  updatedAt: DateTime!
-  userId: String!
+  preferredName: String
 }
 
 type UserRequirementStatus {
@@ -1722,9 +1718,49 @@ type UserRequirementStatus {
   status: RequirementFulfillmentStatus!
 }
 
-type VolunteerInviteAllowance {
-  state: InviteAllowanceState!
+type UserWithProfile {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  checkInId: ID!
+  city: String
+  email: String!
+
+  """
+  Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership).
+  """
+  emailPlatformEnabled: Boolean!
+
+  """Whether the volunteer receives urgent call-out emails."""
+  emailUrgentCallsEnabled: Boolean!
+
+  """Whether the volunteer receives the weekly plan email."""
+  emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
+  gender: String
+  iban: String
+  id: ID!
+  image: String
+  lastname: String!
+  locale: String
+  name: String!
+  permissions: [Permission!]
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
+type VolunteerAllowance {
+  state: VolunteerAllowanceState!
   volunteerId: ID!
+}
+
+enum VolunteerAllowanceState {
+  ELIGIBLE
+  NEARLY_EXHAUSTED
+  NO_AGREEMENT
+  WOULD_EXCEED
 }
 
 type VolunteerNeedsTimesheet {

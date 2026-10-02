@@ -38,7 +38,8 @@ test.describe('Signup privacy policy', () => {
     await signup.goto();
 
     await signup.fillForm({
-      name: 'E2E User',
+      firstname: 'E2E',
+      lastname: 'User',
       email: uniqueEmail(),
       password: TEST_PASSWORD,
     });
@@ -59,7 +60,8 @@ test.describe('Signup privacy policy', () => {
     await signup.goto();
 
     const response = await signup.signup(
-      'E2E User',
+      'E2E',
+      'User',
       uniqueEmail(),
       TEST_PASSWORD,
     );

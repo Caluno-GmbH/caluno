@@ -52,8 +52,11 @@
       "emailPlaceholder": "du@beispiel.de",
       "genericError": "Dein Konto ließ sich nicht erstellen. Versuch es bitte erneut.",
       "hasAccount": "Hast du bereits ein Konto?",
-      "nameLabel": "Vollständiger Name",
-      "namePlaceholder": "Max Mustermann",
+      "firstnameLabel": "Vorname",
+      "firstnamePlaceholder": "Max",
+      "lastnameLabel": "Nachname",
+      "lastnamePlaceholder": "Mustermann",
+      "namePartsRequired": "Bitte gib Vor- und Nachname ein.",
       "passwordHint": "Mindestens 6 Zeichen",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
@@ -139,10 +142,7 @@
     "selectShiftPlaceholder": "Einsatz wählen",
     "shiftSearchPlaceholder": "Einsatzname",
     "shiftSheetTitle": "Einsatz wählen",
-    "shiftlessWarningDuplicateAtSubmit": "Wenn diese Person bereits ein offenes Check-in ohne Einsatz hat, schlägt das Check-in mit einer Fehlermeldung fehl.",
-    "shiftlessWarningEmptyTaskCell": "Im Stundennachweis bleibt die Spalte für die Aufgabe leer. Du kannst später eine Notiz zum Eintrag hinzufügen.",
-    "shiftlessWarningNoReimbursement": "Diese Stunden bekommen keine Vergütungsart. Sie erscheinen erst im Stundennachweis und in der Abrechnung, wenn du den Eintrag später bearbeitest.",
-    "shiftlessWarningNoShiftStats": "Die Stunden zählen nur in die Gesamtstunden, nicht in die Kapazität oder Planung eines Einsatzes.",
+    "shiftlessWarningBody": "Wenn diese:r Freiwillige für diesen Einsatz eine Vergütung erhalten soll, muss dem Eintrag auf der Seite „Zeiterfassung“ manuell eine Vergütungsart hinzugefügt werden.",
     "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
@@ -485,17 +485,17 @@
   },
   "ShiftSettings": {
     "page": {
-      "title": "Schichten und Check-in",
-      "subtitle": "Einstellungen für Schichten in {orgName}."
+      "title": "Einsätze und Check-in",
+      "subtitle": "Einstellungen für Einsätze in {orgName}."
     },
     "sections": {
       "staffing": {
         "title": "Besetzung",
-        "description": "Wie Freiwillige gebeten werden, Schichten zu besetzen."
+        "description": "Wie Freiwillige gebeten werden, Einsätze zu besetzen."
       },
       "moderation": {
         "title": "Moderation",
-        "description": "Regeln dafür, wer in eine Schicht kommt."
+        "description": "Regeln dafür, wer in einen Einsatz kommt."
       },
       "checkIn": {
         "title": "Check-in",
@@ -526,24 +526,35 @@
       }
     },
     "stepIn": {
-      "label": "Wann eingegriffen wird",
+      "label": "Zeitfenster vor Beginn",
       "option": "{hours} Stunden vorher"
+    },
+    "sendAt": {
+      "label": "Uhrzeit"
     },
     "callOut": {
       "title": "Automatischer dringender Aufruf",
-      "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Schichten ohne Mindestbesetzung sind nie betroffen.",
-      "daysDescription": "Schichten an diesen Tagen können einen dringenden Aufruf auslösen.",
-      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung einen dringenden Aufruf erhält.",
+      "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Einsätze ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Einsätze an diesen Tagen können einen dringenden Aufruf auslösen.",
+      "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung einen dringenden Aufruf erhält.",
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht.",
+      "updateError": "Diese Automatisierung ließ sich nicht speichern. Versuch es bitte erneut."
+    },
+    "discovery": {
+      "title": "Übersichts-E-Mail",
+      "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Einsätze in dieser Einheit und der Einsätze, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
+      "daysDescription": "Tage, an denen die E-Mail verschickt wird.",
+      "sendAtDescription": "Uhrzeit, zu der die E-Mail verschickt wird (Ortszeit).",
       "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
       "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
     },
     "approval": {
       "title": "Freigabe pausieren",
-      "description": "Bestätigt Anmeldungen sofort, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Sobald die Schicht ihre Mindestbesetzung erreicht, gilt die Freigabe wieder. Schichten ohne Mindestbesetzung sind nie betroffen.",
-      "daysDescription": "Bei Schichten an diesen Tagen kann die Freigabe pausiert werden.",
-      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung keine Freigabe mehr braucht.",
-      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
-      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+      "description": "Bestätigt Anmeldungen sofort, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Sobald der Einsatz seine Mindestbesetzung erreicht, gilt die Freigabe wieder. Einsätze ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Bei Einsätzen an diesen Tagen kann die Freigabe pausiert werden.",
+      "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung keine Freigabe mehr braucht.",
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht.",
+      "updateError": "Diese Automatisierung ließ sich nicht speichern. Versuch es bitte erneut."
     }
   },
   "MembershipRequest": {
@@ -715,7 +726,7 @@
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
     "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}",
-    "shiftSettings": "Schichten und Check-in"
+    "shiftSettings": "Einsätze und Check-in"
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",
@@ -869,8 +880,8 @@
     "emailSettings": "E-Mails",
     "emailUrgentCalls": "Dringende Aufrufe",
     "emailUrgentCallsDescription": "Dringende Aufrufe für unterbesetzte Einsätze.",
-    "emailWeeklyUpdate": "Wöchentliche Übersicht",
-    "emailWeeklyUpdateDescription": "Die wöchentliche Planungs-E-Mail am Sonntag.",
+    "emailWeeklyUpdate": "Übersichts-E-Mail",
+    "emailWeeklyUpdateDescription": "Eine Übersicht deiner bevorstehenden Einsätze und der Einsätze, für die noch Leute fehlen.",
     "identity": {
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
@@ -1536,7 +1547,7 @@
       "groupComing": "Zugesagt",
       "groupNotComing": "Nicht dabei",
       "groupPending": "Ausstehend",
-      "removeSuccess": "Freiwillige:r von dieser Schicht entfernt",
+      "removeSuccess": "Freiwillige:r von diesem Einsatz entfernt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
       "pendingApproval": "Genehmigung ausstehend",
@@ -1688,10 +1699,10 @@
     "transferList": {
       "addAria": "Hinzufügen",
       "allowance": {
-        "eligible": "Vergütung möglich",
-        "nearlyExhausted": "Freibetrag der Pauschale fast erreicht",
+        "eligible": "auszahlungsberechtigt",
+        "nearlyExhausted": "Limit fast erreicht",
         "noAgreement": "Vereinbarung nötig",
-        "wouldExceed": "Überschreitet den zulässigen Freibetrag"
+        "wouldExceed": "überschreitet Limit!"
       },
       "available": "Verfügbar",
       "confirmExceedAllowance": {
@@ -1762,6 +1773,7 @@
     "pickDayLabel": "Wähle einen Tag",
     "respondBeforeNote": "Antworte bis {date}. Du kannst es dir bis zum Einsatzbeginn anders überlegen.",
     "signUpCta": "Anmelden für {date}",
+    "signUpApprovalNote": "Nach der Anmeldung prüft die Administration deine Anfrage.",
     "signUpNote": "Du kannst jederzeit absagen.",
     "spotsFree": "· {n} frei",
     "spotsFull": "· voll besetzt",
@@ -1860,7 +1872,6 @@
       "recorded": "Erfasst",
       "recordedBy": "von {name}",
       "recordedByUnknown": "Unbekannt",
-      "recordedOnBehalf": "im Auftrag erfasst",
       "date": "Datum",
       "shift": "Einsatz",
       "volunteer": "Freiwillige:r"
@@ -2124,8 +2135,8 @@
       },
       "toolbar": {
         "typeAll": "Alle Pauschalen",
-        "typeEP": "Ehrenamt",
-        "typeUL": "Übungsleiter",
+        "typeEP": "Ehrenamtspauschale",
+        "typeUL": "Übungsleiterpauschale",
         "searchPlaceholder": "Freiwillige suchen...",
         "sortActionNeeded": "Dringend zuerst",
         "sortNewest": "Neueste zuerst"
@@ -2259,7 +2270,7 @@
           "countersign": "Gegenzeichnen",
           "decline": "Ablehnen",
           "seeDetails": "Details ansehen",
-          "createNew": "Neues {docType} erstellen"
+          "createNew": "{kind, select, contract {Neue Vereinbarung} timesheet {Neuen Stundennachweis} other {Neues Dokument}} erstellen"
         },
         "nonCompliantDialog": {
           "titleSingle": "Ohne aktive Vereinbarung {action, select, create {erstellen} remind {erinnern} countersign {gegenzeichnen} other {bearbeiten}}?",
@@ -2503,7 +2514,8 @@
           "nextYear": "Nächstes Jahr",
           "previousYearBlock": "Vorheriger Zeitraum",
           "nextYearBlock": "Nächster Zeitraum",
-          "apply": "Anwenden"
+          "apply": "Anwenden",
+          "placeholder": "Zeitraum"
         },
         "manualFieldLabels": {
           "contract-lifespan": "Vereinbarungslaufzeit",

@@ -7,7 +7,6 @@ import type {
   UpdateFormBlockFieldInput,
   UpdateFormBlockInput,
   UpdateRequirementFormInput,
-  UpdateUserProfileInput,
 } from '../../generated/graphql';
 import {
   BaseRepository,
@@ -129,16 +128,6 @@ export class RequirementFormRepository extends BaseRepository {
   async getMyFormSubmissionByToken(token: string) {
     const data = await this.sdk.GetMyFormSubmissionByToken({ token });
     return data.myFormSubmissionByToken;
-  }
-
-  async getMyUserProfile() {
-    const data = await this.sdk.GetMyUserProfile();
-    return data.myUserProfile;
-  }
-
-  async updateMyUserProfile(input: UpdateUserProfileInput) {
-    const data = await this.sdk.UpdateMyUserProfile({ input });
-    return data.updateMyUserProfile;
   }
 
   async findSubmissionsByMembershipRequestId(membershipRequestId: string) {

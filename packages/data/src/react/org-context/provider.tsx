@@ -2,9 +2,8 @@
 
 import { createContext, type ReactNode, useContext } from 'react';
 
-export interface OrganizationData {
+interface BaseOrgUnitContextData {
   id: string;
-  organizationId: string;
   slug: string;
   name: string;
   description?: string | null;
@@ -13,20 +12,35 @@ export interface OrganizationData {
   zipCode?: string | null;
   city?: string | null;
   legalRep?: string | null;
+  organizationId: string;
   accountingEnabled: boolean;
 }
 
+interface NestedOrgUnitContextData extends BaseOrgUnitContextData {
+  isRoot: false;
+  rootOrganizationName: string;
+}
+
+interface RootOrgUnitContextData extends BaseOrgUnitContextData {
+  isRoot: true;
+  rootOrganizationName: undefined;
+}
+
+export type OrgUnitContextData =
+  | NestedOrgUnitContextData
+  | RootOrgUnitContextData;
+
 interface OrgContextValue {
-  org: OrganizationData;
-  organizations: OrganizationData[];
+  org: OrgUnitContextData;
+  organizations: OrgUnitContextData[];
 }
 
 const OrgContext = createContext<OrgContextValue | null>(null);
 
 export interface OrgProviderProps {
   children: ReactNode;
-  org: OrganizationData;
-  organizations: OrganizationData[];
+  org: OrgUnitContextData;
+  organizations: OrgUnitContextData[];
 }
 
 export function OrgProvider({
@@ -57,10 +71,10 @@ export function useOrgSlug(): string {
   return useOrg().org.slug;
 }
 
-export function useCurrentOrg(): OrganizationData {
+export function useCurrentOrg(): OrgUnitContextData {
   return useOrg().org;
 }
 
-export function useUserOrganizations(): OrganizationData[] {
+export function useUserOrganizations(): OrgUnitContextData[] {
   return useOrg().organizations;
 }

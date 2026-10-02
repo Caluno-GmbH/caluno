@@ -1,4 +1,5 @@
 import type { Database } from '../../database/database.module';
+import { isBlank } from '../../utils';
 
 /** Org details a document renders and the accounting gates require. */
 export const INHERITED_ORG_PROFILE_COLUMNS = [
@@ -21,9 +22,6 @@ export type UnitRow = {
   name: string;
   deletedAt?: Date | null;
 } & Partial<Record<InheritedColumn, string | null>>;
-
-const isBlank = (value: unknown): boolean =>
-  typeof value !== 'string' || value.trim() === '';
 
 /**
  * Pure resolution of a unit's org details from the unit plus its already-loaded

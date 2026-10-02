@@ -71,7 +71,7 @@ export default async function VolunteeringCheckOutPage({
 
           <UserCard user={context.volunteer} size="lg" />
 
-          <div className="mt-2 fixed bottom-0 left-4 right-4 z-50 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:w-full">
+          <div className="mt-2 bottom-0 left-4 right-4 z-50 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:w-full">
             <CheckOutButton
               organizationUnitId={entry.organizationUnit.id}
               timeEntryId={entry.id}

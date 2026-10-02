@@ -18,7 +18,7 @@ export default async function ProfileEditPage({
   const tProfile = await getTranslations('Profile');
 
   const data = await getDataClient();
-  const profile = await data.requirementForm.getMyUserProfile();
+  const me = await data.user.getMe();
 
   return (
     <div>
@@ -26,7 +26,7 @@ export default async function ProfileEditPage({
         <ProfilePageHeader title={tProfile('title')} backHref="/profile" />
       </div>
       <div className="mx-auto w-full max-w-4xl px-4 py-6">
-        <EditIdentityForm profile={profile ?? null} />
+        <EditIdentityForm profile={me} />
       </div>
     </div>
   );

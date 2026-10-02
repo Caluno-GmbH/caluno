@@ -35,6 +35,8 @@ const createContext = async (): Promise<GraphqlTestContext> => {
     .values({
       id: testUserId,
       name: 'GraphQL Test User',
+      firstname: 'GraphQL',
+      lastname: 'Test User',
       email: `graphql-test-${crypto.randomUUID()}@example.com`,
     })
     .onConflictDoNothing();

@@ -163,7 +163,10 @@ export default async function ShiftInstanceDetailPage({
             }
             rrule={instance.master.rrule}
             visibility={instance.master.visibility}
-            joinRequiresApproval={instance.master.joinRequiresApproval}
+            joinRequiresApproval={
+              instance.overrideJoinRequiresApproval ??
+              instance.master.joinRequiresApproval
+            }
             filledCount={instance.filledCount}
             maxVolunteers={
               instance.overrideMaxVolunteers ?? instance.master.maxVolunteers
