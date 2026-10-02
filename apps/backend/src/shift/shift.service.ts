@@ -210,18 +210,21 @@ export class ShiftService {
   /**
    * Active (not cancelled) instances starting within `windowHours` of `now`
    * that have an effective minimum staffing requirement (an instance-level
-   * override, or else the series' `minVolunteers`) — candidates for the
-   * understaffed-shift scheduler tick. Instances with no minimum configured
-   * are filtered out in application code since there's nothing to be "below".
+   * override, or else the series' `minVolunteers`). Instances with no
+   * minimum configured are filtered out in application code since there's
+   * nothing to be "below". Restricted to `instanceIds` when given.
    */
-  async findUnderstaffedCandidateInstances(
+  private async findActiveInstancesWithMinimumInWindow(
     now: Date,
     windowHours: number,
+    instanceIds?: string[],
   ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
-    const windowEnd = new Date(now.getTime() + windowHours * 3_600_000);
+    if (instanceIds?.length === 0) return [];
 
+    const windowEnd = new Date(now.getTime() + windowHours * 3_600_000);
     const instances = await this.db.query.shiftInstances.findMany({
       where: {
+        ...(instanceIds ? { id: { in: instanceIds } } : {}),
         isCancelled: false,
         actualStartsAt: { gt: now, lte: windowEnd },
       },
@@ -233,6 +236,57 @@ export class ShiftService {
         (instance.overrideMinVolunteers ?? instance.master.minVolunteers) !=
         null,
     );
+  }
+
+  /** Candidates for the understaffed-shift scheduler tick, see findActiveInstancesWithMinimumInWindow. */
+  async findUnderstaffedCandidateInstances(
+    now: Date,
+    windowHours: number,
+  ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
+    return this.findActiveInstancesWithMinimumInWindow(now, windowHours);
+  }
+
+  /**
+   * Candidates for the pause-approval sweep tick: upcoming instances that
+   * currently have at least one AWAITING_ADMIN_APPROVAL invite, which
+   * re-checks whether those invites now qualify to be admitted without
+   * waiting on another sign-up. See findActiveInstancesWithMinimumInWindow.
+   */
+  async findPauseApprovalSweepCandidates(
+    now: Date,
+    windowHours: number,
+  ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
+    const pending = await this.db
+      .selectDistinct({
+        instanceId: schema.shiftInstanceInvites.instanceId,
+      })
+      .from(schema.shiftInstanceInvites)
+      .where(
+        eq(
+          schema.shiftInstanceInvites.status,
+          ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+        ),
+      );
+    if (pending.length === 0) return [];
+
+    return this.findActiveInstancesWithMinimumInWindow(
+      now,
+      windowHours,
+      pending.map((row) => row.instanceId),
+    );
+  }
+
+  /**
+   * Public entry point for the pause-approval sweep tick: resolves every
+   * AWAITING_ADMIN_APPROVAL invite on the given instances now that the
+   * pause-approval automation covers them, in their own transaction.
+   */
+  async sweepPausedApprovalInvites(instanceIds: string[]): Promise<void> {
+    if (instanceIds.length === 0) return;
+
+    await this.db.transaction(async (tx) => {
+      await this.autoResolveAwaitingApprovalInvites(tx, instanceIds);
+    });
   }
 
   /** Instances of the given shifts in the org unit, keyed by masterId, ordered by start time. */
@@ -2059,7 +2113,8 @@ export class ShiftService {
    * oldest-first, now that approval is no longer required for them: admits
    * up to capacity, waitlists the overflow. Mirrors the single-invite admin
    * approval path (resolveAdminApprovalTargetStatus + the same notifications)
-   * but as a bulk sweep triggered by turning approval off.
+   * but as a bulk sweep, triggered either by turning approval off for an
+   * instance/series or by the pause-approval scheduler tick.
    */
   private async autoResolveAwaitingApprovalInvites(
     tx: Database,

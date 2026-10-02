@@ -36,8 +36,8 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
+import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
-import { signOut } from '@/lib/auth';
 
 interface DashboardSidebarProps {
   permissions: PermissionKey[];
@@ -52,6 +52,7 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
   const permissionSet = useMemo(() => new Set(permissions), [permissions]);
   const canViewVolunteers = permissionSet.has(PermissionKey.VolunteerView);
   const { accountingEnabled } = useCurrentOrg();
+  const signOut = useSignOut();
 
   const { data: pendingCount } = useMembershipRequestCount(
     orgUId ?? '',

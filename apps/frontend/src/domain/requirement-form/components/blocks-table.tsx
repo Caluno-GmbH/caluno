@@ -4,6 +4,7 @@ import type { FormBlock, RequirementForm } from '@repo/data';
 import {
   Badge,
   Button,
+  cn,
   Table,
   TableBody,
   TableCell,
@@ -17,6 +18,7 @@ import { useTransition } from 'react';
 import { DeleteAlertDialog } from '@/components/delete-alert-dialog';
 import { FormattedDate } from '@/components/formatted-date';
 import { useSheetTrigger } from '@/hooks/use-sheet';
+import { USER_TEXT_BADGE } from './user-text-badge';
 
 function BlockActions({
   block,
@@ -124,7 +126,7 @@ export function BlocksTable({
                         <Badge
                           key={f.id}
                           variant="secondary"
-                          className="text-xs"
+                          className={cn('text-xs', USER_TEXT_BADGE)}
                         >
                           {f.name}
                         </Badge>

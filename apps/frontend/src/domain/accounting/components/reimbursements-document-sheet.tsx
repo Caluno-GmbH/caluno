@@ -815,7 +815,9 @@ export function DocumentSheet({
                 onOpenChange(false);
               }}
             >
-              {t('actions.createNew', { docType: kindLabel })}
+              {t('actions.createNew', {
+                kind: isContract ? 'contract' : 'timesheet',
+              })}
             </Button>
           ) : actionKey ? (
             <div className="flex w-full items-center gap-2">
