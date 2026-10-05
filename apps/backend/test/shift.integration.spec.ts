@@ -380,6 +380,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Shift Past Future Invite User',
+      firstname: 'Shift',
+      lastname: 'Past Future Invite User',
       email: `shift-past-future-invite-${crypto.randomUUID()}@example.com`,
     });
 
@@ -494,6 +496,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Shift Remove Future User',
+      firstname: 'Shift',
+      lastname: 'Remove Future User',
       email: `shift-remove-future-${crypto.randomUUID()}@example.com`,
     });
 
@@ -768,6 +772,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Deleted Shift Invite User',
+      firstname: 'Deleted',
+      lastname: 'Shift Invite User',
       email: `deleted-shift-invite-${crypto.randomUUID()}@example.com`,
     });
 
@@ -852,6 +858,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Deleted Master Invite User',
+      firstname: 'Deleted',
+      lastname: 'Master Invite User',
       email: `deleted-master-invite-${crypto.randomUUID()}@example.com`,
     });
 

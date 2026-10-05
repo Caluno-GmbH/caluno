@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
 import { SubmissionView } from '@/domain/requirement-form/components/submission-view';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 
@@ -15,7 +16,7 @@ export default async function FormSubmissionPage({ params }: Props) {
   const data = await getDataClient();
   const [submission, profile] = await Promise.all([
     data.requirementForm.findMySubmission(submissionId),
-    data.requirementForm.getMyUserProfile(),
+    data.user.getMe(),
   ]);
   if (!submission) notFound();
 
@@ -43,7 +44,7 @@ export default async function FormSubmissionPage({ params }: Props) {
         <SubmissionView
           fields={fields}
           submissionValues={submission.values ?? []}
-          profileData={profile?.data ?? {}}
+          profileData={toProfileDataMap(profile)}
         />
       </div>
     </div>

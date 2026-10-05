@@ -28,7 +28,7 @@ test('signup -> verify email -> login -> create org -> create shift', async ({
 
   await test.step('signup', async () => {
     await signup.goto();
-    await signup.signup('E2E User', emailAddress, TEST_PASSWORD);
+    await signup.signup('E2E', 'User', emailAddress, TEST_PASSWORD);
     await signup.expectVerificationPrompt();
   });
 

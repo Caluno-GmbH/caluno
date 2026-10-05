@@ -1,11 +1,26 @@
 import { getTranslations } from 'next-intl/server';
 import { isGenderOptionValue } from '@/domain/requirement-form/gender-options';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { ProfileField } from './profile-field';
 
 type PersonalInformationSectionProps = {
-  profile: { data: Record<string, unknown> } | null;
+  profile: {
+    firstname?: string | null;
+    lastname?: string | null;
+    preferredName?: string | null;
+    gender?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    street?: string | null;
+    zip?: string | null;
+    city?: string | null;
+    birthdate?: string | null;
+    iban?: string | null;
+    accountHolder?: string | null;
+    bic?: string | null;
+  } | null;
 };
 
 type FieldItem = {
@@ -22,14 +37,14 @@ export const PersonalInformationSection = async ({
   const tGender = await getTranslations('RequirementForm.genderOptions');
   const { formatDate } = await getFormatting();
 
-  const data = (profile?.data ?? {}) as Record<string, unknown>;
-  const str = (key: string): string | null => {
+  const data = toProfileDataMap(profile);
+  const profileValue = (key: string): string | null => {
     const value = data[key];
     return typeof value === 'string' && value.trim() !== '' ? value : null;
   };
 
   let formattedBirthDate: string | null = null;
-  const birthDate = str('birth-date');
+  const birthDate = profileValue('birthdate');
   if (birthDate) {
     const parsed = new Date(birthDate);
     if (!Number.isNaN(parsed.getTime())) {
@@ -39,7 +54,7 @@ export const PersonalInformationSection = async ({
 
   const subtitleByKey: Record<string, string> = {
     'preferred-name': tSubtitles('preferredName'),
-    name: tSubtitles('firstName'),
+    firstname: tSubtitles('firstName'),
     lastname: tSubtitles('lastName'),
     iban: tSubtitles('iban'),
     'account-holder': tSubtitles('accountHolder'),
@@ -50,12 +65,12 @@ export const PersonalInformationSection = async ({
 
   const fields: FieldItem[] = SYSTEM_PROFILE_FIELDS.map((field) => {
     let value: string | null;
-    if (field.key === 'birth-date') {
+    if (field.key === 'birthdate') {
       value = formattedBirthDate;
     } else if (field.key === 'gender') {
-      value = genderLabel(str(field.key));
+      value = genderLabel(profileValue(field.key));
     } else {
-      value = str(field.key);
+      value = profileValue(field.key);
     }
     return {
       label: tFields(field.labelKey),

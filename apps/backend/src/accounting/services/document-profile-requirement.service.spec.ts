@@ -3,10 +3,10 @@ import { DocumentProfileRequirementService } from './document-profile-requiremen
 
 describe('DocumentProfileRequirementService', () => {
   const db = {} as never;
-  const userProfileService = {
-    findByUserId: () => Promise.resolve(undefined),
+  const userService = {
+    getProfileDataByUserId: () => Promise.resolve({}),
   } as never;
-  const service = new DocumentProfileRequirementService(db, userProfileService);
+  const service = new DocumentProfileRequirementService(db, userService);
 
   it('collects profile-required sources from enabled lines only', () => {
     const body = {
@@ -76,9 +76,10 @@ describe('DocumentProfileRequirementService', () => {
 
   it('reports a source as missing when the profile value is empty', async () => {
     const serviceWithProfile = new DocumentProfileRequirementService(db, {
-      findByUserId: () =>
+      getProfileDataByUserId: () =>
         Promise.resolve({
-          data: { iban: 'DE00 0000 0000 0000 0000 00', bic: '' },
+          iban: 'DE00 0000 0000 0000 0000 00',
+          bic: '',
         }),
     } as never);
     const body = {
@@ -117,7 +118,7 @@ describe('DocumentProfileRequirementService', () => {
     } as never;
     const serviceWithOrg = new DocumentProfileRequirementService(
       dbWithOrg,
-      userProfileService,
+      userService,
     );
     const body = {
       header: {
@@ -154,7 +155,7 @@ describe('DocumentProfileRequirementService', () => {
     } as never;
     const serviceWithOrg = new DocumentProfileRequirementService(
       dbWithOrg,
-      userProfileService,
+      userService,
     );
     const body = {
       header: {
@@ -186,7 +187,7 @@ describe('DocumentProfileRequirementService', () => {
     } as never;
     const serviceWithOrg = new DocumentProfileRequirementService(
       dbWithOrg,
-      userProfileService,
+      userService,
     );
     const body = {
       header: {
@@ -218,7 +219,7 @@ describe('DocumentProfileRequirementService', () => {
     } as never;
     const serviceWithOrg = new DocumentProfileRequirementService(
       dbWithOrg,
-      userProfileService,
+      userService,
     );
     const body = {
       header: {
@@ -236,7 +237,7 @@ describe('DocumentProfileRequirementService', () => {
 
   it('does not let orgOverrides clear volunteer profile requirements', async () => {
     const serviceWithProfile = new DocumentProfileRequirementService(db, {
-      findByUserId: () => Promise.resolve({ data: {} }),
+      getProfileDataByUserId: () => Promise.resolve({}),
     } as never);
     const body = {
       blocks: [
@@ -279,7 +280,7 @@ describe('DocumentProfileRequirementService', () => {
     } as never;
     const serviceWithOrg = new DocumentProfileRequirementService(
       dbWithOrg,
-      userProfileService,
+      userService,
     );
     const body = {
       header: {
@@ -296,10 +297,7 @@ describe('DocumentProfileRequirementService', () => {
 
   it('reports a profile-required source the volunteer has left blank', async () => {
     const serviceWithProfile = new DocumentProfileRequirementService(db, {
-      findByUserId: () =>
-        Promise.resolve({
-          data: { bic: '' },
-        }),
+      getProfileDataByUserId: () => Promise.resolve({ bic: '' }),
     } as never);
     const body = {
       blocks: [
@@ -329,10 +327,7 @@ describe('DocumentProfileRequirementService', () => {
           },
         },
       } as never;
-      return new DocumentProfileRequirementService(
-        dbWithOrg,
-        userProfileService,
-      );
+      return new DocumentProfileRequirementService(dbWithOrg, userService);
     };
 
     it('reports every baseline org field the unit has not filled in', async () => {
@@ -417,7 +412,7 @@ describe('DocumentProfileRequirementService', () => {
           },
         },
       } as never,
-      userProfileService,
+      userService,
     );
     const body = {
       header: {

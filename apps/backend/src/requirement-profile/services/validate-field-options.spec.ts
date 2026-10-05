@@ -85,7 +85,7 @@ describe('assertValidSystemKeyBinding', () => {
 
   it('ignores other system keys and missing keys', () => {
     expect(() =>
-      assertValidSystemKeyBinding('name', FieldType.TEXT, null),
+      assertValidSystemKeyBinding('firstname', FieldType.TEXT, null),
     ).not.toThrow();
     expect(() =>
       assertValidSystemKeyBinding(null, FieldType.TEXT, null),

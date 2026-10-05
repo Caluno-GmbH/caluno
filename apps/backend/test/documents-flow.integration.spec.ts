@@ -27,7 +27,7 @@ import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
 import type { DocumentAwaitingSignaturePayload } from '../src/notification/payloads/document-awaiting-signature.payload';
 import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/document-declined-by-org.payload';
-import { userProfiles } from '../src/requirement-profile/schemas/user-profile.schema';
+import { profileDataToUserColumns } from '../src/user/profile-fields';
 import {
   createDocumentTemplate,
   createReimbursementRate,
@@ -376,28 +376,32 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
 };
 
 /**
- * Seeds (or merges into) the volunteer's `user_profiles.data`. Document name
- * fields (`volunteer_first_name` / `volunteer_last_name`) now read `name` /
- * `lastname` from here, not from `users.name`.
+ * Seeds (or merges into) the volunteer's profile columns on `users`. Document
+ * name fields (`volunteer_first_name` / `volunteer_last_name`) read
+ * `firstname` / `lastname` from here, not from `users.name`.
  */
 const seedVolunteerProfile = async (
   db: Database,
   userId: string,
   data: Record<string, unknown>,
 ) => {
-  const existing = await db.query.userProfiles.findFirst({
-    where: { userId },
-  });
-  if (existing) {
-    await db
-      .update(userProfiles)
-      .set({
-        data: { ...(existing.data as Record<string, unknown>), ...data },
-      })
-      .where(eq(userProfiles.userId, userId));
-    return;
+  const { email: _email, ...columns } = profileDataToUserColumns(data);
+  const changes: Record<string, string> = {};
+  for (const [key, value] of Object.entries(columns)) {
+    if (typeof value === 'string') {
+      changes[key] = value;
+    }
   }
-  await db.insert(userProfiles).values({ userId, data });
+  if (changes.firstname !== undefined || changes.lastname !== undefined) {
+    const existing = await db.query.users.findFirst({ where: { id: userId } });
+    const first = changes.firstname ?? existing?.firstname;
+    const last = changes.lastname ?? existing?.lastname;
+    if (first && last) {
+      changes.name = `${first} ${last}`;
+    }
+  }
+  if (Object.keys(changes).length === 0) return;
+  await db.update(schema.users).set(changes).where(eq(schema.users.id, userId));
 };
 
 /** A completed, unclaimed, paid time entry — the raw material for an invoice. */
@@ -901,6 +905,103 @@ describe('documents flow — admin + volunteer', () => {
   });
 
   describe('org scoping', () => {
+    it('createInvoice rejects a sibling organization unit in input', async () => {
+      const scoped = await setupFlowOrg(db);
+      const header = { 'x-organization-unit-id': scoped.organizationUnitId };
+      const unitTypeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: scoped.organizationId },
+          })
+        )?.id ?? '';
+      const sibling = await createUnit(db, {
+        organizationId: scoped.organizationId,
+        typeId: unitTypeId,
+        name: `Sibling ${crypto.randomUUID()}`,
+        parentId: scoped.organizationUnitId,
+      });
+      const rootEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: scoped.organizationUnitId,
+        volunteerId: scoped.volunteerId,
+        reimbursementTypeId: scoped.reimbursementTypeId,
+        startedAt: new Date('2026-09-01T09:00:00.000Z'),
+        endedAt: new Date('2026-09-01T13:00:00.000Z'),
+      });
+      const siblingEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: sibling.id,
+        volunteerId: scoped.volunteerId,
+        reimbursementTypeId: scoped.reimbursementTypeId,
+        startedAt: new Date('2026-09-02T09:00:00.000Z'),
+        endedAt: new Date('2026-09-02T13:00:00.000Z'),
+      });
+
+      setAuthMockUserId(scoped.adminId);
+
+      // A client-supplied unit that does not match the header is forbidden —
+      // do not silently retarget or claim sibling hours.
+      const rejected = await graphqlRequest(app, {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: sibling.id,
+            reimbursementTypeId: scoped.reimbursementTypeId,
+            volunteerId: scoped.volunteerId,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        },
+        headers: header,
+      });
+      expect(rejected.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(rejected.errors?.[0]?.message).toMatch(/organization unit/i);
+
+      // Matching the header unit still creates on that unit; sibling hours
+      // remain ineligible under the header scope.
+      const siblingHoursRejected = await graphqlRequest(app, {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: scoped.organizationUnitId,
+            reimbursementTypeId: scoped.reimbursementTypeId,
+            volunteerId: scoped.volunteerId,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        },
+        headers: header,
+      });
+      expect(siblingHoursRejected.errors?.[0]?.message).toMatch(
+        /not eligible/i,
+      );
+
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: scoped.organizationUnitId,
+              reimbursementTypeId: scoped.reimbursementTypeId,
+              volunteerId: scoped.volunteerId,
+              timeEntryIds: [rootEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: header,
+        },
+        'createInvoice',
+      );
+      const stored = await db.query.invoices.findFirst({
+        where: { id: createInvoice.id },
+      });
+      expect(stored?.organizationUnitId).toBe(scoped.organizationUnitId);
+    });
+
     it('a volunteer in two organisations only ever sees each org\u2019s own documents', async () => {
       // Two fresh orgs, each with its own admin and template — the shared
       // `org` already carries documents from the lifecycle tests above.
@@ -1444,7 +1545,7 @@ describe('documents flow — admin + volunteer', () => {
         );
       // Template binds volunteer_first_name / volunteer_last_name from profile.
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1609,7 +1710,7 @@ describe('documents flow — admin + volunteer', () => {
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1707,7 +1808,7 @@ describe('documents flow — admin + volunteer', () => {
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1880,7 +1981,7 @@ describe('documents flow — admin + volunteer', () => {
           ),
         );
       await seedVolunteerProfile(db, nested.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
       const unitTypeId =
@@ -1954,6 +2055,9 @@ describe('documents flow — admin + volunteer', () => {
         reimbursementTypeId: nested.reimbursementTypeId,
       });
       setAuthMockUserId(nested.adminId);
+      const grandchildHeader = {
+        'x-organization-unit-id': grandchild.id,
+      };
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string; totalAmountCents: number };
       }>(
@@ -1970,7 +2074,7 @@ describe('documents flow — admin + volunteer', () => {
               periodEnd: '2026-07-31T22:00:00.000Z',
             },
           },
-          headers: nestedHeader,
+          headers: grandchildHeader,
         },
         'createInvoice',
       );

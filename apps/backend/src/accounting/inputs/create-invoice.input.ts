@@ -3,8 +3,10 @@ import { DocumentFieldOverrideInput } from './document-field-override.input';
 
 @InputType()
 export class CreateInvoiceInput {
-  // Omit to resolve the org-wide default template; set to target a specific
-  // unit's template override.
+  // Optional on the wire for backwards compatibility with older clients.
+  // Ignored for tenancy: `createInvoice` always scopes the timesheet to
+  // `context.organizationUnitId` (header). Kept so existing callers that
+  // still send the route unit do not break.
   @Field(() => ID, { nullable: true })
   organizationUnitId?: string | null;
 

@@ -28,10 +28,10 @@ import { FormSubmissionService } from '../src/requirement-profile/services/form-
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
 import { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
-import { UserProfileService } from '../src/requirement-profile/services/user-profile.service';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
+import { UserService } from '../src/user/user.service';
 import {
   cancelShiftInstance,
   createFormSubmission,
@@ -89,12 +89,12 @@ describe('RequiredFormService', () => {
     requiredFormService = new RequiredFormService(db, {
       capture: () => {},
     } as unknown as PostHogService);
-    const userProfileService = new UserProfileService(db, {
+    const userService = new UserService(db, {
       capture: () => {},
     } as unknown as PostHogService);
     formSubmissionService = new FormSubmissionService(
       db,
-      userProfileService,
+      userService,
       requiredFormService,
       { capture: () => {} } as unknown as PostHogService,
     );

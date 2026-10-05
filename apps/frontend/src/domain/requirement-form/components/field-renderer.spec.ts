@@ -45,7 +45,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         type: FieldType.Name,
         label: 'Name',
         required: true,
-        systemKey: 'name',
+        systemKey: 'firstname',
       }),
       true,
       msgs,
@@ -60,7 +60,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         type: FieldType.Name,
         label: 'Name',
         required: true,
-        systemKey: 'name',
+        systemKey: 'firstname',
       }),
       true,
       msgs,
@@ -152,20 +152,20 @@ describe('buildFieldSchema BIC', () => {
   });
 });
 
-describe('buildFieldSchema birth-date', () => {
+describe('buildFieldSchema birthdate', () => {
   const field = makeField({
     id: 'dob',
     type: FieldType.Date,
     label: 'Birth date',
-    systemKey: 'birth-date',
+    systemKey: 'birthdate',
   });
-  it('rejects a future birth-date', () => {
+  it('rejects a future birthdate', () => {
     const future = new Date(Date.now() + 86_400_000 * 365).toISOString();
     expect(buildFieldSchema(field, false, msgs).safeParse(future).success).toBe(
       false,
     );
   });
-  it('accepts a past birth-date', () => {
+  it('accepts a past birthdate', () => {
     expect(
       buildFieldSchema(field, false, msgs).safeParse('1990-01-01').success,
     ).toBe(true);

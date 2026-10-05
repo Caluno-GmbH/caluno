@@ -147,12 +147,16 @@ export class InvoiceService {
   async findEligibleTimeEntries(
     volunteerId: string,
     reimbursementTypeId: string,
+    organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
   ): Promise<TimeEntryEntity[]> {
     const conditions = [
       eq(schema.timeEntries.volunteerId, volunteerId),
       eq(schema.timeEntries.reimbursementTypeId, reimbursementTypeId),
+      // A timesheet is issued in one unit; hours from a sibling unit must
+      // never appear on it (or be claimable into it).
+      eq(schema.timeEntries.organizationUnitId, organizationUnitId),
       isNotNull(schema.timeEntries.endedAt),
       // Time entries stay claimed while tied to a live (non-declined)
       // invoice. Declining releases the claim (see declineInvoice), so a
@@ -436,9 +440,15 @@ export class InvoiceService {
     // below by eligibility: `findEligibleTimeEntries` omits anything already
     // claimed, and `uq_invoice_time_entries_time_entry_id` makes the claim
     // exclusive in the database rather than by reasoning about dates.
+    // Hours are also unit-scoped: eligibility uses the invoice's
+    // organization unit.
+    const eligibilityUnitId =
+      input.organizationUnitId ??
+      (await this.organizationService.requireRootUnit(organizationId)).id;
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
+      eligibilityUnitId,
       input.periodStart,
       input.periodEnd,
     );
