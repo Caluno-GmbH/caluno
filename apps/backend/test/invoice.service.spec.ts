@@ -416,6 +416,7 @@ describe('InvoiceService', () => {
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
         reimbursementType.id,
+        root.id,
         july.start,
         july.end,
       );
@@ -423,6 +424,79 @@ describe('InvoiceService', () => {
       const ids = eligible.map((entry) => entry.id);
       expect(ids).toContain(lastEvening.id);
       expect(ids).not.toContain(nextMonth.id);
+    });
+
+    it('excludes entries that belong to a sibling organization unit', async () => {
+      const { organization, root, type, reimbursementType, volunteer } =
+        await setup();
+      const sibling = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        parentId: root.id,
+        name: `Sibling ${crypto.randomUUID()}`,
+      });
+      // setup() already placed a completed entry on root; add one on the
+      // sibling for the same volunteer / type / period.
+      const siblingEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: sibling.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-02T09:00:00.000Z'),
+        endedAt: new Date('2026-07-02T13:00:00.000Z'),
+      });
+
+      const eligibleForRoot = await service.findEligibleTimeEntries(
+        volunteer.id,
+        reimbursementType.id,
+        root.id,
+      );
+      const eligibleForSibling = await service.findEligibleTimeEntries(
+        volunteer.id,
+        reimbursementType.id,
+        sibling.id,
+      );
+
+      expect(eligibleForRoot.map((e) => e.id)).not.toContain(siblingEntry.id);
+      expect(eligibleForSibling.map((e) => e.id)).toEqual([siblingEntry.id]);
+    });
+
+    it("rejects creating an invoice that claims a sibling unit's hours", async () => {
+      const {
+        organization,
+        root,
+        type,
+        reimbursementType,
+        volunteer,
+        supervisor,
+      } = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        parentId: root.id,
+        name: `Sibling ${crypto.randomUUID()}`,
+      });
+      const siblingEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: sibling.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-02T09:00:00.000Z'),
+        endedAt: new Date('2026-07-02T13:00:00.000Z'),
+      });
+
+      await expect(
+        service.createInvoice(
+          organization.id,
+          {
+            organizationUnitId: root.id,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: new Date('2026-07-01T00:00:00.000Z'),
+            periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+          },
+          supervisor.id,
+        ),
+      ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
 
     it('excludes entries that have not been ended yet', async () => {
@@ -444,6 +518,7 @@ describe('InvoiceService', () => {
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
         reimbursementType.id,
+        root.id,
       );
       expect(eligible.every((entry) => entry.endedAt !== null)).toBe(true);
     });
@@ -451,6 +526,7 @@ describe('InvoiceService', () => {
     it('excludes an entry claimed by a live (non-declined) invoice', async () => {
       const {
         organization,
+        root,
         reimbursementType,
         volunteer,
         supervisor,
@@ -473,6 +549,7 @@ describe('InvoiceService', () => {
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
         reimbursementType.id,
+        root.id,
       );
       expect(eligible.map((e) => e.id)).not.toContain(timeEntry.id);
     });
@@ -480,6 +557,7 @@ describe('InvoiceService', () => {
     it('releases an entry back to the eligible pool once its invoice is declined', async () => {
       const {
         organization,
+        root,
         reimbursementType,
         volunteer,
         supervisor,
@@ -503,6 +581,7 @@ describe('InvoiceService', () => {
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
         reimbursementType.id,
+        root.id,
       );
       expect(eligible.map((e) => e.id)).toContain(timeEntry.id);
     });
@@ -510,6 +589,7 @@ describe('InvoiceService', () => {
     it('lets a replacement invoice be created for the hours of a declined one', async () => {
       const {
         organization,
+        root,
         reimbursementType,
         volunteer,
         supervisor,
@@ -557,6 +637,7 @@ describe('InvoiceService', () => {
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
         reimbursementType.id,
+        root.id,
       );
       expect(eligible.map((e) => e.id)).not.toContain(timeEntry.id);
     });

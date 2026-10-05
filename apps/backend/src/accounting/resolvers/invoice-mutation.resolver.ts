@@ -2,11 +2,13 @@ import { Args, Context, ID, Mutation, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { ForbiddenGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { CreateInvoiceInput } from '../inputs/create-invoice.input';
 import { InvoiceMapper } from '../mappers';
 import { Invoice } from '../models/invoice.model';
-import { AccountingOrgAccessService, InvoiceService } from '../services';
+import { AccountingOrgAccessService } from '../services/accounting-org-access.service';
+import { InvoiceService } from '../services/invoice.service';
 
 @Resolver(() => Invoice)
 export class InvoiceMutationResolver {
@@ -23,6 +25,14 @@ export class InvoiceMutationResolver {
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Invoice> {
+    if (
+      input.organizationUnitId &&
+      input.organizationUnitId !== context.organizationUnitId
+    ) {
+      throw new ForbiddenGraphQLError(
+        'Organization UnitId must match the viewed context.',
+      );
+    }
     const organizationId =
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
@@ -32,8 +42,7 @@ export class InvoiceMutationResolver {
       organizationId,
       {
         ...input,
-        organizationUnitId:
-          input.organizationUnitId ?? context.organizationUnitId,
+        organizationUnitId: context.organizationUnitId,
       },
       session.user.id,
     );
