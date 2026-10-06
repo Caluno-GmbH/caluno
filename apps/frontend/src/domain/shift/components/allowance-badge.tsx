@@ -49,10 +49,15 @@ const ALLOWANCE_BADGE: Record<
 export function AllowanceBadge({ state }: { state: VolunteerAllowanceState }) {
   const t = useTranslations('Shift.transferList.allowance');
   const { labelKey, icon: Icon, variant, className } = ALLOWANCE_BADGE[state];
+  const label = t(labelKey);
   return (
-    <Badge variant={variant} className={cn('gap-1 shrink-0', className)}>
-      <Icon className="size-3" />
-      {t(labelKey)}
+    <Badge
+      variant={variant}
+      title={label}
+      className={cn('max-w-full min-w-0 shrink gap-1', className)}
+    >
+      <Icon className="size-3 shrink-0" />
+      <span className="truncate">{label}</span>
     </Badge>
   );
 }

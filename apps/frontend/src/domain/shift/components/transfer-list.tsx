@@ -150,7 +150,7 @@ export function TransferList({
                     {member.email}
                   </p>
                   {member.allowanceState && (
-                    <div className="mt-1">
+                    <div className="mt-1 min-w-0 max-w-full">
                       <AllowanceBadge state={member.allowanceState} />
                     </div>
                   )}
