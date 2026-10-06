@@ -4,6 +4,15 @@
     "accepting": "Accepting...",
     "loadFailed": "The terms document could not be loaded. Please refresh the page."
   },
+  "Unsubscribe": {
+    "confirm": "Unsubscribe from all emails",
+    "confirming": "Unsubscribing...",
+    "description": "Stop receiving all email notifications from caluno.",
+    "error": "We couldn't update your email preferences. Please try again.",
+    "success": "You will no longer receive email notifications from caluno.",
+    "successTitle": "You're unsubscribed",
+    "title": "Unsubscribe from emails"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Join {orgName}",

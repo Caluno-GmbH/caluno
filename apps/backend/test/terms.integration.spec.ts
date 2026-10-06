@@ -74,4 +74,26 @@ describe('terms acceptance guard', () => {
 
     expect(response.errors?.[0]?.extensions?.code).not.toBe('FORBIDDEN');
   });
+
+  it('leaves the escape-hatched unsubscribeFromEmails mutation reachable for a pending user', async () => {
+    const user = await createUser(db, { termsVersion: null });
+    setAuthMockUserId(user.id, null);
+
+    const response = await graphqlRequest<{
+      unsubscribeFromEmails: boolean;
+    }>(app, {
+      query: 'mutation { unsubscribeFromEmails }',
+    });
+
+    expect(response.errors).toBeUndefined();
+    expect(response.data?.unsubscribeFromEmails).toBe(true);
+
+    const [updated] = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.id, user.id));
+    expect(updated?.emailWeeklyUpdateEnabled).toBe(false);
+    expect(updated?.emailUrgentCallsEnabled).toBe(false);
+    expect(updated?.emailPlatformEnabled).toBe(false);
+  });
 });

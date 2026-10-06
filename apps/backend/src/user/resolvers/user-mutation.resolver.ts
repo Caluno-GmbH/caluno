@@ -4,6 +4,7 @@ import { BadRequestGraphQLError } from '../../graphql/errors';
 import { SUPPORTED_LOCALES } from '../../graphql/locale';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
+import { AllowUnacceptedTerms } from '../../terms/guards/allow-unaccepted-terms.decorator';
 import { UpdateMyAccountSettingsInput } from '../inputs/update-my-account-settings.input';
 import { UpdateMyImageInput } from '../inputs/update-my-image.input';
 import { UpdateMyProfileInput } from '../inputs/update-my-profile.input';
@@ -51,6 +52,19 @@ export class UserMutationResolver {
       emailPlatformEnabled: input.emailPlatformEnabled ?? undefined,
     });
     return this.userMapper.toModelOrThrow(user);
+  }
+
+  @Mutation(() => Boolean)
+  @AllowUnacceptedTerms()
+  async unsubscribeFromEmails(
+    @Session() session: UserSession,
+  ): Promise<boolean> {
+    await this.userService.updateAccountSettings(session.user.id, {
+      emailWeeklyUpdateEnabled: false,
+      emailUrgentCallsEnabled: false,
+      emailPlatformEnabled: false,
+    });
+    return true;
   }
 
   @Mutation(() => UserWithProfile)

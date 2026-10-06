@@ -4,6 +4,15 @@
     "accepting": "Wird akzeptiert...",
     "loadFailed": "Das AGB-Dokument konnte nicht geladen werden. Bitte lade die Seite neu."
   },
+  "Unsubscribe": {
+    "confirm": "Alle E-Mails abbestellen",
+    "confirming": "Wird abbestellt...",
+    "description": "Erhalte keine E-Mail-Benachrichtigungen mehr von caluno.",
+    "error": "Wir konnten deine E-Mail-Einstellungen nicht aktualisieren. Bitte versuche es erneut.",
+    "success": "Du erhältst keine E-Mail-Benachrichtigungen mehr von caluno.",
+    "successTitle": "Abbestellt",
+    "title": "E-Mails abbestellen"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Tritt {orgName} bei",

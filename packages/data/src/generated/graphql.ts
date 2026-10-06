@@ -814,6 +814,7 @@ export type Mutation = {
   signInvoice: Invoice;
   submitForm: FormSubmission;
   submitRequiredForm: FormSubmission;
+  unsubscribeFromEmails: Scalars['Boolean']['output'];
   updateDocumentTemplate: DocumentTemplate;
   updateEvent: Event;
   updateEventInviteStatus: EventInvite;
@@ -4378,6 +4379,11 @@ export type UpdateMyAccountSettingsMutationVariables = Exact<{
 
 
 export type UpdateMyAccountSettingsMutation = { __typename?: 'Mutation', updateMyAccountSettings: { __typename?: 'User', id: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean } };
+
+export type UnsubscribeFromEmailsMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type UnsubscribeFromEmailsMutation = { __typename?: 'Mutation', unsubscribeFromEmails: boolean };
 
 export type UpdateMyProfileMutationVariables = Exact<{
   input: UpdateMyProfileInput;
@@ -8017,6 +8023,11 @@ export const UpdateMyAccountSettingsDocument = gql`
   }
 }
     `;
+export const UnsubscribeFromEmailsDocument = gql`
+    mutation UnsubscribeFromEmails {
+  unsubscribeFromEmails
+}
+    `;
 export const UpdateMyProfileDocument = gql`
     mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
   updateMyProfile(input: $input) {
@@ -8599,6 +8610,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     UpdateMyAccountSettings(variables: UpdateMyAccountSettingsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyAccountSettingsMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyAccountSettingsMutation>({ document: UpdateMyAccountSettingsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyAccountSettings', 'mutation', variables);
+    },
+    UnsubscribeFromEmails(variables?: UnsubscribeFromEmailsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UnsubscribeFromEmailsMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UnsubscribeFromEmailsMutation>({ document: UnsubscribeFromEmailsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UnsubscribeFromEmails', 'mutation', variables);
     },
     UpdateMyProfile(variables: UpdateMyProfileMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyProfileMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyProfileMutation>({ document: UpdateMyProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyProfile', 'mutation', variables);

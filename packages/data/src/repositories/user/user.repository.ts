@@ -8,6 +8,7 @@ import type {
   UpdateMyLocaleMutation,
   UpdateMyProfileInput,
   UpdateMyProfileMutation,
+  UnsubscribeFromEmailsMutation,
   UserWithProfile,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
@@ -62,5 +63,10 @@ export class UserRepository extends BaseRepository {
   ): Promise<UpdateMyProfileMutation['updateMyProfile']> {
     const data = await this.sdk.UpdateMyProfile({ input });
     return data.updateMyProfile;
+  }
+
+  async unsubscribeFromEmails(): Promise<boolean> {
+    const data = await this.sdk.UnsubscribeFromEmails();
+    return data.unsubscribeFromEmails;
   }
 }
