@@ -1,7 +1,8 @@
 import { headers } from 'next/headers';
+import { cache } from 'react';
 import { redirect } from '@/i18n/navigation';
-import { routing } from '@/i18n/routing';
 import { API_URL } from './constants';
+import { isSupportedLocale, stripLocalePrefix } from './locale-path';
 
 export interface TermsStatusResponse {
   mustAccept: boolean;
@@ -11,35 +12,37 @@ export interface TermsStatusResponse {
   acceptedAt: string | null;
 }
 
-export async function fetchTermsStatus(): Promise<TermsStatusResponse | null> {
-  const headersList = await headers();
-  const cookieHeader = headersList.get('cookie');
+/**
+ * Fetch the terms status for the current request. Cached per render pass so
+ * the layout, the gate and pages share a single request.
+ */
+export const fetchTermsStatus = cache(
+  async (): Promise<TermsStatusResponse | null> => {
+    const headersList = await headers();
+    const cookieHeader = headersList.get('cookie');
 
-  if (!cookieHeader) {
-    return null;
-  }
-
-  try {
-    const response = await fetch(`${API_URL}/legal/terms/status`, {
-      headers: {
-        cookie: cookieHeader,
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
+    if (!cookieHeader) {
       return null;
     }
 
-    return (await response.json()) as TermsStatusResponse;
-  } catch {
-    return null;
-  }
-}
+    try {
+      const response = await fetch(`${API_URL}/legal/terms/status`, {
+        headers: {
+          cookie: cookieHeader,
+        },
+        cache: 'no-store',
+      });
 
-function isSupportedLocale(value: string): boolean {
-  return (routing.locales as readonly string[]).includes(value);
-}
+      if (!response.ok) {
+        return null;
+      }
+
+      return (await response.json()) as TermsStatusResponse;
+    } catch {
+      return null;
+    }
+  },
+);
 
 export function isTermsGateExempt(
   pathname: string | null | undefined,
@@ -57,15 +60,6 @@ export function isTermsGateExempt(
   const startIndex = isSupportedLocale(first) ? 1 : 0;
   const top = segments[startIndex];
   return top === 'accept-terms' || top === 'unsubscribe';
-}
-
-export function stripLocalePrefix(pathname: string): string {
-  const segments = pathname.split('/').filter(Boolean);
-  const first = segments[0];
-  if (first !== undefined && isSupportedLocale(first)) {
-    segments.shift();
-  }
-  return segments.length > 0 ? `/${segments.join('/')}` : '/';
 }
 
 export async function requireTermsAccepted(locale: string): Promise<void> {

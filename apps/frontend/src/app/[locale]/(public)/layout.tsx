@@ -7,6 +7,7 @@ import { isAuthenticated } from '@/lib/auth-server';
 import { GRAPHQL_API_URL } from '@/lib/constants';
 import { isAnAdminstrator } from '@/lib/org-context-server';
 import {
+  fetchTermsStatus,
   isTermsGateExempt,
   requireTermsAccepted,
 } from '@/lib/terms-gate-server';
@@ -31,8 +32,15 @@ export default async function PublicLayout({
     await requireTermsAccepted(locale);
   }
 
-  const isAdmin =
-    authenticated && !gateExempt ? await isAnAdminstrator() : false;
+  // `isAnAdminstrator()` is a terms-gated query that 403s for a pending user,
+  // who is still allowed to reach exempt paths (e.g. /unsubscribe). Skip it
+  // when the user must still accept, or when the status is unknown (safer than
+  // risking the gated call). An accepted admin keeps the admin nav here.
+  const pending =
+    authenticated &&
+    gateExempt &&
+    (await fetchTermsStatus())?.mustAccept !== false;
+  const isAdmin = authenticated && !pending ? await isAnAdminstrator() : false;
 
   return (
     <DataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>

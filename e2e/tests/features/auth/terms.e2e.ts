@@ -148,13 +148,21 @@ test.describe('Terms & conditions acceptance', () => {
     });
     expect(response.status()).toBe(400);
 
-    // No create-more endpoint exists to check existence directly; a failed
-    // credential sign-in is the available proof the row was never created.
-    const signIn = await request.post(`${API_URL}/api/auth/sign-in/email`, {
+    // A valid signup with the same email must succeed: if the rejected attempt
+    // had created a row, this would fail with a duplicate-email error.
+    const retry = await request.post(`${API_URL}/api/auth/sign-up/email`, {
       headers: signupHeaders,
-      data: { email, password: TEST_PASSWORD },
+      data: {
+        name: 'E2E User',
+        firstname: 'E2E',
+        lastname: 'User',
+        email,
+        password: TEST_PASSWORD,
+        privacyPolicyAccepted: true,
+        termsAccepted: true,
+      },
     });
-    expect(signIn.ok()).toBe(false);
+    expect(retry.ok()).toBe(true);
   });
 });
 

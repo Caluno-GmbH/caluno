@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { isTermsGateExempt, stripLocalePrefix } from '../terms-gate-server';
+import { stripLocalePrefix } from '../locale-path';
+import { isTermsGateExempt } from '../terms-gate-server';
 
 describe('isTermsGateExempt', () => {
   it('exempts accept-terms with and without a locale prefix', () => {

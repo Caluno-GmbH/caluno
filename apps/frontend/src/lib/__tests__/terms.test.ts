@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { API_URL } from '../constants';
 import { buildSignupPayload } from '../privacy-policy';
-import { TERMS_PDF_URL, termsPdfUrl } from '../terms';
+import { termsPdfUrl } from '../terms';
 
 const base = {
   firstname: 'Ada',
@@ -37,7 +37,7 @@ describe('termsPdfUrl', () => {
     expect(termsPdfUrl('en')).toBe(`${API_URL}/legal/terms/current/en`);
   });
 
-  it('exposes a default for the source locale', () => {
-    expect(TERMS_PDF_URL).toBe(`${API_URL}/legal/terms/current/de`);
+  it('builds the source-locale URL', () => {
+    expect(termsPdfUrl('de')).toBe(`${API_URL}/legal/terms/current/de`);
   });
 });

@@ -224,7 +224,7 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
             {t.rich('termsAcknowledge', {
               termsLink: (chunks) => (
                 <a
-                  href={termsPdfUrl(currentLocale)}
+                  href={termsPdfUrl(currentLocale as Locale)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-primary hover:underline"
