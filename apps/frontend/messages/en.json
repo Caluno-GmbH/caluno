@@ -2,6 +2,8 @@
   "Terms": {
     "accept": "Accept and continue",
     "accepting": "Accepting...",
+    "redirecting": "Redirecting...",
+    "acceptFailed": "Something went wrong. Please try again.",
     "loadFailed": "The terms document could not be loaded. Please refresh the page."
   },
   "Unsubscribe": {

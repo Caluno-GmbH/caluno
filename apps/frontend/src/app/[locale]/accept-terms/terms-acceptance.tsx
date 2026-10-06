@@ -125,6 +125,7 @@ export function TermsAcceptance({
 
   const accept = () => {
     if (!currentVersion) return;
+    acceptTerms.reset();
     acceptTerms.mutate(
       { version: currentVersion, language: locale },
       {
@@ -135,6 +136,12 @@ export function TermsAcceptance({
       },
     );
   };
+
+  const label = acceptTerms.isPending
+    ? t('accepting')
+    : acceptTerms.isSuccess
+      ? t('redirecting')
+      : t('accept');
 
   return (
     <div className="flex h-screen flex-col">
@@ -150,13 +157,18 @@ export function TermsAcceptance({
           </p>
         )}
       </div>
-      <div className="border-t bg-background p-4">
+      <div className="flex flex-col items-center gap-3 border-t bg-background p-4">
+        {acceptTerms.isError && (
+          <p className="text-sm text-destructive">{t('acceptFailed')}</p>
+        )}
         <Button
-          className="w-full"
-          disabled={!hasReachedEnd || acceptTerms.isPending}
+          className="min-w-48 px-8"
+          disabled={
+            !hasReachedEnd || acceptTerms.isPending || acceptTerms.isSuccess
+          }
           onClick={accept}
         >
-          {acceptTerms.isPending ? t('accepting') : t('accept')}
+          {label}
         </Button>
       </div>
     </div>
