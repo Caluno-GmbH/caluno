@@ -23,6 +23,7 @@ export class TermsController {
 
   @Get('current/:locale')
   @AllowAnonymous()
+  @AllowUnacceptedTerms()
   @Header('Cache-Control', 'public, max-age=0, must-revalidate')
   async current(@Param('locale') locale: string): Promise<StreamableFile> {
     const current = await this.termsService.getCurrentVersion();
@@ -34,6 +35,7 @@ export class TermsController {
 
   @Get(':version/:locale')
   @AllowAnonymous()
+  @AllowUnacceptedTerms()
   @Header('Cache-Control', 'public, max-age=31536000, immutable')
   streamVersion(
     @Param('version') version: string,
