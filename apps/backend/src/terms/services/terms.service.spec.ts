@@ -37,6 +37,44 @@ function makeAcceptanceService(opts: {
   return new TermsService(db, opts.directory);
 }
 
+function makeAcceptService(opts: {
+  directory: string;
+  ledger: LedgerRow[];
+  user: { termsVersion: string | null } | null;
+  existingAcceptance: Record<string, unknown> | null;
+}): {
+  service: TermsService;
+  rows: Record<string, unknown>[];
+  updates: Record<string, unknown>[];
+} {
+  const rows = opts.existingAcceptance ? [opts.existingAcceptance] : [];
+  const updates: Record<string, unknown>[] = [];
+  const tx = {
+    update: () => ({
+      set: (values: Record<string, unknown>) => ({
+        where: async () => {
+          updates.push(values);
+        },
+      }),
+    }),
+    insert: () => ({
+      values: async (values: Record<string, unknown>) => {
+        rows.push(values);
+      },
+    }),
+  };
+  const db = {
+    select: () => ({ from: async () => opts.ledger }),
+    query: {
+      users: { findFirst: async () => opts.user },
+      termsAcceptances: { findFirst: async () => opts.existingAcceptance },
+    },
+    transaction: async (callback: (tx: unknown) => Promise<void>) =>
+      callback(tx),
+  } as unknown as Database;
+  return { service: new TermsService(db, opts.directory), rows, updates };
+}
+
 describe('computeMustAccept', () => {
   it('requires acceptance when there is no recorded acceptance', () => {
     expect(computeMustAccept(null, '1.0')).toBe(true);
@@ -233,5 +271,76 @@ describe('TermsService.getCurrentVersion', () => {
       class: TermsChangeClass.MINOR,
       date: '2026-09-10',
     });
+  });
+});
+
+describe('TermsService cache', () => {
+  it('shares a single ledger read between getCurrentVersion and mustAccept', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    let reads = 0;
+    const db = {
+      select: () => ({
+        from: async () => {
+          reads += 1;
+          return [
+            {
+              version: '1.0',
+              class: TermsChangeClass.MAJOR,
+              publishedAt: new Date('2026-10-06T00:00:00.000Z'),
+            },
+          ];
+        },
+      }),
+    } as unknown as Database;
+    const service = new TermsService(db, directory);
+
+    await service.getCurrentVersion();
+    await service.mustAccept(null);
+
+    expect(reads).toBe(1);
+  });
+});
+
+describe('TermsService.accept', () => {
+  function setup(
+    existingAcceptance: Record<string, unknown> | null,
+    userTermsVersion: string | null,
+  ) {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    writeFileSync(join(directory, 'terms_1.0_2026-10-06_en.pdf'), 'english');
+    writeFileSync(join(directory, 'terms_1.0_2026-10-06_de.pdf'), 'deutsch');
+    return makeAcceptService({
+      directory,
+      ledger: [
+        {
+          version: '1.0',
+          class: TermsChangeClass.MAJOR,
+          publishedAt: new Date('2026-10-06T00:00:00.000Z'),
+        },
+      ],
+      user: { termsVersion: userTermsVersion },
+      existingAcceptance,
+    });
+  }
+
+  it('does not insert again when the current version is already accepted', async () => {
+    const { service, rows, updates } = setup(
+      { id: 'acc-1', userId: 'user-1', version: '1.0' },
+      '1.0',
+    );
+
+    await service.accept({ userId: 'user-1', version: '1.0', language: 'en' });
+
+    expect(rows).toHaveLength(1);
+    expect(updates).toHaveLength(0);
+  });
+
+  it('stamps and records when the current version is not yet accepted', async () => {
+    const { service, rows, updates } = setup(null, null);
+
+    await service.accept({ userId: 'user-1', version: '1.0', language: 'en' });
+
+    expect(rows).toHaveLength(1);
+    expect(updates).toHaveLength(1);
   });
 });

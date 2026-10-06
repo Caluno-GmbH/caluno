@@ -378,11 +378,6 @@ export class NotificationService {
     this.emitter.emit(NotificationEvent.TERMS_UPDATED, input);
   }
 
-  /**
-   * Awaited counterpart of {@link notifyTermsUpdated}: resolves only once every
-   * listener — including the email send to each recipient — has settled. The
-   * terms publish CLI uses this so the process cannot exit before delivery.
-   */
   async notifyTermsUpdatedAsync(input: TermsUpdatedInput): Promise<void> {
     await this.emitter.emitAsync(NotificationEvent.TERMS_UPDATED, input);
   }

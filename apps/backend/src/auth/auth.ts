@@ -1,4 +1,5 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
+import { Logger } from '@nestjs/common';
 import { APIError, type BetterAuthOptions, betterAuth } from 'better-auth';
 import { emailOTP } from 'better-auth/plugins';
 import { Database } from '../database/database.module';
@@ -22,6 +23,8 @@ import {
   verifications,
 } from './schemas/auth.schema';
 import { assertTermsAccepted, TermsAcceptanceError } from './terms-acceptance';
+
+const authTermsLogger = new Logger('AuthTermsAcceptance');
 
 type EmailOtpType =
   | 'sign-in'
@@ -60,11 +63,6 @@ export interface BetterAuthLogger {
   ) => void;
 }
 
-/**
- * Narrow terms dependency for the auth hooks. Kept structural (rather than the
- * concrete `TermsService`) so unit tests can supply a fake and so `auth.ts`
- * does not hard-depend on the terms module.
- */
 export interface AuthTermsService {
   getCurrentVersion(): Promise<{ version: string } | null>;
   recordSignupAcceptance(userId: string): Promise<void>;
@@ -220,7 +218,13 @@ export const createAuthConfig = ({
           },
           after: async (user) => {
             if (typeof user.id === 'string') {
-              await termsService.recordSignupAcceptance(user.id);
+              try {
+                await termsService.recordSignupAcceptance(user.id);
+              } catch (error) {
+                authTermsLogger.warn(
+                  `Failed to record terms acceptance for user ${user.id}: ${error instanceof Error ? error.message : String(error)}`,
+                );
+              }
               onUserCreated?.(user.id);
             }
           },

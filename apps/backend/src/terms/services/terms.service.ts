@@ -43,6 +43,8 @@ export class TermsService {
   private cache?: {
     at: number;
     current: { version: string; class: TermsChangeClass; date: string } | null;
+    latestMajor: string | null;
+    hasPublished: boolean;
   };
 
   constructor(
@@ -93,23 +95,24 @@ export class TermsService {
     return this.latestMajorFrom(await this.readPublished());
   }
 
-  async getCurrentVersion(): Promise<{
-    version: string;
-    class: TermsChangeClass;
-    date: string;
-  } | null> {
+  private async getSnapshot(): Promise<{
+    current: { version: string; class: TermsChangeClass; date: string } | null;
+    latestMajor: string | null;
+    hasPublished: boolean;
+  }> {
     const now = Date.now();
     if (this.cache && now - this.cache.at < 60_000) {
-      return this.cache.current;
+      return this.cache;
     }
 
-    const rows = (await this.readPublished()).sort((a, b) =>
+    const published = await this.readPublished();
+    const rows = [...published].sort((a, b) =>
       compareVersions(a.version, b.version),
     );
     const currentRow = rows.at(-1);
     const files = this.readVersionsFromFiles();
 
-    let value: {
+    let current: {
       version: string;
       class: TermsChangeClass;
       date: string;
@@ -117,14 +120,14 @@ export class TermsService {
 
     if (currentRow) {
       const file = files.find((doc) => doc.version === currentRow.version);
-      value = {
+      current = {
         version: currentRow.version,
         class: currentRow.class,
         date: file?.date ?? currentRow.publishedAt.toISOString().slice(0, 10),
       };
     } else {
       const file = pickCurrentTermsVersion(files);
-      value = file
+      current = file
         ? {
             version: file.version,
             class: termsChangeClassForVersion(file.version),
@@ -133,8 +136,26 @@ export class TermsService {
         : null;
     }
 
-    this.cache = { at: now, current: value };
-    return value;
+    if (published.length === 0) {
+      this.cache = undefined;
+      return { current, latestMajor: null, hasPublished: false };
+    }
+
+    this.cache = {
+      at: now,
+      current,
+      latestMajor: this.latestMajorFrom(published),
+      hasPublished: true,
+    };
+    return this.cache;
+  }
+
+  async getCurrentVersion(): Promise<{
+    version: string;
+    class: TermsChangeClass;
+    date: string;
+  } | null> {
+    return (await this.getSnapshot()).current;
   }
 
   resolveDocument(version: string, locale: TermsLocale): TermsVersion {
@@ -152,11 +173,11 @@ export class TermsService {
   async mustAccept(
     acceptedVersion: string | null | undefined,
   ): Promise<boolean> {
-    const published = await this.readPublished();
-    if (published.length === 0) {
+    const snapshot = await this.getSnapshot();
+    if (!snapshot.hasPublished) {
       return false;
     }
-    return computeMustAccept(acceptedVersion, this.latestMajorFrom(published));
+    return computeMustAccept(acceptedVersion, snapshot.latestMajor);
   }
 
   async getStatusForUser(userId: string): Promise<TermsStatus> {
@@ -187,6 +208,18 @@ export class TermsService {
       throw new BadRequestGraphQLError(
         'The accepted version is not the current version',
       );
+    }
+
+    const user = await this.db.query.users.findFirst({
+      where: { id: input.userId },
+    });
+    if (user?.termsVersion === current.version) {
+      const existing = await this.db.query.termsAcceptances.findFirst({
+        where: { userId: input.userId, version: current.version },
+      });
+      if (existing) {
+        return;
+      }
     }
 
     const document = this.resolveDocument(current.version, input.language);

@@ -41,10 +41,6 @@ function isSupportedLocale(value: string): boolean {
   return (routing.locales as readonly string[]).includes(value);
 }
 
-/**
- * Paths that a pending user must still be able to reach: the terms themselves
- * (so they can read and accept) and email opt-out. Tolerant of a locale prefix.
- */
 export function isTermsGateExempt(
   pathname: string | null | undefined,
 ): boolean {
@@ -63,7 +59,6 @@ export function isTermsGateExempt(
   return top === 'accept-terms' || top === 'unsubscribe';
 }
 
-/** Strip a single locale prefix from a pathname (proxy sets `x-pathname`). */
 export function stripLocalePrefix(pathname: string): string {
   const segments = pathname.split('/').filter(Boolean);
   const first = segments[0];
@@ -73,13 +68,6 @@ export function stripLocalePrefix(pathname: string): string {
   return segments.length > 0 ? `/${segments.join('/')}` : '/';
 }
 
-/**
- * Redirects a pending authenticated user to `/accept-terms`, preserving the
- * current path so they land back where they were after accepting.
- *
- * A `null` status (no cookie or an API error) lets the request through — this
- * avoids a redirect loop with the accept page when the backend is unreachable.
- */
 export async function requireTermsAccepted(locale: string): Promise<void> {
   const headersList = await headers();
   const pathname = headersList.get('x-pathname');

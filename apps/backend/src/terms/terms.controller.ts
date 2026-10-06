@@ -1,11 +1,17 @@
 import { createReadStream } from 'node:fs';
-import { Controller, Get, Header, Param, StreamableFile } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Header,
+  Param,
+  StreamableFile,
+} from '@nestjs/common';
 import {
   AllowAnonymous,
   Session,
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
-import { BadRequestGraphQLError } from '../graphql/errors';
 import { AllowUnacceptedTerms } from './guards/allow-unaccepted-terms.decorator';
 import { TermsService, type TermsStatus } from './services/terms.service';
 import { isTermsLocale } from './terms-files';
@@ -28,7 +34,7 @@ export class TermsController {
   async current(@Param('locale') locale: string): Promise<StreamableFile> {
     const current = await this.termsService.getCurrentVersion();
     if (!current) {
-      throw new BadRequestGraphQLError('No published terms version');
+      throw new BadRequestException('No published terms version');
     }
     return this.stream(current.version, locale);
   }
@@ -46,7 +52,7 @@ export class TermsController {
 
   private stream(version: string, locale: string): StreamableFile {
     if (!isTermsLocale(locale)) {
-      throw new BadRequestGraphQLError('Unsupported terms locale');
+      throw new BadRequestException('Unsupported terms locale');
     }
     const document = this.termsService.resolveDocument(version, locale);
     return new StreamableFile(createReadStream(document.path), {

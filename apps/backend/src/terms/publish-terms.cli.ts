@@ -6,8 +6,26 @@ import { TermsNotificationService } from './services/terms-notification.service'
 import {
   compareVersions,
   defaultTermsDirectory,
+  isTermsPlaceholderDocument,
   listTermsDocuments,
+  TERMS_PLACEHOLDER_MARKER,
+  type TermsVersion,
 } from './terms-files';
+
+const PLACEHOLDER_ALLOWED = process.env.TERMS_ALLOW_PLACEHOLDER === '1';
+
+function assertPublishableDocuments(
+  version: string,
+  docs: TermsVersion[],
+): void {
+  for (const doc of docs) {
+    if (!PLACEHOLDER_ALLOWED && isTermsPlaceholderDocument(doc.path)) {
+      throw new Error(
+        `Refusing to publish terms ${version}: placeholder document ${doc.filename} still contains ${TERMS_PLACEHOLDER_MARKER}`,
+      );
+    }
+  }
+}
 
 async function main(): Promise<void> {
   const app = await NestFactory.createApplicationContext(AppModule, {
@@ -30,25 +48,26 @@ async function main(): Promise<void> {
     .filter((version) => !publishedVersions.has(version))
     .sort(compareVersions);
 
-  // Validate every new version before publishing or notifying any of them, so a
-  // document set missing a locale cannot leave a half-published batch.
   for (const version of newVersions) {
-    const locales = new Set(byVersion.get(version)?.map((f) => f.locale));
+    const docs = byVersion.get(version) ?? [];
+    const locales = new Set(docs.map((f) => f.locale));
     if (!locales.has('en') || !locales.has('de')) {
       throw new Error(`Terms ${version} is missing an en or de document`);
     }
+    assertPublishableDocuments(version, docs);
   }
 
   for (const version of newVersions) {
     await termsService.publishVersion(version);
   }
 
-  // Publishing leaves notification_sent_at null; re-reading means a version
-  // written by an interrupted run is picked up again, so a crash between
-  // publish and notify is recoverable without a new document set.
   const toNotify = (await termsService.listPublishedVersions())
     .filter((row) => row.notificationSentAt === null)
     .sort((a, b) => compareVersions(a.version, b.version));
+
+  for (const row of toNotify) {
+    assertPublishableDocuments(row.version, byVersion.get(row.version) ?? []);
+  }
 
   for (const row of toNotify) {
     await notifier.broadcastForVersion({

@@ -85,8 +85,6 @@ export const NOTIFICATION_EMAIL_GROUP: Record<
   [NotificationEvent.DOCUMENT_DECLINED_BY_ORG]: null,
   [NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER]: null,
 
-  // A change to the terms and conditions is a legal notice to every account
-  // holder, so it is never subject to the volunteer Platform toggle.
   [NotificationEvent.TERMS_UPDATED]: null,
 
   // The call-out and digest are sent directly by their own senders rather than

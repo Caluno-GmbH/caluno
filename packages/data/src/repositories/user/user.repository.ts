@@ -2,7 +2,6 @@ import type {
   GetMyOrganizationsQuery,
   GetMyPermissionsQuery,
   GetUserQuery,
-  UnsubscribeFromEmailsMutation,
   UpdateMyAccountSettingsInput,
   UpdateMyAccountSettingsMutation,
   UpdateMyImageInput,

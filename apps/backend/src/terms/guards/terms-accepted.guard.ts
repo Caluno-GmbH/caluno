@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   Scope,
 } from '@nestjs/common';
@@ -26,7 +27,7 @@ export class TermsAcceptedGuard implements CanActivate {
       return true;
     }
 
-    const { user } = this.resolveRequestContext(context);
+    const { user, isHttp } = this.resolveRequestContext(context);
     if (!user) {
       return true;
     }
@@ -34,9 +35,12 @@ export class TermsAcceptedGuard implements CanActivate {
     const acceptedVersion =
       (user as { termsVersion?: string | null }).termsVersion ?? null;
     if (await this.termsService.mustAccept(acceptedVersion)) {
-      throw new ForbiddenGraphQLError(
-        'You must accept the updated terms and conditions before continuing',
-      );
+      const message =
+        'You must accept the updated terms and conditions before continuing';
+      if (isHttp) {
+        throw new ForbiddenException(message);
+      }
+      throw new ForbiddenGraphQLError(message);
     }
 
     return true;
@@ -44,11 +48,12 @@ export class TermsAcceptedGuard implements CanActivate {
 
   private resolveRequestContext(context: ExecutionContext): {
     user?: { id: string; termsVersion?: string | null };
+    isHttp: boolean;
   } {
     if (context.getType() === 'http') {
-      return { user: context.switchToHttp().getRequest().user };
+      return { user: context.switchToHttp().getRequest().user, isHttp: true };
     }
     const gqlContext = GqlExecutionContext.create(context).getContext();
-    return { user: gqlContext.req?.user };
+    return { user: gqlContext.req?.user, isHttp: false };
   }
 }

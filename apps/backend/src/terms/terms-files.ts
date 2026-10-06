@@ -65,12 +65,19 @@ export function listTermsDocuments(directory: string): TermsVersion[] {
 export function pickCurrentTermsVersion(
   docs: TermsVersion[],
 ): TermsVersion | undefined {
-  return docs.reduce<TermsVersion | undefined>((latest, doc) => {
-    if (!latest || compareVersions(doc.version, latest.version) > 0) {
-      return doc;
-    }
-    return latest;
-  }, undefined);
+  return [...docs]
+    .sort((a, b) => {
+      const byVersion = compareVersions(a.version, b.version);
+      if (byVersion !== 0) {
+        return byVersion;
+      }
+      const byDate = a.date.localeCompare(b.date);
+      if (byDate !== 0) {
+        return byDate;
+      }
+      return a.locale.localeCompare(b.locale);
+    })
+    .at(-1);
 }
 
 const getBackendRoot = (): string => {
@@ -88,4 +95,10 @@ export function defaultTermsDirectory(): string {
 
 export function sha256File(path: string): string {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+export const TERMS_PLACEHOLDER_MARKER = '%CALUNO-TERMS-PLACEHOLDER%';
+
+export function isTermsPlaceholderDocument(path: string): boolean {
+  return readFileSync(path).includes(TERMS_PLACEHOLDER_MARKER);
 }

@@ -513,6 +513,44 @@ describe('createAuthConfig', () => {
     expect(onSessionCreated).not.toHaveBeenCalled();
   });
 
+  it('still runs onUserCreated when recording terms acceptance fails', async () => {
+    const termsService = createFakeTermsService();
+    termsService.recordSignupAcceptance.mockRejectedValueOnce(
+      new Error('ledger unavailable'),
+    );
+    const onUserCreated = jest.fn();
+    const config = createAuthConfig({
+      database: {},
+      trustedOrigins: [],
+      sendVerificationOTP: jest.fn(),
+      sendResetPassword: jest.fn(),
+      termsService,
+      onUserCreated,
+    });
+
+    const afterCreate = config.databaseHooks?.user?.create?.after;
+    expect(afterCreate).toBeDefined();
+
+    await expect(
+      afterCreate?.(
+        {
+          id: 'user-11',
+          email: 'volunteer@example.com',
+          name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        null,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(termsService.recordSignupAcceptance).toHaveBeenCalledWith('user-11');
+    expect(onUserCreated).toHaveBeenCalledWith('user-11');
+  });
+
   it('calls onSessionDeleted with the session user id after session delete', async () => {
     const onSessionDeleted = jest.fn();
     const config = createAuthConfig({

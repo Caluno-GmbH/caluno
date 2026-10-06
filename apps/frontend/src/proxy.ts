@@ -57,12 +57,6 @@ export function withLocalePreference(next: Middleware): Middleware {
   return (request) => localePreferenceRedirect(request) ?? next(request);
 }
 
-/**
- * Expose the request pathname as `x-pathname` so server layouts can read it
- * (layouts do not receive the pathname). next-intl copies `request.headers`
- * onto its `NextResponse.next`/`rewrite`, so mutating the request here reaches
- * the downstream route handler.
- */
 export function withPathnameHeader(next: Middleware): Middleware {
   return (request) => {
     request.headers.set('x-pathname', request.nextUrl.pathname);
