@@ -88,6 +88,11 @@ export function invalidateInvoiceQueries(queryClient: QueryClient) {
   });
   queryClient.invalidateQueries({ queryKey: ['accounting', 'roster-usage'] });
   queryClient.invalidateQueries({ queryKey: ['accounting', 'yearly-usage'] });
+  // Creating a timesheet may also set the volunteer's initial yearly amount
+  // (VOLI-1569), so the baseline query has to refresh with it.
+  queryClient.invalidateQueries({
+    queryKey: ['accounting', 'manual-baseline'],
+  });
   queryClient.invalidateQueries({
     queryKey: ['accounting', 'volunteers-needing-timesheets'],
   });
