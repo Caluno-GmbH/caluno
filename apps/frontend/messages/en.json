@@ -1,4 +1,9 @@
 {
+  "Terms": {
+    "accept": "Accept and continue",
+    "accepting": "Accepting...",
+    "loadFailed": "The terms document could not be loaded. Please refresh the page."
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Join {orgName}",

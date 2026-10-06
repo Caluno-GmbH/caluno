@@ -1,4 +1,9 @@
 {
+  "Terms": {
+    "accept": "Akzeptieren und fortfahren",
+    "accepting": "Wird akzeptiert...",
+    "loadFailed": "Das AGB-Dokument konnte nicht geladen werden. Bitte lade die Seite neu."
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Tritt {orgName} bei",
