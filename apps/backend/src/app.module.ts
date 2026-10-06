@@ -106,6 +106,7 @@ const autoSchemaFile =
         NotificationModule,
         AppI18nModule,
         ObservabilityModule,
+        TermsModule,
       ],
       useFactory: (
         database: Database,
@@ -115,6 +116,7 @@ const autoSchemaFile =
         appI18n: AppI18nService,
         postHogService: PostHogService,
         pinoLogger: Logger,
+        termsService: TermsService,
       ) => {
         const webUrl = configService.getOrThrow<string>('WEB_URL');
         const shouldVerifyEmail = process.env.NODE_ENV === 'production';
@@ -158,6 +160,7 @@ const autoSchemaFile =
               trustedOrigins: [webUrl],
               cookieDomain: configService.get('COOKIE_DOMAIN'),
               logger: betterAuthLogger,
+              termsService,
               emailVerificationEnabled: shouldVerifyEmail,
               onSessionCreated: (userId) => {
                 postHogService.capture({
@@ -282,6 +285,7 @@ const autoSchemaFile =
         AppI18nService,
         PostHogService,
         Logger,
+        TermsService,
       ],
     }),
     UserModule,

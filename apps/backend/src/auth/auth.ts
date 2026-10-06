@@ -21,6 +21,7 @@ import {
   users,
   verifications,
 } from './schemas/auth.schema';
+import { assertTermsAccepted, TermsAcceptanceError } from './terms-acceptance';
 
 type EmailOtpType =
   | 'sign-in'
@@ -59,6 +60,16 @@ export interface BetterAuthLogger {
   ) => void;
 }
 
+/**
+ * Narrow terms dependency for the auth hooks. Kept structural (rather than the
+ * concrete `TermsService`) so unit tests can supply a fake and so `auth.ts`
+ * does not hard-depend on the terms module.
+ */
+export interface AuthTermsService {
+  getCurrentVersion(): Promise<{ version: string } | null>;
+  recordSignupAcceptance(userId: string): Promise<void>;
+}
+
 export interface AuthConfigOptions {
   database: Database | object;
   trustedOrigins: string[];
@@ -75,6 +86,7 @@ export interface AuthConfigOptions {
   onEmailVerified?: (userId: string) => void;
   onPasswordResetCompleted?: (userId: string) => void;
   privacyPolicyDirectory?: string;
+  termsService: AuthTermsService;
 }
 
 export const createAuthConfig = ({
@@ -91,6 +103,7 @@ export const createAuthConfig = ({
   onEmailVerified,
   onPasswordResetCompleted,
   privacyPolicyDirectory = defaultPrivacyPolicyDirectory(),
+  termsService,
 }: AuthConfigOptions): BetterAuthOptions => {
   const pendingEmailVerified = { flagged: false };
 
@@ -130,6 +143,16 @@ export const createAuthConfig = ({
           required: false,
           input: false,
         },
+        termsVersion: {
+          type: 'string',
+          required: false,
+          input: false,
+        },
+        termsAcceptedAt: {
+          type: 'date',
+          required: false,
+          input: false,
+        },
       },
     },
     databaseHooks: {
@@ -148,24 +171,45 @@ export const createAuthConfig = ({
               });
             }
 
+            const currentTerms = await termsService.getCurrentVersion();
+            if (!currentTerms) {
+              throw new APIError('BAD_REQUEST', {
+                message: 'No published terms version',
+              });
+            }
+
+            try {
+              assertTermsAccepted(ctx?.body);
+            } catch (error) {
+              if (error instanceof TermsAcceptanceError) {
+                throw new APIError('BAD_REQUEST', { message: error.message });
+              }
+              throw error;
+            }
+
             try {
               const { version } = resolvePrivacyPolicyDocument(
                 privacyPolicyDirectory,
               );
+              const withPrivacy = applyPrivacyPolicyAcceptance(
+                {
+                  ...user,
+                  firstname,
+                  lastname,
+                  name: formatUserName(firstname, lastname),
+                  locale,
+                  privacyPolicyAccepted: privacyPolicyAcceptedFromBody(
+                    ctx?.body,
+                  ),
+                },
+                version,
+              );
               return {
-                data: applyPrivacyPolicyAcceptance(
-                  {
-                    ...user,
-                    firstname,
-                    lastname,
-                    name: formatUserName(firstname, lastname),
-                    locale,
-                    privacyPolicyAccepted: privacyPolicyAcceptedFromBody(
-                      ctx?.body,
-                    ),
-                  },
-                  version,
-                ),
+                data: {
+                  ...withPrivacy,
+                  termsVersion: currentTerms.version,
+                  termsAcceptedAt: new Date(),
+                },
               };
             } catch (error) {
               if (error instanceof PrivacyPolicyAcceptanceError) {
@@ -176,6 +220,7 @@ export const createAuthConfig = ({
           },
           after: async (user) => {
             if (typeof user.id === 'string') {
+              await termsService.recordSignupAcceptance(user.id);
               onUserCreated?.(user.id);
             }
           },
@@ -270,6 +315,11 @@ export const createAuthConfig = ({
   };
 };
 
+const noopTermsService: AuthTermsService = {
+  getCurrentVersion: async () => null,
+  recordSignupAcceptance: async () => {},
+};
+
 export const auth = betterAuth(
   createAuthConfig({
     database: {},
@@ -277,5 +327,6 @@ export const auth = betterAuth(
     cookieDomain: undefined,
     sendVerificationOTP: async () => {},
     sendResetPassword: async () => {},
+    termsService: noopTermsService,
   }),
 );

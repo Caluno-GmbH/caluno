@@ -73,13 +73,18 @@ export class TermsService {
     return this.readPublished();
   }
 
-  async getLatestMajorVersion(): Promise<string | null> {
-    const published = await this.readPublished();
+  private latestMajorFrom(
+    published: Array<{ version: string; class: TermsChangeClass }>,
+  ): string | null {
     const majors = published
       .filter((row) => row.class === TermsChangeClass.MAJOR)
       .map((row) => row.version)
       .sort(compareVersions);
     return majors.at(-1) ?? null;
+  }
+
+  async getLatestMajorVersion(): Promise<string | null> {
+    return this.latestMajorFrom(await this.readPublished());
   }
 
   async getCurrentVersion(): Promise<{
@@ -141,13 +146,11 @@ export class TermsService {
   async mustAccept(
     acceptedVersion: string | null | undefined,
   ): Promise<boolean> {
-    if (!(await this.getCurrentVersion())) {
+    const published = await this.readPublished();
+    if (published.length === 0) {
       return false;
     }
-    return computeMustAccept(
-      acceptedVersion,
-      await this.getLatestMajorVersion(),
-    );
+    return computeMustAccept(acceptedVersion, this.latestMajorFrom(published));
   }
 
   async getStatusForUser(userId: string): Promise<TermsStatus> {
@@ -197,6 +200,25 @@ export class TermsService {
         documentFilename: document.filename,
         documentHash,
       });
+    });
+  }
+
+  async recordSignupAcceptance(userId: string): Promise<void> {
+    const user = await this.db.query.users.findFirst({
+      where: { id: userId },
+    });
+    if (!user?.termsVersion) {
+      return;
+    }
+    const locale: TermsLocale = user.locale === 'en' ? 'en' : 'de';
+    const document = this.resolveDocument(user.termsVersion, locale);
+    await this.db.insert(schema.termsAcceptances).values({
+      userId,
+      version: user.termsVersion,
+      class: termsChangeClassForVersion(user.termsVersion),
+      language: locale,
+      documentFilename: document.filename,
+      documentHash: sha256File(document.path),
     });
   }
 

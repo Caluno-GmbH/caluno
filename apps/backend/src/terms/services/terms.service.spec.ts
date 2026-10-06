@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Database } from '../../database/database.module';
 import { TermsChangeClass } from '../enums';
+import { sha256File } from '../terms-files';
 import { computeMustAccept, TermsService } from './terms.service';
 
 type LedgerRow = {
@@ -17,6 +18,23 @@ function makeService(rows: LedgerRow[], directory: string): TermsService {
     select: () => ({ from: async () => rows }),
   } as unknown as Database;
   return new TermsService(db, directory);
+}
+
+function makeAcceptanceService(opts: {
+  directory: string;
+  user: { termsVersion: string | null; locale: string | null } | null;
+  inserted: Record<string, unknown>[];
+}): TermsService {
+  const db = {
+    select: () => ({ from: async () => [] }),
+    query: { users: { findFirst: async () => opts.user } },
+    insert: () => ({
+      values: async (values: Record<string, unknown>) => {
+        opts.inserted.push(values);
+      },
+    }),
+  } as unknown as Database;
+  return new TermsService(db, opts.directory);
 }
 
 describe('computeMustAccept', () => {
@@ -65,6 +83,81 @@ describe('TermsService.mustAccept', () => {
     await expect(service.mustAccept(null)).resolves.toBe(true);
     await expect(service.mustAccept('1.0')).resolves.toBe(true);
     await expect(service.mustAccept('2.0')).resolves.toBe(false);
+  });
+
+  it('stays inert when files exist but nothing is published', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    writeFileSync(join(directory, 'terms_1.0_2026-09-01_en.pdf'), '');
+    writeFileSync(join(directory, 'terms_1.0_2026-09-01_de.pdf'), '');
+    const service = makeService([], directory);
+
+    await expect(service.mustAccept(null)).resolves.toBe(false);
+    await expect(service.mustAccept('0.9')).resolves.toBe(false);
+  });
+});
+
+describe('TermsService.recordSignupAcceptance', () => {
+  it('does nothing when the user has no stamped version', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    const inserted: Record<string, unknown>[] = [];
+    const service = makeAcceptanceService({
+      directory,
+      user: { termsVersion: null, locale: 'en' },
+      inserted,
+    });
+
+    await service.recordSignupAcceptance('user-1');
+
+    expect(inserted).toHaveLength(0);
+  });
+
+  it('inserts an acceptance row using the user locale document', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    const enPath = join(directory, 'terms_1.0_2026-10-06_en.pdf');
+    writeFileSync(enPath, 'english terms');
+    writeFileSync(join(directory, 'terms_1.0_2026-10-06_de.pdf'), 'deutsche');
+
+    const inserted: Record<string, unknown>[] = [];
+    const service = makeAcceptanceService({
+      directory,
+      user: { termsVersion: '1.0', locale: 'en' },
+      inserted,
+    });
+
+    await service.recordSignupAcceptance('user-1');
+
+    expect(inserted).toEqual([
+      {
+        userId: 'user-1',
+        version: '1.0',
+        class: TermsChangeClass.MAJOR,
+        language: 'en',
+        documentFilename: 'terms_1.0_2026-10-06_en.pdf',
+        documentHash: sha256File(enPath),
+      },
+    ]);
+  });
+
+  it('falls back to German for a non-English user locale', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    writeFileSync(join(directory, 'terms_1.0_2026-10-06_en.pdf'), 'english');
+    const dePath = join(directory, 'terms_1.0_2026-10-06_de.pdf');
+    writeFileSync(dePath, 'deutsch');
+
+    const inserted: Record<string, unknown>[] = [];
+    const service = makeAcceptanceService({
+      directory,
+      user: { termsVersion: '1.0', locale: null },
+      inserted,
+    });
+
+    await service.recordSignupAcceptance('user-1');
+
+    expect(inserted[0]).toMatchObject({
+      language: 'de',
+      documentFilename: 'terms_1.0_2026-10-06_de.pdf',
+      documentHash: sha256File(dePath),
+    });
   });
 });
 
