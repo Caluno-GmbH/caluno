@@ -8,6 +8,7 @@ export function buildSignupPayload(input: {
   email: string;
   password: string;
   privacyAccepted: boolean;
+  termsAccepted: boolean;
 }): {
   firstname: string;
   lastname: string;
@@ -15,8 +16,9 @@ export function buildSignupPayload(input: {
   email: string;
   password: string;
   privacyPolicyAccepted: true;
+  termsAccepted: true;
 } | null {
-  if (!input.privacyAccepted) {
+  if (!input.privacyAccepted || !input.termsAccepted) {
     return null;
   }
 
@@ -33,5 +35,6 @@ export function buildSignupPayload(input: {
     email: input.email,
     password: input.password,
     privacyPolicyAccepted: true,
+    termsAccepted: true,
   };
 }

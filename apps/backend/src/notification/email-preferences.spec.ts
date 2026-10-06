@@ -81,6 +81,12 @@ describe('notification email groups', () => {
     }
   });
 
+  it('never preference-gates the terms-updated legal notice', () => {
+    expect(
+      NOTIFICATION_EMAIL_GROUP[NotificationEvent.TERMS_UPDATED],
+    ).toBeNull();
+  });
+
   it('gates the urgent call-out and the weekly digest, but not their manager mails', () => {
     expect(
       NOTIFICATION_EMAIL_GROUP[NotificationEvent.SHIFT_INSTANCE_CALL_OUT],

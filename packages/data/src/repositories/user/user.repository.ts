@@ -63,4 +63,9 @@ export class UserRepository extends BaseRepository {
     const data = await this.sdk.UpdateMyProfile({ input });
     return data.updateMyProfile;
   }
+
+  async unsubscribeFromEmails(): Promise<boolean> {
+    const data = await this.sdk.UnsubscribeFromEmails();
+    return data.unsubscribeFromEmails;
+  }
 }

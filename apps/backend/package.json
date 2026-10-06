@@ -30,7 +30,8 @@
     "db:fixtures": "bun run src/database/fixtures.ts",
     "db:fixtures:staging": "bun run db:fixtures",
     "db:fixtures:demo": "bun run src/database/demo-fixtures.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "terms:publish": "bun run src/terms/publish-terms.cli.ts"
   },
   "dependencies": {
     "@apollo/server": "^5.2.0",

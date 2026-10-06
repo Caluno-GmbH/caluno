@@ -7,6 +7,7 @@ import { requireAuth } from '@/lib/auth-server';
 import { GRAPHQL_API_URL } from '@/lib/constants';
 import { resolveLocaleSeed } from '@/lib/locale-seed';
 import { isAnAdminstrator } from '@/lib/org-context-server';
+import { requireTermsAccepted } from '@/lib/terms-gate-server';
 
 interface VolunteeringOrgLayoutProps {
   children: ReactNode;
@@ -20,6 +21,8 @@ export default async function VolunteeringOrgLayout({
   await requireAuth();
   const { locale: rawLocale } = await params;
   const locale = resolveLocale(rawLocale);
+
+  await requireTermsAccepted(locale);
 
   const localeSeed = await resolveLocaleSeed();
   const isAdmin = await isAnAdminstrator();

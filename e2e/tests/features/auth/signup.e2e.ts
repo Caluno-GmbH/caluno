@@ -51,6 +51,7 @@ test.describe('Signup validation', () => {
         email: VALID_EMAIL,
         password: VALID_PASSWORD,
         privacyAccepted: true,
+        termsAccepted: true,
       });
       await signup.submit();
 
@@ -67,6 +68,7 @@ test.describe('Signup validation', () => {
         email: VALID_EMAIL,
         password: VALID_PASSWORD,
         privacyAccepted: true,
+        termsAccepted: true,
       });
       await signup.submit();
 
@@ -83,6 +85,7 @@ test.describe('Signup validation', () => {
         lastname: VALID_LASTNAME,
         password: VALID_PASSWORD,
         privacyAccepted: true,
+        termsAccepted: true,
       });
       await signup.submit();
 
@@ -99,6 +102,7 @@ test.describe('Signup validation', () => {
         lastname: VALID_LASTNAME,
         email: VALID_EMAIL,
         privacyAccepted: true,
+        termsAccepted: true,
       });
       await signup.submit();
 
@@ -120,6 +124,7 @@ test.describe('Signup validation', () => {
           email,
           password: VALID_PASSWORD,
           privacyAccepted: true,
+          termsAccepted: true,
         });
         await signup.submit();
 
@@ -151,6 +156,7 @@ test.describe('Signup validation', () => {
           email: VALID_EMAIL,
           password,
           privacyAccepted: true,
+          termsAccepted: true,
         });
         await signup.submit();
 

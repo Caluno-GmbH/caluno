@@ -15,6 +15,7 @@ describe('privacy policy signup payload', () => {
         email: 'ada@example.com',
         password: 'secret1',
         privacyAccepted: true,
+        termsAccepted: true,
       }),
     ).toEqual({
       firstname: 'Ada',
@@ -23,10 +24,11 @@ describe('privacy policy signup payload', () => {
       email: 'ada@example.com',
       password: 'secret1',
       privacyPolicyAccepted: true,
+      termsAccepted: true,
     });
   });
 
-  it('returns null when the checkbox is not accepted', () => {
+  it('returns null when the privacy checkbox is not accepted', () => {
     expect(
       buildSignupPayload({
         firstname: 'Ada',
@@ -34,6 +36,20 @@ describe('privacy policy signup payload', () => {
         email: 'ada@example.com',
         password: 'secret1',
         privacyAccepted: false,
+        termsAccepted: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('returns null when the terms checkbox is not accepted', () => {
+    expect(
+      buildSignupPayload({
+        firstname: 'Ada',
+        lastname: 'Lovelace',
+        email: 'ada@example.com',
+        password: 'secret1',
+        privacyAccepted: true,
+        termsAccepted: false,
       }),
     ).toBeNull();
   });
@@ -46,6 +62,7 @@ describe('privacy policy signup payload', () => {
         email: 'ada@example.com',
         password: 'secret1',
         privacyAccepted: true,
+        termsAccepted: true,
       }),
     ).toBeNull();
   });

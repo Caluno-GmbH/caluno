@@ -4,17 +4,12 @@ import { NextResponse } from 'next/server';
 import createMiddleware from 'next-intl/middleware';
 import { routing } from '@/i18n/routing';
 import { USER_LOCALE_COOKIE } from '@/lib/locale-constants';
+import { isSupportedLocale, stripLocalePrefix } from '@/lib/locale-path';
 import { hasSessionCookie } from '@/lib/session-cookie';
 
 type Middleware = (request: NextRequest) => NextResponse;
 
 const intlMiddleware = createMiddleware(routing);
-
-const supportedLocales = new Set<Locale>(routing.locales);
-
-function isSupportedLocale(value: string): value is Locale {
-  return supportedLocales.has(value as Locale);
-}
 
 /**
  * Pure locale-preference decision. Returns a 307 redirect to the
@@ -57,10 +52,17 @@ export function withLocalePreference(next: Middleware): Middleware {
   return (request) => localePreferenceRedirect(request) ?? next(request);
 }
 
+export function withPathnameHeader(next: Middleware): Middleware {
+  return (request) => {
+    request.headers.set('x-pathname', request.nextUrl.pathname);
+    return next(request);
+  };
+}
+
 // The intl fallback is load-bearing: it prefixes bare paths (localePrefix
 // 'always') and runs Accept-Language detection for visitors without a
 // preference cookie.
-export const proxy = withLocalePreference(intlMiddleware);
+export const proxy = withPathnameHeader(withLocalePreference(intlMiddleware));
 
 function redirectToLocale(request: NextRequest, cookieLocale: Locale) {
   const pathWithoutLocale = stripLocalePrefix(request.nextUrl.pathname);
@@ -80,21 +82,6 @@ function getLocaleFromPathname(pathname: string): Locale | undefined {
   return firstSegment && isSupportedLocale(firstSegment)
     ? firstSegment
     : undefined;
-}
-
-function stripLocalePrefix(pathname: string): string {
-  const segments = pathname.split('/').filter(Boolean);
-  let startIndex = 0;
-
-  while (
-    startIndex < segments.length &&
-    isSupportedLocale(segments[startIndex] as string)
-  ) {
-    startIndex++;
-  }
-
-  const remaining = segments.slice(startIndex).join('/');
-  return remaining ? `/${remaining}` : '/';
 }
 
 export const config = {
