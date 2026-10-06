@@ -26,12 +26,24 @@ export class SignupPage extends AuthPage {
     return this.page.getByRole('link', { name: 'Privacy Policy' });
   }
 
+  get termsCheckbox() {
+    return this.page.getByRole('checkbox', { name: /terms/i });
+  }
+
+  get termsLink() {
+    return this.page.getByRole('link', { name: /terms and conditions/i });
+  }
+
   async goto() {
     await this.page.goto(this.url('/signup'), { waitUntil: 'load' });
   }
 
   async acceptPrivacyPolicy() {
     await this.privacyCheckbox.check();
+  }
+
+  async acceptTerms() {
+    await this.termsCheckbox.check();
   }
 
   async signup(
@@ -45,6 +57,7 @@ export class SignupPage extends AuthPage {
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.acceptPrivacyPolicy();
+    await this.acceptTerms();
     const [res] = await Promise.all([
       this.page.waitForResponse(
         (r) => r.url().includes('/api/auth/sign-up/email'),
@@ -79,6 +92,7 @@ export class SignupPage extends AuthPage {
     email?: string;
     password?: string;
     privacyAccepted?: boolean;
+    termsAccepted?: boolean;
   }) {
     if (values.firstname !== undefined) {
       await this.firstnameInput.fill(values.firstname);
@@ -91,6 +105,7 @@ export class SignupPage extends AuthPage {
       await this.passwordInput.fill(values.password);
     }
     if (values.privacyAccepted) await this.acceptPrivacyPolicy();
+    if (values.termsAccepted) await this.acceptTerms();
   }
 
   private fieldLocator(field: 'firstname' | 'lastname' | 'email' | 'password') {
