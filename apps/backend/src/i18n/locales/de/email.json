@@ -91,7 +91,7 @@
     "buttonLabel": "{organizationName} öffnen",
     "checkInQrAlt": "Dein Check-in-QR-Code",
     "checkInQrCaption": "Zeige diesen QR-Code beim Check-in vor und lass ihn von der dazu beauftragten Person scannen, wenn deine Organisation die Anwesenheit bei Einsätzen erfasst. Du findest ihn auch über den Menüpunkt Einchecken, wenn du dich bei app.caluno.org anmeldest.",
-    "checkInQrNote": "Dein Check-in-QR-Code ist unten zu sehen und außerdem als PDF beigefügt. Du kannst ihn ausdrucken oder auf deinem Handy speichern. Zeig ihn einfach beim Check-in, auch ohne Caluno-Login.",
+    "checkInQrNote": "Dein Check-in-QR-Code ist unten zu sehen und außerdem als PDF beigefügt. Zeige diesen QR-Code beim Check-in vor und lass ihn von der dazu beauftragten Person scannen, wenn deine Organisation die Anwesenheit bei Einsätzen erfasst. Du findest ihn auch über den Menüpunkt Einchecken, wenn du dich bei app.caluno.org anmeldest.",
     "contactEmailLabel": "E-Mail",
     "contactHeading": "Deine Ansprechperson",
     "contactNameLabel": "Name",
