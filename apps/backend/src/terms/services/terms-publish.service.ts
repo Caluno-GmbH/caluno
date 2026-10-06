@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { Pool } from 'pg';
+import type { Database } from '../../database/database.module';
+import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { TermsChangeClass } from '../enums';
 import {
   compareVersions,
@@ -22,12 +25,63 @@ export interface TermsPublishSummary {
 
 const PLACEHOLDER_ALLOWED = process.env.TERMS_ALLOW_PLACEHOLDER === '1';
 
+const TERMS_PUBLISH_LOCK_KEY = 874213001;
+
 @Injectable()
 export class TermsPublishService {
+  private readonly logger = new Logger(TermsPublishService.name);
+
   constructor(
+    @Inject(DATABASE_CONNECTION) private readonly db: Database,
     private readonly termsService: TermsService,
     private readonly notifier: TermsNotificationService,
   ) {}
+
+  /**
+   * Run a publish pass under a Postgres advisory lock so only one instance
+   * broadcasts a version at a time (concurrent boots must not double-send).
+   * The lock is session-scoped on a dedicated connection, so it releases
+   * automatically if the process dies — a crashed run is retried on the next
+   * boot (a version with `notification_sent_at IS NULL` is re-selected, and
+   * users already recorded are skipped).
+   */
+  private async withPublishLock<T>(run: () => Promise<T>): Promise<T | null> {
+    const pool = (this.db as unknown as { $client: Pool }).$client;
+    const client = await pool.connect();
+    let locked = false;
+    try {
+      const result = await client.query<{ locked: boolean }>(
+        'select pg_try_advisory_lock($1) as locked',
+        [TERMS_PUBLISH_LOCK_KEY],
+      );
+      locked = result.rows[0]?.locked === true;
+      if (!locked) {
+        this.logger.log('another terms publisher holds the lock; skipping');
+        return null;
+      }
+      return await run();
+    } finally {
+      if (locked) {
+        try {
+          await client.query('select pg_advisory_unlock($1)', [
+            TERMS_PUBLISH_LOCK_KEY,
+          ]);
+          client.release();
+        } catch {
+          client.release(true);
+        }
+      } else {
+        client.release();
+      }
+    }
+  }
+
+  async publishPendingVersions(): Promise<TermsPublishSummary> {
+    const result = await this.withPublishLock(() =>
+      this.doPublishPendingVersions(),
+    );
+    return result ?? { published: [], notified: [] };
+  }
 
   acceptTermsUrl(): string {
     const base =
@@ -48,7 +102,7 @@ export class TermsPublishService {
     }
   }
 
-  async publishPendingVersions(): Promise<TermsPublishSummary> {
+  private async doPublishPendingVersions(): Promise<TermsPublishSummary> {
     const files = listTermsDocuments(defaultTermsDirectory());
     const byVersion = new Map<string, TermsVersion[]>();
     for (const file of files) {
