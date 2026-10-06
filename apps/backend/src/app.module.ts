@@ -47,6 +47,8 @@ import { validatePostHogEnv } from './shared/observability/validate-posthog-env'
 import { validateSentryEnv } from './shared/observability/validate-sentry-env';
 import { ShiftModule } from './shift/shift.module';
 import { StorageModule } from './storage/storage.module';
+import { TermsAcceptedGuard } from './terms/guards/terms-accepted.guard';
+import { TermsService } from './terms/services/terms.service';
 import { TermsModule } from './terms/terms.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { UserModule } from './user/user.module';
@@ -310,6 +312,13 @@ const autoSchemaFile =
       scope: Scope.REQUEST,
       useFactory: createSessionCachingAuthGuard,
       inject: [Reflector, AuthService],
+    },
+    {
+      provide: APP_GUARD,
+      scope: Scope.REQUEST,
+      useFactory: (reflector: Reflector, termsService: TermsService) =>
+        new TermsAcceptedGuard(reflector, termsService),
+      inject: [Reflector, TermsService],
     },
     {
       provide: APP_GUARD,
