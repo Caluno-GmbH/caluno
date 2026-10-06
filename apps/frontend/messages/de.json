@@ -2,6 +2,8 @@
   "Terms": {
     "accept": "Akzeptieren und fortfahren",
     "accepting": "Wird akzeptiert...",
+    "redirecting": "Weiterleitung...",
+    "acceptFailed": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     "loadFailed": "Das AGB-Dokument konnte nicht geladen werden. Bitte lade die Seite neu."
   },
   "Unsubscribe": {
