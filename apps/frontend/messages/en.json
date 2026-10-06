@@ -2373,7 +2373,7 @@
           "cancelButtonLabel": "Cancel",
           "inputLabel": "Initial amount in euros",
           "projectedAfter": "Projected after this timesheet: {after}",
-          "successToast": "Initial amount saved.",
+          "deferredToast": "Initial amount will be saved when you send the timesheet.",
           "errorToast": "The initial amount couldn't be saved. Please try again."
         },
         "hoursCard": {

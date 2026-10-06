@@ -183,6 +183,7 @@ input CreateFormBlockInput {
 input CreateInvoiceInput {
   fieldOverrides: [DocumentFieldOverrideInput!]
   hourlyRateCents: Int
+  manualBaselineCents: Int
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!

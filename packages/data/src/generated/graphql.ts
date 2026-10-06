@@ -211,6 +211,7 @@ export type CreateFormBlockInput = {
 export type CreateInvoiceInput = {
   fieldOverrides?: InputMaybe<Array<DocumentFieldOverrideInput>>;
   hourlyRateCents?: InputMaybe<Scalars['Int']['input']>;
+  manualBaselineCents?: InputMaybe<Scalars['Int']['input']>;
   organizationUnitId?: InputMaybe<Scalars['ID']['input']>;
   periodEnd: Scalars['DateTime']['input'];
   periodStart: Scalars['DateTime']['input'];
