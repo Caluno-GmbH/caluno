@@ -55,13 +55,19 @@ export class TermsService {
   }
 
   private async readPublished(): Promise<
-    Array<{ version: string; class: TermsChangeClass; publishedAt: Date }>
+    Array<{
+      version: string;
+      class: TermsChangeClass;
+      publishedAt: Date;
+      notificationSentAt: Date | null;
+    }>
   > {
     const rows = await this.db.select().from(schema.termsVersions);
     return rows.map((row) => ({
       version: row.version,
       class: row.class,
       publishedAt: row.publishedAt,
+      notificationSentAt: row.notificationSentAt,
     }));
   }
 

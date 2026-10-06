@@ -69,7 +69,6 @@ export const NOTIFICATION_EMAIL_GROUP: Record<
   [NotificationEvent.MEMBERSHIP_APPROVED]: 'platform',
   [NotificationEvent.MEMBERSHIP_REJECTED]: 'platform',
   [NotificationEvent.MEMBERSHIP_REMOVED]: 'platform',
-  [NotificationEvent.TERMS_UPDATED]: 'platform',
 
   // Manager-facing — a manager is told what a volunteer did. Never gated.
   [NotificationEvent.SHIFT_INSTANCE_JOINED]: null,
@@ -85,6 +84,10 @@ export const NOTIFICATION_EMAIL_GROUP: Record<
   [NotificationEvent.DOCUMENT_AWAITING_SIGNATURE]: null,
   [NotificationEvent.DOCUMENT_DECLINED_BY_ORG]: null,
   [NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER]: null,
+
+  // A change to the terms and conditions is a legal notice to every account
+  // holder, so it is never subject to the volunteer Platform toggle.
+  [NotificationEvent.TERMS_UPDATED]: null,
 
   // The call-out and digest are sent directly by their own senders rather than
   // through the emitter; the entries below are the groups those senders

@@ -26,6 +26,7 @@ export class TermsNotificationService {
 
     for (;;) {
       const users = await this.db.query.users.findMany({
+        orderBy: { id: 'asc' },
         limit: BATCH_SIZE,
         offset,
         columns: { id: true },
@@ -35,7 +36,7 @@ export class TermsNotificationService {
       }
 
       const userIds = users.map((user) => user.id);
-      this.notificationService.notifyTermsUpdated({
+      await this.notificationService.notifyTermsUpdatedAsync({
         version: input.version,
         class: input.class,
         acceptTermsUrl: input.acceptTermsUrl,

@@ -30,24 +30,39 @@ async function main(): Promise<void> {
     .filter((version) => !publishedVersions.has(version))
     .sort(compareVersions);
 
+  // Validate every new version before publishing or notifying any of them, so a
+  // document set missing a locale cannot leave a half-published batch.
   for (const version of newVersions) {
     const locales = new Set(byVersion.get(version)?.map((f) => f.locale));
     if (!locales.has('en') || !locales.has('de')) {
       throw new Error(`Terms ${version} is missing an en or de document`);
     }
-    const { class: changeClass } = await termsService.publishVersion(version);
+  }
+
+  for (const version of newVersions) {
+    await termsService.publishVersion(version);
+  }
+
+  // Publishing leaves notification_sent_at null; re-reading means a version
+  // written by an interrupted run is picked up again, so a crash between
+  // publish and notify is recoverable without a new document set.
+  const toNotify = (await termsService.listPublishedVersions())
+    .filter((row) => row.notificationSentAt === null)
+    .sort((a, b) => compareVersions(a.version, b.version));
+
+  for (const row of toNotify) {
     await notifier.broadcastForVersion({
-      version,
-      class: changeClass,
+      version: row.version,
+      class: row.class,
       acceptTermsUrl,
     });
-    await termsService.markNotified(version);
+    await termsService.markNotified(row.version);
     console.log(
-      `published ${version} (${changeClass === TermsChangeClass.MAJOR ? 'major' : 'minor'})`,
+      `published ${row.version} (${row.class === TermsChangeClass.MAJOR ? 'major' : 'minor'})`,
     );
   }
 
-  if (newVersions.length === 0) {
+  if (toNotify.length === 0) {
     console.log('no new terms versions to publish');
   }
 
