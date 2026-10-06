@@ -446,7 +446,7 @@ function FilterTile({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex min-w-[100px] flex-1 flex-col justify-between gap-2 rounded-xl border p-3 text-left transition-colors',
+        'flex min-w-[160px] flex-1 flex-col justify-between gap-2 rounded-xl border p-3 text-left transition-colors',
         active
           ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
           : 'border-border bg-card hover:bg-muted',
@@ -454,7 +454,7 @@ function FilterTile({
     >
       <span
         className={cn(
-          'text-base font-semibold leading-tight',
+          'text-base font-semibold leading-tight hyphens-auto break-words',
           active ? 'text-primary' : 'text-card-foreground',
         )}
       >
@@ -991,7 +991,7 @@ export function ReimbursementsBoardSkeleton() {
                 <Skeleton className="h-3 w-3" />
               </div>
             )}
-            <div className="flex min-w-[100px] flex-1 flex-col gap-2 rounded-xl border border-border bg-card p-3">
+            <div className="flex min-w-[160px] flex-1 flex-col gap-2 rounded-xl border border-border bg-card p-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-3 w-3" />
                 <Skeleton className="h-5 w-5 rounded-full" />
