@@ -47,6 +47,7 @@ import { validatePostHogEnv } from './shared/observability/validate-posthog-env'
 import { validateSentryEnv } from './shared/observability/validate-sentry-env';
 import { ShiftModule } from './shift/shift.module';
 import { StorageModule } from './storage/storage.module';
+import { TermsModule } from './terms/terms.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
@@ -293,6 +294,7 @@ const autoSchemaFile =
     ShiftModule,
     EventModule,
     StorageModule,
+    TermsModule,
     BetterAuthModule,
     AuthModule,
     AccountingModule,

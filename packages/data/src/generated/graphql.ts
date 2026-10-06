@@ -21,6 +21,11 @@ export type Scalars = {
   JSON: { input: Record<string, unknown>; output: Record<string, unknown>; }
 };
 
+export type AcceptTermsInput = {
+  language: Scalars['String']['input'];
+  version: Scalars['String']['input'];
+};
+
 export type AccountingOrgProfile = {
   __typename?: 'AccountingOrgProfile';
   city?: Maybe<Scalars['String']['output']>;
@@ -743,6 +748,7 @@ export enum MembershipRequestStatus {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  acceptTerms: TermsStatus;
   addTimeEntry: TimeEntry;
   approveMembershipRequest: MembershipRequest;
   cancelMembershipRequest: MembershipRequest;
@@ -834,6 +840,11 @@ export type Mutation = {
   updateShiftInstanceInviteStatus: ShiftInstanceInvite;
   updateShiftInviteStatus: ShiftInvite;
   updateTimeEntry: TimeEntry;
+};
+
+
+export type MutationAcceptTermsArgs = {
+  input: AcceptTermsInput;
 };
 
 
@@ -1633,6 +1644,7 @@ export type Query = {
   shiftInstancesByMasterIds: Array<ShiftInstancesByMaster>;
   shiftVolunteers: Array<User>;
   shifts: ShiftPaginatedResponse;
+  termsStatus: TermsStatus;
   timeEntries: TimeEntryPaginatedResponse;
   timeEntriesByUser: TimeEntryPaginatedResponse;
   timeEntry: TimeEntry;
@@ -2618,6 +2630,15 @@ export type TemplateSignee = {
   order: Scalars['Int']['output'];
   requiredPermission?: Maybe<Permission>;
   signeeType: SigneeType;
+};
+
+export type TermsStatus = {
+  __typename?: 'TermsStatus';
+  acceptedAt?: Maybe<Scalars['DateTime']['output']>;
+  acceptedVersion?: Maybe<Scalars['String']['output']>;
+  currentClass?: Maybe<Scalars['String']['output']>;
+  currentVersion?: Maybe<Scalars['String']['output']>;
+  mustAccept: Scalars['Boolean']['output'];
 };
 
 export type TimeEntry = {
