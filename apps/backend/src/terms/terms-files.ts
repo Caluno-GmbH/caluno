@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { getBackendRoot } from '../legal/backend-root';
 import { TermsChangeClass as TermsClass } from './enums';
 
 export const TERMS_FILENAME_PATTERN =
@@ -79,15 +80,6 @@ export function pickCurrentTermsVersion(
     })
     .at(-1);
 }
-
-const getBackendRoot = (): string => {
-  const cwd = process.cwd();
-  const monorepoBackend = join(cwd, 'apps', 'backend');
-  if (existsSync(join(monorepoBackend, 'tsconfig.json'))) {
-    return monorepoBackend;
-  }
-  return cwd;
-};
 
 export function defaultTermsDirectory(): string {
   return join(getBackendRoot(), 'legal');

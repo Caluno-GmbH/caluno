@@ -19,7 +19,13 @@ export const termsAcceptances = snakeCase.table(
     documentHash: text('document_hash').notNull(),
     ...timestampColumns,
   },
-  (table) => [index('idx_terms_acceptances_user_id').on(table.userId)],
+  (table) => [
+    index('idx_terms_acceptances_user_id').on(table.userId),
+    index('idx_terms_acceptances_user_id_accepted_at').on(
+      table.userId,
+      table.acceptedAt,
+    ),
+  ],
 );
 
 export type TermsAcceptanceEntity = typeof termsAcceptances.$inferSelect;

@@ -3,7 +3,10 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
-import { BadRequestGraphQLError } from '../../graphql/errors';
+import {
+  BadRequestGraphQLError,
+  NotFoundGraphQLError,
+} from '../../graphql/errors';
 import { TermsChangeClass } from '../enums';
 import {
   compareVersions,
@@ -213,7 +216,10 @@ export class TermsService {
     const user = await this.db.query.users.findFirst({
       where: { id: input.userId },
     });
-    if (user?.termsVersion === current.version) {
+    if (!user) {
+      throw new NotFoundGraphQLError('User not found');
+    }
+    if (user.termsVersion === current.version) {
       const existing = await this.db.query.termsAcceptances.findFirst({
         where: { userId: input.userId, version: current.version },
       });

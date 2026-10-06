@@ -5,9 +5,12 @@ import { join } from 'node:path';
 import { TermsChangeClass } from './enums';
 import {
   compareVersions,
+  defaultTermsDirectory,
+  isTermsLocale,
   listTermsDocuments,
   parseTermsFilename,
   pickCurrentTermsVersion,
+  sha256File,
   termsChangeClassForVersion,
 } from './terms-files';
 
@@ -56,5 +59,39 @@ describe('listTermsDocuments + pickCurrentTermsVersion', () => {
     const docs = listTermsDocuments(dir);
     expect(docs).toHaveLength(3);
     expect(pickCurrentTermsVersion(docs)?.version).toBe('1.1');
+  });
+});
+
+describe('isTermsLocale', () => {
+  it('accepts the supported locales', () => {
+    expect(isTermsLocale('en')).toBe(true);
+    expect(isTermsLocale('de')).toBe(true);
+  });
+
+  it('rejects unsupported or mis-cased locales', () => {
+    expect(isTermsLocale('fr')).toBe(false);
+    expect(isTermsLocale('EN')).toBe(false);
+    expect(isTermsLocale('')).toBe(false);
+  });
+});
+
+describe('defaultTermsDirectory', () => {
+  it('resolves to the backend legal directory', () => {
+    expect(defaultTermsDirectory().endsWith('legal')).toBe(true);
+  });
+});
+
+describe('sha256File', () => {
+  it('hashes file bytes deterministically', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'terms-hash-'));
+    const path = join(dir, 'doc.pdf');
+    writeFileSync(path, 'hello');
+
+    const hash = sha256File(path);
+    // sha256('hello')
+    expect(hash).toBe(
+      '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+    );
+    expect(sha256File(path)).toBe(hash);
   });
 });

@@ -51,9 +51,11 @@ export async function termsUpdatedTemplate(
   return renderEmail({
     templateName: 'termsUpdatedTemplate',
     subject: t('termsUpdated.subject'),
-    previewText: t('termsUpdated.previewText', {
-      action: isMajor ? t('termsUpdated.buttonLabel') : '',
-    }),
+    previewText: isMajor
+      ? t('termsUpdated.previewText', {
+          action: t('termsUpdated.buttonLabel'),
+        })
+      : t('termsUpdated.previewTextMinor'),
     body,
     footerNote: [
       t('termsUpdated.footerNote', { brandName: emailTheme.brandName }),

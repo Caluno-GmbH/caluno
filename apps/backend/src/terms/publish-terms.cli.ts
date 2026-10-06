@@ -10,6 +10,7 @@ import {
   listTermsDocuments,
   TERMS_PLACEHOLDER_MARKER,
   type TermsVersion,
+  termsChangeClassForVersion,
 } from './terms-files';
 
 const PLACEHOLDER_ALLOWED = process.env.TERMS_ALLOW_PLACEHOLDER === '1';
@@ -57,10 +58,17 @@ async function main(): Promise<void> {
     assertPublishableDocuments(version, docs);
   }
 
+  const classLabel = (value: TermsChangeClass): string =>
+    value === TermsChangeClass.MAJOR ? 'major' : 'minor';
+
   for (const version of newVersions) {
     await termsService.publishVersion(version);
+    console.log(
+      `published ${version} (${classLabel(termsChangeClassForVersion(version))})`,
+    );
   }
 
+  const newlyPublished = new Set(newVersions);
   const toNotify = (await termsService.listPublishedVersions())
     .filter((row) => row.notificationSentAt === null)
     .sort((a, b) => compareVersions(a.version, b.version));
@@ -76,12 +84,14 @@ async function main(): Promise<void> {
       acceptTermsUrl,
     });
     await termsService.markNotified(row.version);
-    console.log(
-      `published ${row.version} (${row.class === TermsChangeClass.MAJOR ? 'major' : 'minor'})`,
-    );
+    if (!newlyPublished.has(row.version)) {
+      console.log(
+        `re-notified already-published ${row.version} (${classLabel(row.class)})`,
+      );
+    }
   }
 
-  if (toNotify.length === 0) {
+  if (newVersions.length === 0 && toNotify.length === 0) {
     console.log('no new terms versions to publish');
   }
 

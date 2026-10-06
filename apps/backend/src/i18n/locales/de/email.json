@@ -585,6 +585,7 @@
   "termsUpdated": {
     "subject": "Unsere Nutzungsbedingungen haben sich geändert",
     "previewText": "Wir haben unsere Nutzungsbedingungen aktualisiert. {action}",
+    "previewTextMinor": "Wir haben unsere Nutzungsbedingungen aktualisiert.",
     "heading": "Neue Nutzungsbedingungen",
     "greeting": "Hallo {firstName}, wir haben unsere Nutzungsbedingungen aktualisiert.",
     "majorBody": "Diese Änderung ist wichtig. Bitte sieh dir die neue Version an und akzeptiere sie, bevor du {brandName} weiter nutzen kannst.",

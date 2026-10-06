@@ -585,6 +585,7 @@
   "termsUpdated": {
     "subject": "Our terms and conditions have changed",
     "previewText": "We've updated our terms and conditions. {action}",
+    "previewTextMinor": "We've updated our terms and conditions.",
     "heading": "Terms and conditions update",
     "greeting": "Hi {firstName}, we've updated our terms and conditions.",
     "majorBody": "This change is important, so you'll need to review and accept the new version before you can continue using {brandName}.",

@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -21,6 +22,18 @@ export class TermsNotificationService {
     class: TermsChangeClass;
     acceptTermsUrl: string;
   }): Promise<number> {
+    // Recovery may re-run a version whose send was interrupted. Skip anyone who
+    // already has a `terms_notifications` row for this version so re-runs only
+    // email the users who were never reached.
+    const alreadyNotified = new Set(
+      (
+        await this.db
+          .select({ userId: schema.termsNotifications.userId })
+          .from(schema.termsNotifications)
+          .where(eq(schema.termsNotifications.version, input.version))
+      ).map((row) => row.userId),
+    );
+
     let offset = 0;
     let sent = 0;
 
@@ -35,9 +48,15 @@ export class TermsNotificationService {
         break;
       }
 
-      const userIds = users.map((user) => user.id);
+      const userIds = users
+        .map((user) => user.id)
+        .filter((userId) => !alreadyNotified.has(userId));
+      if (userIds.length === 0) {
+        offset += BATCH_SIZE;
+        continue;
+      }
+
       await this.notificationService.notifyTermsUpdatedAsync({
-        version: input.version,
         class: input.class,
         acceptTermsUrl: input.acceptTermsUrl,
         recipientUserIds: userIds,

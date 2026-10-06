@@ -374,10 +374,6 @@ export class NotificationService {
     this.emitter.emit(NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER, input);
   }
 
-  notifyTermsUpdated(input: TermsUpdatedInput): void {
-    this.emitter.emit(NotificationEvent.TERMS_UPDATED, input);
-  }
-
   async notifyTermsUpdatedAsync(input: TermsUpdatedInput): Promise<void> {
     await this.emitter.emitAsync(NotificationEvent.TERMS_UPDATED, input);
   }

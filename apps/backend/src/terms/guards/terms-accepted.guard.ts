@@ -3,15 +3,14 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
-  Scope,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { GqlExecutionContext } from '@nestjs/graphql';
+import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { ForbiddenGraphQLError } from '../../graphql/errors';
 import { TermsService } from '../services/terms.service';
 import { ALLOW_UNACCEPTED_TERMS_KEY } from './allow-unaccepted-terms.decorator';
 
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class TermsAcceptedGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
@@ -50,10 +49,15 @@ export class TermsAcceptedGuard implements CanActivate {
     user?: { id: string; termsVersion?: string | null };
     isHttp: boolean;
   } {
-    if (context.getType() === 'http') {
+    const type = context.getType<GqlContextType>();
+    if (type === 'http') {
       return { user: context.switchToHttp().getRequest().user, isHttp: true };
     }
-    const gqlContext = GqlExecutionContext.create(context).getContext();
-    return { user: gqlContext.req?.user, isHttp: false };
+    if (type === 'graphql') {
+      const gqlContext = GqlExecutionContext.create(context).getContext();
+      return { user: gqlContext.req?.user, isHttp: false };
+    }
+    // Unknown execution context (e.g. rpc/ws): do not assume GraphQL.
+    return { user: undefined, isHttp: false };
   }
 }
