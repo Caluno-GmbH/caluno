@@ -1,4 +1,5 @@
 import {
+  afterAll,
   beforeAll,
   describe,
   expect,
@@ -7,28 +8,41 @@ import {
   setDefaultTimeout,
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import type { Database } from '../src/database/database.module';
-import { DATABASE_CONNECTION } from '../src/database/database-connection';
+import * as schema from '../src/database/schema';
+import { TermsService } from '../src/terms/services/terms.service';
 import { createUser } from './factories';
 import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
-import { createGraphqlFullTestApp } from './helpers/create-graphql-full-app';
 import { graphqlRequest } from './helpers/graphql-request';
+import { getGraphqlTestContext } from './helpers/graphql-test-context';
 
 applyBunAuthMocks(mock.module);
 setDefaultTimeout(20_000);
+
+const SEEDED_TERMS_VERSION = '1.0';
 
 describe('terms acceptance guard', () => {
   let app: INestApplication;
   let db: Database;
 
   beforeAll(async () => {
-    app = await createGraphqlFullTestApp();
-    db = app.get(DATABASE_CONNECTION);
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+    await app.get(TermsService).publishVersion(SEEDED_TERMS_VERSION);
   });
 
-  it('rejects a pending user and allows termsStatus', async () => {
+  afterAll(async () => {
+    await db
+      .delete(schema.termsVersions)
+      .where(eq(schema.termsVersions.version, SEEDED_TERMS_VERSION));
+    setAuthMockUserId('test-user-id');
+  });
+
+  it('rejects a pending user on normal operations but allows termsStatus', async () => {
     const user = await createUser(db, { termsVersion: null });
-    setAuthMockUserId(user.id);
+    setAuthMockUserId(user.id, null);
 
     const pending = await graphqlRequest(app, { query: '{ me { id } }' });
     expect(pending.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
@@ -40,5 +54,24 @@ describe('terms acceptance guard', () => {
     });
     expect(status.errors).toBeUndefined();
     expect(status.data?.termsStatus.mustAccept).toBe(true);
+    expect(status.data?.termsStatus.currentVersion).toBe(SEEDED_TERMS_VERSION);
+  });
+
+  it('leaves the escape-hatched acceptTerms mutation reachable for a pending user', async () => {
+    const user = await createUser(db, { termsVersion: null });
+    setAuthMockUserId(user.id, null);
+
+    const response = await graphqlRequest(app, {
+      query: `
+        mutation AcceptTerms($input: AcceptTermsInput!) {
+          acceptTerms(input: $input) { mustAccept }
+        }
+      `,
+      variables: {
+        input: { version: SEEDED_TERMS_VERSION, language: 'de' },
+      },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).not.toBe('FORBIDDEN');
   });
 });

@@ -40,6 +40,34 @@ describe('computeMustAccept', () => {
   });
 });
 
+describe('TermsService.mustAccept', () => {
+  it('does not require acceptance when no version is published', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    const service = makeService([], directory);
+
+    await expect(service.mustAccept(null)).resolves.toBe(false);
+    await expect(service.mustAccept(undefined)).resolves.toBe(false);
+  });
+
+  it('requires acceptance when a version is published and none was accepted', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'terms-'));
+    const service = makeService(
+      [
+        {
+          version: '2.0',
+          class: TermsChangeClass.MAJOR,
+          publishedAt: new Date('2026-01-02T00:00:00.000Z'),
+        },
+      ],
+      directory,
+    );
+
+    await expect(service.mustAccept(null)).resolves.toBe(true);
+    await expect(service.mustAccept('1.0')).resolves.toBe(true);
+    await expect(service.mustAccept('2.0')).resolves.toBe(false);
+  });
+});
+
 describe('TermsService.getCurrentVersion', () => {
   it('resolves the current version from the ledger when no PDF exists', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'terms-'));

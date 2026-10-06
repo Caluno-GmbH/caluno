@@ -5,7 +5,9 @@ type RegisterModuleMock = (
   moduleName: string,
   factory: () => Record<string, unknown>,
 ) => void;
+const DEFAULT_MOCK_TERMS_VERSION = '9999.0';
 let mockedUserId = 'test-user-id';
+let mockedUserTermsVersion: string | null = DEFAULT_MOCK_TERMS_VERSION;
 
 const createNoopDecorator = () => {
   return () => {
@@ -145,8 +147,15 @@ export const applyBunAuthMocks = (registerModuleMock: RegisterModuleMock) => {
   registerModuleMock('rrule', mockRruleModule);
 };
 
-export const setAuthMockUserId = (userId: string) => {
+export const setAuthMockUserId = (
+  userId: string,
+  termsVersion: string | null = DEFAULT_MOCK_TERMS_VERSION,
+) => {
   mockedUserId = userId;
+  mockedUserTermsVersion = termsVersion;
 };
 
 export const getAuthMockUserId = (): string => mockedUserId;
+
+export const getAuthMockUserTermsVersion = (): string | null =>
+  mockedUserTermsVersion;

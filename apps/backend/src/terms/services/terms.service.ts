@@ -141,6 +141,9 @@ export class TermsService {
   async mustAccept(
     acceptedVersion: string | null | undefined,
   ): Promise<boolean> {
+    if (!(await this.getCurrentVersion())) {
+      return false;
+    }
     return computeMustAccept(
       acceptedVersion,
       await this.getLatestMajorVersion(),
