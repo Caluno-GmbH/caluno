@@ -2373,7 +2373,7 @@
           "cancelButtonLabel": "Abbrechen",
           "inputLabel": "Anfangsbetrag in Euro",
           "projectedAfter": "Nach diesem Stundennachweis: {after}",
-          "successToast": "Anfangsbetrag gespeichert.",
+          "deferredToast": "Der Anfangsbetrag wird beim Senden des Stundennachweises gespeichert.",
           "errorToast": "Der Anfangsbetrag ließ sich nicht speichern. Versuch es bitte erneut."
         },
         "hoursCard": {

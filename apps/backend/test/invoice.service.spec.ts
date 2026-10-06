@@ -898,6 +898,99 @@ describe('InvoiceService', () => {
       ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
 
+    // VOLI-1569: the initial yearly amount is part of the timesheet's own
+    // draft, so it is written in the same transaction and never on its own.
+    it('persists the initial yearly amount together with the timesheet', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+
+      await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+          manualBaselineCents: 50_000,
+        },
+        supervisor.id,
+      );
+
+      const baseline = await db.query.reimbursementManualBaselines.findFirst({
+        where: {
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          year: 2026,
+        },
+      });
+      expect(baseline?.amountCents).toBe(50_000);
+    });
+
+    it('leaves the initial yearly amount untouched when none is sent', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+
+      await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+
+      const baseline = await db.query.reimbursementManualBaselines.findFirst({
+        where: {
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          year: 2026,
+        },
+      });
+      expect(baseline).toBeUndefined();
+    });
+
+    it('rejects a negative initial yearly amount', async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+
+      await expect(
+        service.createInvoice(
+          organization.id,
+          {
+            organizationUnitId: null,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            timeEntryIds: [timeEntry.id],
+            periodStart: new Date('2026-07-01T00:00:00.000Z'),
+            periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+            manualBaselineCents: -1,
+          },
+          supervisor.id,
+        ),
+      ).rejects.toBeInstanceOf(BadRequestGraphQLError);
+    });
+
     it('computes total hours and amount from the effective rate', async () => {
       const {
         organization,

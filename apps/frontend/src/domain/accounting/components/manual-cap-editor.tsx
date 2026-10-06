@@ -1,6 +1,5 @@
 'use client';
 
-import { useManualBaseline, useSetManualBaseline } from '@repo/data/react';
 import { Button, Input } from '@repo/ui';
 import { CheckIcon, PencilIcon, XIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -15,61 +14,50 @@ import {
 import { InfoPanel } from './info-panel';
 
 interface ManualCapEditorProps {
-  volunteerId: string;
-  reimbursementTypeId: string;
-  year: number;
+  /** The saved initial amount for the year, as stored on the server. */
+  initialAmountCents: number | null | undefined;
+  /** The coordinator's unsaved edit, or null while untouched. */
+  pendingAmountCents: number | null;
+  /** Called when the coordinator confirms an amount; it is saved with the timesheet, not immediately. */
+  onCommitAmount: (amountCents: number) => void;
   usedBefore: number;
   selectedAmount: number;
   className?: string;
 }
 
+/**
+ * Edits the volunteer's initial yearly amount. The confirmed value is held as a
+ * draft by the owning dialog and persisted together with the timesheet, so
+ * cancelling the timesheet creation discards it (VOLI-1569).
+ */
 export function ManualCapEditor({
-  volunteerId,
-  reimbursementTypeId,
-  year,
+  initialAmountCents,
+  pendingAmountCents,
+  onCommitAmount,
   usedBefore,
   selectedAmount,
   className,
 }: ManualCapEditorProps) {
   const t = useTranslations('Accounting.reimbursements.invoiceModal.manualCap');
 
-  const baselineQuery = useManualBaseline(
-    volunteerId,
-    reimbursementTypeId,
-    year,
-  );
-  const setBaseline = useSetManualBaseline();
-
-  const initialEuros = initialCapAmountEuros(baselineQuery.data?.amountCents);
+  const displayedCents = pendingAmountCents ?? initialAmountCents ?? 0;
+  const displayedEuros = initialCapAmountEuros(displayedCents);
   const projected = projectedCapAmount(usedBefore, selectedAmount);
 
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const handleEdit = () => {
-    setDraft(initialEuros === 0 ? '' : String(initialEuros));
+    setDraft(displayedEuros === 0 ? '' : String(displayedEuros));
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     const amountCents = parseEuroInputToCents(draft);
     if (amountCents === null) return;
-    setIsSaving(true);
-    try {
-      await setBaseline.mutateAsync({
-        volunteerId,
-        reimbursementTypeId,
-        year,
-        amountCents,
-      });
-      setIsEditing(false);
-      toast.success(t('successToast'));
-    } catch {
-      toast.error(t('errorToast'));
-    } finally {
-      setIsSaving(false);
-    }
+    onCommitAmount(amountCents);
+    setIsEditing(false);
+    toast.success(t('deferredToast'));
   };
 
   return (
@@ -104,7 +92,7 @@ export function ManualCapEditor({
             variant="outline"
             size="icon-md"
             onClick={handleSave}
-            disabled={isSaving || parseEuroInputToCents(draft) === null}
+            disabled={parseEuroInputToCents(draft) === null}
           >
             <CheckIcon />
             <span className="sr-only">{t('saveButtonLabel')}</span>
@@ -120,7 +108,7 @@ export function ManualCapEditor({
           </Button>
         </div>
       ) : (
-        <p className="mt-2 text-base">{formatEuro(initialEuros)}</p>
+        <p className="mt-2 text-base">{formatEuro(displayedEuros)}</p>
       )}
       <p className="mt-1 text-xs text-muted-foreground">
         {t('projectedAfter', { after: formatEuro(projected) })}

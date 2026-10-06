@@ -428,6 +428,10 @@ export class InvoiceService {
       );
     }
 
+    if (input.manualBaselineCents != null && input.manualBaselineCents < 0) {
+      throw new BadRequestGraphQLError('Initial amount must not be negative');
+    }
+
     // Only entries inside the invoice's own period can go on it, so the
     // document never lists hours from outside the period it states.
     //
@@ -625,6 +629,33 @@ export class InvoiceService {
         type: DocumentStatusChange.CREATED,
         actorUserId,
       });
+
+      // The initial yearly amount is part of the same draft as the timesheet:
+      // it is only written once the coordinator actually sends, so cancelling
+      // the creation dialog leaves no change behind (VOLI-1569).
+      if (input.manualBaselineCents != null) {
+        await tx
+          .insert(schema.reimbursementManualBaselines)
+          .values({
+            organizationId,
+            volunteerId: input.volunteerId,
+            reimbursementTypeId: input.reimbursementTypeId,
+            year: documentNumberYear,
+            amountCents: input.manualBaselineCents,
+            updatedByUserId: actorUserId,
+          })
+          .onConflictDoUpdate({
+            target: [
+              schema.reimbursementManualBaselines.volunteerId,
+              schema.reimbursementManualBaselines.reimbursementTypeId,
+              schema.reimbursementManualBaselines.year,
+            ],
+            set: {
+              amountCents: input.manualBaselineCents,
+              updatedByUserId: actorUserId,
+            },
+          });
+      }
 
       return created;
     });
