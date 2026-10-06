@@ -2,13 +2,13 @@ import type {
   GetMyOrganizationsQuery,
   GetMyPermissionsQuery,
   GetUserQuery,
+  UnsubscribeFromEmailsMutation,
   UpdateMyAccountSettingsInput,
   UpdateMyAccountSettingsMutation,
   UpdateMyImageInput,
   UpdateMyLocaleMutation,
   UpdateMyProfileInput,
   UpdateMyProfileMutation,
-  UnsubscribeFromEmailsMutation,
   UserWithProfile,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
