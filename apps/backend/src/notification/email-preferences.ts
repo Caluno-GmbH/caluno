@@ -69,6 +69,7 @@ export const NOTIFICATION_EMAIL_GROUP: Record<
   [NotificationEvent.MEMBERSHIP_APPROVED]: 'platform',
   [NotificationEvent.MEMBERSHIP_REJECTED]: 'platform',
   [NotificationEvent.MEMBERSHIP_REMOVED]: 'platform',
+  [NotificationEvent.TERMS_UPDATED]: 'platform',
 
   // Manager-facing — a manager is told what a volunteer did. Never gated.
   [NotificationEvent.SHIFT_INSTANCE_JOINED]: null,

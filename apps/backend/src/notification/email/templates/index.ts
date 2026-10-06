@@ -28,4 +28,5 @@ export { shiftInvitedTemplate } from './shift-invited.template';
 export { shiftSeriesLeftTemplate } from './shift-series-left.template';
 export { shiftSeriesRemovedTemplate } from './shift-series-removed.template';
 export { shiftSeriesVolunteerLeftTemplate } from './shift-series-volunteer-left.template';
+export { termsUpdatedTemplate } from './terms-updated.template';
 export { volunteerDigestTemplate } from './volunteer-digest.template';

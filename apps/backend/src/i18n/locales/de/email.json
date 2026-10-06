@@ -581,5 +581,15 @@
     "subject": "Deine Woche im Überblick auf {brandName}",
     "previewText": "Deine Einsätze, Einladungen und offene Einsätze für die kommende Woche.",
     "footerNote": "Du erhältst diese wöchentliche Übersicht, weil du Mitglied einer Organisation auf {brandName} bist."
+  },
+  "termsUpdated": {
+    "subject": "Unsere Nutzungsbedingungen haben sich geändert",
+    "previewText": "Wir haben unsere Nutzungsbedingungen aktualisiert. {action}",
+    "heading": "Neue Nutzungsbedingungen",
+    "greeting": "Hallo {firstName}, wir haben unsere Nutzungsbedingungen aktualisiert.",
+    "majorBody": "Diese Änderung ist wichtig. Bitte sieh dir die neue Version an und akzeptiere sie, bevor du {brandName} weiter nutzen kannst.",
+    "minorBody": "Für dich ist nichts weiter zu tun. Du kannst {brandName} wie gewohnt weiter nutzen.",
+    "buttonLabel": "Neue Bedingungen ansehen",
+    "footerNote": "Du erhältst diese E-Mail, weil du ein Konto bei {brandName} hast."
   }
 }
