@@ -15,6 +15,7 @@ import { shiftInvitesRelations } from '../shift/schemas/shift-invite.relations';
 import { shiftManagerNotificationsRelations } from '../shift/schemas/shift-manager-notification.relations';
 import { volunteerDigestShiftLogsRelations } from '../shift/schemas/volunteer-digest-shift-log.relations';
 import { filesRelations } from '../storage/schemas/file.relations';
+import { termsRelations } from '../terms/schemas/terms.relations';
 import { timeEntryRelations } from '../time-tracking/schemas/time-entry.relations';
 
 export const relations = {
@@ -34,6 +35,7 @@ export const relations = {
   ...shiftInstanceUnderstaffedStatesRelations,
   ...shiftInvitesRelations,
   ...shiftManagerNotificationsRelations,
+  ...termsRelations,
   ...timeEntryRelations,
   ...volunteerDigestShiftLogsRelations,
 };

@@ -26,6 +26,8 @@ const volunteer = {
   emailPlatformEnabled: true,
   privacyPolicyVersion: null,
   privacyPolicyAcceptedAt: null,
+  termsVersion: null,
+  termsAcceptedAt: null,
   checkInId: 'CHKIN01',
   firstname: 'Erika',
   lastname: 'Musterfrau',
