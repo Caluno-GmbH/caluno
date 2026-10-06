@@ -73,8 +73,13 @@ function buildDayStripWindow(
     firstDate = first.date;
     lastDate = last.date;
 
-    if (!options.includePast && firstDate.getTime() < today.getTime()) {
+    // Always span today — the strip's "today" button needs a pill to land on,
+    // even when the nearest shift is days away.
+    if (!options.includePast || firstDate.getTime() > today.getTime()) {
       firstDate = today;
+    }
+    if (lastDate.getTime() < today.getTime()) {
+      lastDate = today;
     }
 
     const minLast = addDays(firstDate, minDays - 1);
@@ -109,6 +114,23 @@ export function getDayStripDays<T extends { actualStartsAt: string }>(
     grouped.map((group) => ({ date: group.date, count: group.items.length })),
     options,
   );
+}
+
+/**
+ * The strip pill "today" should land on: today when it has shifts, else the
+ * nearest later day with shifts, else the latest earlier one; -1 when no day
+ * has shifts.
+ */
+export function getTodayTargetDayIndex(
+  days: Array<{ date: Date; shiftCount: number }>,
+  today: Date,
+): number {
+  const todayStart = startOfDay(today).getTime();
+  const upcoming = days.findIndex(
+    (day) => day.shiftCount > 0 && day.date.getTime() >= todayStart,
+  );
+  if (upcoming >= 0) return upcoming;
+  return days.findLastIndex((day) => day.shiftCount > 0);
 }
 
 export function getDayStripDaysFromCounts(
