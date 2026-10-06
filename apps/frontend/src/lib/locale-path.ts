@@ -28,3 +28,26 @@ export function stripLocalePrefix(pathname: string): string {
   const remaining = segments.slice(startIndex).join('/');
   return remaining ? `/${remaining}` : '/';
 }
+
+/**
+ * Paths a pending user must still reach: the terms themselves and email
+ * opt-out. Tolerant of a locale prefix. Pure so it can be unit-tested without
+ * the server-only imports of the gate module.
+ */
+export function isTermsGateExempt(
+  pathname: string | null | undefined,
+): boolean {
+  if (!pathname) {
+    return false;
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  const first = segments[0];
+  if (first === undefined) {
+    return false;
+  }
+
+  const startIndex = isSupportedLocale(first) ? 1 : 0;
+  const top = segments[startIndex];
+  return top === 'accept-terms' || top === 'unsubscribe';
+}

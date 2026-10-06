@@ -2,7 +2,9 @@ import { headers } from 'next/headers';
 import { cache } from 'react';
 import { redirect } from '@/i18n/navigation';
 import { API_URL } from './constants';
-import { isSupportedLocale, stripLocalePrefix } from './locale-path';
+import { isTermsGateExempt, stripLocalePrefix } from './locale-path';
+
+export { isTermsGateExempt };
 
 export interface TermsStatusResponse {
   mustAccept: boolean;
@@ -43,24 +45,6 @@ export const fetchTermsStatus = cache(
     }
   },
 );
-
-export function isTermsGateExempt(
-  pathname: string | null | undefined,
-): boolean {
-  if (!pathname) {
-    return false;
-  }
-
-  const segments = pathname.split('/').filter(Boolean);
-  const first = segments[0];
-  if (first === undefined) {
-    return false;
-  }
-
-  const startIndex = isSupportedLocale(first) ? 1 : 0;
-  const top = segments[startIndex];
-  return top === 'accept-terms' || top === 'unsubscribe';
-}
 
 export async function requireTermsAccepted(locale: string): Promise<void> {
   const headersList = await headers();
