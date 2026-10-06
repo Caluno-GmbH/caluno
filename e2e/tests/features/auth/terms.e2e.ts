@@ -5,21 +5,23 @@ import { LoginPage } from '../../../pages/LoginPage';
 import { SignupPage } from '../../../pages/SignupPage';
 import { TEST_PASSWORD, uniqueEmail } from '../../../utils/test-data';
 
-// Terms & conditions acceptance. Like the other auth suites this runs against
-// the deployed app by default; the gate + accept cases additionally need a
-// published terms version and a pending (no terms_version) user, so they run
-// against a local stack where the suite seeds both itself.
+// Terms & conditions acceptance.
+//
+// Cases 1-3 (signup link, submit gating, 400 without acceptance) need no
+// seeding and run against whatever E2E_BASE_URL targets — including staging.
+//
+// Cases 4-5 (the pending-user gate and the scroll-gated accept flow) need a
+// published terms version and a pending (no terms_version) user, so they only
+// run against a local stack, where a beforeAll publishes `1.0` (the committed
+// placeholder documents under apps/backend/legal/) and resets the two fixture
+// users to a pending state. Loading this file never mutates the DB.
 //
 // Local run:
 //   E2E_BASE_URL=http://localhost:3000 E2E_API_URL=http://localhost:5001 \
 //   bun playwright test tests/features/auth/terms.e2e.ts
-//
-// The suite publishes `1.0` (the committed placeholder documents under
-// apps/backend/legal/) and resets the two fixture users to a pending state
-// before the run, so it is repeatable and does not depend on prior DB state.
 
 const TERMS_VERSION = '1.0';
-const FIXTURE_PASSWORD = 'abcd1234';
+const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
 const GATE_USER = 'testing+001@caluno.org';
 const ACCEPT_USER = 'testing+002@caluno.org';
 
@@ -64,13 +66,6 @@ function seedTermsState() {
   });
 }
 
-// Playwright loads every spec file before running any test, so seeding here (and
-// not in a hook) makes the published version available to the whole local run —
-// signup now requires a published terms version, and other suites sign up too.
-if (IS_LOCAL) {
-  seedTermsState();
-}
-
 async function loginPending(page: Page, email: string) {
   const login = new LoginPage(page);
   await login.goto();
@@ -80,15 +75,6 @@ async function loginPending(page: Page, email: string) {
 }
 
 test.describe('Terms & conditions acceptance', () => {
-  test.skip(
-    !IS_LOCAL,
-    'Terms e2e needs a published terms version and pending fixture users; run against the local stack.',
-  );
-
-  test.beforeAll(() => {
-    seedTermsState();
-  });
-
   test('terms link opens the current terms PDF in a new tab and keeps the checkbox unchecked', async ({
     page,
     request,
@@ -107,8 +93,14 @@ test.describe('Terms & conditions acceptance', () => {
     expect(pdf.headers()['content-type'] ?? '').toMatch(/pdf/i);
 
     const popupPromise = page.waitForEvent('popup');
+    // Chromium renders the PDF in its internal viewer, so the popup's own URL
+    // is not introspectable; assert the new tab requests the terms PDF instead.
+    const pdfRequestPromise = page
+      .context()
+      .waitForEvent('request', (r) => r.url() === CURRENT_TERMS_PDF_URL);
     await signup.termsLink.click();
     await popupPromise;
+    expect((await pdfRequestPromise).url()).toBe(CURRENT_TERMS_PDF_URL);
     await expect(signup.termsCheckbox).not.toBeChecked();
   });
 
@@ -156,11 +148,26 @@ test.describe('Terms & conditions acceptance', () => {
     });
     expect(response.status()).toBe(400);
 
+    // No create-more endpoint exists to check existence directly; a failed
+    // credential sign-in is the available proof the row was never created.
     const signIn = await request.post(`${API_URL}/api/auth/sign-in/email`, {
       headers: signupHeaders,
       data: { email, password: TEST_PASSWORD },
     });
     expect(signIn.ok()).toBe(false);
+  });
+});
+
+// Gate + acceptance, local stack only (needs a published version and a pending
+// fixture user, which beforeAll seeds here — never at import time).
+test.describe('Terms acceptance gate', () => {
+  test.skip(
+    !IS_LOCAL,
+    'Needs a published terms version and a pending fixture user; run against the local stack.',
+  );
+
+  test.beforeAll(() => {
+    seedTermsState();
   });
 
   test('a pending user is redirected to accept-terms when visiting the app root', async ({
@@ -185,7 +192,7 @@ test.describe('Terms & conditions acceptance', () => {
     await expect(page).toHaveURL(/\/accept-terms\?next=%2Fmy-shifts$/);
     await pdfResponse;
 
-    const scroll = page.locator('.overflow-y-auto');
+    const scroll = page.getByTestId('terms-scroll');
     await expect(scroll.locator('canvas').first()).toBeVisible();
     await expect
       .poll(() =>

@@ -138,7 +138,11 @@ export function TermsAcceptance({
 
   return (
     <div className="flex h-screen flex-col">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4">
+      <div
+        ref={scrollRef}
+        data-testid="terms-scroll"
+        className="flex-1 overflow-y-auto p-4"
+      >
         <div ref={contentRef} className="mx-auto max-w-3xl" />
         {renderError && (
           <p className="mx-auto max-w-3xl py-8 text-center text-muted-foreground text-sm">
