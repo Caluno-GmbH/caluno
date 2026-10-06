@@ -1,6 +1,6 @@
 # Admin approval users: roster or waitlist (VOLI-1455)
 
-Date: 2026-10-06 · Ticket: [VOLI-1455](https://holi.atlassian.net/browse/VOLI-1455) · Status: implementation spec
+Date: 2026-10-06 · Ticket: [VOLI-1455](https://holi.atlassian.net/browse/VOLI-1455) · Status: implemented
 
 ## Summary
 

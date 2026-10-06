@@ -33,6 +33,7 @@ import {
 import {
   adminChipTargetStatuses,
   adminRowActions,
+  approvalAdmitsToWaitlist,
   canRemindInvitee,
   groupInvitesByRosterGroup,
   toInviteDisplayState,
@@ -158,6 +159,9 @@ export function ShiftInstanceVolunteersPanel({
     const remindActive = canRemindInvitee(invite.status, invite.remindedAt);
 
     const rowActions = canManage ? adminRowActions(invite.status) : [];
+    const admitsToWaitlist =
+      invite.status === ShiftInviteStatus.AwaitingAdminApproval &&
+      approvalAdmitsToWaitlist(filledCount, maxVolunteers);
 
     const baseState = toInviteDisplayState(invite.status);
     // Entries are only meaningful for accepted invites — every other status
@@ -198,11 +202,19 @@ export function ShiftInstanceVolunteersPanel({
       ) : undefined,
       statusOptions:
         chipTargets.length > 0
-          ? chipTargets.map((target) => ({
-              value: target,
-              label: chipOptionLabel(target),
-              state: toInviteDisplayState(target),
-            }))
+          ? chipTargets.map((target) => {
+              const approveLandsOnWaitlist =
+                admitsToWaitlist && target === ShiftInviteStatus.Joined;
+              return {
+                value: target,
+                label: approveLandsOnWaitlist
+                  ? t('inviteStatus.waitlisted')
+                  : chipOptionLabel(target),
+                state: approveLandsOnWaitlist
+                  ? 'waitlisted'
+                  : toInviteDisplayState(target),
+              };
+            })
           : undefined,
       statusMenuAriaLabel: t('inviteStatus.changeStatusAria', {
         name: invite.user.name,
@@ -219,6 +231,9 @@ export function ShiftInstanceVolunteersPanel({
         View: t('inviteStatus.viewProfileAriaNamed', {
           name: invite.user.name,
         }),
+        ...(admitsToWaitlist
+          ? { Approve: t('inviteStatus.actionApproveToWaitlist') }
+          : {}),
         ...(remindVisible
           ? {
               Remind: remindActive

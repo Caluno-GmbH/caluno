@@ -1531,6 +1531,7 @@
     "inviteStatus": {
       "accepted": "Angenommen",
       "actionApprove": "Genehmigen",
+      "actionApproveToWaitlist": "Auf die Warteliste setzen",
       "actionInvite": "Einladen",
       "actionRemind": "Erinnern",
       "actionUninvite": "Einladung zurückziehen",

@@ -1531,6 +1531,7 @@
     "inviteStatus": {
       "accepted": "Accepted",
       "actionApprove": "Approve",
+      "actionApproveToWaitlist": "Approve to waitlist",
       "actionInvite": "Invite",
       "actionRemind": "Remind",
       "actionUninvite": "Withdraw invite",

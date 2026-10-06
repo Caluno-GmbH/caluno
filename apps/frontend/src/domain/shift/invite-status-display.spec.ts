@@ -5,6 +5,7 @@ import {
   adminReinviteTargetStatus,
   adminRowActions,
   adminUninviteTargetStatus,
+  approvalAdmitsToWaitlist,
   canAdminReinvite,
   canAdminUninvite,
   canRemindInvitee,
@@ -185,6 +186,22 @@ describe('toInviteDisplayState', () => {
     expect(toInviteDisplayState(ShiftInviteStatus.AdminRejected)).toBe(
       'rejected',
     );
+  });
+});
+
+describe('approvalAdmitsToWaitlist', () => {
+  it('joins while a seat remains', () => {
+    expect(approvalAdmitsToWaitlist(1, 2)).toBe(false);
+  });
+
+  it('waitlists once the instance is at capacity', () => {
+    expect(approvalAdmitsToWaitlist(2, 2)).toBe(true);
+    expect(approvalAdmitsToWaitlist(3, 2)).toBe(true);
+  });
+
+  it('joins when the instance has no maximum', () => {
+    expect(approvalAdmitsToWaitlist(3, null)).toBe(false);
+    expect(approvalAdmitsToWaitlist(3, undefined)).toBe(false);
   });
 });
 

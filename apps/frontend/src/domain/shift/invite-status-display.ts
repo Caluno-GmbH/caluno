@@ -47,6 +47,18 @@ export function adminReinviteTargetStatus<S extends InviteStatus>(
   return ShiftInviteStatus.AdminInvited as S;
 }
 
+/**
+ * Whether approving an AWAITING_ADMIN_APPROVAL invite will land on the
+ * waitlist. Null or omitted max means the instance is uncapped.
+ * Only JOINED invites count toward filledCount.
+ */
+export function approvalAdmitsToWaitlist(
+  filledCount: number,
+  maxVolunteers: number | null | undefined,
+): boolean {
+  return maxVolunteers != null && filledCount >= maxVolunteers;
+}
+
 export function adminRowActions(
   status: InviteStatus,
 ): VolunteeringActionLabel[] {
