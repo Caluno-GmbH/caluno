@@ -10,6 +10,7 @@ import {
 import { TermsChangeClass } from '../enums';
 import {
   compareVersions,
+  isTermsPlaceholderDocument,
   listTermsDocuments,
   pickCurrentTermsVersion,
   sha256File,
@@ -94,10 +95,6 @@ export class TermsService {
     return majors.at(-1) ?? null;
   }
 
-  async getLatestMajorVersion(): Promise<string | null> {
-    return this.latestMajorFrom(await this.readPublished());
-  }
-
   private async getSnapshot(): Promise<{
     current: { version: string; class: TermsChangeClass; date: string } | null;
     latestMajor: string | null;
@@ -129,7 +126,9 @@ export class TermsService {
         date: file?.date ?? currentRow.publishedAt.toISOString().slice(0, 10),
       };
     } else {
-      const file = pickCurrentTermsVersion(files);
+      const file = pickCurrentTermsVersion(
+        files.filter((doc) => !isTermsPlaceholderDocument(doc.path)),
+      );
       current = file
         ? {
             version: file.version,

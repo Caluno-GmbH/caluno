@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Header,
+  NotFoundException,
   Param,
   StreamableFile,
 } from '@nestjs/common';
@@ -54,7 +55,12 @@ export class TermsController {
     if (!isTermsLocale(locale)) {
       throw new BadRequestException('Unsupported terms locale');
     }
-    const document = this.termsService.resolveDocument(version, locale);
+    let document: { path: string; filename: string };
+    try {
+      document = this.termsService.resolveDocument(version, locale);
+    } catch {
+      throw new NotFoundException('Terms document not found');
+    }
     return new StreamableFile(createReadStream(document.path), {
       type: 'application/pdf',
       disposition: `inline; filename="${document.filename}"`,
