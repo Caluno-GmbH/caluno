@@ -3,6 +3,7 @@ import { addDays, startOfDay } from './date-helpers';
 import {
   hasNextDiscoverDay,
   resolveDiscoverDayIndex,
+  resolvePendingDiscoverDay,
   shouldFetchNextDiscoverPage,
 } from './discover-paging';
 
@@ -92,5 +93,42 @@ describe('resolveDiscoverDayIndex', () => {
 describe('shouldFetchNextDiscoverPage for a day past the loaded pages', () => {
   it('fetches when the selected day lies beyond the loaded days', () => {
     expect(shouldFetchNextDiscoverPage(state({ activeIndex: 10 }))).toBe(true);
+  });
+});
+
+describe('resolvePendingDiscoverDay', () => {
+  const base = startOfDay(new Date());
+  const loaded = [0, 1, 4].map((offset) => addDays(base, offset));
+
+  it('scrolls to a loaded day', () => {
+    expect(resolvePendingDiscoverDay(loaded, addDays(base, 1), true)).toEqual({
+      type: 'scroll',
+      date: loaded[1],
+    });
+  });
+
+  it('scrolls to the next loaded day for an unloaded day in range', () => {
+    expect(resolvePendingDiscoverDay(loaded, addDays(base, 2), true)).toEqual({
+      type: 'scroll',
+      date: loaded[2],
+    });
+  });
+
+  it('fetches while the day lies past the loaded days and pages remain', () => {
+    expect(resolvePendingDiscoverDay(loaded, addDays(base, 30), true)).toEqual({
+      type: 'fetch',
+    });
+  });
+
+  it('settles on the last loaded day once the feed is exhausted', () => {
+    expect(resolvePendingDiscoverDay(loaded, addDays(base, 30), false)).toEqual(
+      { type: 'scroll', date: loaded[2] },
+    );
+  });
+
+  it('gives up when nothing is loaded and nothing remains', () => {
+    expect(resolvePendingDiscoverDay([], base, false)).toEqual({
+      type: 'none',
+    });
   });
 });

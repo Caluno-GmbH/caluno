@@ -41,3 +41,24 @@ export function resolveDiscoverDayIndex(
   );
   return index >= 0 ? index : loadedDays.length;
 }
+
+export type PendingDiscoverDayAction =
+  | { type: 'scroll'; date: Date }
+  | { type: 'fetch' }
+  | { type: 'none' };
+
+/**
+ * What to do for a day picked on a strip whose days can lie past the loaded
+ * pages: load more while it's beyond them, otherwise scroll to it (or the
+ * nearest loaded day after it, or the last one once the feed is exhausted).
+ */
+export function resolvePendingDiscoverDay(
+  loadedDays: Date[],
+  pendingDay: Date,
+  hasMorePages: boolean,
+): PendingDiscoverDayAction {
+  const index = resolveDiscoverDayIndex(loadedDays, pendingDay);
+  if (index >= loadedDays.length && hasMorePages) return { type: 'fetch' };
+  const date = loadedDays[Math.min(index, loadedDays.length - 1)];
+  return date ? { type: 'scroll', date } : { type: 'none' };
+}
