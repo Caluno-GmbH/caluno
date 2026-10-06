@@ -446,11 +446,6 @@ function FilterTile({
       type="button"
       onClick={onClick}
       className={cn(
-        // 160px is measured, not guessed: "Stundennachweise" renders 164px at
-        // text-base/600, so the old 100px floor clipped it mid-word in German —
-        // the label wraps at spaces but a single compound cannot break on its
-        // own. At 160px it hyphenates to two lines. The row is overflow-x-auto,
-        // so narrow viewports scroll rather than squeeze.
         'flex min-w-[160px] flex-1 flex-col justify-between gap-2 rounded-xl border p-3 text-left transition-colors',
         active
           ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
@@ -459,10 +454,6 @@ function FilterTile({
     >
       <span
         className={cn(
-          // hyphens-auto breaks German compounds at real syllable boundaries
-          // ("Stundennach-weise"); break-words is the fallback for locales the
-          // browser has no hyphenation dictionary for, where it would otherwise
-          // overflow again.
           'text-base font-semibold leading-tight hyphens-auto break-words',
           active ? 'text-primary' : 'text-card-foreground',
         )}
@@ -1000,7 +991,6 @@ export function ReimbursementsBoardSkeleton() {
                 <Skeleton className="h-3 w-3" />
               </div>
             )}
-            {/* Matches FilterTile's floor so the row does not resize on load. */}
             <div className="flex min-w-[160px] flex-1 flex-col gap-2 rounded-xl border border-border bg-card p-3">
               <div className="flex items-center justify-between">
                 <Skeleton className="h-3 w-3" />
