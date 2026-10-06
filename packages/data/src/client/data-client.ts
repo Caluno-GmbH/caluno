@@ -12,6 +12,7 @@ import { RequirementFormRepository } from '../repositories/requirementForm/requi
 import { RequirementProfileRepository } from '../repositories/requirementProfile/requirement-profile.repository';
 import { RoleRepository } from '../repositories/role/role.repository';
 import { ShiftRepository } from '../repositories/shift/shift.repository';
+import { TermsRepository } from '../repositories/terms/terms.repository';
 import { TimeEntryRepository } from '../repositories/time-entry/time-entry.repository';
 import { UserRepository } from '../repositories/user/user.repository';
 import {
@@ -42,6 +43,7 @@ export class DataClient {
   public readonly role: RoleRepository;
   public readonly publicEvent: PublicEventRepository;
   public readonly publicOrganizationUnit: PublicOrganizationUnitRepository;
+  public readonly terms: TermsRepository;
 
   public readonly organizationContext?: OrganizationContext;
 
@@ -67,6 +69,7 @@ export class DataClient {
     this.role = new RoleRepository(sdk);
     this.publicEvent = new PublicEventRepository(sdk);
     this.publicOrganizationUnit = new PublicOrganizationUnitRepository(sdk);
+    this.terms = new TermsRepository(sdk);
   }
 
   async getCurrentOrganizationId(): Promise<string | null> {

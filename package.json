@@ -21,7 +21,8 @@
     "db:generate": "bun run --cwd apps/backend db:generate",
     "db:seed": "bun run --cwd apps/backend db:seed",
     "codegen": "turbo run codegen",
-    "setup:hooks": "bash .githooks/install-hooks.sh"
+    "setup:hooks": "bash .githooks/install-hooks.sh",
+    "terms:publish": "bun run --cwd apps/backend terms:publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

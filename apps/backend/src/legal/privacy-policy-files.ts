@@ -1,5 +1,6 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { getBackendRoot } from './backend-root';
 
 export const PRIVACY_POLICY_FILENAME_PATTERN =
   /^datenschutzhinweise-(\d{4}-\d{2}-\d{2})\.pdf$/;
@@ -41,15 +42,6 @@ export function resolvePrivacyPolicyDocument(
     path: join(directory, filename),
   };
 }
-
-const getBackendRoot = (): string => {
-  const cwd = process.cwd();
-  const monorepoBackend = join(cwd, 'apps', 'backend');
-  if (existsSync(join(monorepoBackend, 'tsconfig.json'))) {
-    return monorepoBackend;
-  }
-  return cwd;
-};
 
 export function defaultPrivacyPolicyDirectory(): string {
   return join(getBackendRoot(), 'legal');

@@ -1,4 +1,18 @@
 {
+  "Terms": {
+    "accept": "Akzeptieren und fortfahren",
+    "accepting": "Wird akzeptiert...",
+    "loadFailed": "Das AGB-Dokument konnte nicht geladen werden. Bitte lade die Seite neu."
+  },
+  "Unsubscribe": {
+    "confirm": "Alle E-Mails abbestellen",
+    "confirming": "Wird abbestellt...",
+    "description": "Erhalte keine E-Mail-Benachrichtigungen mehr von caluno.",
+    "error": "Wir konnten deine E-Mail-Einstellungen nicht aktualisieren. Bitte versuche es erneut.",
+    "success": "Du erhältst keine E-Mail-Benachrichtigungen mehr von caluno.",
+    "successTitle": "Abbestellt",
+    "title": "E-Mails abbestellen"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Tritt {orgName} bei",
@@ -65,6 +79,8 @@
       "signInLink": "Anmelden",
       "submit": "Konto erstellen",
       "submitting": "Konto wird erstellt...",
+      "termsAcknowledge": "Ich habe die <termsLink>Nutzungsbedingungen</termsLink> gelesen und akzeptiere sie.",
+      "termsRequired": "Bitte akzeptiere die Nutzungsbedingungen, um fortzufahren.",
       "title": "Erstelle dein Konto",
       "description": "Willkommen bei caluno. Registriere dich, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },

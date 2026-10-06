@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AcceptTermsInput {
+  language: String!
+  version: String!
+}
+
 type AccountingOrgProfile {
   city: String
   legalRep: String
@@ -699,6 +704,7 @@ enum MembershipRequestStatus {
 }
 
 type Mutation {
+  acceptTerms(input: AcceptTermsInput!): TermsStatus!
   addTimeEntry(input: AddTimeEntryInput!): TimeEntry!
   approveMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
   cancelMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
@@ -764,6 +770,7 @@ type Mutation {
   signInvoice(invoiceId: ID!): Invoice!
   submitForm(input: SubmitFormInput!, organizationUnitId: ID!, token: String!): FormSubmission!
   submitRequiredForm(formId: String!, input: SubmitFormInput!, targetId: String!, targetType: RequiredFormTargetType!): FormSubmission!
+  unsubscribeFromEmails: Boolean!
   updateDocumentTemplate(id: ID!, input: UpdateDocumentTemplateInput!): DocumentTemplate!
   updateEvent(id: ID!, input: UpdateEventInput!): Event!
   updateEventInviteStatus(eventId: ID!, status: EventInviteStatus!, userId: String): EventInvite!
@@ -1056,6 +1063,7 @@ type Query {
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
+  termsStatus: TermsStatus!
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
@@ -1478,6 +1486,14 @@ type TemplateSignee {
   order: Int!
   requiredPermission: Permission
   signeeType: SigneeType!
+}
+
+type TermsStatus {
+  acceptedAt: DateTime
+  acceptedVersion: String
+  currentClass: String
+  currentVersion: String
+  mustAccept: Boolean!
 }
 
 type TimeEntry {

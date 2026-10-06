@@ -4,6 +4,7 @@ import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { TermsAutoPublishService } from './terms/services/terms-auto-publish.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,5 +20,6 @@ async function bootstrap() {
   process.once('SIGTERM', onSignal);
   process.once('SIGINT', onSignal);
   await app.listen(process.env.PORT ?? 8080);
+  void app.get(TermsAutoPublishService).runIfEnabled();
 }
 void bootstrap();

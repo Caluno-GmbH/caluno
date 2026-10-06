@@ -29,6 +29,7 @@
     "next-intl": "^4.14.9",
     "next-safe-action": "^8.7.3",
     "nuqs": "^2.10.1",
+    "pdfjs-dist": "^6.4.299",
     "qrcode.react": "^4.2.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
