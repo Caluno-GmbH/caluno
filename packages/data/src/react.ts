@@ -65,6 +65,7 @@ export * from './react/hooks/use-roles';
 export * from './react/hooks/use-shift';
 export * from './react/hooks/use-shift-instances';
 export * from './react/hooks/use-shift-volunteers';
+export * from './react/hooks/use-terms';
 export * from './react/hooks/use-time-entry-shift-instances';
 export * from './react/hooks/use-update-event-invite-status';
 export * from './react/hooks/use-update-my-account-settings';

@@ -4212,6 +4212,18 @@ export type CheckInInviteToShiftInstanceMutationVariables = Exact<{
 
 export type CheckInInviteToShiftInstanceMutation = { __typename?: 'Mutation', checkInInviteToShiftInstance: { __typename?: 'ShiftInstance', id: string } };
 
+export type TermsStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TermsStatusQuery = { __typename?: 'Query', termsStatus: { __typename?: 'TermsStatus', mustAccept: boolean, currentVersion?: string | null, currentClass?: string | null, acceptedVersion?: string | null, acceptedAt?: string | null } };
+
+export type AcceptTermsMutationVariables = Exact<{
+  input: AcceptTermsInput;
+}>;
+
+
+export type AcceptTermsMutation = { __typename?: 'Mutation', acceptTerms: { __typename?: 'TermsStatus', mustAccept: boolean, currentVersion?: string | null, currentClass?: string | null, acceptedVersion?: string | null, acceptedAt?: string | null } };
+
 export type AddTimeEntryMutationVariables = Exact<{
   input: AddTimeEntryInput;
 }>;
@@ -7595,6 +7607,28 @@ export const CheckInInviteToShiftInstanceDocument = gql`
   }
 }
     `;
+export const TermsStatusDocument = gql`
+    query TermsStatus {
+  termsStatus {
+    mustAccept
+    currentVersion
+    currentClass
+    acceptedVersion
+    acceptedAt
+  }
+}
+    `;
+export const AcceptTermsDocument = gql`
+    mutation AcceptTerms($input: AcceptTermsInput!) {
+  acceptTerms(input: $input) {
+    mustAccept
+    currentVersion
+    currentClass
+    acceptedVersion
+    acceptedAt
+  }
+}
+    `;
 export const AddTimeEntryDocument = gql`
     mutation AddTimeEntry($input: AddTimeEntryInput!) {
   addTimeEntry(input: $input) {
@@ -8496,6 +8530,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CheckInInviteToShiftInstance(variables: CheckInInviteToShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInInviteToShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInInviteToShiftInstanceMutation>({ document: CheckInInviteToShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInInviteToShiftInstance', 'mutation', variables);
+    },
+    TermsStatus(variables?: TermsStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TermsStatusQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<TermsStatusQuery>({ document: TermsStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TermsStatus', 'query', variables);
+    },
+    AcceptTerms(variables: AcceptTermsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AcceptTermsMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AcceptTermsMutation>({ document: AcceptTermsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AcceptTerms', 'mutation', variables);
     },
     AddTimeEntry(variables: AddTimeEntryMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AddTimeEntryMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<AddTimeEntryMutation>({ document: AddTimeEntryDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AddTimeEntry', 'mutation', variables);

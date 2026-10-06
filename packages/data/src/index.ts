@@ -39,5 +39,6 @@ export * from './repositories/requirementForm/requirement-form.repository';
 export * from './repositories/requirementProfile/requirement-profile.repository';
 export * from './repositories/role/role.repository';
 export * from './repositories/shift/shift.repository';
+export * from './repositories/terms/terms.repository';
 export * from './repositories/time-entry/time-entry.repository';
 export * from './repositories/user/user.repository';
