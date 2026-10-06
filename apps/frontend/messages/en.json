@@ -65,6 +65,8 @@
       "signInLink": "Sign in",
       "submit": "Create account",
       "submitting": "Creating account...",
+      "termsAcknowledge": "I have read and accept the <termsLink>Terms and Conditions</termsLink>.",
+      "termsRequired": "Please accept the Terms and Conditions to continue.",
       "title": "Create your account",
       "description": "Welcome to caluno. Sign up to join assignments and volunteer with your organisation."
     },

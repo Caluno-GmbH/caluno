@@ -65,6 +65,8 @@
       "signInLink": "Anmelden",
       "submit": "Konto erstellen",
       "submitting": "Konto wird erstellt...",
+      "termsAcknowledge": "Ich habe die <termsLink>Nutzungsbedingungen</termsLink> gelesen und akzeptiere sie.",
+      "termsRequired": "Bitte akzeptiere die Nutzungsbedingungen, um fortzufahren.",
       "title": "Erstelle dein Konto",
       "description": "Willkommen bei caluno. Registriere dich, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
