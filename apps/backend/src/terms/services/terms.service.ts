@@ -43,7 +43,6 @@ export class TermsService {
   private cache?: {
     at: number;
     current: { version: string; class: TermsChangeClass; date: string } | null;
-    latestMajor: string | null;
   };
 
   constructor(
@@ -93,30 +92,37 @@ export class TermsService {
       return this.cache.current;
     }
 
-    const published = await this.readPublished();
-    const current = published
-      .map((row) => row.version)
-      .sort(compareVersions)
-      .at(-1);
-
+    const rows = (await this.readPublished()).sort((a, b) =>
+      compareVersions(a.version, b.version),
+    );
+    const currentRow = rows.at(-1);
     const files = this.readVersionsFromFiles();
-    const currentFile = current
-      ? files.find((file) => file.version === current)
-      : pickCurrentTermsVersion(files);
 
-    const value = currentFile
-      ? {
-          version: currentFile.version,
-          class: termsChangeClassForVersion(currentFile.version),
-          date: currentFile.date,
-        }
-      : null;
+    let value: {
+      version: string;
+      class: TermsChangeClass;
+      date: string;
+    } | null;
 
-    this.cache = {
-      at: now,
-      current: value,
-      latestMajor: null,
-    };
+    if (currentRow) {
+      const file = files.find((doc) => doc.version === currentRow.version);
+      value = {
+        version: currentRow.version,
+        class: currentRow.class,
+        date: file?.date ?? currentRow.publishedAt.toISOString().slice(0, 10),
+      };
+    } else {
+      const file = pickCurrentTermsVersion(files);
+      value = file
+        ? {
+            version: file.version,
+            class: termsChangeClassForVersion(file.version),
+            date: file.date,
+          }
+        : null;
+    }
+
+    this.cache = { at: now, current: value };
     return value;
   }
 
