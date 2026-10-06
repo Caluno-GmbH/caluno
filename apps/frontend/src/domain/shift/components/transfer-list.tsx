@@ -149,10 +149,12 @@ export function TransferList({
                   >
                     {member.email}
                   </p>
+                  {member.allowanceState && (
+                    <div className="mt-1 min-w-0 max-w-full">
+                      <AllowanceBadge state={member.allowanceState} />
+                    </div>
+                  )}
                 </div>
-                {member.allowanceState && (
-                  <AllowanceBadge state={member.allowanceState} />
-                )}
                 <Button
                   type="button"
                   variant="ghost"
