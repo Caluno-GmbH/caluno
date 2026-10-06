@@ -26,7 +26,7 @@ Use `bun` - never npm or yarn.
 - `bun run db:migrate` - Migrates database schema
 - `bun run db:up` / `bun run db:down` - Start/stop local Postgres
 - `bun run codegen` - Regenerate GraphQL types (schema + *.graphql)
-- `bun run terms:publish` - Publish new terms & conditions versions (ledger + update email; see apps/backend/AGENTS.md for the file-naming rule)
+- `bun run terms:publish` - Publish new terms & conditions versions against the local DB (deployed envs auto-publish on boot; see apps/backend/AGENTS.md for the file-naming rule)
 
 ## Local fixtures
 
