@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
+import { addDays, startOfDay } from './date-helpers';
 import {
   hasNextDiscoverDay,
+  resolveDiscoverDayIndex,
   shouldFetchNextDiscoverPage,
 } from './discover-paging';
 
@@ -63,5 +65,32 @@ describe('shouldFetchNextDiscoverPage', () => {
     expect(shouldFetchNextDiscoverPage(state({ loadedDayCount: 0 }))).toBe(
       false,
     );
+  });
+});
+
+describe('resolveDiscoverDayIndex', () => {
+  const base = startOfDay(new Date());
+  const loaded = [0, 1, 4].map((offset) => addDays(base, offset));
+
+  it('returns the index of a loaded day', () => {
+    expect(resolveDiscoverDayIndex(loaded, addDays(base, 1))).toBe(1);
+  });
+
+  it('falls forward to the next loaded day for an unloaded day in range', () => {
+    expect(resolveDiscoverDayIndex(loaded, addDays(base, 2))).toBe(2);
+  });
+
+  it('points past the loaded days for a day beyond them', () => {
+    expect(resolveDiscoverDayIndex(loaded, addDays(base, 30))).toBe(3);
+  });
+
+  it('returns 0 when nothing is loaded', () => {
+    expect(resolveDiscoverDayIndex([], base)).toBe(0);
+  });
+});
+
+describe('shouldFetchNextDiscoverPage for a day past the loaded pages', () => {
+  it('fetches when the selected day lies beyond the loaded days', () => {
+    expect(shouldFetchNextDiscoverPage(state({ activeIndex: 10 }))).toBe(true);
   });
 });

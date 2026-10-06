@@ -125,7 +125,10 @@ export function RequiredFormsAddExisting({
           {t('addExisting')}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent
+        className="w-max min-w-72 max-w-[min(100vw-2rem,32rem)] p-0"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder={t('searchForms')} />
           <CommandList>
@@ -144,7 +147,9 @@ export function RequiredFormsAddExisting({
                       }
                     }}
                   >
-                    <span className="truncate">{form.name}</span>
+                    <span className="whitespace-normal break-words">
+                      {form.name}
+                    </span>
                     {isDisabled && (
                       <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                         {t('noBlocks')}
