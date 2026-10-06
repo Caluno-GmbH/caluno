@@ -5,10 +5,11 @@ import { Button } from '@repo/ui';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import type { PDFDocumentLoadingTask } from 'pdfjs-dist';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
 import type { Locale } from '@/i18n/routing';
 import { termsPdfVersionedUrl } from '@/lib/terms';
+import { resolveNextPath } from '@/lib/terms-next-path';
 
 interface TermsAcceptanceProps {
   locale: Locale;
@@ -25,21 +26,33 @@ export function TermsAcceptance({
   const acceptTerms = useAcceptTerms();
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const readyRef = useRef(false);
   const [hasReachedEnd, setHasReachedEnd] = useState(false);
   const [renderError, setRenderError] = useState(false);
+
+  const checkEnd = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !readyRef.current) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) {
+      setHasReachedEnd(true);
+    }
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const onScroll = () => {
-      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 8) {
-        setHasReachedEnd(true);
-      }
-    };
-    el.addEventListener('scroll', onScroll);
-    onScroll();
-    return () => el.removeEventListener('scroll', onScroll);
-  }, []);
+    el.addEventListener('scroll', checkEnd);
+    checkEnd();
+    return () => el.removeEventListener('scroll', checkEnd);
+  }, [checkEnd]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => checkEnd());
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [checkEnd]);
 
   useEffect(() => {
     if (!currentVersion) return;
@@ -47,11 +60,15 @@ export function TermsAcceptance({
     const renderTasks: { cancel: () => void }[] = [];
     let loadingTask: PDFDocumentLoadingTask | null = null;
 
+    readyRef.current = false;
+    setHasReachedEnd(false);
+    setRenderError(false);
+
     (async () => {
       try {
-        const pdfjs = await import('pdfjs-dist');
+        const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
         pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-          'pdfjs-dist/build/pdf.worker.min.mjs',
+          'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
           import.meta.url,
         ).toString();
 
@@ -63,7 +80,6 @@ export function TermsAcceptance({
         const container = contentRef.current;
         if (!container || cancelled) return;
         container.innerHTML = '';
-        setHasReachedEnd(false);
 
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           if (cancelled) return;
@@ -82,16 +98,13 @@ export function TermsAcceptance({
           await task.promise;
         }
 
-        const scrollEl = scrollRef.current;
-        if (
-          scrollEl &&
-          scrollEl.scrollTop + scrollEl.clientHeight >=
-            scrollEl.scrollHeight - 8
-        ) {
-          setHasReachedEnd(true);
-        }
+        if (cancelled) return;
+        readyRef.current = true;
+        checkEnd();
       } catch {
         if (!cancelled) {
+          readyRef.current = false;
+          setHasReachedEnd(false);
           setRenderError(true);
         }
       }
@@ -99,6 +112,7 @@ export function TermsAcceptance({
 
     return () => {
       cancelled = true;
+      readyRef.current = false;
       for (const task of renderTasks) {
         task.cancel();
       }
@@ -107,7 +121,7 @@ export function TermsAcceptance({
         contentRef.current.innerHTML = '';
       }
     };
-  }, [currentVersion, locale]);
+  }, [currentVersion, locale, checkEnd]);
 
   const accept = () => {
     if (!currentVersion) return;
@@ -115,8 +129,7 @@ export function TermsAcceptance({
       { version: currentVersion, language: locale },
       {
         onSuccess: () => {
-          const next = searchParams.get('next') ?? '/';
-          router.push(next);
+          router.push(resolveNextPath(searchParams.get('next')));
           router.refresh();
         },
       },

@@ -21,7 +21,7 @@ export default async function AcceptTermsPage({
   }
 
   const status = await fetchTermsStatus();
-  if (!status?.mustAccept) {
+  if (status && !status.mustAccept) {
     redirect({ href: '/', locale });
   }
 
