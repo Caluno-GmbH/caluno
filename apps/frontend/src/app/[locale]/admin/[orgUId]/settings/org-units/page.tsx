@@ -43,7 +43,7 @@ export default async function OrgUnitsPage({ params }: OrgUnitsPageProps) {
         <OrgUnitDetailView
           orgUnit={currentUnit}
           types={types}
-          canEdit={canEdit}
+          canEdit={canEdit ?? false}
           embedded
         />
       </Suspense>
