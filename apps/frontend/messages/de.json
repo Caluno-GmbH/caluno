@@ -506,6 +506,18 @@
       "title": "Einsätze und Check-in",
       "subtitle": "Einstellungen für Einsätze in {orgName}."
     },
+    "actions": {
+      "saved": "Einstellungen gespeichert",
+      "saveError": "Die Einstellungen ließen sich nicht speichern. Versuch es bitte erneut.",
+      "unsavedChangesTitle": "Ungespeicherte Änderungen",
+      "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
+      "unsavedChangesLeave": "Ohne Speichern verlassen",
+      "unsavedChangesStay": "Weiter bearbeiten",
+      "pendingHint": "Noch nicht aktiv. Diese Änderungen gelten erst, wenn du speicherst.",
+      "confirmEnableTitle": "Wirklich einschalten?",
+      "confirmEnableDescription": "Beim Speichern startet {names}. Das kann ändern, wer in einen Einsatz kommt.",
+      "confirmEnableAction": "Speichern und einschalten"
+    },
     "sections": {
       "staffing": {
         "title": "Besetzung",

@@ -1,13 +1,12 @@
 import { OrganizationUnitAutomationKind, PermissionKey } from '@repo/data';
-import { Mail, Megaphone, UserCheck } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
-import {
-  AutomationCard,
-  type AutomationCardSettings,
-} from '@/domain/org-unit/components/automation-card';
-import { IdVerificationSettingsCard } from '@/domain/org-unit/components/id-verification-settings-card';
-import { SettingsSection } from '@/domain/org-unit/components/settings-section';
+import { ShiftSettingsEditor } from '@/domain/org-unit/components/shift-settings-editor';
+import type {
+  AutomationControl,
+  AutomationDraft,
+  ShiftSettingsDraft,
+} from '@/domain/org-unit/shift-settings-draft';
 import { getDataClient } from '@/lib/data-client';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
 
@@ -33,12 +32,15 @@ export default async function ShiftSettingsPage({
   ]);
   if (!orgUnit) notFound();
 
-  const settingsFor = (
+  const draftFor = (
     kind: OrganizationUnitAutomationKind,
-  ): AutomationCardSettings | null => {
+    control: AutomationControl,
+  ): AutomationDraft | null => {
     const automation = automations.find((entry) => entry.kind === kind);
     if (!automation) return null;
     return {
+      kind,
+      control,
       enabled: automation.enabled,
       activeDays: [...automation.activeDays],
       leadTimeHours: automation.leadTimeHours ?? null,
@@ -46,13 +48,16 @@ export default async function ShiftSettingsPage({
     };
   };
 
-  const urgentCall = settingsFor(OrganizationUnitAutomationKind.UrgentCall);
-  const discoveryEmail = settingsFor(
-    OrganizationUnitAutomationKind.DiscoveryEmail,
-  );
-  const pauseApproval = settingsFor(
-    OrganizationUnitAutomationKind.PauseApproval,
-  );
+  const initialAutomations = [
+    draftFor(OrganizationUnitAutomationKind.UrgentCall, 'leadTime'),
+    draftFor(OrganizationUnitAutomationKind.DiscoveryEmail, 'sendTime'),
+    draftFor(OrganizationUnitAutomationKind.PauseApproval, 'leadTime'),
+  ].filter((automation): automation is AutomationDraft => automation !== null);
+
+  const initialDraft: ShiftSettingsDraft = {
+    automations: initialAutomations,
+    idVerificationEnabled: orgUnit.idVerificationEnabled ?? false,
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
@@ -63,64 +68,12 @@ export default async function ShiftSettingsPage({
         </p>
       </div>
 
-      {(urgentCall || discoveryEmail) && (
-        <SettingsSection
-          title={t('sections.staffing.title')}
-          description={t('sections.staffing.description')}
-        >
-          {urgentCall && (
-            <AutomationCard
-              organizationUnitId={orgUId}
-              kind={OrganizationUnitAutomationKind.UrgentCall}
-              copyKey="callOut"
-              icon={<Megaphone />}
-              control="leadTime"
-              initialSettings={urgentCall}
-              canEdit={canEdit}
-            />
-          )}
-          {discoveryEmail && (
-            <AutomationCard
-              organizationUnitId={orgUId}
-              kind={OrganizationUnitAutomationKind.DiscoveryEmail}
-              copyKey="discovery"
-              icon={<Mail />}
-              control="sendTime"
-              initialSettings={discoveryEmail}
-              canEdit={canEdit}
-            />
-          )}
-        </SettingsSection>
-      )}
-
-      {pauseApproval && (
-        <SettingsSection
-          title={t('sections.moderation.title')}
-          description={t('sections.moderation.description')}
-        >
-          <AutomationCard
-            organizationUnitId={orgUId}
-            kind={OrganizationUnitAutomationKind.PauseApproval}
-            copyKey="approval"
-            icon={<UserCheck />}
-            control="leadTime"
-            initialSettings={pauseApproval}
-            canEdit={canEdit}
-          />
-        </SettingsSection>
-      )}
-
-      <SettingsSection
-        title={t('sections.checkIn.title')}
-        description={t('sections.checkIn.description')}
-      >
-        <IdVerificationSettingsCard
-          organizationUnitId={orgUId}
-          organizationId={orgUnit.organizationId}
-          initialEnabled={orgUnit.idVerificationEnabled ?? false}
-          canEdit={canEdit}
-        />
-      </SettingsSection>
+      <ShiftSettingsEditor
+        organizationUnitId={orgUId}
+        organizationId={orgUnit.organizationId}
+        canEdit={canEdit}
+        initialDraft={initialDraft}
+      />
     </div>
   );
 }
