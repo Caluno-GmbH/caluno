@@ -514,7 +514,6 @@
       "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
       "unsavedChangesLeave": "Ohne Speichern verlassen",
       "unsavedChangesStay": "Weiter bearbeiten",
-      "pendingHint": "Noch nicht aktiv. Diese Änderungen gelten erst, wenn du speicherst.",
       "confirmEnableTitle": "Wirklich einschalten?",
       "confirmEnableDescription": "Beim Speichern startet {names}. Das kann ändern, wer in einen Einsatz kommt.",
       "confirmEnableAction": "Speichern und einschalten"

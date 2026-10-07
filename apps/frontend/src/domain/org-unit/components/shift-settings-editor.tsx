@@ -15,14 +15,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  Button,
-  cn,
-  useSidebar,
 } from '@repo/ui';
 import { Mail, Megaphone, UserCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { PageActions } from '@/components/page-actions';
 import {
   type GuardedNavigation,
   stripKnownLocalePrefix,
@@ -98,8 +96,6 @@ export function ShiftSettingsEditor({
   const [pendingNavigation, setPendingNavigation] =
     useState<GuardedNavigation | null>(null);
   const [confirmingSave, setConfirmingSave] = useState(false);
-  const { state: sidebarState, isMobile } = useSidebar();
-  const sidebarDocked = !isMobile && sidebarState === 'expanded';
   const savingRef = useRef(false);
 
   const dirty = canEdit && isShiftSettingsDirty(saved, draft);
@@ -209,108 +205,101 @@ export function ShiftSettingsEditor({
   );
 
   return (
-    <div className={dirty ? 'space-y-6 pb-28' : 'space-y-6'}>
-      {(urgentCall || discoveryEmail) && (
-        <SettingsSection
-          title={t('sections.staffing.title')}
-          description={t('sections.staffing.description')}
-        >
-          {urgentCall && (
-            <AutomationCard
-              copyKey={
-                PRESENTATION[OrganizationUnitAutomationKind.UrgentCall].copyKey
-              }
-              icon={
-                PRESENTATION[OrganizationUnitAutomationKind.UrgentCall].icon
-              }
-              control={urgentCall.control}
-              settings={cardSettings(urgentCall)}
-              canEdit={canEdit}
-              isSaving={saving}
-              onChange={(patch) => patchAutomation(urgentCall.kind, patch)}
-            />
-          )}
-          {discoveryEmail && (
-            <AutomationCard
-              copyKey={
-                PRESENTATION[OrganizationUnitAutomationKind.DiscoveryEmail]
-                  .copyKey
-              }
-              icon={
-                PRESENTATION[OrganizationUnitAutomationKind.DiscoveryEmail].icon
-              }
-              control={discoveryEmail.control}
-              settings={cardSettings(discoveryEmail)}
-              canEdit={canEdit}
-              isSaving={saving}
-              onChange={(patch) => patchAutomation(discoveryEmail.kind, patch)}
-            />
-          )}
-        </SettingsSection>
-      )}
-
-      {pauseApproval && (
-        <SettingsSection
-          title={t('sections.moderation.title')}
-          description={t('sections.moderation.description')}
-        >
-          <AutomationCard
-            copyKey={
-              PRESENTATION[OrganizationUnitAutomationKind.PauseApproval].copyKey
-            }
-            icon={
-              PRESENTATION[OrganizationUnitAutomationKind.PauseApproval].icon
-            }
-            control={pauseApproval.control}
-            settings={cardSettings(pauseApproval)}
-            canEdit={canEdit}
-            isSaving={saving}
-            onChange={(patch) => patchAutomation(pauseApproval.kind, patch)}
-          />
-        </SettingsSection>
-      )}
-
-      <SettingsSection
-        title={t('sections.checkIn.title')}
-        description={t('sections.checkIn.description')}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <PageActions
+        scrollLabel={t('page.title')}
+        showActions={canEdit}
+        saveLabel={saving ? tCommon('saving') : tCommon('save')}
+        onSave={handleSaveClick}
+        saveDisabled={!dirty || saving}
+        cancelLabel={tCommon('cancel')}
+        onCancel={handleCancel}
+        cancelDisabled={!dirty || saving}
       >
-        <IdVerificationSettingsCard
-          enabled={draft.idVerificationEnabled}
-          canEdit={canEdit}
-          isSaving={saving}
-          onEnabledChange={(enabled) =>
-            setDraft((current) => withIdVerificationEnabled(current, enabled))
-          }
-        />
-      </SettingsSection>
-
-      {dirty && (
-        <section
-          aria-label={t('actions.unsavedChangesTitle')}
-          className={cn(
-            'fixed inset-x-0 bottom-0 z-30 border-t bg-background p-4',
-            sidebarDocked &&
-              'md:left-(--sidebar-width) md:w-[calc(100%-var(--sidebar-width))]',
+        <div className="mx-auto w-full max-w-3xl space-y-6">
+          {(urgentCall || discoveryEmail) && (
+            <SettingsSection
+              title={t('sections.staffing.title')}
+              description={t('sections.staffing.description')}
+            >
+              {urgentCall && (
+                <AutomationCard
+                  copyKey={
+                    PRESENTATION[OrganizationUnitAutomationKind.UrgentCall]
+                      .copyKey
+                  }
+                  icon={
+                    PRESENTATION[OrganizationUnitAutomationKind.UrgentCall].icon
+                  }
+                  control={urgentCall.control}
+                  settings={cardSettings(urgentCall)}
+                  canEdit={canEdit}
+                  isSaving={saving}
+                  onChange={(patch) => patchAutomation(urgentCall.kind, patch)}
+                />
+              )}
+              {discoveryEmail && (
+                <AutomationCard
+                  copyKey={
+                    PRESENTATION[OrganizationUnitAutomationKind.DiscoveryEmail]
+                      .copyKey
+                  }
+                  icon={
+                    PRESENTATION[OrganizationUnitAutomationKind.DiscoveryEmail]
+                      .icon
+                  }
+                  control={discoveryEmail.control}
+                  settings={cardSettings(discoveryEmail)}
+                  canEdit={canEdit}
+                  isSaving={saving}
+                  onChange={(patch) =>
+                    patchAutomation(discoveryEmail.kind, patch)
+                  }
+                />
+              )}
+            </SettingsSection>
           )}
-        >
-          <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm">{t('actions.pendingHint')}</p>
-            <div className="flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saving}
-              >
-                {tCommon('cancel')}
-              </Button>
-              <Button type="button" onClick={handleSaveClick} disabled={saving}>
-                {saving ? tCommon('saving') : tCommon('save')}
-              </Button>
-            </div>
-          </div>
-        </section>
-      )}
+
+          {pauseApproval && (
+            <SettingsSection
+              title={t('sections.moderation.title')}
+              description={t('sections.moderation.description')}
+            >
+              <AutomationCard
+                copyKey={
+                  PRESENTATION[OrganizationUnitAutomationKind.PauseApproval]
+                    .copyKey
+                }
+                icon={
+                  PRESENTATION[OrganizationUnitAutomationKind.PauseApproval]
+                    .icon
+                }
+                control={pauseApproval.control}
+                settings={cardSettings(pauseApproval)}
+                canEdit={canEdit}
+                isSaving={saving}
+                onChange={(patch) => patchAutomation(pauseApproval.kind, patch)}
+              />
+            </SettingsSection>
+          )}
+
+          <SettingsSection
+            title={t('sections.checkIn.title')}
+            description={t('sections.checkIn.description')}
+          >
+            <IdVerificationSettingsCard
+              enabled={draft.idVerificationEnabled}
+              canEdit={canEdit}
+              isSaving={saving}
+              onEnabledChange={(enabled) =>
+                setDraft((current) =>
+                  withIdVerificationEnabled(current, enabled),
+                )
+              }
+            />
+          </SettingsSection>
+        </div>
+      </PageActions>
 
       <AlertDialog
         open={confirmingSave}

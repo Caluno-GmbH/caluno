@@ -60,8 +60,8 @@ export default async function ShiftSettingsPage({
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
-      <div>
+    <div className="flex h-[calc(100svh-6rem-1px)] w-full flex-col gap-6">
+      <div className="mx-auto w-full max-w-3xl">
         <h1 className="page-title">{t('page.title')}</h1>
         <p className="text-muted-foreground mt-1">
           {t('page.subtitle', { orgName: orgUnit.name })}

@@ -514,7 +514,6 @@
       "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
       "unsavedChangesLeave": "Leave without saving",
       "unsavedChangesStay": "Keep editing",
-      "pendingHint": "Not active yet. These changes take effect when you save.",
       "confirmEnableTitle": "Turn this on?",
       "confirmEnableDescription": "Saving starts {names}. That can change who gets onto an assignment.",
       "confirmEnableAction": "Save and turn on"
