@@ -1604,6 +1604,7 @@ export type Query = {
   myOrganizationUnits: Array<OrganizationUnit>;
   myRequiredOrgUnitForms: Array<RequirementForm>;
   myShiftInstances: ShiftInstancePaginatedResponse;
+  myTasks: Array<Task>;
   myTime: TimeEntryPaginatedResponse;
   organization?: Maybe<Organization>;
   organizationBySlug: Organization;
@@ -2625,6 +2626,28 @@ export enum SortOrder {
 export type SubmitFormInput = {
   values: Array<FormFieldValueInput>;
 };
+
+export type Task = {
+  __typename?: 'Task';
+  data: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  link: Scalars['String']['output'];
+  neededPermission?: Maybe<PermissionKey>;
+  organizationUnitId: Scalars['ID']['output'];
+  type: TaskType;
+};
+
+export enum TaskType {
+  ContractExpiring = 'CONTRACT_EXPIRING',
+  ContractSign = 'CONTRACT_SIGN',
+  DocumentDeclined = 'DOCUMENT_DECLINED',
+  EventApproval = 'EVENT_APPROVAL',
+  MembershipRequest = 'MEMBERSHIP_REQUEST',
+  ShiftApproval = 'SHIFT_APPROVAL',
+  ShiftBelowMinimum = 'SHIFT_BELOW_MINIMUM',
+  TimesheetBundles = 'TIMESHEET_BUNDLES',
+  TimesheetSign = 'TIMESHEET_SIGN'
+}
 
 export type TemplateSignee = {
   __typename?: 'TemplateSignee';
