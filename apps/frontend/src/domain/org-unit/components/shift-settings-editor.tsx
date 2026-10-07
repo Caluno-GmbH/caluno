@@ -16,10 +16,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   Button,
+  cn,
+  useSidebar,
 } from '@repo/ui';
 import { Mail, Megaphone, UserCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   type GuardedNavigation,
@@ -96,6 +98,9 @@ export function ShiftSettingsEditor({
   const [pendingNavigation, setPendingNavigation] =
     useState<GuardedNavigation | null>(null);
   const [confirmingSave, setConfirmingSave] = useState(false);
+  const { state: sidebarState, isMobile } = useSidebar();
+  const sidebarDocked = !isMobile && sidebarState === 'expanded';
+  const savingRef = useRef(false);
 
   const dirty = canEdit && isShiftSettingsDirty(saved, draft);
   const turningOn = automationsTurningOn(saved, draft);
@@ -120,6 +125,7 @@ export function ShiftSettingsEditor({
   }
 
   function handleSaveClick() {
+    if (savingRef.current) return;
     if (turningOn.length > 0) {
       setConfirmingSave(true);
       return;
@@ -128,14 +134,17 @@ export function ShiftSettingsEditor({
   }
 
   async function persist() {
+    if (savingRef.current) return;
     const plan = planShiftSettingsSave(saved, draft);
     if (plan.automations.length === 0 && plan.idVerificationEnabled === null) {
       return;
     }
 
+    savingRef.current = true;
     setSaving(true);
     setConfirmingSave(false);
     let baseline = saved;
+    let savedAny = false;
     try {
       for (const automation of plan.automations) {
         await updateAutomation.mutateAsync({
@@ -148,6 +157,7 @@ export function ShiftSettingsEditor({
         });
         baseline = markAutomationSaved(baseline, draft, automation.kind);
         setSaved(baseline);
+        savedAny = true;
       }
 
       if (plan.idVerificationEnabled !== null) {
@@ -158,14 +168,18 @@ export function ShiftSettingsEditor({
         });
         baseline = markIdVerificationSaved(baseline, enabled);
         setSaved(baseline);
+        savedAny = true;
       }
 
       setDraft(cloneShiftSettingsDraft(baseline));
       toast.success(t('actions.saved'));
       router.refresh();
     } catch {
-      toast.error(t('actions.saveError'));
+      toast.error(
+        savedAny ? t('actions.savePartialError') : t('actions.saveError'),
+      );
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   }
@@ -273,7 +287,11 @@ export function ShiftSettingsEditor({
       {dirty && (
         <section
           aria-label={t('actions.unsavedChangesTitle')}
-          className="fixed inset-x-0 bottom-0 z-30 border-t bg-background p-4 md:left-(--sidebar-width) md:w-[calc(100%-var(--sidebar-width))]"
+          className={cn(
+            'fixed inset-x-0 bottom-0 z-30 border-t bg-background p-4',
+            sidebarDocked &&
+              'md:left-(--sidebar-width) md:w-[calc(100%-var(--sidebar-width))]',
+          )}
         >
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm">{t('actions.pendingHint')}</p>
@@ -321,7 +339,7 @@ export function ShiftSettingsEditor({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void persist()}>
+            <AlertDialogAction disabled={saving} onClick={() => void persist()}>
               {t('actions.confirmEnableAction')}
             </AlertDialogAction>
           </AlertDialogFooter>

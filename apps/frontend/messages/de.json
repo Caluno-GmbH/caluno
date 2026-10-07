@@ -509,6 +509,7 @@
     "actions": {
       "saved": "Einstellungen gespeichert",
       "saveError": "Die Einstellungen ließen sich nicht speichern. Versuch es bitte erneut.",
+      "savePartialError": "Ein Teil wurde gespeichert. Der Rest wartet noch. Speichere erneut, oder brich ab, um ihn zu verwerfen.",
       "unsavedChangesTitle": "Ungespeicherte Änderungen",
       "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
       "unsavedChangesLeave": "Ohne Speichern verlassen",

@@ -509,6 +509,7 @@
     "actions": {
       "saved": "Settings saved",
       "saveError": "We couldn't save these settings. Please try again.",
+      "savePartialError": "Some changes were saved. The rest are still waiting. Save again to retry, or cancel to drop them.",
       "unsavedChangesTitle": "Unsaved changes",
       "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
       "unsavedChangesLeave": "Leave without saving",
