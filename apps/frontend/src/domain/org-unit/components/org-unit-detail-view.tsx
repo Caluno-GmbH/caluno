@@ -132,7 +132,21 @@ export function OrgUnitDetailView({
         </Card>
       )}
 
-      <OrgUnitCreateEditSheet types={types} />
+      {!embedded && orgUnit.parent && (
+        <Card className="gap-2 py-4">
+          <CardHeader>
+            <CardTitle>{t('hierarchyTitle')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm">
+              <span className="text-muted-foreground">{t('partOf')}</span>
+              <span className="font-medium">{orgUnit.parent.name}</span>
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {!embedded && <OrgUnitCreateEditSheet types={types} />}
     </>
   );
 }

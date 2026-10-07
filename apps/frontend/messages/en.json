@@ -785,7 +785,9 @@
     "detail": {
       "aboutTitle": "About",
       "contactTitle": "Contact",
-      "editButton": "Edit"
+      "editButton": "Edit",
+      "hierarchyTitle": "Hierarchy",
+      "partOf": "Part of "
     },
     "form": {
       "streetLabel": "Street name and number",

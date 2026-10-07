@@ -55,7 +55,12 @@ export function OrgUnitSetup({
   );
 
   if (!tree) {
-    return treeCard;
+    return (
+      <>
+        {treeCard}
+        <OrgUnitCreateEditSheet types={types} />
+      </>
+    );
   }
 
   return (
