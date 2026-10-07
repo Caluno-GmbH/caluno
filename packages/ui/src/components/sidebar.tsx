@@ -474,7 +474,14 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+  // `px-2 py-1`, not the upstream `p-2`: our type scale is bumped one step, so
+  // `text-sm` is a 24px line box where shadcn assumed 20px. With 8px of vertical
+  // padding a single line needs 40px and never fit the 32px size below — it
+  // clipped 4px of leading, which nothing showed. A wrapped label lost a whole
+  // line (VOLI-1579). Halving the vertical padding buys back exactly what the
+  // taller line needs, so a single line still measures 32px and nav density is
+  // unchanged. Horizontal padding is untouched.
+  'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -482,10 +489,13 @@ const sidebarMenuButtonVariants = cva(
         outline:
           'bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]',
       },
+      // Floors, not fixed heights: a label that wraps has to be able to grow.
+      // The collapsed rail is unaffected — `group-data-[collapsible=icon]:size-8!`
+      // on the base class is `!important` and still pins it square.
       size: {
-        default: 'h-8 text-sm',
-        sm: 'h-7 text-xs',
-        lg: 'h-12 text-sm group-data-[collapsible=icon]:p-0!',
+        default: 'min-h-8 text-sm',
+        sm: 'min-h-7 text-xs',
+        lg: 'min-h-12 text-sm group-data-[collapsible=icon]:p-0!',
       },
     },
     defaultVariants: {
