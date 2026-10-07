@@ -172,23 +172,50 @@ describe('VolunteerAllowanceService', () => {
     });
   });
 
-  describe('unpaid shift or no shift (person only)', () => {
-    it('never reports WOULD_EXCEED, even at a fully used ceiling', async () => {
+  // VOLI-1577. An unpaid shift raises no allowance question, so it gets no
+  // answer — distinct from "no shift named", below, where the person's general
+  // standing is what was asked for.
+  describe('unpaid shift instance', () => {
+    const unpaid = {
+      reimbursementTypeId: null,
+      start: '2026-09-10T08:00:00Z',
+      end: '2026-09-10T12:00:00Z',
+    };
+
+    it('reports no state at all, even for someone holding a contract', async () => {
       const { service } = build({
-        instance: {
-          reimbursementTypeId: null,
-          start: '2026-09-10T08:00:00Z',
-          end: '2026-09-10T12:00:00Z',
-        },
+        instance: unpaid,
         contracts: { a: [EHREN] },
-        usage: { a: [ehren(0)] },
+        usage: { a: [ehren(500_00)] },
       });
 
-      expect(await call(service, ['a'], 'inst-1')).toEqual([
-        { volunteerId: 'a', state: VolunteerAllowanceState.NEARLY_EXHAUSTED },
-      ]);
+      expect(await call(service, ['a'], 'inst-1')).toEqual([]);
     });
 
+    it('reports no state for someone without a contract, rather than NO_AGREEMENT', async () => {
+      const { service } = build({
+        instance: unpaid,
+        contracts: {},
+        usage: { a: [ehren(840_00)] },
+      });
+
+      expect(await call(service, ['a'], 'inst-1')).toEqual([]);
+    });
+
+    it('does not compute usage it will not report', async () => {
+      const { service, getRosterYearlyUsage } = build({
+        instance: unpaid,
+        contracts: { a: [EHREN] },
+        usage: { a: [ehren(500_00)] },
+      });
+
+      await call(service, ['a'], 'inst-1');
+
+      expect(getRosterYearlyUsage).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('no shift named (person only)', () => {
     it('is NO_AGREEMENT without any active contract', async () => {
       const { service } = build({
         contracts: {},

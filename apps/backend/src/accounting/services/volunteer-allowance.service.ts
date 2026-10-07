@@ -60,6 +60,20 @@ export class VolunteerAllowanceService {
           input.organizationUnitId,
         )
       : undefined;
+    // A named shift with no reimbursement type is unpaid, and an unpaid shift
+    // raises no allowance question at all. Without this the code below falls
+    // through to the volunteer's own contract types and answers a different
+    // question — their general standing — so everyone ends up badged: eligible
+    // if they hold a contract, NO_AGREEMENT if they don't. Both VOLI-1248 and
+    // VOLI-1534 require no state here (VOLI-1577).
+    //
+    // Note this is deliberately not `!paidTypeId`: when no shift is named at
+    // all, the general standing IS the question being asked (the volunteer
+    // sheet opened from the volunteer list, VOLI-1535), and the fallback stays.
+    if (shift && !shift.reimbursementTypeId) {
+      return [];
+    }
+
     const paidTypeId = shift?.reimbursementTypeId ?? undefined;
     // The ceiling is per calendar year, so measure against the shift's year.
     const year = appDateParts(shift?.period.start ?? new Date()).year;
