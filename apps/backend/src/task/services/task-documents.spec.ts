@@ -1,0 +1,137 @@
+import { describe, expect, it } from 'bun:test';
+import { DocumentKind } from '../../accounting/enums';
+import { TaskType } from '../enums/task-type.enum';
+import {
+  type ContractTaskRow,
+  countersignContractTasks,
+  declinedDocumentTasks,
+  type InvoiceTaskRow,
+  timesheetBundleTasks,
+  timesheetSignTasks,
+} from './task-documents';
+
+const ORG = 'org-1';
+const start = new Date('2026-08-01T00:00:00.000Z');
+const end = new Date('2026-09-01T00:00:00.000Z');
+
+function contract(overrides: Partial<ContractTaskRow> = {}): ContractTaskRow {
+  return {
+    id: 'contract-1',
+    volunteerId: 'volunteer-1',
+    volunteerName: 'Ada Lovelace',
+    reimbursementTypeKey: 'EHRENAMT',
+    periodStart: start,
+    periodEnd: end,
+    status: 'AWAITING_NGO_SIGNATURE',
+    declinedAtSigneeType: null,
+    declineReason: null,
+    ...overrides,
+  };
+}
+
+function invoice(overrides: Partial<InvoiceTaskRow> = {}): InvoiceTaskRow {
+  return {
+    ...contract(),
+    id: 'invoice-1',
+    status: 'AWAITING_SUPERVISOR_SIGNATURE',
+    totalHours: 4,
+    totalAmountCents: 1600,
+    paidAt: null,
+    ...overrides,
+  };
+}
+
+describe('document tasks', () => {
+  it('keeps contracts waiting for the organisation signature', () => {
+    const tasks = countersignContractTasks(
+      [contract(), contract({ id: 'active', status: 'ACTIVE' })],
+      ORG,
+    );
+
+    expect(tasks.map((task) => task.id)).toEqual(['contract-1']);
+    expect(tasks[0]?.type).toBe(TaskType.CONTRACT_SIGN);
+    expect(tasks[0]?.data).toMatchObject({
+      volunteerName: 'Ada Lovelace',
+      reimbursementTypeKey: 'EHRENAMT',
+    });
+  });
+
+  it('signs one timesheet with hours and amount', () => {
+    const tasks = timesheetSignTasks([invoice()], ORG);
+    expect(tasks[0]?.data).toMatchObject({ hours: 4, amountCents: 1600 });
+  });
+
+  it('counts every unpaid ready timesheet for a volunteer and type', () => {
+    const tasks = timesheetBundleTasks(
+      [
+        invoice({ id: 'a', status: 'READY' }),
+        invoice({
+          id: 'b',
+          status: 'READY',
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+        }),
+        invoice({ id: 'paid', status: 'READY', paidAt: new Date() }),
+        invoice({
+          id: 'other-type',
+          status: 'READY',
+          reimbursementTypeKey: 'UEBUNGSLEITER',
+        }),
+      ],
+      ORG,
+    );
+
+    expect(tasks).toEqual([
+      expect.objectContaining({
+        data: expect.objectContaining({
+          volunteerName: 'Ada Lovelace',
+          reimbursementTypeKey: 'EHRENAMT',
+          readyCount: 2,
+          amountCents: 3200,
+        }),
+      }),
+      expect.objectContaining({
+        data: expect.objectContaining({
+          reimbursementTypeKey: 'UEBUNGSLEITER',
+          readyCount: 1,
+        }),
+      }),
+    ]);
+  });
+
+  it('drops a volunteer decline once a replacement exists, and skips org declines', () => {
+    const tasks = declinedDocumentTasks(
+      [
+        contract({
+          id: 'open',
+          status: 'DECLINED',
+          declinedAtSigneeType: 'VOLUNTEER',
+          declineReason: 'Wrong hours',
+        }),
+        contract({
+          id: 'replaced',
+          volunteerId: 'volunteer-2',
+          status: 'DECLINED',
+          declinedAtSigneeType: 'VOLUNTEER',
+        }),
+        contract({
+          id: 'replacement',
+          volunteerId: 'volunteer-2',
+          status: 'DRAFT',
+        }),
+        contract({
+          id: 'org',
+          status: 'DECLINED',
+          declinedAtSigneeType: 'PERMISSION_HOLDER',
+        }),
+      ],
+      ORG,
+      DocumentKind.INVOICE,
+    );
+
+    expect(tasks.map((task) => task.id)).toEqual(['open']);
+    expect(tasks[0]?.data).toMatchObject({
+      declineReason: 'Wrong hours',
+      declinedAtSigneeType: 'VOLUNTEER',
+    });
+  });
+});

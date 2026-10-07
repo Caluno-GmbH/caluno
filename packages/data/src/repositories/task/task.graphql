@@ -1,0 +1,10 @@
+query MyTasks {
+  myTasks {
+    id
+    type
+    link
+    data
+    organizationUnitId
+    neededPermission
+  }
+}

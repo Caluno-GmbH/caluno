@@ -46,6 +46,8 @@ export type ShiftFixture = {
   visibility?: ShiftVisibility;
   /** Capacity cap; omit for unlimited spots. */
   maxVolunteers?: number;
+  /** Staffing floor. A future occurrence under this count is an overview action. */
+  minVolunteers?: number;
   instructions?: string;
   location?: string;
   imageUrl?: string;
@@ -346,6 +348,7 @@ export const ensureShiftWithInvites = async (
       joinRequiresApproval: shift.joinRequiresApproval ?? false,
       reimbursementTypeId: shift.reimbursementTypeId ?? null,
       maxVolunteers: shift.maxVolunteers ?? null,
+      minVolunteers: shift.minVolunteers ?? null,
       originalStartsAt: shift.startsAt,
       durationMinutes,
       rrule: shift.rrule,

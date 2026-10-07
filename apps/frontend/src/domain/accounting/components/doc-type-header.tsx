@@ -34,6 +34,7 @@ interface DocTypeHeaderProps {
   name: string;
   subline?: string;
   className?: string;
+  children?: React.ReactNode;
 }
 
 export function DocTypeHeader({
@@ -43,6 +44,7 @@ export function DocTypeHeader({
   name,
   subline,
   className,
+  children,
 }: DocTypeHeaderProps) {
   const Icon = KIND_ICON[kind];
   const color = TYPE_COLOR[pauschale];
@@ -61,9 +63,11 @@ export function DocTypeHeader({
         <Icon size={18} strokeWidth={2} />
       </div>
       <div className="min-w-0 w-full flex-1">
-        <p className="text-sm text-muted-foreground leading-none truncate mb-0.5">
-          {topLine}
-        </p>
+        {topLine ? (
+          <p className="text-sm text-muted-foreground leading-none truncate mb-0.5">
+            {topLine}
+          </p>
+        ) : null}
         <p className="text-base font-bold text-card-foreground leading-snug line-clamp-2 whitespace-normal break-words">
           {name}
         </p>
@@ -72,6 +76,7 @@ export function DocTypeHeader({
             {subline}
           </p>
         )}
+        {children}
       </div>
     </div>
   );

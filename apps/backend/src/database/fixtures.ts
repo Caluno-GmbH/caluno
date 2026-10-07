@@ -3,6 +3,13 @@ import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import {
+  ContractStatus,
+  DocumentKind,
+  InvoiceStatus,
+  ReimbursementTypeKey,
+  SigneeType,
+} from '../accounting/enums';
+import {
   DEFAULT_MEMBER_ROLE_NAME,
   DEFAULT_OWNER_ROLE_NAME,
   MEMBER_DEFAULT_PERMISSIONS,
@@ -44,6 +51,14 @@ const SHOWCASE_EVENT_ID = 'a6f6f1a1-1f2a-4a2a-9c1a-2f6b8b2f9a11';
 const SHOWCASE_OPEN_SHIFT_ID = 'b1e2a3c4-5d6e-4f70-8a91-b2c3d4e5f601';
 const SHOWCASE_FULL_SHIFT_ID = 'c2f3b4d5-6e7f-4081-9a02-c3d4e5f60712';
 const SHOWCASE_UNLIMITED_SHIFT_ID = 'd3a4c5e6-7f80-4192-ab13-d4e5f6071823';
+const OVERVIEW_UNDERSTAFFED_SHIFT_ID = 'e4b5d6f7-8091-4a03-bc24-e5f607182934';
+const OVERVIEW_APPROVAL_SHIFT_ID = 'f5c6e7a8-91a2-4b14-cd35-f60718293445';
+const OVERVIEW_EVENT_ID = 'a6d7f8b9-a2b3-4c25-de46-071829344556';
+const OVERVIEW_CONTRACT_ID = 'b7e8a9c0-b3c4-4d36-ef57-182934455667';
+const OVERVIEW_TIMESHEET_ID = 'c8f9b0d1-c4d5-4e47-f068-293445566778';
+const OVERVIEW_BUNDLE_APRIL_ID = 'd9a0c1e2-d5e6-4f58-a179-344556677889';
+const OVERVIEW_BUNDLE_MAY_ID = 'e0b1d2f3-e6f7-4069-b28a-455667788990';
+const OVERVIEW_DECLINED_ID = 'f1c2e3a4-f708-417a-c39b-566778899001';
 
 const EVENT_COVER_IMAGE_URL =
   'https://images.unsplash.com/photo-1593113646773-028c64a8f1b8?auto=format&fit=crop&w=1200&q=80';
@@ -704,6 +719,357 @@ const ensureCodeOfConductForm = async (
   return form;
 };
 
+const EMPTY_DOCUMENT_BODY = { header: {}, blocks: [], footer: {} };
+
+/** Berlin midnight on the first of `month` (1–12), or January of the next year when month is 13. */
+const berlinMonthStart = (year: number, month: number): Date => {
+  const resolvedYear = month > 12 ? year + 1 : year;
+  const resolvedMonth = month > 12 ? month - 12 : month;
+  return fixtureWallClockToUtc(resolvedYear, resolvedMonth, 1, 0);
+};
+
+const OVERVIEW_COUNT = 5;
+
+/**
+ * Five of each waiting action on the Playground root unit, so
+ * testing+admin@caluno.org can open See more on every Übersicht section.
+ * Skips rows that already exist. Requires reimbursement types from `bun run db:seed`.
+ */
+async function ensureOverviewWaitingActions(
+  db: Database,
+  args: {
+    organizationId: string;
+    rootUnitId: string;
+    adminId: string;
+    volunteers: FixtureUser[];
+  },
+): Promise<void> {
+  if (args.volunteers.length < 9) {
+    throw new Error('Overview fixtures need nine Playground members');
+  }
+  const joined = args.volunteers[0];
+  const requestA = args.volunteers[1];
+  const requestB = args.volunteers[2];
+  const eventRequest = args.volunteers[3];
+  if (!joined || !requestA || !requestB || !eventRequest) {
+    throw new Error('Overview fixtures need nine Playground members');
+  }
+
+  const today = getDateInFixtureTimezone(new Date());
+  const upcoming = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    6,
+  );
+
+  const understaffedTitles = [
+    'Overview Understaffed Desk',
+    'Reading Corner',
+    'Homework Help',
+    'Library Desk',
+    'Park Reading',
+  ];
+  const approvalTitles = [
+    'Overview Shift Requests',
+    'Saturday Setup',
+    'Sunday Pack-down',
+    'Weekday Welcome',
+    'Evening Close',
+  ];
+  const eventTitles = [
+    'Overview Open House',
+    'Story Afternoon',
+    'Family Reading',
+    'School Visit',
+    'Winter Fair',
+  ];
+
+  for (let index = 0; index < OVERVIEW_COUNT; index += 1) {
+    const day = addDaysInFixtureTimezone(
+      upcoming.year,
+      upcoming.month,
+      upcoming.day,
+      index,
+    );
+    const morning = fixtureWallClockToUtc(day.year, day.month, day.day, 10);
+    const afternoon = fixtureWallClockToUtc(day.year, day.month, day.day, 14);
+
+    await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+      id:
+        index === 0
+          ? OVERVIEW_UNDERSTAFFED_SHIFT_ID
+          : `e4b5d6f7-8091-4a03-bc24-e5f60718293${index + 4}`,
+      title: understaffedTitles[index] ?? `Understaffed ${index + 1}`,
+      startsAt: morning,
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: 180,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      minVolunteers: 3,
+      maxVolunteers: 6,
+      instructions:
+        'Seeded under the minimum so the Übersicht shows a shift that still needs people.',
+      location: 'Playground Community Center, Front Desk',
+      inviteUserIds: [joined.id],
+    });
+
+    await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+      id:
+        index === 0
+          ? OVERVIEW_APPROVAL_SHIFT_ID
+          : `f5c6e7a8-91a2-4b14-cd35-f6071829344${index + 5}`,
+      title: approvalTitles[index] ?? `Shift requests ${index + 1}`,
+      startsAt: afternoon,
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: 180,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 8,
+      instructions:
+        'Two volunteers are waiting for an admin to accept them onto this shift.',
+      location: 'Playground Community Center, Main Hall',
+      inviteUserIds: [],
+      extraInvites: [
+        {
+          userIds: [requestA.id, requestB.id],
+          status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+        },
+      ],
+    });
+
+    const eventIds = [
+      OVERVIEW_EVENT_ID,
+      'a6d7f8b9-a2b3-4c25-de46-071829344557',
+      'a6d7f8b9-a2b3-4c25-de46-071829344558',
+      'a6d7f8b9-a2b3-4c25-de46-071829344559',
+      'a6d7f8b9-a2b3-4c25-de46-071829344560',
+    ];
+    const overviewEvent = await ensureEvent(db, args.rootUnitId, args.adminId, {
+      id: eventIds[index] ?? OVERVIEW_EVENT_ID,
+      title: eventTitles[index] ?? `Open event ${index + 1}`,
+      description: 'A join request is waiting for an admin.',
+      location: 'Playground Community Center, Hauptstraße 1, 10115 Berlin',
+      startsAt: morning,
+      endsAt: addHours(morning, 4),
+    });
+
+    const existingEventRequest = await db.query.eventInvites.findFirst({
+      where: { eventId: overviewEvent.id, userId: eventRequest.id },
+    });
+    if (!existingEventRequest) {
+      await db.insert(schema.eventInvites).values({
+        eventId: overviewEvent.id,
+        userId: eventRequest.id,
+        status: EventInviteStatus.AWAITING_ADMIN_APPROVAL,
+      });
+    }
+  }
+
+  const reimbursementType = await db.query.reimbursementTypes.findFirst({
+    where: { key: ReimbursementTypeKey.EHRENAMT },
+  });
+  if (!reimbursementType) {
+    throw new Error(
+      'Ehrenamt reimbursement type is missing. Run bun run db:seed before fixtures.',
+    );
+  }
+
+  const ensureTemplate = async (kind: DocumentKind) => {
+    const existing = await db.query.documentTemplates.findFirst({
+      where: {
+        organizationId: args.organizationId,
+        reimbursementTypeId: reimbursementType.id,
+        kind,
+        organizationUnitId: { isNull: true },
+        isDeleted: false,
+      },
+    });
+    if (existing) return existing;
+
+    const [template] = await db
+      .insert(schema.documentTemplates)
+      .values({
+        organizationId: args.organizationId,
+        reimbursementTypeId: reimbursementType.id,
+        kind,
+        body: EMPTY_DOCUMENT_BODY,
+        lastEditedAt: new Date(),
+        lastEditedBy: args.adminId,
+      })
+      .returning();
+    if (!template) throw new Error(`Failed to create ${kind} template`);
+
+    await db.insert(schema.templateSignees).values({
+      documentTemplateId: template.id,
+      order: 0,
+      signeeType: SigneeType.VOLUNTEER,
+    });
+    return template;
+  };
+
+  const contractTemplate = await ensureTemplate(DocumentKind.CONTRACT);
+  const invoiceTemplate = await ensureTemplate(DocumentKind.INVOICE);
+  const yearStart = berlinMonthStart(today.year, 1);
+  const yearEnd = berlinMonthStart(today.year + 1, 1);
+  const contractIds = [
+    OVERVIEW_CONTRACT_ID,
+    'b7e8a9c0-b3c4-4d36-ef57-182934455668',
+    'b7e8a9c0-b3c4-4d36-ef57-182934455669',
+    'b7e8a9c0-b3c4-4d36-ef57-18293445566a',
+    'b7e8a9c0-b3c4-4d36-ef57-18293445566b',
+  ];
+
+  for (let index = 0; index < OVERVIEW_COUNT; index += 1) {
+    const volunteer = args.volunteers[index];
+    const contractId = contractIds[index];
+    if (!volunteer || !contractId) continue;
+    const existingContract = await db.query.contracts.findFirst({
+      where: { id: contractId },
+    });
+    if (existingContract) continue;
+    await db.insert(schema.contracts).values({
+      id: contractId,
+      documentTemplateId: contractTemplate.id,
+      volunteerId: volunteer.id,
+      reimbursementTypeId: reimbursementType.id,
+      organizationUnitId: args.rootUnitId,
+      contractStatus: ContractStatus.AWAITING_NGO_SIGNATURE,
+      periodStart: yearStart,
+      periodEnd: yearEnd,
+      resolvedBody: EMPTY_DOCUMENT_BODY,
+    });
+  }
+
+  const insertInvoice = async (invoice: {
+    id: string;
+    volunteerId: string;
+    status: InvoiceStatus;
+    periodStart: Date;
+    periodEnd: Date;
+    documentNumber: string;
+    seq: number;
+    hours?: number;
+    declineReason?: string;
+  }) => {
+    const existing = await db.query.invoices.findFirst({
+      where: { id: invoice.id },
+    });
+    if (existing) return;
+    const hours = invoice.hours ?? 8;
+    await db.insert(schema.invoices).values({
+      id: invoice.id,
+      documentTemplateId: invoiceTemplate.id,
+      volunteerId: invoice.volunteerId,
+      reimbursementTypeId: reimbursementType.id,
+      organizationUnitId: args.rootUnitId,
+      invoiceStatus: invoice.status,
+      periodStart: invoice.periodStart,
+      periodEnd: invoice.periodEnd,
+      hourlyRateCents: 400,
+      totalHours: hours,
+      totalAmountCents: hours * 400,
+      resolvedBody: EMPTY_DOCUMENT_BODY,
+      documentNumber: invoice.documentNumber,
+      documentNumberSeq: invoice.seq,
+      documentNumberYear: today.year,
+      documentNumberScopeUnitId: args.rootUnitId,
+      ...(invoice.declineReason
+        ? {
+            declinedAtSigneeType: SigneeType.VOLUNTEER,
+            declineReason: invoice.declineReason,
+            declinedAt: new Date(),
+          }
+        : {}),
+    });
+  };
+
+  const signMonths = [9, 8, 7, 6, 10];
+  const signHours = [8, 6, 10, 4, 12];
+  const signIds = [
+    OVERVIEW_TIMESHEET_ID,
+    'c8f9b0d1-c4d5-4e47-f068-293445566779',
+    'c8f9b0d1-c4d5-4e47-f068-29344556677a',
+    'c8f9b0d1-c4d5-4e47-f068-29344556677b',
+    'c8f9b0d1-c4d5-4e47-f068-29344556677c',
+  ];
+  for (let index = 0; index < OVERVIEW_COUNT; index += 1) {
+    const volunteer = args.volunteers[index];
+    const month = signMonths[index];
+    const id = signIds[index];
+    if (!volunteer || month === undefined || !id) continue;
+    await insertInvoice({
+      id,
+      volunteerId: volunteer.id,
+      status: InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
+      periodStart: berlinMonthStart(today.year, month),
+      periodEnd: berlinMonthStart(today.year, month + 1),
+      documentNumber: `overview-timesheet-sign-${index + 1}`,
+      seq: 10 + index,
+      hours: signHours[index],
+    });
+  }
+
+  const bundleVolunteers = args.volunteers.slice(4, 9);
+  const bundleIds = [
+    OVERVIEW_BUNDLE_APRIL_ID,
+    'd9a0c1e2-d5e6-4f58-a179-34455667788a',
+    'd9a0c1e2-d5e6-4f58-a179-34455667788b',
+    'd9a0c1e2-d5e6-4f58-a179-34455667788c',
+    'd9a0c1e2-d5e6-4f58-a179-34455667788d',
+  ];
+  await insertInvoice({
+    id: OVERVIEW_BUNDLE_MAY_ID,
+    volunteerId: bundleVolunteers[0]?.id ?? joined.id,
+    status: InvoiceStatus.READY,
+    periodStart: berlinMonthStart(today.year, 5),
+    periodEnd: berlinMonthStart(today.year, 6),
+    documentNumber: 'overview-bundle-may',
+    seq: 3,
+  });
+  for (const [index, volunteer] of bundleVolunteers.entries()) {
+    const id = bundleIds[index];
+    if (!id) continue;
+    await insertInvoice({
+      id,
+      volunteerId: volunteer.id,
+      status: InvoiceStatus.READY,
+      periodStart: berlinMonthStart(today.year, 4),
+      periodEnd: berlinMonthStart(today.year, 5),
+      documentNumber: `overview-bundle-april-${index + 1}`,
+      seq: 20 + index,
+    });
+  }
+
+  const declineReasons = [
+    'The hours on the timesheet are wrong.',
+    'This is not my timesheet.',
+    'The amount does not match what we agreed.',
+    'Please split this into two months.',
+    'I was away for most of this month.',
+  ];
+  const declinedIds = [
+    OVERVIEW_DECLINED_ID,
+    'f1c2e3a4-f708-417a-c39b-566778899002',
+    'f1c2e3a4-f708-417a-c39b-566778899003',
+    'f1c2e3a4-f708-417a-c39b-566778899004',
+    'f1c2e3a4-f708-417a-c39b-566778899005',
+  ];
+  for (const [index, volunteer] of bundleVolunteers.entries()) {
+    const id = declinedIds[index];
+    if (!id) continue;
+    await insertInvoice({
+      id,
+      volunteerId: volunteer.id,
+      status: InvoiceStatus.DECLINED,
+      periodStart: berlinMonthStart(today.year, 2),
+      periodEnd: berlinMonthStart(today.year, 3),
+      documentNumber: `overview-declined-${index + 1}`,
+      seq: 30 + index,
+      hours: 2,
+      declineReason: declineReasons[index],
+    });
+  }
+}
+
 async function seedFixtures() {
   const pool = new Pool({
     host: process.env.DB_HOST,
@@ -787,14 +1153,19 @@ async function seedFixtures() {
   }
 
   const pendingUsers = await Promise.all(
-    ['testing+pending01@caluno.org', 'testing+pending02@caluno.org'].map(
-      (email, index) =>
-        createAuthUser(db, hashedPassword, {
-          locale: 'en',
-          email,
-          firstname: 'Pending',
-          lastname: `Applicant ${String(index + 1).padStart(2, '0')}`,
-        }),
+    [
+      'testing+pending01@caluno.org',
+      'testing+pending02@caluno.org',
+      'testing+pending03@caluno.org',
+      'testing+pending04@caluno.org',
+      'testing+pending05@caluno.org',
+    ].map((email, index) =>
+      createAuthUser(db, hashedPassword, {
+        locale: 'en',
+        email,
+        firstname: 'Pending',
+        lastname: `Applicant ${String(index + 1).padStart(2, '0')}`,
+      }),
     ),
   );
 
@@ -1488,6 +1859,13 @@ async function seedFixtures() {
     });
   }
 
+  await ensureOverviewWaitingActions(db, {
+    organizationId: org.organizationId,
+    rootUnitId: org.rootUnitId,
+    adminId: admin.id,
+    volunteers: members,
+  });
+
   await ensureTimeEntries(
     db,
     [supervisor, ...members],
@@ -1507,9 +1885,9 @@ async function seedFixtures() {
   console.log(`Created Playground organization (${org.organizationId})`);
   console.log(`Root unit: ${org.rootUnitId}`);
   console.log(
-    'Users: 16 accounts seeded (password from FIXTURE_PASSWORD, default: abcd1234)',
+    'Users: 19 accounts seeded (password from FIXTURE_PASSWORD, default: abcd1234)',
   );
-  console.log('Memberships: 13 approved, 2 pending, 1 rejected');
+  console.log('Memberships: 13 approved, 5 pending, 1 rejected');
   console.log(
     'Requirement forms: Personal Information (org unit), Banking Information (Welcome Desk shift), Code of Conduct (Volunteer Fair event)',
   );
@@ -1528,6 +1906,9 @@ async function seedFixtures() {
   );
   console.log(
     'Time entries: created across Community Support and Food Distribution',
+  );
+  console.log(
+    'Overview (testing+admin@caluno.org): 5 of each waiting action, including 5 membership requests',
   );
   console.log(
     [

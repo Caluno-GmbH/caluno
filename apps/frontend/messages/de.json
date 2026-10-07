@@ -1,4 +1,23 @@
 {
+  "Overview": {
+    "empty": "Es wartet nichts auf dich.",
+    "loadFailed": "Die offenen Aufgaben konnten nicht geladen werden.",
+    "seeAll": "Alle anzeigen ({count})",
+    "back": "Zurück zur Übersicht",
+    "waiting": "{count, plural, one {# wartet} other {# warten}}",
+    "short": "{missing, plural, one {# nötig} other {# nötig}}",
+    "hours": "{hours} Stunden",
+    "sections": {
+      "SHIFT_BELOW_MINIMUM": "Einsätze, für die noch Leute fehlen",
+      "SHIFT_APPROVAL": "Anmeldungen für Einsätze freigeben",
+      "EVENT_APPROVAL": "Anmeldungen für Veranstaltungen freigeben",
+      "CONTRACT_SIGN": "Vereinbarungen gegenzeichnen",
+      "TIMESHEET_SIGN": "Stundennachweise gegenzeichnen",
+      "TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand",
+      "DOCUMENT_DECLINED": "Von Ehrenamtlichen abgelehnte Dokumente",
+      "MEMBERSHIP_REQUEST": "Beitrittsanfrage"
+    }
+  },
   "Terms": {
     "accept": "Akzeptieren und fortfahren",
     "accepting": "Wird akzeptiert...",

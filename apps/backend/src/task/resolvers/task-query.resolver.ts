@@ -12,7 +12,7 @@ export class TaskQueryResolver {
   myTasks(
     @Session() session: UserSession,
     @Context() ctx: AuthenticatedGraphQLContext,
-  ): Task[] {
+  ): Promise<Task[]> {
     return this.taskService.myTasks(session.user.id, ctx.organizationUnitId);
   }
 }

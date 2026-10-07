@@ -1,4 +1,23 @@
 {
+  "Overview": {
+    "empty": "Nothing is waiting on you.",
+    "loadFailed": "Waiting actions could not be loaded.",
+    "seeAll": "See all ({count})",
+    "back": "Back to overview",
+    "waiting": "{count, plural, one {# waiting} other {# waiting}}",
+    "short": "{missing, plural, one {# needed} other {# needed}}",
+    "hours": "{hours} hours",
+    "sections": {
+      "SHIFT_BELOW_MINIMUM": "Assignments that need people",
+      "SHIFT_APPROVAL": "Assignment sign-ups to approve",
+      "EVENT_APPROVAL": "Event sign-ups to approve",
+      "CONTRACT_SIGN": "Contracts to countersign",
+      "TIMESHEET_SIGN": "Timesheets to sign",
+      "TIMESHEET_BUNDLES": "Timesheet bundles ready to send",
+      "DOCUMENT_DECLINED": "Documents declined by a volunteer",
+      "MEMBERSHIP_REQUEST": "Volunteer request"
+    }
+  },
   "Terms": {
     "accept": "Accept and continue",
     "accepting": "Accepting...",

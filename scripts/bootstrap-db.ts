@@ -90,7 +90,7 @@ const logFixtureSummary = (): void => {
   );
   console.log('  testing+001@caluno.org … testing+010@caluno.org (Member)');
   console.log(
-    '  testing+pending01@caluno.org, testing+pending02@caluno.org (pending request)',
+    '  testing+pending01@caluno.org … testing+pending05@caluno.org (pending request)',
   );
   console.log('  testing+rejected01@caluno.org   (rejected request)');
   console.log('\nShifts (weekly, Europe/Berlin):');

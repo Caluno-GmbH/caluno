@@ -119,10 +119,10 @@ The same fixture script is used for staging via `bun run db:fixtures:staging`.
 | `testing+supervisor@caluno.org` | Supervisor |
 | `testing+demo@caluno.org` | Member (demo account) |
 | `testing+001@` … `testing+010@caluno.org` | Member |
-| `testing+pending01@`, `testing+pending02@caluno.org` | Pending membership request |
+| `testing+pending01@` … `testing+pending05@caluno.org` | Pending membership request |
 | `testing+rejected01@caluno.org` | Rejected membership request |
 
-Password for all fixture accounts: `abcd1234` (override with `FIXTURE_PASSWORD`). Organization: **Playground**. Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields.
+Password for all fixture accounts: `abcd1234` (override with `FIXTURE_PASSWORD`). Organization: **Playground**. Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields. `testing+admin@caluno.org` also gets five of each Übersicht waiting action on the root unit.
 
 ## Tech Stack
 - **NestJS 11** primary web framework

@@ -4237,6 +4237,11 @@ export type CheckInInviteToShiftInstanceMutationVariables = Exact<{
 
 export type CheckInInviteToShiftInstanceMutation = { __typename?: 'Mutation', checkInInviteToShiftInstance: { __typename?: 'ShiftInstance', id: string } };
 
+export type MyTasksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyTasksQuery = { __typename?: 'Query', myTasks: Array<{ __typename?: 'Task', id: string, type: TaskType, link: string, data: Record<string, unknown>, organizationUnitId: string, neededPermission?: PermissionKey | null }> };
+
 export type TermsStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -7637,6 +7642,18 @@ export const CheckInInviteToShiftInstanceDocument = gql`
   }
 }
     `;
+export const MyTasksDocument = gql`
+    query MyTasks {
+  myTasks {
+    id
+    type
+    link
+    data
+    organizationUnitId
+    neededPermission
+  }
+}
+    `;
 export const TermsStatusDocument = gql`
     query TermsStatus {
   termsStatus {
@@ -8565,6 +8582,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CheckInInviteToShiftInstance(variables: CheckInInviteToShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInInviteToShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInInviteToShiftInstanceMutation>({ document: CheckInInviteToShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInInviteToShiftInstance', 'mutation', variables);
+    },
+    MyTasks(variables?: MyTasksQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyTasksQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyTasksQuery>({ document: MyTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyTasks', 'query', variables);
     },
     TermsStatus(variables?: TermsStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TermsStatusQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<TermsStatusQuery>({ document: TermsStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TermsStatus', 'query', variables);

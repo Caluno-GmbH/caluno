@@ -78,7 +78,7 @@ After `bun bootstrap`, the database contains a **Playground** organization with 
 | `testing+supervisor@caluno.org` | Supervisor |
 | `testing+demo@caluno.org` | Member (demo account) |
 | `testing+001@` … `testing+010@caluno.org` | Member |
-| `testing+pending01@`, `testing+pending02@caluno.org` | Pending membership request |
+| `testing+pending01@` … `testing+pending05@caluno.org` | Pending membership request |
 | `testing+rejected01@caluno.org` | Rejected membership request |
 
 Weekly shifts (Europe/Berlin):
