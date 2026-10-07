@@ -9,6 +9,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
   Badge,
   Button,
   cn,
@@ -16,7 +19,7 @@ import {
   type ShiftVolunteeringDisplayState,
   VolunteeringMemberRow,
 } from '@repo/ui';
-import { ArrowLeftRight, CirclePlus, CircleX } from 'lucide-react';
+import { ArrowLeftRight, CirclePlus, CircleX, UserRound } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import type { VolunteerAllowanceState } from '../allowance-display';
@@ -65,6 +68,7 @@ export function TransferList({
     null,
   );
   const t = useTranslations('Shift');
+  const tCommon = useTranslations('Common');
   const tConfirm = useTranslations('Shift.transferList.confirmExceedAllowance');
 
   const invitedIds = new Set(invited.map((m) => m.id));
@@ -138,7 +142,19 @@ export function TransferList({
                 key={member.id}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent"
               >
-                <div className="size-5 rounded-full bg-muted shrink-0" />
+                {/* `image` already arrives here from GetOrganizationUnitMemberships;
+                    this row used to drop it and draw a bare circle. Matches the
+                    volunteer list: sm avatar, UserRound when there is no picture
+                    (VOLI-1582). */}
+                <Avatar size="sm" className="shrink-0">
+                  <AvatarImage
+                    src={member.image ?? undefined}
+                    alt={tCommon('avatarAlt', { name: member.name })}
+                  />
+                  <AvatarFallback>
+                    <UserRound className="size-3" />
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm truncate" title={member.name}>
                     {member.name}
