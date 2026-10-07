@@ -245,11 +245,9 @@ export function TemplateBuilder({
       ? 'preview.documentTitle.contract'
       : 'preview.documentTitle.invoice') as Parameters<typeof t>[0],
   );
-  const signerRightLabel = t(
-    (kind === 'contract'
-      ? 'preview.signatureCoordinator'
-      : 'preview.signatureSupervisor') as Parameters<typeof t>[0],
-  );
+  // Contracts and invoices name the same signer, and the renderer prints one
+  // label for both, so there is nothing left to branch on here (VOLI-1580).
+  const signerRightLabel = t('preview.signatureSupervisor');
 
   async function handleSave() {
     if (!templateDoc) return;

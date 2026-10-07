@@ -363,7 +363,12 @@ export class DocumentRenderingService {
         signedAt: this.signatureTimestampFor(document, 'VOLUNTEER'),
       },
       {
-        label: 'Unterschrift Koordination',
+        // "Organisation", not "Koordination": the seat is filled with org_name,
+        // so the old label contradicted the name printed under it. One pair of
+        // labels covers every document type here, so this is also what fixes
+        // invoices — their preview already said Organisation while the issued
+        // PDF said Koordination (VOLI-1580).
+        label: 'Unterschrift (Organisation)',
         name: resolved.org_name || '—',
         signedAt: this.signatureTimestampFor(document, 'PERMISSION_HOLDER'),
       },

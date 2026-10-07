@@ -2347,7 +2347,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Supplementary agreement",
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
+          "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2459,7 +2459,6 @@
             "invoice": "Timesheet"
           },
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
           "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         },

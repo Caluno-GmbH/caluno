@@ -2347,7 +2347,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Zusatzvereinbarung",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift (Koordination)",
+          "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2459,7 +2459,6 @@
             "invoice": "Stundennachweis"
           },
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift (Koordination)",
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
