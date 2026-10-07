@@ -172,9 +172,6 @@ describe('VolunteerAllowanceService', () => {
     });
   });
 
-  // VOLI-1577. An unpaid shift raises no allowance question, so it gets no
-  // answer — distinct from "no shift named", below, where the person's general
-  // standing is what was asked for.
   describe('unpaid shift instance', () => {
     const unpaid = {
       reimbursementTypeId: null,
