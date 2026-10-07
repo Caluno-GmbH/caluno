@@ -785,9 +785,7 @@
     "detail": {
       "aboutTitle": "About",
       "contactTitle": "Contact",
-      "editButton": "Edit",
-      "hierarchyTitle": "Hierarchy",
-      "partOf": "Part of "
+      "editButton": "Edit"
     },
     "form": {
       "streetLabel": "Street name and number",
@@ -840,6 +838,7 @@
       "deleteAria": "Delete",
       "editAria": "Edit",
       "empty": "No organisation unit hierarchy found. Contact your coordinator.",
+      "title": "Organisational structure",
       "visitAria": "Visit"
     },
     "validation": {

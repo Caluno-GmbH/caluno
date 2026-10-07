@@ -785,9 +785,7 @@
     "detail": {
       "aboutTitle": "Über",
       "contactTitle": "Kontakt",
-      "editButton": "Bearbeiten",
-      "hierarchyTitle": "Hierarchie",
-      "partOf": "Teil von "
+      "editButton": "Bearbeiten"
     },
     "form": {
       "streetLabel": "Straße und Hausnummer",
@@ -840,6 +838,7 @@
       "deleteAria": "Löschen",
       "editAria": "Bearbeiten",
       "empty": "Keine Organisationseinheit-Hierarchie gefunden. Wende dich an deine Koordination.",
+      "title": "Organisationsstruktur",
       "visitAria": "Besuchen"
     },
     "validation": {
