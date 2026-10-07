@@ -157,7 +157,7 @@ src/
 ├── utils       # Shared generic code
 test/
 ```
-Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`) are self-contained NestJS modules:
+Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`, `task`) are self-contained NestJS modules:
 ```
 domain/
 ├── domain.module.ts
