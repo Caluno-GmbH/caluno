@@ -14,6 +14,7 @@ import {
   useCurrentOrg,
   useEffectiveRates,
   useEligibleTimeEntriesForInvoice,
+  useManualBaseline,
   usePermissions,
   useReimbursementTypes,
   useVolunteersNeedingTimesheets,
@@ -24,6 +25,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { fromPeriodBounds, toPeriodBounds } from '../lib/billing-period';
@@ -38,6 +40,7 @@ import {
 } from '../lib/creation-modal.utils';
 import { eligibleHoursEmptyReason } from '../lib/eligible-hours-empty';
 import { formatRateInput, parseRateCents } from '../lib/invoice-rate';
+import { effectiveUsedBefore } from '../lib/manual-cap';
 import { centsToEuros, formatHourlyRate } from '../lib/money';
 import {
   apiDocumentKindFor,
@@ -235,6 +238,11 @@ export function InvoiceCreationModal({
   const [isSending, setIsSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [sendErrorCode, setSendErrorCode] = useState<string | null>(null);
+  // The initial yearly amount the coordinator set while reviewing, or null
+  // while untouched. Saved together with the timesheet, never on its own.
+  const [pendingBaselineCents, setPendingBaselineCents] = useState<
+    number | null
+  >(null);
 
   const eligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
@@ -261,6 +269,14 @@ export function InvoiceCreationModal({
     // cutoff, so the dialog and the document state the same figure.
     asOfDate: periodBounds?.periodEnd,
   });
+  const periodYear = period.from?.getFullYear() ?? new Date().getFullYear();
+  // The stored initial yearly amount for the year this timesheet covers; the
+  // coordinator's pending edit is layered on top of it below.
+  const baselineQuery = useManualBaseline(
+    volunteerId ?? undefined,
+    reimbursementType?.id,
+    periodYear,
+  );
   const formatting = useFormatting();
   const lines = useMemo(
     () =>
@@ -286,8 +302,16 @@ export function InvoiceCreationModal({
   useEffect(() => {
     setDerivedFields(null);
     setEditedValues({});
+    setPendingBaselineCents(null);
     setPeriod(periodToOpen(initialPeriod));
   }, [volunteerId, docId, templateIdentity]);
+
+  // The initial amount belongs to the year the period covers; switching to
+  // another year must not carry a pending edit over onto the new year's figure.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset keyed on the year only
+  useEffect(() => {
+    setPendingBaselineCents(null);
+  }, [periodYear]);
 
   // Every eligible entry starts checked — unchecking removes it from the
   // invoice being created (see EligibleHoursCard). Re-syncs whenever the
@@ -355,15 +379,10 @@ export function InvoiceCreationModal({
   // data arriving, say) must not clobber a coordinator's edits. The reset
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !template || derivedFields || !volunteerName) return;
-    const profileData = (profileQuery.data?.data ?? {}) as Record<
-      string,
-      unknown
-    >;
-    setDerivedFields(
-      deriveEditableFields(template, profileData, volunteerName),
-    );
-  }, [dataReady, template, derivedFields, profileQuery.data, volunteerName]);
+    if (!dataReady || !template || derivedFields) return;
+    const profileData = toProfileDataMap(profileQuery.data);
+    setDerivedFields(deriveEditableFields(template, profileData));
+  }, [dataReady, template, derivedFields, profileQuery.data]);
 
   // Rendered unconditionally (per the ContractCreationModal precedent) so the
   // Dialog can drive its own open/close animation; nothing below needs the
@@ -389,7 +408,14 @@ export function InvoiceCreationModal({
   // (see dataReady) rather than showing the board's full-year figure.
   const usedBefore = centsToEuros(yearlyUsageQuery.data?.usedCents ?? 0);
   const totalCap = centsToEuros(yearlyUsageQuery.data?.limitCents ?? 0);
-  const projectedAfter = usedBefore + selectedAmount;
+  // Show the coordinator's pending initial amount immediately, even though it
+  // is only persisted once the timesheet is sent.
+  const displayedUsedBefore = effectiveUsedBefore(
+    usedBefore,
+    pendingBaselineCents,
+    baselineQuery.data?.amountCents,
+  );
+  const projectedAfter = displayedUsedBefore + selectedAmount;
 
   const toggleLine = (id: string) => {
     setCheckedIds((prev) => {
@@ -414,6 +440,9 @@ export function InvoiceCreationModal({
         periodEnd: periodBounds.periodEnd,
         timeEntryIds: selectedLines.map((line) => line.id),
         hourlyRateCents: rateIsOverridden ? rateCents : undefined,
+        // Part of the same send: the backend persists it in the transaction
+        // that creates the timesheet, so cancelling saves nothing (VOLI-1569).
+        manualBaselineCents: pendingBaselineCents ?? undefined,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>
           isEdited(field.fieldId)
             ? field.fieldIds.map((id) => ({
@@ -423,6 +452,7 @@ export function InvoiceCreationModal({
             : [],
         ),
       });
+      setPendingBaselineCents(null);
       onOpenChange(false);
       toast.success(t('sentToast', { name: volunteerName }));
       onSent();
@@ -799,16 +829,16 @@ export function InvoiceCreationModal({
                 </InfoPanel>
               ))}
             <InvoiceCapCard
-              usedBefore={usedBefore}
+              usedBefore={displayedUsedBefore}
               projectedAfter={projectedAfter}
               total={totalCap}
             />
             {reimbursementType && (
               <ManualCapEditor
-                volunteerId={volunteerId}
-                reimbursementTypeId={reimbursementType.id}
-                year={period.from?.getFullYear() ?? new Date().getFullYear()}
-                usedBefore={usedBefore}
+                initialAmountCents={baselineQuery.data?.amountCents}
+                pendingAmountCents={pendingBaselineCents}
+                onCommitAmount={setPendingBaselineCents}
+                usedBefore={displayedUsedBefore}
                 selectedAmount={selectedAmount}
               />
             )}

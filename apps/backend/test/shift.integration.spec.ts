@@ -380,6 +380,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Shift Past Future Invite User',
+      firstname: 'Shift',
+      lastname: 'Past Future Invite User',
       email: `shift-past-future-invite-${crypto.randomUUID()}@example.com`,
     });
 
@@ -494,6 +496,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Shift Remove Future User',
+      firstname: 'Shift',
+      lastname: 'Remove Future User',
       email: `shift-remove-future-${crypto.randomUUID()}@example.com`,
     });
 
@@ -768,6 +772,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Deleted Shift Invite User',
+      firstname: 'Deleted',
+      lastname: 'Shift Invite User',
       email: `deleted-shift-invite-${crypto.randomUUID()}@example.com`,
     });
 
@@ -852,6 +858,8 @@ describe('ShiftService.findInstancesForOrgUnitInRange', () => {
     await db.insert(schema.users).values({
       id: userId,
       name: 'Deleted Master Invite User',
+      firstname: 'Deleted',
+      lastname: 'Master Invite User',
       email: `deleted-master-invite-${crypto.randomUUID()}@example.com`,
     });
 
@@ -4906,7 +4914,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
     return { user, shiftId, instance };
   };
 
-  it('returns PENDING when joinRequiresApproval is enabled', async () => {
+  it('returns PENDING_APPROVAL when joinRequiresApproval is enabled', async () => {
     const { user, instance } = await setupJoinableInstance({
       joinRequiresApproval: true,
     });
@@ -4916,7 +4924,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       instance.id,
     );
 
-    expect(result.status).toBe(JoinStatus.PENDING);
+    expect(result.status).toBe(JoinStatus.PENDING_APPROVAL);
 
     const invite = await db.query.shiftInstanceInvites.findFirst({
       where: { instanceId: instance.id, userId: user.id },
@@ -4949,7 +4957,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
     expect(invite?.status).toBe(ShiftInviteStatus.WAITLIST_JOINED);
   });
 
-  it('returns PENDING for ADMIN_INVITED when joinRequiresApproval is enabled', async () => {
+  it('returns PENDING_APPROVAL for ADMIN_INVITED when joinRequiresApproval is enabled', async () => {
     const { user, instance } = await setupJoinableInstance({
       joinRequiresApproval: true,
     });
@@ -4965,7 +4973,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       instance.id,
     );
 
-    expect(result.status).toBe(JoinStatus.PENDING);
+    expect(result.status).toBe(JoinStatus.PENDING_APPROVAL);
 
     const invite = await db.query.shiftInstanceInvites.findFirst({
       where: { instanceId: instance.id, userId: user.id },
@@ -4987,7 +4995,7 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       instance.id,
     );
 
-    expect(result.status).toBe(JoinStatus.PENDING);
+    expect(result.status).toBe(JoinStatus.PENDING_APPROVAL);
 
     const invite = await db.query.shiftInstanceInvites.findFirst({
       where: { instanceId: instance.id, userId: user.id },
@@ -5444,8 +5452,10 @@ describe('ShiftService.updateShiftInstance applyToAllFuture — non-UTC host tim
   it('does not shift startsAt/endsAt when resubmitted unchanged with applyToAllFuture', async () => {
     // Exactly what a real Berlin browser sends for "2:00-4:00 AM local, Wed
     // Oct 7 2026" (CEST, UTC+2): the true UTC instant.
-    const startsAt = new Date('2026-10-07T00:00:00.000Z');
-    const endsAt = new Date('2026-10-07T02:00:00.000Z');
+    const start = new Date();
+    start.setMilliseconds(0);
+    const startsAt = new Date(start.getTime() + 120 * 60000);
+    const endsAt = new Date(startsAt.getTime() + 120 * 60000);
 
     const shift = await createShift(db, {
       organizationUnitId,

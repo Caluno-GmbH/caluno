@@ -588,25 +588,6 @@ query GetMyFormSubmissions($organizationUnitId: ID!) {
   }
 }
 
-query GetMyUserProfile {
-  myUserProfile {
-    id
-    userId
-    data
-    createdAt
-    updatedAt
-  }
-}
-
-mutation UpdateMyUserProfile($input: UpdateUserProfileInput!) {
-  updateMyUserProfile(input: $input) {
-    id
-    userId
-    data
-    updatedAt
-  }
-}
-
 query GetFormSubmissionsByMembershipRequest($membershipRequestId: String!) {
   formSubmissionsByMembershipRequest(
     membershipRequestId: $membershipRequestId

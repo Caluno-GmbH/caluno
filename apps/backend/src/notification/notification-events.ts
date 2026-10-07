@@ -63,6 +63,7 @@ export const NotificationEvent = {
   // The admin-facing counterpart: the volunteer declined a document with a
   // reason, and whoever can correct and reissue it needs to know (VOLI-1246).
   DOCUMENT_DECLINED_BY_VOLUNTEER: 'notification.document.declined-by-volunteer',
+  TERMS_UPDATED: 'notification.terms.updated',
 } as const;
 
 export type NotificationEvent =

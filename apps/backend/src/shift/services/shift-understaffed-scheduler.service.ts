@@ -18,13 +18,27 @@ export class ShiftUnderstaffedSchedulerService {
 
   @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
   async handleTick(): Promise<void> {
+    const startedAt = Date.now();
+    this.logger.log({ event: 'understaffed_tick.started' }, 'Tick started');
+
     try {
-      await this.notificationService.runTick();
+      const summary = await this.notificationService.runTick();
+      this.logger.log(
+        {
+          event: 'understaffed_tick.finished',
+          duration_ms: Date.now() - startedAt,
+          ...summary,
+        },
+        'Tick finished',
+      );
     } catch (error) {
       this.logger.error(
-        `Understaffed-shift scheduler tick failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        {
+          event: 'understaffed_tick.failed',
+          duration_ms: Date.now() - startedAt,
+          err: error,
+        },
+        'Tick failed',
       );
     }
   }

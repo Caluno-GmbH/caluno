@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
@@ -171,15 +172,10 @@ export function ContractCreationModal({
   // data arriving, say) must not clobber a coordinator's edits. The reset
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !templateDoc || derivedFields || !volunteerName) return;
-    const profileData = (profileQuery.data?.data ?? {}) as Record<
-      string,
-      unknown
-    >;
-    setDerivedFields(
-      deriveEditableFields(templateDoc, profileData, volunteerName),
-    );
-  }, [dataReady, templateDoc, derivedFields, profileQuery.data, volunteerName]);
+    if (!dataReady || !templateDoc || derivedFields) return;
+    const profileData = toProfileDataMap(profileQuery.data);
+    setDerivedFields(deriveEditableFields(templateDoc, profileData));
+  }, [dataReady, templateDoc, derivedFields, profileQuery.data]);
 
   const { formatDate } = useFormatting();
 

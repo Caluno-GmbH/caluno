@@ -8,6 +8,7 @@ import { EventListener } from './listeners/event.listener';
 import { MembershipListener } from './listeners/membership.listener';
 import { OrganizationListener } from './listeners/organization.listener';
 import { ShiftListener } from './listeners/shift.listener';
+import { TermsListener } from './listeners/terms.listener';
 import { NotificationService } from './notification.service';
 import { TypedNotificationEmitter } from './typed-notification-emitter.service';
 
@@ -23,6 +24,7 @@ import { TypedNotificationEmitter } from './typed-notification-emitter.service';
     ShiftListener,
     EventListener,
     DocumentListener,
+    TermsListener,
   ],
   exports: [NotificationService, EmailService],
 })

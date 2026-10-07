@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
-import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
+import { UserService } from '../../user/user.service';
 import {
   ORG_OVERRIDE_SOURCES,
   type OrgOverrides,
@@ -34,7 +34,7 @@ export class DocumentProfileRequirementService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly userProfileService: UserProfileService,
+    private readonly userService: UserService,
   ) {}
 
   /** The profile-required DataSourceKeys the template binds on enabled lines. */
@@ -78,8 +78,7 @@ export class DocumentProfileRequirementService {
   ): Promise<string[]> {
     const required = this.requiredProfileSources(templateBody);
     if (required.length === 0) return [];
-    const profile = await this.userProfileService.findByUserId(volunteerId);
-    const data = (profile?.data ?? {}) as Record<string, unknown>;
+    const data = await this.userService.getProfileDataByUserId(volunteerId);
 
     return required.filter((source) => {
       const key = PROFILE_SOURCE_TO_PROFILE_KEY[source];

@@ -195,16 +195,15 @@ export function JoinShiftButton({
             inviteStatusFromResult ?? ShiftInviteStatus.WaitlistJoined,
           );
           if (isAuto) router.push('/');
-        } else if (result.status === JoinStatus.Pending) {
-          if (
-            inviteStatusFromResult === ShiftInviteStatus.AwaitingAdminApproval
-          ) {
-            toast.success(t('join.requestSent'));
-            onInviteStatusChange?.(inviteStatusFromResult);
-          } else {
-            toast.success(t('join.pending'));
-            onMembershipStateChange?.(JoinStatus.Pending);
-          }
+        } else if (result.status === JoinStatus.PendingApproval) {
+          toast.success(t('join.requestSent'));
+          onInviteStatusChange?.(
+            inviteStatusFromResult ?? ShiftInviteStatus.AwaitingAdminApproval,
+          );
+          if (isAuto) router.push('/');
+        } else if (result.status === JoinStatus.PendingMembership) {
+          toast.success(t('join.pending'));
+          onMembershipStateChange?.(JoinStatus.PendingMembership);
           if (isAuto) router.push('/');
         } else if (result.status === JoinStatus.Rejected) {
           toast.error(t('join.rejected'));

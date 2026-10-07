@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { orgUnitAdminHref, switchOrgAdminHref } from '@/lib/admin-routes';
+import { getOrgUnitDisplayName } from '@/lib/org-display-name';
 
 export function OrgSwitcher() {
   const [open, setOpen] = useState(false);
@@ -34,6 +35,7 @@ export function OrgSwitcher() {
       : switchOrgAdminHref(orgUId, pathname);
 
   const currentOrg = organizations.find((org) => org.id === currentorgUId);
+  const isNested = currentOrg && !currentOrg.isRoot;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -42,14 +44,30 @@ export function OrgSwitcher() {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between px-3!"
+          className={cn(
+            'w-full justify-between px-3!',
+            isNested && 'h-auto min-h-9 py-1',
+          )}
         >
-          <span className="flex items-center gap-2 truncate">
-            <Building2 className="shrink-0" />
-            <span className="truncate">
-              {currentOrg?.name || t('selectOrganization')}
+          {currentOrg ? (
+            <span className="flex min-w-0 items-center gap-2 text-left">
+              <span className="flex min-w-0 flex-col">
+                {isNested ? (
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground pl-7 truncate">
+                    {currentOrg.rootOrganizationName}
+                  </span>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  <Building2 className="shrink-0" />
+                  <span className="truncate font-medium">
+                    {currentOrg.name}
+                  </span>
+                </div>
+              </span>
             </span>
-          </span>
+          ) : (
+            t('selectOrganization')
+          )}
           <ChevronsUpDown className="ml-2 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -66,7 +84,7 @@ export function OrgSwitcher() {
                         currentorgUId === org.id ? 'opacity-100' : 'opacity-0',
                       )}
                     />
-                    <span>{org.name}</span>
+                    <span>{getOrgUnitDisplayName(org)}</span>
                   </Link>
                 </CommandItem>
               ))}

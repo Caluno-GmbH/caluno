@@ -40,7 +40,8 @@ export function ShiftJoinFormsClient({
 
       if (
         result.status === JoinStatus.Joined ||
-        result.status === JoinStatus.Pending
+        result.status === JoinStatus.PendingMembership ||
+        result.status === JoinStatus.PendingApproval
       ) {
         toast.success(
           result.status === JoinStatus.Joined

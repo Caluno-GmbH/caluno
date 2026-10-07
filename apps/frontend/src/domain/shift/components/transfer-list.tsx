@@ -16,26 +16,16 @@ import {
   type ShiftVolunteeringDisplayState,
   VolunteeringMemberRow,
 } from '@repo/ui';
-import {
-  ArrowLeftRight,
-  CircleAlert,
-  CircleCheck,
-  CirclePlus,
-  CircleX,
-  FileWarning,
-  TriangleAlert,
-} from 'lucide-react';
+import { ArrowLeftRight, CirclePlus, CircleX } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import type { InviteAllowanceState } from '../invite-allowance-display';
-import {
-  requiresInviteConfirmation,
-  toInviteAllowanceDisplay,
-} from '../invite-allowance-display';
+import type { VolunteerAllowanceState } from '../allowance-display';
+import { requiresInviteConfirmation } from '../allowance-display';
 import {
   type InviteStatus,
   toInviteDisplayState,
 } from '../invite-status-display';
+import { AllowanceBadge } from './allowance-badge';
 
 /** Label + gap + search bar + minimum list area */
 const TRANSFER_LIST_MIN_HEIGHT = 222;
@@ -49,41 +39,12 @@ type Member = {
   /** When set, overrides inviteStatus → display mapping (e.g. events). */
   displayState?: ShiftVolunteeringDisplayState;
   /**
-   * Allowance eligibility for the shift being invited to. Only set for a
-   * paid shift (VOLI-1248) — undefined/null renders no badge at all, which
-   * is what keeps an unpaid shift's list unchanged.
+   * Allowance state of the person for the shift being invited to
+   * (VOLI-1248). Undefined/null renders no badge, e.g. while loading or when
+   * accounting is off.
    */
-  allowanceState?: InviteAllowanceState | null;
+  allowanceState?: VolunteerAllowanceState | null;
 };
-
-const ALLOWANCE_ICON: Record<InviteAllowanceState, typeof CircleCheck> = {
-  ELIGIBLE: CircleCheck,
-  NEARLY_EXHAUSTED: TriangleAlert,
-  WOULD_EXCEED: CircleAlert,
-  NO_AGREEMENT: FileWarning,
-};
-
-const ALLOWANCE_BADGE_VARIANT: Record<
-  InviteAllowanceState,
-  'success' | 'info' | 'destructive'
-> = {
-  ELIGIBLE: 'success',
-  NEARLY_EXHAUSTED: 'info',
-  WOULD_EXCEED: 'destructive',
-  NO_AGREEMENT: 'info',
-};
-
-function AllowanceBadge({ state }: { state: InviteAllowanceState }) {
-  const t = useTranslations('Shift.transferList.allowance');
-  const display = toInviteAllowanceDisplay(state);
-  const Icon = ALLOWANCE_ICON[state];
-  return (
-    <Badge variant={ALLOWANCE_BADGE_VARIANT[state]} className="gap-1 shrink-0">
-      <Icon className="size-3" />
-      {t(display.labelKey)}
-    </Badge>
-  );
-}
 
 type TransferListProps = {
   available: Member[];
@@ -188,10 +149,12 @@ export function TransferList({
                   >
                     {member.email}
                   </p>
+                  {member.allowanceState && (
+                    <div className="mt-1 min-w-0 max-w-full">
+                      <AllowanceBadge state={member.allowanceState} />
+                    </div>
+                  )}
                 </div>
-                {member.allowanceState && (
-                  <AllowanceBadge state={member.allowanceState} />
-                )}
                 <Button
                   type="button"
                   variant="ghost"

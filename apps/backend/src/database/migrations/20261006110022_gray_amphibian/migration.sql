@@ -1,0 +1,1 @@
+CREATE INDEX "idx_terms_acceptances_user_id_accepted_at" ON "terms_acceptances" ("user_id","accepted_at");

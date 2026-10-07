@@ -1,3 +1,4 @@
+export * from './compensation';
 export * from './components';
 export * from './icons';
 export * from './layout';

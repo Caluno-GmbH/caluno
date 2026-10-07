@@ -39,7 +39,10 @@ export function EventFormsClient({
       if (result.status === JoinStatus.Joined) {
         toast.success(t('joinedToast', { eventTitle }));
         router.push(getSafeRedirect(redirectTo, `/events/${eventId}`));
-      } else if (result.status === JoinStatus.Pending) {
+      } else if (
+        result.status === JoinStatus.PendingMembership ||
+        result.status === JoinStatus.PendingApproval
+      ) {
         toast.success(t('pendingRequestToast'));
         router.push(`/events/${eventId}`);
       } else if (result.status === JoinStatus.Rejected) {

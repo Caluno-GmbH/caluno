@@ -21,6 +21,7 @@ import {
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { CompensationNotice } from '@/domain/shift/components/compensation-notice';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { getInitials } from '@/lib/get-initials';
@@ -166,6 +167,8 @@ export function InviteCardMyInvited({ invite }: { invite: MergedInvitation }) {
             )}
           </div>
         </Link>
+
+        <CompensationNotice reimbursementTypeKey={n.reimbursementTypeKey} />
 
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button

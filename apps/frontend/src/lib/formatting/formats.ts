@@ -4,6 +4,7 @@ import {
   formatDuration as dateFnsFormatDuration,
   intervalToDuration,
   isSameDay,
+  parseISO,
 } from 'date-fns';
 import { intlLocaleTag, localeDateFns } from '@/i18n/locales';
 
@@ -19,6 +20,11 @@ export function formatEuro(amount: number): string {
 }
 
 export const formats = (locale: string) => {
+  // Parse date strings with date-fns (never `new Date(string)`) so parsing is
+  // engine- and timezone-independent across SSR and the client.
+  const toDate = (value: string | Date): Date =>
+    value instanceof Date ? value : parseISO(value);
+
   const format = (date: Date, formatting: string) =>
     dateFnsFormat(date, formatting, {
       locale: localeDateFns(locale),
@@ -78,6 +84,33 @@ export const formats = (locale: string) => {
     return `${formatTime(fromDate)} - ${formatTime(toDate)}`;
   };
 
+  // Splits a worked period into a date line and a time-range line. When the
+  // entry crosses midnight in Europe/Berlin, the end date is appended to the
+  // time line so the range is unambiguous.
+  const formatWorkedPeriod = (
+    from: string | Date,
+    to?: string | Date | null,
+    openLabel = 'open',
+  ): { date: string; time: string } => {
+    const fromDate = toDate(from);
+    const date = formatDate(fromDate);
+
+    if (!to) {
+      return { date, time: `${formatTime(fromDate)} - ${openLabel}` };
+    }
+
+    const toDateValue = toDate(to);
+    const crossesDay = !isSameDay(fromDate, toDateValue, {
+      in: tz(DEFAULT_TIMEZONE),
+    });
+    const endSuffix = crossesDay ? ` (${formatDate(toDateValue)})` : '';
+
+    return {
+      date,
+      time: `${formatTime(fromDate)} - ${formatTime(toDateValue)}${endSuffix}`,
+    };
+  };
+
   const formatDuration = (from: Date | string, to?: Date | string | null) => {
     const start = new Date(from);
     const end = to ? new Date(to) : new Date();
@@ -114,6 +147,7 @@ export const formats = (locale: string) => {
     formatRange,
     formatDateRange,
     formatTimeRange,
+    formatWorkedPeriod,
     formatDuration,
     formatDurationByMinutes,
   };

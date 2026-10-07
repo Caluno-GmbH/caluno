@@ -1,4 +1,20 @@
 {
+  "Terms": {
+    "accept": "Accept and continue",
+    "accepting": "Accepting...",
+    "redirecting": "Redirecting...",
+    "acceptFailed": "Something went wrong. Please try again.",
+    "loadFailed": "The terms document could not be loaded. Please refresh the page."
+  },
+  "Unsubscribe": {
+    "confirm": "Unsubscribe from all emails",
+    "confirming": "Unsubscribing...",
+    "description": "Stop receiving all email notifications from caluno.",
+    "error": "We couldn't update your email preferences. Please try again.",
+    "success": "You will no longer receive email notifications from caluno.",
+    "successTitle": "You're unsubscribed",
+    "title": "Unsubscribe from emails"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Join {orgName}",
@@ -52,8 +68,11 @@
       "emailPlaceholder": "you@example.com",
       "genericError": "We couldn't create your account. Please try again.",
       "hasAccount": "Already have an account?",
-      "nameLabel": "Full name",
-      "namePlaceholder": "John Doe",
+      "firstnameLabel": "First name",
+      "firstnamePlaceholder": "John",
+      "lastnameLabel": "Last name",
+      "lastnamePlaceholder": "Doe",
+      "namePartsRequired": "Please enter your first and last name.",
       "passwordHint": "At least 6 characters",
       "passwordLabel": "Password",
       "passwordPlaceholder": "••••••••",
@@ -62,6 +81,8 @@
       "signInLink": "Sign in",
       "submit": "Create account",
       "submitting": "Creating account...",
+      "termsAcknowledge": "I have read and accept the <termsLink>Terms and Conditions</termsLink>.",
+      "termsRequired": "Please accept the Terms and Conditions to continue.",
       "title": "Create your account",
       "description": "Welcome to caluno. Sign up to join assignments and volunteer with your organisation."
     },
@@ -105,6 +126,8 @@
     "idVerificationDescription": "Ask the volunteer for their ID and confirm the name matches.",
     "idVerificationError": "Could not confirm the ID.",
     "idVerificationTitle": "ID not verified yet",
+    "startTimeInvalid": "Enter a valid start time",
+    "startTimeLabel": "Check-in time",
     "inviteSentConfirmation": "Invitation sent",
     "manualCheckin": "Manual check-in",
     "myQrCodeTab": "My QR code",
@@ -120,6 +143,7 @@
     "notMemberTitle": "Not in your organisation",
     "openEntriesDescription": "This volunteer is still checked in. Select an entry to check them out.",
     "openEntriesTitle": "Open check-ins",
+    "orDivider": "or",
     "orgUnitRowLabel": "Org unit",
     "orgUnitSheetTitle": "Select org unit",
     "pendingMembershipDescription": "This volunteer has asked to join. Accept their request to continue.",
@@ -136,10 +160,7 @@
     "selectShiftPlaceholder": "Select the assignment",
     "shiftSearchPlaceholder": "Assignment name",
     "shiftSheetTitle": "Select assignment",
-    "shiftlessWarningDuplicateAtSubmit": "If this volunteer already has an open check-in without an assignment, the check-in will fail with an error.",
-    "shiftlessWarningEmptyTaskCell": "The hour record shows an empty task column. You can add a note to the entry later.",
-    "shiftlessWarningNoReimbursement": "These hours have no compensation type yet. They'll only appear in the hour record and the accounting once you edit the entry.",
-    "shiftlessWarningNoShiftStats": "The hours count toward general totals only, not toward any assignment's capacity or planning.",
+    "shiftlessWarningBody": "If this volunteer should receive compensation for this assignment, the compensation type needs to be added manually to the entry on the Tracked times page.",
     "shiftlessWarningTitle": "Checking in without an assignment",
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
@@ -359,7 +380,7 @@
     "noShifts": "No assignments planned yet.",
     "noShiftsOnDay": "No assignments on this day.",
     "pendingCta": "Pending request",
-    "pendingNote": "A coordinator will confirm your request.",
+    "pendingMembershipNote": "A coordinator will confirm your request.",
     "rejectedCta": "You cannot join this event",
     "requestSentToast": "Request sent. A coordinator will confirm it.",
     "requiredFormsTitle": "Required forms",
@@ -478,6 +499,80 @@
       "label": "Enable ID verification",
       "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in.",
       "updateError": "We couldn't save the setting. Please try again."
+    }
+  },
+  "ShiftSettings": {
+    "page": {
+      "title": "Assignments and check-in",
+      "subtitle": "Settings for assignments in {orgName}."
+    },
+    "sections": {
+      "staffing": {
+        "title": "Staffing",
+        "description": "How volunteers are asked to fill assignments."
+      },
+      "moderation": {
+        "title": "Moderation",
+        "description": "Rules for who gets into an assignment."
+      },
+      "checkIn": {
+        "title": "Check-in",
+        "description": "How volunteers are checked in on site."
+      }
+    }
+  },
+  "Automations": {
+    "days": {
+      "label": "Active days",
+      "short": {
+        "MONDAY": "Mon",
+        "TUESDAY": "Tue",
+        "WEDNESDAY": "Wed",
+        "THURSDAY": "Thu",
+        "FRIDAY": "Fri",
+        "SATURDAY": "Sat",
+        "SUNDAY": "Sun"
+      },
+      "long": {
+        "MONDAY": "Monday",
+        "TUESDAY": "Tuesday",
+        "WEDNESDAY": "Wednesday",
+        "THURSDAY": "Thursday",
+        "FRIDAY": "Friday",
+        "SATURDAY": "Saturday",
+        "SUNDAY": "Sunday"
+      }
+    },
+    "stepIn": {
+      "label": "Time frame before the start",
+      "option": "{hours} hours before"
+    },
+    "sendAt": {
+      "label": "Time"
+    },
+    "callOut": {
+      "title": "Automatic urgent call",
+      "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can trigger an urgent call.",
+      "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "We couldn't save this automation. Please try again."
+    },
+    "discovery": {
+      "title": "Discovery email",
+      "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
+      "daysDescription": "Days the email goes out.",
+      "sendAtDescription": "Time of day the email goes out, in local time.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "Could not save this automation."
+    },
+    "approval": {
+      "title": "Pause approval",
+      "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can have approval paused.",
+      "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
+      "noDaysHint": "No days selected, so this automation will not run.",
+      "updateError": "We couldn't save this automation. Please try again."
     }
   },
   "MembershipRequest": {
@@ -648,7 +743,8 @@
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
-    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}"
+    "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
+    "shiftSettings": "Assignments and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",
@@ -802,8 +898,8 @@
     "emailSettings": "Emails",
     "emailUrgentCalls": "Urgent calls",
     "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
-    "emailWeeklyUpdate": "Weekly update",
-    "emailWeeklyUpdateDescription": "The Sunday weekly plan email.",
+    "emailWeeklyUpdate": "Discovery email",
+    "emailWeeklyUpdateDescription": "An overview of your upcoming assignments and the assignments that still need people.",
     "identity": {
       "subtitles": {
         "firstName": "As on your ID",
@@ -868,6 +964,7 @@
       "fieldAdded": "Field added",
       "fieldDeleted": "Field deleted",
       "fieldUpdated": "Field updated",
+      "formDetailsSaved": "Form details saved",
       "formSaved": "Form saved",
       "linkCopied": "Link copied",
       "linkCopiedDescription": "{url}"
@@ -954,7 +1051,7 @@
       "saving": "Saving...",
       "shareLinkCopied": "Share link copied to clipboard",
       "submissionsWarning": "This form has submissions",
-      "submissionsWarningDescription": "You can't edit this form because volunteers have already submitted responses. Create a copy if you need a new version.",
+      "submissionsWarningDescription": "You can't change this form's blocks because volunteers have already submitted responses. Name and description can still be edited. Create a copy if you need a new version.",
       "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
       "unsavedChangesLeave": "Leave without saving",
       "unsavedChangesStay": "Keep editing",
@@ -1056,8 +1153,12 @@
       "descriptionLabel": "Description",
       "descriptionOptional": "Description (optional)",
       "descriptionPlaceholder": "What is this form for?",
+      "editDetailsAria": "Edit form name and description",
+      "editDialogTitle": "Edit form details",
       "nameLabel": "Name",
-      "namePlaceholder": "e.g. Onboarding form"
+      "namePlaceholder": "e.g. Onboarding form",
+      "save": "Save",
+      "saving": "Saving..."
     },
     "genderOptions": {
       "female": "Female",
@@ -1176,8 +1277,10 @@
     },
     "noRole": "No role",
     "internal": {
+      "member": "Member",
+      "memberDescription": "Members have no admin view or permissions.",
       "owner": "Owner",
-      "member": "Member"
+      "ownerDescription": "Owner has all permissions by default."
     },
     "page": {
       "createButton": "Create role",
@@ -1187,8 +1290,40 @@
     },
     "permissions": {
       "all": "All",
+      "descriptions": {
+        "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
+        "checkInManage": "Look up volunteers; see which assignments are available for check-in; check volunteers in or out; add people to assignments; invite people to the organisation and approve join requests from this screen.",
+        "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
+        "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
+        "requirementProfileEdit": "Create and change forms and blocks.",
+        "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
+        "shiftEdit": "Create, change, and delete assignments and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
+        "shiftView": "See assignments and their occurrences, events, who is invited or signed up, and timesheet entries.",
+        "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
+        "volunteerView": "See members, pending and past join requests, and volunteer profiles, including submitted forms (excluding payment-related data)."
+      },
+      "labels": {
+        "accountingManage": "Manage",
+        "checkInManage": "Manage",
+        "orgEdit": "Edit",
+        "orgView": "View",
+        "requirementProfileEdit": "Edit",
+        "requirementProfileView": "View",
+        "shiftEdit": "Edit",
+        "shiftView": "View",
+        "volunteerEdit": "Edit",
+        "volunteerView": "View"
+      },
       "none": "None",
-      "partial": "Partial"
+      "partial": "Partial",
+      "titles": {
+        "accounting": "Accounting",
+        "checkIn": "Check-in",
+        "organization": "Organisation wide settings",
+        "requirementProfile": "Requirement forms and blocks",
+        "shift": "Assignments, events, timesheets",
+        "volunteer": "Volunteer information and membership"
+      }
     },
     "select": {
       "addCustom": "Add custom",
@@ -1270,9 +1405,6 @@
       "waitlistInviteSuccess": "Volunteer invited to the assignment"
     },
     "checkIn": {
-      "checkInError": "Could not check in volunteer",
-      "checkInLoading": "Checking in {name}…",
-      "checkInSuccess": "Volunteer checked in",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
       "checkOutLoading": "Checking out {name}…",
@@ -1286,8 +1418,8 @@
     },
     "compensation": {
       "agreementNote": "If you accept this assignment, you'll get an agreement to sign.",
-      "ehrenamt": "Compensated via volunteer allowance (Ehrenamtspauschale)",
-      "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
+      "ehrenamt": "Volunteer allowance (Ehrenamtspauschale)",
+      "uebungsleiter": "Trainer's allowance (Übungsleiterpauschale)"
     },
     "detail": {
       "approvalLabel": "Approval",
@@ -1424,7 +1556,6 @@
       "approveWaitlistedSuccess": "Assignment is full. Volunteer added to the waitlist.",
       "cancelled": "Withdrawn",
       "changeStatusAria": "Change status for {name}",
-      "checkInAriaNamed": "Check in {name}",
       "checkOutAriaNamed": "Check out {name}",
       "capacityBadge": "{filled} / {max} spots filled",
       "capacityBadgeNoMax": "{filled} volunteers",
@@ -1434,7 +1565,7 @@
       "groupComing": "Coming",
       "groupNotComing": "Not coming",
       "groupPending": "Pending",
-      "removeSuccess": "Volunteer removed from this shift",
+      "removeSuccess": "Volunteer removed from this assignment",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
       "pendingApproval": "Pending approval",
@@ -1586,10 +1717,10 @@
     "transferList": {
       "addAria": "Add",
       "allowance": {
-        "eligible": "Allowance available",
-        "nearlyExhausted": "Allowance nearly exhausted",
-        "noAgreement": "Agreement needed",
-        "wouldExceed": "Would exceed allowance"
+        "eligible": "eligible for payout",
+        "nearlyExhausted": "close to limit",
+        "noAgreement": "contract needed",
+        "wouldExceed": "exceeds allowance!"
       },
       "available": "Available",
       "confirmExceedAllowance": {
@@ -1655,7 +1786,8 @@
     "joinedNote": "You're signed up for this assignment.",
     "later": "Later",
     "locationDivider": "·",
-    "pendingNote": "Your membership request is pending. You will be added to this assignment once approved.",
+    "pendingMembershipNote": "Your membership request is pending. You will be added to this assignment once approved.",
+    "pendingApprovalNote": "Your request is pending. You will be notified, once your request was decided.",
     "pickDayLabel": "Choose a day",
     "respondBeforeNote": "Respond before {date}. You can change your mind until the assignment starts.",
     "signUpCta": "Sign up for {date}",
@@ -1686,6 +1818,13 @@
       "uploaded": "File uploaded",
       "uploading": "Uploading..."
     }
+  },
+  "DataTable": {
+    "sortAscending": "Sort ascending",
+    "sortDescending": "Sort descending",
+    "sortedAscending": "Sorted ascending",
+    "sortedDescending": "Sorted descending",
+    "unsorted": "Not sorted"
   },
   "TimeEntry": {
     "action": {
@@ -1732,6 +1871,7 @@
     },
     "page": {
       "createButton": "Add time entry",
+      "paginationName": "time entries",
       "title": "Tracked times"
     },
     "pauschaleType": {
@@ -1747,8 +1887,11 @@
     "table": {
       "duration": "Duration",
       "notAvailable": "N/A",
+      "recorded": "Recorded",
+      "recordedBy": "by {name}",
+      "recordedByUnknown": "Unknown",
+      "date": "Date",
       "shift": "Assignment",
-      "time": "Time",
       "volunteer": "Volunteer"
     },
     "validation": {
@@ -1813,6 +1956,13 @@
       "title": "Forms required to join",
       "updateFailedToast": "We couldn't update the required forms. Please try again."
     },
+    "search": {
+      "clearAria": "Clear search",
+      "countFiltered": "{count} of {total}",
+      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
+      "emptyTitle": "No volunteers found",
+      "placeholder": "Search by name, email or role"
+    },
     "sheet": {
       "streetLabel": "Street",
       "birthdayLabel": "Birthday",
@@ -1835,9 +1985,14 @@
       "zipLabel": "Postal code"
     },
     "table": {
+      "copyEmailAria": "Copy {name}'s email address",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
       "email": "Email",
+      "emailCopied": "Email address copied to clipboard",
+      "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "name": "Name",
-      "roles": "Roles"
+      "openProfileAria": "Open {name}'s profile",
+      "roles": "Role"
     }
   },
   "VolunteerHome": {
@@ -1987,7 +2142,7 @@
         "action": "Action"
       },
       "tiles": {
-        "all": "All open tasks",
+        "all": "All documents",
         "docCount": "{count, plural, one {# document} other {# documents}}",
         "waitingOnYou": "{count, plural, one {# waiting on you} other {# waiting on you}}",
         "contractGenerate": "Create agreements",
@@ -1998,8 +2153,8 @@
       },
       "toolbar": {
         "typeAll": "All allowance types",
-        "typeEP": "Ehrenamt",
-        "typeUL": "Übungsleiter",
+        "typeEP": "Ehrenamtspauschale",
+        "typeUL": "Übungsleiterpauschale",
         "searchPlaceholder": "Search volunteers...",
         "sortActionNeeded": "Action needed first",
         "sortNewest": "Newest first"
@@ -2133,7 +2288,7 @@
           "countersign": "Countersign",
           "decline": "Decline",
           "seeDetails": "See details",
-          "createNew": "Create new {docType}"
+          "createNew": "Create new {kind, select, contract {Agreement} timesheet {Timesheet} other {Document}}"
         },
         "nonCompliantDialog": {
           "titleSingle": "{action, select, create {Create} remind {Send a reminder for} countersign {Countersign} other {Proceed with}} a timesheet without an active agreement?",
@@ -2236,7 +2391,7 @@
           "cancelButtonLabel": "Cancel",
           "inputLabel": "Initial amount in euros",
           "projectedAfter": "Projected after this timesheet: {after}",
-          "successToast": "Initial amount saved.",
+          "deferredToast": "Initial amount will be saved when you send the timesheet.",
           "errorToast": "The initial amount couldn't be saved. Please try again."
         },
         "hoursCard": {
@@ -2325,8 +2480,8 @@
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
             "shift_name": {
-              "label": "Name of the tracked shift",
-              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+              "label": "Name of the tracked assignment",
+              "hint": "Each row shows the assignment its hours came from. Hours tracked without an assignment show the agreement's task description instead."
             },
             "agreement_task_description": {
               "label": "Task description from the agreement",
@@ -2338,7 +2493,7 @@
             }
           },
           "firstColumnPlaceholders": {
-            "shiftName": "Shift name",
+            "shiftName": "Assignment name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },
@@ -2377,7 +2532,8 @@
           "nextYear": "Next year",
           "previousYearBlock": "Previous period",
           "nextYearBlock": "Next period",
-          "apply": "Apply"
+          "apply": "Apply",
+          "placeholder": "Period"
         },
         "manualFieldLabels": {
           "contract-lifespan": "Agreement period",

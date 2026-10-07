@@ -37,10 +37,14 @@ test.describe('Signup privacy policy', () => {
     const signup = new SignupPage(page);
     await signup.goto();
 
+    // Terms acceptance is required too (covered by terms.e2e.ts); accept it
+    // here so this test isolates the privacy checkbox.
     await signup.fillForm({
-      name: 'E2E User',
+      firstname: 'E2E',
+      lastname: 'User',
       email: uniqueEmail(),
       password: TEST_PASSWORD,
+      termsAccepted: true,
     });
 
     await expect(signup.privacyCheckbox).not.toBeChecked();
@@ -59,7 +63,8 @@ test.describe('Signup privacy policy', () => {
     await signup.goto();
 
     const response = await signup.signup(
-      'E2E User',
+      'E2E',
+      'User',
       uniqueEmail(),
       TEST_PASSWORD,
     );

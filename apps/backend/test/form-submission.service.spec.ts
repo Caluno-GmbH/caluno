@@ -10,8 +10,8 @@ import { ForbiddenGraphQLError } from '../src/graphql/errors';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import { UserProfileService } from '../src/requirement-profile/services/user-profile.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
+import { UserService } from '../src/user/user.service';
 import {
   createFormSubmission,
   createRequirementForm,
@@ -46,7 +46,7 @@ describe('FormSubmissionService org-unit shares', () => {
     const requiredFormService = new RequiredFormService(db, postHogService);
     formSubmissionService = new FormSubmissionService(
       db,
-      new UserProfileService(db, postHogService),
+      new UserService(db, postHogService),
       requiredFormService,
       postHogService,
     );
@@ -534,10 +534,69 @@ describe('FormSubmissionService org-unit shares', () => {
       await submit(form.id, unitA.id, volunteer.id, [
         { fieldId: genderField.id, blockId: block.id, value: 'female' },
       ]);
-      const profile = await db.query.userProfiles.findFirst({
-        where: { userId: volunteer.id },
+      const user = await db.query.users.findFirst({
+        where: { id: volunteer.id },
       });
-      expect(profile?.data.gender).toBe('female');
+      expect(user?.gender).toBe('female');
+    });
+
+    it('merges systemKey values onto user columns without wiping unset fields', async () => {
+      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
+      await db
+        .update(schema.users)
+        .set({ gender: 'female', phone: '+49 30 111' })
+        .where(eq(schema.users.id, volunteer.id));
+
+      const { form, block } = await createRequirementForm(db, {
+        organizationId: rootUnit.organizationId,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        required: false,
+      });
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [form.id],
+      });
+      await db
+        .update(schema.formBlockFields)
+        .set({ required: false })
+        .where(eq(schema.formBlockFields.blockId, block.id));
+      const [phoneField] = await db
+        .insert(schema.formBlockFields)
+        .values({
+          blockId: block.id,
+          type: 'PHONE',
+          label: 'Phone',
+          required: false,
+          systemKey: 'phone',
+          fieldOrder: 1,
+        })
+        .returning();
+      if (!phoneField) throw new Error('Failed to create phone field');
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [
+            {
+              fieldId: phoneField.id,
+              blockId: block.id,
+              value: '+49 30 999',
+            },
+          ],
+        },
+        volunteer.id,
+      );
+
+      const user = await db.query.users.findFirst({
+        where: { id: volunteer.id },
+      });
+      expect(user?.phone).toBe('+49 30 999');
+      expect(user?.gender).toBe('female');
     });
 
     it('rejects a value outside the fixed list', async () => {
@@ -563,10 +622,10 @@ describe('FormSubmissionService org-unit shares', () => {
           value: 'prefer-not-to-say',
         },
       ]);
-      const profile = await db.query.userProfiles.findFirst({
-        where: { userId: volunteer.id },
+      const user = await db.query.users.findFirst({
+        where: { id: volunteer.id },
       });
-      expect(profile?.data.gender).toBe('prefer-not-to-say');
+      expect(user?.gender).toBe('prefer-not-to-say');
     });
   });
 });

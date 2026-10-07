@@ -68,6 +68,7 @@ export const checkInVolunteer = actionClient
     return await data.timeEntry.checkInVolunteer(
       parsedInput.volunteerId,
       parsedInput.shiftInstanceId,
+      parsedInput.startedAt.toISOString(),
     );
   });
 

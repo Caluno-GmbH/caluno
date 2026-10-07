@@ -14,7 +14,7 @@ export async function signUpAndLogin(page: Page): Promise<TestCredentials> {
 
   const signup = new SignupPage(page);
   await signup.goto();
-  await signup.signup('E2E User', email, TEST_PASSWORD);
+  await signup.signup('E2E', 'User', email, TEST_PASSWORD);
   await signup.expectVerificationPrompt();
 
   await page.context().clearCookies();

@@ -6,7 +6,7 @@ export enum ShiftVisibility {
   ALL_MEMBERS = 'ALL_MEMBERS',
 }
 
-export { SortOrder } from './sort-order.enum';
+export { SortOrder } from '../../graphql/enums/sort-order.enum';
 
 export enum ShiftInviteStatus {
   ADMIN_INVITED = 'ADMIN_INVITED',
@@ -24,7 +24,7 @@ export const INVITE_STATUS_TO_JOIN_SHIFT_STATUS: Record<
   JoinStatus
 > = {
   [ShiftInviteStatus.ADMIN_INVITED]: JoinStatus.INVITED,
-  [ShiftInviteStatus.AWAITING_ADMIN_APPROVAL]: JoinStatus.PENDING,
+  [ShiftInviteStatus.AWAITING_ADMIN_APPROVAL]: JoinStatus.PENDING_APPROVAL,
   [ShiftInviteStatus.WAITLIST_JOINED]: JoinStatus.WAITLIST_JOINED,
   [ShiftInviteStatus.JOINED]: JoinStatus.JOINED,
   [ShiftInviteStatus.VOLUNTEER_REJECTED]: JoinStatus.VOLUNTEER_REJECTED,

@@ -1,3 +1,8 @@
+import {
+  type Weekday,
+  weekdayFromIsoDay,
+} from '../../shared/enums/weekday.enum';
+
 // "Today" boundaries must be computed in the app's display timezone
 // (Europe/Berlin), not UTC — otherwise the includePast=false cutoff is off by
 // the Berlin offset near midnight and drops/keeps the wrong shifts. The backend
@@ -70,4 +75,27 @@ export function startOfTodayInAppTimeZone(now: Date = new Date()): Date {
 /** Hours from `now` until `target` (negative once `target` is in the past). Both are absolute instants, so no timezone handling is needed here. */
 export function hoursUntil(target: Date, now: Date = new Date()): number {
   return (target.getTime() - now.getTime()) / 3_600_000;
+}
+
+export function appWeekday(date: Date): Weekday {
+  const { year, month, day } = appDateParts(date);
+  const utcDay = new Date(Date.UTC(year, month, day)).getUTCDay();
+  return weekdayFromIsoDay(utcDay === 0 ? 7 : utcDay);
+}
+
+export function appHourMinute(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: APP_TIME_ZONE,
+    hourCycle: 'h23',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(date);
+  const hour = parts.find((part) => part.type === 'hour')?.value ?? '00';
+  const minute = parts.find((part) => part.type === 'minute')?.value ?? '00';
+  return `${hour}:${minute}`;
+}
+
+export function appDateKey(date: Date): string {
+  const { year, month, day } = appDateParts(date);
+  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 }

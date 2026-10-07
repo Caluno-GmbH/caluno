@@ -31,7 +31,7 @@ const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
   volunteer_iban: 'iban',
   volunteer_account_holder: 'account-holder',
   volunteer_bic: 'bic',
-  volunteer_dob: 'birth-date',
+  volunteer_dob: 'birthdate',
 };
 
 function isEditableSource(source: DataSourceKey): boolean {
@@ -42,24 +42,13 @@ function isEditableSource(source: DataSourceKey): boolean {
   );
 }
 
-/** "Anna Müller" -> { first: "Anna", last: "Müller" } — matches the backend's `splitName(volunteer.name)`. */
-function splitVolunteerName(name?: string): {
-  first: string | null;
-  last: string | null;
-} {
-  const trimmed = name?.trim() ?? '';
-  if (!trimmed) return { first: null, last: null };
-  const [first, ...rest] = trimmed.split(/\s+/);
-  return { first: first ?? trimmed, last: rest.join(' ').trim() || null };
-}
-
 function resolveBoundValue(
   source: DataSourceKey,
   profileData: Record<string, unknown>,
-  name: { first: string | null; last: string | null },
+  name: { firstname: string; lastname: string },
 ): string | null {
-  if (source === 'volunteer_first_name') return name.first;
-  if (source === 'volunteer_last_name') return name.last;
+  if (source === 'volunteer_first_name') return name.firstname;
+  if (source === 'volunteer_last_name') return name.lastname;
   const profileKey = PROFILE_SOURCE_TO_PROFILE_KEY[source];
   if (!profileKey) return null;
   const raw = profileData[profileKey];
@@ -82,12 +71,14 @@ function resolveBoundValue(
 export function deriveEditableFields(
   document: TemplateDocument,
   profileData: Record<string, unknown> = {},
-  volunteerName?: string,
 ): DerivedField[] {
   const fields: DerivedField[] = [];
   const seenFieldIds = new Set<string>();
   const boundBySource = new Map<DataSourceKey, DerivedField>();
-  const name = splitVolunteerName(volunteerName);
+  const name = {
+    firstname: profileData.firstname as string,
+    lastname: profileData.lastname as string,
+  };
 
   const collect = (line: TemplateLine | undefined) => {
     if (!line || line.enabled === false) return;

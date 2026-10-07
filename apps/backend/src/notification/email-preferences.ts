@@ -85,6 +85,8 @@ export const NOTIFICATION_EMAIL_GROUP: Record<
   [NotificationEvent.DOCUMENT_DECLINED_BY_ORG]: null,
   [NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER]: null,
 
+  [NotificationEvent.TERMS_UPDATED]: null,
+
   // The call-out and digest are sent directly by their own senders rather than
   // through the emitter; the entries below are the groups those senders
   // enforce. Only the volunteer-facing call-out is gated — the "nobody left to

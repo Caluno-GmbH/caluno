@@ -60,6 +60,10 @@ query GetOrganizationUnit($id: String!) {
     legalRep
     idVerificationEnabled
     organizationId
+    organization {
+      id
+      name
+    }
     requiredForms {
       form {
         id
@@ -372,5 +376,34 @@ mutation SetRequiredForms($organizationUnitId: String!, $formIds: [String!]!) {
       description
     }
     order
+  }
+}
+
+fragment OrganizationUnitAutomationFields on OrganizationUnitAutomation {
+  organizationUnitId
+  kind
+  enabled
+  activeDays
+  leadTimeHours
+  sendAtTime
+}
+
+query GetOrganizationUnitAutomations($organizationUnitId: ID!) {
+  organizationUnitAutomations(organizationUnitId: $organizationUnitId) {
+    ...OrganizationUnitAutomationFields
+  }
+}
+
+mutation UpdateOrganizationUnitAutomation(
+  $organizationUnitId: ID!
+  $kind: OrganizationUnitAutomationKind!
+  $input: UpdateOrganizationUnitAutomationInput!
+) {
+  updateOrganizationUnitAutomation(
+    organizationUnitId: $organizationUnitId
+    kind: $kind
+    input: $input
+  ) {
+    ...OrganizationUnitAutomationFields
   }
 }

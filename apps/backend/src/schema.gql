@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AcceptTermsInput {
+  language: String!
+  version: String!
+}
+
 type AccountingOrgProfile {
   city: String
   legalRep: String
@@ -183,6 +188,7 @@ input CreateFormBlockInput {
 input CreateInvoiceInput {
   fieldOverrides: [DocumentFieldOverrideInput!]
   hourlyRateCents: Int
+  manualBaselineCents: Int
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!
@@ -534,13 +540,6 @@ type FormSubmissionValue {
   value: String!
 }
 
-enum InviteAllowanceState {
-  ELIGIBLE
-  NEARLY_EXHAUSTED
-  NO_AGREEMENT
-  WOULD_EXCEED
-}
-
 type Invoice {
   createdAt: DateTime!
   declineReason: String
@@ -646,7 +645,8 @@ enum JoinStatus {
   INVITED
   JOINED
   NONE
-  PENDING
+  PENDING_APPROVAL
+  PENDING_MEMBERSHIP
   REJECTED
   REQUIREMENTS_NEEDED
   VOLUNTEER_REJECTED
@@ -704,6 +704,7 @@ enum MembershipRequestStatus {
 }
 
 type Mutation {
+  acceptTerms(input: AcceptTermsInput!): TermsStatus!
   addTimeEntry(input: AddTimeEntryInput!): TimeEntry!
   approveMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
   cancelMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
@@ -711,7 +712,7 @@ type Mutation {
   checkInApproveMembershipRequest(requestId: ID!): MembershipRequest!
   checkInInviteToOrganization(volunteerId: ID!): Boolean!
   checkInInviteToShiftInstance(shiftInstanceId: ID!, volunteerId: ID!): ShiftInstance!
-  checkInVolunteer(shiftInstanceId: ID, volunteerId: ID!): TimeEntry!
+  checkInVolunteer(shiftInstanceId: ID, startedAt: DateTime, volunteerId: ID!): TimeEntry!
   checkOut(shiftInstanceId: ID!): TimeEntry!
   checkOutVolunteer(timeEntryId: ID!): TimeEntry!
   closeTimeEntry(id: ID!, input: CloseTimeEntryInput!): TimeEntry!
@@ -769,6 +770,7 @@ type Mutation {
   signInvoice(invoiceId: ID!): Invoice!
   submitForm(input: SubmitFormInput!, organizationUnitId: ID!, token: String!): FormSubmission!
   submitRequiredForm(formId: String!, input: SubmitFormInput!, targetId: String!, targetType: RequiredFormTargetType!): FormSubmission!
+  unsubscribeFromEmails: Boolean!
   updateDocumentTemplate(id: ID!, input: UpdateDocumentTemplateInput!): DocumentTemplate!
   updateEvent(id: ID!, input: UpdateEventInput!): Event!
   updateEventInviteStatus(eventId: ID!, status: EventInviteStatus!, userId: String): EventInvite!
@@ -779,9 +781,10 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
-  updateMyUserProfile(input: UpdateUserProfileInput!): UserProfile!
+  updateMyProfile(input: UpdateMyProfileInput!): UserWithProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
+  updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
   updateRequirement(id: String!, input: UpdateRequirementInput!): Requirement!
   updateRequirementForm(id: String!, input: UpdateRequirementFormInput!): RequirementForm!
   updateRequirementFulfillment(id: String!, input: UpdateRequirementFulfillmentInput!): RequirementFulfillment!
@@ -869,6 +872,21 @@ type OrganizationUnit {
   zipCode: String
 }
 
+type OrganizationUnitAutomation {
+  activeDays: [Weekday!]!
+  enabled: Boolean!
+  kind: OrganizationUnitAutomationKind!
+  leadTimeHours: Int
+  organizationUnitId: ID!
+  sendAtTime: String
+}
+
+enum OrganizationUnitAutomationKind {
+  DISCOVERY_EMAIL
+  PAUSE_APPROVAL
+  URGENT_CALL
+}
+
 type OrganizationUnitPaginatedResponse {
   items: [OrganizationUnit!]!
   pagination: PaginationInfo!
@@ -950,7 +968,6 @@ type Query {
   accountingSetupStatus: AccountingSetupStatus!
   activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeId: ID!): DocumentTemplate!
   activeShiftInstances: [ShiftInstance!]!
-  adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
@@ -977,12 +994,11 @@ type Query {
   formSubmissionsByForm(formId: String!, limit: Int! = 10, offset: Int! = 0): FormSubmissionPaginatedResponse!
   formSubmissionsByMembershipRequest(membershipRequestId: String!): [FormSubmission!]!
   formSubmissionsForVolunteer(userId: String!): [FormSubmission!]!
-  inviteAllowanceEligibility(organizationUnitId: ID!, periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, shiftDurationMinutes: Int!): [VolunteerInviteAllowance!]!
   invoice(id: ID!): Invoice!
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
   manualBaseline(reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline
-  me: User!
+  me: UserWithProfile!
   members(organizationUnitId: ID!): [User!]!
   membership(organizationUnitId: ID!): Membership
   membershipRequestCount(status: MembershipRequestStatus): Int!
@@ -1006,11 +1022,11 @@ type Query {
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
-  myUserProfile: UserProfile
   organization(id: String!): Organization
   organizationBySlug(slug: String!): Organization!
   organizationTree: OrganizationTree
   organizationUnit(id: String!): OrganizationUnit
+  organizationUnitAutomations(organizationUnitId: ID!): [OrganizationUnitAutomation!]!
   organizationUnitBySlug(slug: String!): OrganizationUnit
   organizationUnitTypes: [OrganizationUnitType!]!
   organizationUnits(limit: Int! = 10, offset: Int! = 0, organizationId: String!): OrganizationUnitPaginatedResponse!
@@ -1047,11 +1063,12 @@ type Query {
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
-  timeEntries(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
+  termsStatus: TermsStatus!
+  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
-  user(id: String!): User
-  userByCheckInId(checkInId: String!): User
+  user(id: String!): UserWithProfile
+  volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
@@ -1377,6 +1394,7 @@ type ShiftInstance {
   overrideMinVolunteers: Int
   overrideReimbursementTypeId: ID
   overrideTitle: String
+  reimbursementTypeKey: ReimbursementTypeKey
   requiredForms: [RequiredFormRef!]!
   requiredFormsCount: Int!
   spotsLeft: Int
@@ -1470,8 +1488,17 @@ type TemplateSignee {
   signeeType: SigneeType!
 }
 
+type TermsStatus {
+  acceptedAt: DateTime
+  acceptedVersion: String
+  currentClass: String
+  currentVersion: String
+  mustAccept: Boolean!
+}
+
 type TimeEntry {
   createdAt: DateTime!
+  createdBy: User
   endedAt: DateTime
   id: ID!
   isPaid: Boolean!
@@ -1486,6 +1513,14 @@ type TimeEntry {
 type TimeEntryPaginatedResponse {
   items: [TimeEntry!]!
   pagination: PaginationInfo!
+}
+
+enum TimeEntrySortField {
+  CREATED_AT
+  DURATION
+  SHIFT
+  STARTED_AT
+  VOLUNTEER
 }
 
 input UpdateDocumentTemplateInput {
@@ -1541,6 +1576,21 @@ input UpdateMyImageInput {
   imageFileId: String
 }
 
+input UpdateMyProfileInput {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  city: String
+  firstname: String
+  gender: String
+  iban: String
+  lastname: String
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
 input UpdateOrganizationInput {
   city: String
   contactEmail: String
@@ -1551,6 +1601,13 @@ input UpdateOrganizationInput {
   street: String
   websiteUrl: String
   zipCode: String
+}
+
+input UpdateOrganizationUnitAutomationInput {
+  activeDays: [Weekday!]
+  enabled: Boolean
+  leadTimeHours: Int
+  sendAtTime: String
 }
 
 input UpdateOrganizationUnitInput {
@@ -1648,10 +1705,6 @@ input UpdateTimeEntryInput {
   startedAt: DateTime!
 }
 
-input UpdateUserProfileInput {
-  data: String!
-}
-
 type User {
   checkInId: ID!
   email: String!
@@ -1666,19 +1719,14 @@ type User {
 
   """Whether the volunteer receives the weekly plan email."""
   emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
   id: ID!
   image: String
+  lastname: String!
   locale: String
   name: String!
   permissions: [Permission!]
-}
-
-type UserProfile {
-  createdAt: DateTime!
-  data: JSON!
-  id: ID!
-  updatedAt: DateTime!
-  userId: String!
+  preferredName: String
 }
 
 type UserRequirementStatus {
@@ -1687,9 +1735,49 @@ type UserRequirementStatus {
   status: RequirementFulfillmentStatus!
 }
 
-type VolunteerInviteAllowance {
-  state: InviteAllowanceState!
+type UserWithProfile {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  checkInId: ID!
+  city: String
+  email: String!
+
+  """
+  Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership).
+  """
+  emailPlatformEnabled: Boolean!
+
+  """Whether the volunteer receives urgent call-out emails."""
+  emailUrgentCallsEnabled: Boolean!
+
+  """Whether the volunteer receives the weekly plan email."""
+  emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
+  gender: String
+  iban: String
+  id: ID!
+  image: String
+  lastname: String!
+  locale: String
+  name: String!
+  permissions: [Permission!]
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
+type VolunteerAllowance {
+  state: VolunteerAllowanceState!
   volunteerId: ID!
+}
+
+enum VolunteerAllowanceState {
+  ELIGIBLE
+  NEARLY_EXHAUSTED
+  NO_AGREEMENT
+  WOULD_EXCEED
 }
 
 type VolunteerNeedsTimesheet {
@@ -1704,6 +1792,16 @@ type VolunteerNeedsTimesheet {
 type VolunteerYearlyUsage {
   usageByType: [ReimbursementTypeUsage!]!
   volunteer: User!
+}
+
+enum Weekday {
+  FRIDAY
+  MONDAY
+  SATURDAY
+  SUNDAY
+  THURSDAY
+  TUESDAY
+  WEDNESDAY
 }
 
 type YearlyUsage {

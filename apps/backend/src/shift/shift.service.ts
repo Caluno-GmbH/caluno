@@ -34,7 +34,9 @@ import type { MembershipRequestEntity } from '../membership/schemas/membership-r
 import { NotificationService } from '../notification/notification.service';
 import type { ChangedField } from '../notification/payloads/shift-details-changed.payload';
 import { buildShiftInviteSchedule } from '../notification/shift-invite-schedule';
+import { OrganizationUnitAutomationKind } from '../organization/enums';
 import { OrganizationService } from '../organization/organization.service';
+import { OrganizationUnitAutomationService } from '../organization/organization-unit-automation.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
 import type { RequirementProfileEntity } from '../requirement-profile/schemas/requirement-profile.schema';
 import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
@@ -83,13 +85,17 @@ import type { ShiftInviteEntity } from './schemas/shift-invite.schema';
 import { propagateShiftInviteStatusToFutureInstances } from './shift-invite-propagation';
 import {
   appDateParts,
+  appWeekday,
+  hoursUntil,
   startOfAppDay,
   startOfTodayInAppTimeZone,
 } from './utils/app-time';
+import { isApprovalPaused } from './utils/approval-pause-decision';
 import {
   getDurationMinutes,
   isValidShiftDurationMinutes,
 } from './utils/duration';
+import { resolveEffectiveReimbursementTypeId } from './utils/effective-reimbursement-type';
 import { parseRruleDays, parseRruleUntil } from './utils/parse-rrule';
 import { expandShift } from './utils/rrule-expander';
 import { localDateKey, syncShiftInstances } from './utils/shift-instance-sync';
@@ -120,6 +126,7 @@ export class ShiftService {
     private readonly formSubmissionService: FormSubmissionService,
     private readonly postHogService: PostHogService,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
+    private readonly automationService: OrganizationUnitAutomationService,
   ) {}
 
   async findById(id: string): Promise<ShiftEntity> {
@@ -203,18 +210,21 @@ export class ShiftService {
   /**
    * Active (not cancelled) instances starting within `windowHours` of `now`
    * that have an effective minimum staffing requirement (an instance-level
-   * override, or else the series' `minVolunteers`) — candidates for the
-   * understaffed-shift scheduler tick. Instances with no minimum configured
-   * are filtered out in application code since there's nothing to be "below".
+   * override, or else the series' `minVolunteers`). Instances with no
+   * minimum configured are filtered out in application code since there's
+   * nothing to be "below". Restricted to `instanceIds` when given.
    */
-  async findUnderstaffedCandidateInstances(
+  private async findActiveInstancesWithMinimumInWindow(
     now: Date,
     windowHours: number,
+    instanceIds?: string[],
   ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
-    const windowEnd = new Date(now.getTime() + windowHours * 3_600_000);
+    if (instanceIds?.length === 0) return [];
 
+    const windowEnd = new Date(now.getTime() + windowHours * 3_600_000);
     const instances = await this.db.query.shiftInstances.findMany({
       where: {
+        ...(instanceIds ? { id: { in: instanceIds } } : {}),
         isCancelled: false,
         actualStartsAt: { gt: now, lte: windowEnd },
       },
@@ -226,6 +236,57 @@ export class ShiftService {
         (instance.overrideMinVolunteers ?? instance.master.minVolunteers) !=
         null,
     );
+  }
+
+  /** Candidates for the understaffed-shift scheduler tick, see findActiveInstancesWithMinimumInWindow. */
+  async findUnderstaffedCandidateInstances(
+    now: Date,
+    windowHours: number,
+  ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
+    return this.findActiveInstancesWithMinimumInWindow(now, windowHours);
+  }
+
+  /**
+   * Candidates for the pause-approval sweep tick: upcoming instances that
+   * currently have at least one AWAITING_ADMIN_APPROVAL invite, which
+   * re-checks whether those invites now qualify to be admitted without
+   * waiting on another sign-up. See findActiveInstancesWithMinimumInWindow.
+   */
+  async findPauseApprovalSweepCandidates(
+    now: Date,
+    windowHours: number,
+  ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
+    const pending = await this.db
+      .selectDistinct({
+        instanceId: schema.shiftInstanceInvites.instanceId,
+      })
+      .from(schema.shiftInstanceInvites)
+      .where(
+        eq(
+          schema.shiftInstanceInvites.status,
+          ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+        ),
+      );
+    if (pending.length === 0) return [];
+
+    return this.findActiveInstancesWithMinimumInWindow(
+      now,
+      windowHours,
+      pending.map((row) => row.instanceId),
+    );
+  }
+
+  /**
+   * Public entry point for the pause-approval sweep tick: resolves every
+   * AWAITING_ADMIN_APPROVAL invite on the given instances now that the
+   * pause-approval automation covers them, in their own transaction.
+   */
+  async sweepPausedApprovalInvites(instanceIds: string[]): Promise<void> {
+    if (instanceIds.length === 0) return;
+
+    await this.db.transaction(async (tx) => {
+      await this.autoResolveAwaitingApprovalInvites(tx, instanceIds);
+    });
   }
 
   /** Instances of the given shifts in the org unit, keyed by masterId, ordered by start time. */
@@ -460,9 +521,15 @@ export class ShiftService {
     order: SortOrder,
     statuses: readonly ShiftInviteStatus[] = MY_SHIFT_INVITE_STATUSES,
     includeIntended = false,
+    restrictToOrganizationUnitIds: readonly string[] | null = null,
   ): Promise<{ instances: ShiftInstanceEntity[]; total: number }> {
-    const organizationUnitIds =
+    const accessibleOrganizationUnitIds =
       await this.getAccessibleOrganizationUnitIds(userId);
+    const organizationUnitIds = restrictToOrganizationUnitIds
+      ? accessibleOrganizationUnitIds.filter((id) =>
+          restrictToOrganizationUnitIds.includes(id),
+        )
+      : accessibleOrganizationUnitIds;
 
     const dateCondition = this.buildMyShiftDateCondition(
       startsAfter,
@@ -2046,7 +2113,8 @@ export class ShiftService {
    * oldest-first, now that approval is no longer required for them: admits
    * up to capacity, waitlists the overflow. Mirrors the single-invite admin
    * approval path (resolveAdminApprovalTargetStatus + the same notifications)
-   * but as a bulk sweep triggered by turning approval off.
+   * but as a bulk sweep, triggered either by turning approval off for an
+   * instance/series or by the pause-approval scheduler tick.
    */
   private async autoResolveAwaitingApprovalInvites(
     tx: Database,
@@ -3226,6 +3294,23 @@ export class ShiftService {
     });
   }
 
+  /**
+   * Volunteer-safe reimbursement type key for an id. Returns null when the id
+   * is absent (unpaid) or no longer resolves, so callers can omit the paid
+   * indicator entirely.
+   */
+  private async resolveReimbursementTypeKey(
+    reimbursementTypeId: string | null | undefined,
+  ): Promise<ReimbursementTypeKey | null> {
+    if (!reimbursementTypeId) {
+      return null;
+    }
+    const rows = await this.findReimbursementTypeKeysByIds([
+      reimbursementTypeId,
+    ]);
+    return rows[0]?.key ?? null;
+  }
+
   private async loadAndEmitShiftInstanceInvitedNotification(
     shift: ShiftEntity,
     instance: ShiftInstanceEntity,
@@ -3244,6 +3329,13 @@ export class ShiftService {
         return;
       }
 
+      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
+        resolveEffectiveReimbursementTypeId(
+          instance.overrideReimbursementTypeId,
+          shift.reimbursementTypeId,
+        ),
+      );
+
       this.notificationService.notifyShiftInstanceInvited({
         organizationUnitId: organizationUnit.id,
         organizationUnitName: organizationUnit.name,
@@ -3256,6 +3348,7 @@ export class ShiftService {
         startsAt: instance.actualStartsAt,
         endsAt: instance.actualEndsAt,
         instanceId: instance.id,
+        reimbursementTypeKey,
       });
     } catch (error) {
       this.logger.error(
@@ -3857,6 +3950,10 @@ export class ShiftService {
         })),
       );
 
+      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
+        shift.reimbursementTypeId,
+      );
+
       this.notificationService.notifyShiftInvited({
         organizationUnitId: organizationUnit.id,
         organizationUnitName: organizationUnit.name,
@@ -3866,6 +3963,7 @@ export class ShiftService {
         shiftInstructions: shift.instructions ?? null,
         recipientUserIds: invitedUserIds,
         schedule,
+        reimbursementTypeKey,
       });
     } catch (error) {
       this.logger.error(
@@ -4085,8 +4183,11 @@ export class ShiftService {
         existingInvite.status === ShiftInviteStatus.ADMIN_INVITED
       ) {
         const targetStatus = resolveVolunteerJoinTargetStatus({
-          joinRequiresApproval:
-            instance.overrideJoinRequiresApproval ?? shift.joinRequiresApproval,
+          joinRequiresApproval: await this.resolveEffectiveJoinApproval(
+            shift,
+            instance,
+            db,
+          ),
           hasAvailableSeat: hasSeat,
           allowWaitlist: true,
           considerApproval:
@@ -4127,8 +4228,11 @@ export class ShiftService {
     }
 
     const targetStatus = resolveVolunteerJoinTargetStatus({
-      joinRequiresApproval:
-        instance.overrideJoinRequiresApproval ?? shift.joinRequiresApproval,
+      joinRequiresApproval: await this.resolveEffectiveJoinApproval(
+        shift,
+        instance,
+        db,
+      ),
       hasAvailableSeat: hasSeat,
       allowWaitlist: true,
       considerApproval: true,
@@ -4295,8 +4399,8 @@ export class ShiftService {
       return JoinStatus.REJECTED;
     }
 
-    if (membershipState === JoinStatus.PENDING) {
-      return JoinStatus.PENDING;
+    if (membershipState === JoinStatus.PENDING_MEMBERSHIP) {
+      return JoinStatus.PENDING_MEMBERSHIP;
     }
 
     if (membershipState === JoinStatus.NONE) {
@@ -4497,7 +4601,7 @@ export class ShiftService {
       }
 
       return {
-        status: JoinStatus.PENDING,
+        status: JoinStatus.PENDING_MEMBERSHIP,
         shiftInstance: instance,
         membershipRequest: result.membershipRequest,
       };
@@ -4592,7 +4696,9 @@ export class ShiftService {
         status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL)
     ) {
       targetStatus = resolveVolunteerJoinTargetStatus({
-        joinRequiresApproval: shift.joinRequiresApproval,
+        joinRequiresApproval: nextInstance
+          ? await this.resolveEffectiveJoinApproval(shift, nextInstance)
+          : shift.joinRequiresApproval,
         hasAvailableSeat: hasSeat,
         allowWaitlist: true,
         considerApproval:
@@ -4876,9 +4982,10 @@ export class ShiftService {
         status === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL)
     ) {
       targetStatus = resolveVolunteerJoinTargetStatus({
-        joinRequiresApproval:
-          instance.overrideJoinRequiresApproval ??
-          instance.master.joinRequiresApproval,
+        joinRequiresApproval: await this.resolveEffectiveJoinApproval(
+          instance.master,
+          instance,
+        ),
         hasAvailableSeat: hasSeat,
         allowWaitlist: true,
         considerApproval:
@@ -5018,16 +5125,58 @@ export class ShiftService {
     }
   }
 
-  private async hasAvailableSeat(
-    instanceId: string,
-    maxVolunteers: number | null | undefined,
+  /**
+   * The approval requirement actually applied to a sign-up: the shift's own
+   * setting, unless the org unit's pause-approval automation covers this
+   * instance right now (understaffed, on an active day, inside the lead time).
+   */
+  private async resolveEffectiveJoinApproval(
+    shift: Pick<
+      ShiftEntity,
+      'organizationUnitId' | 'joinRequiresApproval' | 'minVolunteers'
+    >,
+    instance: Pick<
+      ShiftInstanceEntity,
+      | 'id'
+      | 'actualStartsAt'
+      | 'overrideJoinRequiresApproval'
+      | 'overrideMinVolunteers'
+    >,
     db: Database = this.db,
   ): Promise<boolean> {
-    if (!maxVolunteers) {
-      return true;
-    }
+    const joinRequiresApproval =
+      instance.overrideJoinRequiresApproval ?? shift.joinRequiresApproval;
+    if (!joinRequiresApproval) return false;
 
-    const [capacity] = await db
+    const minVolunteers =
+      instance.overrideMinVolunteers ?? shift.minVolunteers ?? null;
+    if (minVolunteers == null) return true;
+
+    const automation = await this.automationService.resolve(
+      shift.organizationUnitId,
+      OrganizationUnitAutomationKind.PAUSE_APPROVAL,
+    );
+    if (!automation.enabled) return true;
+
+    const paused = isApprovalPaused({
+      joinRequiresApproval,
+      automationEnabled: automation.enabled,
+      activeDays: automation.activeDays,
+      leadTimeHours: automation.leadTimeHours,
+      shiftWeekday: appWeekday(instance.actualStartsAt),
+      hoursUntilStart: hoursUntil(instance.actualStartsAt),
+      minVolunteers,
+      filledCount: await this.countParticipants(instance.id, db),
+    });
+
+    return !paused;
+  }
+
+  private async countParticipants(
+    instanceId: string,
+    db: Database = this.db,
+  ): Promise<number> {
+    const [participants] = await db
       .select({ current: count() })
       .from(schema.shiftInstanceInvites)
       .where(
@@ -5039,7 +5188,19 @@ export class ShiftService {
         ),
       );
 
-    return (capacity?.current ?? 0) < maxVolunteers;
+    return participants?.current ?? 0;
+  }
+
+  private async hasAvailableSeat(
+    instanceId: string,
+    maxVolunteers: number | null | undefined,
+    db: Database = this.db,
+  ): Promise<boolean> {
+    if (!maxVolunteers) {
+      return true;
+    }
+
+    return (await this.countParticipants(instanceId, db)) < maxVolunteers;
   }
 
   /**

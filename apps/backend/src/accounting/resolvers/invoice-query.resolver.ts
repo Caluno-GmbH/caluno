@@ -143,6 +143,7 @@ export class InvoiceQueryResolver {
     const entries = await this.invoiceService.findEligibleTimeEntries(
       volunteerId,
       reimbursementTypeId,
+      context.organizationUnitId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
     );

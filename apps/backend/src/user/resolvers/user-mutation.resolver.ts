@@ -4,10 +4,14 @@ import { BadRequestGraphQLError } from '../../graphql/errors';
 import { SUPPORTED_LOCALES } from '../../graphql/locale';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
+import { AllowUnacceptedTerms } from '../../terms/guards/allow-unaccepted-terms.decorator';
 import { UpdateMyAccountSettingsInput } from '../inputs/update-my-account-settings.input';
 import { UpdateMyImageInput } from '../inputs/update-my-image.input';
+import { UpdateMyProfileInput } from '../inputs/update-my-profile.input';
 import { UserMapper } from '../mappers/user.mapper';
+import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
+import { UserWithProfile } from '../models/user-with-profile.model';
 import { UserService } from '../user.service';
 
 @Resolver(() => User)
@@ -15,6 +19,7 @@ export class UserMutationResolver {
   constructor(
     private readonly userService: UserService,
     private readonly userMapper: UserMapper,
+    private readonly userWithProfileMapper: UserWithProfileMapper,
     private readonly fileService: FileService,
   ) {}
 
@@ -47,6 +52,28 @@ export class UserMutationResolver {
       emailPlatformEnabled: input.emailPlatformEnabled ?? undefined,
     });
     return this.userMapper.toModelOrThrow(user);
+  }
+
+  @Mutation(() => Boolean)
+  @AllowUnacceptedTerms()
+  async unsubscribeFromEmails(
+    @Session() session: UserSession,
+  ): Promise<boolean> {
+    await this.userService.updateAccountSettings(session.user.id, {
+      emailWeeklyUpdateEnabled: false,
+      emailUrgentCallsEnabled: false,
+      emailPlatformEnabled: false,
+    });
+    return true;
+  }
+
+  @Mutation(() => UserWithProfile)
+  async updateMyProfile(
+    @Args('input') input: UpdateMyProfileInput,
+    @Session() session: UserSession,
+  ): Promise<UserWithProfile> {
+    const user = await this.userService.updateMyProfile(session.user.id, input);
+    return this.userWithProfileMapper.toModelOrThrow(user);
   }
 
   @Mutation(() => User)

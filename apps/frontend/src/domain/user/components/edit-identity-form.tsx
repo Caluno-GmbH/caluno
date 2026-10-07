@@ -16,10 +16,11 @@ import {
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 
 type EditIdentityFormProps = {
-  profile: { data: Record<string, unknown> } | null;
+  profile: Parameters<typeof toProfileDataMap>[0];
 };
 
 const editableFields = SYSTEM_PROFILE_FIELDS.filter((f) => f.key !== 'email');
@@ -33,7 +34,7 @@ const fieldToRenderable = (
   systemKey: f.key,
   type: f.type,
   label,
-  required: false,
+  required: f.key === 'firstname' || f.key === 'lastname',
   description: subtitle ?? null,
   placeholder: null,
   options: null,
@@ -50,12 +51,12 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const router = useRouter();
   const messages = useValidationMessages();
 
-  const data = (profile?.data ?? {}) as Record<string, unknown>;
+  const data = toProfileDataMap(profile);
 
   const subtitleByKey = useMemo<Record<string, string>>(
     () => ({
       'preferred-name': tSubtitles('preferredName'),
-      name: tSubtitles('firstName'),
+      firstname: tSubtitles('firstName'),
       lastname: tSubtitles('lastName'),
       iban: tSubtitles('iban'),
       'account-holder': tSubtitles('accountHolder'),
@@ -81,7 +82,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
             f.key,
             buildFieldSchema(
               fieldToRenderable(f, tFields(f.labelKey), subtitleByKey[f.key]),
-              false,
+              f.key === 'firstname' || f.key === 'lastname',
               messages,
             ),
           ]),
@@ -109,6 +110,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
       }
       toast.success(tProfile('saved'));
       router.replace('/profile');
+      router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : tProfile('saveFailed'),

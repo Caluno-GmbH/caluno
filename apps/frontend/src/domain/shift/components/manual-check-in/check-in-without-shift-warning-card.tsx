@@ -5,9 +5,13 @@ import { Info } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 /**
- * Informational warning shown while "Check in without shift" is active.
- * Lists the organizational consequences of a shiftless time entry so the
- * check-in is a deliberate decision. Never blocks the check-in button.
+ * Informational note shown while "Check in without shift" is active.
+ *
+ * It says the one thing the coordinator has to act on: hours recorded this way
+ * carry no compensation type, so one has to be added by hand if the volunteer
+ * is to be paid for them. It used to list four consequences, which user testing
+ * found harder to act on than the single instruction. Never blocks the
+ * check-in button.
  */
 export function CheckInWithoutShiftWarningCard() {
   const t = useTranslations('CheckIn');
@@ -21,12 +25,9 @@ export function CheckInWithoutShiftWarningCard() {
           </div>
           <p className="font-semibold">{t('shiftlessWarningTitle')}</p>
         </div>
-        <ul className="list-disc space-y-1 pl-10 text-sm text-muted-foreground">
-          <li>{t('shiftlessWarningNoReimbursement')}</li>
-          <li>{t('shiftlessWarningNoShiftStats')}</li>
-          <li>{t('shiftlessWarningDuplicateAtSubmit')}</li>
-          <li>{t('shiftlessWarningEmptyTaskCell')}</li>
-        </ul>
+        <p className="pl-10 text-sm text-muted-foreground">
+          {t('shiftlessWarningBody')}
+        </p>
       </CardContent>
     </Card>
   );

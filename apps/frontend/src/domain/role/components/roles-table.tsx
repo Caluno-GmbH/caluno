@@ -12,7 +12,10 @@ import {
   TableRow,
 } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { internalRoleKey } from '@/domain/role/lib/role-label';
+import {
+  internalRoleDescriptionKey,
+  internalRoleKey,
+} from '@/domain/role/lib/role-label';
 import { Link } from '@/i18n/navigation';
 import { ActionBar } from './action-bar';
 
@@ -28,6 +31,10 @@ export function RolesTable({ roles }: RolesTableProps) {
     return key ? t(key) : role.name;
   };
   const tCommon = useTranslations('Common');
+  const roleDescription = (role: RoleListItem) => {
+    const key = internalRoleDescriptionKey(role);
+    return key ? t(key) : role.description || tCommon('dash');
+  };
 
   return (
     <div className="rounded-md border overflow-x-auto">
@@ -57,7 +64,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {role.description || tCommon('dash')}
+                {roleDescription(role)}
               </TableCell>
               <TableCell>
                 {t('table.permissionsCount', { n: role.permissions.length })}

@@ -25,6 +25,8 @@ export type VolunteeringVolunteerListItem = {
   statusLabel?: string;
   /** Extra content shown in a tooltip on the status chip (e.g. check-out windows). */
   statusTooltip?: ReactNode;
+  /** Extra content rendered right after the name (e.g. an accounting badge). */
+  nameAdornment?: ReactNode;
   statusOptions?: VolunteeringStatusOption[];
   statusMenuAriaLabel?: string;
   /** When set, overrides default actions from status presentation. */
@@ -97,6 +99,7 @@ function VolunteerRows({
           completedDuration={volunteer.completedDuration}
           statusLabel={volunteer.statusLabel}
           statusTooltip={volunteer.statusTooltip}
+          nameAdornment={volunteer.nameAdornment}
           statusOptions={volunteer.statusOptions}
           statusMenuAriaLabel={volunteer.statusMenuAriaLabel}
           actions={volunteer.actions}

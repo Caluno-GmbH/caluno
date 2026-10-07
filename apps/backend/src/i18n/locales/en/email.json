@@ -1,4 +1,10 @@
 {
+  "compensation": {
+    "agreementNote": "If you accept this assignment, you'll get an agreement to sign.",
+    "detail": "Compensation",
+    "ehrenamt": "Compensated via volunteer allowance (Ehrenamtspauschale)",
+    "uebungsleiter": "Compensated via trainer's allowance (Übungsleiterpauschale)"
+  },
   "accountVerificationOtp": {
     "expiry": "This code expires in {minutes} minutes.",
     "footerNote": "You're receiving this because this email was used to create an account on {brandName}.",
@@ -84,8 +90,8 @@
   "membershipApproved": {
     "buttonLabel": "Open {organizationName}",
     "checkInQrAlt": "Your check-in QR code",
-    "checkInQrCaption": "Show this code at check-in, or have it scanned by a supervisor.",
-    "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Print it out or keep it on your phone. You can show it at check-in any time, even without your Caluno login.",
+    "checkInQrCaption": "Show this QR code at check-in and have it scanned by the person responsible, if your organisation records attendance at assignments. You can also find it under Check in when you sign in at app.caluno.org.",
+    "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Show this QR code at check-in and have it scanned by the person responsible, if your organisation records attendance at assignments. You can also find it under Check in when you sign in at app.caluno.org.",
     "contactEmailLabel": "Email",
     "contactHeading": "Your contact person",
     "contactNameLabel": "Name",
@@ -467,7 +473,7 @@
     "subject": "You're invited to {shiftTitle}"
   },
   "shiftInstanceCallOut": {
-    "buttonLabel": "I can help",
+    "buttonLabel": "View assignment",
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
     "detailShift": "Assignment",
@@ -575,5 +581,16 @@
     "subject": "Your week ahead on {brandName}",
     "previewText": "Your assignments, invitations, and open assignments for the week ahead.",
     "footerNote": "You're receiving this weekly digest as a member of an organisation on {brandName}."
+  },
+  "termsUpdated": {
+    "subject": "Our terms and conditions have changed",
+    "previewText": "We've updated our terms and conditions. {action}",
+    "previewTextMinor": "We've updated our terms and conditions.",
+    "heading": "Terms and conditions update",
+    "greeting": "Hi {firstName}, we've updated our terms and conditions.",
+    "majorBody": "This change is important, so you'll need to review and accept the new version before you can continue using {brandName}.",
+    "minorBody": "This update does not require any action from you. You can keep using {brandName} as before.",
+    "buttonLabel": "Review the new terms",
+    "footerNote": "You're receiving this because you have a {brandName} account."
   }
 }

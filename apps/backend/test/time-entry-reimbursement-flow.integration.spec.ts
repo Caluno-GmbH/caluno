@@ -70,6 +70,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       {} as never,
       { capture: () => {} } as unknown as PostHogService,
       accountingOrgAccessService,
+      { resolve: async () => ({ enabled: false }) } as never,
     );
     timeTrackingService = new TimeTrackingService(
       db,
@@ -165,6 +166,7 @@ describe('Time entry -> eligible timesheet flow', () => {
     const eligible = await invoiceService.findEligibleTimeEntries(
       volunteerId,
       reimbursementType.id,
+      organizationUnitId,
     );
     expect(eligible.map((e) => e.id)).toContain(entry.id);
 

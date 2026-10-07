@@ -26,10 +26,27 @@ export const users = snakeCase.table('users', {
     .notNull(),
   privacyPolicyVersion: text('privacy_policy_version'),
   privacyPolicyAcceptedAt: timestamp('privacy_policy_accepted_at'),
+  termsVersion: text('terms_version'),
+  termsAcceptedAt: timestamp('terms_accepted_at'),
   checkInId: text('check_in_id')
     .notNull()
     .unique()
     .$defaultFn(generateCheckInId),
+  // Profile fields (formerly user_profiles.data) — VOLI-1524
+  // firstname/lastname are source of truth; `name` is always dual-written as
+  // `firstname + " " + lastname` for Better Auth + display.
+  firstname: text('firstname').notNull(),
+  lastname: text('lastname').notNull(),
+  preferredName: text('preferred_name'),
+  gender: text('gender'),
+  phone: text('phone'),
+  street: text('street'),
+  zip: text('zip'),
+  city: text('city'),
+  birthdate: text('birthdate'),
+  iban: text('iban'),
+  accountHolder: text('account_holder'),
+  bic: text('bic'),
   ...timestampColumns,
 });
 

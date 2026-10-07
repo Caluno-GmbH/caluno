@@ -3,8 +3,10 @@ import { DocumentFieldOverrideInput } from './document-field-override.input';
 
 @InputType()
 export class CreateInvoiceInput {
-  // Omit to resolve the org-wide default template; set to target a specific
-  // unit's template override.
+  // Optional on the wire for backwards compatibility with older clients.
+  // Ignored for tenancy: `createInvoice` always scopes the timesheet to
+  // `context.organizationUnitId` (header). Kept so existing callers that
+  // still send the route unit do not break.
   @Field(() => ID, { nullable: true })
   organizationUnitId?: string | null;
 
@@ -28,6 +30,12 @@ export class CreateInvoiceInput {
   // rate; setting it here never changes that rate for anyone else.
   @Field(() => Int, { nullable: true })
   hourlyRateCents?: number | null;
+
+  // The volunteer's initial yearly amount for this Pauschale, when the
+  // coordinator sets it while reviewing the timesheet. Persisted in the same
+  // transaction as the timesheet so a cancelled creation leaves no trace.
+  @Field(() => Int, { nullable: true })
+  manualBaselineCents?: number | null;
 
   @Field(() => [DocumentFieldOverrideInput], { nullable: true })
   fieldOverrides?: DocumentFieldOverrideInput[] | null;

@@ -229,15 +229,19 @@ export class RequirementFormService {
     }
 
     const updated = await this.db.transaction(async (tx) => {
-      const hasSubmissions = await tx.query.formSubmissions.findFirst({
-        where: { formId: id },
-        columns: { id: true },
-      });
+      // Name/description stay editable after submissions; blockRefs and
+      // settings remain locked (spec: metadata-only unlock).
+      if (input.blockRefs !== undefined || input.settings !== undefined) {
+        const hasSubmissions = await tx.query.formSubmissions.findFirst({
+          where: { formId: id },
+          columns: { id: true },
+        });
 
-      if (hasSubmissions) {
-        throw new ConflictGraphQLError(
-          'Cannot edit form because it already has submissions',
-        );
+        if (hasSubmissions) {
+          throw new ConflictGraphQLError(
+            'Cannot edit form structure or settings because it already has submissions',
+          );
+        }
       }
 
       const { settings, blockRefs, ...rest } = input;

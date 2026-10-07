@@ -17,7 +17,7 @@ export interface MyDocumentsGroupEntity {
   invoices: InvoiceEntity[];
 }
 
-interface MembershipOrgInfo {
+interface MembershipOrgUnitInfo {
   organizationId: string;
   membershipId: string;
   organizationUnitId: string;
@@ -41,10 +41,10 @@ export class VolunteerDocumentsService {
     private readonly invoiceService: InvoiceService,
   ) {}
 
-  /** The user's orgs, deduplicated by organization (one membership each). */
-  private async findMembershipOrgInfos(
+  /** The user's memberships, one entry per org unit (all units across orgs). */
+  private async findMembershipOrgUnitInfos(
     userId: string,
-  ): Promise<MembershipOrgInfo[]> {
+  ): Promise<MembershipOrgUnitInfo[]> {
     const memberships = await this.db.query.memberships.findMany({
       where: { userId },
       columns: { id: true, organizationUnitId: true },
@@ -63,46 +63,59 @@ export class VolunteerDocumentsService {
       },
     });
 
-    const byOrganization = new Map<string, MembershipOrgInfo>();
+    const byOrganization = new Map<string, MembershipOrgUnitInfo[]>();
     for (const membership of memberships) {
       const unit = membership.organizationUnit;
       if (unit?.organization == null) continue;
-      if (byOrganization.has(unit.organizationId)) continue;
-      byOrganization.set(unit.organizationId, {
+      const info: MembershipOrgUnitInfo = {
         organizationId: unit.organizationId,
         membershipId: membership.id,
         organizationUnitId: unit.id,
         organizationUnitName: unit.name,
         organizationName: unit.organization.name,
         logoUrl: unit.logoUrl,
-      });
+      };
+      const group = byOrganization.get(unit.organizationId);
+      if (group) {
+        group.push(info);
+      } else {
+        byOrganization.set(unit.organizationId, [info]);
+      }
     }
-    return [...byOrganization.values()];
+    return [...byOrganization.values()].flat();
   }
 
   async findMyDocumentsGroups(
     userId: string,
   ): Promise<MyDocumentsGroupEntity[]> {
-    const orgs = await this.findMembershipOrgInfos(userId);
+    const orgUnitInfos = await this.findMembershipOrgUnitInfos(userId);
     const groups: MyDocumentsGroupEntity[] = [];
 
-    for (const org of orgs) {
+    for (const orgUnitInfo of orgUnitInfos) {
       const [contracts, invoices] = await Promise.all([
-        this.contractService.findContractsForOrganization(org.organizationId, {
-          volunteerId: userId,
-          issuedOnly: true,
-        }),
-        this.invoiceService.findInvoicesForOrganization(org.organizationId, {
-          volunteerId: userId,
-          issuedOnly: true,
-        }),
+        this.contractService.findContractsForOrganization(
+          orgUnitInfo.organizationId,
+          {
+            volunteerId: userId,
+            organizationUnitId: orgUnitInfo.organizationUnitId,
+            issuedOnly: true,
+          },
+        ),
+        this.invoiceService.findInvoicesForOrganization(
+          orgUnitInfo.organizationId,
+          {
+            volunteerId: userId,
+            organizationUnitId: orgUnitInfo.organizationUnitId,
+            issuedOnly: true,
+          },
+        ),
       ]);
       groups.push({
-        membershipId: org.membershipId,
-        organizationUnitId: org.organizationUnitId,
-        organizationUnitName: org.organizationUnitName,
-        organizationName: org.organizationName,
-        logoUrl: org.logoUrl,
+        membershipId: orgUnitInfo.membershipId,
+        organizationUnitId: orgUnitInfo.organizationUnitId,
+        organizationUnitName: orgUnitInfo.organizationUnitName,
+        organizationName: orgUnitInfo.organizationName,
+        logoUrl: orgUnitInfo.logoUrl,
         contracts,
         invoices,
       });
@@ -120,20 +133,28 @@ export class VolunteerDocumentsService {
   async getMyDocumentSummary(
     userId: string,
   ): Promise<{ total: number; pending: number }> {
-    const orgs = await this.findMembershipOrgInfos(userId);
+    const orgUnitInfos = await this.findMembershipOrgUnitInfos(userId);
     let total = 0;
     let pending = 0;
 
-    for (const org of orgs) {
+    for (const orgUnitInfo of orgUnitInfos) {
       const [contracts, invoices] = await Promise.all([
-        this.contractService.findContractsForOrganization(org.organizationId, {
-          volunteerId: userId,
-          issuedOnly: true,
-        }),
-        this.invoiceService.findInvoicesForOrganization(org.organizationId, {
-          volunteerId: userId,
-          issuedOnly: true,
-        }),
+        this.contractService.findContractsForOrganization(
+          orgUnitInfo.organizationId,
+          {
+            volunteerId: userId,
+            organizationUnitId: orgUnitInfo.organizationUnitId,
+            issuedOnly: true,
+          },
+        ),
+        this.invoiceService.findInvoicesForOrganization(
+          orgUnitInfo.organizationId,
+          {
+            volunteerId: userId,
+            organizationUnitId: orgUnitInfo.organizationUnitId,
+            issuedOnly: true,
+          },
+        ),
       ]);
       total += contracts.length + invoices.length;
       pending +=

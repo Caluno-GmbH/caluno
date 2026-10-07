@@ -1,6 +1,7 @@
 'use client';
 
 import { MembershipRequestStatus, ShiftInviteStatus } from '@repo/data';
+import { useVolunteerAllowanceStates } from '@repo/data/react';
 import {
   Badge,
   Button,
@@ -13,10 +14,7 @@ import { Megaphone, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import {
-  checkInVolunteer,
-  checkOutVolunteer,
-} from '@/domain/time-entry/actions';
+import { checkOutVolunteer } from '@/domain/time-entry/actions';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -40,6 +38,7 @@ import {
   toInviteDisplayState,
 } from '../invite-status-display';
 import { shiftInvitePath } from '../routes';
+import { AllowanceBadge } from './allowance-badge';
 import { CheckedOutStatusTooltip } from './checked-out-status-tooltip';
 import { SendCallOutDialog } from './send-call-out-dialog';
 
@@ -102,6 +101,14 @@ export function ShiftInstanceVolunteersPanel({
   };
 
   const timeEntriesByVolunteer = groupTimeEntriesByVolunteer(timeEntries);
+
+  const { data: allowanceStates } = useVolunteerAllowanceStates({
+    volunteerIds: invites.map((invite) => invite.user.id),
+    shiftInstanceId: instanceId,
+  });
+  const allowanceStateByVolunteerId = new Map(
+    (allowanceStates ?? []).map((entry) => [entry.volunteerId, entry.state]),
+  );
 
   const stateLabel = (state: ShiftVolunteeringDisplayState) => {
     switch (state) {
@@ -177,6 +184,8 @@ export function ShiftInstanceVolunteersPanel({
         />
       ) : undefined;
 
+    const allowanceState = allowanceStateByVolunteerId.get(invite.user.id);
+
     return {
       id: invite.user.id,
       name: invite.user.name,
@@ -184,6 +193,9 @@ export function ShiftInstanceVolunteersPanel({
       state,
       statusLabel: stateLabel(state),
       statusTooltip,
+      nameAdornment: allowanceState ? (
+        <AllowanceBadge state={allowanceState} />
+      ) : undefined,
       statusOptions:
         chipTargets.length > 0
           ? chipTargets.map((target) => ({
@@ -221,11 +233,8 @@ export function ShiftInstanceVolunteersPanel({
           : {}),
       },
       // Text buttons render actionLabels as visible content, so the name
-      // goes here instead to avoid "Check in Jo Fischer" showing on screen.
+      // goes here instead to avoid "Check out Jo Fischer" showing on screen.
       accessibleActionLabels: {
-        'Check in': t('inviteStatus.checkInAriaNamed', {
-          name: invite.user.name,
-        }),
         'Check out': t('inviteStatus.checkOutAriaNamed', {
           name: invite.user.name,
         }),
@@ -270,6 +279,7 @@ export function ShiftInstanceVolunteersPanel({
 
   const openProfile = (invite: InstanceInvite) => {
     openVolunteerSheet({
+      shiftInstanceId: instanceId,
       userId: invite.user.id,
       volunteerName: invite.user.name,
       volunteerStatus: MembershipRequestStatus.Accepted,
@@ -346,35 +356,6 @@ export function ShiftInstanceVolunteersPanel({
 
     if (action === 'View') {
       openProfile(invite);
-      return;
-    }
-
-    if (action === 'Check in') {
-      if (!canCheckIn || busyIds.has(volunteerId)) return;
-      const toastId = `check-in-${volunteerId}`;
-      toast.loading(t('checkIn.checkInLoading', { name: invite.user.name }), {
-        id: toastId,
-      });
-      markBusy(volunteerId, true);
-      startTransition(async () => {
-        try {
-          const result = await checkInVolunteer({
-            organizationUnitId: orgUId,
-            volunteerId,
-            shiftInstanceId: instanceId,
-          });
-          if (result?.serverError) {
-            toast.error(t('checkIn.checkInError'), { id: toastId });
-            return;
-          }
-          toast.success(t('checkIn.checkInSuccess'), { id: toastId });
-          router.refresh();
-        } catch {
-          toast.error(t('checkIn.checkInError'), { id: toastId });
-        } finally {
-          markBusy(volunteerId, false);
-        }
-      });
       return;
     }
 

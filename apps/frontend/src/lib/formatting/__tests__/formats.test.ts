@@ -121,6 +121,33 @@ describe('formats', () => {
     });
   });
 
+  describe('formatWorkedPeriod', () => {
+    it('splits a same-day entry into a date and a time range', () => {
+      expect(
+        formats('en').formatWorkedPeriod(
+          '2026-06-15T08:00:00Z',
+          '2026-06-15T11:00:00Z',
+        ),
+      ).toEqual({ date: '15/06/2026', time: '10:00 - 13:00' });
+    });
+
+    it('uses the open label when there is no end', () => {
+      expect(
+        formats('en').formatWorkedPeriod('2026-06-15T08:00:00Z', null),
+      ).toEqual({ date: '15/06/2026', time: '10:00 - open' });
+    });
+
+    it('appends the end date when the entry crosses Berlin midnight', () => {
+      // 20:00Z -> 22:00 Berlin (15th); 23:00Z -> 01:00 Berlin (16th).
+      expect(
+        formats('en').formatWorkedPeriod(
+          '2026-06-15T20:00:00Z',
+          '2026-06-15T23:00:00Z',
+        ),
+      ).toEqual({ date: '15/06/2026', time: '22:00 - 01:00 (16/06/2026)' });
+    });
+  });
+
   describe('formatDurationByMinutes', () => {
     it('formats minutes as hours and minutes', () => {
       expect(formats('en').formatDurationByMinutes(90)).toBe(

@@ -16,6 +16,7 @@ import {
   type PostHogSurface,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
+import { UserService } from '../../user/user.service';
 import { SYSTEM_PROFILE_KEYS } from '../constants';
 import { FieldType, RequiredFormTargetType } from '../enums';
 import { SubmitFormInput } from '../inputs/submit-form.input';
@@ -27,14 +28,13 @@ import {
   RequiredFormService,
   type RequiredFormTarget,
 } from './required-form.service';
-import { UserProfileService } from './user-profile.service';
 
 @Injectable()
 export class FormSubmissionService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly userProfileService: UserProfileService,
+    private readonly userService: UserService,
     private readonly requiredFormService: RequiredFormService,
     private readonly postHogService: PostHogService,
   ) {}
@@ -402,7 +402,7 @@ export class FormSubmissionService {
     const submission = await this.db.transaction(async (tx) => {
       // Save profile data
       if (Object.keys(profileData).length > 0) {
-        await this.userProfileService.upsertData(userId, profileData, tx);
+        await this.userService.updateProfileFields(userId, profileData, tx);
       }
 
       // Create submission

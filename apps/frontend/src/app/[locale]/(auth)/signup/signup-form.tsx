@@ -11,6 +11,7 @@ import {
   buildSignupPayload,
   PRIVACY_POLICY_PDF_URL,
 } from '@/lib/privacy-policy';
+import { termsPdfUrl } from '@/lib/terms';
 import { getVerifyEmailPath } from '@/lib/verify-email-url';
 
 function switchAuthHref(
@@ -35,9 +36,11 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
   const router = useRouter();
   const currentLocale = useLocale();
   const privacyCheckboxId = useId();
+  const termsCheckboxId = useId();
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   async function handleSignupSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,18 +48,27 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
     setIsPending(true);
 
     const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
+    const firstname = formData.get('firstname') as string;
+    const lastname = formData.get('lastname') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const payload = buildSignupPayload({
-      name,
+      firstname,
+      lastname,
       email,
       password,
       privacyAccepted,
+      termsAccepted,
     });
 
     if (!payload) {
-      setError(t('privacyRequired'));
+      setError(
+        privacyAccepted
+          ? termsAccepted
+            ? t('namePartsRequired')
+            : t('termsRequired')
+          : t('privacyRequired'),
+      );
       setIsPending(false);
       return;
     }
@@ -106,16 +118,31 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
 
       <div className="space-y-4">
         <div>
-          <label htmlFor="name" className="block text-sm font-medium">
-            {t('nameLabel')}
+          <label htmlFor="firstname" className="block text-sm font-medium">
+            {t('firstnameLabel')}
           </label>
           <Input
-            id="name"
-            name="name"
+            id="firstname"
+            name="firstname"
             type="text"
             required
             className="mt-1"
-            placeholder={t('namePlaceholder')}
+            placeholder={t('firstnamePlaceholder')}
+            disabled={isPending}
+          />
+        </div>
+
+        <div>
+          <label htmlFor="lastname" className="block text-sm font-medium">
+            {t('lastnameLabel')}
+          </label>
+          <Input
+            id="lastname"
+            name="lastname"
+            type="text"
+            required
+            className="mt-1"
+            placeholder={t('lastnamePlaceholder')}
             disabled={isPending}
           />
         </div>
@@ -181,11 +208,39 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
             })}
           </label>
         </div>
+
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={termsCheckboxId}
+            checked={termsAccepted}
+            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+            disabled={isPending}
+            aria-required
+          />
+          <label
+            htmlFor={termsCheckboxId}
+            className="text-sm leading-snug font-medium"
+          >
+            {t.rich('termsAcknowledge', {
+              termsLink: (chunks) => (
+                <a
+                  href={termsPdfUrl(currentLocale as Locale)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary hover:underline"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
+          </label>
+        </div>
       </div>
 
       <Button
         type="submit"
-        disabled={isPending || !privacyAccepted}
+        disabled={isPending || !privacyAccepted || !termsAccepted}
         className="w-full"
       >
         {isPending ? t('submitting') : t('submit')}

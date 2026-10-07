@@ -24,11 +24,10 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const tCommon = await getTranslations('Common');
 
   const data = await getDataClient();
-  const [me, requestPage, memberships, profile] = await Promise.all([
+  const [me, requestPage, memberships] = await Promise.all([
     data.user.getMe(),
     data.membershipRequest.findMine(),
     data.membership.findMine(),
-    data.requirementForm.getMyUserProfile(),
   ]);
   const membershipEntries = buildMembershipEntries(
     requestPage.items,
@@ -74,7 +73,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
               </Link>
             </Button>
           </div>
-          <PersonalInformationSection profile={profile ?? null} />
+          <PersonalInformationSection profile={me} />
         </section>
 
         <hr className="border-t border-border my-6" />

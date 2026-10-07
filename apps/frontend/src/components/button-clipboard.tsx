@@ -29,7 +29,7 @@ export function ButtonClipboard({
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="default"
       onClick={handleCopyToClipboard}
       className="group relative"
     >
