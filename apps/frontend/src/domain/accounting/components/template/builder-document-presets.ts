@@ -328,6 +328,14 @@ export function getInvoiceDocument(
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),
           ]),
+          // Opt-in, off by default — only demanded when enabled, matching the
+          // agreement. Follows the IBAN so payout details read together.
+          line(
+            'volunteer-bic',
+            '{volunteerBic} (BIC)',
+            [bound('volunteer-bic-field', 'volunteer_bic')],
+            { optional: true },
+          ),
         ],
       },
       {
