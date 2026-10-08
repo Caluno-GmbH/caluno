@@ -7,15 +7,6 @@ input AcceptTermsInput {
   version: String!
 }
 
-enum AgreementStatus {
-  ACTIVE
-  AWAITING_COUNTERSIGNATURE
-  AWAITING_VOLUNTEER_SIGNATURE
-  NO_CONTRACT
-  NO_TEMPLATE
-  NOT_APPLICABLE
-}
-
 type AccountingOrgProfile {
   city: String
   legalRep: String
@@ -50,16 +41,19 @@ input AddTimeEntryInput {
   volunteerId: String!
 }
 
+enum AgreementStatus {
+  ACTIVE
+  AWAITING_COUNTERSIGNATURE
+  AWAITING_VOLUNTEER_SIGNATURE
+  NOT_APPLICABLE
+  NO_CONTRACT
+  NO_TEMPLATE
+}
+
 type BundleDownloadStatus {
   downloadedAt: DateTime!
   downloadedByUser: User
   reimbursementType: ReimbursementType!
-  volunteer: User!
-}
-
-type CheckInContext {
-  eligibleOrganizationUnits: [OrganizationUnit!]!
-  openTimeEntries: [TimeEntry!]!
   volunteer: User!
 }
 
@@ -69,6 +63,12 @@ type CheckInAgreement {
   managerNames: [String!]!
   reimbursementTypeName: String
   status: AgreementStatus!
+}
+
+type CheckInContext {
+  eligibleOrganizationUnits: [OrganizationUnit!]!
+  openTimeEntries: [TimeEntry!]!
+  volunteer: User!
 }
 
 type CheckInReadiness {
