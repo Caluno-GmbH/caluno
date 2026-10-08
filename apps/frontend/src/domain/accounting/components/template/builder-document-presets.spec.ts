@@ -1,25 +1,17 @@
 import { describe, expect, it } from 'bun:test';
+import type { PauschalenType } from '../doc-type-header';
+import { findTextLine } from './__tests__/find-text-line';
 import {
   getContractDocument,
   getInvoiceDocument,
 } from './builder-document-presets';
 
-function contractLine(id: string) {
-  const block = getContractDocument('ehrenamt').blocks.find(
-    (b) => b.kind === 'text' && b.lines.some((line) => line.id === id),
-  );
-  return block?.kind === 'text'
-    ? block.lines.find((line) => line.id === id)
-    : undefined;
+function contractLine(id: string, pauschale: PauschalenType = 'ehrenamt') {
+  return findTextLine(getContractDocument(pauschale), id);
 }
 
-function invoiceLine(id: string) {
-  const block = getInvoiceDocument('ehrenamt').blocks.find(
-    (b) => b.id === 'persoenliche-daten',
-  );
-  return block?.kind === 'text'
-    ? block.lines.find((line) => line.id === id)
-    : undefined;
+function invoiceLine(id: string, pauschale: PauschalenType = 'ehrenamt') {
+  return findTextLine(getInvoiceDocument(pauschale), id);
 }
 
 describe('document preset org identity', () => {
@@ -167,20 +159,8 @@ describe('optional BIC (VOLI-1544)', () => {
 
   it('Applies to both pauschalen', () => {
     for (const pauschale of ['ehrenamt', 'uebungsleiter'] as const) {
-      const contractBicBlock = getContractDocument(pauschale).blocks.find(
-        (b) => b.kind === 'text' && b.lines.some((l) => l.id === 'payout-bic'),
-      );
-      const bicLine =
-        contractBicBlock?.kind === 'text'
-          ? contractBicBlock.lines.find((l) => l.id === 'payout-bic')
-          : undefined;
-      const invoiceBlock = getInvoiceDocument(pauschale).blocks.find(
-        (b) => b.id === 'persoenliche-daten',
-      );
-      const invoiceBic =
-        invoiceBlock?.kind === 'text'
-          ? invoiceBlock.lines.find((l) => l.id === 'volunteer-bic')
-          : undefined;
+      const bicLine = contractLine('payout-bic', pauschale);
+      const invoiceBic = invoiceLine('volunteer-bic', pauschale);
 
       expect(bicLine?.optional).toBe(true);
       expect(bicLine?.enabled).toBe(false);

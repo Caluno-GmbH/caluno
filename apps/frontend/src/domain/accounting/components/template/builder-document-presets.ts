@@ -85,6 +85,21 @@ function line(
   };
 }
 
+/**
+ * The volunteer's BIC: opt-in, off by default (VOLI-1544). SEPA payouts do not
+ * need a BIC; only non-EU accounts do. Same switch pattern as the date of birth.
+ */
+function bicLine(id: string): TemplateLine {
+  return line(
+    id,
+    '{volunteerBic} (BIC)',
+    [bound(`${id}-field`, 'volunteer_bic')],
+    {
+      optional: true,
+    },
+  );
+}
+
 const PAUSCHALE_TITLE: Record<PauschalenType, string> = {
   ehrenamt: 'Aufwandsentschädigung gemäß § 3 Nr. 26a EStG (Ehrenamtspauschale)',
   uebungsleiter:
@@ -226,14 +241,7 @@ export function getContractDocument(
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),
-          // Opt-in, off by default — SEPA payouts do not need a BIC; only
-          // non-EU accounts do. Same switch pattern as the date of birth.
-          line(
-            'payout-bic',
-            '{volunteerBic} (BIC)',
-            [bound('payout-bic-field', 'volunteer_bic')],
-            { optional: true },
-          ),
+          bicLine('payout-bic'),
         ],
       },
       {
@@ -328,14 +336,8 @@ export function getInvoiceDocument(
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),
           ]),
-          // Opt-in, off by default — only demanded when enabled, matching the
-          // agreement. Follows the IBAN so payout details read together.
-          line(
-            'volunteer-bic',
-            '{volunteerBic} (BIC)',
-            [bound('volunteer-bic-field', 'volunteer_bic')],
-            { optional: true },
-          ),
+          // Follows the IBAN so payout details read together.
+          bicLine('volunteer-bic'),
         ],
       },
       {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { findTextLine } from '../components/template/__tests__/find-text-line';
 import {
   getContractDocument,
   getInvoiceDocument,
@@ -9,12 +10,9 @@ import { deriveEditableFields } from './creation-fields';
 // need BIC derived flip the line on — what a coordinator enabling it does.
 function contractWithBicEnabled() {
   const doc = getContractDocument('ehrenamt');
-  for (const block of doc.blocks) {
-    if (block.kind !== 'text') continue;
-    for (const line of block.lines) {
-      if (line.id === 'payout-bic') line.enabled = true;
-    }
-  }
+  const bic = findTextLine(doc, 'payout-bic');
+  if (!bic) throw new Error('expected a payout-bic line');
+  bic.enabled = true;
   return doc;
 }
 
