@@ -142,10 +142,6 @@ export function TransferList({
                 key={member.id}
                 className="flex items-center gap-2 px-2 py-1.5 rounded-sm hover:bg-accent"
               >
-                {/* `image` already arrives here from GetOrganizationUnitMemberships;
-                    this row used to drop it and draw a bare circle. Matches the
-                    volunteer list: sm avatar, UserRound when there is no picture
-                    (VOLI-1582). */}
                 <Avatar size="sm" className="shrink-0">
                   <AvatarImage
                     src={member.image ?? undefined}
