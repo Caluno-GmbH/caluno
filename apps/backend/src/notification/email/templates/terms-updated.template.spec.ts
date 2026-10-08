@@ -18,7 +18,7 @@ describe('termsUpdatedTemplate', () => {
     );
 
     expect(html).toContain(ACCEPT_TERMS_URL);
-    expect(html).toContain('Review the new terms');
+    expect(html).toContain('Review and accept the terms');
   });
 
   it('omits the accept button and URL for a minor change', async () => {
@@ -28,6 +28,6 @@ describe('termsUpdatedTemplate', () => {
     );
 
     expect(html).not.toContain(ACCEPT_TERMS_URL);
-    expect(html).not.toContain('Review the new terms');
+    expect(html).not.toContain('Review and accept the terms');
   });
 });
