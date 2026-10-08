@@ -5,6 +5,7 @@ import {
   useCheckInInviteToShiftInstance,
   useCheckInReadiness,
   useCheckInShiftInstances,
+  useOrgUId,
   useQueryClient,
 } from '@repo/data/react';
 import { applyTimeToDate, Button, Card, CardContent } from '@repo/ui';
@@ -17,6 +18,7 @@ import { UserCard } from '@/components/user-card';
 import { checkInVolunteer } from '@/domain/time-entry/actions';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { resolveAgreementTrigger } from '../../check-in-agreement';
 import {
   resolveCheckInReadiness,
   shouldShowIdVerification,
@@ -32,6 +34,7 @@ import {
 } from '../../check-in-selection';
 import { setCheckInSuccessPayload } from '../../check-in-success-dialog';
 import { AcceptMembershipSheet } from './accept-membership-sheet';
+import { CheckInAgreementCard } from './check-in-agreement-card';
 import { CheckInReadinessCard } from './check-in-readiness-card';
 import { CheckInWithoutShiftWarningCard } from './check-in-without-shift-warning-card';
 import { DateSheet } from './date-sheet';
@@ -40,6 +43,7 @@ import { OrgUnitSheet } from './org-unit-sheet';
 import { ShiftInstanceStepper } from './shift-instance-stepper';
 import { ShiftSheet } from './shift-sheet';
 import { shouldShowShiftlessCheckInWarning } from './shiftless-check-in-warning';
+import { UnverifiedCheckInDialog } from './unverified-check-in-dialog';
 
 type ManualCheckInPageProps = {
   volunteer: {
@@ -62,6 +66,7 @@ export function ManualCheckInPage({
   const t = useTranslations('CheckIn');
   const router = useRouter();
   const queryClient = useQueryClient();
+  const orgUId = useOrgUId();
   const { formatDate, formatTimeRange } = useFormatting();
 
   const [selection, setSelection] = useState<CheckInSelection>(() => ({
@@ -185,6 +190,13 @@ export function ManualCheckInPage({
     }
   };
 
+  const [showUnverifiedConfirm, setShowUnverifiedConfirm] = useState(false);
+
+  const agreementTrigger =
+    readinessState === 'ready'
+      ? resolveAgreementTrigger(readiness?.agreement)
+      : null;
+
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
@@ -299,22 +311,53 @@ export function ManualCheckInPage({
           />
         )}
 
-        {readinessState === 'ready' && (
-          <Button
-            type="button"
-            size="lg"
-            variant={
-              showIdVerification && readiness?.membershipId
-                ? 'outline'
-                : 'default'
-            }
-            className="w-full"
-            disabled={isSubmitPending}
-            onClick={handleSubmit}
-          >
-            {t('checkInButton')}
-          </Button>
-        )}
+        {readinessState === 'ready' &&
+          agreementTrigger &&
+          readiness?.agreement && (
+            <CheckInAgreementCard
+              agreement={readiness.agreement}
+              orgUId={orgUId}
+            />
+          )}
+
+        {readinessState === 'ready' &&
+          (agreementTrigger ? (
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              className="w-full"
+              disabled={isSubmitPending}
+              onClick={() => setShowUnverifiedConfirm(true)}
+            >
+              {t('unverifiedCheckInButton')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="lg"
+              variant={
+                showIdVerification && readiness?.membershipId
+                  ? 'outline'
+                  : 'default'
+              }
+              className="w-full"
+              disabled={isSubmitPending}
+              onClick={handleSubmit}
+            >
+              {t('checkInButton')}
+            </Button>
+          ))}
+
+        <UnverifiedCheckInDialog
+          open={showUnverifiedConfirm}
+          onOpenChange={setShowUnverifiedConfirm}
+          onConfirm={() => {
+            setShowUnverifiedConfirm(false);
+            handleSubmit();
+          }}
+          isPending={isSubmitPending}
+        />
 
         <OrgUnitSheet
           open={openSheet === 'orgUnit'}
