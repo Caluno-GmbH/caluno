@@ -13,6 +13,15 @@ function contractLine(id: string) {
     : undefined;
 }
 
+function invoiceLine(id: string) {
+  const block = getInvoiceDocument('ehrenamt').blocks.find(
+    (b) => b.id === 'persoenliche-daten',
+  );
+  return block?.kind === 'text'
+    ? block.lines.find((line) => line.id === id)
+    : undefined;
+}
+
 describe('document preset org identity', () => {
   it('Names the org as the first contracting party with its full address', () => {
     // VOLI-1325 asked for the name and address separated by a comma, which this
@@ -114,4 +123,68 @@ describe('timesheet table columns', () => {
       'Betrag',
     ]);
   });
+});
+
+describe('optional BIC (VOLI-1544)', () => {
+  it('Offers the agreement BIC line as an opt-in, off by default', () => {
+    // SEPA payouts do not need a BIC; only non-EU accounts do. Like the date
+    // of birth, the coordinator enables the line when their volunteers need it.
+    const line = contractLine('payout-bic');
+
+    expect(line?.optional).toBe(true);
+    expect(line?.enabled).toBe(false);
+  });
+
+  it('Binds the agreement BIC line to the volunteer bic profile field', () => {
+    expect(contractLine('payout-bic')?.fields[0]?.value).toEqual({
+      kind: 'bound',
+      source: 'volunteer_bic',
+    });
+  });
+
+  it('Adds an opt-in BIC line to the timesheet, off by default', () => {
+    const line = invoiceLine('volunteer-bic');
+
+    expect(line?.optional).toBe(true);
+    expect(line?.enabled).toBe(false);
+    expect(line?.fields[0]?.value).toEqual({
+      kind: 'bound',
+      source: 'volunteer_bic',
+    });
+  });
+
+  it('Sits the timesheet BIC directly after the IBAN line', () => {
+    const block = getInvoiceDocument('ehrenamt').blocks.find(
+      (b) => b.id === 'persoenliche-daten',
+    );
+    const ids =
+      block?.kind === 'text' ? block.lines.map((line) => line.id) : [];
+
+    expect(ids.indexOf('volunteer-bic')).toBe(ids.indexOf('volunteer-iban') + 1);
+  });
+
+  it.each(['ehrenamt', 'uebungsleiter'] as const)(
+    'Applies to both pauschalen (%s)',
+    (pauschale) => {
+      const contractBicBlock = getContractDocument(pauschale).blocks.find(
+        (b) => b.kind === 'text' && b.lines.some((l) => l.id === 'payout-bic'),
+      );
+      const bicLine =
+        contractBicBlock?.kind === 'text'
+          ? contractBicBlock.lines.find((l) => l.id === 'payout-bic')
+          : undefined;
+      const invoiceBlock = getInvoiceDocument(pauschale).blocks.find(
+        (b) => b.id === 'persoenliche-daten',
+      );
+      const invoiceBic =
+        invoiceBlock?.kind === 'text'
+          ? invoiceBlock.lines.find((l) => l.id === 'volunteer-bic')
+          : undefined;
+
+      expect(bicLine?.optional).toBe(true);
+      expect(bicLine?.enabled).toBe(false);
+      expect(invoiceBic?.optional).toBe(true);
+      expect(invoiceBic?.enabled).toBe(false);
+    },
+  );
 });
