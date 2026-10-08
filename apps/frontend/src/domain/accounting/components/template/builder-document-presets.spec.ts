@@ -160,12 +160,13 @@ describe('optional BIC (VOLI-1544)', () => {
     const ids =
       block?.kind === 'text' ? block.lines.map((line) => line.id) : [];
 
-    expect(ids.indexOf('volunteer-bic')).toBe(ids.indexOf('volunteer-iban') + 1);
+    expect(ids.indexOf('volunteer-bic')).toBe(
+      ids.indexOf('volunteer-iban') + 1,
+    );
   });
 
-  it.each(['ehrenamt', 'uebungsleiter'] as const)(
-    'Applies to both pauschalen (%s)',
-    (pauschale) => {
+  it('Applies to both pauschalen', () => {
+    for (const pauschale of ['ehrenamt', 'uebungsleiter'] as const) {
       const contractBicBlock = getContractDocument(pauschale).blocks.find(
         (b) => b.kind === 'text' && b.lines.some((l) => l.id === 'payout-bic'),
       );
@@ -185,6 +186,6 @@ describe('optional BIC (VOLI-1544)', () => {
       expect(bicLine?.enabled).toBe(false);
       expect(invoiceBic?.optional).toBe(true);
       expect(invoiceBic?.enabled).toBe(false);
-    },
-  );
+    }
+  });
 });
