@@ -52,34 +52,39 @@ export const MembershipFormCard = async ({
   return (
     <Card>
       {/*
-        A wrapping flex row rather than CardHeader's `grid-cols-[1fr_auto]`.
-        That grid's `1fr` is `minmax(auto, 1fr)`, so its floor was the title's
-        min-content — and `truncate` makes min-content the whole string, so the
-        column could never shrink and the badge was pushed outside the card
-        (VOLI-1594).
-
-        `basis-3/5` is what makes the badge drop below the title only when the
-        name genuinely needs the room: measured inline at 750px and 560px, on
-        its own line at 420px and under. `flex-1` would set the basis to 0, so
-        the title would squeeze to a sliver and the badge would never wrap.
+        Plain flex instead of CardHeader's `grid-cols-[1fr_auto]`. That grid's
+        `1fr` is `minmax(auto, 1fr)`, so its floor was the title's min-content —
+        and `truncate` makes min-content the whole string, so the column could
+        never shrink and the badge was pushed outside the card (VOLI-1594).
       */}
-      <CardHeader className="flex flex-wrap items-start justify-between gap-2">
-        <CardTitle className="flex min-w-0 grow basis-3/5 items-center gap-2">
-          <div className="bg-muted p-2 border rounded-lg shrink-0">
-            <FileText className="text-muted-foreground size-4" />
-          </div>
+      <CardHeader className="flex items-start gap-2">
+        <div className="bg-muted p-2 border rounded-lg shrink-0">
+          <FileText className="text-muted-foreground size-4" />
+        </div>
+        {/*
+          The icon sits outside this row on purpose. This is the row that wraps,
+          so wherever it starts is where the badge lands when it drops to its own
+          line — which is exactly the name's left edge. With the icon inside, the
+          badge wrapped under the icon instead of lining up with the name.
+
+          `basis-3/5` is what makes it drop only when the name needs the room:
+          measured inline at a 442px card, on its own line from ~372px down. With
+          `flex-1` the basis would be 0, so the name would squeeze to a sliver and
+          the badge would never wrap at all.
+        */}
+        <div className="flex min-w-0 grow flex-wrap items-start justify-between gap-2">
           {/* Wraps instead of truncating: the form name is what the volunteer
               picks by, and at phone width truncation left "Vereinb…". */}
-          <span className="min-w-0 hyphens-auto break-words">
+          <CardTitle className="min-w-0 grow basis-3/5 leading-snug hyphens-auto break-words">
             {submission.form.name}
-          </span>
-        </CardTitle>
-        <Badge
-          variant={submission.completed ? 'success' : 'alert'}
-          className="shrink-0"
-        >
-          {statusLabel}
-        </Badge>
+          </CardTitle>
+          <Badge
+            variant={submission.completed ? 'success' : 'alert'}
+            className="shrink-0"
+          >
+            {statusLabel}
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground text-sm mb-2">{description}</p>
