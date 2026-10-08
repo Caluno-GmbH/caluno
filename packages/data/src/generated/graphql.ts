@@ -63,12 +63,30 @@ export type AddTimeEntryInput = {
   volunteerId: Scalars['String']['input'];
 };
 
+export enum AgreementStatus {
+  Active = 'ACTIVE',
+  AwaitingCountersignature = 'AWAITING_COUNTERSIGNATURE',
+  AwaitingVolunteerSignature = 'AWAITING_VOLUNTEER_SIGNATURE',
+  NotApplicable = 'NOT_APPLICABLE',
+  NoContract = 'NO_CONTRACT',
+  NoTemplate = 'NO_TEMPLATE'
+}
+
 export type BundleDownloadStatus = {
   __typename?: 'BundleDownloadStatus';
   downloadedAt: Scalars['DateTime']['output'];
   downloadedByUser?: Maybe<User>;
   reimbursementType: ReimbursementType;
   volunteer: User;
+};
+
+export type CheckInAgreement = {
+  __typename?: 'CheckInAgreement';
+  canManageAgreements: Scalars['Boolean']['output'];
+  contractId?: Maybe<Scalars['ID']['output']>;
+  managerNames: Array<Scalars['String']['output']>;
+  reimbursementTypeName?: Maybe<Scalars['String']['output']>;
+  status: AgreementStatus;
 };
 
 export type CheckInContext = {
@@ -80,6 +98,7 @@ export type CheckInContext = {
 
 export type CheckInReadiness = {
   __typename?: 'CheckInReadiness';
+  agreement: CheckInAgreement;
   hasOpenTimeEntry: Scalars['Boolean']['output'];
   idVerificationEnabled: Scalars['Boolean']['output'];
   idVerified: Scalars['Boolean']['output'];
@@ -4326,7 +4345,7 @@ export type GetCheckInReadinessQueryVariables = Exact<{
 }>;
 
 
-export type GetCheckInReadinessQuery = { __typename?: 'Query', checkInReadiness: { __typename?: 'CheckInReadiness', isMember: boolean, openMembershipRequestId?: string | null, shiftInviteStatus?: ShiftInviteStatus | null, isParticipating: boolean, hasOpenTimeEntry: boolean, idVerificationEnabled: boolean, idVerified: boolean, membershipId?: string | null } };
+export type GetCheckInReadinessQuery = { __typename?: 'Query', checkInReadiness: { __typename?: 'CheckInReadiness', isMember: boolean, openMembershipRequestId?: string | null, shiftInviteStatus?: ShiftInviteStatus | null, isParticipating: boolean, hasOpenTimeEntry: boolean, idVerificationEnabled: boolean, idVerified: boolean, membershipId?: string | null, agreement: { __typename?: 'CheckInAgreement', status: AgreementStatus, reimbursementTypeName?: string | null, contractId?: string | null, canManageAgreements: boolean, managerNames: Array<string> } } };
 
 export type GetCheckInVolunteerRequiredFormsQueryVariables = Exact<{
   volunteerId: Scalars['ID']['input'];
@@ -7900,6 +7919,13 @@ export const GetCheckInReadinessDocument = gql`
     idVerificationEnabled
     idVerified
     membershipId
+    agreement {
+      status
+      reimbursementTypeName
+      contractId
+      canManageAgreements
+      managerNames
+    }
   }
 }
     `;

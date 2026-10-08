@@ -51,6 +51,7 @@ import { TaskModule } from './task/task.module';
 import { TermsAcceptedGuard } from './terms/guards/terms-accepted.guard';
 import { TermsService } from './terms/services/terms.service';
 import { TermsModule } from './terms/terms.module';
+import { CheckInAgreementModule } from './check-in-agreement/check-in-agreement.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
@@ -296,6 +297,7 @@ const autoSchemaFile =
     MembershipLifecycleModule,
     NotificationModule,
     TimeTrackingModule,
+    CheckInAgreementModule,
     GraphqlModule,
     LegalModule,
     ShiftModule,

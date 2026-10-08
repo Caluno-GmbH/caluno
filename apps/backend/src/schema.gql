@@ -7,6 +7,15 @@ input AcceptTermsInput {
   version: String!
 }
 
+enum AgreementStatus {
+  ACTIVE
+  AWAITING_COUNTERSIGNATURE
+  AWAITING_VOLUNTEER_SIGNATURE
+  NO_CONTRACT
+  NO_TEMPLATE
+  NOT_APPLICABLE
+}
+
 type AccountingOrgProfile {
   city: String
   legalRep: String
@@ -54,7 +63,16 @@ type CheckInContext {
   volunteer: User!
 }
 
+type CheckInAgreement {
+  canManageAgreements: Boolean!
+  contractId: ID
+  managerNames: [String!]!
+  reimbursementTypeName: String
+  status: AgreementStatus!
+}
+
 type CheckInReadiness {
+  agreement: CheckInAgreement!
   hasOpenTimeEntry: Boolean!
   idVerificationEnabled: Boolean!
   idVerified: Boolean!
