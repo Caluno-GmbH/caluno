@@ -69,6 +69,7 @@ export default async function ShiftSettingsPage({
       </div>
 
       <ShiftSettingsEditor
+        key={orgUId}
         organizationUnitId={orgUId}
         organizationId={orgUnit.organizationId}
         canEdit={canEdit}
