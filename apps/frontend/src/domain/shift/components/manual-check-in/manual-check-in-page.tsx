@@ -5,7 +5,6 @@ import {
   useCheckInInviteToShiftInstance,
   useCheckInReadiness,
   useCheckInShiftInstances,
-  useOrgUId,
   useQueryClient,
 } from '@repo/data/react';
 import { applyTimeToDate, Button, Card, CardContent } from '@repo/ui';
@@ -66,7 +65,6 @@ export function ManualCheckInPage({
   const t = useTranslations('CheckIn');
   const router = useRouter();
   const queryClient = useQueryClient();
-  const orgUId = useOrgUId();
   const { formatDate, formatTimeRange } = useFormatting();
 
   const [selection, setSelection] = useState<CheckInSelection>(() => ({
@@ -197,6 +195,11 @@ export function ManualCheckInPage({
       ? resolveAgreementTrigger(readiness?.agreement)
       : null;
 
+  // "Good to go" means every check passed. A pending ID verification or an
+  // unresolved agreement is still outstanding, so the green ready banner is
+  // held back and the relevant card carries the state instead.
+  const hasOutstandingReadyCheck = !!agreementTrigger || showIdVerification;
+
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
@@ -288,21 +291,23 @@ export function ManualCheckInPage({
 
         {showShiftlessWarning && <CheckInWithoutShiftWarningCard />}
 
-        {showReadinessCard && readinessState && (
-          <CheckInReadinessCard
-            state={readinessState}
-            checkInId={checkInId}
-            onInviteToOrg={handleInviteToOrg}
-            onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
-            onInviteToShift={handleInviteToShift}
-            isInviteToOrgPending={inviteToOrgMutation.isPending}
-            isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
-            isInviteToShiftPending={inviteToShiftMutation.isPending}
-            isInviteToShiftSent={
-              shiftInviteSentFor === selection.shiftInstanceId
-            }
-          />
-        )}
+        {showReadinessCard &&
+          readinessState &&
+          !(readinessState === 'ready' && hasOutstandingReadyCheck) && (
+            <CheckInReadinessCard
+              state={readinessState}
+              checkInId={checkInId}
+              onInviteToOrg={handleInviteToOrg}
+              onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
+              onInviteToShift={handleInviteToShift}
+              isInviteToOrgPending={inviteToOrgMutation.isPending}
+              isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
+              isInviteToShiftPending={inviteToShiftMutation.isPending}
+              isInviteToShiftSent={
+                shiftInviteSentFor === selection.shiftInstanceId
+              }
+            />
+          )}
 
         {showIdVerification && readiness?.membershipId && (
           <IdVerificationCard
@@ -316,7 +321,7 @@ export function ManualCheckInPage({
           readiness?.agreement && (
             <CheckInAgreementCard
               agreement={readiness.agreement}
-              orgUId={orgUId}
+              orgUId={selection.orgUnitId}
             />
           )}
 
