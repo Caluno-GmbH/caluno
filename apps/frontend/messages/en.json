@@ -497,8 +497,7 @@
     },
     "card": {
       "label": "Enable ID verification",
-      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in.",
-      "updateError": "We couldn't save the setting. Please try again."
+      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in."
     }
   },
   "ShiftSettings": {
@@ -567,24 +566,21 @@
       "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
       "daysDescription": "Assignments on these days can trigger an urgent call.",
       "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "We couldn't save this automation. Please try again."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "discovery": {
       "title": "Discovery email",
       "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
       "daysDescription": "Days the email goes out.",
       "sendAtDescription": "Time of day the email goes out, in local time.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "approval": {
       "title": "Pause approval",
       "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
       "daysDescription": "Assignments on these days can have approval paused.",
       "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "We couldn't save this automation. Please try again."
+      "noDaysHint": "No days selected, so this automation will not run."
     }
   },
   "MembershipRequest": {

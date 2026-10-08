@@ -1,10 +1,12 @@
+import type { OrganizationUnitAutomationKind, Weekday } from '@repo/data';
+
 export type AutomationControl = 'leadTime' | 'sendTime';
 
 export interface AutomationDraft {
-  kind: string;
+  kind: OrganizationUnitAutomationKind;
   control: AutomationControl;
   enabled: boolean;
-  activeDays: readonly string[];
+  activeDays: readonly Weekday[];
   leadTimeHours: number | null;
   sendAtTime: string | null;
 }
@@ -16,13 +18,13 @@ export interface ShiftSettingsDraft {
 
 export interface AutomationSaveInput {
   enabled: boolean;
-  activeDays: string[];
+  activeDays: Weekday[];
   leadTimeHours?: number;
   sendAtTime?: string;
 }
 
 export interface AutomationSave {
-  kind: string;
+  kind: OrganizationUnitAutomationKind;
   input: AutomationSaveInput;
 }
 
@@ -44,7 +46,10 @@ export function cloneShiftSettingsDraft(
   };
 }
 
-function sameDays(left: readonly string[], right: readonly string[]): boolean {
+function sameDays(
+  left: readonly Weekday[],
+  right: readonly Weekday[],
+): boolean {
   if (left.length !== right.length) return false;
   const rightDays = new Set(right);
   return left.every((day) => rightDays.has(day));
@@ -109,7 +114,7 @@ export function isShiftSettingsDirty(
 export function automationsTurningOn(
   saved: ShiftSettingsDraft,
   draft: ShiftSettingsDraft,
-): string[] {
+): OrganizationUnitAutomationKind[] {
   const savedByKind = new Map(
     saved.automations.map((automation) => [automation.kind, automation]),
   );
@@ -122,7 +127,7 @@ export function automationsTurningOn(
 
 export function withAutomationPatch(
   draft: ShiftSettingsDraft,
-  kind: string,
+  kind: OrganizationUnitAutomationKind,
   patch: Partial<
     Pick<
       AutomationDraft,
@@ -157,7 +162,7 @@ export function withIdVerificationEnabled(
 export function markAutomationSaved(
   saved: ShiftSettingsDraft,
   draft: ShiftSettingsDraft,
-  kind: string,
+  kind: OrganizationUnitAutomationKind,
 ): ShiftSettingsDraft {
   const next = draft.automations.find((automation) => automation.kind === kind);
   if (!next) return saved;

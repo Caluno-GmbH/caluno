@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { OrganizationUnitAutomationKind, Weekday } from '@repo/data';
 import {
   type AutomationDraft,
   automationsTurningOn,
@@ -18,7 +19,7 @@ function automation(
 ): AutomationDraft {
   return {
     enabled: false,
-    activeDays: ['SATURDAY', 'SUNDAY'],
+    activeDays: [Weekday.Saturday, Weekday.Sunday],
     leadTimeHours: 48,
     sendAtTime: null,
     ...overrides,
@@ -31,15 +32,21 @@ function settings(
   return {
     idVerificationEnabled: false,
     automations: [
-      automation({ kind: 'URGENT_CALL', control: 'leadTime' }),
       automation({
-        kind: 'DISCOVERY_EMAIL',
+        kind: OrganizationUnitAutomationKind.UrgentCall,
+        control: 'leadTime',
+      }),
+      automation({
+        kind: OrganizationUnitAutomationKind.DiscoveryEmail,
         control: 'sendTime',
-        activeDays: ['SUNDAY'],
+        activeDays: [Weekday.Sunday],
         leadTimeHours: null,
         sendAtTime: '08:00',
       }),
-      automation({ kind: 'PAUSE_APPROVAL', control: 'leadTime' }),
+      automation({
+        kind: OrganizationUnitAutomationKind.PauseApproval,
+        control: 'leadTime',
+      }),
     ],
     ...overrides,
   };
@@ -61,34 +68,46 @@ describe('planShiftSettingsSave', () => {
 
   it('treats the same active days in a different order as unchanged', () => {
     const saved = settings();
-    const draft = withAutomationPatch(saved, 'URGENT_CALL', {
-      activeDays: ['SUNDAY', 'SATURDAY'],
-    });
+    const draft = withAutomationPatch(
+      saved,
+      OrganizationUnitAutomationKind.UrgentCall,
+      {
+        activeDays: [Weekday.Sunday, Weekday.Saturday],
+      },
+    );
     expect(isShiftSettingsDirty(saved, draft)).toBe(false);
   });
 
   it('plans only the automations that changed, with the fields that automation uses', () => {
     const saved = settings();
-    let draft = withAutomationPatch(saved, 'URGENT_CALL', { enabled: true });
-    draft = withAutomationPatch(draft, 'DISCOVERY_EMAIL', {
-      sendAtTime: '09:15',
-    });
+    let draft = withAutomationPatch(
+      saved,
+      OrganizationUnitAutomationKind.UrgentCall,
+      { enabled: true },
+    );
+    draft = withAutomationPatch(
+      draft,
+      OrganizationUnitAutomationKind.DiscoveryEmail,
+      {
+        sendAtTime: '09:15',
+      },
+    );
 
     expect(planShiftSettingsSave(saved, draft)).toEqual({
       automations: [
         {
-          kind: 'URGENT_CALL',
+          kind: OrganizationUnitAutomationKind.UrgentCall,
           input: {
             enabled: true,
-            activeDays: ['SATURDAY', 'SUNDAY'],
+            activeDays: [Weekday.Saturday, Weekday.Sunday],
             leadTimeHours: 48,
           },
         },
         {
-          kind: 'DISCOVERY_EMAIL',
+          kind: OrganizationUnitAutomationKind.DiscoveryEmail,
           input: {
             enabled: false,
-            activeDays: ['SUNDAY'],
+            activeDays: [Weekday.Sunday],
             sendAtTime: '09:15',
           },
         },
@@ -109,19 +128,25 @@ describe('planShiftSettingsSave', () => {
   it('drops a saved automation from the plan without discarding the rest', () => {
     const saved = settings();
     const draft = withAutomationPatch(
-      withAutomationPatch(saved, 'URGENT_CALL', { enabled: true }),
-      'PAUSE_APPROVAL',
+      withAutomationPatch(saved, OrganizationUnitAutomationKind.UrgentCall, {
+        enabled: true,
+      }),
+      OrganizationUnitAutomationKind.PauseApproval,
       { leadTimeHours: 24 },
     );
-    const afterUrgentCall = markAutomationSaved(saved, draft, 'URGENT_CALL');
+    const afterUrgentCall = markAutomationSaved(
+      saved,
+      draft,
+      OrganizationUnitAutomationKind.UrgentCall,
+    );
 
     expect(planShiftSettingsSave(afterUrgentCall, draft)).toEqual({
       automations: [
         {
-          kind: 'PAUSE_APPROVAL',
+          kind: OrganizationUnitAutomationKind.PauseApproval,
           input: {
             enabled: false,
-            activeDays: ['SATURDAY', 'SUNDAY'],
+            activeDays: [Weekday.Saturday, Weekday.Sunday],
             leadTimeHours: 24,
           },
         },
@@ -141,21 +166,31 @@ describe('planShiftSettingsSave', () => {
 describe('automationsTurningOn', () => {
   it('names an automation only when save would switch it from off to on', () => {
     const saved = settings();
-    const enabled = withAutomationPatch(saved, 'URGENT_CALL', {
-      enabled: true,
-    });
-    expect(automationsTurningOn(saved, enabled)).toEqual(['URGENT_CALL']);
+    const enabled = withAutomationPatch(
+      saved,
+      OrganizationUnitAutomationKind.UrgentCall,
+      {
+        enabled: true,
+      },
+    );
+    expect(automationsTurningOn(saved, enabled)).toEqual([
+      OrganizationUnitAutomationKind.UrgentCall,
+    ]);
 
     const alreadyOn = settings({
       automations: settings().automations.map((automation) =>
-        automation.kind === 'PAUSE_APPROVAL'
+        automation.kind === OrganizationUnitAutomationKind.PauseApproval
           ? { ...automation, enabled: true }
           : automation,
       ),
     });
-    const retimed = withAutomationPatch(alreadyOn, 'PAUSE_APPROVAL', {
-      leadTimeHours: 12,
-    });
+    const retimed = withAutomationPatch(
+      alreadyOn,
+      OrganizationUnitAutomationKind.PauseApproval,
+      {
+        leadTimeHours: 12,
+      },
+    );
     expect(automationsTurningOn(alreadyOn, retimed)).toEqual([]);
   });
 });
@@ -164,17 +199,27 @@ describe('cloneShiftSettingsDraft', () => {
   it('copies active days so a later edit does not change the saved snapshot', () => {
     const saved = settings();
     const copy = cloneShiftSettingsDraft(saved);
-    const copiedDays = copy.automations[0]?.activeDays as string[];
-    copiedDays.push('MONDAY');
-    expect(saved.automations[0]?.activeDays).toEqual(['SATURDAY', 'SUNDAY']);
+    const copiedDays = copy.automations[0]?.activeDays as Weekday[];
+    copiedDays.push(Weekday.Monday);
+    expect(saved.automations[0]?.activeDays).toEqual([
+      Weekday.Saturday,
+      Weekday.Sunday,
+    ]);
   });
 });
 
 describe('withAutomationPatch', () => {
   it('applies an empty day selection without changing the previous draft', () => {
     const saved = settings();
-    const draft = withAutomationPatch(saved, 'URGENT_CALL', { activeDays: [] });
-    expect(saved.automations[0]?.activeDays).toEqual(['SATURDAY', 'SUNDAY']);
+    const draft = withAutomationPatch(
+      saved,
+      OrganizationUnitAutomationKind.UrgentCall,
+      { activeDays: [] },
+    );
+    expect(saved.automations[0]?.activeDays).toEqual([
+      Weekday.Saturday,
+      Weekday.Sunday,
+    ]);
     expect(draft.automations[0]?.activeDays).toEqual([]);
     expect(isShiftSettingsDirty(saved, draft)).toBe(true);
   });

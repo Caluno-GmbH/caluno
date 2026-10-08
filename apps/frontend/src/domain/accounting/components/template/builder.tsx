@@ -25,7 +25,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usePageBreadcrumb } from '@/components/navigation/page-header-context';
-import { PageActions } from '@/components/page-actions';
+import { PageActions, type PageActionsCancel } from '@/components/page-actions';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
   apiDocumentKindFor,
@@ -375,10 +375,14 @@ export function TemplateBuilder({
     permissionsQuery.data?.some((p) => p.key === PermissionKey.OrgEdit) ??
     false;
   const saving = createTemplate.isPending || updateTemplate.isPending;
+  const cancel: PageActionsCancel | undefined = backHref
+    ? { label: tCommon('cancel'), href: backHref }
+    : undefined;
 
   return (
     <div className="flex h-[calc(100svh-6rem-1px)] flex-col">
       <PageActions
+        cancel={cancel}
         contentClassName="grid grid-cols-[3fr_2fr] gap-6"
         saveLabel={t('saveButton')}
         onSave={handleSave}
@@ -388,8 +392,9 @@ export function TemplateBuilder({
           orgProfileBlocked ||
           saving
         }
-        cancelLabel={backHref ? tCommon('cancel') : undefined}
-        cancelHref={backHref}
+        {...(backHref
+          ? { cancelLabel: tCommon('cancel'), cancelHref: backHref }
+          : {})}
         notice={
           <>
             {incompleteCount > 0 && (

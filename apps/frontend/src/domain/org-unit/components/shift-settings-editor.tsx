@@ -4,7 +4,6 @@ import {
   OrganizationUnitAutomationKind,
   useUpdateOrganizationUnit,
   useUpdateOrganizationUnitAutomation,
-  type Weekday,
 } from '@repo/data/react';
 import {
   AlertDialog,
@@ -17,7 +16,7 @@ import {
   AlertDialogTitle,
 } from '@repo/ui';
 import { Mail, Megaphone, UserCheck } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { PageActions } from '@/components/page-actions';
@@ -68,7 +67,7 @@ const PRESENTATION = {
 function cardSettings(automation: AutomationDraft): AutomationCardSettings {
   return {
     enabled: automation.enabled,
-    activeDays: [...automation.activeDays] as Weekday[],
+    activeDays: [...automation.activeDays],
     leadTimeHours: automation.leadTimeHours,
     sendAtTime: automation.sendAtTime,
   };
@@ -83,6 +82,7 @@ export function ShiftSettingsEditor({
   const t = useTranslations('ShiftSettings');
   const tAutomations = useTranslations('Automations');
   const tCommon = useTranslations('Common');
+  const locale = useLocale();
   const router = useRouter();
   const updateAutomation = useUpdateOrganizationUnitAutomation();
   const updateUnit = useUpdateOrganizationUnit();
@@ -100,6 +100,16 @@ export function ShiftSettingsEditor({
 
   const dirty = canEdit && isShiftSettingsDirty(saved, draft);
   const turningOn = automationsTurningOn(saved, draft);
+  const turningOnNames = new Intl.ListFormat(locale, {
+    type: 'conjunction',
+  }).format(
+    turningOn.map((kind) => {
+      const presentation = PRESENTATION[kind];
+      return presentation
+        ? tAutomations(`${presentation.copyKey}.title`)
+        : kind;
+    }),
+  );
   const { release: releaseNavigationGuard } = useUnsavedChangesGuard({
     enabled: dirty,
     onPrompt: setPendingNavigation,
@@ -109,7 +119,7 @@ export function ShiftSettingsEditor({
     draft.automations.find((automation) => automation.kind === kind);
 
   const patchAutomation = (
-    kind: string,
+    kind: OrganizationUnitAutomationKind,
     patch: Partial<AutomationCardSettings>,
   ) => {
     setDraft((current) => withAutomationPatch(current, kind, patch));
@@ -145,11 +155,8 @@ export function ShiftSettingsEditor({
       for (const automation of plan.automations) {
         await updateAutomation.mutateAsync({
           organizationUnitId,
-          kind: automation.kind as OrganizationUnitAutomationKind,
-          input: {
-            ...automation.input,
-            activeDays: automation.input.activeDays as Weekday[],
-          },
+          kind: automation.kind,
+          input: automation.input,
         });
         baseline = markAutomationSaved(baseline, draft, automation.kind);
         setSaved(baseline);
@@ -212,9 +219,11 @@ export function ShiftSettingsEditor({
         saveLabel={saving ? tCommon('saving') : tCommon('save')}
         onSave={handleSaveClick}
         saveDisabled={!dirty || saving}
-        cancelLabel={tCommon('cancel')}
-        onCancel={handleCancel}
-        cancelDisabled={!dirty || saving}
+        cancel={{
+          label: tCommon('cancel'),
+          onClick: handleCancel,
+          disabled: !dirty || saving,
+        }}
       >
         <div className="mx-auto w-full max-w-3xl space-y-6">
           {(urgentCall || discoveryEmail) && (
@@ -314,15 +323,7 @@ export function ShiftSettingsEditor({
             </AlertDialogTitle>
             <AlertDialogDescription>
               {t('actions.confirmEnableDescription', {
-                names: turningOn
-                  .map((kind) => {
-                    const presentation =
-                      PRESENTATION[kind as OrganizationUnitAutomationKind];
-                    return presentation
-                      ? tAutomations(`${presentation.copyKey}.title`)
-                      : kind;
-                  })
-                  .join(', '),
+                names: turningOnNames,
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
