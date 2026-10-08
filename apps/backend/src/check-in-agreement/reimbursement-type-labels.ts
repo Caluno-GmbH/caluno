@@ -1,7 +1,6 @@
 import type { ReimbursementTypeKey } from '../accounting/enums';
 
-// Our own copy — accounting's labels are off-limits for import.
-// Record<ReimbursementTypeKey, string> makes a missing enum key a compile error.
+// Local copy — accounting's labels are not exported. Record<> enforces exhaustiveness.
 export const PAUSCHALE_TYPE_LABELS: Record<ReimbursementTypeKey, string> = {
   EHRENAMT: 'Ehrenamtspauschale',
   UEBUNGSLEITER: 'Übungsleiterpauschale',

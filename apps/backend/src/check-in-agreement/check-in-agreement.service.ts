@@ -35,13 +35,11 @@ export class AgreementStatusService {
     const { volunteerId, organizationUnitId, shiftInstanceId, callerUserId } =
       params;
 
-    // Without a shift instance there is no reimbursement type context, so
-    // agreement status is not applicable.
+    // No shift instance → no reimbursement type context → not applicable.
     if (!shiftInstanceId) {
       return this.buildResult(AgreementStatus.NOT_APPLICABLE, null, null, false, []);
     }
 
-    // Resolve the shift instance and derive the effective reimbursement type.
     const instance = await this.shiftService.findInstanceById(
       shiftInstanceId,
       organizationUnitId,
@@ -51,13 +49,12 @@ export class AgreementStatusService {
       instance.master.reimbursementTypeId,
     );
 
-    // Without a reimbursement type the agreement concept does not apply.
+    // No reimbursement type → agreement does not apply.
     if (!typeId) {
       return this.buildResult(AgreementStatus.NOT_APPLICABLE, null, null, false, []);
     }
 
-    // Resolve the display name for the reimbursement type from the database
-    // (ReimbursementRateService is not exported from AccountingModule).
+    // Direct DB read — ReimbursementRateService is not exported from AccountingModule.
     const typeRow = await this.db.query.reimbursementTypes.findFirst({
       where: { id: typeId },
       columns: { key: true },
@@ -66,7 +63,6 @@ export class AgreementStatusService {
       ? reimbursementTypeLabel(typeRow.key)
       : null;
 
-    // Resolve the parent organization for contract and template lookups.
     const org =
       await this.organizationUnitDataService.findOrganizationByUnitId(
         organizationUnitId,
@@ -81,9 +77,8 @@ export class AgreementStatusService {
       );
     }
 
-    // Fetch all contracts for this volunteer/type/unit in parallel with the
-    // template check. Scoping contracts to organizationUnitId here satisfies
-    // the requirement that check-in agreement is unit-scoped (#1, #2).
+    // Contract and template checks run in parallel.
+    // Scoping to organizationUnitId: agreement is unit-scoped.
     const now = new Date();
     const [contracts, templateExists] = await Promise.all([
       this.contractService.findContractsForOrganization(org.id, {
@@ -95,14 +90,14 @@ export class AgreementStatusService {
         .findActiveTemplate(org.id, typeId, DocumentKind.CONTRACT, organizationUnitId)
         .then(() => true)
         .catch((err: unknown) => {
+          // findActiveTemplate throws when absent; we only need presence.
           if (err instanceof NotFoundGraphQLError) return false;
           throw err;
         }),
     ]);
 
-    // Classify contracts. An ACTIVE contract whose period covers now is the
-    // only state that satisfies the agreement requirement. Declined, expired,
-    // draft, or future-active contracts fall through to the next checks.
+    // Only ACTIVE + period covers now satisfies the requirement.
+    // Declined, expired, draft, or future-active fall through to NO_CONTRACT.
     let status: AgreementStatus;
     let contractId: string | null = null;
 
@@ -113,7 +108,7 @@ export class AgreementStatusService {
         c.periodEnd >= now,
     );
     if (activeNow) {
-      // Active contract found — no permission lookup needed.
+      // Active → skip permission lookup.
       return this.buildResult(
         AgreementStatus.ACTIVE,
         reimbursementTypeName,
@@ -126,8 +121,7 @@ export class AgreementStatusService {
     if (!templateExists) {
       status = AgreementStatus.NO_TEMPLATE;
     } else {
-      // AWAITING_NGO_SIGNATURE (countersign) takes priority over
-      // AWAITING_VOLUNTEER_SIGNATURE.
+      // AWAITING_NGO_SIGNATURE takes priority over AWAITING_VOLUNTEER_SIGNATURE.
       const awaitingNgo = contracts.find(
         (c) => c.contractStatus === ContractStatus.AWAITING_NGO_SIGNATURE,
       );
@@ -148,10 +142,7 @@ export class AgreementStatusService {
       }
     }
 
-    // Permission lookups are only relevant for actionable agreement states
-    // (those where the manager can take action or the UI needs to show contact
-    // details). NOT_APPLICABLE and ACTIVE skip this to avoid unnecessary DB
-    // round-trips on every check-in readiness query (#8).
+    // Permission lookup only for actionable states; ACTIVE/NOT_APPLICABLE returned early.
     const [canManageAgreements, permissionUsers] = await Promise.all([
       this.authService.hasRequiredPermissions(callerUserId, organizationUnitId, [
         PERMISSIONS.ACCOUNTING_MANAGE,
@@ -162,8 +153,7 @@ export class AgreementStatusService {
       ),
     ]);
 
-    // Filter out users without a name first, then cap at 3 — filter-before-slice
-    // ensures the cap applies to valid names only (#3).
+    // Filter nulls before capping so the limit applies to valid names only.
     const managerNames = permissionUsers
       .map((u) => u.name)
       .filter((n): n is string => n != null)

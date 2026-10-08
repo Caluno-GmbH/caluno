@@ -27,9 +27,8 @@ export class CheckInReadiness {
   @Field(() => ID, { nullable: true })
   membershipId?: string | null;
 
-  // Non-schema context fields: carried from the service for the
-  // CheckInAgreementModule field resolver, which resolves `agreement`
-  // independently so TimeTrackingModule does not depend on AccountingModule.
+  // Not in GraphQL schema — context for the CheckInAgreementModule field resolver
+  // so TimeTrackingModule stays independent of AccountingModule.
   volunteerId!: string;
   organizationUnitId!: string;
   shiftInstanceId!: string | null;

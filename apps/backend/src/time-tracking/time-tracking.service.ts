@@ -65,9 +65,7 @@ export class TimeTrackingService {
         organizationUnitId,
       );
 
-      // Fail fast instead of relying on the DB unique-index guard below.
-      // Closed (historical) entries coexist with an open entry, so only
-      // check when the new entry would itself be open.
+      // Fail fast; closed entries may coexist, so guard only open entries.
       if (!input.endedAt) {
         const alreadyCheckedIn = await this.shiftService.hasOpenTimeEntry(
           input.shiftInstanceId,
@@ -542,23 +540,13 @@ export class TimeTrackingService {
   }
 
   /**
-   * The four facts the check-in readiness gate needs: unit membership
-   * (ancestor-inclusive, matching `getCheckInContext`'s eligibility check),
-   * an open membership request against the exact unit, the volunteer's
-   * invite status on the specific shift instance, and whether the volunteer
-   * already has an open time entry for that instance. The ID-verification
-   * facts (unit flag, verified membership) are read-only inputs to the
-   * optional verification card, not readiness blockers.
-   *
-   * `shiftInstanceId` is null when checking in without a shift: only the two
-   * membership facts exist then, and the shift-scoped ones are reported as
-   * absent rather than looked up against a null id. Deciding that shift
-   * participation does not apply in that mode is the caller's job.
+   * Returns readiness facts for the check-in gate. When `shiftInstanceId` is
+   * null (without-shift mode) only the membership facts are meaningful; the
+   * shift-scoped ones are reported as absent.
    *
    * The three extra non-@Field properties (volunteerId, organizationUnitId,
-   * shiftInstanceId) are not part of the GraphQL schema — they carry context
-   * for the CheckInAgreementModule's field resolver, which resolves `agreement`
-   * separately so TimeTrackingModule does not depend on AccountingModule.
+   * shiftInstanceId) carry context for the CheckInAgreementModule field resolver
+   * so TimeTrackingModule stays independent of AccountingModule.
    */
   async getCheckInReadiness(
     volunteerId: string,
@@ -577,8 +565,6 @@ export class TimeTrackingService {
     organizationUnitId: string;
     shiftInstanceId: string | null;
   }> {
-    // Scoped lookup throws NotFound for foreign/missing instances.
-    // No instance in without-shift mode: there is nothing to scope against.
     if (shiftInstanceId) {
       await this.shiftService.findInstanceById(
         shiftInstanceId,
@@ -632,7 +618,6 @@ export class TimeTrackingService {
       idVerificationEnabled: unit?.idVerificationEnabled ?? false,
       idVerified: membership?.idVerifiedAt != null,
       membershipId: membership?.id ?? null,
-      // Context fields for the CheckInAgreementModule field resolver (not in schema).
       volunteerId,
       organizationUnitId,
       shiftInstanceId,
