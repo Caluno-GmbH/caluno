@@ -738,7 +738,7 @@
     "shortcuts": "Verknüpfungen",
     "timesheets": "Zeiterfassung",
     "volunteeringApp": "Freiwilligen-App",
-    "volunteers": "Freiwillige",
+    "volunteers": "Nutzende",
     "accounting": "Buchhaltung",
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
@@ -1923,14 +1923,14 @@
       "viewProfileAria": "Ansehen"
     },
     "empty": {
-      "description": "Teile den Einladungslink, damit sich Freiwillige anmelden.",
-      "title": "Noch keine Freiwilligen"
+      "description": "Teile den Einladungslink, damit sich Personen anmelden.",
+      "title": "Noch keine Nutzenden"
     },
     "page": {
       "copyInviteLink": "Einladungslink kopieren",
       "inviteLinkCopied": "Einladungslink in Zwischenablage kopiert",
-      "subtitle": "Verwalte Freiwillige in deiner Organisation",
-      "title": "Freiwillige"
+      "subtitle": "Verwalte Personen und ihre Rollen in deiner Organisation",
+      "title": "Nutzende"
     },
     "requests": {
       "pendingEmpty": "Noch keine ausstehenden Anfragen.",
@@ -1959,8 +1959,8 @@
     "search": {
       "clearAria": "Suche zurücksetzen",
       "countFiltered": "{count} von {total}",
-      "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
-      "emptyTitle": "Keine Freiwilligen gefunden",
+      "emptyDescription": "Keine Person entspricht dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
+      "emptyTitle": "Keine Nutzenden gefunden",
       "placeholder": "Nach Name, E-Mail oder Rolle suchen"
     },
     "sheet": {
