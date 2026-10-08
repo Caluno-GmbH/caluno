@@ -11,7 +11,6 @@ import {
 } from '../lib/setup-status';
 import { AccountingSetupAlert } from './accounting-setup-alert';
 import type { DateRange } from './period-picker';
-import { thisMonthRange } from './period-picker';
 import { ReimbursementsBoard } from './reimbursements-board';
 
 interface ReimbursementsPageHeaderProps {
@@ -78,10 +77,6 @@ export function ReimbursementsPageHeader({
         onDateRangeChange={setDateRange}
         year={year}
         onYearChange={setYear}
-        onReadyToGoSelected={() => {
-          setDateRange(thisMonthRange());
-          setYear(new Date().getFullYear());
-        }}
         createDocOpen={createDocOpen}
         onCreateDocOpenChange={setCreateDocOpen}
         canCreateDocuments={canCreateDocuments}
