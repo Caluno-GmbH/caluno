@@ -195,9 +195,7 @@ export function ManualCheckInPage({
       ? resolveAgreementTrigger(readiness?.agreement)
       : null;
 
-  // "Good to go" means every check passed. A pending ID verification or an
-  // unresolved agreement is still outstanding, so the green ready banner is
-  // held back and the relevant card carries the state instead.
+  // Holds back the green ready banner when a side-check (agreement/ID) is still open.
   const hasOutstandingReadyCheck = !!agreementTrigger || showIdVerification;
 
   const [isSubmitPending, startSubmitTransition] = useTransition();

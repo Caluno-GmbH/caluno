@@ -109,7 +109,6 @@ export function CheckInAgreementCard({
     );
   }
 
-  // awaitingVolunteerSign — no action
   return (
     <BlockerCard
       icon={<FileBadge className="size-5" />}

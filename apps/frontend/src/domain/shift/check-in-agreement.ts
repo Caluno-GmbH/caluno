@@ -10,11 +10,6 @@ export type AgreementTrigger = {
   hasAction: boolean;
 };
 
-/**
- * Maps the raw agreement status from readiness data to an actionable trigger
- * for the check-in agreement warning card. Returns null when no card should
- * be shown (active, not applicable, or missing data).
- */
 export function resolveAgreementTrigger(
   agreement:
     | { status: AgreementStatus; canManageAgreements: boolean }

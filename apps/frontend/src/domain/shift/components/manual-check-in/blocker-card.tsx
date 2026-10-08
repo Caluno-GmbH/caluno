@@ -13,7 +13,6 @@ type BlockerCardProps = {
   isActionPending?: boolean | undefined;
   isActionDone?: boolean | undefined;
   doneLabel?: string | undefined;
-  /** If provided, renders the action as a link instead of calling onAction. */
   actionHref?: string | undefined;
   actionExternal?: boolean | undefined;
   className?: string | undefined;
