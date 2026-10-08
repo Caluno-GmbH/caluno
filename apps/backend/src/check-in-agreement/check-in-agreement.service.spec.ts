@@ -83,7 +83,9 @@ describe('AgreementStatusService.resolve', () => {
     expect(result.status).toBe(AgreementStatus.NOT_APPLICABLE);
     expect(result.reimbursementTypeName).toBeNull();
     expect(result.contractId).toBeNull();
-    expect(deps.contractService.findContractsForOrganization).not.toHaveBeenCalled();
+    expect(
+      deps.contractService.findContractsForOrganization,
+    ).not.toHaveBeenCalled();
     expect(deps.authService.hasRequiredPermissions).not.toHaveBeenCalled();
     expect(deps.authService.findUsersWithPermission).not.toHaveBeenCalled();
   });
@@ -105,7 +107,9 @@ describe('AgreementStatusService.resolve', () => {
     });
 
     expect(result.status).toBe(AgreementStatus.NOT_APPLICABLE);
-    expect(deps.contractService.findContractsForOrganization).not.toHaveBeenCalled();
+    expect(
+      deps.contractService.findContractsForOrganization,
+    ).not.toHaveBeenCalled();
     expect(deps.authService.hasRequiredPermissions).not.toHaveBeenCalled();
   });
 
@@ -138,7 +142,9 @@ describe('AgreementStatusService.resolve', () => {
     expect(result.canManageAgreements).toBe(false);
     expect(result.managerNames).toEqual([]);
     // Verify organizationUnitId was passed in the filter (#1, #2).
-    expect(deps.contractService.findContractsForOrganization).toHaveBeenCalledWith(
+    expect(
+      deps.contractService.findContractsForOrganization,
+    ).toHaveBeenCalledWith(
       'org-1',
       expect.objectContaining({ organizationUnitId: 'ou-1' }),
     );
@@ -187,7 +193,9 @@ describe('AgreementStatusService.resolve', () => {
       { id: 'contract-ngo', contractStatus: 'AWAITING_NGO_SIGNATURE' },
     ]);
     // findActiveTemplate resolves (template exists).
-    deps.documentTemplateService.findActiveTemplate.mockResolvedValue({ id: 'tpl-1' });
+    deps.documentTemplateService.findActiveTemplate.mockResolvedValue({
+      id: 'tpl-1',
+    });
     deps.authService.hasRequiredPermissions.mockResolvedValue(false);
     deps.authService.findUsersWithPermission.mockResolvedValue([]);
     const service = makeService(deps);
@@ -208,7 +216,9 @@ describe('AgreementStatusService.resolve', () => {
     deps.contractService.findContractsForOrganization.mockResolvedValue([
       { id: 'contract-vol', contractStatus: 'AWAITING_VOLUNTEER_SIGNATURE' },
     ]);
-    deps.documentTemplateService.findActiveTemplate.mockResolvedValue({ id: 'tpl-1' });
+    deps.documentTemplateService.findActiveTemplate.mockResolvedValue({
+      id: 'tpl-1',
+    });
     deps.authService.hasRequiredPermissions.mockResolvedValue(false);
     deps.authService.findUsersWithPermission.mockResolvedValue([]);
     const service = makeService(deps);
@@ -227,7 +237,9 @@ describe('AgreementStatusService.resolve', () => {
   it('returns NO_CONTRACT when a template exists but no matching contract is found', async () => {
     const deps = makeBaseDeps();
     deps.contractService.findContractsForOrganization.mockResolvedValue([]);
-    deps.documentTemplateService.findActiveTemplate.mockResolvedValue({ id: 'tpl-1' });
+    deps.documentTemplateService.findActiveTemplate.mockResolvedValue({
+      id: 'tpl-1',
+    });
     deps.authService.hasRequiredPermissions.mockResolvedValue(false);
     deps.authService.findUsersWithPermission.mockResolvedValue([]);
     const service = makeService(deps);

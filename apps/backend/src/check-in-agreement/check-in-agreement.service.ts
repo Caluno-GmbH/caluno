@@ -2,14 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ContractStatus, DocumentKind } from '../accounting/enums';
 import { ContractService } from '../accounting/services/contract.service';
 import { DocumentTemplateService } from '../accounting/services/document-template.service';
-import { PERMISSIONS } from '../auth/constants';
 import { AuthService } from '../auth/auth.service';
+import { PERMISSIONS } from '../auth/constants';
+import type { Database } from '../database/database.module';
+import { DATABASE_CONNECTION } from '../database/database-connection';
 import { NotFoundGraphQLError } from '../graphql/errors';
 import { OrganizationUnitDataService } from '../organization/organization-unit-data.service';
 import { ShiftService } from '../shift/shift.service';
 import { resolveEffectiveReimbursementTypeId } from '../shift/utils/effective-reimbursement-type';
-import type { Database } from '../database/database.module';
-import { DATABASE_CONNECTION } from '../database/database-connection';
 import { AgreementStatus } from './agreement-status.enum';
 import { CheckInAgreement } from './check-in-agreement.model';
 import { reimbursementTypeLabel } from './reimbursement-type-labels';
@@ -37,7 +37,13 @@ export class AgreementStatusService {
 
     // No shift instance → no reimbursement type context → not applicable.
     if (!shiftInstanceId) {
-      return this.buildResult(AgreementStatus.NOT_APPLICABLE, null, null, false, []);
+      return this.buildResult(
+        AgreementStatus.NOT_APPLICABLE,
+        null,
+        null,
+        false,
+        [],
+      );
     }
 
     const instance = await this.shiftService.findInstanceById(
@@ -51,7 +57,13 @@ export class AgreementStatusService {
 
     // No reimbursement type → agreement does not apply.
     if (!typeId) {
-      return this.buildResult(AgreementStatus.NOT_APPLICABLE, null, null, false, []);
+      return this.buildResult(
+        AgreementStatus.NOT_APPLICABLE,
+        null,
+        null,
+        false,
+        [],
+      );
     }
 
     // Direct DB read — ReimbursementRateService is not exported from AccountingModule.
@@ -87,7 +99,12 @@ export class AgreementStatusService {
         organizationUnitId,
       }),
       this.documentTemplateService
-        .findActiveTemplate(org.id, typeId, DocumentKind.CONTRACT, organizationUnitId)
+        .findActiveTemplate(
+          org.id,
+          typeId,
+          DocumentKind.CONTRACT,
+          organizationUnitId,
+        )
         .then(() => true)
         .catch((err: unknown) => {
           // findActiveTemplate throws when absent; we only need presence.
@@ -144,9 +161,11 @@ export class AgreementStatusService {
 
     // Permission lookup only for actionable states; ACTIVE/NOT_APPLICABLE returned early.
     const [canManageAgreements, permissionUsers] = await Promise.all([
-      this.authService.hasRequiredPermissions(callerUserId, organizationUnitId, [
-        PERMISSIONS.ACCOUNTING_MANAGE,
-      ]),
+      this.authService.hasRequiredPermissions(
+        callerUserId,
+        organizationUnitId,
+        [PERMISSIONS.ACCOUNTING_MANAGE],
+      ),
       this.authService.findUsersWithPermission(
         organizationUnitId,
         PERMISSIONS.ACCOUNTING_MANAGE,
