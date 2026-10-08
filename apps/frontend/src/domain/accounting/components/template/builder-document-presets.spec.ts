@@ -6,7 +6,7 @@ import {
 
 function contractLine(id: string) {
   const block = getContractDocument('ehrenamt').blocks.find(
-    (b) => b.id === 'persoenliche-daten',
+    (b) => b.kind === 'text' && b.lines.some((line) => line.id === id),
   );
   return block?.kind === 'text'
     ? block.lines.find((line) => line.id === id)

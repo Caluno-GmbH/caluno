@@ -226,9 +226,14 @@ export function getContractDocument(
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),
-          line('payout-bic', '{volunteerBic} (BIC)', [
-            bound('payout-bic-field', 'volunteer_bic'),
-          ]),
+          // Opt-in, off by default — SEPA payouts do not need a BIC; only
+          // non-EU accounts do. Same switch pattern as the date of birth.
+          line(
+            'payout-bic',
+            '{volunteerBic} (BIC)',
+            [bound('payout-bic-field', 'volunteer_bic')],
+            { optional: true },
+          ),
         ],
       },
       {
