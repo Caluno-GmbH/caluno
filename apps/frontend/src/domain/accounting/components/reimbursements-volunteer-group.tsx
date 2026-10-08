@@ -332,7 +332,7 @@ function VolunteerTableGroup({
   const readyByType: Partial<Record<PauschalenType, number>> = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
-    const type = d.pauschale ?? vol.pauschale;
+    const type = d.pauschale;
     readyByType[type] = (readyByType[type] ?? 0) + 1;
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
@@ -432,7 +432,7 @@ function VolunteerTableGroup({
           // Contract-generate has nothing to show yet (no signing chain has
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
-          const effectivePauschale = doc.pauschale ?? vol.pauschale;
+          const effectivePauschale = doc.pauschale;
           const docNonCompliant = isTimesheetNonCompliant(vol, doc);
           const createBlocked =
             actionKey === 'create' &&

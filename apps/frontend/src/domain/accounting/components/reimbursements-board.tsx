@@ -124,7 +124,7 @@ export interface BoardDocument {
   periodEnd?: Date;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
   isOverCap?: boolean;
-  pauschale?: PauschalenType;
+  pauschale: PauschalenType;
   /** Set together when a signer rejects the document (contract-declined/timesheet-declined only). */
   declineReason?: string;
   declinedBy?: string;
@@ -142,7 +142,6 @@ export interface BoardVolunteer {
   id: string;
   name: string;
   initials: string;
-  pauschale: PauschalenType;
   usedAmount: number;
   totalCap: number;
   limits?: Partial<Record<PauschalenType, PauschalenLimit>>;
@@ -170,11 +169,9 @@ export function isTimesheetNonCompliant(
   // Declined is a terminal dead end on its own — reissuing is the fix, not
   // the paired contract, so it never carries the non-compliant flag too.
   if (doc.status === 'timesheet-declined') return false;
-  const pauschale = doc.pauschale ?? vol.pauschale;
+  const pauschale = doc.pauschale;
   return !vol.documents.some(
-    (d) =>
-      d.status === 'contract-active' &&
-      (d.pauschale ?? vol.pauschale) === pauschale,
+    (d) => d.status === 'contract-active' && d.pauschale === pauschale,
   );
 }
 
@@ -183,9 +180,7 @@ function findContractDoc(
   pauschale: PauschalenType,
 ): BoardDocument | undefined {
   return vol.documents.find(
-    (d) =>
-      d.status.startsWith('contract') &&
-      (d.pauschale ?? vol.pauschale) === pauschale,
+    (d) => d.status.startsWith('contract') && d.pauschale === pauschale,
   );
 }
 
@@ -209,16 +204,14 @@ export function getReadyToGoDocs(
   if (readyTimesheets.length === 0) return [];
 
   const pauschaleTypes = Array.from(
-    new Set(readyTimesheets.map((d) => d.pauschale ?? vol.pauschale)),
+    new Set(readyTimesheets.map((d) => d.pauschale)),
   );
 
   const contractRows: BoardDocument[] = pauschaleTypes.map((type) => {
     const contract = findContractDoc(vol, type);
     if (contract) return contract;
 
-    const sample = readyTimesheets.find(
-      (d) => (d.pauschale ?? vol.pauschale) === type,
-    );
+    const sample = readyTimesheets.find((d) => d.pauschale === type);
     const year = (sample && periodYear(sample)) ?? '';
     return {
       id: `${vol.id}-contract-missing-${type}-${year}`,
@@ -404,7 +397,7 @@ function applyFilters(
     if (vol.documents.length === 0) return false;
     if (
       pauschale !== 'all' &&
-      !vol.documents.some((d) => (d.pauschale ?? vol.pauschale) === pauschale)
+      !vol.documents.some((d) => d.pauschale === pauschale)
     )
       return false;
     if (search && !vol.name.toLowerCase().includes(search.toLowerCase()))
@@ -538,7 +531,7 @@ export function ReimbursementsBoard({
     const target = creationTargetFor(pair.doc.status);
     // Never open a create modal whose template is missing — the admin would
     // only reach the raw "no template" dead end.
-    const pauschale = pair.doc.pauschale ?? pair.vol.pauschale;
+    const pauschale = pair.doc.pauschale;
     if (
       target &&
       documentCreationBlockedFor(templateReadiness, pauschale, target)
@@ -623,9 +616,7 @@ export function ReimbursementsBoard({
     () =>
       volunteers.filter((v) => {
         if (pauschale === 'all') return true;
-        return v.documents.some(
-          (d) => (d.pauschale ?? v.pauschale) === pauschale,
-        );
+        return v.documents.some((d) => d.pauschale === pauschale);
       }),
     [volunteers, pauschale],
   );
@@ -918,10 +909,7 @@ export function ReimbursementsBoard({
         volunteerId={contractCreationTarget?.vol.id ?? null}
         volunteerName={contractCreationTarget?.vol.name ?? null}
         pauschale={
-          contractCreationTarget
-            ? (contractCreationTarget.doc.pauschale ??
-              contractCreationTarget.vol.pauschale)
-            : null
+          contractCreationTarget ? contractCreationTarget.doc.pauschale : null
         }
         onSent={() => setContractCreationTarget(null)}
       />
@@ -947,10 +935,7 @@ export function ReimbursementsBoard({
         volunteerId={invoiceCreationTarget?.vol.id ?? null}
         volunteerName={invoiceCreationTarget?.vol.name ?? null}
         pauschale={
-          invoiceCreationTarget
-            ? (invoiceCreationTarget.doc.pauschale ??
-              invoiceCreationTarget.vol.pauschale)
-            : null
+          invoiceCreationTarget ? invoiceCreationTarget.doc.pauschale : null
         }
         onSent={() => setInvoiceCreationTarget(null)}
       />
