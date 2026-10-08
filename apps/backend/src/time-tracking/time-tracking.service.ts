@@ -554,6 +554,11 @@ export class TimeTrackingService {
    * membership facts exist then, and the shift-scoped ones are reported as
    * absent rather than looked up against a null id. Deciding that shift
    * participation does not apply in that mode is the caller's job.
+   *
+   * The three extra non-@Field properties (volunteerId, organizationUnitId,
+   * shiftInstanceId) are not part of the GraphQL schema — they carry context
+   * for the CheckInAgreementModule's field resolver, which resolves `agreement`
+   * separately so TimeTrackingModule does not depend on AccountingModule.
    */
   async getCheckInReadiness(
     volunteerId: string,
@@ -568,6 +573,9 @@ export class TimeTrackingService {
     idVerificationEnabled: boolean;
     idVerified: boolean;
     membershipId: string | null;
+    volunteerId: string;
+    organizationUnitId: string;
+    shiftInstanceId: string | null;
   }> {
     // Scoped lookup throws NotFound for foreign/missing instances.
     // No instance in without-shift mode: there is nothing to scope against.
@@ -624,6 +632,10 @@ export class TimeTrackingService {
       idVerificationEnabled: unit?.idVerificationEnabled ?? false,
       idVerified: membership?.idVerifiedAt != null,
       membershipId: membership?.id ?? null,
+      // Context fields for the CheckInAgreementModule field resolver (not in schema).
+      volunteerId,
+      organizationUnitId,
+      shiftInstanceId,
     };
   }
 
