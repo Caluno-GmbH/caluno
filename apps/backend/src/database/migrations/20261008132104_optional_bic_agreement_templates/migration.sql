@@ -27,20 +27,25 @@ SET "body" = jsonb_set(
         THEN jsonb_set(
           block,
           '{lines}',
-          (
-            SELECT jsonb_agg(
-              CASE
-                WHEN line->>'id' = 'payout-bic'
-                THEN jsonb_set(
-                  jsonb_set(line, '{optional}', 'true'::jsonb),
-                  '{enabled}', 'false'::jsonb
-                )
-                ELSE line
-              END
-              ORDER BY line_ord
-            )
-            FROM jsonb_array_elements(block -> 'lines')
-              WITH ORDINALITY AS l(line, line_ord)
+          -- jsonb_agg over an empty "lines" array yields NULL, which would turn
+          -- the whole block into null; keep it an empty array instead.
+          COALESCE(
+            (
+              SELECT jsonb_agg(
+                CASE
+                  WHEN line->>'id' = 'payout-bic'
+                  THEN jsonb_set(
+                    jsonb_set(line, '{optional}', 'true'::jsonb),
+                    '{enabled}', 'false'::jsonb
+                  )
+                  ELSE line
+                END
+                ORDER BY line_ord
+              )
+              FROM jsonb_array_elements(block -> 'lines')
+                WITH ORDINALITY AS l(line, line_ord)
+            ),
+            '[]'::jsonb
           )
         )
         ELSE block
@@ -56,7 +61,12 @@ WHERE dt."kind" = 'CONTRACT'
   AND EXISTS (
     SELECT 1
     FROM jsonb_array_elements(dt."body" -> 'blocks') AS block,
-         jsonb_array_elements(block -> 'lines') AS line
+         jsonb_array_elements(
+           CASE WHEN jsonb_typeof(block -> 'lines') = 'array'
+             THEN block -> 'lines'
+             ELSE '[]'::jsonb
+           END
+         ) AS line
     WHERE line->>'id' = 'payout-bic'
   );
 --> statement-breakpoint
