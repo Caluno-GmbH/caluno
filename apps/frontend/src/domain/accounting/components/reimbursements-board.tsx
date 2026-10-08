@@ -195,10 +195,10 @@ function findContractDoc(
  * here.
  */
 export function getReadyToGoDocs(
-  vol: BoardVolunteer,
+  volunteer: BoardVolunteer,
   range: DateRange | undefined,
 ): BoardDocument[] {
-  const readyTimesheets = vol.documents.filter(
+  const readyTimesheets = volunteer.documents.filter(
     (d) => d.status === 'timesheet-ready' && docInRange(d, range),
   );
   if (readyTimesheets.length === 0) return [];
@@ -208,13 +208,13 @@ export function getReadyToGoDocs(
   );
 
   const contractRows: BoardDocument[] = pauschaleTypes.map((type) => {
-    const contract = findContractDoc(vol, type);
+    const contract = findContractDoc(volunteer, type);
     if (contract) return contract;
 
     const sample = readyTimesheets.find((d) => d.pauschale === type);
     const year = (sample && periodYear(sample)) ?? '';
     return {
-      id: `${vol.id}-contract-missing-${type}-${year}`,
+      id: `${volunteer.id}-contract-missing-${type}-${year}`,
       status: 'contract-missing',
       periodLabel: year,
       pauschale: type,
@@ -475,7 +475,6 @@ interface ReimbursementsBoardProps {
   year: number;
   onYearChange: (year: number) => void;
   /** Fired when the "Ready to go" tile is selected — the page header narrows its own range to this month. */
-  onReadyToGoSelected: () => void;
   createDocOpen: boolean;
   onCreateDocOpenChange: (open: boolean) => void;
   canCreateDocuments: boolean;
@@ -489,7 +488,6 @@ export function ReimbursementsBoard({
   onDateRangeChange,
   year,
   onYearChange,
-  onReadyToGoSelected,
   createDocOpen,
   onCreateDocOpenChange,
   canCreateDocuments,
@@ -612,7 +610,7 @@ export function ReimbursementsBoard({
   // effect (TILE_DOC_TYPE) — so letting it narrow this list would make every
   // tile's count shrink whenever any one tile is selected, instead of
   // reflecting the org's true, stable totals.
-  const baseFilteredVols = useMemo(
+  const volunteersWithDocumentsOfSelectedPauschale = useMemo(
     () =>
       volunteers.filter((v) => {
         if (pauschale === 'all') return true;
@@ -624,9 +622,12 @@ export function ReimbursementsBoard({
   const tileCounts = useMemo(
     () =>
       Object.fromEntries(
-        TILE_IDS.map((id) => [id, countForTile(baseFilteredVols, id)]),
+        TILE_IDS.map((id) => [
+          id,
+          countForTile(volunteersWithDocumentsOfSelectedPauschale, id),
+        ]),
       ) as Record<Exclude<TileFilter, null>, number>,
-    [baseFilteredVols],
+    [volunteersWithDocumentsOfSelectedPauschale],
   );
 
   const tileActionableCounts = useMemo(
@@ -634,13 +635,16 @@ export function ReimbursementsBoard({
       Object.fromEntries(
         TILE_IDS.map((id) => [
           id,
-          countActionableForTile(baseFilteredVols, id),
+          countActionableForTile(
+            volunteersWithDocumentsOfSelectedPauschale,
+            id,
+          ),
         ]),
       ) as Record<Exclude<TileFilter, null>, number>,
-    [baseFilteredVols],
+    [volunteersWithDocumentsOfSelectedPauschale],
   );
 
-  const filteredVols = useMemo(
+  const filteredVolunteers = useMemo(
     () =>
       applyFilters(
         volunteers,
@@ -653,9 +657,14 @@ export function ReimbursementsBoard({
     [volunteers, activeTile, pauschale, docTypeFilter, search, dateRange],
   );
 
-  const sortedFilteredVols = useMemo(
-    () => sortVolunteers(filteredVols, sortOption),
-    [filteredVols, sortOption],
+  const allDocumentsCount = volunteers.reduce(
+    (docCount, volunteer) => volunteer.documents.length + docCount,
+    0,
+  );
+
+  const sortedFilteredVolunteers = useMemo(
+    () => sortVolunteers(filteredVolunteers, sortOption),
+    [filteredVolunteers, sortOption],
   );
 
   // Tabs are married to the doc-type filter: picking a tile sets the matching
@@ -666,10 +675,6 @@ export function ReimbursementsBoard({
     setActiveTile((prev) => {
       const next = prev === tile ? null : tile;
       setDocTypeFilter(next ? TILE_DOC_TYPE[next] : 'all');
-      // Ready-to-go is a bundle-and-send-now action — auto-narrow to this
-      // month so the list defaults to what's actually due, not the whole
-      // history.
-      if (next === 'ready-to-go') onReadyToGoSelected();
       return next;
     });
   }
@@ -757,7 +762,7 @@ export function ReimbursementsBoard({
       <div className="flex items-stretch gap-0 overflow-x-auto pb-1">
         <FilterTile
           label={t('tiles.all')}
-          count={Object.values(tileCounts).reduce((s, n) => s + n, 0)}
+          count={allDocumentsCount}
           active={activeTile === null}
           onClick={handleAllTile}
         />
@@ -853,7 +858,7 @@ export function ReimbursementsBoard({
       </div>
 
       {/* Table / empty state */}
-      {sortedFilteredVols.length === 0 ? (
+      {sortedFilteredVolunteers.length === 0 ? (
         <Empty className="border-border py-16">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -873,7 +878,7 @@ export function ReimbursementsBoard({
         </Empty>
       ) : (
         <ReimbursementsTable
-          vols={sortedFilteredVols}
+          volunteers={sortedFilteredVolunteers}
           orgUId={orgUId}
           onDocumentClick={(doc, vol) => setSelectedDoc({ doc, vol })}
           onRequestCreate={handleRequestCreate}

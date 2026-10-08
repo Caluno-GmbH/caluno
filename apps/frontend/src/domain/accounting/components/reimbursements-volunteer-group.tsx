@@ -279,7 +279,7 @@ function BundleDownloadButton({
 // ─── VolunteerTableGroup ──────────────────────────────────────────────────────
 
 interface VolunteerTableGroupProps {
-  vol: BoardVolunteer;
+  volunteer: BoardVolunteer;
   orgUId: string;
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
@@ -291,7 +291,7 @@ interface VolunteerTableGroupProps {
 }
 
 function VolunteerTableGroup({
-  vol,
+  volunteer,
   orgUId,
   onDocumentClick,
   onRequestCreate,
@@ -312,8 +312,8 @@ function VolunteerTableGroup({
   // compliance checks stay accurate regardless of what's on screen.
   const visibleDocs =
     activeTile === 'ready-to-go'
-      ? getReadyToGoDocs(vol, dateRange)
-      : vol.documents
+      ? getReadyToGoDocs(volunteer, dateRange)
+      : volunteer.documents
           .filter(
             (doc) =>
               docTypeFilter === 'all' || doc.status.startsWith(docTypeFilter),
@@ -355,13 +355,13 @@ function VolunteerTableGroup({
           <div className="min-w-0 overflow-hidden">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-base font-medium text-card-foreground truncate">
-                {vol.name}
+                {volunteer.name}
               </span>
             </div>
-            {vol.limits && Object.keys(vol.limits).length > 1 ? (
+            {volunteer.limits && Object.keys(volunteer.limits).length > 1 ? (
               <div className="flex flex-col gap-1 mt-1">
                 {(
-                  Object.entries(vol.limits) as [
+                  Object.entries(volunteer.limits) as [
                     PauschalenType,
                     PauschalenLimit,
                   ][]
@@ -376,8 +376,8 @@ function VolunteerTableGroup({
               </div>
             ) : (
               <LimitHeadroomBar
-                used={vol.usedAmount}
-                total={vol.totalCap}
+                used={volunteer.usedAmount}
+                total={volunteer.totalCap}
                 density="text"
                 className="mt-1"
               />
@@ -398,8 +398,8 @@ function VolunteerTableGroup({
                 {readyTypes.map((type) => (
                   <BundleDownloadButton
                     key={type}
-                    volunteerId={vol.id}
-                    reimbursementTypeId={vol.reimbursementTypeIds?.[type]}
+                    volunteerId={volunteer.id}
+                    reimbursementTypeId={volunteer.reimbursementTypeIds?.[type]}
                     typeLabel={TYPE_LABEL[type]}
                     readyCount={readyByType[type] ?? 0}
                     orgUId={orgUId}
@@ -433,7 +433,7 @@ function VolunteerTableGroup({
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale;
-          const docNonCompliant = isTimesheetNonCompliant(vol, doc);
+          const docNonCompliant = isTimesheetNonCompliant(volunteer, doc);
           const createBlocked =
             actionKey === 'create' &&
             documentCreationBlockedFor(
@@ -459,10 +459,10 @@ function VolunteerTableGroup({
               onClick={() => {
                 if (rowAction === 'create') {
                   if (createBlocked) return;
-                  onRequestCreate({ doc, vol });
+                  onRequestCreate({ doc, vol: volunteer });
                   return;
                 }
-                if (rowAction === 'open') onDocumentClick(doc, vol);
+                if (rowAction === 'open') onDocumentClick(doc, volunteer);
               }}
             >
               <TableCell
@@ -584,7 +584,7 @@ function VolunteerTableGroup({
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDocumentClick(doc, vol);
+                        onDocumentClick(doc, volunteer);
                       }}
                     >
                       {t('docs.actions.seeDetails' as Parameters<typeof t>[0])}
@@ -602,9 +602,9 @@ function VolunteerTableGroup({
                         e.stopPropagation();
                         if (actionKey === 'create') {
                           if (!canCreateDocuments || createBlocked) return;
-                          onRequestCreate({ doc, vol });
+                          onRequestCreate({ doc, vol: volunteer });
                         } else {
-                          onDocumentClick(doc, vol);
+                          onDocumentClick(doc, volunteer);
                         }
                       }}
                     >
@@ -625,7 +625,7 @@ function VolunteerTableGroup({
 // ─── ReimbursementsTable ──────────────────────────────────────────────────────
 
 interface ReimbursementsTableProps {
-  vols: BoardVolunteer[];
+  volunteers: BoardVolunteer[];
   orgUId: string;
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
@@ -637,7 +637,7 @@ interface ReimbursementsTableProps {
 }
 
 export function ReimbursementsTable({
-  vols,
+  volunteers,
   orgUId,
   onDocumentClick,
   onRequestCreate,
@@ -668,10 +668,10 @@ export function ReimbursementsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {vols.map((vol) => (
+          {volunteers.map((vol) => (
             <VolunteerTableGroup
               key={vol.id}
-              vol={vol}
+              volunteer={vol}
               orgUId={orgUId}
               onDocumentClick={onDocumentClick}
               onRequestCreate={onRequestCreate}
