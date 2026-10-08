@@ -363,7 +363,7 @@ export class DocumentRenderingService {
         signedAt: this.signatureTimestampFor(document, 'VOLUNTEER'),
       },
       {
-        label: 'Unterschrift Koordination',
+        label: 'Unterschrift (Organisation)',
         name: resolved.org_name || '—',
         signedAt: this.signatureTimestampFor(document, 'PERMISSION_HOLDER'),
       },
