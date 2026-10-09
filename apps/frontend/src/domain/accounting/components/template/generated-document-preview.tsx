@@ -385,14 +385,21 @@ export function GeneratedDocumentPreview({
 
             if (block.kind === 'note') {
               return (
-                <div key={block.id} className="rounded-md border p-2">
-                  <LineRow
-                    line={block.line}
-                    values={values}
-                    manualOverrides={manualOverrides}
-                    unresolvedLabels={unresolvedLabels}
-                    gapSources={gapSources}
-                  />
+                <div key={block.id}>
+                  {block.title && (
+                    <p className="mb-1 text-sm font-semibold italic text-muted-foreground">
+                      {block.title}
+                    </p>
+                  )}
+                  <div className="rounded-md border p-2">
+                    <LineRow
+                      line={block.line}
+                      values={values}
+                      manualOverrides={manualOverrides}
+                      unresolvedLabels={unresolvedLabels}
+                      gapSources={gapSources}
+                    />
+                  </div>
                 </div>
               );
             }
@@ -401,7 +408,7 @@ export function GeneratedDocumentPreview({
 
             return (
               <div key={block.id}>
-                {kind !== 'contract' && (
+                {block.title && (
                   <p className="mb-1 text-sm font-semibold italic text-muted-foreground">
                     {block.title}
                   </p>
