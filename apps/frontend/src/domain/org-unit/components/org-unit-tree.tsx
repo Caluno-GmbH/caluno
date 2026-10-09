@@ -3,6 +3,7 @@
 import type { OrgUnitTreeNode } from '@repo/data';
 import {
   Button,
+  cn,
   TreeExpander,
   TreeIcon,
   TreeLabel,
@@ -84,7 +85,7 @@ function OrgUnitNodeItem({
       isLast={isLast}
       parentPath={parentPath}
     >
-      <TreeNodeTrigger>
+      <TreeNodeTrigger className={level > 0 ? 'org-unit-child-row' : undefined}>
         <TreeExpander hasChildren={hasChildren} />
 
         <TreeIcon
@@ -100,7 +101,14 @@ function OrgUnitNodeItem({
             <Link href={orgUnitAdminHref(node.id)}>{node.name}</Link>
           </TreeLabel>
 
-          <span className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <span
+            className={cn(
+              'flex items-center gap-1 transition-opacity',
+              level === 0 && 'org-unit-root-actions',
+              level > 0 &&
+                'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100',
+            )}
+          >
             <Button
               size="icon-xs"
               variant="outline"
@@ -202,7 +210,7 @@ export function OrgUnitTree({
 
   return (
     <TreeProvider defaultExpandedIds={allIds} animateExpand>
-      <TreeView className="w-full">
+      <TreeView className="w-full has-[.org-unit-child-row:hover]:[&_.org-unit-root-actions]:opacity-0 has-[.org-unit-child-row:focus-within]:[&_.org-unit-root-actions]:opacity-0">
         <OrgUnitNodeItem
           node={root}
           canEdit={canEdit}

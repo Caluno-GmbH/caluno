@@ -848,6 +848,7 @@
       "deleteAria": "Löschen",
       "editAria": "Bearbeiten",
       "empty": "Keine Organisationseinheit-Hierarchie gefunden. Wende dich an deine Koordination.",
+      "title": "Organisationsstruktur",
       "visitAria": "Besuchen"
     },
     "validation": {

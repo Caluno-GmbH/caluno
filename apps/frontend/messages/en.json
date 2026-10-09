@@ -848,6 +848,7 @@
       "deleteAria": "Delete",
       "editAria": "Edit",
       "empty": "No organisation unit hierarchy found. Contact your coordinator.",
+      "title": "Organisational structure",
       "visitAria": "Visit"
     },
     "validation": {
