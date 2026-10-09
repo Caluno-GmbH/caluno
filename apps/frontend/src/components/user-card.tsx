@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl';
 import { getInitials } from '@/lib/get-initials';
 
 type UserCardProps = {
-  user: Pick<User, 'name' | 'image' | 'email'>;
+  user: Pick<User, 'name' | 'image'> & { email?: string | null };
   size?: 'sm' | 'lg' | 'default';
   hideEmail?: boolean;
 };
