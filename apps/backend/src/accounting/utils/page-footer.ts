@@ -38,6 +38,9 @@ export function pageFooterHeight(footer: PageFooter): number {
   return GAP_ABOVE + (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
 }
 
-export function pageNumberLabel(page: number, total: number): string {
+export function pageNumberLabel(
+  page: number | string,
+  total: number | string,
+): string {
   return `Seite ${page} von ${total}`;
 }

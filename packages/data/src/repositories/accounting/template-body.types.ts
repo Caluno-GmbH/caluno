@@ -185,7 +185,10 @@ export function pageFooterTextLines(
   return text.length === 0 ? [] : text.split('\n');
 }
 
-export function pageNumberLabel(page: number, total: number): string {
+export function pageNumberLabel(
+  page: number | string,
+  total: number | string,
+): string {
   return `Seite ${page} von ${total}`;
 }
 

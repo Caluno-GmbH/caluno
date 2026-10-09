@@ -24,6 +24,9 @@ describe('page footer helpers (preview side)', () => {
   // live either side of the app boundary and cannot share an implementation.
   it('labels pages as the PDF does', () => {
     expect(pageNumberLabel(1, 3)).toBe('Seite 1 von 3');
-    expect(pageNumberLabel(1, 1)).toBe('Seite 1 von 1');
+  });
+
+  it('fills the same format with placeholders for the unpaginated preview', () => {
+    expect(pageNumberLabel('x', 'y')).toBe('Seite x von y');
   });
 });

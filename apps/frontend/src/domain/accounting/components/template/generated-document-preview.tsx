@@ -473,11 +473,11 @@ export function GeneratedDocumentPreview({
           a 499pt text column, so 8/499 = 1.602cqw reproduces its wrapping at any
           preview width. Container units resolve against the content box, so this
           is a fraction of the text column, not of the page. The preview is one
-          continuous page, so the count is 1.
+          continuous page, so it shows placeholders where the document numbers.
         */}
         <div className="mt-10 border-t pt-2 text-[1.602cqw]/[1.803cqw]">
           <p className="text-right text-muted-foreground">
-            {pageNumberLabel(1, 1)}
+            {pageNumberLabel('x', 'y')}
           </p>
           {pageFooterLines.length > 0 && (
             <p className="mt-[1.803cqw] whitespace-pre-line">

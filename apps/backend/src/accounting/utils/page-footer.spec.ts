@@ -68,6 +68,8 @@ describe('page footer', () => {
   // depend on @repo/data, so this pins the wording the two must agree on.
   it('labels pages as the preview does', () => {
     expect(pageNumberLabel(1, 3)).toBe('Seite 1 von 3');
-    expect(pageNumberLabel(1, 1)).toBe('Seite 1 von 1');
+    // The preview has no pages to count, so it fills the same format with
+    // placeholders — one format string, two callers.
+    expect(pageNumberLabel('x', 'y')).toBe('Seite x von y');
   });
 });
