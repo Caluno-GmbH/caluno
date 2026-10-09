@@ -2,7 +2,7 @@
 
 import { TermsRepository } from '@repo/data';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AcceptTermsInput } from '../../generated/graphql';
+import type { AcceptTermsInput } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 export function useTermsStatus() {

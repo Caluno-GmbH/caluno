@@ -1,19 +1,21 @@
 import type {
+  UpdateMyAccountSettingsInput,
+  UpdateMyImageInput,
+  UpdateMyProfileInput,
+} from '../../generated/base-types';
+import type {
+  GetMeQuery,
   GetMyOrganizationsQuery,
   GetMyPermissionsQuery,
   GetUserQuery,
-  UpdateMyAccountSettingsInput,
   UpdateMyAccountSettingsMutation,
-  UpdateMyImageInput,
   UpdateMyLocaleMutation,
-  UpdateMyProfileInput,
   UpdateMyProfileMutation,
-  UserWithProfile,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 
 export class UserRepository extends BaseRepository {
-  async getMe(): Promise<UserWithProfile> {
+  async getMe(): Promise<GetMeQuery['me']> {
     const data = await this.sdk.GetMe();
     return data.me;
   }

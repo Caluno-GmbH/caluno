@@ -1,6 +1,7 @@
 'use client';
 
-import { PermissionKey, useRemoveMembership } from '@repo/data/react';
+import { PermissionKey } from '@repo/data';
+import { useRemoveMembership } from '@repo/data/react';
 import { Button } from '@repo/ui';
 import { Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';

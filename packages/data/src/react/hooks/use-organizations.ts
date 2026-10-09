@@ -10,7 +10,7 @@ import type {
   OrganizationUnitAutomationKind,
   UpdateOrganizationUnitAutomationInput,
   UpdateOrganizationUnitInput,
-} from '../../generated/graphql';
+} from '../../generated/base-types';
 import { OrganizationRepository } from '../../repositories/organization/organization.repository';
 import { OrganizationUnitRepository } from '../../repositories/organization/organization-unit.repository';
 import { useSdk } from './use-graphql-client';

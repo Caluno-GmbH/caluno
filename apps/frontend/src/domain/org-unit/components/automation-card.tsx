@@ -1,6 +1,6 @@
 'use client';
 
-import { Weekday } from '@repo/data/react';
+import { Weekday } from '@repo/data';
 import {
   Card,
   CardContent,

@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormBlock, RequirementFormRepository } from '@repo/data';
+import { RequirementFormRepository } from '@repo/data';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { useSdk } from './use-graphql-client';
@@ -13,7 +13,7 @@ export function useBlock(id: string) {
   const sdk = useSdk();
   const repository = new RequirementFormRepository(sdk);
 
-  return useQuery<FormBlock>({
+  return useQuery({
     queryKey: blockQueryKey(id),
     queryFn: async () => {
       const block = await repository.findBlockById(id);
