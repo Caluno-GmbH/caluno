@@ -424,7 +424,7 @@ describe('DocumentRenderingService', () => {
       expect(footerHits).toBe(Number(total));
     });
 
-    it('renders no page footer or page numbers when disabled', async () => {
+    it('still numbers pages when the footer text is switched off', async () => {
       const service = createService({ rateCents: 1500 });
       const base = contract();
       const template = base.documentTemplate as NonNullable<
@@ -445,7 +445,8 @@ describe('DocumentRenderingService', () => {
       );
 
       expect(text).not.toContain('BSM gGmbH');
-      expect(text).not.toContain('Seite 1 von');
+      // The page number is not part of the footer toggle.
+      expect(text).toContain('Seite 1 von');
     });
 
     it('leaves signature seats blank while nobody has signed', async () => {

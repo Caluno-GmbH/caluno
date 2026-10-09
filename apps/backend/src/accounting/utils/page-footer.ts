@@ -28,12 +28,14 @@ export function pageFooterLines(footer: PageFooter): string[] {
   return text.length === 0 ? [] : text.split('\n');
 }
 
-/** Vertical space to reserve, including the page-number line above the text. */
+/**
+ * Height of the bottom strip. The page number is always there, so this is
+ * never zero; footer text adds a blank line plus its own lines beneath it.
+ */
 export function pageFooterHeight(footer: PageFooter): number {
-  if (!footer.enabled) return 0;
-  return (
-    GAP_ABOVE + (1 + pageFooterLines(footer).length) * PAGE_FOOTER_LINE_HEIGHT
-  );
+  const lines = pageFooterLines(footer);
+  const textBlock = lines.length > 0 ? 1 + lines.length : 0;
+  return GAP_ABOVE + (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
 }
 
 export function pageNumberLabel(page: number, total: number): string {

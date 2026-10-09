@@ -241,7 +241,7 @@ export function GeneratedDocumentPreview({
         page taller instead of spilling its table past the border. The generated
         PDF paginates properly; the preview is one continuous page.
       */}
-      <div className="mx-auto w-full max-w-[820px] overflow-hidden break-words rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
+      <div className="@container/doc-page mx-auto w-full max-w-[820px] overflow-hidden break-words rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
         <div className="flex items-start justify-between gap-4">
           <DocTypeHeader
             kind={kind}
@@ -468,19 +468,23 @@ export function GeneratedDocumentPreview({
           </div>
         )}
 
-        {pageFooterLines.length > 0 && (
-          // text-xs is the preview's smallest size, as 8pt is the PDF's, so the
-          // footer reads here at the proportion it will print at. The preview is
-          // one continuous page, so the count is 1 rather than the real total.
-          <div className="mt-10 border-t pt-2">
-            <p className="text-right text-xs leading-snug text-muted-foreground">
-              {pageNumberLabel(1, 1)}
-            </p>
-            <p className="whitespace-pre-line text-xs leading-snug">
+        {/*
+          Sized off the page box, not the type scale: the PDF prints 8pt across
+          a 499pt text column, so 8/499 = 1.602cqw reproduces its wrapping at any
+          preview width. Container units resolve against the content box, so this
+          is a fraction of the text column, not of the page. The preview is one
+          continuous page, so the count is 1.
+        */}
+        <div className="mt-10 border-t pt-2 text-[1.602cqw]/[1.803cqw]">
+          <p className="text-right text-muted-foreground">
+            {pageNumberLabel(1, 1)}
+          </p>
+          {pageFooterLines.length > 0 && (
+            <p className="mt-[1.803cqw] whitespace-pre-line">
               {pageFooterLines.join('\n')}
             </p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

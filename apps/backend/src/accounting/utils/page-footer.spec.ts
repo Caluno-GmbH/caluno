@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  PAGE_FOOTER_LINE_HEIGHT,
   pageFooterHeight,
   pageFooterLines,
   pageNumberLabel,
@@ -11,7 +12,19 @@ describe('page footer', () => {
     const footer = resolvePageFooter({});
     expect(footer.enabled).toBe(false);
     expect(pageFooterLines(footer)).toEqual([]);
-    expect(pageFooterHeight(footer)).toBe(0);
+  });
+
+  it('still reserves the page-number line when the footer is off', () => {
+    expect(pageFooterHeight(resolvePageFooter({}))).toBeGreaterThan(0);
+  });
+
+  it('adds a blank line between the page number and the footer text', () => {
+    const none = resolvePageFooter({});
+    const one = resolvePageFooter({ pageFooter: { enabled: true, text: 'A' } });
+    // page number only -> + blank line + one text line
+    expect(pageFooterHeight(one) - pageFooterHeight(none)).toBe(
+      2 * PAGE_FOOTER_LINE_HEIGHT,
+    );
   });
 
   it('keeps one line per typed line', () => {
