@@ -17,6 +17,9 @@ interface SignatureLineProps {
 
 const AMOUNT_COLUMN_LABEL = 'Betrag';
 
+/** Matches EXTRA_BLOCK_ID in the builder — its label is not a document heading. */
+const FREE_TEXT_BLOCK_ID = 'sonstiges';
+
 function SignatureLine({ label, unsignedLabel }: SignatureLineProps) {
   return (
     <div>
@@ -403,7 +406,7 @@ export function GeneratedDocumentPreview({
 
             return (
               <div key={block.id}>
-                {kind !== 'contract' && (
+                {kind !== 'contract' && block.id !== FREE_TEXT_BLOCK_ID && (
                   <p className="mb-1 text-sm font-semibold italic text-muted-foreground">
                     {block.title}
                   </p>

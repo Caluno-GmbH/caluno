@@ -2524,7 +2524,6 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen",
           "other": "Sonstiges"
         },
         "hoursUnit": {

@@ -2524,7 +2524,6 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses",
           "other": "Other information"
         },
         "hoursUnit": {

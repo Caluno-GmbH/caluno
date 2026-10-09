@@ -678,7 +678,7 @@ function ExtraClausesCard({
   extraPanel,
 }: {
   block: TemplateTextBlock;
-  /** Section heading — "Extra clauses" on a contract, "Other information" on a timesheet. */
+  /** Section heading — the same on both document kinds. */
   heading: string;
   firstOccurrenceByFieldId: Map<string, string>;
   profileGaps: Set<DataSourceKey>;
@@ -1103,7 +1103,7 @@ export function TemplateBuilderBlockEditor({
         {groups.extraBlock && (
           <ExtraClausesCard
             block={groups.extraBlock}
-            heading={t('editorGroups.extra')}
+            heading={t('editorGroups.other')}
             firstOccurrenceByFieldId={firstOccurrenceByFieldId}
             profileGaps={profileGaps}
             knownValues={knownValues}

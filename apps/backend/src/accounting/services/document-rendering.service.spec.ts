@@ -424,6 +424,42 @@ describe('DocumentRenderingService', () => {
       expect(footerHits).toBe(Number(total));
     });
 
+    it('prints the free-text block\'s content but not its "Sonstiges" label', async () => {
+      const service = createService({ rateCents: 1500 });
+      const base = contract();
+      const template = base.documentTemplate as NonNullable<
+        ContractWithRelations['documentTemplate']
+      >;
+      const body = template.body as Record<string, unknown>;
+      const text = extractPdfText(
+        await service.generatePdf({
+          ...base,
+          documentTemplate: {
+            ...template,
+            body: {
+              ...body,
+              blocks: [
+                {
+                  id: 'sonstiges',
+                  title: 'Sonstiges',
+                  lines: [
+                    {
+                      id: 'freeform',
+                      text: 'Zusatz: Parkkosten werden erstattet.',
+                      fields: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        } as unknown as ContractWithRelations),
+      );
+
+      expect(text).toContain('Zusatz: Parkkosten werden erstattet.');
+      expect(text).not.toContain('Sonstiges');
+    });
+
     it('still numbers pages when the footer text is switched off', async () => {
       const service = createService({ rateCents: 1500 });
       const base = contract();

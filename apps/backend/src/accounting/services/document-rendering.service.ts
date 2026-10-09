@@ -1,6 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
+
+/** Matches EXTRA_BLOCK_ID in the template builder. */
+const FREE_TEXT_BLOCK_ID = 'sonstiges';
+
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -244,7 +248,9 @@ export class DocumentRenderingService {
         this.renderTableBlock(pdf, block, tableRows, totalAmountCents);
         continue;
       }
-      if (block.title) {
+      // "Sonstiges" is the editor's label for a free-text block, not a heading
+      // the reader needs; the block contributes only what was typed into it.
+      if (block.title && block.id !== FREE_TEXT_BLOCK_ID) {
         pdf.fontSize(12).font('Helvetica-Bold').text(block.title);
         pdf.moveDown(0.25);
       }
