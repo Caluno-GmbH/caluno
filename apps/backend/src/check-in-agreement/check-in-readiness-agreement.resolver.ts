@@ -15,7 +15,7 @@ export class CheckInReadinessAgreementResolver {
     @Parent() parent: CheckInReadiness,
     @Session() session: UserSession,
   ): Promise<CheckInAgreement> {
-    return this.agreementStatusService.resolve({
+    return this.agreementStatusService.resolveAgreement({
       volunteerId: parent.volunteerId,
       organizationUnitId: parent.organizationUnitId,
       shiftInstanceId: parent.shiftInstanceId,

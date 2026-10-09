@@ -73,7 +73,7 @@ describe('AgreementStatusService.resolve', () => {
     const deps = makeBaseDeps();
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: null,
@@ -99,7 +99,7 @@ describe('AgreementStatusService.resolve', () => {
     });
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: 'si-1',
@@ -129,7 +129,7 @@ describe('AgreementStatusService.resolve', () => {
     ]);
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: 'si-1',
@@ -172,7 +172,7 @@ describe('AgreementStatusService.resolve', () => {
     ]);
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: 'si-1',
@@ -200,7 +200,7 @@ describe('AgreementStatusService.resolve', () => {
     deps.authService.findUsersWithPermission.mockResolvedValue([]);
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: 'si-1',
@@ -223,7 +223,7 @@ describe('AgreementStatusService.resolve', () => {
     deps.authService.findUsersWithPermission.mockResolvedValue([]);
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: 'si-1',
@@ -244,7 +244,7 @@ describe('AgreementStatusService.resolve', () => {
     deps.authService.findUsersWithPermission.mockResolvedValue([]);
     const service = makeService(deps);
 
-    const result = await service.resolve({
+    const result = await service.resolveAgreement({
       volunteerId: 'v-1',
       organizationUnitId: 'ou-1',
       shiftInstanceId: 'si-1',

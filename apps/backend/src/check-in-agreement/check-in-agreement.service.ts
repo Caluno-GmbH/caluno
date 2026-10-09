@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ContractStatus, DocumentKind } from '../accounting/enums';
 import { ContractService } from '../accounting/services/contract.service';
 import { DocumentTemplateService } from '../accounting/services/document-template.service';
+import { PAUSCHALE_TYPE_LABELS } from '../accounting/utils/reimbursement-type-labels';
 import { AuthService } from '../auth/auth.service';
 import { PERMISSIONS } from '../auth/constants';
 import type { Database } from '../database/database.module';
@@ -12,7 +13,6 @@ import { ShiftService } from '../shift/shift.service';
 import { resolveEffectiveReimbursementTypeId } from '../shift/utils/effective-reimbursement-type';
 import { AgreementStatus } from './agreement-status.enum';
 import { CheckInAgreement } from './check-in-agreement.model';
-import { reimbursementTypeLabel } from './reimbursement-type-labels';
 
 @Injectable()
 export class AgreementStatusService {
@@ -26,7 +26,7 @@ export class AgreementStatusService {
     private readonly db: Database,
   ) {}
 
-  async resolve(params: {
+  async resolveAgreement(params: {
     volunteerId: string;
     organizationUnitId: string;
     shiftInstanceId: string | null;
@@ -72,7 +72,7 @@ export class AgreementStatusService {
       columns: { key: true },
     });
     const reimbursementTypeName = typeRow
-      ? reimbursementTypeLabel(typeRow.key)
+      ? PAUSCHALE_TYPE_LABELS[typeRow.key]
       : null;
 
     const org =
@@ -91,7 +91,6 @@ export class AgreementStatusService {
 
     // Contract and template checks run in parallel.
     // Scoping to organizationUnitId: agreement is unit-scoped.
-    const now = new Date();
     const [contracts, templateExists] = await Promise.all([
       this.contractService.findContractsForOrganization(org.id, {
         volunteerId,
@@ -118,6 +117,7 @@ export class AgreementStatusService {
     let status: AgreementStatus;
     let contractId: string | null = null;
 
+    const now = new Date();
     const activeNow = contracts.find(
       (c) =>
         c.contractStatus === ContractStatus.ACTIVE &&
