@@ -21,7 +21,6 @@ import {
 import { resolveFirstColumn } from '../utils/invoice-table';
 import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
-import { PAUSCHALE_TYPE_LABELS } from '../utils/reimbursement-type-labels';
 import {
   PAGE_FOOTER_FONT_SIZE,
   PAGE_FOOTER_LINE_GAP,
@@ -32,6 +31,7 @@ import {
   pageNumberLabel,
   resolvePageFooter,
 } from '../utils/page-footer';
+import { PAUSCHALE_TYPE_LABELS } from '../utils/reimbursement-type-labels';
 import {
   findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
