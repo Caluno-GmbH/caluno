@@ -56,7 +56,7 @@ import { GeneratedDocumentPreview } from './generated-document-preview';
 import { TemplateListingPageError } from './listing-page';
 
 // Mock: profile-required sources this org hasn't collected yet.
-const MOCK_PROFILE_GAPS = new Set<DataSourceKey>(['volunteer_bic']);
+const EMPTY_PROFILE_GAPS = new Set<DataSourceKey>();
 
 // The org-unit edit sheet's URL id — mirrors FORM_ID in
 // org-unit-create-edit-sheet.tsx, so the org-profile CTA opens it directly.
@@ -442,7 +442,7 @@ export function TemplateBuilder({
             unsignedLabel={t('preview.unsigned')}
             values={knownValues}
             unresolvedLabels={unresolvedLabels}
-            gapSources={MOCK_PROFILE_GAPS}
+            gapSources={EMPTY_PROFILE_GAPS}
             tableRows={
               kind === 'invoice'
                 ? getPlaceholderTableRows(templateDoc, t)
@@ -466,7 +466,7 @@ export function TemplateBuilder({
           <TemplateBuilderBlockEditor
             document={templateDoc}
             kind={kind}
-            profileGaps={MOCK_PROFILE_GAPS}
+            profileGaps={EMPTY_PROFILE_GAPS}
             knownValues={knownValues}
             typeLabel={typeLabel}
             onChange={setTemplateDoc}

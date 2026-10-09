@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'bun:test';
+import type { PauschalenType } from '../doc-type-header';
+import { findTextLine } from './__tests__/find-text-line';
 import {
   getContractDocument,
   getInvoiceDocument,
 } from './builder-document-presets';
 
-function contractLine(id: string) {
-  const block = getContractDocument('ehrenamt').blocks.find(
-    (b) => b.id === 'persoenliche-daten',
-  );
-  return block?.kind === 'text'
-    ? block.lines.find((line) => line.id === id)
-    : undefined;
+function contractLine(id: string, pauschale: PauschalenType = 'ehrenamt') {
+  return findTextLine(getContractDocument(pauschale), id);
+}
+
+function invoiceLine(id: string, pauschale: PauschalenType = 'ehrenamt') {
+  return findTextLine(getInvoiceDocument(pauschale), id);
 }
 
 describe('document preset org identity', () => {
@@ -113,5 +114,58 @@ describe('timesheet table columns', () => {
       '€/h',
       'Betrag',
     ]);
+  });
+});
+
+describe('optional BIC (VOLI-1544)', () => {
+  it('Offers the agreement BIC line as an opt-in, off by default', () => {
+    // SEPA payouts do not need a BIC; only non-EU accounts do. Like the date
+    // of birth, the coordinator enables the line when their volunteers need it.
+    const line = contractLine('payout-bic');
+
+    expect(line?.optional).toBe(true);
+    expect(line?.enabled).toBe(false);
+  });
+
+  it('Binds the agreement BIC line to the volunteer bic profile field', () => {
+    expect(contractLine('payout-bic')?.fields[0]?.value).toEqual({
+      kind: 'bound',
+      source: 'volunteer_bic',
+    });
+  });
+
+  it('Adds an opt-in BIC line to the timesheet, off by default', () => {
+    const line = invoiceLine('volunteer-bic');
+
+    expect(line?.optional).toBe(true);
+    expect(line?.enabled).toBe(false);
+    expect(line?.fields[0]?.value).toEqual({
+      kind: 'bound',
+      source: 'volunteer_bic',
+    });
+  });
+
+  it('Sits the timesheet BIC directly after the IBAN line', () => {
+    const block = getInvoiceDocument('ehrenamt').blocks.find(
+      (b) => b.id === 'persoenliche-daten',
+    );
+    const ids =
+      block?.kind === 'text' ? block.lines.map((line) => line.id) : [];
+
+    expect(ids.indexOf('volunteer-bic')).toBe(
+      ids.indexOf('volunteer-iban') + 1,
+    );
+  });
+
+  it('Applies to both pauschalen', () => {
+    for (const pauschale of ['ehrenamt', 'uebungsleiter'] as const) {
+      const bicLine = contractLine('payout-bic', pauschale);
+      const invoiceBic = invoiceLine('volunteer-bic', pauschale);
+
+      expect(bicLine?.optional).toBe(true);
+      expect(bicLine?.enabled).toBe(false);
+      expect(invoiceBic?.optional).toBe(true);
+      expect(invoiceBic?.enabled).toBe(false);
+    }
   });
 });
