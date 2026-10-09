@@ -2544,7 +2544,6 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses",
           "other": "Other information"
         },
         "hoursUnit": {
@@ -2631,6 +2630,11 @@
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Annual allowance"
+        },
+        "pageFooter": {
+          "title": "Page footer",
+          "description": "Appears at the bottom of every page.",
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
         }
       },
       "card": {
