@@ -79,7 +79,7 @@
   "devDependencies": {
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
-    "@nestjs/testing": "^11.2.7",
+    "@nestjs/testing": "^12.1.2",
     "@repo/typescript-config": "*",
     "@sentry/cli": "^3.8.0",
     "@types/adm-zip": "^0.5.8",
