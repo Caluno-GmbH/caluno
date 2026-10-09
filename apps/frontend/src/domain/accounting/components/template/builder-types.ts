@@ -26,10 +26,15 @@ export type {
   TemplateHeader,
   TemplateLine,
   TemplateNoteBlock,
+  TemplatePageFooter,
   TemplateTableBlock,
   TemplateTextBlock,
 } from '@repo/data';
-export { ORG_OVERRIDE_SOURCES } from '@repo/data';
+export {
+  ORG_OVERRIDE_SOURCES,
+  pageFooterTextLines,
+  pageNumberLabel,
+} from '@repo/data';
 
 export const ALWAYS_AVAILABLE_SOURCES: DataSourceKey[] = [
   'volunteer_first_name',
