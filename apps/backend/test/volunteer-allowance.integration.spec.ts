@@ -133,7 +133,7 @@ const setupOrg = async (
   };
 
   const shiftInstanceId = async (paid: boolean, unitId = unit.id) => {
-    const startsAt = new Date('2026-09-10T08:00:00.000Z');
+    const startsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
     const shift = await createShift(db, {
       organizationUnitId: unitId,
       reimbursementTypeId: paid ? reimbursementType.id : null,
@@ -236,9 +236,7 @@ describe('volunteerAllowanceStates', () => {
       await org.shiftInstanceId(false),
     );
 
-    expect(response.data?.volunteerAllowanceStates).toEqual([
-      { volunteerId: nearCeiling, state: 'NEARLY_EXHAUSTED' },
-    ]);
+    expect(response.data?.volunteerAllowanceStates).toEqual([]);
   });
 
   it('omits people who are not members of the caller unit', async () => {

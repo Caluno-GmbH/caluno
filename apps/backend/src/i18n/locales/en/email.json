@@ -36,12 +36,12 @@
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
     "detailWhen": "When",
-    "footerNote": "You're receiving this because a coordinator removed you from an event on {brandName}.",
-    "greeting": "Hi {firstName}, you've been removed from an event.",
-    "heading": "You've been removed from an event",
+    "footerNote": "You're receiving this because the plan for an event on {brandName} changed.",
+    "greeting": "Hi {firstName}, you're no longer scheduled for this event.",
+    "heading": "You're no longer scheduled",
     "note": "This event is no longer on your schedule. Thank you for wanting to be there. If you have questions, or if this was a mistake, reach out to your volunteer coordinator.",
-    "previewText": "You've been removed from {eventTitle} at {organizationName}.",
-    "subject": "You've been removed from {eventTitle}",
+    "previewText": "You're no longer scheduled for {eventTitle} at {organizationName}.",
+    "subject": "{eventTitle}: you're no longer scheduled",
     "whenRange": "{date} · {timeRange}"
   },
   "eventDetailsChanged": {
@@ -91,7 +91,7 @@
     "buttonLabel": "Open {organizationName}",
     "checkInQrAlt": "Your check-in QR code",
     "checkInQrCaption": "Show this QR code at check-in and have it scanned by the person responsible, if your organisation records attendance at assignments. You can also find it under Check in when you sign in at app.caluno.org.",
-    "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Print it out or keep it on your phone. You can show it at check-in any time, even without your Caluno login.",
+    "checkInQrNote": "Your check-in QR code is below, and we've also attached it as a PDF. Show this QR code at check-in and have it scanned by the person responsible, if your organisation records attendance at assignments. You can also find it under Check in when you sign in at app.caluno.org.",
     "contactEmailLabel": "Email",
     "contactHeading": "Your contact person",
     "contactNameLabel": "Name",
@@ -299,26 +299,26 @@
     "detailOrganization": "Organisation",
     "detailShift": "Assignment",
     "detailWhen": "When",
-    "footerNote": "You're receiving this because a coordinator removed you from an assignment on {brandName}.",
-    "greeting": "Hi {firstName}, you've been removed from an assignment.",
-    "heading": "You've been removed from an assignment",
+    "footerNote": "You're receiving this because the plan for an assignment on {brandName} changed.",
+    "greeting": "Hi {firstName}, you're no longer scheduled for this assignment.",
+    "heading": "You're no longer scheduled",
     "note": "This assignment is no longer on your schedule. Thank you for making the time. If you have questions, or if this was a mistake, reach out to your volunteer coordinator.",
-    "previewText": "You've been removed from {shiftTitle} at {organizationName}.",
-    "subject": "You've been removed from {shiftTitle}",
+    "previewText": "You're no longer scheduled for {shiftTitle} at {organizationName}.",
+    "subject": "{shiftTitle}: you're no longer scheduled",
     "whenRange": "{date} · {timeRange}"
   },
   "shiftSeriesRemoved": {
-    "bodyMessage": "You've been removed from the '{shiftTitle}' series starting {fromDate}.",
+    "bodyMessage": "You're no longer scheduled for the '{shiftTitle}' series from {fromDate}.",
     "detailFrom": "From",
     "detailLocation": "Location",
     "detailOrganization": "Organisation",
     "detailShift": "Assignment",
-    "footerNote": "You're receiving this because a coordinator removed you from an assignment series on {brandName}.",
-    "greeting": "Hi {firstName}, you've been removed from an assignment series.",
-    "heading": "You've been removed from an assignment series",
+    "footerNote": "You're receiving this because the plan for an assignment series on {brandName} changed.",
+    "greeting": "Hi {firstName}, you're no longer scheduled for this assignment series.",
+    "heading": "You're no longer scheduled",
     "note": "These assignments are no longer on your schedule. Thank you for making the time. If you have questions, or if this was a mistake, reach out to your volunteer coordinator.",
-    "previewText": "You've been removed from {shiftTitle} at {organizationName} starting {fromDate}.",
-    "subject": "You've been removed from {shiftTitle}"
+    "previewText": "You're no longer scheduled for {shiftTitle} at {organizationName} from {fromDate}.",
+    "subject": "{shiftTitle}: you're no longer scheduled"
   },
   "shiftInstanceLeft": {
     "detailLocation": "Location",
@@ -581,5 +581,16 @@
     "subject": "Your week ahead on {brandName}",
     "previewText": "Your assignments, invitations, and open assignments for the week ahead.",
     "footerNote": "You're receiving this weekly digest as a member of an organisation on {brandName}."
+  },
+  "termsUpdated": {
+    "subject": "Our terms and conditions have changed",
+    "previewText": "We've updated our terms and conditions. {action}",
+    "previewTextMinor": "We've updated our terms and conditions.",
+    "heading": "Terms and conditions update",
+    "greeting": "Hi {firstName}, we've updated our terms and conditions.",
+    "majorBody": "This change is important. Please review the new version and accept it — after that you can keep using {brandName} as before.",
+    "minorBody": "This update does not require any action from you. You can keep using {brandName} as before.",
+    "buttonLabel": "Review and accept the terms",
+    "footerNote": "You're receiving this because you have a {brandName} account."
   }
 }

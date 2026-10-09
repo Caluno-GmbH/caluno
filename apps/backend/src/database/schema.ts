@@ -53,4 +53,7 @@ export * from '../shift/schemas/shift-manager-notification.schema';
 export * from '../shift/schemas/shift-required-form.schema';
 export * from '../shift/schemas/volunteer-digest-shift-log.schema';
 export * from '../storage/schemas/file.schema';
+export * from '../terms/schemas/terms-acceptance.schema';
+export * from '../terms/schemas/terms-notification.schema';
+export * from '../terms/schemas/terms-version.schema';
 export * from '../time-tracking/schemas/time-entry.schema';

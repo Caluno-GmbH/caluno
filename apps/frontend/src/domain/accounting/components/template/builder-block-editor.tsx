@@ -427,6 +427,7 @@ function LineEditor({
     const [soleField] = line.fields;
     const title = soleField ? getFieldTitle(soleField, t) : line.id;
     const isGap =
+      line.enabled &&
       soleField?.value.kind === 'bound' &&
       profileGaps.has(soleField.value.source);
 

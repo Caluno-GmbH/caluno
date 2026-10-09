@@ -60,6 +60,11 @@ export class VolunteerAllowanceService {
           input.organizationUnitId,
         )
       : undefined;
+    // Unpaid shifts don't show allowance states
+    if (shift && !shift.reimbursementTypeId) {
+      return [];
+    }
+
     const paidTypeId = shift?.reimbursementTypeId ?? undefined;
     // The ceiling is per calendar year, so measure against the shift's year.
     const year = appDateParts(shift?.period.start ?? new Date()).year;

@@ -26,6 +26,8 @@ export const users = snakeCase.table('users', {
     .notNull(),
   privacyPolicyVersion: text('privacy_policy_version'),
   privacyPolicyAcceptedAt: timestamp('privacy_policy_accepted_at'),
+  termsVersion: text('terms_version'),
+  termsAcceptedAt: timestamp('terms_accepted_at'),
   checkInId: text('check_in_id')
     .notNull()
     .unique()

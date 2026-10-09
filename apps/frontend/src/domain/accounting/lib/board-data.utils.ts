@@ -51,9 +51,7 @@ export function getDocLineSummary(
 ): DocLineSummary {
   const prefix = kind === 'contract' ? 'contract' : 'timesheet';
   const matches = vol.documents.filter(
-    (d) =>
-      (d.pauschale ?? vol.pauschale) === pauschale &&
-      d.status.startsWith(prefix),
+    (d) => d.pauschale === pauschale && d.status.startsWith(prefix),
   );
   const latest = matches.reduce<BoardDocument | undefined>((acc, d) => {
     if (!acc) return d;
@@ -650,18 +648,10 @@ export function buildBoardVolunteers({
       }
     }
 
-    const primaryType =
-      (entry.usageByType[0]?.reimbursementType.key
-        ? pauschaleForReimbursementTypeKey(
-            entry.usageByType[0].reimbursementType.key,
-          )
-        : undefined) ?? 'ehrenamt';
-
     return {
       id: entry.volunteer.id,
       name: entry.volunteer.name,
       initials: getInitials(entry.volunteer.name),
-      pauschale: primaryType,
       usedAmount: centsToEuros(
         entry.usageByType.reduce((sum, u) => sum + u.usedCents, 0),
       ),

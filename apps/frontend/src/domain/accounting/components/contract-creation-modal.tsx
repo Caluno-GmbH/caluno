@@ -374,7 +374,7 @@ export function ContractCreationModal({
             orgName={orgProfile?.name ?? org.name}
             disclaimerLabel={t('preview.disclaimerBadge')}
             signerLeftLabel={t('preview.signatureVolunteer')}
-            signerRightLabel={t('preview.signatureCoordinator')}
+            signerRightLabel={t('preview.signatureSupervisor')}
             unsignedLabel={t('preview.unsigned')}
             values={values}
             manualOverrides={manualOverrides}

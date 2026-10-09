@@ -1,4 +1,20 @@
 {
+  "Terms": {
+    "accept": "Accept and continue",
+    "accepting": "Accepting...",
+    "redirecting": "Redirecting...",
+    "acceptFailed": "Something went wrong. Please try again.",
+    "loadFailed": "The terms document could not be loaded. Please refresh the page."
+  },
+  "Unsubscribe": {
+    "confirm": "Unsubscribe from all emails",
+    "confirming": "Unsubscribing...",
+    "description": "Stop receiving all email notifications from caluno.",
+    "error": "We couldn't update your email preferences. Please try again.",
+    "success": "You will no longer receive email notifications from caluno.",
+    "successTitle": "You're unsubscribed",
+    "title": "Unsubscribe from emails"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Join {orgName}",
@@ -65,6 +81,8 @@
       "signInLink": "Sign in",
       "submit": "Create account",
       "submitting": "Creating account...",
+      "termsAcknowledge": "I have read and accept the <termsLink>Terms and Conditions</termsLink>.",
+      "termsRequired": "Please accept the Terms and Conditions to continue.",
       "title": "Create your account",
       "description": "Welcome to caluno. Sign up to join assignments and volunteer with your organisation."
     },
@@ -479,14 +497,25 @@
     },
     "card": {
       "label": "Enable ID verification",
-      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in.",
-      "updateError": "We couldn't save the setting. Please try again."
+      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in."
     }
   },
   "ShiftSettings": {
     "page": {
       "title": "Assignments and check-in",
       "subtitle": "Settings for assignments in {orgName}."
+    },
+    "actions": {
+      "saved": "Settings saved",
+      "saveError": "We couldn't save these settings. Please try again.",
+      "savePartialError": "Some changes were saved. The rest are still waiting. Save again to retry, or cancel to drop them.",
+      "unsavedChangesTitle": "Unsaved changes",
+      "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
+      "unsavedChangesLeave": "Leave without saving",
+      "unsavedChangesStay": "Keep editing",
+      "confirmEnableTitle": "Turn this on?",
+      "confirmEnableDescription": "Saving starts {names}. That can change who gets onto an assignment.",
+      "confirmEnableAction": "Save and turn on"
     },
     "sections": {
       "staffing": {
@@ -537,24 +566,21 @@
       "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
       "daysDescription": "Assignments on these days can trigger an urgent call.",
       "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "We couldn't save this automation. Please try again."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "discovery": {
       "title": "Discovery email",
       "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
       "daysDescription": "Days the email goes out.",
       "sendAtDescription": "Time of day the email goes out, in local time.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "approval": {
       "title": "Pause approval",
       "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
       "daysDescription": "Assignments on these days can have approval paused.",
       "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "We couldn't save this automation. Please try again."
+      "noDaysHint": "No days selected, so this automation will not run."
     }
   },
   "MembershipRequest": {
@@ -720,7 +746,7 @@
     "shortcuts": "Shortcuts",
     "timesheets": "Tracked times",
     "volunteeringApp": "Volunteering app",
-    "volunteers": "Volunteers",
+    "volunteers": "Users",
     "accounting": "Accounting",
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
@@ -822,6 +848,7 @@
       "deleteAria": "Delete",
       "editAria": "Edit",
       "empty": "No organisation unit hierarchy found. Contact your coordinator.",
+      "title": "Organisational structure",
       "visitAria": "Visit"
     },
     "validation": {
@@ -1379,7 +1406,6 @@
     "card": {
       "inviteAria": "Invite",
       "inviteToShift": "Invite to the assignment",
-      "invited": "Invited",
       "noVolunteers": "No volunteers invited",
       "openInstanceAria": "Open",
       "waitlist": "Waitlist",
@@ -1899,20 +1925,20 @@
       "remove": "Remove",
       "removeAria": "Remove",
       "removeDescription": "Are you sure you want to remove {name} from this organisation? This cannot be undone.",
-      "removeFailedToast": "We couldn't remove this volunteer. Please try again.",
+      "removeFailedToast": "We couldn't remove this person. Please try again.",
       "removeTitle": "Remove from organisation",
       "removedToast": "{name} was removed from this organisation",
       "viewProfileAria": "View"
     },
     "empty": {
-      "description": "Share the invite link to get volunteers to sign up.",
-      "title": "No volunteers yet"
+      "description": "Share the invite link to get people to sign up.",
+      "title": "No users yet"
     },
     "page": {
       "copyInviteLink": "Copy invite link",
       "inviteLinkCopied": "Invite link copied to clipboard",
-      "subtitle": "Manage volunteers in your organisation",
-      "title": "Volunteers"
+      "subtitle": "Manage people and their roles in your organisation",
+      "title": "Users"
     },
     "requests": {
       "pendingEmpty": "No pending requests yet.",
@@ -1941,8 +1967,8 @@
     "search": {
       "clearAria": "Clear search",
       "countFiltered": "{count} of {total}",
-      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
-      "emptyTitle": "No volunteers found",
+      "emptyDescription": "No person matches this search. Try a different name, email or role.",
+      "emptyTitle": "No users found",
       "placeholder": "Search by name, email or role"
     },
     "sheet": {
@@ -2329,7 +2355,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Supplementary agreement",
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
+          "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2373,7 +2399,7 @@
           "cancelButtonLabel": "Cancel",
           "inputLabel": "Initial amount in euros",
           "projectedAfter": "Projected after this timesheet: {after}",
-          "successToast": "Initial amount saved.",
+          "deferredToast": "Initial amount will be saved when you send the timesheet.",
           "errorToast": "The initial amount couldn't be saved. Please try again."
         },
         "hoursCard": {
@@ -2441,7 +2467,6 @@
             "invoice": "Timesheet"
           },
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
           "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         },

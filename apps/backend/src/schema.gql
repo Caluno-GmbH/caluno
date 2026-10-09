@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AcceptTermsInput {
+  language: String!
+  version: String!
+}
+
 type AccountingOrgProfile {
   city: String
   legalRep: String
@@ -183,6 +188,7 @@ input CreateFormBlockInput {
 input CreateInvoiceInput {
   fieldOverrides: [DocumentFieldOverrideInput!]
   hourlyRateCents: Int
+  manualBaselineCents: Int
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!
@@ -698,6 +704,7 @@ enum MembershipRequestStatus {
 }
 
 type Mutation {
+  acceptTerms(input: AcceptTermsInput!): TermsStatus!
   addTimeEntry(input: AddTimeEntryInput!): TimeEntry!
   approveMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
   cancelMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
@@ -763,6 +770,7 @@ type Mutation {
   signInvoice(invoiceId: ID!): Invoice!
   submitForm(input: SubmitFormInput!, organizationUnitId: ID!, token: String!): FormSubmission!
   submitRequiredForm(formId: String!, input: SubmitFormInput!, targetId: String!, targetType: RequiredFormTargetType!): FormSubmission!
+  unsubscribeFromEmails: Boolean!
   updateDocumentTemplate(id: ID!, input: UpdateDocumentTemplateInput!): DocumentTemplate!
   updateEvent(id: ID!, input: UpdateEventInput!): Event!
   updateEventInviteStatus(eventId: ID!, status: EventInviteStatus!, userId: String): EventInvite!
@@ -1013,6 +1021,7 @@ type Query {
   myOrganizationUnits: [OrganizationUnit!]!
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
+  myTasks: [Task!]!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
   organization(id: String!): Organization
   organizationBySlug(slug: String!): Organization!
@@ -1055,6 +1064,7 @@ type Query {
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
+  termsStatus: TermsStatus!
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
@@ -1472,11 +1482,40 @@ input SubmitFormInput {
   values: [FormFieldValueInput!]!
 }
 
+type Task {
+  data: JSON!
+  id: ID!
+  link: String!
+  neededPermission: PermissionKey
+  organizationUnitId: ID!
+  type: TaskType!
+}
+
+enum TaskType {
+  CONTRACT_EXPIRING
+  CONTRACT_SIGN
+  DOCUMENT_DECLINED
+  EVENT_APPROVAL
+  MEMBERSHIP_REQUEST
+  SHIFT_APPROVAL
+  SHIFT_BELOW_MINIMUM
+  TIMESHEET_BUNDLES
+  TIMESHEET_SIGN
+}
+
 type TemplateSignee {
   id: ID!
   order: Int!
   requiredPermission: Permission
   signeeType: SigneeType!
+}
+
+type TermsStatus {
+  acceptedAt: DateTime
+  acceptedVersion: String
+  currentClass: String
+  currentVersion: String
+  mustAccept: Boolean!
 }
 
 type TimeEntry {

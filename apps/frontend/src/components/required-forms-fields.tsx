@@ -65,14 +65,16 @@ export function RequiredFormsList({
           key={form.id}
           className="flex items-center justify-between gap-3 rounded-lg border px-3 py-3"
         >
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-start">
             {formHasFileUpload(form) ? (
               <FileCheck className="h-5 w-5 shrink-0 text-muted-foreground" />
             ) : (
               <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
             )}
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate">{form.name}</p>
+              <p className="text-sm font-medium line-clamp-3" title={form.name}>
+                {form.name}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {getRequiredFormDescription(form, t)}
               </p>
@@ -125,7 +127,10 @@ export function RequiredFormsAddExisting({
           {t('addExisting')}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-72 p-0" align="start">
+      <PopoverContent
+        className="w-max min-w-72 max-w-[min(100vw-2rem,32rem)] p-0"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder={t('searchForms')} />
           <CommandList>
@@ -144,7 +149,12 @@ export function RequiredFormsAddExisting({
                       }
                     }}
                   >
-                    <span className="truncate">{form.name}</span>
+                    <span
+                      className="whitespace-normal break-words line-clamp-3"
+                      title={form.name}
+                    >
+                      {form.name}
+                    </span>
                     {isDisabled && (
                       <span className="ml-auto shrink-0 text-xs text-muted-foreground">
                         {t('noBlocks')}

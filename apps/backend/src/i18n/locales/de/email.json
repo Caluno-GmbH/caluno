@@ -36,12 +36,12 @@
     "detailLocation": "Ort",
     "detailOrganization": "Organisation",
     "detailWhen": "Wann",
-    "footerNote": "Du erhältst diese E-Mail, weil ein:e Koordinator:in dich auf {brandName} von einem Event entfernt hat.",
-    "greeting": "Hallo {firstName}, du wurdest von einem Event entfernt.",
-    "heading": "Du wurdest von einem Event entfernt",
+    "footerNote": "Du erhältst diese E-Mail, weil sich die Planung für ein Event auf {brandName} geändert hat.",
+    "greeting": "Hallo {firstName}, für dieses Event bist du nicht mehr eingeplant.",
+    "heading": "Du bist nicht mehr eingeplant",
     "note": "Dieses Event steht nicht mehr in deinem Zeitplan. Danke, dass du dabei sein wolltest. Wenn du Fragen hast oder das ein Versehen war, melde dich bei deiner Ehrenamtskoordination.",
-    "previewText": "Du wurdest von {eventTitle} bei {organizationName} entfernt.",
-    "subject": "Du wurdest von {eventTitle} entfernt",
+    "previewText": "Für {eventTitle} bei {organizationName} bist du nicht mehr eingeplant.",
+    "subject": "{eventTitle}: Du bist nicht mehr eingeplant",
     "whenRange": "{date} · {timeRange}"
   },
   "eventDetailsChanged": {
@@ -91,7 +91,7 @@
     "buttonLabel": "{organizationName} öffnen",
     "checkInQrAlt": "Dein Check-in-QR-Code",
     "checkInQrCaption": "Zeige diesen QR-Code beim Check-in vor und lass ihn von der dazu beauftragten Person scannen, wenn deine Organisation die Anwesenheit bei Einsätzen erfasst. Du findest ihn auch über den Menüpunkt Einchecken, wenn du dich bei app.caluno.org anmeldest.",
-    "checkInQrNote": "Dein Check-in-QR-Code ist unten zu sehen und außerdem als PDF beigefügt. Du kannst ihn ausdrucken oder auf deinem Handy speichern. Zeig ihn einfach beim Check-in, auch ohne Caluno-Login.",
+    "checkInQrNote": "Dein Check-in-QR-Code ist unten zu sehen und außerdem als PDF beigefügt. Zeige diesen QR-Code beim Check-in vor und lass ihn von der dazu beauftragten Person scannen, wenn deine Organisation die Anwesenheit bei Einsätzen erfasst. Du findest ihn auch über den Menüpunkt Einchecken, wenn du dich bei app.caluno.org anmeldest.",
     "contactEmailLabel": "E-Mail",
     "contactHeading": "Deine Ansprechperson",
     "contactNameLabel": "Name",
@@ -299,26 +299,26 @@
     "detailOrganization": "Organisation",
     "detailShift": "Einsatz",
     "detailWhen": "Wann",
-    "footerNote": "Du erhältst diese E-Mail, weil ein:e Koordinator:in dich auf {brandName} von einem Einsatz entfernt hat.",
-    "greeting": "Hallo {firstName}, du wurdest von einem Einsatz entfernt.",
-    "heading": "Du wurdest von einem Einsatz entfernt",
+    "footerNote": "Du erhältst diese E-Mail, weil sich die Planung für einen Einsatz auf {brandName} geändert hat.",
+    "greeting": "Hallo {firstName}, für diesen Einsatz bist du nicht mehr eingeplant.",
+    "heading": "Du bist nicht mehr eingeplant",
     "note": "Dieser Einsatz steht nicht mehr in deinem Zeitplan. Danke, dass du dir die Zeit nehmen wolltest. Wenn du Fragen hast oder das ein Versehen war, melde dich bei deiner Ehrenamtskoordination.",
-    "previewText": "Du wurdest von {shiftTitle} bei {organizationName} entfernt.",
-    "subject": "Du wurdest von {shiftTitle} entfernt",
+    "previewText": "Für {shiftTitle} bei {organizationName} bist du nicht mehr eingeplant.",
+    "subject": "{shiftTitle}: Du bist nicht mehr eingeplant",
     "whenRange": "{date} · {timeRange}"
   },
   "shiftSeriesRemoved": {
-    "bodyMessage": "Du wurdest aus der Einsatzserie '{shiftTitle}' ab {fromDate} entfernt.",
+    "bodyMessage": "Für die Einsatzserie '{shiftTitle}' bist du ab {fromDate} nicht mehr eingeplant.",
     "detailFrom": "Ab",
     "detailLocation": "Ort",
     "detailOrganization": "Organisation",
     "detailShift": "Einsatz",
-    "footerNote": "Du erhältst diese E-Mail, weil ein:e Koordinator:in dich auf {brandName} von einer Einsatzserie entfernt hat.",
-    "greeting": "Hallo {firstName}, du wurdest von einer Einsatzserie entfernt.",
-    "heading": "Du wurdest von einer Einsatzserie entfernt",
+    "footerNote": "Du erhältst diese E-Mail, weil sich die Planung für eine Einsatzserie auf {brandName} geändert hat.",
+    "greeting": "Hallo {firstName}, für diese Einsatzserie bist du nicht mehr eingeplant.",
+    "heading": "Du bist nicht mehr eingeplant",
     "note": "Diese Einsätze stehen nicht mehr in deinem Zeitplan. Danke, dass du dir die Zeit nehmen wolltest. Wenn du Fragen hast oder das ein Versehen war, melde dich bei deiner Ehrenamtskoordination.",
-    "previewText": "Du wurdest von {shiftTitle} bei {organizationName} ab {fromDate} entfernt.",
-    "subject": "Du wurdest von {shiftTitle} entfernt"
+    "previewText": "Für {shiftTitle} bei {organizationName} bist du ab {fromDate} nicht mehr eingeplant.",
+    "subject": "{shiftTitle}: Du bist nicht mehr eingeplant"
   },
   "shiftInstanceLeft": {
     "detailLocation": "Ort",
@@ -581,5 +581,16 @@
     "subject": "Deine Woche im Überblick auf {brandName}",
     "previewText": "Deine Einsätze, Einladungen und offene Einsätze für die kommende Woche.",
     "footerNote": "Du erhältst diese wöchentliche Übersicht, weil du Mitglied einer Organisation auf {brandName} bist."
+  },
+  "termsUpdated": {
+    "subject": "Unsere Nutzungsbedingungen haben sich geändert",
+    "previewText": "Wir haben unsere Nutzungsbedingungen aktualisiert. {action}",
+    "previewTextMinor": "Wir haben unsere Nutzungsbedingungen aktualisiert.",
+    "heading": "Neue Nutzungsbedingungen",
+    "greeting": "Hallo {firstName}, wir haben unsere Nutzungsbedingungen aktualisiert.",
+    "majorBody": "Diese Änderung ist wichtig. Bitte sieh dir die neue Version an und stimme ihr zu — danach kannst du {brandName} wie gewohnt weiter nutzen.",
+    "minorBody": "Für dich ist nichts weiter zu tun. Du kannst {brandName} wie gewohnt weiter nutzen.",
+    "buttonLabel": "Bedingungen ansehen und zustimmen",
+    "footerNote": "Du erhältst diese E-Mail, weil du ein Konto bei {brandName} hast."
   }
 }

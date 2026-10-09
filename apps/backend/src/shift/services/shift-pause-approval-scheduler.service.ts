@@ -7,7 +7,8 @@ import { ShiftPauseApprovalSweepService } from './shift-pause-approval-sweep.ser
  * so the actual sweep logic is unit-testable without touching Nest's
  * scheduler. One hourly tick, Europe/Berlin — mirrors the understaffed-shift
  * scheduler's shape: invites already sitting in AWAITING_ADMIN_APPROVAL are
- * re-checked against live conditions, not just new sign-ups.
+ * moved onto the waitlist once the pause covers them, and told when a seat
+ * is free. New sign-ups still skip approval on their own.
  */
 @Injectable()
 export class ShiftPauseApprovalSchedulerService {

@@ -99,6 +99,10 @@ mutation UpdateMyAccountSettings($input: UpdateMyAccountSettingsInput!) {
   }
 }
 
+mutation UnsubscribeFromEmails {
+  unsubscribeFromEmails
+}
+
 mutation UpdateMyProfile($input: UpdateMyProfileInput!) {
   updateMyProfile(input: $input) {
     id

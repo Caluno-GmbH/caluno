@@ -21,6 +21,11 @@ export type Scalars = {
   JSON: { input: Record<string, unknown>; output: Record<string, unknown>; }
 };
 
+export type AcceptTermsInput = {
+  language: Scalars['String']['input'];
+  version: Scalars['String']['input'];
+};
+
 export type AccountingOrgProfile = {
   __typename?: 'AccountingOrgProfile';
   city?: Maybe<Scalars['String']['output']>;
@@ -211,6 +216,7 @@ export type CreateFormBlockInput = {
 export type CreateInvoiceInput = {
   fieldOverrides?: InputMaybe<Array<DocumentFieldOverrideInput>>;
   hourlyRateCents?: InputMaybe<Scalars['Int']['input']>;
+  manualBaselineCents?: InputMaybe<Scalars['Int']['input']>;
   organizationUnitId?: InputMaybe<Scalars['ID']['input']>;
   periodEnd: Scalars['DateTime']['input'];
   periodStart: Scalars['DateTime']['input'];
@@ -743,6 +749,7 @@ export enum MembershipRequestStatus {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  acceptTerms: TermsStatus;
   addTimeEntry: TimeEntry;
   approveMembershipRequest: MembershipRequest;
   cancelMembershipRequest: MembershipRequest;
@@ -808,6 +815,7 @@ export type Mutation = {
   signInvoice: Invoice;
   submitForm: FormSubmission;
   submitRequiredForm: FormSubmission;
+  unsubscribeFromEmails: Scalars['Boolean']['output'];
   updateDocumentTemplate: DocumentTemplate;
   updateEvent: Event;
   updateEventInviteStatus: EventInvite;
@@ -834,6 +842,11 @@ export type Mutation = {
   updateShiftInstanceInviteStatus: ShiftInstanceInvite;
   updateShiftInviteStatus: ShiftInvite;
   updateTimeEntry: TimeEntry;
+};
+
+
+export type MutationAcceptTermsArgs = {
+  input: AcceptTermsInput;
 };
 
 
@@ -1591,6 +1604,7 @@ export type Query = {
   myOrganizationUnits: Array<OrganizationUnit>;
   myRequiredOrgUnitForms: Array<RequirementForm>;
   myShiftInstances: ShiftInstancePaginatedResponse;
+  myTasks: Array<Task>;
   myTime: TimeEntryPaginatedResponse;
   organization?: Maybe<Organization>;
   organizationBySlug: Organization;
@@ -1633,6 +1647,7 @@ export type Query = {
   shiftInstancesByMasterIds: Array<ShiftInstancesByMaster>;
   shiftVolunteers: Array<User>;
   shifts: ShiftPaginatedResponse;
+  termsStatus: TermsStatus;
   timeEntries: TimeEntryPaginatedResponse;
   timeEntriesByUser: TimeEntryPaginatedResponse;
   timeEntry: TimeEntry;
@@ -2612,12 +2627,43 @@ export type SubmitFormInput = {
   values: Array<FormFieldValueInput>;
 };
 
+export type Task = {
+  __typename?: 'Task';
+  data: Scalars['JSON']['output'];
+  id: Scalars['ID']['output'];
+  link: Scalars['String']['output'];
+  neededPermission?: Maybe<PermissionKey>;
+  organizationUnitId: Scalars['ID']['output'];
+  type: TaskType;
+};
+
+export enum TaskType {
+  ContractExpiring = 'CONTRACT_EXPIRING',
+  ContractSign = 'CONTRACT_SIGN',
+  DocumentDeclined = 'DOCUMENT_DECLINED',
+  EventApproval = 'EVENT_APPROVAL',
+  MembershipRequest = 'MEMBERSHIP_REQUEST',
+  ShiftApproval = 'SHIFT_APPROVAL',
+  ShiftBelowMinimum = 'SHIFT_BELOW_MINIMUM',
+  TimesheetBundles = 'TIMESHEET_BUNDLES',
+  TimesheetSign = 'TIMESHEET_SIGN'
+}
+
 export type TemplateSignee = {
   __typename?: 'TemplateSignee';
   id: Scalars['ID']['output'];
   order: Scalars['Int']['output'];
   requiredPermission?: Maybe<Permission>;
   signeeType: SigneeType;
+};
+
+export type TermsStatus = {
+  __typename?: 'TermsStatus';
+  acceptedAt?: Maybe<Scalars['DateTime']['output']>;
+  acceptedVersion?: Maybe<Scalars['String']['output']>;
+  currentClass?: Maybe<Scalars['String']['output']>;
+  currentVersion?: Maybe<Scalars['String']['output']>;
+  mustAccept: Scalars['Boolean']['output'];
 };
 
 export type TimeEntry = {
@@ -4191,6 +4237,18 @@ export type CheckInInviteToShiftInstanceMutationVariables = Exact<{
 
 export type CheckInInviteToShiftInstanceMutation = { __typename?: 'Mutation', checkInInviteToShiftInstance: { __typename?: 'ShiftInstance', id: string } };
 
+export type TermsStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TermsStatusQuery = { __typename?: 'Query', termsStatus: { __typename?: 'TermsStatus', mustAccept: boolean, currentVersion?: string | null, currentClass?: string | null, acceptedVersion?: string | null, acceptedAt?: string | null } };
+
+export type AcceptTermsMutationVariables = Exact<{
+  input: AcceptTermsInput;
+}>;
+
+
+export type AcceptTermsMutation = { __typename?: 'Mutation', acceptTerms: { __typename?: 'TermsStatus', mustAccept: boolean, currentVersion?: string | null, currentClass?: string | null, acceptedVersion?: string | null, acceptedAt?: string | null } };
+
 export type AddTimeEntryMutationVariables = Exact<{
   input: AddTimeEntryInput;
 }>;
@@ -4345,6 +4403,11 @@ export type UpdateMyAccountSettingsMutationVariables = Exact<{
 
 
 export type UpdateMyAccountSettingsMutation = { __typename?: 'Mutation', updateMyAccountSettings: { __typename?: 'User', id: string, locale?: string | null, emailWeeklyUpdateEnabled: boolean, emailUrgentCallsEnabled: boolean, emailPlatformEnabled: boolean } };
+
+export type UnsubscribeFromEmailsMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type UnsubscribeFromEmailsMutation = { __typename?: 'Mutation', unsubscribeFromEmails: boolean };
 
 export type UpdateMyProfileMutationVariables = Exact<{
   input: UpdateMyProfileInput;
@@ -7574,6 +7637,28 @@ export const CheckInInviteToShiftInstanceDocument = gql`
   }
 }
     `;
+export const TermsStatusDocument = gql`
+    query TermsStatus {
+  termsStatus {
+    mustAccept
+    currentVersion
+    currentClass
+    acceptedVersion
+    acceptedAt
+  }
+}
+    `;
+export const AcceptTermsDocument = gql`
+    mutation AcceptTerms($input: AcceptTermsInput!) {
+  acceptTerms(input: $input) {
+    mustAccept
+    currentVersion
+    currentClass
+    acceptedVersion
+    acceptedAt
+  }
+}
+    `;
 export const AddTimeEntryDocument = gql`
     mutation AddTimeEntry($input: AddTimeEntryInput!) {
   addTimeEntry(input: $input) {
@@ -7960,6 +8045,11 @@ export const UpdateMyAccountSettingsDocument = gql`
     emailUrgentCallsEnabled
     emailPlatformEnabled
   }
+}
+    `;
+export const UnsubscribeFromEmailsDocument = gql`
+    mutation UnsubscribeFromEmails {
+  unsubscribeFromEmails
 }
     `;
 export const UpdateMyProfileDocument = gql`
@@ -8476,6 +8566,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     CheckInInviteToShiftInstance(variables: CheckInInviteToShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInInviteToShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInInviteToShiftInstanceMutation>({ document: CheckInInviteToShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInInviteToShiftInstance', 'mutation', variables);
     },
+    TermsStatus(variables?: TermsStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TermsStatusQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<TermsStatusQuery>({ document: TermsStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TermsStatus', 'query', variables);
+    },
+    AcceptTerms(variables: AcceptTermsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AcceptTermsMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<AcceptTermsMutation>({ document: AcceptTermsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AcceptTerms', 'mutation', variables);
+    },
     AddTimeEntry(variables: AddTimeEntryMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<AddTimeEntryMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<AddTimeEntryMutation>({ document: AddTimeEntryDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'AddTimeEntry', 'mutation', variables);
     },
@@ -8538,6 +8634,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     UpdateMyAccountSettings(variables: UpdateMyAccountSettingsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyAccountSettingsMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyAccountSettingsMutation>({ document: UpdateMyAccountSettingsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyAccountSettings', 'mutation', variables);
+    },
+    UnsubscribeFromEmails(variables?: UnsubscribeFromEmailsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UnsubscribeFromEmailsMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UnsubscribeFromEmailsMutation>({ document: UnsubscribeFromEmailsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UnsubscribeFromEmails', 'mutation', variables);
     },
     UpdateMyProfile(variables: UpdateMyProfileMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyProfileMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyProfileMutation>({ document: UpdateMyProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyProfile', 'mutation', variables);

@@ -147,12 +147,16 @@ export class InvoiceService {
   async findEligibleTimeEntries(
     volunteerId: string,
     reimbursementTypeId: string,
+    organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
   ): Promise<TimeEntryEntity[]> {
     const conditions = [
       eq(schema.timeEntries.volunteerId, volunteerId),
       eq(schema.timeEntries.reimbursementTypeId, reimbursementTypeId),
+      // A timesheet is issued in one unit; hours from a sibling unit must
+      // never appear on it (or be claimable into it).
+      eq(schema.timeEntries.organizationUnitId, organizationUnitId),
       isNotNull(schema.timeEntries.endedAt),
       // Time entries stay claimed while tied to a live (non-declined)
       // invoice. Declining releases the claim (see declineInvoice), so a
@@ -424,6 +428,10 @@ export class InvoiceService {
       );
     }
 
+    if (input.manualBaselineCents != null && input.manualBaselineCents < 0) {
+      throw new BadRequestGraphQLError('Initial amount must not be negative');
+    }
+
     // Only entries inside the invoice's own period can go on it, so the
     // document never lists hours from outside the period it states.
     //
@@ -436,9 +444,15 @@ export class InvoiceService {
     // below by eligibility: `findEligibleTimeEntries` omits anything already
     // claimed, and `uq_invoice_time_entries_time_entry_id` makes the claim
     // exclusive in the database rather than by reasoning about dates.
+    // Hours are also unit-scoped: eligibility uses the invoice's
+    // organization unit.
+    const eligibilityUnitId =
+      input.organizationUnitId ??
+      (await this.organizationService.requireRootUnit(organizationId)).id;
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
+      eligibilityUnitId,
       input.periodStart,
       input.periodEnd,
     );
@@ -615,6 +629,33 @@ export class InvoiceService {
         type: DocumentStatusChange.CREATED,
         actorUserId,
       });
+
+      // The initial yearly amount is part of the same draft as the timesheet:
+      // it is only written once the coordinator actually sends, so cancelling
+      // the creation dialog leaves no change behind (VOLI-1569).
+      if (input.manualBaselineCents != null) {
+        await tx
+          .insert(schema.reimbursementManualBaselines)
+          .values({
+            organizationId,
+            volunteerId: input.volunteerId,
+            reimbursementTypeId: input.reimbursementTypeId,
+            year: documentNumberYear,
+            amountCents: input.manualBaselineCents,
+            updatedByUserId: actorUserId,
+          })
+          .onConflictDoUpdate({
+            target: [
+              schema.reimbursementManualBaselines.volunteerId,
+              schema.reimbursementManualBaselines.reimbursementTypeId,
+              schema.reimbursementManualBaselines.year,
+            ],
+            set: {
+              amountCents: input.manualBaselineCents,
+              updatedByUserId: actorUserId,
+            },
+          });
+      }
 
       return created;
     });

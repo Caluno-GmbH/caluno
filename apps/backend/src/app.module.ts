@@ -47,6 +47,10 @@ import { validatePostHogEnv } from './shared/observability/validate-posthog-env'
 import { validateSentryEnv } from './shared/observability/validate-sentry-env';
 import { ShiftModule } from './shift/shift.module';
 import { StorageModule } from './storage/storage.module';
+import { TaskModule } from './task/task.module';
+import { TermsAcceptedGuard } from './terms/guards/terms-accepted.guard';
+import { TermsService } from './terms/services/terms.service';
+import { TermsModule } from './terms/terms.module';
 import { TimeTrackingModule } from './time-tracking/time-tracking.module';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
@@ -103,6 +107,7 @@ const autoSchemaFile =
         NotificationModule,
         AppI18nModule,
         ObservabilityModule,
+        TermsModule,
       ],
       useFactory: (
         database: Database,
@@ -112,6 +117,7 @@ const autoSchemaFile =
         appI18n: AppI18nService,
         postHogService: PostHogService,
         pinoLogger: Logger,
+        termsService: TermsService,
       ) => {
         const webUrl = configService.getOrThrow<string>('WEB_URL');
         const shouldVerifyEmail = process.env.NODE_ENV === 'production';
@@ -155,6 +161,7 @@ const autoSchemaFile =
               trustedOrigins: [webUrl],
               cookieDomain: configService.get('COOKIE_DOMAIN'),
               logger: betterAuthLogger,
+              termsService,
               emailVerificationEnabled: shouldVerifyEmail,
               onSessionCreated: (userId) => {
                 postHogService.capture({
@@ -279,6 +286,7 @@ const autoSchemaFile =
         AppI18nService,
         PostHogService,
         Logger,
+        TermsService,
       ],
     }),
     UserModule,
@@ -293,6 +301,8 @@ const autoSchemaFile =
     ShiftModule,
     EventModule,
     StorageModule,
+    TaskModule,
+    TermsModule,
     BetterAuthModule,
     AuthModule,
     AccountingModule,
@@ -308,6 +318,13 @@ const autoSchemaFile =
       scope: Scope.REQUEST,
       useFactory: createSessionCachingAuthGuard,
       inject: [Reflector, AuthService],
+    },
+    {
+      provide: APP_GUARD,
+      scope: Scope.REQUEST,
+      useFactory: (reflector: Reflector, termsService: TermsService) =>
+        new TermsAcceptedGuard(reflector, termsService),
+      inject: [Reflector, TermsService],
     },
     {
       provide: APP_GUARD,

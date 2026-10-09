@@ -249,8 +249,8 @@ export class ShiftService {
   /**
    * Candidates for the pause-approval sweep tick: upcoming instances that
    * currently have at least one AWAITING_ADMIN_APPROVAL invite, which
-   * re-checks whether those invites now qualify to be admitted without
-   * waiting on another sign-up. See findActiveInstancesWithMinimumInWindow.
+   * re-checks whether those invites should move onto the waitlist now that
+   * the pause covers the instance. See findActiveInstancesWithMinimumInWindow.
    */
   async findPauseApprovalSweepCandidates(
     now: Date,
@@ -277,16 +277,55 @@ export class ShiftService {
   }
 
   /**
-   * Public entry point for the pause-approval sweep tick: resolves every
-   * AWAITING_ADMIN_APPROVAL invite on the given instances now that the
-   * pause-approval automation covers them, in their own transaction.
+   * Pause-approval sweep: moves every AWAITING_ADMIN_APPROVAL invite on the
+   * given instances to WAITLIST_JOINED. When a seat is free, the volunteers
+   * who just moved receive the existing spot-opened email. Volunteers already
+   * on the waitlist are not mailed again. Turning approval off still confirms
+   * people via autoResolveAwaitingApprovalInvites.
    */
   async sweepPausedApprovalInvites(instanceIds: string[]): Promise<void> {
     if (instanceIds.length === 0) return;
 
-    await this.db.transaction(async (tx) => {
-      await this.autoResolveAwaitingApprovalInvites(tx, instanceIds);
+    const movedByInstance = await this.db.transaction(async (tx) => {
+      const instances = await tx.query.shiftInstances.findMany({
+        where: { id: { in: instanceIds } },
+        with: {
+          invites: {
+            where: { status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL },
+            columns: { id: true, userId: true },
+          },
+        },
+      });
+
+      const moved = new Map<string, string[]>();
+      for (const instance of instances) {
+        if (instance.invites.length === 0) continue;
+
+        await tx
+          .update(schema.shiftInstanceInvites)
+          .set({
+            status: ShiftInviteStatus.WAITLIST_JOINED,
+            remindedAt: null,
+          })
+          .where(
+            inArray(
+              schema.shiftInstanceInvites.id,
+              instance.invites.map((invite) => invite.id),
+            ),
+          );
+
+        moved.set(
+          instance.id,
+          instance.invites.map((invite) => invite.userId),
+        );
+      }
+
+      return moved;
     });
+
+    for (const [instanceId, userIds] of movedByInstance) {
+      void this.notifyWaitlistOfOpenedSeat(instanceId, this.db, userIds);
+    }
   }
 
   /** Instances of the given shifts in the org unit, keyed by masterId, ordered by start time. */
@@ -2113,8 +2152,9 @@ export class ShiftService {
    * oldest-first, now that approval is no longer required for them: admits
    * up to capacity, waitlists the overflow. Mirrors the single-invite admin
    * approval path (resolveAdminApprovalTargetStatus + the same notifications)
-   * but as a bulk sweep, triggered either by turning approval off for an
-   * instance/series or by the pause-approval scheduler tick.
+   * but as a bulk sweep, triggered by turning approval off for an
+   * instance/series. The pause-approval tick does not use this path: it
+   * moves waiting volunteers onto the waitlist instead of confirming them.
    */
   private async autoResolveAwaitingApprovalInvites(
     tx: Database,
@@ -5207,11 +5247,14 @@ export class ShiftService {
    * Notifies the waitlist that a seat opened up. Guarded so call sites can
    * invoke it unconditionally after a seat *may* have freed: no-op unless
    * the instance is live and in the future, a seat is actually available,
-   * and someone is waiting (VOLI-1260).
+   * and someone is waiting (VOLI-1260). `onlyUserIds` limits the send to
+   * those volunteers, used when pause-approval has just moved them onto
+   * the waitlist.
    */
   private async notifyWaitlistOfOpenedSeat(
     instanceId: string,
     db: Database = this.db,
+    onlyUserIds?: readonly string[],
   ): Promise<void> {
     try {
       const instance = await db.query.shiftInstances.findFirst({
@@ -5233,13 +5276,19 @@ export class ShiftService {
         return;
       }
 
-      const waitlisted = await db.query.shiftInstanceInvites.findMany({
-        where: {
-          instanceId,
-          status: ShiftInviteStatus.WAITLIST_JOINED,
-        },
-        columns: { userId: true },
-      });
+      const allowedUserIds = onlyUserIds ? new Set(onlyUserIds) : null;
+      const waitlisted = (
+        await db.query.shiftInstanceInvites.findMany({
+          where: {
+            instanceId,
+            status: ShiftInviteStatus.WAITLIST_JOINED,
+          },
+          columns: { userId: true },
+        })
+      ).filter(
+        (invite) =>
+          allowedUserIds === null || allowedUserIds.has(invite.userId),
+      );
       if (waitlisted.length === 0) {
         return;
       }

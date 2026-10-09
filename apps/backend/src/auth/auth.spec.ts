@@ -41,13 +41,21 @@ writeFileSync(
   'new',
 );
 
-const authConfig = () =>
+const createFakeTermsService = (
+  current: { version: string } | null = { version: '1.0' },
+) => ({
+  getCurrentVersion: jest.fn(async () => current),
+  recordSignupAcceptance: jest.fn(async () => undefined),
+});
+
+const authConfig = (termsService = createFakeTermsService()) =>
   createAuthConfig({
     database: {},
     trustedOrigins: [],
     sendVerificationOTP: jest.fn(),
     sendResetPassword: jest.fn(),
     privacyPolicyDirectory,
+    termsService,
   });
 
 describe('createAuthConfig', () => {
@@ -104,7 +112,7 @@ describe('createAuthConfig', () => {
       },
       {
         request: new Request('http://localhost:8080/api/auth/sign-up/email'),
-        body: { privacyPolicyAccepted: true },
+        body: { privacyPolicyAccepted: true, termsAccepted: true },
       } as never,
     );
 
@@ -123,6 +131,21 @@ describe('createAuthConfig', () => {
     expect(config.user?.additionalFields).not.toHaveProperty(
       'privacyPolicyAccepted',
     );
+  });
+
+  it('declares termsVersion and termsAcceptedAt as non-input additional fields', () => {
+    const config = authConfig();
+
+    expect(config.user?.additionalFields).toMatchObject({
+      termsVersion: { type: 'string', required: false, input: false },
+      termsAcceptedAt: { type: 'date', required: false, input: false },
+    });
+  });
+
+  it('does not declare termsAccepted as an additional user field', () => {
+    const config = authConfig();
+
+    expect(config.user?.additionalFields).not.toHaveProperty('termsAccepted');
   });
 
   it.each([
@@ -158,7 +181,7 @@ describe('createAuthConfig', () => {
         },
         {
           request,
-          body: { privacyPolicyAccepted: true },
+          body: { privacyPolicyAccepted: true, termsAccepted: true },
         } as never,
       );
 
@@ -201,6 +224,7 @@ describe('createAuthConfig', () => {
         },
         {
           request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+          body: { termsAccepted: true },
         } as never,
       ),
     ).rejects.toBeInstanceOf(APIError);
@@ -226,6 +250,7 @@ describe('createAuthConfig', () => {
         },
         {
           request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+          body: { termsAccepted: true },
         } as never,
       ),
     ).rejects.toBeInstanceOf(APIError);
@@ -252,11 +277,125 @@ describe('createAuthConfig', () => {
         },
         {
           request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+          body: { termsAccepted: true },
         } as never,
       ),
     ).rejects.toMatchObject({
       message: 'Privacy policy must be accepted',
     });
+  });
+
+  it('rejects sign up without terms acceptance', async () => {
+    const config = authConfig();
+
+    const beforeCreate = config.databaseHooks?.user?.create?.before;
+    expect(beforeCreate).toBeDefined();
+
+    await expect(
+      beforeCreate?.(
+        {
+          id: 'user-1',
+          email: 'volunteer@example.com',
+          name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+          body: { privacyPolicyAccepted: true },
+        } as never,
+      ),
+    ).rejects.toMatchObject({
+      status: 'BAD_REQUEST',
+      message: 'Terms and conditions must be accepted',
+    });
+  });
+
+  it('rejects sign up when no terms version is published', async () => {
+    const config = authConfig(createFakeTermsService(null));
+
+    const beforeCreate = config.databaseHooks?.user?.create?.before;
+    expect(beforeCreate).toBeDefined();
+
+    await expect(
+      beforeCreate?.(
+        {
+          id: 'user-1',
+          email: 'volunteer@example.com',
+          name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+          body: { privacyPolicyAccepted: true, termsAccepted: true },
+        } as never,
+      ),
+    ).rejects.toMatchObject({
+      status: 'BAD_REQUEST',
+      message: 'No published terms version',
+    });
+  });
+
+  it('stamps termsVersion and termsAcceptedAt on sign up', async () => {
+    const config = authConfig();
+
+    const beforeCreate = config.databaseHooks?.user?.create?.before;
+    expect(beforeCreate).toBeDefined();
+
+    const result = await beforeCreate?.(
+      {
+        id: 'user-1',
+        email: 'volunteer@example.com',
+        name: 'Volunteer',
+        firstname: 'Volun',
+        lastname: 'Teer',
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        request: new Request('http://localhost:8080/api/auth/sign-up/email'),
+        body: { privacyPolicyAccepted: true, termsAccepted: true },
+      } as never,
+    );
+
+    expect(result).toEqual({
+      data: expect.objectContaining({
+        termsVersion: '1.0',
+        termsAcceptedAt: expect.any(Date),
+      }),
+    });
+  });
+
+  it('records the signup acceptance after user create', async () => {
+    const termsService = createFakeTermsService();
+    const config = authConfig(termsService);
+
+    const afterCreate = config.databaseHooks?.user?.create?.after;
+    expect(afterCreate).toBeDefined();
+
+    await afterCreate?.(
+      {
+        id: 'user-9',
+        email: 'volunteer@example.com',
+        name: 'Volunteer',
+        firstname: 'Volun',
+        lastname: 'Teer',
+        emailVerified: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      null,
+    );
+
+    expect(termsService.recordSignupAcceptance).toHaveBeenCalledWith('user-9');
   });
 
   it('delegates Better Auth password reset emails to the configured sender', async () => {
@@ -266,6 +405,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword,
+      termsService: createFakeTermsService(),
     });
 
     const emailAndPassword = config.emailAndPassword as unknown as {
@@ -315,6 +455,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
       onSessionCreated,
       onUserCreated,
     });
@@ -346,6 +487,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
       onUserCreated,
       onSessionCreated,
     });
@@ -371,6 +513,44 @@ describe('createAuthConfig', () => {
     expect(onSessionCreated).not.toHaveBeenCalled();
   });
 
+  it('still runs onUserCreated when recording terms acceptance fails', async () => {
+    const termsService = createFakeTermsService();
+    termsService.recordSignupAcceptance.mockRejectedValueOnce(
+      new Error('ledger unavailable'),
+    );
+    const onUserCreated = jest.fn();
+    const config = createAuthConfig({
+      database: {},
+      trustedOrigins: [],
+      sendVerificationOTP: jest.fn(),
+      sendResetPassword: jest.fn(),
+      termsService,
+      onUserCreated,
+    });
+
+    const afterCreate = config.databaseHooks?.user?.create?.after;
+    expect(afterCreate).toBeDefined();
+
+    await expect(
+      afterCreate?.(
+        {
+          id: 'user-11',
+          email: 'volunteer@example.com',
+          name: 'Volunteer',
+          firstname: 'Volun',
+          lastname: 'Teer',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        null,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(termsService.recordSignupAcceptance).toHaveBeenCalledWith('user-11');
+    expect(onUserCreated).toHaveBeenCalledWith('user-11');
+  });
+
   it('calls onSessionDeleted with the session user id after session delete', async () => {
     const onSessionDeleted = jest.fn();
     const config = createAuthConfig({
@@ -378,6 +558,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
       onSessionDeleted,
     });
 
@@ -406,6 +587,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
       onEmailVerified,
     });
 
@@ -440,6 +622,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
       onEmailVerified,
     });
 
@@ -472,6 +655,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
       onPasswordResetCompleted,
     });
 
@@ -495,6 +679,7 @@ describe('createAuthConfig', () => {
       trustedOrigins: [],
       sendVerificationOTP: jest.fn(),
       sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
     });
 
     const afterCreate = config.databaseHooks?.user?.create?.after;

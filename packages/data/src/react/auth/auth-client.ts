@@ -39,6 +39,20 @@ const additionalFieldsClient = inferAdditionalFields({
       required: false,
       input: false,
     },
+    termsAccepted: {
+      type: 'boolean',
+      required: false,
+      returned: false,
+    },
+    termsVersion: {
+      type: 'string',
+      required: false,
+    },
+    termsAcceptedAt: {
+      type: 'date',
+      required: false,
+      input: false,
+    },
   },
 });
 

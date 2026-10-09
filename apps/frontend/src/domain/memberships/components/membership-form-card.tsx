@@ -3,7 +3,6 @@ import {
   Badge,
   Button,
   Card,
-  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -52,18 +51,21 @@ export const MembershipFormCard = async ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <div className="bg-muted p-2 border rounded-lg">
-            <FileText className="text-muted-foreground size-4" />
-          </div>
-          <span className="truncate">{submission.form.name}</span>
-        </CardTitle>
-        <CardAction>
-          <Badge variant={submission.completed ? 'success' : 'alert'}>
+      <CardHeader className="flex items-start gap-2">
+        <div className="bg-muted p-2 border rounded-lg shrink-0">
+          <FileText className="text-muted-foreground size-4" />
+        </div>
+        <div className="flex min-w-0 grow flex-wrap items-start justify-between gap-2">
+          <CardTitle className="min-w-0 grow basis-3/5 leading-snug hyphens-auto break-words">
+            {submission.form.name}
+          </CardTitle>
+          <Badge
+            variant={submission.completed ? 'success' : 'alert'}
+            className="shrink-0"
+          >
             {statusLabel}
           </Badge>
-        </CardAction>
+        </div>
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground text-sm mb-2">{description}</p>

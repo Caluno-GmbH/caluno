@@ -179,6 +179,12 @@ package "Operations" {
     class EventInvite {
         status {INVITED, ACCEPTED, REJECTED, CANCELLED, SELF_JOINED}
     }
+
+    class Task {
+        type
+        link
+        data
+    }
 }
 
 ' --- Identity & Organization ---
@@ -239,4 +245,6 @@ ShiftInstance "0..1" -- "*" TimeEntry : "logged against >"
 OrgUnit "1" -- "*" TimeEntry : "belongs to <"
 User "1" -- "*" TimeEntry : "clocked by >"
 
+OrgUnit "1" -- "*" Task
+Task "*" -- "0..1" Permission : "needed >"
 @enduml
