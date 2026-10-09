@@ -2,7 +2,7 @@
 
 import { EventRepository } from '@repo/data';
 import { type UseQueryOptions, useQuery } from '@tanstack/react-query';
-import type { EventInviteStatus, SortOrder } from '../../generated/graphql';
+import type { EventInviteStatus, SortOrder } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 export function useMyEvents(

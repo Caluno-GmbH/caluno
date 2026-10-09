@@ -1,10 +1,7 @@
 'use client';
 
-import {
-  type OrganizationUnitAutomationKind,
-  useUpdateOrganizationUnitAutomation,
-  Weekday,
-} from '@repo/data/react';
+import { type OrganizationUnitAutomationKind, Weekday } from '@repo/data';
+import { useUpdateOrganizationUnitAutomation } from '@repo/data/react';
 import {
   Card,
   CardContent,

@@ -1,11 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  MembershipRequestStatus,
-  useApproveMembershipRequest,
-  useQueryClient,
-} from '@repo/data/react';
+import { MembershipRequestStatus } from '@repo/data';
+import { useApproveMembershipRequest, useQueryClient } from '@repo/data/react';
 import {
   Button,
   Dialog,

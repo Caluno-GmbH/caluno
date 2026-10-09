@@ -7,7 +7,7 @@ import type {
   UpdateFormBlockFieldInput,
   UpdateFormBlockInput,
   UpdateRequirementFormInput,
-} from '../../generated/graphql';
+} from '../../generated/base-types';
 import {
   BaseRepository,
   type PaginationOptions,

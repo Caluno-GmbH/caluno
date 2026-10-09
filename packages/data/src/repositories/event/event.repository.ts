@@ -1,15 +1,17 @@
 import {
   type CreateEventInput,
   type EventInviteStatus,
-  type GetAvailableEventsQuery,
-  type GetEventInvitesQuery,
-  type GetEventQuery,
-  type GetEventsQuery,
-  type GetMyEventsQuery,
-  type SetEventRequiredFormsMutation,
   SortOrder,
   type UpdateEventInput,
-  type UpdateEventInviteStatusMutation,
+} from '../../generated/base-types';
+import type {
+  GetAvailableEventsQuery,
+  GetEventInvitesQuery,
+  GetEventQuery,
+  GetEventsQuery,
+  GetMyEventsQuery,
+  SetEventRequiredFormsMutation,
+  UpdateEventInviteStatusMutation,
 } from '../../generated/graphql';
 import {
   BaseRepository,

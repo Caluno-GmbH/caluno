@@ -1,7 +1,5 @@
-import type {
-  JoinOrganizationMutation,
-  MembershipRequestStatus,
-} from '../../generated/graphql';
+import type { MembershipRequestStatus } from '../../generated/base-types';
+import type { JoinOrganizationMutation } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 
 export interface FindMembershipRequestsOptions {

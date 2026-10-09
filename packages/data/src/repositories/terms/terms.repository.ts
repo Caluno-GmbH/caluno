@@ -1,5 +1,5 @@
+import type { AcceptTermsInput } from '../../generated/base-types';
 import type {
-  AcceptTermsInput,
   AcceptTermsMutation,
   TermsStatusQuery,
 } from '../../generated/graphql';

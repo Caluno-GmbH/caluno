@@ -1,10 +1,9 @@
-import type { User } from '@repo/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import { getInitials } from '@/lib/get-initials';
 
 type UserCardProps = {
-  user: Pick<User, 'name' | 'image'> & { email?: string | null };
+  user: { name: string; image?: string | null; email?: string | null };
   size?: 'sm' | 'lg' | 'default';
   hideEmail?: boolean;
 };

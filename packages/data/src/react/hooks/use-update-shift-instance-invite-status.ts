@@ -2,7 +2,7 @@
 
 import { ShiftRepository } from '@repo/data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ShiftInviteStatus } from '../../generated/graphql';
+import type { ShiftInviteStatus } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 export function useUpdateShiftInstanceInviteStatus() {

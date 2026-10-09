@@ -63,6 +63,7 @@ function makeEntry(
     shiftInstance: {
       id: 'si-1',
       master: { title: 'Sonntagsdienst' },
+      overrideTitle: null,
     },
     ...overrides,
   };
