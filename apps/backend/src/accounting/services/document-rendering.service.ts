@@ -21,6 +21,16 @@ import { resolveFirstColumn } from '../utils/invoice-table';
 import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
 import {
+  PAGE_FOOTER_FONT_SIZE,
+  PAGE_FOOTER_LINE_GAP,
+  PAGE_FOOTER_LINE_HEIGHT,
+  type PageFooter,
+  pageFooterHeight,
+  pageFooterLines,
+  pageNumberLabel,
+  resolvePageFooter,
+} from '../utils/page-footer';
+import {
   findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
@@ -150,7 +160,20 @@ export class DocumentRenderingService {
       'totalAmountCents' in document ? document.totalAmountCents : undefined;
 
     return new Promise<Buffer>((resolve, reject) => {
-      const pdf = new PDFDocument({ size: 'A4', margin: 48 });
+      const pageFooter = resolvePageFooter(body);
+      const pdf = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: 48,
+          left: 48,
+          right: 48,
+          // The page number and footer lines are stamped after the content is
+          // laid out, so the bottom margin has to hold them or body text runs
+          // underneath.
+          bottom: 48 + pageFooterHeight(pageFooter),
+        },
+        bufferPages: true,
+      });
       const chunks: Buffer[] = [];
       pdf.on('data', (chunk: Buffer) => chunks.push(chunk));
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
@@ -160,6 +183,7 @@ export class DocumentRenderingService {
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
       this.renderSignatures(pdf, document, resolvedValues);
+      this.renderPageFooters(pdf, pageFooter);
       pdf.end();
     });
   }
@@ -348,6 +372,50 @@ export class DocumentRenderingService {
       pdf.moveDown(1.5);
     } else {
       pdf.moveDown(0.5);
+    }
+  }
+
+  private renderPageFooters(pdf: PDFKit.PDFDocument, footer: PageFooter): void {
+    if (!footer.enabled) return;
+
+    const lines = pageFooterLines(footer);
+    const { start, count } = pdf.bufferedPageRange();
+    const left = pdf.page.margins.left;
+    const width = pdf.page.width - left - pdf.page.margins.right;
+
+    for (let i = 0; i < count; i++) {
+      pdf.switchToPage(start + i);
+      // Writing into the reserved strip would otherwise push PDFKit onto a new
+      // page, which would in turn need a footer of its own.
+      const reserved = pdf.page.margins.bottom;
+      pdf.page.margins.bottom = 0;
+
+      const blockHeight = (1 + lines.length) * PAGE_FOOTER_LINE_HEIGHT;
+      // Sit on the true page margin, not the enlarged one — the enlargement is
+      // the strip this block occupies, so measuring from it would place the
+      // footer a strip too high, over the last lines of body text.
+      const pageMargin = reserved - pageFooterHeight(footer);
+      const top = pdf.page.height - pageMargin - blockHeight;
+
+      pdf
+        .fontSize(PAGE_FOOTER_FONT_SIZE)
+        .font('Helvetica')
+        .fillColor('black')
+        .text(pageNumberLabel(i + 1, count), left, top, {
+          width,
+          align: 'right',
+          lineBreak: false,
+        });
+
+      if (lines.length > 0) {
+        pdf.text(lines.join('\n'), left, top + PAGE_FOOTER_LINE_HEIGHT, {
+          width,
+          align: 'left',
+          lineGap: PAGE_FOOTER_LINE_GAP,
+        });
+      }
+
+      pdf.page.margins.bottom = reserved;
     }
   }
 

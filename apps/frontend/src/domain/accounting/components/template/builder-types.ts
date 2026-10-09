@@ -26,6 +26,7 @@ export type {
   TemplateHeader,
   TemplateLine,
   TemplateNoteBlock,
+  TemplatePageFooter,
   TemplateTableBlock,
   TemplateTextBlock,
 } from '@repo/data';

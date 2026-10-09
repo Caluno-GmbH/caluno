@@ -2611,6 +2611,11 @@
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
           "yearly_limit_amount": "Jahresfreibetrag"
+        },
+        "pageFooter": {
+          "title": "Fußzeile",
+          "description": "Erscheint unten auf jeder Seite. Zeilenumbrüche werden übernommen. Die Seitenzahl steht rechts darüber.",
+          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB"
         }
       },
       "card": {

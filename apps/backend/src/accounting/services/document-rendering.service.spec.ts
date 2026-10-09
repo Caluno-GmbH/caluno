@@ -378,6 +378,76 @@ describe('DocumentRenderingService', () => {
       expect(text).not.toContain('02.02.2025');
     });
 
+    it('repeats the page footer and numbers every page when enabled', async () => {
+      const service = createService({ rateCents: 1500 });
+      const base = contract();
+      const template = base.documentTemplate as NonNullable<
+        ContractWithRelations['documentTemplate']
+      >;
+      const body = template.body as Record<string, unknown>;
+      const text = extractPdfText(
+        await service.generatePdf({
+          ...base,
+          documentTemplate: {
+            ...template,
+            body: {
+              ...body,
+              // Long enough to run past one page.
+              blocks: Array.from({ length: 40 }, (_, i) => ({
+                id: `filler-${i}`,
+                title: `Abschnitt ${i}`,
+                lines: [
+                  {
+                    id: `filler-line-${i}`,
+                    text: 'Vorlesestunde.',
+                    fields: [],
+                  },
+                ],
+              })),
+              pageFooter: {
+                enabled: true,
+                text: 'BSM gGmbH\nAmtsgericht HH, HRB 12345',
+              },
+            },
+          },
+        } as unknown as ContractWithRelations),
+      );
+
+      expect(text).toContain('BSM gGmbH');
+      expect(text).toContain('Amtsgericht HH, HRB 12345');
+      expect(text).toContain('Seite 1 von');
+      expect(text).toContain('Seite 2 von');
+      const total = text.match(/Seite 1 von (\d+)/)?.[1];
+      expect(Number(total)).toBeGreaterThan(1);
+      // Every page carries the footer text, so it appears once per page.
+      const footerHits = [...text.matchAll(/BSM gGmbH/g)].length;
+      expect(footerHits).toBe(Number(total));
+    });
+
+    it('renders no page footer or page numbers when disabled', async () => {
+      const service = createService({ rateCents: 1500 });
+      const base = contract();
+      const template = base.documentTemplate as NonNullable<
+        ContractWithRelations['documentTemplate']
+      >;
+      const body = template.body as Record<string, unknown>;
+      const text = extractPdfText(
+        await service.generatePdf({
+          ...base,
+          documentTemplate: {
+            ...template,
+            body: {
+              ...body,
+              pageFooter: { enabled: false, text: 'BSM gGmbH' },
+            },
+          },
+        } as unknown as ContractWithRelations),
+      );
+
+      expect(text).not.toContain('BSM gGmbH');
+      expect(text).not.toContain('Seite 1 von');
+    });
+
     it('leaves signature seats blank while nobody has signed', async () => {
       const service = createService({ rateCents: 1500 });
       const text = extractPdfText(

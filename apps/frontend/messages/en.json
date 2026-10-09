@@ -2611,6 +2611,11 @@
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Annual allowance"
+        },
+        "pageFooter": {
+          "title": "Page footer",
+          "description": "Appears at the bottom of every page. Line breaks are kept. The page number sits above it on the right.",
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
         }
       },
       "card": {

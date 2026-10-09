@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  FieldDescription,
   Input,
   Label,
   RadioGroup,
@@ -43,6 +44,7 @@ import {
   type TemplateDocument,
   type TemplateField,
   type TemplateLine,
+  type TemplatePageFooter,
   type TemplateTableBlock,
   type TemplateTextBlock,
   updateManualFieldValue,
@@ -722,6 +724,52 @@ function ExtraClausesCard({
   );
 }
 
+/** Repeats at the bottom of every page, with "Seite x von y" above it. */
+function PageFooterCard({
+  pageFooter,
+  onPageFooterChange,
+}: {
+  pageFooter: TemplatePageFooter | undefined;
+  onPageFooterChange: (next: Partial<TemplatePageFooter>) => void;
+}) {
+  const t = useTranslations('Accounting.templates.builder');
+  const enabled = pageFooter?.enabled ?? false;
+  const title = t('pageFooter.title');
+
+  return (
+    <div className="flex flex-col gap-3">
+      <span className={SECTION_TITLE_CLASSNAME}>{title}</span>
+      <InfoPanel
+        variant="outline"
+        title={title}
+        inactive={!enabled}
+        headerRight={
+          <Switch
+            checked={enabled}
+            onCheckedChange={(checked) =>
+              onPageFooterChange({ enabled: checked })
+            }
+            aria-label={title}
+          />
+        }
+      >
+        {enabled && (
+          <div className="flex flex-col gap-2">
+            <FieldDescription>{t('pageFooter.description')}</FieldDescription>
+            <Textarea
+              value={pageFooter?.text ?? ''}
+              onChange={(e) => onPageFooterChange({ text: e.target.value })}
+              placeholder={t('pageFooter.placeholder')}
+              aria-label={title}
+              rows={4}
+            />
+          </div>
+        )}
+      </InfoPanel>
+    </div>
+  );
+}
+
 /**
  * The contract's hours-per-{unit} line has two manual fields (unit, amount) that belong in
  * one card, not two — the unit is a Tabs choice above the number input, never a separate
@@ -950,6 +998,17 @@ export function TemplateBuilderBlockEditor({
     onChange(updateManualFieldValue(templateDoc, fieldId, value));
   }
 
+  function handlePageFooterChange(next: Partial<TemplatePageFooter>) {
+    onChange({
+      ...templateDoc,
+      pageFooter: {
+        enabled: templateDoc.pageFooter?.enabled ?? false,
+        text: templateDoc.pageFooter?.text ?? '',
+        ...next,
+      },
+    });
+  }
+
   function handleTableFirstColumnSourceChange(
     blockId: string,
     source: TableFirstColumnSource,
@@ -1052,6 +1111,10 @@ export function TemplateBuilderBlockEditor({
             onFieldChange={handleFieldChange}
           />
         )}
+        <PageFooterCard
+          pageFooter={templateDoc.pageFooter}
+          onPageFooterChange={handlePageFooterChange}
+        />
       </div>
     );
   }
@@ -1162,6 +1225,10 @@ export function TemplateBuilderBlockEditor({
           onFieldChange={handleFieldChange}
         />
       )}
+      <PageFooterCard
+        pageFooter={templateDoc.pageFooter}
+        onPageFooterChange={handlePageFooterChange}
+      />
     </div>
   );
 }

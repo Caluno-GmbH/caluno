@@ -166,10 +166,22 @@ export const ORG_OVERRIDE_SOURCES: readonly OrgOverrideSource[] = [
 
 export type OrgOverrides = Partial<Record<OrgOverrideSource, string>>;
 
+/**
+ * Repeated at the bottom of every page, unlike `TemplateFooter`, which is the
+ * document's closing section and appears once. Plain text: newlines become
+ * line breaks, nothing else is interpreted.
+ */
+export type TemplatePageFooter = {
+  enabled: boolean;
+  text: string;
+};
+
 export type TemplateDocument = {
   header: TemplateHeader;
   blocks: TemplateBlock[];
   footer: TemplateFooter;
+  /** Absent on templates saved before this existed — treat as disabled. */
+  pageFooter?: TemplatePageFooter;
   /** Invoice-only: how the generated document number is formatted. Undefined for contracts. */
   invoiceNumberFormat?: InvoiceNumberFormat;
   /** Coordinator-stated organisation details; absent entries fall back to the org unit. */
@@ -209,11 +221,23 @@ export function parseTemplateBody(
     Array.isArray(raw.blocks) ? raw.blocks : []
   ) as TemplateBlock[];
   const footer = (raw.footer ?? {}) as TemplateFooter;
+  const rawPageFooter = raw.pageFooter as TemplatePageFooter | undefined;
+  const pageFooter: TemplatePageFooter = {
+    enabled: rawPageFooter?.enabled === true,
+    text: rawPageFooter?.text ?? '',
+  };
   const invoiceNumberFormat = raw.invoiceNumberFormat as
     | InvoiceNumberFormat
     | undefined;
   const orgOverrides = (raw.orgOverrides ?? undefined) as
     | OrgOverrides
     | undefined;
-  return { header, blocks, footer, invoiceNumberFormat, orgOverrides };
+  return {
+    header,
+    blocks,
+    footer,
+    pageFooter,
+    invoiceNumberFormat,
+    orgOverrides,
+  };
 }
