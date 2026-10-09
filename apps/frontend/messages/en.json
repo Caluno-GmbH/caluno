@@ -2614,7 +2614,7 @@
         },
         "pageFooter": {
           "title": "Page footer",
-          "description": "Appears at the bottom of every page. Line breaks are kept. The page number sits above it on the right.",
+          "description": "Appears at the bottom of every page.",
           "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
         }
       },

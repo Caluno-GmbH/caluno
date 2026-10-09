@@ -675,6 +675,7 @@ function ExtraClausesCard({
   typeLabel,
   onBlockToggle,
   onFieldChange,
+  extraPanel,
 }: {
   block: TemplateTextBlock;
   /** Section heading — "Extra clauses" on a contract, "Other information" on a timesheet. */
@@ -685,6 +686,8 @@ function ExtraClausesCard({
   typeLabel: string;
   onBlockToggle: (blockId: string, enabled: boolean) => void;
   onFieldChange: (fieldId: string, value: string) => void;
+  /** Rendered under the same heading — today, the page footer. */
+  extraPanel?: ReactNode;
 }) {
   const t = useTranslations('Accounting.templates.builder');
   const [line] = block.lines;
@@ -720,11 +723,12 @@ function ExtraClausesCard({
           />
         )}
       </InfoPanel>
+      {extraPanel}
     </div>
   );
 }
 
-/** Repeats at the bottom of every page, with "Seite x von y" above it. */
+/** Sits beside the freeform text under the same heading, not in a section of its own. */
 function PageFooterCard({
   pageFooter,
   onPageFooterChange,
@@ -737,36 +741,33 @@ function PageFooterCard({
   const title = t('pageFooter.title');
 
   return (
-    <div className="flex flex-col gap-3">
-      <span className={SECTION_TITLE_CLASSNAME}>{title}</span>
-      <InfoPanel
-        variant="outline"
-        title={title}
-        inactive={!enabled}
-        headerRight={
-          <Switch
-            checked={enabled}
-            onCheckedChange={(checked) =>
-              onPageFooterChange({ enabled: checked })
-            }
+    <InfoPanel
+      variant="outline"
+      title={title}
+      inactive={!enabled}
+      headerRight={
+        <Switch
+          checked={enabled}
+          onCheckedChange={(checked) =>
+            onPageFooterChange({ enabled: checked })
+          }
+          aria-label={title}
+        />
+      }
+    >
+      {enabled && (
+        <div className="flex flex-col gap-2">
+          <FieldDescription>{t('pageFooter.description')}</FieldDescription>
+          <Textarea
+            value={pageFooter?.text ?? ''}
+            onChange={(e) => onPageFooterChange({ text: e.target.value })}
+            placeholder={t('pageFooter.placeholder')}
             aria-label={title}
+            rows={4}
           />
-        }
-      >
-        {enabled && (
-          <div className="flex flex-col gap-2">
-            <FieldDescription>{t('pageFooter.description')}</FieldDescription>
-            <Textarea
-              value={pageFooter?.text ?? ''}
-              onChange={(e) => onPageFooterChange({ text: e.target.value })}
-              placeholder={t('pageFooter.placeholder')}
-              aria-label={title}
-              rows={4}
-            />
-          </div>
-        )}
-      </InfoPanel>
-    </div>
+        </div>
+      )}
+    </InfoPanel>
   );
 }
 
@@ -1109,12 +1110,14 @@ export function TemplateBuilderBlockEditor({
             typeLabel={typeLabel}
             onBlockToggle={handleBlockToggle}
             onFieldChange={handleFieldChange}
+            extraPanel={
+              <PageFooterCard
+                pageFooter={templateDoc.pageFooter}
+                onPageFooterChange={handlePageFooterChange}
+              />
+            }
           />
         )}
-        <PageFooterCard
-          pageFooter={templateDoc.pageFooter}
-          onPageFooterChange={handlePageFooterChange}
-        />
       </div>
     );
   }
@@ -1223,12 +1226,14 @@ export function TemplateBuilderBlockEditor({
           typeLabel={typeLabel}
           onBlockToggle={handleBlockToggle}
           onFieldChange={handleFieldChange}
+          extraPanel={
+            <PageFooterCard
+              pageFooter={templateDoc.pageFooter}
+              onPageFooterChange={handlePageFooterChange}
+            />
+          }
         />
       )}
-      <PageFooterCard
-        pageFooter={templateDoc.pageFooter}
-        onPageFooterChange={handlePageFooterChange}
-      />
     </div>
   );
 }

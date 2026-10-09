@@ -2614,7 +2614,7 @@
         },
         "pageFooter": {
           "title": "Fußzeile",
-          "description": "Erscheint unten auf jeder Seite. Zeilenumbrüche werden übernommen. Die Seitenzahl steht rechts darüber.",
+          "description": "Erscheint unten auf jeder Seite.",
           "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB"
         }
       },
