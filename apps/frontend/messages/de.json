@@ -497,14 +497,25 @@
     },
     "card": {
       "label": "Ausweisprüfung aktivieren",
-      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht.",
-      "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
+      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht."
     }
   },
   "ShiftSettings": {
     "page": {
       "title": "Einsätze und Check-in",
       "subtitle": "Einstellungen für Einsätze in {orgName}."
+    },
+    "actions": {
+      "saved": "Einstellungen gespeichert",
+      "saveError": "Die Einstellungen ließen sich nicht speichern. Versuch es bitte erneut.",
+      "savePartialError": "Ein Teil wurde gespeichert. Der Rest wartet noch. Speichere erneut, oder brich ab, um ihn zu verwerfen.",
+      "unsavedChangesTitle": "Ungespeicherte Änderungen",
+      "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
+      "unsavedChangesLeave": "Ohne Speichern verlassen",
+      "unsavedChangesStay": "Weiter bearbeiten",
+      "confirmEnableTitle": "Wirklich einschalten?",
+      "confirmEnableDescription": "Beim Speichern startet {names}. Das kann ändern, wer in einen Einsatz kommt.",
+      "confirmEnableAction": "Speichern und einschalten"
     },
     "sections": {
       "staffing": {
@@ -555,24 +566,21 @@
       "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Einsätze ohne Mindestbesetzung sind nie betroffen.",
       "daysDescription": "Einsätze an diesen Tagen können einen dringenden Aufruf auslösen.",
       "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung einen dringenden Aufruf erhält.",
-      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht.",
-      "updateError": "Diese Automatisierung ließ sich nicht speichern. Versuch es bitte erneut."
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht."
     },
     "discovery": {
       "title": "Übersichts-E-Mail",
       "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Einsätze in dieser Einheit und der Einsätze, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
       "daysDescription": "Tage, an denen die E-Mail verschickt wird.",
       "sendAtDescription": "Uhrzeit, zu der die E-Mail verschickt wird (Ortszeit).",
-      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
-      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht."
     },
     "approval": {
       "title": "Freigabe pausieren",
       "description": "Bestätigt Anmeldungen sofort, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Sobald der Einsatz seine Mindestbesetzung erreicht, gilt die Freigabe wieder. Einsätze ohne Mindestbesetzung sind nie betroffen.",
       "daysDescription": "Bei Einsätzen an diesen Tagen kann die Freigabe pausiert werden.",
       "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung keine Freigabe mehr braucht.",
-      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht.",
-      "updateError": "Diese Automatisierung ließ sich nicht speichern. Versuch es bitte erneut."
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht."
     }
   },
   "MembershipRequest": {

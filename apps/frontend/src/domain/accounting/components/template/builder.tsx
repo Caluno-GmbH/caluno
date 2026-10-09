@@ -25,6 +25,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usePageBreadcrumb } from '@/components/navigation/page-header-context';
+import { PageActions, type PageActionsCancel } from '@/components/page-actions';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
   apiDocumentKindFor,
@@ -370,12 +371,60 @@ export function TemplateBuilder({
     permissionsQuery.data?.some((p) => p.key === PermissionKey.OrgEdit) ??
     false;
   const saving = createTemplate.isPending || updateTemplate.isPending;
+  const cancel: PageActionsCancel | undefined = backHref
+    ? { label: tCommon('cancel'), href: backHref }
+    : undefined;
 
   return (
-    <div className="flex h-[calc(100svh-6rem-1px)] flex-col gap-6">
-      <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-6">
+    <div className="flex h-[calc(100svh-6rem-1px)] flex-col">
+      <PageActions
+        cancel={cancel}
+        contentClassName="grid grid-cols-[3fr_2fr] gap-6"
+        saveLabel={t('saveButton')}
+        onSave={handleSave}
+        saveDisabled={
+          incompleteCount > 0 ||
+          missingOrgSources.length > 0 ||
+          orgProfileBlocked ||
+          saving
+        }
+        {...(backHref
+          ? { cancelLabel: tCommon('cancel'), cancelHref: backHref }
+          : {})}
+        notice={
+          <>
+            {incompleteCount > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {t('blockEditor.incompleteCount', {
+                  count: incompleteCount,
+                } as Parameters<typeof t>[1])}
+              </span>
+            )}
+            {(missingOrgSources.length > 0 || orgProfileBlocked) && (
+              <div className="flex w-full items-center justify-between gap-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
+                <p className="text-sm text-foreground">
+                  {t('orgProfile.blockedMessage')}
+                </p>
+                {canEditOrg ? (
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <Link
+                      href={`/admin/${orgUId}/settings/org-units?sheet=${ORG_UNIT_EDIT_SHEET_ID}&id=${orgUId}`}
+                    >
+                      {t('orgProfile.blockedCta')}
+                    </Link>
+                  </Button>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    {t('orgProfile.blockedAskSomeone')}
+                  </span>
+                )}
+              </div>
+            )}
+          </>
+        }
+      >
         <section
-          className="min-h-0 overflow-y-auto pb-12 [mask-image:linear-gradient(to_bottom,black_0,black_calc(100%-2rem),transparent_100%)]"
+          className="min-h-0 overflow-y-auto pb-12"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1 requires this independently-scrollable region to be keyboard-reachable (axe "scrollable-region-focusable").
           tabIndex={0}
           aria-label={t('previewScrollRegionLabel')}
@@ -409,7 +458,7 @@ export function TemplateBuilder({
           />
         </section>
         <section
-          className="min-h-0 overflow-y-auto pb-12 [mask-image:linear-gradient(to_bottom,black_0,black_calc(100%-2rem),transparent_100%)]"
+          className="min-h-0 overflow-y-auto pb-12"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1 requires this independently-scrollable region to be keyboard-reachable (axe "scrollable-region-focusable").
           tabIndex={0}
           aria-label={t('blockEditor.scrollRegionLabel')}
@@ -423,56 +472,7 @@ export function TemplateBuilder({
             onChange={setTemplateDoc}
           />
         </section>
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-3">
-        {incompleteCount > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {t('blockEditor.incompleteCount', {
-              count: incompleteCount,
-            } as Parameters<typeof t>[1])}
-          </span>
-        )}
-        {(missingOrgSources.length > 0 || orgProfileBlocked) && (
-          <div className="flex w-full items-center justify-between gap-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
-            <p className="text-sm text-foreground">
-              {t('orgProfile.blockedMessage')}
-            </p>
-            {canEditOrg ? (
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link
-                  href={`/admin/${orgUId}/settings/org-units?sheet=${ORG_UNIT_EDIT_SHEET_ID}&id=${orgUId}`}
-                >
-                  {t('orgProfile.blockedCta')}
-                </Link>
-              </Button>
-            ) : (
-              <span className="text-sm text-muted-foreground">
-                {t('orgProfile.blockedAskSomeone')}
-              </span>
-            )}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {backHref && (
-            <Button type="button" variant="outline" asChild>
-              <Link href={backHref}>{tCommon('cancel')}</Link>
-            </Button>
-          )}
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={
-              incompleteCount > 0 ||
-              missingOrgSources.length > 0 ||
-              orgProfileBlocked ||
-              saving
-            }
-          >
-            {t('saveButton')}
-          </Button>
-        </div>
-      </div>
+      </PageActions>
     </div>
   );
 }
