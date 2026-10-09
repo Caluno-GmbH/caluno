@@ -18,6 +18,7 @@ import { type BetterAuthLogger, createAuthConfig } from './auth/auth';
 import { AuthModule } from './auth/auth.module';
 import { createSessionCachingAuthGuard } from './auth/guards/auth.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
+import { CheckInAgreementModule } from './check-in-agreement/check-in-agreement.module';
 import { type Database, DatabaseModule } from './database/database.module';
 import { DATABASE_CONNECTION } from './database/database-connection';
 import { EventModule } from './event/event.module';
@@ -296,6 +297,7 @@ const autoSchemaFile =
     MembershipLifecycleModule,
     NotificationModule,
     TimeTrackingModule,
+    CheckInAgreementModule,
     GraphqlModule,
     LegalModule,
     ShiftModule,

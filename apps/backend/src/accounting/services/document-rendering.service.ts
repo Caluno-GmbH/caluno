@@ -20,6 +20,7 @@ import {
 import { resolveFirstColumn } from '../utils/invoice-table';
 import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
+import { PAUSCHALE_TYPE_LABELS } from '../utils/reimbursement-type-labels';
 import {
   findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
@@ -35,12 +36,6 @@ type RenderableDocument = ContractWithRelations | InvoiceWithRelations;
 const EUR = '€';
 
 const AMOUNT_COLUMN = 'Betrag';
-
-/** Human label for the reimbursement type key rendered for the `pauschalen_type` source. */
-const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
-  EHRENAMT: 'Ehrenamtspauschale',
-  UEBUNGSLEITER: 'Übungsleiterpauschale',
-};
 
 const nonBlank = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();
@@ -658,7 +653,7 @@ export class DocumentRenderingService {
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
       ),
       pauschalen_type: document.reimbursementType
-        ? (PAUSCHALE_TYPE_LABELS[document.reimbursementType.key] ?? '')
+        ? PAUSCHALE_TYPE_LABELS[document.reimbursementType.key]
         : '',
       hourly_rate: rateCents !== undefined ? this.formatRate(rateCents) : '',
       total_hours: totalHours !== undefined ? `${totalHours}h` : '',
