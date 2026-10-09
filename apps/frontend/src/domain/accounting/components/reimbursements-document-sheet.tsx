@@ -453,7 +453,7 @@ export function DocumentSheet({
   const monthParam = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
   const timesheetsUrl = `/admin/${orgUId}/timesheets?month=${monthParam}&volunteer=${vol.id}`;
 
-  const effectivePauschale = doc.pauschale ?? vol.pauschale;
+  const effectivePauschale = doc.pauschale;
   const docLimit = vol.limits?.[effectivePauschale] ?? {
     used: vol.usedAmount,
     total: vol.totalCap,
@@ -707,7 +707,7 @@ export function DocumentSheet({
                 (d) =>
                   d.status.startsWith('timesheet') &&
                   d.amount !== undefined &&
-                  (d.pauschale ?? vol.pauschale) === effectivePauschale,
+                  d.pauschale === effectivePauschale,
               );
               const paidOut = timesheetDocs.filter(
                 (d) => d.status === 'timesheet-ready',
