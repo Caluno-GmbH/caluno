@@ -17,9 +17,6 @@ interface SignatureLineProps {
 
 const AMOUNT_COLUMN_LABEL = 'Betrag';
 
-/** Matches EXTRA_BLOCK_ID in the builder — its label is not a document heading. */
-const FREE_TEXT_BLOCK_ID = 'sonstiges';
-
 function SignatureLine({ label, unsignedLabel }: SignatureLineProps) {
   return (
     <div>
@@ -406,7 +403,7 @@ export function GeneratedDocumentPreview({
 
             return (
               <div key={block.id}>
-                {kind !== 'contract' && block.id !== FREE_TEXT_BLOCK_ID && (
+                {kind !== 'contract' && (
                   <p className="mb-1 text-sm font-semibold italic text-muted-foreground">
                     {block.title}
                   </p>
@@ -471,13 +468,7 @@ export function GeneratedDocumentPreview({
           </div>
         )}
 
-        {/*
-          Sized off the page box, not the type scale: the PDF prints 8pt across
-          a 499pt text column, so 8/499 = 1.602cqw reproduces its wrapping at any
-          preview width. Container units resolve against the content box, so this
-          is a fraction of the text column, not of the page. The preview is one
-          continuous page, so it shows placeholders where the document numbers.
-        */}
+        {/* 1.602cqw = the PDF's 8pt across its 499pt column, so it wraps alike. */}
         <div className="mt-10 border-t pt-2 text-[1.602cqw]/[1.803cqw]">
           <p className="text-right text-muted-foreground">
             {pageNumberLabel('x', 'y')}

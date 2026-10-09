@@ -20,8 +20,7 @@ describe('page footer helpers (preview side)', () => {
     ]);
   });
 
-  // Must match apps/backend/src/accounting/utils/page-footer.spec.ts — the two
-  // live either side of the app boundary and cannot share an implementation.
+  // Pins the wording against the duplicate in apps/backend.
   it('labels pages as the PDF does', () => {
     expect(pageNumberLabel(1, 3)).toBe('Seite 1 von 3');
   });

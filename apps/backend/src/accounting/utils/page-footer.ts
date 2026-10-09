@@ -19,19 +19,14 @@ export function resolvePageFooter(body: {
   };
 }
 
-// Kept in step with `pageFooterTextLines` / `pageNumberLabel` in
-// packages/data, which the builder preview uses. The backend does not depend
-// on @repo/data, so the two are verified against each other by spec instead.
+// Duplicated in packages/data for the preview; the backend cannot import it.
 export function pageFooterLines(footer: PageFooter): string[] {
   if (!footer.enabled) return [];
   const text = footer.text.replace(/\r\n/g, '\n').trimEnd();
   return text.length === 0 ? [] : text.split('\n');
 }
 
-/**
- * Height of the bottom strip. The page number is always there, so this is
- * never zero; footer text adds a blank line plus its own lines beneath it.
- */
+/** Never zero: the page number is always present. */
 export function pageFooterHeight(footer: PageFooter): number {
   const lines = pageFooterLines(footer);
   const textBlock = lines.length > 0 ? 1 + lines.length : 0;

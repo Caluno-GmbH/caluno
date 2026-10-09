@@ -2,9 +2,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
 
-/** Matches EXTRA_BLOCK_ID in the template builder. */
-const FREE_TEXT_BLOCK_ID = 'sonstiges';
-
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -171,9 +168,6 @@ export class DocumentRenderingService {
           top: 48,
           left: 48,
           right: 48,
-          // The page number and footer lines are stamped after the content is
-          // laid out, so the bottom margin has to hold them or body text runs
-          // underneath.
           bottom: 48 + pageFooterHeight(pageFooter),
         },
         bufferPages: true,
@@ -248,9 +242,7 @@ export class DocumentRenderingService {
         this.renderTableBlock(pdf, block, tableRows, totalAmountCents);
         continue;
       }
-      // "Sonstiges" is the editor's label for a free-text block, not a heading
-      // the reader needs; the block contributes only what was typed into it.
-      if (block.title && block.id !== FREE_TEXT_BLOCK_ID) {
+      if (block.title) {
         pdf.fontSize(12).font('Helvetica-Bold').text(block.title);
         pdf.moveDown(0.25);
       }
@@ -389,17 +381,13 @@ export class DocumentRenderingService {
 
     for (let i = 0; i < count; i++) {
       pdf.switchToPage(start + i);
-      // Writing into the reserved strip would otherwise push PDFKit onto a new
-      // page, which would in turn need a footer of its own.
+      // Zeroed so writing into the reserved strip cannot trigger a new page.
       const reserved = pdf.page.margins.bottom;
       pdf.page.margins.bottom = 0;
 
-      // A blank line separates the page number from the footer text below it.
       const textBlock = lines.length > 0 ? 1 + lines.length : 0;
       const blockHeight = (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
-      // Sit on the true page margin, not the enlarged one — the enlargement is
-      // the strip this block occupies, so measuring from it would place the
-      // footer a strip too high, over the last lines of body text.
+      // The true page margin, not the enlarged one: that enlargement is this strip.
       const pageMargin = reserved - pageFooterHeight(footer);
       const top = pdf.page.height - pageMargin - blockHeight;
 

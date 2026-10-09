@@ -392,7 +392,6 @@ describe('DocumentRenderingService', () => {
             ...template,
             body: {
               ...body,
-              // Long enough to run past one page.
               blocks: Array.from({ length: 40 }, (_, i) => ({
                 id: `filler-${i}`,
                 title: `Abschnitt ${i}`,
@@ -419,45 +418,8 @@ describe('DocumentRenderingService', () => {
       expect(text).toContain('Seite 2 von');
       const total = text.match(/Seite 1 von (\d+)/)?.[1];
       expect(Number(total)).toBeGreaterThan(1);
-      // Every page carries the footer text, so it appears once per page.
       const footerHits = [...text.matchAll(/BSM gGmbH/g)].length;
       expect(footerHits).toBe(Number(total));
-    });
-
-    it('prints the free-text block\'s content but not its "Sonstiges" label', async () => {
-      const service = createService({ rateCents: 1500 });
-      const base = contract();
-      const template = base.documentTemplate as NonNullable<
-        ContractWithRelations['documentTemplate']
-      >;
-      const body = template.body as Record<string, unknown>;
-      const text = extractPdfText(
-        await service.generatePdf({
-          ...base,
-          documentTemplate: {
-            ...template,
-            body: {
-              ...body,
-              blocks: [
-                {
-                  id: 'sonstiges',
-                  title: 'Sonstiges',
-                  lines: [
-                    {
-                      id: 'freeform',
-                      text: 'Zusatz: Parkkosten werden erstattet.',
-                      fields: [],
-                    },
-                  ],
-                },
-              ],
-            },
-          },
-        } as unknown as ContractWithRelations),
-      );
-
-      expect(text).toContain('Zusatz: Parkkosten werden erstattet.');
-      expect(text).not.toContain('Sonstiges');
     });
 
     it('still numbers pages when the footer text is switched off', async () => {
@@ -481,7 +443,6 @@ describe('DocumentRenderingService', () => {
       );
 
       expect(text).not.toContain('BSM gGmbH');
-      // The page number is not part of the footer toggle.
       expect(text).toContain('Seite 1 von');
     });
 

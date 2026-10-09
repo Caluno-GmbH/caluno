@@ -166,17 +166,12 @@ export const ORG_OVERRIDE_SOURCES: readonly OrgOverrideSource[] = [
 
 export type OrgOverrides = Partial<Record<OrgOverrideSource, string>>;
 
-/**
- * Repeated at the bottom of every page, unlike `TemplateFooter`, which is the
- * document's closing section and appears once. Plain text: newlines become
- * line breaks, nothing else is interpreted.
- */
+/** Repeated on every page, unlike `TemplateFooter`, which closes the document once. */
 export type TemplatePageFooter = {
   enabled: boolean;
   text: string;
 };
 
-/** Shared by the PDF renderer and the builder preview so the two cannot drift. */
 export function pageFooterTextLines(
   footer: TemplatePageFooter | undefined,
 ): string[] {
@@ -196,7 +191,6 @@ export type TemplateDocument = {
   header: TemplateHeader;
   blocks: TemplateBlock[];
   footer: TemplateFooter;
-  /** Absent on templates saved before this existed — treat as disabled. */
   pageFooter?: TemplatePageFooter;
   /** Invoice-only: how the generated document number is formatted. Undefined for contracts. */
   invoiceNumberFormat?: InvoiceNumberFormat;

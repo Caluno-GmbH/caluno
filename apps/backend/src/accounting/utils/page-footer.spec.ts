@@ -21,7 +21,6 @@ describe('page footer', () => {
   it('adds a blank line between the page number and the footer text', () => {
     const none = resolvePageFooter({});
     const one = resolvePageFooter({ pageFooter: { enabled: true, text: 'A' } });
-    // page number only -> + blank line + one text line
     expect(pageFooterHeight(one) - pageFooterHeight(none)).toBe(
       2 * PAGE_FOOTER_LINE_HEIGHT,
     );
@@ -64,12 +63,9 @@ describe('page footer', () => {
     expect(pageFooterHeight(three)).toBeGreaterThan(pageFooterHeight(one));
   });
 
-  // The builder preview has its own copy in packages/data; the backend does not
-  // depend on @repo/data, so this pins the wording the two must agree on.
+  // Pins the wording against the duplicate in packages/data.
   it('labels pages as the preview does', () => {
     expect(pageNumberLabel(1, 3)).toBe('Seite 1 von 3');
-    // The preview has no pages to count, so it fills the same format with
-    // placeholders — one format string, two callers.
     expect(pageNumberLabel('x', 'y')).toBe('Seite x von y');
   });
 });

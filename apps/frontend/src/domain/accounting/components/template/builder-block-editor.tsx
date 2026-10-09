@@ -678,7 +678,6 @@ function ExtraClausesCard({
   extraPanel,
 }: {
   block: TemplateTextBlock;
-  /** Section heading — the same on both document kinds. */
   heading: string;
   firstOccurrenceByFieldId: Map<string, string>;
   profileGaps: Set<DataSourceKey>;
@@ -686,7 +685,6 @@ function ExtraClausesCard({
   typeLabel: string;
   onBlockToggle: (blockId: string, enabled: boolean) => void;
   onFieldChange: (fieldId: string, value: string) => void;
-  /** Rendered under the same heading — today, the page footer. */
   extraPanel?: ReactNode;
 }) {
   const t = useTranslations('Accounting.templates.builder');
@@ -728,7 +726,6 @@ function ExtraClausesCard({
   );
 }
 
-/** Sits beside the freeform text under the same heading, not in a section of its own. */
 function PageFooterCard({
   pageFooter,
   onPageFooterChange,
