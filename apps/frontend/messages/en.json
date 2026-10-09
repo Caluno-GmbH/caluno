@@ -738,7 +738,7 @@
     "shortcuts": "Shortcuts",
     "timesheets": "Tracked times",
     "volunteeringApp": "Volunteering app",
-    "volunteers": "Volunteers",
+    "volunteers": "Users",
     "accounting": "Accounting",
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
@@ -1397,7 +1397,6 @@
     "card": {
       "inviteAria": "Invite",
       "inviteToShift": "Invite to the assignment",
-      "invited": "Invited",
       "noVolunteers": "No volunteers invited",
       "openInstanceAria": "Open",
       "waitlist": "Waitlist",
@@ -1917,20 +1916,20 @@
       "remove": "Remove",
       "removeAria": "Remove",
       "removeDescription": "Are you sure you want to remove {name} from this organisation? This cannot be undone.",
-      "removeFailedToast": "We couldn't remove this volunteer. Please try again.",
+      "removeFailedToast": "We couldn't remove this person. Please try again.",
       "removeTitle": "Remove from organisation",
       "removedToast": "{name} was removed from this organisation",
       "viewProfileAria": "View"
     },
     "empty": {
-      "description": "Share the invite link to get volunteers to sign up.",
-      "title": "No volunteers yet"
+      "description": "Share the invite link to get people to sign up.",
+      "title": "No users yet"
     },
     "page": {
       "copyInviteLink": "Copy invite link",
       "inviteLinkCopied": "Invite link copied to clipboard",
-      "subtitle": "Manage volunteers in your organisation",
-      "title": "Volunteers"
+      "subtitle": "Manage people and their roles in your organisation",
+      "title": "Users"
     },
     "requests": {
       "pendingEmpty": "No pending requests yet.",
@@ -1959,8 +1958,8 @@
     "search": {
       "clearAria": "Clear search",
       "countFiltered": "{count} of {total}",
-      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
-      "emptyTitle": "No volunteers found",
+      "emptyDescription": "No person matches this search. Try a different name, email or role.",
+      "emptyTitle": "No users found",
       "placeholder": "Search by name, email or role"
     },
     "sheet": {
