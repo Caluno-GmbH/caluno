@@ -16,7 +16,7 @@
     "@repo/data": "*",
     "@repo/observability": "*",
     "@repo/ui": "*",
-    "@sentry/nextjs": "^10.76.0",
+    "@sentry/nextjs": "^11.0.0",
     "@tanstack/react-table": "^8.21.3",
     "@teispace/next-themes": "^3.0.2",
     "@yudiel/react-qr-scanner": "^2.5.1",
