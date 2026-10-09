@@ -1354,7 +1354,7 @@ export type GetCheckInReadinessQueryVariables = Exact<{
 }>;
 
 
-export type GetCheckInReadinessQuery = { checkInReadiness: { isMember: boolean, openMembershipRequestId: string | null, shiftInviteStatus: Types.ShiftInviteStatus | null, isParticipating: boolean, hasOpenTimeEntry: boolean, idVerificationEnabled: boolean, idVerified: boolean, membershipId: string | null } };
+export type GetCheckInReadinessQuery = { checkInReadiness: { isMember: boolean, openMembershipRequestId: string | null, shiftInviteStatus: Types.ShiftInviteStatus | null, isParticipating: boolean, hasOpenTimeEntry: boolean, idVerificationEnabled: boolean, idVerified: boolean, membershipId: string | null, agreement: { status: Types.AgreementStatus, reimbursementTypeName: string | null, contractId: string | null, canManageAgreements: boolean, managerNames: Array<string> } } };
 
 export type GetCheckInVolunteerRequiredFormsQueryVariables = Exact<{
   volunteerId: string;
@@ -4905,6 +4905,13 @@ export const GetCheckInReadinessDocument = gql`
     idVerificationEnabled
     idVerified
     membershipId
+    agreement {
+      status
+      reimbursementTypeName
+      contractId
+      canManageAgreements
+      managerNames
+    }
   }
 }
     `;

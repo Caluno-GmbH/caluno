@@ -17,6 +17,7 @@ import { UserCard } from '@/components/user-card';
 import { checkInVolunteer } from '@/domain/time-entry/actions';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { resolveAgreementTrigger } from '../../check-in-agreement';
 import {
   resolveCheckInReadiness,
   shouldShowIdVerification,
@@ -32,6 +33,7 @@ import {
 } from '../../check-in-selection';
 import { setCheckInSuccessPayload } from '../../check-in-success-dialog';
 import { AcceptMembershipSheet } from './accept-membership-sheet';
+import { CheckInAgreementCard } from './check-in-agreement-card';
 import { CheckInReadinessCard } from './check-in-readiness-card';
 import { CheckInWithoutShiftWarningCard } from './check-in-without-shift-warning-card';
 import { DateSheet } from './date-sheet';
@@ -40,6 +42,7 @@ import { OrgUnitSheet } from './org-unit-sheet';
 import { ShiftInstanceStepper } from './shift-instance-stepper';
 import { ShiftSheet } from './shift-sheet';
 import { shouldShowShiftlessCheckInWarning } from './shiftless-check-in-warning';
+import { UnverifiedCheckInDialog } from './unverified-check-in-dialog';
 
 type ManualCheckInPageProps = {
   volunteer: {
@@ -185,6 +188,16 @@ export function ManualCheckInPage({
     }
   };
 
+  const [showUnverifiedConfirm, setShowUnverifiedConfirm] = useState(false);
+
+  const agreementTrigger =
+    readinessState === 'ready'
+      ? resolveAgreementTrigger(readiness?.agreement)
+      : null;
+
+  // Holds back the green ready banner when a side-check (agreement/ID) is still open.
+  const hasOutstandingReadyCheck = !!agreementTrigger || showIdVerification;
+
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
@@ -276,21 +289,23 @@ export function ManualCheckInPage({
 
         {showShiftlessWarning && <CheckInWithoutShiftWarningCard />}
 
-        {showReadinessCard && readinessState && (
-          <CheckInReadinessCard
-            state={readinessState}
-            checkInId={checkInId}
-            onInviteToOrg={handleInviteToOrg}
-            onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
-            onInviteToShift={handleInviteToShift}
-            isInviteToOrgPending={inviteToOrgMutation.isPending}
-            isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
-            isInviteToShiftPending={inviteToShiftMutation.isPending}
-            isInviteToShiftSent={
-              shiftInviteSentFor === selection.shiftInstanceId
-            }
-          />
-        )}
+        {showReadinessCard &&
+          readinessState &&
+          !(readinessState === 'ready' && hasOutstandingReadyCheck) && (
+            <CheckInReadinessCard
+              state={readinessState}
+              checkInId={checkInId}
+              onInviteToOrg={handleInviteToOrg}
+              onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
+              onInviteToShift={handleInviteToShift}
+              isInviteToOrgPending={inviteToOrgMutation.isPending}
+              isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
+              isInviteToShiftPending={inviteToShiftMutation.isPending}
+              isInviteToShiftSent={
+                shiftInviteSentFor === selection.shiftInstanceId
+              }
+            />
+          )}
 
         {showIdVerification && readiness?.membershipId && (
           <IdVerificationCard
@@ -299,22 +314,53 @@ export function ManualCheckInPage({
           />
         )}
 
-        {readinessState === 'ready' && (
-          <Button
-            type="button"
-            size="lg"
-            variant={
-              showIdVerification && readiness?.membershipId
-                ? 'outline'
-                : 'default'
-            }
-            className="w-full"
-            disabled={isSubmitPending}
-            onClick={handleSubmit}
-          >
-            {t('checkInButton')}
-          </Button>
-        )}
+        {readinessState === 'ready' &&
+          agreementTrigger &&
+          readiness?.agreement && (
+            <CheckInAgreementCard
+              agreement={readiness.agreement}
+              orgUId={selection.orgUnitId}
+            />
+          )}
+
+        {readinessState === 'ready' &&
+          (agreementTrigger ? (
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              className="w-full"
+              disabled={isSubmitPending}
+              onClick={() => setShowUnverifiedConfirm(true)}
+            >
+              {t('unverifiedCheckInButton')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="lg"
+              variant={
+                showIdVerification && readiness?.membershipId
+                  ? 'outline'
+                  : 'default'
+              }
+              className="w-full"
+              disabled={isSubmitPending}
+              onClick={handleSubmit}
+            >
+              {t('checkInButton')}
+            </Button>
+          ))}
+
+        <UnverifiedCheckInDialog
+          open={showUnverifiedConfirm}
+          onOpenChange={setShowUnverifiedConfirm}
+          onConfirm={() => {
+            setShowUnverifiedConfirm(false);
+            handleSubmit();
+          }}
+          isPending={isSubmitPending}
+        />
 
         <OrgUnitSheet
           open={openSheet === 'orgUnit'}

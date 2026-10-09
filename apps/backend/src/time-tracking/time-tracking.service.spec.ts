@@ -306,19 +306,25 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     findMembershipInUnits: jest.fn().mockResolvedValue(null),
   });
   const shiftService = () => ({
-    findInstanceById: jest.fn().mockResolvedValue({ id: 'si-1' }),
+    findInstanceById: jest.fn().mockResolvedValue({
+      id: 'si-1',
+      overrideReimbursementTypeId: null,
+      master: { reimbursementTypeId: null, organizationUnitId: 'ou-1' },
+    }),
     findInviteStatusesForUser: jest.fn(),
     hasOpenTimeEntry: jest.fn(),
   });
   const organizationUnitDataService = () => ({
     listInclusiveAncestorUnitIds: jest.fn().mockResolvedValue(['ou-1']),
     findById: jest.fn().mockResolvedValue({ idVerificationEnabled: false }),
+    findOrganizationByUnitId: jest.fn().mockResolvedValue(null),
   });
 
   it('reports the membership facts and skips the shift lookups', async () => {
     const shift = shiftService();
+    const db = { query: {} };
     const service = new TimeTrackingService(
-      {} as never,
+      db as never,
       membershipService() as never,
       shift as never,
       {} as never,
@@ -335,7 +341,7 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       'ou-1',
     );
 
-    expect(readiness).toEqual({
+    expect(readiness).toMatchObject({
       isMember: true,
       openMembershipRequestId: 'mr-1',
       shiftInviteStatus: null,
@@ -354,8 +360,9 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     const shift = shiftService();
     shift.findInviteStatusesForUser.mockResolvedValue([]);
     shift.hasOpenTimeEntry.mockResolvedValue(true);
+    const db = { query: {} };
     const service = new TimeTrackingService(
-      {} as never,
+      db as never,
       membershipService() as never,
       shift as never,
       {} as never,

@@ -41,11 +41,28 @@ input AddTimeEntryInput {
   volunteerId: String!
 }
 
+enum AgreementStatus {
+  ACTIVE
+  AWAITING_COUNTERSIGNATURE
+  AWAITING_VOLUNTEER_SIGNATURE
+  NOT_APPLICABLE
+  NO_CONTRACT
+  NO_TEMPLATE
+}
+
 type BundleDownloadStatus {
   downloadedAt: DateTime!
   downloadedByUser: User
   reimbursementType: ReimbursementType!
   volunteer: User!
+}
+
+type CheckInAgreement {
+  canManageAgreements: Boolean!
+  contractId: ID
+  managerNames: [String!]!
+  reimbursementTypeName: String
+  status: AgreementStatus!
 }
 
 type CheckInContext {
@@ -55,6 +72,7 @@ type CheckInContext {
 }
 
 type CheckInReadiness {
+  agreement: CheckInAgreement!
   hasOpenTimeEntry: Boolean!
   idVerificationEnabled: Boolean!
   idVerified: Boolean!
