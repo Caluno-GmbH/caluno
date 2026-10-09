@@ -176,6 +176,19 @@ export type TemplatePageFooter = {
   text: string;
 };
 
+/** Shared by the PDF renderer and the builder preview so the two cannot drift. */
+export function pageFooterTextLines(
+  footer: TemplatePageFooter | undefined,
+): string[] {
+  if (footer?.enabled !== true) return [];
+  const text = footer.text.replace(/\r\n/g, '\n').trimEnd();
+  return text.length === 0 ? [] : text.split('\n');
+}
+
+export function pageNumberLabel(page: number, total: number): string {
+  return `Seite ${page} von ${total}`;
+}
+
 export type TemplateDocument = {
   header: TemplateHeader;
   blocks: TemplateBlock[];

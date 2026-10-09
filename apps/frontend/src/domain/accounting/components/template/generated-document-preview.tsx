@@ -8,6 +8,7 @@ import type {
   TemplateDocument,
   TemplateLine,
 } from './builder-types';
+import { pageFooterTextLines, pageNumberLabel } from './builder-types';
 
 interface SignatureLineProps {
   label: string;
@@ -231,6 +232,7 @@ export function GeneratedDocumentPreview({
   className,
 }: GeneratedDocumentPreviewProps) {
   const letterhead = letterheadLines(values);
+  const pageFooterLines = pageFooterTextLines(templateDoc.pageFooter);
   return (
     <div className={className}>
       {/*
@@ -463,6 +465,20 @@ export function GeneratedDocumentPreview({
               label={signerRightLabel}
               unsignedLabel={unsignedLabel}
             />
+          </div>
+        )}
+
+        {pageFooterLines.length > 0 && (
+          // text-xs is the preview's smallest size, as 8pt is the PDF's, so the
+          // footer reads here at the proportion it will print at. The preview is
+          // one continuous page, so the count is 1 rather than the real total.
+          <div className="mt-10 border-t pt-2">
+            <p className="text-right text-xs leading-snug text-muted-foreground">
+              {pageNumberLabel(1, 1)}
+            </p>
+            <p className="whitespace-pre-line text-xs leading-snug">
+              {pageFooterLines.join('\n')}
+            </p>
           </div>
         )}
       </div>
