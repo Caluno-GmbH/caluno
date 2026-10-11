@@ -267,6 +267,7 @@ export function getContractDocument(
       ]),
       showSignatures: true,
     },
+    pageFooter: { enabled: false, text: '' },
   };
 }
 
@@ -404,6 +405,7 @@ export function getInvoiceDocument(
       ]),
       showSignatures: true,
     },
+    pageFooter: { enabled: false, text: '' },
     invoiceNumberFormat: 'date-number',
   };
 }

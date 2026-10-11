@@ -26,4 +26,10 @@ export class CheckInReadiness {
 
   @Field(() => ID, { nullable: true })
   membershipId?: string | null;
+
+  // Not in GraphQL schema — context for the CheckInAgreementModule field resolver
+  // so TimeTrackingModule stays independent of AccountingModule.
+  volunteerId!: string;
+  organizationUnitId!: string;
+  shiftInstanceId!: string | null;
 }

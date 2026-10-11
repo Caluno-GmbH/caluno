@@ -8,6 +8,7 @@ import type {
   TemplateDocument,
   TemplateLine,
 } from './builder-types';
+import { pageFooterTextLines, pageNumberLabel } from './builder-types';
 
 interface SignatureLineProps {
   label: string;
@@ -231,6 +232,7 @@ export function GeneratedDocumentPreview({
   className,
 }: GeneratedDocumentPreviewProps) {
   const letterhead = letterheadLines(values);
+  const pageFooterLines = pageFooterTextLines(templateDoc.pageFooter);
   return (
     <div className={className}>
       {/*
@@ -239,7 +241,7 @@ export function GeneratedDocumentPreview({
         page taller instead of spilling its table past the border. The generated
         PDF paginates properly; the preview is one continuous page.
       */}
-      <div className="mx-auto w-full max-w-[820px] overflow-hidden break-words rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
+      <div className="@container/doc-page mx-auto w-full max-w-[820px] overflow-hidden break-words rounded-sm border bg-card p-[7%] shadow-sm before:float-left before:h-0 before:w-0 before:pb-[148%] before:content-['']">
         <div className="flex items-start justify-between gap-4">
           <DocTypeHeader
             kind={kind}
@@ -465,6 +467,18 @@ export function GeneratedDocumentPreview({
             />
           </div>
         )}
+
+        {/* 1.602cqw = the PDF's 8pt across its 499pt column, so it wraps alike. */}
+        <div className="mt-10 border-t pt-2 text-[1.602cqw]/[1.803cqw]">
+          <p className="text-right text-muted-foreground">
+            {pageNumberLabel('x', 'y')}
+          </p>
+          {pageFooterLines.length > 0 && (
+            <p className="mt-[1.803cqw] whitespace-pre-line">
+              {pageFooterLines.join('\n')}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
