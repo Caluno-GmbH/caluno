@@ -115,7 +115,7 @@ describe('deriveEditableFields', () => {
 
   it('prefills the account holder from the profile like the other payout fields', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'), {
-      'account-holder': 'Erika Musterfrau',
+      accountHolder: 'Erika Musterfrau',
     });
     const holder = fields.find((f) => f.source === 'volunteer_account_holder');
     expect(holder?.kind).toBe('bound');

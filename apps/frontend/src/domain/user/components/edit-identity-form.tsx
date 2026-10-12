@@ -16,11 +16,26 @@ import {
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 
+type ProfileShape = {
+  firstname?: string | null;
+  lastname?: string | null;
+  preferredName?: string | null;
+  gender?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  street?: string | null;
+  zip?: string | null;
+  city?: string | null;
+  birthdate?: string | null;
+  iban?: string | null;
+  accountHolder?: string | null;
+  bic?: string | null;
+};
+
 type EditIdentityFormProps = {
-  profile: Parameters<typeof toProfileDataMap>[0];
+  profile: ProfileShape | null | undefined;
 };
 
 const editableFields = SYSTEM_PROFILE_FIELDS.filter((f) => f.key !== 'email');
@@ -51,15 +66,13 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const router = useRouter();
   const messages = useValidationMessages();
 
-  const data = toProfileDataMap(profile);
-
   const subtitleByKey = useMemo<Record<string, string>>(
     () => ({
-      'preferred-name': tSubtitles('preferredName'),
+      preferredName: tSubtitles('preferredName'),
       firstname: tSubtitles('firstName'),
       lastname: tSubtitles('lastName'),
       iban: tSubtitles('iban'),
-      'account-holder': tSubtitles('accountHolder'),
+      accountHolder: tSubtitles('accountHolder'),
       bic: tSubtitles('bic'),
     }),
     [tSubtitles],
@@ -68,11 +81,11 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const defaultValues = useMemo(() => {
     const vals: Record<string, string> = {};
     for (const f of editableFields) {
-      const v = data[f.key];
+      const v = profile?.[f.key as keyof ProfileShape];
       vals[f.key] = typeof v === 'string' ? v : '';
     }
     return vals;
-  }, [data]);
+  }, [profile]);
 
   const schema = useMemo(
     () =>
@@ -118,6 +131,8 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
     }
   };
 
+  const emailValue = typeof profile?.email === 'string' ? profile.email : '';
+
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="space-y-4 rounded-lg border bg-card p-6">
@@ -131,7 +146,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
                 <div className="flex items-center gap-2">
                   <Input
                     id="email-locked"
-                    value={data.email as string}
+                    value={emailValue}
                     readOnly
                     disabled
                     className="flex-1"

@@ -22,9 +22,9 @@ import { PostHogService } from '../shared/observability/posthog.service';
 import { isBlank, trimmed } from '../utils';
 import {
   type ProfileFields,
-  profileDataToUserColumns,
-  toProfileDataMap,
-  WRITABLE_PROFILE_SYSTEM_KEYS,
+  pickWritableProfileFields,
+  toProfileFields,
+  WRITABLE_PROFILE_FIELD_KEYS,
 } from './profile-fields';
 import { formatUserName, normalizeAccountHolderForStorage } from './user-name';
 
@@ -102,30 +102,28 @@ export class UserService {
     return user;
   }
 
-  async getProfileDataByUserId(
-    userId: string,
-  ): Promise<Record<string, unknown>> {
+  async getProfileDataByUserId(userId: string): Promise<ProfileFields> {
     const user = await this.findById(userId);
     if (!user) {
       return {};
     }
-    return toProfileDataMap(user);
+    return toProfileFields(user);
   }
 
   /**
-   * Merge profile fields from a systemKey → value map onto the user row.
-   * Skips email. Validates writable system keys.
+   * Merge writable profile columns onto the user row. Skips email.
+   * Accepts a column-keyed bag (same keys as form systemKeys).
    */
   async updateProfileFields(
     userId: string,
-    data: Record<string, unknown>,
+    data: Record<string, unknown> | ProfileFields,
     tx?: Database,
   ): Promise<UserEntity> {
-    const columns = profileDataToUserColumns(data);
+    const columns = pickWritableProfileFields(data as Record<string, unknown>);
 
-    for (const key of WRITABLE_PROFILE_SYSTEM_KEYS) {
-      if (!Object.hasOwn(data, key)) continue;
-      const value = data[key];
+    for (const key of WRITABLE_PROFILE_FIELD_KEYS) {
+      if (!Object.hasOwn(columns, key)) continue;
+      const value = columns[key];
       if (typeof value !== 'string') continue;
       validateSystemKeyValue(value, key, formatSystemKeyLabel(key), null);
     }
@@ -137,28 +135,7 @@ export class UserService {
     userId: string,
     input: ProfileFields,
   ): Promise<UserEntity> {
-    const data: Record<string, unknown> = {};
-    const reverse: Record<string, string> = {
-      firstname: 'firstname',
-      lastname: 'lastname',
-      preferredName: 'preferred-name',
-      gender: 'gender',
-      phone: 'phone',
-      street: 'street',
-      zip: 'zip',
-      city: 'city',
-      birthdate: 'birthdate',
-      iban: 'iban',
-      accountHolder: 'account-holder',
-      bic: 'bic',
-    };
-    for (const [column, systemKey] of Object.entries(reverse)) {
-      if (!Object.hasOwn(input, column)) continue;
-      const value = input[column as keyof ProfileFields];
-      if (value === undefined) continue;
-      data[systemKey] = value;
-    }
-    return this.updateProfileFields(userId, data);
+    return this.updateProfileFields(userId, input);
   }
 
   private async applyProfileColumns(

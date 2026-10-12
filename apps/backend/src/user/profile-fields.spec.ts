@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { profileDataToUserColumns, toProfileDataMap } from './profile-fields';
+import { pickWritableProfileFields, toProfileFields } from './profile-fields';
 
-describe('toProfileDataMap', () => {
-  it('maps user columns to systemKeys and skips empty values', () => {
+describe('toProfileFields', () => {
+  it('keeps column keys and skips empty values', () => {
     expect(
-      toProfileDataMap({
+      toProfileFields({
         firstname: 'Ada',
         lastname: 'Lovelace',
         preferredName: '',
@@ -19,13 +19,13 @@ describe('toProfileDataMap', () => {
       email: 'ada@example.com',
       birthdate: '1815-12-10',
       // Equal-to-name stored value still resolves as the effective holder.
-      'account-holder': 'Ada Lovelace',
+      accountHolder: 'Ada Lovelace',
     });
   });
 
-  it('fills account-holder from the derived name when unset', () => {
+  it('fills accountHolder from the derived name when unset', () => {
     expect(
-      toProfileDataMap({
+      toProfileFields({
         firstname: 'Ada',
         lastname: 'Lovelace',
         accountHolder: null,
@@ -33,29 +33,29 @@ describe('toProfileDataMap', () => {
     ).toEqual({
       firstname: 'Ada',
       lastname: 'Lovelace',
-      'account-holder': 'Ada Lovelace',
+      accountHolder: 'Ada Lovelace',
     });
   });
 
   it('prefers an explicit accountHolder over the derived name', () => {
     expect(
-      toProfileDataMap({
+      toProfileFields({
         firstname: 'Ada',
         lastname: 'Lovelace',
         accountHolder: 'A. Lovelace Trust',
-      })['account-holder'],
+      }).accountHolder,
     ).toBe('A. Lovelace Trust');
   });
 });
 
-describe('profileDataToUserColumns', () => {
-  it('maps writable systemKeys to columns and ignores email', () => {
+describe('pickWritableProfileFields', () => {
+  it('keeps writable columns and ignores email', () => {
     expect(
-      profileDataToUserColumns({
+      pickWritableProfileFields({
         firstname: 'Ada',
-        'preferred-name': 'A',
+        preferredName: 'A',
         birthdate: '1815-12-10',
-        'account-holder': 'Ada Lovelace',
+        accountHolder: 'Ada Lovelace',
         email: 'should-not-write@example.com',
         unknown: 'ignored',
       }),
@@ -68,7 +68,7 @@ describe('profileDataToUserColumns', () => {
   });
 
   it('does not invent keys that were absent from the input (merge, not wipe)', () => {
-    expect(profileDataToUserColumns({ phone: '+49 30 123' })).toEqual({
+    expect(pickWritableProfileFields({ phone: '+49 30 123' })).toEqual({
       phone: '+49 30 123',
     });
   });

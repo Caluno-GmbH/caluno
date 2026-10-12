@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { SubmissionView } from '@/domain/requirement-form/components/submission-view';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { getDataClient } from '@/lib/data-client';
 
 interface Props {
@@ -31,7 +31,7 @@ export default async function FormSubmissionPage({ params }: Props) {
     fieldId: string;
     value: string;
   }[];
-  const profileData = toProfileDataMap(userProfile);
+  const profileData = profileFieldValues(userProfile);
 
   const fields =
     submission.form?.blockRefs

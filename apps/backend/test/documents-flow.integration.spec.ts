@@ -27,7 +27,7 @@ import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
 import type { DocumentAwaitingSignaturePayload } from '../src/notification/payloads/document-awaiting-signature.payload';
 import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/document-declined-by-org.payload';
-import { profileDataToUserColumns } from '../src/user/profile-fields';
+import { pickWritableProfileFields } from '../src/user/profile-fields';
 import {
   createDocumentTemplate,
   createReimbursementRate,
@@ -385,7 +385,7 @@ const seedVolunteerProfile = async (
   userId: string,
   data: Record<string, unknown>,
 ) => {
-  const { email: _email, ...columns } = profileDataToUserColumns(data);
+  const { email: _email, ...columns } = pickWritableProfileFields(data);
   const changes: Record<string, string> = {};
   for (const [key, value] of Object.entries(columns)) {
     if (typeof value === 'string') {
