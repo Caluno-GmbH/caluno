@@ -3,6 +3,7 @@ import AdmZip from 'adm-zip';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { BadRequestGraphQLError } from '../../graphql/errors';
+import { InternalServerGraphQLError } from '../../graphql/errors/internal-server.error';
 import { FileService } from '../../storage/services/file.service';
 import { InvoiceStatus } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
@@ -13,6 +14,12 @@ import { ReimbursementRateService } from './reimbursement-rate.service';
 interface BundleEntry {
   name: string;
   fileId: string;
+  /**
+   * Whether the download must fail when this file cannot be fetched. A
+   * timesheet is marked paid once the ZIP is built, so a ZIP without it would
+   * lose it; a contract only accompanies the timesheets.
+   */
+  required: boolean;
 }
 
 interface BuiltBundle {
@@ -78,6 +85,7 @@ export class BundleDownloadService {
       entries.push({
         name: `Vereinbarung-${contract.id.slice(0, 8)}-${contract.id.slice(8, 12)}.pdf`,
         fileId: contract.fileId,
+        required: false,
       });
     }
     for (const invoice of invoices) {
@@ -85,6 +93,7 @@ export class BundleDownloadService {
       entries.push({
         name: `Stundennachweis-${invoice.id.slice(0, 8)}-${invoice.id.slice(8, 12)}.pdf`,
         fileId: invoice.fileId,
+        required: true,
       });
     }
 
@@ -97,9 +106,9 @@ export class BundleDownloadService {
     const buffer = await this.zipEntries(entries);
 
     // Record the download (audit row + mark the READY invoices as paid). Only
-    // once the ZIP is built, so a file URL that cannot be resolved marks
-    // nothing paid. A file that cannot be fetched is skipped by `zipEntries`
-    // and its invoice is still marked paid here; that predates VOLI-1586.
+    // once the ZIP is built, and `zipEntries` throws when a timesheet's file
+    // cannot be resolved or fetched, so nothing is marked paid for a ZIP that
+    // lacks one of its timesheets.
     if (invoices.length > 0) {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
@@ -182,10 +191,14 @@ export class BundleDownloadService {
         }
         zip.addFile(entry.name, Buffer.from(await response.arrayBuffer()));
       } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        if (entry.required) {
+          throw new InternalServerGraphQLError(
+            `The document ${entry.name} could not be fetched, so the bundle was not built and nothing was marked as paid. Please try again. (${reason})`,
+          );
+        }
         this.logger.warn(
-          `Bundle download: skipping ${entry.name} (${entry.fileId}): ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          `Bundle download: skipping ${entry.name} (${entry.fileId}): ${reason}`,
         );
       }
     }

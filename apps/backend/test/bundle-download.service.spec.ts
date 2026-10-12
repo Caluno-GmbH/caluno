@@ -352,6 +352,51 @@ describe('BundleDownloadService', () => {
       expect(stored?.paidAt).toBeNull();
     });
 
+    it('fails and marks nothing paid when a timesheet PDF cannot be fetched', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [entry]);
+      fetchSpy.mockImplementation((async (url: unknown) =>
+        String(url).endsWith(String(invoice.fileId))
+          ? new Response('missing', { status: 404 })
+          : new Response(
+              new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+            )) as unknown as typeof fetch);
+
+      await expect(download(s)).rejects.toThrow('could not be fetched');
+
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).toBeNull();
+      const audit = await db.query.reimbursementBundleDownloads.findFirst({
+        where: { volunteerId: s.volunteer.id },
+      });
+      expect(audit).toBeUndefined();
+    });
+
+    it('still delivers the timesheets when only a contract PDF cannot be fetched', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const contract = await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [entry]);
+      fetchSpy.mockImplementation((async (url: unknown) =>
+        String(url).endsWith(String(contract.fileId))
+          ? new Response('missing', { status: 404 })
+          : new Response(
+              new Uint8Array([0x25, 0x50, 0x44, 0x46]),
+            )) as unknown as typeof fetch);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).not.toBeNull();
+    });
+
     // VOLI-1586 changed this on purpose: a contract is only bundled for the
     // hours of the timesheets being downloaded, so a paid timesheet alone, with
     // a contract that used to ride along, leaves nothing to download.
