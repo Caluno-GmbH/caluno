@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'bun:test';
+import { beforeAll, describe, expect, it, spyOn } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { eq } from 'drizzle-orm';
@@ -14,6 +14,10 @@ import { DocumentProfileRequirementService } from '../src/accounting/services/do
 import { DocumentRenderingService } from '../src/accounting/services/document-rendering.service';
 import { DocumentSigningService } from '../src/accounting/services/document-signing.service';
 import { DocumentTemplateService } from '../src/accounting/services/document-template.service';
+import {
+  ContractCover,
+  type CoverageTarget,
+} from '../src/accounting/utils/contract-coverage';
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
@@ -29,6 +33,7 @@ import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
+import { startOfAppDay } from '../src/shift/utils/app-time';
 import { FileService } from '../src/storage/services/file.service';
 import {
   createReimbursementType,
@@ -155,6 +160,7 @@ describe('ContractService', () => {
 
     return {
       organization,
+      type,
       root,
       reimbursementType,
       template,
@@ -772,6 +778,256 @@ describe('ContractService', () => {
         },
       );
       expect(twoMonths).toBeUndefined();
+    });
+  });
+
+  describe('findCoveringContracts', () => {
+    const OCTOBER = {
+      periodStart: startOfAppDay(2026, 9, 1),
+      periodEnd: startOfAppDay(2026, 10, 1),
+    };
+
+    /** Inserted directly so status and createdAt are exactly what the test states. */
+    const insertContract = async (args: {
+      templateId: string;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      organizationUnitId: string | null;
+      status: ContractStatus;
+      periodStart: Date;
+      periodEnd: Date;
+      createdAt?: Date;
+    }) => {
+      const [row] = await db
+        .insert(schema.contracts)
+        .values({
+          documentTemplateId: args.templateId,
+          volunteerId: args.volunteerId,
+          reimbursementTypeId: args.reimbursementTypeId,
+          organizationUnitId: args.organizationUnitId,
+          contractStatus: args.status,
+          periodStart: args.periodStart,
+          periodEnd: args.periodEnd,
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+          ...(args.createdAt ? { createdAt: args.createdAt } : {}),
+        })
+        .returning();
+      return row;
+    };
+
+    const noonOn = (day: number) =>
+      new Date(startOfAppDay(2026, 9, day).getTime() + 12 * 3_600_000);
+
+    it('returns the active contracts covering each entry, newest first', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      const base = {
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        status: ContractStatus.ACTIVE,
+      };
+      const month = await insertContract({
+        ...base,
+        ...OCTOBER,
+        createdAt: new Date('2026-09-01T10:00:00.000Z'),
+      });
+      const week = await insertContract({
+        ...base,
+        periodStart: startOfAppDay(2026, 9, 5),
+        periodEnd: startOfAppDay(2026, 9, 12),
+        createdAt: new Date('2026-09-20T10:00:00.000Z'),
+      });
+      const target = (key: string, at: Date): CoverageTarget => ({
+        key,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        at,
+      });
+
+      const result = await service.findCoveringContracts([
+        target('in-week', noonOn(7)),
+        target('after-week', noonOn(20)),
+        target('on-period-end', OCTOBER.periodEnd),
+      ]);
+
+      expect(result.get('in-week')?.map((c) => c.id)).toEqual([
+        week.id,
+        month.id,
+      ]);
+      expect(result.get('after-week')?.map((c) => c.id)).toEqual([month.id]);
+      expect(result.get('on-period-end')).toEqual([]);
+    });
+
+    it('resolves many entries with a single query and none for an empty list', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      await insertContract({
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      });
+      const targets: CoverageTarget[] = Array.from({ length: 25 }, (_, i) => ({
+        key: `entry-${i}`,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        at: noonOn(i + 1),
+      }));
+
+      const findMany = spyOn(db.query.contracts, 'findMany');
+      try {
+        const result = await service.findCoveringContracts(targets);
+        expect(findMany).toHaveBeenCalledTimes(1);
+        expect(result.size).toBe(25);
+        expect([...result.values()].every((list) => list.length === 1)).toBe(
+          true,
+        );
+
+        const empty = await service.findCoveringContracts([]);
+        expect(empty.size).toBe(0);
+        expect(findMany).toHaveBeenCalledTimes(1);
+      } finally {
+        findMany.mockRestore();
+      }
+    });
+
+    it('ignores contracts of a sibling unit, of another organization and without a unit', async () => {
+      const {
+        organization,
+        type,
+        root,
+        reimbursementType,
+        template,
+        volunteer,
+      } = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'sibling',
+        parentId: root.id,
+      });
+      // Reimbursement types are global, so a second setup shares the type row.
+      const other = await setup();
+      expect(other.reimbursementType.id).toBe(reimbursementType.id);
+      const shared = {
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      };
+      await insertContract({
+        ...shared,
+        templateId: template.id,
+        organizationUnitId: sibling.id,
+      });
+      await insertContract({
+        ...shared,
+        templateId: template.id,
+        organizationUnitId: null,
+      });
+      await insertContract({
+        ...shared,
+        templateId: other.template.id,
+        organizationUnitId: other.root.id,
+      });
+
+      const result = await service.findCoveringContracts([
+        {
+          key: 'entry',
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          organizationUnitId: root.id,
+          at: noonOn(15),
+        },
+      ]);
+
+      expect(result.get('entry')).toEqual([]);
+    });
+
+    it('counts a draft and an awaiting-signature contract as open cover only, and never a declined one', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      const base = {
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        ...OCTOBER,
+      };
+      const draft = await insertContract({
+        ...base,
+        status: ContractStatus.DRAFT,
+        createdAt: new Date('2026-09-01T10:00:00.000Z'),
+      });
+      const awaiting = await insertContract({
+        ...base,
+        status: ContractStatus.AWAITING_NGO_SIGNATURE,
+        createdAt: new Date('2026-09-02T10:00:00.000Z'),
+      });
+      await insertContract({ ...base, status: ContractStatus.DECLINED });
+      const targets: CoverageTarget[] = [
+        {
+          key: 'entry',
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          organizationUnitId: root.id,
+          at: noonOn(15),
+        },
+      ];
+
+      const active = await service.findCoveringContracts(targets);
+      const open = await service.findCoveringContracts(
+        targets,
+        ContractCover.OPEN,
+      );
+
+      expect(active.get('entry')).toEqual([]);
+      expect(open.get('entry')?.map((c) => c.id)).toEqual([
+        awaiting.id,
+        draft.id,
+      ]);
+    });
+
+    it('covers entries in both years of a contract running Sep 2026 to Mar 2027', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      const crossYear = await insertContract({
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        status: ContractStatus.ACTIVE,
+        periodStart: startOfAppDay(2026, 8, 1),
+        periodEnd: startOfAppDay(2027, 3, 1),
+      });
+      const target = (key: string, at: Date): CoverageTarget => ({
+        key,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        at,
+      });
+
+      const result = await service.findCoveringContracts([
+        target(
+          'december',
+          new Date(startOfAppDay(2026, 11, 15).getTime() + 12 * 3_600_000),
+        ),
+        target(
+          'january',
+          new Date(startOfAppDay(2027, 0, 15).getTime() + 12 * 3_600_000),
+        ),
+        target(
+          'august',
+          new Date(startOfAppDay(2026, 7, 15).getTime() + 12 * 3_600_000),
+        ),
+      ]);
+
+      expect(result.get('december')?.map((c) => c.id)).toEqual([crossYear.id]);
+      expect(result.get('january')?.map((c) => c.id)).toEqual([crossYear.id]);
+      expect(result.get('august')).toEqual([]);
     });
   });
 

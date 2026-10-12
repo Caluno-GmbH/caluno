@@ -33,6 +33,11 @@ import {
   billingMonthBoundsOf,
   periodCovers,
 } from '../utils/billing-period';
+import {
+  ContractCover,
+  type CoverageTarget,
+  matchCoveringContracts,
+} from '../utils/contract-coverage';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
@@ -200,6 +205,52 @@ export class ContractService {
     return rows.filter((c) =>
       periodCovers(c.periodStart, c.periodEnd, period.start, period.end),
     );
+  }
+
+  /**
+   * The contracts covering each target instant, newest first by `createdAt`,
+   * keyed by the target's key — the one place per-entry coverage is resolved.
+   * Coverage is per time entry: different entries of one timesheet may be
+   * covered by different contracts. `ContractCover.ACTIVE` is what makes hours
+   * compliant and what goes in the bundle; `ContractCover.OPEN` (anything not
+   * declined) only decides whether a new draft or reminder is needed.
+   *
+   * One query for the whole set: it loads every contract that could cover any
+   * target, and `matchCoveringContracts` applies the exact rule per target.
+   */
+  async findCoveringContracts(
+    targets: readonly CoverageTarget[],
+    cover: ContractCover = ContractCover.ACTIVE,
+  ): Promise<Map<string, ContractEntity[]>> {
+    if (targets.length === 0) return new Map();
+
+    let earliest = targets[0].at.getTime();
+    let latest = earliest;
+    for (const target of targets) {
+      const instant = target.at.getTime();
+      if (instant < earliest) earliest = instant;
+      if (instant > latest) latest = instant;
+    }
+
+    const candidates = await this.db.query.contracts.findMany({
+      where: {
+        volunteerId: { in: [...new Set(targets.map((t) => t.volunteerId))] },
+        reimbursementTypeId: {
+          in: [...new Set(targets.map((t) => t.reimbursementTypeId))],
+        },
+        organizationUnitId: {
+          in: [...new Set(targets.map((t) => t.organizationUnitId))],
+        },
+        contractStatus:
+          cover === ContractCover.ACTIVE
+            ? ContractStatus.ACTIVE
+            : { ne: ContractStatus.DECLINED },
+        periodStart: { lte: new Date(latest) },
+        periodEnd: { gt: new Date(earliest) },
+      },
+    });
+
+    return matchCoveringContracts(candidates, targets, cover);
   }
 
   async createContract(
