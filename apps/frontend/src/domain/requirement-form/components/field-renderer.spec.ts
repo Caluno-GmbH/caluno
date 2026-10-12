@@ -114,6 +114,15 @@ describe('buildFieldSchema IBAN', () => {
       ).success,
     ).toBe(true);
   });
+  it('accepts a valid spaced IBAN longer than 34 characters', () => {
+    // Malta IBAN: 31 alphanumeric chars; with spaces the typed value is > 34.
+    const spaced = 'MT84 MALT 0110 0001 2345 MTLC AST0 01S';
+    expect(spaced.length).toBeGreaterThan(34);
+    expect(validateIban(spaced)).toBe(true);
+    expect(buildFieldSchema(field, false, msgs).safeParse(spaced).success).toBe(
+      true,
+    );
+  });
 });
 
 describe('validateBic', () => {
@@ -169,6 +178,16 @@ describe('buildFieldSchema birthdate', () => {
     expect(
       buildFieldSchema(field, false, msgs).safeParse('1990-01-01').success,
     ).toBe(true);
+  });
+  it('rejects an incomplete birthdate with a single date error', () => {
+    const result = buildFieldSchema(field, false, msgs).safeParse('incomplete');
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toHaveLength(1);
+      expect(result.error.issues[0]?.message).toBe(
+        msgs.mustBeValidDate('Birth date'),
+      );
+    }
   });
 });
 
