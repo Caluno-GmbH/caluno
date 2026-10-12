@@ -1,6 +1,7 @@
-import { beforeAll, describe, expect, it } from 'bun:test';
+import { beforeAll, describe, expect, it, spyOn } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
+import { eq } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
@@ -62,6 +63,7 @@ describe('InvoiceService', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let service: InvoiceService;
+  let contractService: ContractService;
   const declinedByVolunteerCalls: unknown[] = [];
 
   beforeAll(async () => {
@@ -104,7 +106,7 @@ describe('InvoiceService', () => {
       {} as MembershipService,
       { capture: () => {} } as unknown as PostHogService,
     );
-    const contractService = new ContractService(
+    contractService = new ContractService(
       db,
       documentTemplateService,
       documentSigningService,
@@ -265,11 +267,12 @@ describe('InvoiceService', () => {
     s: Fixture,
     timeEntryIds: string[],
     period: { start: string; end: string },
+    unitId: string | null = null,
   ) =>
     service.createInvoice(
       s.organization.id,
       {
-        organizationUnitId: null,
+        organizationUnitId: unitId,
         volunteerId: s.volunteer.id,
         reimbursementTypeId: s.reimbursementType.id,
         timeEntryIds,
@@ -287,6 +290,32 @@ describe('InvoiceService', () => {
         contractStatus: ContractStatus.DRAFT,
       },
     });
+
+  /** Sets the Vertragslaufzeit the fixture's contract template carries. */
+  const setLifespan = (s: Fixture, lifespan: string) =>
+    db
+      .update(schema.documentTemplates)
+      .set({
+        body: {
+          header: {
+            metaLines: [
+              {
+                id: 'meta',
+                text: 'Laufzeit {lifespan}',
+                fields: [
+                  {
+                    id: 'contract-lifespan',
+                    value: { kind: 'manual-template', value: lifespan },
+                  },
+                ],
+              },
+            ],
+          },
+          blocks: [],
+          footer: {},
+        },
+      })
+      .where(eq(schema.documentTemplates.id, s.contractTemplate.id));
 
   describe('findInvoicesForOrganization — period filter', () => {
     it('excludes invoices whose period does not overlap the requested range', async () => {
@@ -1757,6 +1786,136 @@ describe('InvoiceService', () => {
         );
 
         expect(await draftsOf(s)).toHaveLength(1);
+      });
+
+      it('queues a draft per month under a month template when two months are uncovered', async () => {
+        const s = await setup();
+        await setLifespan(s, '07/2026');
+        const august = await entryAt(s, '2026-08-12T09:00:00.000Z');
+
+        await issueTimesheet(s, [august.id, s.timeEntry.id], {
+          start: '2026-06-30T22:00:00.000Z',
+          end: '2026-08-31T22:00:00.000Z',
+        });
+
+        const drafts = (await draftsOf(s)).sort(
+          (a, b) => a.periodStart.getTime() - b.periodStart.getTime(),
+        );
+        expect(drafts.map((d) => [d.periodStart, d.periodEnd])).toEqual([
+          [
+            new Date('2026-06-30T22:00:00.000Z'),
+            new Date('2026-07-31T22:00:00.000Z'),
+          ],
+          [
+            new Date('2026-07-31T22:00:00.000Z'),
+            new Date('2026-08-31T22:00:00.000Z'),
+          ],
+        ]);
+      });
+
+      it('decides from the oldest uncovered entry first, so one year draft absorbs the later one', async () => {
+        const s = await setup();
+        // September 2026 to March 2027: only the October entry is inside it.
+        await setLifespan(s, '01.09.2026–31.03.2027');
+        const august = await entryAt(s, '2026-08-15T09:00:00.000Z');
+        const october = await entryAt(s, '2026-10-14T09:00:00.000Z');
+
+        // Newest first on purpose: the order the caller lists them in must
+        // not matter. Oldest first the August entry queues the 2026 year draft
+        // (the range does not contain it) and the October entry is already
+        // inside it; newest first would queue the range and then the year.
+        await issueTimesheet(s, [october.id, august.id], {
+          start: '2026-07-31T22:00:00.000Z',
+          end: '2026-10-31T23:00:00.000Z',
+        });
+
+        const drafts = await draftsOf(s);
+        expect(drafts).toHaveLength(1);
+        expect(drafts[0]?.periodStart).toEqual(
+          new Date('2025-12-31T23:00:00.000Z'),
+        );
+        expect(drafts[0]?.periodEnd).toEqual(
+          new Date('2026-12-31T23:00:00.000Z'),
+        );
+      });
+
+      it('does not ask for a draft for entries a non-declined contract already covers', async () => {
+        const s = await setup();
+        const second = await entryAt(s, '2026-07-12T09:00:00.000Z');
+        const third = await entryAt(s, '2026-07-26T09:00:00.000Z');
+        await insertContract(s, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+        const spy = spyOn(contractService, 'ensureDraftContract');
+
+        try {
+          await issueTimesheet(
+            s,
+            [s.timeEntry.id, second.id, third.id],
+            JULY_TIMESHEET,
+          );
+          expect(spy).not.toHaveBeenCalled();
+        } finally {
+          spy.mockRestore();
+        }
+      });
+
+      it('queues the draft in the invoice unit when a contract of the root unit is the only cover', async () => {
+        const s = await setup();
+        const sub = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sub',
+          parentId: s.root.id,
+        });
+        const entry = await createCompletedTimeEntry(db, {
+          organizationUnitId: sub.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          startedAt: new Date('2026-07-10T09:00:00.000Z'),
+          endedAt: new Date('2026-07-10T11:00:00.000Z'),
+        });
+        await insertContract(s, JULY_TIMESHEET, { unitId: s.root.id });
+
+        const invoice = await issueTimesheet(
+          s,
+          [entry.id],
+          JULY_TIMESHEET,
+          sub.id,
+        );
+
+        expect(invoice.isNonCompliant).toBe(true);
+        const drafts = await draftsOf(s);
+        expect(drafts).toHaveLength(1);
+        expect(drafts[0]?.organizationUnitId).toBe(sub.id);
+      });
+
+      it('is compliant in a sub unit when a contract of that unit covers the entry', async () => {
+        const s = await setup();
+        const sub = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sub',
+          parentId: s.root.id,
+        });
+        const entry = await createCompletedTimeEntry(db, {
+          organizationUnitId: sub.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          startedAt: new Date('2026-07-10T09:00:00.000Z'),
+          endedAt: new Date('2026-07-10T11:00:00.000Z'),
+        });
+        await insertContract(s, JULY_TIMESHEET, { unitId: sub.id });
+
+        const invoice = await issueTimesheet(
+          s,
+          [entry.id],
+          JULY_TIMESHEET,
+          sub.id,
+        );
+
+        expect(invoice.isNonCompliant).toBe(false);
+        expect(await draftsOf(s)).toHaveLength(0);
       });
     });
 

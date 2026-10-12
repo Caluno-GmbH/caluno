@@ -53,6 +53,7 @@ import {
 import {
   ContractCover,
   coverageTargetsForTimeEntries,
+  entriesWithoutCover,
 } from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
 import { ContractService } from './contract.service';
@@ -533,16 +534,25 @@ export class InvoiceService {
       coverageTargetsForTimeEntries(selected),
       ContractCover.ACTIVE,
     );
-    const uncovered = selected
-      .filter((entry) => coverByEntry.get(entry.id)?.length === 0)
-      .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+    const uncovered = entriesWithoutCover(selected, coverByEntry);
 
-    // One draft per uncovered entry, oldest first and one at a time. Each
-    // call checks open cover for its own instant, so the draft the first
-    // entry queues already suppresses every later entry it contains, and an
-    // entry that a contract awaiting signatures covers queues nothing.
-    // Never parallel: two concurrent calls would both see "no cover" yet.
-    for (const entry of uncovered) {
+    // A draft is only needed for an entry no non-declined contract covers: a
+    // draft or a contract awaiting signatures is already its own task. This
+    // one query saves a lookup per entry; `ensureDraftContract` still decides
+    // for itself below.
+    const openCover = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(uncovered),
+      ContractCover.OPEN,
+    );
+    const needDraft = uncovered.filter(
+      (entry) => (openCover.get(entry.id) ?? []).length === 0,
+    );
+
+    // One draft per entry that needs one, oldest first and one at a time. The
+    // order decides the result: the oldest entry's draft is queued first, so
+    // a later entry that draft contains queues nothing, whereas newest first
+    // could queue a narrower range and then the year around it.
+    for (const entry of needDraft) {
       await this.contractService.ensureDraftContract(
         organizationId,
         {
