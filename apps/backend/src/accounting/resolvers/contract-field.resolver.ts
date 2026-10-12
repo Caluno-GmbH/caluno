@@ -110,7 +110,7 @@ export class ContractFieldResolver {
     let templateBody: unknown = contract.documentTemplate?.body;
     if (!templateBody) {
       const full = await loader.contractWithRelationsById.load(contract.id);
-      templateBody = full.documentTemplate?.body;
+      templateBody = full.documentTemplate.body;
     }
     return this.documentProfileRequirementService.missingProfileSources(
       contract.volunteerId,
@@ -133,8 +133,8 @@ export class ContractFieldResolver {
       const full = await contractLoader.contractWithRelationsById.load(
         contract.id,
       );
-      templateBody = full.documentTemplate?.body;
-      organizationId = full.documentTemplate?.organizationId;
+      templateBody = full.documentTemplate.body;
+      organizationId = full.documentTemplate.organizationId;
       organizationUnitId = full.organizationUnitId ?? undefined;
     }
     if (!organizationId) return [];

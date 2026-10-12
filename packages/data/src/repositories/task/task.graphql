@@ -1,0 +1,26 @@
+query MyTasks {
+  myTasks {
+    id
+    type
+    link
+    data
+    organizationUnitId
+    neededPermission
+  }
+}
+
+query TodoFillAssignmentFilter {
+  todoFillAssignmentFilter {
+    threshold
+    daysAhead
+  }
+}
+
+mutation UpdateTodoFillAssignmentFilter(
+  $input: UpdateTodoFillAssignmentFilterInput!
+) {
+  updateTodoFillAssignmentFilter(input: $input) {
+    threshold
+    daysAhead
+  }
+}

@@ -1,4 +1,43 @@
 {
+  "Todo": {
+    "empty": "Nothing is waiting for you.",
+    "loadFailed": "Waiting actions could not be loaded.",
+    "seeAll": "See all",
+    "groups": {
+      "volunteersAndShifts": "Volunteers and shifts",
+      "accounting": "Accounting"
+    },
+    "types": {
+      "contract": "Contract",
+      "timesheet": "Timesheet"
+    },
+    "back": "Back to to do",
+    "waiting": "{count, plural, one {# waiting} other {# waiting}}",
+    "appliedRelative": "Applied {when}",
+    "declinedAgo": "Declined {when}",
+    "signedAgo": "Signed {when}",
+    "short": "{missing, plural, one {# needed} other {# needed}}",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} of {total} spots filled",
+    "hours": "{hours} h",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} days",
+      "staffing": "Staffing",
+      "daysAhead": "Days ahead",
+      "BELOW_MINIMUM": "Below minimum",
+      "NOT_FULL": "Not full",
+      "emptyBelowMinimum": "No assignments below minimum in the next {count} days",
+      "emptyNotFull": "No assignments that aren't full in the next {count} days"
+    },
+    "sections": {
+      "FILL_OPEN_ASSIGNMENTS": "Fill upcoming assignments",
+      "REVIEW_APPLICATIONS": "Review applications",
+      "APPROVE_SIGNUPS": "Approve sign-ups",
+      "DECLINED_DOCUMENTS": "Declined documents",
+      "COUNTERSIGN_DOCUMENTS": "Countersign documents"
+    }
+  },
   "Terms": {
     "accept": "Accept and continue",
     "accepting": "Accepting...",
@@ -755,7 +794,7 @@
     "orgUnits": "Org units",
     "organizationSettings": "Organisation settings",
     "organizations": "Organisations",
-    "overview": "Overview",
+    "todo": "To do",
     "profile": "Profile",
     "qrIdDescription": "Show this QR code on-site to confirm your attendance.",
     "qrIdTitle": "QR ID",
@@ -811,6 +850,7 @@
       "title": "Request to delete \"{name}\""
     },
     "detail": {
+      "title": "Overview",
       "aboutTitle": "About",
       "contactTitle": "Contact",
       "editButton": "Edit",

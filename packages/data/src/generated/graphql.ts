@@ -1265,6 +1265,23 @@ export type CheckInInviteToShiftInstanceMutationVariables = Exact<{
 
 export type CheckInInviteToShiftInstanceMutation = { checkInInviteToShiftInstance: { id: string } };
 
+export type MyTasksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyTasksQuery = { myTasks: Array<{ id: string, type: Types.TaskType, link: string, data: Record<string, unknown>, organizationUnitId: string, neededPermission: Types.PermissionKey | null }> };
+
+export type TodoFillAssignmentFilterQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TodoFillAssignmentFilterQuery = { todoFillAssignmentFilter: { threshold: Types.TodoFillThreshold, daysAhead: number } };
+
+export type UpdateTodoFillAssignmentFilterMutationVariables = Exact<{
+  input: Types.UpdateTodoFillAssignmentFilterInput;
+}>;
+
+
+export type UpdateTodoFillAssignmentFilterMutation = { updateTodoFillAssignmentFilter: { threshold: Types.TodoFillThreshold, daysAhead: number } };
+
 export type TermsStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4642,6 +4659,34 @@ export const CheckInInviteToShiftInstanceDocument = gql`
   }
 }
     `;
+export const MyTasksDocument = gql`
+    query MyTasks {
+  myTasks {
+    id
+    type
+    link
+    data
+    organizationUnitId
+    neededPermission
+  }
+}
+    `;
+export const TodoFillAssignmentFilterDocument = gql`
+    query TodoFillAssignmentFilter {
+  todoFillAssignmentFilter {
+    threshold
+    daysAhead
+  }
+}
+    `;
+export const UpdateTodoFillAssignmentFilterDocument = gql`
+    mutation UpdateTodoFillAssignmentFilter($input: UpdateTodoFillAssignmentFilterInput!) {
+  updateTodoFillAssignmentFilter(input: $input) {
+    threshold
+    daysAhead
+  }
+}
+    `;
 export const TermsStatusDocument = gql`
     query TermsStatus {
   termsStatus {
@@ -5577,6 +5622,15 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CheckInInviteToShiftInstance(variables: CheckInInviteToShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInInviteToShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInInviteToShiftInstanceMutation>({ document: CheckInInviteToShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInInviteToShiftInstance', 'mutation', variables);
+    },
+    MyTasks(variables?: MyTasksQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyTasksQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyTasksQuery>({ document: MyTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyTasks', 'query', variables);
+    },
+    TodoFillAssignmentFilter(variables?: TodoFillAssignmentFilterQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TodoFillAssignmentFilterQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<TodoFillAssignmentFilterQuery>({ document: TodoFillAssignmentFilterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TodoFillAssignmentFilter', 'query', variables);
+    },
+    UpdateTodoFillAssignmentFilter(variables: UpdateTodoFillAssignmentFilterMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateTodoFillAssignmentFilterMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateTodoFillAssignmentFilterMutation>({ document: UpdateTodoFillAssignmentFilterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateTodoFillAssignmentFilter', 'mutation', variables);
     },
     TermsStatus(variables?: TermsStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TermsStatusQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<TermsStatusQuery>({ document: TermsStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TermsStatus', 'query', variables);

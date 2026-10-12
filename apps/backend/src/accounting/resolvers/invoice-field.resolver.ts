@@ -127,7 +127,7 @@ export class InvoiceFieldResolver {
     let templateBody: unknown = invoice.documentTemplate?.body;
     if (!templateBody) {
       const full = await loader.invoiceWithRelationsById.load(invoice.id);
-      templateBody = full.documentTemplate?.body;
+      templateBody = full.documentTemplate.body;
     }
     return this.documentProfileRequirementService.missingProfileSources(
       invoice.volunteerId,
@@ -150,8 +150,8 @@ export class InvoiceFieldResolver {
       const full = await invoiceLoader.invoiceWithRelationsById.load(
         invoice.id,
       );
-      templateBody = full.documentTemplate?.body;
-      organizationId = full.documentTemplate?.organizationId;
+      templateBody = full.documentTemplate.body;
+      organizationId = full.documentTemplate.organizationId;
       organizationUnitId = full.organizationUnitId ?? undefined;
     }
     if (!organizationId) return [];
