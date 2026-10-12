@@ -17,7 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
@@ -186,7 +186,7 @@ export function ContractCreationModal({
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
     if (!dataReady || !templateDoc || derivedFields) return;
-    const profileData = toProfileDataMap(profileQuery.data);
+    const profileData = profileFieldValues(profileQuery.data);
     setDerivedFields(deriveEditableFields(templateDoc, profileData));
   }, [dataReady, templateDoc, derivedFields, profileQuery.data]);
 

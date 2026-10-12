@@ -623,7 +623,7 @@ const ensureBankingInformationForm = async (
         blockId: block.id,
         type: FieldType.TEXT,
         label: 'Account holder',
-        systemKey: 'account-holder',
+        systemKey: 'accountHolder',
         required: true,
         fieldOrder: 1,
       },

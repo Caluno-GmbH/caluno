@@ -29,7 +29,7 @@ const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
   volunteer_zip: 'zip',
   volunteer_city: 'city',
   volunteer_iban: 'iban',
-  volunteer_account_holder: 'account-holder',
+  volunteer_account_holder: 'accountHolder',
   volunteer_bic: 'bic',
   volunteer_dob: 'birthdate',
 };

@@ -3,13 +3,13 @@ import { isBlank } from '../utils';
 export const PAYMENT_DATA_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',
-  'account-holder': 'XXXXXX XXXXXX',
+  accountHolder: 'XXXXXX XXXXXX',
 } as const;
 
 export const PAYMENT_USER_FIELD_MASKS = {
   iban: PAYMENT_DATA_MASKS.iban,
   bic: PAYMENT_DATA_MASKS.bic,
-  accountHolder: PAYMENT_DATA_MASKS['account-holder'],
+  accountHolder: PAYMENT_DATA_MASKS.accountHolder,
 } as const;
 
 export function maskRestrictedPaymentData(

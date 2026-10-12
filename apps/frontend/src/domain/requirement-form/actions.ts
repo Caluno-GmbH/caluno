@@ -3,7 +3,6 @@
 import { FieldType, RequiredFormTargetType } from '@repo/data';
 import { revalidatePath } from 'next/cache';
 import z from 'zod';
-import { profileDataToUpdateInput } from '@/domain/user/lib/profile-data-map';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
 import {
@@ -470,7 +469,7 @@ export const updateUserProfile = actionClient
   .action(async ({ parsedInput }) => {
     const data = await getDataClient();
     const result = await data.user.updateMyProfile(
-      profileDataToUpdateInput(parsedInput.data),
+      parsedInput.data as Parameters<typeof data.user.updateMyProfile>[0],
     );
     revalidatePath('/');
     revalidatePath('/profile');
