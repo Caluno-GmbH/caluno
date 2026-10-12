@@ -14,6 +14,7 @@ COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
+COPY packages/lifespan/package.json ./packages/lifespan/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 # --ignore-scripts: @repo/data's postinstall runs codegen, which needs source.
@@ -24,6 +25,7 @@ COPY apps/backend ./apps/backend
 COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
+COPY packages/lifespan ./packages/lifespan
 COPY packages/typescript-config ./packages/typescript-config
 
 # The @repo/data postinstall, deferred from the install above.
@@ -31,6 +33,7 @@ RUN bun run --cwd packages/data codegen
 
 # Build @repo/observability (dist/ is dockerignored, so it must be built in-image)
 RUN bun run --cwd packages/observability build
+RUN bun run --cwd packages/lifespan build
 
 # Build the NestJS backend
 WORKDIR /app/apps/backend
@@ -65,6 +68,7 @@ COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
+COPY packages/lifespan/package.json ./packages/lifespan/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
@@ -74,9 +78,11 @@ COPY apps/backend ./apps/backend
 COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
+COPY packages/lifespan ./packages/lifespan
 COPY packages/typescript-config ./packages/typescript-config
 # Compiled @repo/observability output (dist/ is dockerignored — built in the builder stage)
 COPY --from=builder /app/packages/observability/dist ./packages/observability/dist
+COPY --from=builder /app/packages/lifespan/dist ./packages/lifespan/dist
 
 ARG SENTRY_RELEASE
 ENV SENTRY_RELEASE=${SENTRY_RELEASE}

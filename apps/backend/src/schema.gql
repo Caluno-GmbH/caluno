@@ -153,6 +153,7 @@ input CreateContractInput {
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementTypeId: ID!
+  sourceDraftId: ID
   volunteerId: ID!
 }
 

@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import { BASE_URL } from '../pages/AuthPage';
 import { LoginPage } from '../pages/LoginPage';
 
-// Depends on the local dev seed fixtures (apps/backend/src/database/fixtures.ts)
-// — run with E2E_BASE_URL=http://localhost:3000. testing+admin@caluno.org is a
-// member of the seeded "Playground" org.
-const ADMIN_EMAIL = 'testing+admin@caluno.org';
+// Depends on the e2e seed (apps/backend/src/database/fixtures.ts, `bun run
+// db:fixtures:e2e`). demo+e2e_admin@caluno.org is a member of the seeded
+// "Playground" org.
+const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
 const ADMIN_PASSWORD = 'abcd1234';
 
 const ORG_DASHBOARD = /\/admin\/[0-9a-f-]{36}$/;

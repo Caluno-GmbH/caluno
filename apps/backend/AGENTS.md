@@ -4,8 +4,9 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 
 ## Commands
 - `bun run dev` - Start NestJS development server
-- `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load Playground fixtures, then start all dev servers
-- `bun run db:fixtures` - Load Playground dev fixtures only (run after migrate + seed)
+- `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load the demo fixtures, then start all dev servers
+- `bun run db:fixtures:demo` - Load the demo dataset (the app's data; run after migrate + seed)
+- `bun run db:fixtures:e2e` - Load the e2e-only Playground seed (run after migrate + seed)
 - `bun run build` - Build a production bundle
 - `bun run lint` - Lint with Biome
 - `bun run format` - Format with Biome
@@ -107,22 +108,50 @@ bun test apps/backend/test/
 
 Integration tests connect to the `postgres` maintenance database to create/drop an isolated `${POSTGRES_DB}_test_<pid>_<id>` database, so the Postgres user needs CREATEDB privileges (the default `postgres` superuser has this).
 
-### Playground fixtures (`bun bootstrap`)
+### Fixture datasets — never both
 
-`bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads [`src/database/fixtures.ts`](src/database/fixtures.ts). Refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`.
+Two fixture datasets exist and are mutually exclusive, because both address their accounts on the `demo@caluno.org` group:
 
-The same fixture script is used for staging via `bun run db:fixtures:staging`.
+| Dataset | Script | Who loads it |
+|---|---|---|
+| **Altonaer Lesepaten** (the app's data) | [`src/database/demo-fixtures.ts`](src/database/demo-fixtures.ts) | `bun bootstrap` locally; **every deployed container** — the entrypoint always seeds it |
+| **Playground** (e2e only) | [`src/database/fixtures.ts`](src/database/fixtures.ts) | the Playwright suite, via `bun run db:fixtures:e2e` |
+
+`bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads the **demo** dataset only. It refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`.
+
+### Fixture safety — they run in production
+
+The backend entrypoint seeds the demo dataset on **every** boot, staging and production alike, so the seed is written to be safe against a live, populated database:
+
+- **Non-destructive.** No `DROP`, `TRUNCATE` or `DELETE` anywhere in `demo-fixtures.ts` / `fixtures.ts`; every write is an upsert scoped to the fixture organization and its own accounts.
+- **Identity is the pinned id, not the name.** `fixtureId()` in `fixture-helpers.ts` derives a deterministic UUID for each fixture account (from its address) and organization (from its slug), so ownership is proven by id — names are not unique and a real person can share one. `assertFixtureIdentitiesAvailable` verifies the whole planned set *before* the seed's first insert: any row holding a fixture id, email or slug that the fixtures did not create (a legacy random-id row, a real customer org, a real user) aborts the run with the full list of clashes and writes nothing. The per-call guards in `createAuthUser` / the org resolvers remain as defence in depth.
+- The only volume wipe (`docker compose down -v`) lives in `scripts/bootstrap-db.ts`, which refuses to run against a non-local `DB_HOST` — it is unreachable from the deploy path.
+
+**Never load both into one database.** The second load silently reuses the first's users and cross-links memberships (it will look like it succeeded). The Playground seed is deliberately e2e-only: it carries the contract the specs depend on — stable UUIDs, the `Overlap Test Pair/Pile` shifts, exact account names — none of which is app content.
+
+**Demo dataset** — password `abcd1234` (override with `DEMO_FIXTURE_PASSWORD`), organization **Altonaer Lesepaten** (slug `demo-altonaer-lesepaten`; units Nord/Süd/West):
 
 | Account | Role / status |
 |---|---|
-| `testing+admin@caluno.org` | Owner |
-| `testing+supervisor@caluno.org` | Supervisor |
-| `testing+demo@caluno.org` | Member (demo account) |
-| `testing+001@` … `testing+010@caluno.org` | Member |
-| `testing+pending01@` … `testing+pending05@caluno.org` | Pending membership request |
-| `testing+rejected01@caluno.org` | Rejected membership request |
+| `demo+owner@caluno.org` | Owner |
+| `demo+supervisor@caluno.org` | Supervisor |
+| `demo@caluno.org` | Member (demo account) |
+| `demo+member01@` … `demo+member29@caluno.org` | Member |
+| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
+| `demo+rejected01@caluno.org` | Rejected membership request |
 
-Password for all fixture accounts: `abcd1234` (override with `FIXTURE_PASSWORD`). Organization: **Playground**. Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields. `testing+admin@caluno.org` also gets five of each Übersicht waiting action on the root unit.
+**Playground seed (e2e only)** — password `abcd1234` (override with `FIXTURE_PASSWORD`), organization **Playground**. Its accounts carry an `e2e_` discriminator precisely so they cannot collide with the demo dataset:
+
+| Account | Role / status |
+|---|---|
+| `demo+e2e_admin@caluno.org` | Owner |
+| `demo+e2e_supervisor@caluno.org` | Supervisor |
+| `demo+e2e_demo@caluno.org` | Member (demo account) |
+| `demo+e2e_member01@` … `demo+e2e_member10@caluno.org` | Member |
+| `demo+e2e_pending01@`, `demo+e2e_pending02@caluno.org` | Pending membership request |
+| `demo+e2e_rejected01@caluno.org` | Rejected membership request |
+
+Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields.
 
 ## Tech Stack
 - **NestJS 11** primary web framework
@@ -222,7 +251,7 @@ only base-table columns, so those sorts use `select().leftJoin()` with an explic
 
 ## Known constraints (decision-log extracts — architectural, must stay)
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
-- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524)
+- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `systemKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / systemKey-column-align)
 - **`FormSubmissionStatus` is `SUBMITTED` / `REJECTED` only** (no DRAFT/APPROVED). Gating logic keys off these two. (form-submission-status-simplification)
 - **No `forwardRef` in `apps/backend`**. Module dependencies must form a DAG. Cycles are broken by extracting lower-level data modules (`OrganizationUnitDataModule`) or by moving cross-domain GraphQL field resolution into the higher-level module (`EventModule` owns the `Shift.event` field).
 - **`OrganizationUnitDataModule`** sits below `AuthModule` in the dependency graph. `AuthService` uses `OrganizationUnitDataService` for ancestor-unit lookups and org resolution, so `AuthModule` does not depend on `OrganizationModule`.

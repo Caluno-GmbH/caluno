@@ -11,6 +11,7 @@ Mono-repo powered by TurboRepo.
 └── packages                # Shared code imported by the apps and services
     ├── data                # Shared data library - graphQL queries and mutations
     ├── infra               # Terraform config for deploying the services and apps
+    ├── lifespan            # Contract lifespan string parser (@repo/lifespan), shared by backend and frontend
     ├── observability       # Shared Sentry config builders (@repo/observability) consumed by both apps
     ├── typescript-config   # Shared typescript config
     └── ui                  # Shared react components and styles - shadcn, tailwind, storybook
@@ -30,7 +31,8 @@ Use `bun` - never npm or yarn.
 
 ## Local fixtures
 
-- Fixture members are `testing+001@caluno.org` and up (no `+000`); fixtures skip already-existing rows, so users seeded before your session keep their original password.
+- Local fixtures are the **Altonaer Lesepaten** demo dataset (`bun bootstrap`; every deployed environment seeds it on boot, including production). Members are `demo+member01@caluno.org` … `demo+member29@caluno.org` and the demo login is `demo@caluno.org`. Fixtures skip already-existing rows, so users seeded before your session keep their original password.
+- The **Playground** seed (`apps/backend/src/database/fixtures.ts`) is **e2e-only** (`bun run --cwd apps/backend db:fixtures:e2e`) and uses `demo+e2e_*@caluno.org`. Both datasets address the `demo@caluno.org` group, so never load both into one database. See apps/backend/AGENTS.md.
 
 <!-- BEGIN:turborepo-agent-rules -->
 

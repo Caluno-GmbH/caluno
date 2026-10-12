@@ -132,6 +132,39 @@ describe('UserQueryResolver.user payment-data visibility', () => {
 
     expect(result?.iban).toBeNull();
     expect(result?.bic).toBeNull();
+    // Raw unset accountHolder stays null — do not resolve name then mask.
+    expect(result?.accountHolder).toBeNull();
+  });
+
+  it('returns the derived name as accountHolder when unset for an authorized viewer', async () => {
+    userService.findByIdInOrgUnit.mockResolvedValue({
+      ...volunteer,
+      accountHolder: null,
+    });
+    authService.hasRequiredPermissions.mockResolvedValue(true);
+
+    const result = await resolver.user(
+      'volunteer-1',
+      sessionFor('accountant-1'),
+      ctx,
+    );
+
+    expect(result?.accountHolder).toBe('Erika Musterfrau');
+  });
+
+  it('returns the derived name as accountHolder to the volunteer themself when unset', async () => {
+    userService.findByIdInOrgUnit.mockResolvedValue({
+      ...volunteer,
+      accountHolder: null,
+    });
+
+    const result = await resolver.user(
+      'volunteer-1',
+      sessionFor('volunteer-1'),
+      ctx,
+    );
+
+    expect(result?.accountHolder).toBe('Erika Musterfrau');
   });
 
   it('checks the accounting permission for the viewer in the org unit', async () => {
@@ -174,5 +207,23 @@ describe('UserQueryResolver.me', () => {
 
     expect(result.iban).toBe(volunteer.iban);
     expect(result.bic).toBe(volunteer.bic);
+    expect(result.accountHolder).toBe(volunteer.accountHolder);
+  });
+
+  it('returns the derived name as accountHolder when the column is unset', async () => {
+    const userService = {
+      findByIdOrThrow: mock(() =>
+        Promise.resolve({ ...volunteer, accountHolder: null }),
+      ),
+    };
+    const resolver = new UserQueryResolver(
+      userService as unknown as UserService,
+      new UserWithProfileMapper(),
+      {} as unknown as AuthService,
+    );
+
+    const result = await resolver.me(sessionFor('volunteer-1'));
+
+    expect(result.accountHolder).toBe('Erika Musterfrau');
   });
 });

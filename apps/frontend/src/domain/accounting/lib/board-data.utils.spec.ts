@@ -26,6 +26,7 @@ import {
   getInitials,
   getLatestTimesheetPeriod,
   getPickerAnnotations,
+  initialLifespanFor,
   invoiceInMonth,
   invoiceStatusToDocStatus,
   mapContractToBoardDoc,
@@ -33,6 +34,7 @@ import {
   mapInvoiceToBoardDoc,
   mapSignatureToSignee,
   monthsInRange,
+  sourceDraftIdFor,
 } from './board-data.utils';
 
 const ehrenamtType = {
@@ -270,6 +272,35 @@ describe('mapContractToBoardDoc', () => {
     expect(doc.periodLabel).toBe('2026');
     expect(doc.pauschale).toBe('ehrenamt');
     expect(doc.lastActionDate).toBeInstanceOf(Date);
+  });
+
+  // The creation dialog opens on the draft's own period, not the template's.
+  it('carries the period of a draft contract as the lifespan to create it for', () => {
+    const doc = mapContractToBoardDoc(
+      makeContract({
+        contractStatus: ContractStatus.Draft,
+        periodStart: '2026-07-31T22:00:00.000Z',
+        periodEnd: '2026-08-31T22:00:00.000Z',
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.status).toBe('contract-draft');
+    expect(doc.draftLifespan).toBe('08/2026');
+  });
+
+  it('gives a year draft a year lifespan', () => {
+    const doc = mapContractToBoardDoc(
+      makeContract({ contractStatus: ContractStatus.Draft }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.draftLifespan).toBe('2026');
+  });
+
+  it('leaves the lifespan off contracts that are not drafts', () => {
+    const doc = mapContractToBoardDoc(makeContract({}), 'ehrenamt', 'de');
+    expect(doc.draftLifespan).toBeUndefined();
   });
 
   // VOLI-1370: a contract's label must state the period the agreement does,
@@ -1550,5 +1581,45 @@ describe('creationTargetFor', () => {
       if (meta.actionKey !== 'create') continue;
       expect(creationTargetFor(status as DocStatus)).not.toBeNull();
     }
+  });
+});
+
+describe('sourceDraftIdFor', () => {
+  it('is the contract id of a queued draft row', () => {
+    expect(sourceDraftIdFor({ id: 'c-1', status: 'contract-draft' })).toBe(
+      'c-1',
+    );
+  });
+
+  it('is null for rows that are not a queued draft', () => {
+    for (const status of [
+      'contract-generate',
+      'contract-declined',
+      'contract-missing',
+      'contract-expired',
+    ] as const) {
+      expect(sourceDraftIdFor({ id: 'c-1', status })).toBeNull();
+    }
+  });
+});
+
+describe('initialLifespanFor', () => {
+  it('opens a draft on its own period', () => {
+    expect(
+      initialLifespanFor({
+        status: 'contract-draft',
+        draftLifespan: '08/2026',
+      }),
+    ).toBe('08/2026');
+  });
+
+  it('has nothing for a row without a draft behind it', () => {
+    expect(
+      initialLifespanFor({
+        status: 'contract-generate',
+        draftLifespan: '08/2026',
+      }),
+    ).toBeNull();
+    expect(initialLifespanFor({ status: 'contract-draft' })).toBeNull();
   });
 });

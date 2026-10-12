@@ -3,13 +3,23 @@ import AdmZip from 'adm-zip';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { BadRequestGraphQLError } from '../../graphql/errors';
+import { InternalServerGraphQLError } from '../../graphql/errors/internal-server.error';
 import { FileService } from '../../storage/services/file.service';
-import { ContractStatus, InvoiceStatus } from '../enums';
+import { InvoiceStatus } from '../enums';
+import type { ContractEntity } from '../schemas/contract.schema';
+import { ContractCover, type CoverageTarget } from '../utils/contract-coverage';
+import { ContractService } from './contract.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
 
 interface BundleEntry {
   name: string;
   fileId: string;
+  /**
+   * Whether the download must fail when this file cannot be fetched. A
+   * timesheet is marked paid once the ZIP is built, so a ZIP without it would
+   * lose it; a contract only accompanies the timesheets.
+   */
+  required: boolean;
 }
 
 interface BuiltBundle {
@@ -22,8 +32,10 @@ interface BuiltBundle {
  * into a single downloadable ZIP and records the download (audit row + marking
  * the READY invoices as paid) once the bundle is built.
  *
- * The bundle contains the signed agreement (contract) plus every ready
- * (unpaid, READY) timesheet for that type. Documents are resolved to their
+ * The bundle contains every ready (unpaid, READY) timesheet for that type plus
+ * the signed agreements (ACTIVE contracts) that cover the hours on those
+ * timesheets: the newest covering contract per time entry, each once, listed
+ * ahead of the timesheets (VOLI-1586). Documents are resolved to their
  * stored PDF bytes (public object storage) and zipped on the fly — nothing is
  * persisted, so repeated downloads don't accumulate artifacts (VOLI-1216).
  */
@@ -36,6 +48,7 @@ export class BundleDownloadService {
     private readonly db: Database,
     private readonly fileService: FileService,
     private readonly reimbursementRateService: ReimbursementRateService,
+    private readonly contractService: ContractService,
   ) {}
 
   async buildAndRecord(
@@ -44,31 +57,35 @@ export class BundleDownloadService {
     reimbursementTypeId: string,
     userId: string,
   ): Promise<BuiltBundle> {
-    const [invoices, contract] = await Promise.all([
-      this.db.query.invoices.findMany({
-        where: {
-          volunteerId,
-          reimbursementTypeId,
-          organizationUnitId,
-          invoiceStatus: InvoiceStatus.READY,
-          paidAt: { isNull: true },
+    const invoices = await this.db.query.invoices.findMany({
+      where: {
+        volunteerId,
+        reimbursementTypeId,
+        organizationUnitId,
+        invoiceStatus: InvoiceStatus.READY,
+        paidAt: { isNull: true },
+      },
+      with: {
+        invoiceTimeEntries: {
+          where: { released: false },
+          with: { timeEntry: true },
         },
-      }),
-      this.db.query.contracts.findFirst({
-        where: {
-          volunteerId,
-          reimbursementTypeId,
-          organizationUnitId,
-          contractStatus: ContractStatus.ACTIVE,
-        },
-      }),
-    ]);
+      },
+    });
+
+    const contracts = await this.findCoveringContracts(invoices, {
+      volunteerId,
+      reimbursementTypeId,
+      organizationUnitId,
+    });
 
     const entries: BundleEntry[] = [];
-    if (contract?.fileId) {
+    for (const contract of contracts) {
+      if (!contract.fileId) continue;
       entries.push({
         name: `Vereinbarung-${contract.id.slice(0, 8)}-${contract.id.slice(8, 12)}.pdf`,
         fileId: contract.fileId,
+        required: false,
       });
     }
     for (const invoice of invoices) {
@@ -76,6 +93,7 @@ export class BundleDownloadService {
       entries.push({
         name: `Stundennachweis-${invoice.id.slice(0, 8)}-${invoice.id.slice(8, 12)}.pdf`,
         fileId: invoice.fileId,
+        required: true,
       });
     }
 
@@ -88,7 +106,9 @@ export class BundleDownloadService {
     const buffer = await this.zipEntries(entries);
 
     // Record the download (audit row + mark the READY invoices as paid). Only
-    // once the ZIP is built, so a failed render never marks anything paid.
+    // once the ZIP is built, and `zipEntries` throws when a timesheet's file
+    // cannot be resolved or fetched, so nothing is marked paid for a ZIP that
+    // lacks one of its timesheets.
     if (invoices.length > 0) {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
@@ -104,8 +124,62 @@ export class BundleDownloadService {
     };
   }
 
+  /**
+   * The ACTIVE contracts that cover the hours on these timesheets: the newest
+   * covering contract per time entry, each contract once, oldest period
+   * first. Hours no contract covers add nothing, so a non-compliant timesheet
+   * still downloads on its own.
+   *
+   * Every entry is matched in the bundle's own volunteer, reimbursement type
+   * and unit, not in whatever the entry row says today: a coordinator can edit
+   * a claimed entry's type, and that must not pull another type's contract
+   * into this bundle.
+   */
+  private async findCoveringContracts(
+    invoices: {
+      invoiceTimeEntries: {
+        timeEntry: { id: string; startedAt: Date } | null;
+      }[];
+    }[],
+    scope: {
+      volunteerId: string;
+      reimbursementTypeId: string;
+      organizationUnitId: string;
+    },
+  ): Promise<ContractEntity[]> {
+    const targets: CoverageTarget[] = invoices.flatMap((invoice) =>
+      invoice.invoiceTimeEntries.flatMap((claim) =>
+        claim.timeEntry
+          ? [
+              {
+                key: claim.timeEntry.id,
+                ...scope,
+                at: claim.timeEntry.startedAt,
+              },
+            ]
+          : [],
+      ),
+    );
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      targets,
+      ContractCover.ACTIVE,
+    );
+
+    const contractsById = new Map<string, ContractEntity>();
+    for (const target of targets) {
+      const newest = coverByEntry.get(target.key)?.[0];
+      if (newest) contractsById.set(newest.id, newest);
+    }
+    return [...contractsById.values()].sort(
+      (a, b) =>
+        a.periodStart.getTime() - b.periodStart.getTime() ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
+  }
+
   private async zipEntries(entries: BundleEntry[]): Promise<Buffer> {
-    const zip = new AdmZip();
+    // `noSort` keeps the order the entries were added in: contracts first.
+    const zip = new AdmZip(undefined, { noSort: true });
     for (const entry of entries) {
       const url = await this.fileService.resolvePublicUrlForUploadedFile(
         entry.fileId,
@@ -117,10 +191,14 @@ export class BundleDownloadService {
         }
         zip.addFile(entry.name, Buffer.from(await response.arrayBuffer()));
       } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        if (entry.required) {
+          throw new InternalServerGraphQLError(
+            `The document ${entry.name} could not be fetched, so the bundle was not built and nothing was marked as paid. Please try again. (${reason})`,
+          );
+        }
         this.logger.warn(
-          `Bundle download: skipping ${entry.name} (${entry.fileId}): ${
-            error instanceof Error ? error.message : String(error)
-          }`,
+          `Bundle download: skipping ${entry.name} (${entry.fileId}): ${reason}`,
         );
       }
     }

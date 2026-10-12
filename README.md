@@ -45,7 +45,7 @@ This monorepo includes the following packages/apps:
 
 4. **Start the development environment**
 
-   **First time or a clean slate** — wipe the local database, migrate, seed permissions, load Playground fixtures, then start dev:
+   **First time or a clean slate** — wipe the local database, migrate, seed permissions, load the demo fixtures, then start dev:
 
    ```bash
    bun bootstrap
@@ -62,34 +62,33 @@ This monorepo includes the following packages/apps:
    - Wait for the database to be ready
    - Start all applications in parallel (backend and frontend)
 
-   `bun bootstrap` additionally resets the Postgres volume, runs migrations, seeds permissions, and loads the Playground fixture dataset (see below).
+   `bun bootstrap` additionally resets the Postgres volume, runs migrations, seeds permissions, and loads the demo fixture dataset (see below).
 
    The services will be available at:
    - Backend API: http://localhost:8080
    - Frontend: http://localhost:3000
 
-### Playground fixtures
+### Demo fixtures
 
-After `bun bootstrap`, the database contains a **Playground** organization with sample users, weekly shifts, time entries, and a requirement form. All fixture accounts use password `abcd1234` (override with `FIXTURE_PASSWORD`).
+After `bun bootstrap`, the database contains the **Altonaer Lesepaten** demo organization (slug `demo-altonaer-lesepaten`) — three sub-units (Nord/Süd/West) with realistic sample volunteers, recurring shifts, events, time entries, and requirement forms. All fixture accounts use password `abcd1234` (override with `DEMO_FIXTURE_PASSWORD`).
 
 | Account | Role / status |
 |---|---|
-| `testing+admin@caluno.org` | Owner |
-| `testing+supervisor@caluno.org` | Supervisor |
-| `testing+demo@caluno.org` | Member (demo account) |
-| `testing+001@` … `testing+010@caluno.org` | Member |
-| `testing+pending01@` … `testing+pending05@caluno.org` | Pending membership request |
-| `testing+rejected01@caluno.org` | Rejected membership request |
+| `demo+owner@caluno.org` | Owner |
+| `demo+supervisor@caluno.org` | Supervisor |
+| `demo@caluno.org` | Member (demo account — use this one) |
+| `demo+member01@` … `demo+member29@caluno.org` | Member |
+| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
+| `demo+rejected01@caluno.org` | Rejected membership request |
 
-Weekly shifts (Europe/Berlin):
+The **Playground** seed — weekly Community Support / Food Distribution / Event Assistance shifts, a requirement form, and the stable IDs and Overlap Test shifts the Playwright suite asserts on — is **e2e-only**. It is not loaded by `bun bootstrap` or by any deployed environment; load it with `bun run --cwd apps/backend db:fixtures:e2e`.
 
-| Shift | Recurrence | Time | Invites |
-|---|---|---|---|
-| Community Support | Every Monday | 08:00–12:00 | All 12 approved members |
-| Food Distribution | Every Wednesday | 12:00–16:00 | Supervisor + member01–04 |
-| Event Assistance | Every Friday | 16:00–20:00 | None |
+The demo dataset is also seeded on **every deploy**: the backend entrypoint runs `bun run db:fixtures:demo` on boot, in staging **and production**. That is safe against a live, populated database:
 
-**Requirement form:** Personal Information — block with required First name and Last name fields.
+- **Non-destructive** — no `DROP`, `TRUNCATE` or `DELETE`; every write is an upsert scoped to the fixture organization and its own accounts.
+- **Verify-or-abort, before any write** — the seed first checks every identity it is about to claim (each account's pinned id *and* address, plus the org id and slug). Fixture rows get deterministic ids, so ownership is proven by id rather than by name. If anything is held by a row the fixtures did not create, it aborts listing all clashes and writes **nothing at all**. Accounts an older run seeded with random ids are reported as clashes and need removing once.
+
+Never load the e2e-only Playground seed alongside it — the two share the `demo@caluno.org` group, and the seed will refuse rather than cross-link.
 
 `bun bootstrap` only runs against local databases (`DB_HOST` must be `localhost`, `127.0.0.1`, or `postgres`).
 
@@ -97,7 +96,7 @@ Weekly shifts (Europe/Berlin):
 
 ### Development
 
-- `bun bootstrap` - Reset local DB, migrate, seed, load Playground fixtures, then start all services
+- `bun bootstrap` - Reset local DB, migrate, seed, load the demo fixtures, then start all services
 - `bun dev` - Start all services (database + apps) without resetting data
 - `bun run db:up` - Start the PostgreSQL database
 - `bun run db:down` - Stop the PostgreSQL database
@@ -110,15 +109,15 @@ From the repo root:
 
 - `bun run db:migrate` - Run pending migrations
 - `bun run db:seed` - Seed permissions (idempotent; also used by tests)
-- `bun run db:bootstrap` - Reset local DB, migrate, seed, and load fixtures (no dev servers)
-- `bun run db:fixtures` - Load Playground fixtures only (after migrate + seed)
+- `bun run db:bootstrap` - Reset local DB, migrate, seed, and load the demo fixtures (no dev servers)
 
 From `apps/backend`:
 
 - `bun run db:generate` - Generate migrations from schema changes
 - `bun run db:migrate` - Run pending migrations
 - `bun run db:studio` - Open Drizzle Studio (database GUI)
-- `bun run db:fixtures` - Load Playground fixtures
+- `bun run db:fixtures:demo` - Load the demo dataset (the app's data)
+- `bun run db:fixtures:e2e` - Load the e2e-only Playground seed
 
 ### Building
 

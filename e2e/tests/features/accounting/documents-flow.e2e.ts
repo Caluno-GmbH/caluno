@@ -9,21 +9,20 @@ import { VolunteerProfilePage } from '../../../pages/volunteering/VolunteerProfi
 
 // The whole document signing chain, both sides.
 //
-// Depends on the playground fixtures (apps/backend/src/database/fixtures.ts):
-// the Playground org has accounting enabled, reimbursement rates and the
-// fixture accounts below exist. Templates are no longer seeded (removed with
-// the setup-gating change), so this suite configures the Ehrenamt contract +
-// invoice templates itself in beforeAll. Staging loads the fixtures via the
-// backend docker entrypoint (`db:fixtures:staging`); local dev via
-// `bun run db:fixtures`. Runs against the default staging base URL like the
-// other suites, or locally with E2E_BASE_URL=http://localhost:3000.
+// Depends on the e2e seed (apps/backend/src/database/fixtures.ts, `bun run
+// db:fixtures:e2e`): the Playground org has accounting enabled, reimbursement
+// rates, and the fixture accounts below exist. Templates are no longer seeded
+// (removed with the setup-gating change), so this suite configures the Ehrenamt
+// contract + invoice templates itself in beforeAll. Runs against the default
+// staging base URL like the other suites, or locally with
+// E2E_BASE_URL=http://localhost:3000.
 //
 // Playground Member 02 is the volunteer (kept document-free in the fresh
 // fixtures so the run's documents are uniquely identifiable); the admin is
 // the Playground owner. Like the other auth-gated suites, sessions are
 // authenticated once in beforeAll and persisted to .auth/ (storageState).
-const ADMIN_EMAIL = 'testing+admin@caluno.org';
-const VOLUNTEER_EMAIL = 'testing+002@caluno.org';
+const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
+const VOLUNTEER_EMAIL = 'demo+e2e_member02@caluno.org';
 const PASSWORD = 'abcd1234';
 const VOLUNTEER_NAME = 'Playground Member 02';
 const DECLINE_REASON = `E2E decline ${Date.now()}: Zeitraum stimmt nicht`;

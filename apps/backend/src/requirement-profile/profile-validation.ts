@@ -8,13 +8,13 @@ export const formatSystemKeyLabel = (systemKey: string): string => {
       return 'First name';
     case 'lastname':
       return 'Last name';
-    case 'preferred-name':
+    case 'preferredName':
       return 'Preferred name';
     case 'birthdate':
       return 'Birth date';
     case 'iban':
       return 'IBAN';
-    case 'account-holder':
+    case 'accountHolder':
       return 'Account holder';
     case 'bic':
       return 'BIC';
@@ -43,7 +43,7 @@ export const validateSystemKeyValue = (
   switch (systemKey) {
     case 'firstname':
     case 'lastname':
-    case 'preferred-name':
+    case 'preferredName':
     case 'city':
       if (value.length > 100)
         throw new BadRequestGraphQLError(

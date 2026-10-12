@@ -50,6 +50,11 @@ import {
   billingYearBounds,
   periodCovers,
 } from '../utils/billing-period';
+import {
+  ContractCover,
+  coverageTargetsForTimeEntries,
+  entriesWithoutCover,
+} from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
@@ -521,20 +526,41 @@ export class InvoiceService {
       );
     }
 
-    const activeContract = await this.contractService.findActiveContract(
-      input.volunteerId,
-      input.reimbursementTypeId,
-      { start: input.periodStart, end: input.periodEnd },
+    // Compliance is per time entry: a timesheet is compliant when every hour
+    // on it sits inside some ACTIVE contract, and different entries may sit
+    // under different contracts. Only ACTIVE counts here; a draft or a
+    // contract still awaiting signatures is its own task, not cover.
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(selected),
+      ContractCover.ACTIVE,
+    );
+    const uncovered = entriesWithoutCover(selected, coverByEntry);
+
+    // A draft is only needed for an entry no non-declined contract covers: a
+    // draft or a contract awaiting signatures is already its own task. This
+    // one query skips the entries already openly covered before the loop;
+    // an entry that a draft queued inside the loop swallows still reaches
+    // `ensureDraftContract`, which decides for itself and returns early.
+    const openCover = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(uncovered),
+      ContractCover.OPEN,
+    );
+    const needDraft = uncovered.filter(
+      (entry) => (openCover.get(entry.id) ?? []).length === 0,
     );
 
-    if (!activeContract) {
+    // One draft per entry that needs one, oldest first and one at a time. The
+    // order decides the result: the oldest entry's draft is queued first, so
+    // a later entry that draft contains queues nothing, whereas newest first
+    // could queue a narrower range and then the year around it.
+    for (const entry of needDraft) {
       await this.contractService.ensureDraftContract(
         organizationId,
         {
           organizationUnitId: input.organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          anchorDate: input.periodStart,
+          anchorDate: entry.startedAt,
         },
         actorUserId,
       );
@@ -584,7 +610,7 @@ export class InvoiceService {
           totalAmountCents,
           totalHours,
           hourlyRateCents: rateCents,
-          isNonCompliant: !activeContract,
+          isNonCompliant: uncovered.length > 0,
           resolvedBody: structuredClone(template.body),
           fieldOverrides,
           documentNumberScopeUnitId,

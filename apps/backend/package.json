@@ -27,8 +27,7 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "node dist/src/database/seed.js",
     "db:seed:dev": "ts-node -r tsconfig-paths/register src/database/seed.ts",
-    "db:fixtures": "bun run src/database/fixtures.ts",
-    "db:fixtures:staging": "bun run db:fixtures",
+    "db:fixtures:e2e": "bun run src/database/fixtures.ts",
     "db:fixtures:demo": "bun run src/database/demo-fixtures.ts",
     "db:studio": "drizzle-kit studio",
     "terms:publish": "bun run src/terms/publish-terms.cli.ts"
@@ -47,6 +46,7 @@
     "@nestjs/graphql": "^14.0.3",
     "@nestjs/platform-express": "^12.1.2",
     "@nestjs/schedule": "^12.0.2",
+    "@repo/lifespan": "*",
     "@repo/observability": "*",
     "@sentry/nestjs": "^11.6.0",
     "@thallesp/nestjs-better-auth": "^2.8.0",

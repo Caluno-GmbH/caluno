@@ -3,6 +3,7 @@
  * seed scripts. Keep this module free of top-level side effects — both scripts
  * run seed on import.
  */
+import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
@@ -184,6 +185,130 @@ export const findWeekdayWeeksAgo = (
 export const addHours = (date: Date, hours: number): Date =>
   new Date(date.getTime() + hours * 3_600_000);
 
+export type PlannedFixtureAccount = {
+  email: string;
+  firstname: string;
+  lastname: string;
+};
+
+const FIXTURE_ID_NAMESPACE = 'caluno:fixtures:v1';
+
+/**
+ * Deterministic UUID for a fixture identity.
+ *
+ * Fixture rows are recognised by **id**, never by name or email: names are not
+ * unique and emails can be claimed by real people, so neither can prove
+ * "we created this row". Deriving the id from a stable key (the address, or
+ * `org:<slug>`) makes ownership provable and keeps re-runs idempotent.
+ */
+export const fixtureId = (key: string): string => {
+  const bytes = createHash('sha256')
+    .update(`${FIXTURE_ID_NAMESPACE}:${key}`)
+    .digest()
+    .subarray(0, 16);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // RFC 4122 variant
+  const hex = bytes.toString('hex');
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20),
+  ].join('-');
+};
+
+/** The pinned id of a fixture account, derived from its address. */
+export const fixtureUserId = (email: string): string =>
+  fixtureId(`user:${email}`);
+
+/** The pinned id of a fixture organization, derived from its slug. */
+export const fixtureOrgId = (slug: string): string => fixtureId(`org:${slug}`);
+
+/**
+ * Pre-flight for both seed scripts.
+ *
+ * Fixtures run on every deploy — staging *and* production — so a clash with
+ * real data must abort the whole run *before the first write*. Verifying here
+ * (rather than only at each `createAuthUser`) means an aborted run leaves the
+ * database exactly as it found it instead of half-populated.
+ *
+ * A clash is: an org holding the fixture slug that these fixtures did not
+ * create, or an account owning a fixture address that these fixtures did not
+ * create. Re-runs of our own rows pass.
+ */
+export const assertFixtureIdentitiesAvailable = async (
+  db: Database,
+  input: {
+    orgSlug: string;
+    accounts: PlannedFixtureAccount[];
+  },
+): Promise<void> => {
+  const clashes: string[] = [];
+  const expectedOrgId = fixtureOrgId(input.orgSlug);
+
+  const orgById = await db.query.organizations.findFirst({
+    where: { id: expectedOrgId },
+  });
+  if (orgById && orgById.slug !== input.orgSlug) {
+    clashes.push(
+      `fixture organization id ${expectedOrgId} is held by "${orgById.slug}" but these fixtures expect "${input.orgSlug}"`,
+    );
+  }
+
+  const orgBySlug = await db.query.organizations.findFirst({
+    where: { slug: input.orgSlug },
+  });
+  if (orgBySlug && orgBySlug.id !== expectedOrgId) {
+    clashes.push(
+      `organization "${input.orgSlug}" already exists with id ${orgBySlug.id} and was ` +
+        `not created by these fixtures (expected id ${expectedOrgId})`,
+    );
+  }
+
+  const planned = input.accounts.map((account) => ({
+    ...account,
+    id: fixtureUserId(account.email),
+  }));
+  const [usersById, usersByEmail] = await Promise.all([
+    db.query.users.findMany({
+      where: { id: { in: planned.map((account) => account.id) } },
+    }),
+    db.query.users.findMany({
+      where: { email: { in: planned.map((account) => account.email) } },
+    }),
+  ]);
+  const byId = new Map(usersById.map((user) => [user.id, user]));
+  const byEmail = new Map(usersByEmail.map((user) => [user.email, user]));
+
+  for (const account of planned) {
+    const heldById = byId.get(account.id);
+    if (heldById && heldById.email !== account.email) {
+      clashes.push(
+        `fixture account id ${account.id} is held by "${heldById.email}" but these fixtures expect "${account.email}"`,
+      );
+    }
+
+    const heldByEmail = byEmail.get(account.email);
+    if (heldByEmail && heldByEmail.id !== account.id) {
+      clashes.push(
+        `account "${account.email}" already exists with id ${heldByEmail.id} and was ` +
+          `not created by these fixtures (expected id ${account.id})`,
+      );
+    }
+  }
+
+  if (clashes.length > 0) {
+    throw new Error(
+      [
+        `Refusing to seed fixtures — ${clashes.length} identity clash(es) with existing data:`,
+        ...clashes.map((clash) => `  - ${clash}`),
+        'Nothing was written. Change the fixture identities or remove the conflicting rows.',
+      ].join('\n'),
+    );
+  }
+};
+
 export const createAuthUser = async (
   db: Database,
   hashedPassword: string,
@@ -195,26 +320,44 @@ export const createAuthUser = async (
     image?: string;
   },
 ): Promise<FixtureUser> => {
-  const existing = await db.query.users.findFirst({
-    where: { email: input.email },
-  });
+  const id = fixtureUserId(input.email);
 
-  if (existing) {
-    if (input.image && !existing.image) {
+  // Ownership is proven by the pinned id. The pre-flight has already rejected
+  // any clash, so these two lookups just decide reuse vs. insert.
+  const ours = await db.query.users.findFirst({ where: { id } });
+  if (ours) {
+    if (ours.email !== input.email) {
+      throw new Error(
+        `Fixture account id ${id} is held by "${ours.email}" but these fixtures ` +
+          `expect "${input.email}".`,
+      );
+    }
+    if (input.image && !ours.image) {
       await db
         .update(schema.users)
         .set({ image: input.image })
-        .where(eq(schema.users.id, existing.id));
+        .where(eq(schema.users.id, ours.id));
     }
     return {
-      id: existing.id,
-      email: existing.email,
-      firstname: existing.firstname,
-      lastname: existing.lastname,
+      id: ours.id,
+      email: ours.email,
+      firstname: ours.firstname,
+      lastname: ours.lastname,
     };
   }
 
-  const id = crypto.randomUUID();
+  const foreign = await db.query.users.findFirst({
+    where: { email: input.email },
+  });
+  if (foreign) {
+    // Never adopt an account these fixtures did not create — a real user who
+    // owns a fixture address must not be handed fixture roles or memberships.
+    throw new Error(
+      `Refusing to reuse existing account "${input.email}" (id ${foreign.id}): it ` +
+        `was not created by these fixtures (expected id ${id}). Remove the account ` +
+        `or change the fixture address.`,
+    );
+  }
 
   await db.insert(schema.users).values({
     id,

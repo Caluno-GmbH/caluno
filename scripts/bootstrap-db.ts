@@ -76,43 +76,27 @@ const run = (command: string, args: string[], cwd = REPO_ROOT): void => {
   }
 };
 
-const logFixtureSummary = (): void => {
-  console.log('\nPlayground fixtures loaded.');
-  console.log('Organization: Playground');
+const logDemoFixtureSummary = (): void => {
+  console.log('\nDemo fixtures loaded.');
+  console.log('Organization: Altonaer Lesepaten');
   console.log(
-    'Password for all accounts: abcd1234 (override with FIXTURE_PASSWORD)\n',
+    'Password for all accounts: abcd1234 (override with DEMO_FIXTURE_PASSWORD)\n',
   );
   console.log('Accounts:');
-  console.log('  testing+admin@caluno.org          (Owner)');
-  console.log('  testing+supervisor@caluno.org   (Supervisor)');
+  console.log('  demo+owner@caluno.org        (Owner)');
+  console.log('  demo+supervisor@caluno.org   (Supervisor)');
   console.log(
-    '  testing+demo@caluno.org         (Member — use this one for demos)',
+    '  demo@caluno.org              (Member — use this one for demos)',
   );
-  console.log('  testing+001@caluno.org … testing+010@caluno.org (Member)');
+  console.log('  demo+member01@caluno.org … demo+member29@caluno.org (Member)');
   console.log(
-    '  testing+pending01@caluno.org … testing+pending05@caluno.org (pending request)',
+    '  demo+pending01@caluno.org, demo+pending02@caluno.org (pending request)',
   );
-  console.log('  testing+rejected01@caluno.org   (rejected request)');
-  console.log('\nShifts (weekly, Europe/Berlin):');
+  console.log('  demo+rejected01@caluno.org   (rejected request)');
   console.log(
-    '  Community Support   Mon 08:00–12:00  (all members + demo invited)',
+    '\nThe e2e-only Playground seed (demo+e2e_*@caluno.org) is loaded separately',
   );
-  console.log(
-    '  Food Distribution   Wed 12:00–16:00  (supervisor + demo + member01–04)',
-  );
-  console.log(
-    '  Event Assistance    Fri 16:00–20:00  (demo + member05–07 invited)',
-  );
-  console.log(
-    '\nRequirement form: Personal Information — block with required First name and Last name.',
-  );
-  console.log(
-    'Demo account also follows the Volunteer Fair event and has 4 more',
-  );
-  console.log('shifts across the next 3 weeks left to discover.');
-  console.log(
-    '\nDemo fixtures loaded: organization "Altonaer Lesepaten" (see apps/backend/src/database/demo-fixtures.ts).',
-  );
+  console.log('with `bun run db:fixtures:e2e` — never into the same database.');
 };
 
 const main = (): void => {
@@ -131,13 +115,11 @@ const main = (): void => {
   console.log('Seeding permissions…');
   run('bun', ['run', 'src/database/seed.ts'], BACKEND_ROOT);
 
-  console.log('Loading Playground fixtures…');
-  run('bun', ['run', 'db:fixtures'], BACKEND_ROOT);
-
-  console.log('Loading demo fixtures…');
+  // One dataset only: the Playground seed is e2e-only (`db:fixtures:e2e`) and
+  // must never share a database with this one.
+  console.log('Loading demo fixtures (Altonaer Lesepaten)…');
   run('bun', ['run', 'db:fixtures:demo'], BACKEND_ROOT);
-
-  logFixtureSummary();
+  logDemoFixtureSummary();
 };
 
 main();
