@@ -94,7 +94,12 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
     handleSubmit,
     formState: { errors, isDirty, isValid, isSubmitting },
   } = useForm<Record<string, string>>({
-    resolver: zodResolver(schema) as Resolver<Record<string, string>>,
+    // raw: true keeps empty optional fields as '' in form state. Without it,
+    // zod preprocess (e.g. gender '' → undefined) rewrites values after the
+    // first validation and desyncs dirty tracking from what the inputs show.
+    resolver: zodResolver(schema, undefined, {
+      raw: true,
+    }) as Resolver<Record<string, string>>,
     defaultValues,
     mode: 'onChange',
   });
