@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  type OrganizationUnitAutomationKind,
-  useUpdateOrganizationUnitAutomation,
-  Weekday,
-} from '@repo/data/react';
+import { Weekday } from '@repo/data/react';
 import {
   Card,
   CardContent,
@@ -21,8 +17,7 @@ import {
 } from '@repo/ui';
 import { TriangleAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useId, useState } from 'react';
-import { toast } from 'sonner';
+import { type ReactNode, useId } from 'react';
 
 export const WEEKDAYS: readonly Weekday[] = [
   Weekday.Monday,
@@ -44,44 +39,35 @@ export interface AutomationCardSettings {
 }
 
 interface AutomationCardProps {
-  organizationUnitId: string;
-  kind: OrganizationUnitAutomationKind;
   copyKey: 'callOut' | 'approval' | 'discovery';
   icon: ReactNode;
   control: 'leadTime' | 'sendTime';
-  initialSettings: AutomationCardSettings;
+  settings: AutomationCardSettings;
   canEdit: boolean;
+  isSaving?: boolean;
+  onChange: (patch: Partial<AutomationCardSettings>) => void;
 }
 
 export function AutomationCard({
-  organizationUnitId,
-  kind,
   copyKey,
   icon,
   control,
-  initialSettings,
+  settings,
   canEdit,
+  isSaving = false,
+  onChange,
 }: AutomationCardProps) {
   const t = useTranslations('Automations');
-  const [settings, setSettings] = useState(initialSettings);
-  const mutation = useUpdateOrganizationUnitAutomation();
   const titleId = useId();
   const descriptionId = useId();
 
-  const update = async (patch: Partial<AutomationCardSettings>) => {
-    const previous = settings;
-    setSettings({ ...settings, ...patch });
-
-    try {
-      await mutation.mutateAsync({ organizationUnitId, kind, input: patch });
-    } catch {
-      setSettings(previous);
-      toast.error(t(`${copyKey}.updateError`));
-    }
+  const update = (patch: Partial<AutomationCardSettings>) => {
+    if (!canEdit || isSaving) return;
+    onChange(patch);
   };
 
   const { enabled, activeDays, leadTimeHours, sendAtTime } = settings;
-  const controlsDisabled = !canEdit || !enabled;
+  const controlsDisabled = !canEdit || !enabled || isSaving;
 
   return (
     <Card>
@@ -102,7 +88,7 @@ export function AutomationCard({
           </div>
           <Switch
             checked={enabled}
-            disabled={!canEdit || mutation.isPending}
+            disabled={!canEdit || isSaving}
             aria-labelledby={titleId}
             aria-describedby={descriptionId}
             onCheckedChange={(next) => update({ enabled: next })}

@@ -205,7 +205,27 @@
     "successDialogTitle": "Erfolgreich eingecheckt",
     "today": "Heute",
     "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
-    "unavailableTitle": "Einchecken nicht möglich"
+    "unavailableTitle": "Einchecken nicht möglich",
+    "agreementNoTemplateTitle": "Keine Vertragsvorlage vorhanden",
+    "agreementNoTemplateManageBody": "Richte zuerst die Vorlage ein, um Verträge mit Freiwilligen zu erstellen.",
+    "agreementNoTemplateNoRightsBody": "Für {reimbursementType}-Einsätze gibt es noch keine Vertragsvorlage. Bitte {admins}, eine einzurichten.",
+    "agreementSetUpTemplateButton": "Vorlage einrichten",
+    "agreementNoContractTitle": "Kein aktiver Vertrag",
+    "agreementNoContractManageBody": "Diese:r Freiwillige hat keinen aktiven Vertrag für {reimbursementType}-Einsätze.",
+    "agreementNoContractNoRightsBody": "Diese:r Freiwillige hat keinen aktiven Vertrag für {reimbursementType}-Einsätze. Bitte {admins}, einen zu erstellen.",
+    "agreementCreateButton": "Vertrag erstellen",
+    "agreementAwaitingCountersignTitle": "Vertrag braucht eine Gegenzeichnung",
+    "agreementAwaitingCountersignManageBody": "Der Vertrag für {reimbursementType}-Einsätze wartet darauf, von eurer Organisation gegengezeichnet zu werden.",
+    "agreementAwaitingCountersignNoRightsBody": "Der Vertrag für {reimbursementType}-Einsätze wartet auf eine Gegenzeichnung. Bitte {admins}, ihn abzuschließen.",
+    "agreementCountersignButton": "Gegenzeichnen",
+    "agreementAwaitingVolunteerTitle": "Vertrag noch nicht unterzeichnet",
+    "agreementAwaitingVolunteerBody": "Diese:r Freiwillige hat den Vertrag für {reimbursementType}-Einsätze noch nicht unterzeichnet. Bitte sie/ihn, die App zu öffnen und den Vertrag vor dem Einsatz zu unterschreiben.",
+    "agreementColleagues": "{name} oder eine andere Person mit Zugriff auf Vergütungen",
+    "unverifiedCheckInButton": "Unverifizierter Check-in",
+    "unverifiedCheckInConfirmTitle": "Ohne gültigen Vertrag einchecken?",
+    "unverifiedCheckInConfirmBody": "Du kannst die Person einchecken, sie kann jedoch ohne Vertrag keine Vergütung erhalten.",
+    "unverifiedCheckInConfirmAction": "Trotzdem einchecken",
+    "cancel": "Abbrechen"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
@@ -536,14 +556,25 @@
     },
     "card": {
       "label": "Ausweisprüfung aktivieren",
-      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht.",
-      "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
+      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht."
     }
   },
   "ShiftSettings": {
     "page": {
       "title": "Einsätze und Check-in",
       "subtitle": "Einstellungen für Einsätze in {orgName}."
+    },
+    "actions": {
+      "saved": "Einstellungen gespeichert",
+      "saveError": "Die Einstellungen ließen sich nicht speichern. Versuch es bitte erneut.",
+      "savePartialError": "Ein Teil wurde gespeichert. Der Rest wartet noch. Speichere erneut, oder brich ab, um ihn zu verwerfen.",
+      "unsavedChangesTitle": "Ungespeicherte Änderungen",
+      "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
+      "unsavedChangesLeave": "Ohne Speichern verlassen",
+      "unsavedChangesStay": "Weiter bearbeiten",
+      "confirmEnableTitle": "Wirklich einschalten?",
+      "confirmEnableDescription": "Beim Speichern startet {names}. Das kann ändern, wer in einen Einsatz kommt.",
+      "confirmEnableAction": "Speichern und einschalten"
     },
     "sections": {
       "staffing": {
@@ -594,24 +625,21 @@
       "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Einsätze ohne Mindestbesetzung sind nie betroffen.",
       "daysDescription": "Einsätze an diesen Tagen können einen dringenden Aufruf auslösen.",
       "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung einen dringenden Aufruf erhält.",
-      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht.",
-      "updateError": "Diese Automatisierung ließ sich nicht speichern. Versuch es bitte erneut."
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht."
     },
     "discovery": {
       "title": "Übersichts-E-Mail",
       "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Einsätze in dieser Einheit und der Einsätze, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
       "daysDescription": "Tage, an denen die E-Mail verschickt wird.",
       "sendAtDescription": "Uhrzeit, zu der die E-Mail verschickt wird (Ortszeit).",
-      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
-      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht."
     },
     "approval": {
       "title": "Freigabe pausieren",
       "description": "Bestätigt Anmeldungen sofort, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Sobald der Einsatz seine Mindestbesetzung erreicht, gilt die Freigabe wieder. Einsätze ohne Mindestbesetzung sind nie betroffen.",
       "daysDescription": "Bei Einsätzen an diesen Tagen kann die Freigabe pausiert werden.",
       "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung keine Freigabe mehr braucht.",
-      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht.",
-      "updateError": "Diese Automatisierung ließ sich nicht speichern. Versuch es bitte erneut."
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht."
     }
   },
   "MembershipRequest": {
@@ -777,7 +805,7 @@
     "shortcuts": "Verknüpfungen",
     "timesheets": "Zeiterfassung",
     "volunteeringApp": "Freiwilligen-App",
-    "volunteers": "Freiwillige",
+    "volunteers": "Nutzende",
     "accounting": "Buchhaltung",
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
@@ -880,6 +908,7 @@
       "deleteAria": "Löschen",
       "editAria": "Bearbeiten",
       "empty": "Keine Organisationseinheit-Hierarchie gefunden. Wende dich an deine Koordination.",
+      "title": "Organisationsstruktur",
       "visitAria": "Besuchen"
     },
     "validation": {
@@ -1437,7 +1466,6 @@
     "card": {
       "inviteAria": "Einladen",
       "inviteToShift": "Zum Einsatz einladen",
-      "invited": "Eingeladen",
       "noVolunteers": "Noch keine Freiwilligen eingeladen",
       "openInstanceAria": "Öffnen",
       "waitlist": "Warteliste",
@@ -1963,14 +1991,14 @@
       "viewProfileAria": "Ansehen"
     },
     "empty": {
-      "description": "Teile den Einladungslink, damit sich Freiwillige anmelden.",
-      "title": "Noch keine Freiwilligen"
+      "description": "Teile den Einladungslink, damit sich Personen anmelden.",
+      "title": "Noch keine Nutzenden"
     },
     "page": {
       "copyInviteLink": "Einladungslink kopieren",
       "inviteLinkCopied": "Einladungslink in Zwischenablage kopiert",
-      "subtitle": "Verwalte Freiwillige in deiner Organisation",
-      "title": "Freiwillige"
+      "subtitle": "Verwalte Personen und ihre Rollen in deiner Organisation",
+      "title": "Nutzende"
     },
     "requests": {
       "pendingEmpty": "Noch keine ausstehenden Anfragen.",
@@ -1999,8 +2027,8 @@
     "search": {
       "clearAria": "Suche zurücksetzen",
       "countFiltered": "{count} von {total}",
-      "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
-      "emptyTitle": "Keine Freiwilligen gefunden",
+      "emptyDescription": "Keine Person entspricht dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
+      "emptyTitle": "Keine Nutzenden gefunden",
       "placeholder": "Nach Name, E-Mail oder Rolle suchen"
     },
     "sheet": {
@@ -2387,7 +2415,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Zusatzvereinbarung",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift (Koordination)",
+          "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2499,7 +2527,6 @@
             "invoice": "Stundennachweis"
           },
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift (Koordination)",
           "signatureSupervisor": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
@@ -2557,7 +2584,6 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen",
           "other": "Sonstiges"
         },
         "hoursUnit": {
@@ -2644,6 +2670,11 @@
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
           "yearly_limit_amount": "Jahresfreibetrag"
+        },
+        "pageFooter": {
+          "title": "Fußzeile",
+          "description": "Erscheint unten auf jeder Seite.",
+          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB"
         }
       },
       "card": {

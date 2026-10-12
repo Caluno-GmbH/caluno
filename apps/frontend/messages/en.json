@@ -205,7 +205,27 @@
     "successDialogTitle": "Successfully checked in",
     "today": "Today",
     "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
-    "unavailableTitle": "Can't check in this person"
+    "unavailableTitle": "Can't check in this person",
+    "agreementNoTemplateTitle": "No agreement template set up",
+    "agreementNoTemplateManageBody": "Set up the template first to create contracts with volunteers.",
+    "agreementNoTemplateNoRightsBody": "There's no agreement template for {reimbursementType} shifts yet. Ask {admins} to set one up.",
+    "agreementSetUpTemplateButton": "Set up template",
+    "agreementNoContractTitle": "No active agreement",
+    "agreementNoContractManageBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts.",
+    "agreementNoContractNoRightsBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts. Ask {admins} to create one.",
+    "agreementCreateButton": "Create agreement",
+    "agreementAwaitingCountersignTitle": "Agreement needs a countersignature",
+    "agreementAwaitingCountersignManageBody": "The agreement for {reimbursementType} shifts is waiting for your organization to countersign.",
+    "agreementAwaitingCountersignNoRightsBody": "The agreement for {reimbursementType} shifts is waiting to be countersigned. Ask {admins} to complete it.",
+    "agreementCountersignButton": "Countersign",
+    "agreementAwaitingVolunteerTitle": "Agreement not signed yet",
+    "agreementAwaitingVolunteerBody": "This volunteer hasn't signed their agreement for {reimbursementType} shifts. Ask them to open their app and sign it before they start.",
+    "agreementColleagues": "{name} or any other colleague with reimbursement access",
+    "unverifiedCheckInButton": "Unverified checkin",
+    "unverifiedCheckInConfirmTitle": "Check in without a valid agreement?",
+    "unverifiedCheckInConfirmBody": "You can check them in, but they won't be able to get reimbursed without the contract.",
+    "unverifiedCheckInConfirmAction": "Check in anyway",
+    "cancel": "Cancel"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",
@@ -536,14 +556,25 @@
     },
     "card": {
       "label": "Enable ID verification",
-      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in.",
-      "updateError": "We couldn't save the setting. Please try again."
+      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in."
     }
   },
   "ShiftSettings": {
     "page": {
       "title": "Assignments and check-in",
       "subtitle": "Settings for assignments in {orgName}."
+    },
+    "actions": {
+      "saved": "Settings saved",
+      "saveError": "We couldn't save these settings. Please try again.",
+      "savePartialError": "Some changes were saved. The rest are still waiting. Save again to retry, or cancel to drop them.",
+      "unsavedChangesTitle": "Unsaved changes",
+      "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
+      "unsavedChangesLeave": "Leave without saving",
+      "unsavedChangesStay": "Keep editing",
+      "confirmEnableTitle": "Turn this on?",
+      "confirmEnableDescription": "Saving starts {names}. That can change who gets onto an assignment.",
+      "confirmEnableAction": "Save and turn on"
     },
     "sections": {
       "staffing": {
@@ -594,24 +625,21 @@
       "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
       "daysDescription": "Assignments on these days can trigger an urgent call.",
       "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "We couldn't save this automation. Please try again."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "discovery": {
       "title": "Discovery email",
       "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
       "daysDescription": "Days the email goes out.",
       "sendAtDescription": "Time of day the email goes out, in local time.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "approval": {
       "title": "Pause approval",
       "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
       "daysDescription": "Assignments on these days can have approval paused.",
       "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "We couldn't save this automation. Please try again."
+      "noDaysHint": "No days selected, so this automation will not run."
     }
   },
   "MembershipRequest": {
@@ -777,7 +805,7 @@
     "shortcuts": "Shortcuts",
     "timesheets": "Tracked times",
     "volunteeringApp": "Volunteering app",
-    "volunteers": "Volunteers",
+    "volunteers": "Users",
     "accounting": "Accounting",
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
@@ -880,6 +908,7 @@
       "deleteAria": "Delete",
       "editAria": "Edit",
       "empty": "No organisation unit hierarchy found. Contact your coordinator.",
+      "title": "Organisational structure",
       "visitAria": "Visit"
     },
     "validation": {
@@ -1437,7 +1466,6 @@
     "card": {
       "inviteAria": "Invite",
       "inviteToShift": "Invite to the assignment",
-      "invited": "Invited",
       "noVolunteers": "No volunteers invited",
       "openInstanceAria": "Open",
       "waitlist": "Waitlist",
@@ -1957,20 +1985,20 @@
       "remove": "Remove",
       "removeAria": "Remove",
       "removeDescription": "Are you sure you want to remove {name} from this organisation? This cannot be undone.",
-      "removeFailedToast": "We couldn't remove this volunteer. Please try again.",
+      "removeFailedToast": "We couldn't remove this person. Please try again.",
       "removeTitle": "Remove from organisation",
       "removedToast": "{name} was removed from this organisation",
       "viewProfileAria": "View"
     },
     "empty": {
-      "description": "Share the invite link to get volunteers to sign up.",
-      "title": "No volunteers yet"
+      "description": "Share the invite link to get people to sign up.",
+      "title": "No users yet"
     },
     "page": {
       "copyInviteLink": "Copy invite link",
       "inviteLinkCopied": "Invite link copied to clipboard",
-      "subtitle": "Manage volunteers in your organisation",
-      "title": "Volunteers"
+      "subtitle": "Manage people and their roles in your organisation",
+      "title": "Users"
     },
     "requests": {
       "pendingEmpty": "No pending requests yet.",
@@ -1999,8 +2027,8 @@
     "search": {
       "clearAria": "Clear search",
       "countFiltered": "{count} of {total}",
-      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
-      "emptyTitle": "No volunteers found",
+      "emptyDescription": "No person matches this search. Try a different name, email or role.",
+      "emptyTitle": "No users found",
       "placeholder": "Search by name, email or role"
     },
     "sheet": {
@@ -2387,7 +2415,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Supplementary agreement",
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
+          "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2499,7 +2527,6 @@
             "invoice": "Timesheet"
           },
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
           "signatureSupervisor": "Organisation signature",
           "unsigned": "Not yet signed"
         },
@@ -2557,7 +2584,6 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses",
           "other": "Other information"
         },
         "hoursUnit": {
@@ -2644,6 +2670,11 @@
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Annual allowance"
+        },
+        "pageFooter": {
+          "title": "Page footer",
+          "description": "Appears at the bottom of every page.",
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
         }
       },
       "card": {

@@ -237,6 +237,13 @@ query GetCheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID) {
     idVerificationEnabled
     idVerified
     membershipId
+    agreement {
+      status
+      reimbursementTypeName
+      contractId
+      canManageAgreements
+      managerNames
+    }
   }
 }
 

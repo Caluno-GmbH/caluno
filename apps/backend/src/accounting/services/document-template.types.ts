@@ -47,6 +47,11 @@ export interface TemplateBodyShape {
     closingLine?: TemplateLineShape;
     showSignatures?: boolean;
   };
+  /** Repeated at the bottom of every page; absent on older templates. */
+  pageFooter?: {
+    enabled?: boolean;
+    text?: string;
+  };
 }
 
 /**

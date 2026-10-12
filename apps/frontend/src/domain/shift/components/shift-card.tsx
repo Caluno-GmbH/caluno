@@ -226,7 +226,7 @@ export function ShiftCard({
       <VolunteeringShiftCardVolunteers
         volunteers={invitedVolunteers}
         phase="before"
-        sectionLabel={t('card.invited')}
+        sectionLabel={t('inviteStatus.volunteersTitle')}
       />
       <VolunteeringShiftCardVolunteers
         volunteers={waitlistVolunteers}
