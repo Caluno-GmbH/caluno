@@ -514,7 +514,7 @@ export function DocumentSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col gap-0 w-full sm:max-w-md p-0">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
-          <SheetTitle className="text-xl font-semibold">
+          <SheetTitle className="text-xl font-semibold pr-8">
             {isContract ? 'Vertrag' : 'Stundennachweis'} · {vol.name}
           </SheetTitle>
           <div className="flex items-center gap-2">
