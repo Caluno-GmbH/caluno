@@ -1,6 +1,6 @@
 {
   "Todo": {
-    "empty": "Nothing is waiting on you.",
+    "empty": "Nothing is waiting for you.",
     "loadFailed": "Waiting actions could not be loaded.",
     "seeAll": "See all",
     "groups": {
