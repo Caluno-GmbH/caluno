@@ -26,7 +26,7 @@ import {
   toProfileDataMap,
   WRITABLE_PROFILE_SYSTEM_KEYS,
 } from './profile-fields';
-import { formatUserName } from './user-name';
+import { formatUserName, normalizeAccountHolderForStorage } from './user-name';
 
 @Injectable()
 export class UserService {
@@ -189,6 +189,10 @@ export class UserService {
       const last = changes.lastname ? changes.lastname : existing.lastname;
       changes.name = formatUserName(first, last);
     }
+    changes.accountHolder = normalizeAccountHolderForStorage(
+      changes.accountHolder,
+      changes.name,
+    );
 
     if (Object.keys(changes).length === 0) {
       return await this.findByIdOrThrow(userId, db);

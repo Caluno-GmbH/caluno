@@ -1,3 +1,5 @@
+import { effectiveAccountHolder } from './user-name';
+
 /**
  * Maps requirement-form systemKeys to `users` column names (entity keys).
  * Email is account-owned (`users.email`) and is included in the read map only.
@@ -64,6 +66,19 @@ export function toProfileDataMap(user: ProfileFields): Record<string, unknown> {
     const value = user[column as ProfileUserColumn];
     if (value !== undefined && value !== null && value !== '') {
       data[systemKey] = value;
+    }
+  }
+  // Effective account holder: stored value, else firstname + lastname.
+  if (user.firstname && user.lastname) {
+    data['account-holder'] = effectiveAccountHolder({
+      accountHolder: user.accountHolder,
+      firstname: user.firstname,
+      lastname: user.lastname,
+    });
+  } else {
+    const stored = user.accountHolder;
+    if (stored !== undefined && stored !== null && stored !== '') {
+      data['account-holder'] = stored;
     }
   }
   return data;

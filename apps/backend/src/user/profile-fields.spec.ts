@@ -18,8 +18,33 @@ describe('toProfileDataMap', () => {
       lastname: 'Lovelace',
       email: 'ada@example.com',
       birthdate: '1815-12-10',
+      // Equal-to-name stored value still resolves as the effective holder.
       'account-holder': 'Ada Lovelace',
     });
+  });
+
+  it('fills account-holder from the derived name when unset', () => {
+    expect(
+      toProfileDataMap({
+        firstname: 'Ada',
+        lastname: 'Lovelace',
+        accountHolder: null,
+      }),
+    ).toEqual({
+      firstname: 'Ada',
+      lastname: 'Lovelace',
+      'account-holder': 'Ada Lovelace',
+    });
+  });
+
+  it('prefers an explicit accountHolder over the derived name', () => {
+    expect(
+      toProfileDataMap({
+        firstname: 'Ada',
+        lastname: 'Lovelace',
+        accountHolder: 'A. Lovelace Trust',
+      })['account-holder'],
+    ).toBe('A. Lovelace Trust');
   });
 });
 
