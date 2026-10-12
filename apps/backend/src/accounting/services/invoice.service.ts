@@ -726,7 +726,7 @@ export class InvoiceService {
       const missing =
         await this.documentProfileRequirementService.missingProfileSources(
           invoice.volunteerId,
-          invoice.documentTemplate?.body,
+          invoice.documentTemplate.body,
         );
       if (missing.length > 0) {
         throw new BadRequestGraphQLError(

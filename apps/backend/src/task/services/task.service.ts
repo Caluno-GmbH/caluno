@@ -301,7 +301,6 @@ export class TaskService {
     });
 
     return rows.flatMap((row) => {
-      if (!row.user) return [];
       return [
         {
           id: row.id,

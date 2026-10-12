@@ -153,6 +153,11 @@ describe('DocumentRenderingService', () => {
       id: 'contract-1',
       volunteerId: 'vol-1',
       reimbursementTypeId: 'type-1',
+      reimbursementType: {
+        id: 'type-1',
+        yearlyLimitCents: 300000,
+        platformDefaultRateCents: 1500,
+      },
       periodStart: new Date('2025-01-01'),
       periodEnd: new Date('2025-01-31'),
       totalAmountCents: 20000,
@@ -221,6 +226,11 @@ describe('DocumentRenderingService', () => {
       id: 'invoice-1',
       volunteerId: 'vol-1',
       reimbursementTypeId: 'type-1',
+      reimbursementType: {
+        id: 'type-1',
+        yearlyLimitCents: 300000,
+        platformDefaultRateCents: 1500,
+      },
       periodStart: new Date('2025-01-01'),
       periodEnd: new Date('2025-01-31'),
       totalAmountCents: 8250,
@@ -347,15 +357,6 @@ describe('DocumentRenderingService', () => {
     expect(rateCallArgs).toEqual(['org-1', 'sub-unit', 'type-1']);
   });
 
-  it('renderAndAttachPdf never throws — returns null when the template is missing', async () => {
-    const service = createService();
-    const fileId = await service.renderAndAttachPdf(
-      contract({ documentTemplate: null }),
-      'actor-1',
-    );
-    expect(fileId).toBeNull();
-  });
-
   describe('signature seats', () => {
     it('renders name and signing date only for parties that have signed', async () => {
       const service = createService({ rateCents: 1500 });
@@ -381,9 +382,7 @@ describe('DocumentRenderingService', () => {
     it('repeats the page footer and numbers every page when enabled', async () => {
       const service = createService({ rateCents: 1500 });
       const base = contract();
-      const template = base.documentTemplate as NonNullable<
-        ContractWithRelations['documentTemplate']
-      >;
+      const template = base.documentTemplate;
       const body = template.body as Record<string, unknown>;
       const text = extractPdfText(
         await service.generatePdf({
@@ -425,9 +424,7 @@ describe('DocumentRenderingService', () => {
     it('still numbers pages when the footer text is switched off', async () => {
       const service = createService({ rateCents: 1500 });
       const base = contract();
-      const template = base.documentTemplate as NonNullable<
-        ContractWithRelations['documentTemplate']
-      >;
+      const template = base.documentTemplate;
       const body = template.body as Record<string, unknown>;
       const text = extractPdfText(
         await service.generatePdf({

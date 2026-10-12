@@ -6,10 +6,12 @@ export const shiftsRelations = defineRelationsPart(schema, (r) => ({
     organizationUnit: r.one.organizationUnits({
       from: r.shifts.organizationUnitId,
       to: r.organizationUnits.id,
+      optional: false,
     }),
     createdBy: r.one.users({
       from: r.shifts.createdById,
       to: r.users.id,
+      optional: false,
     }),
     instances: r.many.shiftInstances({
       from: r.shifts.id,
@@ -32,10 +34,12 @@ export const shiftsRelations = defineRelationsPart(schema, (r) => ({
     shift: r.one.shifts({
       from: r.shiftRequiredForms.shiftId,
       to: r.shifts.id,
+      optional: false,
     }),
     form: r.one.requirementForms({
       from: r.shiftRequiredForms.formId,
       to: r.requirementForms.id,
+      optional: false,
     }),
   },
 }));

@@ -6,12 +6,14 @@ export const termsRelations = defineRelationsPart(schema, (r) => ({
     user: r.one.users({
       from: r.termsAcceptances.userId,
       to: r.users.id,
+      optional: false,
     }),
   },
   termsNotifications: {
     user: r.one.users({
       from: r.termsNotifications.userId,
       to: r.users.id,
+      optional: false,
     }),
   },
 }));
