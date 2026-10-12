@@ -1,5 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, gte, inArray, lt, max, sql } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNotNull,
+  lt,
+  max,
+  sql,
+} from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
@@ -29,6 +40,15 @@ import {
   fillAssignmentWindow,
 } from './todo-fill-filter';
 import { TodoFillFilterService } from './todo-fill-filter.service';
+
+const shiftInstanceTitle = sql<string>`coalesce(${schema.shiftInstances.overrideTitle}, ${schema.shifts.title})`;
+const shiftMinimumVolunteers = sql<number>`coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${schema.shifts.minVolunteers})`;
+const shiftMaximumVolunteers = sql<
+  number | null
+>`coalesce(${schema.shiftInstances.overrideMaxVolunteers}, ${schema.shifts.maxVolunteers})`;
+const joinedInviteCount = sql<number>`count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED})::int`;
+const shiftOpenApprovalCount = sql<number>`count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.AWAITING_ADMIN_APPROVAL})::int`;
+const eventOpenApprovalCount = sql<number>`count(*) filter (where ${schema.eventInvites.status} = ${EventInviteStatus.AWAITING_ADMIN_APPROVAL})::int`;
 
 /**
  * Tasks are computed on each read for the selected org unit. A row leaves
@@ -96,29 +116,29 @@ export class TaskService {
     organizationUnitId: string,
     filter: FillAssignmentFilter,
   ): Promise<Task[]> {
-    const minimum = sql<number>`coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${schema.shifts.minVolunteers})`;
-    const maximum = sql<
-      number | null
-    >`coalesce(${schema.shiftInstances.overrideMaxVolunteers}, ${schema.shifts.maxVolunteers})`;
-    const approvedCount = sql<number>`count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED})::int`;
-    const title = sql<string>`coalesce(${schema.shiftInstances.overrideTitle}, ${schema.shifts.title})`;
     const now = new Date();
     const window = fillAssignmentWindow(now, filter.daysAhead);
     const staffing =
       filter.threshold === 'NOT_FULL'
-        ? sql`${maximum} is not null and count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED}) < ${maximum}`
-        : sql`${minimum} is not null and count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED}) < ${minimum}`;
+        ? and(
+            isNotNull(shiftMaximumVolunteers),
+            lt(joinedInviteCount, shiftMaximumVolunteers),
+          )
+        : and(
+            isNotNull(shiftMinimumVolunteers),
+            lt(joinedInviteCount, shiftMinimumVolunteers),
+          );
 
     const rows = await this.db
       .select({
         instanceId: schema.shiftInstances.id,
         shiftId: schema.shifts.id,
-        title,
+        title: shiftInstanceTitle,
         startsAt: schema.shiftInstances.actualStartsAt,
         endsAt: schema.shiftInstances.actualEndsAt,
-        minimum,
-        maximum,
-        approvedCount,
+        minimum: shiftMinimumVolunteers,
+        maximum: shiftMaximumVolunteers,
+        approvedCount: joinedInviteCount,
       })
       .from(schema.shiftInstances)
       .innerJoin(
@@ -171,17 +191,14 @@ export class TaskService {
   }
 
   private async shiftApprovals(organizationUnitId: string): Promise<Task[]> {
-    const openRequestCount = sql<number>`count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.AWAITING_ADMIN_APPROVAL})::int`;
-    const title = sql<string>`coalesce(${schema.shiftInstances.overrideTitle}, ${schema.shifts.title})`;
-
     const rows = await this.db
       .select({
         instanceId: schema.shiftInstances.id,
         shiftId: schema.shifts.id,
-        title,
+        title: shiftInstanceTitle,
         startsAt: schema.shiftInstances.actualStartsAt,
         endsAt: schema.shiftInstances.actualEndsAt,
-        openRequestCount,
+        openRequestCount: shiftOpenApprovalCount,
       })
       .from(schema.shiftInstances)
       .innerJoin(
@@ -208,9 +225,7 @@ export class TaskService {
         schema.shiftInstances.actualStartsAt,
         schema.shiftInstances.actualEndsAt,
       )
-      .having(
-        sql`count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.AWAITING_ADMIN_APPROVAL}) > 0`,
-      )
+      .having(gt(shiftOpenApprovalCount, 0))
       .orderBy(asc(schema.shiftInstances.actualStartsAt));
 
     return rows.map((row) => ({
@@ -229,15 +244,13 @@ export class TaskService {
   }
 
   private async eventApprovals(organizationUnitId: string): Promise<Task[]> {
-    const openRequestCount = sql<number>`count(*) filter (where ${schema.eventInvites.status} = ${EventInviteStatus.AWAITING_ADMIN_APPROVAL})::int`;
-
     const rows = await this.db
       .select({
         eventId: schema.events.id,
         title: schema.events.title,
         startsAt: schema.events.startsAt,
         endsAt: schema.events.endsAt,
-        openRequestCount,
+        openRequestCount: eventOpenApprovalCount,
       })
       .from(schema.events)
       .innerJoin(
@@ -257,9 +270,7 @@ export class TaskService {
         schema.events.startsAt,
         schema.events.endsAt,
       )
-      .having(
-        sql`count(*) filter (where ${schema.eventInvites.status} = ${EventInviteStatus.AWAITING_ADMIN_APPROVAL}) > 0`,
-      )
+      .having(gt(eventOpenApprovalCount, 0))
       .orderBy(asc(schema.events.startsAt));
 
     return rows.map((row) => ({
