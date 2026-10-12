@@ -80,3 +80,6 @@ docs/superpowers/
 
 # Personal mise config
 mise.toml
+
+# Reasonix
+.reasonix/

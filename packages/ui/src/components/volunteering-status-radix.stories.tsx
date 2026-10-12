@@ -253,25 +253,25 @@ const invitePanelMembers = [
   {
     id: '1',
     name: 'Konstantin Zaituc',
-    email: 'testing+002@caluno.org',
+    email: 'demo+member02@caluno.org',
     state: 'declined' as const,
   },
   {
     id: '2',
     name: 'Helena Thiomas',
-    email: 'testing+006@caluno.org',
+    email: 'demo+member06@caluno.org',
     state: 'accepted' as const,
   },
   {
     id: '3',
     name: 'Frau Ylvi Grams',
-    email: 'testing+008@caluno.org',
+    email: 'demo+member08@caluno.org',
     state: 'accepted' as const,
   },
   {
     id: '4',
     name: 'Noemi Umlauft',
-    email: 'testing+010@caluno.org',
+    email: 'demo+member10@caluno.org',
     state: 'accepted' as const,
   },
 ];
