@@ -126,7 +126,7 @@ export function getContractDocument(
       {
         kind: 'text',
         id: 'persoenliche-daten',
-        title: 'Persönliche Daten',
+        title: '',
         locked: true,
         enabled: true,
         lines: [
@@ -200,7 +200,7 @@ export function getContractDocument(
       {
         kind: 'text',
         id: 'freiwillige-stunden',
-        title: 'Freiwillige Stunden',
+        title: '',
         locked: true,
         enabled: true,
         lines: [
