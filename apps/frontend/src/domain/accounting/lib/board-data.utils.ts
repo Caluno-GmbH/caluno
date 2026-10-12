@@ -22,6 +22,7 @@ import {
   isContractExpired,
   periodCovers,
 } from './billing-period';
+import { lifespanForPeriod } from './creation-modal.utils';
 import { centsToEuros } from './money';
 import { pauschaleForReimbursementTypeKey } from './reimbursement-type-mapping';
 
@@ -109,6 +110,19 @@ export function sourceDraftIdFor(doc: {
   status: DocStatus;
 }): string | null {
   return doc.status === 'contract-draft' ? doc.id : null;
+}
+
+/**
+ * The Vertragslaufzeit the creation dialog opens on for this row: a queued
+ * draft's own period, so August hours open an August contract even when the
+ * template still says October. Rows with no draft behind them have none and
+ * the dialog keeps the template's value.
+ */
+export function initialLifespanFor(doc: {
+  status: DocStatus;
+  draftLifespan?: string;
+}): string | null {
+  return doc.status === 'contract-draft' ? (doc.draftLifespan ?? null) : null;
 }
 
 export type ContractPickerState =
@@ -293,6 +307,12 @@ export function mapContractToBoardDoc(
       locale,
     ),
     pauschale: type,
+    // A draft states its own period, and the dialog that turns it into a
+    // contract opens on that, not on the template's stored value.
+    draftLifespan:
+      contract.contractStatus === ContractStatus.Draft
+        ? lifespanForPeriod(contract.periodStart, contract.periodEnd)
+        : undefined,
     declineReason: contract.declineReason ?? undefined,
     declinedBy: contract.declinedByUser?.name ?? undefined,
     declinedAt: contract.declinedAt ? new Date(contract.declinedAt) : undefined,
