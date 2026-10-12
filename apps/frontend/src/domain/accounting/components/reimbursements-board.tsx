@@ -33,7 +33,7 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useReimbursementBoardData } from '../hooks/use-reimbursement-board-data';
-import { creationTargetFor } from '../lib/board-data.utils';
+import { creationTargetFor, sourceDraftIdFor } from '../lib/board-data.utils';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -915,6 +915,11 @@ export function ReimbursementsBoard({
         volunteerName={contractCreationTarget?.vol.name ?? null}
         pauschale={
           contractCreationTarget ? contractCreationTarget.doc.pauschale : null
+        }
+        sourceDraftId={
+          contractCreationTarget
+            ? sourceDraftIdFor(contractCreationTarget.doc)
+            : null
         }
         onSent={() => setContractCreationTarget(null)}
       />
