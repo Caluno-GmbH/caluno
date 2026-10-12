@@ -46,6 +46,7 @@
     "@nestjs/graphql": "^14.0.3",
     "@nestjs/platform-express": "^12.1.2",
     "@nestjs/schedule": "^12.0.2",
+    "@repo/lifespan": "*",
     "@repo/observability": "*",
     "@sentry/nestjs": "^11.6.0",
     "@thallesp/nestjs-better-auth": "^2.8.0",

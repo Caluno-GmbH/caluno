@@ -38,6 +38,14 @@ describe('contractPeriodForLifespan', () => {
   it('returns undefined for an empty entry', () => {
     expect(contractPeriodForLifespan('')).toBeUndefined();
   });
+
+  it('refuses a month outside 1 to 12 instead of rolling into the next year', () => {
+    expect(contractPeriodForLifespan('13/2026')).toBeUndefined();
+  });
+
+  it('refuses a day range with a day that does not exist', () => {
+    expect(contractPeriodForLifespan('31.02.2026–05.03.2026')).toBeUndefined();
+  });
 });
 
 describe('hoursBetween', () => {

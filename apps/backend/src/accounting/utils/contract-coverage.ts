@@ -177,3 +177,18 @@ export function coverageTargetsForTimeEntries(
   }
   return targets;
 }
+
+/**
+ * The entries no covering contract was found for, oldest first. An entry that
+ * is missing from `coverByKey` counts as uncovered, so a compliance flag fails
+ * closed instead of reading "no answer" as "covered". Callers pass paid
+ * entries; an unpaid one has no target and would show up here.
+ */
+export function entriesWithoutCover<E extends { id: string; startedAt: Date }>(
+  entries: readonly E[],
+  coverByKey: ReadonlyMap<string, readonly unknown[]>,
+): E[] {
+  return entries
+    .filter((entry) => (coverByKey.get(entry.id) ?? []).length === 0)
+    .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
+}

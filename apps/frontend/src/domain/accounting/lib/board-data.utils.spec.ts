@@ -33,6 +33,7 @@ import {
   mapInvoiceToBoardDoc,
   mapSignatureToSignee,
   monthsInRange,
+  sourceDraftIdFor,
 } from './board-data.utils';
 
 const ehrenamtType = {
@@ -1549,6 +1550,25 @@ describe('creationTargetFor', () => {
     for (const [status, meta] of Object.entries(STATUS_META)) {
       if (meta.actionKey !== 'create') continue;
       expect(creationTargetFor(status as DocStatus)).not.toBeNull();
+    }
+  });
+});
+
+describe('sourceDraftIdFor', () => {
+  it('is the contract id of a queued draft row', () => {
+    expect(sourceDraftIdFor({ id: 'c-1', status: 'contract-draft' })).toBe(
+      'c-1',
+    );
+  });
+
+  it('is null for rows that are not a queued draft', () => {
+    for (const status of [
+      'contract-generate',
+      'contract-declined',
+      'contract-missing',
+      'contract-expired',
+    ] as const) {
+      expect(sourceDraftIdFor({ id: 'c-1', status })).toBeNull();
     }
   });
 });

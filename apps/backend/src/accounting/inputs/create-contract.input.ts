@@ -8,6 +8,12 @@ export class CreateContractInput {
   @Field(() => ID, { nullable: true })
   organizationUnitId?: string | null;
 
+  // The auto-queued draft this contract is created from. It is always
+  // consumed, even when the new period does not fully contain it; other drafts
+  // are only superseded when the new period fully contains them.
+  @Field(() => ID, { nullable: true })
+  sourceDraftId?: string | null;
+
   @Field(() => ID)
   volunteerId!: string;
 
