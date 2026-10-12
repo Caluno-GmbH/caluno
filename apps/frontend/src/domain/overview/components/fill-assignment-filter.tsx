@@ -1,6 +1,7 @@
 'use client';
 
-import { TodoFillThreshold, useTodoFillFilter } from '@repo/data/react';
+import { TodoFillThreshold } from '@repo/data';
+import { useTodoFillFilter } from '@repo/data/react';
 import {
   Popover,
   PopoverContent,

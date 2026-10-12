@@ -183,7 +183,7 @@ describe('TaskService.myTasks', () => {
       status: EventInviteStatus.AWAITING_ADMIN_APPROVAL,
     });
 
-    await createMembershipRequest(db, {
+    const volunteerMembershipRequest = await createMembershipRequest(db, {
       userId: volunteer.id,
       organizationUnitId,
     });
@@ -213,27 +213,38 @@ describe('TaskService.myTasks', () => {
     const periodStart = new Date('2026-06-01T00:00:00.000Z');
     const periodEnd = new Date('2026-07-01T00:00:00.000Z');
     const body = { header: {}, blocks: [], footer: {} };
-    await db.insert(schema.contracts).values({
-      documentTemplateId: contractTemplate.id,
-      volunteerId: volunteer.id,
-      reimbursementTypeId: reimbursementType.id,
-      organizationUnitId,
-      contractStatus: ContractStatus.AWAITING_NGO_SIGNATURE,
-      periodStart,
-      periodEnd,
-      resolvedBody: body,
-    });
-    await db.insert(schema.contracts).values({
-      documentTemplateId: contractTemplate.id,
-      volunteerId: volunteer.id,
-      reimbursementTypeId: reimbursementType.id,
-      organizationUnitId,
-      contractStatus: ContractStatus.DECLINED,
-      declinedAtSigneeType: SigneeType.PERMISSION_HOLDER,
-      periodStart: new Date('2026-01-01T00:00:00.000Z'),
-      periodEnd: new Date('2027-01-01T00:00:00.000Z'),
-      resolvedBody: body,
-    });
+    const [awaitingContract] = await db
+      .insert(schema.contracts)
+      .values({
+        documentTemplateId: contractTemplate.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId,
+        contractStatus: ContractStatus.AWAITING_NGO_SIGNATURE,
+        periodStart,
+        periodEnd,
+        resolvedBody: body,
+      })
+      .returning();
+    if (!awaitingContract)
+      throw new Error('Failed to create awaiting contract');
+    const [orgDeclinedContract] = await db
+      .insert(schema.contracts)
+      .values({
+        documentTemplateId: contractTemplate.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId,
+        contractStatus: ContractStatus.DECLINED,
+        declinedAtSigneeType: SigneeType.PERMISSION_HOLDER,
+        periodStart: new Date('2026-01-01T00:00:00.000Z'),
+        periodEnd: new Date('2027-01-01T00:00:00.000Z'),
+        resolvedBody: body,
+      })
+      .returning();
+    if (!orgDeclinedContract) {
+      throw new Error('Failed to create org-declined contract');
+    }
 
     const invoiceBase = {
       documentTemplateId: invoiceTemplate.id,
@@ -246,13 +257,17 @@ describe('TaskService.myTasks', () => {
       totalAmountCents: 1200,
       ...stubInvoiceDocumentNumber(organizationUnitId),
     };
-    await db.insert(schema.invoices).values({
-      ...invoiceBase,
-      invoiceStatus: InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
-      periodStart,
-      periodEnd,
-      ...stubInvoiceDocumentNumber(organizationUnitId),
-    });
+    const [awaitingInvoice] = await db
+      .insert(schema.invoices)
+      .values({
+        ...invoiceBase,
+        invoiceStatus: InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
+        periodStart,
+        periodEnd,
+        ...stubInvoiceDocumentNumber(organizationUnitId),
+      })
+      .returning();
+    if (!awaitingInvoice) throw new Error('Failed to create awaiting invoice');
     await db.insert(schema.invoices).values({
       ...invoiceBase,
       invoiceStatus: InvoiceStatus.READY,
@@ -277,15 +292,21 @@ describe('TaskService.myTasks', () => {
     });
     const declinedStart = new Date('2026-02-01T00:00:00.000Z');
     const declinedEnd = new Date('2026-03-01T00:00:00.000Z');
-    await db.insert(schema.invoices).values({
-      ...invoiceBase,
-      invoiceStatus: InvoiceStatus.DECLINED,
-      declinedAtSigneeType: SigneeType.VOLUNTEER,
-      declineReason: 'Wrong hours',
-      periodStart: declinedStart,
-      periodEnd: declinedEnd,
-      ...stubInvoiceDocumentNumber(organizationUnitId),
-    });
+    const [volunteerDeclinedInvoice] = await db
+      .insert(schema.invoices)
+      .values({
+        ...invoiceBase,
+        invoiceStatus: InvoiceStatus.DECLINED,
+        declinedAtSigneeType: SigneeType.VOLUNTEER,
+        declineReason: 'Wrong hours',
+        periodStart: declinedStart,
+        periodEnd: declinedEnd,
+        ...stubInvoiceDocumentNumber(organizationUnitId),
+      })
+      .returning();
+    if (!volunteerDeclinedInvoice) {
+      throw new Error('Failed to create volunteer-declined invoice');
+    }
     await db.insert(schema.invoices).values({
       ...invoiceBase,
       invoiceStatus: InvoiceStatus.DECLINED,
@@ -330,30 +351,51 @@ describe('TaskService.myTasks', () => {
         (task) => task.id === approvalInstance.id,
       )?.data,
     ).toMatchObject({ title: 'Needs a yes', openRequestCount: 2 });
-    expect(of(TaskType.EVENT_APPROVAL)[0]?.data).toMatchObject({
+    expect(
+      of(TaskType.EVENT_APPROVAL).find((task) => task.id === event.id)?.data,
+    ).toMatchObject({
       title: 'Summer fair',
       openRequestCount: 1,
     });
-    expect(of(TaskType.MEMBERSHIP_REQUEST)[0]?.data).toMatchObject({
+    expect(
+      of(TaskType.MEMBERSHIP_REQUEST).find(
+        (task) => task.id === volunteerMembershipRequest.id,
+      )?.data,
+    ).toMatchObject({
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: volunteer.email,
     });
-    expect(of(TaskType.CONTRACT_SIGN)).toHaveLength(1);
-    expect(of(TaskType.TIMESHEET_SIGN)[0]?.data).toMatchObject({
+    expect(of(TaskType.CONTRACT_SIGN).map((task) => task.id)).toContain(
+      awaitingContract.id,
+    );
+    expect(
+      of(TaskType.TIMESHEET_SIGN).find((task) => task.id === awaitingInvoice.id)
+        ?.data,
+    ).toMatchObject({
       volunteerName: volunteer.name,
       hours: 3,
       amountCents: 1200,
     });
-    expect(of(TaskType.TIMESHEET_BUNDLES)[0]?.data).toMatchObject({
+    expect(
+      of(TaskType.TIMESHEET_BUNDLES).find(
+        (task) => task.id === `bundle:${volunteer.id}:${reimbursementType.key}`,
+      )?.data,
+    ).toMatchObject({
       readyCount: 2,
       amountCents: 2400,
     });
-    expect(of(TaskType.DOCUMENT_DECLINED)).toHaveLength(1);
-    expect(of(TaskType.DOCUMENT_DECLINED)[0]?.data).toMatchObject({
+    expect(
+      of(TaskType.DOCUMENT_DECLINED).find(
+        (task) => task.id === volunteerDeclinedInvoice.id,
+      )?.data,
+    ).toMatchObject({
       declineReason: 'Wrong hours',
       declinedAtSigneeType: SigneeType.VOLUNTEER,
     });
+    expect(of(TaskType.DOCUMENT_DECLINED).map((task) => task.id)).not.toContain(
+      orgDeclinedContract.id,
+    );
     expect(tasks.some((task) => task.type === TaskType.CONTRACT_EXPIRING)).toBe(
       false,
     );
