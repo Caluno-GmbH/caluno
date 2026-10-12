@@ -94,7 +94,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const {
     control,
     handleSubmit,
-    formState: { errors, isDirty, isValid, isSubmitting },
+    formState: { errors, isSubmitting },
   } = useForm<Record<string, string>>({
     resolver: zodResolver(schema) as Resolver<Record<string, string>>,
     defaultValues,
@@ -179,7 +179,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
         >
           {tCommon('cancel')}
         </Button>
-        <Button type="submit" disabled={!isDirty || !isValid || isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
           {isSubmitting ? tCommon('saving') : tCommon('save')}
         </Button>
