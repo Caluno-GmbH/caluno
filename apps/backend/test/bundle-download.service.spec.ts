@@ -10,10 +10,12 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import AdmZip from 'adm-zip';
+import { eq } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
   InvoiceStatus,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
 import { BundleDownloadService } from '../src/accounting/services/bundle-download.service';
@@ -188,6 +190,7 @@ describe('BundleDownloadService', () => {
       createdAt?: string;
       volunteerId?: string;
       unitId?: string;
+      reimbursementTypeId?: string;
     } = {},
   ) => {
     const file = options.withFile === false ? null : await createPdfFile(s);
@@ -196,7 +199,8 @@ describe('BundleDownloadService', () => {
       .values({
         documentTemplateId: s.contractTemplate.id,
         volunteerId: options.volunteerId ?? s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.id,
+        reimbursementTypeId:
+          options.reimbursementTypeId ?? s.reimbursementType.id,
         organizationUnitId: options.unitId ?? s.root.id,
         contractStatus: options.status ?? ContractStatus.ACTIVE,
         periodStart: new Date(period.start),
@@ -273,6 +277,11 @@ describe('BundleDownloadService', () => {
       .map((entry) => entry.entryName)
       .sort();
   const sorted = (names: string[]) => [...names].sort();
+  /** Entry names in the order they were written, for the order tests. */
+  const zipOrder = (buffer: Buffer) =>
+    new AdmZip(buffer, { noSort: true })
+      .getEntries()
+      .map((entry) => entry.entryName);
   const contractName = (id: string) =>
     `Vereinbarung-${id.slice(0, 8)}-${id.slice(8, 12)}.pdf`;
   const timesheetName = (id: string) =>
@@ -423,16 +432,21 @@ describe('BundleDownloadService', () => {
           timesheetName(sheetTwo.id),
         ]),
       );
+      // One fetch per document: the ZIP collapses a duplicate name, so only
+      // the fetch count shows a contract that was resolved twice.
+      expect(fetchSpy).toHaveBeenCalledTimes(4);
     });
 
     it('leaves out an old ACTIVE contract that covers none of the hours', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
-      const covering = await insertContract(s, JULY);
+      // Inserted first, so an unordered findFirst over the volunteer's ACTIVE
+      // contracts would return this one.
       await insertContract(s, {
         start: '2025-12-31T23:00:00.000Z',
         end: '2026-03-31T22:00:00.000Z',
       });
+      const covering = await insertContract(s, JULY);
       const invoice = await readyTimesheet(s, [entry]);
 
       const { buffer } = await download(s);
@@ -542,6 +556,66 @@ describe('BundleDownloadService', () => {
 
       expect(zipNames(buffer)).toEqual(
         sorted([contractName(second.id), timesheetName(invoice.id)]),
+      );
+    });
+    it('puts the contracts ahead of the timesheets, oldest period first', async () => {
+      const s = await setup();
+      const early = await entryAt(s, '2026-07-05T09:00:00.000Z');
+      const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
+      // Inserted newest period first on purpose.
+      const second = await insertContract(s, SECOND_HALF);
+      const first = await insertContract(s, FIRST_HALF);
+      const sheetOne = await readyTimesheet(s, [early]);
+      const sheetTwo = await readyTimesheet(s, [late]);
+
+      const { buffer } = await download(s);
+
+      const order = zipOrder(buffer);
+      expect(order.slice(0, 2)).toEqual([
+        contractName(first.id),
+        contractName(second.id),
+      ]);
+      expect(sorted(order.slice(2))).toEqual(
+        sorted([timesheetName(sheetOne.id), timesheetName(sheetTwo.id)]),
+      );
+    });
+
+    it('does not pull in a contract of another reimbursement type when a claimed entry was moved to it', async () => {
+      const s = await setup();
+      const other = await createReimbursementType(db, {
+        key: ReimbursementTypeKey.UEBUNGSLEITER,
+      });
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const invoice = await readyTimesheet(s, [entry]);
+      // A coordinator edits the claimed entry's type after the timesheet was
+      // issued; the type-B contract covers that date but is not this bundle's.
+      await db
+        .update(schema.timeEntries)
+        .set({ reimbursementTypeId: other.id })
+        .where(eq(schema.timeEntries.id, entry.id));
+      await insertContract(s, JULY, { reimbursementTypeId: other.id });
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+    });
+
+    it('does not read claims that were released from the timesheet', async () => {
+      const s = await setup();
+      const kept = await entryAt(s, '2026-07-05T09:00:00.000Z');
+      const released = await entryAt(s, '2026-07-20T09:00:00.000Z');
+      const first = await insertContract(s, FIRST_HALF);
+      await insertContract(s, SECOND_HALF);
+      const invoice = await readyTimesheet(s, [kept, released]);
+      await db
+        .update(schema.invoiceTimeEntries)
+        .set({ released: true })
+        .where(eq(schema.invoiceTimeEntries.timeEntryId, released.id));
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(
+        sorted([contractName(first.id), timesheetName(invoice.id)]),
       );
     });
   });

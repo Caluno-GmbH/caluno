@@ -6,11 +6,7 @@ import { BadRequestGraphQLError } from '../../graphql/errors';
 import { FileService } from '../../storage/services/file.service';
 import { InvoiceStatus } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
-import {
-  ContractCover,
-  type CoverableTimeEntry,
-  coverageTargetsForTimeEntries,
-} from '../utils/contract-coverage';
+import { ContractCover, type CoverageTarget } from '../utils/contract-coverage';
 import { ContractService } from './contract.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
 
@@ -29,8 +25,10 @@ interface BuiltBundle {
  * into a single downloadable ZIP and records the download (audit row + marking
  * the READY invoices as paid) once the bundle is built.
  *
- * The bundle contains the signed agreement (contract) plus every ready
- * (unpaid, READY) timesheet for that type. Documents are resolved to their
+ * The bundle contains every ready (unpaid, READY) timesheet for that type plus
+ * the signed agreements (ACTIVE contracts) that cover the hours on those
+ * timesheets: the newest covering contract per time entry, each once, listed
+ * ahead of the timesheets (VOLI-1586). Documents are resolved to their
  * stored PDF bytes (public object storage) and zipped on the fly — nothing is
  * persisted, so repeated downloads don't accumulate artifacts (VOLI-1216).
  */
@@ -68,7 +66,11 @@ export class BundleDownloadService {
       },
     });
 
-    const contracts = await this.findCoveringContracts(invoices);
+    const contracts = await this.findCoveringContracts(invoices, {
+      volunteerId,
+      reimbursementTypeId,
+      organizationUnitId,
+    });
 
     const entries: BundleEntry[] = [];
     for (const contract of contracts) {
@@ -95,7 +97,9 @@ export class BundleDownloadService {
     const buffer = await this.zipEntries(entries);
 
     // Record the download (audit row + mark the READY invoices as paid). Only
-    // once the ZIP is built, so a failed render never marks anything paid.
+    // once the ZIP is built, so a file URL that cannot be resolved marks
+    // nothing paid. A file that cannot be fetched is skipped by `zipEntries`
+    // and its invoice is still marked paid here; that predates VOLI-1586.
     if (invoices.length > 0) {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
@@ -116,25 +120,45 @@ export class BundleDownloadService {
    * covering contract per time entry, each contract once, oldest period
    * first. Hours no contract covers add nothing, so a non-compliant timesheet
    * still downloads on its own.
+   *
+   * Every entry is matched in the bundle's own volunteer, reimbursement type
+   * and unit, not in whatever the entry row says today: a coordinator can edit
+   * a claimed entry's type, and that must not pull another type's contract
+   * into this bundle.
    */
   private async findCoveringContracts(
     invoices: {
-      invoiceTimeEntries: { timeEntry: CoverableTimeEntry | null }[];
+      invoiceTimeEntries: {
+        timeEntry: { id: string; startedAt: Date } | null;
+      }[];
     }[],
+    scope: {
+      volunteerId: string;
+      reimbursementTypeId: string;
+      organizationUnitId: string;
+    },
   ): Promise<ContractEntity[]> {
-    const timeEntries = invoices.flatMap((invoice) =>
+    const targets: CoverageTarget[] = invoices.flatMap((invoice) =>
       invoice.invoiceTimeEntries.flatMap((claim) =>
-        claim.timeEntry ? [claim.timeEntry] : [],
+        claim.timeEntry
+          ? [
+              {
+                key: claim.timeEntry.id,
+                ...scope,
+                at: claim.timeEntry.startedAt,
+              },
+            ]
+          : [],
       ),
     );
     const coverByEntry = await this.contractService.findCoveringContracts(
-      coverageTargetsForTimeEntries(timeEntries),
+      targets,
       ContractCover.ACTIVE,
     );
 
     const contractsById = new Map<string, ContractEntity>();
-    for (const entry of timeEntries) {
-      const newest = coverByEntry.get(entry.id)?.[0];
+    for (const target of targets) {
+      const newest = coverByEntry.get(target.key)?.[0];
       if (newest) contractsById.set(newest.id, newest);
     }
     return [...contractsById.values()].sort(
@@ -145,7 +169,8 @@ export class BundleDownloadService {
   }
 
   private async zipEntries(entries: BundleEntry[]): Promise<Buffer> {
-    const zip = new AdmZip();
+    // `noSort` keeps the order the entries were added in: contracts first.
+    const zip = new AdmZip(undefined, { noSort: true });
     for (const entry of entries) {
       const url = await this.fileService.resolvePublicUrlForUploadedFile(
         entry.fileId,
