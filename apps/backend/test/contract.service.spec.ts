@@ -19,7 +19,10 @@ import {
   findManualFieldValue,
   type TemplateBodyShape,
 } from '../src/accounting/services/document-template.types';
-import { billingYearBounds } from '../src/accounting/utils/billing-period';
+import {
+  billingMonthBoundsOf,
+  billingYearBounds,
+} from '../src/accounting/utils/billing-period';
 import {
   ContractCover,
   type CoverageTarget,
@@ -369,12 +372,12 @@ describe('ContractService', () => {
     });
 
     it('replaces the auto-queued draft for the same volunteer, type and year', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, root, reimbursementType, volunteer, signer } =
         await setup();
       const draft = await service.ensureDraftContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           anchorDate: new Date('2026-06-15T12:00:00.000Z'),
@@ -386,11 +389,12 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
-          periodStart: new Date('2026-01-01T00:00:00.000Z'),
-          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+          // The Berlin calendar year, so it fully contains the year draft.
+          periodStart: billingYearBounds(2026).start,
+          periodEnd: billingYearBounds(2026).end,
         },
         signer.id,
       );
@@ -1405,6 +1409,165 @@ describe('ContractService', () => {
           volunteer.id,
         ),
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+    });
+  });
+
+  describe('createContract draft supersede', () => {
+    const queueDraft = (
+      s: Awaited<ReturnType<typeof setup>>,
+      anchorDate: Date,
+    ) =>
+      service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate,
+        },
+        s.signer.id,
+      );
+
+    const create = (
+      s: Awaited<ReturnType<typeof setup>>,
+      period: { start: Date; end: Date },
+      extra: { sourceDraftId?: string | null } = {},
+    ) =>
+      service.createContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          periodStart: period.start,
+          periodEnd: period.end,
+          sourceDraftId: extra.sourceDraftId,
+        },
+        s.signer.id,
+      );
+
+    const draftIds = async (s: Awaited<ReturnType<typeof setup>>) =>
+      (
+        await db.query.contracts.findMany({
+          where: {
+            volunteerId: s.volunteer.id,
+            contractStatus: ContractStatus.DRAFT,
+          },
+        })
+      ).map((c) => c.id);
+
+    const october = () =>
+      billingMonthBoundsOf(new Date('2026-10-20T10:00:00.000Z'));
+
+    it('keeps a month draft when a week contract is created inside it', async () => {
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      const draft = await queueDraft(s, new Date('2026-10-20T10:00:00.000Z'));
+
+      await create(s, {
+        start: startOfAppDay(2026, 9, 5),
+        end: startOfAppDay(2026, 9, 12),
+      });
+
+      expect(await draftIds(s)).toEqual([draft?.id]);
+    });
+
+    it('supersedes a month draft when a month contract covers it', async () => {
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      await queueDraft(s, new Date('2026-10-20T10:00:00.000Z'));
+
+      const contract = await create(s, october());
+
+      expect(await draftIds(s)).toEqual([]);
+      const changes = await db.query.contractStatusChanges.findMany({
+        where: { contractId: contract.id },
+      });
+      expect(changes.map((c) => c.type)).toContain(
+        DocumentStatusChange.DRAFT_SUPERSEDED,
+      );
+    });
+
+    it('supersedes a year draft when a year contract covers it', async () => {
+      const s = await setup();
+      await queueDraft(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      await create(s, billingYearBounds(2026));
+
+      expect(await draftIds(s)).toEqual([]);
+    });
+
+    it('keeps a year draft that is only partly covered by a month contract', async () => {
+      const s = await setup();
+      const draft = await queueDraft(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      await create(s, october());
+
+      expect(await draftIds(s)).toEqual([draft?.id]);
+    });
+
+    it('consumes the source draft even when the new contract does not contain it', async () => {
+      const s = await setup();
+      const draft = await queueDraft(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      await create(s, october(), { sourceDraftId: draft?.id });
+
+      expect(await draftIds(s)).toEqual([]);
+    });
+
+    it('ignores a source draft id that matches nothing', async () => {
+      const s = await setup();
+      const contract = await create(s, october(), {
+        sourceDraftId: crypto.randomUUID(),
+      });
+      expect(contract.contractStatus).toBe(
+        ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+      );
+    });
+
+    it("never deletes another organization's draft, not even by source draft id", async () => {
+      const a = await setup();
+      const b = await setup();
+      const draftInB = await service.ensureDraftContract(
+        b.organization.id,
+        {
+          organizationUnitId: b.root.id,
+          volunteerId: a.volunteer.id,
+          reimbursementTypeId: a.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        b.signer.id,
+      );
+      expect(draftInB?.contractStatus).toBe(ContractStatus.DRAFT);
+
+      await create(a, billingYearBounds(2026), { sourceDraftId: draftInB?.id });
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draftInB?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('never deletes a draft of another unit of the same organization', async () => {
+      const s = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      const draftInSibling = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: sibling.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+
+      await create(s, billingYearBounds(2026));
+
+      expect(await draftIds(s)).toEqual([draftInSibling?.id]);
     });
   });
 
