@@ -234,6 +234,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 - Soft deletes via `deletedAt` timestamp — no hard deletes on important records
 - Export entity types: `$inferSelect` / `$inferInsert`
 - Migration `snapshot.json` files (`src/database/migrations/*/`) duplicate the full schema once per migration and drown out real search hits — they are excluded from search via the root `.ignore`. Trace schema history through the `migration.sql` diffs; read a specific snapshot by naming its path explicitly.
+- Schema fields with notNull() are marked with `optional: false` in relations
 
 ### Querying: Relational Query v2 by default
 For fetching entities and their relations, use Relational Query v2:
