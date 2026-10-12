@@ -8,6 +8,7 @@ import {
   contractCountsAsCover,
   contractCoversInstant,
   coverageTargetsForTimeEntries,
+  entriesWithoutCover,
   matchCoveringContracts,
 } from './contract-coverage';
 
@@ -343,5 +344,36 @@ describe('coverageTargetsForTimeEntries', () => {
         },
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('entriesWithoutCover', () => {
+  const entry = (id: string, startedAt: Date) => ({ id, startedAt });
+
+  it('keeps entries whose covering list is empty and drops covered ones', () => {
+    const covered = entry('covered', berlinNoon(2026, 9, 5));
+    const open = entry('open', berlinNoon(2026, 9, 20));
+    const cover = new Map([
+      ['covered', [contract()]],
+      ['open', []],
+    ]);
+
+    expect(entriesWithoutCover([covered, open], cover)).toEqual([open]);
+  });
+
+  it('treats an entry missing from the cover map as uncovered', () => {
+    const unknown = entry('unknown', berlinNoon(2026, 9, 5));
+
+    expect(entriesWithoutCover([unknown], new Map())).toEqual([unknown]);
+  });
+
+  it('returns the uncovered entries oldest first whatever the input order', () => {
+    const early = entry('early', berlinNoon(2026, 7, 15));
+    const middle = entry('middle', berlinNoon(2026, 8, 15));
+    const late = entry('late', berlinNoon(2026, 9, 14));
+
+    expect(
+      entriesWithoutCover([late, early, middle], new Map()).map((e) => e.id),
+    ).toEqual(['early', 'middle', 'late']);
   });
 });
