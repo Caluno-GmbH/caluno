@@ -85,6 +85,21 @@ function line(
   };
 }
 
+/**
+ * The volunteer's BIC: opt-in, off by default (VOLI-1544). SEPA payouts do not
+ * need a BIC; only non-EU accounts do. Same switch pattern as the date of birth.
+ */
+function bicLine(id: string): TemplateLine {
+  return line(
+    id,
+    '{volunteerBic} (BIC)',
+    [bound(`${id}-field`, 'volunteer_bic')],
+    {
+      optional: true,
+    },
+  );
+}
+
 const PAUSCHALE_TITLE: Record<PauschalenType, string> = {
   ehrenamt: 'Aufwandsentschädigung gemäß § 3 Nr. 26a EStG (Ehrenamtspauschale)',
   uebungsleiter:
@@ -111,7 +126,7 @@ export function getContractDocument(
       {
         kind: 'text',
         id: 'persoenliche-daten',
-        title: 'Persönliche Daten',
+        title: '',
         locked: true,
         enabled: true,
         lines: [
@@ -185,7 +200,7 @@ export function getContractDocument(
       {
         kind: 'text',
         id: 'freiwillige-stunden',
-        title: 'Freiwillige Stunden',
+        title: '',
         locked: true,
         enabled: true,
         lines: [
@@ -226,9 +241,7 @@ export function getContractDocument(
           line('payout-iban', '{volunteerIban} (IBAN)', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),
-          line('payout-bic', '{volunteerBic} (BIC)', [
-            bound('payout-bic-field', 'volunteer_bic'),
-          ]),
+          bicLine('payout-bic'),
         ],
       },
       {
@@ -254,6 +267,7 @@ export function getContractDocument(
       ]),
       showSignatures: true,
     },
+    pageFooter: { enabled: false, text: '' },
   };
 }
 
@@ -323,6 +337,8 @@ export function getInvoiceDocument(
           line('volunteer-iban', '{volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),
           ]),
+          // Follows the IBAN so payout details read together.
+          bicLine('volunteer-bic'),
         ],
       },
       {
@@ -389,6 +405,7 @@ export function getInvoiceDocument(
       ]),
       showSignatures: true,
     },
+    pageFooter: { enabled: false, text: '' },
     invoiceNumberFormat: 'date-number',
   };
 }

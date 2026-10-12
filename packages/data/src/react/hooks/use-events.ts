@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateEventInput,
   UpdateEventInput,
-} from '../../generated/graphql';
+} from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 export function useEvents() {

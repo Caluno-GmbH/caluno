@@ -1,16 +1,19 @@
 import { DataError } from '../../errors/data-error';
+// SortOrder / TimeEntrySortField are string enums used as values below, so
+// they must be value imports (not part of the `import type` above).
+import {
+  type AddTimeEntryInput,
+  type CloseTimeEntryInput,
+  SortOrder,
+  TimeEntrySortField,
+  type UpdateTimeEntryInput,
+} from '../../generated/base-types';
 import type {
-  AddTimeEntryInput,
-  CloseTimeEntryInput,
   GetCheckInContextQuery,
   GetCheckInReadinessQuery,
   GetCheckInVolunteerRequiredFormsQuery,
   GetTimeEntryQuery,
-  UpdateTimeEntryInput,
 } from '../../generated/graphql';
-// SortOrder / TimeEntrySortField are string enums used as values below, so
-// they must be value imports (not part of the `import type` above).
-import { SortOrder, TimeEntrySortField } from '../../generated/graphql';
 import {
   BaseRepository,
   type PaginationOptions,

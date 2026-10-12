@@ -278,6 +278,9 @@ describe('ShiftPauseApprovalSweepService', () => {
   let automationService: OrganizationUnitAutomationService;
   let db: Database;
   let organizationUnitId: string;
+  let notifyShiftInstanceWaitlistSpotOpened: ReturnType<typeof mock>;
+  let notifyShiftInstanceWaitlistJoined: ReturnType<typeof mock>;
+  let notifyShiftInstanceJoinApproved: ReturnType<typeof mock>;
 
   beforeAll(async () => {
     await ensureTestDatabase();
@@ -297,6 +300,10 @@ describe('ShiftPauseApprovalSweepService', () => {
       {} as never,
     );
 
+    notifyShiftInstanceWaitlistSpotOpened = mock(() => {});
+    notifyShiftInstanceWaitlistJoined = mock(() => {});
+    notifyShiftInstanceJoinApproved = mock(() => {});
+
     shiftService = new ShiftService(
       db,
       { findUsersWithPermission: async () => [] } as unknown as AuthService,
@@ -308,8 +315,9 @@ describe('ShiftPauseApprovalSweepService', () => {
       {
         notifyShiftInstanceJoined: mock(() => {}),
         notifyShiftInstanceJoinRequested: mock(() => {}),
-        notifyShiftInstanceJoinApproved: mock(() => {}),
-        notifyShiftInstanceWaitlistJoined: mock(() => {}),
+        notifyShiftInstanceJoinApproved,
+        notifyShiftInstanceWaitlistJoined,
+        notifyShiftInstanceWaitlistSpotOpened,
       } as unknown as NotificationService,
       {} as OrganizationService,
       {} as never,
@@ -422,7 +430,18 @@ describe('ShiftPauseApprovalSweepService', () => {
     return invite?.status;
   }
 
-  it('admits a volunteer who was already waiting once the shift qualifies', async () => {
+  function clearPauseMails() {
+    notifyShiftInstanceWaitlistSpotOpened.mockClear();
+    notifyShiftInstanceWaitlistJoined.mockClear();
+    notifyShiftInstanceJoinApproved.mockClear();
+  }
+
+  async function settleMails() {
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+
+  it('moves a waiting volunteer onto the waitlist and tells them a seat is open', async () => {
+    clearPauseMails();
     const { instance, weekday } = await createApprovalShift({
       hoursFromNow: 20,
       minVolunteers: 3,
@@ -436,13 +455,24 @@ describe('ShiftPauseApprovalSweepService', () => {
     });
 
     await sweepService.runTick();
+    await settleMails();
 
     expect(await inviteStatus(instance.id, waitingUserId)).toBe(
-      ShiftInviteStatus.JOINED,
+      ShiftInviteStatus.WAITLIST_JOINED,
+    );
+    expect(notifyShiftInstanceJoinApproved).not.toHaveBeenCalled();
+    expect(notifyShiftInstanceWaitlistJoined).not.toHaveBeenCalled();
+    expect(notifyShiftInstanceWaitlistSpotOpened).toHaveBeenCalledTimes(1);
+    expect(notifyShiftInstanceWaitlistSpotOpened).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceId: instance.id,
+        recipientUserIds: [waitingUserId],
+      }),
     );
   });
 
-  it('waitlists the overflow when there are more waiting volunteers than seats', async () => {
+  it('tells every moved volunteer a seat is open while one remains', async () => {
+    clearPauseMails();
     const { instance, weekday } = await createApprovalShift({
       hoursFromNow: 20,
       minVolunteers: 3,
@@ -458,12 +488,81 @@ describe('ShiftPauseApprovalSweepService', () => {
     });
 
     await sweepService.runTick();
+    await settleMails();
 
     expect(await inviteStatus(instance.id, firstUserId)).toBe(
-      ShiftInviteStatus.JOINED,
+      ShiftInviteStatus.WAITLIST_JOINED,
     );
     expect(await inviteStatus(instance.id, secondUserId)).toBe(
       ShiftInviteStatus.WAITLIST_JOINED,
+    );
+    expect(notifyShiftInstanceWaitlistSpotOpened).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceId: instance.id,
+        recipientUserIds: expect.arrayContaining([firstUserId, secondUserId]),
+      }),
+    );
+    expect(
+      notifyShiftInstanceWaitlistSpotOpened.mock.calls[0]?.[0].recipientUserIds,
+    ).toHaveLength(2);
+  });
+
+  it('moves a waiting volunteer onto the waitlist without a seat-opened email when the shift is full', async () => {
+    clearPauseMails();
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 20,
+      minVolunteers: 3,
+      maxVolunteers: 1,
+      joinedCount: 1,
+    });
+    const waitingUserId = await createAwaitingInvite(instance.id);
+
+    await setPauseApproval({
+      enabled: true,
+      activeDays: [weekday],
+      leadTimeHours: 48,
+    });
+
+    await sweepService.runTick();
+    await settleMails();
+
+    expect(await inviteStatus(instance.id, waitingUserId)).toBe(
+      ShiftInviteStatus.WAITLIST_JOINED,
+    );
+    expect(notifyShiftInstanceWaitlistSpotOpened).not.toHaveBeenCalled();
+    expect(notifyShiftInstanceWaitlistJoined).not.toHaveBeenCalled();
+  });
+
+  it('does not email volunteers who were already on the waitlist', async () => {
+    clearPauseMails();
+    const { instance, weekday } = await createApprovalShift({
+      hoursFromNow: 20,
+      minVolunteers: 3,
+    });
+    const waitingUserId = await createAwaitingInvite(instance.id);
+    const alreadyWaitlistedId = (await createUser(db)).id;
+    await createShiftInstanceInvite(db, {
+      instanceId: instance.id,
+      userId: alreadyWaitlistedId,
+      status: ShiftInviteStatus.WAITLIST_JOINED,
+    });
+
+    await setPauseApproval({
+      enabled: true,
+      activeDays: [weekday],
+      leadTimeHours: 48,
+    });
+
+    await sweepService.runTick();
+    await settleMails();
+
+    expect(await inviteStatus(instance.id, waitingUserId)).toBe(
+      ShiftInviteStatus.WAITLIST_JOINED,
+    );
+    expect(notifyShiftInstanceWaitlistSpotOpened).toHaveBeenCalledWith(
+      expect.objectContaining({
+        recipientUserIds: [waitingUserId],
+      }),
     );
   });
 

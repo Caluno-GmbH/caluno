@@ -1,7 +1,7 @@
 'use client';
 
+import { PermissionKey } from '@repo/data';
 import {
-  PermissionKey,
   useHasPermission,
   useRoles,
   useUpdateMembershipRoles,
