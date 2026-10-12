@@ -17,6 +17,7 @@ import {
   SigneeType,
 } from '../src/accounting/enums';
 import { BundleDownloadService } from '../src/accounting/services/bundle-download.service';
+import { ContractService } from '../src/accounting/services/contract.service';
 import { ReimbursementRateService } from '../src/accounting/services/reimbursement-rate.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
@@ -57,6 +58,16 @@ describe('BundleDownloadService', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
+    // Only `findCoveringContracts` is used, so the other collaborators are stubs.
+    const contractService = new ContractService(
+      db,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { capture: () => {} } as unknown as PostHogService,
+    );
     const reimbursementRateService = new ReimbursementRateService(
       db,
       new OrganizationUnitDataService(db),
@@ -73,6 +84,7 @@ describe('BundleDownloadService', () => {
       db,
       fileService,
       reimbursementRateService,
+      contractService,
     );
 
     registerTestResourceCleanup(async () => {
@@ -331,18 +343,206 @@ describe('BundleDownloadService', () => {
       expect(stored?.paidAt).toBeNull();
     });
 
-    it('does not put an already paid timesheet back in the bundle', async () => {
+    // VOLI-1586 changed this on purpose: a contract is only bundled for the
+    // hours of the timesheets being downloaded, so a paid timesheet alone, with
+    // a contract that used to ride along, leaves nothing to download.
+    it('has nothing to download when the only timesheet is already paid', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
-      const contract = await insertContract(s, JULY);
-      const paid = await readyTimesheet(s, [entry], { paid: true });
+      await insertContract(s, JULY);
+      await readyTimesheet(s, [entry], { paid: true });
+
+      await expect(download(s)).rejects.toThrow(
+        'No ready documents to download',
+      );
+    });
+  });
+
+  describe('contracts that cover the timesheets’ hours (VOLI-1586)', () => {
+    const FIRST_HALF = {
+      start: '2026-06-30T22:00:00.000Z',
+      end: '2026-07-15T22:00:00.000Z',
+    };
+    const SECOND_HALF = {
+      start: '2026-07-15T22:00:00.000Z',
+      end: '2026-07-31T22:00:00.000Z',
+    };
+
+    it('contains both contracts when one timesheet spans two of them, then the timesheet', async () => {
+      const s = await setup();
+      const early = await entryAt(s, '2026-07-05T09:00:00.000Z');
+      const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
+      const first = await insertContract(s, FIRST_HALF);
+      const second = await insertContract(s, SECOND_HALF);
+      const invoice = await readyTimesheet(s, [early, late]);
 
       const { buffer } = await download(s);
 
-      // Today the one ACTIVE contract is bundled on its own; the paid
-      // timesheet is not in it.
-      expect(zipNames(buffer)).toEqual([contractName(contract.id)]);
-      expect(zipNames(buffer)).not.toContain(timesheetName(paid.id));
+      expect(zipNames(buffer)).toEqual(
+        sorted([
+          contractName(first.id),
+          contractName(second.id),
+          timesheetName(invoice.id),
+        ]),
+      );
+    });
+
+    it('contains only the newest of two contracts that cover the same time', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      await insertContract(s, JULY, { createdAt: '2026-06-01T10:00:00.000Z' });
+      const newest = await insertContract(s, JULY, {
+        createdAt: '2026-06-20T10:00:00.000Z',
+      });
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(
+        sorted([contractName(newest.id), timesheetName(invoice.id)]),
+      );
+    });
+
+    it('contains the union of covering contracts of several timesheets, each once', async () => {
+      const s = await setup();
+      const a = await entryAt(s, '2026-07-05T09:00:00.000Z');
+      const b = await entryAt(s, '2026-07-08T09:00:00.000Z');
+      const c = await entryAt(s, '2026-07-20T09:00:00.000Z');
+      const first = await insertContract(s, FIRST_HALF);
+      const second = await insertContract(s, SECOND_HALF);
+      const sheetOne = await readyTimesheet(s, [a]);
+      const sheetTwo = await readyTimesheet(s, [b, c]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(
+        sorted([
+          contractName(first.id),
+          contractName(second.id),
+          timesheetName(sheetOne.id),
+          timesheetName(sheetTwo.id),
+        ]),
+      );
+    });
+
+    it('leaves out an old ACTIVE contract that covers none of the hours', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const covering = await insertContract(s, JULY);
+      await insertContract(s, {
+        start: '2025-12-31T23:00:00.000Z',
+        end: '2026-03-31T22:00:00.000Z',
+      });
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(
+        sorted([contractName(covering.id), timesheetName(invoice.id)]),
+      );
+    });
+
+    for (const [label, status] of [
+      ['draft', ContractStatus.DRAFT],
+      ['awaiting signature', ContractStatus.AWAITING_VOLUNTEER_SIGNATURE],
+      ['declined', ContractStatus.DECLINED],
+    ] as const) {
+      it(`never includes a ${label} contract`, async () => {
+        const s = await setup();
+        const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+        await insertContract(s, JULY, { status });
+        const invoice = await readyTimesheet(s, [entry]);
+
+        const { buffer } = await download(s);
+
+        expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      });
+    }
+
+    it('still builds the bundle from the timesheets when no contract covers any entry, and marks them paid', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).not.toBeNull();
+    });
+
+    it('skips a covering contract that has no file', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      await insertContract(s, JULY, { withFile: false });
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+    });
+
+    it('does not use an older contract with a file in place of the newest one that has none', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      await insertContract(s, JULY, { createdAt: '2026-06-01T10:00:00.000Z' });
+      await insertContract(s, JULY, {
+        createdAt: '2026-06-20T10:00:00.000Z',
+        withFile: false,
+      });
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+    });
+
+    it('does not include a contract of another volunteer, another unit or another type', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const otherVolunteer = await createUser(db);
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      await insertContract(s, JULY, { volunteerId: otherVolunteer.id });
+      await insertContract(s, JULY, { unitId: sibling.id });
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+    });
+
+    it('does not count an entry that starts exactly when the contract ends', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-15T22:00:00.000Z');
+      await insertContract(s, FIRST_HALF);
+      const invoice = await readyTimesheet(s, [entry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+    });
+
+    it('ignores the hours of an already paid timesheet when choosing contracts', async () => {
+      const s = await setup();
+      const paidEntry = await entryAt(s, '2026-07-05T09:00:00.000Z');
+      const openEntry = await entryAt(s, '2026-07-20T09:00:00.000Z');
+      await insertContract(s, FIRST_HALF);
+      const second = await insertContract(s, SECOND_HALF);
+      await readyTimesheet(s, [paidEntry], { paid: true });
+      const invoice = await readyTimesheet(s, [openEntry]);
+
+      const { buffer } = await download(s);
+
+      expect(zipNames(buffer)).toEqual(
+        sorted([contractName(second.id), timesheetName(invoice.id)]),
+      );
     });
   });
 });

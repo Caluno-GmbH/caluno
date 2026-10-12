@@ -4,7 +4,14 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { BadRequestGraphQLError } from '../../graphql/errors';
 import { FileService } from '../../storage/services/file.service';
-import { ContractStatus, InvoiceStatus } from '../enums';
+import { InvoiceStatus } from '../enums';
+import type { ContractEntity } from '../schemas/contract.schema';
+import {
+  ContractCover,
+  type CoverableTimeEntry,
+  coverageTargetsForTimeEntries,
+} from '../utils/contract-coverage';
+import { ContractService } from './contract.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
 
 interface BundleEntry {
@@ -36,6 +43,7 @@ export class BundleDownloadService {
     private readonly db: Database,
     private readonly fileService: FileService,
     private readonly reimbursementRateService: ReimbursementRateService,
+    private readonly contractService: ContractService,
   ) {}
 
   async buildAndRecord(
@@ -44,28 +52,27 @@ export class BundleDownloadService {
     reimbursementTypeId: string,
     userId: string,
   ): Promise<BuiltBundle> {
-    const [invoices, contract] = await Promise.all([
-      this.db.query.invoices.findMany({
-        where: {
-          volunteerId,
-          reimbursementTypeId,
-          organizationUnitId,
-          invoiceStatus: InvoiceStatus.READY,
-          paidAt: { isNull: true },
+    const invoices = await this.db.query.invoices.findMany({
+      where: {
+        volunteerId,
+        reimbursementTypeId,
+        organizationUnitId,
+        invoiceStatus: InvoiceStatus.READY,
+        paidAt: { isNull: true },
+      },
+      with: {
+        invoiceTimeEntries: {
+          where: { released: false },
+          with: { timeEntry: true },
         },
-      }),
-      this.db.query.contracts.findFirst({
-        where: {
-          volunteerId,
-          reimbursementTypeId,
-          organizationUnitId,
-          contractStatus: ContractStatus.ACTIVE,
-        },
-      }),
-    ]);
+      },
+    });
+
+    const contracts = await this.findCoveringContracts(invoices);
 
     const entries: BundleEntry[] = [];
-    if (contract?.fileId) {
+    for (const contract of contracts) {
+      if (!contract.fileId) continue;
       entries.push({
         name: `Vereinbarung-${contract.id.slice(0, 8)}-${contract.id.slice(8, 12)}.pdf`,
         fileId: contract.fileId,
@@ -102,6 +109,39 @@ export class BundleDownloadService {
       buffer,
       zipName: `Abrechnung-${volunteerId.slice(0, 8)}.zip`,
     };
+  }
+
+  /**
+   * The ACTIVE contracts that cover the hours on these timesheets: the newest
+   * covering contract per time entry, each contract once, oldest period
+   * first. Hours no contract covers add nothing, so a non-compliant timesheet
+   * still downloads on its own.
+   */
+  private async findCoveringContracts(
+    invoices: {
+      invoiceTimeEntries: { timeEntry: CoverableTimeEntry | null }[];
+    }[],
+  ): Promise<ContractEntity[]> {
+    const timeEntries = invoices.flatMap((invoice) =>
+      invoice.invoiceTimeEntries.flatMap((claim) =>
+        claim.timeEntry ? [claim.timeEntry] : [],
+      ),
+    );
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(timeEntries),
+      ContractCover.ACTIVE,
+    );
+
+    const contractsById = new Map<string, ContractEntity>();
+    for (const entry of timeEntries) {
+      const newest = coverByEntry.get(entry.id)?.[0];
+      if (newest) contractsById.set(newest.id, newest);
+    }
+    return [...contractsById.values()].sort(
+      (a, b) =>
+        a.periodStart.getTime() - b.periodStart.getTime() ||
+        (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    );
   }
 
   private async zipEntries(entries: BundleEntry[]): Promise<Buffer> {
