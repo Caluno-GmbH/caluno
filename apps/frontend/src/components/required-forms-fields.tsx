@@ -1,6 +1,7 @@
 'use client';
 
-import { FieldType, type RequiredForm } from '@repo/data/react';
+import { FieldType } from '@repo/data';
+import type { RequiredForm } from '@repo/data/react';
 import {
   Button,
   Command,

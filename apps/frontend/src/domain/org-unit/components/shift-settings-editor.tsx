@@ -1,7 +1,7 @@
 'use client';
 
+import { OrganizationUnitAutomationKind } from '@repo/data';
 import {
-  OrganizationUnitAutomationKind,
   useUpdateOrganizationUnit,
   useUpdateOrganizationUnitAutomation,
 } from '@repo/data/react';

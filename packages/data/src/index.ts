@@ -21,6 +21,7 @@ export * from './errors/data-error';
 export * from './errors/forbidden-data-error';
 export * from './errors/translate';
 // Generated types (all GraphQL types, queries, mutations)
+export * from './generated/base-types';
 export * from './generated/graphql';
 // Server-side utilities (framework-agnostic, requires DI)
 export * from './integrations/server-org-context';

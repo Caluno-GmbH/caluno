@@ -2,7 +2,7 @@
 
 import { EventRepository } from '@repo/data';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { EventInviteStatus } from '../../generated/graphql';
+import type { EventInviteStatus } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 export function useUpdateEventInviteStatus() {
