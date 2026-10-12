@@ -538,8 +538,9 @@ export class InvoiceService {
 
     // A draft is only needed for an entry no non-declined contract covers: a
     // draft or a contract awaiting signatures is already its own task. This
-    // one query saves a lookup per entry; `ensureDraftContract` still decides
-    // for itself below.
+    // one query skips the entries already openly covered before the loop;
+    // an entry that a draft queued inside the loop swallows still reaches
+    // `ensureDraftContract`, which decides for itself and returns early.
     const openCover = await this.contractService.findCoveringContracts(
       coverageTargetsForTimeEntries(uncovered),
       ContractCover.OPEN,

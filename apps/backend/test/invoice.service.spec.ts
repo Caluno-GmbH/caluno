@@ -1849,15 +1849,73 @@ describe('InvoiceService', () => {
         const spy = spyOn(contractService, 'ensureDraftContract');
 
         try {
-          await issueTimesheet(
+          const invoice = await issueTimesheet(
             s,
             [s.timeEntry.id, second.id, third.id],
             JULY_TIMESHEET,
           );
+          // Not compliant, so the empty call list is down to the pre-filter
+          // and not to there being nothing uncovered.
+          expect(invoice.isNonCompliant).toBe(true);
           expect(spy).not.toHaveBeenCalled();
         } finally {
           spy.mockRestore();
         }
+      });
+
+      it('asks for drafts one at a time, oldest entry first', async () => {
+        const s = await setup();
+        const december = await entryAt(s, '2026-12-20T09:00:00.000Z');
+        const january = await entryAt(s, '2027-01-10T09:00:00.000Z');
+        const original =
+          contractService.ensureDraftContract.bind(contractService);
+        let inFlight = 0;
+        let mostInFlight = 0;
+        const anchors: number[] = [];
+        const spy = spyOn(contractService, 'ensureDraftContract');
+        spy.mockImplementation(async (...args) => {
+          anchors.push(args[1].anchorDate.getTime());
+          inFlight += 1;
+          mostInFlight = Math.max(mostInFlight, inFlight);
+          try {
+            return await original(...args);
+          } finally {
+            inFlight -= 1;
+          }
+        });
+
+        try {
+          await issueTimesheet(s, [january.id, december.id], {
+            start: '2026-11-30T23:00:00.000Z',
+            end: '2027-01-31T23:00:00.000Z',
+          });
+        } finally {
+          spy.mockRestore();
+        }
+
+        expect(anchors).toEqual([
+          new Date('2026-12-20T09:00:00.000Z').getTime(),
+          new Date('2027-01-10T09:00:00.000Z').getTime(),
+        ]);
+        expect(mostInFlight).toBe(1);
+      });
+
+      it('writes nothing when the organisation has no contract template to draft from', async () => {
+        const s = await setup();
+        await db
+          .update(schema.documentTemplates)
+          .set({ isDeleted: true })
+          .where(eq(schema.documentTemplates.id, s.contractTemplate.id));
+
+        await expect(
+          issueTimesheet(s, [s.timeEntry.id], JULY_TIMESHEET),
+        ).rejects.toThrow();
+
+        const invoices = await db.query.invoices.findMany({
+          where: { volunteerId: s.volunteer.id },
+        });
+        expect(invoices).toHaveLength(0);
+        expect(await draftsOf(s)).toHaveLength(0);
       });
 
       it('queues the draft in the invoice unit when a contract of the root unit is the only cover', async () => {
