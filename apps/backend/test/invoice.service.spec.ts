@@ -1663,6 +1663,103 @@ describe('InvoiceService', () => {
       });
     });
 
+    describe('drafts for uncovered entries (VOLI-1584)', () => {
+      it('queues one draft for the entry no contract covers and none for covered ones', async () => {
+        const s = await setup();
+        const outside = await entryAt(s, '2026-07-25T09:00:00.000Z');
+        await insertContract(s, JULY_FIRST_HALF);
+
+        await issueTimesheet(s, [s.timeEntry.id, outside.id], JULY_TIMESHEET);
+
+        const drafts = await draftsOf(s);
+        expect(drafts).toHaveLength(1);
+        // No lifespan on the template: the draft covers the entry's year.
+        expect(drafts[0]?.periodStart).toEqual(
+          new Date('2025-12-31T23:00:00.000Z'),
+        );
+        expect(drafts[0]?.periodEnd).toEqual(
+          new Date('2026-12-31T23:00:00.000Z'),
+        );
+      });
+
+      it('queues nothing when two contracts together cover every entry', async () => {
+        const s = await setup();
+        const second = await entryAt(s, '2026-07-20T09:00:00.000Z');
+        await insertContract(s, JULY_FIRST_HALF);
+        await insertContract(s, JULY_SECOND_HALF);
+
+        await issueTimesheet(s, [s.timeEntry.id, second.id], JULY_TIMESHEET);
+
+        expect(await draftsOf(s)).toHaveLength(0);
+      });
+
+      it('queues nothing while a contract awaiting signature covers the entry', async () => {
+        const s = await setup();
+        await insertContract(s, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(true);
+        expect(await draftsOf(s)).toHaveLength(0);
+      });
+
+      it('queues a draft when the only covering contract was declined', async () => {
+        const s = await setup();
+        await insertContract(s, JULY_TIMESHEET, {
+          status: ContractStatus.DECLINED,
+        });
+
+        await issueTimesheet(s, [s.timeEntry.id], JULY_TIMESHEET);
+
+        expect(await draftsOf(s)).toHaveLength(1);
+      });
+
+      it('queues one draft per calendar year when uncovered entries span two years', async () => {
+        const s = await setup();
+        const december = await entryAt(s, '2026-12-20T09:00:00.000Z');
+        const january = await entryAt(s, '2027-01-10T09:00:00.000Z');
+
+        await issueTimesheet(s, [january.id, december.id], {
+          start: '2026-11-30T23:00:00.000Z',
+          end: '2027-01-31T23:00:00.000Z',
+        });
+
+        const drafts = (await draftsOf(s)).sort(
+          (a, b) => a.periodStart.getTime() - b.periodStart.getTime(),
+        );
+        expect(drafts.map((d) => [d.periodStart, d.periodEnd])).toEqual([
+          [
+            new Date('2025-12-31T23:00:00.000Z'),
+            new Date('2026-12-31T23:00:00.000Z'),
+          ],
+          [
+            new Date('2026-12-31T23:00:00.000Z'),
+            new Date('2027-12-31T23:00:00.000Z'),
+          ],
+        ]);
+      });
+
+      it('queues one draft for several uncovered entries of the same year', async () => {
+        const s = await setup();
+        const second = await entryAt(s, '2026-07-12T09:00:00.000Z');
+        const third = await entryAt(s, '2026-07-26T09:00:00.000Z');
+
+        await issueTimesheet(
+          s,
+          [third.id, s.timeEntry.id, second.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(await draftsOf(s)).toHaveLength(1);
+      });
+    });
+
     it('auto-creates a DRAFT contract when the volunteer has no contract', async () => {
       const {
         organization,

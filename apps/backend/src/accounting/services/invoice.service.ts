@@ -537,14 +537,19 @@ export class InvoiceService {
       .filter((entry) => coverByEntry.get(entry.id)?.length === 0)
       .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
 
-    if (uncovered.length > 0) {
+    // One draft per uncovered entry, oldest first and one at a time. Each
+    // call checks open cover for its own instant, so the draft the first
+    // entry queues already suppresses every later entry it contains, and an
+    // entry that a contract awaiting signatures covers queues nothing.
+    // Never parallel: two concurrent calls would both see "no cover" yet.
+    for (const entry of uncovered) {
       await this.contractService.ensureDraftContract(
         organizationId,
         {
           organizationUnitId: input.organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          anchorDate: uncovered[0].startedAt,
+          anchorDate: entry.startedAt,
         },
         actorUserId,
       );
