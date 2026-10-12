@@ -232,15 +232,34 @@ export class ContractService {
       if (instant > latest) latest = instant;
     }
 
+    // Exact (volunteer, type, unit) scopes rather than three IN lists, whose
+    // cross product would also load contracts of pairs nobody asked about.
+    const scopes = new Map<
+      string,
+      {
+        volunteerId: string;
+        reimbursementTypeId: string;
+        organizationUnitId: string;
+      }
+    >();
+    for (const target of targets) {
+      scopes.set(
+        [
+          target.volunteerId,
+          target.reimbursementTypeId,
+          target.organizationUnitId,
+        ].join('\u0000'),
+        {
+          volunteerId: target.volunteerId,
+          reimbursementTypeId: target.reimbursementTypeId,
+          organizationUnitId: target.organizationUnitId,
+        },
+      );
+    }
+
     const candidates = await this.db.query.contracts.findMany({
       where: {
-        volunteerId: { in: [...new Set(targets.map((t) => t.volunteerId))] },
-        reimbursementTypeId: {
-          in: [...new Set(targets.map((t) => t.reimbursementTypeId))],
-        },
-        organizationUnitId: {
-          in: [...new Set(targets.map((t) => t.organizationUnitId))],
-        },
+        OR: [...scopes.values()],
         contractStatus:
           cover === ContractCover.ACTIVE
             ? ContractStatus.ACTIVE

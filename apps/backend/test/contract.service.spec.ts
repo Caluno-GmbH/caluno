@@ -934,6 +934,13 @@ describe('ContractService', () => {
         templateId: other.template.id,
         organizationUnitId: other.root.id,
       });
+      // Positive control: the same scope as the entry, so an empty result can't
+      // be an unrelated query mistake.
+      const matching = await insertContract({
+        ...shared,
+        templateId: template.id,
+        organizationUnitId: root.id,
+      });
 
       const result = await service.findCoveringContracts([
         {
@@ -945,7 +952,64 @@ describe('ContractService', () => {
         },
       ]);
 
-      expect(result.get('entry')).toEqual([]);
+      expect(result.get('entry')?.map((c) => c.id)).toEqual([matching.id]);
+    });
+
+    it('keeps each entry with its own volunteer and unit when resolved together', async () => {
+      const {
+        organization,
+        type,
+        root,
+        reimbursementType,
+        template,
+        volunteer,
+      } = await setup();
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'child',
+        parentId: root.id,
+      });
+      const otherVolunteer = await createUser(db);
+      const base = {
+        templateId: template.id,
+        reimbursementTypeId: reimbursementType.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      };
+      const aInRoot = await insertContract({
+        ...base,
+        volunteerId: volunteer.id,
+        organizationUnitId: root.id,
+      });
+      const bInChild = await insertContract({
+        ...base,
+        volunteerId: otherVolunteer.id,
+        organizationUnitId: child.id,
+      });
+      const target = (
+        key: string,
+        volunteerId: string,
+        organizationUnitId: string,
+      ): CoverageTarget => ({
+        key,
+        volunteerId,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId,
+        at: noonOn(15),
+      });
+
+      const result = await service.findCoveringContracts([
+        target('a-root', volunteer.id, root.id),
+        target('b-child', otherVolunteer.id, child.id),
+        target('a-child', volunteer.id, child.id),
+        target('b-root', otherVolunteer.id, root.id),
+      ]);
+
+      expect(result.get('a-root')?.map((c) => c.id)).toEqual([aInRoot.id]);
+      expect(result.get('b-child')?.map((c) => c.id)).toEqual([bInChild.id]);
+      expect(result.get('a-child')).toEqual([]);
+      expect(result.get('b-root')).toEqual([]);
     });
 
     it('counts a draft and an awaiting-signature contract as open cover only, and never a declined one', async () => {

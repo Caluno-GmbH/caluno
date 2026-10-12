@@ -276,6 +276,30 @@ describe('matchCoveringContracts', () => {
     expect(result.get('theirs')?.map((c) => c.id)).toEqual([theirs.id]);
   });
 
+  it('throws when one key is used for two different targets', () => {
+    expect(() =>
+      matchCoveringContracts(
+        [contract()],
+        [
+          target(berlinNoon(2026, 9, 3), { key: 'same' }),
+          target(berlinNoon(2026, 11, 3), { key: 'same' }),
+        ],
+        ContractCover.ACTIVE,
+      ),
+    ).toThrow(/same/);
+  });
+
+  it('accepts the same key repeated for an identical target', () => {
+    const october = contract();
+    const at = berlinNoon(2026, 9, 3);
+    const result = matchCoveringContracts(
+      [october],
+      [target(at, { key: 'same' }), target(new Date(at), { key: 'same' })],
+      ContractCover.ACTIVE,
+    );
+    expect(result.get('same')?.map((c) => c.id)).toEqual([october.id]);
+  });
+
   it('returns an empty map for no targets', () => {
     expect(
       matchCoveringContracts([contract()], [], ContractCover.ACTIVE).size,
