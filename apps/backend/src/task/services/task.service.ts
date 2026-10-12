@@ -362,13 +362,7 @@ export class TaskService {
         ),
       );
 
-    return rows.map((row) => ({
-      ...row,
-      declinedAtSigneeType: row.declinedAtSigneeType,
-      declineReason: row.declineReason,
-      declinedAt: row.declinedAt,
-      volunteerSignedAt: row.volunteerSignedAt,
-    }));
+    return rows;
   }
 
   private async invoiceRows(
@@ -424,13 +418,6 @@ export class TaskService {
         ),
       );
 
-    return rows.map((row) => ({
-      ...row,
-      declinedAtSigneeType: row.declinedAtSigneeType ?? null,
-      declineReason: row.declineReason,
-      declinedAt: row.declinedAt,
-      volunteerSignedAt: row.volunteerSignedAt,
-      paidAt: row.paidAt,
-    }));
+    return rows;
   }
 }
