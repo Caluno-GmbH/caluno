@@ -219,6 +219,75 @@ describe('InvoiceService', () => {
     };
   };
 
+  type Fixture = Awaited<ReturnType<typeof setup>>;
+
+  /** Berlin day bounds as ISO instants, so a spec reads as calendar dates. */
+  const JULY_FIRST_HALF = {
+    start: '2026-06-30T22:00:00.000Z', // 1 Jul 00:00 Berlin
+    end: '2026-07-15T22:00:00.000Z', // 16 Jul 00:00 Berlin, exclusive
+  };
+  const JULY_SECOND_HALF = {
+    start: '2026-07-15T22:00:00.000Z',
+    end: '2026-07-31T22:00:00.000Z', // 1 Aug 00:00 Berlin, exclusive
+  };
+  const JULY_TIMESHEET = {
+    start: '2026-06-30T22:00:00.000Z',
+    end: '2026-07-31T22:00:00.000Z',
+  };
+
+  const insertContract = (
+    s: Fixture,
+    period: { start: string; end: string },
+    options: { status?: ContractStatus; unitId?: string | null } = {},
+  ) =>
+    db.insert(schema.contracts).values({
+      documentTemplateId: s.contractTemplate.id,
+      volunteerId: s.volunteer.id,
+      reimbursementTypeId: s.reimbursementType.id,
+      organizationUnitId:
+        options.unitId === undefined ? s.root.id : options.unitId,
+      contractStatus: options.status ?? ContractStatus.ACTIVE,
+      periodStart: new Date(period.start),
+      periodEnd: new Date(period.end),
+      resolvedBody: { header: {}, blocks: [], footer: {} },
+    });
+
+  const entryAt = (s: Fixture, startedAt: string) =>
+    createCompletedTimeEntry(db, {
+      organizationUnitId: s.root.id,
+      volunteerId: s.volunteer.id,
+      reimbursementTypeId: s.reimbursementType.id,
+      startedAt: new Date(startedAt),
+      endedAt: new Date(new Date(startedAt).getTime() + 2 * 3_600_000),
+    });
+
+  const issueTimesheet = (
+    s: Fixture,
+    timeEntryIds: string[],
+    period: { start: string; end: string },
+  ) =>
+    service.createInvoice(
+      s.organization.id,
+      {
+        organizationUnitId: null,
+        volunteerId: s.volunteer.id,
+        reimbursementTypeId: s.reimbursementType.id,
+        timeEntryIds,
+        periodStart: new Date(period.start),
+        periodEnd: new Date(period.end),
+      },
+      s.supervisor.id,
+    );
+
+  const draftsOf = (s: Fixture) =>
+    db.query.contracts.findMany({
+      where: {
+        volunteerId: s.volunteer.id,
+        reimbursementTypeId: s.reimbursementType.id,
+        contractStatus: ContractStatus.DRAFT,
+      },
+    });
+
   describe('findInvoicesForOrganization — period filter', () => {
     it('excludes invoices whose period does not overlap the requested range', async () => {
       const { organization, root, reimbursementType, volunteer, supervisor } =
@@ -1351,6 +1420,7 @@ describe('InvoiceService', () => {
     it('does not flag the invoice when the volunteer has an active contract', async () => {
       const {
         organization,
+        root,
         reimbursementType,
         volunteer,
         supervisor,
@@ -1361,6 +1431,7 @@ describe('InvoiceService', () => {
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
         contractStatus: ContractStatus.ACTIVE,
         // Covers the invoice's July 2026 period.
         periodStart: new Date('2026-07-01T00:00:00.000Z'),
@@ -1389,6 +1460,7 @@ describe('InvoiceService', () => {
     it('flags the invoice when the active contract covers a different month', async () => {
       const {
         organization,
+        root,
         reimbursementType,
         volunteer,
         supervisor,
@@ -1399,6 +1471,7 @@ describe('InvoiceService', () => {
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
         contractStatus: ContractStatus.ACTIVE,
         // August 2026 as Berlin bounds — the invoice is for July.
         periodStart: new Date('2026-07-31T22:00:00.000Z'),
@@ -1420,6 +1493,174 @@ describe('InvoiceService', () => {
       );
 
       expect(invoice.isNonCompliant).toBe(true);
+    });
+
+    describe('compliance per time entry (VOLI-1584)', () => {
+      it('is compliant when two contracts together cover every entry', async () => {
+        const s = await setup();
+        const second = await entryAt(s, '2026-07-20T09:00:00.000Z');
+        await insertContract(s, JULY_FIRST_HALF);
+        await insertContract(s, JULY_SECOND_HALF);
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id, second.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(false);
+      });
+
+      it('is non-compliant when one entry falls outside every contract', async () => {
+        const s = await setup();
+        const outside = await entryAt(s, '2026-07-25T09:00:00.000Z');
+        await insertContract(s, JULY_FIRST_HALF);
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id, outside.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(true);
+        // A partly covered timesheet is still created and persisted.
+        const stored = await db.query.invoices.findFirst({
+          where: { id: invoice.id },
+        });
+        expect(stored?.isNonCompliant).toBe(true);
+      });
+
+      it('stays compliant under one contract that spans the whole month', async () => {
+        const s = await setup();
+        await insertContract(s, JULY_TIMESHEET);
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(false);
+      });
+
+      it('is compliant for any month inside a Sep 2026 to Mar 2027 contract', async () => {
+        const s = await setup();
+        await insertContract(s, {
+          start: '2026-08-31T22:00:00.000Z', // 1 Sep 2026 Berlin
+          end: '2027-03-31T22:00:00.000Z', // 1 Apr 2027 Berlin, exclusive
+        });
+        const october = await entryAt(s, '2026-10-14T09:00:00.000Z');
+        const january = await entryAt(s, '2027-01-12T09:00:00.000Z');
+
+        const octoberSheet = await issueTimesheet(s, [october.id], {
+          start: '2026-09-30T22:00:00.000Z',
+          end: '2026-10-31T23:00:00.000Z',
+        });
+        const januarySheet = await issueTimesheet(s, [january.id], {
+          start: '2026-12-31T23:00:00.000Z',
+          end: '2027-01-31T23:00:00.000Z',
+        });
+
+        expect(octoberSheet.isNonCompliant).toBe(false);
+        expect(januarySheet.isNonCompliant).toBe(false);
+      });
+
+      it('covers an entry exactly at the contract start and not at its exclusive end', async () => {
+        const s = await setup();
+        // The setup entry starts 2026-07-01T09:00Z.
+        await insertContract(s, {
+          start: '2026-07-01T09:00:00.000Z',
+          end: '2026-07-31T22:00:00.000Z',
+        });
+        const atStart = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        expect(atStart.isNonCompliant).toBe(false);
+
+        const t = await setup();
+        await insertContract(t, {
+          start: '2026-06-30T22:00:00.000Z',
+          end: '2026-07-01T09:00:00.000Z', // exclusive: the entry starts here
+        });
+        const atEnd = await issueTimesheet(t, [t.timeEntry.id], JULY_TIMESHEET);
+        expect(atEnd.isNonCompliant).toBe(true);
+      });
+
+      for (const [label, status] of [
+        ['awaiting signature', ContractStatus.AWAITING_VOLUNTEER_SIGNATURE],
+        ['declined', ContractStatus.DECLINED],
+        ['draft', ContractStatus.DRAFT],
+      ] as const) {
+        it(`does not count a ${label} contract as cover`, async () => {
+          const s = await setup();
+          await insertContract(s, JULY_TIMESHEET, { status });
+
+          const invoice = await issueTimesheet(
+            s,
+            [s.timeEntry.id],
+            JULY_TIMESHEET,
+          );
+
+          expect(invoice.isNonCompliant).toBe(true);
+        });
+      }
+
+      it('does not count an active contract of another unit of the organisation', async () => {
+        const s = await setup();
+        const sibling = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sibling',
+          parentId: s.root.id,
+        });
+        await insertContract(s, JULY_TIMESHEET, { unitId: sibling.id });
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(true);
+      });
+
+      it('does not count an active contract of another volunteer', async () => {
+        const s = await setup();
+        const other = await createUser(db);
+        await db.insert(schema.contracts).values({
+          documentTemplateId: s.contractTemplate.id,
+          volunteerId: other.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          organizationUnitId: s.root.id,
+          contractStatus: ContractStatus.ACTIVE,
+          periodStart: new Date(JULY_TIMESHEET.start),
+          periodEnd: new Date(JULY_TIMESHEET.end),
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+        });
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(true);
+      });
+
+      it('does not count an active contract that has no unit', async () => {
+        const s = await setup();
+        await insertContract(s, JULY_TIMESHEET, { unitId: null });
+
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(invoice.isNonCompliant).toBe(true);
+      });
     });
 
     it('auto-creates a DRAFT contract when the volunteer has no contract', async () => {
@@ -1737,6 +1978,7 @@ describe('InvoiceService', () => {
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
         contractStatus: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
         // The 2026 Berlin calendar year; its exclusive end is 1 Jan 2027 00:00 Berlin.
         periodStart: new Date('2025-12-31T23:00:00.000Z'),

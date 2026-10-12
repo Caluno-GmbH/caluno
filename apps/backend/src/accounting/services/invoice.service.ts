@@ -50,6 +50,10 @@ import {
   billingYearBounds,
   periodCovers,
 } from '../utils/billing-period';
+import {
+  ContractCover,
+  coverageTargetsForTimeEntries,
+} from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
@@ -521,20 +525,26 @@ export class InvoiceService {
       );
     }
 
-    const activeContract = await this.contractService.findActiveContract(
-      input.volunteerId,
-      input.reimbursementTypeId,
-      { start: input.periodStart, end: input.periodEnd },
+    // Compliance is per time entry: a timesheet is compliant when every hour
+    // on it sits inside some ACTIVE contract, and different entries may sit
+    // under different contracts. Only ACTIVE counts here; a draft or a
+    // contract still awaiting signatures is its own task, not cover.
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(selected),
+      ContractCover.ACTIVE,
     );
+    const uncovered = selected
+      .filter((entry) => coverByEntry.get(entry.id)?.length === 0)
+      .sort((a, b) => a.startedAt.getTime() - b.startedAt.getTime());
 
-    if (!activeContract) {
+    if (uncovered.length > 0) {
       await this.contractService.ensureDraftContract(
         organizationId,
         {
           organizationUnitId: input.organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          anchorDate: input.periodStart,
+          anchorDate: uncovered[0].startedAt,
         },
         actorUserId,
       );
@@ -584,7 +594,7 @@ export class InvoiceService {
           totalAmountCents,
           totalHours,
           hourlyRateCents: rateCents,
-          isNonCompliant: !activeContract,
+          isNonCompliant: uncovered.length > 0,
           resolvedBody: structuredClone(template.body),
           fieldOverrides,
           documentNumberScopeUnitId,
