@@ -1,9 +1,16 @@
 import type { EligibleTimeEntry } from '@repo/data';
-import { type LifespanShape, parseLifespanShape } from '@repo/lifespan';
+import {
+  formatLifespanShape,
+  type LifespanShape,
+  parseLifespanShape,
+} from '@repo/lifespan';
 import type { EligibleHourLine } from '../components/eligible-hours-card';
 import {
   billingMonthBounds,
+  billingMonthOf,
   billingYearBounds,
+  contractPeriodKind,
+  fromPeriodBounds,
   type PeriodBounds,
   toPeriodBounds,
 } from './billing-period';
@@ -42,6 +49,41 @@ export function contractPeriodForLifespan(
 ): PeriodBounds | undefined {
   const shape = parseLifespanShape(lifespan);
   return shape ? boundsForShape(shape) : undefined;
+}
+
+/**
+ * The "Vertragslaufzeit" string for a stored period: what the creation dialog
+ * opens on when a contract is created from the draft that already states that
+ * period. The inverse of `contractPeriodForLifespan`, printed by the same
+ * `@repo/lifespan` format the template builder writes.
+ */
+export function lifespanForPeriod(
+  periodStart: Date | string,
+  periodEnd: Date | string,
+): string {
+  const first = billingMonthOf(periodStart);
+  const kind = contractPeriodKind(periodStart, periodEnd);
+  if (kind === 'year') {
+    return formatLifespanShape({ kind: 'year', year: first.year });
+  }
+  if (kind === 'month') {
+    return formatLifespanShape({
+      kind: 'month',
+      year: first.year,
+      month: first.month + 1,
+    });
+  }
+  const { from, to } = fromPeriodBounds(periodStart, periodEnd);
+  const day = (date: Date) => ({
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  });
+  return formatLifespanShape({
+    kind: 'range',
+    from: day(from ?? new Date(periodStart)),
+    to: day(to ?? new Date(periodStart)),
+  });
 }
 
 /** Hours between two ISO timestamps, rounded to hundredths so display never shows floating-point noise. */

@@ -50,6 +50,11 @@ interface ContractCreationModalProps {
   pauschale: PauschalenType | null;
   /** The queued draft this contract is created from; it is consumed with the contract. */
   sourceDraftId?: string | null;
+  /**
+   * The Vertragslaufzeit to open on, normally the draft's own period. Without
+   * it the field starts from the template's stored value.
+   */
+  initialLifespan?: string | null;
   onSent: () => void;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
@@ -62,6 +67,7 @@ export function ContractCreationModal({
   volunteerName,
   pauschale,
   sourceDraftId,
+  initialLifespan,
   onSent,
   embedded,
 }: ContractCreationModalProps) {
@@ -127,8 +133,12 @@ export function ContractCreationModal({
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset keyed on identity change, not a dependency read by the effect body
   useEffect(() => {
     setDerivedFields(null);
-    setEditedValues({});
-  }, [volunteerId, pauschale, templateIdentity]);
+    // Seeded as an edit so the preview, the printed value and the stored
+    // period all follow the draft's own Vertragslaufzeit, not the template's.
+    setEditedValues(
+      initialLifespan ? { 'contract-lifespan': initialLifespan } : {},
+    );
+  }, [volunteerId, pauschale, templateIdentity, initialLifespan]);
 
   const profileLoaded = !!volunteerId && profileQuery.isSuccess;
   const reimbursementTypeMissing =
