@@ -1656,7 +1656,7 @@ describe('InvoiceService', () => {
       expect(invoices).toHaveLength(2);
     });
 
-    it('creates one month-scoped draft per uncovered month', async () => {
+    it('queues one year draft that covers every uncovered month of that year', async () => {
       const {
         organization,
         reimbursementType,
@@ -1703,22 +1703,18 @@ describe('InvoiceService', () => {
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
         },
-        orderBy: (c, { asc }) => [asc(c.periodStart)],
       });
-      // VOLI-1370: a draft is scoped to the uncovered month, so July and August
-      // each queue their own — never one whole-year draft.
-      expect(contracts.map((c) => c.contractStatus)).toEqual([
-        ContractStatus.DRAFT,
-        ContractStatus.DRAFT,
-      ]);
-      expect(contracts.map((c) => c.periodStart)).toEqual([
-        new Date('2026-06-30T22:00:00.000Z'),
-        new Date('2026-07-31T22:00:00.000Z'),
-      ]);
-      expect(contracts.map((c) => c.periodEnd)).toEqual([
-        new Date('2026-07-31T22:00:00.000Z'),
-        new Date('2026-08-31T22:00:00.000Z'),
-      ]);
+      // VOLI-1585: with no lifespan on the template a draft covers the entry's
+      // calendar year, so the July timesheet queues one draft and the August
+      // one is already inside it (VOLI-1370 expected one draft per month).
+      expect(contracts).toHaveLength(1);
+      expect(contracts[0]?.contractStatus).toBe(ContractStatus.DRAFT);
+      expect(contracts[0]?.periodStart).toEqual(
+        new Date('2025-12-31T23:00:00.000Z'),
+      );
+      expect(contracts[0]?.periodEnd).toEqual(
+        new Date('2026-12-31T23:00:00.000Z'),
+      );
     });
 
     it('drafts for the following year despite a prior-year contract ending Jan 1', async () => {

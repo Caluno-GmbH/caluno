@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, gt, inArray, lt, ne } from 'drizzle-orm';
+import { and, eq, gt, inArray, lt, ne, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -26,23 +26,31 @@ import {
 } from '../enums';
 import type { CreateContractInput } from '../inputs/create-contract.input';
 import { toFieldOverridesMap } from '../inputs/document-field-override.input';
-import type { ContractEntity } from '../schemas/contract.schema';
+import type { ContractBody, ContractEntity } from '../schemas/contract.schema';
 import type { ContractStatusChangeEntity } from '../schemas/contract-status-change.schema';
-import {
-  type BillingPeriod,
-  billingMonthBoundsOf,
-  periodCovers,
-} from '../utils/billing-period';
+import type { DocumentTemplateEntity } from '../schemas/document-template.schema';
+import type { TemplateSigneeEntity } from '../schemas/template-signee.schema';
+import { type BillingPeriod, periodCovers } from '../utils/billing-period';
 import {
   ContractCover,
   type CoverageTarget,
   matchCoveringContracts,
 } from '../utils/contract-coverage';
+import {
+  CONTRACT_LIFESPAN_FIELD_ID,
+  draftPeriodForAnchor,
+  formatLifespanForPeriod,
+} from '../utils/contract-lifespan';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
 import { DocumentSigningService } from './document-signing.service';
 import { DocumentTemplateService } from './document-template.service';
+import {
+  findManualFieldValue,
+  type TemplateBodyShape,
+  withManualFieldValue,
+} from './document-template.types';
 
 // Periods end exclusively, so one ending exactly at the range start doesn't
 // overlap it.
@@ -52,6 +60,9 @@ function contractOverlapsPeriod(periodStart: Date, periodEnd: Date) {
     lt(schema.contracts.periodStart, periodEnd),
   ];
 }
+
+/** Anything that can run the relational queries: the database or a transaction. */
+type DbExecutor = Pick<Database, 'query'>;
 
 @Injectable()
 export class ContractService {
@@ -217,10 +228,12 @@ export class ContractService {
    *
    * One query for the whole set: it loads every contract that could cover any
    * target, and `matchCoveringContracts` applies the exact rule per target.
+   * Pass `executor` to run the lookup inside a transaction.
    */
   async findCoveringContracts(
     targets: readonly CoverageTarget[],
     cover: ContractCover = ContractCover.ACTIVE,
+    executor: DbExecutor = this.db,
   ): Promise<Map<string, ContractEntity[]>> {
     if (targets.length === 0) return new Map();
 
@@ -257,7 +270,7 @@ export class ContractService {
       );
     }
 
-    const candidates = await this.db.query.contracts.findMany({
+    const candidates = await executor.query.contracts.findMany({
       where: {
         OR: [...scopes.values()],
         contractStatus:
@@ -418,13 +431,30 @@ export class ContractService {
     return contract;
   }
 
+  /** The organisation's root unit id; drafts always carry a unit so they count as cover. */
+  private async rootUnitIdOf(organizationId: string): Promise<string> {
+    const root = await this.db.query.organizationUnits.findFirst({
+      where: { organizationId, parentId: { isNull: true } },
+      columns: { id: true },
+    });
+    if (!root) {
+      throw new NotFoundGraphQLError(
+        `No root organization unit found for organization ${organizationId}`,
+      );
+    }
+    return root.id;
+  }
+
   /**
    * Queues the volunteer's Vereinbarung as a DRAFT when no non-declined
-   * contract covers the anchor date for the reimbursement type. The draft is
-   * scoped to the anchor's Berlin calendar month, so it surfaces the admin's
-   * "create contract" task for exactly the uncovered month. Runs when paid
-   * hours first appear and when a timesheet is created. Returns the draft, or
-   * undefined if a covering contract already exists.
+   * contract of the same unit covers the anchor date for the reimbursement
+   * type (`ContractCover.OPEN`: a draft or awaiting-signature contract is
+   * already a task). The draft's period follows the template's Vertragslaufzeit
+   * applied to the anchor (year, month, or the stored range when it contains
+   * the anchor; otherwise the anchor's calendar year), and the draft prints that
+   * same period in its body. Runs when paid hours first appear and when a
+   * timesheet is created. Returns the draft, or undefined if a covering
+   * contract already exists.
    */
   async ensureDraftContract(
     organizationId: string,
@@ -437,32 +467,73 @@ export class ContractService {
     },
     actorUserId: string,
   ): Promise<ContractEntity | undefined> {
-    const month = billingMonthBoundsOf(input.anchorDate);
-    // A contract only stands in for the period it states, so a draft is only
-    // skipped when an existing contract actually covers the anchor date —
-    // not merely one that overlaps its calendar year (VOLI-1370).
-    const existing = await this.db.query.contracts.findFirst({
-      where: {
-        volunteerId: input.volunteerId,
-        reimbursementTypeId: input.reimbursementTypeId,
-        contractStatus: { ne: ContractStatus.DECLINED },
-        periodStart: { lte: input.anchorDate },
-        periodEnd: { gt: input.anchorDate },
-      },
-    });
-    if (existing) return undefined;
+    const organizationUnitId =
+      input.organizationUnitId ?? (await this.rootUnitIdOf(organizationId));
+    const target: CoverageTarget = {
+      key: 'anchor',
+      volunteerId: input.volunteerId,
+      reimbursementTypeId: input.reimbursementTypeId,
+      organizationUnitId,
+      at: input.anchorDate,
+    };
+    const isCovered = async (executor: DbExecutor) => {
+      const covering = await this.findCoveringContracts(
+        [target],
+        ContractCover.OPEN,
+        executor,
+      );
+      return (covering.get(target.key) ?? []).length > 0;
+    };
 
-    return this.createDraftContract(
+    // Cheap path first: most closed entries are already covered, and then
+    // neither the template nor a lock is needed.
+    if (await isCovered(this.db)) return undefined;
+
+    const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      {
-        organizationUnitId: input.organizationUnitId,
-        volunteerId: input.volunteerId,
-        reimbursementTypeId: input.reimbursementTypeId,
-        periodStart: month.start,
-        periodEnd: month.end,
-      },
-      actorUserId,
+      input.reimbursementTypeId,
+      DocumentKind.CONTRACT,
+      input.organizationUnitId,
     );
+    const orderedSignees =
+      await this.documentTemplateService.findOrderedTemplateSignees(
+        template.id,
+      );
+    const period = draftPeriodForAnchor(
+      findManualFieldValue(
+        (template.body ?? {}) as TemplateBodyShape,
+        CONTRACT_LIFESPAN_FIELD_ID,
+      ),
+      input.anchorDate,
+    );
+
+    return this.db.transaction(async (tx) => {
+      // Two entries closing at once must not both queue a draft for the same
+      // volunteer, type and unit: serialise the check and the insert.
+      const lockKey = [
+        input.volunteerId,
+        input.reimbursementTypeId,
+        organizationUnitId,
+      ].join(':');
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+      );
+      if (await isCovered(tx)) return undefined;
+
+      return this.insertDraft(
+        tx,
+        template,
+        orderedSignees,
+        {
+          organizationUnitId,
+          volunteerId: input.volunteerId,
+          reimbursementTypeId: input.reimbursementTypeId,
+          periodStart: period.start,
+          periodEnd: period.end,
+        },
+        actorUserId,
+      );
+    });
   }
 
   async createDraftContract(
@@ -480,39 +551,83 @@ export class ContractService {
       await this.documentTemplateService.findOrderedTemplateSignees(
         template.id,
       );
+    const organizationUnitId =
+      input.organizationUnitId ?? (await this.rootUnitIdOf(organizationId));
 
-    return this.db.transaction(async (tx) => {
-      const [created] = await tx
-        .insert(schema.contracts)
-        .values({
-          documentTemplateId: template.id,
+    return this.db.transaction((tx) =>
+      this.insertDraft(
+        tx,
+        template,
+        orderedSignees,
+        {
+          organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          organizationUnitId: input.organizationUnitId,
-          contractStatus: ContractStatus.DRAFT,
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
-          resolvedBody: structuredClone(template.body),
-        })
-        .returning();
-
-      await tx.insert(schema.contractSignatures).values(
-        orderedSignees.map((signee) => ({
-          contractId: created.id,
-          order: signee.order,
-          signeeType: signee.signeeType,
-          requiredPermissionId: signee.requiredPermissionId,
-        })),
-      );
-
-      await tx.insert(schema.contractStatusChanges).values({
-        contractId: created.id,
-        type: DocumentStatusChange.CREATED,
+        },
         actorUserId,
-      });
+      ),
+    );
+  }
 
-      return created;
+  /**
+   * Inserts a DRAFT whose body prints the period it is stored with: the
+   * template's concrete Vertragslaufzeit would otherwise disagree with
+   * `periodStart`/`periodEnd` (VOLI-1370).
+   */
+  private async insertDraft(
+    tx: Parameters<Parameters<Database['transaction']>[0]>[0],
+    template: DocumentTemplateEntity,
+    orderedSignees: TemplateSigneeEntity[],
+    draft: {
+      organizationUnitId: string;
+      volunteerId: string;
+      reimbursementTypeId: string;
+      periodStart: Date;
+      periodEnd: Date;
+    },
+    actorUserId: string,
+  ): Promise<ContractEntity> {
+    const [created] = await tx
+      .insert(schema.contracts)
+      .values({
+        documentTemplateId: template.id,
+        volunteerId: draft.volunteerId,
+        reimbursementTypeId: draft.reimbursementTypeId,
+        organizationUnitId: draft.organizationUnitId,
+        contractStatus: ContractStatus.DRAFT,
+        periodStart: draft.periodStart,
+        periodEnd: draft.periodEnd,
+        // The same snapshot shape the template body has; only the lifespan
+        // value changes, so the structural body type carries over.
+        resolvedBody: withManualFieldValue(
+          (template.body ?? {}) as TemplateBodyShape,
+          CONTRACT_LIFESPAN_FIELD_ID,
+          formatLifespanForPeriod({
+            start: draft.periodStart,
+            end: draft.periodEnd,
+          }),
+        ) as unknown as ContractBody,
+      })
+      .returning();
+
+    await tx.insert(schema.contractSignatures).values(
+      orderedSignees.map((signee) => ({
+        contractId: created.id,
+        order: signee.order,
+        signeeType: signee.signeeType,
+        requiredPermissionId: signee.requiredPermissionId,
+      })),
+    );
+
+    await tx.insert(schema.contractStatusChanges).values({
+      contractId: created.id,
+      type: DocumentStatusChange.CREATED,
+      actorUserId,
     });
+
+    return created;
   }
 
   async signContract(
