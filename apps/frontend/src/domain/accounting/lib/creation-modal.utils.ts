@@ -1,4 +1,5 @@
 import type { EligibleTimeEntry } from '@repo/data';
+import { type LifespanShape, parseLifespanShape } from '@repo/lifespan';
 import type { EligibleHourLine } from '../components/eligible-hours-card';
 import {
   billingMonthBounds,
@@ -7,36 +8,27 @@ import {
   toPeriodBounds,
 } from './billing-period';
 
-const RANGE_PATTERN =
-  /^(\d{2})\.(\d{2})\.(\d{4})\s*[–-]\s*(\d{2})\.(\d{2})\.(\d{4})$/;
-const MONTH_PATTERN = /^(\d{2})\/(\d{4})$/;
-const YEAR_PATTERN = /^(\d{4})$/;
-
 /**
  * The period the contract's manual "Vertragslaufzeit" field states. The field
  * is the same "period" value the template builder produces, so it can be a
  * single month ("08/2026"), a whole year ("2026") or a day range
  * ("01.08.2026–15.08.2026"). The contract row must cover exactly what the
  * signed agreement states — a month agreement is valid for that month only
- * (VOLI-1370).
+ * (VOLI-1370). The string is read by `@repo/lifespan`, the same parser the
+ * backend uses for auto-queued drafts, so printed and stored periods agree.
  */
-function parseLifespan(lifespan: string): PeriodBounds | undefined {
-  const range = lifespan.match(RANGE_PATTERN);
-  if (range) {
-    const [, fromDay, fromMonth, fromYear, toDay, toMonth, toYear] = range;
-    return toPeriodBounds({
-      from: new Date(Number(fromYear), Number(fromMonth) - 1, Number(fromDay)),
-      to: new Date(Number(toYear), Number(toMonth) - 1, Number(toDay)),
-    });
+function boundsForShape(shape: LifespanShape): PeriodBounds | undefined {
+  switch (shape.kind) {
+    case 'range':
+      return toPeriodBounds({
+        from: new Date(shape.from.year, shape.from.month - 1, shape.from.day),
+        to: new Date(shape.to.year, shape.to.month - 1, shape.to.day),
+      });
+    case 'month':
+      return billingMonthBounds(shape.year, shape.month - 1);
+    case 'year':
+      return billingYearBounds(shape.year);
   }
-
-  const month = lifespan.match(MONTH_PATTERN);
-  if (month) return billingMonthBounds(Number(month[2]), Number(month[1]) - 1);
-
-  const year = lifespan.match(YEAR_PATTERN);
-  if (year) return billingYearBounds(Number(year[1]));
-
-  return undefined;
 }
 
 /**
@@ -48,7 +40,8 @@ function parseLifespan(lifespan: string): PeriodBounds | undefined {
 export function contractPeriodForLifespan(
   lifespan: string,
 ): PeriodBounds | undefined {
-  return parseLifespan(lifespan.trim());
+  const shape = parseLifespanShape(lifespan);
+  return shape ? boundsForShape(shape) : undefined;
 }
 
 /** Hours between two ISO timestamps, rounded to hundredths so display never shows floating-point noise. */
