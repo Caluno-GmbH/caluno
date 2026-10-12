@@ -1,5 +1,5 @@
+import type { CreateRequirementProfileSubmissionInput } from '../../generated/base-types';
 import type {
-  CreateRequirementProfileSubmissionInput,
   CreateRequirementProfileSubmissionMutation,
   GetAdminUserProfileQuery,
 } from '../../generated/graphql';

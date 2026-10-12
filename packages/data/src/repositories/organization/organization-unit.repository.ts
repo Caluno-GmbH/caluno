@@ -3,7 +3,7 @@ import type {
   OrganizationUnitAutomationKind,
   UpdateOrganizationUnitAutomationInput,
   UpdateOrganizationUnitInput,
-} from '../../generated/graphql';
+} from '../../generated/base-types';
 import { BaseRepository } from '../base/base.repository';
 
 export interface OrgUnitTreeNode {

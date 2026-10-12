@@ -7,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import type { MembershipRequestStatus } from '../../generated/graphql';
+import type { MembershipRequestStatus } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 export function useMembershipRequests(

@@ -1,7 +1,7 @@
 'use client';
 
+import { MembershipRequestStatus } from '@repo/data';
 import {
-  MembershipRequestStatus,
   useMembershipRequestCount,
   useMembershipRequests,
   useMemberships,

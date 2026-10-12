@@ -1,8 +1,5 @@
-import type {
-  CreateRoleInput,
-  GetRoleQuery,
-  GetRolesQuery,
-} from '../../generated/graphql';
+import type { CreateRoleInput } from '../../generated/base-types';
+import type { GetRoleQuery, GetRolesQuery } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 
 export type RoleListItem = GetRolesQuery['roles'][number];

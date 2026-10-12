@@ -1,4 +1,4 @@
-import { SortOrder } from '@repo/data/react';
+import { SortOrder } from '@repo/data';
 import { MyShiftsView } from '@/domain/home/components/my-shifts-view';
 import { startOfDay } from '@/domain/home/lib/date-helpers';
 import { getDataClient } from '@/lib/data-client';
