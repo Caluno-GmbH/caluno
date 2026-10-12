@@ -1569,6 +1569,71 @@ describe('ContractService', () => {
 
       expect(await draftIds(s)).toEqual([draftInSibling?.id]);
     });
+
+    it("never deletes a sibling unit's draft by source draft id", async () => {
+      const s = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      const draftInSibling = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: sibling.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+
+      await create(s, billingYearBounds(2026), {
+        sourceDraftId: draftInSibling?.id,
+      });
+
+      expect(await draftIds(s)).toEqual([draftInSibling?.id]);
+    });
+
+    it("never deletes another volunteer's draft by source draft id", async () => {
+      const s = await setup();
+      const otherVolunteer = await createUser(db);
+      const draftOfOther = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: otherVolunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+
+      await create(s, billingYearBounds(2026), {
+        sourceDraftId: draftOfOther?.id,
+      });
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draftOfOther?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('keeps a source draft the new contract does not overlap', async () => {
+      // Month template saved as 10/2026, entry in December: the December draft
+      // is queued. A contract for October created with that draft as its source
+      // must not take the December task with it.
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      const december = await queueDraft(
+        s,
+        new Date('2026-12-15T10:00:00.000Z'),
+      );
+
+      await create(s, october(), { sourceDraftId: december?.id });
+
+      expect(await draftIds(s)).toEqual([december?.id]);
+    });
   });
 
   describe('findContractsForOrganization', () => {

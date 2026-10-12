@@ -325,9 +325,10 @@ export class ContractService {
     const contract = await this.db.transaction(async (tx) => {
       // The draft queued by ensureDraftContract stands in for this contract
       // until it exists. A draft is dropped when this contract fully contains
-      // it, or when it is the draft this contract was created from; a draft
-      // that only overlaps stays, because its remaining period is still
-      // unsigned. Scoped to this organization's templates: reimbursement types
+      // it, or when it is the draft this contract was created from and the
+      // two overlap in the same unit; a draft that only overlaps otherwise
+      // stays, because its remaining period is still unsigned, and a source
+      // draft for a period this contract never touches is still an open task. Scoped to this organization's templates: reimbursement types
       // are global, so without this join a volunteer with a draft in another
       // org could lose it here.
       const supersededDrafts = await tx
@@ -350,7 +351,12 @@ export class ContractService {
                 lte(schema.contracts.periodEnd, input.periodEnd),
               ),
               input.sourceDraftId
-                ? eq(schema.contracts.id, input.sourceDraftId)
+                ? and(
+                    eq(schema.contracts.id, input.sourceDraftId),
+                    eq(schema.contracts.organizationUnitId, draftUnitId),
+                    lt(schema.contracts.periodStart, input.periodEnd),
+                    gt(schema.contracts.periodEnd, input.periodStart),
+                  )
                 : undefined,
             ),
           ),
