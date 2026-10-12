@@ -1,21 +1,41 @@
 {
-  "Overview": {
+  "Todo": {
     "empty": "Es wartet nichts auf dich.",
     "loadFailed": "Die offenen Aufgaben konnten nicht geladen werden.",
-    "seeAll": "Alle anzeigen ({count})",
-    "back": "Zurück zur Übersicht",
+    "seeAll": "Alle anzeigen",
+    "groups": {
+      "volunteersAndShifts": "Freiwillige und Einsätze",
+      "accounting": "Buchhaltung"
+    },
+    "types": {
+      "contract": "Vereinbarung",
+      "timesheet": "Stundennachweis"
+    },
+    "back": "Zurück zu Zu erledigen",
     "waiting": "{count, plural, one {# wartet} other {# warten}}",
+    "appliedRelative": "{when} beworben",
+    "declinedAgo": "Abgelehnt {when}",
+    "signedAgo": "Unterschrieben {when}",
     "short": "{missing, plural, one {# nötig} other {# nötig}}",
-    "hours": "{hours} Stunden",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} von {total} Plätzen besetzt",
+    "hours": "{hours} Std.",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} Tage",
+      "staffing": "Besetzung",
+      "daysAhead": "Tage im Voraus",
+      "BELOW_MINIMUM": "Unter Minimum",
+      "NOT_FULL": "Nicht voll",
+      "emptyBelowMinimum": "Keine Einsätze unter Minimum in den nächsten {count} Tagen",
+      "emptyNotFull": "Keine Einsätze, die nicht voll sind, in den nächsten {count} Tagen"
+    },
     "sections": {
-      "SHIFT_BELOW_MINIMUM": "Einsätze, für die noch Leute fehlen",
-      "SHIFT_APPROVAL": "Anmeldungen für Einsätze freigeben",
-      "EVENT_APPROVAL": "Anmeldungen für Veranstaltungen freigeben",
-      "CONTRACT_SIGN": "Vereinbarungen gegenzeichnen",
-      "TIMESHEET_SIGN": "Stundennachweise gegenzeichnen",
-      "TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand",
-      "DOCUMENT_DECLINED": "Von Ehrenamtlichen abgelehnte Dokumente",
-      "MEMBERSHIP_REQUEST": "Beitrittsanfrage"
+      "FILL_OPEN_ASSIGNMENTS": "Anstehende Einsätze besetzen",
+      "REVIEW_APPLICATIONS": "Anfragen prüfen",
+      "APPROVE_SIGNUPS": "Anmeldungen freigeben",
+      "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
+      "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen"
     }
   },
   "Terms": {
@@ -746,7 +766,7 @@
     "orgUnits": "Organisationseinheiten",
     "organizationSettings": "Organisationseinstellungen",
     "organizations": "Organisationen",
-    "overview": "Übersicht",
+    "todo": "Zu erledigen",
     "profile": "Profil",
     "qrIdDescription": "Zeig diesen QR-Code vor Ort, um deine Anwesenheit zu bestätigen.",
     "qrIdTitle": "QR-ID",
@@ -802,6 +822,7 @@
       "title": "Löschung von \"{name}\" anfragen"
     },
     "detail": {
+      "title": "Übersicht",
       "aboutTitle": "Über",
       "contactTitle": "Kontakt",
       "editButton": "Bearbeiten",

@@ -1,5 +1,5 @@
 import { hashPassword } from 'better-auth/crypto';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import {
@@ -730,6 +730,18 @@ const berlinMonthStart = (year: number, month: number): Date => {
 
 const OVERVIEW_COUNT = 5;
 
+/** Berlin wall time `days` before today, as a UTC instant. */
+const daysBeforeToday = (days: number, hour: number): Date => {
+  const today = getDateInFixtureTimezone(new Date());
+  const day = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    -days,
+  );
+  return fixtureWallClockToUtc(day.year, day.month, day.day, hour);
+};
+
 /**
  * Five of each waiting action on the Playground root unit, so
  * testing+admin@caluno.org can open See more on every Übersicht section.
@@ -864,6 +876,222 @@ async function ensureOverviewWaitingActions(
     }
   }
 
+  // Close to the day fixtures run, so the board can show Today, Tomorrow,
+  // shared start times, and different gaps under the minimum.
+  const nearTermUnderstaffed = [
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a1',
+      title: 'Evening Desk',
+      dayOffset: 0,
+      hour: 21,
+      durationMinutes: 300,
+      joined: 0,
+      minVolunteers: 2,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a2',
+      title: 'Evening Desk',
+      dayOffset: 0,
+      hour: 22,
+      durationMinutes: 240,
+      joined: 1,
+      minVolunteers: 3,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a3',
+      title: 'Shelf Duty',
+      dayOffset: 1,
+      hour: 9,
+      durationMinutes: 180,
+      joined: 0,
+      minVolunteers: 2,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a4',
+      title: 'Shelf Duty',
+      dayOffset: 1,
+      hour: 14,
+      durationMinutes: 180,
+      joined: 1,
+      minVolunteers: 4,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a5',
+      title: 'Morning Welcome',
+      dayOffset: 1,
+      hour: 16,
+      durationMinutes: 120,
+      joined: 1,
+      minVolunteers: 3,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a6',
+      title: 'Almost Staffed',
+      dayOffset: 2,
+      hour: 10,
+      durationMinutes: 180,
+      joined: 2,
+      minVolunteers: 3,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a7',
+      title: 'Empty Reading Room',
+      dayOffset: 3,
+      hour: 11,
+      durationMinutes: 180,
+      joined: 0,
+      minVolunteers: 5,
+    },
+  ] as const;
+
+  for (const shift of nearTermUnderstaffed) {
+    const day = addDaysInFixtureTimezone(
+      today.year,
+      today.month,
+      today.day,
+      shift.dayOffset,
+    );
+    await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+      id: shift.id,
+      title: shift.title,
+      startsAt: fixtureWallClockToUtc(day.year, day.month, day.day, shift.hour),
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: shift.durationMinutes,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      minVolunteers: shift.minVolunteers,
+      maxVolunteers: Math.max(shift.minVolunteers, 6),
+      instructions:
+        'Seeded under the minimum, close to today, so the To do board shows urgent unfilled assignments.',
+      location: 'Playground Community Center, Front Desk',
+      inviteUserIds: args.volunteers
+        .slice(0, shift.joined)
+        .map((user) => user.id),
+    });
+  }
+
+  const signupVolunteers = [
+    requestA,
+    requestB,
+    eventRequest,
+    args.volunteers[4],
+  ].filter((user): user is FixtureUser => user !== undefined);
+  const nearTermSignups = [
+    {
+      kind: 'shift' as const,
+      id: 'f5c6e7a8-91a2-4b14-cd35-f60718293b01',
+      title: 'Join Desk',
+      dayOffset: 0,
+      hour: 21,
+      durationMinutes: 180,
+      waiting: 1,
+    },
+    {
+      kind: 'shift' as const,
+      id: 'f5c6e7a8-91a2-4b14-cd35-f60718293b02',
+      title: 'Join Desk',
+      dayOffset: 0,
+      hour: 22,
+      durationMinutes: 180,
+      waiting: 2,
+    },
+    {
+      kind: 'event' as const,
+      id: 'a6d7f8b9-a2b3-4c25-de46-0718293445c1',
+      title: 'Reading Hour',
+      dayOffset: 1,
+      hour: 9,
+      durationMinutes: 180,
+      waiting: 1,
+    },
+    {
+      kind: 'event' as const,
+      id: 'a6d7f8b9-a2b3-4c25-de46-0718293445c2',
+      title: 'Reading Hour',
+      dayOffset: 1,
+      hour: 15,
+      durationMinutes: 180,
+      waiting: 3,
+    },
+    {
+      kind: 'shift' as const,
+      id: 'f5c6e7a8-91a2-4b14-cd35-f60718293b03',
+      title: 'Late Signup',
+      dayOffset: 2,
+      hour: 11,
+      durationMinutes: 180,
+      waiting: 1,
+    },
+    {
+      kind: 'event' as const,
+      id: 'a6d7f8b9-a2b3-4c25-de46-0718293445c3',
+      title: 'Family Morning',
+      dayOffset: 3,
+      hour: 10,
+      durationMinutes: 240,
+      waiting: 2,
+    },
+  ];
+
+  for (const signup of nearTermSignups) {
+    const day = addDaysInFixtureTimezone(
+      today.year,
+      today.month,
+      today.day,
+      signup.dayOffset,
+    );
+    const startsAt = fixtureWallClockToUtc(
+      day.year,
+      day.month,
+      day.day,
+      signup.hour,
+    );
+    const waitingUsers = signupVolunteers
+      .slice(0, signup.waiting)
+      .map((user) => user.id);
+    if (signup.kind === 'shift') {
+      await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+        id: signup.id,
+        title: signup.title,
+        startsAt,
+        rrule: ONE_TIME_RRULE,
+        durationMinutes: signup.durationMinutes,
+        visibility: ShiftVisibility.ALL_MEMBERS,
+        maxVolunteers: 8,
+        instructions:
+          'Seeded with sign-ups waiting for approval, close to today.',
+        location: 'Playground Community Center, Main Hall',
+        inviteUserIds: [],
+        extraInvites: [
+          {
+            userIds: waitingUsers,
+            status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+          },
+        ],
+      });
+      continue;
+    }
+
+    const overviewEvent = await ensureEvent(db, args.rootUnitId, args.adminId, {
+      id: signup.id,
+      title: signup.title,
+      description: 'Join requests are waiting for an admin.',
+      location: 'Playground Community Center, Hauptstraße 1, 10115 Berlin',
+      startsAt,
+      endsAt: addHours(startsAt, signup.durationMinutes / 60),
+    });
+    for (const userId of waitingUsers) {
+      const existingEventRequest = await db.query.eventInvites.findFirst({
+        where: { eventId: overviewEvent.id, userId },
+      });
+      if (existingEventRequest) continue;
+      await db.insert(schema.eventInvites).values({
+        eventId: overviewEvent.id,
+        userId,
+        status: EventInviteStatus.AWAITING_ADMIN_APPROVAL,
+      });
+    }
+  }
+
   const reimbursementType = await db.query.reimbursementTypes.findFirst({
     where: { key: ReimbursementTypeKey.EHRENAMT },
   });
@@ -939,6 +1167,9 @@ async function ensureOverviewWaitingActions(
     });
   }
 
+  const statusAges = [2, 5, 9, 16, 21];
+  const declineAges = [1, 4, 8, 15, 20];
+
   const insertInvoice = async (invoice: {
     id: string;
     volunteerId: string;
@@ -949,6 +1180,7 @@ async function ensureOverviewWaitingActions(
     seq: number;
     hours?: number;
     declineReason?: string;
+    declinedAt?: Date;
   }) => {
     const existing = await db.query.invoices.findFirst({
       where: { id: invoice.id },
@@ -976,7 +1208,7 @@ async function ensureOverviewWaitingActions(
         ? {
             declinedAtSigneeType: SigneeType.VOLUNTEER,
             declineReason: invoice.declineReason,
-            declinedAt: new Date(),
+            declinedAt: invoice.declinedAt ?? new Date(),
           }
         : {}),
     });
@@ -1066,8 +1298,112 @@ async function ensureOverviewWaitingActions(
       seq: 30 + index,
       hours: 2,
       declineReason: declineReasons[index],
+      declinedAt: daysAgo(declineAges[index] ?? 1),
     });
   }
+
+  await ensureOverviewStatusAges(db, {
+    contracts: contractIds.map((id, index) => ({
+      id,
+      volunteerId: args.volunteers[index]?.id,
+      daysAgo: statusAges[index] ?? 2,
+    })),
+    timesheets: signIds.map((id, index) => ({
+      id,
+      volunteerId: args.volunteers[index]?.id,
+      daysAgo: statusAges[index] ?? 2,
+    })),
+    declined: declinedIds.map((id, index) => ({
+      id,
+      daysAgo: declineAges[index] ?? 2,
+    })),
+  });
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 86_400_000);
+}
+
+/** Volunteer signature and decline times for the To do accounting chips. */
+async function ensureOverviewStatusAges(
+  db: Database,
+  ages: {
+    contracts: Array<{ id: string; volunteerId?: string; daysAgo: number }>;
+    timesheets: Array<{ id: string; volunteerId?: string; daysAgo: number }>;
+    declined: Array<{ id: string; daysAgo: number }>;
+  },
+) {
+  for (const document of ages.contracts) {
+    if (!document.volunteerId) continue;
+    await ensureVolunteerSignature(db, 'contract', document);
+  }
+  for (const document of ages.timesheets) {
+    if (!document.volunteerId) continue;
+    await ensureVolunteerSignature(db, 'invoice', document);
+  }
+  for (const document of ages.declined) {
+    await db
+      .update(schema.invoices)
+      .set({ declinedAt: daysAgo(document.daysAgo) })
+      .where(eq(schema.invoices.id, document.id));
+  }
+}
+
+async function ensureVolunteerSignature(
+  db: Database,
+  kind: 'contract' | 'invoice',
+  document: { id: string; volunteerId?: string; daysAgo: number },
+) {
+  if (!document.volunteerId) return;
+  const signedAt = daysAgo(document.daysAgo);
+  if (kind === 'contract') {
+    const existing = await db.query.contractSignatures.findFirst({
+      where: { contractId: document.id, signeeType: SigneeType.VOLUNTEER },
+    });
+    if (existing?.signedAt) return;
+    if (existing) {
+      await db
+        .update(schema.contractSignatures)
+        .set({ signedAt, signedByUserId: document.volunteerId })
+        .where(eq(schema.contractSignatures.id, existing.id));
+      return;
+    }
+    const contract = await db.query.contracts.findFirst({
+      where: { id: document.id },
+    });
+    if (!contract) return;
+    await db.insert(schema.contractSignatures).values({
+      contractId: document.id,
+      order: 0,
+      signeeType: SigneeType.VOLUNTEER,
+      signedByUserId: document.volunteerId,
+      signedAt,
+    });
+    return;
+  }
+
+  const existing = await db.query.invoiceSignatures.findFirst({
+    where: { invoiceId: document.id, signeeType: SigneeType.VOLUNTEER },
+  });
+  if (existing?.signedAt) return;
+  if (existing) {
+    await db
+      .update(schema.invoiceSignatures)
+      .set({ signedAt, signedByUserId: document.volunteerId })
+      .where(eq(schema.invoiceSignatures.id, existing.id));
+    return;
+  }
+  const invoice = await db.query.invoices.findFirst({
+    where: { id: document.id },
+  });
+  if (!invoice) return;
+  await db.insert(schema.invoiceSignatures).values({
+    invoiceId: document.id,
+    order: 0,
+    signeeType: SigneeType.VOLUNTEER,
+    signedByUserId: document.volunteerId,
+    signedAt,
+  });
 }
 
 async function seedFixtures() {
@@ -1159,6 +1495,8 @@ async function seedFixtures() {
       'testing+pending03@caluno.org',
       'testing+pending04@caluno.org',
       'testing+pending05@caluno.org',
+      'testing+pending06@caluno.org',
+      'testing+pending07@caluno.org',
     ].map((email, index) =>
       createAuthUser(db, hashedPassword, {
         locale: 'en',
@@ -1219,6 +1557,30 @@ async function seedFixtures() {
 
   for (const user of pendingUsers) {
     await ensureMembershipRequest(user.id, MembershipRequestStatus.PENDING);
+  }
+
+  // Refresh these on every fixture run so the chips stay relative to today.
+  const applicationRequestedAt = [
+    daysBeforeToday(6, 10),
+    daysBeforeToday(4, 10),
+    daysBeforeToday(2, 11),
+    daysBeforeToday(1, 9),
+    daysBeforeToday(0, 8),
+    daysBeforeToday(8, 10),
+    fixtureWallClockToUtc(2025, 10, 2, 12),
+  ];
+  for (const [index, user] of pendingUsers.entries()) {
+    const createdAt = applicationRequestedAt[index];
+    if (!createdAt) continue;
+    await db
+      .update(schema.membershipRequests)
+      .set({ createdAt })
+      .where(
+        and(
+          eq(schema.membershipRequests.userId, user.id),
+          eq(schema.membershipRequests.organizationUnitId, org.rootUnitId),
+        ),
+      );
   }
 
   await ensureMembershipRequest(

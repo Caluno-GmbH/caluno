@@ -15,7 +15,7 @@ import type { OverviewSourceTask } from './visible-tasks';
  *
  * Shift below minimum: title, startsAt, endsAt, approvedCount, minimum
  * Shift / event join requests: title, startsAt, endsAt, openRequestCount
- * Membership request: firstName, lastName, requestedAt
+ * Membership request: firstName, lastName, email, requestedAt
  * Contract to countersign / declined document: volunteerName,
  *   reimbursementTypeName, periodStart, periodEnd, declineReason
  * Timesheet to sign: volunteerName, reimbursementTypeName, periodStart
@@ -33,9 +33,29 @@ export function mapOverviewTask(
     type,
     href: task.link,
     details: detailsFor(task, locale, labels?.reimbursementType),
+    sortAt: sortAtFor(task),
     reimbursementTypeKey: readString(task.data, 'reimbursementTypeKey'),
     documentKind: documentKind(type, task.data),
   };
+}
+
+function sortAtFor(task: OverviewSourceTask): string | undefined {
+  const data = task.data;
+  switch (task.type) {
+    case 'SHIFT_BELOW_MINIMUM':
+    case 'SHIFT_APPROVAL':
+    case 'EVENT_APPROVAL':
+      return readString(data, 'startsAt');
+    case 'MEMBERSHIP_REQUEST':
+      return readString(data, 'requestedAt');
+    case 'CONTRACT_SIGN':
+    case 'TIMESHEET_SIGN':
+      return readString(data, 'signedAt') ?? readString(data, 'periodStart');
+    case 'DOCUMENT_DECLINED':
+      return readString(data, 'declinedAt') ?? readString(data, 'periodStart');
+    default:
+      return undefined;
+  }
 }
 
 function documentKind(
@@ -61,21 +81,23 @@ function detailsFor(
     case 'SHIFT_BELOW_MINIMUM':
       return present([
         field('title', readString(data, 'title')),
-        ...schedule(data, locale),
+        ...schedule(data),
         field('approvedCount', readCount(data, 'approvedCount')),
         field('minimum', readCount(data, 'minimum')),
+        field('maximum', readCount(data, 'maximum')),
       ]);
     case 'SHIFT_APPROVAL':
     case 'EVENT_APPROVAL':
       return present([
         field('title', readString(data, 'title')),
-        ...schedule(data, locale),
+        ...schedule(data),
         field('openRequestCount', readCount(data, 'openRequestCount')),
       ]);
     case 'MEMBERSHIP_REQUEST':
       return present([
         field('firstName', readString(data, 'firstName')),
         field('lastName', readString(data, 'lastName')),
+        field('email', readString(data, 'email')),
         field(
           'requestedAt',
           formatWhen(readString(data, 'requestedAt'), locale),
@@ -86,12 +108,14 @@ function detailsFor(
         field('volunteerName', readString(data, 'volunteerName')),
         field('reimbursementType', typeName(data, reimbursementType)),
         field('period', boardPeriod(data, locale)),
+        field('signedAt', readString(data, 'signedAt')),
       ]);
     case 'TIMESHEET_SIGN':
       return present([
         field('volunteerName', readString(data, 'volunteerName')),
         field('reimbursementType', typeName(data, reimbursementType)),
         field('month', timesheetMonth(data, locale)),
+        field('signedAt', readString(data, 'signedAt')),
         field('hours', formatHours(readNumber(data, 'hours'), locale)),
         field('amount', formatAmount(readNumber(data, 'amountCents'))),
       ]);
@@ -108,6 +132,7 @@ function detailsFor(
         field('reimbursementType', typeName(data, reimbursementType)),
         field('period', boardPeriod(data, locale)),
         field('declineReason', readString(data, 'declineReason')),
+        field('declinedAt', readString(data, 'declinedAt')),
       ]);
     default:
       return [];
@@ -142,20 +167,12 @@ function present(details: Array<OverviewDetail | undefined>): OverviewDetail[] {
 
 function schedule(
   data: Record<string, unknown>,
-  locale: string,
 ): Array<OverviewDetail | undefined> {
   const startsAt = readString(data, 'startsAt');
   if (!startsAt) return [];
-  const endsAt = readString(data, 'endsAt');
-  const formatting = formats(locale);
-  if (endsAt) {
-    const period = formatting.formatWorkedPeriod(startsAt, endsAt);
-    return [field('date', period.date), field('time', period.time)];
-  }
-  const start = parseISO(startsAt);
   return [
-    field('date', formatting.formatDate(start)),
-    field('time', formatting.formatTime(start)),
+    field('startsAt', startsAt),
+    field('endsAt', readString(data, 'endsAt')),
   ];
 }
 

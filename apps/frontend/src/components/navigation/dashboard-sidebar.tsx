@@ -21,7 +21,6 @@ import {
 } from '@repo/ui';
 import {
   ArrowUpRight,
-  BuildingIcon,
   CalendarCog,
   CalendarIcon,
   ClipboardListIcon,
@@ -29,6 +28,7 @@ import {
   CoinsIcon,
   HeartHandshake,
   LayoutListIcon,
+  ListTodo,
   LogOutIcon,
   NetworkIcon,
   ScanQrCode,
@@ -78,9 +78,9 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
 
     return [
       {
-        titleKey: 'overview',
+        titleKey: 'todo',
         href: `/admin/${orgUId}`,
-        icon: BuildingIcon,
+        icon: ListTodo,
         count: waitingCount,
       },
       {

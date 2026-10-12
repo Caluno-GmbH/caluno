@@ -25,6 +25,8 @@ function contract(overrides: Partial<ContractTaskRow> = {}): ContractTaskRow {
     status: 'AWAITING_NGO_SIGNATURE',
     declinedAtSigneeType: null,
     declineReason: null,
+    declinedAt: null,
+    volunteerSignedAt: null,
     ...overrides,
   };
 }
@@ -44,7 +46,12 @@ function invoice(overrides: Partial<InvoiceTaskRow> = {}): InvoiceTaskRow {
 describe('document tasks', () => {
   it('keeps contracts waiting for the organisation signature', () => {
     const tasks = countersignContractTasks(
-      [contract(), contract({ id: 'active', status: 'ACTIVE' })],
+      [
+        contract({
+          volunteerSignedAt: new Date('2026-08-20T10:00:00.000Z'),
+        }),
+        contract({ id: 'active', status: 'ACTIVE' }),
+      ],
       ORG,
     );
 
@@ -53,6 +60,7 @@ describe('document tasks', () => {
     expect(tasks[0]?.data).toMatchObject({
       volunteerName: 'Ada Lovelace',
       reimbursementTypeKey: 'EHRENAMT',
+      signedAt: '2026-08-20T10:00:00.000Z',
     });
   });
 
@@ -106,6 +114,7 @@ describe('document tasks', () => {
           status: 'DECLINED',
           declinedAtSigneeType: 'VOLUNTEER',
           declineReason: 'Wrong hours',
+          declinedAt: new Date('2026-09-01T08:00:00.000Z'),
         }),
         contract({
           id: 'replaced',
@@ -132,6 +141,7 @@ describe('document tasks', () => {
     expect(tasks[0]?.data).toMatchObject({
       declineReason: 'Wrong hours',
       declinedAtSigneeType: 'VOLUNTEER',
+      declinedAt: '2026-09-01T08:00:00.000Z',
     });
   });
 });

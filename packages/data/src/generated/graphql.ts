@@ -842,6 +842,7 @@ export type Mutation = {
   updateShiftInstanceInviteStatus: ShiftInstanceInvite;
   updateShiftInviteStatus: ShiftInvite;
   updateTimeEntry: TimeEntry;
+  updateTodoFillAssignmentFilter: TodoFillAssignmentFilter;
 };
 
 
@@ -1365,6 +1366,11 @@ export type MutationUpdateTimeEntryArgs = {
   input: UpdateTimeEntryInput;
 };
 
+
+export type MutationUpdateTodoFillAssignmentFilterArgs = {
+  input: UpdateTodoFillAssignmentFilterInput;
+};
+
 export type MyDocumentSummary = {
   __typename?: 'MyDocumentSummary';
   pending: Scalars['Int']['output'];
@@ -1651,6 +1657,7 @@ export type Query = {
   timeEntries: TimeEntryPaginatedResponse;
   timeEntriesByUser: TimeEntryPaginatedResponse;
   timeEntry: TimeEntry;
+  todoFillAssignmentFilter: TodoFillAssignmentFilter;
   user?: Maybe<UserWithProfile>;
   volunteerAllowanceStates: Array<VolunteerAllowance>;
   volunteersNeedingTimesheets: Array<VolunteerNeedsTimesheet>;
@@ -2695,6 +2702,17 @@ export enum TimeEntrySortField {
   Volunteer = 'VOLUNTEER'
 }
 
+export type TodoFillAssignmentFilter = {
+  __typename?: 'TodoFillAssignmentFilter';
+  daysAhead: Scalars['Int']['output'];
+  threshold: TodoFillThreshold;
+};
+
+export enum TodoFillThreshold {
+  BelowMinimum = 'BELOW_MINIMUM',
+  NotFull = 'NOT_FULL'
+}
+
 export type UpdateDocumentTemplateInput = {
   body?: InputMaybe<Scalars['JSON']['input']>;
   invoiceNumberFormat?: InputMaybe<Scalars['String']['input']>;
@@ -2875,6 +2893,11 @@ export type UpdateTimeEntryInput = {
   reimbursementTypeId?: InputMaybe<Scalars['String']['input']>;
   shiftInstanceId?: InputMaybe<Scalars['String']['input']>;
   startedAt: Scalars['DateTime']['input'];
+};
+
+export type UpdateTodoFillAssignmentFilterInput = {
+  daysAhead: Scalars['Int']['input'];
+  threshold: TodoFillThreshold;
 };
 
 export type User = {
@@ -4241,6 +4264,18 @@ export type MyTasksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MyTasksQuery = { __typename?: 'Query', myTasks: Array<{ __typename?: 'Task', id: string, type: TaskType, link: string, data: Record<string, unknown>, organizationUnitId: string, neededPermission?: PermissionKey | null }> };
+
+export type TodoFillAssignmentFilterQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TodoFillAssignmentFilterQuery = { __typename?: 'Query', todoFillAssignmentFilter: { __typename?: 'TodoFillAssignmentFilter', threshold: TodoFillThreshold, daysAhead: number } };
+
+export type UpdateTodoFillAssignmentFilterMutationVariables = Exact<{
+  input: UpdateTodoFillAssignmentFilterInput;
+}>;
+
+
+export type UpdateTodoFillAssignmentFilterMutation = { __typename?: 'Mutation', updateTodoFillAssignmentFilter: { __typename?: 'TodoFillAssignmentFilter', threshold: TodoFillThreshold, daysAhead: number } };
 
 export type TermsStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -7654,6 +7689,22 @@ export const MyTasksDocument = gql`
   }
 }
     `;
+export const TodoFillAssignmentFilterDocument = gql`
+    query TodoFillAssignmentFilter {
+  todoFillAssignmentFilter {
+    threshold
+    daysAhead
+  }
+}
+    `;
+export const UpdateTodoFillAssignmentFilterDocument = gql`
+    mutation UpdateTodoFillAssignmentFilter($input: UpdateTodoFillAssignmentFilterInput!) {
+  updateTodoFillAssignmentFilter(input: $input) {
+    threshold
+    daysAhead
+  }
+}
+    `;
 export const TermsStatusDocument = gql`
     query TermsStatus {
   termsStatus {
@@ -8585,6 +8636,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     MyTasks(variables?: MyTasksQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyTasksQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<MyTasksQuery>({ document: MyTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyTasks', 'query', variables);
+    },
+    TodoFillAssignmentFilter(variables?: TodoFillAssignmentFilterQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TodoFillAssignmentFilterQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<TodoFillAssignmentFilterQuery>({ document: TodoFillAssignmentFilterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TodoFillAssignmentFilter', 'query', variables);
+    },
+    UpdateTodoFillAssignmentFilter(variables: UpdateTodoFillAssignmentFilterMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateTodoFillAssignmentFilterMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateTodoFillAssignmentFilterMutation>({ document: UpdateTodoFillAssignmentFilterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateTodoFillAssignmentFilter', 'mutation', variables);
     },
     TermsStatus(variables?: TermsStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TermsStatusQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<TermsStatusQuery>({ document: TermsStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TermsStatus', 'query', variables);

@@ -31,6 +31,8 @@ interface DocTypeHeaderProps {
   kind: DocumentKind;
   pauschale: PauschalenType;
   topLine: string;
+  /** Let a long overview meta line wrap instead of clipping the type label. */
+  wrapTopLine?: boolean;
   name: string;
   subline?: string;
   className?: string;
@@ -41,6 +43,7 @@ export function DocTypeHeader({
   kind,
   pauschale,
   topLine,
+  wrapTopLine = false,
   name,
   subline,
   className,
@@ -64,7 +67,14 @@ export function DocTypeHeader({
       </div>
       <div className="min-w-0 w-full flex-1">
         {topLine ? (
-          <p className="text-sm text-muted-foreground leading-none truncate mb-0.5">
+          <p
+            className={cn(
+              'mb-0.5 text-sm text-muted-foreground',
+              wrapTopLine
+                ? 'whitespace-normal break-words leading-snug'
+                : 'truncate leading-none',
+            )}
+          >
             {topLine}
           </p>
         ) : null}

@@ -13,6 +13,8 @@ export interface ContractTaskRow {
   status: string;
   declinedAtSigneeType: string | null;
   declineReason: string | null;
+  declinedAt: Date | null;
+  volunteerSignedAt: Date | null;
 }
 
 export interface InvoiceTaskRow extends ContractTaskRow {
@@ -57,6 +59,7 @@ export function timesheetSignTasks(
         periodEnd: row.periodEnd.toISOString(),
         hours: row.totalHours,
         amountCents: row.totalAmountCents,
+        signedAt: iso(row.volunteerSignedAt),
       },
     }));
 }
@@ -144,6 +147,7 @@ export function declinedDocumentTasks(
         periodEnd: row.periodEnd.toISOString(),
         declineReason: row.declineReason,
         declinedAtSigneeType: row.declinedAtSigneeType,
+        declinedAt: iso(row.declinedAt),
         kind,
       },
     }));
@@ -166,12 +170,17 @@ function documentTask(
       reimbursementTypeKey: row.reimbursementTypeKey,
       periodStart: row.periodStart.toISOString(),
       periodEnd: row.periodEnd.toISOString(),
+      signedAt: iso(row.volunteerSignedAt),
     },
   };
 }
 
 function periodKey(row: ContractTaskRow): string {
   return `${row.volunteerId}|${row.reimbursementTypeKey}|${row.periodStart.getTime()}|${row.periodEnd.getTime()}`;
+}
+
+function iso(value: Date | null): string | undefined {
+  return value ? value.toISOString() : undefined;
 }
 
 function reimbursementsLink(organizationUnitId: string): string {

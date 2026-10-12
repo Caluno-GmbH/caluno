@@ -35,7 +35,6 @@ export function OrgUnitDetailView({
 }: OrgUnitDetailViewProps) {
   const { open } = useSheetTrigger(FORM_ID);
   const t = useTranslations('OrgUnit.detail');
-  const tNav = useTranslations('Navigation');
 
   const addressText = formatAddress(orgUnit);
   const hasContact =
@@ -48,7 +47,7 @@ export function OrgUnitDetailView({
   return (
     <>
       <div className="flex items-start justify-between gap-4">
-        <h1 className="page-title">{tNav('overview')}</h1>
+        <h1 className="page-title">{t('title')}</h1>
         {canEdit && (
           <Button
             variant="outline"

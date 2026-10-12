@@ -337,6 +337,7 @@ describe('TaskService.myTasks', () => {
     expect(of(TaskType.MEMBERSHIP_REQUEST)[0]?.data).toMatchObject({
       firstName: 'Ada',
       lastName: 'Lovelace',
+      email: volunteer.email,
     });
     expect(of(TaskType.CONTRACT_SIGN)).toHaveLength(1);
     expect(of(TaskType.TIMESHEET_SIGN)[0]?.data).toMatchObject({

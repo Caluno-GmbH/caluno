@@ -5,25 +5,32 @@ import { Button, Empty, EmptyDescription, EmptyHeader } from '@repo/ui';
 import { ChevronLeftIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
-import type { OverviewTaskType } from '../tasks';
+import { type OverviewSectionId, taskIdsWithStartTime } from '../tasks';
 import { useOverviewTasks } from '../use-overview-tasks';
+import {
+  FillAssignmentEmpty,
+  FillAssignmentFilterControl,
+} from './fill-assignment-filter';
 import { TaskCard } from './task-card';
 
 export function OverviewSection({
   orgUId,
   permissions,
-  type,
+  sectionId,
 }: {
   orgUId: string;
   permissions: PermissionKey[];
-  type: OverviewTaskType;
+  sectionId: OverviewSectionId;
 }) {
-  const t = useTranslations('Overview');
+  const t = useTranslations('Todo');
   const { sections, isPending, isError } = useOverviewTasks(
     orgUId,
     permissions,
   );
-  const section = sections.find((item) => item.type === type);
+  const section = sections.find((item) => item.id === sectionId);
+  const withStartTime = section
+    ? taskIdsWithStartTime(section.tasks)
+    : undefined;
 
   return (
     <div className="space-y-6">
@@ -34,20 +41,40 @@ export function OverviewSection({
             {t('back')}
           </Link>
         </Button>
-        <h1 className="page-title">{t(`sections.${type}`)}</h1>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <h1 className="page-title">
+            {t(`sections.${sectionId}`)}
+            {section
+              ? ` (${section.tasks.length})`
+              : sectionId === 'FILL_OPEN_ASSIGNMENTS' && !isPending
+                ? ' (0)'
+                : ''}
+          </h1>
+          {sectionId === 'FILL_OPEN_ASSIGNMENTS' ? (
+            <FillAssignmentFilterControl orgUId={orgUId} />
+          ) : null}
+        </div>
       </div>
       {isPending ? null : isError ? (
         <p className="text-sm text-muted-foreground">{t('loadFailed')}</p>
-      ) : !section ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyDescription>{t('empty')}</EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+      ) : !section || section.tasks.length === 0 ? (
+        sectionId === 'FILL_OPEN_ASSIGNMENTS' ? (
+          <FillAssignmentEmpty orgUId={orgUId} />
+        ) : (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyDescription>{t('empty')}</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )
       ) : (
         <div className="grid grid-cols-1 gap-2 min-[750px]:grid-cols-2">
           {section.tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard
+              key={task.id}
+              showStartTime={withStartTime?.has(task.id)}
+              task={task}
+            />
           ))}
         </div>
       )}

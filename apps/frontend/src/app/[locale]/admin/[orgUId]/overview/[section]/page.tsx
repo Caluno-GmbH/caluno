@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { OverviewSection } from '@/domain/overview/components/overview-section';
-import { overviewSectionTypeFromSlug } from '@/domain/overview/tasks';
+import { overviewSectionIdFromSlug } from '@/domain/overview/tasks';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
@@ -15,19 +15,19 @@ export async function generateMetadata({
   params,
 }: OverviewSectionPageProps): Promise<Metadata> {
   const { locale: rawLocale, section } = await params;
-  const type = overviewSectionTypeFromSlug(section);
-  if (!type) return {};
+  const sectionId = overviewSectionIdFromSlug(section);
+  if (!sectionId) return {};
   const locale = resolveLocale(rawLocale);
-  const t = await getTranslations({ locale, namespace: 'Overview' });
-  return { title: t(`sections.${type}`) };
+  const t = await getTranslations({ locale, namespace: 'Todo' });
+  return { title: t(`sections.${sectionId}`) };
 }
 
 export default async function OverviewSectionPage({
   params,
 }: OverviewSectionPageProps) {
   const { orgUId, locale: rawLocale, section } = await params;
-  const type = overviewSectionTypeFromSlug(section);
-  if (!type) notFound();
+  const sectionId = overviewSectionIdFromSlug(section);
+  if (!sectionId) notFound();
 
   const locale = resolveLocale(rawLocale);
   await requireOrgAccess(orgUId);
@@ -37,7 +37,7 @@ export default async function OverviewSectionPage({
   return (
     <OverviewSection
       orgUId={orgUId}
-      type={type}
+      sectionId={sectionId}
       permissions={userPermissions.map((permission) => permission.key)}
     />
   );

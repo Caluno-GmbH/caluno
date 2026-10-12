@@ -2,7 +2,14 @@ import { Badge } from '@repo/ui';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-/** Shared row: identity on the left, one status badge on the right. */
+/** Days-away chip above a grey context chip, right-aligned. */
+export function OverviewChipStack({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex shrink-0 flex-col items-end gap-1">{children}</div>
+  );
+}
+
+/** Shared row: identity on the left, status chips on the right. */
 export function OverviewCardLayout({
   children,
   badge,
@@ -24,7 +31,7 @@ export function OverviewCardCopy({
   title,
   children,
 }: {
-  meta?: string;
+  meta?: ReactNode;
   title?: string;
   children?: ReactNode;
 }) {
@@ -32,12 +39,12 @@ export function OverviewCardCopy({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {meta ? (
-        <p className="truncate text-sm leading-none text-muted-foreground tabular-nums">
+        <p className="truncate text-sm leading-snug whitespace-nowrap text-muted-foreground tabular-nums">
           {meta}
         </p>
       ) : null}
       {title ? (
-        <p className="line-clamp-2 whitespace-normal break-words text-base font-bold leading-snug text-card-foreground">
+        <p className="truncate text-base font-bold leading-snug text-card-foreground">
           {title}
         </p>
       ) : null}
@@ -53,7 +60,7 @@ export function OverviewCardIdentity({
   children,
 }: {
   leading?: ReactNode;
-  meta?: string;
+  meta?: ReactNode;
   title?: string;
   children?: ReactNode;
 }) {
@@ -78,15 +85,27 @@ export function OverviewTypeIcon({ icon: Icon }: { icon: LucideIcon }) {
   );
 }
 
+const TONE_VARIANT = {
+  danger: 'error',
+  warning: 'alert',
+  neutral: 'outline',
+} as const;
+
 export function OverviewStatusBadge({
   icon: Icon,
   children,
+  tone = 'neutral',
+  label,
 }: {
   icon?: LucideIcon;
   children: ReactNode;
+  /** Danger and warning are outline chips: transparent fill, role-coloured border and text. */
+  tone?: keyof typeof TONE_VARIANT;
+  /** Accessible name when the visible text is abbreviated. */
+  label?: string;
 }) {
   return (
-    <Badge variant="outline" className="shrink-0">
+    <Badge variant={TONE_VARIANT[tone]} aria-label={label} className="shrink-0">
       {Icon ? <Icon /> : null}
       {children}
     </Badge>

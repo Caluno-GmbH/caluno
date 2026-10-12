@@ -8,3 +8,19 @@ query MyTasks {
     neededPermission
   }
 }
+
+query TodoFillAssignmentFilter {
+  todoFillAssignmentFilter {
+    threshold
+    daysAhead
+  }
+}
+
+mutation UpdateTodoFillAssignmentFilter(
+  $input: UpdateTodoFillAssignmentFilterInput!
+) {
+  updateTodoFillAssignmentFilter(input: $input) {
+    threshold
+    daysAhead
+  }
+}

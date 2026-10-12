@@ -47,7 +47,8 @@ describe('mapOverviewTask', () => {
     expect(detailValues).toContain('3');
     expect(detailValues.at(-2)).toBe('1');
     expect(detailValues.at(-1)).toBe('3');
-    expect(detailValues[2]).toContain('10:00');
+    expect(detailValues).toContain('2026-08-12T08:00:00.000Z');
+    expect(detailValues).toContain('2026-08-12T10:00:00.000Z');
   });
 
   it('formats open join requests for a shift and an event', () => {
@@ -71,14 +72,19 @@ describe('mapOverviewTask', () => {
       source(TaskType.MembershipRequest, {
         firstName: 'Ada',
         lastName: 'Lovelace',
+        email: 'ada@caluno.org',
         requestedAt: '2026-03-04T09:00:00.000Z',
       }),
       'en',
     );
 
     const detailValues = values(task);
-    expect(detailValues.slice(0, 2)).toEqual(['Ada', 'Lovelace']);
-    expect(detailValues[2]).toMatch(/2026/);
+    expect(detailValues.slice(0, 3)).toEqual([
+      'Ada',
+      'Lovelace',
+      'ada@caluno.org',
+    ]);
+    expect(detailValues[3]).toMatch(/2026/);
   });
 
   it('labels a countersign contract as a year, a month, or a range', () => {
@@ -191,5 +197,27 @@ describe('mapOverviewTask', () => {
       'June 2026',
       'Wrong hours',
     ]);
+  });
+
+  it('sorts declined and countersign documents by the status change', () => {
+    const declined = mapOverviewTask(
+      source(TaskType.DocumentDeclined, {
+        volunteerName: 'Ada Lovelace',
+        periodStart: '2026-02-01T00:00:00.000Z',
+        declinedAt: '2026-09-20T08:00:00.000Z',
+      }),
+      'en',
+    );
+    const signed = mapOverviewTask(
+      source(TaskType.ContractSign, {
+        volunteerName: 'Ada Lovelace',
+        periodStart: '2026-01-01T00:00:00.000Z',
+        signedAt: '2026-08-15T10:00:00.000Z',
+      }),
+      'en',
+    );
+
+    expect(declined.sortAt).toBe('2026-09-20T08:00:00.000Z');
+    expect(signed.sortAt).toBe('2026-08-15T10:00:00.000Z');
   });
 });

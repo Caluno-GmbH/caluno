@@ -1,21 +1,41 @@
 {
-  "Overview": {
+  "Todo": {
     "empty": "Nothing is waiting on you.",
     "loadFailed": "Waiting actions could not be loaded.",
-    "seeAll": "See all ({count})",
-    "back": "Back to overview",
+    "seeAll": "See all",
+    "groups": {
+      "volunteersAndShifts": "Volunteers and shifts",
+      "accounting": "Accounting"
+    },
+    "types": {
+      "contract": "Contract",
+      "timesheet": "Timesheet"
+    },
+    "back": "Back to to do",
     "waiting": "{count, plural, one {# waiting} other {# waiting}}",
+    "appliedRelative": "Applied {when}",
+    "declinedAgo": "Declined {when}",
+    "signedAgo": "Signed {when}",
     "short": "{missing, plural, one {# needed} other {# needed}}",
-    "hours": "{hours} hours",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} of {total} spots filled",
+    "hours": "{hours} h",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} days",
+      "staffing": "Staffing",
+      "daysAhead": "Days ahead",
+      "BELOW_MINIMUM": "Below minimum",
+      "NOT_FULL": "Not full",
+      "emptyBelowMinimum": "No assignments below minimum in the next {count} days",
+      "emptyNotFull": "No assignments that aren't full in the next {count} days"
+    },
     "sections": {
-      "SHIFT_BELOW_MINIMUM": "Assignments that need people",
-      "SHIFT_APPROVAL": "Assignment sign-ups to approve",
-      "EVENT_APPROVAL": "Event sign-ups to approve",
-      "CONTRACT_SIGN": "Contracts to countersign",
-      "TIMESHEET_SIGN": "Timesheets to sign",
-      "TIMESHEET_BUNDLES": "Timesheet bundles ready to send",
-      "DOCUMENT_DECLINED": "Documents declined by a volunteer",
-      "MEMBERSHIP_REQUEST": "Volunteer request"
+      "FILL_OPEN_ASSIGNMENTS": "Fill upcoming assignments",
+      "REVIEW_APPLICATIONS": "Review applications",
+      "APPROVE_SIGNUPS": "Approve sign-ups",
+      "DECLINED_DOCUMENTS": "Declined documents",
+      "COUNTERSIGN_DOCUMENTS": "Countersign documents"
     }
   },
   "Terms": {
@@ -746,7 +766,7 @@
     "orgUnits": "Org units",
     "organizationSettings": "Organisation settings",
     "organizations": "Organisations",
-    "overview": "Overview",
+    "todo": "To do",
     "profile": "Profile",
     "qrIdDescription": "Show this QR code on-site to confirm your attendance.",
     "qrIdTitle": "QR ID",
@@ -802,6 +822,7 @@
       "title": "Request to delete \"{name}\""
     },
     "detail": {
+      "title": "Overview",
       "aboutTitle": "About",
       "contactTitle": "Contact",
       "editButton": "Edit",

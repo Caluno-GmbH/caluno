@@ -1,17 +1,22 @@
 'use client';
 
-import type { PermissionKey } from '@repo/data';
+import { PermissionKey } from '@repo/data';
 import { useMyTasks } from '@repo/data/react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { mapOverviewTask } from './map-task';
-import { groupOverviewTasks, type OverviewSection } from './tasks';
+import {
+  groupOverviewBoard,
+  type OverviewGroup,
+  type OverviewSection,
+} from './tasks';
 import { visibleOverviewTasks } from './visible-tasks';
 
 export function useOverviewTasks(
   orgUId: string,
   permissions: PermissionKey[],
 ): {
+  groups: OverviewGroup[];
   sections: OverviewSection[];
   isPending: boolean;
   isError: boolean;
@@ -19,7 +24,7 @@ export function useOverviewTasks(
   const tType = useTranslations('Shift.paidMarker');
   const locale = useLocale();
   const { data, isPending, isError } = useMyTasks(orgUId);
-  const sections = useMemo(() => {
+  const groups = useMemo(() => {
     const visible = visibleOverviewTasks(data ?? [], {
       organizationUnitId: orgUId,
       permissions,
@@ -33,8 +38,15 @@ export function useOverviewTasks(
         },
       }),
     );
-    return groupOverviewTasks(tasks);
+    return groupOverviewBoard(tasks, {
+      keepEmptyFill: permissions.includes(PermissionKey.ShiftEdit),
+    });
   }, [data, locale, orgUId, permissions, tType]);
 
-  return { sections, isPending, isError };
+  return {
+    groups,
+    sections: groups.flatMap((group) => group.sections),
+    isPending,
+    isError,
+  };
 }

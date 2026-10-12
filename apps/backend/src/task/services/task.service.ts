@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt, max, sql } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
   InvoiceStatus,
+  SigneeType,
 } from '../../accounting/enums';
 import { AuthService } from '../../auth/auth.service';
 import { PermissionKey } from '../../auth/enums';
@@ -23,6 +24,11 @@ import {
   timesheetBundleTasks,
   timesheetSignTasks,
 } from './task-documents';
+import {
+  type FillAssignmentFilter,
+  fillAssignmentWindow,
+} from './todo-fill-filter';
+import { TodoFillFilterService } from './todo-fill-filter.service';
 
 /**
  * Tasks are computed on each read for the selected org unit. A row leaves
@@ -33,13 +39,14 @@ export class TaskService {
   constructor(
     @Inject(DATABASE_CONNECTION) private readonly db: Database,
     private readonly authService: AuthService,
+    private readonly fillFilters: TodoFillFilterService,
   ) {}
 
   async myTasks(userId: string, organizationUnitId: string): Promise<Task[]> {
-    const permissions = await this.authService.findUserPermissionKeys(
-      userId,
-      organizationUnitId,
-    );
+    const [permissions, fillFilter] = await Promise.all([
+      this.authService.findUserPermissionKeys(userId, organizationUnitId),
+      this.fillFilters.get(userId, organizationUnitId),
+    ]);
     const canEditShifts = permissions.has(PermissionKey.SHIFT_EDIT);
     const canEditVolunteers = permissions.has(PermissionKey.VOLUNTEER_EDIT);
     const canManageAccounting = permissions.has(
@@ -54,7 +61,9 @@ export class TaskService {
       contracts,
       invoices,
     ] = await Promise.all([
-      canEditShifts ? this.shiftsBelowMinimum(organizationUnitId) : [],
+      canEditShifts
+        ? this.shiftsBelowMinimum(organizationUnitId, fillFilter)
+        : [],
       canEditShifts ? this.shiftApprovals(organizationUnitId) : [],
       canEditShifts ? this.eventApprovals(organizationUnitId) : [],
       canEditVolunteers ? this.membershipRequests(organizationUnitId) : [],
@@ -85,10 +94,20 @@ export class TaskService {
 
   private async shiftsBelowMinimum(
     organizationUnitId: string,
+    filter: FillAssignmentFilter,
   ): Promise<Task[]> {
     const minimum = sql<number>`coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${schema.shifts.minVolunteers})`;
+    const maximum = sql<
+      number | null
+    >`coalesce(${schema.shiftInstances.overrideMaxVolunteers}, ${schema.shifts.maxVolunteers})`;
     const approvedCount = sql<number>`count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED})::int`;
     const title = sql<string>`coalesce(${schema.shiftInstances.overrideTitle}, ${schema.shifts.title})`;
+    const now = new Date();
+    const window = fillAssignmentWindow(now, filter.daysAhead);
+    const staffing =
+      filter.threshold === 'NOT_FULL'
+        ? sql`${maximum} is not null and count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED}) < ${maximum}`
+        : sql`${minimum} is not null and count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED}) < ${minimum}`;
 
     const rows = await this.db
       .select({
@@ -98,6 +117,7 @@ export class TaskService {
         startsAt: schema.shiftInstances.actualStartsAt,
         endsAt: schema.shiftInstances.actualEndsAt,
         minimum,
+        maximum,
         approvedCount,
       })
       .from(schema.shiftInstances)
@@ -114,7 +134,8 @@ export class TaskService {
           eq(schema.shifts.organizationUnitId, organizationUnitId),
           eq(schema.shifts.isDeleted, false),
           eq(schema.shiftInstances.isCancelled, false),
-          gt(schema.shiftInstances.actualEndsAt, new Date()),
+          gte(schema.shiftInstances.actualStartsAt, now),
+          lt(schema.shiftInstances.actualStartsAt, window.end),
         ),
       )
       .groupBy(
@@ -126,10 +147,10 @@ export class TaskService {
         schema.shiftInstances.actualEndsAt,
         schema.shiftInstances.overrideMinVolunteers,
         schema.shifts.minVolunteers,
+        schema.shiftInstances.overrideMaxVolunteers,
+        schema.shifts.maxVolunteers,
       )
-      .having(
-        sql`coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${schema.shifts.minVolunteers}) is not null and count(*) filter (where ${schema.shiftInstanceInvites.status} = ${ShiftInviteStatus.JOINED}) < coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${schema.shifts.minVolunteers})`,
-      )
+      .having(staffing)
       .orderBy(asc(schema.shiftInstances.actualStartsAt));
 
     return rows.map((row) => ({
@@ -143,7 +164,8 @@ export class TaskService {
         startsAt: row.startsAt.toISOString(),
         endsAt: row.endsAt.toISOString(),
         approvedCount: Number(row.approvedCount),
-        minimum: Number(row.minimum),
+        ...(row.minimum == null ? {} : { minimum: Number(row.minimum) }),
+        ...(row.maximum == null ? {} : { maximum: Number(row.maximum) }),
       },
     }));
   }
@@ -175,6 +197,7 @@ export class TaskService {
           eq(schema.shifts.organizationUnitId, organizationUnitId),
           eq(schema.shifts.isDeleted, false),
           eq(schema.shiftInstances.isCancelled, false),
+          gte(schema.shiftInstances.actualStartsAt, new Date()),
         ),
       )
       .groupBy(
@@ -225,6 +248,7 @@ export class TaskService {
         and(
           eq(schema.events.organizationUnitId, organizationUnitId),
           eq(schema.events.isDeleted, false),
+          gte(schema.events.startsAt, new Date()),
         ),
       )
       .groupBy(
@@ -277,6 +301,7 @@ export class TaskService {
           data: {
             firstName: row.user.firstname,
             lastName: row.user.lastname,
+            email: row.user.email,
             requestedAt: row.createdAt.toISOString(),
           },
         },
@@ -287,6 +312,16 @@ export class TaskService {
   private async contractRows(
     organizationUnitId: string,
   ): Promise<ContractTaskRow[]> {
+    const volunteerContractSignedAt = this.db
+      .select({
+        contractId: schema.contractSignatures.contractId,
+        signedAt: max(schema.contractSignatures.signedAt).as('signed_at'),
+      })
+      .from(schema.contractSignatures)
+      .where(eq(schema.contractSignatures.signeeType, SigneeType.VOLUNTEER))
+      .groupBy(schema.contractSignatures.contractId)
+      .as('volunteer_contract_signed_at');
+
     const rows = await this.db
       .select({
         id: schema.contracts.id,
@@ -298,6 +333,8 @@ export class TaskService {
         status: schema.contracts.contractStatus,
         declinedAtSigneeType: schema.contracts.declinedAtSigneeType,
         declineReason: schema.contracts.declineReason,
+        declinedAt: schema.contracts.declinedAt,
+        volunteerSignedAt: volunteerContractSignedAt.signedAt,
       })
       .from(schema.contracts)
       .innerJoin(
@@ -307,6 +344,10 @@ export class TaskService {
       .innerJoin(
         schema.reimbursementTypes,
         eq(schema.reimbursementTypes.id, schema.contracts.reimbursementTypeId),
+      )
+      .leftJoin(
+        volunteerContractSignedAt,
+        eq(volunteerContractSignedAt.contractId, schema.contracts.id),
       )
       .where(
         and(
@@ -325,12 +366,24 @@ export class TaskService {
       ...row,
       declinedAtSigneeType: row.declinedAtSigneeType,
       declineReason: row.declineReason,
+      declinedAt: row.declinedAt,
+      volunteerSignedAt: row.volunteerSignedAt,
     }));
   }
 
   private async invoiceRows(
     organizationUnitId: string,
   ): Promise<InvoiceTaskRow[]> {
+    const volunteerInvoiceSignedAt = this.db
+      .select({
+        invoiceId: schema.invoiceSignatures.invoiceId,
+        signedAt: max(schema.invoiceSignatures.signedAt).as('signed_at'),
+      })
+      .from(schema.invoiceSignatures)
+      .where(eq(schema.invoiceSignatures.signeeType, SigneeType.VOLUNTEER))
+      .groupBy(schema.invoiceSignatures.invoiceId)
+      .as('volunteer_invoice_signed_at');
+
     const rows = await this.db
       .select({
         id: schema.invoices.id,
@@ -342,6 +395,8 @@ export class TaskService {
         status: schema.invoices.invoiceStatus,
         declinedAtSigneeType: schema.invoices.declinedAtSigneeType,
         declineReason: schema.invoices.declineReason,
+        declinedAt: schema.invoices.declinedAt,
+        volunteerSignedAt: volunteerInvoiceSignedAt.signedAt,
         totalHours: schema.invoices.totalHours,
         totalAmountCents: schema.invoices.totalAmountCents,
         paidAt: schema.invoices.paidAt,
@@ -351,6 +406,10 @@ export class TaskService {
       .innerJoin(
         schema.reimbursementTypes,
         eq(schema.reimbursementTypes.id, schema.invoices.reimbursementTypeId),
+      )
+      .leftJoin(
+        volunteerInvoiceSignedAt,
+        eq(volunteerInvoiceSignedAt.invoiceId, schema.invoices.id),
       )
       .where(
         and(
@@ -369,6 +428,8 @@ export class TaskService {
       ...row,
       declinedAtSigneeType: row.declinedAtSigneeType ?? null,
       declineReason: row.declineReason,
+      declinedAt: row.declinedAt,
+      volunteerSignedAt: row.volunteerSignedAt,
       paidAt: row.paidAt,
     }));
   }
