@@ -1,6 +1,6 @@
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
 
-type ProfileShape = {
+export type ProfileShape = {
   firstname?: string | null;
   lastname?: string | null;
   preferredName?: string | null;

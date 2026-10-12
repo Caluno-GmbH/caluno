@@ -1,24 +1,9 @@
 import { getTranslations } from 'next-intl/server';
 import { isGenderOptionValue } from '@/domain/requirement-form/gender-options';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import type { ProfileShape } from '@/domain/user/lib/profile-field-values';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { ProfileField } from './profile-field';
-
-type ProfileShape = {
-  firstname?: string | null;
-  lastname?: string | null;
-  preferredName?: string | null;
-  gender?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  street?: string | null;
-  zip?: string | null;
-  city?: string | null;
-  birthdate?: string | null;
-  iban?: string | null;
-  accountHolder?: string | null;
-  bic?: string | null;
-};
 
 type PersonalInformationSectionProps = {
   profile: ProfileShape | null;

@@ -16,23 +16,8 @@ import {
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import type { ProfileShape } from '@/domain/user/lib/profile-field-values';
 import { useRouter } from '@/i18n/navigation';
-
-type ProfileShape = {
-  firstname?: string | null;
-  lastname?: string | null;
-  preferredName?: string | null;
-  gender?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  street?: string | null;
-  zip?: string | null;
-  city?: string | null;
-  birthdate?: string | null;
-  iban?: string | null;
-  accountHolder?: string | null;
-  bic?: string | null;
-};
 
 type EditIdentityFormProps = {
   profile: ProfileShape | null | undefined;
