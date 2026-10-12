@@ -1,5 +1,5 @@
 import { hashPassword } from 'better-auth/crypto';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import {
@@ -16,6 +16,7 @@ import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import {
   addDaysInFixtureTimezone,
   addHours,
+  assertFixtureIdentitiesAvailable,
   createAuthUser,
   type Database,
   DEFAULT_SHIFT_DURATION_MINUTES,
@@ -24,6 +25,7 @@ import {
   ensureShiftWithInvites,
   type FixtureUser,
   findWeekdayWeeksAgo,
+  fixtureOrgId,
   fixtureWallClockToUtc,
   getDateInFixtureTimezone,
 } from './fixture-helpers';
@@ -35,7 +37,43 @@ process.env.TZ = 'Europe/Berlin';
 const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
 const ORG_NAME = 'Playground';
 const ORG_SLUG = 'playground';
+const ORG_DESCRIPTION = 'Local development playground organization';
+/** Pinned id — fixture ownership is proven by id, never by name or slug. */
+const ORG_ID = fixtureOrgId(ORG_SLUG);
+
+// Single source of truth for every identity these fixtures claim, shared by the
+// pre-flight check and the account creation below so the two cannot drift.
+const MEMBER_COUNT = 10;
+const PENDING_COUNT = 2;
+const memberIdentity = (index: number) => ({
+  firstname: 'Playground',
+  lastname: `Member ${String(index).padStart(2, '0')}`,
+});
+const pendingIdentity = (index: number) => ({
+  firstname: 'Pending',
+  lastname: `Applicant ${String(index).padStart(2, '0')}`,
+});
+const pendingEmail = (index: number) => e2eEmail(`pending0${index}`);
+const ADMIN_IDENTITY = { firstname: 'Playground', lastname: 'Admin' } as const;
+const SUPERVISOR_IDENTITY = {
+  firstname: 'Playground',
+  lastname: 'Supervisor',
+} as const;
+const DEMO_IDENTITY = { firstname: 'Demo', lastname: 'Volunteer' } as const;
+const REJECTED_IDENTITY = {
+  firstname: 'Rejected',
+  lastname: 'Applicant',
+} as const;
 const RECURRENCE_WEEKS_BACK = 12;
+
+/**
+ * Playground is the **e2e-only** seed — `bun bootstrap` and deployed
+ * environments load the demo dataset (`demo-fixtures.ts`) instead. Its accounts
+ * still route to the demo@caluno.org group but carry an `e2e_` discriminator,
+ * so they never collide with that dataset's bare `demo+<role>` addresses when
+ * both live in one database.
+ */
+const e2eEmail = (suffix: string): string => `demo+e2e_${suffix}@caluno.org`;
 
 // Stable IDs so e2e specs can rely on fixture data without querying the DB.
 const PUBLIC_EVENT_ID = '213e6757-af0c-4ce3-ba29-fb3500309351';
@@ -51,7 +89,7 @@ const SHOWCASE_SHIFT_IMAGE_URL =
   'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1200&q=80';
 const ORG_COVER_IMAGE_URL =
   'https://images.unsplash.com/photo-1593113646773-028c64a8f1b8?auto=format&fit=crop&w=1200&q=80';
-const DEMO_USER_EMAIL = 'testing+demo@caluno.org';
+const DEMO_USER_EMAIL = e2eEmail('demo');
 
 const WEEKLY_RRULE = {
   MONDAY: 'FREQ=WEEKLY;BYDAY=MO;WKST=MO',
@@ -73,7 +111,7 @@ const SUPERVISOR_PERMISSIONS = [
 ] as const;
 
 const memberEmail = (index: number): string =>
-  `testing+${String(index).padStart(3, '0')}@caluno.org`;
+  e2eEmail(`member${String(index).padStart(2, '0')}`);
 
 const ensurePlaygroundOrganization = async (
   db: Database,
@@ -90,7 +128,7 @@ const ensurePlaygroundOrganization = async (
   );
 
   const existingOrg = await db.query.organizations.findFirst({
-    where: { slug: ORG_SLUG },
+    where: { id: ORG_ID },
   });
 
   if (existingOrg) {
@@ -168,10 +206,11 @@ const ensurePlaygroundOrganization = async (
     const [organization] = await tx
       .insert(schema.organizations)
       .values({
+        id: ORG_ID,
         name: ORG_NAME,
         slug: ORG_SLUG,
-        contactEmail: 'testing@caluno.org',
-        description: 'Local development playground organization',
+        contactEmail: e2eEmail('contact'),
+        description: ORG_DESCRIPTION,
         street: 'Hauptstraße 1',
         zipCode: '10115',
         city: 'Berlin',
@@ -345,7 +384,7 @@ const ensureTimeEntries = async (
   for (const [index, member] of approvedMembers.entries()) {
     const memberNumber = index + 1;
 
-    if (member.email === 'testing+supervisor@caluno.org') {
+    if (member.email === e2eEmail('supervisor')) {
       entries.push({
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
@@ -718,11 +757,30 @@ async function seedFixtures() {
 
   const hashedPassword = await hashPassword(FIXTURE_PASSWORD);
 
+  // Verify every identity BEFORE the first write, so a clash with real data
+  // aborts cleanly instead of leaving a half-populated database.
+  await assertFixtureIdentitiesAvailable(db, {
+    orgSlug: ORG_SLUG,
+    accounts: [
+      { email: e2eEmail('admin'), ...ADMIN_IDENTITY },
+      { email: e2eEmail('supervisor'), ...SUPERVISOR_IDENTITY },
+      ...Array.from({ length: MEMBER_COUNT }, (_, index) => ({
+        email: memberEmail(index + 1),
+        ...memberIdentity(index + 1),
+      })),
+      { email: DEMO_USER_EMAIL, ...DEMO_IDENTITY },
+      ...Array.from({ length: PENDING_COUNT }, (_, index) => ({
+        email: pendingEmail(index + 1),
+        ...pendingIdentity(index + 1),
+      })),
+      { email: e2eEmail('rejected01'), ...REJECTED_IDENTITY },
+    ],
+  });
+
   const admin = await createAuthUser(db, hashedPassword, {
     locale: 'en',
-    email: 'testing+admin@caluno.org',
-    firstname: 'Playground',
-    lastname: 'Admin',
+    email: e2eEmail('admin'),
+    ...ADMIN_IDENTITY,
   });
 
   const org = await ensurePlaygroundOrganization(db, admin.id);
@@ -736,19 +794,17 @@ async function seedFixtures() {
 
   const supervisor = await createAuthUser(db, hashedPassword, {
     locale: 'en',
-    email: 'testing+supervisor@caluno.org',
-    firstname: 'Playground',
-    lastname: 'Supervisor',
+    email: e2eEmail('supervisor'),
+    ...SUPERVISOR_IDENTITY,
   });
 
   const members: FixtureUser[] = [];
-  for (let index = 1; index <= 10; index += 1) {
+  for (let index = 1; index <= MEMBER_COUNT; index += 1) {
     members.push(
       await createAuthUser(db, hashedPassword, {
         locale: 'en',
         email: memberEmail(index),
-        firstname: 'Playground',
-        lastname: `Member ${String(index).padStart(2, '0')}`,
+        ...memberIdentity(index),
       }),
     );
   }
@@ -759,8 +815,7 @@ async function seedFixtures() {
   const demoUser = await createAuthUser(db, hashedPassword, {
     locale: 'en',
     email: DEMO_USER_EMAIL,
-    firstname: 'Demo',
-    lastname: 'Volunteer',
+    ...DEMO_IDENTITY,
   });
 
   await ensureMembershipWithRole(
@@ -787,22 +842,21 @@ async function seedFixtures() {
   }
 
   const pendingUsers = await Promise.all(
-    ['testing+pending01@caluno.org', 'testing+pending02@caluno.org'].map(
-      (email, index) =>
-        createAuthUser(db, hashedPassword, {
-          locale: 'en',
-          email,
-          firstname: 'Pending',
-          lastname: `Applicant ${String(index + 1).padStart(2, '0')}`,
-        }),
+    Array.from({ length: PENDING_COUNT }, (_, index) =>
+      pendingEmail(index + 1),
+    ).map((email, index) =>
+      createAuthUser(db, hashedPassword, {
+        locale: 'en',
+        email,
+        ...pendingIdentity(index + 1),
+      }),
     ),
   );
 
   const rejectedUser = await createAuthUser(db, hashedPassword, {
     locale: 'en',
-    email: 'testing+rejected01@caluno.org',
-    firstname: 'Rejected',
-    lastname: 'Applicant',
+    email: e2eEmail('rejected01'),
+    ...REJECTED_IDENTITY,
   });
 
   // The document signing chain requires the volunteer's bank/personal profile
@@ -1539,22 +1593,32 @@ async function seedFixtures() {
     ].join('\n'),
   );
 
-  // No admin UI to toggle accountingEnabled yet — this script never runs in production.
-  const enabledOrgs = await db
+  // No admin UI to toggle accountingEnabled yet. Scoped strictly to the seeded
+  // Playground org — these fixtures must never write to another org's rows.
+  await db
     .update(schema.organizations)
     .set({ accountingEnabled: true })
-    .returning({ id: schema.organizations.id });
-  console.log(`Accounting enabled on ${enabledOrgs.length} organization(s).`);
+    // Only when it actually needs flipping: `updatedAt` has an $onUpdate, so an
+    // unconditional write would bump the row (and the WAL) on every deploy that
+    // re-runs these fixtures.
+    .where(
+      and(
+        eq(schema.organizations.id, org.organizationId),
+        eq(schema.organizations.accountingEnabled, false),
+      ),
+    );
+  console.log(
+    `Accounting enabled on the Playground org (${org.organizationId}).`,
+  );
 
-  // Backfill missing unit postal fields so accounting documents have an org
-  // street/zip/city to render (a document with "—" in the footer is a hard
-  // dead-end the org can't fix without an edit form). The document renders the
-  // UNIT's profile, so patch the org's root unit. Only fills gaps.
-  for (const enabledOrg of enabledOrgs) {
-    const rootUnit = await db.query.organizationUnits.findFirst({
-      where: { organizationId: enabledOrg.id, parentId: { isNull: true } },
-    });
-    if (!rootUnit) continue;
+  // Backfill missing postal fields on the Playground root unit so accounting
+  // documents have a street/zip/city to render (a document with "—" in the
+  // footer is a hard dead-end the org can't fix without an edit form). Only
+  // fills gaps, and only on the seeded org's own root unit.
+  const rootUnit = await db.query.organizationUnits.findFirst({
+    where: { organizationId: org.organizationId, parentId: { isNull: true } },
+  });
+  if (rootUnit) {
     const patch: Partial<typeof schema.organizationUnits.$inferInsert> = {};
     if (!rootUnit.street) patch.street = 'Hauptstraße 1';
     if (!rootUnit.zipCode) patch.zipCode = '10115';

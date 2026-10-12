@@ -14,7 +14,7 @@ import { LoginPage } from '../../../pages/LoginPage';
 // org's templates first to guarantee the no-templates starting state. It
 // authenticates once and persists the session to .auth/ (storageState) like
 // the sibling accounting spec.
-const ADMIN_EMAIL = 'testing+admin@caluno.org';
+const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
 const PASSWORD = 'abcd1234';
 
 const adminAuthFile = '.auth/accounting-admin.json';
