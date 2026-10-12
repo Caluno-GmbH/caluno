@@ -11,6 +11,11 @@ import {
 const NOW = new Date('2026-10-07T12:00:00.000Z');
 const TZ = 'Europe/Berlin';
 
+/** Linux ICU inserts a comma after the weekday; macOS does not. */
+function weekdayLabel(label: string | undefined): string | undefined {
+  return label?.replace(',', '');
+}
+
 function upcoming(startsAt: string, endsAt: string, locale: string) {
   return formatUpcomingWhen(startsAt, endsAt, {
     locale,
@@ -86,15 +91,21 @@ describe('formatUpcomingWhen', () => {
       tone: 'neutral',
     });
     expect(
+      weekdayLabel(
+        upcoming(
+          '2026-10-13T08:00:00.000Z',
+          end('2026-10-13T08:00:00.000Z', 3),
+          'de',
+        )?.dayLabel,
+      ),
+    ).toBe('Di. 13. Okt.');
+    expect(
       upcoming(
         '2026-10-13T08:00:00.000Z',
         end('2026-10-13T08:00:00.000Z', 3),
         'de',
-      ),
-    ).toMatchObject({
-      dayLabel: 'Di. 13. Okt.',
-      relative: 'in 6 Tagen',
-    });
+      )?.relative,
+    ).toBe('in 6 Tagen');
   });
 
   it('drops the relative phrase later in the same year', () => {
@@ -110,8 +121,10 @@ describe('formatUpcomingWhen', () => {
     });
     expect(later?.relative).toBeUndefined();
     expect(
-      upcoming('2026-11-20T09:00:00.000Z', '2026-11-20T12:00:00.000Z', 'de')
-        ?.dayLabel,
+      weekdayLabel(
+        upcoming('2026-11-20T09:00:00.000Z', '2026-11-20T12:00:00.000Z', 'de')
+          ?.dayLabel,
+      ),
     ).toBe('Fr. 20. Nov.');
   });
 
@@ -121,8 +134,10 @@ describe('formatUpcomingWhen', () => {
         ?.dayLabel,
     ).toBe('Wed, 13 Oct 2027');
     expect(
-      upcoming('2027-10-13T08:00:00.000Z', '2027-10-13T11:00:00.000Z', 'de')
-        ?.dayLabel,
+      weekdayLabel(
+        upcoming('2027-10-13T08:00:00.000Z', '2027-10-13T11:00:00.000Z', 'de')
+          ?.dayLabel,
+      ),
     ).toBe('Mi. 13. Okt. 2027');
   });
 
