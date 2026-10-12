@@ -1,4 +1,4 @@
-import { describe, expect, it, spyOn } from 'bun:test';
+import { describe, expect, it } from 'bun:test';
 import {
   formatAppliedWhen,
   formatDaysAway,
@@ -296,14 +296,21 @@ describe('formatDaysAway', () => {
   });
 
   it('shows a neutral Started chip when a past start reaches the UI', () => {
-    const warn = spyOn(console, 'warn').mockImplementation(() => {});
-    expect(away('2026-10-07T11:59:00.000Z', 'en')).toEqual({
-      label: 'Started',
-      tone: 'neutral',
-    });
-    expect(away('2026-10-07T11:59:00.000Z', 'de')?.label).toBe('Begonnen');
-    expect(warn).toHaveBeenCalled();
-    warn.mockRestore();
+    const warnings: unknown[][] = [];
+    const original = console.warn;
+    console.warn = (...args: unknown[]) => {
+      warnings.push(args);
+    };
+    try {
+      expect(away('2026-10-07T11:59:00.000Z', 'en')).toEqual({
+        label: 'Started',
+        tone: 'neutral',
+      });
+      expect(away('2026-10-07T11:59:00.000Z', 'de')?.label).toBe('Begonnen');
+      expect(warnings.length).toBeGreaterThan(0);
+    } finally {
+      console.warn = original;
+    }
   });
 
   it('uses the German names', () => {
