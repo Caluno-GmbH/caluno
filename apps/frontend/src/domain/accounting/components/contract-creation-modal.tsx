@@ -48,6 +48,8 @@ interface ContractCreationModalProps {
   volunteerId: string | null;
   volunteerName: string | null;
   pauschale: PauschalenType | null;
+  /** The queued draft this contract is created from; it is consumed with the contract. */
+  sourceDraftId?: string | null;
   onSent: () => void;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
@@ -59,6 +61,7 @@ export function ContractCreationModal({
   volunteerId,
   volunteerName,
   pauschale,
+  sourceDraftId,
   onSent,
   embedded,
 }: ContractCreationModalProps) {
@@ -218,6 +221,7 @@ export function ContractCreationModal({
         organizationUnitId: orgUId,
         reimbursementTypeId: reimbursementType.id,
         volunteerId,
+        sourceDraftId,
         periodStart: period.periodStart,
         periodEnd: period.periodEnd,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>

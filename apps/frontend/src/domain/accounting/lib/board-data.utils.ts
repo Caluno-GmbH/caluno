@@ -99,6 +99,18 @@ export function creationTargetFor(status: DocStatus): CreationTarget | null {
   }
 }
 
+/**
+ * The queued DRAFT a contract creation modal was opened from. Creating the
+ * contract consumes exactly that draft, even when its period is wider than the
+ * contract's; other rows have no draft behind them.
+ */
+export function sourceDraftIdFor(doc: {
+  id: string;
+  status: DocStatus;
+}): string | null {
+  return doc.status === 'contract-draft' ? doc.id : null;
+}
+
 export type ContractPickerState =
   | 'none'
   | 'awaiting-signature'
