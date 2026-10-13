@@ -325,8 +325,8 @@ function sortVolunteers(
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function matchesTile(status: DocStatus, tile: TileFilter): boolean {
-  if (!tile) return false;
+export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
+  if (!tile) return true;
   switch (tile) {
     case 'contract-generate':
       return status === 'contract-generate' || status === 'contract-draft';
@@ -343,8 +343,6 @@ function matchesTile(status: DocStatus, tile: TileFilter): boolean {
       );
     case 'ready-to-go':
       return status === 'timesheet-ready';
-    default:
-      return false;
   }
 }
 
@@ -399,26 +397,35 @@ function applyFilters(
   search: string,
   range: DateRange | undefined,
 ): BoardVolunteer[] {
-  return volunteers.filter((vol) => {
-    if (vol.documents.length === 0) return false;
+  const filteredVolunteers = volunteers.filter((volunteer) => {
+    if (volunteer.documents.length === 0) return false;
     if (
       pauschale !== 'all' &&
-      !vol.documents.some((d) => d.pauschale === pauschale)
+      !volunteer.documents.some((d) => d.pauschale === pauschale)
     )
       return false;
-    if (search && !vol.name.toLowerCase().includes(search.toLowerCase()))
+    if (search && !volunteer.name.toLowerCase().includes(search.toLowerCase()))
       return false;
-    if (tile && !vol.documents.some((d) => matchesTile(d.status, tile)))
+    if (tile && !volunteer.documents.some((d) => matchesTile(d.status, tile)))
       return false;
     if (
       docType !== 'all' &&
-      !vol.documents.some((d) => d.status.startsWith(docType))
+      !volunteer.documents.some((d) => d.status.startsWith(docType))
     )
       return false;
-    if (range?.from && !vol.documents.some((d) => docVisibleInRange(d, range)))
+    if (
+      range?.from &&
+      !volunteer.documents.some((d) => docVisibleInRange(d, range))
+    )
       return false;
     return true;
   });
+  // for (const volunteer of filteredVolunteers) {
+  //   volunteer.documents = volunteer.documents.filter((d) =>
+  //     matchesTile(d.status, tile),
+  //   );
+  // }
+  return filteredVolunteers;
 }
 
 // ─── FilterTile (step card, no icon box) ─────────────────────────────────────

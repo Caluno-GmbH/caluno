@@ -27,19 +27,18 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DateRange,
-  DocStatus,
-  DocVolPair,
-  PauschalenLimit,
-  TileFilter,
-} from './reimbursements-board';
 import {
+  type BoardDocument,
+  type BoardVolunteer,
+  type DateRange,
+  type DocStatus,
+  type DocVolPair,
   docVisibleInRange,
   getReadyToGoDocs,
   isTimesheetNonCompliant,
+  matchesTile,
+  type PauschalenLimit,
+  type TileFilter,
 } from './reimbursements-board';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -318,7 +317,11 @@ function VolunteerTableGroup({
             (doc) =>
               docTypeFilter === 'all' || doc.status.startsWith(docTypeFilter),
           )
-          .filter((doc) => docVisibleInRange(doc, dateRange));
+          .filter(
+            (doc) =>
+              docVisibleInRange(doc, dateRange) &&
+              matchesTile(doc.status, activeTile),
+          );
 
   const sortedDocs = [...visibleDocs].sort(
     (a, b) =>
