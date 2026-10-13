@@ -1061,6 +1061,41 @@ describe('buildBoardVolunteers', () => {
     expect(docs.some((d) => d.status === 'contract-active')).toBe(true);
   });
 
+  it('keeps a paid-shift create task inside the selected period like the timesheet rows', () => {
+    const buildFor = (dateRange: { from: Date; to: Date }) =>
+      buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts: [],
+        invoices: [],
+        year: 2026,
+        locale: 'de',
+        dateRange,
+        paidShiftSignups: [
+          {
+            volunteerId: 'v-1',
+            reimbursementTypeId: 'rt-ehrenamt',
+            // September 2026 as Berlin bounds.
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        ],
+      })[0]?.documents ?? [];
+
+    const september = buildFor({
+      from: new Date(2026, 8, 1),
+      to: new Date(2026, 8, 30),
+    });
+    const november = buildFor({
+      from: new Date(2026, 10, 1),
+      to: new Date(2026, 10, 30),
+    });
+
+    expect(
+      september.find((d) => d.status === 'contract-generate')?.periodLabel,
+    ).toBe('September 2026');
+    expect(november).toHaveLength(0);
+  });
+
   it('dedupes the contract-generate row when a volunteer has both eligible hours and a paid-shift signup', () => {
     const volunteers = buildBoardVolunteers({
       rosterUsage: [noDocsVolunteer],

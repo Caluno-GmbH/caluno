@@ -527,8 +527,17 @@ export function buildBoardVolunteers({
       const timesheetsForType = volunteerTimesheetsToCreate.filter(
         (t) => t.reimbursementTypeId === usage.reimbursementType.id,
       );
+      const months = monthsInRange(year, dateRange);
+      const inSelectedMonths = (periodStart: string) => {
+        const { year: y, month } = billingMonthOf(periodStart);
+        return months.some((m) => m.year === y && m.month === month);
+      };
       const paidShiftSignupsForType = volunteerPaidShiftSignups
-        .filter((s) => s.reimbursementTypeId === usage.reimbursementType.id)
+        .filter(
+          (s) =>
+            s.reimbursementTypeId === usage.reimbursementType.id &&
+            inSelectedMonths(s.periodStart),
+        )
         .sort(
           (a, b) =>
             new Date(a.periodStart).getTime() -
@@ -539,7 +548,6 @@ export function buildBoardVolunteers({
       // compliant (no active contract, or the contract changed after the
       // timesheet was created), but it must never be orphaned out of every
       // stage (VOLI-1283).
-      const months = monthsInRange(year, dateRange);
       for (const { year: y, month } of months) {
         const invoicesForMonth = invoices.filter(
           (i) =>
@@ -600,11 +608,11 @@ export function buildBoardVolunteers({
         // contract does not cover, so it does. Only months inside the selected
         // period count, like the timesheet rows above.
         const firstUncoveredRow = timesheetsForType
-          .filter((timesheet) => {
-            if (!timesheet.hasUncoveredHours) return false;
-            const { year: y, month } = billingMonthOf(timesheet.periodStart);
-            return months.some((m) => m.year === y && m.month === month);
-          })
+          .filter(
+            (timesheet) =>
+              timesheet.hasUncoveredHours &&
+              inSelectedMonths(timesheet.periodStart),
+          )
           .sort(
             (a, b) =>
               new Date(a.firstUncoveredAt ?? a.periodStart).getTime() -
