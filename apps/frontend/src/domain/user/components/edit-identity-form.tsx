@@ -92,7 +92,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const {
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isValid, isSubmitting },
   } = useForm<Record<string, string>>({
     // raw: true keeps empty optional fields as '' in form state. Without it,
     // zod preprocess (e.g. gender '' → undefined) rewrites values after the
@@ -184,7 +184,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
         >
           {tCommon('cancel')}
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={!isDirty || !isValid || isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
           {isSubmitting ? tCommon('saving') : tCommon('save')}
         </Button>
