@@ -481,7 +481,7 @@
         "decline": "Decline"
       },
       "missingProfileWarning": "Your profile is missing details this document needs.",
-      "missingProfileCta": "Complete your profile to sign",
+      "completeDetailsCta": "Complete details",
       "toasts": {
         "signed": "{name} signed.",
         "signedError": "We couldn't sign {name}. Please try again.",
@@ -2661,6 +2661,17 @@
     "empty": {
       "title": "No documents yet",
       "description": "Agreements and timesheets from your organisations will appear here."
+    },
+    "completeProfile": {
+      "title": "Complete your details",
+      "description": "Required for {documentName} at {orgName}.",
+      "descriptionWithoutOrg": "Required for {documentName}.",
+      "savedToProfile": "The details are saved to your profile and used for all your documents.",
+      "success": "Details saved",
+      "allComplete": "All details are complete — there is nothing left to fill in.",
+      "error": "We couldn't load this document. Please try again.",
+      "saveError": "We couldn't save your details. Please try again.",
+      "close": "Close"
     }
   }
 }
