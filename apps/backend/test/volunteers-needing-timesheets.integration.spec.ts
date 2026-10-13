@@ -205,7 +205,7 @@ describe('volunteersNeedingTimesheets projection', () => {
         eligibleHours: 2,
         hasUncoveredHours: true,
         firstUncoveredAt: new Date('2026-07-16T09:00:00.000Z'),
-        hasHoursWithoutActiveContract: false,
+        hasHoursWithoutActiveContract: true,
       },
     ];
 
@@ -217,6 +217,7 @@ describe('volunteersNeedingTimesheets projection', () => {
 
     expect(row?.hasUncoveredHours).toBe(true);
     expect(row?.firstUncoveredAt).toEqual(new Date('2026-07-16T09:00:00.000Z'));
+    expect(row?.hasHoursWithoutActiveContract).toBe(true);
   });
 
   it('passes a fully covered month as no uncovered hours and no start', async () => {

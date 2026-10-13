@@ -2255,6 +2255,25 @@ describe('InvoiceService', () => {
         }
       });
 
+      it('judges an org-wide invoice, which stores no unit, in the unit of its claimed entries', async () => {
+        const s = await setup();
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        const stored = await db.query.invoices.findFirst({
+          where: { id: invoice.id },
+        });
+        expect(stored?.organizationUnitId).toBeNull();
+
+        await insertContract(s, JULY_TIMESHEET, { unitId: s.root.id });
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
       it('matches in the invoice unit, so another unit’s contract does not count', async () => {
         const s = await setup();
         const sibling = await createUnit(db, {
