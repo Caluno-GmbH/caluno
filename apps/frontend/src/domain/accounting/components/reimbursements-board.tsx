@@ -95,13 +95,13 @@ export type TileFilter =
   | 'timesheet-signing'
   | 'ready-to-go';
 
-type PipelineTile = Exclude<TileFilter, 'all'>;
 type PauschalenFilter = 'all' | PauschalenType;
 type SortOption = 'action-needed' | 'newest';
 
 export type { DateRange };
 
-const TILE_IDS: PipelineTile[] = [
+const TILE_IDS: TileFilter[] = [
+  'all',
   'contract-generate',
   'contract-signing',
   'timesheet-generate',
@@ -348,10 +348,10 @@ export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
   }
 }
 
-/** How many of a tile's matching docs are actionable by the org right now (vs. waiting on the volunteer). Only meaningful for the two mixed-substep signing tiles. */
+/** How many of a tile's matching docs are actionable by the org right now (vs. waiting on the volunteer). Only meaningful for the mixed-substep signing / generate tiles. */
 function countActionableForTile(
   volunteers: BoardVolunteer[],
-  tile: PipelineTile,
+  tile: TileFilter,
 ): number {
   return volunteers.reduce(
     (sum, vol) =>
@@ -363,7 +363,8 @@ function countActionableForTile(
   );
 }
 
-const TILE_DOC_TYPE: Record<PipelineTile, DocTypeFilter> = {
+const TILE_DOC_TYPE: Record<TileFilter, DocTypeFilter> = {
+  all: 'all',
   'contract-generate': 'contract',
   'contract-signing': 'contract',
   'timesheet-generate': 'timesheet',
@@ -374,10 +375,7 @@ const TILE_DOC_TYPE: Record<PipelineTile, DocTypeFilter> = {
   'ready-to-go': 'all',
 };
 
-function countForTile(
-  volunteers: BoardVolunteer[],
-  tile: PipelineTile,
-): number {
+function countForTile(volunteers: BoardVolunteer[], tile: TileFilter): number {
   return volunteers.reduce(
     (sum, vol) =>
       sum + vol.documents.filter((d) => matchesTile(d.status, tile)).length,
@@ -618,7 +616,8 @@ export function ReimbursementsBoard({
   // Derived for DocumentSheet
   const selectedDate = dateRange?.from ?? new Date();
 
-  const tileLabels: Record<PipelineTile, string> = {
+  const tileLabels: Record<TileFilter, string> = {
+    all: t('tiles.all'),
     'contract-generate': t('tiles.contractGenerate'),
     'contract-signing': t('tiles.contractSigning'),
     'timesheet-generate': t('tiles.timesheetGenerate'),
@@ -626,7 +625,7 @@ export function ReimbursementsBoard({
     'ready-to-go': t('tiles.readyToGo'),
   };
 
-  // Pipeline-tile counts are pauschale-scoped only. docTypeFilter is not an
+  // Tile counts are pauschale-scoped only. docTypeFilter is not an
   // independent user choice here — selecting a tile sets it as a side
   // effect (TILE_DOC_TYPE) — so letting it narrow this list would make every
   // tile's count shrink whenever any one tile is selected, instead of
@@ -647,7 +646,7 @@ export function ReimbursementsBoard({
           id,
           countForTile(volunteersWithDocumentsOfSelectedPauschale, id),
         ]),
-      ) as Record<PipelineTile, number>,
+      ) as Record<TileFilter, number>,
     [volunteersWithDocumentsOfSelectedPauschale],
   );
 
@@ -661,7 +660,7 @@ export function ReimbursementsBoard({
             id,
           ),
         ]),
-      ) as Record<PipelineTile, number>,
+      ) as Record<TileFilter, number>,
     [volunteersWithDocumentsOfSelectedPauschale],
   );
 
@@ -678,11 +677,6 @@ export function ReimbursementsBoard({
     [volunteers, activeTile, pauschale, docTypeFilter, search, dateRange],
   );
 
-  const allDocumentsCount = volunteers.reduce(
-    (docCount, volunteer) => volunteer.documents.length + docCount,
-    0,
-  );
-
   const sortedFilteredVolunteers = useMemo(
     () => sortVolunteers(filteredVolunteers, sortOption),
     [filteredVolunteers, sortOption],
@@ -692,10 +686,12 @@ export function ReimbursementsBoard({
   // doc type (or "all" for the All tile); changing the doc type manually
   // always resets the tile back to All, so the two controls can never
   // disagree and silently zero out the table.
-  function toggleTile(tile: PipelineTile) {
+  // Clicking All always selects it; clicking the active pipeline tile
+  // deselects back to All.
+  function toggleTile(tile: TileFilter) {
     setActiveTile((prev) => {
       const next: TileFilter = prev === tile ? 'all' : tile;
-      setDocTypeFilter(next === 'all' ? 'all' : TILE_DOC_TYPE[next]);
+      setDocTypeFilter(TILE_DOC_TYPE[next]);
       return next;
     });
   }
@@ -703,11 +699,6 @@ export function ReimbursementsBoard({
   function handleDocTypeChange(next: DocTypeFilter) {
     setDocTypeFilter(next);
     setActiveTile('all');
-  }
-
-  function handleAllTile() {
-    setActiveTile('all');
-    setDocTypeFilter('all');
   }
 
   if (isLoading) {
@@ -779,18 +770,14 @@ export function ReimbursementsBoard({
         </Select>
       </div>
 
-      {/* Pipeline steps (connected filter tiles) */}
+      {/* Filter tiles: All, then the pipeline steps */}
       <div className="flex items-stretch gap-0 overflow-x-auto pb-1">
-        <FilterTile
-          label={t('tiles.all')}
-          count={allDocumentsCount}
-          active={activeTile === 'all'}
-          onClick={handleAllTile}
-        />
-        <div className="w-px self-stretch bg-border mx-3 shrink-0" />
         {TILE_IDS.map((id, i) => (
           <Fragment key={id}>
-            {i > 0 && (
+            {i === 1 && (
+              <div className="w-px self-stretch bg-border mx-3 shrink-0" />
+            )}
+            {i > 1 && (
               <div className="flex items-center px-1 shrink-0">
                 <ChevronRightIcon size={14} className="text-border" />
               </div>
