@@ -28,6 +28,14 @@ describe('invalidateContractQueries', () => {
     ]);
   });
 
+  it('refreshes the paid-shift signups, which stop asking for an agreement once one covers the shift', () => {
+    const { keys, queryClient } = recordInvalidations();
+
+    invalidateContractQueries(queryClient);
+
+    expect(keys).toContainEqual(['accounting', 'paid-shift-signup-volunteers']);
+  });
+
   it('still refreshes the contract queries', () => {
     const { keys, queryClient } = recordInvalidations();
 

@@ -70,6 +70,10 @@ export function invalidateContractQueries(queryClient: QueryClient) {
   queryClient.invalidateQueries({
     queryKey: ['accounting', 'volunteers-needing-timesheets'],
   });
+  // A paid-shift signup stops asking for an agreement once one covers it.
+  queryClient.invalidateQueries({
+    queryKey: ['accounting', 'paid-shift-signup-volunteers'],
+  });
 }
 
 export function useCreateContract() {
