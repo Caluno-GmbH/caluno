@@ -26,6 +26,7 @@ import { DocumentProfileRequirementService } from '../services/document-profile-
 import { AccountingOrganizationLoader } from './accounting-organization.loader';
 import { AccountingUserLoader } from './accounting-user.loader';
 import { InvoiceLoader } from './invoice.loader';
+import { InvoiceCoverLoader } from './invoice-cover.loader';
 
 type MaybeWithRelations = InvoiceEntity & {
   documentTemplate?: DocumentTemplateEntity;
@@ -117,6 +118,17 @@ export class InvoiceFieldResolver {
   ): Promise<string | null> {
     if (!invoice.fileId) return null;
     return this.fileService.resolvePublicUrlForUploadedFile(invoice.fileId);
+  }
+
+  @ResolveField(() => Boolean, {
+    description:
+      'At least one claimed hour has no ACTIVE contract right now. Live, unlike isNonCompliant, which is the state when the timesheet was created.',
+  })
+  async hasHoursWithoutActiveContract(
+    @Parent() invoice: MaybeWithRelations,
+    @Loader(InvoiceCoverLoader) loader: InvoiceCoverLoader,
+  ): Promise<boolean> {
+    return loader.lacksActiveContractById.load(invoice.id);
   }
 
   @ResolveField(() => [String])

@@ -13,6 +13,7 @@ export * from './document-template-mutation.resolver';
 export * from './document-template-query.resolver';
 export * from './document-template-signees.loader';
 export * from './invoice.loader';
+export * from './invoice-cover.loader';
 export * from './invoice-field.resolver';
 export * from './invoice-mutation.resolver';
 export * from './invoice-query.resolver';
