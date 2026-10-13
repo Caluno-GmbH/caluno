@@ -2340,7 +2340,7 @@
           "timesheetSigningCoord": "Countersignature required",
           "timesheetReady": "Ready to submit",
           "nonCompliant": "No active agreement",
-          "nonCompliantHint": "No active agreement for this allowance type yet. Create or activate one to make this timesheet compliant.",
+          "nonCompliantHint": "Some hours of this timesheet are not covered by an active agreement. Create or activate one that covers them.",
           "notYetCreated": "Not yet created",
           "overCap": "Will exceed yearly allowance",
           "overCapHint": "This timesheet's amount pushes the volunteer at or over their yearly allowance",
