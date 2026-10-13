@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { eq } from 'drizzle-orm';
 import { AccountingOrgAccessService } from '../src/accounting/services/accounting-org-access.service';
+import { ContractService } from '../src/accounting/services/contract.service';
 import { InvoiceService } from '../src/accounting/services/invoice.service';
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
@@ -87,13 +88,22 @@ describe('Time entry -> eligible timesheet flow', () => {
     // (it depends on a chain of accounting services), so it is constructed
     // directly like `test/invoice.service.spec.ts` does. Both methods this
     // test exercises (findEligibleTimeEntries/findVolunteersNeedingTimesheets)
-    // only touch `db`, so every other dependency is safely stubbed.
+    // only touch `db` and the contract cover lookup, which is a real
+    // ContractService over the same `db`; every other dependency is stubbed.
     invoiceService = new InvoiceService(
       db,
       {} as never,
       {} as never,
       {} as never,
-      {} as never,
+      new ContractService(
+        db,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        { capture: () => {} } as unknown as PostHogService,
+      ),
       {} as never,
       {} as never,
       {} as never,
