@@ -175,8 +175,24 @@ export function VolunteerDocumentCard({
         </Button>
         {awaitingSignature && (
           <>
+            {missingProfileFields && (
+              <div className="flex flex-col gap-1 px-1">
+                <p className="text-xs text-muted-foreground">
+                  {t('missingProfileWarning')}
+                </p>
+                <Button asChild className="w-full">
+                  <Link
+                    href={`/profile/documents/complete-profile?kind=${document.kind}&id=${document.id}`}
+                  >
+                    <FileUserIcon />
+                    {t('completeDetailsCta')}
+                  </Link>
+                </Button>
+              </div>
+            )}
             <Button
               className="w-full"
+              disabled={missingProfileFields}
               onClick={(e) => {
                 e.stopPropagation();
                 onOpen(document);
@@ -185,19 +201,6 @@ export function VolunteerDocumentCard({
               <SignatureIcon />
               {t('actions.sign')}
             </Button>
-            {missingProfileFields && (
-              <div className="flex flex-col gap-1 px-1">
-                <p className="text-xs text-muted-foreground">
-                  {t('missingProfileWarning')}
-                </p>
-                <Link
-                  href="/profile"
-                  className="text-xs font-medium text-primary underline underline-offset-2"
-                >
-                  {t('missingProfileCta')}
-                </Link>
-              </div>
-            )}
             <Button
               variant="destructive"
               className="w-full"

@@ -220,10 +220,10 @@ export function VolunteerDocumentPreview({
                       {t('missingProfileWarning')}
                     </p>
                     <Link
-                      href="/profile"
+                      href={`/profile/documents/complete-profile?kind=${kind}&id=${documentId}`}
                       className="text-xs font-medium text-primary underline underline-offset-2"
                     >
-                      {t('missingProfileCta')}
+                      {t('completeDetailsCta')}
                     </Link>
                   </div>
                 )}
