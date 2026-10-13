@@ -1,10 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import type {
-  FormBlock,
-  GetRequirementFormByShareTokenQuery,
-} from '@repo/data';
+import type { GetRequirementFormByShareTokenQuery } from '@repo/data';
 import { Button } from '@repo/ui';
 import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -60,8 +57,7 @@ export function VolunteerForm({
             effectiveRequired: ref.required ?? block.required,
           };
         })
-        .filter((b): b is FormBlock & { effectiveRequired: boolean } => !!b) ??
-      []
+        .filter((b) => !!b) ?? []
     );
   }, [form.blockRefs]);
 

@@ -1226,7 +1226,6 @@ function makeVol(documents: BoardDocument[] = []): BoardVolunteer {
     id: 'v-1',
     name: 'Anna Müller',
     initials: 'AM',
-    pauschale: 'ehrenamt',
     usedAmount: 0,
     totalCap: 840,
     documents,
@@ -1477,6 +1476,7 @@ describe('documentRowAction', () => {
     id: 'synthetic-or-real',
     status,
     periodLabel: '',
+    pauschale: 'ehrenamt',
   });
 
   it('routes a timesheet still to create to the creation modal, not the detail sheet', () => {

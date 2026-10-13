@@ -18,6 +18,7 @@ import { type BetterAuthLogger, createAuthConfig } from './auth/auth';
 import { AuthModule } from './auth/auth.module';
 import { createSessionCachingAuthGuard } from './auth/guards/auth.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
+import { CheckInAgreementModule } from './check-in-agreement/check-in-agreement.module';
 import { type Database, DatabaseModule } from './database/database.module';
 import { DATABASE_CONNECTION } from './database/database-connection';
 import { EventModule } from './event/event.module';
@@ -47,6 +48,7 @@ import { validatePostHogEnv } from './shared/observability/validate-posthog-env'
 import { validateSentryEnv } from './shared/observability/validate-sentry-env';
 import { ShiftModule } from './shift/shift.module';
 import { StorageModule } from './storage/storage.module';
+import { TaskModule } from './task/task.module';
 import { TermsAcceptedGuard } from './terms/guards/terms-accepted.guard';
 import { TermsService } from './terms/services/terms.service';
 import { TermsModule } from './terms/terms.module';
@@ -295,11 +297,13 @@ const autoSchemaFile =
     MembershipLifecycleModule,
     NotificationModule,
     TimeTrackingModule,
+    CheckInAgreementModule,
     GraphqlModule,
     LegalModule,
     ShiftModule,
     EventModule,
     StorageModule,
+    TaskModule,
     TermsModule,
     BetterAuthModule,
     AuthModule,

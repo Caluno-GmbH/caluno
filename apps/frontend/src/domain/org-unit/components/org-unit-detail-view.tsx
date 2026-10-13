@@ -26,12 +26,14 @@ interface OrgUnitDetailViewProps {
   orgUnit: OrganizationUnit;
   types: OrganizationUnitType[];
   canEdit: boolean;
+  embedded?: boolean;
 }
 
 export function OrgUnitDetailView({
   orgUnit,
   types,
   canEdit,
+  embedded = false,
 }: OrgUnitDetailViewProps) {
   const { open } = useSheetTrigger(FORM_ID);
   const t = useTranslations('OrgUnit.detail');
@@ -48,7 +50,11 @@ export function OrgUnitDetailView({
   return (
     <>
       <div className="flex items-start justify-between gap-4">
-        <h1 className="page-title">{tNav('overview')}</h1>
+        {embedded ? (
+          <h2 className="text-lg font-semibold">{orgUnit.name}</h2>
+        ) : (
+          <h1 className="page-title">{tNav('overview')}</h1>
+        )}
         {canEdit && (
           <Button
             variant="outline"
@@ -126,7 +132,7 @@ export function OrgUnitDetailView({
         </Card>
       )}
 
-      {orgUnit.parent && (
+      {!embedded && orgUnit.parent && (
         <Card className="gap-2 py-4">
           <CardHeader>
             <CardTitle>{t('hierarchyTitle')}</CardTitle>
@@ -140,7 +146,7 @@ export function OrgUnitDetailView({
         </Card>
       )}
 
-      <OrgUnitCreateEditSheet types={types} />
+      {!embedded && <OrgUnitCreateEditSheet types={types} />}
     </>
   );
 }

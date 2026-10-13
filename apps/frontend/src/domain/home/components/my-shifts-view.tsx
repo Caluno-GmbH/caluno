@@ -1,9 +1,9 @@
 'use client';
 
+import { SortOrder } from '@repo/data';
 import {
   type MyShiftInstance,
   type MyShiftInstancesInfiniteResult,
-  SortOrder,
   useMyShiftInstancesInfinite,
 } from '@repo/data/react';
 import { Button, Empty, EmptyMedia, EmptyTitle, Skeleton } from '@repo/ui';

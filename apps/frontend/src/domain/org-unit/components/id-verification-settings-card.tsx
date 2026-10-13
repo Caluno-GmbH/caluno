@@ -1,44 +1,23 @@
 'use client';
 
-import { useUpdateOrganizationUnit } from '@repo/data/react';
 import { Card, CardContent, Switch } from '@repo/ui';
 import { IdCard } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { useRouter } from '@/i18n/navigation';
 
 interface IdVerificationSettingsCardProps {
-  organizationUnitId: string;
-  organizationId: string;
-  initialEnabled: boolean;
+  enabled: boolean;
   canEdit: boolean;
+  isSaving?: boolean;
+  onEnabledChange: (enabled: boolean) => void;
 }
 
 export function IdVerificationSettingsCard({
-  organizationUnitId,
-  organizationId,
-  initialEnabled,
+  enabled,
   canEdit,
+  isSaving = false,
+  onEnabledChange,
 }: IdVerificationSettingsCardProps) {
   const t = useTranslations('IdVerification');
-  const router = useRouter();
-  const mutation = useUpdateOrganizationUnit();
-  const [enabled, setEnabled] = useState(initialEnabled);
-
-  const handleToggle = async (next: boolean) => {
-    setEnabled(next);
-    try {
-      await mutation.mutateAsync({
-        id: organizationUnitId,
-        input: { organizationId, idVerificationEnabled: next },
-      });
-      router.refresh();
-    } catch {
-      setEnabled(!next);
-      toast.error(t('card.updateError'));
-    }
-  };
 
   return (
     <Card>
@@ -59,10 +38,13 @@ export function IdVerificationSettingsCard({
         </div>
         <Switch
           checked={enabled}
-          disabled={!canEdit || mutation.isPending}
+          disabled={!canEdit || isSaving}
           aria-labelledby="id-verification-label"
           aria-describedby="id-verification-description"
-          onCheckedChange={handleToggle}
+          onCheckedChange={(next) => {
+            if (!canEdit || isSaving) return;
+            onEnabledChange(next);
+          }}
         />
       </CardContent>
     </Card>

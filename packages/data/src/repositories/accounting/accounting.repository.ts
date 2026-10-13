@@ -4,6 +4,10 @@ import type {
   CreateDocumentTemplateInput,
   CreateInvoiceInput,
   DocumentKind,
+  InvoiceFilterInput,
+  UpdateDocumentTemplateInput,
+} from '../../generated/base-types';
+import type {
   GetAccountingSetupStatusQuery,
   GetBundleDownloadStatusQuery,
   GetContractQuery,
@@ -22,12 +26,10 @@ import type {
   GetVolunteerAllowanceStatesQuery,
   GetVolunteersNeedingTimesheetsQuery,
   GetYearlyUsageQuery,
-  InvoiceFilterInput,
   MyDocumentSummaryQuery,
   MyDocumentsQuery,
   RecordBundleDownloadMutation,
   SetManualBaselineMutation,
-  UpdateDocumentTemplateInput,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 

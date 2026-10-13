@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
+
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -21,6 +22,17 @@ import { resolveFirstColumn } from '../utils/invoice-table';
 import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
 import {
+  PAGE_FOOTER_FONT_SIZE,
+  PAGE_FOOTER_LINE_GAP,
+  PAGE_FOOTER_LINE_HEIGHT,
+  type PageFooter,
+  pageFooterHeight,
+  pageFooterLines,
+  pageNumberLabel,
+  resolvePageFooter,
+} from '../utils/page-footer';
+import { PAUSCHALE_TYPE_LABELS } from '../utils/reimbursement-type-labels';
+import {
   findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
   type TemplateBlockShape,
@@ -35,12 +47,6 @@ type RenderableDocument = ContractWithRelations | InvoiceWithRelations;
 const EUR = '€';
 
 const AMOUNT_COLUMN = 'Betrag';
-
-/** Human label for the reimbursement type key rendered for the `pauschalen_type` source. */
-const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
-  EHRENAMT: 'Ehrenamtspauschale',
-  UEBUNGSLEITER: 'Übungsleiterpauschale',
-};
 
 const nonBlank = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();
@@ -150,7 +156,17 @@ export class DocumentRenderingService {
       'totalAmountCents' in document ? document.totalAmountCents : undefined;
 
     return new Promise<Buffer>((resolve, reject) => {
-      const pdf = new PDFDocument({ size: 'A4', margin: 48 });
+      const pageFooter = resolvePageFooter(body);
+      const pdf = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: 48,
+          left: 48,
+          right: 48,
+          bottom: 48 + pageFooterHeight(pageFooter),
+        },
+        bufferPages: true,
+      });
       const chunks: Buffer[] = [];
       pdf.on('data', (chunk: Buffer) => chunks.push(chunk));
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
@@ -160,6 +176,7 @@ export class DocumentRenderingService {
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
       this.renderSignatures(pdf, document, resolvedValues);
+      this.renderPageFooters(pdf, pageFooter);
       pdf.end();
     });
   }
@@ -351,6 +368,46 @@ export class DocumentRenderingService {
     }
   }
 
+  private renderPageFooters(pdf: PDFKit.PDFDocument, footer: PageFooter): void {
+    const lines = pageFooterLines(footer);
+    const { start, count } = pdf.bufferedPageRange();
+    const left = pdf.page.margins.left;
+    const width = pdf.page.width - left - pdf.page.margins.right;
+
+    for (let i = 0; i < count; i++) {
+      pdf.switchToPage(start + i);
+      // Zeroed so writing into the reserved strip cannot trigger a new page.
+      const reserved = pdf.page.margins.bottom;
+      pdf.page.margins.bottom = 0;
+
+      const textBlock = lines.length > 0 ? 1 + lines.length : 0;
+      const blockHeight = (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
+      // The true page margin, not the enlarged one: that enlargement is this strip.
+      const pageMargin = reserved - pageFooterHeight(footer);
+      const top = pdf.page.height - pageMargin - blockHeight;
+
+      pdf
+        .fontSize(PAGE_FOOTER_FONT_SIZE)
+        .font('Helvetica')
+        .fillColor('black')
+        .text(pageNumberLabel(i + 1, count), left, top, {
+          width,
+          align: 'right',
+          lineBreak: false,
+        });
+
+      if (lines.length > 0) {
+        pdf.text(lines.join('\n'), left, top + 2 * PAGE_FOOTER_LINE_HEIGHT, {
+          width,
+          align: 'left',
+          lineGap: PAGE_FOOTER_LINE_GAP,
+        });
+      }
+
+      pdf.page.margins.bottom = reserved;
+    }
+  }
+
   private renderSignatures(
     pdf: PDFKit.PDFDocument,
     document: RenderableDocument,
@@ -363,7 +420,7 @@ export class DocumentRenderingService {
         signedAt: this.signatureTimestampFor(document, 'VOLUNTEER'),
       },
       {
-        label: 'Unterschrift Koordination',
+        label: 'Unterschrift (Organisation)',
         name: resolved.org_name || '—',
         signedAt: this.signatureTimestampFor(document, 'PERMISSION_HOLDER'),
       },
@@ -658,7 +715,7 @@ export class DocumentRenderingService {
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
       ),
       pauschalen_type: document.reimbursementType
-        ? (PAUSCHALE_TYPE_LABELS[document.reimbursementType.key] ?? '')
+        ? PAUSCHALE_TYPE_LABELS[document.reimbursementType.key]
         : '',
       hourly_rate: rateCents !== undefined ? this.formatRate(rateCents) : '',
       total_hours: totalHours !== undefined ? `${totalHours}h` : '',
