@@ -2337,7 +2337,7 @@
           "contractExpired": "Expired contract",
           "timesheetGenerate": "Create timesheet",
           "timesheetSigningVol": "Waiting for signature",
-          "timesheetSigningCoord": "Coordinator signature",
+          "timesheetSigningCoord": "Countersignature required",
           "timesheetReady": "Ready to submit",
           "nonCompliant": "No active agreement",
           "nonCompliantHint": "No active agreement for this allowance type yet. Create or activate one to make this timesheet compliant.",
