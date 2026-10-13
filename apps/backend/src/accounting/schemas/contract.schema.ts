@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   jsonb,
   pgEnum,
   snakeCase,
@@ -28,42 +29,57 @@ export type ContractBody = {
   footer: unknown;
 };
 
-export const contracts = snakeCase.table('contracts', {
-  ...idColumn,
-  documentTemplateId: uuid('document_template_id')
-    .references(() => documentTemplates.id, { onDelete: 'restrict' })
-    .notNull(),
-  volunteerId: text('volunteer_id')
-    .references(() => users.id, { onDelete: 'restrict' })
-    .notNull(),
-  reimbursementTypeId: uuid('reimbursement_type_id')
-    .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
-    .notNull(),
-  organizationUnitId: uuid('organization_unit_id').references(
-    () => organizationUnits.id,
-    { onDelete: 'restrict' },
-  ),
-  fileId: uuid('file_id').references(() => files.id, { onDelete: 'set null' }),
-  contractStatus: contractStatusEnum('contract_status')
-    .$type<ContractStatus>()
-    .notNull(),
-  periodStart: timestamp('period_start').notNull(),
-  periodEnd: timestamp('period_end').notNull(),
-  renewDate: timestamp('renew_date'),
-  isNonCompliant: boolean('is_non_compliant').notNull().default(false),
-  resolvedBody: jsonb('resolved_body').$type<ContractBody>().notNull(),
-  fieldOverrides: jsonb('field_overrides')
-    .$type<Record<string, string>>()
-    .notNull()
-    .default({}),
-  declineReason: text('decline_reason'),
-  declinedByUserId: text('declined_by_user_id').references(() => users.id, {
-    onDelete: 'restrict',
-  }),
-  declinedAt: timestamp('declined_at'),
-  declinedAtSigneeType: signeeTypeEnum('declined_at_signee_type'),
-  ...timestampColumns,
-});
+export const contracts = snakeCase.table(
+  'contracts',
+  {
+    ...idColumn,
+    documentTemplateId: uuid('document_template_id')
+      .references(() => documentTemplates.id, { onDelete: 'restrict' })
+      .notNull(),
+    volunteerId: text('volunteer_id')
+      .references(() => users.id, { onDelete: 'restrict' })
+      .notNull(),
+    reimbursementTypeId: uuid('reimbursement_type_id')
+      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+      .notNull(),
+    organizationUnitId: uuid('organization_unit_id').references(
+      () => organizationUnits.id,
+      { onDelete: 'restrict' },
+    ),
+    fileId: uuid('file_id').references(() => files.id, {
+      onDelete: 'set null',
+    }),
+    contractStatus: contractStatusEnum('contract_status')
+      .$type<ContractStatus>()
+      .notNull(),
+    periodStart: timestamp('period_start').notNull(),
+    periodEnd: timestamp('period_end').notNull(),
+    renewDate: timestamp('renew_date'),
+    isNonCompliant: boolean('is_non_compliant').notNull().default(false),
+    resolvedBody: jsonb('resolved_body').$type<ContractBody>().notNull(),
+    fieldOverrides: jsonb('field_overrides')
+      .$type<Record<string, string>>()
+      .notNull()
+      .default({}),
+    declineReason: text('decline_reason'),
+    declinedByUserId: text('declined_by_user_id').references(() => users.id, {
+      onDelete: 'restrict',
+    }),
+    declinedAt: timestamp('declined_at'),
+    declinedAtSigneeType: signeeTypeEnum('declined_at_signee_type'),
+    ...timestampColumns,
+  },
+  (table) => [
+    // Cover is looked up per exact (volunteer, type, unit) scope: the timesheet
+    // compliance check, the document bundle and the board's needs-timesheet
+    // rows all go through `ContractService.findCoveringContracts`.
+    index('idx_contracts_volunteer_type_unit').on(
+      table.volunteerId,
+      table.reimbursementTypeId,
+      table.organizationUnitId,
+    ),
+  ],
+);
 
 export type ContractEntity = typeof contracts.$inferSelect;
 export type ContractInsert = typeof contracts.$inferInsert;
