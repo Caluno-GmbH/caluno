@@ -17,3 +17,7 @@ export function isUnauthenticatedDataError(error: unknown): boolean {
     error instanceof DataError && error.options?.code === 'UNAUTHENTICATED'
   );
 }
+
+export function isNotFoundDataError(error: unknown): boolean {
+  return error instanceof DataError && error.options?.code === 'NOT_FOUND';
+}

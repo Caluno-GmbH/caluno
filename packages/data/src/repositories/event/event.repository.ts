@@ -17,6 +17,7 @@ import {
   BaseRepository,
   type PaginationOptions,
 } from '../base/base.repository';
+import { isNotFoundDataError } from '../../errors/data-error';
 
 export type RawEvent = GetEventQuery['event'];
 export type EventListItem = GetEventsQuery['events']['items'][number];
@@ -92,9 +93,14 @@ export class EventRepository extends BaseRepository {
     return data.availableEvents;
   }
 
-  async findById(id: string): Promise<RawEvent> {
-    const data = await this.sdk.GetEvent({ id });
-    return data.event;
+  async findById(id: string): Promise<RawEvent | null> {
+    try {
+      const data = await this.sdk.GetEvent({ id });
+      return data.event;
+    } catch (error) {
+      if (isNotFoundDataError(error)) return null;
+      throw error;
+    }
   }
 
   async findInvites(eventId: string): Promise<EventInviteItem[]> {
