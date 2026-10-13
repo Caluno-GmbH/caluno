@@ -143,7 +143,7 @@ export type GetVolunteersNeedingTimesheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetVolunteersNeedingTimesheetsQuery = { volunteersNeedingTimesheets: Array<{ periodStart: string, periodEnd: string, eligibleHours: number, estimatedAmountCents: number, volunteer: { id: string, name: string }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey } }> };
+export type GetVolunteersNeedingTimesheetsQuery = { volunteersNeedingTimesheets: Array<{ periodStart: string, periodEnd: string, eligibleHours: number, estimatedAmountCents: number, hasUncoveredHours: boolean, firstUncoveredAt: string | null, volunteer: { id: string, name: string }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey } }> };
 
 export type GetPaidShiftSignupVolunteersQueryVariables = Exact<{
   year: number;
@@ -2129,6 +2129,8 @@ export const GetVolunteersNeedingTimesheetsDocument = gql`
     periodEnd
     eligibleHours
     estimatedAmountCents
+    hasUncoveredHours
+    firstUncoveredAt
   }
 }
     `;

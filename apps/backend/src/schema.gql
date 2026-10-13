@@ -1841,6 +1841,8 @@ enum VolunteerAllowanceState {
 type VolunteerNeedsTimesheet {
   eligibleHours: Float!
   estimatedAmountCents: Int!
+  firstUncoveredAt: DateTime
+  hasUncoveredHours: Boolean!
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!

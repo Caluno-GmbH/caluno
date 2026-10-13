@@ -763,6 +763,9 @@ describe('InvoiceService', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 4,
+        // No contract of any kind covers the entry.
+        hasUncoveredHours: true,
+        firstUncoveredAt: new Date('2026-07-01T09:00:00.000Z'),
       });
       expect(result[0]?.volunteerId).toBe(timeEntry.volunteerId);
     });
@@ -799,6 +802,8 @@ describe('InvoiceService', () => {
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
           eligibleHours: 6.5,
+          hasUncoveredHours: true,
+          firstUncoveredAt: new Date('2026-07-01T09:00:00.000Z'),
         },
         {
           volunteerId: volunteer.id,
@@ -806,6 +811,8 @@ describe('InvoiceService', () => {
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
           eligibleHours: 1,
+          hasUncoveredHours: true,
+          firstUncoveredAt: new Date('2026-08-03T09:00:00.000Z'),
         },
       ]);
     });
@@ -878,6 +885,10 @@ describe('InvoiceService', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 4,
+        // Issuing the declined timesheet queued a draft contract over these
+        // hours, and a draft is cover for the reminder: it is its own task.
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
       });
     });
 
@@ -949,6 +960,165 @@ describe('InvoiceService', () => {
       );
 
       expect(result.map((r) => r.volunteerId)).not.toContain(otherVolunteer.id);
+    });
+
+    describe('uncovered hours (VOLI-1587)', () => {
+      const rowFor = async (s: Fixture, month: 'JUL' | 'AUG' = 'JUL') => {
+        const rows = await service.findVolunteersNeedingTimesheets(
+          s.root.id,
+          new Date('2026-01-01T00:00:00.000Z'),
+          new Date('2027-01-01T00:00:00.000Z'),
+        );
+        const start =
+          month === 'JUL'
+            ? '2026-06-30T22:00:00.000Z'
+            : '2026-07-31T22:00:00.000Z';
+        return rows.find(
+          (row) =>
+            row.volunteerId === s.volunteer.id &&
+            row.periodStart.toISOString() === start,
+        );
+      };
+
+      it('is false when every entry of the month is inside an active contract', async () => {
+        const s = await setup();
+        await entryAt(s, '2026-07-20T09:00:00.000Z');
+        await insertContract(s, JULY_TIMESHEET);
+
+        const row = await rowFor(s);
+
+        expect(row?.hasUncoveredHours).toBe(false);
+        expect(row?.firstUncoveredAt).toBeNull();
+      });
+
+      it('is true with the earliest uncovered start when one entry is outside every contract', async () => {
+        const s = await setup(); // entry at 2026-07-01T09:00Z
+        // The earliest uncovered entry (16 Jul) sits in the middle of the
+        // insertion order, so neither "first row wins" nor "last row wins"
+        // returns it by accident.
+        await entryAt(s, '2026-07-25T09:00:00.000Z');
+        await entryAt(s, '2026-07-16T09:00:00.000Z');
+        await entryAt(s, '2026-07-20T09:00:00.000Z');
+        // Covers 1 Jul (the setup entry) only.
+        await insertContract(s, {
+          start: '2026-06-30T22:00:00.000Z',
+          end: '2026-07-10T22:00:00.000Z',
+        });
+
+        const row = await rowFor(s);
+
+        expect(row?.hasUncoveredHours).toBe(true);
+        expect(row?.firstUncoveredAt).toEqual(
+          new Date('2026-07-16T09:00:00.000Z'),
+        );
+      });
+
+      it('is false when only a draft or a contract awaiting signature covers the hours', async () => {
+        const draft = await setup();
+        await insertContract(draft, JULY_TIMESHEET, {
+          status: ContractStatus.DRAFT,
+        });
+        const awaiting = await setup();
+        await insertContract(awaiting, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+
+        expect((await rowFor(draft))?.hasUncoveredHours).toBe(false);
+        expect((await rowFor(awaiting))?.hasUncoveredHours).toBe(false);
+      });
+
+      it('is true when only a declined contract is over the hours', async () => {
+        const s = await setup();
+        await insertContract(s, JULY_TIMESHEET, {
+          status: ContractStatus.DECLINED,
+        });
+
+        const row = await rowFor(s);
+
+        expect(row?.hasUncoveredHours).toBe(true);
+        expect(row?.firstUncoveredAt).toEqual(
+          new Date('2026-07-01T09:00:00.000Z'),
+        );
+      });
+
+      it('answers each month on its own', async () => {
+        const s = await setup(); // July entry
+        await entryAt(s, '2026-08-12T09:00:00.000Z');
+        await insertContract(s, JULY_TIMESHEET);
+
+        expect((await rowFor(s, 'JUL'))?.hasUncoveredHours).toBe(false);
+        const august = await rowFor(s, 'AUG');
+        expect(august?.hasUncoveredHours).toBe(true);
+        expect(august?.firstUncoveredAt).toEqual(
+          new Date('2026-08-12T09:00:00.000Z'),
+        );
+      });
+
+      it('does not count a contract of another unit or another volunteer', async () => {
+        const s = await setup();
+        const sibling = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sibling',
+          parentId: s.root.id,
+        });
+        const other = await createUser(db);
+        await insertContract(s, JULY_TIMESHEET, { unitId: sibling.id });
+        await db.insert(schema.contracts).values({
+          documentTemplateId: s.contractTemplate.id,
+          volunteerId: other.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          organizationUnitId: s.root.id,
+          contractStatus: ContractStatus.ACTIVE,
+          periodStart: new Date(JULY_TIMESHEET.start),
+          periodEnd: new Date(JULY_TIMESHEET.end),
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+        });
+
+        expect((await rowFor(s))?.hasUncoveredHours).toBe(true);
+      });
+
+      it('covers an entry exactly at the contract start and not at its exclusive end', async () => {
+        const atStart = await setup(); // entry at 2026-07-01T09:00Z
+        await insertContract(atStart, {
+          start: '2026-07-01T09:00:00.000Z',
+          end: '2026-07-31T22:00:00.000Z',
+        });
+        const atEnd = await setup();
+        await insertContract(atEnd, {
+          start: '2026-06-30T22:00:00.000Z',
+          end: '2026-07-01T09:00:00.000Z',
+        });
+
+        expect((await rowFor(atStart))?.hasUncoveredHours).toBe(false);
+        expect((await rowFor(atEnd))?.hasUncoveredHours).toBe(true);
+      });
+
+      it('looks cover up once for the whole result, whatever the number of volunteers', async () => {
+        const s = await setup();
+        for (let i = 0; i < 3; i += 1) {
+          const volunteer = await createUser(db);
+          await createCompletedTimeEntry(db, {
+            organizationUnitId: s.root.id,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: s.reimbursementType.id,
+            startedAt: new Date('2026-07-10T09:00:00.000Z'),
+            endedAt: new Date('2026-07-10T11:00:00.000Z'),
+          });
+        }
+        const spy = spyOn(contractService, 'findCoveringContracts');
+
+        try {
+          await service.findVolunteersNeedingTimesheets(
+            s.root.id,
+            new Date('2026-01-01T00:00:00.000Z'),
+            new Date('2027-01-01T00:00:00.000Z'),
+          );
+          expect(spy).toHaveBeenCalledTimes(1);
+        } finally {
+          spy.mockRestore();
+        }
+      });
     });
   });
 

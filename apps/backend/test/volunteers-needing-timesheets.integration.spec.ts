@@ -152,6 +152,8 @@ describe('volunteersNeedingTimesheets projection', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 6.5,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
       },
     ];
 
@@ -176,6 +178,8 @@ describe('volunteersNeedingTimesheets projection', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 2,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
       },
     ];
 
@@ -186,5 +190,53 @@ describe('volunteersNeedingTimesheets projection', () => {
     );
 
     expect(row?.estimatedAmountCents).toBe(3_000);
+  });
+
+  it('passes whether the month has uncovered hours and where the first one starts', async () => {
+    const { unit, reimbursementType, volunteer } = await setup();
+    timesheetRows = [
+      {
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-06-30T22:00:00.000Z'),
+        periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        eligibleHours: 2,
+        hasUncoveredHours: true,
+        firstUncoveredAt: new Date('2026-07-16T09:00:00.000Z'),
+      },
+    ];
+
+    const [row] = await resolver.volunteersNeedingTimesheets(
+      null,
+      null,
+      contextFor(unit.id),
+    );
+
+    expect(row?.hasUncoveredHours).toBe(true);
+    expect(row?.firstUncoveredAt).toEqual(new Date('2026-07-16T09:00:00.000Z'));
+  });
+
+  it('passes a fully covered month as no uncovered hours and no start', async () => {
+    const { unit, reimbursementType, volunteer } = await setup();
+    timesheetRows = [
+      {
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-06-30T22:00:00.000Z'),
+        periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        eligibleHours: 2,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+      },
+    ];
+
+    const [row] = await resolver.volunteersNeedingTimesheets(
+      null,
+      null,
+      contextFor(unit.id),
+    );
+
+    expect(row?.hasUncoveredHours).toBe(false);
+    expect(row?.firstUncoveredAt).toBeNull();
   });
 });

@@ -215,6 +215,8 @@ export class InvoiceQueryResolver {
             (rateCentsByTypeId.get(row.reimbursementTypeId) ??
               reimbursementType.platformDefaultRateCents),
         ),
+        hasUncoveredHours: row.hasUncoveredHours,
+        firstUncoveredAt: row.firstUncoveredAt,
       };
     });
   }

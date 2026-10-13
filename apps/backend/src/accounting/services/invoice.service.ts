@@ -56,6 +56,7 @@ import {
   entriesWithoutCover,
 } from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
+import { groupTimesheetCandidates } from '../utils/timesheet-groups';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -195,7 +196,8 @@ export class InvoiceService {
    * completed, in-period) hours grouped by volunteer, reimbursement type and
    * Berlin calendar month, with the month's bounds and summed hours. Entries
    * are only claimed once a timesheet is issued, so these rows always reflect
-   * the current time entries.
+   * the current time entries. Each row also says whether any of its hours has
+   * no non-declined contract and where the first such hour starts (VOLI-1587).
    */
   async findVolunteersNeedingTimesheets(
     organizationUnitId: string,
@@ -227,28 +229,32 @@ export class InvoiceService {
       )
       .where(and(...conditions));
 
-    const groups = new Map<string, EligibleTimesheetVolunteer>();
-    for (const row of rows) {
-      const entry = row.timeEntry;
-      if (!entry.endedAt || !entry.reimbursementTypeId) continue;
-      const month = billingMonthBoundsOf(entry.startedAt);
-      const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
-      const group = groups.get(key) ?? {
-        volunteerId: entry.volunteerId,
-        reimbursementTypeId: entry.reimbursementTypeId,
-        periodStart: month.start,
-        periodEnd: month.end,
-        eligibleHours: 0,
-      };
-      group.eligibleHours +=
-        (entry.endedAt.getTime() - entry.startedAt.getTime()) / 3_600_000;
-      groups.set(key, group);
-    }
+    // The query already requires an end and a reimbursement type; the guard
+    // is what lets the types say so.
+    const entries = rows
+      .map((row) => row.timeEntry)
+      .filter(
+        (
+          entry,
+        ): entry is typeof entry & {
+          endedAt: Date;
+          reimbursementTypeId: string;
+        } => entry.endedAt !== null && entry.reimbursementTypeId !== null,
+      );
 
-    return [...groups.values()].map((group) => ({
-      ...group,
-      eligibleHours: Math.round(group.eligibleHours * 100) / 100,
-    }));
+    // One lookup for every entry of the result. "Cover" is any non-declined
+    // contract: a draft or a contract awaiting signatures is already its own
+    // task on the board, so it must not also raise a contract reminder (this
+    // is broader than compliance, which counts ACTIVE only).
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(entries),
+      ContractCover.OPEN,
+    );
+    const uncoveredIds = new Set(
+      entriesWithoutCover(entries, coverByEntry).map((entry) => entry.id),
+    );
+
+    return groupTimesheetCandidates(entries, uncoveredIds);
   }
 
   /**

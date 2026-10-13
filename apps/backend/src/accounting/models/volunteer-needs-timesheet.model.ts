@@ -22,4 +22,12 @@ export class VolunteerNeedsTimesheet {
 
   @Field(() => Int)
   estimatedAmountCents!: number;
+
+  /** Any hour of this month has no non-declined contract: a contract reminder is due. */
+  @Field(() => Boolean)
+  hasUncoveredHours!: boolean;
+
+  /** `startedAt` of the earliest hour of this month with no non-declined contract, or null. */
+  @Field(() => Date, { nullable: true })
+  firstUncoveredAt?: Date | null;
 }
