@@ -532,12 +532,11 @@ export function buildBoardVolunteers({
         const { year: y, month } = billingMonthOf(periodStart);
         return months.some((m) => m.year === y && m.month === month);
       };
+      // Not narrowed to the selected months: the backend sends one signup per
+      // volunteer and Pauschale, the earliest uncovered month of the year, so a
+      // filter here would hide a task that is still open.
       const paidShiftSignupsForType = volunteerPaidShiftSignups
-        .filter(
-          (s) =>
-            s.reimbursementTypeId === usage.reimbursementType.id &&
-            inSelectedMonths(s.periodStart),
-        )
+        .filter((s) => s.reimbursementTypeId === usage.reimbursementType.id)
         .sort(
           (a, b) =>
             new Date(a.periodStart).getTime() -

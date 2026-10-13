@@ -1061,7 +1061,11 @@ describe('buildBoardVolunteers', () => {
     expect(docs.some((d) => d.status === 'contract-active')).toBe(true);
   });
 
-  it('keeps a paid-shift create task inside the selected period like the timesheet rows', () => {
+  // The backend sends one paid-shift row per volunteer and Pauschale: the
+  // earliest uncovered month of the year. Narrowing the board to another month
+  // must not hide that task, or a coordinator looking at November would see
+  // nothing to do for a volunteer whose March shift is still uncovered.
+  it('keeps the paid-shift create task visible whatever period is selected', () => {
     const buildFor = (dateRange: { from: Date; to: Date }) =>
       buildBoardVolunteers({
         rosterUsage: [noDocsVolunteer],
@@ -1074,26 +1078,21 @@ describe('buildBoardVolunteers', () => {
           {
             volunteerId: 'v-1',
             reimbursementTypeId: 'rt-ehrenamt',
-            // September 2026 as Berlin bounds.
-            periodStart: '2026-08-31T22:00:00.000Z',
-            periodEnd: '2026-09-30T22:00:00.000Z',
+            // March 2026 as Berlin bounds.
+            periodStart: '2026-02-28T23:00:00.000Z',
+            periodEnd: '2026-03-31T22:00:00.000Z',
           },
         ],
       })[0]?.documents ?? [];
 
-    const september = buildFor({
-      from: new Date(2026, 8, 1),
-      to: new Date(2026, 8, 30),
-    });
     const november = buildFor({
       from: new Date(2026, 10, 1),
       to: new Date(2026, 10, 30),
     });
 
     expect(
-      september.find((d) => d.status === 'contract-generate')?.periodLabel,
-    ).toBe('September 2026');
-    expect(november).toHaveLength(0);
+      november.find((d) => d.status === 'contract-generate')?.periodLabel,
+    ).toBe('März 2026');
   });
 
   it('dedupes the contract-generate row when a volunteer has both eligible hours and a paid-shift signup', () => {
