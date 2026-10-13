@@ -88,19 +88,20 @@ export type DocStatus =
   | 'timesheet-declined';
 
 export type TileFilter =
+  | 'all'
   | 'contract-generate'
   | 'contract-signing'
   | 'timesheet-generate'
   | 'timesheet-signing'
-  | 'ready-to-go'
-  | null;
+  | 'ready-to-go';
 
+type PipelineTile = Exclude<TileFilter, 'all'>;
 type PauschalenFilter = 'all' | PauschalenType;
 type SortOption = 'action-needed' | 'newest';
 
 export type { DateRange };
 
-const TILE_IDS: Exclude<TileFilter, null>[] = [
+const TILE_IDS: PipelineTile[] = [
   'contract-generate',
   'contract-signing',
   'timesheet-generate',
@@ -326,8 +327,9 @@ function sortVolunteers(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
-  if (!tile) return true;
   switch (tile) {
+    case 'all':
+      return true;
     case 'contract-generate':
       return status === 'contract-generate' || status === 'contract-draft';
     case 'contract-signing':
@@ -349,7 +351,7 @@ export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
 /** How many of a tile's matching docs are actionable by the org right now (vs. waiting on the volunteer). Only meaningful for the two mixed-substep signing tiles. */
 function countActionableForTile(
   volunteers: BoardVolunteer[],
-  tile: Exclude<TileFilter, null>,
+  tile: PipelineTile,
 ): number {
   return volunteers.reduce(
     (sum, vol) =>
@@ -361,7 +363,7 @@ function countActionableForTile(
   );
 }
 
-const TILE_DOC_TYPE: Record<Exclude<TileFilter, null>, DocTypeFilter> = {
+const TILE_DOC_TYPE: Record<PipelineTile, DocTypeFilter> = {
   'contract-generate': 'contract',
   'contract-signing': 'contract',
   'timesheet-generate': 'timesheet',
@@ -372,8 +374,10 @@ const TILE_DOC_TYPE: Record<Exclude<TileFilter, null>, DocTypeFilter> = {
   'ready-to-go': 'all',
 };
 
-function countForTile(volunteers: BoardVolunteer[], tile: TileFilter): number {
-  if (!tile) return 0;
+function countForTile(
+  volunteers: BoardVolunteer[],
+  tile: PipelineTile,
+): number {
   return volunteers.reduce(
     (sum, vol) =>
       sum + vol.documents.filter((d) => matchesTile(d.status, tile)).length,
@@ -406,7 +410,10 @@ function applyFilters(
       return false;
     if (search && !volunteer.name.toLowerCase().includes(search.toLowerCase()))
       return false;
-    if (tile && !volunteer.documents.some((d) => matchesTile(d.status, tile)))
+    if (
+      tile !== 'all' &&
+      !volunteer.documents.some((d) => matchesTile(d.status, tile))
+    )
       return false;
     if (
       docType !== 'all' &&
@@ -520,7 +527,8 @@ export function ReimbursementsBoard({
   const declineInvoice = useDeclineInvoice();
 
   // Filters
-  const [activeTile, setActiveTile] = useState<TileFilter>(null);
+  const [activeTile, setActiveTile] = useState<TileFilter>('all');
+
   const [pauschale, setPauschale] = useState<PauschalenFilter>('all');
   const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>('all');
   const [search, setSearch] = useState('');
@@ -610,7 +618,7 @@ export function ReimbursementsBoard({
   // Derived for DocumentSheet
   const selectedDate = dateRange?.from ?? new Date();
 
-  const tileLabels: Record<Exclude<TileFilter, null>, string> = {
+  const tileLabels: Record<PipelineTile, string> = {
     'contract-generate': t('tiles.contractGenerate'),
     'contract-signing': t('tiles.contractSigning'),
     'timesheet-generate': t('tiles.timesheetGenerate'),
@@ -639,7 +647,7 @@ export function ReimbursementsBoard({
           id,
           countForTile(volunteersWithDocumentsOfSelectedPauschale, id),
         ]),
-      ) as Record<Exclude<TileFilter, null>, number>,
+      ) as Record<PipelineTile, number>,
     [volunteersWithDocumentsOfSelectedPauschale],
   );
 
@@ -653,7 +661,7 @@ export function ReimbursementsBoard({
             id,
           ),
         ]),
-      ) as Record<Exclude<TileFilter, null>, number>,
+      ) as Record<PipelineTile, number>,
     [volunteersWithDocumentsOfSelectedPauschale],
   );
 
@@ -684,21 +692,21 @@ export function ReimbursementsBoard({
   // doc type (or "all" for the All tile); changing the doc type manually
   // always resets the tile back to All, so the two controls can never
   // disagree and silently zero out the table.
-  function toggleTile(tile: Exclude<TileFilter, null>) {
+  function toggleTile(tile: PipelineTile) {
     setActiveTile((prev) => {
-      const next = prev === tile ? null : tile;
-      setDocTypeFilter(next ? TILE_DOC_TYPE[next] : 'all');
+      const next: TileFilter = prev === tile ? 'all' : tile;
+      setDocTypeFilter(next === 'all' ? 'all' : TILE_DOC_TYPE[next]);
       return next;
     });
   }
 
   function handleDocTypeChange(next: DocTypeFilter) {
     setDocTypeFilter(next);
-    setActiveTile(null);
+    setActiveTile('all');
   }
 
   function handleAllTile() {
-    setActiveTile(null);
+    setActiveTile('all');
     setDocTypeFilter('all');
   }
 
@@ -776,7 +784,7 @@ export function ReimbursementsBoard({
         <FilterTile
           label={t('tiles.all')}
           count={allDocumentsCount}
-          active={activeTile === null}
+          active={activeTile === 'all'}
           onClick={handleAllTile}
         />
         <div className="w-px self-stretch bg-border mx-3 shrink-0" />
@@ -875,16 +883,18 @@ export function ReimbursementsBoard({
         <Empty className="border-border py-16">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              {activeTile || search ? (
+              {activeTile !== 'all' || search ? (
                 <FilterXIcon className="size-5 text-muted-foreground" />
               ) : (
                 <CheckCircle2Icon className="size-5 text-success" />
               )}
             </EmptyMedia>
             <EmptyTitle>
-              {activeTile || search ? t('empty.filtered') : t('empty.allDone')}
+              {activeTile !== 'all' || search
+                ? t('empty.filtered')
+                : t('empty.allDone')}
             </EmptyTitle>
-            {!activeTile && !search && (
+            {activeTile === 'all' && !search && (
               <EmptyDescription>{t('empty.allDoneHint')}</EmptyDescription>
             )}
           </EmptyHeader>
