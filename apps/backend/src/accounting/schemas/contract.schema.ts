@@ -70,9 +70,9 @@ export const contracts = snakeCase.table(
     ...timestampColumns,
   },
   (table) => [
-    // Cover is looked up per exact (volunteer, type, unit) scope: the timesheet
-    // compliance check, the document bundle and the board's needs-timesheet
-    // rows all go through `ContractService.findCoveringContracts`.
+    // Serves exact (volunteer, type, unit) cover lookups, which
+    // `ContractService.findCoveringContracts` runs as an OR of such scopes, and
+    // by its leading columns the volunteer and volunteer + type filters.
     index('idx_contracts_volunteer_type_unit').on(
       table.volunteerId,
       table.reimbursementTypeId,
