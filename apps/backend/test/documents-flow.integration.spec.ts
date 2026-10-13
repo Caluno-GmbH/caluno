@@ -224,6 +224,26 @@ const INVOICE_DETAIL = `
   }
 `;
 
+const INVOICE_COVER_FLAGS_LIST = `
+  query InvoiceCoverFlagsList {
+    invoices {
+      id
+      isNonCompliant
+      hasHoursWithoutActiveContract
+    }
+  }
+`;
+
+const INVOICE_COVER_FLAGS = `
+  query InvoiceCoverFlags($id: ID!) {
+    invoice(id: $id) {
+      id
+      isNonCompliant
+      hasHoursWithoutActiveContract
+    }
+  }
+`;
+
 // ─── Setup helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -840,6 +860,112 @@ describe('documents flow — admin + volunteer', () => {
         org.volunteerId,
         org.adminId,
       ]);
+    });
+
+    // VOLI-1588: the board reads the live flag through GraphQL, in a list and
+    // on one invoice, while `isNonCompliant` stays the creation snapshot.
+    it('exposes the live no-active-contract flag on invoices and clears it when the contract is signed', async () => {
+      const { createContract } = await createContractAsAdmin();
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: org.organizationUnitId,
+        volunteerId: org.volunteerId,
+        reimbursementTypeId: org.reimbursementTypeId,
+      });
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: org.organizationUnitId,
+              reimbursementTypeId: org.reimbursementTypeId,
+              volunteerId: org.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
+            },
+          },
+          headers: orgHeader,
+        },
+        'createInvoice',
+      );
+
+      const readFlags = async () => {
+        const { invoices } = await graphqlRequestRequiringData<{
+          invoices: Array<{
+            id: string;
+            isNonCompliant: boolean;
+            hasHoursWithoutActiveContract: boolean;
+          }>;
+        }>(
+          app,
+          { query: INVOICE_COVER_FLAGS_LIST, headers: orgHeader },
+          'invoices',
+        );
+        const { invoice } = await graphqlRequestRequiringData<{
+          invoice: {
+            isNonCompliant: boolean;
+            hasHoursWithoutActiveContract: boolean;
+          };
+        }>(
+          app,
+          {
+            query: INVOICE_COVER_FLAGS,
+            variables: { id: createInvoice.id },
+            headers: orgHeader,
+          },
+          'invoice',
+        );
+        return {
+          listed: invoices.find((i) => i.id === createInvoice.id),
+          invoice,
+        };
+      };
+
+      // Only a contract awaiting signature exists: the hours have no ACTIVE one.
+      const before = await readFlags();
+      expect(before.listed).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: true,
+      });
+      expect(before.invoice).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: true,
+      });
+
+      setAuthMockUserId(org.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: orgHeader,
+        },
+        'signContract',
+      );
+      setAuthMockUserId(org.adminId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: orgHeader,
+        },
+        'signContract',
+      );
+
+      // Signed: the live flag clears, the creation snapshot stays as it was.
+      const after = await readFlags();
+      expect(after.listed).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: false,
+      });
+      expect(after.invoice).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: false,
+      });
     });
 
     it('records an invoice decline with the reason', async () => {

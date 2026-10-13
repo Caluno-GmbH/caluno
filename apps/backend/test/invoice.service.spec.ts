@@ -2274,6 +2274,66 @@ describe('InvoiceService', () => {
         ).toEqual(new Set());
       });
 
+      it('judges a unit-scoped invoice in its own unit, not in the root unit', async () => {
+        const s = await setup();
+        const sub = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sub',
+          parentId: s.root.id,
+        });
+        const entry = await createCompletedTimeEntry(db, {
+          organizationUnitId: sub.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          startedAt: new Date('2026-07-10T09:00:00.000Z'),
+          endedAt: new Date('2026-07-10T11:00:00.000Z'),
+        });
+        const invoice = await issueTimesheet(
+          s,
+          [entry.id],
+          JULY_TIMESHEET,
+          sub.id,
+        );
+        const stored = await db.query.invoices.findFirst({
+          where: { id: invoice.id },
+        });
+        expect(stored?.organizationUnitId).toBe(sub.id);
+
+        await insertContract(s, JULY_TIMESHEET, { unitId: s.root.id });
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+
+        await insertContract(s, JULY_TIMESHEET, { unitId: sub.id });
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
+      it('ignores a claim that was released, so it does not hold the invoice non-compliant', async () => {
+        const s = await setup();
+        const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id, late.id],
+          JULY_TIMESHEET,
+        );
+        await insertContract(s, JULY_FIRST_HALF);
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+
+        await db
+          .update(schema.invoiceTimeEntries)
+          .set({ released: true })
+          .where(eq(schema.invoiceTimeEntries.timeEntryId, late.id));
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
       it('matches in the invoice unit, so another unit’s contract does not count', async () => {
         const s = await setup();
         const sibling = await createUnit(db, {
