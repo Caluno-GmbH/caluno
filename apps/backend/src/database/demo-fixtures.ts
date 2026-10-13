@@ -3,10 +3,10 @@
  * demos and manual testing.
  *
  * Fully fictional non-profit reading-mentorship organisation, built to look
- * like a real Caluno customer instead of the "testing+00X" Playground
- * fixtures. Creates its own organisation, accounts and shifts/events — so
- * re-running `bun run src/database/fixtures.ts` (the Playground/e2e dataset)
- * is unaffected, and running this script never touches the Playground org.
+ * like a real Caluno customer instead of the "demo+e2e_memberNN" Playground e2e
+ * seed. Creates its own organisation, accounts and shifts/events — so
+ * re-running `bun run db:fixtures:e2e` (the Playground/e2e dataset) is
+ * unaffected, and running this script never touches the Playground org.
  * Shared date/auth/shift helpers live in `fixture-helpers.ts`.
  *
  * Usage (from apps/backend, after `bun bootstrap` or `bun run db:migrate` +
@@ -16,11 +16,12 @@
  *   bun run db:fixtures:demo
  *
  * All accounts use the password from DEMO_FIXTURE_PASSWORD, default `abcd1234`.
- * All emails are on the `lesepaten-altona.example` domain — reserved by
- * RFC 2606 for documentation/demo use, so nothing is ever actually delivered.
+ * All emails are on the `caluno.org` domain, plus-addressed onto the demo
+ * group (`demo+owner@caluno.org`, `demo+member01@caluno.org`, …), so every
+ * address routes to the single demo@caluno.org inbox.
  */
 import { hashPassword } from 'better-auth/crypto';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { ReimbursementTypeKey } from '../accounting/enums';
@@ -37,6 +38,7 @@ import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import {
   addDaysInFixtureTimezone,
   addHours,
+  assertFixtureIdentitiesAvailable,
   createAuthUser,
   type Database,
   ensureEvent,
@@ -44,6 +46,7 @@ import {
   ensureShiftWithInvites,
   type FixtureUser,
   findWeekdayWeeksAgo,
+  fixtureOrgId,
   fixtureWallClockToUtc,
   getDateInFixtureTimezone,
 } from './fixture-helpers';
@@ -54,8 +57,21 @@ process.env.TZ = 'Europe/Berlin';
 
 const FIXTURE_PASSWORD = process.env.DEMO_FIXTURE_PASSWORD ?? 'abcd1234';
 const ORG_NAME = 'Altonaer Lesepaten';
-const ORG_SLUG = 'altonaer-lesepaten';
-const EMAIL_DOMAIN = 'lesepaten-altona.example';
+/**
+ * `demo-` prefixed so a real customer can never take this slug: these fixtures
+ * seed into real environments, and a slug clash would abort the seed on every
+ * deploy.
+ */
+const ORG_SLUG = 'demo-altonaer-lesepaten';
+/** Pinned id — fixture ownership is proven by id, never by name or slug. */
+const ORG_ID = fixtureOrgId(ORG_SLUG);
+const ORG_DESCRIPTION =
+  'Gemeinnütziger Verein: Ehrenamtliche begleiten Kinder, Senior:innen und Menschen mit Leseschwierigkeiten in Hamburg-Altona beim Lesen.';
+const EMAIL_DOMAIN = 'caluno.org';
+/** Local part of the plus-addressed demo-group address: `demo+<role>@caluno.org`. */
+const emailLocalPart = (role: string) => `demo+${role}`;
+/** The demo group address itself — the primary demo login. */
+const DEMO_ACCOUNT_EMAIL = `demo@${EMAIL_DOMAIN}`;
 const RECURRENCE_WEEKS_BACK = 8;
 
 // Real Unsplash photos (via the connected Unsplash search), one per
@@ -211,7 +227,7 @@ const ensureAltonaerLesepatenOrganization = async (
   );
 
   const existingOrg = await db.query.organizations.findFirst({
-    where: { slug: ORG_SLUG },
+    where: { id: ORG_ID },
   });
 
   if (existingOrg) {
@@ -264,11 +280,11 @@ const ensureAltonaerLesepatenOrganization = async (
     const [organization] = await tx
       .insert(schema.organizations)
       .values({
+        id: ORG_ID,
         name: ORG_NAME,
         slug: ORG_SLUG,
-        contactEmail: `kontakt@${EMAIL_DOMAIN}`,
-        description:
-          'Gemeinnütziger Verein: Ehrenamtliche begleiten Kinder, Senior:innen und Menschen mit Leseschwierigkeiten in Hamburg-Altona beim Lesen.',
+        contactEmail: DEMO_ACCOUNT_EMAIL,
+        description: ORG_DESCRIPTION,
         street: 'Museumstraße 23',
         zipCode: '22765',
         city: 'Hamburg',
@@ -762,13 +778,152 @@ async function seedDemoFixtures() {
 
   const hashedPassword = await hashPassword(FIXTURE_PASSWORD);
 
-  const email = (localPart: string) => `${localPart}@${EMAIL_DOMAIN}`;
+  const email = (role: string) => `${emailLocalPart(role)}@${EMAIL_DOMAIN}`;
+  const memberEmail = (index: number) =>
+    email(`member${String(index).padStart(2, '0')}`);
+
+  // Every identity these fixtures claim is declared before the first write, so
+  // the pre-flight below can verify all of them against the live database.
+  const COORDINATOR = { firstname: 'Friederike', lastname: 'Lange' };
+  const SUPERVISOR = { firstname: 'Jonas', lastname: 'Petersen' };
+  const DEMO_VOLUNTEER = { firstname: 'Lena', lastname: 'Vogt' };
+  const REJECTED_APPLICANT = { firstname: 'Sabine', lastname: 'Wolff' };
+  const PENDING_APPLICANTS = [
+    {
+      portraitKey: 'marie.albrecht',
+      firstname: 'Marie',
+      lastname: 'Albrecht',
+    },
+    { portraitKey: 'david.kern', firstname: 'David', lastname: 'Kern' },
+  ];
+
+  const memberDefinitions: Array<{
+    portraitKey: string;
+    firstname: string;
+    lastname: string;
+    unit: 'nord' | 'sued' | 'west';
+  }> = [
+    {
+      portraitKey: 'hannah.reimers',
+      firstname: 'Hannah',
+      lastname: 'Reimers',
+      unit: 'nord',
+    },
+    {
+      portraitKey: 'mehmet.aydin',
+      firstname: 'Mehmet',
+      lastname: 'Aydın',
+      unit: 'nord',
+    },
+    {
+      portraitKey: 'sophie.brandt',
+      firstname: 'Sophie',
+      lastname: 'Brandt',
+      unit: 'nord',
+    },
+    {
+      portraitKey: 'klaus.dietrich',
+      firstname: 'Klaus',
+      lastname: 'Dietrich',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'layla.hoffmann',
+      firstname: 'Layla',
+      lastname: 'Hoffmann',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'tom.vogel',
+      firstname: 'Tom',
+      lastname: 'Vogel',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'ingrid.neumann',
+      firstname: 'Ingrid',
+      lastname: 'Neumann',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'noah.fischer',
+      firstname: 'Noah',
+      lastname: 'Fischer',
+      unit: 'west',
+    },
+    {
+      portraitKey: 'elif.yildiz',
+      firstname: 'Elif',
+      lastname: 'Yıldız',
+      unit: 'west',
+    },
+    {
+      portraitKey: 'peter.schulz',
+      firstname: 'Peter',
+      lastname: 'Schulz',
+      unit: 'west',
+    },
+  ];
+
+  const additionalNordMemberDefinitions: Array<{
+    portraitKey: string;
+    firstname: string;
+    lastname: string;
+  }> = [
+    {
+      portraitKey: 'julia.schroeder',
+      firstname: 'Julia',
+      lastname: 'Schröder',
+    },
+    { portraitKey: 'finn.kowalski', firstname: 'Finn', lastname: 'Kowalski' },
+    { portraitKey: 'amara.boateng', firstname: 'Amara', lastname: 'Boateng' },
+    { portraitKey: 'paul.lehmann', firstname: 'Paul', lastname: 'Lehmann' },
+    { portraitKey: 'zeynep.demir', firstname: 'Zeynep', lastname: 'Demir' },
+    { portraitKey: 'clara.winkler', firstname: 'Clara', lastname: 'Winkler' },
+    { portraitKey: 'leon.kraus', firstname: 'Leon', lastname: 'Kraus' },
+    { portraitKey: 'fatima.elamin', firstname: 'Fatima', lastname: 'El-Amin' },
+    { portraitKey: 'tobias.richter', firstname: 'Tobias', lastname: 'Richter' },
+    { portraitKey: 'greta.sommer', firstname: 'Greta', lastname: 'Sommer' },
+    { portraitKey: 'ali.hassan', firstname: 'Ali', lastname: 'Hassan' },
+    { portraitKey: 'marlene.vogel', firstname: 'Marlene', lastname: 'Vogel' },
+    { portraitKey: 'tarek.younes', firstname: 'Tarek', lastname: 'Younes' },
+    { portraitKey: 'nele.krueger', firstname: 'Nele', lastname: 'Krüger' },
+    { portraitKey: 'milan.petrov', firstname: 'Milan', lastname: 'Petrov' },
+    { portraitKey: 'ida.wagner', firstname: 'Ida', lastname: 'Wagner' },
+    { portraitKey: 'samuel.owusu', firstname: 'Samuel', lastname: 'Owusu' },
+    { portraitKey: 'franziska.berg', firstname: 'Franziska', lastname: 'Berg' },
+    { portraitKey: 'yusuf.kaya', firstname: 'Yusuf', lastname: 'Kaya' },
+  ];
+
+  await assertFixtureIdentitiesAvailable(db, {
+    orgSlug: ORG_SLUG,
+    accounts: [
+      { email: email('owner'), ...COORDINATOR },
+      { email: email('supervisor'), ...SUPERVISOR },
+      ...memberDefinitions.map((definition, index) => ({
+        email: memberEmail(index + 1),
+        firstname: definition.firstname,
+        lastname: definition.lastname,
+      })),
+      { email: DEMO_ACCOUNT_EMAIL, ...DEMO_VOLUNTEER },
+      ...additionalNordMemberDefinitions.map((definition, index) => ({
+        email: memberEmail(memberDefinitions.length + index + 1),
+        firstname: definition.firstname,
+        lastname: definition.lastname,
+      })),
+      ...PENDING_APPLICANTS.map((applicant, index) => ({
+        email: email(`pending0${index + 1}`),
+        firstname: applicant.firstname,
+        lastname: applicant.lastname,
+      })),
+      { email: email('rejected01'), ...REJECTED_APPLICANT },
+    ],
+  });
 
   const coordinator = await createAuthUser(db, hashedPassword, {
     locale: 'de',
-    email: email('friederike.lange'),
-    firstname: 'Friederike',
-    lastname: 'Lange',
+    email: email('owner'),
+    ...COORDINATOR,
     image: PORTRAIT_URLS['friederike.lange'],
   });
 
@@ -812,9 +967,8 @@ async function seedDemoFixtures() {
 
   const supervisor = await createAuthUser(db, hashedPassword, {
     locale: 'de',
-    email: email('jonas.petersen'),
-    firstname: 'Jonas',
-    lastname: 'Petersen',
+    email: email('supervisor'),
+    ...SUPERVISOR,
     image: PORTRAIT_URLS['jonas.petersen'],
   });
   await ensureMembershipWithRole(
@@ -824,82 +978,14 @@ async function seedDemoFixtures() {
     org.supervisorRoleId,
   );
 
-  const memberDefinitions: Array<{
-    localPart: string;
-    firstname: string;
-    lastname: string;
-    unit: 'nord' | 'sued' | 'west';
-  }> = [
-    {
-      localPart: 'hannah.reimers',
-      firstname: 'Hannah',
-      lastname: 'Reimers',
-      unit: 'nord',
-    },
-    {
-      localPart: 'mehmet.aydin',
-      firstname: 'Mehmet',
-      lastname: 'Aydın',
-      unit: 'nord',
-    },
-    {
-      localPart: 'sophie.brandt',
-      firstname: 'Sophie',
-      lastname: 'Brandt',
-      unit: 'nord',
-    },
-    {
-      localPart: 'klaus.dietrich',
-      firstname: 'Klaus',
-      lastname: 'Dietrich',
-      unit: 'sued',
-    },
-    {
-      localPart: 'layla.hoffmann',
-      firstname: 'Layla',
-      lastname: 'Hoffmann',
-      unit: 'sued',
-    },
-    {
-      localPart: 'tom.vogel',
-      firstname: 'Tom',
-      lastname: 'Vogel',
-      unit: 'sued',
-    },
-    {
-      localPart: 'ingrid.neumann',
-      firstname: 'Ingrid',
-      lastname: 'Neumann',
-      unit: 'sued',
-    },
-    {
-      localPart: 'noah.fischer',
-      firstname: 'Noah',
-      lastname: 'Fischer',
-      unit: 'west',
-    },
-    {
-      localPart: 'elif.yildiz',
-      firstname: 'Elif',
-      lastname: 'Yıldız',
-      unit: 'west',
-    },
-    {
-      localPart: 'peter.schulz',
-      firstname: 'Peter',
-      lastname: 'Schulz',
-      unit: 'west',
-    },
-  ];
-
   const members: Array<FixtureUser & { unit: 'nord' | 'sued' | 'west' }> = [];
-  for (const definition of memberDefinitions) {
+  for (const [index, definition] of memberDefinitions.entries()) {
     const user = await createAuthUser(db, hashedPassword, {
       locale: 'de',
-      email: email(definition.localPart),
+      email: memberEmail(index + 1),
       firstname: definition.firstname,
       lastname: definition.lastname,
-      image: PORTRAIT_URLS[definition.localPart],
+      image: PORTRAIT_URLS[definition.portraitKey],
     });
     await ensureMembershipWithRole(
       db,
@@ -915,9 +1001,8 @@ async function seedDemoFixtures() {
   // "Demo Volunteer" pattern), plus complete personal/banking-style data.
   const demoUser = await createAuthUser(db, hashedPassword, {
     locale: 'de',
-    email: email('lena.vogt'),
-    firstname: 'Lena',
-    lastname: 'Vogt',
+    email: DEMO_ACCOUNT_EMAIL,
+    ...DEMO_VOLUNTEER,
     image: PORTRAIT_URLS['lena.vogt'],
   });
   await ensureMembershipWithRole(
@@ -933,40 +1018,14 @@ async function seedDemoFixtures() {
   // Referenzen wie nordMembers[3] weiterhin auf sie zeigen, statt sich zu
   // verschieben. Ohne weitere Einsatz-Zuordnung — sie zählen zur
   // Mitgliederliste und tauchen unten in der Zeiterfassung auf.
-  const additionalNordMemberDefinitions: Array<{
-    localPart: string;
-    firstname: string;
-    lastname: string;
-  }> = [
-    { localPart: 'julia.schroeder', firstname: 'Julia', lastname: 'Schröder' },
-    { localPart: 'finn.kowalski', firstname: 'Finn', lastname: 'Kowalski' },
-    { localPart: 'amara.boateng', firstname: 'Amara', lastname: 'Boateng' },
-    { localPart: 'paul.lehmann', firstname: 'Paul', lastname: 'Lehmann' },
-    { localPart: 'zeynep.demir', firstname: 'Zeynep', lastname: 'Demir' },
-    { localPart: 'clara.winkler', firstname: 'Clara', lastname: 'Winkler' },
-    { localPart: 'leon.kraus', firstname: 'Leon', lastname: 'Kraus' },
-    { localPart: 'fatima.elamin', firstname: 'Fatima', lastname: 'El-Amin' },
-    { localPart: 'tobias.richter', firstname: 'Tobias', lastname: 'Richter' },
-    { localPart: 'greta.sommer', firstname: 'Greta', lastname: 'Sommer' },
-    { localPart: 'ali.hassan', firstname: 'Ali', lastname: 'Hassan' },
-    { localPart: 'marlene.vogel', firstname: 'Marlene', lastname: 'Vogel' },
-    { localPart: 'tarek.younes', firstname: 'Tarek', lastname: 'Younes' },
-    { localPart: 'nele.krueger', firstname: 'Nele', lastname: 'Krüger' },
-    { localPart: 'milan.petrov', firstname: 'Milan', lastname: 'Petrov' },
-    { localPart: 'ida.wagner', firstname: 'Ida', lastname: 'Wagner' },
-    { localPart: 'samuel.owusu', firstname: 'Samuel', lastname: 'Owusu' },
-    { localPart: 'franziska.berg', firstname: 'Franziska', lastname: 'Berg' },
-    { localPart: 'yusuf.kaya', firstname: 'Yusuf', lastname: 'Kaya' },
-  ];
-
   const additionalNordMembers: FixtureUser[] = [];
-  for (const definition of additionalNordMemberDefinitions) {
+  for (const [index, definition] of additionalNordMemberDefinitions.entries()) {
     const user = await createAuthUser(db, hashedPassword, {
       locale: 'de',
-      email: email(definition.localPart),
+      email: memberEmail(memberDefinitions.length + index + 1),
       firstname: definition.firstname,
       lastname: definition.lastname,
-      image: PORTRAIT_URLS[definition.localPart],
+      image: PORTRAIT_URLS[definition.portraitKey],
     });
     await ensureMembershipWithRole(
       db,
@@ -983,25 +1042,21 @@ async function seedDemoFixtures() {
 
   // Pending / rejected Interessensbekundungen (Use Case 1: Einladen & Verwalten)
   const pendingApplicants = await Promise.all(
-    [
-      { localPart: 'marie.albrecht', firstname: 'Marie', lastname: 'Albrecht' },
-      { localPart: 'david.kern', firstname: 'David', lastname: 'Kern' },
-    ].map((applicant) =>
+    PENDING_APPLICANTS.map((applicant, index) =>
       createAuthUser(db, hashedPassword, {
         locale: 'de',
-        email: email(applicant.localPart),
+        email: email(`pending0${index + 1}`),
         firstname: applicant.firstname,
         lastname: applicant.lastname,
-        image: PORTRAIT_URLS[applicant.localPart],
+        image: PORTRAIT_URLS[applicant.portraitKey],
       }),
     ),
   );
 
   const rejectedApplicant = await createAuthUser(db, hashedPassword, {
     locale: 'de',
-    email: email('sabine.wolff'),
-    firstname: 'Sabine',
-    lastname: 'Wolff',
+    email: email('rejected01'),
+    ...REJECTED_APPLICANT,
     image: PORTRAIT_URLS['sabine.wolff'],
   });
 
@@ -2179,7 +2234,15 @@ async function seedDemoFixtures() {
   await db
     .update(schema.organizations)
     .set({ accountingEnabled: true })
-    .where(eq(schema.organizations.id, org.organizationId));
+    // Only when it actually needs flipping: `updatedAt` has an $onUpdate, so an
+    // unconditional write would bump the row (and the WAL) on every deploy that
+    // re-runs these fixtures.
+    .where(
+      and(
+        eq(schema.organizations.id, org.organizationId),
+        eq(schema.organizations.accountingEnabled, false),
+      ),
+    );
 
   console.log(
     `Created Altonaer Lesepaten organization (${org.organizationId})`,

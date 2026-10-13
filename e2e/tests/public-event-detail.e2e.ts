@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { BASE_URL } from '../pages/AuthPage';
 
-// Depends on the local dev seed fixtures (apps/backend/src/database/fixtures.ts)
-// — run with E2E_BASE_URL=http://localhost:3000.
+// Depends on the e2e seed (apps/backend/src/database/fixtures.ts,
+// `bun run db:fixtures:e2e`).
 const PUBLIC_EVENT_ID = '213e6757-af0c-4ce3-ba29-fb3500309351';
 const EVENT_ASSISTANCE_SHIFT_ID = 'e2915169-290d-42b2-a2e2-6d9992bb8814';
 
