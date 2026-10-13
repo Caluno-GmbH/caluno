@@ -240,7 +240,7 @@ function PipelineTracker({ steps }: { steps: PipelineStep[] }) {
             </span>
             <div
               className={cn(
-                'h-0.5 flex-1',
+                'h-0.5 flex-1 relative z-[-1]',
                 i === steps.length - 1
                   ? 'invisible'
                   : step.state === 'done'
@@ -514,7 +514,7 @@ export function DocumentSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col gap-0 w-full sm:max-w-md p-0">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
-          <SheetTitle className="text-xl font-semibold">
+          <SheetTitle className="text-xl font-semibold pr-8">
             {isContract ? 'Vertrag' : 'Stundennachweis'} · {vol.name}
           </SheetTitle>
           <div className="flex items-center gap-2">
@@ -833,9 +833,24 @@ export function DocumentSheet({
                   className="text-alert"
                 />
               )}
+              {(doc.status === 'timesheet-signing-super' ||
+                doc.status === 'contract-signing-coord') && (
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  disabled={!canUserSign || isDetailLoading}
+                  onClick={() => setDeclineDialogOpen(true)}
+                >
+                  {t('actions.decline')}
+                </Button>
+              )}
               <Button
                 className="flex-1"
-                variant={actionKey === 'create' ? 'default' : 'outline'}
+                variant={
+                  ['create', 'countersign'].includes(actionKey)
+                    ? 'default'
+                    : 'outline'
+                }
                 disabled={
                   (actionKey === 'countersign' &&
                     (!canUserSign || isDetailLoading)) ||
@@ -854,17 +869,6 @@ export function DocumentSheet({
               >
                 {t(`actions.${actionKey}` as Parameters<typeof t>[0])}
               </Button>
-              {(doc.status === 'timesheet-signing-super' ||
-                doc.status === 'contract-signing-coord') && (
-                <Button
-                  className="flex-1"
-                  variant="outline"
-                  disabled={!canUserSign || isDetailLoading}
-                  onClick={() => setDeclineDialogOpen(true)}
-                >
-                  {t('actions.decline')}
-                </Button>
-              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center w-full">
