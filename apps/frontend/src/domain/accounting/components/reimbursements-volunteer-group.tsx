@@ -343,7 +343,7 @@ function VolunteerTableGroup({
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale;
-          const docNonCompliant = isTimesheetNonCompliant(volunteer, doc);
+          const docNonCompliant = isTimesheetNonCompliant(doc);
           const createBlocked =
             actionKey === 'create' &&
             documentCreationBlockedFor(

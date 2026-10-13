@@ -88,15 +88,6 @@ describe('docVisibleInRange', () => {
 });
 
 describe('isTimesheetNonCompliant', () => {
-  const vol = (documents: unknown[] = []) =>
-    ({
-      id: 'v',
-      name: 'V',
-      initials: 'V',
-      usedAmount: 0,
-      totalCap: 0,
-      documents,
-    }) as never;
   const doc = (overrides: Record<string, unknown> = {}) =>
     ({
       id: 'd',
@@ -105,46 +96,28 @@ describe('isTimesheetNonCompliant', () => {
       pauschale: 'ehrenamt',
       ...overrides,
     }) as never;
-  const activeContract = {
-    id: 'c',
-    status: 'contract-active',
-    periodLabel: '2026',
-    pauschale: 'ehrenamt',
-  };
 
-  it('follows the document flag even when another active contract of the Pauschale exists', () => {
-    const withActiveElsewhere = vol([activeContract]);
-
-    expect(
-      isTimesheetNonCompliant(
-        withActiveElsewhere,
-        doc({ isNonCompliant: true }),
-      ),
-    ).toBe(true);
-    expect(
-      isTimesheetNonCompliant(
-        withActiveElsewhere,
-        doc({ isNonCompliant: false }),
-      ),
-    ).toBe(false);
+  // The flag is the backend's live per-hour answer; whether some other active
+  // contract of the Pauschale exists is not an input any more (VOLI-1588).
+  it('follows the document flag', () => {
+    expect(isTimesheetNonCompliant(doc({ isNonCompliant: true }))).toBe(true);
+    expect(isTimesheetNonCompliant(doc({ isNonCompliant: false }))).toBe(false);
   });
 
   it('is false for a declined timesheet and for anything that is not a timesheet', () => {
     expect(
       isTimesheetNonCompliant(
-        vol(),
         doc({ status: 'timesheet-declined', isNonCompliant: true }),
       ),
     ).toBe(false);
     expect(
       isTimesheetNonCompliant(
-        vol(),
         doc({ status: 'contract-active', isNonCompliant: true }),
       ),
     ).toBe(false);
   });
 
   it('treats a timesheet without a flag as compliant rather than guessing', () => {
-    expect(isTimesheetNonCompliant(vol(), doc())).toBe(false);
+    expect(isTimesheetNonCompliant(doc())).toBe(false);
   });
 });

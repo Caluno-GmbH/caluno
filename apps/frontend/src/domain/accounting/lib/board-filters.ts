@@ -13,10 +13,7 @@ import type {
  * contract signed after the timesheet was created clears it, and an unrelated
  * active contract of the same Pauschale no longer hides it (VOLI-1588).
  */
-export function isTimesheetNonCompliant(
-  _vol: BoardVolunteer,
-  doc: BoardDocument,
-): boolean {
+export function isTimesheetNonCompliant(doc: BoardDocument): boolean {
   if (!doc.status.startsWith('timesheet')) return false;
   // Declined is a terminal dead end on its own — reissuing is the fix, not
   // the paired contract, so it never carries the non-compliant flag too.
