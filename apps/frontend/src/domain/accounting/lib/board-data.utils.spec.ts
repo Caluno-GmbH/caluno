@@ -771,6 +771,7 @@ describe('buildBoardVolunteers', () => {
       contracts: ReturnType<typeof makeContract>[],
       timesheetsToCreate: ReturnType<typeof row>[],
       year = 2026,
+      dateRange?: { from?: Date; to?: Date },
     ) =>
       buildBoardVolunteers({
         rosterUsage: [noDocsVolunteer],
@@ -779,6 +780,7 @@ describe('buildBoardVolunteers', () => {
         year,
         locale: 'de',
         timesheetsToCreate,
+        dateRange,
       })[0]?.documents ?? [];
     const reminder = (docs: BoardDocument[]) =>
       docs.find((d) => d.status === 'contract-generate');
@@ -851,6 +853,29 @@ describe('buildBoardVolunteers', () => {
       );
 
       expect(reminder(docs)?.periodLabel).toBe('Oktober 2026');
+    });
+
+    // The period picker narrows the board to its months, for the reminder as
+    // for the timesheet rows, so an uncovered October does not show up while
+    // only November is selected.
+    it('ignores uncovered hours outside the selected period', () => {
+      const october = row(...OCTOBER, {
+        hasUncoveredHours: true,
+        firstUncoveredAt: '2026-10-20T07:00:00.000Z',
+        hasHoursWithoutActiveContract: true,
+      });
+
+      const november = build([], [october], 2026, {
+        from: new Date(2026, 10, 1),
+        to: new Date(2026, 10, 30),
+      });
+      const octoberView = build([], [october], 2026, {
+        from: new Date(2026, 9, 1),
+        to: new Date(2026, 9, 31),
+      });
+
+      expect(reminder(november)).toBeUndefined();
+      expect(reminder(octoberView)?.periodLabel).toBe('Oktober 2026');
     });
 
     // A Sep 2026 to Mar 2027 contract: no reminder inside it in either year
@@ -1351,10 +1376,10 @@ describe('buildBoardVolunteers', () => {
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 12,
-          estimatedAmountCents: 5_400,
+          estimatedAmountCents: 5_400, // 54 € — pushes 800 + 54 = 854 > 840
           hasUncoveredHours: false,
           firstUncoveredAt: null,
-          hasHoursWithoutActiveContract: false, // 54 € — pushes 800 + 54 = 854 > 840
+          hasHoursWithoutActiveContract: false,
         },
       ],
     });
@@ -1393,10 +1418,10 @@ describe('buildBoardVolunteers', () => {
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 4,
-          estimatedAmountCents: 1_800,
+          estimatedAmountCents: 1_800, // 18 € — 800 + 18 = 818 ≤ 840
           hasUncoveredHours: false,
           firstUncoveredAt: null,
-          hasHoursWithoutActiveContract: false, // 18 € — 800 + 18 = 818 ≤ 840
+          hasHoursWithoutActiveContract: false,
         },
       ],
     });

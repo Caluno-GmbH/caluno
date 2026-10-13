@@ -597,9 +597,14 @@ export function buildBoardVolunteers({
         // contract covers, as the backend judges it per entry (T5). A draft or
         // a contract awaiting signature already covers its hours and is its own
         // task (Create or Countersign), so it raises no second row; a declined
-        // contract does not cover, so it does.
+        // contract does not cover, so it does. Only months inside the selected
+        // period count, like the timesheet rows above.
         const firstUncoveredRow = timesheetsForType
-          .filter((timesheet) => timesheet.hasUncoveredHours)
+          .filter((timesheet) => {
+            if (!timesheet.hasUncoveredHours) return false;
+            const { year: y, month } = billingMonthOf(timesheet.periodStart);
+            return months.some((m) => m.year === y && m.month === month);
+          })
           .sort(
             (a, b) =>
               new Date(a.firstUncoveredAt ?? a.periodStart).getTime() -
@@ -647,11 +652,10 @@ export function buildBoardVolunteers({
             pauschale: type,
           });
         }
-        // Else: a contract already exists but isn't active yet (awaiting
-        // volunteer/coordinator signature, or declined) — the contract
-        // document pushed above already queues this volunteer under
-        // "Vereinbarungen gegenzeichnen" (or the declined-document flow),
-        // so nothing further needs synthesizing here.
+        // Else: nothing in the period lacks a contract (or a draft or a
+        // contract awaiting signature already covers it, which the contract
+        // document pushed above queues as its own task), so nothing further
+        // needs synthesizing here.
       }
     }
 
