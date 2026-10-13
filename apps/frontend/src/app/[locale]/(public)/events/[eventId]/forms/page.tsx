@@ -30,6 +30,7 @@ export async function generateMetadata({ params }: EventFormsPageProps) {
     }
     return { title: 'Event — Caluno' };
   }
+  if (!event) notFound();
   const t = await getTranslations({ locale, namespace: 'EventDetail' });
   return { title: `${t('forms.title', { eventTitle: event.title })} — Caluno` };
 }
@@ -51,6 +52,7 @@ export default async function EventFormsPage({
     }
     throw error;
   }
+  if (!event) notFound();
 
   const session = await getSession();
   if (!session) {

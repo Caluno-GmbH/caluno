@@ -1,3 +1,4 @@
+import { isNotFoundDataError } from '../../errors/data-error';
 import {
   type CreateEventInput,
   type EventInviteStatus,
@@ -17,7 +18,6 @@ import {
   BaseRepository,
   type PaginationOptions,
 } from '../base/base.repository';
-import { isNotFoundDataError } from '../../errors/data-error';
 
 export type RawEvent = GetEventQuery['event'];
 export type EventListItem = GetEventsQuery['events']['items'][number];

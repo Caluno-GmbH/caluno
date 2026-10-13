@@ -32,6 +32,7 @@ export async function generateMetadata({ params }: EventPageProps) {
     }
     return { title: 'Event — Caluno' };
   }
+  if (!event) notFound();
   return { title: `${event.title} — Caluno` };
 }
 
@@ -54,6 +55,7 @@ export default async function EventPage({
     }
     throw error;
   }
+  if (!event) notFound();
 
   const authenticated = await isAuthenticated();
   const showJoinForms = search.showJoinForms === 'true';

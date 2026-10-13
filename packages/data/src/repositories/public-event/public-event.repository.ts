@@ -1,9 +1,9 @@
+import { isNotFoundDataError } from '../../errors/data-error';
 import type {
   GetPublicEventQuery,
   JoinEventMutation,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
-import { isNotFoundDataError } from '../../errors/data-error';
 
 export type RawPublicEvent = GetPublicEventQuery['publicEvent'];
 
