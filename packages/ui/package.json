@@ -45,7 +45,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^1.11.0",
     "motion": "^14.0.0",
-    "radix-ui": "^1.4.3",
+    "radix-ui": "^1.7.0",
     "react": "^19",
     "react-day-picker": "^10.0.2",
     "react-dom": "^19",
