@@ -5,7 +5,7 @@ export type DocStatus =
   | 'contract-generate'
   | 'contract-draft'
   | 'contract-signing-vol'
-  | 'contract-signing-admin'
+  | 'contract-signing-coord'
   | 'contract-active'
   // An ACTIVE contract whose stated period has ended: the signing chain is
   // complete, but it is no longer valid cover for the current month and a new
@@ -19,7 +19,7 @@ export type DocStatus =
   | 'contract-missing'
   | 'timesheet-generate'
   | 'timesheet-signing-vol'
-  | 'timesheet-signing-admin'
+  | 'timesheet-signing-coord'
   | 'timesheet-ready'
   // Passive record: eligible hours from a paid shift where the contract
   // gate was bypassed. Rate × hours is still shown, but there's no "create"

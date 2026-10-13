@@ -150,11 +150,11 @@ export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
     case 'contract-generate':
       return status === 'contract-generate' || status === 'contract-draft';
     case 'contract-signing':
-      return status === 'contract-signing-admin';
+      return status === 'contract-signing-coord';
     case 'timesheet-generate':
       return status === 'timesheet-generate';
     case 'timesheet-signing':
-      return status === 'timesheet-signing-admin';
+      return status === 'timesheet-signing-coord';
     case 'ready-to-go':
       return status === 'timesheet-ready';
   }

@@ -137,7 +137,7 @@ describe('contractStatusToDocStatus', () => {
       contractStatusToDocStatus(ContractStatus.AwaitingVolunteerSignature),
     ).toBe('contract-signing-vol');
     expect(contractStatusToDocStatus(ContractStatus.AwaitingNgoSignature)).toBe(
-      'contract-signing-admin',
+      'contract-signing-coord',
     );
     expect(contractStatusToDocStatus(ContractStatus.Active)).toBe(
       'contract-active',
@@ -164,7 +164,7 @@ describe('invoiceStatusToDocStatus', () => {
     ).toBe('timesheet-signing-vol');
     expect(
       invoiceStatusToDocStatus(InvoiceStatus.AwaitingSupervisorSignature),
-    ).toBe('timesheet-signing-admin');
+    ).toBe('timesheet-signing-coord');
     expect(invoiceStatusToDocStatus(InvoiceStatus.Ready)).toBe(
       'timesheet-ready',
     );
@@ -176,87 +176,65 @@ describe('invoiceStatusToDocStatus', () => {
 
 describe('mapDeclinedAtRole', () => {
   it('maps volunteer signee type', () => {
-    expect(mapDeclinedAtRole(SigneeType.Volunteer, 'contract')).toBe(
-      'volunteer',
-    );
+    expect(mapDeclinedAtRole(SigneeType.Volunteer)).toBe('volunteer');
   });
 
-  it('maps permission holder to coordinator for contracts', () => {
-    expect(mapDeclinedAtRole(SigneeType.PermissionHolder, 'contract')).toBe(
-      'coordinator',
-    );
-  });
-
-  it('maps permission holder to supervisor for invoices', () => {
-    expect(mapDeclinedAtRole(SigneeType.PermissionHolder, 'invoice')).toBe(
-      'supervisor',
-    );
+  it('maps permission holder to admin', () => {
+    expect(mapDeclinedAtRole(SigneeType.PermissionHolder)).toBe('coordinator');
   });
 
   it('returns undefined for null/undefined', () => {
-    expect(mapDeclinedAtRole(null, 'contract')).toBeUndefined();
-    expect(mapDeclinedAtRole(undefined, 'invoice')).toBeUndefined();
+    expect(mapDeclinedAtRole(null)).toBeUndefined();
+    expect(mapDeclinedAtRole(undefined)).toBeUndefined();
   });
 });
 
 describe('mapSignatureToSignee', () => {
   it('maps volunteer signature', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-1',
-        order: 0,
-        signeeType: SigneeType.Volunteer,
-        signedAt: null,
-        signedByUser: null,
-        requiredPermission: null,
-      },
-      'contract',
-    );
+    const signee = mapSignatureToSignee({
+      id: 's-1',
+      order: 0,
+      signeeType: SigneeType.Volunteer,
+      signedAt: null,
+      signedByUser: null,
+      requiredPermission: null,
+    });
     expect(signee.role).toBe('volunteer');
   });
 
-  it('maps permission holder signature to coordinator for contracts', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-2',
-        order: 1,
-        signeeType: SigneeType.PermissionHolder,
-        signedAt: null,
-        signedByUser: null,
-        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
-      },
-      'contract',
-    );
+  it('maps permission holder signature to coordinator', () => {
+    const signee = mapSignatureToSignee({
+      id: 's-2',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: null,
+      signedByUser: null,
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
     expect(signee.role).toBe('coordinator');
   });
 
   it('carries the signing users name, when the agreement has been signed', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-3',
-        order: 1,
-        signeeType: SigneeType.PermissionHolder,
-        signedAt: '2026-03-02T00:00:00.000Z',
-        signedByUser: { id: 'u-1', name: 'Boo-Boo' },
-        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
-      },
-      'contract',
-    );
+    const signee = mapSignatureToSignee({
+      id: 's-3',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: '2026-03-02T00:00:00.000Z',
+      signedByUser: { id: 'u-1', name: 'Boo-Boo' },
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
     expect(signee.signedByName).toBe('Boo-Boo');
   });
 
   it('leaves the signing users name empty, when the agreement has not signed', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-4',
-        order: 1,
-        signeeType: SigneeType.PermissionHolder,
-        signedAt: null,
-        signedByUser: null,
-        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
-      },
-      'invoice',
-    );
+    const signee = mapSignatureToSignee({
+      id: 's-4',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: null,
+      signedByUser: null,
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
     expect(signee.signedByName).toBeUndefined();
   });
 });
@@ -722,7 +700,7 @@ describe('buildBoardVolunteers', () => {
         docs.filter((d) => d.status === 'timesheet-generate'),
       ).toHaveLength(1);
       expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
-      expect(docs.some((d) => d.status === 'contract-signing-admin')).toBe(
+      expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(
         true,
       );
     });
@@ -775,7 +753,7 @@ describe('buildBoardVolunteers', () => {
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
-    expect(docs.some((d) => d.status === 'contract-signing-admin')).toBe(true);
+    expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(true);
   });
 
   it('queues a volunteer with a paid-shift signup but no Vereinbarung under contract-generate', () => {
@@ -962,7 +940,7 @@ describe('buildBoardVolunteers', () => {
       locale: 'de',
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'timesheet-signing-admin')).toBe(true);
+    expect(docs.some((d) => d.status === 'timesheet-signing-coord')).toBe(true);
   });
 
   // VOLI-1283: an existing timesheet is a real document in the workflow and
@@ -1011,7 +989,7 @@ describe('buildBoardVolunteers', () => {
       dateRange: invoicesDuring,
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'timesheet-signing-admin')).toBe(true);
+    expect(docs.some((d) => d.status === 'timesheet-signing-coord')).toBe(true);
   });
 
   // VOLI-1283: the documents-creation flow ("Not created yet") keys a
@@ -1236,7 +1214,7 @@ describe('buildBoardVolunteers', () => {
     if (!vol) throw new Error('expected a built volunteer');
     const summary = getDocLineSummary(vol, 'invoice', 'ehrenamt');
     expect(summary.count).toBeGreaterThan(0);
-    expect(summary.latest?.status).toBe('timesheet-signing-admin');
+    expect(summary.latest?.status).toBe('timesheet-signing-coord');
   });
 });
 
@@ -1307,7 +1285,7 @@ describe('getContractStateForPicker', () => {
     const vol = makeVol([
       {
         id: 'c-1',
-        status: 'contract-signing-admin',
+        status: 'contract-signing-coord',
         periodLabel: '2026',
         pauschale: 'uebungsleiter',
       },
@@ -1521,12 +1499,12 @@ describe('documentRowAction', () => {
   it('opens the detail sheet for rows backed by a persisted document', () => {
     const persisted: DocStatus[] = [
       'contract-signing-vol',
-      'contract-signing-admin',
+      'contract-signing-coord',
       'contract-active',
       'contract-missing',
       'contract-declined',
       'timesheet-signing-vol',
-      'timesheet-signing-admin',
+      'timesheet-signing-coord',
       'timesheet-ready',
       'timesheet-muted',
       'timesheet-declined',
@@ -1560,10 +1538,10 @@ describe('creationTargetFor', () => {
   it('has nothing to create once a document is in its signing chain', () => {
     const statuses: DocStatus[] = [
       'contract-signing-vol',
-      'contract-signing-admin',
+      'contract-signing-coord',
       'contract-active',
       'timesheet-signing-vol',
-      'timesheet-signing-admin',
+      'timesheet-signing-coord',
       'timesheet-ready',
       'timesheet-muted',
     ];
