@@ -996,9 +996,12 @@ describe('InvoiceService', () => {
 
       it('is true with the earliest uncovered start when one entry is outside every contract', async () => {
         const s = await setup(); // entry at 2026-07-01T09:00Z
+        // The earliest uncovered entry (16 Jul) sits in the middle of the
+        // insertion order, so neither "first row wins" nor "last row wins"
+        // returns it by accident.
         await entryAt(s, '2026-07-25T09:00:00.000Z');
-        // Inserted last, but the earliest uncovered entry of the month.
         await entryAt(s, '2026-07-16T09:00:00.000Z');
+        await entryAt(s, '2026-07-20T09:00:00.000Z');
         // Covers 1 Jul (the setup entry) only.
         await insertContract(s, {
           start: '2026-06-30T22:00:00.000Z',

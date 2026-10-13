@@ -56,6 +56,7 @@ import {
   entriesWithoutCover,
 } from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
+import { groupTimesheetCandidates } from '../utils/timesheet-groups';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -228,9 +229,18 @@ export class InvoiceService {
       )
       .where(and(...conditions));
 
+    // The query already requires an end and a reimbursement type; the guard
+    // is what lets the types say so.
     const entries = rows
       .map((row) => row.timeEntry)
-      .filter((entry) => entry.endedAt && entry.reimbursementTypeId);
+      .filter(
+        (
+          entry,
+        ): entry is typeof entry & {
+          endedAt: Date;
+          reimbursementTypeId: string;
+        } => entry.endedAt !== null && entry.reimbursementTypeId !== null,
+      );
 
     // One lookup for every entry of the result. "Cover" is any non-declined
     // contract: a draft or a contract awaiting signatures is already its own
@@ -244,38 +254,7 @@ export class InvoiceService {
       entriesWithoutCover(entries, coverByEntry).map((entry) => entry.id),
     );
 
-    const groups = new Map<string, EligibleTimesheetVolunteer>();
-    for (const entry of entries) {
-      if (!entry.endedAt || !entry.reimbursementTypeId) continue;
-      const month = billingMonthBoundsOf(entry.startedAt);
-      const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
-      const group = groups.get(key) ?? {
-        volunteerId: entry.volunteerId,
-        reimbursementTypeId: entry.reimbursementTypeId,
-        periodStart: month.start,
-        periodEnd: month.end,
-        eligibleHours: 0,
-        hasUncoveredHours: false,
-        firstUncoveredAt: null,
-      };
-      group.eligibleHours +=
-        (entry.endedAt.getTime() - entry.startedAt.getTime()) / 3_600_000;
-      if (uncoveredIds.has(entry.id)) {
-        group.hasUncoveredHours = true;
-        if (
-          !group.firstUncoveredAt ||
-          entry.startedAt < group.firstUncoveredAt
-        ) {
-          group.firstUncoveredAt = entry.startedAt;
-        }
-      }
-      groups.set(key, group);
-    }
-
-    return [...groups.values()].map((group) => ({
-      ...group,
-      eligibleHours: Math.round(group.eligibleHours * 100) / 100,
-    }));
+    return groupTimesheetCandidates(entries, uncoveredIds);
   }
 
   /**

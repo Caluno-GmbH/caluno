@@ -194,6 +194,7 @@ describe('volunteersNeedingTimesheets projection', () => {
 
     expect(row?.estimatedAmountCents).toBe(3_000);
   });
+
   it('passes whether the month has uncovered hours and where the first one starts', async () => {
     const { unit, reimbursementType, volunteer } = await setup();
     timesheetRows = [
