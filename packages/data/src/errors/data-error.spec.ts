@@ -7,6 +7,16 @@ describe('isUnauthenticatedDataError', () => {
     expect(isUnauthenticatedDataError(error)).toBe(true);
   });
 
+  it('returns true for UNAUTHORIZED DataError', () => {
+    const error = new DataError('Unauthorized', { code: 'UNAUTHORIZED' });
+    expect(isUnauthenticatedDataError(error)).toBe(true);
+  });
+
+  it('returns true for a DataError with HTTP 401 and no code', () => {
+    const error = new DataError('Unauthorized', { statusCode: 401 });
+    expect(isUnauthenticatedDataError(error)).toBe(true);
+  });
+
   it('returns false for other DataError codes', () => {
     const error = new DataError('Forbidden', { code: 'FORBIDDEN' });
     expect(isUnauthenticatedDataError(error)).toBe(false);
