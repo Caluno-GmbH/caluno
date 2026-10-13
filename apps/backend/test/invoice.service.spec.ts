@@ -55,8 +55,8 @@ import { createShift } from './factories/shift.factory';
 import { createShiftInstance } from './factories/shift-instance.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('InvoiceService', () => {
@@ -64,6 +64,7 @@ describe('InvoiceService', () => {
   let db: Database;
   let service: InvoiceService;
   let contractService: ContractService;
+  closeTestingModuleAfterAll(() => moduleRef);
   const declinedByVolunteerCalls: unknown[] = [];
 
   beforeAll(async () => {
@@ -148,10 +149,6 @@ describe('InvoiceService', () => {
       organizationService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /** Org + root unit + an invoice template (volunteer -> permission holder) + a completed, unclaimed time entry. */

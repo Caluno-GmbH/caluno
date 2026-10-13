@@ -62,14 +62,15 @@ import {
 } from './factories/role.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('ContractService', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let service: ContractService;
+  closeTestingModuleAfterAll(() => moduleRef);
   const declinedByVolunteerCalls: unknown[] = [];
 
   beforeAll(async () => {
@@ -127,10 +128,6 @@ describe('ContractService', () => {
       } as unknown as DocumentRenderingService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /** Org + root unit + a volunteer -> permission-holder contract template, with one authorized signer. */

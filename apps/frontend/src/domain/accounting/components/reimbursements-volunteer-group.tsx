@@ -20,6 +20,22 @@ import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { documentRowAction } from '../lib/board-data.utils';
 import {
+  docVisibleInRange,
+  getReadyToGoDocs,
+  isTimesheetNonCompliant,
+  matchesTile,
+} from '../lib/board-filters';
+import { STATUS_META } from '../lib/board-status';
+import type {
+  BoardDocument,
+  BoardVolunteer,
+  DocStatus,
+  DocTypeFilter,
+  DocVolPair,
+  PauschalenLimit,
+  TileFilter,
+} from '../lib/board-types';
+import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
 } from '../lib/setup-status';
@@ -27,117 +43,7 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DateRange,
-  DocStatus,
-  DocVolPair,
-  PauschalenLimit,
-  TileFilter,
-} from './reimbursements-board';
-import {
-  docVisibleInRange,
-  getReadyToGoDocs,
-  isTimesheetNonCompliant,
-} from './reimbursements-board';
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
-
-// ─── Status meta ──────────────────────────────────────────────────────────────
-
-type ActionKey = 'create' | 'countersign';
-
-interface StatusMeta {
-  labelKey: string;
-  actionKey: ActionKey | null;
-  isYourAction: boolean;
-}
-
-export const STATUS_META: Record<DocStatus, StatusMeta> = {
-  'contract-generate': {
-    labelKey: 'contractGenerate',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'contract-draft': {
-    labelKey: 'contractDraft',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'contract-signing-vol': {
-    labelKey: 'contractSigningVol',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'contract-signing-coord': {
-    labelKey: 'contractSigningCoord',
-    actionKey: 'countersign',
-    isYourAction: true,
-  },
-  'contract-active': {
-    labelKey: 'contractActive',
-    actionKey: null,
-    isYourAction: false,
-  },
-  // A completed contract whose period has ended. Renewal is queued as its own
-  // contract-generate row, so this one has no action of its own.
-  'contract-expired': {
-    labelKey: 'contractExpired',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'contract-missing': {
-    labelKey: 'contractMissing',
-    actionKey: 'create',
-    // false, not true: this keeps the row muted (bg-muted/20, see the
-    // isYourAction check below) per the "at least in muted state" rule —
-    // it still renders a Create button via actionKey, just outside the
-    // normal actionable-count/sort weighting.
-    isYourAction: false,
-  },
-  'timesheet-generate': {
-    labelKey: 'timesheetGenerate',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'timesheet-signing-vol': {
-    labelKey: 'timesheetSigningVol',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'timesheet-signing-super': {
-    labelKey: 'timesheetSigningSuper',
-    actionKey: 'countersign',
-    isYourAction: true,
-  },
-  'timesheet-ready': {
-    labelKey: 'timesheetReady',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'timesheet-muted': {
-    labelKey: 'timesheetMuted',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'contract-declined': {
-    labelKey: 'declined',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'timesheet-declined': {
-    labelKey: 'declined',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-};
-
-/** Whether this status is actionable by the org (coordinator/supervisor) right now, as opposed to waiting on the volunteer or already resolved. */
-export function isYourActionStatus(status: DocStatus): boolean {
-  return STATUS_META[status].isYourAction;
-}
+import type { DateRange } from './period-picker';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -156,7 +62,7 @@ const STATUS_SORT_ORDER: DocStatus[] = [
   'timesheet-generate',
   'contract-missing',
   'contract-signing-coord',
-  'timesheet-signing-super',
+  'timesheet-signing-coord',
   'timesheet-ready',
   'contract-signing-vol',
   'timesheet-signing-vol',
@@ -318,7 +224,11 @@ function VolunteerTableGroup({
             (doc) =>
               docTypeFilter === 'all' || doc.status.startsWith(docTypeFilter),
           )
-          .filter((doc) => docVisibleInRange(doc, dateRange));
+          .filter(
+            (doc) =>
+              docVisibleInRange(doc, dateRange) &&
+              matchesTile(doc.status, activeTile),
+          );
 
   const sortedDocs = [...visibleDocs].sort(
     (a, b) =>

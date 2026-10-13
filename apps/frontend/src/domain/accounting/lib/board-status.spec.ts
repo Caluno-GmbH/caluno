@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  isYourActionStatus,
-  STATUS_META,
-} from './reimbursements-volunteer-group';
+import { isYourActionStatus, STATUS_META } from './board-status';
 
 describe('contract-expired status', () => {
   // A completed contract whose period has ended (e.g. an individual time

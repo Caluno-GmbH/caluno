@@ -9,11 +9,6 @@ import {
 } from '@repo/data';
 import { formats } from '@/lib/formatting/formats';
 import type { PauschalenType } from '../components/doc-type-header';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-} from '../components/reimbursements-board';
 import type { Signee, SigneeRole } from '../components/template/types';
 import {
   billingMonthOf,
@@ -22,6 +17,7 @@ import {
   isContractExpired,
   periodCovers,
 } from './billing-period';
+import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 import { lifespanForPeriod } from './creation-modal.utils';
 import { centsToEuros } from './money';
 import { pauschaleForReimbursementTypeKey } from './reimbursement-type-mapping';
@@ -42,7 +38,7 @@ export interface DocLineSummary {
  * that line or whether it should still prompt a "create" ("Not created yet").
  * A doc is counted for a line by its status prefix (`contract-*` for an
  * agreement, `timesheet-*` for a timesheet) matching the line's pauschale — so
- * a volunteer-signed timesheet awaiting countersignature (`timesheet-signing-super`)
+ * a volunteer-signed timesheet awaiting countersignature (`timesheet-signing-coord`)
  * counts as created, never as generate (VOLI-1283).
  */
 export function getDocLineSummary(
@@ -154,7 +150,7 @@ const PICKER_PAUSCHALEN: PauschalenType[] = ['ehrenamt', 'uebungsleiter'];
  */
 const ISSUED_TIMESHEET_STATUSES = new Set<DocStatus>([
   'timesheet-signing-vol',
-  'timesheet-signing-super',
+  'timesheet-signing-coord',
   'timesheet-ready',
 ]);
 
@@ -247,7 +243,7 @@ export function invoiceStatusToDocStatus(status: InvoiceStatus): DocStatus {
     case InvoiceStatus.AwaitingVolunteerSignature:
       return 'timesheet-signing-vol';
     case InvoiceStatus.AwaitingSupervisorSignature:
-      return 'timesheet-signing-super';
+      return 'timesheet-signing-coord';
     case InvoiceStatus.Ready:
       return 'timesheet-ready';
     case InvoiceStatus.Declined:
@@ -257,29 +253,24 @@ export function invoiceStatusToDocStatus(status: InvoiceStatus): DocStatus {
   }
 }
 
-function signeeTypeToRole(
-  signeeType: SigneeType,
-  kind: 'contract' | 'invoice',
-): SigneeRole {
+function signeeTypeToRole(signeeType: SigneeType): SigneeRole {
   if (signeeType === SigneeType.Volunteer) return 'volunteer';
-  return kind === 'contract' ? 'coordinator' : 'supervisor';
+  return 'coordinator';
 }
 
 export function mapDeclinedAtRole(
   signeeType: SigneeType | null | undefined,
-  kind: 'contract' | 'invoice',
 ): SigneeRole | undefined {
   if (!signeeType) return undefined;
-  return signeeTypeToRole(signeeType, kind);
+  return signeeTypeToRole(signeeType);
 }
 
 export function mapSignatureToSignee(
   signature:
     | RawContract['signatures'][number]
     | RawInvoice['signatures'][number],
-  kind: 'contract' | 'invoice',
 ): Signee {
-  const role = signeeTypeToRole(signature.signeeType, kind);
+  const role = signeeTypeToRole(signature.signeeType);
   return {
     id: signature.id,
     role,
@@ -316,10 +307,7 @@ export function mapContractToBoardDoc(
     declineReason: contract.declineReason ?? undefined,
     declinedBy: contract.declinedByUser?.name ?? undefined,
     declinedAt: contract.declinedAt ? new Date(contract.declinedAt) : undefined,
-    declinedAtRole: mapDeclinedAtRole(
-      contract.declinedAtSigneeType,
-      'contract',
-    ),
+    declinedAtRole: mapDeclinedAtRole(contract.declinedAtSigneeType),
   };
 }
 
@@ -385,7 +373,7 @@ export function mapInvoiceToBoardDoc(
     declineReason: invoice.declineReason ?? undefined,
     declinedBy: invoice.declinedByUser?.name ?? undefined,
     declinedAt: invoice.declinedAt ? new Date(invoice.declinedAt) : undefined,
-    declinedAtRole: mapDeclinedAtRole(invoice.declinedAtSigneeType, 'invoice'),
+    declinedAtRole: mapDeclinedAtRole(invoice.declinedAtSigneeType),
   };
 }
 

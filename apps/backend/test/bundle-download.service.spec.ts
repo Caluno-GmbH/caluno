@@ -42,8 +42,8 @@ import {
 import { createPermission } from './factories/role.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('BundleDownloadService', () => {
@@ -53,6 +53,7 @@ describe('BundleDownloadService', () => {
   let fetchSpy: ReturnType<typeof spyOn>;
   let failUrlResolution = false;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -88,10 +89,6 @@ describe('BundleDownloadService', () => {
       reimbursementRateService,
       contractService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   beforeEach(() => {

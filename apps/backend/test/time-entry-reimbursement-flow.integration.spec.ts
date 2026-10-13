@@ -25,8 +25,8 @@ import {
 } from './factories/org.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('Time entry -> eligible timesheet flow', () => {
@@ -38,6 +38,7 @@ describe('Time entry -> eligible timesheet flow', () => {
   let organizationUnitId: string;
   let volunteerId: string;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -118,10 +119,6 @@ describe('Time entry -> eligible timesheet flow', () => {
       .update(schema.organizations)
       .set({ accountingEnabled: true })
       .where(eq(schema.organizations.id, organization.id));
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   it('makes a checked-out volunteer eligible once their shift has a reimbursement type', async () => {

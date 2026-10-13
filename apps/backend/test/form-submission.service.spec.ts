@@ -26,8 +26,8 @@ import {
 } from './factories/org.factory';
 import { createShift } from './factories/shift.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('FormSubmissionService org-unit shares', () => {
@@ -35,6 +35,7 @@ describe('FormSubmissionService org-unit shares', () => {
   let db: Database;
   let formSubmissionService: FormSubmissionService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -50,10 +51,6 @@ describe('FormSubmissionService org-unit shares', () => {
       requiredFormService,
       postHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setupOrgWithUnits = async () => {

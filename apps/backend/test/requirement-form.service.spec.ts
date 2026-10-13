@@ -21,8 +21,8 @@ import {
   createRequirementForm,
 } from './factories/requirement-form.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('RequirementFormService block org scoping', () => {
@@ -30,6 +30,7 @@ describe('RequirementFormService block org scoping', () => {
   let db: Database;
   let requirementFormService: RequirementFormService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -44,10 +45,6 @@ describe('RequirementFormService block org scoping', () => {
       } as unknown as PostHogService),
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setupOrg = async (label: string) => {

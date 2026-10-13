@@ -2298,7 +2298,6 @@
             "declined": "Declined",
             "volSign": "Volunteer",
             "coordSign": "Coordinator",
-            "superSign": "Supervisor",
             "active": "Active",
             "ready": "Ready",
             "actorOrg": "Organisation"
@@ -2338,7 +2337,7 @@
           "contractExpired": "Expired contract",
           "timesheetGenerate": "Create timesheet",
           "timesheetSigningVol": "Waiting for signature",
-          "timesheetSigningSuper": "Supervisor signature",
+          "timesheetSigningCoord": "Countersignature required",
           "timesheetReady": "Ready to submit",
           "nonCompliant": "No active agreement",
           "nonCompliantHint": "No active agreement for this allowance type yet. Create or activate one to make this timesheet compliant.",
@@ -2415,7 +2414,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Supplementary agreement",
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2475,7 +2474,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Timesheet",
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2527,7 +2526,7 @@
             "invoice": "Timesheet"
           },
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         },
         "orgOverride": {

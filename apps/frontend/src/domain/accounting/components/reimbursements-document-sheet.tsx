@@ -42,6 +42,14 @@ import {
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
+import { isTimesheetNonCompliant } from '../lib/board-filters';
+import { isYourActionStatus } from '../lib/board-status';
+import type {
+  BoardDocument,
+  BoardVolunteer,
+  DocStatus,
+  DocVolPair,
+} from '../lib/board-types';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -50,14 +58,6 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import { DeclineReasonDialog } from './decline-reason-dialog';
 import { getPauschaleKey, TYPE_COLOR } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-  DocVolPair,
-} from './reimbursements-board';
-import { isTimesheetNonCompliant } from './reimbursements-board';
-import { isYourActionStatus } from './reimbursements-volunteer-group';
 import type { Signee, SigneeRole } from './template/types';
 
 // ─── Pipeline step definitions ────────────────────────────────────────────────
@@ -82,9 +82,7 @@ function signeeActorName(
 ): string {
   if (signee.role === 'volunteer') return volunteerName;
   if (signee.signedByName) return signee.signedByName;
-  return signee.role === 'supervisor'
-    ? t('pipeline.superSign')
-    : t('pipeline.coordSign');
+  return t('pipeline.coordSign');
 }
 
 function getActiveStepIdx(status: string, signees: Signee[]): number {
@@ -100,11 +98,10 @@ function getActiveStepIdx(status: string, signees: Signee[]): number {
   const activeRole: SigneeRole | null =
     status === 'contract-signing-vol' || status === 'timesheet-signing-vol'
       ? 'volunteer'
-      : status === 'contract-signing-coord'
+      : status === 'contract-signing-coord' ||
+          status === 'timesheet-signing-coord'
         ? 'coordinator'
-        : status === 'timesheet-signing-super'
-          ? 'supervisor'
-          : null;
+        : null;
   if (!activeRole) return 0;
   const pos = signees.findIndex((s) => s.role === activeRole);
   return pos === -1 ? 1 : pos + 1;
@@ -398,8 +395,7 @@ export function DocumentSheet({
   const signees: Signee[] = useMemo(() => {
     const detail = isContract ? contractDetail : invoiceDetail;
     if (!detail) return [];
-    const kind = isContract ? 'contract' : 'invoice';
-    return detail.signatures.map((s) => mapSignatureToSignee(s, kind));
+    return detail.signatures.map((s) => mapSignatureToSignee(s));
   }, [contractDetail, invoiceDetail, isContract]);
 
   const canUserSign = useMemo(() => {
@@ -463,7 +459,7 @@ export function DocumentSheet({
     creationTargetFor(effectiveDoc.status) !== null
       ? 'create'
       : effectiveDoc.status === 'contract-signing-coord' ||
-          effectiveDoc.status === 'timesheet-signing-super'
+          effectiveDoc.status === 'timesheet-signing-coord'
         ? 'countersign'
         : null;
 
@@ -833,7 +829,7 @@ export function DocumentSheet({
                   className="text-alert"
                 />
               )}
-              {(doc.status === 'timesheet-signing-super' ||
+              {(doc.status === 'timesheet-signing-coord' ||
                 doc.status === 'contract-signing-coord') && (
                 <Button
                   className="flex-1"

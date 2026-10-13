@@ -7,12 +7,6 @@ import {
   ReimbursementTypeKey,
   SigneeType,
 } from '@repo/data';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-} from '../components/reimbursements-board';
-import { STATUS_META } from '../components/reimbursements-volunteer-group';
 import {
   boardYear,
   buildBoardVolunteers,
@@ -36,6 +30,8 @@ import {
   monthsInRange,
   sourceDraftIdFor,
 } from './board-data.utils';
+import { STATUS_META } from './board-status';
+import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 
 const ehrenamtType = {
   id: 'rt-ehrenamt',
@@ -168,7 +164,7 @@ describe('invoiceStatusToDocStatus', () => {
     ).toBe('timesheet-signing-vol');
     expect(
       invoiceStatusToDocStatus(InvoiceStatus.AwaitingSupervisorSignature),
-    ).toBe('timesheet-signing-super');
+    ).toBe('timesheet-signing-coord');
     expect(invoiceStatusToDocStatus(InvoiceStatus.Ready)).toBe(
       'timesheet-ready',
     );
@@ -180,87 +176,65 @@ describe('invoiceStatusToDocStatus', () => {
 
 describe('mapDeclinedAtRole', () => {
   it('maps volunteer signee type', () => {
-    expect(mapDeclinedAtRole(SigneeType.Volunteer, 'contract')).toBe(
-      'volunteer',
-    );
+    expect(mapDeclinedAtRole(SigneeType.Volunteer)).toBe('volunteer');
   });
 
-  it('maps permission holder to coordinator for contracts', () => {
-    expect(mapDeclinedAtRole(SigneeType.PermissionHolder, 'contract')).toBe(
-      'coordinator',
-    );
-  });
-
-  it('maps permission holder to supervisor for invoices', () => {
-    expect(mapDeclinedAtRole(SigneeType.PermissionHolder, 'invoice')).toBe(
-      'supervisor',
-    );
+  it('maps permission holder to admin', () => {
+    expect(mapDeclinedAtRole(SigneeType.PermissionHolder)).toBe('coordinator');
   });
 
   it('returns undefined for null/undefined', () => {
-    expect(mapDeclinedAtRole(null, 'contract')).toBeUndefined();
-    expect(mapDeclinedAtRole(undefined, 'invoice')).toBeUndefined();
+    expect(mapDeclinedAtRole(null)).toBeUndefined();
+    expect(mapDeclinedAtRole(undefined)).toBeUndefined();
   });
 });
 
 describe('mapSignatureToSignee', () => {
   it('maps volunteer signature', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-1',
-        order: 0,
-        signeeType: SigneeType.Volunteer,
-        signedAt: null,
-        signedByUser: null,
-        requiredPermission: null,
-      },
-      'contract',
-    );
+    const signee = mapSignatureToSignee({
+      id: 's-1',
+      order: 0,
+      signeeType: SigneeType.Volunteer,
+      signedAt: null,
+      signedByUser: null,
+      requiredPermission: null,
+    });
     expect(signee.role).toBe('volunteer');
   });
 
-  it('maps permission holder signature to coordinator for contracts', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-2',
-        order: 1,
-        signeeType: SigneeType.PermissionHolder,
-        signedAt: null,
-        signedByUser: null,
-        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
-      },
-      'contract',
-    );
+  it('maps permission holder signature to coordinator', () => {
+    const signee = mapSignatureToSignee({
+      id: 's-2',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: null,
+      signedByUser: null,
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
     expect(signee.role).toBe('coordinator');
   });
 
   it('carries the signing users name, when the agreement has been signed', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-3',
-        order: 1,
-        signeeType: SigneeType.PermissionHolder,
-        signedAt: '2026-03-02T00:00:00.000Z',
-        signedByUser: { id: 'u-1', name: 'Boo-Boo' },
-        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
-      },
-      'contract',
-    );
+    const signee = mapSignatureToSignee({
+      id: 's-3',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: '2026-03-02T00:00:00.000Z',
+      signedByUser: { id: 'u-1', name: 'Boo-Boo' },
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
     expect(signee.signedByName).toBe('Boo-Boo');
   });
 
   it('leaves the signing users name empty, when the agreement has not signed', () => {
-    const signee = mapSignatureToSignee(
-      {
-        id: 's-4',
-        order: 1,
-        signeeType: SigneeType.PermissionHolder,
-        signedAt: null,
-        signedByUser: null,
-        requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
-      },
-      'invoice',
-    );
+    const signee = mapSignatureToSignee({
+      id: 's-4',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: null,
+      signedByUser: null,
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
     expect(signee.signedByName).toBeUndefined();
   });
 });
@@ -922,7 +896,7 @@ describe('buildBoardVolunteers', () => {
     );
   });
 
-  // VOLI-1283: a timesheet the volunteer signed (awaiting the supervisor's
+  // VOLI-1283: a timesheet the volunteer signed (awaiting the coordinator's
   // countersignature) must surface in the admin board's Sign-timesheets stage
   // — even when its period is NOT the current month (All-time view).
   it('surfaces an awaiting-countersignature invoice on All-time regardless of its period month', () => {
@@ -966,7 +940,7 @@ describe('buildBoardVolunteers', () => {
       locale: 'de',
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'timesheet-signing-super')).toBe(true);
+    expect(docs.some((d) => d.status === 'timesheet-signing-coord')).toBe(true);
   });
 
   // VOLI-1283: an existing timesheet is a real document in the workflow and
@@ -1015,7 +989,7 @@ describe('buildBoardVolunteers', () => {
       dateRange: invoicesDuring,
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'timesheet-signing-super')).toBe(true);
+    expect(docs.some((d) => d.status === 'timesheet-signing-coord')).toBe(true);
   });
 
   // VOLI-1283: the documents-creation flow ("Not created yet") keys a
@@ -1240,7 +1214,7 @@ describe('buildBoardVolunteers', () => {
     if (!vol) throw new Error('expected a built volunteer');
     const summary = getDocLineSummary(vol, 'invoice', 'ehrenamt');
     expect(summary.count).toBeGreaterThan(0);
-    expect(summary.latest?.status).toBe('timesheet-signing-super');
+    expect(summary.latest?.status).toBe('timesheet-signing-coord');
   });
 });
 
@@ -1530,7 +1504,7 @@ describe('documentRowAction', () => {
       'contract-missing',
       'contract-declined',
       'timesheet-signing-vol',
-      'timesheet-signing-super',
+      'timesheet-signing-coord',
       'timesheet-ready',
       'timesheet-muted',
       'timesheet-declined',
@@ -1567,7 +1541,7 @@ describe('creationTargetFor', () => {
       'contract-signing-coord',
       'contract-active',
       'timesheet-signing-vol',
-      'timesheet-signing-super',
+      'timesheet-signing-coord',
       'timesheet-ready',
       'timesheet-muted',
     ];
