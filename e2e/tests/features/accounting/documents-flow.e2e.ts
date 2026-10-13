@@ -164,6 +164,12 @@ test.describe('accounting documents flow — admin + volunteer', () => {
     await volunteerPage.waitForURL(/\/en\/profile\/documents$/, {
       timeout: 15_000,
     });
+    // The sheet is gone — not left mounted in the @sheet slot, and not
+    // swapped for the "all complete" message while closing.
+    await expect(volunteerPage.getByRole('dialog')).toHaveCount(0);
+    await expect(
+      volunteerPage.getByText('All details are complete'),
+    ).toHaveCount(0);
     const refreshed = volunteerPage
       .locator(
         '[data-testid="volunteer-document-card"][data-state="awaiting-signature"]',

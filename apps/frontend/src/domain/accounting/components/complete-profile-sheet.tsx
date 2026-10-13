@@ -21,7 +21,7 @@ import {
   useIsMobile,
 } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, type Resolver, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -94,6 +94,15 @@ export function CompleteProfileSheet({
     [query.data],
   );
 
+  // Latch the keys the form first rendered with. Saving invalidates this
+  // document's query; the refetch reports nothing missing while the sheet is
+  // still sliding out, and without the latch the form would swap for the
+  // "all complete" message mid-close.
+  const [formKeys, setFormKeys] = useState<MissingProfileKey[] | null>(null);
+  if (formKeys === null && missingKeys.length > 0) {
+    setFormKeys(missingKeys);
+  }
+
   const documentName = kind
     ? tNames(kind === 'contract' ? 'agreement' : 'timesheet')
     : '';
@@ -131,7 +140,7 @@ export function CompleteProfileSheet({
     );
   }
 
-  if (missingKeys.length === 0) {
+  if (formKeys === null) {
     return (
       <MessageSheet
         open={open}
@@ -145,7 +154,8 @@ export function CompleteProfileSheet({
 
   return (
     <CompleteProfileForm
-      missingKeys={missingKeys}
+      key={documentId}
+      missingKeys={formKeys}
       userNames={userNames}
       title={t('title')}
       description={description}

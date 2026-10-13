@@ -20,6 +20,7 @@ export default async function CompleteProfileSheetPage({
 
   return (
     <CompleteProfileSheet
+      key={`${kind}-${id}`}
       kind={kind === 'contract' || kind === 'invoice' ? kind : null}
       documentId={id ?? null}
       userNames={{ firstname: me.firstname, lastname: me.lastname }}

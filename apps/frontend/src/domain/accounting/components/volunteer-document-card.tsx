@@ -1,5 +1,6 @@
 'use client';
 
+import { toMissingProfileKeys } from '@repo/data';
 import { Badge, Button, cn } from '@repo/ui';
 import {
   CalendarXIcon,
@@ -90,7 +91,10 @@ export function VolunteerDocumentCard({
   }
 
   const awaitingSignature = document.state === 'awaiting-signature';
-  const missingProfileFields = document.missingProfileFields.length > 0;
+  // Gate on the keys the complete-profile sheet can actually collect, so the
+  // card is never disabled with nothing for the sheet to ask for.
+  const missingProfileFields =
+    toMissingProfileKeys(document.missingProfileFields).length > 0;
 
   return (
     <div
