@@ -50,6 +50,10 @@ export type EligibleTimesheetVolunteer = {
   periodStart: Date;
   periodEnd: Date;
   eligibleHours: number;
+  /** Any entry of this month has no non-declined contract covering its start. */
+  hasUncoveredHours: boolean;
+  /** `startedAt` of the earliest such entry, or null when every hour is covered. */
+  firstUncoveredAt: Date | null;
 };
 
 export type YearlyUsage = {

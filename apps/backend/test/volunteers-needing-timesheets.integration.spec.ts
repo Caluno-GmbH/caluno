@@ -155,6 +155,8 @@ describe('volunteersNeedingTimesheets projection', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 6.5,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
       },
     ];
 
@@ -179,6 +181,8 @@ describe('volunteersNeedingTimesheets projection', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 2,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
       },
     ];
 
