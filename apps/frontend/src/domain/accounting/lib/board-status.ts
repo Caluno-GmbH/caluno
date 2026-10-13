@@ -61,7 +61,7 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
     isYourAction: false,
   },
   'timesheet-signing-coord': {
-    labelKey: 'timesheetSigningSuper',
+    labelKey: 'timesheetSigningCoord',
     actionKey: 'countersign',
     isYourAction: true,
   },
@@ -87,7 +87,7 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
   },
 };
 
-/** Whether this status is actionable by the org (coordinator/supervisor) right now, as opposed to waiting on the volunteer or already resolved. */
+/** Whether this status is actionable by the org (coordinator) right now, as opposed to waiting on the volunteer or already resolved. */
 export function isYourActionStatus(status: DocStatus): boolean {
   return STATUS_META[status].isYourAction;
 }

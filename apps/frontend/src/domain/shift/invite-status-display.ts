@@ -137,7 +137,7 @@ export function toInviteDisplayState(
 
 export type RosterGroupKey = 'coming' | 'pending' | 'notComing';
 
-/** Ordered so the group a supervisor must act on renders first. */
+/** Ordered so the group a coordinator must act on renders first. */
 export const ROSTER_GROUP_ORDER: readonly RosterGroupKey[] = [
   'coming',
   'pending',

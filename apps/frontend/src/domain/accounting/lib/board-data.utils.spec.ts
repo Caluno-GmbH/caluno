@@ -896,7 +896,7 @@ describe('buildBoardVolunteers', () => {
     );
   });
 
-  // VOLI-1283: a timesheet the volunteer signed (awaiting the supervisor's
+  // VOLI-1283: a timesheet the volunteer signed (awaiting the coordinator's
   // countersignature) must surface in the admin board's Sign-timesheets stage
   // — even when its period is NOT the current month (All-time view).
   it('surfaces an awaiting-countersignature invoice on All-time regardless of its period month', () => {
