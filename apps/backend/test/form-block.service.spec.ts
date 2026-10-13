@@ -17,8 +17,8 @@ import {
 } from './factories/org.factory';
 import { createRequirementForm } from './factories/requirement-form.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('FormBlockService gender system field contract', () => {
@@ -26,6 +26,7 @@ describe('FormBlockService gender system field contract', () => {
   let db: Database;
   let formBlockService: FormBlockService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -38,10 +39,6 @@ describe('FormBlockService gender system field contract', () => {
       {} as FileService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setupOrgWithBlock = async () => {
@@ -201,6 +198,7 @@ describe('FormBlockService document fields contract', () => {
   let formBlockService: FormBlockService;
   let rejectedFileIds: Set<string>;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -222,10 +220,6 @@ describe('FormBlockService document fields contract', () => {
     formBlockService = new FormBlockService(db, fileService, {
       capture: () => {},
     } as unknown as PostHogService);
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setupOrgWithBlock = async () => {

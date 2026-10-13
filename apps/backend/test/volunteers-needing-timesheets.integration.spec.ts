@@ -31,8 +31,8 @@ import {
 } from './factories/org.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 /**
@@ -48,6 +48,7 @@ describe('volunteersNeedingTimesheets projection', () => {
   let rateService: ReimbursementRateService;
   let timesheetRows: EligibleTimesheetVolunteer[];
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -109,10 +110,6 @@ describe('volunteersNeedingTimesheets projection', () => {
       new ReimbursementTypeMapper(),
       rateService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setup = async () => {

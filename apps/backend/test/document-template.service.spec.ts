@@ -24,8 +24,8 @@ import {
 } from './factories/org.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('DocumentTemplateService', () => {
@@ -33,6 +33,7 @@ describe('DocumentTemplateService', () => {
   let db: Database;
   let service: DocumentTemplateService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -48,9 +49,6 @@ describe('DocumentTemplateService', () => {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
     );
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   describe('createDocumentTemplate', () => {

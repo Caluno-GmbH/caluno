@@ -24,8 +24,8 @@ import {
   grantPermissionToRole,
 } from './factories/role.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 const accessibleIds = async (
@@ -66,6 +66,7 @@ describe('OrganizationService', () => {
   let organizationService: OrganizationService;
   let db: Database;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -82,10 +83,6 @@ describe('OrganizationService', () => {
       {} as FileService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   describe('findAccessibleUnits', () => {
@@ -378,13 +375,16 @@ describe('OrganizationService', () => {
 });
 
 describe('OrganizationUnitService', () => {
+  let moduleRef: TestingModule;
   let db: Database;
   let organizationUnitService: OrganizationUnitService;
   let organizationService: OrganizationService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
+
   beforeAll(async () => {
     await ensureTestDatabase();
-    const moduleRef = await Test.createTestingModule({
+    moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
@@ -411,10 +411,6 @@ describe('OrganizationUnitService', () => {
       {} as FileService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   describe('update', () => {
