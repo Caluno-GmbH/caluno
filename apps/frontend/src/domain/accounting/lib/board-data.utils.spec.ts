@@ -137,7 +137,7 @@ describe('contractStatusToDocStatus', () => {
       contractStatusToDocStatus(ContractStatus.AwaitingVolunteerSignature),
     ).toBe('contract-signing-vol');
     expect(contractStatusToDocStatus(ContractStatus.AwaitingNgoSignature)).toBe(
-      'contract-signing-coord',
+      'contract-signing-admin',
     );
     expect(contractStatusToDocStatus(ContractStatus.Active)).toBe(
       'contract-active',
@@ -164,7 +164,7 @@ describe('invoiceStatusToDocStatus', () => {
     ).toBe('timesheet-signing-vol');
     expect(
       invoiceStatusToDocStatus(InvoiceStatus.AwaitingSupervisorSignature),
-    ).toBe('timesheet-signing-super');
+    ).toBe('timesheet-signing-admin');
     expect(invoiceStatusToDocStatus(InvoiceStatus.Ready)).toBe(
       'timesheet-ready',
     );
@@ -722,7 +722,7 @@ describe('buildBoardVolunteers', () => {
         docs.filter((d) => d.status === 'timesheet-generate'),
       ).toHaveLength(1);
       expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
-      expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(
+      expect(docs.some((d) => d.status === 'contract-signing-admin')).toBe(
         true,
       );
     });
@@ -775,7 +775,7 @@ describe('buildBoardVolunteers', () => {
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
-    expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(true);
+    expect(docs.some((d) => d.status === 'contract-signing-admin')).toBe(true);
   });
 
   it('queues a volunteer with a paid-shift signup but no Vereinbarung under contract-generate', () => {
@@ -962,7 +962,7 @@ describe('buildBoardVolunteers', () => {
       locale: 'de',
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'timesheet-signing-super')).toBe(true);
+    expect(docs.some((d) => d.status === 'timesheet-signing-admin')).toBe(true);
   });
 
   // VOLI-1283: an existing timesheet is a real document in the workflow and
@@ -1011,7 +1011,7 @@ describe('buildBoardVolunteers', () => {
       dateRange: invoicesDuring,
     });
     const docs = volunteers[0]?.documents ?? [];
-    expect(docs.some((d) => d.status === 'timesheet-signing-super')).toBe(true);
+    expect(docs.some((d) => d.status === 'timesheet-signing-admin')).toBe(true);
   });
 
   // VOLI-1283: the documents-creation flow ("Not created yet") keys a
@@ -1236,7 +1236,7 @@ describe('buildBoardVolunteers', () => {
     if (!vol) throw new Error('expected a built volunteer');
     const summary = getDocLineSummary(vol, 'invoice', 'ehrenamt');
     expect(summary.count).toBeGreaterThan(0);
-    expect(summary.latest?.status).toBe('timesheet-signing-super');
+    expect(summary.latest?.status).toBe('timesheet-signing-admin');
   });
 });
 
@@ -1307,7 +1307,7 @@ describe('getContractStateForPicker', () => {
     const vol = makeVol([
       {
         id: 'c-1',
-        status: 'contract-signing-coord',
+        status: 'contract-signing-admin',
         periodLabel: '2026',
         pauschale: 'uebungsleiter',
       },
@@ -1521,12 +1521,12 @@ describe('documentRowAction', () => {
   it('opens the detail sheet for rows backed by a persisted document', () => {
     const persisted: DocStatus[] = [
       'contract-signing-vol',
-      'contract-signing-coord',
+      'contract-signing-admin',
       'contract-active',
       'contract-missing',
       'contract-declined',
       'timesheet-signing-vol',
-      'timesheet-signing-super',
+      'timesheet-signing-admin',
       'timesheet-ready',
       'timesheet-muted',
       'timesheet-declined',
@@ -1560,10 +1560,10 @@ describe('creationTargetFor', () => {
   it('has nothing to create once a document is in its signing chain', () => {
     const statuses: DocStatus[] = [
       'contract-signing-vol',
-      'contract-signing-coord',
+      'contract-signing-admin',
       'contract-active',
       'timesheet-signing-vol',
-      'timesheet-signing-super',
+      'timesheet-signing-admin',
       'timesheet-ready',
       'timesheet-muted',
     ];

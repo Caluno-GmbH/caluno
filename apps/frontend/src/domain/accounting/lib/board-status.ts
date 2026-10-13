@@ -24,7 +24,7 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
     actionKey: null,
     isYourAction: false,
   },
-  'contract-signing-coord': {
+  'contract-signing-admin': {
     labelKey: 'contractSigningCoord',
     actionKey: 'countersign',
     isYourAction: true,
@@ -60,7 +60,7 @@ export const STATUS_META: Record<DocStatus, StatusMeta> = {
     actionKey: null,
     isYourAction: false,
   },
-  'timesheet-signing-super': {
+  'timesheet-signing-admin': {
     labelKey: 'timesheetSigningSuper',
     actionKey: 'countersign',
     isYourAction: true,

@@ -100,9 +100,9 @@ function getActiveStepIdx(status: string, signees: Signee[]): number {
   const activeRole: SigneeRole | null =
     status === 'contract-signing-vol' || status === 'timesheet-signing-vol'
       ? 'volunteer'
-      : status === 'contract-signing-coord'
+      : status === 'contract-signing-admin'
         ? 'coordinator'
-        : status === 'timesheet-signing-super'
+        : status === 'timesheet-signing-admin'
           ? 'supervisor'
           : null;
   if (!activeRole) return 0;
@@ -462,8 +462,8 @@ export function DocumentSheet({
   const actionKey =
     creationTargetFor(effectiveDoc.status) !== null
       ? 'create'
-      : effectiveDoc.status === 'contract-signing-coord' ||
-          effectiveDoc.status === 'timesheet-signing-super'
+      : effectiveDoc.status === 'contract-signing-admin' ||
+          effectiveDoc.status === 'timesheet-signing-admin'
         ? 'countersign'
         : null;
 
@@ -833,8 +833,8 @@ export function DocumentSheet({
                   className="text-alert"
                 />
               )}
-              {(doc.status === 'timesheet-signing-super' ||
-                doc.status === 'contract-signing-coord') && (
+              {(doc.status === 'timesheet-signing-admin' ||
+                doc.status === 'contract-signing-admin') && (
                 <Button
                   className="flex-1"
                   variant="outline"

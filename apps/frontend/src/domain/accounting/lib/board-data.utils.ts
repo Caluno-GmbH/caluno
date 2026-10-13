@@ -38,7 +38,7 @@ export interface DocLineSummary {
  * that line or whether it should still prompt a "create" ("Not created yet").
  * A doc is counted for a line by its status prefix (`contract-*` for an
  * agreement, `timesheet-*` for a timesheet) matching the line's pauschale — so
- * a volunteer-signed timesheet awaiting countersignature (`timesheet-signing-super`)
+ * a volunteer-signed timesheet awaiting countersignature (`timesheet-signing-admin`)
  * counts as created, never as generate (VOLI-1283).
  */
 export function getDocLineSummary(
@@ -150,7 +150,7 @@ const PICKER_PAUSCHALEN: PauschalenType[] = ['ehrenamt', 'uebungsleiter'];
  */
 const ISSUED_TIMESHEET_STATUSES = new Set<DocStatus>([
   'timesheet-signing-vol',
-  'timesheet-signing-super',
+  'timesheet-signing-admin',
   'timesheet-ready',
 ]);
 
@@ -166,7 +166,7 @@ export function getContractStateForPicker(
       return 'expired';
     case 'contract-declined':
       return 'declined';
-    case 'contract-signing-coord':
+    case 'contract-signing-admin':
       return 'awaiting-countersignature';
     case 'contract-draft':
     case 'contract-signing-vol':
@@ -226,7 +226,7 @@ export function contractStatusToDocStatus(status: ContractStatus): DocStatus {
     case ContractStatus.AwaitingVolunteerSignature:
       return 'contract-signing-vol';
     case ContractStatus.AwaitingNgoSignature:
-      return 'contract-signing-coord';
+      return 'contract-signing-admin';
     case ContractStatus.Active:
       return 'contract-active';
     case ContractStatus.Expired:
@@ -243,7 +243,7 @@ export function invoiceStatusToDocStatus(status: InvoiceStatus): DocStatus {
     case InvoiceStatus.AwaitingVolunteerSignature:
       return 'timesheet-signing-vol';
     case InvoiceStatus.AwaitingSupervisorSignature:
-      return 'timesheet-signing-super';
+      return 'timesheet-signing-admin';
     case InvoiceStatus.Ready:
       return 'timesheet-ready';
     case InvoiceStatus.Declined:

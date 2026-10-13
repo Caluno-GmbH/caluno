@@ -318,7 +318,7 @@ export function ReimbursementsBoard({
 
   function handleSign(pair: DocVolPair) {
     const { doc, vol } = pair;
-    if (doc.status === 'contract-signing-coord') {
+    if (doc.status === 'contract-signing-admin') {
       signContract.mutate(doc.id, {
         onSuccess: () =>
           toast.success(t('signToasts.contract', { name: vol.name })),
@@ -327,7 +327,7 @@ export function ReimbursementsBoard({
       });
       return;
     }
-    if (doc.status === 'timesheet-signing-super') {
+    if (doc.status === 'timesheet-signing-admin') {
       signInvoice.mutate(doc.id, {
         onSuccess: () =>
           toast.success(t('signToasts.invoice', { name: vol.name })),
