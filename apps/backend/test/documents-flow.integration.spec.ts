@@ -865,11 +865,34 @@ describe('documents flow — admin + volunteer', () => {
     // VOLI-1588: the board reads the live flag through GraphQL, in a list and
     // on one invoice, while `isNonCompliant` stays the creation snapshot.
     it('exposes the live no-active-contract flag on invoices and clears it when the contract is signed', async () => {
-      const { createContract } = await createContractAsAdmin();
+      // Its own org: the shared one already holds an ACTIVE contract from the
+      // lifecycle tests, which would cover the hours.
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createContract',
+      );
       const timeEntry = await createCompletedTimeEntry(db, {
-        organizationUnitId: org.organizationUnitId,
-        volunteerId: org.volunteerId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        organizationUnitId: own.organizationUnitId,
+        volunteerId: own.volunteerId,
+        reimbursementTypeId: own.reimbursementTypeId,
       });
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string };
@@ -879,15 +902,15 @@ describe('documents flow — admin + volunteer', () => {
           query: CREATE_INVOICE,
           variables: {
             input: {
-              organizationUnitId: org.organizationUnitId,
-              reimbursementTypeId: org.reimbursementTypeId,
-              volunteerId: org.volunteerId,
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-06-30T22:00:00.000Z',
               periodEnd: '2026-07-31T22:00:00.000Z',
             },
           },
-          headers: orgHeader,
+          headers: ownHeader,
         },
         'createInvoice',
       );
@@ -901,7 +924,7 @@ describe('documents flow — admin + volunteer', () => {
           }>;
         }>(
           app,
-          { query: INVOICE_COVER_FLAGS_LIST, headers: orgHeader },
+          { query: INVOICE_COVER_FLAGS_LIST, headers: ownHeader },
           'invoices',
         );
         const { invoice } = await graphqlRequestRequiringData<{
@@ -914,7 +937,7 @@ describe('documents flow — admin + volunteer', () => {
           {
             query: INVOICE_COVER_FLAGS,
             variables: { id: createInvoice.id },
-            headers: orgHeader,
+            headers: ownHeader,
           },
           'invoice',
         );
@@ -935,23 +958,23 @@ describe('documents flow — admin + volunteer', () => {
         hasHoursWithoutActiveContract: true,
       });
 
-      setAuthMockUserId(org.volunteerId);
+      setAuthMockUserId(own.volunteerId);
       await graphqlRequestRequiringData(
         app,
         {
           query: SIGN_CONTRACT,
           variables: { contractId: createContract.id },
-          headers: orgHeader,
+          headers: ownHeader,
         },
         'signContract',
       );
-      setAuthMockUserId(org.adminId);
+      setAuthMockUserId(own.adminId);
       await graphqlRequestRequiringData(
         app,
         {
           query: SIGN_CONTRACT,
           variables: { contractId: createContract.id },
-          headers: orgHeader,
+          headers: ownHeader,
         },
         'signContract',
       );
