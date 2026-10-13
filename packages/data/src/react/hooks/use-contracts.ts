@@ -54,13 +54,21 @@ export function useContract(id?: string) {
   });
 }
 
-function invalidateContractQueries(queryClient: QueryClient) {
+export function invalidateContractQueries(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: ['accounting', 'contracts'] });
   queryClient.invalidateQueries({ queryKey: ['accounting', 'my-contracts'] });
   // The cross-org "My documents" views derive from the same data.
   queryClient.invalidateQueries({ queryKey: ['accounting', 'my-documents'] });
   queryClient.invalidateQueries({
     queryKey: ['accounting', 'my-document-summary'],
+  });
+  // The board's agreement reminder and "No active agreement" badge are read
+  // from the invoices and the needs-timesheet rows (VOLI-1588), so a contract
+  // change has to refresh those as well.
+  queryClient.invalidateQueries({ queryKey: ['accounting', 'invoices'] });
+  queryClient.invalidateQueries({ queryKey: ['accounting', 'invoice'] });
+  queryClient.invalidateQueries({
+    queryKey: ['accounting', 'volunteers-needing-timesheets'],
   });
 }
 
