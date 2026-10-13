@@ -42,6 +42,14 @@ import {
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
+import { isTimesheetNonCompliant } from '../lib/board-filters';
+import { isYourActionStatus } from '../lib/board-status';
+import type {
+  BoardDocument,
+  BoardVolunteer,
+  DocStatus,
+  DocVolPair,
+} from '../lib/board-types';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -50,14 +58,6 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import { DeclineReasonDialog } from './decline-reason-dialog';
 import { getPauschaleKey, TYPE_COLOR } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-  DocVolPair,
-} from './reimbursements-board';
-import { isTimesheetNonCompliant } from './reimbursements-board';
-import { isYourActionStatus } from './reimbursements-volunteer-group';
 import type { Signee, SigneeRole } from './template/types';
 
 // ─── Pipeline step definitions ────────────────────────────────────────────────

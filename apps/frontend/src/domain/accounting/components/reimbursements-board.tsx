@@ -38,6 +38,14 @@ import {
   initialLifespanFor,
   sourceDraftIdFor,
 } from '../lib/board-data.utils';
+import { docVisibleInRange, matchesTile } from '../lib/board-filters';
+import { isYourActionStatus } from '../lib/board-status';
+import type {
+  BoardVolunteer,
+  DocTypeFilter,
+  DocVolPair,
+  TileFilter,
+} from '../lib/board-types';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -49,56 +57,10 @@ import { InvoiceCreationModal } from './invoice-creation-modal';
 import type { DateRange } from './period-picker';
 import { lastMonthRange, PeriodPicker, thisMonthRange } from './period-picker';
 import { DocumentSheet } from './reimbursements-document-sheet';
-import {
-  type DocTypeFilter,
-  isYourActionStatus,
-  ReimbursementsTable,
-} from './reimbursements-volunteer-group';
-import type { SigneeRole } from './template/types';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type DocStatus =
-  | 'contract-generate'
-  | 'contract-draft'
-  | 'contract-signing-vol'
-  | 'contract-signing-coord'
-  | 'contract-active'
-  // An ACTIVE contract whose stated period has ended: the signing chain is
-  // complete, but it is no longer valid cover for the current month and a new
-  // agreement must be created (VOLI-1370).
-  | 'contract-expired'
-  // Muted placeholder: implied by a 'timesheet-muted' sibling (or a
-  // search-only, zero-document volunteer) but no contract flow has actually
-  // been started. Not part of the automatic signup-triggered flow, so it
-  // never counts toward the Contract·Generate tile — resolved only via the
-  // manual "Create contract" action.
-  | 'contract-missing'
-  | 'timesheet-generate'
-  | 'timesheet-signing-vol'
-  | 'timesheet-signing-super'
-  | 'timesheet-ready'
-  // Passive record: eligible hours from a paid shift where the contract
-  // gate was bypassed. Rate × hours is still shown, but there's no "create"
-  // CTA on this row — the fix is the paired contract-missing row instead.
-  | 'timesheet-muted'
-  // Terminal: signer rejected the document. Dead end — the fix is
-  // reissuing a new document, never resuming this one.
-  | 'contract-declined'
-  | 'timesheet-declined';
-
-export type TileFilter =
-  | 'all'
-  | 'contract-generate'
-  | 'contract-signing'
-  | 'timesheet-generate'
-  | 'timesheet-signing'
-  | 'ready-to-go';
+import { ReimbursementsTable } from './reimbursements-volunteer-group';
 
 type PauschalenFilter = 'all' | PauschalenType;
 type SortOption = 'action-needed' | 'newest';
-
-export type { DateRange };
 
 const TILE_IDS: TileFilter[] = [
   'all',
@@ -116,190 +78,6 @@ const YEAR_OPTIONS = [
   CURRENT_YEAR,
   CURRENT_YEAR + 1,
 ];
-
-export interface BoardDocument {
-  id: string;
-  status: DocStatus;
-  amount?: number;
-  hours?: number;
-  lastActionDate?: Date;
-  periodLabel: string;
-  /** The document's own period: a to-invoice row opens on this month, a declined timesheet on the period it was issued for. */
-  periodStart?: Date;
-  periodEnd?: Date;
-  /** A draft contract's own Vertragslaufzeit ("08/2026", "2026", a day range): what creating the contract from it opens on. */
-  draftLifespan?: string;
-  /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
-  isOverCap?: boolean;
-  pauschale: PauschalenType;
-  /** Set together when a signer rejects the document (contract-declined/timesheet-declined only). */
-  declineReason?: string;
-  declinedBy?: string;
-  declinedAt?: Date;
-  /** Which seat in the signing chain declined — determines where the pipeline/timeline gets cut off. */
-  declinedAtRole?: SigneeRole;
-}
-
-export interface PauschalenLimit {
-  used: number;
-  total: number;
-}
-
-export interface BoardVolunteer {
-  id: string;
-  name: string;
-  initials: string;
-  usedAmount: number;
-  totalCap: number;
-  limits?: Partial<Record<PauschalenType, PauschalenLimit>>;
-  /** Maps each pauschale type the volunteer is eligible for to its reimbursement type id. */
-  reimbursementTypeIds?: Partial<Record<PauschalenType, string>>;
-  documents: BoardDocument[];
-}
-
-/** A document paired with the volunteer it belongs to — needed once actions act across volunteers. */
-export interface DocVolPair {
-  doc: BoardDocument;
-  vol: BoardVolunteer;
-}
-
-/**
- * A timesheet is non-compliant when no active contract exists for its pauschale type —
- * contracts must be active before a timesheet can be created. Derived, not stored, so it
- * always reflects the volunteer's current contract state.
- */
-export function isTimesheetNonCompliant(
-  vol: BoardVolunteer,
-  doc: BoardDocument,
-): boolean {
-  if (!doc.status.startsWith('timesheet')) return false;
-  // Declined is a terminal dead end on its own — reissuing is the fix, not
-  // the paired contract, so it never carries the non-compliant flag too.
-  if (doc.status === 'timesheet-declined') return false;
-  const pauschale = doc.pauschale;
-  return !vol.documents.some(
-    (d) => d.status === 'contract-active' && d.pauschale === pauschale,
-  );
-}
-
-function findContractDoc(
-  vol: BoardVolunteer,
-  pauschale: PauschalenType,
-): BoardDocument | undefined {
-  return vol.documents.find(
-    (d) => d.status.startsWith('contract') && d.pauschale === pauschale,
-  );
-}
-
-/**
- * Row set for the "Ready to go" tab: only the ready timesheets (date-scoped)
- * plus, per pauschale type they cover, that type's real contract document —
- * whatever its status, so an in-progress signing keeps its normal action —
- * or a synthesized, greyed `contract-missing` placeholder for the
- * timesheet's year when no contract exists at all. Every other document
- * (generate/signing docs from other periods) is excluded, so nothing but the
- * bundle-download action and this one placeholder's "Create" can surface
- * here.
- */
-export function getReadyToGoDocs(
-  volunteer: BoardVolunteer,
-  range: DateRange | undefined,
-): BoardDocument[] {
-  const readyTimesheets = volunteer.documents.filter(
-    (d) => d.status === 'timesheet-ready' && docInRange(d, range),
-  );
-  if (readyTimesheets.length === 0) return [];
-
-  const pauschaleTypes = Array.from(
-    new Set(readyTimesheets.map((d) => d.pauschale)),
-  );
-
-  const contractRows: BoardDocument[] = pauschaleTypes.map((type) => {
-    const contract = findContractDoc(volunteer, type);
-    if (contract) return contract;
-
-    const sample = readyTimesheets.find((d) => d.pauschale === type);
-    const year = (sample && periodYear(sample)) ?? '';
-    return {
-      id: `${volunteer.id}-contract-missing-${type}-${year}`,
-      status: 'contract-missing',
-      periodLabel: year,
-      pauschale: type,
-    };
-  });
-
-  return [...readyTimesheets, ...contractRows];
-}
-
-// ─── Date helpers ─────────────────────────────────────────────────────────────
-
-/**
- * The last instant of a day. A range picked as "1 – 30 September" ends at
- * midnight on the 30th, which would exclude everything that happened during
- * that day — the whole of the last day of the selected period.
- */
-function endOfDay(date: Date): Date {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    23,
-    59,
-    59,
-    999,
-  );
-}
-
-/**
- * Whether a timesheet belongs to the selected period.
- *
- * Matched on the period the document covers, not on when it was last touched.
- * A timesheet for August countersigned in September is an August document, and
- * asking for August has to find it — it used to be judged by `lastActionDate`,
- * so it went missing from its own month and turned up in the next one
- * (VOLI-1543).
- *
- * A document with no period of its own is never hidden: the filter narrows
- * what is shown, and cannot decide about something it has no date for.
- */
-function docInRange(doc: BoardDocument, range: DateRange | undefined): boolean {
-  if (!range?.from) return true;
-  const start = doc.periodStart;
-  if (!start) return true;
-  const end = doc.periodEnd ?? start;
-  return start <= endOfDay(range.to ?? range.from) && end >= range.from;
-}
-
-/** A contract's `periodLabel` is its coverage year (e.g. "2026"); a timesheet's is "<Month> <year>" — either way the year is the last 4 digits. */
-function periodYear(doc: BoardDocument): string | undefined {
-  return doc.periodLabel.match(/\d{4}/)?.[0];
-}
-
-/** Contracts run the calendar year, so they're "in range" whenever their year overlaps the selected period — never by the exact day they were signed. */
-function contractCoversRange(doc: BoardDocument, range: DateRange): boolean {
-  const year = periodYear(doc);
-  if (!year || !range.from) return true;
-  const fromYear = range.from.getFullYear();
-  const toYear = (range.to ?? range.from).getFullYear();
-  const y = Number(year);
-  return y >= fromYear && y <= toYear;
-}
-
-/**
- * Display-time date filter for a document. Contracts are annual — active for
- * every month of their year — so they never get hidden by an exact-day
- * range; timesheets still match by their own date. Never mutates the
- * volunteer's document list (see `applyFilters`) — this only decides what to
- * render, so compliance checks keep seeing the true, unfiltered data.
- */
-export function docVisibleInRange(
-  doc: BoardDocument,
-  range: DateRange | undefined,
-): boolean {
-  if (!range?.from) return true;
-  if (doc.status.startsWith('contract')) return contractCoversRange(doc, range);
-  return docInRange(doc, range);
-}
 
 function newestDocTimestamp(vol: BoardVolunteer): number {
   return vol.documents.reduce((max, d) => {
@@ -322,30 +100,6 @@ function sortVolunteers(
       : actionableDocCount(b) - actionableDocCount(a) ||
         newestDocTimestamp(b) - newestDocTimestamp(a),
   );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
-  switch (tile) {
-    case 'all':
-      return true;
-    case 'contract-generate':
-      return status === 'contract-generate' || status === 'contract-draft';
-    case 'contract-signing':
-      return (
-        status === 'contract-signing-vol' || status === 'contract-signing-coord'
-      );
-    case 'timesheet-generate':
-      return status === 'timesheet-generate';
-    case 'timesheet-signing':
-      return (
-        status === 'timesheet-signing-vol' ||
-        status === 'timesheet-signing-super'
-      );
-    case 'ready-to-go':
-      return status === 'timesheet-ready';
-  }
 }
 
 /** How many of a tile's matching docs are actionable by the org right now (vs. waiting on the volunteer). Only meaningful for the mixed-substep signing / generate tiles. */
@@ -425,11 +179,6 @@ function applyFilters(
       return false;
     return true;
   });
-  // for (const volunteer of filteredVolunteers) {
-  //   volunteer.documents = volunteer.documents.filter((d) =>
-  //     matchesTile(d.status, tile),
-  //   );
-  // }
   return filteredVolunteers;
 }
 

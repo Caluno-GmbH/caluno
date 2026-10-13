@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { docVisibleInRange } from './reimbursements-board';
+import { docVisibleInRange } from './board-filters';
 
 const timesheet = (periodStart: Date, periodEnd: Date, lastAction: Date) =>
   ({

@@ -9,11 +9,6 @@ import {
 } from '@repo/data';
 import { formats } from '@/lib/formatting/formats';
 import type { PauschalenType } from '../components/doc-type-header';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-} from '../components/reimbursements-board';
 import type { Signee, SigneeRole } from '../components/template/types';
 import {
   billingMonthOf,
@@ -22,6 +17,7 @@ import {
   isContractExpired,
   periodCovers,
 } from './billing-period';
+import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 import { lifespanForPeriod } from './creation-modal.utils';
 import { centsToEuros } from './money';
 import { pauschaleForReimbursementTypeKey } from './reimbursement-type-mapping';

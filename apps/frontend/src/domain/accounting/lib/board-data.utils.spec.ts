@@ -7,12 +7,6 @@ import {
   ReimbursementTypeKey,
   SigneeType,
 } from '@repo/data';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-} from '../components/reimbursements-board';
-import { STATUS_META } from '../components/reimbursements-volunteer-group';
 import {
   boardYear,
   buildBoardVolunteers,
@@ -36,6 +30,8 @@ import {
   monthsInRange,
   sourceDraftIdFor,
 } from './board-data.utils';
+import { STATUS_META } from './board-status';
+import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 
 const ehrenamtType = {
   id: 'rt-ehrenamt',
