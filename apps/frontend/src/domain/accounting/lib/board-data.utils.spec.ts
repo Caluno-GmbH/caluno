@@ -97,6 +97,7 @@ function makeInvoice(
     totalAmountCents: 12_000,
     totalHours: 8,
     isNonCompliant: false,
+    hasHoursWithoutActiveContract: false,
     declineReason: null,
     declinedAt: null,
     declinedAtSigneeType: null,
@@ -343,6 +344,19 @@ describe('mapContractToBoardDoc', () => {
 });
 
 describe('mapInvoiceToBoardDoc', () => {
+  it('carries the live no-active-contract flag, not the stored snapshot', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        isNonCompliant: true, // created without a contract...
+        hasHoursWithoutActiveContract: false, // ...signed since
+      }),
+      'ehrenamt',
+      'de',
+    );
+
+    expect(doc.isNonCompliant).toBe(false);
+  });
+
   it('maps an invoice to a board document', () => {
     const doc = mapInvoiceToBoardDoc(makeInvoice({}), 'ehrenamt', 'de');
     expect(doc.status).toBe('timesheet-signing-vol');
@@ -465,6 +479,9 @@ describe('buildBoardVolunteers', () => {
         periodEnd: '2026-07-31T22:00:00.000Z',
         eligibleHours: 6.5,
         estimatedAmountCents: 2_925,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: false,
       },
       {
         volunteerId: 'v-1',
@@ -473,6 +490,9 @@ describe('buildBoardVolunteers', () => {
         periodEnd: '2026-08-31T22:00:00.000Z',
         eligibleHours: 1,
         estimatedAmountCents: 450,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: false,
       },
     ];
 
@@ -503,6 +523,7 @@ describe('buildBoardVolunteers', () => {
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
           isOverCap: false,
+          isNonCompliant: false,
         },
         {
           id: 'v-1-timesheet-generate-ehrenamt-2026-08',
@@ -517,6 +538,7 @@ describe('buildBoardVolunteers', () => {
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
           isOverCap: false,
+          isNonCompliant: false,
         },
       ]);
     });
@@ -547,7 +569,13 @@ describe('buildBoardVolunteers', () => {
         invoices: [],
         year: 2026,
         locale: 'de',
-        timesheetsToCreate,
+        // The backend reports both months as having hours no contract covers.
+        timesheetsToCreate: timesheetsToCreate.map((t) => ({
+          ...t,
+          hasUncoveredHours: true,
+          firstUncoveredAt: t.periodStart,
+          hasHoursWithoutActiveContract: true,
+        })),
       });
 
       const docs = volunteers[0]?.documents ?? [];
@@ -588,6 +616,10 @@ describe('buildBoardVolunteers', () => {
             periodEnd: '2026-09-30T22:00:00.000Z',
             eligibleHours: 5,
             estimatedAmountCents: 600,
+            // The August contract does not cover these September hours.
+            hasUncoveredHours: true,
+            firstUncoveredAt: '2026-09-08T08:00:00.000Z',
+            hasHoursWithoutActiveContract: true,
           },
         ],
       });
@@ -622,6 +654,9 @@ describe('buildBoardVolunteers', () => {
             periodEnd: '2026-08-31T22:00:00.000Z',
             eligibleHours: 5,
             estimatedAmountCents: 600,
+            hasUncoveredHours: false,
+            firstUncoveredAt: null,
+            hasHoursWithoutActiveContract: false,
           },
         ],
       });
@@ -644,6 +679,11 @@ describe('buildBoardVolunteers', () => {
         periodEnd: '2026-09-30T22:00:00.000Z',
         eligibleHours: 5,
         estimatedAmountCents: 600,
+        // Openly covered (the draft / awaiting contract is its own task) but
+        // not by an ACTIVE contract yet.
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: true,
       };
       const volunteers = buildBoardVolunteers({
         rosterUsage: [noDocsVolunteer],
@@ -678,6 +718,11 @@ describe('buildBoardVolunteers', () => {
         periodEnd: '2026-09-30T22:00:00.000Z',
         eligibleHours: 5,
         estimatedAmountCents: 600,
+        // Openly covered (the draft / awaiting contract is its own task) but
+        // not by an ACTIVE contract yet.
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: true,
       };
       const volunteers = buildBoardVolunteers({
         rosterUsage: [noDocsVolunteer],
@@ -703,6 +748,189 @@ describe('buildBoardVolunteers', () => {
       expect(docs.some((d) => d.status === 'contract-signing-coord')).toBe(
         true,
       );
+    });
+
+    const row = (
+      periodStart: string,
+      periodEnd: string,
+      flags: {
+        hasUncoveredHours: boolean;
+        firstUncoveredAt: string | null;
+        hasHoursWithoutActiveContract: boolean;
+      },
+    ) => ({
+      volunteerId: 'v-1',
+      reimbursementTypeId: 'rt-ehrenamt',
+      periodStart,
+      periodEnd,
+      eligibleHours: 3,
+      estimatedAmountCents: 1_350,
+      ...flags,
+    });
+    const build = (
+      contracts: ReturnType<typeof makeContract>[],
+      timesheetsToCreate: ReturnType<typeof row>[],
+      year = 2026,
+    ) =>
+      buildBoardVolunteers({
+        rosterUsage: [noDocsVolunteer],
+        contracts,
+        invoices: [],
+        year,
+        locale: 'de',
+        timesheetsToCreate,
+      })[0]?.documents ?? [];
+    const reminder = (docs: BoardDocument[]) =>
+      docs.find((d) => d.status === 'contract-generate');
+
+    // October 2026 and the months around the cross-year contract, as Berlin bounds.
+    const OCTOBER = [
+      '2026-09-30T22:00:00.000Z',
+      '2026-10-31T23:00:00.000Z',
+    ] as const;
+
+    it('shows no reminder for an individual-time-frame contract that covers all hours of the month (VOLI-1506)', () => {
+      const docs = build(
+        [
+          makeContract({
+            id: 'c-frame',
+            contractStatus: ContractStatus.Active,
+            periodStart: '2026-09-30T22:00:00.000Z',
+            periodEnd: '2026-10-20T22:00:00.000Z',
+          }),
+        ],
+        [
+          row(...OCTOBER, {
+            hasUncoveredHours: false,
+            firstUncoveredAt: null,
+            hasHoursWithoutActiveContract: false,
+          }),
+        ],
+      );
+
+      expect(reminder(docs)).toBeUndefined();
+    });
+
+    it('names the month of the first uncovered hour for a week contract with hours outside the week', () => {
+      const docs = build(
+        [
+          makeContract({
+            id: 'c-week',
+            contractStatus: ContractStatus.Active,
+            periodStart: '2026-10-04T22:00:00.000Z', // 05.10.
+            periodEnd: '2026-10-11T22:00:00.000Z', // through 11.10.
+          }),
+        ],
+        [
+          row(...OCTOBER, {
+            hasUncoveredHours: true,
+            firstUncoveredAt: '2026-10-20T07:00:00.000Z',
+            hasHoursWithoutActiveContract: true,
+          }),
+        ],
+      );
+
+      expect(reminder(docs)?.periodLabel).toBe('Oktober 2026');
+    });
+
+    it('names the earliest month when several months have uncovered hours', () => {
+      const docs = build(
+        [],
+        [
+          row('2026-10-31T23:00:00.000Z', '2026-11-30T23:00:00.000Z', {
+            hasUncoveredHours: true,
+            firstUncoveredAt: '2026-11-12T08:00:00.000Z',
+            hasHoursWithoutActiveContract: true,
+          }),
+          row(...OCTOBER, {
+            hasUncoveredHours: true,
+            firstUncoveredAt: '2026-10-20T07:00:00.000Z',
+            hasHoursWithoutActiveContract: true,
+          }),
+        ],
+      );
+
+      expect(reminder(docs)?.periodLabel).toBe('Oktober 2026');
+    });
+
+    // A Sep 2026 to Mar 2027 contract: no reminder inside it in either year
+    // view, one for the first month after it ends.
+    it('follows the backend across a cross-year contract in both year views', () => {
+      const crossYear = makeContract({
+        id: 'c-cross',
+        contractStatus: ContractStatus.Active,
+        periodStart: '2026-08-31T22:00:00.000Z',
+        periodEnd: '2027-03-31T22:00:00.000Z',
+      });
+      const covered = (start: string, end: string) =>
+        row(start, end, {
+          hasUncoveredHours: false,
+          firstUncoveredAt: null,
+          hasHoursWithoutActiveContract: false,
+        });
+
+      const view2026 = build(
+        [crossYear],
+        [covered('2026-11-30T23:00:00.000Z', '2026-12-31T23:00:00.000Z')],
+        2026,
+      );
+      const view2027Inside = build(
+        [crossYear],
+        [covered('2026-12-31T23:00:00.000Z', '2027-01-31T23:00:00.000Z')],
+        2027,
+      );
+      const view2027After = build(
+        [crossYear],
+        [
+          row('2027-03-31T22:00:00.000Z', '2027-04-30T22:00:00.000Z', {
+            hasUncoveredHours: true,
+            firstUncoveredAt: '2027-04-06T08:00:00.000Z',
+            hasHoursWithoutActiveContract: true,
+          }),
+        ],
+        2027,
+      );
+
+      expect(reminder(view2026)).toBeUndefined();
+      expect(reminder(view2027Inside)).toBeUndefined();
+      expect(reminder(view2027After)?.periodLabel).toBe('April 2027');
+    });
+
+    it('shows a reminder when the only contract over the hours was declined', () => {
+      const docs = build(
+        [
+          makeContract({
+            id: 'c-declined',
+            contractStatus: ContractStatus.Declined,
+          }),
+        ],
+        [
+          row(...OCTOBER, {
+            hasUncoveredHours: true,
+            firstUncoveredAt: '2026-10-12T08:00:00.000Z',
+            hasHoursWithoutActiveContract: true,
+          }),
+        ],
+      );
+
+      expect(reminder(docs)?.periodLabel).toBe('Oktober 2026');
+    });
+
+    it('carries the live no-active-contract flag onto the timesheet row', () => {
+      const docs = build(
+        [],
+        [
+          row(...OCTOBER, {
+            hasUncoveredHours: false,
+            firstUncoveredAt: null,
+            hasHoursWithoutActiveContract: true,
+          }),
+        ],
+      );
+
+      expect(
+        docs.find((d) => d.status === 'timesheet-generate')?.isNonCompliant,
+      ).toBe(true);
     });
   });
 
@@ -1123,7 +1351,10 @@ describe('buildBoardVolunteers', () => {
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 12,
-          estimatedAmountCents: 5_400, // 54 € — pushes 800 + 54 = 854 > 840
+          estimatedAmountCents: 5_400,
+          hasUncoveredHours: false,
+          firstUncoveredAt: null,
+          hasHoursWithoutActiveContract: false, // 54 € — pushes 800 + 54 = 854 > 840
         },
       ],
     });
@@ -1162,7 +1393,10 @@ describe('buildBoardVolunteers', () => {
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 4,
-          estimatedAmountCents: 1_800, // 18 € — 800 + 18 = 818 ≤ 840
+          estimatedAmountCents: 1_800,
+          hasUncoveredHours: false,
+          firstUncoveredAt: null,
+          hasHoursWithoutActiveContract: false, // 18 € — 800 + 18 = 818 ≤ 840
         },
       ],
     });

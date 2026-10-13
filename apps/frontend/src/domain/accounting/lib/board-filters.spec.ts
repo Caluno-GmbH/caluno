@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { docVisibleInRange } from './board-filters';
+import { docVisibleInRange, isTimesheetNonCompliant } from './board-filters';
 
 const timesheet = (periodStart: Date, periodEnd: Date, lastAction: Date) =>
   ({
@@ -84,5 +84,67 @@ describe('docVisibleInRange', () => {
         to: new Date(2025, 7, 31),
       }),
     ).toBe(false);
+  });
+});
+
+describe('isTimesheetNonCompliant', () => {
+  const vol = (documents: unknown[] = []) =>
+    ({
+      id: 'v',
+      name: 'V',
+      initials: 'V',
+      usedAmount: 0,
+      totalCap: 0,
+      documents,
+    }) as never;
+  const doc = (overrides: Record<string, unknown> = {}) =>
+    ({
+      id: 'd',
+      status: 'timesheet-countersign',
+      periodLabel: 'Oktober 2026',
+      pauschale: 'ehrenamt',
+      ...overrides,
+    }) as never;
+  const activeContract = {
+    id: 'c',
+    status: 'contract-active',
+    periodLabel: '2026',
+    pauschale: 'ehrenamt',
+  };
+
+  it('follows the document flag even when another active contract of the Pauschale exists', () => {
+    const withActiveElsewhere = vol([activeContract]);
+
+    expect(
+      isTimesheetNonCompliant(
+        withActiveElsewhere,
+        doc({ isNonCompliant: true }),
+      ),
+    ).toBe(true);
+    expect(
+      isTimesheetNonCompliant(
+        withActiveElsewhere,
+        doc({ isNonCompliant: false }),
+      ),
+    ).toBe(false);
+  });
+
+  it('is false for a declined timesheet and for anything that is not a timesheet', () => {
+    expect(
+      isTimesheetNonCompliant(
+        vol(),
+        doc({ status: 'timesheet-declined', isNonCompliant: true }),
+      ),
+    ).toBe(false);
+    expect(
+      isTimesheetNonCompliant(
+        vol(),
+        doc({ status: 'contract-active', isNonCompliant: true }),
+      ),
+    ).toBe(false);
+  });
+
+  it('treats a timesheet without a flag as compliant rather than guessing', () => {
+    expect(isTimesheetNonCompliant(vol(), doc())).toBe(false);
   });
 });

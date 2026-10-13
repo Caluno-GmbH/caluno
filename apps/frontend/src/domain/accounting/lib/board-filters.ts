@@ -8,22 +8,20 @@ import type {
 } from './board-types';
 
 /**
- * A timesheet is non-compliant when no active contract exists for its pauschale type —
- * contracts must be active before a timesheet can be created. Derived, not stored, so it
- * always reflects the volunteer's current contract state.
+ * A timesheet is non-compliant when at least one of its hours has no ACTIVE
+ * contract right now. The backend decides that per hour and live, so a
+ * contract signed after the timesheet was created clears it, and an unrelated
+ * active contract of the same Pauschale no longer hides it (VOLI-1588).
  */
 export function isTimesheetNonCompliant(
-  vol: BoardVolunteer,
+  _vol: BoardVolunteer,
   doc: BoardDocument,
 ): boolean {
   if (!doc.status.startsWith('timesheet')) return false;
   // Declined is a terminal dead end on its own — reissuing is the fix, not
   // the paired contract, so it never carries the non-compliant flag too.
   if (doc.status === 'timesheet-declined') return false;
-  const pauschale = doc.pauschale;
-  return !vol.documents.some(
-    (d) => d.status === 'contract-active' && d.pauschale === pauschale,
-  );
+  return doc.isNonCompliant === true;
 }
 
 function findContractDoc(

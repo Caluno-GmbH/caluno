@@ -52,6 +52,8 @@ export interface BoardDocument {
   periodEnd?: Date;
   /** A draft contract's own Vertragslaufzeit ("08/2026", "2026", a day range): what creating the contract from it opens on. */
   draftLifespan?: string;
+  /** The timesheet has an hour with no ACTIVE contract right now. Live from the backend, not the snapshot stored when the timesheet was created. */
+  isNonCompliant?: boolean;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
   isOverCap?: boolean;
   pauschale: PauschalenType;
