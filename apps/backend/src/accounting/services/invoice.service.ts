@@ -481,6 +481,9 @@ export class InvoiceService {
           key,
           volunteerId: invoice.volunteerId,
           reimbursementTypeId: invoice.reimbursementTypeId,
+          // The invoice's unit is the document's scope and wins. Eligibility
+          // makes it equal to the entry's unit today (the root unit for an
+          // org-wide invoice), so this does not depend on that rule holding.
           organizationUnitId:
             invoice.organizationUnitId ?? entry.organizationUnitId,
           at: entry.startedAt,
