@@ -1,8 +1,10 @@
-import type {
-  DataSourceKey,
-  TemplateDocument,
-  TemplateField,
-  TemplateLine,
+import {
+  type DataSourceKey,
+  isProfileSourceKey,
+  PROFILE_SOURCE_TO_PROFILE_KEY,
+  type TemplateDocument,
+  type TemplateField,
+  type TemplateLine,
 } from '@repo/data';
 
 export type DerivedFieldKind = 'bound' | 'manual';
@@ -23,23 +25,8 @@ export interface DerivedField {
   control?: TemplateField['control'];
 }
 
-/** Profile-bound sources other than first/last name — resolved from the volunteer's profile data. */
-const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
-  volunteer_street: 'street',
-  volunteer_zip: 'zip',
-  volunteer_city: 'city',
-  volunteer_iban: 'iban',
-  volunteer_account_holder: 'account-holder',
-  volunteer_bic: 'bic',
-  volunteer_dob: 'birthdate',
-};
-
 function isEditableSource(source: DataSourceKey): boolean {
-  return (
-    source === 'volunteer_first_name' ||
-    source === 'volunteer_last_name' ||
-    source in PROFILE_SOURCE_TO_PROFILE_KEY
-  );
+  return isProfileSourceKey(source);
 }
 
 function resolveBoundValue(
@@ -49,7 +36,9 @@ function resolveBoundValue(
 ): string | null {
   if (source === 'volunteer_first_name') return name.firstname;
   if (source === 'volunteer_last_name') return name.lastname;
-  const profileKey = PROFILE_SOURCE_TO_PROFILE_KEY[source];
+  const profileKey = isProfileSourceKey(source)
+    ? PROFILE_SOURCE_TO_PROFILE_KEY[source]
+    : undefined;
   if (!profileKey) return null;
   const raw = profileData[profileKey];
   return typeof raw === 'string' && raw.trim() !== '' ? raw : null;

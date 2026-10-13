@@ -27,6 +27,7 @@ export * from './generated/graphql';
 export * from './integrations/server-org-context';
 // Repositories (if you want to use them directly)
 export * from './repositories/accounting/accounting.repository';
+export * from './repositories/accounting/profile-source-keys';
 export * from './repositories/accounting/template-body.types';
 export * from './repositories/base/base.repository';
 export * from './repositories/event/event.repository';
