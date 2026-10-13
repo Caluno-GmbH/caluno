@@ -63,7 +63,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
   volunteer_first_name: 'firstname',
   volunteer_last_name: 'lastname',
   volunteer_iban: 'iban',
-  volunteer_account_holder: 'account-holder',
+  volunteer_account_holder: 'accountHolder',
   volunteer_bic: 'bic',
   volunteer_street: 'street',
   volunteer_zip: 'zip',

@@ -2,16 +2,15 @@ import { expect, test } from '@playwright/test';
 import { BASE_URL } from '../pages/AuthPage';
 import { LoginPage } from '../pages/LoginPage';
 
-// These specs depend on the local dev seed fixtures
-// (apps/backend/src/database/fixtures.ts, `bun run db:fixtures`) — they are
-// not self-contained like flow.e2e.ts and only make sense against a local
-// dev server: run with E2E_BASE_URL=http://localhost:3000.
+// These specs depend on the e2e seed (apps/backend/src/database/fixtures.ts),
+// which you load yourself with `bun run db:fixtures:e2e` — they are not
+// self-contained like flow.e2e.ts: run with E2E_BASE_URL=http://localhost:3000.
 //
 // member02 is the fixture account with the "Overlap Test Pair"
 // (2 overlapping shifts) and "Overlap Test Pile" (6 overlapping shifts,
 // A-F) fixtures invited to it — member01 is kept conflict-free as a
 // baseline for other manual checks.
-const MEMBER_EMAIL = 'testing+002@caluno.org';
+const MEMBER_EMAIL = 'demo+e2e_member02@caluno.org';
 const MEMBER_PASSWORD = 'abcd1234';
 
 test.describe('my-shifts conflict clustering + day strip', () => {

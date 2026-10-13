@@ -8,14 +8,17 @@ export const shiftCallOutRecipientsRelations = defineRelationsPart(
       instance: r.one.shiftInstances({
         from: r.shiftCallOutRecipients.instanceId,
         to: r.shiftInstances.id,
+        optional: false,
       }),
       recipient: r.one.users({
         from: r.shiftCallOutRecipients.recipientId,
         to: r.users.id,
+        optional: false,
       }),
       sentBy: r.one.users({
         from: r.shiftCallOutRecipients.sentById,
         to: r.users.id,
+        optional: false,
       }),
     },
   }),

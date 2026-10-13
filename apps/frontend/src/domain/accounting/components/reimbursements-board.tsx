@@ -33,7 +33,11 @@ import { useTranslations } from 'next-intl';
 import { Fragment, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useReimbursementBoardData } from '../hooks/use-reimbursement-board-data';
-import { creationTargetFor, sourceDraftIdFor } from '../lib/board-data.utils';
+import {
+  creationTargetFor,
+  initialLifespanFor,
+  sourceDraftIdFor,
+} from '../lib/board-data.utils';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -122,6 +126,8 @@ export interface BoardDocument {
   /** The document's own period: a to-invoice row opens on this month, a declined timesheet on the period it was issued for. */
   periodStart?: Date;
   periodEnd?: Date;
+  /** A draft contract's own Vertragslaufzeit ("08/2026", "2026", a day range): what creating the contract from it opens on. */
+  draftLifespan?: string;
   /** Manually flagged: this timesheet's amount pushed the volunteer at/over their yearly cap. Unrelated to contract compliance. */
   isOverCap?: boolean;
   pauschale: PauschalenType;
@@ -919,6 +925,11 @@ export function ReimbursementsBoard({
         sourceDraftId={
           contractCreationTarget
             ? sourceDraftIdFor(contractCreationTarget.doc)
+            : null
+        }
+        initialLifespan={
+          contractCreationTarget
+            ? initialLifespanFor(contractCreationTarget.doc)
             : null
         }
         onSent={() => setContractCreationTarget(null)}

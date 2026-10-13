@@ -134,12 +134,6 @@ describe('DocumentSigningService', () => {
         } as never),
       ).toBe('org-1');
     });
-
-    it('throws ConflictGraphQLError when the template is null', () => {
-      expect(() => service.organizationIdOf(null)).toThrow(
-        ConflictGraphQLError,
-      );
-    });
   });
 
   describe('assertSigneeAuthorized', () => {

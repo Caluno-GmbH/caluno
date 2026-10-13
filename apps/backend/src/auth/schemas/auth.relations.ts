@@ -32,18 +32,21 @@ export const authRelations = defineRelationsPart(schema, (r) => ({
     users: r.one.users({
       from: r.sessions.userId,
       to: r.users.id,
+      optional: false,
     }),
   },
   accounts: {
     users: r.one.users({
       from: r.accounts.userId,
       to: r.users.id,
+      optional: false,
     }),
   },
   roles: {
     organization: r.one.organizations({
       from: r.roles.organizationId,
       to: r.organizations.id,
+      optional: false,
     }),
     permissions: r.many.rolePermissions({
       from: r.roles.id,
@@ -64,20 +67,24 @@ export const authRelations = defineRelationsPart(schema, (r) => ({
     role: r.one.roles({
       from: r.rolePermissions.roleId,
       to: r.roles.id,
+      optional: false,
     }),
     permission: r.one.permissions({
       from: r.rolePermissions.permissionId,
       to: r.permissions.id,
+      optional: false,
     }),
   },
   membershipRoles: {
     membership: r.one.memberships({
       from: r.membershipRoles.membershipId,
       to: r.memberships.id,
+      optional: false,
     }),
     role: r.one.roles({
       from: r.membershipRoles.roleId,
       to: r.roles.id,
+      optional: false,
     }),
   },
 }));

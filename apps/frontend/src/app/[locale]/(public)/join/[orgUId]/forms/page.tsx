@@ -2,7 +2,7 @@ import { JoinStatus } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import { buildSubmittedFormIds } from '@/domain/requirement-form/resolve-required-forms';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
@@ -54,7 +54,7 @@ export default async function JoinFormsPage({
   const mySubmissions =
     await data.requirementForm.findMyFormSubmissions(orgUId);
 
-  const profileData = toProfileDataMap(userProfile) as Record<string, string>;
+  const profileData = profileFieldValues(userProfile);
 
   const submittedFormIds = buildSubmittedFormIds(mySubmissions);
 

@@ -6,6 +6,7 @@ export const timeEntryRelations = defineRelationsPart(schema, (r) => ({
     volunteer: r.one.users({
       from: r.timeEntries.volunteerId,
       to: r.users.id,
+      optional: false,
     }),
     createdBy: r.one.users({
       from: r.timeEntries.createdById,

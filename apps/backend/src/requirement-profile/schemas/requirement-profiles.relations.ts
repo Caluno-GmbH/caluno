@@ -8,6 +8,7 @@ export const requirementProfilesRelations = defineRelationsPart(
       organization: r.one.organizations({
         from: r.requirementProfiles.organizationId,
         to: r.organizations.id,
+        optional: false,
       }),
       requirements: r.many.requirementProfileRequirements({
         from: r.requirementProfiles.id,
@@ -22,6 +23,7 @@ export const requirementProfilesRelations = defineRelationsPart(
       organization: r.one.organizations({
         from: r.requirements.organizationId,
         to: r.organizations.id,
+        optional: false,
       }),
       profiles: r.many.requirementProfileRequirements({
         from: r.requirements.id,
@@ -32,16 +34,19 @@ export const requirementProfilesRelations = defineRelationsPart(
       requirementProfile: r.one.requirementProfiles({
         from: r.requirementProfileRequirements.profileId,
         to: r.requirementProfiles.id,
+        optional: false,
       }),
       requirement: r.one.requirements({
         from: r.requirementProfileRequirements.requirementId,
         to: r.requirements.id,
+        optional: false,
       }),
     },
     requirementProfileSubmissions: {
       requirementProfile: r.one.requirementProfiles({
         from: r.requirementProfileSubmissions.profileId,
         to: r.requirementProfiles.id,
+        optional: false,
       }),
       membership: r.one.memberships({
         from: r.requirementProfileSubmissions.membershipId,
@@ -64,10 +69,12 @@ export const requirementProfilesRelations = defineRelationsPart(
       submission: r.one.requirementProfileSubmissions({
         from: r.requirementFulfillments.submissionId,
         to: r.requirementProfileSubmissions.id,
+        optional: false,
       }),
       requirement: r.one.requirements({
         from: r.requirementFulfillments.requirementId,
         to: r.requirements.id,
+        optional: false,
       }),
       reviewedBy: r.one.users({
         from: r.requirementFulfillments.reviewedById,
@@ -82,10 +89,12 @@ export const requirementProfilesRelations = defineRelationsPart(
       organization: r.one.organizations({
         from: r.organizationUserProfiles.organizationId,
         to: r.organizations.id,
+        optional: false,
       }),
       user: r.one.users({
         from: r.organizationUserProfiles.userId,
         to: r.users.id,
+        optional: false,
       }),
       fulfillments: r.many.requirementFulfillments({
         from: r.organizationUserProfiles.id,
@@ -96,20 +105,24 @@ export const requirementProfilesRelations = defineRelationsPart(
       user: r.one.users({
         from: r.documents.userId,
         to: r.users.id,
+        optional: false,
       }),
     },
     formBlocks: {
       organization: r.one.organizations({
         from: r.formBlocks.organizationId,
         to: r.organizations.id,
+        optional: false,
       }),
       createdByUser: r.one.users({
         from: r.formBlocks.createdBy,
         to: r.users.id,
+        optional: false,
       }),
       updatedByUser: r.one.users({
         from: r.formBlocks.updatedBy,
         to: r.users.id,
+        optional: false,
       }),
       fields: r.many.formBlockFields({
         from: r.formBlocks.id,
@@ -124,20 +137,24 @@ export const requirementProfilesRelations = defineRelationsPart(
       block: r.one.formBlocks({
         from: r.formBlockFields.blockId,
         to: r.formBlocks.id,
+        optional: false,
       }),
     },
     requirementForms: {
       organization: r.one.organizations({
         from: r.requirementForms.organizationId,
         to: r.organizations.id,
+        optional: false,
       }),
       createdByUser: r.one.users({
         from: r.requirementForms.createdBy,
         to: r.users.id,
+        optional: false,
       }),
       updatedByUser: r.one.users({
         from: r.requirementForms.updatedBy,
         to: r.users.id,
+        optional: false,
       }),
       blockRefs: r.many.requirementFormBlockRefs({
         from: r.requirementForms.id,
@@ -152,20 +169,24 @@ export const requirementProfilesRelations = defineRelationsPart(
       form: r.one.requirementForms({
         from: r.requirementFormBlockRefs.formId,
         to: r.requirementForms.id,
+        optional: false,
       }),
       block: r.one.formBlocks({
         from: r.requirementFormBlockRefs.blockId,
         to: r.formBlocks.id,
+        optional: false,
       }),
     },
     formSubmissions: {
       form: r.one.requirementForms({
         from: r.formSubmissions.formId,
         to: r.requirementForms.id,
+        optional: false,
       }),
       user: r.one.users({
         from: r.formSubmissions.userId,
         to: r.users.id,
+        optional: false,
       }),
       values: r.many.formSubmissionValues({
         from: r.formSubmissions.id,
@@ -180,24 +201,29 @@ export const requirementProfilesRelations = defineRelationsPart(
       submission: r.one.formSubmissions({
         from: r.formSubmissionShares.submissionId,
         to: r.formSubmissions.id,
+        optional: false,
       }),
       organizationUnit: r.one.organizationUnits({
         from: r.formSubmissionShares.organizationUnitId,
         to: r.organizationUnits.id,
+        optional: false,
       }),
     },
     formSubmissionValues: {
       submission: r.one.formSubmissions({
         from: r.formSubmissionValues.submissionId,
         to: r.formSubmissions.id,
+        optional: false,
       }),
       field: r.one.formBlockFields({
         from: r.formSubmissionValues.fieldId,
         to: r.formBlockFields.id,
+        optional: false,
       }),
       block: r.one.formBlocks({
         from: r.formSubmissionValues.blockId,
         to: r.formBlocks.id,
+        optional: false,
       }),
     },
   }),

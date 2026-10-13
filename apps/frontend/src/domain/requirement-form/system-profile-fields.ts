@@ -8,7 +8,7 @@ export type SystemProfileField = {
 
 export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   {
-    key: 'preferred-name',
+    key: 'preferredName',
     labelKey: 'preferredName',
     type: FieldType.Text,
   },
@@ -40,7 +40,7 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   { key: 'city', labelKey: 'city', type: FieldType.Text },
   { key: 'iban', labelKey: 'iban', type: FieldType.Iban },
   {
-    key: 'account-holder',
+    key: 'accountHolder',
     labelKey: 'accountHolder',
     type: FieldType.Text,
   },
