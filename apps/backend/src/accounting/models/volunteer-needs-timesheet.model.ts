@@ -30,4 +30,8 @@ export class VolunteerNeedsTimesheet {
   /** `startedAt` of the earliest hour of this month with no non-declined contract, or null. */
   @Field(() => Date, { nullable: true })
   firstUncoveredAt?: Date | null;
+
+  /** Any hour of this month has no ACTIVE contract: a timesheet issued now would be non-compliant. Not the same as `hasUncoveredHours`, which also counts drafts and contracts awaiting signature as cover. */
+  @Field(() => Boolean)
+  hasHoursWithoutActiveContract!: boolean;
 }

@@ -1842,6 +1842,7 @@ type VolunteerNeedsTimesheet {
   eligibleHours: Float!
   estimatedAmountCents: Int!
   firstUncoveredAt: DateTime
+  hasHoursWithoutActiveContract: Boolean!
   hasUncoveredHours: Boolean!
   periodEnd: DateTime!
   periodStart: DateTime!

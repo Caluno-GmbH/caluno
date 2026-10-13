@@ -766,6 +766,7 @@ describe('InvoiceService', () => {
         // No contract of any kind covers the entry.
         hasUncoveredHours: true,
         firstUncoveredAt: new Date('2026-07-01T09:00:00.000Z'),
+        hasHoursWithoutActiveContract: true,
       });
       expect(result[0]?.volunteerId).toBe(timeEntry.volunteerId);
     });
@@ -804,6 +805,7 @@ describe('InvoiceService', () => {
           eligibleHours: 6.5,
           hasUncoveredHours: true,
           firstUncoveredAt: new Date('2026-07-01T09:00:00.000Z'),
+          hasHoursWithoutActiveContract: true,
         },
         {
           volunteerId: volunteer.id,
@@ -813,6 +815,7 @@ describe('InvoiceService', () => {
           eligibleHours: 1,
           hasUncoveredHours: true,
           firstUncoveredAt: new Date('2026-08-03T09:00:00.000Z'),
+          hasHoursWithoutActiveContract: true,
         },
       ]);
     });
@@ -889,6 +892,7 @@ describe('InvoiceService', () => {
         // hours, and a draft is cover for the reminder: it is its own task.
         hasUncoveredHours: false,
         firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: true,
       });
     });
 
@@ -1011,6 +1015,24 @@ describe('InvoiceService', () => {
         expect(row?.firstUncoveredAt).toEqual(
           new Date('2026-07-16T09:00:00.000Z'),
         );
+      });
+
+      it('is only satisfied by an ACTIVE contract for the hasHoursWithoutActiveContract flag', async () => {
+        const awaiting = await setup();
+        await insertContract(awaiting, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+        const active = await setup();
+        await insertContract(active, JULY_TIMESHEET);
+
+        const awaitingRow = await rowFor(awaiting);
+        const activeRow = await rowFor(active);
+
+        // Open cover (no reminder) but not an ACTIVE contract (still no agreement).
+        expect(awaitingRow?.hasUncoveredHours).toBe(false);
+        expect(awaitingRow?.hasHoursWithoutActiveContract).toBe(true);
+        expect(activeRow?.hasUncoveredHours).toBe(false);
+        expect(activeRow?.hasHoursWithoutActiveContract).toBe(false);
       });
 
       it('is false when only a draft or a contract awaiting signature covers the hours', async () => {

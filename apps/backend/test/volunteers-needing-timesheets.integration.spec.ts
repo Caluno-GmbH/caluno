@@ -154,6 +154,7 @@ describe('volunteersNeedingTimesheets projection', () => {
         eligibleHours: 6.5,
         hasUncoveredHours: false,
         firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: false,
       },
     ];
 
@@ -180,6 +181,7 @@ describe('volunteersNeedingTimesheets projection', () => {
         eligibleHours: 2,
         hasUncoveredHours: false,
         firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: false,
       },
     ];
 
@@ -203,6 +205,7 @@ describe('volunteersNeedingTimesheets projection', () => {
         eligibleHours: 2,
         hasUncoveredHours: true,
         firstUncoveredAt: new Date('2026-07-16T09:00:00.000Z'),
+        hasHoursWithoutActiveContract: false,
       },
     ];
 
@@ -227,6 +230,7 @@ describe('volunteersNeedingTimesheets projection', () => {
         eligibleHours: 2,
         hasUncoveredHours: false,
         firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: false,
       },
     ];
 
@@ -238,5 +242,30 @@ describe('volunteersNeedingTimesheets projection', () => {
 
     expect(row?.hasUncoveredHours).toBe(false);
     expect(row?.firstUncoveredAt).toBeNull();
+  });
+
+  it('passes whether the month has hours without an ACTIVE contract', async () => {
+    const { unit, reimbursementType, volunteer } = await setup();
+    timesheetRows = [
+      {
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-06-30T22:00:00.000Z'),
+        periodEnd: new Date('2026-07-31T22:00:00.000Z'),
+        eligibleHours: 2,
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: true,
+      },
+    ];
+
+    const [row] = await resolver.volunteersNeedingTimesheets(
+      null,
+      null,
+      contextFor(unit.id),
+    );
+
+    expect(row?.hasHoursWithoutActiveContract).toBe(true);
+    expect(row?.hasUncoveredHours).toBe(false);
   });
 });

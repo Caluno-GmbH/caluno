@@ -254,7 +254,20 @@ export class InvoiceService {
       entriesWithoutCover(entries, coverByEntry).map((entry) => entry.id),
     );
 
-    return groupTimesheetCandidates(entries, uncoveredIds);
+    // An ACTIVE contract is what makes hours compliant. The same lookup lists
+    // every non-declined contract per entry, so this needs no second query.
+    const withoutActiveIds = new Set(
+      entries
+        .filter(
+          (entry) =>
+            !(coverByEntry.get(entry.id) ?? []).some(
+              (contract) => contract.contractStatus === ContractStatus.ACTIVE,
+            ),
+        )
+        .map((entry) => entry.id),
+    );
+
+    return groupTimesheetCandidates(entries, uncoveredIds, withoutActiveIds);
   }
 
   /**
