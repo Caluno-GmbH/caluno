@@ -179,6 +179,12 @@ export class AccountingTemplatesPage {
     // fields are filled and Save is enabled — filling them again would fail
     // (the period trigger then reads the saved range, not "Select period").
     // Only fill the contract's required manual fields on a fresh slot.
+    //
+    // The contract must cover the day the suite runs: VOLI-1370 reads an
+    // ACTIVE contract whose period has already ended as Expired, so a
+    // short window (e.g. the 1st–10th) turns the countersigned document
+    // "Expired" instead of "Active" on days 11+. Span the whole current
+    // month; it always contains today and needs no calendar navigation.
     if (kind === 'contract' && (await save.isDisabled())) {
       await this.page
         .getByRole('textbox', { name: 'Task description' })
@@ -189,12 +195,22 @@ export class AccountingTemplatesPage {
 
       const today = new Date();
       const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const tenthOfMonth = new Date(today.getFullYear(), today.getMonth(), 10);
-      await this.page
+      const lastOfMonth = new Date(
+        today.getFullYear(),
+        today.getMonth() + 1,
+        0,
+      );
+      // The picker renders the current and the next month side by side, and
+      // the month's last day doubles as an outside day in the next grid —
+      // scope the clicks to the current month's grid.
+      const currentMonthGrid = this.page.getByRole('grid', {
+        name: MONTHS[today.getMonth()],
+      });
+      await currentMonthGrid
         .getByRole('button', { name: dayButtonName(firstOfMonth) })
         .click();
-      await this.page
-        .getByRole('button', { name: dayButtonName(tenthOfMonth) })
+      await currentMonthGrid
+        .getByRole('button', { name: dayButtonName(lastOfMonth) })
         .click();
 
       await this.page.getByRole('button', { name: 'Apply' }).click();
