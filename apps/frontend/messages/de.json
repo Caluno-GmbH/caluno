@@ -2189,7 +2189,7 @@
       "periodLabel": "Zeitraum",
       "yearLabel": "Jahr",
       "periodPicker": {
-        "allTime": "Gesamter Zeitraum",
+        "fullYear": "Gesamtes Jahr",
         "thisMonth": "Dieser Monat",
         "lastMonth": "Letzter Monat",
         "customPeriod": "Benutzerdefinierter Zeitraum",

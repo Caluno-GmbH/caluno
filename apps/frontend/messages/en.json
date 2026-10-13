@@ -2189,7 +2189,7 @@
       "periodLabel": "Period",
       "yearLabel": "Year",
       "periodPicker": {
-        "allTime": "All time",
+        "fullYear": "Full year",
         "thisMonth": "This month",
         "lastMonth": "Last month",
         "customPeriod": "Custom period",

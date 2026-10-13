@@ -722,7 +722,7 @@ export function ReimbursementsBoard({
           presets={[
             {
               key: 'all-time',
-              label: t('periodPicker.allTime'),
+              label: t('periodPicker.fullYear'),
               range: undefined,
             },
             {
@@ -736,7 +736,7 @@ export function ReimbursementsBoard({
               range: lastMonthRange(),
             },
           ]}
-          placeholderLabel={t('periodPicker.allTime')}
+          placeholderLabel={t('periodPicker.fullYear')}
           applyLabel={t('periodPicker.apply')}
           customRangeLabel={t('periodPicker.customPeriod')}
           autoApplyPresets
