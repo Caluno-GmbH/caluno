@@ -28,6 +28,22 @@ e2e/
 ```
 
 
+## Fixture data
+
+Most specs here are **not** self-contained: `admin-redirect`, `my-shifts`, the
+two public-detail specs, `terms`, `documents-flow` and `setup-gating` log in as
+seeded accounts. That seed is e2e-only and is *not* loaded by `bun bootstrap` or
+by deployed environments. Load it yourself (after migrate + seed):
+
+```bash
+bun run --cwd apps/backend db:fixtures:e2e
+```
+
+It uses `demo+e2e_*@caluno.org` accounts (password `abcd1234`) in the
+"Playground" org. It must never be loaded into a database that already holds the
+demo dataset (`demo+<role>@caluno.org`) — the two share the `demo@caluno.org`
+group and would cross-link.
+
 ## Running
 
 From this directory (`e2e`):

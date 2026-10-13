@@ -30,7 +30,8 @@ Use `bun` - never npm or yarn.
 
 ## Local fixtures
 
-- Fixture members are `testing+001@caluno.org` and up (no `+000`); fixtures skip already-existing rows, so users seeded before your session keep their original password.
+- Local fixtures are the **Altonaer Lesepaten** demo dataset (`bun bootstrap`; every deployed environment seeds it on boot, including production). Members are `demo+member01@caluno.org` … `demo+member29@caluno.org` and the demo login is `demo@caluno.org`. Fixtures skip already-existing rows, so users seeded before your session keep their original password.
+- The **Playground** seed (`apps/backend/src/database/fixtures.ts`) is **e2e-only** (`bun run --cwd apps/backend db:fixtures:e2e`) and uses `demo+e2e_*@caluno.org`. Both datasets address the `demo@caluno.org` group, so never load both into one database. See apps/backend/AGENTS.md.
 
 <!-- BEGIN:turborepo-agent-rules -->
 
