@@ -23,39 +23,16 @@ export type ProfileUserColumn =
   (typeof SYSTEM_KEY_TO_USER_COLUMN)[ProfileSystemKey];
 
 /** Writable profile columns — email is excluded (account-owned). */
-export const WRITABLE_PROFILE_SYSTEM_KEYS = [
-  'firstname',
-  'lastname',
-  'preferred-name',
-  'gender',
-  'phone',
-  'street',
-  'zip',
-  'city',
-  'birthdate',
-  'iban',
-  'account-holder',
-  'bic',
-] as const satisfies readonly ProfileSystemKey[];
+export type WritableProfileSystemKey = keyof Omit<
+  typeof SYSTEM_KEY_TO_USER_COLUMN,
+  'email'
+>;
 
-export type WritableProfileSystemKey =
-  (typeof WRITABLE_PROFILE_SYSTEM_KEYS)[number];
+export const WRITABLE_PROFILE_SYSTEM_KEYS = Object.keys(
+  SYSTEM_KEY_TO_USER_COLUMN,
+).filter((k) => k !== 'email') as WritableProfileSystemKey[];
 
-export type ProfileFields = {
-  firstname?: string | null;
-  lastname?: string | null;
-  preferredName?: string | null;
-  gender?: string | null;
-  phone?: string | null;
-  street?: string | null;
-  zip?: string | null;
-  city?: string | null;
-  birthdate?: string | null;
-  iban?: string | null;
-  accountHolder?: string | null;
-  bic?: string | null;
-  email?: string | null;
-};
+export type ProfileFields = Partial<Record<ProfileUserColumn, string | null>>;
 
 /** Build the systemKey → value map used by forms, documents, and UI. */
 export function toProfileDataMap(user: ProfileFields): Record<string, unknown> {
