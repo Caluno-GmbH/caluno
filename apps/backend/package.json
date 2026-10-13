@@ -86,7 +86,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/mjml": "^5.0.0",
-    "@types/node": "^24.19.1",
+    "@types/node": "^26.6.5",
     "@types/nodemailer": "^8.0.2",
     "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.16.0",

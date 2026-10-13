@@ -29,7 +29,7 @@
     "@tanstack/react-query-devtools": "^5.104.1",
     "@types/bun": "^1.4.2",
     "@types/js-cookie": "^3.0.6",
-    "@types/node": "^24.19.1",
+    "@types/node": "^26.6.5",
     "@types/react": "^19",
     "typescript": "^6.0.0"
   },
