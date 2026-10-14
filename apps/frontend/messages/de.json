@@ -2340,7 +2340,7 @@
           "timesheetSigningCoord": "Gegenzeichnung erforderlich",
           "timesheetReady": "Bereit zur Abgabe",
           "nonCompliant": "Keine aktive Vereinbarung",
-          "nonCompliantHint": "Noch keine aktive Vereinbarung für diese Pauschale. Erstelle oder aktiviere eine, damit dieser Stundennachweis konform ist.",
+          "nonCompliantHint": "Nicht alle Stunden dieses Stundennachweises sind durch eine aktive Vereinbarung abgedeckt. Erstelle oder aktiviere eine, die sie abdeckt.",
           "notYetCreated": "Noch nicht erstellt",
           "overCap": "Jährlicher Freibetrag wird überschritten",
           "overCapHint": "Der Betrag dieses Stundennachweises bringt die Person an oder über ihren jährlichen Freibetrag",

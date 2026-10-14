@@ -52,6 +52,7 @@ import {
 } from '../utils/billing-period';
 import {
   ContractCover,
+  type CoverageTarget,
   coverageTargetsForTimeEntries,
   entriesWithoutCover,
 } from '../utils/contract-coverage';
@@ -254,7 +255,20 @@ export class InvoiceService {
       entriesWithoutCover(entries, coverByEntry).map((entry) => entry.id),
     );
 
-    return groupTimesheetCandidates(entries, uncoveredIds);
+    // An ACTIVE contract is what makes hours compliant. The same lookup lists
+    // every non-declined contract per entry, so this needs no second query.
+    const withoutActiveIds = new Set(
+      entries
+        .filter(
+          (entry) =>
+            !(coverByEntry.get(entry.id) ?? []).some(
+              (contract) => contract.contractStatus === ContractStatus.ACTIVE,
+            ),
+        )
+        .map((entry) => entry.id),
+    );
+
+    return groupTimesheetCandidates(entries, uncoveredIds, withoutActiveIds);
   }
 
   /**
@@ -426,6 +440,69 @@ export class InvoiceService {
         },
       ];
     });
+  }
+
+  /**
+   * The given invoices that have at least one claimed hour with no ACTIVE
+   * contract right now, from one lookup for the whole list. This is the live
+   * answer the board's "No active agreement" badge needs: the stored
+   * `isNonCompliant` is only the state at creation and never follows a
+   * contract being signed later.
+   *
+   * Hours are matched in the invoice's own volunteer and reimbursement type,
+   * and in its unit (an org-wide invoice falls back to the claimed entry's
+   * unit). Released claims are ignored. An invoice with no claimed hours is
+   * not flagged.
+   */
+  async findInvoiceIdsWithoutActiveCover(
+    invoiceIds: readonly string[],
+  ): Promise<Set<string>> {
+    if (invoiceIds.length === 0) return new Set();
+
+    const invoices = await this.db.query.invoices.findMany({
+      where: { id: { in: [...invoiceIds] } },
+      with: {
+        invoiceTimeEntries: {
+          where: { released: false },
+          with: { timeEntry: true },
+        },
+      },
+    });
+
+    const targets: CoverageTarget[] = [];
+    const invoiceIdByKey = new Map<string, string>();
+    for (const invoice of invoices) {
+      for (const claim of invoice.invoiceTimeEntries) {
+        const entry = claim.timeEntry;
+        if (!entry) continue;
+        const key = `${invoice.id}:${entry.id}`;
+        invoiceIdByKey.set(key, invoice.id);
+        targets.push({
+          key,
+          volunteerId: invoice.volunteerId,
+          reimbursementTypeId: invoice.reimbursementTypeId,
+          // The invoice's unit is the document's scope and wins. Eligibility
+          // makes it equal to the entry's unit today (the root unit for an
+          // org-wide invoice), so this does not depend on that rule holding.
+          organizationUnitId:
+            invoice.organizationUnitId ?? entry.organizationUnitId,
+          at: entry.startedAt,
+        });
+      }
+    }
+
+    const cover = await this.contractService.findCoveringContracts(
+      targets,
+      ContractCover.ACTIVE,
+    );
+    const flagged = new Set<string>();
+    for (const target of targets) {
+      if ((cover.get(target.key) ?? []).length === 0) {
+        const invoiceId = invoiceIdByKey.get(target.key);
+        if (invoiceId) flagged.add(invoiceId);
+      }
+    }
+    return flagged;
   }
 
   async createInvoice(

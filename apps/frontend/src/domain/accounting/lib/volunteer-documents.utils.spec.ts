@@ -324,6 +324,7 @@ describe('invoiceToVolunteerDocument', () => {
         totalAmountCents: 12_000,
         totalHours: 8,
         isNonCompliant: false,
+        hasHoursWithoutActiveContract: false,
         declineReason: null,
         declinedAt: null,
         declinedAtSigneeType: null,

@@ -15,6 +15,10 @@ export interface TimesheetCandidateEntry {
  * month into the rows of "timesheets still to be created", summing the hours
  * (rounded to hundredths) and noting which hours have no contract.
  *
+ * An entry's id in `withoutActiveIds` marks it as having no ACTIVE contract (a
+ * draft or a contract awaiting signature is cover for the reminder, not for
+ * compliance); the month is flagged when any of its entries is.
+ *
  * An entry's id in `uncoveredIds` marks its hours as uncovered. A month is
  * uncovered when any of its entries is, and it starts at the earliest such
  * entry whatever order the entries arrive in (the query has no ORDER BY).
@@ -22,6 +26,7 @@ export interface TimesheetCandidateEntry {
 export function groupTimesheetCandidates(
   entries: readonly TimesheetCandidateEntry[],
   uncoveredIds: ReadonlySet<string>,
+  withoutActiveIds: ReadonlySet<string>,
 ): EligibleTimesheetVolunteer[] {
   const groups = new Map<string, EligibleTimesheetVolunteer>();
   for (const entry of entries) {
@@ -35,9 +40,13 @@ export function groupTimesheetCandidates(
       eligibleHours: 0,
       hasUncoveredHours: false,
       firstUncoveredAt: null,
+      hasHoursWithoutActiveContract: false,
     };
     group.eligibleHours +=
       (entry.endedAt.getTime() - entry.startedAt.getTime()) / 3_600_000;
+    if (withoutActiveIds.has(entry.id)) {
+      group.hasHoursWithoutActiveContract = true;
+    }
     if (uncoveredIds.has(entry.id)) {
       group.hasUncoveredHours = true;
       if (!group.firstUncoveredAt || entry.startedAt < group.firstUncoveredAt) {

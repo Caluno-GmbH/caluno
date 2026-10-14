@@ -217,6 +217,7 @@ export class InvoiceQueryResolver {
         ),
         hasUncoveredHours: row.hasUncoveredHours,
         firstUncoveredAt: row.firstUncoveredAt,
+        hasHoursWithoutActiveContract: row.hasHoursWithoutActiveContract,
       };
     });
   }

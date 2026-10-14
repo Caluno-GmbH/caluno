@@ -567,6 +567,11 @@ type Invoice {
   declinedByUser: User
   documentTemplate: DocumentTemplate!
   downloadUrl: String
+
+  """
+  At least one claimed hour has no ACTIVE contract right now. Live, unlike isNonCompliant, which is the state when the timesheet was created.
+  """
+  hasHoursWithoutActiveContract: Boolean!
   hourlyRateCents: Int!
   id: ID!
   invoiceStatus: InvoiceStatus!
@@ -1842,6 +1847,7 @@ type VolunteerNeedsTimesheet {
   eligibleHours: Float!
   estimatedAmountCents: Int!
   firstUncoveredAt: DateTime
+  hasHoursWithoutActiveContract: Boolean!
   hasUncoveredHours: Boolean!
   periodEnd: DateTime!
   periodStart: DateTime!

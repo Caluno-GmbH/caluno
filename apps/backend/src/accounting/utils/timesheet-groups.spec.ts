@@ -49,6 +49,7 @@ describe('groupTimesheetCandidates', () => {
         entry(startOfAppDay(2026, 7, 3), 1),
       ],
       new Set(),
+      new Set(),
     ).sort((a, b) => a.periodStart.getTime() - b.periodStart.getTime());
 
     expect(rows.map((row) => row.eligibleHours)).toEqual([3.83, 1]);
@@ -64,6 +65,7 @@ describe('groupTimesheetCandidates', () => {
         entry(july(5), 1, { reimbursementTypeId: 'type-2' }),
       ],
       new Set(),
+      new Set(),
     );
 
     expect(rows).toHaveLength(3);
@@ -72,6 +74,7 @@ describe('groupTimesheetCandidates', () => {
   it('is covered with no start when no entry of the month is uncovered', () => {
     const [row] = groupTimesheetCandidates(
       [entry(july(3), 1), entry(july(9), 1)],
+      new Set(),
       new Set(),
     );
 
@@ -87,7 +90,7 @@ describe('groupTimesheetCandidates', () => {
     const uncovered = new Set([early.id, middle.id, late.id]);
 
     for (const order of permutations([covered, early, middle, late])) {
-      const [row] = groupTimesheetCandidates(order, uncovered);
+      const [row] = groupTimesheetCandidates(order, uncovered, new Set());
       expect(row?.hasUncoveredHours).toBe(true);
       expect(row?.firstUncoveredAt).toEqual(early.startedAt);
     }
@@ -100,9 +103,34 @@ describe('groupTimesheetCandidates', () => {
     const rows = groupTimesheetCandidates(
       [coveredJuly, uncoveredAugust],
       new Set([uncoveredAugust.id]),
+      new Set(),
     ).sort((a, b) => a.periodStart.getTime() - b.periodStart.getTime());
 
     expect(rows.map((row) => row.hasUncoveredHours)).toEqual([false, true]);
     expect(rows[1]?.firstUncoveredAt).toEqual(uncoveredAugust.startedAt);
+  });
+
+  it('flags a month that has an entry without an ACTIVE contract, independently of open cover', () => {
+    const withActive = entry(july(3), 1);
+    const withoutActive = entry(july(9), 1);
+
+    const [row] = groupTimesheetCandidates(
+      [withActive, withoutActive],
+      new Set(), // everything is openly covered (for example by a draft)
+      new Set([withoutActive.id]),
+    );
+
+    expect(row?.hasUncoveredHours).toBe(false);
+    expect(row?.hasHoursWithoutActiveContract).toBe(true);
+  });
+
+  it('is false for a month whose every entry has an ACTIVE contract', () => {
+    const [row] = groupTimesheetCandidates(
+      [entry(july(3), 1), entry(july(9), 1)],
+      new Set(),
+      new Set(),
+    );
+
+    expect(row?.hasHoursWithoutActiveContract).toBe(false);
   });
 });

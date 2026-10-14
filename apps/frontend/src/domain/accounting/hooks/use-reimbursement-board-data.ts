@@ -85,6 +85,9 @@ export function useReimbursementBoardData({
         periodEnd: row.periodEnd,
         eligibleHours: row.eligibleHours,
         estimatedAmountCents: row.estimatedAmountCents,
+        hasUncoveredHours: row.hasUncoveredHours,
+        firstUncoveredAt: row.firstUncoveredAt,
+        hasHoursWithoutActiveContract: row.hasHoursWithoutActiveContract,
       })),
     });
   }, [

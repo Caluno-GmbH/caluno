@@ -13,9 +13,7 @@ import type { Signee, SigneeRole } from '../components/template/types';
 import {
   billingMonthOf,
   contractPeriodKind,
-  type DateInterval,
   isContractExpired,
-  periodCovers,
 } from './billing-period';
 import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 import { lifespanForPeriod } from './creation-modal.utils';
@@ -369,6 +367,7 @@ export function mapInvoiceToBoardDoc(
     periodLabel: formatMonthYear(new Date(invoice.periodStart), locale),
     periodStart: new Date(invoice.periodStart),
     periodEnd: new Date(invoice.periodEnd),
+    isNonCompliant: invoice.hasHoursWithoutActiveContract,
     pauschale: type,
     declineReason: invoice.declineReason ?? undefined,
     declinedBy: invoice.declinedByUser?.name ?? undefined,
@@ -433,6 +432,12 @@ export interface TimesheetToCreate {
   periodEnd: string;
   eligibleHours: number;
   estimatedAmountCents: number;
+  /** Any hour of the month has no non-declined contract: the "create contract" reminder is due. */
+  hasUncoveredHours: boolean;
+  /** `startedAt` of the earliest such hour. */
+  firstUncoveredAt: string | null;
+  /** Any hour of the month has no ACTIVE contract: the timesheet would be non-compliant. */
+  hasHoursWithoutActiveContract: boolean;
 }
 
 /** A paid shift a volunteer joined whose month no open contract/invoice covers. */
@@ -522,6 +527,14 @@ export function buildBoardVolunteers({
       const timesheetsForType = volunteerTimesheetsToCreate.filter(
         (t) => t.reimbursementTypeId === usage.reimbursementType.id,
       );
+      const months = monthsInRange(year, dateRange);
+      const inSelectedMonths = (periodStart: string) => {
+        const { year: y, month } = billingMonthOf(periodStart);
+        return months.some((m) => m.year === y && m.month === month);
+      };
+      // Not narrowed to the selected months: the backend sends one signup per
+      // volunteer and Pauschale, the earliest uncovered month of the year, so a
+      // filter here would hide a task that is still open.
       const paidShiftSignupsForType = volunteerPaidShiftSignups
         .filter((s) => s.reimbursementTypeId === usage.reimbursementType.id)
         .sort(
@@ -529,19 +542,11 @@ export function buildBoardVolunteers({
             new Date(a.periodStart).getTime() -
             new Date(b.periodStart).getTime(),
         );
-      // Months with eligible hours that no ACTIVE contract covers. The
-      // timesheet task still shows (hours may be why a contract is needed);
-      // creation flags non-compliant / auto-drafts. These months also feed
-      // the "create contract" reminder below when no open contract covers
-      // them at all (VOLI-1370 period scoping).
-      const uncoveredMonths: DateInterval[] = [];
-
       // An existing timesheet is a real document in the workflow and must be
       // tracked no matter what the contract currently is — it can be non-
       // compliant (no active contract, or the contract changed after the
       // timesheet was created), but it must never be orphaned out of every
       // stage (VOLI-1283).
-      const months = monthsInRange(year, dateRange);
       for (const { year: y, month } of months) {
         const invoicesForMonth = invoices.filter(
           (i) =>
@@ -565,19 +570,6 @@ export function buildBoardVolunteers({
           }
           const start = new Date(timesheet.periodStart);
           const end = new Date(timesheet.periodEnd);
-          // Track months without ACTIVE cover for the contract reminder.
-          // Drafts / awaiting-signature still surface as their own contract
-          // task below and do not suppress the timesheet row — creating a
-          // timesheet without an active contract is allowed (non-compliant).
-          if (
-            !contractsForType.some(
-              (c) =>
-                c.contractStatus === ContractStatus.Active &&
-                periodCovers(c.periodStart, c.periodEnd, start, end),
-            )
-          ) {
-            uncoveredMonths.push({ start, end });
-          }
           const generateLimit = limits[type];
           documents.push({
             id: `${entry.volunteer.id}-timesheet-generate-${type}-${y}-${String(month + 1).padStart(2, '0')}`,
@@ -588,6 +580,10 @@ export function buildBoardVolunteers({
             periodLabel: formatMonthYear(start, locale),
             periodStart: start,
             periodEnd: end,
+            // Live and per hour from the backend: a draft or a contract
+            // awaiting signature is no ACTIVE contract yet, and an unrelated
+            // active contract of the same Pauschale does not count.
+            isNonCompliant: timesheet.hasHoursWithoutActiveContract,
             isOverCap:
               generateLimit !== undefined &&
               generateLimit.used +
@@ -604,28 +600,31 @@ export function buildBoardVolunteers({
         eligibleTypeIds?.has(usage.reimbursementType.id) ||
         paidShiftSignupsForType.length > 0
       ) {
-        // A month already covered by a draft / awaiting-signature contract is
-        // that contract's own task (Create or Countersign) — don't synthesize a
-        // second "create contract" row for it. Only a month with no contract
-        // covering it at all gets the reminder.
-        const firstUncovered = uncoveredMonths.find(
-          (month) =>
-            !contractsForType.some(
-              (c) =>
-                c.contractStatus !== ContractStatus.Declined &&
-                periodCovers(
-                  c.periodStart,
-                  c.periodEnd,
-                  month.start,
-                  month.end,
-                ),
-            ),
-        );
-        if (firstUncovered) {
+        // The earliest month of this Pauschale with an hour no non-declined
+        // contract covers, as the backend judges it per entry (T5). A draft or
+        // a contract awaiting signature already covers its hours and is its own
+        // task (Create or Countersign), so it raises no second row; a declined
+        // contract does not cover, so it does. Only months inside the selected
+        // period count, like the timesheet rows above.
+        const firstUncoveredRow = timesheetsForType
+          .filter(
+            (timesheet) =>
+              timesheet.hasUncoveredHours &&
+              inSelectedMonths(timesheet.periodStart),
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.firstUncoveredAt ?? a.periodStart).getTime() -
+              new Date(b.firstUncoveredAt ?? b.periodStart).getTime(),
+          )[0];
+        if (firstUncoveredRow) {
           documents.push({
             id: `${entry.volunteer.id}-contract-generate-${type}`,
             status: 'contract-generate',
-            periodLabel: formatMonthYear(firstUncovered.start, locale),
+            periodLabel: formatMonthYear(
+              new Date(firstUncoveredRow.periodStart),
+              locale,
+            ),
             pauschale: type,
           });
         } else if (paidShiftSignupsForType.length > 0) {
@@ -660,11 +659,10 @@ export function buildBoardVolunteers({
             pauschale: type,
           });
         }
-        // Else: a contract already exists but isn't active yet (awaiting
-        // volunteer/coordinator signature, or declined) — the contract
-        // document pushed above already queues this volunteer under
-        // "Vereinbarungen gegenzeichnen" (or the declined-document flow),
-        // so nothing further needs synthesizing here.
+        // Else: nothing in the period lacks a contract (or a draft or a
+        // contract awaiting signature already covers it, which the contract
+        // document pushed above queues as its own task), so nothing further
+        // needs synthesizing here.
       }
     }
 

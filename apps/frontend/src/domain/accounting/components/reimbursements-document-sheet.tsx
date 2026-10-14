@@ -516,7 +516,7 @@ export function DocumentSheet({
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
               {ts('period')}: {doc.periodLabel}
-              {isTimesheetNonCompliant(vol, doc) && (
+              {isTimesheetNonCompliant(effectiveDoc) && (
                 <span className="inline-flex items-center gap-1 ml-2 text-alert">
                   <TriangleAlertIcon size={12} />
                   {t('statusLabel.nonCompliant')}
@@ -817,7 +817,7 @@ export function DocumentSheet({
             </Button>
           ) : actionKey ? (
             <div className="flex w-full items-center gap-2">
-              {isTimesheetNonCompliant(vol, doc) && (
+              {isTimesheetNonCompliant(effectiveDoc) && (
                 <AlertIconTooltip
                   hint={t('statusLabel.nonCompliantHint')}
                   className="text-alert"

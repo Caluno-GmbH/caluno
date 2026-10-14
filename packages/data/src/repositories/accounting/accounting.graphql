@@ -203,6 +203,9 @@ fragment InvoiceSummaryFields on Invoice {
   totalAmountCents
   totalHours
   isNonCompliant
+  # Live (does a claimed hour lack an ACTIVE contract right now?), unlike the
+  # stored isNonCompliant above, which is only the state at creation.
+  hasHoursWithoutActiveContract
   declineReason
   declinedAt
   declinedAtSigneeType
@@ -323,6 +326,7 @@ query GetVolunteersNeedingTimesheets(
     estimatedAmountCents
     hasUncoveredHours
     firstUncoveredAt
+    hasHoursWithoutActiveContract
   }
 }
 

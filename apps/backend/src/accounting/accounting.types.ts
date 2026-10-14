@@ -54,6 +54,8 @@ export type EligibleTimesheetVolunteer = {
   hasUncoveredHours: boolean;
   /** `startedAt` of the earliest such entry, or null when every hour is covered. */
   firstUncoveredAt: Date | null;
+  /** Any entry of this month has no ACTIVE contract right now: a timesheet issued now would be non-compliant. */
+  hasHoursWithoutActiveContract: boolean;
 };
 
 export type YearlyUsage = {
