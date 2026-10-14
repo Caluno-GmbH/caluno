@@ -520,7 +520,7 @@
         "decline": "Ablehnen"
       },
       "missingProfileWarning": "In deinem Profil fehlen Angaben, die dieses Dokument benötigt.",
-      "missingProfileCta": "Profil vervollständigen, um zu unterschreiben",
+      "completeDetailsCta": "Daten vervollständigen",
       "toasts": {
         "signed": "{name} unterschrieben.",
         "signedError": "{name} ließ sich nicht unterschreiben. Versuch es bitte erneut.",
@@ -2700,6 +2700,17 @@
     "empty": {
       "title": "Noch keine Dokumente",
       "description": "Vereinbarungen und Stundennachweise deiner Organisationen erscheinen hier."
+    },
+    "completeProfile": {
+      "title": "Vervollständige deine Daten",
+      "description": "Wird für {documentName} bei {orgName} benötigt.",
+      "descriptionWithoutOrg": "Wird für {documentName} benötigt.",
+      "savedToProfile": "Die Angaben werden in deinem Profil gespeichert und für alle deine Dokumente verwendet.",
+      "success": "Angaben gespeichert",
+      "allComplete": "Alle Angaben sind vollständig – es gibt nichts mehr auszufüllen.",
+      "error": "Wir konnten dieses Dokument nicht laden. Bitte versuche es erneut.",
+      "saveError": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
+      "close": "Schließen"
     }
   }
 }
