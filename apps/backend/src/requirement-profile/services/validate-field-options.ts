@@ -9,7 +9,8 @@ const CHOICE_TYPES: ReadonlySet<FieldType> = new Set([
 
 /**
  * Choice fields render one control per option; an empty option can never stay
- * selected on the volunteer form, so reject it at write time.
+ * selected on the volunteer form, and duplicates cannot be distinguished, so
+ * reject both at write time.
  */
 export function assertValidFieldOptions(
   type: FieldType,
@@ -17,12 +18,18 @@ export function assertValidFieldOptions(
 ): void {
   if (!CHOICE_TYPES.has(type) || !options) return;
 
+  const seen = new Set<string>();
   for (const option of options) {
-    if (!option?.trim()) {
+    const trimmed = option?.trim() ?? '';
+    if (!trimmed) {
       throw new BadRequestGraphQLError(
         'Choice field options must be non-empty',
       );
     }
+    if (seen.has(trimmed)) {
+      throw new BadRequestGraphQLError('Choice field options must be unique');
+    }
+    seen.add(trimmed);
   }
 }
 

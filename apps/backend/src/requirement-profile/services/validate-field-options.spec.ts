@@ -25,6 +25,18 @@ describe('assertValidFieldOptions', () => {
     ).not.toThrow();
   });
 
+  it('throws for duplicate options', () => {
+    expect(() =>
+      assertValidFieldOptions(FieldType.SINGLE_CHOICE, ['Morning', 'Morning']),
+    ).toThrow(BadRequestGraphQLError);
+  });
+
+  it('throws for duplicates that only differ by surrounding whitespace', () => {
+    expect(() =>
+      assertValidFieldOptions(FieldType.MULTI_CHOICE, ['Morning', ' Morning ']),
+    ).toThrow(BadRequestGraphQLError);
+  });
+
   it('ignores non-choice field types even with empty options', () => {
     expect(() => assertValidFieldOptions(FieldType.TEXT, [''])).not.toThrow();
   });

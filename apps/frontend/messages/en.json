@@ -1177,6 +1177,8 @@
       "enterDocumentFileError": "Please upload a document.",
       "enterDocumentLabelError": "Please enter a document label.",
       "enterLabelError": "Please enter a label.",
+      "duplicateOptionError": "Options must be unique.",
+      "emptyOptionError": "Please fill in every option.",
       "enterOptionError": "Please enter at least one option.",
       "enterTextError": "Please enter text.",
       "fieldTypeLabel": "Field type",

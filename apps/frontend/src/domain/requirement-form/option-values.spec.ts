@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
   choiceOptionSchema,
+  choiceOptionsSchema,
+  duplicateOptionIndexes,
   parseMultiChoiceValue,
   serializeMultiChoiceValue,
 } from './option-values';
@@ -25,6 +27,32 @@ describe('choiceOptionSchema', () => {
 
   it('rejects a blank option', () => {
     expect(choiceOptionSchema.safeParse('   ').success).toBe(false);
+  });
+});
+
+describe('choiceOptionsSchema', () => {
+  it('accepts unique options', () => {
+    expect(choiceOptionsSchema.safeParse(['Morning', 'Evening']).success).toBe(
+      true,
+    );
+  });
+
+  it('rejects duplicates after trim', () => {
+    expect(
+      choiceOptionsSchema.safeParse(['Morning', ' Morning ']).success,
+    ).toBe(false);
+  });
+});
+
+describe('duplicateOptionIndexes', () => {
+  it('returns indexes of duplicated trimmed text', () => {
+    expect(duplicateOptionIndexes(['A', 'B', 'A', ' B '])).toEqual([
+      0, 1, 2, 3,
+    ]);
+  });
+
+  it('ignores empty entries', () => {
+    expect(duplicateOptionIndexes(['', 'A', ''])).toEqual([]);
   });
 });
 
