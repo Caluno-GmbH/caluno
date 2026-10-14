@@ -1,5 +1,4 @@
-import { type DataClient, isNotFoundDataError, JoinStatus } from '@repo/data';
-import { notFound } from 'next/navigation';
+import { JoinStatus } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { EventFormsClient } from '@/app/[locale]/(public)/events/[eventId]/forms/event-forms-client';
 import { EventPageHeader } from '@/domain/event/components/event-page-header';
@@ -9,6 +8,7 @@ import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 
 interface EventFormsPageProps {
@@ -16,21 +16,14 @@ interface EventFormsPageProps {
   searchParams: Promise<{ redirectTo?: string }>;
 }
 
-type PublicEvent = Awaited<ReturnType<DataClient['publicEvent']['findById']>>;
-
 export async function generateMetadata({ params }: EventFormsPageProps) {
   const { eventId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  let event: PublicEvent;
-  try {
-    event = await data.publicEvent.findById(eventId);
-  } catch (error) {
-    if (isNotFoundDataError(error)) {
-      notFound();
-    }
-    return { title: 'Event — Caluno' };
-  }
-  if (!event) notFound();
+  const event = await requireFound(
+    () => data.publicEvent.findById(eventId),
+    () => null,
+  );
+  if (!event) return { title: 'Event — Caluno' };
   const t = await getTranslations({ locale, namespace: 'EventDetail' });
   return { title: `${t('forms.title', { eventTitle: event.title })} — Caluno` };
 }
@@ -43,16 +36,7 @@ export default async function EventFormsPage({
   const { redirectTo } = await searchParams;
   const data = await getDataClient({ locale: resolveLocale(locale) });
 
-  let event: PublicEvent;
-  try {
-    event = await data.publicEvent.findById(eventId);
-  } catch (error) {
-    if (isNotFoundDataError(error)) {
-      notFound();
-    }
-    throw error;
-  }
-  if (!event) notFound();
+  const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const session = await getSession();
   if (!session) {

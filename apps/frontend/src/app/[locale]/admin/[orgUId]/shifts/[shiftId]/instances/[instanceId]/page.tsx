@@ -1,8 +1,4 @@
-import {
-  isNotFoundDataError,
-  PermissionKey,
-  ShiftVisibility,
-} from '@repo/data';
+import { PermissionKey, ShiftVisibility } from '@repo/data';
 import { Button } from '@repo/ui';
 import { Copy, Trash2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -25,6 +21,7 @@ import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
 import { checkPermission } from '@/lib/permissions-server';
+import { requireFound } from '@/lib/require-found';
 
 interface ShiftInstanceDetailPageProps {
   params: Promise<{ orgUId: string; shiftId: string; instanceId: string }>;
@@ -44,15 +41,9 @@ export default async function ShiftInstanceDetailPage({
   const t = await getTranslations('Shift');
   const data = await getDataClient({ orgUId });
 
-  let instance: Awaited<ReturnType<typeof data.shift.findInstance>>;
-  try {
-    instance = await data.shift.findInstance(instanceId);
-  } catch (error) {
-    if (isNotFoundDataError(error)) {
-      notFound();
-    }
-    throw error;
-  }
+  const instance = await requireFound(() =>
+    data.shift.findInstance(instanceId),
+  );
 
   if (instance.isCancelled) {
     notFound();
@@ -67,12 +58,7 @@ export default async function ShiftInstanceDetailPage({
   const canAddImage = canManage && !isInstanceInThePast;
 
   const callOuts = canManage
-    ? await data.shift.findCallOutHistory(instanceId).catch((error) => {
-        if (isNotFoundDataError(error)) {
-          notFound();
-        }
-        throw error;
-      })
+    ? await requireFound(() => data.shift.findCallOutHistory(instanceId))
     : null;
 
   return (
