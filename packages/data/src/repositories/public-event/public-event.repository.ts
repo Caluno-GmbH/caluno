@@ -1,4 +1,3 @@
-import { isNotFoundDataError } from '../../errors/data-error';
 import type {
   GetPublicEventQuery,
   JoinEventMutation,
@@ -8,14 +7,9 @@ import { BaseRepository } from '../base/base.repository';
 export type RawPublicEvent = GetPublicEventQuery['publicEvent'];
 
 export class PublicEventRepository extends BaseRepository {
-  async findById(id: string): Promise<RawPublicEvent | null> {
-    try {
-      const data = await this.sdk.GetPublicEvent({ id });
-      return data.publicEvent;
-    } catch (error) {
-      if (isNotFoundDataError(error)) return null;
-      throw error;
-    }
+  async findById(id: string): Promise<RawPublicEvent> {
+    const data = await this.sdk.GetPublicEvent({ id });
+    return data.publicEvent;
   }
 
   async join(eventId: string): Promise<JoinEventMutation['joinEvent']> {

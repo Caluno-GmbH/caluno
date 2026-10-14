@@ -1,4 +1,3 @@
-import { isNotFoundDataError } from '../../errors/data-error';
 import {
   type CreateEventInput,
   type EventInviteStatus,
@@ -93,14 +92,9 @@ export class EventRepository extends BaseRepository {
     return data.availableEvents;
   }
 
-  async findById(id: string): Promise<RawEvent | null> {
-    try {
-      const data = await this.sdk.GetEvent({ id });
-      return data.event;
-    } catch (error) {
-      if (isNotFoundDataError(error)) return null;
-      throw error;
-    }
+  async findById(id: string): Promise<RawEvent> {
+    const data = await this.sdk.GetEvent({ id });
+    return data.event;
   }
 
   async findInvites(eventId: string): Promise<EventInviteItem[]> {
