@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { DataError } from '@repo/data';
 
 const notFoundMock = mock(() => {
   throw new Error('NEXT_NOT_FOUND');
@@ -6,11 +7,6 @@ const notFoundMock = mock(() => {
 
 mock.module('next/navigation', () => ({
   notFound: notFoundMock,
-}));
-
-mock.module('@repo/data', () => ({
-  isNotFoundDataError: (error: unknown) =>
-    error instanceof Error && error.message === 'NOT_FOUND',
 }));
 
 const { requireFound } = await import('../require-found');
@@ -36,7 +32,7 @@ describe('requireFound', () => {
   it('calls notFound when the loader throws a NOT_FOUND DataError', async () => {
     await expect(
       requireFound(async () => {
-        throw new Error('NOT_FOUND');
+        throw new DataError('missing', { code: 'NOT_FOUND' });
       }),
     ).rejects.toThrow('NEXT_NOT_FOUND');
     expect(notFoundMock).toHaveBeenCalledTimes(1);
