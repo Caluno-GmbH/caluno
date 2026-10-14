@@ -93,7 +93,9 @@ export class InvoiceService {
         documentTemplate: true,
         reimbursementType: true,
         signatures: { orderBy: { order: 'asc' } },
-        statusChanges: true,
+        // Postgres sorts an enum by declaration order, which is lifecycle
+        // order, so `type` breaks the tie between rows of one transaction.
+        statusChanges: { orderBy: { occurredAt: 'asc', type: 'asc' } },
         invoiceTimeEntries: true,
         organizationUnit: true,
       },
@@ -1016,12 +1018,10 @@ export class InvoiceService {
   async findInvoiceStatusChanges(
     invoiceId: string,
   ): Promise<InvoiceStatusChangeEntity[]> {
-    const statusChanges = await this.db.query.invoiceStatusChanges.findMany({
+    return this.db.query.invoiceStatusChanges.findMany({
       where: { invoiceId },
+      orderBy: { occurredAt: 'asc', type: 'asc' },
     });
-    return statusChanges.sort(
-      (a, b) => a.occurredAt.getTime() - b.occurredAt.getTime(),
-    );
   }
 
   async findPendingInvoiceSignee(
