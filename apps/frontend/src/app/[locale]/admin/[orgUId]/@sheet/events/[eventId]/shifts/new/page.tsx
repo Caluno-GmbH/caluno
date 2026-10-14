@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { createEventShift } from '@/domain/event/actions';
 import { ShiftForm } from '@/domain/shift/components/shift-form';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface NewEventShiftPageProps {
   params: Promise<{ orgUId: string; eventId: string; locale: string }>;
@@ -15,11 +15,7 @@ export default async function NewEventShiftPage({
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Shift.sheet' });
 
-  const event = await data.event.findById(eventId);
-
-  if (!event) {
-    notFound();
-  }
+  const event = await requireFound(() => data.event.findById(eventId));
 
   return (
     <ShiftForm

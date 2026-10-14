@@ -1,9 +1,9 @@
 import { ShiftVisibility } from '@repo/data';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { duplicateShift } from '@/domain/shift/actions';
 import { ShiftForm } from '@/domain/shift/components/shift-form';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface DuplicateShiftPageProps {
   params: Promise<{ orgUId: string; shiftId: string; locale: string }>;
@@ -18,13 +18,12 @@ export default async function DuplicateShiftPage({
   const { redirect } = await searchParams;
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Shift.sheet' });
-  const shift = await data.shift.findByIdDetailed(shiftId);
+  const shift = await requireFound(() => data.shift.findByIdDetailed(shiftId));
 
-  if (!shift) {
-    notFound();
-  }
-
-  const event = shift.event ? await data.event.findById(shift.event.id) : null;
+  const linkedEventId = shift.event?.id;
+  const event = linkedEventId
+    ? await requireFound(() => data.event.findById(linkedEventId))
+    : null;
 
   return (
     <ShiftForm

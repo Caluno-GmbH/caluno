@@ -1,6 +1,5 @@
-import { JoinStatus, type RawShift } from '@repo/data';
+import { JoinStatus } from '@repo/data';
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { cache } from 'react';
 import { DetailHero } from '@/components/detail-hero';
@@ -10,6 +9,7 @@ import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { isAuthenticated } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 const findShift = cache(async (locale: string, shiftId: string) => {
   const data = await getDataClient({ locale: resolveLocale(locale) });
@@ -25,12 +25,11 @@ export async function generateMetadata({
   params,
 }: ShiftPageProps): Promise<Metadata> {
   const { shiftId, locale } = await params;
-  let shift: RawShift | undefined;
-  try {
-    shift = await findShift(locale, shiftId);
-  } catch {
-    return { title: 'Shift — Caluno' };
-  }
+  const shift = await requireFound(
+    () => findShift(locale, shiftId),
+    () => null,
+  );
+  if (!shift) return { title: 'Shift — Caluno' };
   return { title: `${shift.title} — Caluno` };
 }
 
@@ -46,16 +45,7 @@ export default async function ShiftPage({
 
   const data = await getDataClient({ locale: resolveLocale(locale) });
 
-  let shift: RawShift | undefined;
-  try {
-    shift = await findShift(locale, shiftId);
-  } catch {
-    notFound();
-  }
-
-  if (!shift) {
-    notFound();
-  }
+  const shift = await requireFound(() => findShift(locale, shiftId));
 
   const t = await getTranslations('ShiftDetail');
   const authenticated = await isAuthenticated();
