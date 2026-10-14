@@ -28,7 +28,8 @@ interface GetDataClientOptions {
   orgUId?: string;
   locale?: Locale;
   /**
-   * When false, UNAUTHENTICATED GraphQL errors are thrown for the caller to
+   * When false, unauthenticated GraphQL errors (code UNAUTHENTICATED /
+   * UNAUTHORIZED or HTTP 401) are thrown for the caller to
    * handle (e.g. optional admin nav). Default: redirect to login.
    */
   redirectOnUnauthenticated?: boolean;
