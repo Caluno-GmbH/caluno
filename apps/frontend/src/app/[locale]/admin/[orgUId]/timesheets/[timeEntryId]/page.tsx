@@ -9,12 +9,12 @@ import {
   Timer,
   User,
 } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/time-entry/components/action-bar';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { requireFound } from '@/lib/require-found';
 
 interface TimeEntryDetailPageProps {
   params: Promise<{ orgUId: string; timeEntryId: string }>;
@@ -26,11 +26,7 @@ export default async function TimeEntryDetailPage({
   const { orgUId, timeEntryId } = await params;
 
   const data = await getDataClient({ orgUId });
-  const entry = await data.timeEntry.findById(timeEntryId);
-
-  if (!entry) {
-    notFound();
-  }
+  const entry = await requireFound(() => data.timeEntry.findById(timeEntryId));
 
   const t = await getTranslations('TimeEntry');
   const { formatDateTime, formatRange, formatDuration } = await getFormatting();

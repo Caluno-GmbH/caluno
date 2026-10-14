@@ -1,5 +1,4 @@
 import { OrganizationUnitAutomationKind, PermissionKey } from '@repo/data';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ShiftSettingsEditor } from '@/domain/org-unit/components/shift-settings-editor';
 import type {
@@ -9,6 +8,7 @@ import type {
 } from '@/domain/org-unit/shift-settings-draft';
 import { getDataClient } from '@/lib/data-client';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
+import { requireFound } from '@/lib/require-found';
 
 interface ShiftSettingsPageProps {
   params: Promise<{ orgUId: string; locale: string }>;
@@ -27,10 +27,9 @@ export default async function ShiftSettingsPage({
   const t = await getTranslations({ locale, namespace: 'ShiftSettings' });
 
   const [orgUnit, automations] = await Promise.all([
-    data.organizationUnit.findById(orgUId),
+    requireFound(() => data.organizationUnit.findById(orgUId)),
     data.organizationUnit.findAutomations(orgUId),
   ]);
-  if (!orgUnit) notFound();
 
   const draftFor = (
     kind: OrganizationUnitAutomationKind,
