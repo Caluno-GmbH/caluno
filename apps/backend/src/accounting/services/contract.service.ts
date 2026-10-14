@@ -84,7 +84,9 @@ export class ContractService {
         documentTemplate: true,
         reimbursementType: true,
         signatures: { orderBy: { order: 'asc' } },
-        statusChanges: true,
+        // Postgres sorts an enum by declaration order, which is lifecycle
+        // order, so `type` breaks the tie between rows of one transaction.
+        statusChanges: { orderBy: { occurredAt: 'asc', type: 'asc' } },
         organizationUnit: true,
       },
     });
@@ -851,12 +853,10 @@ export class ContractService {
   async findContractStatusChanges(
     contractId: string,
   ): Promise<ContractStatusChangeEntity[]> {
-    const statusChanges = await this.db.query.contractStatusChanges.findMany({
+    return this.db.query.contractStatusChanges.findMany({
       where: { contractId },
+      orderBy: { occurredAt: 'asc', type: 'asc' },
     });
-    return statusChanges.sort(
-      (a, b) => a.occurredAt.getTime() - b.occurredAt.getTime(),
-    );
   }
 
   async findPendingContractSignee(
