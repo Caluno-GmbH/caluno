@@ -315,6 +315,26 @@ export class TimeTrackingService {
     return entry;
   }
 
+  /**
+   * Load a time entry by id without a request org-unit scope.
+   *
+   * Only for field resolvers on an already-authorized parent (e.g.
+   * `InvoiceTimeEntry.timeEntry` after `invoice` passed `assertCanViewDocument`).
+   * Volunteer "My documents" has no `x-organization-unit-id`; org-scoped
+   * `findById` would 404 there even though the claim is legitimate.
+   */
+  async findByIdForAuthorizedParent(id: string): Promise<TimeEntryEntity> {
+    const entry = await this.db.query.timeEntries.findFirst({
+      where: { id },
+    });
+
+    if (!entry) {
+      throw new NotFoundGraphQLError('Time entry not found');
+    }
+
+    return entry;
+  }
+
   private buildTimeEntryOrderBy(
     sort: TimeEntrySortField,
     order: SortOrder,
