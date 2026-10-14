@@ -1,6 +1,5 @@
-import { type DataClient, DataError, JoinStatus } from '@repo/data';
+import { JoinStatus } from '@repo/data';
 import { CalendarCheckIcon, MapPinIcon, UsersIcon } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Suspense } from 'react';
 import { DetailHero } from '@/components/detail-hero';
@@ -13,27 +12,19 @@ import { formatAddress } from '@/domain/org-unit/format-address';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { getInitials } from '@/lib/get-initials';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 
 interface OrgPageProps {
   params: Promise<{ orgUId: string; locale: string }>;
 }
 
-type PublicOrganizationUnit = Awaited<
-  ReturnType<DataClient['publicOrganizationUnit']['findById']>
->;
-
 export async function generateMetadata({ params }: OrgPageProps) {
   const { orgUId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  let org: PublicOrganizationUnit;
-  try {
-    org = await data.publicOrganizationUnit.findById(orgUId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    return { title: 'Organization — Caluno' };
-  }
+  const org = await requireFoundOrNull(() =>
+    data.publicOrganizationUnit.findById(orgUId),
+  );
+  if (!org) return { title: 'Organization — Caluno' };
   return { title: `${org.name} — Caluno` };
 }
 
@@ -42,15 +33,9 @@ export default async function OrgPage({ params }: OrgPageProps) {
   const data = await getDataClient({ locale: resolveLocale(locale) });
   const t = await getTranslations('OrgDetail');
 
-  let org: PublicOrganizationUnit;
-  try {
-    org = await data.publicOrganizationUnit.findById(orgUId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
+  const org = await requireFound(() =>
+    data.publicOrganizationUnit.findById(orgUId),
+  );
 
   const addressText = formatAddress(org);
 

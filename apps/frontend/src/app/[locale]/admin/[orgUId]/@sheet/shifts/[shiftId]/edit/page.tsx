@@ -1,9 +1,9 @@
 import { ShiftVisibility } from '@repo/data';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { updateShift } from '@/domain/shift/actions';
 import { ShiftForm } from '@/domain/shift/components/shift-form';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface UpdateShiftPageProps {
   params: Promise<{ orgUId: string; shiftId: string; locale: string }>;
@@ -15,11 +15,7 @@ export default async function UpdateShiftPage({
   const { orgUId, shiftId, locale } = await params;
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Shift.sheet' });
-  const shift = await data.shift.findByIdDetailed(shiftId);
-
-  if (!shift) {
-    notFound();
-  }
+  const shift = await requireFound(() => data.shift.findByIdDetailed(shiftId));
 
   return (
     <ShiftForm

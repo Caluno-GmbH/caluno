@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { FormSubmissionsClient } from '@/domain/requirement-form/components/form-submissions-client';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
+import { requireFound } from '@/lib/require-found';
 
 interface Props {
   params: Promise<{ orgUId: string; formId: string; locale: string }>;
@@ -14,10 +14,9 @@ export default async function FormSubmissionsPage({ params }: Props) {
   const data = await getDataClient({ orgUId });
   const t = await getTranslations('RequirementForm.submissions');
 
-  const form = await data.requirementForm.findFormById(formId);
-  if (!form) {
-    notFound();
-  }
+  const form = await requireFound(() =>
+    data.requirementForm.findFormById(formId),
+  );
 
   const submissions = await data.requirementForm.findSubmissionsByForm(formId);
 

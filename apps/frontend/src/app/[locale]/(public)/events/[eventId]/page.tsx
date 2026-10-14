@@ -1,6 +1,5 @@
-import { type DataClient, DataError, JoinStatus } from '@repo/data';
+import { JoinStatus } from '@repo/data';
 import { LayersIcon, MapPinIcon } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { DetailHero } from '@/components/detail-hero';
 import { EventFollowButton } from '@/domain/event/components/event-follow-button';
@@ -12,26 +11,20 @@ import { resolveLocale } from '@/i18n/routing';
 import { isAuthenticated } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 
 interface EventPageProps {
   params: Promise<{ eventId: string; locale: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-type PublicEvent = Awaited<ReturnType<DataClient['publicEvent']['findById']>>;
-
 export async function generateMetadata({ params }: EventPageProps) {
   const { eventId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  let event: PublicEvent;
-  try {
-    event = await data.publicEvent.findById(eventId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    return { title: 'Event — Caluno' };
-  }
+  const event = await requireFoundOrNull(() =>
+    data.publicEvent.findById(eventId),
+  );
+  if (!event) return { title: 'Event — Caluno' };
   return { title: `${event.title} — Caluno` };
 }
 
@@ -45,15 +38,7 @@ export default async function EventPage({
   const { formatDateRange } = await getFormatting();
   const t = await getTranslations('EventDetail');
 
-  let event: PublicEvent;
-  try {
-    event = await data.publicEvent.findById(eventId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
+  const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const authenticated = await isAuthenticated();
   const showJoinForms = search.showJoinForms === 'true';

@@ -29,3 +29,7 @@ export function isUnauthenticatedDataError(error: unknown): boolean {
     statusCode === 401
   );
 }
+
+export function isNotFoundDataError(error: unknown): boolean {
+  return error instanceof DataError && error.options?.code === 'NOT_FOUND';
+}

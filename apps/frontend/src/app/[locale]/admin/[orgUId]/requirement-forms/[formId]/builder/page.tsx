@@ -1,9 +1,9 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { FormBuilder } from '@/domain/requirement-form/components/form-builder';
 import { FormMetaHeader } from '@/domain/requirement-form/components/form-meta-header';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
+import { requireFound } from '@/lib/require-found';
 
 interface Props {
   params: Promise<{ orgUId: string; formId: string; locale: string }>;
@@ -18,10 +18,9 @@ export default async function BuilderPage({ params }: Props) {
     namespace: 'RequirementForm.builder',
   });
 
-  const form = await data.requirementForm.findFormById(formId);
-  if (!form) {
-    notFound();
-  }
+  const form = await requireFound(() =>
+    data.requirementForm.findFormById(formId),
+  );
 
   const blocksResult = await data.requirementForm.findBlocks(
     org.organizationId,
