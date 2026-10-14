@@ -32,10 +32,7 @@ function isEditableSource(source: DataSourceKey): boolean {
 function resolveBoundValue(
   source: DataSourceKey,
   profileData: Record<string, unknown>,
-  name: { firstname: string; lastname: string },
 ): string | null {
-  if (source === 'volunteer_first_name') return name.firstname;
-  if (source === 'volunteer_last_name') return name.lastname;
   const profileKey = isProfileSourceKey(source)
     ? PROFILE_SOURCE_TO_PROFILE_KEY[source]
     : undefined;
@@ -64,10 +61,6 @@ export function deriveEditableFields(
   const fields: DerivedField[] = [];
   const seenFieldIds = new Set<string>();
   const boundBySource = new Map<DataSourceKey, DerivedField>();
-  const name = {
-    firstname: profileData.firstname as string,
-    lastname: profileData.lastname as string,
-  };
 
   const collect = (line: TemplateLine | undefined) => {
     if (!line || line.enabled === false) return;
@@ -96,7 +89,7 @@ export function deriveEditableFields(
         continue;
       }
 
-      const value = resolveBoundValue(source, profileData, name);
+      const value = resolveBoundValue(source, profileData);
       const entry: DerivedField = {
         fieldId: field.id,
         fieldIds: [field.id],
