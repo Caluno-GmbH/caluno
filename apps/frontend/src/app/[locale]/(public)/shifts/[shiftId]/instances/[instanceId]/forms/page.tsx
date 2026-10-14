@@ -9,7 +9,7 @@ import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
-import { requireFound } from '@/lib/require-found';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 
 interface ShiftFormsPageProps {
@@ -20,10 +20,7 @@ interface ShiftFormsPageProps {
 export async function generateMetadata({ params }: ShiftFormsPageProps) {
   const { shiftId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  const shift = await requireFound(
-    () => data.shift.findById(shiftId),
-    () => null,
-  );
+  const shift = await requireFoundOrNull(() => data.shift.findById(shiftId));
   if (!shift) return { title: 'Shift — Caluno' };
   const t = await getTranslations({ locale, namespace: 'ShiftDetail' });
   return {

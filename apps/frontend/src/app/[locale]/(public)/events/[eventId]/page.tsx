@@ -11,7 +11,7 @@ import { resolveLocale } from '@/i18n/routing';
 import { isAuthenticated } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
-import { requireFound } from '@/lib/require-found';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 
 interface EventPageProps {
   params: Promise<{ eventId: string; locale: string }>;
@@ -21,9 +21,8 @@ interface EventPageProps {
 export async function generateMetadata({ params }: EventPageProps) {
   const { eventId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  const event = await requireFound(
-    () => data.publicEvent.findById(eventId),
-    () => null,
+  const event = await requireFoundOrNull(() =>
+    data.publicEvent.findById(eventId),
   );
   if (!event) return { title: 'Event — Caluno' };
   return { title: `${event.title} — Caluno` };

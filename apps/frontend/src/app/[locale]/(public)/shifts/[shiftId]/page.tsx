@@ -9,7 +9,7 @@ import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { isAuthenticated } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
-import { requireFound } from '@/lib/require-found';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 
 const findShift = cache(async (locale: string, shiftId: string) => {
   const data = await getDataClient({ locale: resolveLocale(locale) });
@@ -25,10 +25,7 @@ export async function generateMetadata({
   params,
 }: ShiftPageProps): Promise<Metadata> {
   const { shiftId, locale } = await params;
-  const shift = await requireFound(
-    () => findShift(locale, shiftId),
-    () => null,
-  );
+  const shift = await requireFoundOrNull(() => findShift(locale, shiftId));
   if (!shift) return { title: 'Shift — Caluno' };
   return { title: `${shift.title} — Caluno` };
 }

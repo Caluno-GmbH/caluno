@@ -12,7 +12,7 @@ import { formatAddress } from '@/domain/org-unit/format-address';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { getInitials } from '@/lib/get-initials';
-import { requireFound } from '@/lib/require-found';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 
 interface OrgPageProps {
   params: Promise<{ orgUId: string; locale: string }>;
@@ -21,9 +21,8 @@ interface OrgPageProps {
 export async function generateMetadata({ params }: OrgPageProps) {
   const { orgUId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  const org = await requireFound(
-    () => data.publicOrganizationUnit.findById(orgUId),
-    () => null,
+  const org = await requireFoundOrNull(() =>
+    data.publicOrganizationUnit.findById(orgUId),
   );
   if (!org) return { title: 'Organization — Caluno' };
   return { title: `${org.name} — Caluno` };

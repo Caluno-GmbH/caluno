@@ -10,7 +10,7 @@ import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
-import { requireFound } from '@/lib/require-found';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 
 interface EventJoinFormsPageProps {
@@ -21,9 +21,8 @@ interface EventJoinFormsPageProps {
 export async function generateMetadata({ params }: EventJoinFormsPageProps) {
   const { eventId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  const event = await requireFound(
-    () => data.publicEvent.findById(eventId),
-    () => null,
+  const event = await requireFoundOrNull(() =>
+    data.publicEvent.findById(eventId),
   );
   if (!event) return { title: 'Event — Caluno' };
   const t = await getTranslations({ locale, namespace: 'EventDetail' });
