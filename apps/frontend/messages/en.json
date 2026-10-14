@@ -2513,6 +2513,7 @@
         "saveButton": "Save template",
         "saveSuccessToast": "Template saved",
         "saveErrorToast": "We couldn't save the template. Please try again.",
+        "signeesUnavailableToast": "We couldn't load the signing roles yet. Please wait a moment and try again.",
         "orgProfile": {
           "blockedMessage": "Your organisation info is missing details this template needs. Complete the organisation info before saving.",
           "blockedCta": "Complete organisation info",
