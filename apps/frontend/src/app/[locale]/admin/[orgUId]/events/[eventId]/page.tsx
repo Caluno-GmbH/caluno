@@ -10,7 +10,6 @@ import {
 } from '@repo/ui';
 import { format } from 'date-fns';
 import { CalendarRange, Plus, UserPlus } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import {
   DetailCoverImage,
@@ -34,6 +33,7 @@ import { getWeekRange } from '@/domain/shift/lib/shift-instances';
 import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { checkPermission } from '@/lib/permissions-server';
+import { requireFound } from '@/lib/require-found';
 
 type EventDetailTab = 'shifts' | 'volunteers';
 
@@ -68,11 +68,7 @@ export default async function EventDetailPage({
   );
   const data = await getDataClient({ orgUId });
 
-  const event = await data.event.findById(eventId);
-
-  if (!event) {
-    notFound();
-  }
+  const event = await requireFound(() => data.event.findById(eventId));
 
   const activeTab = parseTab(tabParam);
   const weekStart = parseWeekStart(week, new Date(event.startsAt));

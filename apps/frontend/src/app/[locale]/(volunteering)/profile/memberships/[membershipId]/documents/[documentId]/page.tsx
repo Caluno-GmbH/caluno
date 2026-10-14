@@ -6,6 +6,7 @@ import { MembershipDetailHeader } from '@/domain/memberships/components/membersh
 import { resolveLocale } from '@/i18n/routing';
 import { GRAPHQL_API_URL } from '@/lib/constants';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 type VolunteerDocumentKind = 'contract' | 'invoice';
 
@@ -31,8 +32,9 @@ export default async function DocumentPreviewPage({
   if (!kind) notFound();
 
   const data = await getDataClient();
-  const membership = await data.membership.findMineById(membershipId);
-  if (!membership) notFound();
+  const membership = await requireFound(() =>
+    data.membership.findMineById(membershipId),
+  );
 
   const t = await getTranslations('MembershipDetail.documents');
 

@@ -1,4 +1,3 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { VolunteerFormWrapper } from '@/domain/requirement-form/components/volunteer-form-wrapper';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
@@ -6,6 +5,7 @@ import { redirect as redirectWithLocale } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
 import { isMember as isMemberOfOrgUnit } from '@/lib/org-context-server';
+import { requireFound } from '@/lib/require-found';
 
 interface Props {
   params: Promise<{ locale: string; orgUId: string; token: string }>;
@@ -15,10 +15,9 @@ export default async function PublicFormPage({ params }: Props) {
   const { locale, orgUId, token } = await params;
   const data = await getDataClient();
 
-  const form = await data.requirementForm.findFormByShareToken(token);
-  if (!form) {
-    notFound();
-  }
+  const form = await requireFound(() =>
+    data.requirementForm.findFormByShareToken(token),
+  );
 
   const session = await getSession();
   if (!session) {

@@ -1,5 +1,4 @@
 import { PermissionKey } from '@repo/data';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { Suspense } from 'react';
 import { OrgUnitDetailView } from '@/domain/org-unit/components/org-unit-detail-view';
@@ -7,6 +6,7 @@ import { OrgUnitSetup } from '@/domain/org-unit/components/org-unit-setup';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
+import { requireFound } from '@/lib/require-found';
 
 interface OrgUnitsPageProps {
   params: Promise<{ orgUId: string; locale: string }>;
@@ -24,10 +24,8 @@ export default async function OrgUnitsPage({ params }: OrgUnitsPageProps) {
     checkPermission(orgUId, PermissionKey.OrgEdit),
     data.organizationUnit.findOrganizationTree(),
     data.organizationUnit.findAllTypes(),
-    data.organizationUnit.findById(orgUId),
+    requireFound(() => data.organizationUnit.findById(orgUId)),
   ]);
-
-  if (!currentUnit) notFound();
 
   return (
     <div className="space-y-6">

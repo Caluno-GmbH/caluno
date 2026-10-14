@@ -12,7 +12,6 @@ import {
   MapPin,
   User,
 } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { DetailCoverImage } from '@/components/detail-entity-image';
 import { UserCard } from '@/components/user-card';
@@ -24,6 +23,7 @@ import {
 import { parseShiftListQuery } from '@/domain/shift/routes';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { requireFound } from '@/lib/require-found';
 import { ShiftViewActionBar } from './shift-view-action-bar';
 
 interface ShiftViewPageProps {
@@ -46,11 +46,7 @@ export default async function ShiftViewPage({
   const data = await getDataClient({ orgUId });
   const { formatDateTime, formatDate, formatTimeRange } = await getFormatting();
   const visibilityConfig = getVisibilityConfig(t);
-  const shift = await data.shift.findById(shiftId);
-
-  if (!shift) {
-    notFound();
-  }
+  const shift = await requireFound(() => data.shift.findById(shiftId));
 
   const approvalConfig = getApprovalConfig(t, shift.joinRequiresApproval);
 

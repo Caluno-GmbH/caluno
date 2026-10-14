@@ -1,10 +1,4 @@
-import {
-  type DataClient,
-  DataError,
-  JoinStatus,
-  RequiredFormTargetType,
-} from '@repo/data';
-import { notFound } from 'next/navigation';
+import { JoinStatus, RequiredFormTargetType } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { ShiftFormsClient } from '@/app/[locale]/(public)/shifts/[shiftId]/instances/[instanceId]/forms/shift-forms-client';
 import type { RequiredFormItem } from '@/domain/requirement-form/components/required-form-renderer';
@@ -15,6 +9,7 @@ import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 
 interface ShiftFormsPageProps {
@@ -22,20 +17,11 @@ interface ShiftFormsPageProps {
   searchParams: Promise<{ redirectTo?: string }>;
 }
 
-type PublicShift = Awaited<ReturnType<DataClient['shift']['findById']>>;
-
 export async function generateMetadata({ params }: ShiftFormsPageProps) {
   const { shiftId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  let shift: PublicShift;
-  try {
-    shift = await data.shift.findById(shiftId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    return { title: 'Shift — Caluno' };
-  }
+  const shift = await requireFoundOrNull(() => data.shift.findById(shiftId));
+  if (!shift) return { title: 'Shift — Caluno' };
   const t = await getTranslations({ locale, namespace: 'ShiftDetail' });
   return {
     title: `${t('forms.title', { shiftTitle: shift.title })} — Caluno`,
@@ -51,25 +37,10 @@ export default async function ShiftFormsPage({
 
   const data = await getDataClient({ locale: resolveLocale(locale) });
 
-  let shift: PublicShift;
-  try {
-    shift = await data.shift.findById(shiftId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
-
-  let instance: Awaited<ReturnType<DataClient['shift']['findPublicInstance']>>;
-  try {
-    instance = await data.shift.findPublicInstance(instanceId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
+  const shift = await requireFound(() => data.shift.findById(shiftId));
+  const instance = await requireFound(() =>
+    data.shift.findPublicInstance(instanceId),
+  );
 
   const session = await getSession();
   if (!session) {

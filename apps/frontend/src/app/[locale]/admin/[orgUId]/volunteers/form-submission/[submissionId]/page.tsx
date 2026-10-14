@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { SubmissionView } from '@/domain/requirement-form/components/submission-view';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface Props {
   params: Promise<{ orgUId: string; submissionId: string; locale: string }>;
@@ -13,12 +13,9 @@ export default async function FormSubmissionPage({ params }: Props) {
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'RequirementForm' });
 
-  const submission =
-    await data.requirementForm.findAdminSubmission(submissionId);
-
-  if (!submission) {
-    notFound();
-  }
+  const submission = await requireFound(() =>
+    data.requirementForm.findAdminSubmission(submissionId),
+  );
 
   const userProfile = submission.user?.id
     ? await data.requirementProfile.getAdminUserProfile(submission.user.id)
