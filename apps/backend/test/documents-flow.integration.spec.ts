@@ -224,6 +224,23 @@ const INVOICE_DETAIL = `
   }
 `;
 
+// Volunteer "My documents" / complete-profile: no x-organization-unit-id.
+const INVOICE_DETAIL_WITH_TIME_ENTRIES = `
+  query InvoiceDetailWithTimeEntries($id: ID!) {
+    invoice(id: $id) {
+      id
+      invoiceTimeEntries {
+        id
+        timeEntry {
+          id
+          startedAt
+          endedAt
+        }
+      }
+    }
+  }
+`;
+
 const INVOICE_COVER_FLAGS_LIST = `
   query InvoiceCoverFlagsList {
     invoices {
@@ -1192,6 +1209,62 @@ describe('documents flow — admin + volunteer', () => {
         SigneeType.VOLUNTEER,
       );
       expect(declined.declineInvoice.declinedByUser?.id).toBe(org.volunteerId);
+    });
+
+    it('volunteer can resolve claimed timeEntry without an org-unit header', async () => {
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: org.organizationUnitId,
+        volunteerId: org.volunteerId,
+        reimbursementTypeId: org.reimbursementTypeId,
+        startedAt: new Date('2026-09-03T09:00:00.000Z'),
+        endedAt: new Date('2026-09-03T13:00:00.000Z'),
+      });
+
+      setAuthMockUserId(org.adminId);
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: org.organizationUnitId,
+              reimbursementTypeId: org.reimbursementTypeId,
+              volunteerId: org.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: orgHeader,
+        },
+        'createInvoice',
+      );
+
+      setAuthMockUserId(org.volunteerId);
+      const detail = await graphqlRequestRequiringData<{
+        invoice: {
+          id: string;
+          invoiceTimeEntries: Array<{
+            id: string;
+            timeEntry: { id: string; startedAt: string; endedAt: string };
+          }>;
+        };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL_WITH_TIME_ENTRIES,
+          variables: { id: createInvoice.id },
+          // No x-organization-unit-id — matches volunteering DataProvider.
+        },
+        'invoice',
+      );
+
+      expect(detail.invoice.invoiceTimeEntries).toHaveLength(1);
+      expect(detail.invoice.invoiceTimeEntries[0].timeEntry.id).toBe(
+        timeEntry.id,
+      );
     });
   });
 
