@@ -1,4 +1,4 @@
-import { type DataClient, DataError, JoinStatus } from '@repo/data';
+import { type DataClient, isNotFoundDataError, JoinStatus } from '@repo/data';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { EventFormsClient } from '@/app/[locale]/(public)/events/[eventId]/forms/event-forms-client';
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: EventFormsPageProps) {
   try {
     event = await data.publicEvent.findById(eventId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     return { title: 'Event — Caluno' };
@@ -47,7 +47,7 @@ export default async function EventFormsPage({
   try {
     event = await data.publicEvent.findById(eventId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     throw error;

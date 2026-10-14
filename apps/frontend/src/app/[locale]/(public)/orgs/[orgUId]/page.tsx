@@ -1,4 +1,4 @@
-import { type DataClient, DataError, JoinStatus } from '@repo/data';
+import { type DataClient, isNotFoundDataError, JoinStatus } from '@repo/data';
 import { CalendarCheckIcon, MapPinIcon, UsersIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: OrgPageProps) {
   try {
     org = await data.publicOrganizationUnit.findById(orgUId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     return { title: 'Organization — Caluno' };
@@ -46,7 +46,7 @@ export default async function OrgPage({ params }: OrgPageProps) {
   try {
     org = await data.publicOrganizationUnit.findById(orgUId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     throw error;

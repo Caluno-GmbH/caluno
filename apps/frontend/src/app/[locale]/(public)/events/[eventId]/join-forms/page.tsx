@@ -1,6 +1,6 @@
 import {
   type DataClient,
-  DataError,
+  isNotFoundDataError,
   JoinStatus,
   RequiredFormTargetType,
 } from '@repo/data';
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: EventJoinFormsPageProps) {
   try {
     event = await data.publicEvent.findById(eventId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     return { title: 'Event — Caluno' };
@@ -56,7 +56,7 @@ export default async function EventJoinFormsPage({
   try {
     event = await data.publicEvent.findById(eventId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     throw error;

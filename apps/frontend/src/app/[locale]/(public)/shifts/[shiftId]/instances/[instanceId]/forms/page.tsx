@@ -1,6 +1,6 @@
 import {
   type DataClient,
-  DataError,
+  isNotFoundDataError,
   JoinStatus,
   RequiredFormTargetType,
 } from '@repo/data';
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: ShiftFormsPageProps) {
   try {
     shift = await data.shift.findById(shiftId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     return { title: 'Shift — Caluno' };
@@ -55,7 +55,7 @@ export default async function ShiftFormsPage({
   try {
     shift = await data.shift.findById(shiftId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     throw error;
@@ -65,7 +65,7 @@ export default async function ShiftFormsPage({
   try {
     instance = await data.shift.findPublicInstance(instanceId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     throw error;

@@ -1,4 +1,8 @@
-import { DataError, PermissionKey, ShiftVisibility } from '@repo/data';
+import {
+  isNotFoundDataError,
+  PermissionKey,
+  ShiftVisibility,
+} from '@repo/data';
 import { Button } from '@repo/ui';
 import { Copy, Trash2 } from 'lucide-react';
 import { notFound } from 'next/navigation';
@@ -44,7 +48,7 @@ export default async function ShiftInstanceDetailPage({
   try {
     instance = await data.shift.findInstance(instanceId);
   } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+    if (isNotFoundDataError(error)) {
       notFound();
     }
     throw error;
@@ -64,7 +68,7 @@ export default async function ShiftInstanceDetailPage({
 
   const callOuts = canManage
     ? await data.shift.findCallOutHistory(instanceId).catch((error) => {
-        if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
+        if (isNotFoundDataError(error)) {
           notFound();
         }
         throw error;
