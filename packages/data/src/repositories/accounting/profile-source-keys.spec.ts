@@ -16,7 +16,7 @@ describe('toMissingProfileKeys', () => {
       'city',
       'birthdate',
       'iban',
-      'account-holder',
+      'accountHolder',
       'bic',
     ]);
   });

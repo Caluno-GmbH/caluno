@@ -1,6 +1,6 @@
 import { TZDate } from '@date-fns/tz';
 import { ContractStatus } from '@repo/data';
-import { isAfter, isBefore, isEqual } from 'date-fns';
+import { isAfter, isEqual } from 'date-fns';
 import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 import type { DateRange } from '../components/period-picker';
 
@@ -11,9 +11,6 @@ import type { DateRange } from '../components/period-picker';
  * convert between the two regardless of the browser's own timezone.
  */
 export type PeriodBounds = { periodStart: string; periodEnd: string };
-
-/** A half-open interval as concrete dates, for in-memory comparisons. */
-export type DateInterval = { start: Date; end: Date };
 
 function berlinMidnight(year: number, month: number, day: number): string {
   return new Date(
@@ -67,41 +64,6 @@ export function billingMonthBounds(year: number, month: number): PeriodBounds {
     periodStart: berlinMidnight(year, month, 1),
     periodEnd: berlinMidnight(year, month + 1, 1),
   };
-}
-
-/**
- * Whether two half-open periods `[aStart, aEnd)` and `[bStart, bEnd)` overlap.
- */
-export function periodsOverlap(
-  aStart: Date,
-  aEnd: Date,
-  bStart: Date,
-  bEnd: Date,
-): boolean {
-  return isBefore(aStart, bEnd) && isAfter(aEnd, bStart);
-}
-
-/**
- * Whether the contract period `[cStart, cEnd)` fully covers the target period
- * `[tStart, tEnd)`. A period covers an instant when `tStart === tEnd`. Full
- * coverage (not mere overlap) is what stops a contract for one month from
- * covering a multi-month timesheet (VOLI-1370).
- */
-export function periodCovers(
-  cStart: Date | string,
-  cEnd: Date | string,
-  tStart: Date | string,
-  tEnd: Date | string,
-): boolean {
-  const contractStart = new Date(cStart);
-  const contractEnd = new Date(cEnd);
-  const targetStart = new Date(tStart);
-  const targetEnd = new Date(tEnd);
-  return (
-    !isAfter(contractStart, targetStart) &&
-    isAfter(contractEnd, targetStart) &&
-    !isBefore(contractEnd, targetEnd)
-  );
 }
 
 /** How a stored contract period reads: a whole year, a whole month, or a day range. */

@@ -1,6 +1,10 @@
 'use client';
 import { MembershipRequestStatus, PermissionKey } from '@repo/data';
-import { useCurrentOrg, useMembershipRequestCount } from '@repo/data/react';
+import {
+  useCurrentOrg,
+  useMembershipRequestCount,
+  useMyTasks,
+} from '@repo/data/react';
 import {
   Button,
   Logo,
@@ -17,7 +21,6 @@ import {
 } from '@repo/ui';
 import {
   ArrowUpRight,
-  BuildingIcon,
   CalendarCog,
   CalendarIcon,
   ClipboardListIcon,
@@ -25,6 +28,7 @@ import {
   CoinsIcon,
   HeartHandshake,
   LayoutListIcon,
+  ListTodo,
   LogOutIcon,
   NetworkIcon,
   ScanQrCode,
@@ -36,6 +40,7 @@ import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
+import { visibleOverviewTasks } from '@/domain/overview/visible-tasks';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
 
@@ -59,15 +64,24 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
     MembershipRequestStatus.Pending,
     canViewVolunteers,
   );
+  const { data: myTasks } = useMyTasks(orgUId ?? '');
+  const waitingCount = useMemo(() => {
+    if (!orgUId || !myTasks) return 0;
+    return visibleOverviewTasks(myTasks, {
+      organizationUnitId: orgUId,
+      permissions: permissionSet,
+    }).length;
+  }, [myTasks, orgUId, permissionSet]);
 
   const menuItems = useMemo(() => {
     if (!orgUId) return [];
 
     return [
       {
-        titleKey: 'overview',
+        titleKey: 'todo',
         href: `/admin/${orgUId}`,
-        icon: BuildingIcon,
+        icon: ListTodo,
+        count: waitingCount,
       },
       {
         titleKey: 'events',
@@ -96,7 +110,7 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
         icon: ClipboardListIcon,
       },
     ];
-  }, [orgUId, pendingCount]);
+  }, [orgUId, pendingCount, waitingCount]);
   const accountingItems = useMemo(() => {
     if (!orgUId || !accountingEnabled) return [];
 

@@ -64,19 +64,19 @@ describe('missingFieldsToRenderable', () => {
 describe('completeProfileDefaultValues', () => {
   it('prefills the account holder from the names, everything else empty', () => {
     expect(
-      completeProfileDefaultValues(['street', 'account-holder'], {
+      completeProfileDefaultValues(['street', 'accountHolder'], {
         firstname: 'Erika',
         lastname: 'Musterfrau',
       }),
-    ).toEqual({ street: '', 'account-holder': 'Erika Musterfrau' });
+    ).toEqual({ street: '', accountHolder: 'Erika Musterfrau' });
   });
 
   it('leaves the account holder empty when the names are unknown', () => {
     expect(
-      completeProfileDefaultValues(['account-holder'], {
+      completeProfileDefaultValues(['accountHolder'], {
         firstname: null,
         lastname: null,
       }),
-    ).toEqual({ 'account-holder': '' });
+    ).toEqual({ accountHolder: '' });
   });
 });

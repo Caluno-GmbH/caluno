@@ -1,4 +1,43 @@
 {
+  "Todo": {
+    "empty": "Nothing is waiting for you.",
+    "loadFailed": "Waiting actions could not be loaded.",
+    "seeAll": "See all",
+    "groups": {
+      "volunteersAndShifts": "Volunteers and shifts",
+      "accounting": "Accounting"
+    },
+    "types": {
+      "contract": "Contract",
+      "timesheet": "Timesheet"
+    },
+    "back": "Back to to do",
+    "waiting": "{count, plural, one {# waiting} other {# waiting}}",
+    "appliedRelative": "Applied {when}",
+    "declinedAgo": "Declined {when}",
+    "signedAgo": "Signed {when}",
+    "short": "{missing, plural, one {# needed} other {# needed}}",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} of {total} spots filled",
+    "hours": "{hours} h",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} days",
+      "staffing": "Staffing",
+      "daysAhead": "Days ahead",
+      "BELOW_MINIMUM": "Below minimum",
+      "NOT_FULL": "Not full",
+      "emptyBelowMinimum": "No assignments below minimum in the next {count} days",
+      "emptyNotFull": "No assignments that aren't full in the next {count} days"
+    },
+    "sections": {
+      "FILL_OPEN_ASSIGNMENTS": "Fill upcoming assignments",
+      "REVIEW_APPLICATIONS": "Review applications",
+      "APPROVE_SIGNUPS": "Approve sign-ups",
+      "DECLINED_DOCUMENTS": "Declined documents",
+      "COUNTERSIGN_DOCUMENTS": "Countersign documents"
+    }
+  },
   "Terms": {
     "accept": "Accept and continue",
     "accepting": "Accepting...",
@@ -755,7 +794,7 @@
     "orgUnits": "Org units",
     "organizationSettings": "Organisation settings",
     "organizations": "Organisations",
-    "overview": "Overview",
+    "todo": "To do",
     "profile": "Profile",
     "qrIdDescription": "Show this QR code on-site to confirm your attendance.",
     "qrIdTitle": "QR ID",
@@ -811,6 +850,7 @@
       "title": "Request to delete \"{name}\""
     },
     "detail": {
+      "title": "Overview",
       "aboutTitle": "About",
       "contactTitle": "Contact",
       "editButton": "Edit",
@@ -2149,7 +2189,7 @@
       "periodLabel": "Period",
       "yearLabel": "Year",
       "periodPicker": {
-        "allTime": "All time",
+        "fullYear": "Full year",
         "thisMonth": "This month",
         "lastMonth": "Last month",
         "customPeriod": "Custom period",
@@ -2258,7 +2298,6 @@
             "declined": "Declined",
             "volSign": "Volunteer",
             "coordSign": "Coordinator",
-            "superSign": "Supervisor",
             "active": "Active",
             "ready": "Ready",
             "actorOrg": "Organisation"
@@ -2298,10 +2337,10 @@
           "contractExpired": "Expired contract",
           "timesheetGenerate": "Create timesheet",
           "timesheetSigningVol": "Waiting for signature",
-          "timesheetSigningSuper": "Supervisor signature",
+          "timesheetSigningCoord": "Countersignature required",
           "timesheetReady": "Ready to submit",
           "nonCompliant": "No active agreement",
-          "nonCompliantHint": "No active agreement for this allowance type yet. Create or activate one to make this timesheet compliant.",
+          "nonCompliantHint": "Some hours of this timesheet are not covered by an active agreement. Create or activate one that covers them.",
           "notYetCreated": "Not yet created",
           "overCap": "Will exceed yearly allowance",
           "overCapHint": "This timesheet's amount pushes the volunteer at or over their yearly allowance",
@@ -2375,7 +2414,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Supplementary agreement",
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2435,7 +2474,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Timesheet",
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2487,7 +2526,7 @@
             "invoice": "Timesheet"
           },
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         },
         "orgOverride": {

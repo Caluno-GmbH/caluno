@@ -55,8 +55,8 @@ import { createShift } from './factories/shift.factory';
 import { createShiftInstance } from './factories/shift-instance.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('InvoiceService', () => {
@@ -64,6 +64,7 @@ describe('InvoiceService', () => {
   let db: Database;
   let service: InvoiceService;
   let contractService: ContractService;
+  closeTestingModuleAfterAll(() => moduleRef);
   const declinedByVolunteerCalls: unknown[] = [];
 
   beforeAll(async () => {
@@ -148,10 +149,6 @@ describe('InvoiceService', () => {
       organizationService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /** Org + root unit + an invoice template (volunteer -> permission holder) + a completed, unclaimed time entry. */
@@ -766,6 +763,10 @@ describe('InvoiceService', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 4,
+        // No contract of any kind covers the entry.
+        hasUncoveredHours: true,
+        firstUncoveredAt: new Date('2026-07-01T09:00:00.000Z'),
+        hasHoursWithoutActiveContract: true,
       });
       expect(result[0]?.volunteerId).toBe(timeEntry.volunteerId);
     });
@@ -802,6 +803,9 @@ describe('InvoiceService', () => {
           periodStart: new Date('2026-06-30T22:00:00.000Z'),
           periodEnd: new Date('2026-07-31T22:00:00.000Z'),
           eligibleHours: 6.5,
+          hasUncoveredHours: true,
+          firstUncoveredAt: new Date('2026-07-01T09:00:00.000Z'),
+          hasHoursWithoutActiveContract: true,
         },
         {
           volunteerId: volunteer.id,
@@ -809,6 +813,9 @@ describe('InvoiceService', () => {
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
           eligibleHours: 1,
+          hasUncoveredHours: true,
+          firstUncoveredAt: new Date('2026-08-03T09:00:00.000Z'),
+          hasHoursWithoutActiveContract: true,
         },
       ]);
     });
@@ -881,6 +888,11 @@ describe('InvoiceService', () => {
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 4,
+        // Issuing the declined timesheet queued a draft contract over these
+        // hours, and a draft is cover for the reminder: it is its own task.
+        hasUncoveredHours: false,
+        firstUncoveredAt: null,
+        hasHoursWithoutActiveContract: true,
       });
     });
 
@@ -952,6 +964,183 @@ describe('InvoiceService', () => {
       );
 
       expect(result.map((r) => r.volunteerId)).not.toContain(otherVolunteer.id);
+    });
+
+    describe('uncovered hours (VOLI-1587)', () => {
+      const rowFor = async (s: Fixture, month: 'JUL' | 'AUG' = 'JUL') => {
+        const rows = await service.findVolunteersNeedingTimesheets(
+          s.root.id,
+          new Date('2026-01-01T00:00:00.000Z'),
+          new Date('2027-01-01T00:00:00.000Z'),
+        );
+        const start =
+          month === 'JUL'
+            ? '2026-06-30T22:00:00.000Z'
+            : '2026-07-31T22:00:00.000Z';
+        return rows.find(
+          (row) =>
+            row.volunteerId === s.volunteer.id &&
+            row.periodStart.toISOString() === start,
+        );
+      };
+
+      it('is false when every entry of the month is inside an active contract', async () => {
+        const s = await setup();
+        await entryAt(s, '2026-07-20T09:00:00.000Z');
+        await insertContract(s, JULY_TIMESHEET);
+
+        const row = await rowFor(s);
+
+        expect(row?.hasUncoveredHours).toBe(false);
+        expect(row?.firstUncoveredAt).toBeNull();
+      });
+
+      it('is true with the earliest uncovered start when one entry is outside every contract', async () => {
+        const s = await setup(); // entry at 2026-07-01T09:00Z
+        // The earliest uncovered entry (16 Jul) sits in the middle of the
+        // insertion order, so neither "first row wins" nor "last row wins"
+        // returns it by accident.
+        await entryAt(s, '2026-07-25T09:00:00.000Z');
+        await entryAt(s, '2026-07-16T09:00:00.000Z');
+        await entryAt(s, '2026-07-20T09:00:00.000Z');
+        // Covers 1 Jul (the setup entry) only.
+        await insertContract(s, {
+          start: '2026-06-30T22:00:00.000Z',
+          end: '2026-07-10T22:00:00.000Z',
+        });
+
+        const row = await rowFor(s);
+
+        expect(row?.hasUncoveredHours).toBe(true);
+        expect(row?.firstUncoveredAt).toEqual(
+          new Date('2026-07-16T09:00:00.000Z'),
+        );
+      });
+
+      it('is only satisfied by an ACTIVE contract for the hasHoursWithoutActiveContract flag', async () => {
+        const awaiting = await setup();
+        await insertContract(awaiting, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+        const active = await setup();
+        await insertContract(active, JULY_TIMESHEET);
+
+        const awaitingRow = await rowFor(awaiting);
+        const activeRow = await rowFor(active);
+
+        // Open cover (no reminder) but not an ACTIVE contract (still no agreement).
+        expect(awaitingRow?.hasUncoveredHours).toBe(false);
+        expect(awaitingRow?.hasHoursWithoutActiveContract).toBe(true);
+        expect(activeRow?.hasUncoveredHours).toBe(false);
+        expect(activeRow?.hasHoursWithoutActiveContract).toBe(false);
+      });
+
+      it('is false when only a draft or a contract awaiting signature covers the hours', async () => {
+        const draft = await setup();
+        await insertContract(draft, JULY_TIMESHEET, {
+          status: ContractStatus.DRAFT,
+        });
+        const awaiting = await setup();
+        await insertContract(awaiting, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+
+        expect((await rowFor(draft))?.hasUncoveredHours).toBe(false);
+        expect((await rowFor(awaiting))?.hasUncoveredHours).toBe(false);
+      });
+
+      it('is true when only a declined contract is over the hours', async () => {
+        const s = await setup();
+        await insertContract(s, JULY_TIMESHEET, {
+          status: ContractStatus.DECLINED,
+        });
+
+        const row = await rowFor(s);
+
+        expect(row?.hasUncoveredHours).toBe(true);
+        expect(row?.firstUncoveredAt).toEqual(
+          new Date('2026-07-01T09:00:00.000Z'),
+        );
+      });
+
+      it('answers each month on its own', async () => {
+        const s = await setup(); // July entry
+        await entryAt(s, '2026-08-12T09:00:00.000Z');
+        await insertContract(s, JULY_TIMESHEET);
+
+        expect((await rowFor(s, 'JUL'))?.hasUncoveredHours).toBe(false);
+        const august = await rowFor(s, 'AUG');
+        expect(august?.hasUncoveredHours).toBe(true);
+        expect(august?.firstUncoveredAt).toEqual(
+          new Date('2026-08-12T09:00:00.000Z'),
+        );
+      });
+
+      it('does not count a contract of another unit or another volunteer', async () => {
+        const s = await setup();
+        const sibling = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sibling',
+          parentId: s.root.id,
+        });
+        const other = await createUser(db);
+        await insertContract(s, JULY_TIMESHEET, { unitId: sibling.id });
+        await db.insert(schema.contracts).values({
+          documentTemplateId: s.contractTemplate.id,
+          volunteerId: other.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          organizationUnitId: s.root.id,
+          contractStatus: ContractStatus.ACTIVE,
+          periodStart: new Date(JULY_TIMESHEET.start),
+          periodEnd: new Date(JULY_TIMESHEET.end),
+          resolvedBody: { header: {}, blocks: [], footer: {} },
+        });
+
+        expect((await rowFor(s))?.hasUncoveredHours).toBe(true);
+      });
+
+      it('covers an entry exactly at the contract start and not at its exclusive end', async () => {
+        const atStart = await setup(); // entry at 2026-07-01T09:00Z
+        await insertContract(atStart, {
+          start: '2026-07-01T09:00:00.000Z',
+          end: '2026-07-31T22:00:00.000Z',
+        });
+        const atEnd = await setup();
+        await insertContract(atEnd, {
+          start: '2026-06-30T22:00:00.000Z',
+          end: '2026-07-01T09:00:00.000Z',
+        });
+
+        expect((await rowFor(atStart))?.hasUncoveredHours).toBe(false);
+        expect((await rowFor(atEnd))?.hasUncoveredHours).toBe(true);
+      });
+
+      it('looks cover up once for the whole result, whatever the number of volunteers', async () => {
+        const s = await setup();
+        for (let i = 0; i < 3; i += 1) {
+          const volunteer = await createUser(db);
+          await createCompletedTimeEntry(db, {
+            organizationUnitId: s.root.id,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: s.reimbursementType.id,
+            startedAt: new Date('2026-07-10T09:00:00.000Z'),
+            endedAt: new Date('2026-07-10T11:00:00.000Z'),
+          });
+        }
+        const spy = spyOn(contractService, 'findCoveringContracts');
+
+        try {
+          await service.findVolunteersNeedingTimesheets(
+            s.root.id,
+            new Date('2026-01-01T00:00:00.000Z'),
+            new Date('2027-01-01T00:00:00.000Z'),
+          );
+          expect(spy).toHaveBeenCalledTimes(1);
+        } finally {
+          spy.mockRestore();
+        }
+      });
     });
   });
 
@@ -1974,6 +2163,195 @@ describe('InvoiceService', () => {
 
         expect(invoice.isNonCompliant).toBe(false);
         expect(await draftsOf(s)).toHaveLength(0);
+      });
+    });
+
+    describe('findInvoiceIdsWithoutActiveCover (VOLI-1588)', () => {
+      it('flags an invoice whose hours have no ACTIVE contract and clears it once one is active', async () => {
+        const s = await setup();
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+
+        await insertContract(s, JULY_TIMESHEET);
+
+        // The stored snapshot still says non-compliant; the live answer moved.
+        const stored = await db.query.invoices.findFirst({
+          where: { id: invoice.id },
+        });
+        expect(stored?.isNonCompliant).toBe(true);
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
+      it('does not count a contract awaiting signature as cover', async () => {
+        const s = await setup();
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        await insertContract(s, JULY_TIMESHEET, {
+          status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        });
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+      });
+
+      it('is judged per claimed hour, so two contracts that together cover the month clear it', async () => {
+        const s = await setup();
+        const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id, late.id],
+          JULY_TIMESHEET,
+        );
+        await insertContract(s, JULY_FIRST_HALF);
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+
+        await insertContract(s, JULY_SECOND_HALF);
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
+      it('answers a whole list with one cover lookup and ignores unknown ids', async () => {
+        const a = await setup();
+        const b = await setup();
+        const invoiceA = await issueTimesheet(
+          a,
+          [a.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        const invoiceB = await issueTimesheet(
+          b,
+          [b.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        await insertContract(b, JULY_TIMESHEET);
+        const spy = spyOn(contractService, 'findCoveringContracts');
+
+        try {
+          const flagged = await service.findInvoiceIdsWithoutActiveCover([
+            invoiceA.id,
+            invoiceB.id,
+            crypto.randomUUID(),
+          ]);
+          expect(flagged).toEqual(new Set([invoiceA.id]));
+          expect(spy).toHaveBeenCalledTimes(1);
+        } finally {
+          spy.mockRestore();
+        }
+      });
+
+      it('judges an org-wide invoice, which stores no unit, in the unit of its claimed entries', async () => {
+        const s = await setup();
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        const stored = await db.query.invoices.findFirst({
+          where: { id: invoice.id },
+        });
+        expect(stored?.organizationUnitId).toBeNull();
+
+        await insertContract(s, JULY_TIMESHEET, { unitId: s.root.id });
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
+      it('judges a unit-scoped invoice in its own unit, not in the root unit', async () => {
+        const s = await setup();
+        const sub = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sub',
+          parentId: s.root.id,
+        });
+        const entry = await createCompletedTimeEntry(db, {
+          organizationUnitId: sub.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          startedAt: new Date('2026-07-10T09:00:00.000Z'),
+          endedAt: new Date('2026-07-10T11:00:00.000Z'),
+        });
+        const invoice = await issueTimesheet(
+          s,
+          [entry.id],
+          JULY_TIMESHEET,
+          sub.id,
+        );
+        const stored = await db.query.invoices.findFirst({
+          where: { id: invoice.id },
+        });
+        expect(stored?.organizationUnitId).toBe(sub.id);
+
+        await insertContract(s, JULY_TIMESHEET, { unitId: s.root.id });
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+
+        await insertContract(s, JULY_TIMESHEET, { unitId: sub.id });
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
+      it('ignores a claim that was released, so it does not hold the invoice non-compliant', async () => {
+        const s = await setup();
+        const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id, late.id],
+          JULY_TIMESHEET,
+        );
+        await insertContract(s, JULY_FIRST_HALF);
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
+
+        await db
+          .update(schema.invoiceTimeEntries)
+          .set({ released: true })
+          .where(eq(schema.invoiceTimeEntries.timeEntryId, late.id));
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set());
+      });
+
+      it('matches in the invoice unit, so another unit’s contract does not count', async () => {
+        const s = await setup();
+        const sibling = await createUnit(db, {
+          organizationId: s.organization.id,
+          typeId: s.type.id,
+          name: 'sibling',
+          parentId: s.root.id,
+        });
+        const invoice = await issueTimesheet(
+          s,
+          [s.timeEntry.id],
+          JULY_TIMESHEET,
+        );
+        await insertContract(s, JULY_TIMESHEET, { unitId: sibling.id });
+
+        expect(
+          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
+        ).toEqual(new Set([invoice.id]));
       });
     });
 

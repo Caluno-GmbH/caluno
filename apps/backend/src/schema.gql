@@ -567,6 +567,11 @@ type Invoice {
   declinedByUser: User
   documentTemplate: DocumentTemplate!
   downloadUrl: String
+
+  """
+  At least one claimed hour has no ACTIVE contract right now. Live, unlike isNonCompliant, which is the state when the timesheet was created.
+  """
+  hasHoursWithoutActiveContract: Boolean!
   hourlyRateCents: Int!
   id: ID!
   invoiceStatus: InvoiceStatus!
@@ -816,6 +821,7 @@ type Mutation {
   updateShiftInstanceInviteStatus(instanceId: String!, status: ShiftInviteStatus!, userId: String): ShiftInstanceInvite!
   updateShiftInviteStatus(shiftId: String!, status: ShiftInviteStatus!): ShiftInvite!
   updateTimeEntry(id: ID!, input: UpdateTimeEntryInput!): TimeEntry!
+  updateTodoFillAssignmentFilter(input: UpdateTodoFillAssignmentFilterInput!): TodoFillAssignmentFilter!
 }
 
 type MyDocumentSummary {
@@ -1087,6 +1093,7 @@ type Query {
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
+  todoFillAssignmentFilter: TodoFillAssignmentFilter!
   user(id: String!): UserWithProfile
   volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
@@ -1564,6 +1571,16 @@ enum TimeEntrySortField {
   VOLUNTEER
 }
 
+type TodoFillAssignmentFilter {
+  daysAhead: Int!
+  threshold: TodoFillThreshold!
+}
+
+enum TodoFillThreshold {
+  BELOW_MINIMUM
+  NOT_FULL
+}
+
 input UpdateDocumentTemplateInput {
   body: JSON
   invoiceNumberFormat: String
@@ -1746,6 +1763,11 @@ input UpdateTimeEntryInput {
   startedAt: DateTime!
 }
 
+input UpdateTodoFillAssignmentFilterInput {
+  daysAhead: Int!
+  threshold: TodoFillThreshold!
+}
+
 type User {
   checkInId: ID!
   email: String!
@@ -1824,6 +1846,9 @@ enum VolunteerAllowanceState {
 type VolunteerNeedsTimesheet {
   eligibleHours: Float!
   estimatedAmountCents: Int!
+  firstUncoveredAt: DateTime
+  hasHoursWithoutActiveContract: Boolean!
+  hasUncoveredHours: Boolean!
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!

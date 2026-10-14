@@ -87,3 +87,27 @@ export function parseLifespanShape(value: string): LifespanShape | undefined {
 
   return undefined;
 }
+
+function twoDigits(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function printDay({ year, month, day }: LifespanDay): string {
+  return `${twoDigits(day)}.${twoDigits(month)}.${year}`;
+}
+
+/**
+ * Prints a shape the way the template builder's period picker writes it, so
+ * `parseLifespanShape(formatLifespanShape(shape))` is the same shape. Shape
+ * to string only: choosing the shape for a stored period stays with each app.
+ */
+export function formatLifespanShape(shape: LifespanShape): string {
+  switch (shape.kind) {
+    case 'year':
+      return String(shape.year);
+    case 'month':
+      return `${twoDigits(shape.month)}/${shape.year}`;
+    case 'range':
+      return `${printDay(shape.from)}–${printDay(shape.to)}`;
+  }
+}

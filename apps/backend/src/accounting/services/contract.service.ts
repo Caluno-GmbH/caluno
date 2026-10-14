@@ -687,7 +687,7 @@ export class ContractService {
       const missing =
         await this.documentProfileRequirementService.missingProfileSources(
           contract.volunteerId,
-          contract.documentTemplate?.body,
+          contract.documentTemplate.body,
         );
       if (missing.length > 0) {
         throw new BadRequestGraphQLError(

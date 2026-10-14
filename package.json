@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "test": "bun test",
     "dev": "bun run db:up && turbo run dev",
     "mdev": "bun run --cwd apps/backend db:migrate && turbo run dev",
     "lint": "turbo run format-and-lint",

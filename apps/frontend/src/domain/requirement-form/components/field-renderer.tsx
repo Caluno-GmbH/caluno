@@ -33,6 +33,7 @@ import {
   serializeMultiChoiceValue,
 } from '../option-values';
 import { BirthDateInput } from './birth-date-input';
+import { INCOMPLETE_BIRTH_DATE_VALUE } from './birth-date-segments';
 import { DocumentPreviewSheet } from './document-preview-sheet';
 
 const PHONE_RE = /^\+?[\d\s\-().]{7,20}$/;
@@ -119,21 +120,35 @@ export function buildFieldSchema(
   }
 
   if (type === FieldType.Date) {
+    const isEmptyOrIncomplete = (v: string) =>
+      !v || v === INCOMPLETE_BIRTH_DATE_VALUE;
     let s = isRequired
       ? z
           .string()
           .min(1, messages.fieldRequired(label))
-          .refine((v) => !Number.isNaN(Date.parse(v)), {
-            message: messages.mustBeValidDate(label),
-          })
-      : z.string().refine((v) => !v || !Number.isNaN(Date.parse(v)), {
-          message: messages.mustBeValidDate(label),
-        });
+          .refine(
+            (v) =>
+              v !== INCOMPLETE_BIRTH_DATE_VALUE && !Number.isNaN(Date.parse(v)),
+            {
+              message: messages.mustBeValidDate(label),
+            },
+          )
+      : z
+          .string()
+          .refine(
+            (v) =>
+              !v ||
+              (v !== INCOMPLETE_BIRTH_DATE_VALUE &&
+                !Number.isNaN(Date.parse(v))),
+            {
+              message: messages.mustBeValidDate(label),
+            },
+          );
     if (minAge != null) {
       const requiredAge = minAge;
       s = s.refine(
         (v) => {
-          if (!v) return true;
+          if (isEmptyOrIncomplete(v)) return true;
           const birth = new Date(v);
           const today = new Date();
           let age = today.getFullYear() - birth.getFullYear();
@@ -152,7 +167,7 @@ export function buildFieldSchema(
     if (systemKey === 'birthdate') {
       s = s.refine(
         (v) => {
-          if (!v) return true;
+          if (isEmptyOrIncomplete(v)) return true;
           const d = new Date(v);
           return !Number.isNaN(d.getTime()) && d.getTime() <= Date.now();
         },
@@ -223,6 +238,8 @@ export function buildFieldSchema(
   }
 
   // Text-like: TEXT, NAME, LASTNAME, ZIP, IBAN, TEXTAREA
+  // IBAN: allow spaces in the typed value (DE89 3704 …); length/checksum
+  // run on the stripped form below — a raw max(34) rejects valid spaced IBANs.
   const maxLen =
     type === FieldType.Textarea
       ? 5000
@@ -231,7 +248,7 @@ export function buildFieldSchema(
         : type === FieldType.Zip
           ? 20
           : type === FieldType.Iban
-            ? 34
+            ? 50
             : 300; // TEXT and anything else
   let s = z.string().max(maxLen, messages.maxChars(label, maxLen));
 
@@ -240,7 +257,7 @@ export function buildFieldSchema(
   if (
     sk === 'firstname' ||
     sk === 'lastname' ||
-    sk === 'preferred-name' ||
+    sk === 'preferredName' ||
     sk === 'city'
   ) {
     s = s
@@ -265,9 +282,16 @@ export function buildFieldSchema(
   }
 
   if (type === FieldType.Iban || systemKey === 'iban') {
-    s = s.refine((v) => !v || validateIban(v), {
-      message: messages.invalidIban(label),
-    }) as z.ZodString;
+    s = s.refine(
+      (v) => {
+        if (!v) return true;
+        const stripped = v.replace(/\s+/g, '');
+        return stripped.length <= 34 && validateIban(v);
+      },
+      {
+        message: messages.invalidIban(label),
+      },
+    ) as z.ZodString;
   }
 
   if (systemKey === 'bic') {

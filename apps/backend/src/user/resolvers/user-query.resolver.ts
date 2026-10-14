@@ -9,6 +9,7 @@ import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
 import { UserWithProfile } from '../models/user-with-profile.model';
 import { UserService } from '../user.service';
+import { withEffectiveAccountHolder } from '../user-name';
 
 @Resolver(() => User)
 export class UserQueryResolver {
@@ -21,7 +22,9 @@ export class UserQueryResolver {
   @Query(() => UserWithProfile)
   async me(@Session() session: UserSession): Promise<UserWithProfile> {
     const me = await this.userService.findByIdOrThrow(session.user.id);
-    return this.userWithProfileMapper.toModelOrThrow(me);
+    return this.userWithProfileMapper.toModelOrThrow(
+      withEffectiveAccountHolder(me),
+    );
   }
 
   @Permissions(PERMISSIONS.VOLUNTEER_VIEW)
@@ -47,8 +50,12 @@ export class UserQueryResolver {
         [PERMISSIONS.ACCOUNTING_MANAGE],
       ));
 
+    // Mask raw payment fields (null stays null). Resolve effective account
+    // holder only for viewers who may see payment data.
     return this.userWithProfileMapper.toModel(
-      canSeePaymentData ? item : maskRestrictedPaymentUserFields(item),
+      canSeePaymentData
+        ? withEffectiveAccountHolder(item)
+        : maskRestrictedPaymentUserFields(item),
     );
   }
 }

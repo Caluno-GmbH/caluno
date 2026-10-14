@@ -92,7 +92,7 @@ function line(
 function bicLine(id: string): TemplateLine {
   return line(
     id,
-    '{volunteerBic} (BIC)',
+    'BIC: {volunteerBic}',
     [bound(`${id}-field`, 'volunteer_bic')],
     {
       optional: true,
@@ -235,10 +235,10 @@ export function getContractDocument(
             'payout-intro',
             'Die Aufwandsentschädigung wird monatlich auf folgendes Konto überwiesen:',
           ),
-          line('payout-holder', '{volunteerAccountHolder} (Kontoinhaber:in)', [
+          line('payout-holder', 'Kontoinhaber:in: {volunteerAccountHolder}', [
             bound('payout-holder-field', 'volunteer_account_holder'),
           ]),
-          line('payout-iban', '{volunteerIban} (IBAN)', [
+          line('payout-iban', 'IBAN: {volunteerIban}', [
             bound('payout-iban-field', 'volunteer_iban'),
           ]),
           bicLine('payout-bic'),
@@ -328,13 +328,14 @@ export function getInvoiceDocument(
           line('volunteer-street', '{volunteerStreet}', [
             bound('volunteer-street-field', 'volunteer_street'),
           ]),
-          line('volunteer-zip', '{volunteerZip}', [
+          line('volunteer-addr', '{volunteerZip} {volunteerCity}', [
             bound('volunteer-zip-field', 'volunteer_zip'),
-          ]),
-          line('volunteer-city', '{volunteerCity}', [
             bound('volunteer-city-field', 'volunteer_city'),
           ]),
-          line('volunteer-iban', '{volunteerIban}', [
+          line('payout-holder', 'Kontoinhaber:in: {volunteerAccountHolder}', [
+            bound('payout-holder-field', 'volunteer_account_holder'),
+          ]),
+          line('volunteer-iban', 'IBAN: {volunteerIban}', [
             bound('volunteer-iban-field', 'volunteer_iban'),
           ]),
           // Follows the IBAN so payout details read together.

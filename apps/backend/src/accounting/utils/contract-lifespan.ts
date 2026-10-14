@@ -1,4 +1,4 @@
-import { parseLifespanShape } from '@repo/lifespan';
+import { formatLifespanShape, parseLifespanShape } from '@repo/lifespan';
 import { appDateParts, startOfAppDay } from '../../shift/utils/app-time';
 import {
   type BillingPeriod,
@@ -10,12 +10,6 @@ import { contractCoversInstant } from './contract-coverage';
 
 /** The manual template field that holds a contract's Vertragslaufzeit. */
 export const CONTRACT_LIFESPAN_FIELD_ID = 'contract-lifespan';
-
-const EN_DASH = '–';
-
-function twoDigits(value: number): string {
-  return String(value).padStart(2, '0');
-}
 
 /**
  * The period an auto-queued draft covers for the entry that starts at
@@ -69,7 +63,7 @@ export function formatLifespanForPeriod(period: BillingPeriod): string {
     period.start.getTime() === year.start.getTime() &&
     period.end.getTime() === year.end.getTime()
   ) {
-    return String(first.year);
+    return formatLifespanShape({ kind: 'year', year: first.year });
   }
 
   const monthStart = startOfAppDay(first.year, first.month, 1);
@@ -78,12 +72,16 @@ export function formatLifespanForPeriod(period: BillingPeriod): string {
     period.start.getTime() === monthStart.getTime() &&
     period.end.getTime() === monthEnd.getTime()
   ) {
-    return `${twoDigits(first.month + 1)}/${first.year}`;
+    return formatLifespanShape({
+      kind: 'month',
+      year: first.year,
+      month: first.month + 1,
+    });
   }
 
-  return (
-    `${twoDigits(first.day)}.${twoDigits(first.month + 1)}.${first.year}` +
-    EN_DASH +
-    `${twoDigits(last.day)}.${twoDigits(last.month + 1)}.${last.year}`
-  );
+  return formatLifespanShape({
+    kind: 'range',
+    from: { year: first.year, month: first.month + 1, day: first.day },
+    to: { year: last.year, month: last.month + 1, day: last.day },
+  });
 }

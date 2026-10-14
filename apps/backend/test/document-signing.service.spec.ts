@@ -32,8 +32,8 @@ import {
   grantPermissionToRole,
 } from './factories/role.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('DocumentSigningService', () => {
@@ -41,6 +41,7 @@ describe('DocumentSigningService', () => {
   let db: Database;
   let service: DocumentSigningService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -62,10 +63,6 @@ describe('DocumentSigningService', () => {
       { capture: () => {} } as unknown as PostHogService,
     );
     service = new DocumentSigningService(db, authService, organizationService);
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   describe('orderSignatures', () => {
@@ -133,12 +130,6 @@ describe('DocumentSigningService', () => {
           organizationId: 'org-1',
         } as never),
       ).toBe('org-1');
-    });
-
-    it('throws ConflictGraphQLError when the template is null', () => {
-      expect(() => service.organizationIdOf(null)).toThrow(
-        ConflictGraphQLError,
-      );
     });
   });
 

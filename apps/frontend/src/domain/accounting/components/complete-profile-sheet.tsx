@@ -31,7 +31,6 @@ import {
   FieldRenderer,
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
-import { profileDataToUpdateInput } from '@/domain/user/lib/profile-data-map';
 import { useRouter } from '@/i18n/navigation';
 import {
   completeProfileDefaultValues,
@@ -260,7 +259,7 @@ function CompleteProfileForm({
 
   const onSubmit = handleSubmit(async (values) => {
     try {
-      await updateProfile.mutateAsync(profileDataToUpdateInput(values));
+      await updateProfile.mutateAsync(values);
       toast.success(t('success'));
       onClose();
     } catch {

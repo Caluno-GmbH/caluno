@@ -107,28 +107,28 @@ export type DeclineContractMutationVariables = Exact<{
 
 export type DeclineContractMutation = { declineContract: { id: string, contractStatus: Types.ContractStatus, periodStart: string, periodEnd: string, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, renewDate: string | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
 
-export type InvoiceSummaryFieldsFragment = { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> };
+export type InvoiceSummaryFieldsFragment = { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> };
 
 export type GetInvoicesQueryVariables = Exact<{
   filter?: Types.InvoiceFilterInput | null | undefined;
 }>;
 
 
-export type GetInvoicesQuery = { invoices: Array<{ id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }> };
+export type GetInvoicesQuery = { invoices: Array<{ id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }> };
 
 export type GetMyInvoicesQueryVariables = Exact<{
   filter?: Types.InvoiceFilterInput | null | undefined;
 }>;
 
 
-export type GetMyInvoicesQuery = { myInvoices: Array<{ id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }> };
+export type GetMyInvoicesQuery = { myInvoices: Array<{ id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }> };
 
 export type GetInvoiceQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetInvoiceQuery = { invoice: { resolvedBody: Record<string, unknown>, id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, invoiceTimeEntries: Array<{ id: string, timeEntry: { id: string, startedAt: string, endedAt: string | null, notes: string | null, shiftInstance: { id: string, overrideTitle: string | null, master: { title: string } } | null } }>, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
+export type GetInvoiceQuery = { invoice: { resolvedBody: Record<string, unknown>, id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, invoiceTimeEntries: Array<{ id: string, timeEntry: { id: string, startedAt: string, endedAt: string | null, notes: string | null, shiftInstance: { id: string, overrideTitle: string | null, master: { title: string } } | null } }>, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
 
 export type GetPendingInvoiceSigneeQueryVariables = Exact<{
   invoiceId: string;
@@ -143,7 +143,7 @@ export type GetVolunteersNeedingTimesheetsQueryVariables = Exact<{
 }>;
 
 
-export type GetVolunteersNeedingTimesheetsQuery = { volunteersNeedingTimesheets: Array<{ periodStart: string, periodEnd: string, eligibleHours: number, estimatedAmountCents: number, volunteer: { id: string, name: string }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey } }> };
+export type GetVolunteersNeedingTimesheetsQuery = { volunteersNeedingTimesheets: Array<{ periodStart: string, periodEnd: string, eligibleHours: number, estimatedAmountCents: number, hasUncoveredHours: boolean, firstUncoveredAt: string | null, hasHoursWithoutActiveContract: boolean, volunteer: { id: string, name: string }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey } }> };
 
 export type GetPaidShiftSignupVolunteersQueryVariables = Exact<{
   year: number;
@@ -167,14 +167,14 @@ export type CreateInvoiceMutationVariables = Exact<{
 }>;
 
 
-export type CreateInvoiceMutation = { createInvoice: { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
+export type CreateInvoiceMutation = { createInvoice: { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
 
 export type SignInvoiceMutationVariables = Exact<{
   invoiceId: string;
 }>;
 
 
-export type SignInvoiceMutation = { signInvoice: { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
+export type SignInvoiceMutation = { signInvoice: { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
 
 export type DeclineInvoiceMutationVariables = Exact<{
   invoiceId: string;
@@ -182,7 +182,7 @@ export type DeclineInvoiceMutationVariables = Exact<{
 }>;
 
 
-export type DeclineInvoiceMutation = { declineInvoice: { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
+export type DeclineInvoiceMutation = { declineInvoice: { id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> } };
 
 export type DocumentTemplateSummaryFieldsFragment = { id: string, kind: Types.DocumentKind, invoiceNumberFormat: string | null, renewalCadence: Types.RenewalCadence | null, isDeleted: boolean, lastEditedAt: string | null, lastEditedByUser: { id: string, name: string } | null, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, organizationUnit: { id: string, name: string } | null, signees: Array<{ id: string, order: number, signeeType: Types.SigneeType, requiredPermission: { id: string, key: Types.PermissionKey } | null }> };
 
@@ -268,7 +268,7 @@ export type SetManualBaselineMutation = { setManualBaseline: { year: number, amo
 export type MyDocumentsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MyDocumentsQuery = { myDocuments: Array<{ membershipId: string, organizationUnitId: string, organizationUnitName: string, organizationName: string, logoUrl: string | null, contracts: Array<{ id: string, contractStatus: Types.ContractStatus, periodStart: string, periodEnd: string, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, renewDate: string | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }>, invoices: Array<{ id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }> }> };
+export type MyDocumentsQuery = { myDocuments: Array<{ membershipId: string, organizationUnitId: string, organizationUnitName: string, organizationName: string, logoUrl: string | null, contracts: Array<{ id: string, contractStatus: Types.ContractStatus, periodStart: string, periodEnd: string, isNonCompliant: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, renewDate: string | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }>, invoices: Array<{ id: string, invoiceStatus: Types.InvoiceStatus, periodStart: string, periodEnd: string, totalAmountCents: number, totalHours: number, isNonCompliant: boolean, hasHoursWithoutActiveContract: boolean, declineReason: string | null, declinedAt: string | null, declinedAtSigneeType: Types.SigneeType | null, downloadUrl: string | null, missingProfileFields: Array<string>, missingOrgProfileFields: Array<string>, createdAt: string, updatedAt: string | null, declinedByUser: { id: string, name: string } | null, volunteer: { id: string, name: string, image: string | null }, reimbursementType: { id: string, key: Types.ReimbursementTypeKey }, documentTemplate: { id: string, kind: Types.DocumentKind }, invoiceTimeEntries: Array<{ id: string }>, signatures: Array<{ id: string, order: number, signeeType: Types.SigneeType, signedAt: string | null, signedByUser: { id: string, name: string } | null, requiredPermission: { id: string, key: Types.PermissionKey } | null }>, statusChanges: Array<{ id: string, type: Types.DocumentStatusChange, occurredAt: string, actorUser: { id: string, name: string } | null }> }> }> };
 
 export type MyDocumentSummaryQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1265,6 +1265,23 @@ export type CheckInInviteToShiftInstanceMutationVariables = Exact<{
 
 export type CheckInInviteToShiftInstanceMutation = { checkInInviteToShiftInstance: { id: string } };
 
+export type MyTasksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyTasksQuery = { myTasks: Array<{ id: string, type: Types.TaskType, link: string, data: Record<string, unknown>, organizationUnitId: string, neededPermission: Types.PermissionKey | null }> };
+
+export type TodoFillAssignmentFilterQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type TodoFillAssignmentFilterQuery = { todoFillAssignmentFilter: { threshold: Types.TodoFillThreshold, daysAhead: number } };
+
+export type UpdateTodoFillAssignmentFilterMutationVariables = Exact<{
+  input: Types.UpdateTodoFillAssignmentFilterInput;
+}>;
+
+
+export type UpdateTodoFillAssignmentFilterMutation = { updateTodoFillAssignmentFilter: { threshold: Types.TodoFillThreshold, daysAhead: number } };
+
 export type TermsStatusQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -1511,6 +1528,7 @@ export const InvoiceSummaryFieldsFragmentDoc = gql`
   totalAmountCents
   totalHours
   isNonCompliant
+  hasHoursWithoutActiveContract
   declineReason
   declinedAt
   declinedAtSigneeType
@@ -2112,6 +2130,9 @@ export const GetVolunteersNeedingTimesheetsDocument = gql`
     periodEnd
     eligibleHours
     estimatedAmountCents
+    hasUncoveredHours
+    firstUncoveredAt
+    hasHoursWithoutActiveContract
   }
 }
     `;
@@ -4642,6 +4663,34 @@ export const CheckInInviteToShiftInstanceDocument = gql`
   }
 }
     `;
+export const MyTasksDocument = gql`
+    query MyTasks {
+  myTasks {
+    id
+    type
+    link
+    data
+    organizationUnitId
+    neededPermission
+  }
+}
+    `;
+export const TodoFillAssignmentFilterDocument = gql`
+    query TodoFillAssignmentFilter {
+  todoFillAssignmentFilter {
+    threshold
+    daysAhead
+  }
+}
+    `;
+export const UpdateTodoFillAssignmentFilterDocument = gql`
+    mutation UpdateTodoFillAssignmentFilter($input: UpdateTodoFillAssignmentFilterInput!) {
+  updateTodoFillAssignmentFilter(input: $input) {
+    threshold
+    daysAhead
+  }
+}
+    `;
 export const TermsStatusDocument = gql`
     query TermsStatus {
   termsStatus {
@@ -5577,6 +5626,15 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CheckInInviteToShiftInstance(variables: CheckInInviteToShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInInviteToShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInInviteToShiftInstanceMutation>({ document: CheckInInviteToShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInInviteToShiftInstance', 'mutation', variables);
+    },
+    MyTasks(variables?: MyTasksQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyTasksQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyTasksQuery>({ document: MyTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyTasks', 'query', variables);
+    },
+    TodoFillAssignmentFilter(variables?: TodoFillAssignmentFilterQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TodoFillAssignmentFilterQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<TodoFillAssignmentFilterQuery>({ document: TodoFillAssignmentFilterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TodoFillAssignmentFilter', 'query', variables);
+    },
+    UpdateTodoFillAssignmentFilter(variables: UpdateTodoFillAssignmentFilterMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateTodoFillAssignmentFilterMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<UpdateTodoFillAssignmentFilterMutation>({ document: UpdateTodoFillAssignmentFilterDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateTodoFillAssignmentFilter', 'mutation', variables);
     },
     TermsStatus(variables?: TermsStatusQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<TermsStatusQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<TermsStatusQuery>({ document: TermsStatusDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'TermsStatus', 'query', variables);

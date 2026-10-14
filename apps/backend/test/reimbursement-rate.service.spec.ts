@@ -37,14 +37,15 @@ import {
 } from './factories/org.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('ReimbursementRateService', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let service: ReimbursementRateService;
+  closeTestingModuleAfterAll(() => moduleRef);
   const ACTOR_USER_ID = crypto.randomUUID();
 
   beforeAll(async () => {
@@ -73,9 +74,6 @@ describe('ReimbursementRateService', () => {
       membershipService,
       { capture: () => {} } as unknown as PostHogService,
     );
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /** Org + root unit, ready for a reimbursement type's rate to cascade over. */

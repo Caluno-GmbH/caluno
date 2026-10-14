@@ -9,7 +9,7 @@ interface CompleteProfileSheetPageProps {
  * Sheet route: complete the profile details one document is missing. Bad
  * `kind`/`id` values are forwarded as null — the sheet renders its own error
  * state rather than a 404. The current user's names come along for the
- * account-holder prefill.
+ * accountHolder prefill.
  */
 export default async function CompleteProfileSheetPage({
   searchParams,

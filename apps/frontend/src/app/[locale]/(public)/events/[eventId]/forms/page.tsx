@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { EventFormsClient } from '@/app/[locale]/(public)/events/[eventId]/forms/event-forms-client';
 import { EventPageHeader } from '@/domain/event/components/event-page-header';
 import type { RequiredFormItem } from '@/domain/requirement-form/components/required-form-renderer';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
@@ -87,7 +87,7 @@ export default async function EventFormsPage({
   let profileData: Record<string, string> = {};
   try {
     const userProfile = await data.user.getMe();
-    profileData = toProfileDataMap(userProfile) as Record<string, string>;
+    profileData = profileFieldValues(userProfile);
   } catch {
     // Ignore profile fetch errors; form will render without prefilled values.
   }

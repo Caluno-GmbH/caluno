@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { docVisibleInRange } from './reimbursements-board';
+import { docVisibleInRange, isTimesheetNonCompliant } from './board-filters';
 
 const timesheet = (periodStart: Date, periodEnd: Date, lastAction: Date) =>
   ({
@@ -84,5 +84,40 @@ describe('docVisibleInRange', () => {
         to: new Date(2025, 7, 31),
       }),
     ).toBe(false);
+  });
+});
+
+describe('isTimesheetNonCompliant', () => {
+  const doc = (overrides: Record<string, unknown> = {}) =>
+    ({
+      id: 'd',
+      status: 'timesheet-countersign',
+      periodLabel: 'Oktober 2026',
+      pauschale: 'ehrenamt',
+      ...overrides,
+    }) as never;
+
+  // The flag is the backend's live per-hour answer; whether some other active
+  // contract of the Pauschale exists is not an input any more (VOLI-1588).
+  it('follows the document flag', () => {
+    expect(isTimesheetNonCompliant(doc({ isNonCompliant: true }))).toBe(true);
+    expect(isTimesheetNonCompliant(doc({ isNonCompliant: false }))).toBe(false);
+  });
+
+  it('is false for a declined timesheet and for anything that is not a timesheet', () => {
+    expect(
+      isTimesheetNonCompliant(
+        doc({ status: 'timesheet-declined', isNonCompliant: true }),
+      ),
+    ).toBe(false);
+    expect(
+      isTimesheetNonCompliant(
+        doc({ status: 'contract-active', isNonCompliant: true }),
+      ),
+    ).toBe(false);
+  });
+
+  it('treats a timesheet without a flag as compliant rather than guessing', () => {
+    expect(isTimesheetNonCompliant(doc())).toBe(false);
   });
 });

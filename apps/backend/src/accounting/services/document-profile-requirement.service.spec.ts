@@ -22,7 +22,7 @@ describe('DocumentProfileRequirementService', () => {
           enabled: true,
           lines: [
             {
-              text: '{volunteerIban}',
+              text: 'IBAN: {volunteerIban}',
               enabled: true,
               fields: [{ value: { kind: 'bound', source: 'volunteer_iban' } }],
             },
@@ -38,7 +38,7 @@ describe('DocumentProfileRequirementService', () => {
         {
           enabled: true,
           line: {
-            text: '{volunteerBic}',
+            text: 'BIC: {volunteerBic}',
             enabled: true,
             fields: [{ value: { kind: 'bound', source: 'volunteer_bic' } }],
           },

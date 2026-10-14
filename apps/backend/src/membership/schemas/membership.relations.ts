@@ -24,10 +24,12 @@ export const membershipRelations = defineRelationsPart(schema, (r) => ({
     membership: r.one.memberships({
       from: r.membershipRoles.membershipId,
       to: r.memberships.id,
+      optional: false,
     }),
     role: r.one.roles({
       from: r.membershipRoles.roleId,
       to: r.roles.id,
+      optional: false,
     }),
   },
 }));

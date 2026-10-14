@@ -15,7 +15,7 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY = {
   volunteer_city: 'city',
   volunteer_dob: 'birthdate',
   volunteer_iban: 'iban',
-  volunteer_account_holder: 'account-holder',
+  volunteer_account_holder: 'accountHolder',
   volunteer_bic: 'bic',
 } as const satisfies Partial<Record<DataSourceKey, string>>;
 

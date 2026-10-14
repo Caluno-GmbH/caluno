@@ -50,7 +50,7 @@ export function completeProfileDefaultValues(
   return Object.fromEntries(
     missingKeys.map((key) => [
       key,
-      key === 'account-holder' ? accountHolderDefault(names) : '',
+      key === 'accountHolder' ? accountHolderDefault(names) : '',
     ]),
   );
 }
