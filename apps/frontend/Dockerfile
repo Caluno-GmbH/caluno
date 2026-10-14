@@ -16,6 +16,7 @@ COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
+COPY packages/lifespan/package.json ./packages/lifespan/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 # --ignore-scripts: @repo/data's postinstall runs codegen, which needs source.
@@ -29,6 +30,7 @@ COPY apps/frontend ./apps/frontend
 COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
+COPY packages/lifespan ./packages/lifespan
 COPY packages/typescript-config ./packages/typescript-config
 
 # The @repo/data postinstall, deferred from the install above.
@@ -36,6 +38,7 @@ RUN bun run --cwd packages/data codegen
 
 # Build @repo/observability (dist/ is dockerignored; next build imports its exports)
 RUN bun run --cwd packages/observability build
+RUN bun run --cwd packages/lifespan build
 
 ENV NODE_ENV=production
 

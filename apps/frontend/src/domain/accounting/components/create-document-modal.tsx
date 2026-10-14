@@ -24,6 +24,8 @@ import {
   getDocLineSummary,
   getPickerAnnotations,
 } from '../lib/board-data.utils';
+import { STATUS_META } from '../lib/board-status';
+import type { BoardVolunteer } from '../lib/board-types';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -36,8 +38,6 @@ import {
   type PauschalenType,
 } from './doc-type-header';
 import { InvoiceCreationModal } from './invoice-creation-modal';
-import type { BoardVolunteer } from './reimbursements-board';
-import { STATUS_META } from './reimbursements-volunteer-group';
 
 type DocKind = 'contract' | 'invoice';
 

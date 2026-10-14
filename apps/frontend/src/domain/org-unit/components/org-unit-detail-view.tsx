@@ -37,7 +37,6 @@ export function OrgUnitDetailView({
 }: OrgUnitDetailViewProps) {
   const { open } = useSheetTrigger(FORM_ID);
   const t = useTranslations('OrgUnit.detail');
-  const tNav = useTranslations('Navigation');
 
   const addressText = formatAddress(orgUnit);
   const hasContact =
@@ -53,7 +52,7 @@ export function OrgUnitDetailView({
         {embedded ? (
           <h2 className="text-lg font-semibold">{orgUnit.name}</h2>
         ) : (
-          <h1 className="page-title">{tNav('overview')}</h1>
+          <h1 className="page-title">{t('title')}</h1>
         )}
         {canEdit && (
           <Button

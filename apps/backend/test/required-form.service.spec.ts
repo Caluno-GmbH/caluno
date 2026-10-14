@@ -51,8 +51,8 @@ import {
 } from './factories/org.factory';
 import { createShift } from './factories/shift.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 const createDefaultMemberRole = async (
@@ -79,6 +79,7 @@ describe('RequiredFormService', () => {
   let membershipService: MembershipService;
   let requirementFormService: RequirementFormService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -122,10 +123,6 @@ describe('RequiredFormService', () => {
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setupOrg = async () => {
@@ -981,6 +978,7 @@ describe('RequiredFormService', () => {
     let db: Database;
     let service: RequiredFormService;
 
+    closeTestingModuleAfterAll(() => moduleRef);
     beforeAll(async () => {
       await ensureTestDatabase();
       moduleRef = await Test.createTestingModule({
@@ -990,10 +988,6 @@ describe('RequiredFormService', () => {
       service = new RequiredFormService(db, {
         capture: () => {},
       } as unknown as PostHogService);
-
-      registerTestResourceCleanup(async () => {
-        await moduleRef.close();
-      });
     });
 
     // Per-test seeded ids, cleaned up in afterEach.

@@ -24,16 +24,19 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     organization: r.one.organizations({
       from: r.reimbursementRates.organizationId,
       to: r.organizations.id,
+      optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
       from: r.reimbursementRates.reimbursementTypeId,
       to: r.reimbursementTypes.id,
+      optional: false,
     }),
   },
   documentTemplates: {
     organization: r.one.organizations({
       from: r.documentTemplates.organizationId,
       to: r.organizations.id,
+      optional: false,
     }),
     organizationUnit: r.one.organizationUnits({
       from: r.documentTemplates.organizationUnitId,
@@ -42,6 +45,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     reimbursementType: r.one.reimbursementTypes({
       from: r.documentTemplates.reimbursementTypeId,
       to: r.reimbursementTypes.id,
+      optional: false,
     }),
     lastEditedByUser: r.one.users({
       from: r.documentTemplates.lastEditedBy,
@@ -64,6 +68,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     documentTemplate: r.one.documentTemplates({
       from: r.templateSignees.documentTemplateId,
       to: r.documentTemplates.id,
+      optional: false,
     }),
     requiredPermission: r.one.permissions({
       from: r.templateSignees.requiredPermissionId,
@@ -74,10 +79,12 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     documentTemplate: r.one.documentTemplates({
       from: r.contracts.documentTemplateId,
       to: r.documentTemplates.id,
+      optional: false,
     }),
     volunteer: r.one.users({
       from: r.contracts.volunteerId,
       to: r.users.id,
+      optional: false,
     }),
     organizationUnit: r.one.organizationUnits({
       from: r.contracts.organizationUnitId,
@@ -86,6 +93,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     reimbursementType: r.one.reimbursementTypes({
       from: r.contracts.reimbursementTypeId,
       to: r.reimbursementTypes.id,
+      optional: false,
     }),
     declinedByUser: r.one.users({
       from: r.contracts.declinedByUserId,
@@ -104,10 +112,12 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     documentTemplate: r.one.documentTemplates({
       from: r.invoices.documentTemplateId,
       to: r.documentTemplates.id,
+      optional: false,
     }),
     volunteer: r.one.users({
       from: r.invoices.volunteerId,
       to: r.users.id,
+      optional: false,
     }),
     organizationUnit: r.one.organizationUnits({
       from: r.invoices.organizationUnitId,
@@ -116,6 +126,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     reimbursementType: r.one.reimbursementTypes({
       from: r.invoices.reimbursementTypeId,
       to: r.reimbursementTypes.id,
+      optional: false,
     }),
     declinedByUser: r.one.users({
       from: r.invoices.declinedByUserId,
@@ -138,6 +149,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     contract: r.one.contracts({
       from: r.contractSignatures.contractId,
       to: r.contracts.id,
+      optional: false,
     }),
     requiredPermission: r.one.permissions({
       from: r.contractSignatures.requiredPermissionId,
@@ -152,6 +164,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     invoice: r.one.invoices({
       from: r.invoiceSignatures.invoiceId,
       to: r.invoices.id,
+      optional: false,
     }),
     requiredPermission: r.one.permissions({
       from: r.invoiceSignatures.requiredPermissionId,
@@ -166,6 +179,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     contract: r.one.contracts({
       from: r.contractStatusChanges.contractId,
       to: r.contracts.id,
+      optional: false,
     }),
     actorUser: r.one.users({
       from: r.contractStatusChanges.actorUserId,
@@ -176,6 +190,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     invoice: r.one.invoices({
       from: r.invoiceStatusChanges.invoiceId,
       to: r.invoices.id,
+      optional: false,
     }),
     actorUser: r.one.users({
       from: r.invoiceStatusChanges.actorUserId,
@@ -186,20 +201,24 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     invoice: r.one.invoices({
       from: r.invoiceTimeEntries.invoiceId,
       to: r.invoices.id,
+      optional: false,
     }),
     timeEntry: r.one.timeEntries({
       from: r.invoiceTimeEntries.timeEntryId,
       to: r.timeEntries.id,
+      optional: false,
     }),
   },
   reimbursementBundleDownloads: {
     volunteer: r.one.users({
       from: r.reimbursementBundleDownloads.volunteerId,
       to: r.users.id,
+      optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
       from: r.reimbursementBundleDownloads.reimbursementTypeId,
       to: r.reimbursementTypes.id,
+      optional: false,
     }),
     downloadedByUser: r.one.users({
       from: r.reimbursementBundleDownloads.downloadedByUserId,
@@ -210,14 +229,17 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
     organization: r.one.organizations({
       from: r.reimbursementManualBaselines.organizationId,
       to: r.organizations.id,
+      optional: false,
     }),
     volunteer: r.one.users({
       from: r.reimbursementManualBaselines.volunteerId,
       to: r.users.id,
+      optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
       from: r.reimbursementManualBaselines.reimbursementTypeId,
       to: r.reimbursementTypes.id,
+      optional: false,
     }),
     updatedByUser: r.one.users({
       from: r.reimbursementManualBaselines.updatedByUserId,

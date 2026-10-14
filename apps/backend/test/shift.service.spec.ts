@@ -37,8 +37,8 @@ import {
   createUnit,
 } from './factories/org.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('ShiftService', () => {
@@ -51,6 +51,7 @@ describe('ShiftService', () => {
 
   let capture: ReturnType<typeof mock>;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -146,10 +147,6 @@ describe('ShiftService', () => {
       .update(schema.organizations)
       .set({ accountingEnabled: true })
       .where(eq(schema.organizations.id, organization.id));
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const createNoneRecurringShift = async (startsAt: Date, endsAt: Date) =>

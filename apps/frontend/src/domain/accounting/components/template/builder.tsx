@@ -246,7 +246,7 @@ export function TemplateBuilder({
       ? 'preview.documentTitle.contract'
       : 'preview.documentTitle.invoice') as Parameters<typeof t>[0],
   );
-  const signerRightLabel = t('preview.signatureSupervisor');
+  const signerRightLabel = t('preview.signatureCoordinator');
 
   async function handleSave() {
     if (!templateDoc) return;

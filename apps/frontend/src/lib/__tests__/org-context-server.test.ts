@@ -156,19 +156,32 @@ describe('getMyAdministrableOrgUnits', () => {
   });
 });
 
+const UUID_SALES = 'aaaaaaaa-aaaa-aaaa-aaaa-000000000001';
+const UUID_ROOT = 'aaaaaaaa-aaaa-aaaa-aaaa-000000000002';
+const UUID_ORG = 'aaaaaaaa-aaaa-aaaa-aaaa-000000000003';
+const UUID_LEGACY = 'aaaaaaaa-aaaa-aaaa-aaaa-000000000004';
+const UUID_UNKNOWN = 'aaaaaaaa-aaaa-aaaa-aaaa-000000000005';
+
 describe('requireOrgAccess', () => {
   beforeEach(resetMocks);
 
+  it('rejects non-UUID orgUId values with not-found before any DB call', async () => {
+    await expect(requireOrgAccess('requirement-forms')).rejects.toThrow(
+      'NOT_FOUND',
+    );
+    expect(findMyAdminstrableOrganizationUnits).not.toHaveBeenCalled();
+  });
+
   it('returns the administrable unit when it is in the user list', async () => {
     findMyAdminstrableOrganizationUnits.mockResolvedValue([
-      nestedUnit('unit-sales', 'Sales', 'Playground'),
+      nestedUnit(UUID_SALES, 'Sales', 'Playground'),
     ]);
 
-    const { org, organizations } = await requireOrgAccess('unit-sales');
+    const { org, organizations } = await requireOrgAccess(UUID_SALES);
 
     expect(org).toEqual(
       expect.objectContaining({
-        id: 'unit-sales',
+        id: UUID_SALES,
         name: 'Sales',
         isRoot: false,
         rootOrganizationName: 'Playground',
@@ -180,39 +193,39 @@ describe('requireOrgAccess', () => {
 
   it('redirects legacy organization ids to their root unit', async () => {
     findMyAdminstrableOrganizationUnits.mockResolvedValue([
-      rootUnit('unit-root', 'Playground'),
+      rootUnit(UUID_ROOT, 'Playground'),
     ]);
 
-    await expect(requireOrgAccess('org-1')).rejects.toThrow('REDIRECT');
+    await expect(requireOrgAccess(UUID_LEGACY)).rejects.toThrow('REDIRECT');
   });
 
   it('builds the org from the unit lookup for non-admin members', async () => {
     findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
     getMyMembershipStatus.mockResolvedValue(true);
     findOrgUnitById.mockResolvedValue({
-      id: 'unit-sales',
+      id: UUID_SALES,
       slug: 'sales',
       name: 'Sales',
-      parent: { id: 'unit-root', name: 'Playground' },
+      parent: { id: UUID_ROOT, name: 'Playground' },
       description: null,
       logoUrl: null,
       street: null,
       zipCode: null,
       city: null,
       legalRep: null,
-      organizationId: 'org-1',
-      organization: { id: 'org-1', name: 'Playground' },
+      organizationId: UUID_ORG,
+      organization: { id: UUID_ORG, name: 'Playground' },
     });
 
-    const { org } = await requireOrgAccess('unit-sales');
+    const { org } = await requireOrgAccess(UUID_SALES);
 
     expect(org).toEqual(
       expect.objectContaining({
-        id: 'unit-sales',
+        id: UUID_SALES,
         name: 'Sales',
         isRoot: false,
         rootOrganizationName: 'Playground',
-        organizationId: 'org-1',
+        organizationId: UUID_ORG,
         accountingEnabled: false,
       }),
     );
@@ -222,7 +235,7 @@ describe('requireOrgAccess', () => {
     findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
     getMyMembershipStatus.mockResolvedValue(true);
     findOrgUnitById.mockResolvedValue({
-      id: 'unit-root',
+      id: UUID_ROOT,
       slug: 'playground',
       name: 'Playground',
       parent: null,
@@ -232,15 +245,15 @@ describe('requireOrgAccess', () => {
       zipCode: null,
       city: null,
       legalRep: null,
-      organizationId: 'org-1',
-      organization: { id: 'org-1', name: 'Playground' },
+      organizationId: UUID_ORG,
+      organization: { id: UUID_ORG, name: 'Playground' },
     });
 
-    const { org } = await requireOrgAccess('unit-root');
+    const { org } = await requireOrgAccess(UUID_ROOT);
 
     expect(org).toEqual(
       expect.objectContaining({
-        id: 'unit-root',
+        id: UUID_ROOT,
         name: 'Playground',
         isRoot: true,
         rootOrganizationName: undefined,
@@ -252,7 +265,7 @@ describe('requireOrgAccess', () => {
     findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
     getMyMembershipStatus.mockResolvedValue(false);
 
-    await expect(requireOrgAccess('unit-x')).rejects.toThrow('REDIRECT');
+    await expect(requireOrgAccess(UUID_UNKNOWN)).rejects.toThrow('REDIRECT');
     expect(findOrgUnitById).not.toHaveBeenCalled();
   });
 });

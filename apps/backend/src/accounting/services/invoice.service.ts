@@ -50,7 +50,14 @@ import {
   billingYearBounds,
   periodCovers,
 } from '../utils/billing-period';
+import {
+  ContractCover,
+  type CoverageTarget,
+  coverageTargetsForTimeEntries,
+  entriesWithoutCover,
+} from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
+import { groupTimesheetCandidates } from '../utils/timesheet-groups';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
@@ -190,7 +197,8 @@ export class InvoiceService {
    * completed, in-period) hours grouped by volunteer, reimbursement type and
    * Berlin calendar month, with the month's bounds and summed hours. Entries
    * are only claimed once a timesheet is issued, so these rows always reflect
-   * the current time entries.
+   * the current time entries. Each row also says whether any of its hours has
+   * no non-declined contract and where the first such hour starts (VOLI-1587).
    */
   async findVolunteersNeedingTimesheets(
     organizationUnitId: string,
@@ -222,28 +230,45 @@ export class InvoiceService {
       )
       .where(and(...conditions));
 
-    const groups = new Map<string, EligibleTimesheetVolunteer>();
-    for (const row of rows) {
-      const entry = row.timeEntry;
-      if (!entry.endedAt || !entry.reimbursementTypeId) continue;
-      const month = billingMonthBoundsOf(entry.startedAt);
-      const key = `${entry.volunteerId}:${entry.reimbursementTypeId}:${month.start.toISOString()}`;
-      const group = groups.get(key) ?? {
-        volunteerId: entry.volunteerId,
-        reimbursementTypeId: entry.reimbursementTypeId,
-        periodStart: month.start,
-        periodEnd: month.end,
-        eligibleHours: 0,
-      };
-      group.eligibleHours +=
-        (entry.endedAt.getTime() - entry.startedAt.getTime()) / 3_600_000;
-      groups.set(key, group);
-    }
+    // The query already requires an end and a reimbursement type; the guard
+    // is what lets the types say so.
+    const entries = rows
+      .map((row) => row.timeEntry)
+      .filter(
+        (
+          entry,
+        ): entry is typeof entry & {
+          endedAt: Date;
+          reimbursementTypeId: string;
+        } => entry.endedAt !== null && entry.reimbursementTypeId !== null,
+      );
 
-    return [...groups.values()].map((group) => ({
-      ...group,
-      eligibleHours: Math.round(group.eligibleHours * 100) / 100,
-    }));
+    // One lookup for every entry of the result. "Cover" is any non-declined
+    // contract: a draft or a contract awaiting signatures is already its own
+    // task on the board, so it must not also raise a contract reminder (this
+    // is broader than compliance, which counts ACTIVE only).
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(entries),
+      ContractCover.OPEN,
+    );
+    const uncoveredIds = new Set(
+      entriesWithoutCover(entries, coverByEntry).map((entry) => entry.id),
+    );
+
+    // An ACTIVE contract is what makes hours compliant. The same lookup lists
+    // every non-declined contract per entry, so this needs no second query.
+    const withoutActiveIds = new Set(
+      entries
+        .filter(
+          (entry) =>
+            !(coverByEntry.get(entry.id) ?? []).some(
+              (contract) => contract.contractStatus === ContractStatus.ACTIVE,
+            ),
+        )
+        .map((entry) => entry.id),
+    );
+
+    return groupTimesheetCandidates(entries, uncoveredIds, withoutActiveIds);
   }
 
   /**
@@ -417,6 +442,69 @@ export class InvoiceService {
     });
   }
 
+  /**
+   * The given invoices that have at least one claimed hour with no ACTIVE
+   * contract right now, from one lookup for the whole list. This is the live
+   * answer the board's "No active agreement" badge needs: the stored
+   * `isNonCompliant` is only the state at creation and never follows a
+   * contract being signed later.
+   *
+   * Hours are matched in the invoice's own volunteer and reimbursement type,
+   * and in its unit (an org-wide invoice falls back to the claimed entry's
+   * unit). Released claims are ignored. An invoice with no claimed hours is
+   * not flagged.
+   */
+  async findInvoiceIdsWithoutActiveCover(
+    invoiceIds: readonly string[],
+  ): Promise<Set<string>> {
+    if (invoiceIds.length === 0) return new Set();
+
+    const invoices = await this.db.query.invoices.findMany({
+      where: { id: { in: [...invoiceIds] } },
+      with: {
+        invoiceTimeEntries: {
+          where: { released: false },
+          with: { timeEntry: true },
+        },
+      },
+    });
+
+    const targets: CoverageTarget[] = [];
+    const invoiceIdByKey = new Map<string, string>();
+    for (const invoice of invoices) {
+      for (const claim of invoice.invoiceTimeEntries) {
+        const entry = claim.timeEntry;
+        if (!entry) continue;
+        const key = `${invoice.id}:${entry.id}`;
+        invoiceIdByKey.set(key, invoice.id);
+        targets.push({
+          key,
+          volunteerId: invoice.volunteerId,
+          reimbursementTypeId: invoice.reimbursementTypeId,
+          // The invoice's unit is the document's scope and wins. Eligibility
+          // makes it equal to the entry's unit today (the root unit for an
+          // org-wide invoice), so this does not depend on that rule holding.
+          organizationUnitId:
+            invoice.organizationUnitId ?? entry.organizationUnitId,
+          at: entry.startedAt,
+        });
+      }
+    }
+
+    const cover = await this.contractService.findCoveringContracts(
+      targets,
+      ContractCover.ACTIVE,
+    );
+    const flagged = new Set<string>();
+    for (const target of targets) {
+      if ((cover.get(target.key) ?? []).length === 0) {
+        const invoiceId = invoiceIdByKey.get(target.key);
+        if (invoiceId) flagged.add(invoiceId);
+      }
+    }
+    return flagged;
+  }
+
   async createInvoice(
     organizationId: string,
     input: CreateInvoiceInput,
@@ -521,20 +609,41 @@ export class InvoiceService {
       );
     }
 
-    const activeContract = await this.contractService.findActiveContract(
-      input.volunteerId,
-      input.reimbursementTypeId,
-      { start: input.periodStart, end: input.periodEnd },
+    // Compliance is per time entry: a timesheet is compliant when every hour
+    // on it sits inside some ACTIVE contract, and different entries may sit
+    // under different contracts. Only ACTIVE counts here; a draft or a
+    // contract still awaiting signatures is its own task, not cover.
+    const coverByEntry = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(selected),
+      ContractCover.ACTIVE,
+    );
+    const uncovered = entriesWithoutCover(selected, coverByEntry);
+
+    // A draft is only needed for an entry no non-declined contract covers: a
+    // draft or a contract awaiting signatures is already its own task. This
+    // one query skips the entries already openly covered before the loop;
+    // an entry that a draft queued inside the loop swallows still reaches
+    // `ensureDraftContract`, which decides for itself and returns early.
+    const openCover = await this.contractService.findCoveringContracts(
+      coverageTargetsForTimeEntries(uncovered),
+      ContractCover.OPEN,
+    );
+    const needDraft = uncovered.filter(
+      (entry) => (openCover.get(entry.id) ?? []).length === 0,
     );
 
-    if (!activeContract) {
+    // One draft per entry that needs one, oldest first and one at a time. The
+    // order decides the result: the oldest entry's draft is queued first, so
+    // a later entry that draft contains queues nothing, whereas newest first
+    // could queue a narrower range and then the year around it.
+    for (const entry of needDraft) {
       await this.contractService.ensureDraftContract(
         organizationId,
         {
           organizationUnitId: input.organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          anchorDate: input.periodStart,
+          anchorDate: entry.startedAt,
         },
         actorUserId,
       );
@@ -584,7 +693,7 @@ export class InvoiceService {
           totalAmountCents,
           totalHours,
           hourlyRateCents: rateCents,
-          isNonCompliant: !activeContract,
+          isNonCompliant: uncovered.length > 0,
           resolvedBody: structuredClone(template.body),
           fieldOverrides,
           documentNumberScopeUnitId,
@@ -726,7 +835,7 @@ export class InvoiceService {
       const missing =
         await this.documentProfileRequirementService.missingProfileSources(
           invoice.volunteerId,
-          invoice.documentTemplate?.body,
+          invoice.documentTemplate.body,
         );
       if (missing.length > 0) {
         throw new BadRequestGraphQLError(

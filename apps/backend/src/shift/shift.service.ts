@@ -509,13 +509,13 @@ export class ShiftService {
       with: { master: true },
     });
 
-    if (!instance?.master) {
+    if (!instance) {
       throw new NotFoundGraphQLError(
         `Shift instance with ID ${instanceId} not found`,
       );
     }
 
-    return instance as ShiftInstanceEntity & { master: ShiftEntity };
+    return instance;
   }
 
   async isVolunteerBooked(
@@ -1979,7 +1979,7 @@ export class ShiftService {
       });
     }
 
-    if (before?.master) {
+    if (before) {
       const previousTitle = before.overrideTitle ?? before.master.title;
       const nextTitle = input.title;
       const previousLocation =
@@ -4123,11 +4123,11 @@ export class ShiftService {
       with: { master: true },
     });
 
-    const shift = instance?.master ?? null;
-
-    if (!instance || !shift) {
+    if (!instance) {
       throw new NotFoundGraphQLError('Shift not found');
     }
+
+    const shift = instance.master;
 
     if (shift.isDeleted || shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
       throw new NotFoundGraphQLError('Shift not found');
@@ -4517,14 +4517,14 @@ export class ShiftService {
       with: { master: true },
     });
 
-    const shift = instance?.master ?? null;
-
-    if (!shift || shift.isDeleted) {
-      throw new NotFoundGraphQLError('Shift not found');
-    }
-
     if (!instance) {
       throw new NotFoundGraphQLError('Shift instance not found');
+    }
+
+    const shift = instance.master;
+
+    if (shift.isDeleted) {
+      throw new NotFoundGraphQLError('Shift not found');
     }
 
     if (shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
@@ -4986,7 +4986,7 @@ export class ShiftService {
       with: { master: true },
     });
 
-    if (!instance?.master || instance.master.isDeleted) {
+    if (!instance || instance.master.isDeleted) {
       throw new NotFoundGraphQLError('Shift instance not found');
     }
 
@@ -5266,7 +5266,7 @@ export class ShiftService {
         with: { master: true },
       });
 
-      if (!instance?.master || instance.master.isDeleted) {
+      if (!instance || instance.master.isDeleted) {
         return;
       }
 
@@ -5328,7 +5328,7 @@ export class ShiftService {
       with: { master: true },
     });
 
-    if (!instance?.master) {
+    if (!instance) {
       throw new NotFoundGraphQLError('Shift instance not found');
     }
 

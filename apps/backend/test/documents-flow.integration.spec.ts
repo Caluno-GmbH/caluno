@@ -27,7 +27,7 @@ import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
 import type { DocumentAwaitingSignaturePayload } from '../src/notification/payloads/document-awaiting-signature.payload';
 import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/document-declined-by-org.payload';
-import { profileDataToUserColumns } from '../src/user/profile-fields';
+import { pickWritableProfileFields } from '../src/user/profile-fields';
 import {
   createDocumentTemplate,
   createReimbursementRate,
@@ -224,6 +224,26 @@ const INVOICE_DETAIL = `
   }
 `;
 
+const INVOICE_COVER_FLAGS_LIST = `
+  query InvoiceCoverFlagsList {
+    invoices {
+      id
+      isNonCompliant
+      hasHoursWithoutActiveContract
+    }
+  }
+`;
+
+const INVOICE_COVER_FLAGS = `
+  query InvoiceCoverFlags($id: ID!) {
+    invoice(id: $id) {
+      id
+      isNonCompliant
+      hasHoursWithoutActiveContract
+    }
+  }
+`;
+
 // ─── Setup helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -385,7 +405,7 @@ const seedVolunteerProfile = async (
   userId: string,
   data: Record<string, unknown>,
 ) => {
-  const { email: _email, ...columns } = profileDataToUserColumns(data);
+  const { email: _email, ...columns } = pickWritableProfileFields(data);
   const changes: Record<string, string> = {};
   for (const [key, value] of Object.entries(columns)) {
     if (typeof value === 'string') {
@@ -840,6 +860,135 @@ describe('documents flow — admin + volunteer', () => {
         org.volunteerId,
         org.adminId,
       ]);
+    });
+
+    // VOLI-1588: the board reads the live flag through GraphQL, in a list and
+    // on one invoice, while `isNonCompliant` stays the creation snapshot.
+    it('exposes the live no-active-contract flag on invoices and clears it when the contract is signed', async () => {
+      // Its own org: the shared one already holds an ACTIVE contract from the
+      // lifecycle tests, which would cover the hours.
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createContract',
+      );
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: own.organizationUnitId,
+        volunteerId: own.volunteerId,
+        reimbursementTypeId: own.reimbursementTypeId,
+      });
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createInvoice',
+      );
+
+      const readFlags = async () => {
+        const { invoices } = await graphqlRequestRequiringData<{
+          invoices: Array<{
+            id: string;
+            isNonCompliant: boolean;
+            hasHoursWithoutActiveContract: boolean;
+          }>;
+        }>(
+          app,
+          { query: INVOICE_COVER_FLAGS_LIST, headers: ownHeader },
+          'invoices',
+        );
+        const { invoice } = await graphqlRequestRequiringData<{
+          invoice: {
+            isNonCompliant: boolean;
+            hasHoursWithoutActiveContract: boolean;
+          };
+        }>(
+          app,
+          {
+            query: INVOICE_COVER_FLAGS,
+            variables: { id: createInvoice.id },
+            headers: ownHeader,
+          },
+          'invoice',
+        );
+        return {
+          listed: invoices.find((i) => i.id === createInvoice.id),
+          invoice,
+        };
+      };
+
+      // Only a contract awaiting signature exists: the hours have no ACTIVE one.
+      const before = await readFlags();
+      expect(before.listed).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: true,
+      });
+      expect(before.invoice).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: true,
+      });
+
+      setAuthMockUserId(own.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: ownHeader,
+        },
+        'signContract',
+      );
+      setAuthMockUserId(own.adminId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: ownHeader,
+        },
+        'signContract',
+      );
+
+      // Signed: the live flag clears, the creation snapshot stays as it was.
+      const after = await readFlags();
+      expect(after.listed).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: false,
+      });
+      expect(after.invoice).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: false,
+      });
     });
 
     it('records an invoice decline with the reason', async () => {

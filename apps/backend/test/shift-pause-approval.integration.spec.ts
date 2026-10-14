@@ -24,8 +24,8 @@ import { slugify } from '../src/utils/slug.util';
 import { createShift, createUser } from './factories';
 import { createShiftInstanceInvite } from './factories/shift-instance-invite.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 const HOURS = 3_600_000;
@@ -37,6 +37,7 @@ describe('ShiftService pause approval', () => {
   let db: Database;
   let organizationUnitId: string;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -102,10 +103,6 @@ describe('ShiftService pause approval', () => {
       .returning();
 
     organizationUnitId = rootUnit.id;
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /**
@@ -282,6 +279,7 @@ describe('ShiftPauseApprovalSweepService', () => {
   let notifyShiftInstanceWaitlistJoined: ReturnType<typeof mock>;
   let notifyShiftInstanceJoinApproved: ReturnType<typeof mock>;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -359,10 +357,6 @@ describe('ShiftPauseApprovalSweepService', () => {
       .returning();
 
     organizationUnitId = rootUnit.id;
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   async function createApprovalShift(options: {

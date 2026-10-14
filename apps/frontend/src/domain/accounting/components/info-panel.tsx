@@ -31,7 +31,7 @@ export function InfoPanel({
   return (
     <div
       className={cn(
-        'p-4',
+        'flex flex-col gap-2 p-4',
         variant === 'muted'
           ? 'rounded-xl bg-muted'
           : 'flex flex-col gap-2 rounded-lg border bg-card',

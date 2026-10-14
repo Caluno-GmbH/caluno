@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
 import { SubmissionView } from '@/domain/requirement-form/components/submission-view';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 
@@ -44,7 +44,7 @@ export default async function FormSubmissionPage({ params }: Props) {
         <SubmissionView
           fields={fields}
           submissionValues={submission.values ?? []}
-          profileData={toProfileDataMap(profile)}
+          profileData={profileFieldValues(profile)}
         />
       </div>
     </div>

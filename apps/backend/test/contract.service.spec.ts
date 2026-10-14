@@ -1,19 +1,32 @@
-import { beforeAll, describe, expect, it } from 'bun:test';
+import { beforeAll, describe, expect, it, spyOn } from 'bun:test';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
   DocumentStatusChange,
   SigneeType,
 } from '../src/accounting/enums';
+import type { DocumentTemplateBody } from '../src/accounting/schemas/document-template.schema';
 import { ContractService } from '../src/accounting/services/contract.service';
 import { DocumentNotificationService } from '../src/accounting/services/document-notification.service';
 import { DocumentProfileRequirementService } from '../src/accounting/services/document-profile-requirement.service';
 import { DocumentRenderingService } from '../src/accounting/services/document-rendering.service';
 import { DocumentSigningService } from '../src/accounting/services/document-signing.service';
 import { DocumentTemplateService } from '../src/accounting/services/document-template.service';
+import {
+  findManualFieldValue,
+  type TemplateBodyShape,
+} from '../src/accounting/services/document-template.types';
+import {
+  billingMonthBoundsOf,
+  billingYearBounds,
+} from '../src/accounting/utils/billing-period';
+import {
+  ContractCover,
+  type CoverageTarget,
+} from '../src/accounting/utils/contract-coverage';
 import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
@@ -21,6 +34,7 @@ import * as schema from '../src/database/schema';
 import {
   ConflictGraphQLError,
   ForbiddenGraphQLError,
+  NotFoundGraphQLError,
 } from '../src/graphql/errors';
 import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification';
@@ -29,6 +43,7 @@ import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
+import { startOfAppDay } from '../src/shift/utils/app-time';
 import { FileService } from '../src/storage/services/file.service';
 import {
   createReimbursementType,
@@ -47,14 +62,15 @@ import {
 } from './factories/role.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('ContractService', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let service: ContractService;
+  closeTestingModuleAfterAll(() => moduleRef);
   const declinedByVolunteerCalls: unknown[] = [];
 
   beforeAll(async () => {
@@ -112,14 +128,12 @@ describe('ContractService', () => {
       } as unknown as DocumentRenderingService,
       { capture: () => {} } as unknown as PostHogService,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /** Org + root unit + a volunteer -> permission-holder contract template, with one authorized signer. */
-  const setup = async () => {
+  const setup = async (
+    options: { contractBody?: DocumentTemplateBody } = {},
+  ) => {
     const reimbursementType = await createReimbursementType(db);
     const { organization, type } = await createOrganizationWithType(
       db,
@@ -150,11 +164,13 @@ describe('ContractService', () => {
       kind: DocumentKind.CONTRACT,
       requiredPermissionId: permission.id,
       signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
+      body: options.contractBody,
     });
     const volunteer = await createUser(db);
 
     return {
       organization,
+      type,
       root,
       reimbursementType,
       template,
@@ -162,6 +178,75 @@ describe('ContractService', () => {
       volunteer,
     };
   };
+
+  const OCTOBER = {
+    periodStart: startOfAppDay(2026, 9, 1),
+    periodEnd: startOfAppDay(2026, 10, 1),
+  };
+
+  /** Inserted directly so status and createdAt are exactly what the test states. */
+  const insertContract = async (args: {
+    templateId: string;
+    volunteerId: string;
+    reimbursementTypeId: string;
+    organizationUnitId: string | null;
+    status: ContractStatus;
+    periodStart: Date;
+    periodEnd: Date;
+    createdAt?: Date;
+  }) => {
+    const [row] = await db
+      .insert(schema.contracts)
+      .values({
+        documentTemplateId: args.templateId,
+        volunteerId: args.volunteerId,
+        reimbursementTypeId: args.reimbursementTypeId,
+        organizationUnitId: args.organizationUnitId,
+        contractStatus: args.status,
+        periodStart: args.periodStart,
+        periodEnd: args.periodEnd,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        ...(args.createdAt ? { createdAt: args.createdAt } : {}),
+      })
+      .returning();
+    return row;
+  };
+
+  /** A contract template whose Vertragslaufzeit field holds `value`, quoted twice like the preset. */
+  const bodyWithLifespan = (value: string): DocumentTemplateBody => ({
+    header: {
+      metaLines: [
+        {
+          id: 'meta',
+          text: 'Laufzeit {lifespan}',
+          fields: [
+            {
+              id: 'contract-lifespan',
+              value: { kind: 'manual-template', value },
+            },
+          ],
+        },
+      ],
+    },
+    blocks: [
+      {
+        id: 'terms',
+        lines: [
+          {
+            id: 'term',
+            text: 'Gültig {lifespan}',
+            fields: [
+              {
+                id: 'contract-lifespan',
+                value: { kind: 'manual-template', value },
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    footer: {},
+  });
 
   describe('findContract', () => {
     it('returns signatures in signing order regardless of insertion order', async () => {
@@ -284,12 +369,12 @@ describe('ContractService', () => {
     });
 
     it('replaces the auto-queued draft for the same volunteer, type and year', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, root, reimbursementType, volunteer, signer } =
         await setup();
       const draft = await service.ensureDraftContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           anchorDate: new Date('2026-06-15T12:00:00.000Z'),
@@ -301,11 +386,12 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
-          periodStart: new Date('2026-01-01T00:00:00.000Z'),
-          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+          // The Berlin calendar year, so it fully contains the year draft.
+          periodStart: billingYearBounds(2026).start,
+          periodEnd: billingYearBounds(2026).end,
         },
         signer.id,
       );
@@ -438,14 +524,14 @@ describe('ContractService', () => {
     });
 
     // VOLI-1370: a contract issued for one month must not stop the system
-    // from queuing one for a later, uncovered month.
-    it('queues a draft for a month no existing contract covers', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+    // from queuing one for a later, uncovered date.
+    it('queues a draft for a date no existing contract covers', async () => {
+      const { organization, root, reimbursementType, volunteer, signer } =
         await setup();
       await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           // August 2026 as Berlin bounds.
@@ -458,7 +544,7 @@ describe('ContractService', () => {
       const draft = await service.ensureDraftContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           anchorDate: new Date('2026-09-15T12:00:00.000Z'),
@@ -467,18 +553,19 @@ describe('ContractService', () => {
       );
 
       expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
-      // VOLI-1370: the draft is scoped to the uncovered month, not the year.
-      expect(draft?.periodStart).toEqual(new Date('2026-08-31T22:00:00.000Z'));
-      expect(draft?.periodEnd).toEqual(new Date('2026-09-30T22:00:00.000Z'));
+      // VOLI-1585: with no lifespan on the template the draft covers the
+      // calendar year of the entry, not just its month.
+      expect(draft?.periodStart).toEqual(billingYearBounds(2026).start);
+      expect(draft?.periodEnd).toEqual(billingYearBounds(2026).end);
     });
 
     it('does not queue a draft when an existing contract covers the anchor date', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, root, reimbursementType, volunteer, signer } =
         await setup();
       await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
@@ -490,7 +577,7 @@ describe('ContractService', () => {
       const draft = await service.ensureDraftContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           anchorDate: new Date('2026-08-15T12:00:00.000Z'),
@@ -772,6 +859,777 @@ describe('ContractService', () => {
         },
       );
       expect(twoMonths).toBeUndefined();
+    });
+  });
+
+  describe('findCoveringContracts', () => {
+    const noonOn = (day: number) =>
+      new Date(startOfAppDay(2026, 9, day).getTime() + 12 * 3_600_000);
+
+    it('returns the active contracts covering each entry, newest first', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      const base = {
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        status: ContractStatus.ACTIVE,
+      };
+      const month = await insertContract({
+        ...base,
+        ...OCTOBER,
+        createdAt: new Date('2026-09-01T10:00:00.000Z'),
+      });
+      const week = await insertContract({
+        ...base,
+        periodStart: startOfAppDay(2026, 9, 5),
+        periodEnd: startOfAppDay(2026, 9, 12),
+        createdAt: new Date('2026-09-20T10:00:00.000Z'),
+      });
+      const target = (key: string, at: Date): CoverageTarget => ({
+        key,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        at,
+      });
+
+      const result = await service.findCoveringContracts([
+        target('in-week', noonOn(7)),
+        target('after-week', noonOn(20)),
+        target('on-period-end', OCTOBER.periodEnd),
+      ]);
+
+      expect(result.get('in-week')?.map((c) => c.id)).toEqual([
+        week.id,
+        month.id,
+      ]);
+      expect(result.get('after-week')?.map((c) => c.id)).toEqual([month.id]);
+      expect(result.get('on-period-end')).toEqual([]);
+    });
+
+    it('resolves many entries with a single query and none for an empty list', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      await insertContract({
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      });
+      const targets: CoverageTarget[] = Array.from({ length: 25 }, (_, i) => ({
+        key: `entry-${i}`,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        at: noonOn(i + 1),
+      }));
+
+      const findMany = spyOn(db.query.contracts, 'findMany');
+      try {
+        const result = await service.findCoveringContracts(targets);
+        expect(findMany).toHaveBeenCalledTimes(1);
+        expect(result.size).toBe(25);
+        expect([...result.values()].every((list) => list.length === 1)).toBe(
+          true,
+        );
+
+        const empty = await service.findCoveringContracts([]);
+        expect(empty.size).toBe(0);
+        expect(findMany).toHaveBeenCalledTimes(1);
+      } finally {
+        findMany.mockRestore();
+      }
+    });
+
+    it('ignores contracts of a sibling unit, of another organization and without a unit', async () => {
+      const {
+        organization,
+        type,
+        root,
+        reimbursementType,
+        template,
+        volunteer,
+      } = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'sibling',
+        parentId: root.id,
+      });
+      // Reimbursement types are global, so a second setup shares the type row.
+      const other = await setup();
+      expect(other.reimbursementType.id).toBe(reimbursementType.id);
+      const shared = {
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      };
+      await insertContract({
+        ...shared,
+        templateId: template.id,
+        organizationUnitId: sibling.id,
+      });
+      await insertContract({
+        ...shared,
+        templateId: template.id,
+        organizationUnitId: null,
+      });
+      await insertContract({
+        ...shared,
+        templateId: other.template.id,
+        organizationUnitId: other.root.id,
+      });
+      // Positive control: the same scope as the entry, so an empty result can't
+      // be an unrelated query mistake.
+      const matching = await insertContract({
+        ...shared,
+        templateId: template.id,
+        organizationUnitId: root.id,
+      });
+
+      const result = await service.findCoveringContracts([
+        {
+          key: 'entry',
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          organizationUnitId: root.id,
+          at: noonOn(15),
+        },
+      ]);
+
+      expect(result.get('entry')?.map((c) => c.id)).toEqual([matching.id]);
+    });
+
+    it('keeps each entry with its own volunteer and unit when resolved together', async () => {
+      const {
+        organization,
+        type,
+        root,
+        reimbursementType,
+        template,
+        volunteer,
+      } = await setup();
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'child',
+        parentId: root.id,
+      });
+      const otherVolunteer = await createUser(db);
+      const base = {
+        templateId: template.id,
+        reimbursementTypeId: reimbursementType.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      };
+      const aInRoot = await insertContract({
+        ...base,
+        volunteerId: volunteer.id,
+        organizationUnitId: root.id,
+      });
+      const bInChild = await insertContract({
+        ...base,
+        volunteerId: otherVolunteer.id,
+        organizationUnitId: child.id,
+      });
+      const target = (
+        key: string,
+        volunteerId: string,
+        organizationUnitId: string,
+      ): CoverageTarget => ({
+        key,
+        volunteerId,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId,
+        at: noonOn(15),
+      });
+
+      const result = await service.findCoveringContracts([
+        target('a-root', volunteer.id, root.id),
+        target('b-child', otherVolunteer.id, child.id),
+        target('a-child', volunteer.id, child.id),
+        target('b-root', otherVolunteer.id, root.id),
+      ]);
+
+      expect(result.get('a-root')?.map((c) => c.id)).toEqual([aInRoot.id]);
+      expect(result.get('b-child')?.map((c) => c.id)).toEqual([bInChild.id]);
+      expect(result.get('a-child')).toEqual([]);
+      expect(result.get('b-root')).toEqual([]);
+    });
+
+    it('counts a draft and an awaiting-signature contract as open cover only, and never a declined one', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      const base = {
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        ...OCTOBER,
+      };
+      const draft = await insertContract({
+        ...base,
+        status: ContractStatus.DRAFT,
+        createdAt: new Date('2026-09-01T10:00:00.000Z'),
+      });
+      const awaiting = await insertContract({
+        ...base,
+        status: ContractStatus.AWAITING_NGO_SIGNATURE,
+        createdAt: new Date('2026-09-02T10:00:00.000Z'),
+      });
+      await insertContract({ ...base, status: ContractStatus.DECLINED });
+      const targets: CoverageTarget[] = [
+        {
+          key: 'entry',
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          organizationUnitId: root.id,
+          at: noonOn(15),
+        },
+      ];
+
+      const active = await service.findCoveringContracts(targets);
+      const open = await service.findCoveringContracts(
+        targets,
+        ContractCover.OPEN,
+      );
+
+      expect(active.get('entry')).toEqual([]);
+      expect(open.get('entry')?.map((c) => c.id)).toEqual([
+        awaiting.id,
+        draft.id,
+      ]);
+    });
+
+    it('covers entries in both years of a contract running Sep 2026 to Mar 2027', async () => {
+      const { root, reimbursementType, template, volunteer } = await setup();
+      const crossYear = await insertContract({
+        templateId: template.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        status: ContractStatus.ACTIVE,
+        periodStart: startOfAppDay(2026, 8, 1),
+        periodEnd: startOfAppDay(2027, 3, 1),
+      });
+      const target = (key: string, at: Date): CoverageTarget => ({
+        key,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId: root.id,
+        at,
+      });
+
+      const result = await service.findCoveringContracts([
+        target(
+          'december',
+          new Date(startOfAppDay(2026, 11, 15).getTime() + 12 * 3_600_000),
+        ),
+        target(
+          'january',
+          new Date(startOfAppDay(2027, 0, 15).getTime() + 12 * 3_600_000),
+        ),
+        target(
+          'august',
+          new Date(startOfAppDay(2026, 7, 15).getTime() + 12 * 3_600_000),
+        ),
+      ]);
+
+      expect(result.get('december')?.map((c) => c.id)).toEqual([crossYear.id]);
+      expect(result.get('january')?.map((c) => c.id)).toEqual([crossYear.id]);
+      expect(result.get('august')).toEqual([]);
+    });
+  });
+
+  describe('ensureDraftContract', () => {
+    const draftFor = async (
+      s: Awaited<ReturnType<typeof setup>>,
+      anchorDate: Date,
+    ) =>
+      service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate,
+        },
+        s.signer.id,
+      );
+
+    const lifespanOf = (body: unknown) =>
+      findManualFieldValue(body as TemplateBodyShape, 'contract-lifespan');
+
+    it('covers the anchor year when the template says a year', async () => {
+      const s = await setup({ contractBody: bodyWithLifespan('2026') });
+      const draft = await draftFor(s, new Date('2027-03-10T10:00:00.000Z'));
+
+      const year = billingYearBounds(2027);
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+      expect(draft?.periodStart).toEqual(year.start);
+      expect(draft?.periodEnd).toEqual(year.end);
+      expect(draft?.organizationUnitId).toBe(s.root.id);
+      expect(lifespanOf(draft?.resolvedBody)).toBe('2027');
+    });
+
+    it('covers the anchor month when the template says a month', async () => {
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      const draft = await draftFor(s, new Date('2026-12-15T12:00:00.000Z'));
+
+      expect(draft?.periodStart).toEqual(startOfAppDay(2026, 11, 1));
+      expect(draft?.periodEnd).toEqual(startOfAppDay(2027, 0, 1));
+      expect(lifespanOf(draft?.resolvedBody)).toBe('12/2026');
+    });
+
+    it('keeps a template range that contains the anchor', async () => {
+      const s = await setup({
+        contractBody: bodyWithLifespan('05.10.2026–11.10.2026'),
+      });
+      const draft = await draftFor(s, new Date('2026-10-07T10:00:00.000Z'));
+
+      expect(draft?.periodStart).toEqual(startOfAppDay(2026, 9, 5));
+      expect(draft?.periodEnd).toEqual(startOfAppDay(2026, 9, 12));
+      expect(lifespanOf(draft?.resolvedBody)).toBe('05.10.2026–11.10.2026');
+    });
+
+    it('falls back to the anchor year when the range does not contain the anchor', async () => {
+      const s = await setup({
+        contractBody: bodyWithLifespan('05.10.2026–11.10.2026'),
+      });
+      const draft = await draftFor(s, new Date('2026-10-20T10:00:00.000Z'));
+
+      const year = billingYearBounds(2026);
+      expect(draft?.periodStart).toEqual(year.start);
+      expect(draft?.periodEnd).toEqual(year.end);
+      expect(lifespanOf(draft?.resolvedBody)).toBe('2026');
+    });
+
+    it('covers the anchor year when the template has no lifespan field at all', async () => {
+      const s = await setup();
+      const draft = await draftFor(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      const year = billingYearBounds(2026);
+      expect(draft?.periodStart).toEqual(year.start);
+      expect(draft?.periodEnd).toEqual(year.end);
+      expect(lifespanOf(draft?.resolvedBody)).toBeUndefined();
+    });
+
+    it('covers the anchor year when the lifespan is empty or unreadable', async () => {
+      for (const value of ['', 'garbage']) {
+        const s = await setup({ contractBody: bodyWithLifespan(value) });
+        const draft = await draftFor(s, new Date('2026-06-15T10:00:00.000Z'));
+        expect(draft?.periodStart).toEqual(billingYearBounds(2026).start);
+        expect(lifespanOf(draft?.resolvedBody)).toBe('2026');
+      }
+    });
+
+    it('uses the Berlin date for an entry just after midnight on 1 January', async () => {
+      const s = await setup();
+      // 00:30 Berlin on 01.01.2027 is still 31.12.2026 in UTC.
+      const draft = await draftFor(s, new Date('2026-12-31T23:30:00.000Z'));
+
+      expect(draft?.periodStart).toEqual(billingYearBounds(2027).start);
+      expect(draft?.periodEnd).toEqual(billingYearBounds(2027).end);
+    });
+
+    it('resolves a missing unit to the organisation root unit', async () => {
+      const s = await setup();
+      const draft = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+      expect(draft?.organizationUnitId).toBe(s.root.id);
+    });
+
+    it('does nothing when an awaiting-signature contract covers the entry', async () => {
+      const s = await setup();
+      await insertContract({
+        templateId: s.template.id,
+        volunteerId: s.volunteer.id,
+        reimbursementTypeId: s.reimbursementType.id,
+        organizationUnitId: s.root.id,
+        status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+        ...OCTOBER,
+      });
+
+      expect(
+        await draftFor(s, new Date('2026-10-15T10:00:00.000Z')),
+      ).toBeUndefined();
+    });
+
+    it('queues a draft when the only covering contract was declined', async () => {
+      const s = await setup();
+      await insertContract({
+        templateId: s.template.id,
+        volunteerId: s.volunteer.id,
+        reimbursementTypeId: s.reimbursementType.id,
+        organizationUnitId: s.root.id,
+        status: ContractStatus.DECLINED,
+        ...OCTOBER,
+      });
+
+      const draft = await draftFor(s, new Date('2026-10-15T10:00:00.000Z'));
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('queues a draft for an entry a week contract does not cover', async () => {
+      const s = await setup();
+      await insertContract({
+        templateId: s.template.id,
+        volunteerId: s.volunteer.id,
+        reimbursementTypeId: s.reimbursementType.id,
+        organizationUnitId: s.root.id,
+        status: ContractStatus.ACTIVE,
+        periodStart: startOfAppDay(2026, 9, 5),
+        periodEnd: startOfAppDay(2026, 9, 12),
+      });
+
+      expect(
+        await draftFor(s, new Date('2026-10-07T10:00:00.000Z')),
+      ).toBeUndefined();
+      const draft = await draftFor(s, new Date('2026-10-20T10:00:00.000Z'));
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('does not queue a second draft for an entry inside an existing draft', async () => {
+      const s = await setup();
+      const first = await draftFor(s, new Date('2026-10-07T10:00:00.000Z'));
+      expect(first?.contractStatus).toBe(ContractStatus.DRAFT);
+
+      expect(
+        await draftFor(s, new Date('2026-11-20T10:00:00.000Z')),
+      ).toBeUndefined();
+
+      const rows = await db.query.contracts.findMany({
+        where: { volunteerId: s.volunteer.id },
+      });
+      expect(rows).toHaveLength(1);
+    });
+
+    it('does not let a contract of another unit count as cover', async () => {
+      const s = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      await insertContract({
+        templateId: s.template.id,
+        volunteerId: s.volunteer.id,
+        reimbursementTypeId: s.reimbursementType.id,
+        organizationUnitId: sibling.id,
+        status: ContractStatus.ACTIVE,
+        ...OCTOBER,
+      });
+
+      const draft = await draftFor(s, new Date('2026-10-15T10:00:00.000Z'));
+      expect(draft?.organizationUnitId).toBe(s.root.id);
+    });
+
+    it('queues one draft when several entries close at the same moment', async () => {
+      const s = await setup();
+      const results = await Promise.all(
+        Array.from({ length: 8 }, (_, i) =>
+          draftFor(
+            s,
+            new Date(`2026-10-${String(i + 1).padStart(2, '0')}T10:00:00.000Z`),
+          ),
+        ),
+      );
+
+      expect(results.filter((r) => r !== undefined)).toHaveLength(1);
+      const rows = await db.query.contracts.findMany({
+        where: { volunteerId: s.volunteer.id },
+      });
+      expect(rows).toHaveLength(1);
+    });
+
+    it('waits while another check for the same volunteer, type and unit holds the lock', async () => {
+      const s = await setup();
+      // The same key ensureDraftContract serialises on; holding it here stands
+      // in for a concurrent entry that is mid-way through its own check.
+      const lockKey = [s.volunteer.id, s.reimbursementType.id, s.root.id].join(
+        ':',
+      );
+      let settled = false;
+      let pending: ReturnType<typeof draftFor> | undefined;
+
+      await db.transaction(async (tx) => {
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+        );
+        pending = draftFor(s, new Date('2026-10-07T10:00:00.000Z')).then(
+          (draft) => {
+            settled = true;
+            return draft;
+          },
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        expect(settled).toBe(false);
+      });
+
+      const draft = await pending;
+      expect(draft?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('reports a missing template as a not-found error', async () => {
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `No Template Org ${crypto.randomUUID()}`,
+      );
+      const root = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'root',
+      });
+      const reimbursementType = await createReimbursementType(db);
+      const volunteer = await createUser(db);
+
+      await expect(
+        service.ensureDraftContract(
+          organization.id,
+          {
+            organizationUnitId: root.id,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            anchorDate: new Date('2026-10-15T10:00:00.000Z'),
+          },
+          volunteer.id,
+        ),
+      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+    });
+  });
+
+  describe('createContract draft supersede', () => {
+    const queueDraft = (
+      s: Awaited<ReturnType<typeof setup>>,
+      anchorDate: Date,
+    ) =>
+      service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate,
+        },
+        s.signer.id,
+      );
+
+    const create = (
+      s: Awaited<ReturnType<typeof setup>>,
+      period: { start: Date; end: Date },
+      extra: { sourceDraftId?: string | null } = {},
+    ) =>
+      service.createContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          periodStart: period.start,
+          periodEnd: period.end,
+          sourceDraftId: extra.sourceDraftId,
+        },
+        s.signer.id,
+      );
+
+    const draftIds = async (s: Awaited<ReturnType<typeof setup>>) =>
+      (
+        await db.query.contracts.findMany({
+          where: {
+            volunteerId: s.volunteer.id,
+            contractStatus: ContractStatus.DRAFT,
+          },
+        })
+      ).map((c) => c.id);
+
+    const october = () =>
+      billingMonthBoundsOf(new Date('2026-10-20T10:00:00.000Z'));
+
+    it('keeps a month draft when a week contract is created inside it', async () => {
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      const draft = await queueDraft(s, new Date('2026-10-20T10:00:00.000Z'));
+
+      await create(s, {
+        start: startOfAppDay(2026, 9, 5),
+        end: startOfAppDay(2026, 9, 12),
+      });
+
+      expect(await draftIds(s)).toEqual([draft?.id]);
+    });
+
+    it('supersedes a month draft when a month contract covers it', async () => {
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      await queueDraft(s, new Date('2026-10-20T10:00:00.000Z'));
+
+      const contract = await create(s, october());
+
+      expect(await draftIds(s)).toEqual([]);
+      const changes = await db.query.contractStatusChanges.findMany({
+        where: { contractId: contract.id },
+      });
+      expect(changes.map((c) => c.type)).toContain(
+        DocumentStatusChange.DRAFT_SUPERSEDED,
+      );
+    });
+
+    it('supersedes a year draft when a year contract covers it', async () => {
+      const s = await setup();
+      await queueDraft(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      await create(s, billingYearBounds(2026));
+
+      expect(await draftIds(s)).toEqual([]);
+    });
+
+    it('keeps a year draft that is only partly covered by a month contract', async () => {
+      const s = await setup();
+      const draft = await queueDraft(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      await create(s, october());
+
+      expect(await draftIds(s)).toEqual([draft?.id]);
+    });
+
+    it('consumes the source draft even when the new contract does not contain it', async () => {
+      const s = await setup();
+      const draft = await queueDraft(s, new Date('2026-06-15T10:00:00.000Z'));
+
+      await create(s, october(), { sourceDraftId: draft?.id });
+
+      expect(await draftIds(s)).toEqual([]);
+    });
+
+    it('ignores a source draft id that matches nothing', async () => {
+      const s = await setup();
+      const contract = await create(s, october(), {
+        sourceDraftId: crypto.randomUUID(),
+      });
+      expect(contract.contractStatus).toBe(
+        ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
+      );
+    });
+
+    it("never deletes another organization's draft, not even by source draft id", async () => {
+      const a = await setup();
+      const b = await setup();
+      const draftInB = await service.ensureDraftContract(
+        b.organization.id,
+        {
+          organizationUnitId: b.root.id,
+          volunteerId: a.volunteer.id,
+          reimbursementTypeId: a.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        b.signer.id,
+      );
+      expect(draftInB?.contractStatus).toBe(ContractStatus.DRAFT);
+
+      await create(a, billingYearBounds(2026), { sourceDraftId: draftInB?.id });
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draftInB?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('never deletes a draft of another unit of the same organization', async () => {
+      const s = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      const draftInSibling = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: sibling.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+
+      await create(s, billingYearBounds(2026));
+
+      expect(await draftIds(s)).toEqual([draftInSibling?.id]);
+    });
+
+    it("never deletes a sibling unit's draft by source draft id", async () => {
+      const s = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      const draftInSibling = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: sibling.id,
+          volunteerId: s.volunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+
+      await create(s, billingYearBounds(2026), {
+        sourceDraftId: draftInSibling?.id,
+      });
+
+      expect(await draftIds(s)).toEqual([draftInSibling?.id]);
+    });
+
+    it("never deletes another volunteer's draft by source draft id", async () => {
+      const s = await setup();
+      const otherVolunteer = await createUser(db);
+      const draftOfOther = await service.ensureDraftContract(
+        s.organization.id,
+        {
+          organizationUnitId: s.root.id,
+          volunteerId: otherVolunteer.id,
+          reimbursementTypeId: s.reimbursementType.id,
+          anchorDate: new Date('2026-06-15T10:00:00.000Z'),
+        },
+        s.signer.id,
+      );
+
+      await create(s, billingYearBounds(2026), {
+        sourceDraftId: draftOfOther?.id,
+      });
+
+      const kept = await db.query.contracts.findFirst({
+        where: { id: draftOfOther?.id },
+      });
+      expect(kept?.contractStatus).toBe(ContractStatus.DRAFT);
+    });
+
+    it('keeps a source draft the new contract does not overlap', async () => {
+      // Month template saved as 10/2026, entry in December: the December draft
+      // is queued. A contract for October created with that draft as its source
+      // must not take the December task with it.
+      const s = await setup({ contractBody: bodyWithLifespan('10/2026') });
+      const december = await queueDraft(
+        s,
+        new Date('2026-12-15T10:00:00.000Z'),
+      );
+
+      await create(s, october(), { sourceDraftId: december?.id });
+
+      expect(await draftIds(s)).toEqual([december?.id]);
     });
   });
 
