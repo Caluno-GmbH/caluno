@@ -56,7 +56,7 @@ interface BlockFormFieldInput {
   required: boolean;
   systemKey?: string;
   lockType?: boolean;
-  options?: { label: string; value: string }[];
+  options?: string[];
   documents?: {
     fileId: string;
     filename?: string | null;

@@ -207,14 +207,7 @@ const createBlockFieldSchema = z.object({
   description: zOptionalNullableTrimmedString,
   placeholder: zOptionalNullableTrimmedString,
   required: z.boolean().optional(),
-  options: z
-    .array(
-      z.object({
-        label: z.string(),
-        value: z.string(),
-      }),
-    )
-    .optional(),
+  options: z.array(choiceOptionSchema).optional(),
   documentFileIds: z.array(z.string()).nullish(),
   documentLabel: zOptionalNullableTrimmedString,
   systemKey: z.string().optional(),
@@ -255,14 +248,7 @@ const updateBlockFieldSchema = z.object({
   description: zOptionalNullableTrimmedString,
   placeholder: zOptionalNullableTrimmedString,
   required: z.boolean().optional(),
-  options: z
-    .array(
-      z.object({
-        label: z.string(),
-        value: z.string(),
-      }),
-    )
-    .optional(),
+  options: z.array(choiceOptionSchema).optional(),
   documentFileIds: z.array(z.string()).nullish(),
   documentLabel: zOptionalNullableTrimmedString,
   fieldOrder: z.number().optional(),
