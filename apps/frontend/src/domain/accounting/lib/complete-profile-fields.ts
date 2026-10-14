@@ -29,28 +29,11 @@ export function missingFieldsToRenderable(
   );
 }
 
-/** "Firstname Lastname" when the names are known, otherwise empty. */
-export function accountHolderDefault(names: {
-  firstname?: string | null;
-  lastname?: string | null;
-}): string {
-  return [names.firstname?.trim() ?? '', names.lastname?.trim() ?? '']
-    .filter(Boolean)
-    .join(' ');
-}
-
 /**
- * Only missing fields are shown, so everything starts empty — except the
- * account holder, which is prefilled from the volunteer's name.
+ * Only missing fields are shown, so everything starts empty
  */
 export function completeProfileDefaultValues(
   missingKeys: readonly MissingProfileKey[],
-  names: { firstname?: string | null; lastname?: string | null },
 ): Record<string, string> {
-  return Object.fromEntries(
-    missingKeys.map((key) => [
-      key,
-      key === 'accountHolder' ? accountHolderDefault(names) : '',
-    ]),
-  );
+  return Object.fromEntries(missingKeys.map((key) => [key, '']));
 }

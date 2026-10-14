@@ -41,7 +41,6 @@ import type { VolunteerDocumentKind } from '../lib/volunteer-documents.utils';
 interface CompleteProfileSheetProps {
   kind: VolunteerDocumentKind | null;
   documentId: string | null;
-  userNames: { firstname: string | null; lastname: string | null };
 }
 
 /**
@@ -53,7 +52,6 @@ interface CompleteProfileSheetProps {
 export function CompleteProfileSheet({
   kind,
   documentId,
-  userNames,
 }: CompleteProfileSheetProps) {
   const t = useTranslations('MyDocuments.completeProfile');
   const tNames = useTranslations('MembershipDetail.documents.names');
@@ -155,7 +153,6 @@ export function CompleteProfileSheet({
     <CompleteProfileForm
       key={documentId}
       missingKeys={formKeys}
-      userNames={userNames}
       title={t('title')}
       description={description}
       open={open}
@@ -209,14 +206,12 @@ function MessageSheet({
 
 function CompleteProfileForm({
   missingKeys,
-  userNames,
   title,
   description,
   open,
   onClose,
 }: {
   missingKeys: MissingProfileKey[];
-  userNames: { firstname: string | null; lastname: string | null };
   title: string;
   description: string;
   open: boolean;
@@ -243,8 +238,8 @@ function CompleteProfileForm({
   );
 
   const defaultValues = useMemo(
-    () => completeProfileDefaultValues(missingKeys, userNames),
-    [missingKeys, userNames],
+    () => completeProfileDefaultValues(missingKeys),
+    [missingKeys],
   );
 
   const {

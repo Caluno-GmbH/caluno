@@ -1,5 +1,4 @@
 import { CompleteProfileSheet } from '@/domain/accounting/components/complete-profile-sheet';
-import { getDataClient } from '@/lib/data-client';
 
 interface CompleteProfileSheetPageProps {
   searchParams: Promise<{ kind?: string; id?: string }>;
@@ -15,15 +14,12 @@ export default async function CompleteProfileSheetPage({
   searchParams,
 }: CompleteProfileSheetPageProps) {
   const { kind, id } = await searchParams;
-  const data = await getDataClient();
-  const me = await data.user.getMe();
 
   return (
     <CompleteProfileSheet
       key={`${kind}-${id}`}
       kind={kind === 'contract' || kind === 'invoice' ? kind : null}
       documentId={id ?? null}
-      userNames={{ firstname: me.firstname, lastname: me.lastname }}
     />
   );
 }
