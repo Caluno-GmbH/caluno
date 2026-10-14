@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { docVisibleInRange, isTimesheetNonCompliant } from './board-filters';
+import {
+  docVisibleInRange,
+  getReadyToGoDocs,
+  isTimesheetNonCompliant,
+} from './board-filters';
 
 const timesheet = (periodStart: Date, periodEnd: Date, lastAction: Date) =>
   ({
@@ -119,5 +123,127 @@ describe('isTimesheetNonCompliant', () => {
 
   it('treats a timesheet without a flag as compliant rather than guessing', () => {
     expect(isTimesheetNonCompliant(doc())).toBe(false);
+  });
+});
+
+describe('getReadyToGoDocs', () => {
+  const ready = (pauschale: string, start: Date, end: Date, id = 't') =>
+    ({
+      id,
+      status: 'timesheet-ready',
+      periodLabel: 'Oktober 2026',
+      periodStart: start,
+      periodEnd: end,
+      pauschale,
+    }) as never;
+
+  const contract = (
+    id: string,
+    status: string,
+    start: Date | undefined,
+    end: Date | undefined,
+    pauschale = 'uebungsleiter',
+  ) =>
+    ({
+      id,
+      status,
+      periodLabel: '2026',
+      periodStart: start,
+      periodEnd: end,
+      pauschale,
+    }) as never;
+
+  const volunteer = (documents: unknown[]) =>
+    ({
+      id: 'v',
+      name: 'V',
+      initials: 'V',
+      usedAmount: 0,
+      totalCap: 0,
+      documents,
+    }) as never;
+
+  const october = [new Date(2026, 9, 1), new Date(2026, 10, 1)] as const;
+
+  it('shows every contract that overlaps the timesheet, oldest first', () => {
+    const later = contract(
+      'b',
+      'contract-active',
+      new Date(2026, 9, 15),
+      new Date(2026, 10, 11),
+    );
+    const earlier = contract(
+      'a',
+      'contract-expired',
+      new Date(2026, 8, 10),
+      new Date(2026, 9, 10),
+    );
+
+    const rows = getReadyToGoDocs(
+      volunteer([later, ready('uebungsleiter', ...october), earlier]),
+      undefined,
+    );
+
+    expect(rows.map((r) => r.id)).toEqual(['t', 'a', 'b']);
+  });
+
+  it('leaves out contracts of another allowance type, outside the period, or declined', () => {
+    const rows = getReadyToGoDocs(
+      volunteer([
+        ready('uebungsleiter', ...october),
+        contract(
+          'declined',
+          'contract-declined',
+          new Date(2026, 9, 6),
+          new Date(2026, 10, 1),
+        ),
+        contract(
+          'before',
+          'contract-active',
+          new Date(2026, 0, 1),
+          new Date(2026, 8, 1),
+        ),
+        contract(
+          'other-type',
+          'contract-active',
+          new Date(2026, 8, 1),
+          new Date(2026, 11, 1),
+          'ehrenamt',
+        ),
+        contract(
+          'same',
+          'contract-active',
+          new Date(2026, 8, 1),
+          new Date(2026, 9, 15),
+        ),
+      ]),
+      undefined,
+    );
+
+    expect(rows.map((r) => r.id)).toEqual(['t', 'same']);
+  });
+
+  it('keeps the first contract of the type when none states a period that overlaps', () => {
+    const rows = getReadyToGoDocs(
+      volunteer([
+        ready('uebungsleiter', ...october),
+        contract('only', 'contract-active', undefined, undefined),
+      ]),
+      undefined,
+    );
+
+    expect(rows.map((r) => r.id)).toEqual(['t', 'only']);
+  });
+
+  it('shows a missing placeholder when the type has no contract at all', () => {
+    const rows = getReadyToGoDocs(
+      volunteer([ready('uebungsleiter', ...october)]),
+      undefined,
+    );
+
+    expect(rows.map((r) => r.status)).toEqual([
+      'timesheet-ready',
+      'contract-missing',
+    ]);
   });
 });

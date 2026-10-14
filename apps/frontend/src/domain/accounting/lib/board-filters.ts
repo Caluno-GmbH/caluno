@@ -31,6 +31,44 @@ function findContractDoc(
 }
 
 /**
+ * The contracts that sit alongside these ready timesheets: every contract of
+ * the Pauschale whose own period overlaps one of the timesheets, oldest first.
+ * Several can apply, since hours of one month may be covered by consecutive
+ * contracts, and the bundle holds all of them. Declined contracts cover
+ * nothing, and reminder rows (generate, missing) are not contracts yet.
+ */
+function findCoveringContractDocs(
+  vol: BoardVolunteer,
+  pauschale: PauschalenType,
+  timesheets: BoardDocument[],
+): BoardDocument[] {
+  return vol.documents
+    .filter(
+      (d) =>
+        d.status.startsWith('contract') &&
+        d.pauschale === pauschale &&
+        d.status !== 'contract-declined' &&
+        d.status !== 'contract-generate' &&
+        d.status !== 'contract-missing' &&
+        d.periodStart !== undefined &&
+        d.periodEnd !== undefined &&
+        timesheets.some(
+          (t) =>
+            t.periodStart !== undefined &&
+            t.periodEnd !== undefined &&
+            d.periodStart !== undefined &&
+            d.periodEnd !== undefined &&
+            d.periodStart < t.periodEnd &&
+            d.periodEnd > t.periodStart,
+        ),
+    )
+    .sort(
+      (a, b) =>
+        (a.periodStart?.getTime() ?? 0) - (b.periodStart?.getTime() ?? 0),
+    );
+}
+
+/**
  * The last instant of a day. A range picked as "1 – 30 September" ends at
  * midnight on the 30th, which would exclude everything that happened during
  * that day — the whole of the last day of the selected period.
@@ -121,18 +159,27 @@ export function getReadyToGoDocs(
     new Set(readyTimesheets.map((d) => d.pauschale)),
   );
 
-  const contractRows: BoardDocument[] = pauschaleTypes.map((type) => {
+  const contractRows: BoardDocument[] = pauschaleTypes.flatMap((type) => {
+    const covering = findCoveringContractDocs(
+      volunteer,
+      type,
+      readyTimesheets.filter((d) => d.pauschale === type),
+    );
+    if (covering.length > 0) return covering;
+
     const contract = findContractDoc(volunteer, type);
-    if (contract) return contract;
+    if (contract) return [contract];
 
     const sample = readyTimesheets.find((d) => d.pauschale === type);
     const year = (sample && periodYear(sample)) ?? '';
-    return {
-      id: `${volunteer.id}-contract-missing-${type}-${year}`,
-      status: 'contract-missing',
-      periodLabel: year,
-      pauschale: type,
-    };
+    return [
+      {
+        id: `${volunteer.id}-contract-missing-${type}-${year}`,
+        status: 'contract-missing',
+        periodLabel: year,
+        pauschale: type,
+      },
+    ];
   });
 
   return [...readyTimesheets, ...contractRows];

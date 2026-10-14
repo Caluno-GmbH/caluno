@@ -296,6 +296,8 @@ export function mapContractToBoardDoc(
       locale,
     ),
     pauschale: type,
+    periodStart: new Date(contract.periodStart),
+    periodEnd: new Date(contract.periodEnd),
     // A draft states its own period, and the dialog that turns it into a
     // contract opens on that, not on the template's stored value.
     draftLifespan:
