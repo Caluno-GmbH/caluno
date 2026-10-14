@@ -35,7 +35,8 @@
       "REVIEW_APPLICATIONS": "Review applications",
       "APPROVE_SIGNUPS": "Approve sign-ups",
       "DECLINED_DOCUMENTS": "Declined documents",
-      "COUNTERSIGN_DOCUMENTS": "Countersign documents"
+      "COUNTERSIGN_DOCUMENTS": "Countersign documents",
+      "SEND_TIMESHEET_BUNDLES": "Timesheet bundles ready to send"
     }
   },
   "Terms": {

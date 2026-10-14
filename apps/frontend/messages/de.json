@@ -35,7 +35,8 @@
       "REVIEW_APPLICATIONS": "Anfragen prüfen",
       "APPROVE_SIGNUPS": "Anmeldungen freigeben",
       "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
-      "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen"
+      "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen",
+      "SEND_TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand"
     }
   },
   "Terms": {

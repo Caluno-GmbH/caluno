@@ -4,6 +4,7 @@ import {
   CheckIcon,
   ChevronRightIcon,
   OctagonXIcon,
+  Package,
   SignatureIcon,
   UserPlus,
   UserSearch,
@@ -30,6 +31,7 @@ const SECTION_ICONS = {
   APPROVE_SIGNUPS: [CheckIcon],
   DECLINED_DOCUMENTS: [OctagonXIcon],
   COUNTERSIGN_DOCUMENTS: [SignatureIcon],
+  SEND_TIMESHEET_BUNDLES: [Package],
 } as const satisfies Record<OverviewSectionId, readonly (typeof UserPlus)[]>;
 
 export function TaskSection({

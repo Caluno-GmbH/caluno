@@ -321,7 +321,9 @@ function documentTypeLabel(
   t: (key: 'types.contract' | 'types.timesheet') => string,
 ): string | undefined {
   if (type === 'CONTRACT_SIGN') return t('types.contract');
-  if (type === 'TIMESHEET_SIGN') return t('types.timesheet');
+  if (type === 'TIMESHEET_SIGN' || type === 'TIMESHEET_BUNDLES') {
+    return t('types.timesheet');
+  }
   return undefined;
 }
 
