@@ -1,5 +1,5 @@
 /**
- * Shared helpers for Playground (`fixtures.ts`) and demo (`demo-fixtures.ts`)
+ * Shared helpers for Testing (`fixtures.ts`) and demo (`demo-fixtures.ts`)
  * seed scripts. Keep this module free of top-level side effects — both scripts
  * run seed on import.
  */
@@ -64,7 +64,7 @@ export type ShiftFixture = {
 };
 
 export type FixtureEventInput = {
-  /** When set, idempotency looks up by id (Playground e2e stable IDs). */
+  /** When set, idempotency looks up by id (Testing e2e stable IDs). */
   id?: string;
   title: string;
   description?: string | null;

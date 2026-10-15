@@ -2,7 +2,7 @@
 # Defaults in e2e/ already target staging; this job pins them and runs on a cron.
 #
 # Preconditions (manual, one-time / as needed):
-# - Playground e2e accounts (`demo+e2e_*@caluno.org`) exist on staging with
+# - Testing e2e accounts (`demo+testing_*@caluno.org`) exist on staging with
 #   password matching FIXTURE_PASSWORD (default `abcd1234`).
 # - Repo secret `MAILBOX_PASSWORD` for staging Mailpit basic auth.
 #
