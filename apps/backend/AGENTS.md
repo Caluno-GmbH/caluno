@@ -140,7 +140,7 @@ The backend entrypoint seeds the demo dataset on **every** boot, staging and pro
 | `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
 | `demo+rejected01@caluno.org` | Rejected membership request |
 
-**Playground seed (e2e only)** — password `abcd1234` (override with `FIXTURE_PASSWORD`), organization **Playground**. Its accounts carry an `e2e_` discriminator precisely so they cannot collide with the demo dataset:
+**Playground seed (e2e only)** — password `abcd1234` (override with `FIXTURE_PASSWORD`), organization **Playground**. Its accounts carry an `e2e_` discriminator precisely so they cannot collide with the demo dataset. Generated member/applicant names use number words (`Playground Member One`, `Pending Applicant Two`) because the requirement-form name fields reject digits (`NAME_RE` in `apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`):
 
 | Account | Role / status |
 |---|---|
