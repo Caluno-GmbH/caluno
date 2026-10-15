@@ -8,7 +8,7 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   // Sequential, single browser session — no parallel windows / tab flicker.
   fullyParallel: false,
-  workers: 1,
+  workers: process.env.PLAYWRIGHT_WORKERS ?? 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   use: {
