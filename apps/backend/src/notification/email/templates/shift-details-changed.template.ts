@@ -17,6 +17,8 @@ export interface ShiftDetailsChangedTemplateData {
   shiftTitle: string;
   recipientFirstName: string;
   fromDate?: Date | null;
+  /** Start of the single edited instance — names the affected date in a series. */
+  instanceStartsAt?: Date | null;
   changes: ChangedField[];
 }
 
@@ -72,7 +74,11 @@ export async function shiftDetailsChangedTemplate(
   const body = card(`
     ${heading(t(headingKey))}
     ${paragraph(
-      t(greetingKey, { firstName, shiftTitle, organizationUnitName }),
+      t(greetingKey, {
+        firstName,
+        shiftTitle,
+        organizationName: organizationUnitName,
+      }),
       {
         padding: '0 0 16px',
       },
@@ -82,6 +88,16 @@ export async function shiftDetailsChangedTemplate(
         ? paragraph(
             t('shiftDetailsChanged.seriesRange', {
               fromDate: formatDate(data.fromDate),
+            }),
+            { padding: '0 0 16px' },
+          )
+        : ''
+    }
+    ${
+      data.instanceStartsAt
+        ? paragraph(
+            t('shiftDetailsChanged.instanceRange', {
+              date: formatDate(data.instanceStartsAt),
             }),
             { padding: '0 0 16px' },
           )

@@ -432,6 +432,7 @@
     "footerNote": "You're receiving this because an assignment you're signed up for on {brandName} has changed.",
     "greeting": "Hi {firstName}, the assignment '{shiftTitle}' at {organizationName} has changed.",
     "heading": "Assignment details changed",
+    "instanceRange": "This change affects the assignment on {date}.",
     "note": "You are still signed up for this assignment. No need to accept again.",
     "previewText": "Details for {shiftTitle} at {organizationName} have changed.",
     "seriesGreeting": "Hi {firstName}, the assignment series '{shiftTitle}' at {organizationName} has changed.",
