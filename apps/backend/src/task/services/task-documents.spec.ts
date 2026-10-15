@@ -4,8 +4,12 @@ import { TaskType } from '../enums/task-type.enum';
 import {
   type ContractTaskRow,
   countersignContractTasks,
+  createContractDraftTasks,
+  createContractGenerateTasks,
+  createInvoiceTasks,
   declinedDocumentTasks,
   type InvoiceTaskRow,
+  type TimesheetCreateRow,
   timesheetBundleTasks,
   timesheetSignTasks,
 } from './task-documents';
@@ -142,6 +146,134 @@ describe('document tasks', () => {
       declineReason: 'Wrong hours',
       declinedAtSigneeType: 'VOLUNTEER',
       declinedAt: '2026-09-01T08:00:00.000Z',
+    });
+  });
+
+  it('queues DRAFT contracts as create-agreement tasks', () => {
+    const tasks = createContractDraftTasks(
+      [
+        contract({ id: 'draft', status: 'DRAFT' }),
+        contract({ id: 'active', status: 'ACTIVE' }),
+      ],
+      ORG,
+    );
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.type).toBe(TaskType.CONTRACT_CREATE);
+    expect(tasks[0]?.id).toBe('draft');
+  });
+
+  it('queues unclaimed paid hours as create-timesheet tasks', () => {
+    const row: TimesheetCreateRow = {
+      volunteerId: 'volunteer-1',
+      volunteerName: 'Ada Lovelace',
+      reimbursementTypeId: 'rt-1',
+      reimbursementTypeKey: 'EHRENAMT',
+      periodStart: start,
+      periodEnd: end,
+      eligibleHours: 5,
+      estimatedAmountCents: 600,
+      hasUncoveredHours: false,
+      firstUncoveredAt: null,
+    };
+
+    const tasks = createInvoiceTasks([row], ORG);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.type).toBe(TaskType.INVOICE_CREATE);
+    expect(tasks[0]?.data).toMatchObject({
+      hours: 5,
+      amountCents: 600,
+      volunteerName: 'Ada Lovelace',
+    });
+  });
+
+  it('synthesizes one create-agreement reminder for uncovered hours', () => {
+    const tasks = createContractGenerateTasks(
+      [
+        {
+          volunteerId: 'volunteer-1',
+          volunteerName: 'Ada Lovelace',
+          reimbursementTypeId: 'rt-1',
+          reimbursementTypeKey: 'EHRENAMT',
+          periodStart: start,
+          periodEnd: end,
+          eligibleHours: 5,
+          estimatedAmountCents: 600,
+          hasUncoveredHours: true,
+          firstUncoveredAt: start,
+        },
+        {
+          volunteerId: 'volunteer-1',
+          volunteerName: 'Ada Lovelace',
+          reimbursementTypeId: 'rt-1',
+          reimbursementTypeKey: 'EHRENAMT',
+          periodStart: new Date('2026-09-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-10-01T00:00:00.000Z'),
+          eligibleHours: 2,
+          estimatedAmountCents: 240,
+          hasUncoveredHours: true,
+          firstUncoveredAt: new Date('2026-09-05T00:00:00.000Z'),
+        },
+        {
+          volunteerId: 'volunteer-1',
+          volunteerName: 'Ada Lovelace',
+          reimbursementTypeId: 'rt-1',
+          reimbursementTypeKey: 'EHRENAMT',
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-08-01T00:00:00.000Z'),
+          eligibleHours: 1,
+          estimatedAmountCents: 120,
+          hasUncoveredHours: false,
+          firstUncoveredAt: null,
+        },
+      ],
+      [],
+      ORG,
+    );
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.type).toBe(TaskType.CONTRACT_CREATE);
+    expect(tasks[0]?.id).toBe('contract-generate:volunteer-1:EHRENAMT');
+    expect(tasks[0]?.data).toMatchObject({
+      kind: 'generate',
+      periodStart: start.toISOString(),
+    });
+  });
+
+  it('falls back to a paid-shift signup when hours are already covered', () => {
+    const signupStart = new Date('2026-08-31T22:00:00.000Z');
+    const tasks = createContractGenerateTasks(
+      [
+        {
+          volunteerId: 'volunteer-1',
+          volunteerName: 'Ada Lovelace',
+          reimbursementTypeId: 'rt-1',
+          reimbursementTypeKey: 'EHRENAMT',
+          periodStart: start,
+          periodEnd: end,
+          eligibleHours: 5,
+          estimatedAmountCents: 600,
+          hasUncoveredHours: false,
+          firstUncoveredAt: null,
+        },
+      ],
+      [
+        {
+          volunteerId: 'volunteer-1',
+          volunteerName: 'Ada Lovelace',
+          reimbursementTypeId: 'rt-1',
+          reimbursementTypeKey: 'EHRENAMT',
+          periodStart: signupStart,
+          periodEnd: end,
+        },
+      ],
+      ORG,
+    );
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.data).toMatchObject({
+      kind: 'generate',
+      periodStart: signupStart.toISOString(),
     });
   });
 });
