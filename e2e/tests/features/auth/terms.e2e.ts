@@ -28,7 +28,7 @@ const ACCEPT_USER = 'demo+e2e_member02@caluno.org';
 const DATABASE_URL =
   process.env.E2E_DATABASE_URL ??
   process.env.DATABASE_URL ??
-  'postgresql://postgres:postgres@localhost:5432/clippy';
+  'postgresql://postgres:postgres@localhost:5432/caluno';
 
 const IS_LOCAL = /(^|:\/\/)(localhost|127\.0\.0\.1)(:|\/|$)/.test(BASE_URL);
 
