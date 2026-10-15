@@ -1,9 +1,13 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import AdmZip from 'adm-zip';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
-import { BadRequestGraphQLError } from '../../graphql/errors';
-import { InternalServerGraphQLError } from '../../graphql/errors/internal-server.error';
 import { FileService } from '../../storage/services/file.service';
 import { InvoiceStatus } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
@@ -32,8 +36,8 @@ interface BuiltBundle {
  * into a single downloadable ZIP and records the download (audit row + marking
  * the READY invoices as paid) once the bundle is built.
  *
- * The bundle contains every ready (unpaid, READY) timesheet for that type, or
- * the last downloaded batch again when none is unpaid, plus
+ * The bundle contains the READY timesheets of that type the board shows (all of
+ * them without a list), paid or not, plus
  * the signed agreements (ACTIVE contracts) that cover the hours on those
  * timesheets: the newest covering contract per time entry, each once, listed
  * ahead of the timesheets (VOLI-1586). Documents are resolved to their
@@ -57,16 +61,27 @@ export class BundleDownloadService {
     volunteerId: string,
     reimbursementTypeId: string,
     userId: string,
+    invoiceIds?: string[],
   ): Promise<BuiltBundle> {
     const scope = { volunteerId, reimbursementTypeId, organizationUnitId };
-    const unpaid = await this.findReadyInvoices({
-      ...scope,
-      paidAt: { isNull: true },
+    // Every READY timesheet, paid or not: there is no payment integration, so
+    // a download is taken as the payment and a repeated one hands over the same
+    // documents again. The board names the timesheets it shows, so the ZIP
+    // holds what is on screen; they are still matched in this volunteer, type
+    // and unit and must be READY.
+    const invoices = await this.db.query.invoices.findMany({
+      where: {
+        ...scope,
+        invoiceStatus: InvoiceStatus.READY,
+        ...(invoiceIds ? { id: { in: invoiceIds } } : {}),
+      },
+      with: {
+        invoiceTimeEntries: {
+          where: { released: false },
+          with: { timeEntry: true },
+        },
+      },
     });
-    // With nothing new to hand over, the last downloaded batch is served again
-    // so a lost or failed download can be repeated. It is not paid a second time.
-    const invoices =
-      unpaid.length > 0 ? unpaid : await this.findLastDownloadedBatch(scope);
 
     const contracts = await this.findCoveringContracts(invoices, scope);
 
@@ -89,7 +104,7 @@ export class BundleDownloadService {
     }
 
     if (entries.length === 0) {
-      throw new BadRequestGraphQLError(
+      throw new BadRequestException(
         'No ready documents to download for this volunteer and reimbursement type.',
       );
     }
@@ -99,14 +114,14 @@ export class BundleDownloadService {
     // Record the download (audit row + mark the READY invoices as paid). Only
     // once the ZIP is built, and `zipEntries` throws when a timesheet's file
     // cannot be resolved or fetched, so nothing is marked paid for a ZIP that
-    // lacks one of its timesheets. A repeated download only refreshes the
-    // audit row: those timesheets were paid by the first one.
+    // lacks one of its timesheets. Timesheets paid by an earlier download keep
+    // their stamp; the audit row still records this one.
     if (invoices.length > 0) {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
         reimbursementTypeId,
         userId,
-        unpaid.map((i) => i.id),
+        invoices.filter((i) => !i.paidAt).map((i) => i.id),
       );
     }
 
@@ -114,45 +129,6 @@ export class BundleDownloadService {
       buffer,
       zipName: `Abrechnung-${volunteerId.slice(0, 8)}.zip`,
     };
-  }
-
-  private findReadyInvoices(where: {
-    volunteerId: string;
-    reimbursementTypeId: string;
-    organizationUnitId: string;
-    paidAt: { isNull: true } | { eq: Date };
-  }) {
-    return this.db.query.invoices.findMany({
-      where: { ...where, invoiceStatus: InvoiceStatus.READY },
-      with: {
-        invoiceTimeEntries: {
-          where: { released: false },
-          with: { timeEntry: true },
-        },
-      },
-    });
-  }
-
-  /**
-   * The READY timesheets the latest download marked paid. A download stamps
-   * its whole batch with one instant, so that instant picks the batch out.
-   */
-  private async findLastDownloadedBatch(scope: {
-    volunteerId: string;
-    reimbursementTypeId: string;
-    organizationUnitId: string;
-  }) {
-    const latest = await this.db.query.invoices.findFirst({
-      where: {
-        ...scope,
-        invoiceStatus: InvoiceStatus.READY,
-        paidAt: { isNotNull: true },
-      },
-      orderBy: { paidAt: 'desc' },
-      columns: { paidAt: true },
-    });
-    if (!latest?.paidAt) return [];
-    return this.findReadyInvoices({ ...scope, paidAt: { eq: latest.paidAt } });
   }
 
   /**
@@ -224,7 +200,7 @@ export class BundleDownloadService {
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
         if (entry.required) {
-          throw new InternalServerGraphQLError(
+          throw new InternalServerErrorException(
             `The document ${entry.name} could not be fetched, so the bundle was not built and nothing was marked as paid. Please try again. (${reason})`,
           );
         }

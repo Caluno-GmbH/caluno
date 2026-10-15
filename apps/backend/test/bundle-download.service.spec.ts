@@ -7,6 +7,7 @@ import {
   it,
   spyOn,
 } from 'bun:test';
+import { BadRequestException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import AdmZip from 'adm-zip';
@@ -226,7 +227,13 @@ describe('BundleDownloadService', () => {
   const readyTimesheet = async (
     s: Fixture,
     entries: { id: string }[],
-    options: { paid?: boolean | Date } = {},
+    options: {
+      paid?: boolean | Date;
+      period?: { start: string; end: string };
+      unitId?: string;
+      reimbursementTypeId?: string;
+      status?: InvoiceStatus;
+    } = {},
   ) => {
     const file = await createPdfFile(s);
     const [invoice] = await db
@@ -234,11 +241,12 @@ describe('BundleDownloadService', () => {
       .values({
         documentTemplateId: s.invoiceTemplate.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.id,
-        organizationUnitId: s.root.id,
-        invoiceStatus: InvoiceStatus.READY,
-        periodStart: new Date(JULY.start),
-        periodEnd: new Date(JULY.end),
+        reimbursementTypeId:
+          options.reimbursementTypeId ?? s.reimbursementType.id,
+        organizationUnitId: options.unitId ?? s.root.id,
+        invoiceStatus: options.status ?? InvoiceStatus.READY,
+        periodStart: new Date((options.period ?? JULY).start),
+        periodEnd: new Date((options.period ?? JULY).end),
         totalAmountCents: 3_000,
         totalHours: 2,
         hourlyRateCents: 1_500,
@@ -332,6 +340,7 @@ describe('BundleDownloadService', () => {
       await expect(download(s)).rejects.toThrow(
         'No ready documents to download',
       );
+      await expect(download(s)).rejects.toBeInstanceOf(BadRequestException);
 
       const audit = await db.query.reimbursementBundleDownloads.findFirst({
         where: { volunteerId: s.volunteer.id },
@@ -459,38 +468,196 @@ describe('BundleDownloadService', () => {
       expect(audit?.downloadedByUserId).toBe(otherUser.id);
     });
 
-    it('serves only the most recent batch, not every timesheet ever paid', async () => {
-      const s = await setup();
-      const oldEntry = await entryAt(s, '2026-07-05T09:00:00.000Z');
-      const newEntry = await entryAt(s, '2026-07-20T09:00:00.000Z');
-      await insertContract(s, JULY);
-      const older = await readyTimesheet(s, [oldEntry], {
-        paid: new Date('2026-08-01T10:00:00.000Z'),
-      });
-      const newer = await readyTimesheet(s, [newEntry], {
-        paid: new Date('2026-09-01T10:00:00.000Z'),
-      });
-
-      const { buffer } = await download(s);
-
-      const names = zipNames(buffer);
-      expect(names).toContain(timesheetName(newer.id));
-      expect(names).not.toContain(timesheetName(older.id));
-    });
-
-    it('takes a newly ready timesheet only, leaving the paid ones out', async () => {
+    it('bundles the paid and the newly ready timesheets together', async () => {
       const s = await setup();
       const paidEntry = await entryAt(s, '2026-07-05T09:00:00.000Z');
       const freshEntry = await entryAt(s, '2026-07-20T09:00:00.000Z');
-      await insertContract(s, JULY);
+      const contract = await insertContract(s, JULY);
       const paid = await readyTimesheet(s, [paidEntry], { paid: true });
       const fresh = await readyTimesheet(s, [freshEntry]);
 
       const { buffer } = await download(s);
 
+      expect(zipNames(buffer)).toEqual(
+        sorted([
+          contractName(contract.id),
+          timesheetName(paid.id),
+          timesheetName(fresh.id),
+        ]),
+      );
+    });
+
+    it('pays only the timesheets that were not paid yet', async () => {
+      const s = await setup();
+      const paidEntry = await entryAt(s, '2026-07-05T09:00:00.000Z');
+      const freshEntry = await entryAt(s, '2026-07-20T09:00:00.000Z');
+      await insertContract(s, JULY);
+      const paidAt = new Date('2026-08-01T10:00:00.000Z');
+      const paid = await readyTimesheet(s, [paidEntry], { paid: paidAt });
+      const fresh = await readyTimesheet(s, [freshEntry]);
+
+      await download(s);
+
+      const storedPaid = await db.query.invoices.findFirst({
+        where: { id: paid.id },
+      });
+      const storedFresh = await db.query.invoices.findFirst({
+        where: { id: fresh.id },
+      });
+      expect(storedPaid?.paidAt?.getTime()).toBe(paidAt.getTime());
+      expect(storedFresh?.paidAt).not.toBeNull();
+    });
+
+    it('grows by one: three timesheets, then four', async () => {
+      const s = await setup();
+      await insertContract(s, JULY);
+      const first = await Promise.all(
+        ['2026-07-03', '2026-07-10', '2026-07-17'].map(async (day) =>
+          readyTimesheet(s, [await entryAt(s, `${day}T09:00:00.000Z`)]),
+        ),
+      );
+      expect(zipNames((await download(s)).buffer).length).toBe(
+        first.length + 1,
+      );
+
+      const added = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-24T09:00:00.000Z'),
+      ]);
+
+      const names = zipNames((await download(s)).buffer);
+      expect(names).toHaveLength(first.length + 2);
+      expect(names).toContain(timesheetName(added.id));
+      for (const invoice of first) {
+        expect(names).toContain(timesheetName(invoice.id));
+      }
+    });
+  });
+
+  describe('timesheets named by the board', () => {
+    const downloadOnly = (s: Fixture, invoiceIds: string[]) =>
+      service.buildAndRecord(
+        s.root.id,
+        s.volunteer.id,
+        s.reimbursementType.id,
+        s.downloader.id,
+        invoiceIds,
+      );
+
+    it('bundles exactly the timesheets named, paid or not', async () => {
+      const s = await setup();
+      const a = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-05T09:00:00.000Z'),
+      ]);
+      const b = await readyTimesheet(
+        s,
+        [await entryAt(s, '2026-07-12T09:00:00.000Z')],
+        { paid: true },
+      );
+      const c = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-20T09:00:00.000Z'),
+      ]);
+
+      const { buffer } = await downloadOnly(s, [a.id, b.id]);
+
       const names = zipNames(buffer);
-      expect(names).toContain(timesheetName(fresh.id));
-      expect(names).not.toContain(timesheetName(paid.id));
+      expect(names).toContain(timesheetName(a.id));
+      expect(names).toContain(timesheetName(b.id));
+      expect(names).not.toContain(timesheetName(c.id));
+      const storedC = await db.query.invoices.findFirst({
+        where: { id: c.id },
+      });
+      expect(storedC?.paidAt).toBeNull();
+    });
+
+    it('ignores a named timesheet of another volunteer', async () => {
+      const s = await setup();
+      const other = await setup();
+      const mine = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-05T09:00:00.000Z'),
+      ]);
+      const theirs = await readyTimesheet(other, [
+        await entryAt(other, '2026-07-05T09:00:00.000Z'),
+      ]);
+
+      const { buffer } = await downloadOnly(s, [mine.id, theirs.id]);
+
+      const names = zipNames(buffer);
+      expect(names).toContain(timesheetName(mine.id));
+      expect(names).not.toContain(timesheetName(theirs.id));
+    });
+
+    it('ignores a named timesheet of the same volunteer in another unit', async () => {
+      const s = await setup();
+      const sibling = await createUnit(db, {
+        organizationId: s.organization.id,
+        typeId: s.type.id,
+        name: 'sibling',
+        parentId: s.root.id,
+      });
+      const mine = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-05T09:00:00.000Z'),
+      ]);
+      const elsewhere = await readyTimesheet(
+        s,
+        [await entryAt(s, '2026-07-12T09:00:00.000Z')],
+        { unitId: sibling.id },
+      );
+
+      const { buffer } = await downloadOnly(s, [mine.id, elsewhere.id]);
+
+      const names = zipNames(buffer);
+      expect(names).toContain(timesheetName(mine.id));
+      expect(names).not.toContain(timesheetName(elsewhere.id));
+      const stored = await db.query.invoices.findFirst({
+        where: { id: elsewhere.id },
+      });
+      expect(stored?.paidAt).toBeNull();
+    });
+
+    it('ignores a named timesheet of another reimbursement type', async () => {
+      const s = await setup();
+      const other = await createReimbursementType(db, {
+        key: ReimbursementTypeKey.UEBUNGSLEITER,
+      });
+      const mine = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-05T09:00:00.000Z'),
+      ]);
+      const otherType = await readyTimesheet(
+        s,
+        [await entryAt(s, '2026-07-12T09:00:00.000Z')],
+        { reimbursementTypeId: other.id },
+      );
+
+      const { buffer } = await downloadOnly(s, [mine.id, otherType.id]);
+
+      const names = zipNames(buffer);
+      expect(names).toContain(timesheetName(mine.id));
+      expect(names).not.toContain(timesheetName(otherType.id));
+    });
+
+    it('ignores a named timesheet that is not ready', async () => {
+      const s = await setup();
+      const mine = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-05T09:00:00.000Z'),
+      ]);
+      const unsigned = await readyTimesheet(
+        s,
+        [await entryAt(s, '2026-07-12T09:00:00.000Z')],
+        { status: InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE },
+      );
+
+      const { buffer } = await downloadOnly(s, [mine.id, unsigned.id]);
+
+      expect(zipNames(buffer)).not.toContain(timesheetName(unsigned.id));
+    });
+
+    it('rejects when none of the named timesheets is ready', async () => {
+      const s = await setup();
+      await readyTimesheet(s, [await entryAt(s, '2026-07-05T09:00:00.000Z')]);
+
+      await expect(downloadOnly(s, [crypto.randomUUID()])).rejects.toThrow(
+        'No ready documents to download',
+      );
     });
   });
 
@@ -670,21 +837,27 @@ describe('BundleDownloadService', () => {
       expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
     });
 
-    it('ignores the hours of an already paid timesheet when choosing contracts', async () => {
+    it('chooses contracts for the hours of a paid timesheet as well', async () => {
       const s = await setup();
       const paidEntry = await entryAt(s, '2026-07-05T09:00:00.000Z');
       const openEntry = await entryAt(s, '2026-07-20T09:00:00.000Z');
-      await insertContract(s, FIRST_HALF);
+      const first = await insertContract(s, FIRST_HALF);
       const second = await insertContract(s, SECOND_HALF);
-      await readyTimesheet(s, [paidEntry], { paid: true });
+      const paid = await readyTimesheet(s, [paidEntry], { paid: true });
       const invoice = await readyTimesheet(s, [openEntry]);
 
       const { buffer } = await download(s);
 
       expect(zipNames(buffer)).toEqual(
-        sorted([contractName(second.id), timesheetName(invoice.id)]),
+        sorted([
+          contractName(first.id),
+          contractName(second.id),
+          timesheetName(paid.id),
+          timesheetName(invoice.id),
+        ]),
       );
     });
+
     it('puts the contracts ahead of the timesheets, oldest period first', async () => {
       const s = await setup();
       const early = await entryAt(s, '2026-07-05T09:00:00.000Z');
