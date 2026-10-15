@@ -12,6 +12,24 @@ import { BadRequestGraphQLError } from '../graphql/errors';
 import { AccountingOrgAccessService } from './services';
 import { BundleDownloadService } from './services/bundle-download.service';
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The timesheets the board shows, as a comma separated list of ids. Left out,
+ * every READY timesheet of the volunteer and type is bundled.
+ */
+function parseInvoiceIds(value: unknown): string[] | undefined {
+  if (value === undefined || value === '') return undefined;
+  if (typeof value !== 'string') {
+    throw new BadRequestGraphQLError('Invalid list of timesheets.');
+  }
+  const ids = value.split(',');
+  if (ids.some((id) => !UUID.test(id))) {
+    throw new BadRequestGraphQLError('Invalid list of timesheets.');
+  }
+  return ids;
+}
+
 /**
  * REST surface for the reimbursement workflow's file delivery. Bytes never go
  * through GraphQL, so the "download bundle" action is a plain authenticated
@@ -31,6 +49,7 @@ export class AccountingController {
     @Headers('x-organization-unit-id') organizationUnitId: string | undefined,
     @Query('volunteerId') volunteerId: unknown,
     @Query('reimbursementTypeId') reimbursementTypeId: unknown,
+    @Query('invoiceIds') invoiceIds: unknown,
   ): Promise<StreamableFile> {
     if (!organizationUnitId) {
       throw new BadRequestGraphQLError('Missing organization unit context.');
@@ -43,6 +62,7 @@ export class AccountingController {
         'Missing volunteer or reimbursement type.',
       );
     }
+    const named = parseInvoiceIds(invoiceIds);
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
       organizationUnitId,
     );
@@ -52,6 +72,7 @@ export class AccountingController {
       volunteerId,
       reimbursementTypeId,
       session.user.id,
+      named,
     );
 
     return new StreamableFile(buffer, {
