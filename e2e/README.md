@@ -84,6 +84,11 @@ committed default.
 - **Selectors** are role- and label-based, captured from the live app — not guessed.
 - **Waits** are locator- and URL-driven (`waitForURL`, `waitFor`); no
   `networkidle` and no fixed sleeps.
+- **Person names must not contain digits.** The signup requirement-form name
+  fields reject anything but letters, marks, apostrophe, hyphen and space
+  (`NAME_RE` in `apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`).
+  Write numbers as words: `E Two E`, matching the Playground seed's
+  `Playground Member One` style (see `apps/backend/src/database/fixtures.ts`).
 - Each run **provisions data on staging** (one user, org, and shift).
 - `test-results/` and `playwright-report/` are git-ignored.
 ```

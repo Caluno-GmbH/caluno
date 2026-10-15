@@ -91,6 +91,25 @@ describe('groupOverviewBoard', () => {
     ]);
   });
 
+  it('shows create agreement and timesheet tasks under accounting', () => {
+    const groups = groupOverviewBoard([
+      task('draft', 'CONTRACT_CREATE', '2026-08-01T00:00:00.000Z'),
+      task('hours', 'INVOICE_CREATE', '2026-08-01T00:00:00.000Z'),
+    ]);
+
+    const accounting = groups.find((group) => group.id === 'accounting');
+    expect(accounting?.sections.map((section) => section.id)).toEqual([
+      'CREATE_AGREEMENTS',
+      'CREATE_TIMESHEETS',
+    ]);
+    expect(accounting?.sections[0]?.tasks.map((item) => item.id)).toEqual([
+      'draft',
+    ]);
+    expect(accounting?.sections[1]?.tasks.map((item) => item.id)).toEqual([
+      'hours',
+    ]);
+  });
+
   it('shows ready timesheet bundles under accounting send-out', () => {
     const groups = groupOverviewBoard([task('bundle', 'TIMESHEET_BUNDLES')]);
 

@@ -158,6 +158,48 @@ describe('mapOverviewTask', () => {
     expect(detailValues[4]?.replace(/\u00a0/g, ' ')).toBe('45,00 €');
   });
 
+  it('formats a timesheet still to create like a timesheet to sign', () => {
+    const month = billingMonthBounds(2026, 8);
+    const task = mapOverviewTask(
+      source(TaskType.InvoiceCreate, {
+        volunteerName: 'Ada Lovelace',
+        reimbursementTypeKey: 'EHRENAMT',
+        ...month,
+        hours: 5,
+        amountCents: 600,
+      }),
+      'en',
+      { reimbursementType: (key) => (key === 'EHRENAMT' ? 'Ehrenamt' : key) },
+    );
+
+    expect(task.documentKind).toBe('invoice');
+    expect(values(task).slice(0, 3)).toEqual([
+      'Ada Lovelace',
+      'Ehrenamt',
+      'September 2026',
+    ]);
+  });
+
+  it('formats a contract still to create like a countersign contract', () => {
+    const year = billingYearBounds(2026);
+    const task = mapOverviewTask(
+      source(TaskType.ContractCreate, {
+        volunteerName: 'Ada Lovelace',
+        reimbursementTypeName: 'Ehrenamtspauschale',
+        ...year,
+        kind: 'generate',
+      }),
+      'en',
+    );
+
+    expect(task.documentKind).toBe('contract');
+    expect(values(task)).toEqual([
+      'Ada Lovelace',
+      'Ehrenamtspauschale',
+      '2026',
+    ]);
+  });
+
   it('counts every ready unpaid timesheet on a bundle card', () => {
     const task = mapOverviewTask(
       source(TaskType.TimesheetBundles, {

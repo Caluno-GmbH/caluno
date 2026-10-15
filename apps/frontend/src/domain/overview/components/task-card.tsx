@@ -279,6 +279,10 @@ function DocumentTaskBody({
           ? tOverview('signedAgo', { when: signedAge.relative })
           : tDocs('status.awaiting-countersignature')}
       </OverviewStatusBadge>
+    ) : task.type === 'CONTRACT_CREATE' ? (
+      <OverviewStatusBadge>{tTiles('contractGenerate')}</OverviewStatusBadge>
+    ) : task.type === 'INVOICE_CREATE' ? (
+      <OverviewStatusBadge>{tTiles('timesheetGenerate')}</OverviewStatusBadge>
     ) : readyCount !== undefined ? (
       <OverviewStatusBadge>
         {tTiles('docCount', { count: readyCount })}
@@ -320,8 +324,14 @@ function documentTypeLabel(
   type: OverviewTask['type'],
   t: (key: 'types.contract' | 'types.timesheet') => string,
 ): string | undefined {
-  if (type === 'CONTRACT_SIGN') return t('types.contract');
-  if (type === 'TIMESHEET_SIGN' || type === 'TIMESHEET_BUNDLES') {
+  if (type === 'CONTRACT_SIGN' || type === 'CONTRACT_CREATE') {
+    return t('types.contract');
+  }
+  if (
+    type === 'TIMESHEET_SIGN' ||
+    type === 'TIMESHEET_BUNDLES' ||
+    type === 'INVOICE_CREATE'
+  ) {
     return t('types.timesheet');
   }
   return undefined;

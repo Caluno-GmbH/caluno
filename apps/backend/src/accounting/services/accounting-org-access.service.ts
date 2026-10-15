@@ -49,4 +49,22 @@ export class AccountingOrgAccessService {
 
     return organizationId;
   }
+
+  /**
+   * Soft check for surfaces that omit accounting data instead of throwing
+   * (e.g. overview `myTasks`).
+   */
+  async isAccountingEnabled(organizationUnitId: string): Promise<boolean> {
+    const organizationId =
+      await this.organizationUnitService.findOrganizationIdByUnitId(
+        organizationUnitId,
+      );
+    if (!organizationId) return false;
+
+    const organization = await this.db.query.organizations.findFirst({
+      where: { id: organizationId },
+      columns: { accountingEnabled: true },
+    });
+    return organization?.accountingEnabled === true;
+  }
 }

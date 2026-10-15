@@ -17,6 +17,13 @@ import {
   InvoiceStatus,
   SigneeType,
 } from '../../accounting/enums';
+import { AccountingOrgAccessService } from '../../accounting/services/accounting-org-access.service';
+import { InvoiceService } from '../../accounting/services/invoice.service';
+import { ReimbursementRateService } from '../../accounting/services/reimbursement-rate.service';
+import {
+  billingYearBounds,
+  billingYearOf,
+} from '../../accounting/utils/billing-period';
 import { AuthService } from '../../auth/auth.service';
 import { PermissionKey } from '../../auth/enums';
 import type { Database } from '../../database/database.module';
@@ -30,8 +37,13 @@ import { Task } from '../models/task.model';
 import {
   type ContractTaskRow,
   countersignContractTasks,
+  createContractDraftTasks,
+  createContractGenerateTasks,
+  createInvoiceTasks,
   declinedDocumentTasks,
   type InvoiceTaskRow,
+  type PaidShiftSignupRow,
+  type TimesheetCreateRow,
   timesheetBundleTasks,
   timesheetSignTasks,
 } from './task-documents';
@@ -60,6 +72,9 @@ export class TaskService {
     @Inject(DATABASE_CONNECTION) private readonly db: Database,
     private readonly authService: AuthService,
     private readonly fillFilters: TodoFillFilterService,
+    private readonly invoiceService: InvoiceService,
+    private readonly reimbursementRateService: ReimbursementRateService,
+    private readonly accountingOrgAccess: AccountingOrgAccessService,
   ) {}
 
   async myTasks(userId: string, organizationUnitId: string): Promise<Task[]> {
@@ -69,9 +84,9 @@ export class TaskService {
     ]);
     const canEditShifts = permissions.has(PermissionKey.SHIFT_EDIT);
     const canEditVolunteers = permissions.has(PermissionKey.VOLUNTEER_EDIT);
-    const canManageAccounting = permissions.has(
-      PermissionKey.ACCOUNTING_MANAGE,
-    );
+    const showAccountingTasks =
+      permissions.has(PermissionKey.ACCOUNTING_MANAGE) &&
+      (await this.accountingOrgAccess.isAccountingEnabled(organizationUnitId));
 
     const [
       belowMinimum,
@@ -80,6 +95,8 @@ export class TaskService {
       membershipRequests,
       contracts,
       invoices,
+      timesheetsToCreate,
+      paidShiftSignups,
     ] = await Promise.all([
       canEditShifts
         ? this.shiftsBelowMinimum(organizationUnitId, fillFilter)
@@ -87,14 +104,32 @@ export class TaskService {
       canEditShifts ? this.shiftApprovals(organizationUnitId) : [],
       canEditShifts ? this.eventApprovals(organizationUnitId) : [],
       canEditVolunteers ? this.membershipRequests(organizationUnitId) : [],
-      canManageAccounting ? this.contractRows(organizationUnitId) : [],
-      canManageAccounting ? this.invoiceRows(organizationUnitId) : [],
+      showAccountingTasks ? this.contractRows(organizationUnitId) : [],
+      showAccountingTasks ? this.invoiceRows(organizationUnitId) : [],
+      showAccountingTasks ? this.timesheetCreateRows(organizationUnitId) : [],
+      showAccountingTasks ? this.paidShiftSignupRows(organizationUnitId) : [],
     ]);
+
+    const year = billingYearOf(new Date());
+    const yearPeriod = billingYearBounds(year);
+    const pairsWithOpenContract = new Set(
+      contracts
+        .filter((row) => row.status !== ContractStatus.DECLINED)
+        .map((row) => `${row.volunteerId}|${row.reimbursementTypeId}`),
+    );
 
     return [
       ...belowMinimum,
       ...shiftApprovals,
       ...eventApprovals,
+      ...createContractDraftTasks(contracts, organizationUnitId),
+      ...createContractGenerateTasks(
+        timesheetsToCreate,
+        paidShiftSignups,
+        organizationUnitId,
+        { yearPeriod, pairsWithOpenContract },
+      ),
+      ...createInvoiceTasks(timesheetsToCreate, organizationUnitId),
       ...countersignContractTasks(contracts, organizationUnitId),
       ...timesheetSignTasks(invoices, organizationUnitId),
       ...timesheetBundleTasks(invoices, organizationUnitId),
@@ -110,6 +145,129 @@ export class TaskService {
       ),
       ...membershipRequests,
     ];
+  }
+
+  /**
+   * Same rows as `volunteersNeedingTimesheets` for the current Berlin year,
+   * enriched for task cards (name, type key, estimated amount).
+   */
+  private async timesheetCreateRows(
+    organizationUnitId: string,
+  ): Promise<TimesheetCreateRow[]> {
+    const year = billingYearOf(new Date());
+    const { start, end } = billingYearBounds(year);
+    const rows = await this.invoiceService.findVolunteersNeedingTimesheets(
+      organizationUnitId,
+      start,
+      end,
+    );
+    if (rows.length === 0) return [];
+
+    const volunteerIds = [...new Set(rows.map((row) => row.volunteerId))];
+    const typeIds = [...new Set(rows.map((row) => row.reimbursementTypeId))];
+
+    const unit = await this.db.query.organizationUnits.findFirst({
+      where: { id: organizationUnitId },
+      columns: { organizationId: true },
+    });
+    if (!unit) return [];
+
+    const [users, types, rates] = await Promise.all([
+      this.db.query.users.findMany({
+        where: { id: { in: volunteerIds } },
+        columns: { id: true, name: true },
+      }),
+      this.db.query.reimbursementTypes.findMany({
+        where: { id: { in: typeIds } },
+        columns: {
+          id: true,
+          key: true,
+          platformDefaultRateCents: true,
+        },
+      }),
+      this.reimbursementRateService.getEffectiveRates(
+        unit.organizationId,
+        organizationUnitId,
+      ),
+    ]);
+
+    const nameById = new Map(users.map((user) => [user.id, user.name]));
+    const typeById = new Map(types.map((type) => [type.id, type]));
+    const rateByTypeId = new Map(
+      rates.map((rate) => [rate.reimbursementType.id, rate.hourlyRateCents]),
+    );
+
+    return rows.flatMap((row) => {
+      const type = typeById.get(row.reimbursementTypeId);
+      const volunteerName = nameById.get(row.volunteerId);
+      if (!type || !volunteerName) return [];
+      const rateCents =
+        rateByTypeId.get(row.reimbursementTypeId) ??
+        type.platformDefaultRateCents;
+      return [
+        {
+          volunteerId: row.volunteerId,
+          volunteerName,
+          reimbursementTypeId: row.reimbursementTypeId,
+          reimbursementTypeKey: type.key,
+          periodStart: row.periodStart,
+          periodEnd: row.periodEnd,
+          eligibleHours: row.eligibleHours,
+          estimatedAmountCents: Math.round(row.eligibleHours * rateCents),
+          hasUncoveredHours: row.hasUncoveredHours,
+          firstUncoveredAt: row.firstUncoveredAt,
+        },
+      ];
+    });
+  }
+
+  /**
+   * Paid-shift signups with no open contract/invoice covering the shift
+   * month — delegates to `InvoiceService.findPaidShiftSignupVolunteers`,
+   * then enriches with volunteer name and reimbursement type key for cards.
+   */
+  private async paidShiftSignupRows(
+    organizationUnitId: string,
+  ): Promise<PaidShiftSignupRow[]> {
+    const year = billingYearOf(new Date());
+    const rows = await this.invoiceService.findPaidShiftSignupVolunteers(
+      organizationUnitId,
+      year,
+    );
+    if (rows.length === 0) return [];
+
+    const volunteerIds = [...new Set(rows.map((row) => row.volunteerId))];
+    const typeIds = [...new Set(rows.map((row) => row.reimbursementTypeId))];
+
+    const [users, types] = await Promise.all([
+      this.db.query.users.findMany({
+        where: { id: { in: volunteerIds } },
+        columns: { id: true, name: true },
+      }),
+      this.db.query.reimbursementTypes.findMany({
+        where: { id: { in: typeIds } },
+        columns: { id: true, key: true },
+      }),
+    ]);
+
+    const nameById = new Map(users.map((user) => [user.id, user.name]));
+    const typeKeyById = new Map(types.map((type) => [type.id, type.key]));
+
+    return rows.flatMap((row) => {
+      const volunteerName = nameById.get(row.volunteerId);
+      const reimbursementTypeKey = typeKeyById.get(row.reimbursementTypeId);
+      if (!volunteerName || !reimbursementTypeKey) return [];
+      return [
+        {
+          volunteerId: row.volunteerId,
+          volunteerName,
+          reimbursementTypeId: row.reimbursementTypeId,
+          reimbursementTypeKey,
+          periodStart: row.periodStart,
+          periodEnd: row.periodEnd,
+        },
+      ];
+    });
   }
 
   private async shiftsBelowMinimum(
@@ -337,6 +495,7 @@ export class TaskService {
         id: schema.contracts.id,
         volunteerId: schema.contracts.volunteerId,
         volunteerName: schema.users.name,
+        reimbursementTypeId: schema.contracts.reimbursementTypeId,
         reimbursementTypeKey: schema.reimbursementTypes.key,
         periodStart: schema.contracts.periodStart,
         periodEnd: schema.contracts.periodEnd,
@@ -393,6 +552,7 @@ export class TaskService {
         id: schema.invoices.id,
         volunteerId: schema.invoices.volunteerId,
         volunteerName: schema.users.name,
+        reimbursementTypeId: schema.invoices.reimbursementTypeId,
         reimbursementTypeKey: schema.reimbursementTypes.key,
         periodStart: schema.invoices.periodStart,
         periodEnd: schema.invoices.periodEnd,

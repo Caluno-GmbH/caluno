@@ -16,9 +16,9 @@ import type { OverviewSourceTask } from './visible-tasks';
  * Shift below minimum: title, startsAt, endsAt, approvedCount, minimum
  * Shift / event join requests: title, startsAt, endsAt, openRequestCount
  * Membership request: firstName, lastName, email, requestedAt
- * Contract to countersign / declined document: volunteerName,
+ * Contract to create / countersign / declined document: volunteerName,
  *   reimbursementTypeName, periodStart, periodEnd, declineReason
- * Timesheet to sign: volunteerName, reimbursementTypeName, periodStart
+ * Timesheet to create / sign: volunteerName, reimbursementTypeName, periodStart
  *   (or month as YYYY-MM), hours, amountCents
  * Timesheet bundle: volunteerName, reimbursementTypeName, readyCount, amountCents
  */
@@ -51,6 +51,9 @@ function sortAtFor(task: OverviewSourceTask): string | undefined {
     case 'CONTRACT_SIGN':
     case 'TIMESHEET_SIGN':
       return readString(data, 'signedAt') ?? readString(data, 'periodStart');
+    case 'CONTRACT_CREATE':
+    case 'INVOICE_CREATE':
+      return readString(data, 'periodStart');
     case 'DOCUMENT_DECLINED':
       return readString(data, 'declinedAt') ?? readString(data, 'periodStart');
     default:
@@ -62,8 +65,12 @@ function documentKind(
   type: OverviewTask['type'],
   data: Record<string, unknown>,
 ): OverviewTask['documentKind'] {
-  if (type === 'CONTRACT_SIGN') return 'contract';
-  if (type === 'TIMESHEET_SIGN' || type === 'TIMESHEET_BUNDLES')
+  if (type === 'CONTRACT_SIGN' || type === 'CONTRACT_CREATE') return 'contract';
+  if (
+    type === 'TIMESHEET_SIGN' ||
+    type === 'TIMESHEET_BUNDLES' ||
+    type === 'INVOICE_CREATE'
+  )
     return 'invoice';
   const kind = readString(data, 'kind');
   if (kind === 'CONTRACT') return 'contract';
@@ -104,6 +111,7 @@ function detailsFor(
         ),
       ]);
     case 'CONTRACT_SIGN':
+    case 'CONTRACT_CREATE':
       return present([
         field('volunteerName', readString(data, 'volunteerName')),
         field('reimbursementType', typeName(data, reimbursementType)),
@@ -111,6 +119,7 @@ function detailsFor(
         field('signedAt', readString(data, 'signedAt')),
       ]);
     case 'TIMESHEET_SIGN':
+    case 'INVOICE_CREATE':
       return present([
         field('volunteerName', readString(data, 'volunteerName')),
         field('reimbursementType', typeName(data, reimbursementType)),
