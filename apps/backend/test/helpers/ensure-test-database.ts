@@ -1,4 +1,6 @@
+import { afterAll } from 'bun:test';
 import { spawnSync } from 'node:child_process';
+import type { TestingModule } from '@nestjs/testing';
 import { Client } from 'pg';
 
 let cachedTestDatabaseName: string | undefined;
@@ -37,6 +39,10 @@ export const applyTestDatabaseEnvironment = (): string => {
   process.env.DB_PORT ??= process.env.POSTGRES_PORT ?? '5432';
   process.env.DB_USER ??= process.env.POSTGRES_USER ?? 'postgres';
   process.env.DB_PASSWORD ??= process.env.POSTGRES_PASSWORD ?? 'postgres';
+  // Cap per-module pools so concurrent TestingModules stay under Postgres
+  // max_connections (~100). Each module ends its own pool on close.
+  process.env.DB_POOL_MAX ??= '5';
+  process.env.DB_POOL_IDLE_TIMEOUT_MS ??= '10000';
 
   const testDbName = getTestDatabaseName();
   process.env.DB_NAME = testDbName;
@@ -47,6 +53,19 @@ export const registerTestResourceCleanup = (
   cleanup: () => Promise<void>,
 ): void => {
   resourceCleanups.push(cleanup);
+};
+
+/**
+ * Close a Nest TestingModule when its describe finishes so the pg Pool is
+ * released before the next file opens another. Call at describe-body top
+ * level (not inside beforeAll) so the afterAll hook registers correctly.
+ */
+export const closeTestingModuleAfterAll = (
+  getModuleRef: () => TestingModule | undefined,
+): void => {
+  afterAll(async () => {
+    await getModuleRef()?.close();
+  });
 };
 
 export const createFreshTestDatabase = async (

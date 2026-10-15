@@ -1,32 +1,10 @@
-/**
- * Maps requirement-form systemKeys to `users` column names (entity keys).
- * Email is account-owned (`users.email`) and is included in the read map only.
- */
-export const SYSTEM_KEY_TO_USER_COLUMN = {
-  firstname: 'firstname',
-  lastname: 'lastname',
-  'preferred-name': 'preferredName',
-  gender: 'gender',
-  email: 'email',
-  phone: 'phone',
-  street: 'street',
-  zip: 'zip',
-  city: 'city',
-  birthdate: 'birthdate',
-  iban: 'iban',
-  'account-holder': 'accountHolder',
-  bic: 'bic',
-} as const;
-
-export type ProfileSystemKey = keyof typeof SYSTEM_KEY_TO_USER_COLUMN;
-export type ProfileUserColumn =
-  (typeof SYSTEM_KEY_TO_USER_COLUMN)[ProfileSystemKey];
+import { effectiveAccountHolder } from './user-name';
 
 /** Writable profile columns — email is excluded (account-owned). */
-export const WRITABLE_PROFILE_SYSTEM_KEYS = [
+export const WRITABLE_PROFILE_FIELD_KEYS = [
   'firstname',
   'lastname',
-  'preferred-name',
+  'preferredName',
   'gender',
   'phone',
   'street',
@@ -34,12 +12,19 @@ export const WRITABLE_PROFILE_SYSTEM_KEYS = [
   'city',
   'birthdate',
   'iban',
-  'account-holder',
+  'accountHolder',
   'bic',
-] as const satisfies readonly ProfileSystemKey[];
+] as const;
 
-export type WritableProfileSystemKey =
-  (typeof WRITABLE_PROFILE_SYSTEM_KEYS)[number];
+/**
+ * Profile field keys — identical to `users` column / GraphQL names and to
+ * requirement-form `systemKey`s. Email is account-owned (`users.email`) and is
+ * included on reads only.
+ */
+export const PROFILE_FIELD_KEYS = [
+  ...WRITABLE_PROFILE_FIELD_KEYS,
+  'email',
+] as const;
 
 export type ProfileFields = {
   firstname?: string | null;
@@ -57,36 +42,53 @@ export type ProfileFields = {
   email?: string | null;
 };
 
-/** Build the systemKey → value map used by forms, documents, and UI. */
-export function toProfileDataMap(user: ProfileFields): Record<string, unknown> {
-  const data: Record<string, unknown> = {};
-  for (const [systemKey, column] of Object.entries(SYSTEM_KEY_TO_USER_COLUMN)) {
-    const value = user[column as ProfileUserColumn];
+/**
+ * Sparse profile bag for forms/documents: non-empty column values, with
+ * `accountHolder` as the effective value (stored, else firstname + lastname).
+ */
+export function toProfileFields(user: ProfileFields): ProfileFields {
+  const data: ProfileFields = {};
+  for (const key of PROFILE_FIELD_KEYS) {
+    if (key === 'accountHolder') continue;
+    const value = user[key];
     if (value !== undefined && value !== null && value !== '') {
-      data[systemKey] = value;
+      data[key] = value;
+    }
+  }
+
+  if (user.firstname && user.lastname) {
+    data.accountHolder = effectiveAccountHolder({
+      accountHolder: user.accountHolder,
+      firstname: user.firstname,
+      lastname: user.lastname,
+    });
+  } else {
+    const stored = user.accountHolder;
+    if (stored !== undefined && stored !== null && stored !== '') {
+      data.accountHolder = stored;
     }
   }
   return data;
 }
 
 /**
- * Convert a systemKey → value map into a partial users-column update.
- * Skips email (account-owned) and unknown keys.
+ * Pick writable profile columns from a partial bag (e.g. form submit).
+ * Skips email (account-owned) and unknown keys. Merge semantics: absent keys
+ * are not invented.
  */
-export function profileDataToUserColumns(
+export function pickWritableProfileFields(
   data: Record<string, unknown>,
 ): ProfileFields {
   const columns: ProfileFields = {};
-  for (const key of WRITABLE_PROFILE_SYSTEM_KEYS) {
+  for (const key of WRITABLE_PROFILE_FIELD_KEYS) {
     if (!Object.hasOwn(data, key)) continue;
     const value = data[key];
-    const column = SYSTEM_KEY_TO_USER_COLUMN[key];
     if (value === null || value === undefined) {
-      columns[column] = null;
+      columns[key] = null;
       continue;
     }
     if (typeof value === 'string') {
-      columns[column] = value;
+      columns[key] = value;
     }
   }
   return columns;

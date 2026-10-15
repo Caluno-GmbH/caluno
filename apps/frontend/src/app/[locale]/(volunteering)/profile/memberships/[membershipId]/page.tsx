@@ -3,7 +3,6 @@ import type {
   MyRequiredOrgUnitFormsQuery,
 } from '@repo/data';
 import { DataProvider } from '@repo/data/react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { VolunteerDocumentsSection } from '@/domain/accounting/components/volunteer-documents-section';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
@@ -17,6 +16,7 @@ import { resolveLocale } from '@/i18n/routing';
 import { GRAPHQL_API_URL } from '@/lib/constants';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { requireFound } from '@/lib/require-found';
 
 type OrgUnitForm =
   MyRequiredOrgUnitFormsQuery['myRequiredOrgUnitForms'][number];
@@ -61,8 +61,9 @@ export default async function MembershipDetailPage({ params }: Props) {
   const locale = resolveLocale(rawLocale);
 
   const data = await getDataClient();
-  const membership = await data.membership.findMineById(membershipId);
-  if (!membership) notFound();
+  const membership = await requireFound(() =>
+    data.membership.findMineById(membershipId),
+  );
 
   const organizationUnitId = membership.organizationUnit.id;
   const [requiredForms, submissions] = await Promise.all([

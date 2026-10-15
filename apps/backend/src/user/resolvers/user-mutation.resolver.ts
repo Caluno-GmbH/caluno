@@ -13,6 +13,7 @@ import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
 import { UserWithProfile } from '../models/user-with-profile.model';
 import { UserService } from '../user.service';
+import { withEffectiveAccountHolder } from '../user-name';
 
 @Resolver(() => User)
 export class UserMutationResolver {
@@ -73,7 +74,9 @@ export class UserMutationResolver {
     @Session() session: UserSession,
   ): Promise<UserWithProfile> {
     const user = await this.userService.updateMyProfile(session.user.id, input);
-    return this.userWithProfileMapper.toModelOrThrow(user);
+    return this.userWithProfileMapper.toModelOrThrow(
+      withEffectiveAccountHolder(user),
+    );
   }
 
   @Mutation(() => User)

@@ -20,6 +20,22 @@ import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { documentRowAction } from '../lib/board-data.utils';
 import {
+  docVisibleInRange,
+  getReadyToGoDocs,
+  isTimesheetNonCompliant,
+  matchesTile,
+} from '../lib/board-filters';
+import { STATUS_META } from '../lib/board-status';
+import type {
+  BoardDocument,
+  BoardVolunteer,
+  DocStatus,
+  DocTypeFilter,
+  DocVolPair,
+  PauschalenLimit,
+  TileFilter,
+} from '../lib/board-types';
+import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
 } from '../lib/setup-status';
@@ -27,117 +43,7 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DateRange,
-  DocStatus,
-  DocVolPair,
-  PauschalenLimit,
-  TileFilter,
-} from './reimbursements-board';
-import {
-  docVisibleInRange,
-  getReadyToGoDocs,
-  isTimesheetNonCompliant,
-} from './reimbursements-board';
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
-
-// ─── Status meta ──────────────────────────────────────────────────────────────
-
-type ActionKey = 'create' | 'countersign';
-
-interface StatusMeta {
-  labelKey: string;
-  actionKey: ActionKey | null;
-  isYourAction: boolean;
-}
-
-export const STATUS_META: Record<DocStatus, StatusMeta> = {
-  'contract-generate': {
-    labelKey: 'contractGenerate',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'contract-draft': {
-    labelKey: 'contractDraft',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'contract-signing-vol': {
-    labelKey: 'contractSigningVol',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'contract-signing-coord': {
-    labelKey: 'contractSigningCoord',
-    actionKey: 'countersign',
-    isYourAction: true,
-  },
-  'contract-active': {
-    labelKey: 'contractActive',
-    actionKey: null,
-    isYourAction: false,
-  },
-  // A completed contract whose period has ended. Renewal is queued as its own
-  // contract-generate row, so this one has no action of its own.
-  'contract-expired': {
-    labelKey: 'contractExpired',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'contract-missing': {
-    labelKey: 'contractMissing',
-    actionKey: 'create',
-    // false, not true: this keeps the row muted (bg-muted/20, see the
-    // isYourAction check below) per the "at least in muted state" rule —
-    // it still renders a Create button via actionKey, just outside the
-    // normal actionable-count/sort weighting.
-    isYourAction: false,
-  },
-  'timesheet-generate': {
-    labelKey: 'timesheetGenerate',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'timesheet-signing-vol': {
-    labelKey: 'timesheetSigningVol',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'timesheet-signing-super': {
-    labelKey: 'timesheetSigningSuper',
-    actionKey: 'countersign',
-    isYourAction: true,
-  },
-  'timesheet-ready': {
-    labelKey: 'timesheetReady',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'timesheet-muted': {
-    labelKey: 'timesheetMuted',
-    actionKey: null,
-    isYourAction: false,
-  },
-  'contract-declined': {
-    labelKey: 'declined',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-  'timesheet-declined': {
-    labelKey: 'declined',
-    actionKey: 'create',
-    isYourAction: true,
-  },
-};
-
-/** Whether this status is actionable by the org (coordinator/supervisor) right now, as opposed to waiting on the volunteer or already resolved. */
-export function isYourActionStatus(status: DocStatus): boolean {
-  return STATUS_META[status].isYourAction;
-}
+import type { DateRange } from './period-picker';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -156,7 +62,7 @@ const STATUS_SORT_ORDER: DocStatus[] = [
   'timesheet-generate',
   'contract-missing',
   'contract-signing-coord',
-  'timesheet-signing-super',
+  'timesheet-signing-coord',
   'timesheet-ready',
   'contract-signing-vol',
   'timesheet-signing-vol',
@@ -173,6 +79,8 @@ interface BundleDownloadButtonProps {
   reimbursementTypeId: string | undefined;
   typeLabel: string;
   readyCount: number;
+  /** The timesheets on screen, so the ZIP holds exactly those. */
+  invoiceIds: string[];
   orgUId: string;
 }
 
@@ -186,6 +94,7 @@ function BundleDownloadButton({
   reimbursementTypeId,
   typeLabel,
   readyCount,
+  invoiceIds,
   orgUId,
 }: BundleDownloadButtonProps) {
   const t = useTranslations('Accounting.reimbursements');
@@ -202,7 +111,8 @@ function BundleDownloadButton({
     const url =
       `${API_URL}/accounting/reimbursement-bundle/download` +
       `?volunteerId=${encodeURIComponent(volunteerId)}` +
-      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}`;
+      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}` +
+      `&invoiceIds=${encodeURIComponent(invoiceIds.join(','))}`;
     setIsDownloading(true);
     try {
       const response = await fetch(url, {
@@ -318,7 +228,11 @@ function VolunteerTableGroup({
             (doc) =>
               docTypeFilter === 'all' || doc.status.startsWith(docTypeFilter),
           )
-          .filter((doc) => docVisibleInRange(doc, dateRange));
+          .filter(
+            (doc) =>
+              docVisibleInRange(doc, dateRange) &&
+              matchesTile(doc.status, activeTile),
+          );
 
   const sortedDocs = [...visibleDocs].sort(
     (a, b) =>
@@ -330,10 +244,12 @@ function VolunteerTableGroup({
   // Ready timesheets bundle separately per pauschale type — never combined
   // into one download, since each type is its own reimbursement batch.
   const readyByType: Partial<Record<PauschalenType, number>> = {};
+  const readyIdsByType: Partial<Record<PauschalenType, string[]>> = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
     const type = d.pauschale;
     readyByType[type] = (readyByType[type] ?? 0) + 1;
+    readyIdsByType[type] = [...(readyIdsByType[type] ?? []), d.id];
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
   const TYPE_LABEL: Record<PauschalenType, string> = {
@@ -402,6 +318,7 @@ function VolunteerTableGroup({
                     reimbursementTypeId={volunteer.reimbursementTypeIds?.[type]}
                     typeLabel={TYPE_LABEL[type]}
                     readyCount={readyByType[type] ?? 0}
+                    invoiceIds={readyIdsByType[type] ?? []}
                     orgUId={orgUId}
                   />
                 ))}
@@ -433,7 +350,7 @@ function VolunteerTableGroup({
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale;
-          const docNonCompliant = isTimesheetNonCompliant(volunteer, doc);
+          const docNonCompliant = isTimesheetNonCompliant(doc);
           const createBlocked =
             actionKey === 'create' &&
             documentCreationBlockedFor(

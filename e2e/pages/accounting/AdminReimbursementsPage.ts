@@ -8,7 +8,7 @@ import { BASE_URL } from '../AuthPage';
  * fixtures (my-shifts.e2e.ts precedent).
  *
  * Board row statuses: only the placeholder/terminal states render a label
- * on the row ("Not yet created", "No contract — create manually",
+ * on the row ("Not yet created", "No agreement. Create manually.",
  * "Declined"). Signing-state rows are dimmed and show no status text — the
  * coordinator's turn (awaiting their countersignature) is the row that
  * gains the "Countersign" action button. The board also does not reflect a
@@ -28,25 +28,31 @@ export class AdminReimbursementsPage {
     return this.page.getByRole('button', { name: 'Create document' });
   }
 
-  /** A real contract row: period + doc name, no placeholder/status suffix. */
+  /**
+   * A real contract row: period label + doc name, nothing after the name.
+   * The period label is the stated Zeitraum — "2026" for a full year, a day
+   * range like "01/10/2026 – 10/10/2026" otherwise (VOLI-1370) — so anchor on
+   * the name at the end of the row rather than the whole accessible name;
+   * placeholder rows carry a status suffix ("No agreement yet") that the
+   * trailing anchor excludes.
+   */
   contractRow(): Locator {
     return this.page.getByRole('row', {
-      name: '2026 Contract Ehrenamtspauschale',
-      exact: true,
+      name: /Agreement Ehrenamtspauschale$/,
     });
   }
 
   /** The row whose turn it is for the coordinator — the one with the action. */
   countersignRow(): Locator {
     return this.page
-      .getByRole('row', { name: /Contract Ehrenamtspauschale/ })
+      .getByRole('row', { name: /Agreement Ehrenamtspauschale/ })
       .filter({ has: this.page.getByRole('button', { name: 'Countersign' }) });
   }
 
   /** A declined contract row (shows the "Declined" label). */
   declinedRow(): Locator {
     return this.page
-      .getByRole('row', { name: /Contract Ehrenamtspauschale/ })
+      .getByRole('row', { name: /Agreement Ehrenamtspauschale/ })
       .filter({ hasText: 'Declined' });
   }
 
@@ -105,11 +111,11 @@ export class AdminReimbursementsPage {
     await expect(volunteerInput).toHaveValue(volunteerName);
 
     // The line button's accessible name also carries the status label text
-    // ("Create contract · …"), so anchor on the document name prefix.
+    // ("No agreement yet · …"), so anchor on the document name prefix.
     await this.page
-      .getByRole('button', { name: /^Contract Ehrenamtspauschale/ })
+      .getByRole('button', { name: /^Agreement Ehrenamtspauschale/ })
       .click();
-    await this.page.getByRole('button', { name: /^Create Contract$/ }).click();
+    await this.page.getByRole('button', { name: /^Create Agreement$/ }).click();
 
     const send = this.page.getByRole('button', {
       name: 'Save and send for signing',

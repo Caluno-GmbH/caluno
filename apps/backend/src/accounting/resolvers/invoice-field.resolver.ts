@@ -26,6 +26,7 @@ import { DocumentProfileRequirementService } from '../services/document-profile-
 import { AccountingOrganizationLoader } from './accounting-organization.loader';
 import { AccountingUserLoader } from './accounting-user.loader';
 import { InvoiceLoader } from './invoice.loader';
+import { InvoiceCoverLoader } from './invoice-cover.loader';
 
 type MaybeWithRelations = InvoiceEntity & {
   documentTemplate?: DocumentTemplateEntity;
@@ -119,6 +120,17 @@ export class InvoiceFieldResolver {
     return this.fileService.resolvePublicUrlForUploadedFile(invoice.fileId);
   }
 
+  @ResolveField(() => Boolean, {
+    description:
+      'At least one claimed hour has no ACTIVE contract right now. Live, unlike isNonCompliant, which is the state when the timesheet was created.',
+  })
+  async hasHoursWithoutActiveContract(
+    @Parent() invoice: MaybeWithRelations,
+    @Loader(InvoiceCoverLoader) loader: InvoiceCoverLoader,
+  ): Promise<boolean> {
+    return loader.lacksActiveContractById.load(invoice.id);
+  }
+
   @ResolveField(() => [String])
   async missingProfileFields(
     @Parent() invoice: MaybeWithRelations,
@@ -127,7 +139,7 @@ export class InvoiceFieldResolver {
     let templateBody: unknown = invoice.documentTemplate?.body;
     if (!templateBody) {
       const full = await loader.invoiceWithRelationsById.load(invoice.id);
-      templateBody = full.documentTemplate?.body;
+      templateBody = full.documentTemplate.body;
     }
     return this.documentProfileRequirementService.missingProfileSources(
       invoice.volunteerId,
@@ -150,8 +162,8 @@ export class InvoiceFieldResolver {
       const full = await invoiceLoader.invoiceWithRelationsById.load(
         invoice.id,
       );
-      templateBody = full.documentTemplate?.body;
-      organizationId = full.documentTemplate?.organizationId;
+      templateBody = full.documentTemplate.body;
+      organizationId = full.documentTemplate.organizationId;
       organizationUnitId = full.organizationUnitId ?? undefined;
     }
     if (!organizationId) return [];

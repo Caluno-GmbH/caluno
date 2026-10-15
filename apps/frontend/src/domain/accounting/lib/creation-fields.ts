@@ -1,8 +1,10 @@
-import type {
-  DataSourceKey,
-  TemplateDocument,
-  TemplateField,
-  TemplateLine,
+import {
+  type DataSourceKey,
+  isProfileSourceKey,
+  PROFILE_SOURCE_TO_PROFILE_KEY,
+  type TemplateDocument,
+  type TemplateField,
+  type TemplateLine,
 } from '@repo/data';
 
 export type DerivedFieldKind = 'bound' | 'manual';
@@ -23,33 +25,17 @@ export interface DerivedField {
   control?: TemplateField['control'];
 }
 
-/** Profile-bound sources other than first/last name — resolved from the volunteer's profile data. */
-const PROFILE_SOURCE_TO_PROFILE_KEY: Partial<Record<DataSourceKey, string>> = {
-  volunteer_street: 'street',
-  volunteer_zip: 'zip',
-  volunteer_city: 'city',
-  volunteer_iban: 'iban',
-  volunteer_account_holder: 'account-holder',
-  volunteer_bic: 'bic',
-  volunteer_dob: 'birthdate',
-};
-
 function isEditableSource(source: DataSourceKey): boolean {
-  return (
-    source === 'volunteer_first_name' ||
-    source === 'volunteer_last_name' ||
-    source in PROFILE_SOURCE_TO_PROFILE_KEY
-  );
+  return isProfileSourceKey(source);
 }
 
 function resolveBoundValue(
   source: DataSourceKey,
   profileData: Record<string, unknown>,
-  name: { firstname: string; lastname: string },
 ): string | null {
-  if (source === 'volunteer_first_name') return name.firstname;
-  if (source === 'volunteer_last_name') return name.lastname;
-  const profileKey = PROFILE_SOURCE_TO_PROFILE_KEY[source];
+  const profileKey = isProfileSourceKey(source)
+    ? PROFILE_SOURCE_TO_PROFILE_KEY[source]
+    : undefined;
   if (!profileKey) return null;
   const raw = profileData[profileKey];
   return typeof raw === 'string' && raw.trim() !== '' ? raw : null;
@@ -75,10 +61,6 @@ export function deriveEditableFields(
   const fields: DerivedField[] = [];
   const seenFieldIds = new Set<string>();
   const boundBySource = new Map<DataSourceKey, DerivedField>();
-  const name = {
-    firstname: profileData.firstname as string,
-    lastname: profileData.lastname as string,
-  };
 
   const collect = (line: TemplateLine | undefined) => {
     if (!line || line.enabled === false) return;
@@ -107,7 +89,7 @@ export function deriveEditableFields(
         continue;
       }
 
-      const value = resolveBoundValue(source, profileData, name);
+      const value = resolveBoundValue(source, profileData);
       const entry: DerivedField = {
         fieldId: field.id,
         fieldIds: [field.id],

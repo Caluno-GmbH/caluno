@@ -42,6 +42,14 @@ import {
   invoiceStatusToDocStatus,
   mapSignatureToSignee,
 } from '../lib/board-data.utils';
+import { isTimesheetNonCompliant } from '../lib/board-filters';
+import { isYourActionStatus } from '../lib/board-status';
+import type {
+  BoardDocument,
+  BoardVolunteer,
+  DocStatus,
+  DocVolPair,
+} from '../lib/board-types';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -50,14 +58,6 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import { DeclineReasonDialog } from './decline-reason-dialog';
 import { getPauschaleKey, TYPE_COLOR } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type {
-  BoardDocument,
-  BoardVolunteer,
-  DocStatus,
-  DocVolPair,
-} from './reimbursements-board';
-import { isTimesheetNonCompliant } from './reimbursements-board';
-import { isYourActionStatus } from './reimbursements-volunteer-group';
 import type { Signee, SigneeRole } from './template/types';
 
 // ─── Pipeline step definitions ────────────────────────────────────────────────
@@ -82,9 +82,7 @@ function signeeActorName(
 ): string {
   if (signee.role === 'volunteer') return volunteerName;
   if (signee.signedByName) return signee.signedByName;
-  return signee.role === 'supervisor'
-    ? t('pipeline.superSign')
-    : t('pipeline.coordSign');
+  return t('pipeline.coordSign');
 }
 
 function getActiveStepIdx(status: string, signees: Signee[]): number {
@@ -100,11 +98,10 @@ function getActiveStepIdx(status: string, signees: Signee[]): number {
   const activeRole: SigneeRole | null =
     status === 'contract-signing-vol' || status === 'timesheet-signing-vol'
       ? 'volunteer'
-      : status === 'contract-signing-coord'
+      : status === 'contract-signing-coord' ||
+          status === 'timesheet-signing-coord'
         ? 'coordinator'
-        : status === 'timesheet-signing-super'
-          ? 'supervisor'
-          : null;
+        : null;
   if (!activeRole) return 0;
   const pos = signees.findIndex((s) => s.role === activeRole);
   return pos === -1 ? 1 : pos + 1;
@@ -240,7 +237,7 @@ function PipelineTracker({ steps }: { steps: PipelineStep[] }) {
             </span>
             <div
               className={cn(
-                'h-0.5 flex-1',
+                'h-0.5 flex-1 relative z-[-1]',
                 i === steps.length - 1
                   ? 'invisible'
                   : step.state === 'done'
@@ -398,8 +395,7 @@ export function DocumentSheet({
   const signees: Signee[] = useMemo(() => {
     const detail = isContract ? contractDetail : invoiceDetail;
     if (!detail) return [];
-    const kind = isContract ? 'contract' : 'invoice';
-    return detail.signatures.map((s) => mapSignatureToSignee(s, kind));
+    return detail.signatures.map((s) => mapSignatureToSignee(s));
   }, [contractDetail, invoiceDetail, isContract]);
 
   const canUserSign = useMemo(() => {
@@ -463,7 +459,7 @@ export function DocumentSheet({
     creationTargetFor(effectiveDoc.status) !== null
       ? 'create'
       : effectiveDoc.status === 'contract-signing-coord' ||
-          effectiveDoc.status === 'timesheet-signing-super'
+          effectiveDoc.status === 'timesheet-signing-coord'
         ? 'countersign'
         : null;
 
@@ -514,13 +510,13 @@ export function DocumentSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex flex-col gap-0 w-full sm:max-w-md p-0">
         <SheetHeader className="px-6 pt-6 pb-4 border-b border-border shrink-0">
-          <SheetTitle className="text-xl font-semibold">
+          <SheetTitle className="text-xl font-semibold pr-8">
             {isContract ? 'Vertrag' : 'Stundennachweis'} · {vol.name}
           </SheetTitle>
           <div className="flex items-center gap-2">
             <p className="text-sm text-muted-foreground">
               {ts('period')}: {doc.periodLabel}
-              {isTimesheetNonCompliant(vol, doc) && (
+              {isTimesheetNonCompliant(effectiveDoc) && (
                 <span className="inline-flex items-center gap-1 ml-2 text-alert">
                   <TriangleAlertIcon size={12} />
                   {t('statusLabel.nonCompliant')}
@@ -821,7 +817,7 @@ export function DocumentSheet({
             </Button>
           ) : actionKey ? (
             <div className="flex w-full items-center gap-2">
-              {isTimesheetNonCompliant(vol, doc) && (
+              {isTimesheetNonCompliant(effectiveDoc) && (
                 <AlertIconTooltip
                   hint={t('statusLabel.nonCompliantHint')}
                   className="text-alert"
@@ -833,9 +829,24 @@ export function DocumentSheet({
                   className="text-alert"
                 />
               )}
+              {(doc.status === 'timesheet-signing-coord' ||
+                doc.status === 'contract-signing-coord') && (
+                <Button
+                  className="flex-1"
+                  variant="outline"
+                  disabled={!canUserSign || isDetailLoading}
+                  onClick={() => setDeclineDialogOpen(true)}
+                >
+                  {t('actions.decline')}
+                </Button>
+              )}
               <Button
                 className="flex-1"
-                variant={actionKey === 'create' ? 'default' : 'outline'}
+                variant={
+                  ['create', 'countersign'].includes(actionKey)
+                    ? 'default'
+                    : 'outline'
+                }
                 disabled={
                   (actionKey === 'countersign' &&
                     (!canUserSign || isDetailLoading)) ||
@@ -854,17 +865,6 @@ export function DocumentSheet({
               >
                 {t(`actions.${actionKey}` as Parameters<typeof t>[0])}
               </Button>
-              {(doc.status === 'timesheet-signing-super' ||
-                doc.status === 'contract-signing-coord') && (
-                <Button
-                  className="flex-1"
-                  variant="outline"
-                  disabled={!canUserSign || isDetailLoading}
-                  onClick={() => setDeclineDialogOpen(true)}
-                >
-                  {t('actions.decline')}
-                </Button>
-              )}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground text-center w-full">

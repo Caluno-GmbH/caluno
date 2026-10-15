@@ -106,9 +106,16 @@ export async function isMember(orgUId: string): Promise<boolean> {
   );
 }
 
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function requireOrgAccess(
   orgUId: string,
 ): Promise<{ org: OrgUnitContextData; organizations: OrgUnitContextData[] }> {
+  if (!UUID_REGEX.test(orgUId)) {
+    return notFound();
+  }
+
   const organizations = await getMyAdministrableOrgUnits();
   const org = organizations.find((item) => item.id === orgUId);
   const legacyOrg = organizations.find(

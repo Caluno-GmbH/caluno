@@ -6,10 +6,12 @@ export const shiftInvitesRelations = defineRelationsPart(schema, (r) => ({
     shift: r.one.shifts({
       from: r.shiftInvites.shiftId,
       to: r.shifts.id,
+      optional: false,
     }),
     user: r.one.users({
       from: r.shiftInvites.userId,
       to: r.users.id,
+      optional: false,
     }),
   },
 }));

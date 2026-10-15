@@ -31,18 +31,23 @@ interface DocTypeHeaderProps {
   kind: DocumentKind;
   pauschale: PauschalenType;
   topLine: string;
+  /** Let a long overview meta line wrap instead of clipping the type label. */
+  wrapTopLine?: boolean;
   name: string;
   subline?: string;
   className?: string;
+  children?: React.ReactNode;
 }
 
 export function DocTypeHeader({
   kind,
   pauschale,
   topLine,
+  wrapTopLine = false,
   name,
   subline,
   className,
+  children,
 }: DocTypeHeaderProps) {
   const Icon = KIND_ICON[kind];
   const color = TYPE_COLOR[pauschale];
@@ -61,9 +66,18 @@ export function DocTypeHeader({
         <Icon size={18} strokeWidth={2} />
       </div>
       <div className="min-w-0 w-full flex-1">
-        <p className="text-sm text-muted-foreground leading-none truncate mb-0.5">
-          {topLine}
-        </p>
+        {topLine ? (
+          <p
+            className={cn(
+              'mb-0.5 text-sm text-muted-foreground',
+              wrapTopLine
+                ? 'whitespace-normal break-words leading-snug'
+                : 'truncate leading-none',
+            )}
+          >
+            {topLine}
+          </p>
+        ) : null}
         <p className="text-base font-bold text-card-foreground leading-snug line-clamp-2 whitespace-normal break-words">
           {name}
         </p>
@@ -72,6 +86,7 @@ export function DocTypeHeader({
             {subline}
           </p>
         )}
+        {children}
       </div>
     </div>
   );

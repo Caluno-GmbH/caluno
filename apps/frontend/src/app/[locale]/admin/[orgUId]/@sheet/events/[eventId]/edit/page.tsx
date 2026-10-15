@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { updateEvent } from '@/domain/event/actions';
 import { EventForm } from '@/domain/event/components/event-form';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface EditEventPageProps {
   params: Promise<{ orgUId: string; eventId: string; locale: string }>;
@@ -13,11 +13,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Event.sheet' });
 
-  const event = await data.event.findById(eventId);
-
-  if (!event) {
-    notFound();
-  }
+  const event = await requireFound(() => data.event.findById(eventId));
 
   return (
     <EventForm

@@ -6,8 +6,12 @@ document templates, rates, and the per-volunteer board. Rendered under
 
 ## Layout
 - `components/` — board, document sheet, creation modals, template builder.
+  Components export UI only; shared board types/status/filters live in `lib/`.
 - `lib/` — pure logic (board filtering, setup gating, period maths, money,
   field derivation). Keep logic here so it is unit-testable; components stay thin.
+  Board shared surface: `board-types.ts` (DocStatus, BoardDocument, …),
+  `board-filters.ts` (matchesTile, docVisibleInRange, getReadyToGoDocs, …),
+  `board-status.ts` (STATUS_META, isYourActionStatus).
 - `hooks/` — domain-specific react-query wrappers.
 
 All data access goes through `@repo/data` hooks (`@repo/data/react`). Do not

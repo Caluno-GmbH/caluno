@@ -1,4 +1,44 @@
 {
+  "Todo": {
+    "empty": "Es wartet nichts auf dich.",
+    "loadFailed": "Die offenen Aufgaben konnten nicht geladen werden.",
+    "seeAll": "Alle anzeigen",
+    "groups": {
+      "volunteersAndShifts": "Freiwillige und Einsätze",
+      "accounting": "Buchhaltung"
+    },
+    "types": {
+      "contract": "Vereinbarung",
+      "timesheet": "Stundennachweis"
+    },
+    "back": "Zurück zu Zu erledigen",
+    "waiting": "{count, plural, one {# wartet} other {# warten}}",
+    "appliedRelative": "{when} beworben",
+    "declinedAgo": "Abgelehnt {when}",
+    "signedAgo": "Unterschrieben {when}",
+    "short": "{missing, plural, one {# nötig} other {# nötig}}",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} von {total} Plätzen besetzt",
+    "hours": "{hours} Std.",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} Tage",
+      "staffing": "Besetzung",
+      "daysAhead": "Tage im Voraus",
+      "BELOW_MINIMUM": "Unter Minimum",
+      "NOT_FULL": "Nicht voll",
+      "emptyBelowMinimum": "Keine Einsätze unter Minimum in den nächsten {count} Tagen",
+      "emptyNotFull": "Keine Einsätze, die nicht voll sind, in den nächsten {count} Tagen"
+    },
+    "sections": {
+      "FILL_OPEN_ASSIGNMENTS": "Anstehende Einsätze besetzen",
+      "REVIEW_APPLICATIONS": "Anfragen prüfen",
+      "APPROVE_SIGNUPS": "Anmeldungen freigeben",
+      "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
+      "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen",
+      "SEND_TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand"
+    }
+  },
   "Terms": {
     "accept": "Akzeptieren und fortfahren",
     "accepting": "Wird akzeptiert...",
@@ -481,7 +521,7 @@
         "decline": "Ablehnen"
       },
       "missingProfileWarning": "In deinem Profil fehlen Angaben, die dieses Dokument benötigt.",
-      "missingProfileCta": "Profil vervollständigen, um zu unterschreiben",
+      "completeDetailsCta": "Daten vervollständigen",
       "toasts": {
         "signed": "{name} unterschrieben.",
         "signedError": "{name} ließ sich nicht unterschreiben. Versuch es bitte erneut.",
@@ -755,7 +795,7 @@
     "orgUnits": "Organisationseinheiten",
     "organizationSettings": "Organisationseinstellungen",
     "organizations": "Organisationen",
-    "overview": "Übersicht",
+    "todo": "Zu erledigen",
     "profile": "Profil",
     "qrIdDescription": "Zeig diesen QR-Code vor Ort, um deine Anwesenheit zu bestätigen.",
     "qrIdTitle": "QR-ID",
@@ -811,6 +851,7 @@
       "title": "Löschung von \"{name}\" anfragen"
     },
     "detail": {
+      "title": "Übersicht",
       "aboutTitle": "Über",
       "contactTitle": "Kontakt",
       "editButton": "Bearbeiten",
@@ -2149,7 +2190,7 @@
       "periodLabel": "Zeitraum",
       "yearLabel": "Jahr",
       "periodPicker": {
-        "allTime": "Gesamter Zeitraum",
+        "fullYear": "Gesamtes Jahr",
         "thisMonth": "Dieser Monat",
         "lastMonth": "Letzter Monat",
         "customPeriod": "Benutzerdefinierter Zeitraum",
@@ -2258,7 +2299,6 @@
             "declined": "Abgelehnt",
             "volSign": "Freiwillige:r",
             "coordSign": "Koordinator:in",
-            "superSign": "Supervisor",
             "active": "Aktiv",
             "ready": "Bereit",
             "actorOrg": "Organisation"
@@ -2298,10 +2338,10 @@
           "contractExpired": "Abgelaufene Vereinbarung",
           "timesheetGenerate": "Stundennachweis erstellen",
           "timesheetSigningVol": "Wartet auf Unterschrift",
-          "timesheetSigningSuper": "Supervisorunterschrift",
+          "timesheetSigningCoord": "Gegenzeichnung erforderlich",
           "timesheetReady": "Bereit zur Abgabe",
           "nonCompliant": "Keine aktive Vereinbarung",
-          "nonCompliantHint": "Noch keine aktive Vereinbarung für diese Pauschale. Erstelle oder aktiviere eine, damit dieser Stundennachweis konform ist.",
+          "nonCompliantHint": "Nicht alle Stunden dieses Stundennachweises sind durch eine aktive Vereinbarung abgedeckt. Erstelle oder aktiviere eine, die sie abdeckt.",
           "notYetCreated": "Noch nicht erstellt",
           "overCap": "Jährlicher Freibetrag wird überschritten",
           "overCapHint": "Der Betrag dieses Stundennachweises bringt die Person an oder über ihren jährlichen Freibetrag",
@@ -2375,7 +2415,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Zusatzvereinbarung",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureSupervisor": "Unterschrift (Organisation)",
+          "signatureCoordinator": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2435,7 +2475,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Stundennachweis",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureSupervisor": "Unterschrift (Organisation)",
+          "signatureCoordinator": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2474,6 +2514,7 @@
         "saveButton": "Vorlage speichern",
         "saveSuccessToast": "Vorlage gespeichert",
         "saveErrorToast": "Die Vorlage ließ sich nicht speichern. Versuch es bitte erneut.",
+        "signeesUnavailableToast": "Die Unterschriftenrollen konnten noch nicht geladen werden. Bitte warte einen Moment und versuch es erneut.",
         "orgProfile": {
           "blockedMessage": "In deinen Organisationsdaten fehlen Angaben, die diese Vorlage benötigt. Vervollständige die Organisationsdaten, bevor du speicherst.",
           "blockedCta": "Organisationsdaten vervollständigen",
@@ -2487,7 +2528,7 @@
             "invoice": "Stundennachweis"
           },
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureSupervisor": "Unterschrift (Organisation)",
+          "signatureCoordinator": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
         "orgOverride": {
@@ -2661,6 +2702,17 @@
     "empty": {
       "title": "Noch keine Dokumente",
       "description": "Vereinbarungen und Stundennachweise deiner Organisationen erscheinen hier."
+    },
+    "completeProfile": {
+      "title": "Vervollständige deine Daten",
+      "description": "Wird für {documentName} bei {orgName} benötigt.",
+      "descriptionWithoutOrg": "Wird für {documentName} benötigt.",
+      "savedToProfile": "Die Angaben werden in deinem Profil gespeichert und für alle deine Dokumente verwendet.",
+      "success": "Angaben gespeichert",
+      "allComplete": "Alle Angaben sind vollständig – es gibt nichts mehr auszufüllen.",
+      "error": "Wir konnten dieses Dokument nicht laden. Bitte versuche es erneut.",
+      "saveError": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
+      "close": "Schließen"
     }
   }
 }

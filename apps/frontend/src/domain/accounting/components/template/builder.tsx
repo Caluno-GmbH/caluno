@@ -1,10 +1,8 @@
 'use client';
 
 import {
-  type CreateTemplateSigneeInput,
   PermissionKey,
   parseTemplateBody,
-  SigneeType,
   serializeTemplateBody,
 } from '@repo/data';
 import {
@@ -43,6 +41,10 @@ import {
   getInvoiceDocument,
   getKnownOrgValues,
 } from './builder-document-presets';
+import {
+  defaultSignees,
+  findAccountingManagePermissionId,
+} from './builder-signees';
 import {
   ALWAYS_AVAILABLE_SOURCES,
   countIncompleteManualFields,
@@ -106,29 +108,6 @@ function getPlaceholderTableRows(
     [firstColumnPlaceholder, '', '', '', '', ''],
     [firstColumnPlaceholder, '', '', '', '', ''],
     [firstColumnPlaceholder, '', '', '', '', ''],
-  ];
-}
-
-/**
- * Signee chain for a newly created template: the volunteer signs first, then a
- * permission holder (ACCOUNTING_MANAGE) countersigns — the same ordering the
- * prototype mocks used. Falls back to volunteer-only when the permission
- * lookup hasn't loaded (the backend requires at least one signee).
- */
-function defaultSignees(
-  accountingManagePermissionId: string | undefined,
-): CreateTemplateSigneeInput[] {
-  return [
-    { order: 0, signeeType: SigneeType.Volunteer },
-    ...(accountingManagePermissionId
-      ? [
-          {
-            order: 1,
-            signeeType: SigneeType.PermissionHolder,
-            requiredPermissionId: accountingManagePermissionId,
-          },
-        ]
-      : []),
   ];
 }
 
@@ -246,7 +225,7 @@ export function TemplateBuilder({
       ? 'preview.documentTitle.contract'
       : 'preview.documentTitle.invoice') as Parameters<typeof t>[0],
   );
-  const signerRightLabel = t('preview.signatureSupervisor');
+  const signerRightLabel = t('preview.signatureCoordinator');
 
   async function handleSave() {
     if (!templateDoc) return;
@@ -279,16 +258,23 @@ export function TemplateBuilder({
             `No reimbursement type found for key ${reimbursementTypeKey}`,
           );
         }
-        const accountingManagePermission = permissionsQuery.data?.find(
-          (permission) => permission.key === PermissionKey.AccountingManage,
+        // Never create a volunteer-only chain: without ACCOUNTING_MANAGE the
+        // coordinator countersign step is missing from every document that
+        // uses this template (seen on ÜL contracts).
+        const accountingManagePermissionId = findAccountingManagePermissionId(
+          permissionsQuery.data,
         );
+        if (!accountingManagePermissionId) {
+          toast.error(t('signeesUnavailableToast'));
+          return;
+        }
         await createTemplate.mutateAsync({
           kind: apiDocumentKindFor(slotKind),
           reimbursementTypeId: reimbursementType.id,
           organizationUnitId: orgUId,
           body,
           invoiceNumberFormat,
-          signees: defaultSignees(accountingManagePermission?.id),
+          signees: defaultSignees(accountingManagePermissionId),
         });
       }
       toast.success(t('saveSuccessToast'));
@@ -370,6 +356,15 @@ export function TemplateBuilder({
   const canEditOrg =
     permissionsQuery.data?.some((p) => p.key === PermissionKey.OrgEdit) ??
     false;
+  const accountingManagePermissionId = findAccountingManagePermissionId(
+    permissionsQuery.data,
+  );
+  // Creates need the permission id up front; edits keep the stored chain.
+  const createBlockedBySignees =
+    !detailQuery.data &&
+    (permissionsQuery.isLoading ||
+      permissionsQuery.isError ||
+      !accountingManagePermissionId);
   const saving = createTemplate.isPending || updateTemplate.isPending;
   const cancel: PageActionsCancel | undefined = backHref
     ? { label: tCommon('cancel'), href: backHref }
@@ -386,6 +381,7 @@ export function TemplateBuilder({
           incompleteCount > 0 ||
           missingOrgSources.length > 0 ||
           orgProfileBlocked ||
+          createBlockedBySignees ||
           saving
         }
         {...(backHref

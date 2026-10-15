@@ -1,21 +1,16 @@
-import {
-  type DataClient,
-  DataError,
-  JoinStatus,
-  RequiredFormTargetType,
-} from '@repo/data';
-import { notFound } from 'next/navigation';
+import { JoinStatus, RequiredFormTargetType } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { ShiftJoinFormsClient } from '@/app/[locale]/(public)/shifts/[shiftId]/instances/[instanceId]/join-forms/shift-join-forms-client';
 import {
   buildSubmittedFormIds,
   resolveRequiredForms,
 } from '@/domain/requirement-form/resolve-required-forms';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 
 interface ShiftJoinFormsPageProps {
@@ -23,20 +18,11 @@ interface ShiftJoinFormsPageProps {
   searchParams: Promise<{ redirectTo?: string }>;
 }
 
-type PublicShift = Awaited<ReturnType<DataClient['shift']['findById']>>;
-
 export async function generateMetadata({ params }: ShiftJoinFormsPageProps) {
   const { shiftId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  let shift: PublicShift;
-  try {
-    shift = await data.shift.findById(shiftId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    return { title: 'Shift — Caluno' };
-  }
+  const shift = await requireFoundOrNull(() => data.shift.findById(shiftId));
+  if (!shift) return { title: 'Shift — Caluno' };
   const t = await getTranslations({ locale, namespace: 'ShiftDetail' });
   return {
     title: `${t('forms.title', { shiftTitle: shift.title })} — Caluno`,
@@ -52,25 +38,10 @@ export default async function ShiftJoinFormsPage({
 
   const data = await getDataClient({ locale: resolveLocale(locale) });
 
-  let shift: PublicShift;
-  try {
-    shift = await data.shift.findById(shiftId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
-
-  let instance: Awaited<ReturnType<DataClient['shift']['findPublicInstance']>>;
-  try {
-    instance = await data.shift.findPublicInstance(instanceId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
+  const shift = await requireFound(() => data.shift.findById(shiftId));
+  const instance = await requireFound(() =>
+    data.shift.findPublicInstance(instanceId),
+  );
 
   const session = await getSession();
   if (!session) {
@@ -121,7 +92,7 @@ export default async function ShiftJoinFormsPage({
   let profileData: Record<string, string> = {};
   try {
     const userProfile = await data.user.getMe();
-    profileData = toProfileDataMap(userProfile) as Record<string, string>;
+    profileData = profileFieldValues(userProfile);
   } catch {
     // Ignore profile fetch errors; form will render without prefilled values.
   }

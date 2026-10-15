@@ -27,8 +27,8 @@ import {
   createUnit,
 } from './factories/org.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('MembershipService', () => {
@@ -36,6 +36,7 @@ describe('MembershipService', () => {
   let db: Database;
   let service: MembershipService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -57,9 +58,6 @@ describe('MembershipService', () => {
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   describe('leaveMembership', () => {

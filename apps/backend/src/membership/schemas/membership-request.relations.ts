@@ -6,10 +6,12 @@ export const membershipRequestRelations = defineRelationsPart(schema, (r) => ({
     user: r.one.users({
       from: r.membershipRequests.userId,
       to: r.users.id,
+      optional: false,
     }),
     organizationUnit: r.one.organizationUnits({
       from: r.membershipRequests.organizationUnitId,
       to: r.organizationUnits.id,
+      optional: false,
     }),
     reviewedBy: r.one.users({
       from: r.membershipRequests.reviewedById,

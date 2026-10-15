@@ -257,7 +257,7 @@ export function buildFieldSchema(
   if (
     sk === 'firstname' ||
     sk === 'lastname' ||
-    sk === 'preferred-name' ||
+    sk === 'preferredName' ||
     sk === 'city'
   ) {
     s = s

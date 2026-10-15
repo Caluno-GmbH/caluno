@@ -26,5 +26,5 @@ test('visiting /admin without a last-visited-org cookie goes to the first access
 
   await expect(page).toHaveURL(ORG_DASHBOARD);
   await expect(page).not.toHaveURL(/\/admin\/create-organization/);
-  await expect(page.getByRole('link', { name: 'Overview' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'To do' })).toBeVisible();
 });

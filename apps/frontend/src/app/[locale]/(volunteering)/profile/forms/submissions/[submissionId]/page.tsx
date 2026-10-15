@@ -1,10 +1,10 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
 import { SubmissionView } from '@/domain/requirement-form/components/submission-view';
-import { toProfileDataMap } from '@/domain/user/lib/profile-data-map';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { requireFound } from '@/lib/require-found';
 
 type Props = {
   params: Promise<{ locale: string; submissionId: string }>;
@@ -15,10 +15,9 @@ export default async function FormSubmissionPage({ params }: Props) {
 
   const data = await getDataClient();
   const [submission, profile] = await Promise.all([
-    data.requirementForm.findMySubmission(submissionId),
+    requireFound(() => data.requirementForm.findMySubmission(submissionId)),
     data.user.getMe(),
   ]);
-  if (!submission) notFound();
 
   const t = await getTranslations('MembershipDetail.submission');
   const { formatDate } = await getFormatting();
@@ -44,7 +43,7 @@ export default async function FormSubmissionPage({ params }: Props) {
         <SubmissionView
           fields={fields}
           submissionValues={submission.values ?? []}
-          profileData={toProfileDataMap(profile)}
+          profileData={profileFieldValues(profile)}
         />
       </div>
     </div>

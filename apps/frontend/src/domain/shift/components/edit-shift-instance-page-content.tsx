@@ -1,6 +1,7 @@
 import { isSingleOccurrenceRrule, ShiftVisibility } from '@repo/data';
 import { notFound } from 'next/navigation';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 import { updateShiftInstance } from '../actions';
 import { EditShiftInstanceForm } from './edit-shift-instance-form';
 
@@ -18,11 +19,11 @@ export async function EditShiftInstancePageContent({
   const data = await getDataClient({ orgUId });
 
   const [shift, instance] = await Promise.all([
-    data.shift.findByIdDetailed(shiftId),
-    data.shift.findInstance(instanceId),
+    requireFound(() => data.shift.findByIdDetailed(shiftId)),
+    requireFound(() => data.shift.findInstance(instanceId)),
   ]);
 
-  if (!shift || !instance || instance.isCancelled) {
+  if (instance.isCancelled) {
     notFound();
   }
 

@@ -46,8 +46,8 @@ import {
 } from './factories/org.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 /**
@@ -63,6 +63,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
   let queryResolver: ReimbursementQueryResolver;
   let mutationResolver: ReimbursementMutationResolver;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -126,9 +127,6 @@ describe('reimbursement-rate resolver unit scoping', () => {
       new ReimbursementTypeMapper(),
       userService,
     );
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   /**
