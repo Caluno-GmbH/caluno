@@ -96,7 +96,7 @@ export async function shiftDetailsChangedTemplate(
     ${
       data.instanceStartsAt
         ? paragraph(
-            t('shiftDetailsChanged.instanceRange', {
+            t('shiftDetailsChanged.instanceDate', {
               date: formatDate(data.instanceStartsAt),
             }),
             { padding: '0 0 16px' },

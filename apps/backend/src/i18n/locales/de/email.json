@@ -432,7 +432,7 @@
     "footerNote": "Du erhältst diese E-Mail, weil sich ein Einsatz, für den du angemeldet bist, auf {brandName} geändert hat.",
     "greeting": "Hallo {firstName}, der Einsatz '{shiftTitle}' bei {organizationName} hat sich geändert.",
     "heading": "Einsatzdetails geändert",
-    "instanceRange": "Diese Änderung betrifft den Einsatz am {date}.",
+    "instanceDate": "Diese Änderung betrifft den Einsatz am {date}.",
     "note": "Du bist weiterhin für diesen Einsatz angemeldet. Du musst nicht erneut zusagen.",
     "previewText": "Die Details für {shiftTitle} bei {organizationName} haben sich geändert.",
     "seriesGreeting": "Hallo {firstName}, die Einsatzserie '{shiftTitle}' bei {organizationName} hat sich geändert.",
