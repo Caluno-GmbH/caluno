@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { DocumentKind } from '../../accounting/enums';
+import { billingYearBounds } from '../../accounting/utils/billing-period';
 import { TaskType } from '../enums/task-type.enum';
 import {
   type ContractTaskRow,
@@ -17,12 +18,15 @@ import {
 const ORG = 'org-1';
 const start = new Date('2026-08-01T00:00:00.000Z');
 const end = new Date('2026-09-01T00:00:00.000Z');
+const yearPeriod = billingYearBounds(2026);
+const noOpenContracts = new Set<string>();
 
 function contract(overrides: Partial<ContractTaskRow> = {}): ContractTaskRow {
   return {
     id: 'contract-1',
     volunteerId: 'volunteer-1',
     volunteerName: 'Ada Lovelace',
+    reimbursementTypeId: 'rt-1',
     reimbursementTypeKey: 'EHRENAMT',
     periodStart: start,
     periodEnd: end,
@@ -43,6 +47,24 @@ function invoice(overrides: Partial<InvoiceTaskRow> = {}): InvoiceTaskRow {
     totalHours: 4,
     totalAmountCents: 1600,
     paidAt: null,
+    ...overrides,
+  };
+}
+
+function timesheet(
+  overrides: Partial<TimesheetCreateRow> = {},
+): TimesheetCreateRow {
+  return {
+    volunteerId: 'volunteer-1',
+    volunteerName: 'Ada Lovelace',
+    reimbursementTypeId: 'rt-1',
+    reimbursementTypeKey: 'EHRENAMT',
+    periodStart: start,
+    periodEnd: end,
+    eligibleHours: 5,
+    estimatedAmountCents: 600,
+    hasUncoveredHours: false,
+    firstUncoveredAt: null,
     ...overrides,
   };
 }
@@ -164,20 +186,7 @@ describe('document tasks', () => {
   });
 
   it('queues unclaimed paid hours as create-timesheet tasks', () => {
-    const row: TimesheetCreateRow = {
-      volunteerId: 'volunteer-1',
-      volunteerName: 'Ada Lovelace',
-      reimbursementTypeId: 'rt-1',
-      reimbursementTypeKey: 'EHRENAMT',
-      periodStart: start,
-      periodEnd: end,
-      eligibleHours: 5,
-      estimatedAmountCents: 600,
-      hasUncoveredHours: false,
-      firstUncoveredAt: null,
-    };
-
-    const tasks = createInvoiceTasks([row], ORG);
+    const tasks = createInvoiceTasks([timesheet()], ORG);
     expect(tasks).toHaveLength(1);
     expect(tasks[0]?.type).toBe(TaskType.INVOICE_CREATE);
     expect(tasks[0]?.data).toMatchObject({
@@ -190,45 +199,30 @@ describe('document tasks', () => {
   it('synthesizes one create-agreement reminder for uncovered hours', () => {
     const tasks = createContractGenerateTasks(
       [
-        {
-          volunteerId: 'volunteer-1',
-          volunteerName: 'Ada Lovelace',
-          reimbursementTypeId: 'rt-1',
-          reimbursementTypeKey: 'EHRENAMT',
-          periodStart: start,
-          periodEnd: end,
-          eligibleHours: 5,
-          estimatedAmountCents: 600,
+        timesheet({
           hasUncoveredHours: true,
           firstUncoveredAt: start,
-        },
-        {
-          volunteerId: 'volunteer-1',
-          volunteerName: 'Ada Lovelace',
-          reimbursementTypeId: 'rt-1',
-          reimbursementTypeKey: 'EHRENAMT',
+        }),
+        timesheet({
           periodStart: new Date('2026-09-01T00:00:00.000Z'),
           periodEnd: new Date('2026-10-01T00:00:00.000Z'),
           eligibleHours: 2,
           estimatedAmountCents: 240,
           hasUncoveredHours: true,
           firstUncoveredAt: new Date('2026-09-05T00:00:00.000Z'),
-        },
-        {
-          volunteerId: 'volunteer-1',
-          volunteerName: 'Ada Lovelace',
-          reimbursementTypeId: 'rt-1',
-          reimbursementTypeKey: 'EHRENAMT',
+        }),
+        timesheet({
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-08-01T00:00:00.000Z'),
           eligibleHours: 1,
           estimatedAmountCents: 120,
           hasUncoveredHours: false,
           firstUncoveredAt: null,
-        },
+        }),
       ],
       [],
       ORG,
+      { yearPeriod, pairsWithOpenContract: noOpenContracts },
     );
 
     expect(tasks).toHaveLength(1);
@@ -243,20 +237,7 @@ describe('document tasks', () => {
   it('falls back to a paid-shift signup when hours are already covered', () => {
     const signupStart = new Date('2026-08-31T22:00:00.000Z');
     const tasks = createContractGenerateTasks(
-      [
-        {
-          volunteerId: 'volunteer-1',
-          volunteerName: 'Ada Lovelace',
-          reimbursementTypeId: 'rt-1',
-          reimbursementTypeKey: 'EHRENAMT',
-          periodStart: start,
-          periodEnd: end,
-          eligibleHours: 5,
-          estimatedAmountCents: 600,
-          hasUncoveredHours: false,
-          firstUncoveredAt: null,
-        },
-      ],
+      [timesheet()],
       [
         {
           volunteerId: 'volunteer-1',
@@ -268,12 +249,55 @@ describe('document tasks', () => {
         },
       ],
       ORG,
+      { yearPeriod, pairsWithOpenContract: noOpenContracts },
     );
 
     expect(tasks).toHaveLength(1);
     expect(tasks[0]?.data).toMatchObject({
       kind: 'generate',
       periodStart: signupStart.toISOString(),
+    });
+  });
+
+  it('emits only the draft create task when OPEN cover clears uncovered hours', () => {
+    const draft = createContractDraftTasks(
+      [contract({ id: 'draft', status: 'DRAFT' })],
+      ORG,
+    );
+    const generate = createContractGenerateTasks(
+      [timesheet({ hasUncoveredHours: false })],
+      [],
+      ORG,
+      {
+        yearPeriod,
+        pairsWithOpenContract: new Set(['volunteer-1|rt-1']),
+      },
+    );
+
+    const createTasks = [...draft, ...generate].filter(
+      (task) => task.type === TaskType.CONTRACT_CREATE,
+    );
+    expect(createTasks).toHaveLength(1);
+    expect(createTasks[0]?.id).toBe('draft');
+    expect(
+      createTasks.some((task) => task.id.startsWith('contract-generate:')),
+    ).toBe(false);
+  });
+
+  it('queues a year-scoped generate when eligible hours exist with no Vereinbarung', () => {
+    const tasks = createContractGenerateTasks(
+      [timesheet({ hasUncoveredHours: false })],
+      [],
+      ORG,
+      { yearPeriod, pairsWithOpenContract: noOpenContracts },
+    );
+
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0]?.id).toBe('contract-generate:volunteer-1:EHRENAMT');
+    expect(tasks[0]?.data).toMatchObject({
+      kind: 'generate',
+      periodStart: yearPeriod.start.toISOString(),
+      periodEnd: yearPeriod.end.toISOString(),
     });
   });
 });

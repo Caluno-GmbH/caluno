@@ -16,7 +16,7 @@ import { SignupPage } from '../../../pages/SignupPage';
  */
 
 // Valid filler values for the fields NOT under test (never submitted).
-const VALID_FIRSTNAME = 'E2E';
+const VALID_FIRSTNAME = 'E Two E';
 const VALID_LASTNAME = 'User';
 const VALID_EMAIL = 'user@example.com';
 const VALID_PASSWORD = 'Test1234!aB';

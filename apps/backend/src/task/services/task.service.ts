@@ -17,6 +17,7 @@ import {
   InvoiceStatus,
   SigneeType,
 } from '../../accounting/enums';
+import { AccountingOrgAccessService } from '../../accounting/services/accounting-org-access.service';
 import { InvoiceService } from '../../accounting/services/invoice.service';
 import { ReimbursementRateService } from '../../accounting/services/reimbursement-rate.service';
 import {
@@ -73,6 +74,7 @@ export class TaskService {
     private readonly fillFilters: TodoFillFilterService,
     private readonly invoiceService: InvoiceService,
     private readonly reimbursementRateService: ReimbursementRateService,
+    private readonly accountingOrgAccess: AccountingOrgAccessService,
   ) {}
 
   async myTasks(userId: string, organizationUnitId: string): Promise<Task[]> {
@@ -82,9 +84,9 @@ export class TaskService {
     ]);
     const canEditShifts = permissions.has(PermissionKey.SHIFT_EDIT);
     const canEditVolunteers = permissions.has(PermissionKey.VOLUNTEER_EDIT);
-    const canManageAccounting = permissions.has(
-      PermissionKey.ACCOUNTING_MANAGE,
-    );
+    const showAccountingTasks =
+      permissions.has(PermissionKey.ACCOUNTING_MANAGE) &&
+      (await this.accountingOrgAccess.isAccountingEnabled(organizationUnitId));
 
     const [
       belowMinimum,
@@ -102,11 +104,17 @@ export class TaskService {
       canEditShifts ? this.shiftApprovals(organizationUnitId) : [],
       canEditShifts ? this.eventApprovals(organizationUnitId) : [],
       canEditVolunteers ? this.membershipRequests(organizationUnitId) : [],
-      canManageAccounting ? this.contractRows(organizationUnitId) : [],
-      canManageAccounting ? this.invoiceRows(organizationUnitId) : [],
-      canManageAccounting ? this.timesheetCreateRows(organizationUnitId) : [],
-      canManageAccounting ? this.paidShiftSignupRows(organizationUnitId) : [],
+      showAccountingTasks ? this.contractRows(organizationUnitId) : [],
+      showAccountingTasks ? this.invoiceRows(organizationUnitId) : [],
+      showAccountingTasks ? this.timesheetCreateRows(organizationUnitId) : [],
+      showAccountingTasks ? this.paidShiftSignupRows(organizationUnitId) : [],
     ]);
+
+    const year = billingYearOf(new Date());
+    const yearPeriod = billingYearBounds(year);
+    const pairsWithOpenContract = new Set(
+      contracts.map((row) => `${row.volunteerId}|${row.reimbursementTypeId}`),
+    );
 
     return [
       ...belowMinimum,
@@ -117,6 +125,7 @@ export class TaskService {
         timesheetsToCreate,
         paidShiftSignups,
         organizationUnitId,
+        { yearPeriod, pairsWithOpenContract },
       ),
       ...createInvoiceTasks(timesheetsToCreate, organizationUnitId),
       ...countersignContractTasks(contracts, organizationUnitId),
@@ -484,6 +493,7 @@ export class TaskService {
         id: schema.contracts.id,
         volunteerId: schema.contracts.volunteerId,
         volunteerName: schema.users.name,
+        reimbursementTypeId: schema.contracts.reimbursementTypeId,
         reimbursementTypeKey: schema.reimbursementTypes.key,
         periodStart: schema.contracts.periodStart,
         periodEnd: schema.contracts.periodEnd,
@@ -540,6 +550,7 @@ export class TaskService {
         id: schema.invoices.id,
         volunteerId: schema.invoices.volunteerId,
         volunteerName: schema.users.name,
+        reimbursementTypeId: schema.invoices.reimbursementTypeId,
         reimbursementTypeKey: schema.reimbursementTypes.key,
         periodStart: schema.invoices.periodStart,
         periodEnd: schema.invoices.periodEnd,

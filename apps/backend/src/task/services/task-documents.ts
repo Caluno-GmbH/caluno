@@ -7,6 +7,7 @@ export interface ContractTaskRow {
   id: string;
   volunteerId: string;
   volunteerName: string;
+  reimbursementTypeId: string;
   reimbursementTypeKey: string;
   periodStart: Date;
   periodEnd: Date;
@@ -15,6 +16,13 @@ export interface ContractTaskRow {
   declineReason: string | null;
   declinedAt: Date | null;
   volunteerSignedAt: Date | null;
+}
+
+/** Year bounds + which volunteer×type pairs already have a non-declined contract. */
+export interface CreateContractGenerateOptions {
+  yearPeriod: { start: Date; end: Date };
+  /** Keys are `${volunteerId}|${reimbursementTypeId}`. */
+  pairsWithOpenContract: ReadonlySet<string>;
 }
 
 export interface InvoiceTaskRow extends ContractTaskRow {
@@ -159,11 +167,15 @@ export function createContractDraftTasks(
  * One card per volunteer + reimbursement type (earliest uncovered month wins).
  * OPEN cover (draft / awaiting signature) already clears `hasUncoveredHours`;
  * a draft for another period does not, and both cards can show — same as the board.
+ *
+ * Order matches `buildBoardVolunteers`: uncovered month → paid-shift month →
+ * year fallback when eligible hours exist and there is no open contract at all.
  */
 export function createContractGenerateTasks(
   timesheets: TimesheetCreateRow[],
   paidShiftSignups: PaidShiftSignupRow[],
   organizationUnitId: string,
+  options: CreateContractGenerateOptions,
 ): Task[] {
   const byPair = new Map<
     string,
@@ -246,6 +258,27 @@ export function createContractGenerateTasks(
       first.periodStart,
       first.periodEnd,
       first.periodStart.getTime(),
+    );
+  }
+
+  // Third board branch: eligible hours, no month-scoped card, no open contract
+  // → year-scoped generate (board `periodLabel: String(year)`).
+  const eligibleByPair = new Map<string, TimesheetCreateRow>();
+  for (const row of timesheets) {
+    const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
+    if (!eligibleByPair.has(pair)) eligibleByPair.set(pair, row);
+  }
+  for (const [pair, row] of eligibleByPair) {
+    if (byPair.has(pair)) continue;
+    if (options.pairsWithOpenContract.has(pair)) continue;
+    consider(
+      row.volunteerId,
+      row.volunteerName,
+      row.reimbursementTypeId,
+      row.reimbursementTypeKey,
+      options.yearPeriod.start,
+      options.yearPeriod.end,
+      options.yearPeriod.start.getTime(),
     );
   }
 
