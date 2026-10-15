@@ -1757,6 +1757,8 @@ describe('NotificationModule', () => {
     expect(expected.html).not.toContain(endsAtCurrent.toISOString());
     expect(expected.html).toContain('Main hall → Side hall');
     expect(expected.html).toContain('Community Fair 2');
+    expect(expected.html).toContain('at Acme Volunteers');
+    expect(expected.html).not.toContain('{organizationName}');
   });
 
   it('sends shift instance volunteer left email to managers with coverage', async () => {
