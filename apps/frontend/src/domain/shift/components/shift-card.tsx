@@ -175,12 +175,11 @@ export function ShiftCard({
               </ActionTooltip>
             )}
           </p>
-          <p
-            className="line-clamp-3 hyphens-auto break-words text-lg text-card-foreground"
-            title={title}
-          >
-            {title}
-          </p>
+          <ActionTooltip label={title}>
+            <p className="line-clamp-3 hyphens-auto break-words text-lg text-card-foreground">
+              {title}
+            </p>
+          </ActionTooltip>
         </Link>
 
         <div className="flex w-full items-stretch gap-1">
