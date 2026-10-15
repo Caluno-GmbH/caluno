@@ -30,7 +30,7 @@ function task(
 }
 
 describe('groupOverviewBoard', () => {
-  it('groups five sections under two subheaders and drops empty ones', () => {
+  it('groups sections under two subheaders and drops empty ones', () => {
     const groups = groupOverviewBoard([
       task('m1', 'MEMBERSHIP_REQUEST', '2026-03-01'),
       task('s1', 'SHIFT_BELOW_MINIMUM', '2026-08-02'),
@@ -39,7 +39,10 @@ describe('groupOverviewBoard', () => {
       task('bundle', 'TIMESHEET_BUNDLES'),
     ]);
 
-    expect(groups.map((group) => group.id)).toEqual(['volunteersAndShifts']);
+    expect(groups.map((group) => group.id)).toEqual([
+      'volunteersAndShifts',
+      'accounting',
+    ]);
     expect(groups[0]?.sections.map((section) => section.id)).toEqual([
       'FILL_OPEN_ASSIGNMENTS',
       'APPROVE_SIGNUPS',
@@ -48,6 +51,12 @@ describe('groupOverviewBoard', () => {
     expect(groups[0]?.sections[0]?.tasks.map((item) => item.id)).toEqual([
       's2',
       's1',
+    ]);
+    expect(groups[1]?.sections.map((section) => section.id)).toEqual([
+      'SEND_TIMESHEET_BUNDLES',
+    ]);
+    expect(groups[1]?.sections[0]?.tasks.map((item) => item.id)).toEqual([
+      'bundle',
     ]);
   });
 
@@ -79,6 +88,22 @@ describe('groupOverviewBoard', () => {
     expect(groups[1]?.sections.map((section) => section.id)).toEqual([
       'DECLINED_DOCUMENTS',
       'COUNTERSIGN_DOCUMENTS',
+    ]);
+  });
+
+  it('shows ready timesheet bundles under accounting send-out', () => {
+    const groups = groupOverviewBoard([task('bundle', 'TIMESHEET_BUNDLES')]);
+
+    expect(groups.map((group) => group.id)).toEqual([
+      'volunteersAndShifts',
+      'accounting',
+    ]);
+    expect(groups[0]?.sections.map((section) => section.id)).toEqual([
+      'FILL_OPEN_ASSIGNMENTS',
+    ]);
+    expect(groups[0]?.sections[0]?.tasks).toEqual([]);
+    expect(groups[1]?.sections.map((section) => section.id)).toEqual([
+      'SEND_TIMESHEET_BUNDLES',
     ]);
   });
 
@@ -164,6 +189,9 @@ describe('visibleSectionTasks', () => {
     expect(sectionPreviewLimit('COUNTERSIGN_DOCUMENTS')).toBe(
       OVERVIEW_SECTION_PREVIEW_LIMIT,
     );
+    expect(sectionPreviewLimit('SEND_TIMESHEET_BUNDLES')).toBe(
+      OVERVIEW_SECTION_PREVIEW_LIMIT,
+    );
   });
 });
 
@@ -185,7 +213,9 @@ describe('overview section pages', () => {
     expect(overviewSectionIdFromSlug('contracts')).toBe(
       'COUNTERSIGN_DOCUMENTS',
     );
+    expect(overviewSectionIdFromSlug('timesheet-bundles')).toBe(
+      'SEND_TIMESHEET_BUNDLES',
+    );
     expect(overviewSectionIdFromSlug('not-a-section')).toBeNull();
-    expect(overviewSectionIdFromSlug('timesheet-bundles')).toBeNull();
   });
 });

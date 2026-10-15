@@ -1,9 +1,13 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import AdmZip from 'adm-zip';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
-import { BadRequestGraphQLError } from '../../graphql/errors';
-import { InternalServerGraphQLError } from '../../graphql/errors/internal-server.error';
 import { FileService } from '../../storage/services/file.service';
 import { InvoiceStatus } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
@@ -32,7 +36,8 @@ interface BuiltBundle {
  * into a single downloadable ZIP and records the download (audit row + marking
  * the READY invoices as paid) once the bundle is built.
  *
- * The bundle contains every ready (unpaid, READY) timesheet for that type plus
+ * The bundle contains the READY timesheets of that type the board shows (all of
+ * them without a list), paid or not, plus
  * the signed agreements (ACTIVE contracts) that cover the hours on those
  * timesheets: the newest covering contract per time entry, each once, listed
  * ahead of the timesheets (VOLI-1586). Documents are resolved to their
@@ -56,14 +61,19 @@ export class BundleDownloadService {
     volunteerId: string,
     reimbursementTypeId: string,
     userId: string,
+    invoiceIds?: string[],
   ): Promise<BuiltBundle> {
+    const scope = { volunteerId, reimbursementTypeId, organizationUnitId };
+    // Every READY timesheet, paid or not: there is no payment integration, so
+    // a download is taken as the payment and a repeated one hands over the same
+    // documents again. The board names the timesheets it shows, so the ZIP
+    // holds what is on screen; they are still matched in this volunteer, type
+    // and unit and must be READY.
     const invoices = await this.db.query.invoices.findMany({
       where: {
-        volunteerId,
-        reimbursementTypeId,
-        organizationUnitId,
+        ...scope,
         invoiceStatus: InvoiceStatus.READY,
-        paidAt: { isNull: true },
+        ...(invoiceIds ? { id: { in: invoiceIds } } : {}),
       },
       with: {
         invoiceTimeEntries: {
@@ -73,11 +83,7 @@ export class BundleDownloadService {
       },
     });
 
-    const contracts = await this.findCoveringContracts(invoices, {
-      volunteerId,
-      reimbursementTypeId,
-      organizationUnitId,
-    });
+    const contracts = await this.findCoveringContracts(invoices, scope);
 
     const entries: BundleEntry[] = [];
     for (const contract of contracts) {
@@ -98,7 +104,7 @@ export class BundleDownloadService {
     }
 
     if (entries.length === 0) {
-      throw new BadRequestGraphQLError(
+      throw new BadRequestException(
         'No ready documents to download for this volunteer and reimbursement type.',
       );
     }
@@ -108,13 +114,14 @@ export class BundleDownloadService {
     // Record the download (audit row + mark the READY invoices as paid). Only
     // once the ZIP is built, and `zipEntries` throws when a timesheet's file
     // cannot be resolved or fetched, so nothing is marked paid for a ZIP that
-    // lacks one of its timesheets.
+    // lacks one of its timesheets. Timesheets paid by an earlier download keep
+    // their stamp; the audit row still records this one.
     if (invoices.length > 0) {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
         reimbursementTypeId,
         userId,
-        invoices.map((i) => i.id),
+        invoices.filter((i) => !i.paidAt).map((i) => i.id),
       );
     }
 
@@ -193,7 +200,7 @@ export class BundleDownloadService {
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
         if (entry.required) {
-          throw new InternalServerGraphQLError(
+          throw new InternalServerErrorException(
             `The document ${entry.name} could not be fetched, so the bundle was not built and nothing was marked as paid. Please try again. (${reason})`,
           );
         }

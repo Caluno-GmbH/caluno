@@ -79,6 +79,8 @@ interface BundleDownloadButtonProps {
   reimbursementTypeId: string | undefined;
   typeLabel: string;
   readyCount: number;
+  /** The timesheets on screen, so the ZIP holds exactly those. */
+  invoiceIds: string[];
   orgUId: string;
 }
 
@@ -92,6 +94,7 @@ function BundleDownloadButton({
   reimbursementTypeId,
   typeLabel,
   readyCount,
+  invoiceIds,
   orgUId,
 }: BundleDownloadButtonProps) {
   const t = useTranslations('Accounting.reimbursements');
@@ -108,7 +111,8 @@ function BundleDownloadButton({
     const url =
       `${API_URL}/accounting/reimbursement-bundle/download` +
       `?volunteerId=${encodeURIComponent(volunteerId)}` +
-      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}`;
+      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}` +
+      `&invoiceIds=${encodeURIComponent(invoiceIds.join(','))}`;
     setIsDownloading(true);
     try {
       const response = await fetch(url, {
@@ -240,10 +244,12 @@ function VolunteerTableGroup({
   // Ready timesheets bundle separately per pauschale type — never combined
   // into one download, since each type is its own reimbursement batch.
   const readyByType: Partial<Record<PauschalenType, number>> = {};
+  const readyIdsByType: Partial<Record<PauschalenType, string[]>> = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
     const type = d.pauschale;
     readyByType[type] = (readyByType[type] ?? 0) + 1;
+    readyIdsByType[type] = [...(readyIdsByType[type] ?? []), d.id];
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
   const TYPE_LABEL: Record<PauschalenType, string> = {
@@ -312,6 +318,7 @@ function VolunteerTableGroup({
                     reimbursementTypeId={volunteer.reimbursementTypeIds?.[type]}
                     typeLabel={TYPE_LABEL[type]}
                     readyCount={readyByType[type] ?? 0}
+                    invoiceIds={readyIdsByType[type] ?? []}
                     orgUId={orgUId}
                   />
                 ))}

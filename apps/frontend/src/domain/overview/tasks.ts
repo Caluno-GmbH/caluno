@@ -7,10 +7,7 @@ export const OVERVIEW_SECTION_PREVIEW_LIMIT = 3;
 /** Fill upcoming assignments spans both columns, so its preview is a 2×2. */
 export const FILL_OPEN_ASSIGNMENTS_PREVIEW_LIMIT = 4;
 
-/**
- * Task types the query can return. Timesheet bundles stay in this list so
- * the sidebar count is unchanged, and stay off the board.
- */
+/** Task types the query can return that the To do board can show. */
 export const OVERVIEW_TASK_TYPES = [
   'MEMBERSHIP_REQUEST',
   'SHIFT_BELOW_MINIMUM',
@@ -30,6 +27,7 @@ export const OVERVIEW_SECTION_IDS = [
   'APPROVE_SIGNUPS',
   'DECLINED_DOCUMENTS',
   'COUNTERSIGN_DOCUMENTS',
+  'SEND_TIMESHEET_BUNDLES',
 ] as const;
 
 export type OverviewSectionId = (typeof OVERVIEW_SECTION_IDS)[number];
@@ -48,6 +46,7 @@ const SECTION_SOURCES: Record<OverviewSectionId, readonly OverviewTaskType[]> =
     APPROVE_SIGNUPS: ['SHIFT_APPROVAL', 'EVENT_APPROVAL'],
     DECLINED_DOCUMENTS: ['DOCUMENT_DECLINED'],
     COUNTERSIGN_DOCUMENTS: ['CONTRACT_SIGN', 'TIMESHEET_SIGN'],
+    SEND_TIMESHEET_BUNDLES: ['TIMESHEET_BUNDLES'],
   };
 
 /** Sections that span every column of their group. They keep a container when empty. */
@@ -70,7 +69,11 @@ const OVERVIEW_BOARD: ReadonlyArray<{
   },
   {
     id: 'accounting',
-    sections: ['DECLINED_DOCUMENTS', 'COUNTERSIGN_DOCUMENTS'],
+    sections: [
+      'DECLINED_DOCUMENTS',
+      'COUNTERSIGN_DOCUMENTS',
+      'SEND_TIMESHEET_BUNDLES',
+    ],
   },
 ];
 
@@ -114,6 +117,7 @@ const OVERVIEW_SECTION_SLUG: Record<OverviewSectionId, string> = {
   APPROVE_SIGNUPS: 'sign-ups',
   DECLINED_DOCUMENTS: 'declined-documents',
   COUNTERSIGN_DOCUMENTS: 'countersign',
+  SEND_TIMESHEET_BUNDLES: 'timesheet-bundles',
 };
 
 /** Earlier see-all paths open the merged section that replaced them. */
