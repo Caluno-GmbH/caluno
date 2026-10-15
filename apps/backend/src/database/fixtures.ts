@@ -85,7 +85,7 @@ const memberIdentity = (index: number) => ({
 });
 const pendingIdentity = (index: number) => ({
   firstname: 'Pending',
-  lastname: `Applicant ${numberToWord(index)}}`,
+  lastname: `Applicant ${numberToWord(index)}`,
 });
 const pendingEmail = (index: number) => e2eEmail(`pending0${index}`);
 const ADMIN_IDENTITY = { firstname: 'Playground', lastname: 'Admin' } as const;

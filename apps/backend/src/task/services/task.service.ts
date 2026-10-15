@@ -113,7 +113,9 @@ export class TaskService {
     const year = billingYearOf(new Date());
     const yearPeriod = billingYearBounds(year);
     const pairsWithOpenContract = new Set(
-      contracts.map((row) => `${row.volunteerId}|${row.reimbursementTypeId}`),
+      contracts
+        .filter((row) => row.status !== ContractStatus.DECLINED)
+        .map((row) => `${row.volunteerId}|${row.reimbursementTypeId}`),
     );
 
     return [
