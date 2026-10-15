@@ -12,6 +12,8 @@ import { BadRequestGraphQLError } from '../graphql/errors';
 import { AccountingOrgAccessService } from './services';
 import { BundleDownloadService } from './services/bundle-download.service';
 
+/** Far above what one volunteer has ready; keeps the list and the query bounded. */
+const MAX_NAMED_INVOICES = 100;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
@@ -24,7 +26,7 @@ function parseInvoiceIds(value: unknown): string[] | undefined {
     throw new BadRequestGraphQLError('Invalid list of timesheets.');
   }
   const ids = value.split(',');
-  if (ids.some((id) => !UUID.test(id))) {
+  if (ids.length > MAX_NAMED_INVOICES || ids.some((id) => !UUID.test(id))) {
     throw new BadRequestGraphQLError('Invalid list of timesheets.');
   }
   return ids;
