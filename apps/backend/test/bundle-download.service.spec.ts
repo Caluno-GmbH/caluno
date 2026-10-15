@@ -7,6 +7,7 @@ import {
   it,
   spyOn,
 } from 'bun:test';
+import { BadRequestException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import AdmZip from 'adm-zip';
@@ -339,6 +340,7 @@ describe('BundleDownloadService', () => {
       await expect(download(s)).rejects.toThrow(
         'No ready documents to download',
       );
+      await expect(download(s)).rejects.toBeInstanceOf(BadRequestException);
 
       const audit = await db.query.reimbursementBundleDownloads.findFirst({
         where: { volunteerId: s.volunteer.id },

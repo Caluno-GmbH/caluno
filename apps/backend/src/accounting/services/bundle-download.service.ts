@@ -1,9 +1,13 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import AdmZip from 'adm-zip';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
-import { BadRequestGraphQLError } from '../../graphql/errors';
-import { InternalServerGraphQLError } from '../../graphql/errors/internal-server.error';
 import { FileService } from '../../storage/services/file.service';
 import { InvoiceStatus } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
@@ -100,7 +104,7 @@ export class BundleDownloadService {
     }
 
     if (entries.length === 0) {
-      throw new BadRequestGraphQLError(
+      throw new BadRequestException(
         'No ready documents to download for this volunteer and reimbursement type.',
       );
     }
@@ -196,7 +200,7 @@ export class BundleDownloadService {
       } catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
         if (entry.required) {
-          throw new InternalServerGraphQLError(
+          throw new InternalServerErrorException(
             `The document ${entry.name} could not be fetched, so the bundle was not built and nothing was marked as paid. Please try again. (${reason})`,
           );
         }
