@@ -104,6 +104,7 @@ const setupPaidShiftOrg = async (db: Database) => {
   return {
     organizationId: organization.id,
     organizationUnitId: root.id,
+    unitTypeId: type.id,
     adminId: admin.id,
     volunteerId: volunteer.id,
     reimbursementTypeId: reimbursementType.id,
@@ -394,6 +395,30 @@ describe('paidShiftSignupVolunteers', () => {
     expect(
       paidShiftSignupVolunteers.some(
         (entry) => entry.volunteer.id === otherVolunteer.id,
+      ),
+    ).toBe(false);
+  });
+
+  it('does not surface paid-shift signups from a sibling organization unit', async () => {
+    const sibling = await createUnit(db, {
+      organizationId: org.organizationId,
+      typeId: org.unitTypeId,
+      name: `sibling-${crypto.randomUUID()}`,
+      parentId: org.organizationUnitId,
+    });
+    const siblingVolunteer = await createUser(db);
+    await addMembership(db, siblingVolunteer.id, sibling.id);
+    await createPaidShiftWithJoinedVolunteer(db, {
+      organizationUnitId: sibling.id,
+      volunteerId: siblingVolunteer.id,
+      reimbursementTypeId: org.reimbursementTypeId,
+      actualStartsAt: new Date('2026-08-10T08:00:00.000Z'),
+    });
+
+    const { paidShiftSignupVolunteers } = await query(2026);
+    expect(
+      paidShiftSignupVolunteers.some(
+        (entry) => entry.volunteer.id === siblingVolunteer.id,
       ),
     ).toBe(false);
   });

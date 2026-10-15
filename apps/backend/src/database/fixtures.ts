@@ -41,6 +41,33 @@ import * as schema from './schema';
 
 process.env.TZ = 'Europe/Berlin';
 
+function numberToWord(num: number): string {
+  const digits = [
+    'Zero',
+    'One',
+    'Two',
+    'Three',
+    'Four',
+    'Five',
+    'Six',
+    'Seven',
+    'Eight',
+    'Nine',
+    'Ten',
+  ];
+
+  if (num >= 1 && num <= 10) {
+    return digits[num];
+  }
+
+  // Converts numbers after 10 into concatenated digit words (e.g., 11 -> "OneOne")
+  return Math.abs(num)
+    .toString()
+    .split('')
+    .map((digit) => digits[Number(digit)])
+    .join('');
+}
+
 const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
 const ORG_NAME = 'Playground';
 const ORG_SLUG = 'playground';
@@ -54,11 +81,11 @@ const MEMBER_COUNT = 10;
 const PENDING_COUNT = 2;
 const memberIdentity = (index: number) => ({
   firstname: 'Playground',
-  lastname: `Member ${String(index).padStart(2, '0')}`,
+  lastname: `Member ${numberToWord(index)}`,
 });
 const pendingIdentity = (index: number) => ({
   firstname: 'Pending',
-  lastname: `Applicant ${String(index).padStart(2, '0')}`,
+  lastname: `Applicant ${numberToWord(index)}`,
 });
 const pendingEmail = (index: number) => e2eEmail(`pending0${index}`);
 const ADMIN_IDENTITY = { firstname: 'Playground', lastname: 'Admin' } as const;

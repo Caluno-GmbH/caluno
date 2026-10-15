@@ -17,14 +17,14 @@ import { VolunteerProfilePage } from '../../../pages/volunteering/VolunteerProfi
 // staging base URL like the other suites, or locally with
 // E2E_BASE_URL=http://localhost:3000.
 //
-// Playground Member 02 is the volunteer (kept document-free in the fresh
+// Playground Member Two is the volunteer (kept document-free in the fresh
 // fixtures so the run's documents are uniquely identifiable); the admin is
 // the Playground owner. Like the other auth-gated suites, sessions are
 // authenticated once in beforeAll and persisted to .auth/ (storageState).
 const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
 const VOLUNTEER_EMAIL = 'demo+e2e_member02@caluno.org';
 const PASSWORD = 'abcd1234';
-const VOLUNTEER_NAME = 'Playground Member 02';
+const VOLUNTEER_NAME = 'Playground Member Two';
 const DECLINE_REASON = `E2E decline ${Date.now()}: Zeitraum stimmt nicht`;
 
 const adminAuthFile = '.auth/accounting-admin.json';
