@@ -4,7 +4,7 @@ import { BASE_URL } from '../AuthPage';
 /**
  * The admin reimbursements board (`/admin/[orgUId]/accounting/reimbursements`)
  * — creating documents through the two-step modal, and countersigning /
- * inspecting them from the board. Relies on the local dev playground
+ * inspecting them from the board. Relies on the local dev Testing
  * fixtures (my-shifts.e2e.ts precedent).
  *
  * Board row statuses: only the placeholder/terminal states render a label
@@ -155,18 +155,7 @@ export class AdminReimbursementsPage {
 
     // Narrow to this volunteer so other members' stale coord rows are out of
     // the try-list, then open the countersign-agreements queue.
-    const search = this.page.getByPlaceholder('Search volunteers...');
-    await search.fill(volunteerName);
-    await expect(
-      this.page.getByRole('row', {
-        name: new RegExp(
-          `^${volunteerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
-        ),
-      }),
-    ).toBeVisible();
-    await this.page
-      .getByRole('button', { name: /Countersign agreements/ })
-      .click();
+    await this.focusVolunteerCountersignQueue(volunteerName);
 
     const rows = this.countersignRow();
     // The board is a client component; wait for it to render the coord row
@@ -212,12 +201,17 @@ export class AdminReimbursementsPage {
       await this.page.keyboard.press('Escape');
       await expect(sheet).toBeHidden();
       // Swallow duplicate SignContract responses from the same click so the
-      // next iteration's waiter cannot latch onto a late CONFLICT.
-      await this.drainSignContractResponses();
-      // Safety net: the real ACTIVE may have completed while we observed a
-      // stale CONFLICT — if this volunteer's coord queue shrank, we are done.
-      if ((await rows.count()) < before) {
+      // next iteration's waiter cannot latch onto a late CONFLICT. A late
+      // error-free response means the countersign actually landed.
+      if (await this.drainSignContractResponses()) {
         await this.page.reload({ waitUntil: 'load' });
+        return;
+      }
+      // Safety net: board paint can stay stale after a successful double-fire
+      // — reload + re-filter before deciding the queue did not shrink.
+      await this.page.reload({ waitUntil: 'load' });
+      await this.focusVolunteerCountersignQueue(volunteerName);
+      if ((await rows.count()) < before) {
         return;
       }
     }
@@ -226,32 +220,59 @@ export class AdminReimbursementsPage {
     );
   }
 
-  /** Quiet-window drain for in-flight SignContract responses. */
-  private async drainSignContractResponses() {
+  /** Search + open the countersign-agreements tile for one volunteer. */
+  private async focusVolunteerCountersignQueue(volunteerName: string) {
+    const search = this.page.getByPlaceholder('Search volunteers...');
+    await search.fill(volunteerName);
+    await expect(
+      this.page.getByRole('row', {
+        name: new RegExp(
+          `^${volunteerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+        ),
+      }),
+    ).toBeVisible();
+    await this.page
+      .getByRole('button', { name: /Countersign agreements/ })
+      .click();
+  }
+
+  /**
+   * Quiet-window drain for in-flight SignContract responses. Returns true if
+   * any drained response is an error-free success (the click double-fired and
+   * the waiter latched onto the CONFLICT).
+   */
+  private async drainSignContractResponses(): Promise<boolean> {
+    let sawSuccess = false;
     for (;;) {
       try {
-        await this.page.waitForResponse(
+        const response = await this.page.waitForResponse(
           (response) =>
             response.url().includes('/graphql') &&
             (response.request().postData() ?? '').includes('SignContract'),
           { timeout: 750 },
         );
+        if (response.ok()) {
+          const body = (await response.json()) as { errors?: unknown[] };
+          if ((body.errors ?? []).length === 0) sawSuccess = true;
+        }
       } catch {
-        return;
+        return sawSuccess;
       }
     }
   }
 
   /**
    * Opens declined document rows until one shows the given reason (earlier
-   * runs leave their own declined rows behind). Returns once found.
+   * runs leave their own declined rows behind). Newest-first: this run's
+   * decline is at the end of the leftover list, so reverse walk finds it
+   * without opening every stale sheet.
    */
   async expectDeclinedWithReason(reason: string) {
     await this.page.reload({ waitUntil: 'load' });
     const rows = this.declinedRow();
     await expect(rows.first()).toBeVisible({ timeout: 15_000 });
     const count = await rows.count();
-    for (let i = 0; i < count; i++) {
+    for (let i = count - 1; i >= 0; i--) {
       // Declined rows open via "See details", not a bare row click.
       await rows.nth(i).getByRole('button', { name: 'See details' }).click();
       const sheet = this.documentSheet();

@@ -19,7 +19,12 @@ export default defineConfig({
     actionTimeout: 20_000,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    trace: 'retain-on-failure',
+    // `retain-on-failure` records for the whole run and finalizes on every
+    // context.close(); with two long-lived contexts that races Playwright's
+    // network-trace copy (ENOENT on `*-pwnetcopy-*.network`) and fails green
+    // tests. `on-first-retry` only traces the retry (CI has retries: 2).
+    // Local debugging: `bun playwright test --trace on <file>`.
+    trace: 'on-first-retry',
     viewport: { width: 1280, height: 720 },
   },
 });

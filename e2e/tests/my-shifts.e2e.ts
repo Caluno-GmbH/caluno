@@ -10,7 +10,7 @@ import { LoginPage } from '../pages/LoginPage';
 // (2 overlapping shifts) and "Overlap Test Pile" (6 overlapping shifts,
 // A-F) fixtures invited to it — member01 is kept conflict-free as a
 // baseline for other manual checks.
-const MEMBER_EMAIL = 'demo+e2e_member02@caluno.org';
+const MEMBER_EMAIL = 'demo+testing_member02@caluno.org';
 const MEMBER_PASSWORD = 'abcd1234';
 
 /** Keep clicking progressive "Load more" until `locator` matches. */

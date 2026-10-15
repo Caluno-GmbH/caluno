@@ -3,20 +3,20 @@ import { BASE_URL } from '../pages/AuthPage';
 import { LoginPage } from '../pages/LoginPage';
 import { ShiftsPage } from '../pages/shifts/ShiftsPage';
 
-const EVENT_ASSISTANCE_SHIFT_ID = 'e2915169-290d-42b2-a2e2-6d9992bb8814';
+const EVENT_ASSISTANCE_SHIFT_ID = 'b13bdd59-9965-49c2-84be-7c943c6d8a79';
 const UNKNOWN_SHIFT_ID = '00000000-0000-0000-0000-000000000000';
 
-// Event Assistance is open (ALL_MEMBERS) and pinned in the Playground seed.
+// Event Assistance is open (ALL_MEMBERS) and pinned in the Testing seed.
 // Invite-only coverage creates a fresh INVITED_MEMBERS shift as the e2e admin
 // instead of looking up a seeded row by title (those rows do not pin a UUID).
-const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
+const ADMIN_EMAIL = 'demo+testing_admin@caluno.org';
 const ADMIN_PASSWORD = 'abcd1234';
 
 test.describe('public shift detail page', () => {
   test('renders shift title and org name', async ({ page }) => {
     await page.goto(`${BASE_URL}/en/shifts/${EVENT_ASSISTANCE_SHIFT_ID}`);
     await expect(page.locator('h1')).toContainText('Event Assistance');
-    await expect(page.getByRole('link', { name: 'Playground' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Testing' })).toBeVisible();
   });
 
   test('shows event badge when shift is part of an event', async ({ page }) => {

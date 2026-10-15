@@ -9,12 +9,12 @@ import { LoginPage } from '../../../pages/LoginPage';
  * auto-queues a DRAFT agreement, To do shows Create agreements + Create
  * timesheets cards for that volunteer.
  *
- * Uses Playground e2e fixtures (`demo+e2e_*`). Templates are configured in
+ * Uses Testing e2e fixtures (`demo+testing_*`). Templates are configured in
  * beforeAll like documents-flow.e2e.ts.
  */
-const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
-const VOLUNTEER_EMAIL = 'demo+e2e_member06@caluno.org'; // no contract yet
-const VOLUNTEER_NAME = 'Playground Member Six';
+const ADMIN_EMAIL = 'demo+testing_admin@caluno.org';
+const VOLUNTEER_EMAIL = 'demo+testing_member06@caluno.org'; // no contract yet
+const VOLUNTEER_NAME = 'Testing Member Six';
 const PASSWORD = 'abcd1234';
 
 const adminAuthFile = '.auth/todo-create-admin.json';

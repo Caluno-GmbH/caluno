@@ -23,9 +23,9 @@ import { TEST_PASSWORD, uniqueEmail } from '../../../utils/test-data';
 
 const TERMS_VERSION = '1.0';
 const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
-const GATE_USER = 'demo+e2e_member01@caluno.org';
+const GATE_USER = 'demo+testing_member01@caluno.org';
 // Keep this off member02 — documents-flow and my-shifts use that account.
-const ACCEPT_USER = 'demo+e2e_member03@caluno.org';
+const ACCEPT_USER = 'demo+testing_member03@caluno.org';
 
 const DATABASE_URL =
   process.env.E2E_DATABASE_URL ??
