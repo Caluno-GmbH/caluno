@@ -12,10 +12,6 @@ import type { ReimbursementType } from '../models/reimbursement-type.model';
 import { ReimbursementRateService } from '../services';
 import { settleEach } from './settle-each';
 
-type TimeEntryKey = { id: string; organizationUnitId: string };
-const toTimeEntryCacheKey = ({ id, organizationUnitId }: TimeEntryKey) =>
-  `${organizationUnitId}:${id}`;
-
 @RegisterLoader()
 @Injectable({ scope: Scope.REQUEST })
 export class AccountingReferenceLoader {
@@ -51,20 +47,13 @@ export class AccountingReferenceLoader {
     },
   );
 
-  public readonly timeEntryById = new DataLoader<
-    TimeEntryKey,
-    TimeEntry,
-    string
-  >(
-    (keys) =>
-      settleEach(keys, async (key) =>
-        this.timeEntryMapper.toModelOrThrow(
-          await this.timeTrackingService.findById(
-            key.id,
-            key.organizationUnitId,
-          ),
-        ),
+  // Keyed by time-entry id only: callers must already have authorized the
+  // parent (invoice claim). Do not use for org-scoped root queries.
+  public readonly timeEntryById = new DataLoader<string, TimeEntry>((ids) =>
+    settleEach(ids, async (id) =>
+      this.timeEntryMapper.toModelOrThrow(
+        await this.timeTrackingService.findByIdForAuthorizedParent(id),
       ),
-    { cacheKeyFn: toTimeEntryCacheKey },
+    ),
   );
 }

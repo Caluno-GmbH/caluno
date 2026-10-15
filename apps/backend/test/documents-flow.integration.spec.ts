@@ -224,6 +224,23 @@ const INVOICE_DETAIL = `
   }
 `;
 
+// Volunteer "My documents" / complete-profile: no x-organization-unit-id.
+const INVOICE_DETAIL_WITH_TIME_ENTRIES = `
+  query InvoiceDetailWithTimeEntries($id: ID!) {
+    invoice(id: $id) {
+      id
+      invoiceTimeEntries {
+        id
+        timeEntry {
+          id
+          startedAt
+          endedAt
+        }
+      }
+    }
+  }
+`;
+
 const INVOICE_COVER_FLAGS_LIST = `
   query InvoiceCoverFlagsList {
     invoices {
@@ -523,6 +540,148 @@ describe('documents flow — admin + volunteer', () => {
   };
 
   describe('contract lifecycle', () => {
+    // The paper trail has to read in lifecycle order whatever order the rows
+    // come back in, and the countersign and activation rows of one signing
+    // share a transaction timestamp, so the type breaks the tie.
+    it('lists the paper trail in lifecycle order whatever the row order', async () => {
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createContract',
+      );
+
+      const signedAt = new Date(Date.now() + 60_000);
+      const countersignedAt = new Date(Date.now() + 120_000);
+      // Inserted newest first, so storage order is the reverse of the trail.
+      await db.insert(schema.contractStatusChanges).values([
+        {
+          contractId: createContract.id,
+          type: DocumentStatusChange.ACTIVATED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          contractId: createContract.id,
+          type: DocumentStatusChange.COUNTERSIGNED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          contractId: createContract.id,
+          type: DocumentStatusChange.SIGNED,
+          actorUserId: own.volunteerId,
+          occurredAt: signedAt,
+        },
+      ]);
+
+      const detail = await graphqlRequestRequiringData<{
+        contract: { statusChanges: Array<{ type: string }> };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: createContract.id },
+          headers: ownHeader,
+        },
+        'contract',
+      );
+      expect(detail.contract.statusChanges.map((s) => s.type)).toEqual([
+        DocumentStatusChange.CREATED,
+        DocumentStatusChange.SIGNED,
+        DocumentStatusChange.COUNTERSIGNED,
+        DocumentStatusChange.ACTIVATED,
+      ]);
+    });
+
+    it('lists a timesheet paper trail in lifecycle order whatever the row order', async () => {
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: own.organizationUnitId,
+        volunteerId: own.volunteerId,
+        reimbursementTypeId: own.reimbursementTypeId,
+      });
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createInvoice',
+      );
+
+      const signedAt = new Date(Date.now() + 60_000);
+      const countersignedAt = new Date(Date.now() + 120_000);
+      await db.insert(schema.invoiceStatusChanges).values([
+        {
+          invoiceId: createInvoice.id,
+          type: DocumentStatusChange.ACTIVATED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          invoiceId: createInvoice.id,
+          type: DocumentStatusChange.COUNTERSIGNED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          invoiceId: createInvoice.id,
+          type: DocumentStatusChange.SIGNED,
+          actorUserId: own.volunteerId,
+          occurredAt: signedAt,
+        },
+      ]);
+
+      const detail = await graphqlRequestRequiringData<{
+        invoice: { statusChanges: Array<{ type: string }> };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL,
+          variables: { id: createInvoice.id },
+          headers: ownHeader,
+        },
+        'invoice',
+      );
+      expect(detail.invoice.statusChanges.map((s) => s.type)).toEqual([
+        DocumentStatusChange.CREATED,
+        DocumentStatusChange.SIGNED,
+        DocumentStatusChange.COUNTERSIGNED,
+        DocumentStatusChange.ACTIVATED,
+      ]);
+    });
+
     it('goes AWAITING_VOLUNTEER_SIGNATURE → AWAITING_NGO_SIGNATURE → ACTIVE with a full paper trail, and emails the volunteer once', async () => {
       const { createContract } = await createContractAsAdmin();
       expect(createContract.contractStatus).toBe(
@@ -1050,6 +1209,62 @@ describe('documents flow — admin + volunteer', () => {
         SigneeType.VOLUNTEER,
       );
       expect(declined.declineInvoice.declinedByUser?.id).toBe(org.volunteerId);
+    });
+
+    it('volunteer can resolve claimed timeEntry without an org-unit header', async () => {
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: org.organizationUnitId,
+        volunteerId: org.volunteerId,
+        reimbursementTypeId: org.reimbursementTypeId,
+        startedAt: new Date('2026-09-03T09:00:00.000Z'),
+        endedAt: new Date('2026-09-03T13:00:00.000Z'),
+      });
+
+      setAuthMockUserId(org.adminId);
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: org.organizationUnitId,
+              reimbursementTypeId: org.reimbursementTypeId,
+              volunteerId: org.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: orgHeader,
+        },
+        'createInvoice',
+      );
+
+      setAuthMockUserId(org.volunteerId);
+      const detail = await graphqlRequestRequiringData<{
+        invoice: {
+          id: string;
+          invoiceTimeEntries: Array<{
+            id: string;
+            timeEntry: { id: string; startedAt: string; endedAt: string };
+          }>;
+        };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL_WITH_TIME_ENTRIES,
+          variables: { id: createInvoice.id },
+          // No x-organization-unit-id — matches volunteering DataProvider.
+        },
+        'invoice',
+      );
+
+      expect(detail.invoice.invoiceTimeEntries).toHaveLength(1);
+      expect(detail.invoice.invoiceTimeEntries[0].timeEntry.id).toBe(
+        timeEntry.id,
+      );
     });
   });
 

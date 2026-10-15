@@ -105,7 +105,6 @@ export default async function ShiftInstanceDetailPage({
                 <Button
                   variant="destructive"
                   size="icon-sm"
-                  tooltip={t('instanceDetail.deleteAria')}
                   disabled={isInstanceInThePast}
                 >
                   <Trash2 />
