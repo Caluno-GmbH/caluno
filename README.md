@@ -81,14 +81,12 @@ After `bun bootstrap`, the database contains the **Altonaer Lesepaten** demo org
 | `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
 | `demo+rejected01@caluno.org` | Rejected membership request |
 
-The **Playground** seed — weekly Community Support / Food Distribution / Event Assistance shifts, a requirement form, and the stable IDs and Overlap Test shifts the Playwright suite asserts on — is **e2e-only**. It is not loaded by `bun bootstrap` or by any deployed environment; load it with `bun run --cwd apps/backend db:fixtures:e2e`.
+The **Testing** seed — weekly Community Support / Food Distribution / Event Assistance shifts, a requirement form, and the stable IDs and Overlap Test shifts the Testing suite asserts on — is **e2e-only**. It is not loaded by `bun bootstrap` or by any deployed environment; load it with `bun run --cwd apps/backend db:fixtures:e2e`.
 
 The demo dataset is also seeded on **every deploy**: the backend entrypoint runs `bun run db:fixtures:demo` on boot, in staging **and production**. That is safe against a live, populated database:
 
 - **Non-destructive** — no `DROP`, `TRUNCATE` or `DELETE`; every write is an upsert scoped to the fixture organization and its own accounts.
 - **Verify-or-abort, before any write** — the seed first checks every identity it is about to claim (each account's pinned id *and* address, plus the org id and slug). Fixture rows get deterministic ids, so ownership is proven by id rather than by name. If anything is held by a row the fixtures did not create, it aborts listing all clashes and writes **nothing at all**. Accounts an older run seeded with random ids are reported as clashes and need removing once.
-
-Never load the e2e-only Playground seed alongside it — the two share the `demo@caluno.org` group, and the seed will refuse rather than cross-link.
 
 `bun bootstrap` only runs against local databases (`DB_HOST` must be `localhost`, `127.0.0.1`, or `postgres`).
 
@@ -117,7 +115,7 @@ From `apps/backend`:
 - `bun run db:migrate` - Run pending migrations
 - `bun run db:studio` - Open Drizzle Studio (database GUI)
 - `bun run db:fixtures:demo` - Load the demo dataset (the app's data)
-- `bun run db:fixtures:e2e` - Load the e2e-only Playground seed
+- `bun run db:fixtures:e2e` - Load the e2e-only Testing seed
 
 ### Building
 

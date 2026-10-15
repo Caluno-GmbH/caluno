@@ -1,4 +1,5 @@
 import { test } from '@playwright/test';
+import { IS_LOCAL } from '../pages/AuthPage';
 import { LoginPage } from '../pages/LoginPage';
 import { OrgPage } from '../pages/org/OrgPage';
 import { SignupPage } from '../pages/SignupPage';
@@ -9,8 +10,9 @@ import { TEST_PASSWORD } from '../utils/test-data';
 
 /**
  * Smoke — full happy path. The only suite that creates a real account.
- * Signup -> Email Verification -> Login -> Create Organization -> Create Shift.
- * The verification code is read from the Mailpit mailbox (see utils/mailbox).
+ * Signup -> Email Verification (staging) -> Login -> Create Organization -> Create Shift.
+ * On local stacks, email verification is skipped (dev disables it).
+ * On staging, the verification code is read from Mailpit (see utils/mailbox).
  */
 test('signup -> verify email -> login -> create org -> create shift', async ({
   page,
@@ -29,13 +31,15 @@ test('signup -> verify email -> login -> create org -> create shift', async ({
   await test.step('signup', async () => {
     await signup.goto();
     await signup.signup('E Two E', 'User', emailAddress, TEST_PASSWORD);
-    await signup.expectVerificationPrompt();
   });
 
-  await test.step('verify email', async () => {
-    const code = await Mailbox.getVerificationCode(emailAddress);
-    await verify.verify(code);
-  });
+  if (!IS_LOCAL) {
+    await test.step('verify email', async () => {
+      await signup.expectVerificationPrompt();
+      const code = await Mailbox.getVerificationCode(emailAddress);
+      await verify.verify(code);
+    });
+  }
 
   await test.step('login', async () => {
     await page.context().clearCookies();

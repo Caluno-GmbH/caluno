@@ -2,7 +2,13 @@
   "name": "caluno-e2e",
   "version": "0.0.0",
   "private": true,
+  "scripts": {
+    "test": "bun playwright test",
+    "test:headed": "HEADED=1 bun playwright test",
+    "test:local": "E2E_BASE_URL=http://localhost:3000 MAILBOX_URL=http://localhost:8025 bun playwright test",
+    "test:local:headed": "E2E_BASE_URL=http://localhost:3000 MAILBOX_URL=http://localhost:8025 HEADED=1 bun playwright test"
+  },
   "devDependencies": {
-    "@playwright/test": "^1.61.1"
+    "@playwright/test": "^1.64.1"
   }
 }
