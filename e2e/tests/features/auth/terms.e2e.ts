@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { expect, type Page, test } from '@playwright/test';
-import { API_URL, BASE_URL } from '../../../pages/AuthPage';
+import { API_URL, BASE_URL, IS_LOCAL } from '../../../pages/AuthPage';
 import { LoginPage } from '../../../pages/LoginPage';
 import { SignupPage } from '../../../pages/SignupPage';
 import { TEST_PASSWORD, uniqueEmail } from '../../../utils/test-data';
@@ -29,8 +29,6 @@ const DATABASE_URL =
   process.env.E2E_DATABASE_URL ??
   process.env.DATABASE_URL ??
   'postgresql://postgres:postgres@localhost:5432/caluno';
-
-const IS_LOCAL = /(^|:\/\/)(localhost|127\.0\.0\.1)(:|\/|$)/.test(BASE_URL);
 
 const CURRENT_TERMS_PDF_URL = `${API_URL}/legal/terms/current/en`;
 

@@ -2,14 +2,14 @@ import { expect, test } from '@playwright/test';
 import { OrgPage } from '../pages/org/OrgPage';
 import { FormBuilderPage } from '../pages/requirement-forms/FormBuilderPage';
 import { RequirementFormsPage } from '../pages/requirement-forms/RequirementFormsPage';
-import { signUpAndLogin } from '../utils/session';
+import { signUpVerifyAndLogin } from '../utils/auth';
 
 test.describe('requirement form builder', () => {
   let forms: RequirementFormsPage;
   let builder: FormBuilderPage;
 
   test.beforeEach(async ({ page }) => {
-    await signUpAndLogin(page);
+    await signUpVerifyAndLogin(page);
     const org = new OrgPage(page);
     await org.gotoCreate();
     const orgUId = await org.createOrganization(`E2E Org ${Date.now()}`);

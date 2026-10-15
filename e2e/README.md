@@ -19,7 +19,6 @@ e2e/
 ├── utils/
 │   ├── auth.ts            # signUpVerifyAndLogin helper
 │   ├── mailbox.ts         # Mailpit client: reads verification codes
-│   ├── session.ts         # signUpAndLogin helper
 │   └── test-data.ts       # password + unique email generator
 ├── tests/
 │   ├── flow.e2e.ts        # the end-to-end journey (smoke)
