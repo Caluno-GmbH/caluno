@@ -452,8 +452,8 @@ export function InvoiceCreationModal({
             : [],
         ),
       });
-      setPendingBaselineCents(null);
-      onOpenChange(false);
+      // Same reset as a cancel: a sent timesheet must not leave its draft behind.
+      handleOpenChange(false);
       toast.success(t('sentToast', { name: volunteerName }));
       onSent();
     } catch (error) {
@@ -646,10 +646,24 @@ export function InvoiceCreationModal({
     formatHourlyRate(selectedAmount),
   ];
 
+  /** Reset the draft on close — the identity-keyed reset above misses a reopen on the same volunteer. */
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setDerivedFields(null);
+      setEditedValues({});
+      setCheckedIds(new Set());
+      setPendingBaselineCents(null);
+      setRateInput(null);
+      setSendError(null);
+      setSendErrorCode(null);
+    }
+    onOpenChange(next);
+  };
+
   return (
     <DocumentCreationDialog
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       embedded={embedded}
       title={t('title')}
       status={status}
