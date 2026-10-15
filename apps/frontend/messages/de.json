@@ -35,6 +35,8 @@
       "REVIEW_APPLICATIONS": "Anfragen prüfen",
       "APPROVE_SIGNUPS": "Anmeldungen freigeben",
       "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
+      "CREATE_AGREEMENTS": "Vereinbarungen erstellen",
+      "CREATE_TIMESHEETS": "Stundennachweise erstellen",
       "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen",
       "SEND_TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand"
     }

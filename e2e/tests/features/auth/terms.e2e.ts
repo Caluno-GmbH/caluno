@@ -111,7 +111,7 @@ test.describe('Terms & conditions acceptance', () => {
     await signup.goto();
 
     await signup.fillForm({
-      firstname: 'E2E',
+      firstname: 'E Two E',
       lastname: 'User',
       email: uniqueEmail(),
       password: TEST_PASSWORD,
@@ -138,8 +138,8 @@ test.describe('Terms & conditions acceptance', () => {
     const response = await request.post(`${API_URL}/api/auth/sign-up/email`, {
       headers: signupHeaders,
       data: {
-        name: 'E2E User',
-        firstname: 'E2E',
+        name: 'E Two E User',
+        firstname: 'E Two E',
         lastname: 'User',
         email,
         password: TEST_PASSWORD,
@@ -153,8 +153,8 @@ test.describe('Terms & conditions acceptance', () => {
     const retry = await request.post(`${API_URL}/api/auth/sign-up/email`, {
       headers: signupHeaders,
       data: {
-        name: 'E2E User',
-        firstname: 'E2E',
+        name: 'E Two E User',
+        firstname: 'E Two E',
         lastname: 'User',
         email,
         password: TEST_PASSWORD,
