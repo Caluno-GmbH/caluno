@@ -177,122 +177,83 @@ export function createContractGenerateTasks(
   organizationUnitId: string,
   options: CreateContractGenerateOptions,
 ): Task[] {
-  const byPair = new Map<
-    string,
-    {
-      volunteerId: string;
-      volunteerName: string;
-      reimbursementTypeKey: string;
-      periodStart: Date;
-      periodEnd: Date;
-      sortAt: number;
-    }
-  >();
+  interface Candidate {
+    volunteerId: string;
+    volunteerName: string;
+    reimbursementTypeKey: string;
+    periodStart: Date;
+    periodEnd: Date;
+  }
 
+  const byPair = new Map<string, { candidate: Candidate; sortAt: number }>();
+  // Earliest sortAt per pair wins; ties keep the earlier row.
   const consider = (
-    volunteerId: string,
-    volunteerName: string,
-    reimbursementTypeId: string,
-    reimbursementTypeKey: string,
+    row: TimesheetCreateRow | PaidShiftSignupRow,
     periodStart: Date,
     periodEnd: Date,
     sortAt: number,
   ) => {
-    const pair = `${volunteerId}|${reimbursementTypeId}`;
-    const existing = byPair.get(pair);
-    if (existing && existing.sortAt <= sortAt) return;
+    const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
+    const current = byPair.get(pair);
+    if (current && current.sortAt <= sortAt) return;
     byPair.set(pair, {
-      volunteerId,
-      volunteerName,
-      reimbursementTypeKey,
-      periodStart,
-      periodEnd,
+      candidate: {
+        volunteerId: row.volunteerId,
+        volunteerName: row.volunteerName,
+        reimbursementTypeKey: row.reimbursementTypeKey,
+        periodStart,
+        periodEnd,
+      },
       sortAt,
     });
   };
 
-  const uncoveredByPair = new Map<string, TimesheetCreateRow[]>();
+  // Branch 1: uncovered month per pair (earliest firstUncoveredAt wins).
+  const firstEligibleByPair = new Map<string, TimesheetCreateRow>();
   for (const row of timesheets) {
-    if (!row.hasUncoveredHours) continue;
     const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
-    const list = uncoveredByPair.get(pair) ?? [];
-    list.push(row);
-    uncoveredByPair.set(pair, list);
-  }
-  for (const rows of uncoveredByPair.values()) {
-    rows.sort(
-      (a, b) =>
-        (a.firstUncoveredAt ?? a.periodStart).getTime() -
-        (b.firstUncoveredAt ?? b.periodStart).getTime(),
-    );
-    const first = rows[0];
-    if (!first) continue;
+    if (!firstEligibleByPair.has(pair)) firstEligibleByPair.set(pair, row);
+    if (!row.hasUncoveredHours) continue;
     consider(
-      first.volunteerId,
-      first.volunteerName,
-      first.reimbursementTypeId,
-      first.reimbursementTypeKey,
-      first.periodStart,
-      first.periodEnd,
-      (first.firstUncoveredAt ?? first.periodStart).getTime(),
+      row,
+      row.periodStart,
+      row.periodEnd,
+      (row.firstUncoveredAt ?? row.periodStart).getTime(),
     );
   }
 
-  const signupByPair = new Map<string, PaidShiftSignupRow[]>();
+  // Branch 2: paid-shift month per pair (earliest periodStart wins).
+  const pairsWithUncoveredHours = new Set(byPair.keys());
   for (const row of paidShiftSignups) {
     const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
-    if (uncoveredByPair.has(pair)) continue;
-    const list = signupByPair.get(pair) ?? [];
-    list.push(row);
-    signupByPair.set(pair, list);
-  }
-  for (const rows of signupByPair.values()) {
-    rows.sort((a, b) => a.periodStart.getTime() - b.periodStart.getTime());
-    const first = rows[0];
-    if (!first) continue;
-    consider(
-      first.volunteerId,
-      first.volunteerName,
-      first.reimbursementTypeId,
-      first.reimbursementTypeKey,
-      first.periodStart,
-      first.periodEnd,
-      first.periodStart.getTime(),
-    );
+    if (pairsWithUncoveredHours.has(pair)) continue;
+    consider(row, row.periodStart, row.periodEnd, row.periodStart.getTime());
   }
 
-  // Third board branch: eligible hours, no month-scoped card, no open contract
+  // Branch 3: eligible hours, no month-scoped card, no open contract
   // → year-scoped generate (board `periodLabel: String(year)`).
-  const eligibleByPair = new Map<string, TimesheetCreateRow>();
-  for (const row of timesheets) {
-    const pair = `${row.volunteerId}|${row.reimbursementTypeId}`;
-    if (!eligibleByPair.has(pair)) eligibleByPair.set(pair, row);
-  }
-  for (const [pair, row] of eligibleByPair) {
+  for (const [pair, row] of firstEligibleByPair) {
     if (byPair.has(pair)) continue;
     if (options.pairsWithOpenContract.has(pair)) continue;
     consider(
-      row.volunteerId,
-      row.volunteerName,
-      row.reimbursementTypeId,
-      row.reimbursementTypeKey,
+      row,
       options.yearPeriod.start,
       options.yearPeriod.end,
       options.yearPeriod.start.getTime(),
     );
   }
 
-  return [...byPair.values()].map((row) => ({
-    id: `contract-generate:${row.volunteerId}:${row.reimbursementTypeKey}`,
+  return [...byPair.values()].map(({ candidate }) => ({
+    id: `contract-generate:${candidate.volunteerId}:${candidate.reimbursementTypeKey}`,
     type: TaskType.CONTRACT_CREATE,
     link: reimbursementsLink(organizationUnitId),
     organizationUnitId,
     neededPermission: PermissionKey.ACCOUNTING_MANAGE,
     data: {
-      volunteerName: row.volunteerName,
-      reimbursementTypeKey: row.reimbursementTypeKey,
-      periodStart: row.periodStart.toISOString(),
-      periodEnd: row.periodEnd.toISOString(),
+      volunteerName: candidate.volunteerName,
+      reimbursementTypeKey: candidate.reimbursementTypeKey,
+      periodStart: candidate.periodStart.toISOString(),
+      periodEnd: candidate.periodEnd.toISOString(),
       kind: 'generate',
     },
   }));
