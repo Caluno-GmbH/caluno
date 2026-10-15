@@ -32,7 +32,8 @@ test.describe('public event detail page', () => {
       page.getByRole('heading', { name: /join playground/i }),
     ).toBeVisible();
     await expect(page.getByText(/powered by/i)).toBeVisible();
-    await expect(page.getByText('caluno')).toBeVisible();
+    // Brand mark is an image (alt "Caluno"), not plain text.
+    await expect(page.getByRole('img', { name: 'Caluno' })).toBeVisible();
   });
 
   test('shows event badge on shift detail when part of event', async ({

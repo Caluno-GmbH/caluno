@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { expect, type Page, test } from '@playwright/test';
+import { AcceptTermsPage } from '../../../pages/AcceptTermsPage';
 import { API_URL, BASE_URL, IS_LOCAL } from '../../../pages/AuthPage';
 import { LoginPage } from '../../../pages/LoginPage';
 import { SignupPage } from '../../../pages/SignupPage';
@@ -23,7 +24,8 @@ import { TEST_PASSWORD, uniqueEmail } from '../../../utils/test-data';
 const TERMS_VERSION = '1.0';
 const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
 const GATE_USER = 'demo+e2e_member01@caluno.org';
-const ACCEPT_USER = 'demo+e2e_member02@caluno.org';
+// Keep this off member02 — documents-flow and my-shifts use that account.
+const ACCEPT_USER = 'demo+e2e_member03@caluno.org';
 
 const DATABASE_URL =
   process.env.E2E_DATABASE_URL ??
@@ -67,7 +69,10 @@ function seedTermsState() {
 async function loginPending(page: Page, email: string) {
   const login = new LoginPage(page);
   await login.goto();
-  const response = await login.login(email, FIXTURE_PASSWORD);
+  // Keep the terms gate intact — this suite asserts the redirect + accept UI.
+  const response = await login.login(email, FIXTURE_PASSWORD, {
+    acceptPendingTerms: false,
+  });
   expect(response.ok()).toBe(true);
   await login.expectLoggedIn();
 }
@@ -198,26 +203,18 @@ test.describe('Terms acceptance gate', () => {
     await expect(page).toHaveURL(/\/accept-terms\?next=%2Fmy-shifts$/);
     await pdfResponse;
 
-    const scroll = page.getByTestId('terms-scroll');
-    await expect(scroll.locator('canvas').first()).toBeVisible();
+    const acceptTerms = new AcceptTermsPage(page);
+    await expect(acceptTerms.scroll.locator('canvas').first()).toBeVisible();
     await expect
       .poll(() =>
-        scroll.evaluate((el) => el.scrollHeight > el.clientHeight + 8),
+        acceptTerms.scroll.evaluate(
+          (el) => el.scrollHeight > el.clientHeight + 8,
+        ),
       )
       .toBe(true);
+    await expect(acceptTerms.acceptButton).toBeDisabled();
 
-    const acceptButton = page.getByRole('button', {
-      name: 'Accept and continue',
-    });
-    await expect(acceptButton).toBeDisabled();
-
-    await scroll.evaluate((el) => {
-      el.scrollTop = el.scrollHeight;
-      el.dispatchEvent(new Event('scroll', { bubbles: true }));
-    });
-
-    await expect(acceptButton).toBeEnabled();
-    await acceptButton.click();
+    await acceptTerms.accept();
     await expect(page).toHaveURL(/\/en\/my-shifts$/);
   });
 });

@@ -46,7 +46,13 @@ export class AdminReimbursementsPage {
   countersignRow(): Locator {
     return this.page
       .getByRole('row', { name: /Agreement Ehrenamtspauschale/ })
-      .filter({ has: this.page.getByRole('button', { name: 'Countersign' }) });
+      .filter({
+        // Exact: section CTAs are named "Countersign agreements" / "… timesheets".
+        has: this.page.getByRole('button', {
+          name: 'Countersign',
+          exact: true,
+        }),
+      });
   }
 
   /** A declined contract row (shows the "Declined" label). */
@@ -148,27 +154,48 @@ export class AdminReimbursementsPage {
     await expect(rows.first()).toBeVisible();
     const before = await rows.count();
 
-    // The row action opens the document detail sheet; countersign from there.
-    await rows.first().getByRole('button', { name: 'Countersign' }).click();
-    const sheet = this.documentSheet();
-    await expect(sheet).toBeVisible();
-    const countersign = sheet.getByRole('button', { name: 'Countersign' });
-    await expect(countersign).toBeEnabled();
+    // Earlier runs leave stale "Countersign" rows that the UI still paints
+    // but the API rejects ("Document has no pending signature"). Try each
+    // row until one mutation succeeds.
+    for (let i = 0; i < before; i++) {
+      await rows
+        .nth(i)
+        .getByRole('button', { name: 'Countersign', exact: true })
+        .click();
+      const sheet = this.documentSheet();
+      await expect(sheet).toBeVisible();
+      const countersign = sheet.getByRole('button', {
+        name: 'Countersign',
+        exact: true,
+      });
+      await expect(countersign).toBeEnabled();
 
-    // Wait on the mutation response rather than the success toast, which a
-    // duplicated `sonner` instance in the local dev bundle swallows.
-    const [signResponse] = await Promise.all([
-      this.page.waitForResponse(
-        (response) =>
-          response.url().includes('/graphql') &&
-          (response.request().postData() ?? '').includes('SignContract'),
-        { timeout: 20_000 },
-      ),
-      countersign.click(),
-    ]);
-    expect(signResponse.ok()).toBeTruthy();
-    await this.page.reload({ waitUntil: 'load' });
-    await expect(this.countersignRow()).toHaveCount(before - 1);
+      const [signResponse] = await Promise.all([
+        this.page.waitForResponse(
+          (response) =>
+            response.url().includes('/graphql') &&
+            (response.request().postData() ?? '').includes('SignContract'),
+          { timeout: 20_000 },
+        ),
+        countersign.click(),
+      ]);
+      expect(signResponse.ok()).toBeTruthy();
+      const body = (await signResponse.json()) as { errors?: unknown[] };
+      if ((body.errors ?? []).length === 0) {
+        await this.page.reload({ waitUntil: 'load' });
+        // Count can drop by more than one when stale "Countersign" rows
+        // disappear on reload; only require that it decreased.
+        await expect
+          .poll(async () => this.countersignRow().count())
+          .toBeLessThan(before);
+        return;
+      }
+      await this.page.keyboard.press('Escape');
+      await expect(sheet).toBeHidden();
+    }
+    throw new Error(
+      `No countersignable Agreement Ehrenamtspauschale row (tried ${before})`,
+    );
   }
 
   /**
@@ -178,10 +205,13 @@ export class AdminReimbursementsPage {
   async expectDeclinedWithReason(reason: string) {
     await this.page.reload({ waitUntil: 'load' });
     const rows = this.declinedRow();
+    await expect(rows.first()).toBeVisible({ timeout: 15_000 });
     const count = await rows.count();
     for (let i = 0; i < count; i++) {
-      await rows.nth(i).click();
-      const sheet = this.page.getByRole('dialog');
+      // Declined rows open via "See details", not a bare row click.
+      await rows.nth(i).getByRole('button', { name: 'See details' }).click();
+      const sheet = this.documentSheet();
+      await expect(sheet).toBeVisible();
       if (
         await sheet
           .getByText(reason)
@@ -192,6 +222,7 @@ export class AdminReimbursementsPage {
         return;
       }
       await this.page.keyboard.press('Escape');
+      await expect(sheet).toBeHidden();
     }
     throw new Error(`No declined document row shows the reason: ${reason}`);
   }
