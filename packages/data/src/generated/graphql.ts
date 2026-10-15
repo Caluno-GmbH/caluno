@@ -379,7 +379,7 @@ export type UpdateEventInviteStatusMutationVariables = Exact<{
 
 export type UpdateEventInviteStatusMutation = { updateEventInviteStatus: { id: string, status: Types.EventInviteStatus, userId: string } };
 
-export type PublicEventOrganizationUnitFieldsFragment = { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type PublicEventOrganizationUnitFieldsFragment = { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus };
 
 export type PublicShiftInstanceFieldsFragment = { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null };
 
@@ -1751,11 +1751,8 @@ export const PublicEventOrganizationUnitFieldsFragmentDoc = gql`
   slug
   logoUrl
   myMembershipState
-  requiredForms {
-    ...RequiredFormRefFields
-  }
 }
-    ${RequiredFormRefFieldsFragmentDoc}`;
+    `;
 export const PublicShiftInstanceFieldsFragmentDoc = gql`
     fragment PublicShiftInstanceFields on ShiftInstance {
   id
@@ -1792,6 +1789,9 @@ export const PublicEventFieldsFragmentDoc = gql`
   myInviteStatus
   organizationUnit {
     ...PublicEventOrganizationUnitFields
+    requiredForms {
+      ...RequiredFormRefFields
+    }
   }
   shifts {
     ...PublicShiftFields
@@ -1801,8 +1801,8 @@ export const PublicEventFieldsFragmentDoc = gql`
   }
 }
     ${PublicEventOrganizationUnitFieldsFragmentDoc}
-${PublicShiftFieldsFragmentDoc}
-${RequiredFormRefFieldsFragmentDoc}`;
+${RequiredFormRefFieldsFragmentDoc}
+${PublicShiftFieldsFragmentDoc}`;
 export const OrganizationUnitAutomationFieldsFragmentDoc = gql`
     fragment OrganizationUnitAutomationFields on OrganizationUnitAutomation {
   organizationUnitId
