@@ -13,8 +13,8 @@ import { LoginPage } from '../../../pages/LoginPage';
  * beforeAll like documents-flow.e2e.ts.
  */
 const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
-const VOLUNTEER_EMAIL = 'demo+e2e_member03@caluno.org';
-const VOLUNTEER_NAME = 'Playground Member Three';
+const VOLUNTEER_EMAIL = 'demo+e2e_member06@caluno.org'; // no contract yet
+const VOLUNTEER_NAME = 'Playground Member Six';
 const PASSWORD = 'abcd1234';
 
 const adminAuthFile = '.auth/todo-create-admin.json';
