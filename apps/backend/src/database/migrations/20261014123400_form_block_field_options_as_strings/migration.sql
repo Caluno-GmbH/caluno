@@ -1,7 +1,14 @@
 -- Choice-field options become plain strings (the former label). Answers that
 -- stored a distinct option value are remapped to the label first so existing
 -- submissions stay valid against the new option list.
-WITH maps AS (
+--
+-- The candidates are de-duplicated per (field, old value): option values were
+-- not required to be unique before this change, so two options of one field can
+-- share a value while carrying different labels. Without the de-duplication the
+-- correlated subquery in the second statement would return more than one row
+-- and abort the whole migration. The lowest label wins, so the remap stays
+-- deterministic either way.
+WITH candidates AS (
   SELECT
     f."id" AS field_id,
     e->>'value' AS old_value,
@@ -14,6 +21,14 @@ WITH maps AS (
     AND COALESCE(btrim(e->>'value'), '') <> ''
     AND COALESCE(btrim(e->>'label'), '') <> ''
     AND e->>'value' <> e->>'label'
+),
+maps AS (
+  SELECT DISTINCT ON (c.field_id, c.old_value)
+    c.field_id,
+    c.old_value,
+    c.new_value
+  FROM candidates c
+  ORDER BY c.field_id, c.old_value, c.new_value
 )
 UPDATE "form_submission_values" v
 SET "value" = to_jsonb(m.new_value)
@@ -22,7 +37,7 @@ WHERE v."field_id" = m.field_id
   AND jsonb_typeof(v."value") = 'string'
   AND v."value" #>> '{}' = m.old_value;
 --> statement-breakpoint
-WITH maps AS (
+WITH candidates AS (
   SELECT
     f."id" AS field_id,
     e->>'value' AS old_value,
@@ -35,6 +50,14 @@ WITH maps AS (
     AND COALESCE(btrim(e->>'value'), '') <> ''
     AND COALESCE(btrim(e->>'label'), '') <> ''
     AND e->>'value' <> e->>'label'
+),
+maps AS (
+  SELECT DISTINCT ON (c.field_id, c.old_value)
+    c.field_id,
+    c.old_value,
+    c.new_value
+  FROM candidates c
+  ORDER BY c.field_id, c.old_value, c.new_value
 )
 UPDATE "form_submission_values" v
 SET "value" = (
