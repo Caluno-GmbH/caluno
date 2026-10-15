@@ -207,7 +207,7 @@ export function buildFieldSchema(
       });
       return isRequired ? e : z.preprocess(emptyAsUndefined, e.optional());
     }
-    const vals = (options ?? []).map((o) => o.value);
+    const vals = options ?? [];
     if (vals.length > 0) {
       const e = z.enum(vals as [string, ...string[]], {
         message: messages.fieldRequired(label),
@@ -220,7 +220,7 @@ export function buildFieldSchema(
   }
 
   if (type === FieldType.MultiChoice) {
-    const vals = new Set((options ?? []).map((o) => o.value));
+    const vals = new Set(options ?? []);
     const s = z
       .string()
       .refine(
@@ -436,7 +436,7 @@ export function FieldRenderer({
     const descriptionId = description ? `$field.id-description` : undefined;
     const opts = hasFixedGenderOptions(field.systemKey)
       ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
-      : (field.options ?? []);
+      : (field.options ?? []).map((opt) => ({ value: opt, label: opt }));
     return (
       <Field>
         <FieldLabel>
@@ -479,22 +479,22 @@ export function FieldRenderer({
         <div className="space-y-2">
           {field.options?.map((opt) => (
             <label
-              key={opt.value}
+              key={opt}
               className="flex items-center gap-2 text-sm"
-              htmlFor={`$field.id-$opt.value`}
+              htmlFor={`$field.id-$opt`}
             >
               <Checkbox
-                id={`$field.id-$opt.value`}
-                checked={selected.includes(opt.value)}
+                id={`$field.id-$opt`}
+                checked={selected.includes(opt)}
                 disabled={readOnly}
                 onCheckedChange={(checked) => {
                   const next = checked
-                    ? [...selected, opt.value]
-                    : selected.filter((v) => v !== opt.value);
+                    ? [...selected, opt]
+                    : selected.filter((v) => v !== opt);
                   onChange(serializeMultiChoiceValue(next));
                 }}
               />
-              {opt.label}
+              {opt}
             </label>
           ))}
         </div>

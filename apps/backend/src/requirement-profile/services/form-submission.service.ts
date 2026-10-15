@@ -319,7 +319,7 @@ export class FormSubmissionService {
         systemKey: string | null;
         type: string;
         label: string;
-        options: Array<{ label: string; value: string }> | null;
+        options: string[] | null;
         minAge: number | null;
       }
     >();
@@ -334,10 +334,7 @@ export class FormSubmissionService {
           systemKey: field.systemKey,
           type: field.type,
           label: field.label,
-          options: field.options as Array<{
-            label: string;
-            value: string;
-          }> | null,
+          options: field.options as string[] | null,
           minAge: field.minAge,
         });
         if (effectiveRequired && field.required) {
@@ -463,7 +460,7 @@ export class FormSubmissionService {
       type: string;
       label: string;
       systemKey: string | null;
-      options: Array<{ label: string; value: string }> | null;
+      options: string[] | null;
       minAge: number | null;
     },
   ): void {
@@ -522,13 +519,13 @@ export class FormSubmissionService {
           throw new BadRequestGraphQLError(`"${label}": must be a valid date`);
         break;
       case FieldType.SINGLE_CHOICE: {
-        const valid = (options ?? []).map((o) => o.value);
+        const valid = options ?? [];
         if (valid.length > 0 && !valid.includes(rawValue))
           throw new BadRequestGraphQLError(`"${label}": invalid option`);
         break;
       }
       case FieldType.MULTI_CHOICE: {
-        const valid = new Set((options ?? []).map((o) => o.value));
+        const valid = new Set(options ?? []);
         const invalid = parseMultiChoiceValue(rawValue).filter(
           (v) => valid.size > 0 && !valid.has(v),
         );
