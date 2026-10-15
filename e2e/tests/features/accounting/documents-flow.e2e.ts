@@ -219,7 +219,7 @@ test.describe('accounting documents flow — admin + volunteer', () => {
     await membership.signAwaitingCard();
 
     // ── Admin side: it has moved on and is waiting on them ──────────────────
-    await board.countersignContract();
+    await board.countersignContract(VOLUNTEER_NAME);
 
     // ── Volunteer side: fully signed, both signatures on the card ──────────
     await volunteerPage.reload({ waitUntil: 'load' });

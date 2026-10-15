@@ -142,22 +142,44 @@ export class AdminReimbursementsPage {
   }
 
   /**
-   * Countersigns one document now waiting on the coordinator. Robust to
-   * leftover coord docs from earlier runs: asserts the coord row count
-   * decreases by exactly one rather than reaching zero.
+   * Countersigns one document now waiting on the coordinator for the given
+   * volunteer. Leftover "Countersign" rows from earlier runs still paint but
+   * the API rejects them ("Document has no pending signature"); the sheet
+   * also double-fires SignContract on some clicks, so a late CONFLICT from
+   * attempt N must not be attributed to attempt N+1 (that race used to let
+   * the real ACTIVE succeed unobserved while the loop walked off the end of
+   * a shrinking row list).
    */
-  async countersignContract() {
+  async countersignContract(volunteerName: string) {
     await this.page.reload({ waitUntil: 'load' });
+
+    // Narrow to this volunteer so other members' stale coord rows are out of
+    // the try-list, then open the countersign-agreements queue.
+    const search = this.page.getByPlaceholder('Search volunteers...');
+    await search.fill(volunteerName);
+    await expect(
+      this.page.getByRole('row', {
+        name: new RegExp(
+          `^${volunteerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+        ),
+      }),
+    ).toBeVisible();
+    await this.page
+      .getByRole('button', { name: /Countersign agreements/ })
+      .click();
+
     const rows = this.countersignRow();
     // The board is a client component; wait for it to render the coord row
     // before counting (a bare count after reload can read 0 too early).
     await expect(rows.first()).toBeVisible();
     const before = await rows.count();
 
-    // Earlier runs leave stale "Countersign" rows that the UI still paints
-    // but the API rejects ("Document has no pending signature"). Try each
-    // row until one mutation succeeds.
     for (let i = 0; i < before; i++) {
+      // Re-count each pass: a mis-attributed success (or a drained late
+      // ACTIVE) can shrink the filtered set under our feet.
+      const current = await rows.count();
+      if (i >= current) break;
+
       await rows
         .nth(i)
         .getByRole('button', { name: 'Countersign', exact: true })
@@ -182,20 +204,42 @@ export class AdminReimbursementsPage {
       expect(signResponse.ok()).toBeTruthy();
       const body = (await signResponse.json()) as { errors?: unknown[] };
       if ((body.errors ?? []).length === 0) {
+        // Reload clears the volunteer search; don't re-assert a global
+        // countersign count — leftovers for other members would still match.
         await this.page.reload({ waitUntil: 'load' });
-        // Count can drop by more than one when stale "Countersign" rows
-        // disappear on reload; only require that it decreased.
-        await expect
-          .poll(async () => this.countersignRow().count())
-          .toBeLessThan(before);
         return;
       }
       await this.page.keyboard.press('Escape');
       await expect(sheet).toBeHidden();
+      // Swallow duplicate SignContract responses from the same click so the
+      // next iteration's waiter cannot latch onto a late CONFLICT.
+      await this.drainSignContractResponses();
+      // Safety net: the real ACTIVE may have completed while we observed a
+      // stale CONFLICT — if this volunteer's coord queue shrank, we are done.
+      if ((await rows.count()) < before) {
+        await this.page.reload({ waitUntil: 'load' });
+        return;
+      }
     }
     throw new Error(
-      `No countersignable Agreement Ehrenamtspauschale row (tried ${before})`,
+      `No countersignable Agreement Ehrenamtspauschale row for ${volunteerName} (tried ${before})`,
     );
+  }
+
+  /** Quiet-window drain for in-flight SignContract responses. */
+  private async drainSignContractResponses() {
+    for (;;) {
+      try {
+        await this.page.waitForResponse(
+          (response) =>
+            response.url().includes('/graphql') &&
+            (response.request().postData() ?? '').includes('SignContract'),
+          { timeout: 750 },
+        );
+      } catch {
+        return;
+      }
+    }
   }
 
   /**
