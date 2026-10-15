@@ -413,6 +413,13 @@ const ensureTimeEntries = async (
     shiftInstances.foodDistribution.instanceId,
   ];
 
+  const supervisor = approvedMembers.find(
+    (member) => member.email === e2eEmail('supervisor'),
+  );
+  if (!supervisor) {
+    throw new Error('Supervisor fixture member missing');
+  }
+
   const existingEntries = await db.query.timeEntries.findMany({
     where: { shiftInstanceId: { in: instanceIds } },
   });
@@ -431,6 +438,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(shiftInstances.communitySupport.startsAt, 0.5),
         endedAt: addHours(shiftInstances.communitySupport.startsAt, 3.5),
         notes: 'Supervisor coverage',
@@ -439,6 +447,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.foodDistribution.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(shiftInstances.foodDistribution.startsAt, 0),
         endedAt: addHours(shiftInstances.foodDistribution.startsAt, 3),
         notes: 'Distribution lead',
@@ -451,6 +460,7 @@ const ensureTimeEntries = async (
       shiftInstanceId: shiftInstances.communitySupport.instanceId,
       organizationUnitId,
       volunteerId: member.id,
+      createdById: supervisor.id,
       startedAt: addHours(
         shiftInstances.communitySupport.startsAt,
         memberNumber % 2,
@@ -467,6 +477,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(
           shiftInstances.communitySupport.startsAt,
           closedHours + 0.5,
@@ -484,6 +495,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.foodDistribution.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(
           shiftInstances.foodDistribution.startsAt,
           memberNumber % 3,
@@ -501,6 +513,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(
           shiftInstances.communitySupport.startsAt,
           1 + memberNumber * 0.25,
