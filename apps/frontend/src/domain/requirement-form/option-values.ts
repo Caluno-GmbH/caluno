@@ -15,15 +15,17 @@ export const choiceOptionsSchema = z
   .superRefine((options, ctx) => {
     const seen = new Set<string>();
     for (let i = 0; i < options.length; i++) {
-      const option = options[i]!;
-      if (seen.has(option)) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Options must be unique',
-          path: [i],
-        });
+      const option = options[i];
+      if (option) {
+        if (seen.has(option)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Options must be unique',
+            path: [i],
+          });
+        }
+        seen.add(option);
       }
-      seen.add(option);
     }
   });
 
