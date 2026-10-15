@@ -97,7 +97,7 @@ export default async function ShiftsPage({
             />
           )}
 
-          <CreateShiftButton orgUId={orgUId} />
+          {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
         </div>
       </div>
 
@@ -112,7 +112,7 @@ export default async function ShiftsPage({
           />
         ) : (
           <EmptyShifts>
-            <CreateShiftButton orgUId={orgUId} />
+            {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
           </EmptyShifts>
         )
       ) : tableContent?.pagination.total ? (
@@ -133,7 +133,7 @@ export default async function ShiftsPage({
         </>
       ) : (
         <EmptyShifts>
-          <CreateShiftButton orgUId={orgUId} />
+          {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
         </EmptyShifts>
       )}
     </div>
