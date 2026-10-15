@@ -14,7 +14,7 @@ import { LoginPage } from '../../../pages/LoginPage';
  */
 const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
 const VOLUNTEER_EMAIL = 'demo+e2e_member03@caluno.org';
-const VOLUNTEER_NAME = 'Playground Member 03';
+const VOLUNTEER_NAME = 'Playground Member Three';
 const PASSWORD = 'abcd1234';
 
 const adminAuthFile = '.auth/todo-create-admin.json';
