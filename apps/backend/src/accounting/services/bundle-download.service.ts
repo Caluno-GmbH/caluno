@@ -32,7 +32,8 @@ interface BuiltBundle {
  * into a single downloadable ZIP and records the download (audit row + marking
  * the READY invoices as paid) once the bundle is built.
  *
- * The bundle contains every ready (unpaid, READY) timesheet for that type plus
+ * The bundle contains every ready (unpaid, READY) timesheet for that type, or
+ * the last downloaded batch again when none is unpaid, plus
  * the signed agreements (ACTIVE contracts) that cover the hours on those
  * timesheets: the newest covering contract per time entry, each once, listed
  * ahead of the timesheets (VOLI-1586). Documents are resolved to their
@@ -57,27 +58,17 @@ export class BundleDownloadService {
     reimbursementTypeId: string,
     userId: string,
   ): Promise<BuiltBundle> {
-    const invoices = await this.db.query.invoices.findMany({
-      where: {
-        volunteerId,
-        reimbursementTypeId,
-        organizationUnitId,
-        invoiceStatus: InvoiceStatus.READY,
-        paidAt: { isNull: true },
-      },
-      with: {
-        invoiceTimeEntries: {
-          where: { released: false },
-          with: { timeEntry: true },
-        },
-      },
+    const scope = { volunteerId, reimbursementTypeId, organizationUnitId };
+    const unpaid = await this.findReadyInvoices({
+      ...scope,
+      paidAt: { isNull: true },
     });
+    // With nothing new to hand over, the last downloaded batch is served again
+    // so a lost or failed download can be repeated. It is not paid a second time.
+    const invoices =
+      unpaid.length > 0 ? unpaid : await this.findLastDownloadedBatch(scope);
 
-    const contracts = await this.findCoveringContracts(invoices, {
-      volunteerId,
-      reimbursementTypeId,
-      organizationUnitId,
-    });
+    const contracts = await this.findCoveringContracts(invoices, scope);
 
     const entries: BundleEntry[] = [];
     for (const contract of contracts) {
@@ -108,13 +99,14 @@ export class BundleDownloadService {
     // Record the download (audit row + mark the READY invoices as paid). Only
     // once the ZIP is built, and `zipEntries` throws when a timesheet's file
     // cannot be resolved or fetched, so nothing is marked paid for a ZIP that
-    // lacks one of its timesheets.
+    // lacks one of its timesheets. A repeated download only refreshes the
+    // audit row: those timesheets were paid by the first one.
     if (invoices.length > 0) {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
         reimbursementTypeId,
         userId,
-        invoices.map((i) => i.id),
+        unpaid.map((i) => i.id),
       );
     }
 
@@ -122,6 +114,45 @@ export class BundleDownloadService {
       buffer,
       zipName: `Abrechnung-${volunteerId.slice(0, 8)}.zip`,
     };
+  }
+
+  private findReadyInvoices(where: {
+    volunteerId: string;
+    reimbursementTypeId: string;
+    organizationUnitId: string;
+    paidAt: { isNull: true } | { eq: Date };
+  }) {
+    return this.db.query.invoices.findMany({
+      where: { ...where, invoiceStatus: InvoiceStatus.READY },
+      with: {
+        invoiceTimeEntries: {
+          where: { released: false },
+          with: { timeEntry: true },
+        },
+      },
+    });
+  }
+
+  /**
+   * The READY timesheets the latest download marked paid. A download stamps
+   * its whole batch with one instant, so that instant picks the batch out.
+   */
+  private async findLastDownloadedBatch(scope: {
+    volunteerId: string;
+    reimbursementTypeId: string;
+    organizationUnitId: string;
+  }) {
+    const latest = await this.db.query.invoices.findFirst({
+      where: {
+        ...scope,
+        invoiceStatus: InvoiceStatus.READY,
+        paidAt: { isNotNull: true },
+      },
+      orderBy: { paidAt: 'desc' },
+      columns: { paidAt: true },
+    });
+    if (!latest?.paidAt) return [];
+    return this.findReadyInvoices({ ...scope, paidAt: { eq: latest.paidAt } });
   }
 
   /**
