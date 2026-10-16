@@ -14,9 +14,7 @@ const meta = {
       control: 'select',
       options: [
         'default',
-        'secondary',
         'neutral',
-        'destructive',
         'outline',
         'info',
         'success',
@@ -55,32 +53,12 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 /**
- * Use the `secondary` badge to call for less urgent information, blending
- * into the interface while still signaling minor updates or statuses.
- */
-export const Secondary: Story = {
-  args: {
-    variant: 'secondary',
-  },
-};
-
-/**
  * Use the `neutral` badge for low-emphasis, informational labels and counts
  * that blend into the interface using the muted surface.
  */
 export const Neutral: Story = {
   args: {
     variant: 'neutral',
-  },
-};
-
-/**
- * Use the `destructive` badge to  indicate errors, alerts, or the need for
- * immediate attention.
- */
-export const Destructive: Story = {
-  args: {
-    variant: 'destructive',
   },
 };
 
@@ -116,6 +94,10 @@ export const Alert: Story = {
   },
 };
 
+/**
+ * Use the `error` badge for errors or rejected states — an outlined red,
+ * the replacement for the former filled `destructive` badge.
+ */
 export const Error: Story = {
   args: {
     variant: 'error',
@@ -124,12 +106,10 @@ export const Error: Story = {
 
 /**
  * Use `size="count"` for compact, circular numeric indicators such as
- * notification or pending-item counts. Pair with `destructive` for urgent
- * counts.
+ * notification or pending-item counts.
  */
 export const Count: Story = {
   args: {
-    variant: 'destructive',
     size: 'count',
     children: '3',
   },
