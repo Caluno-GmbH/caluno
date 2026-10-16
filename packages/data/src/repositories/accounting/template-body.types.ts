@@ -228,7 +228,13 @@ export function serializeTemplateBody(
  * counted as missing.
  */
 function emptyClosingLine(): TemplateLine {
-  return { id: 'closing', text: '', fields: [], optional: false, enabled: true };
+  return {
+    id: 'closing',
+    text: '',
+    fields: [],
+    optional: false,
+    enabled: true,
+  };
 }
 
 export function parseTemplateBody(
