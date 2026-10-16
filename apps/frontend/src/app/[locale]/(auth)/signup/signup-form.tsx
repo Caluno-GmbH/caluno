@@ -77,7 +77,11 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
       const result = await signUp.email(payload);
 
       if (result.error) {
-        setError(result.error.message || t('createAccountFailed'));
+        setError(
+          result.error.code === 'SIGNUP_EMAIL_UNAVAILABLE'
+            ? t('useAnotherEmail')
+            : result.error.message || t('createAccountFailed'),
+        );
         setIsPending(false);
         return;
       }

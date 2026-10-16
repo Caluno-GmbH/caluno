@@ -1,6 +1,7 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { Logger } from '@nestjs/common';
 import { APIError, type BetterAuthOptions, betterAuth } from 'better-auth';
+import { createAuthMiddleware } from 'better-auth/api';
 import { emailOTP } from 'better-auth/plugins';
 import { Database } from '../database/database.module';
 import { resolveRequestLocale } from '../graphql/locale';
@@ -269,6 +270,25 @@ export const createAuthConfig = ({
           },
         },
       },
+    },
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (ctx.path !== '/sign-up/email') {
+          return;
+        }
+        const email = trimmed(ctx.body?.email).toLowerCase();
+        if (isBlank(email)) {
+          return;
+        }
+        const existing =
+          await ctx.context.internalAdapter.findUserByEmail(email);
+        if (existing?.user) {
+          throw new APIError('UNPROCESSABLE_ENTITY', {
+            message: 'Please use another email',
+            code: 'SIGNUP_EMAIL_UNAVAILABLE',
+          });
+        }
+      }),
     },
     trustedOrigins,
     ...(cookieDomain && {

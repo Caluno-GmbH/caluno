@@ -19,6 +19,10 @@ jest.mock('better-auth', () => ({
   },
 }));
 
+jest.mock('better-auth/api', () => ({
+  createAuthMiddleware: jest.fn((handler) => handler),
+}));
+
 jest.mock('better-auth/plugins', () => ({
   emailOTP: jest.fn(() => ({ id: 'email-otp' })),
 }));
@@ -82,6 +86,48 @@ describe('createAuthConfig', () => {
       ),
     ).rejects.toMatchObject({
       message: 'First name and last name are required',
+    });
+  });
+
+  describe('sign-up duplicate email hook', () => {
+    const run = (path: string, email: unknown, existing: unknown) => {
+      const findUserByEmail = jest.fn(async () => existing);
+      const before = authConfig().hooks?.before as unknown as (
+        ctx: unknown,
+      ) => Promise<void>;
+      return {
+        findUserByEmail,
+        result: before({
+          path,
+          body: { email },
+          context: { internalAdapter: { findUserByEmail } },
+        }),
+      };
+    };
+
+    it('rejects sign up when the email already exists', async () => {
+      const { result, findUserByEmail } = run(
+        '/sign-up/email',
+        ' Jane@Example.com ',
+        { user: { id: 'u1' } },
+      );
+      await expect(result).rejects.toMatchObject({
+        status: 'UNPROCESSABLE_ENTITY',
+      });
+      expect(findUserByEmail).toHaveBeenCalledWith('jane@example.com');
+    });
+
+    it('allows sign up for a new email', async () => {
+      const { result } = run('/sign-up/email', 'new@example.com', null);
+      await expect(result).resolves.toBeUndefined();
+    });
+
+    it('ignores other endpoints', async () => {
+      const { result, findUserByEmail } = run('/sign-in/email', 'a@b.c', {
+        user: { id: 'u1' },
+      });
+      await expect(result).resolves.toBeUndefined();
+      expect(findUserByEmail).not.toHaveBeenCalled();
     });
   });
 
