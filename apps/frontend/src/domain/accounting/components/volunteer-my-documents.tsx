@@ -148,11 +148,7 @@ export function VolunteerMyDocuments() {
                     </span>
                   )}
                 </span>
-                {pendingInOrg > 0 && (
-                  <Badge size="count">
-                    {pendingInOrg}
-                  </Badge>
-                )}
+                {pendingInOrg > 0 && <Badge size="count">{pendingInOrg}</Badge>}
               </AccordionTrigger>
               <AccordionContent className="pb-4">
                 <div className="flex flex-col gap-3">
