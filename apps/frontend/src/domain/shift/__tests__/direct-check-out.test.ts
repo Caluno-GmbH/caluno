@@ -101,7 +101,7 @@ describe('resolveDirectCheckOutEntryId', () => {
     });
 
     it('handles startedAt with an explicit offset', () => {
-      const e = entry('e1', '2026-10-16T09:00:00+02:00', null);
+      const e = entry('e1', '2026-10-16T01:00:00+02:00', null);
       expect(resolve([e], '2026-10-16T12:00:00Z')).toBe('e1');
     });
   });
@@ -113,6 +113,10 @@ describe('resolveDirectCheckOutEntryId', () => {
     });
 
     it('is today during the repeated hour', () => {
+      expect(resolve([e], '2026-10-25T00:30:00Z')).toBe('e1');
+    });
+
+    it('is today after the clocks go back', () => {
       expect(resolve([e], '2026-10-25T02:30:00Z')).toBe('e1');
     });
 
