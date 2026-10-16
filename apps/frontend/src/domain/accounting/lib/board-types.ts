@@ -40,6 +40,8 @@ export type TileFilter =
 
 export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
 
+export type PauschalenFilter = 'all' | PauschalenType;
+
 export interface BoardDocument {
   id: string;
   status: DocStatus;

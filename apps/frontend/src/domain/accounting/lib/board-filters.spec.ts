@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  docMatchesBoardFilters,
   docVisibleInRange,
   getReadyToGoDocs,
   isTimesheetNonCompliant,
+  matchesPauschale,
 } from './board-filters';
+import type { BoardDocument } from './board-types';
 
 const timesheet = (periodStart: Date, periodEnd: Date, lastAction: Date) =>
   ({
@@ -245,5 +248,92 @@ describe('getReadyToGoDocs', () => {
       'timesheet-ready',
       'contract-missing',
     ]);
+  });
+
+  it('keeps only the selected Pauschale when the filter is set', () => {
+    const rows = getReadyToGoDocs(
+      volunteer([
+        ready('ehrenamt', ...october, 'ep'),
+        ready('uebungsleiter', ...october, 'ul'),
+        contract(
+          'ep-c',
+          'contract-active',
+          new Date(2026, 8, 1),
+          new Date(2026, 11, 1),
+          'ehrenamt',
+        ),
+        contract(
+          'ul-c',
+          'contract-active',
+          new Date(2026, 8, 1),
+          new Date(2026, 11, 1),
+          'uebungsleiter',
+        ),
+      ]),
+      undefined,
+      'ehrenamt',
+    );
+
+    expect(rows.map((r) => r.id)).toEqual(['ep', 'ep-c']);
+  });
+});
+
+describe('matchesPauschale', () => {
+  const doc = { pauschale: 'ehrenamt' } as BoardDocument;
+
+  it('keeps every document when the filter is all', () => {
+    expect(matchesPauschale(doc, 'all')).toBe(true);
+  });
+
+  it('keeps only the matching type', () => {
+    expect(matchesPauschale(doc, 'ehrenamt')).toBe(true);
+    expect(matchesPauschale(doc, 'uebungsleiter')).toBe(false);
+  });
+});
+
+describe('docMatchesBoardFilters', () => {
+  const epSigning = {
+    id: 'ep',
+    status: 'timesheet-signing-coord',
+    periodLabel: 'Oktober 2026',
+    periodStart: new Date(2026, 9, 1),
+    periodEnd: new Date(2026, 10, 1),
+    pauschale: 'ehrenamt',
+  } as BoardDocument;
+
+  const ulSigning = {
+    ...epSigning,
+    id: 'ul',
+    pauschale: 'uebungsleiter',
+  } as BoardDocument;
+
+  it('requires the document to match Pauschale, tile, doc-type and range together', () => {
+    expect(
+      docMatchesBoardFilters(
+        epSigning,
+        'timesheet-signing',
+        'ehrenamt',
+        'timesheet',
+        undefined,
+      ),
+    ).toBe(true);
+    expect(
+      docMatchesBoardFilters(
+        ulSigning,
+        'timesheet-signing',
+        'ehrenamt',
+        'timesheet',
+        undefined,
+      ),
+    ).toBe(false);
+    expect(
+      docMatchesBoardFilters(
+        epSigning,
+        'contract-signing',
+        'ehrenamt',
+        'timesheet',
+        undefined,
+      ),
+    ).toBe(false);
   });
 });

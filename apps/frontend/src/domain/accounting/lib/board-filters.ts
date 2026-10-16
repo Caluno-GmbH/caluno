@@ -4,8 +4,39 @@ import type {
   BoardDocument,
   BoardVolunteer,
   DocStatus,
+  DocTypeFilter,
+  PauschalenFilter,
   TileFilter,
 } from './board-types';
+
+/** Display-time Pauschale filter — `all` keeps every type. */
+export function matchesPauschale(
+  doc: BoardDocument,
+  pauschale: PauschalenFilter,
+): boolean {
+  return pauschale === 'all' || doc.pauschale === pauschale;
+}
+
+/**
+ * Whether one document satisfies the board's document-level filters.
+ * Search stays volunteer-level. Ready-to-go still synthesizes contract rows
+ * via `getReadyToGoDocs`; this only judges real documents for inclusion /
+ * non-ready tabs.
+ */
+export function docMatchesBoardFilters(
+  doc: BoardDocument,
+  tile: TileFilter,
+  pauschale: PauschalenFilter,
+  docType: DocTypeFilter,
+  range: DateRange | undefined,
+): boolean {
+  return (
+    matchesPauschale(doc, pauschale) &&
+    matchesTile(doc.status, tile) &&
+    (docType === 'all' || doc.status.startsWith(docType)) &&
+    docVisibleInRange(doc, range)
+  );
+}
 
 /**
  * A timesheet is non-compliant when at least one of its hours has no ACTIVE
@@ -149,9 +180,13 @@ export function docVisibleInRange(
 export function getReadyToGoDocs(
   volunteer: BoardVolunteer,
   range: DateRange | undefined,
+  pauschale: PauschalenFilter = 'all',
 ): BoardDocument[] {
   const readyTimesheets = volunteer.documents.filter(
-    (d) => d.status === 'timesheet-ready' && docInRange(d, range),
+    (d) =>
+      d.status === 'timesheet-ready' &&
+      docInRange(d, range) &&
+      matchesPauschale(d, pauschale),
   );
   if (readyTimesheets.length === 0) return [];
 

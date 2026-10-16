@@ -20,10 +20,9 @@ import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { documentRowAction } from '../lib/board-data.utils';
 import {
-  docVisibleInRange,
+  docMatchesBoardFilters,
   getReadyToGoDocs,
   isTimesheetNonCompliant,
-  matchesTile,
 } from '../lib/board-filters';
 import { STATUS_META } from '../lib/board-status';
 import type {
@@ -32,6 +31,7 @@ import type {
   DocStatus,
   DocTypeFilter,
   DocVolPair,
+  PauschalenFilter,
   PauschalenLimit,
   TileFilter,
 } from '../lib/board-types';
@@ -194,6 +194,7 @@ interface VolunteerTableGroupProps {
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
   docTypeFilter: DocTypeFilter;
+  pauschaleFilter: PauschalenFilter;
   dateRange: DateRange | undefined;
   activeTile: TileFilter;
   canCreateDocuments: boolean;
@@ -206,6 +207,7 @@ function VolunteerTableGroup({
   onDocumentClick,
   onRequestCreate,
   docTypeFilter,
+  pauschaleFilter,
   dateRange,
   activeTile,
   canCreateDocuments,
@@ -218,21 +220,21 @@ function VolunteerTableGroup({
   // Ready-to-go gets its own row set (ready timesheets + one contract row
   // per pauschale in play — real if it exists, a greyed placeholder if
   // not); every other tab filters the volunteer's real documents by
-  // doc-type + date, without ever touching `vol.documents` itself so
-  // compliance checks stay accurate regardless of what's on screen.
+  // pauschale + doc-type + date + tile, without ever touching
+  // `vol.documents` itself so compliance checks stay accurate regardless
+  // of what's on screen.
   const visibleDocs =
     activeTile === 'ready-to-go'
-      ? getReadyToGoDocs(volunteer, dateRange)
-      : volunteer.documents
-          .filter(
-            (doc) =>
-              docTypeFilter === 'all' || doc.status.startsWith(docTypeFilter),
-          )
-          .filter(
-            (doc) =>
-              docVisibleInRange(doc, dateRange) &&
-              matchesTile(doc.status, activeTile),
-          );
+      ? getReadyToGoDocs(volunteer, dateRange, pauschaleFilter)
+      : volunteer.documents.filter((doc) =>
+          docMatchesBoardFilters(
+            doc,
+            activeTile,
+            pauschaleFilter,
+            docTypeFilter,
+            dateRange,
+          ),
+        );
 
   const sortedDocs = [...visibleDocs].sort(
     (a, b) =>
@@ -547,6 +549,7 @@ interface ReimbursementsTableProps {
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
   docTypeFilter: DocTypeFilter;
+  pauschaleFilter: PauschalenFilter;
   dateRange: DateRange | undefined;
   activeTile: TileFilter;
   canCreateDocuments: boolean;
@@ -559,6 +562,7 @@ export function ReimbursementsTable({
   onDocumentClick,
   onRequestCreate,
   docTypeFilter,
+  pauschaleFilter,
   dateRange,
   activeTile,
   canCreateDocuments,
@@ -593,6 +597,7 @@ export function ReimbursementsTable({
               onDocumentClick={onDocumentClick}
               onRequestCreate={onRequestCreate}
               docTypeFilter={docTypeFilter}
+              pauschaleFilter={pauschaleFilter}
               dateRange={dateRange}
               activeTile={activeTile}
               canCreateDocuments={canCreateDocuments}

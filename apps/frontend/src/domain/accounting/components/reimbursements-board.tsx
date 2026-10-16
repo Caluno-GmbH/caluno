@@ -38,12 +38,17 @@ import {
   initialLifespanFor,
   sourceDraftIdFor,
 } from '../lib/board-data.utils';
-import { docVisibleInRange, matchesTile } from '../lib/board-filters';
+import {
+  docMatchesBoardFilters,
+  matchesPauschale,
+  matchesTile,
+} from '../lib/board-filters';
 import { isYourActionStatus } from '../lib/board-status';
 import type {
   BoardVolunteer,
   DocTypeFilter,
   DocVolPair,
+  PauschalenFilter,
   TileFilter,
 } from '../lib/board-types';
 import {
@@ -52,14 +57,12 @@ import {
 } from '../lib/setup-status';
 import { ContractCreationModal } from './contract-creation-modal';
 import { CreateDocumentModal } from './create-document-modal';
-import type { PauschalenType } from './doc-type-header';
 import { InvoiceCreationModal } from './invoice-creation-modal';
 import type { DateRange } from './period-picker';
 import { lastMonthRange, PeriodPicker, thisMonthRange } from './period-picker';
 import { DocumentSheet } from './reimbursements-document-sheet';
 import { ReimbursementsTable } from './reimbursements-volunteer-group';
 
-type PauschalenFilter = 'all' | PauschalenType;
 type SortOption = 'action-needed' | 'newest';
 
 const TILE_IDS: TileFilter[] = [
@@ -106,12 +109,16 @@ function sortVolunteers(
 function countActionableForTile(
   volunteers: BoardVolunteer[],
   tile: TileFilter,
+  pauschale: PauschalenFilter,
 ): number {
   return volunteers.reduce(
     (sum, vol) =>
       sum +
       vol.documents.filter(
-        (d) => matchesTile(d.status, tile) && isYourActionStatus(d.status),
+        (d) =>
+          matchesTile(d.status, tile) &&
+          matchesPauschale(d, pauschale) &&
+          isYourActionStatus(d.status),
       ).length,
     0,
   );
@@ -129,10 +136,17 @@ const TILE_DOC_TYPE: Record<TileFilter, DocTypeFilter> = {
   'ready-to-go': 'all',
 };
 
-function countForTile(volunteers: BoardVolunteer[], tile: TileFilter): number {
+function countForTile(
+  volunteers: BoardVolunteer[],
+  tile: TileFilter,
+  pauschale: PauschalenFilter,
+): number {
   return volunteers.reduce(
     (sum, vol) =>
-      sum + vol.documents.filter((d) => matchesTile(d.status, tile)).length,
+      sum +
+      vol.documents.filter(
+        (d) => matchesTile(d.status, tile) && matchesPauschale(d, pauschale),
+      ).length,
     0,
   );
 }
@@ -141,9 +155,14 @@ function countForTile(volunteers: BoardVolunteer[], tile: TileFilter): number {
  * Decides which volunteers show, without ever touching `vol.documents` —
  * compliance checks (and the table itself) always read the true, unfiltered
  * document list; only *inclusion* is filtered here, and *display* is
- * filtered separately per-document (see `docVisibleInRange` and
+ * filtered separately per-document (see `docMatchesBoardFilters` and
  * `getReadyToGoDocs`) so a volunteer's real data is never corrupted by the
  * current view.
+ *
+ * Inclusion requires at least one document that matches every active
+ * document-level filter together (Pauschale ∩ tile ∩ doc-type ∩ range) —
+ * not one document per filter independently. Otherwise a dual-Pauschale
+ * volunteer stays visible when only the other type's rows match the tile.
  */
 function applyFilters(
   volunteers: BoardVolunteer[],
@@ -153,33 +172,14 @@ function applyFilters(
   search: string,
   range: DateRange | undefined,
 ): BoardVolunteer[] {
-  const filteredVolunteers = volunteers.filter((volunteer) => {
+  return volunteers.filter((volunteer) => {
     if (volunteer.documents.length === 0) return false;
-    if (
-      pauschale !== 'all' &&
-      !volunteer.documents.some((d) => d.pauschale === pauschale)
-    )
-      return false;
     if (search && !volunteer.name.toLowerCase().includes(search.toLowerCase()))
       return false;
-    if (
-      tile !== 'all' &&
-      !volunteer.documents.some((d) => matchesTile(d.status, tile))
-    )
-      return false;
-    if (
-      docType !== 'all' &&
-      !volunteer.documents.some((d) => d.status.startsWith(docType))
-    )
-      return false;
-    if (
-      range?.from &&
-      !volunteer.documents.some((d) => docVisibleInRange(d, range))
-    )
-      return false;
-    return true;
+    return volunteer.documents.some((d) =>
+      docMatchesBoardFilters(d, tile, pauschale, docType, range),
+    );
   });
-  return filteredVolunteers;
 }
 
 // ─── FilterTile (step card, no icon box) ─────────────────────────────────────
@@ -379,24 +379,12 @@ export function ReimbursementsBoard({
   // effect (TILE_DOC_TYPE) — so letting it narrow this list would make every
   // tile's count shrink whenever any one tile is selected, instead of
   // reflecting the org's true, stable totals.
-  const volunteersWithDocumentsOfSelectedPauschale = useMemo(
-    () =>
-      volunteers.filter((v) => {
-        if (pauschale === 'all') return true;
-        return v.documents.some((d) => d.pauschale === pauschale);
-      }),
-    [volunteers, pauschale],
-  );
-
   const tileCounts = useMemo(
     () =>
       Object.fromEntries(
-        TILE_IDS.map((id) => [
-          id,
-          countForTile(volunteersWithDocumentsOfSelectedPauschale, id),
-        ]),
+        TILE_IDS.map((id) => [id, countForTile(volunteers, id, pauschale)]),
       ) as Record<TileFilter, number>,
-    [volunteersWithDocumentsOfSelectedPauschale],
+    [volunteers, pauschale],
   );
 
   const tileActionableCounts = useMemo(
@@ -404,13 +392,10 @@ export function ReimbursementsBoard({
       Object.fromEntries(
         TILE_IDS.map((id) => [
           id,
-          countActionableForTile(
-            volunteersWithDocumentsOfSelectedPauschale,
-            id,
-          ),
+          countActionableForTile(volunteers, id, pauschale),
         ]),
       ) as Record<TileFilter, number>,
-    [volunteersWithDocumentsOfSelectedPauschale],
+    [volunteers, pauschale],
   );
 
   const filteredVolunteers = useMemo(
@@ -642,6 +627,7 @@ export function ReimbursementsBoard({
           onDocumentClick={(doc, vol) => setSelectedDoc({ doc, vol })}
           onRequestCreate={handleRequestCreate}
           docTypeFilter={docTypeFilter}
+          pauschaleFilter={pauschale}
           dateRange={dateRange}
           activeTile={activeTile}
           canCreateDocuments={canCreateDocuments}
