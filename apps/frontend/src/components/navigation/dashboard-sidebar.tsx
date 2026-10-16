@@ -2,6 +2,7 @@
 import { MembershipRequestStatus, PermissionKey } from '@repo/data';
 import { useCurrentOrg, useMembershipRequestCount } from '@repo/data/react';
 import {
+  Badge,
   Button,
   Logo,
   Sidebar,
@@ -192,9 +193,9 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
                           </span>
                         </span>
                         {'count' in item && item.count ? (
-                          <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 text-xs font-medium text-muted-foreground">
+                          <Badge variant="neutral" size="count">
                             {item.count}
-                          </span>
+                          </Badge>
                         ) : null}
                       </Link>
                     </SidebarMenuButton>

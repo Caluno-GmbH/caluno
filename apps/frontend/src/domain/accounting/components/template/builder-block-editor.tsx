@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Badge,
   Input,
   Label,
   RadioGroup,
@@ -245,10 +246,10 @@ interface FieldRowProps {
 /** Amber "profile data was never collected" badge — shared by a bound field's own card and its parent optional-line card. */
 function ProfileGapBadge({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-alert/30 bg-alert/15 px-2 py-0.5 text-xs font-medium text-alert">
-      <TriangleAlertIcon size={12} aria-hidden="true" />
+    <Badge variant="alert">
+      <TriangleAlertIcon aria-hidden="true" />
       {t('fieldList.requiresCollection')}
-    </span>
+    </Badge>
   );
 }
 
