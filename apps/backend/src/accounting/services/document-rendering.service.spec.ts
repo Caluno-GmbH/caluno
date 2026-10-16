@@ -806,6 +806,7 @@ describe('DocumentRenderingService', () => {
       // 82,50 € (which would clamp to 0,00 €): the invoice is excluded by id.
       expect(values.already_received_amount).toBe('50,00 €');
       expect(yearlyUsageCallArgs).toEqual([
+        'org-1',
         'vol-1',
         'type-1',
         2025,

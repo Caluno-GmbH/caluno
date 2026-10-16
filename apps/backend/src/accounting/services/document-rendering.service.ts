@@ -628,9 +628,10 @@ export class DocumentRenderingService {
     const documentPeriodStart = new Date(document.periodStart);
     const documentPeriodEnd = new Date(document.periodEnd);
     const yearlyUsage =
-      'invoiceStatus' in document
+      'invoiceStatus' in document && template.organizationId
         ? await this.reimbursementRateService
             .getYearlyUsage(
+              template.organizationId,
               document.volunteerId,
               document.reimbursementTypeId,
               billingYearOf(documentPeriodStart),

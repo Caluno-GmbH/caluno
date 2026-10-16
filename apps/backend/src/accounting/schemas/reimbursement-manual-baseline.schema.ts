@@ -14,7 +14,8 @@ export const reimbursementManualBaselines = snakeCase.table(
   'reimbursement_manual_baselines',
   {
     ...idColumn,
-    // Provenance only (which org's admin last set the value) — not a scoping key; baselines are looked up by volunteerId+reimbursementTypeId+year alone, since the yearly limit is a per-person statutory figure.
+    // Scoping key: each Organization keeps its own Anfangsbetrag for a
+    // volunteer + type + year. Yearly usage in accounting never crosses tenants.
     organizationId: uuid('organization_id')
       .references(() => organizations.id, { onDelete: 'cascade' })
       .notNull(),
@@ -32,7 +33,8 @@ export const reimbursementManualBaselines = snakeCase.table(
     ...timestampColumns,
   },
   (table) => [
-    uniqueIndex('uq_reimbursement_manual_baselines_volunteer_type_year').on(
+    uniqueIndex('uq_reimbursement_manual_baselines_org_volunteer_type_year').on(
+      table.organizationId,
       table.volunteerId,
       table.reimbursementTypeId,
       table.year,
