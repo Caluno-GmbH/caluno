@@ -206,6 +206,8 @@ query GetCheckInContext($checkInId: String!) {
       startedAt
       shiftInstance {
         id
+        actualStartsAt
+        actualEndsAt
         overrideTitle
         master {
           id
