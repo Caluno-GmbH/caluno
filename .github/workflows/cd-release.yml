@@ -28,4 +28,5 @@ jobs:
       moving-tag: release
       api-url: https://release.api.caluno.org
       web-url: https://release.app.caluno.org
+      notify-slack: true
     secrets: inherit

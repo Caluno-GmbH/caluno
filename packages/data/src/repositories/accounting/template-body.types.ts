@@ -222,15 +222,51 @@ export function serializeTemplateBody(
   return document as unknown as Record<string, unknown>;
 }
 
+/**
+ * Missing or partial stored closing lines (e.g. seeded `footer: {}`, or
+ * `{ id, text }` without `fields`) must still satisfy `TemplateLine` so
+ * builder helpers can safely read `.fields`. Absent pieces stay empty /
+ * inert — nothing renders and nothing is counted as missing.
+ */
+function normalizeClosingLine(
+  raw: Partial<TemplateLine> | undefined,
+): TemplateLine {
+  return {
+    id: raw?.id ?? 'closing',
+    text: raw?.text ?? '',
+    fields: Array.isArray(raw?.fields) ? raw.fields : [],
+    optional: raw?.optional ?? false,
+    enabled: raw?.enabled ?? true,
+    ...(raw?.inline !== undefined ? { inline: raw.inline } : {}),
+  };
+}
+
 export function parseTemplateBody(
   raw: Record<string, unknown>,
 ): TemplateDocument {
-  const header = (raw.header ?? {}) as TemplateHeader;
-  header.metaLines = header.metaLines ?? [];
-  const blocks = (
-    Array.isArray(raw.blocks) ? raw.blocks : []
+  // The backend stores the body as opaque JSON and treats every part as
+  // optional, so fill in the pieces the builder relies on rather than casting.
+  // Build fresh objects: `raw` is react-query cache data and must not be mutated.
+  const rawHeader = (raw.header ?? {}) as Partial<TemplateHeader>;
+  const header: TemplateHeader = {
+    ...rawHeader,
+    titleLines: rawHeader.titleLines ?? [],
+    metaLines: rawHeader.metaLines ?? [],
+  };
+  const blocks = (Array.isArray(raw.blocks) ? raw.blocks : []).map((block) =>
+    (block as TemplateBlock).kind === 'text'
+      ? {
+          ...(block as TemplateTextBlock),
+          lines: (block as TemplateTextBlock).lines ?? [],
+        }
+      : block,
   ) as TemplateBlock[];
-  const footer = (raw.footer ?? {}) as TemplateFooter;
+  const rawFooter = (raw.footer ?? {}) as Partial<TemplateFooter>;
+  const footer: TemplateFooter = {
+    ...rawFooter,
+    closingLine: normalizeClosingLine(rawFooter.closingLine),
+    showSignatures: rawFooter.showSignatures ?? true,
+  };
   const rawPageFooter = raw.pageFooter as TemplatePageFooter | undefined;
   const pageFooter: TemplatePageFooter = {
     enabled: rawPageFooter?.enabled === true,
