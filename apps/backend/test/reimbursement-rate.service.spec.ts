@@ -602,6 +602,7 @@ describe('ReimbursementRateService', () => {
       });
 
       const usage = await service.getYearlyUsage(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2026,
@@ -650,6 +651,7 @@ describe('ReimbursementRateService', () => {
       );
 
       const usage = await service.getYearlyUsage(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2026,
@@ -714,6 +716,7 @@ describe('ReimbursementRateService', () => {
       // Reissuing a July document must keep reporting the same year-to-date
       // figure it originally stated, regardless of invoices created since.
       const usage = await service.getYearlyUsage(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2026,
@@ -771,10 +774,11 @@ describe('ReimbursementRateService', () => {
       };
 
       it('leaves the given invoice out of the sum', async () => {
-        const { reimbursementType, volunteer, current } =
+        const { organization, reimbursementType, volunteer, current } =
           await setupVolunteerWithInvoices();
 
         const usage = await service.getYearlyUsage(
+          organization.id,
           volunteer.id,
           reimbursementType.id,
           2026,
@@ -790,10 +794,11 @@ describe('ReimbursementRateService', () => {
       });
 
       it('ignores an id that is not a UUID', async () => {
-        const { reimbursementType, volunteer } =
+        const { organization, reimbursementType, volunteer } =
           await setupVolunteerWithInvoices();
 
         const usage = await service.getYearlyUsage(
+          organization.id,
           volunteer.id,
           reimbursementType.id,
           2026,
@@ -818,6 +823,7 @@ describe('ReimbursementRateService', () => {
         );
 
         const usage = await service.getYearlyUsage(
+          organization.id,
           volunteer.id,
           reimbursementType.id,
           2026,
@@ -827,6 +833,167 @@ describe('ReimbursementRateService', () => {
 
         expect(usage.usedCents).toBe(15_000);
       });
+    });
+
+    it('excludes invoices issued by another Organization', async () => {
+      const reimbursementType = await createReimbursementType(db, {
+        yearlyLimitCents: 84_000,
+      });
+      const orgA = await setupOrgWithRootUnit();
+      const orgB = await setupOrgWithRootUnit();
+      const volunteer = await createUser(db);
+      const templateA = await createDocumentTemplate(db, {
+        organizationId: orgA.organization.id,
+        reimbursementTypeId: reimbursementType.id,
+        kind: DocumentKind.INVOICE,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+      const templateB = await createDocumentTemplate(db, {
+        organizationId: orgB.organization.id,
+        reimbursementTypeId: reimbursementType.id,
+        kind: DocumentKind.INVOICE,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+      await db.insert(schema.invoices).values({
+        documentTemplateId: templateA.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-03-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-03-01T00:00:00.000Z'),
+        totalAmountCents: 20_000,
+        totalHours: 1,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(orgA.root.id),
+      });
+      await db.insert(schema.invoices).values({
+        documentTemplateId: templateB.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-04-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-04-01T00:00:00.000Z'),
+        totalAmountCents: 7_000,
+        totalHours: 1,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(orgB.root.id),
+      });
+
+      const usageB = await service.getYearlyUsage(
+        orgB.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+      );
+
+      expect(usageB.usedCents).toBe(7_000);
+    });
+
+    it('sums invoices from sibling units of the same Organization', async () => {
+      const reimbursementType = await createReimbursementType(db, {
+        yearlyLimitCents: 84_000,
+      });
+      const { organization, unitType, root } = await setupOrgWithRootUnit();
+      const sibling = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: unitType.id,
+        name: 'sibling',
+        parentId: root.id,
+      });
+      const volunteer = await createUser(db);
+      const templateRoot = await createDocumentTemplate(db, {
+        organizationId: organization.id,
+        reimbursementTypeId: reimbursementType.id,
+        kind: DocumentKind.INVOICE,
+        organizationUnitId: root.id,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+      const templateSibling = await createDocumentTemplate(db, {
+        organizationId: organization.id,
+        reimbursementTypeId: reimbursementType.id,
+        kind: DocumentKind.INVOICE,
+        organizationUnitId: sibling.id,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+      await db.insert(schema.invoices).values({
+        documentTemplateId: templateRoot.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-03-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-03-01T00:00:00.000Z'),
+        totalAmountCents: 10_000,
+        totalHours: 1,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(root.id),
+      });
+      await db.insert(schema.invoices).values({
+        documentTemplateId: templateSibling.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        periodStart: new Date('2026-05-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-05-01T00:00:00.000Z'),
+        totalAmountCents: 4_000,
+        totalHours: 1,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(sibling.id),
+      });
+
+      const usage = await service.getYearlyUsage(
+        organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+      );
+
+      expect(usage.usedCents).toBe(14_000);
+    });
+
+    it("does not include another Organization's manual baseline", async () => {
+      const reimbursementType = await createReimbursementType(db, {
+        yearlyLimitCents: 84_000,
+      });
+      const orgA = await setupOrgWithRootUnit();
+      const orgB = await setupOrgWithRootUnit();
+      const volunteer = await createUser(db);
+      const editor = await createUser(db);
+      await service.setManualBaseline(
+        orgA.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        12_000,
+        editor.id,
+      );
+      await service.setManualBaseline(
+        orgB.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        3_000,
+        editor.id,
+      );
+
+      const usageB = await service.getYearlyUsage(
+        orgB.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+      );
+
+      expect(usageB.usedCents).toBe(3_000);
+      const baselineA = await service.getManualBaseline(
+        orgA.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+      );
+      expect(baselineA?.amountCents).toBe(12_000);
     });
   });
 
@@ -1032,14 +1199,80 @@ describe('ReimbursementRateService', () => {
       expect(typeUsage?.usedCents).toBe(7_500);
       expect(typeUsage?.remainingCents).toBe(76_500);
     });
+
+    it('excludes invoices and baselines from another Organization', async () => {
+      const type = await createReimbursementType(db, {
+        yearlyLimitCents: 84_000,
+      });
+      const orgA = await setupOrgWithRootUnit();
+      const orgB = await setupOrgWithRootUnit();
+      const volunteer = await createUser(db);
+      const editor = await createUser(db);
+      await addMembership(db, volunteer.id, orgB.root.id);
+      const templateA = await createDocumentTemplate(db, {
+        organizationId: orgA.organization.id,
+        reimbursementTypeId: type.id,
+        kind: DocumentKind.INVOICE,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+      const templateB = await createDocumentTemplate(db, {
+        organizationId: orgB.organization.id,
+        reimbursementTypeId: type.id,
+        kind: DocumentKind.INVOICE,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+      await db.insert(schema.invoices).values({
+        documentTemplateId: templateA.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: type.id,
+        periodStart: new Date('2026-03-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-03-01T00:00:00.000Z'),
+        totalAmountCents: 20_000,
+        totalHours: 1,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(orgA.root.id),
+      });
+      await db.insert(schema.invoices).values({
+        documentTemplateId: templateB.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: type.id,
+        periodStart: new Date('2026-04-01T00:00:00.000Z'),
+        periodEnd: new Date('2026-04-01T00:00:00.000Z'),
+        totalAmountCents: 5_000,
+        totalHours: 1,
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+        invoiceStatus: InvoiceStatus.READY,
+        hourlyRateCents: 1000,
+        ...stubInvoiceDocumentNumber(orgB.root.id),
+      });
+      await service.setManualBaseline(
+        orgA.organization.id,
+        volunteer.id,
+        type.id,
+        2026,
+        8_000,
+        editor.id,
+      );
+
+      const usage = await service.getRosterYearlyUsage(orgB.root.id, 2026);
+      const entry = usage.find((u) => u.volunteer.id === volunteer.id);
+      const typeUsage = entry?.usageByType.find(
+        (tu) => tu.reimbursementType.id === type.id,
+      );
+      expect(typeUsage?.usedCents).toBe(5_000);
+    });
   });
 
   describe('setManualBaseline / getManualBaseline', () => {
     it('returns undefined when no baseline has ever been set', async () => {
+      const { organization } = await setupOrgWithRootUnit();
       const reimbursementType = await createReimbursementType(db);
       const volunteer = await createUser(db);
 
       const result = await service.getManualBaseline(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2026,
@@ -1068,6 +1301,7 @@ describe('ReimbursementRateService', () => {
       expect(result.year).toBe(2026);
 
       const fetched = await service.getManualBaseline(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2026,
@@ -1154,17 +1388,59 @@ describe('ReimbursementRateService', () => {
       );
 
       const y2025 = await service.getManualBaseline(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2025,
       );
       const y2026 = await service.getManualBaseline(
+        organization.id,
         volunteer.id,
         reimbursementType.id,
         2026,
       );
       expect(y2025?.amountCents).toBe(5_000);
       expect(y2026?.amountCents).toBe(15_000);
+    });
+
+    it('keeps baselines for different Organizations independent', async () => {
+      const orgA = await setupOrgWithRootUnit();
+      const orgB = await setupOrgWithRootUnit();
+      const reimbursementType = await createReimbursementType(db);
+      const volunteer = await createUser(db);
+      const editor = await createUser(db);
+
+      await service.setManualBaseline(
+        orgA.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        5_000,
+        editor.id,
+      );
+      await service.setManualBaseline(
+        orgB.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+        9_000,
+        editor.id,
+      );
+
+      const a = await service.getManualBaseline(
+        orgA.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+      );
+      const b = await service.getManualBaseline(
+        orgB.organization.id,
+        volunteer.id,
+        reimbursementType.id,
+        2026,
+      );
+      expect(a?.amountCents).toBe(5_000);
+      expect(b?.amountCents).toBe(9_000);
     });
   });
 
