@@ -222,15 +222,41 @@ export function serializeTemplateBody(
   return document as unknown as Record<string, unknown>;
 }
 
+/**
+ * Stand-in for a stored body that has no closing line (e.g. a seeded
+ * `footer: {}`). Empty text and no fields, so nothing renders and nothing is
+ * counted as missing.
+ */
+function emptyClosingLine(): TemplateLine {
+  return { id: 'closing', text: '', fields: [], optional: false, enabled: true };
+}
+
 export function parseTemplateBody(
   raw: Record<string, unknown>,
 ): TemplateDocument {
-  const header = (raw.header ?? {}) as TemplateHeader;
-  header.metaLines = header.metaLines ?? [];
-  const blocks = (
-    Array.isArray(raw.blocks) ? raw.blocks : []
+  // The backend stores the body as opaque JSON and treats every part as
+  // optional, so fill in the pieces the builder relies on rather than casting.
+  // Build fresh objects: `raw` is react-query cache data and must not be mutated.
+  const rawHeader = (raw.header ?? {}) as Partial<TemplateHeader>;
+  const header: TemplateHeader = {
+    ...rawHeader,
+    titleLines: rawHeader.titleLines ?? [],
+    metaLines: rawHeader.metaLines ?? [],
+  };
+  const blocks = (Array.isArray(raw.blocks) ? raw.blocks : []).map((block) =>
+    (block as TemplateBlock).kind === 'text'
+      ? {
+          ...(block as TemplateTextBlock),
+          lines: (block as TemplateTextBlock).lines ?? [],
+        }
+      : block,
   ) as TemplateBlock[];
-  const footer = (raw.footer ?? {}) as TemplateFooter;
+  const rawFooter = (raw.footer ?? {}) as Partial<TemplateFooter>;
+  const footer: TemplateFooter = {
+    ...rawFooter,
+    closingLine: rawFooter.closingLine ?? emptyClosingLine(),
+    showSignatures: rawFooter.showSignatures ?? true,
+  };
   const rawPageFooter = raw.pageFooter as TemplatePageFooter | undefined;
   const pageFooter: TemplatePageFooter = {
     enabled: rawPageFooter?.enabled === true,
