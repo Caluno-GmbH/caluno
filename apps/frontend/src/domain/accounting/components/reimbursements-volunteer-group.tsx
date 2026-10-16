@@ -20,20 +20,17 @@ import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { documentRowAction } from '../lib/board-data.utils';
 import {
-  docMatchesBoardFilters,
-  getReadyToGoDocs,
   isTimesheetNonCompliant,
+  visibleDocumentsForVolunteer,
 } from '../lib/board-filters';
 import { STATUS_META } from '../lib/board-status';
 import type {
   BoardDocument,
   BoardVolunteer,
   DocStatus,
-  DocTypeFilter,
   DocVolPair,
-  PauschalenFilter,
+  FilterSettings,
   PauschalenLimit,
-  TileFilter,
 } from '../lib/board-types';
 import {
   documentCreationBlockedFor,
@@ -43,7 +40,6 @@ import { AlertIconTooltip } from './alert-icon-tooltip';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
-import type { DateRange } from './period-picker';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -193,10 +189,7 @@ interface VolunteerTableGroupProps {
   orgUId: string;
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
-  docTypeFilter: DocTypeFilter;
-  pauschaleFilter: PauschalenFilter;
-  dateRange: DateRange | undefined;
-  activeTile: TileFilter;
+  filterSettings: FilterSettings;
   canCreateDocuments: boolean;
   templateReadiness: TemplateReadinessByPauschale;
 }
@@ -206,10 +199,7 @@ function VolunteerTableGroup({
   orgUId,
   onDocumentClick,
   onRequestCreate,
-  docTypeFilter,
-  pauschaleFilter,
-  dateRange,
-  activeTile,
+  filterSettings,
   canCreateDocuments,
   templateReadiness,
 }: VolunteerTableGroupProps) {
@@ -217,24 +207,10 @@ function VolunteerTableGroup({
   const tSections = useTranslations('Accounting.templates.sections');
   const [isOpen, setIsOpen] = useState(true);
 
-  // Ready-to-go gets its own row set (ready timesheets + one contract row
-  // per pauschale in play — real if it exists, a greyed placeholder if
-  // not); every other tab filters the volunteer's real documents by
-  // pauschale + doc-type + date + tile, without ever touching
-  // `vol.documents` itself so compliance checks stay accurate regardless
-  // of what's on screen.
-  const visibleDocs =
-    activeTile === 'ready-to-go'
-      ? getReadyToGoDocs(volunteer, dateRange, pauschaleFilter)
-      : volunteer.documents.filter((doc) =>
-          docMatchesBoardFilters(
-            doc,
-            activeTile,
-            pauschaleFilter,
-            docTypeFilter,
-            dateRange,
-          ),
-        );
+  // Ready-to-go (`nextAction: 'send'`) gets its own row set; every other
+  // combination filters real documents via FilterSettings without mutating
+  // `vol.documents`, so compliance checks stay accurate regardless of view.
+  const visibleDocs = visibleDocumentsForVolunteer(volunteer, filterSettings);
 
   const sortedDocs = [...visibleDocs].sort(
     (a, b) =>
@@ -548,10 +524,7 @@ interface ReimbursementsTableProps {
   orgUId: string;
   onDocumentClick: (doc: BoardDocument, vol: BoardVolunteer) => void;
   onRequestCreate: (pair: DocVolPair) => void;
-  docTypeFilter: DocTypeFilter;
-  pauschaleFilter: PauschalenFilter;
-  dateRange: DateRange | undefined;
-  activeTile: TileFilter;
+  filterSettings: FilterSettings;
   canCreateDocuments: boolean;
   templateReadiness: TemplateReadinessByPauschale;
 }
@@ -561,10 +534,7 @@ export function ReimbursementsTable({
   orgUId,
   onDocumentClick,
   onRequestCreate,
-  docTypeFilter,
-  pauschaleFilter,
-  dateRange,
-  activeTile,
+  filterSettings,
   canCreateDocuments,
   templateReadiness,
 }: ReimbursementsTableProps) {
@@ -596,10 +566,7 @@ export function ReimbursementsTable({
               orgUId={orgUId}
               onDocumentClick={onDocumentClick}
               onRequestCreate={onRequestCreate}
-              docTypeFilter={docTypeFilter}
-              pauschaleFilter={pauschaleFilter}
-              dateRange={dateRange}
-              activeTile={activeTile}
+              filterSettings={filterSettings}
               canCreateDocuments={canCreateDocuments}
               templateReadiness={templateReadiness}
             />

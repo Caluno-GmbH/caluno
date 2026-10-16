@@ -39,17 +39,22 @@ import {
   sourceDraftIdFor,
 } from '../lib/board-data.utils';
 import {
-  docMatchesBoardFilters,
-  matchesPauschale,
-  matchesTile,
+  documentMatchesFilterSettings,
+  filterVolunteers,
 } from '../lib/board-filters';
 import { isYourActionStatus } from '../lib/board-status';
 import type {
+  BoardTileId,
   BoardVolunteer,
-  DocTypeFilter,
+  DocumentTypeFilter,
   DocVolPair,
-  PauschalenFilter,
-  TileFilter,
+  FilterSettings,
+  PauschaleTypeFilter,
+} from '../lib/board-types';
+import {
+  BOARD_TILE_IDS,
+  BOARD_TILE_PRESETS,
+  DEFAULT_FILTER_SETTINGS,
 } from '../lib/board-types';
 import {
   documentCreationBlockedFor,
@@ -64,15 +69,6 @@ import { DocumentSheet } from './reimbursements-document-sheet';
 import { ReimbursementsTable } from './reimbursements-volunteer-group';
 
 type SortOption = 'action-needed' | 'newest';
-
-const TILE_IDS: TileFilter[] = [
-  'all',
-  'contract-generate',
-  'contract-signing',
-  'timesheet-generate',
-  'timesheet-signing',
-  'ready-to-go',
-];
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [
@@ -105,81 +101,60 @@ function sortVolunteers(
   );
 }
 
-/** How many of a tile's matching docs are actionable by the org right now (vs. waiting on the volunteer). Only meaningful for the mixed-substep signing / generate tiles. */
+function tilePresetSettings(
+  tileId: BoardTileId,
+  pauschaleType: PauschaleTypeFilter,
+): FilterSettings {
+  const preset = BOARD_TILE_PRESETS[tileId];
+  return {
+    ...DEFAULT_FILTER_SETTINGS,
+    documentType: preset.documentType,
+    nextAction: preset.nextAction,
+    pauschaleType,
+  };
+}
+
+function isTileActive(settings: FilterSettings, tileId: BoardTileId): boolean {
+  const preset = BOARD_TILE_PRESETS[tileId];
+  return (
+    settings.documentType === preset.documentType &&
+    settings.nextAction === preset.nextAction
+  );
+}
+
+/** Tile badge counts are pauschale-scoped only — date/name stay out so totals stay stable. */
+function countForTile(
+  volunteers: BoardVolunteer[],
+  tileId: BoardTileId,
+  pauschaleType: PauschaleTypeFilter,
+): number {
+  const settings = tilePresetSettings(tileId, pauschaleType);
+  return volunteers.reduce(
+    (sum, vol) =>
+      sum +
+      vol.documents.filter((d) => documentMatchesFilterSettings(d, settings))
+        .length,
+    0,
+  );
+}
+
+/** How many of a tile's matching docs are actionable by the org right now. */
 function countActionableForTile(
   volunteers: BoardVolunteer[],
-  tile: TileFilter,
-  pauschale: PauschalenFilter,
+  tileId: BoardTileId,
+  pauschaleType: PauschaleTypeFilter,
 ): number {
+  const settings = tilePresetSettings(tileId, pauschaleType);
   return volunteers.reduce(
     (sum, vol) =>
       sum +
       vol.documents.filter(
         (d) =>
-          matchesTile(d.status, tile) &&
-          matchesPauschale(d, pauschale) &&
+          documentMatchesFilterSettings(d, settings) &&
           isYourActionStatus(d.status),
       ).length,
     0,
   );
-}
-
-const TILE_DOC_TYPE: Record<TileFilter, DocTypeFilter> = {
-  all: 'all',
-  'contract-generate': 'contract',
-  'contract-signing': 'contract',
-  'timesheet-generate': 'timesheet',
-  'timesheet-signing': 'timesheet',
-  // Ready-to-go is the terminal bundling stage — leave the doc-type filter
-  // on "all"; the tile's own row-builder (getReadyToGoDocs) scopes the
-  // table to ready timesheets + their contract row, not this dropdown.
-  'ready-to-go': 'all',
-};
-
-function countForTile(
-  volunteers: BoardVolunteer[],
-  tile: TileFilter,
-  pauschale: PauschalenFilter,
-): number {
-  return volunteers.reduce(
-    (sum, vol) =>
-      sum +
-      vol.documents.filter(
-        (d) => matchesTile(d.status, tile) && matchesPauschale(d, pauschale),
-      ).length,
-    0,
-  );
-}
-
-/**
- * Decides which volunteers show, without ever touching `vol.documents` —
- * compliance checks (and the table itself) always read the true, unfiltered
- * document list; only *inclusion* is filtered here, and *display* is
- * filtered separately per-document (see `docMatchesBoardFilters` and
- * `getReadyToGoDocs`) so a volunteer's real data is never corrupted by the
- * current view.
- *
- * Inclusion requires at least one document that matches every active
- * document-level filter together (Pauschale ∩ tile ∩ doc-type ∩ range) —
- * not one document per filter independently. Otherwise a dual-Pauschale
- * volunteer stays visible when only the other type's rows match the tile.
- */
-function applyFilters(
-  volunteers: BoardVolunteer[],
-  tile: TileFilter,
-  pauschale: PauschalenFilter,
-  docType: DocTypeFilter,
-  search: string,
-  range: DateRange | undefined,
-): BoardVolunteer[] {
-  return volunteers.filter((volunteer) => {
-    if (volunteer.documents.length === 0) return false;
-    if (search && !volunteer.name.toLowerCase().includes(search.toLowerCase()))
-      return false;
-    return volunteer.documents.some((d) =>
-      docMatchesBoardFilters(d, tile, pauschale, docType, range),
-    );
-  });
 }
 
 // ─── FilterTile (step card, no icon box) ─────────────────────────────────────
@@ -273,13 +248,16 @@ export function ReimbursementsBoard({
   const declineContract = useDeclineContract();
   const declineInvoice = useDeclineInvoice();
 
-  // Filters
-  const [activeTile, setActiveTile] = useState<TileFilter>('all');
-
-  const [pauschale, setPauschale] = useState<PauschalenFilter>('all');
-  const [docTypeFilter, setDocTypeFilter] = useState<DocTypeFilter>('all');
-  const [search, setSearch] = useState('');
+  // Filters — one object; dateRange stays owned by the page header and is merged in.
+  const [filterSettings, setFilterSettings] = useState<FilterSettings>(
+    DEFAULT_FILTER_SETTINGS,
+  );
   const [sortOption, setSortOption] = useState<SortOption>('action-needed');
+
+  const effectiveFilterSettings = useMemo(
+    (): FilterSettings => ({ ...filterSettings, dateRange }),
+    [filterSettings, dateRange],
+  );
 
   // Sheet
   const [selectedDoc, setSelectedDoc] = useState<DocVolPair | null>(null);
@@ -365,7 +343,7 @@ export function ReimbursementsBoard({
   // Derived for DocumentSheet
   const selectedDate = dateRange?.from ?? new Date();
 
-  const tileLabels: Record<TileFilter, string> = {
+  const tileLabels: Record<BoardTileId, string> = {
     all: t('tiles.all'),
     'contract-generate': t('tiles.contractGenerate'),
     'contract-signing': t('tiles.contractSigning'),
@@ -374,41 +352,41 @@ export function ReimbursementsBoard({
     'ready-to-go': t('tiles.readyToGo'),
   };
 
-  // Tile counts are pauschale-scoped only. docTypeFilter is not an
-  // independent user choice here — selecting a tile sets it as a side
-  // effect (TILE_DOC_TYPE) — so letting it narrow this list would make every
-  // tile's count shrink whenever any one tile is selected, instead of
-  // reflecting the org's true, stable totals.
+  // Tile counts are pauschale-scoped only so selecting a tile does not shrink
+  // every other tile's badge.
   const tileCounts = useMemo(
     () =>
       Object.fromEntries(
-        TILE_IDS.map((id) => [id, countForTile(volunteers, id, pauschale)]),
-      ) as Record<TileFilter, number>,
-    [volunteers, pauschale],
+        BOARD_TILE_IDS.map((tileId) => [
+          tileId,
+          countForTile(
+            volunteers,
+            tileId,
+            effectiveFilterSettings.pauschaleType,
+          ),
+        ]),
+      ) as Record<BoardTileId, number>,
+    [volunteers, effectiveFilterSettings.pauschaleType],
   );
 
   const tileActionableCounts = useMemo(
     () =>
       Object.fromEntries(
-        TILE_IDS.map((id) => [
-          id,
-          countActionableForTile(volunteers, id, pauschale),
+        BOARD_TILE_IDS.map((tileId) => [
+          tileId,
+          countActionableForTile(
+            volunteers,
+            tileId,
+            effectiveFilterSettings.pauschaleType,
+          ),
         ]),
-      ) as Record<TileFilter, number>,
-    [volunteers, pauschale],
+      ) as Record<BoardTileId, number>,
+    [volunteers, effectiveFilterSettings.pauschaleType],
   );
 
   const filteredVolunteers = useMemo(
-    () =>
-      applyFilters(
-        volunteers,
-        activeTile,
-        pauschale,
-        docTypeFilter,
-        search,
-        dateRange,
-      ),
-    [volunteers, activeTile, pauschale, docTypeFilter, search, dateRange],
+    () => filterVolunteers(volunteers, effectiveFilterSettings),
+    [volunteers, effectiveFilterSettings],
   );
 
   const sortedFilteredVolunteers = useMemo(
@@ -416,24 +394,35 @@ export function ReimbursementsBoard({
     [filteredVolunteers, sortOption],
   );
 
-  // Tabs are married to the doc-type filter: picking a tile sets the matching
-  // doc type (or "all" for the All tile); changing the doc type manually
-  // always resets the tile back to All, so the two controls can never
-  // disagree and silently zero out the table.
-  // Clicking All always selects it; clicking the active pipeline tile
-  // deselects back to All.
-  function toggleTile(tile: TileFilter) {
-    setActiveTile((prev) => {
-      const next: TileFilter = prev === tile ? 'all' : tile;
-      setDocTypeFilter(TILE_DOC_TYPE[next]);
-      return next;
+  // Tiles set documentType + nextAction together. Clicking the active
+  // pipeline tile deselects back to All; changing documentType via the
+  // dropdown always clears nextAction so the two cannot disagree.
+  function toggleTile(tileId: BoardTileId) {
+    setFilterSettings((prev) => {
+      if (isTileActive({ ...prev, dateRange }, tileId) && tileId !== 'all') {
+        return { ...prev, documentType: 'all', nextAction: 'any' };
+      }
+      const preset = BOARD_TILE_PRESETS[tileId];
+      return {
+        ...prev,
+        documentType: preset.documentType,
+        nextAction: preset.nextAction,
+      };
     });
   }
 
-  function handleDocTypeChange(next: DocTypeFilter) {
-    setDocTypeFilter(next);
-    setActiveTile('all');
+  function handleDocTypeChange(next: DocumentTypeFilter) {
+    setFilterSettings((prev) => ({
+      ...prev,
+      documentType: next,
+      nextAction: 'any',
+    }));
   }
+
+  const filtersActive =
+    effectiveFilterSettings.nextAction !== 'any' ||
+    effectiveFilterSettings.documentType !== 'all' ||
+    effectiveFilterSettings.volunteerName.trim() !== '';
 
   if (isLoading) {
     return <ReimbursementsBoardSkeleton />;
@@ -504,34 +493,35 @@ export function ReimbursementsBoard({
         </Select>
       </div>
 
-      {/* Filter tiles: All, then the pipeline steps */}
+      {/* Filter tiles: All, then the pipeline steps — each sets documentType + nextAction */}
       <div className="flex items-stretch gap-0 overflow-x-auto pb-1">
-        {TILE_IDS.map((id, i) => (
-          <Fragment key={id}>
-            {i === 1 && (
-              <div className="w-px self-stretch bg-border mx-3 shrink-0" />
-            )}
-            {i > 1 && (
-              <div className="flex items-center px-1 shrink-0">
-                <ChevronRightIcon size={14} className="text-border" />
-              </div>
-            )}
-            <FilterTile
-              label={tileLabels[id]}
-              count={tileCounts[id]}
-              actionableCount={
-                id === 'contract-generate' ||
-                id === 'timesheet-generate' ||
-                id === 'contract-signing' ||
-                id === 'timesheet-signing'
-                  ? tileActionableCounts[id]
-                  : undefined
-              }
-              active={activeTile === id}
-              onClick={() => toggleTile(id)}
-            />
-          </Fragment>
-        ))}
+        {BOARD_TILE_IDS.map((tileId, i) => {
+          const tile = BOARD_TILE_PRESETS[tileId];
+          return (
+            <Fragment key={tileId}>
+              {i === 1 && (
+                <div className="w-px self-stretch bg-border mx-3 shrink-0" />
+              )}
+              {i > 1 && (
+                <div className="flex items-center px-1 shrink-0">
+                  <ChevronRightIcon size={14} className="text-border" />
+                </div>
+              )}
+              <FilterTile
+                label={tileLabels[tileId]}
+                count={tileCounts[tileId]}
+                actionableCount={
+                  tile.nextAction === 'generate' ||
+                  tile.nextAction === 'countersign'
+                    ? tileActionableCounts[tileId]
+                    : undefined
+                }
+                active={isTileActive(effectiveFilterSettings, tileId)}
+                onClick={() => toggleTile(tileId)}
+              />
+            </Fragment>
+          );
+        })}
       </div>
 
       {/* Toolbar */}
@@ -544,15 +534,20 @@ export function ReimbursementsBoard({
           <Input
             type="search"
             placeholder={t('toolbar.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={filterSettings.volunteerName}
+            onChange={(e) =>
+              setFilterSettings((prev) => ({
+                ...prev,
+                volunteerName: e.target.value,
+              }))
+            }
             className="h-10 pl-9"
           />
         </div>
 
         <Select
-          value={docTypeFilter}
-          onValueChange={(v) => handleDocTypeChange(v as DocTypeFilter)}
+          value={filterSettings.documentType}
+          onValueChange={(v) => handleDocTypeChange(v as DocumentTypeFilter)}
         >
           <SelectTrigger className="h-10 min-w-40">
             <SelectValue />
@@ -569,8 +564,13 @@ export function ReimbursementsBoard({
         </Select>
 
         <Select
-          value={pauschale}
-          onValueChange={(v) => setPauschale(v as PauschalenFilter)}
+          value={filterSettings.pauschaleType}
+          onValueChange={(v) =>
+            setFilterSettings((prev) => ({
+              ...prev,
+              pauschaleType: v as PauschaleTypeFilter,
+            }))
+          }
         >
           <SelectTrigger className="h-10 min-w-40">
             <SelectValue />
@@ -604,18 +604,16 @@ export function ReimbursementsBoard({
         <Empty className="border-border py-16">
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              {activeTile !== 'all' || search ? (
+              {filtersActive ? (
                 <FilterXIcon className="size-5 text-muted-foreground" />
               ) : (
                 <CheckCircle2Icon className="size-5 text-success" />
               )}
             </EmptyMedia>
             <EmptyTitle>
-              {activeTile !== 'all' || search
-                ? t('empty.filtered')
-                : t('empty.allDone')}
+              {filtersActive ? t('empty.filtered') : t('empty.allDone')}
             </EmptyTitle>
-            {activeTile === 'all' && !search && (
+            {!filtersActive && (
               <EmptyDescription>{t('empty.allDoneHint')}</EmptyDescription>
             )}
           </EmptyHeader>
@@ -626,10 +624,7 @@ export function ReimbursementsBoard({
           orgUId={orgUId}
           onDocumentClick={(doc, vol) => setSelectedDoc({ doc, vol })}
           onRequestCreate={handleRequestCreate}
-          docTypeFilter={docTypeFilter}
-          pauschaleFilter={pauschale}
-          dateRange={dateRange}
-          activeTile={activeTile}
+          filterSettings={effectiveFilterSettings}
           canCreateDocuments={canCreateDocuments}
           templateReadiness={templateReadiness}
         />

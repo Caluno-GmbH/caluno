@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  docMatchesBoardFilters,
+  documentMatchesFilterSettings,
   docVisibleInRange,
   getReadyToGoDocs,
   isTimesheetNonCompliant,
   matchesPauschale,
 } from './board-filters';
-import type { BoardDocument } from './board-types';
+import type { BoardDocument, FilterSettings } from './board-types';
+import { DEFAULT_FILTER_SETTINGS } from './board-types';
 
 const timesheet = (periodStart: Date, periodEnd: Date, lastAction: Date) =>
   ({
@@ -184,7 +185,7 @@ describe('getReadyToGoDocs', () => {
 
     const rows = getReadyToGoDocs(
       volunteer([later, ready('uebungsleiter', ...october), earlier]),
-      undefined,
+      DEFAULT_FILTER_SETTINGS,
     );
 
     expect(rows.map((r) => r.id)).toEqual(['t', 'a', 'b']);
@@ -220,7 +221,7 @@ describe('getReadyToGoDocs', () => {
           new Date(2026, 9, 15),
         ),
       ]),
-      undefined,
+      DEFAULT_FILTER_SETTINGS,
     );
 
     expect(rows.map((r) => r.id)).toEqual(['t', 'same']);
@@ -232,7 +233,7 @@ describe('getReadyToGoDocs', () => {
         ready('uebungsleiter', ...october),
         contract('only', 'contract-active', undefined, undefined),
       ]),
-      undefined,
+      DEFAULT_FILTER_SETTINGS,
     );
 
     expect(rows.map((r) => r.id)).toEqual(['t', 'only']);
@@ -241,7 +242,7 @@ describe('getReadyToGoDocs', () => {
   it('shows a missing placeholder when the type has no contract at all', () => {
     const rows = getReadyToGoDocs(
       volunteer([ready('uebungsleiter', ...october)]),
-      undefined,
+      DEFAULT_FILTER_SETTINGS,
     );
 
     expect(rows.map((r) => r.status)).toEqual([
@@ -270,8 +271,7 @@ describe('getReadyToGoDocs', () => {
           'uebungsleiter',
         ),
       ]),
-      undefined,
-      'ehrenamt',
+      { ...DEFAULT_FILTER_SETTINGS, pauschaleType: 'ehrenamt' },
     );
 
     expect(rows.map((r) => r.id)).toEqual(['ep', 'ep-c']);
@@ -291,7 +291,7 @@ describe('matchesPauschale', () => {
   });
 });
 
-describe('docMatchesBoardFilters', () => {
+describe('documentMatchesFilterSettings', () => {
   const epSigning = {
     id: 'ep',
     status: 'timesheet-signing-coord',
@@ -307,32 +307,23 @@ describe('docMatchesBoardFilters', () => {
     pauschale: 'uebungsleiter',
   } as BoardDocument;
 
-  it('requires the document to match Pauschale, tile, doc-type and range together', () => {
+  const settings = (
+    overrides: Partial<FilterSettings> = {},
+  ): FilterSettings => ({
+    ...DEFAULT_FILTER_SETTINGS,
+    documentType: 'timesheet',
+    nextAction: 'countersign',
+    pauschaleType: 'ehrenamt',
+    ...overrides,
+  });
+
+  it('requires the document to match Pauschale, nextAction, documentType and range together', () => {
+    expect(documentMatchesFilterSettings(epSigning, settings())).toBe(true);
+    expect(documentMatchesFilterSettings(ulSigning, settings())).toBe(false);
     expect(
-      docMatchesBoardFilters(
+      documentMatchesFilterSettings(
         epSigning,
-        'timesheet-signing',
-        'ehrenamt',
-        'timesheet',
-        undefined,
-      ),
-    ).toBe(true);
-    expect(
-      docMatchesBoardFilters(
-        ulSigning,
-        'timesheet-signing',
-        'ehrenamt',
-        'timesheet',
-        undefined,
-      ),
-    ).toBe(false);
-    expect(
-      docMatchesBoardFilters(
-        epSigning,
-        'contract-signing',
-        'ehrenamt',
-        'timesheet',
-        undefined,
+        settings({ documentType: 'contract', nextAction: 'countersign' }),
       ),
     ).toBe(false);
   });
