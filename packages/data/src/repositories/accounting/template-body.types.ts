@@ -166,10 +166,32 @@ export const ORG_OVERRIDE_SOURCES: readonly OrgOverrideSource[] = [
 
 export type OrgOverrides = Partial<Record<OrgOverrideSource, string>>;
 
+/** Repeated on every page, unlike `TemplateFooter`, which closes the document once. */
+export type TemplatePageFooter = {
+  enabled: boolean;
+  text: string;
+};
+
+export function pageFooterTextLines(
+  footer: TemplatePageFooter | undefined,
+): string[] {
+  if (footer?.enabled !== true) return [];
+  const text = footer.text.replace(/\r\n/g, '\n').trimEnd();
+  return text.length === 0 ? [] : text.split('\n');
+}
+
+export function pageNumberLabel(
+  page: number | string,
+  total: number | string,
+): string {
+  return `Seite ${page} von ${total}`;
+}
+
 export type TemplateDocument = {
   header: TemplateHeader;
   blocks: TemplateBlock[];
   footer: TemplateFooter;
+  pageFooter?: TemplatePageFooter;
   /** Invoice-only: how the generated document number is formatted. Undefined for contracts. */
   invoiceNumberFormat?: InvoiceNumberFormat;
   /** Coordinator-stated organisation details; absent entries fall back to the org unit. */
@@ -200,20 +222,68 @@ export function serializeTemplateBody(
   return document as unknown as Record<string, unknown>;
 }
 
+/**
+ * Missing or partial stored closing lines (e.g. seeded `footer: {}`, or
+ * `{ id, text }` without `fields`) must still satisfy `TemplateLine` so
+ * builder helpers can safely read `.fields`. Absent pieces stay empty /
+ * inert — nothing renders and nothing is counted as missing.
+ */
+function normalizeClosingLine(
+  raw: Partial<TemplateLine> | undefined,
+): TemplateLine {
+  return {
+    id: raw?.id ?? 'closing',
+    text: raw?.text ?? '',
+    fields: Array.isArray(raw?.fields) ? raw.fields : [],
+    optional: raw?.optional ?? false,
+    enabled: raw?.enabled ?? true,
+    ...(raw?.inline !== undefined ? { inline: raw.inline } : {}),
+  };
+}
+
 export function parseTemplateBody(
   raw: Record<string, unknown>,
 ): TemplateDocument {
-  const header = (raw.header ?? {}) as TemplateHeader;
-  header.metaLines = header.metaLines ?? [];
-  const blocks = (
-    Array.isArray(raw.blocks) ? raw.blocks : []
+  // The backend stores the body as opaque JSON and treats every part as
+  // optional, so fill in the pieces the builder relies on rather than casting.
+  // Build fresh objects: `raw` is react-query cache data and must not be mutated.
+  const rawHeader = (raw.header ?? {}) as Partial<TemplateHeader>;
+  const header: TemplateHeader = {
+    ...rawHeader,
+    titleLines: rawHeader.titleLines ?? [],
+    metaLines: rawHeader.metaLines ?? [],
+  };
+  const blocks = (Array.isArray(raw.blocks) ? raw.blocks : []).map((block) =>
+    (block as TemplateBlock).kind === 'text'
+      ? {
+          ...(block as TemplateTextBlock),
+          lines: (block as TemplateTextBlock).lines ?? [],
+        }
+      : block,
   ) as TemplateBlock[];
-  const footer = (raw.footer ?? {}) as TemplateFooter;
+  const rawFooter = (raw.footer ?? {}) as Partial<TemplateFooter>;
+  const footer: TemplateFooter = {
+    ...rawFooter,
+    closingLine: normalizeClosingLine(rawFooter.closingLine),
+    showSignatures: rawFooter.showSignatures ?? true,
+  };
+  const rawPageFooter = raw.pageFooter as TemplatePageFooter | undefined;
+  const pageFooter: TemplatePageFooter = {
+    enabled: rawPageFooter?.enabled === true,
+    text: rawPageFooter?.text ?? '',
+  };
   const invoiceNumberFormat = raw.invoiceNumberFormat as
     | InvoiceNumberFormat
     | undefined;
   const orgOverrides = (raw.orgOverrides ?? undefined) as
     | OrgOverrides
     | undefined;
-  return { header, blocks, footer, invoiceNumberFormat, orgOverrides };
+  return {
+    header,
+    blocks,
+    footer,
+    pageFooter,
+    invoiceNumberFormat,
+    orgOverrides,
+  };
 }

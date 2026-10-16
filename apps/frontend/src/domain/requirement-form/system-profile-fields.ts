@@ -8,11 +8,11 @@ export type SystemProfileField = {
 
 export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   {
-    key: 'preferred-name',
+    key: 'preferredName',
     labelKey: 'preferredName',
     type: FieldType.Text,
   },
-  { key: 'name', labelKey: 'firstName', type: FieldType.Name },
+  { key: 'firstname', labelKey: 'firstName', type: FieldType.Name },
   {
     key: 'lastname',
     labelKey: 'lastName',
@@ -27,7 +27,7 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   { key: 'email', labelKey: 'email', type: FieldType.Email },
   { key: 'phone', labelKey: 'phone', type: FieldType.Phone },
   {
-    key: 'birth-date',
+    key: 'birthdate',
     labelKey: 'birthDate',
     type: FieldType.Date,
   },
@@ -40,7 +40,7 @@ export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
   { key: 'city', labelKey: 'city', type: FieldType.Text },
   { key: 'iban', labelKey: 'iban', type: FieldType.Iban },
   {
-    key: 'account-holder',
+    key: 'accountHolder',
     labelKey: 'accountHolder',
     type: FieldType.Text,
   },

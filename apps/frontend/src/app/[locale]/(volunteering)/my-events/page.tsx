@@ -1,4 +1,4 @@
-import { SortOrder } from '@repo/data/react';
+import { SortOrder } from '@repo/data';
 import { Empty, EmptyMedia, EmptyTitle } from '@repo/ui';
 import { CalendarXIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';

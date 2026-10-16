@@ -13,7 +13,7 @@ function createEventService(options: { capture: jest.Mock }) {
         findFirst: jest.fn().mockResolvedValue({
           id: 'event-1',
           organizationUnitId: 'ou-1',
-          startsAt: new Date('2026-10-01T09:00:00.000Z'),
+          startsAt: new Date(Date.now() + 24 * 3_600_000),
         }),
       },
       eventInvites: {

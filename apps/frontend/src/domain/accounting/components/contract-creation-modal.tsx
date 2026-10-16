@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { FORM_ID as ORG_UNIT_EDIT_SHEET_ID } from '@/domain/org-unit/components/org-unit-create-edit-sheet';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import {
@@ -47,6 +48,13 @@ interface ContractCreationModalProps {
   volunteerId: string | null;
   volunteerName: string | null;
   pauschale: PauschalenType | null;
+  /** The queued draft this contract is created from; it is consumed with the contract. */
+  sourceDraftId?: string | null;
+  /**
+   * The Vertragslaufzeit to open on, normally the draft's own period. Without
+   * it the field starts from the template's stored value.
+   */
+  initialLifespan?: string | null;
   onSent: () => void;
   /** See DocumentCreationDialog's embedded mode. */
   embedded?: boolean;
@@ -58,6 +66,8 @@ export function ContractCreationModal({
   volunteerId,
   volunteerName,
   pauschale,
+  sourceDraftId,
+  initialLifespan,
   onSent,
   embedded,
 }: ContractCreationModalProps) {
@@ -123,8 +133,12 @@ export function ContractCreationModal({
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset keyed on identity change, not a dependency read by the effect body
   useEffect(() => {
     setDerivedFields(null);
-    setEditedValues({});
-  }, [volunteerId, pauschale, templateIdentity]);
+    // Seeded as an edit so the preview, the printed value and the stored
+    // period all follow the draft's own Vertragslaufzeit, not the template's.
+    setEditedValues(
+      initialLifespan ? { 'contract-lifespan': initialLifespan } : {},
+    );
+  }, [volunteerId, pauschale, templateIdentity, initialLifespan]);
 
   const profileLoaded = !!volunteerId && profileQuery.isSuccess;
   const reimbursementTypeMissing =
@@ -171,15 +185,10 @@ export function ContractCreationModal({
   // data arriving, say) must not clobber a coordinator's edits. The reset
   // effect owns what counts as a new identity; nothing here second-guesses it.
   useEffect(() => {
-    if (!dataReady || !templateDoc || derivedFields || !volunteerName) return;
-    const profileData = (profileQuery.data?.data ?? {}) as Record<
-      string,
-      unknown
-    >;
-    setDerivedFields(
-      deriveEditableFields(templateDoc, profileData, volunteerName),
-    );
-  }, [dataReady, templateDoc, derivedFields, profileQuery.data, volunteerName]);
+    if (!dataReady || !templateDoc || derivedFields) return;
+    const profileData = profileFieldValues(profileQuery.data);
+    setDerivedFields(deriveEditableFields(templateDoc, profileData));
+  }, [dataReady, templateDoc, derivedFields, profileQuery.data]);
 
   const { formatDate } = useFormatting();
 
@@ -222,6 +231,7 @@ export function ContractCreationModal({
         organizationUnitId: orgUId,
         reimbursementTypeId: reimbursementType.id,
         volunteerId,
+        sourceDraftId,
         periodStart: period.periodStart,
         periodEnd: period.periodEnd,
         fieldOverrides: (derivedFields ?? []).flatMap((field) =>

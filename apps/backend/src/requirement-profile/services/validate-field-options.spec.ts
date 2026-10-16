@@ -7,43 +7,38 @@ import {
 } from './validate-field-options';
 
 describe('assertValidFieldOptions', () => {
-  it('throws for a MULTI_CHOICE option with an empty value', () => {
+  it('throws for a MULTI_CHOICE option that is empty', () => {
     expect(() =>
-      assertValidFieldOptions(FieldType.MULTI_CHOICE, [
-        { label: '10:30', value: '' },
-      ]),
+      assertValidFieldOptions(FieldType.MULTI_CHOICE, ['10:30', '']),
     ).toThrow(BadRequestGraphQLError);
   });
 
-  it('throws for a SINGLE_CHOICE option with a blank value', () => {
+  it('throws for a SINGLE_CHOICE option that is blank', () => {
     expect(() =>
-      assertValidFieldOptions(FieldType.SINGLE_CHOICE, [
-        { label: 'Morning', value: '   ' },
-      ]),
-    ).toThrow(BadRequestGraphQLError);
-  });
-
-  it('throws for an option with an empty label', () => {
-    expect(() =>
-      assertValidFieldOptions(FieldType.MULTI_CHOICE, [
-        { label: '', value: 'morning' },
-      ]),
+      assertValidFieldOptions(FieldType.SINGLE_CHOICE, ['Morning', '   ']),
     ).toThrow(BadRequestGraphQLError);
   });
 
   it('accepts valid options', () => {
     expect(() =>
-      assertValidFieldOptions(FieldType.MULTI_CHOICE, [
-        { label: '10:30', value: '10:30' },
-        { label: '13:00', value: '13:00' },
-      ]),
+      assertValidFieldOptions(FieldType.MULTI_CHOICE, ['10:30', '13:00']),
     ).not.toThrow();
   });
 
-  it('ignores non-choice field types even with empty option values', () => {
+  it('throws for duplicate options', () => {
     expect(() =>
-      assertValidFieldOptions(FieldType.TEXT, [{ label: '', value: '' }]),
-    ).not.toThrow();
+      assertValidFieldOptions(FieldType.SINGLE_CHOICE, ['Morning', 'Morning']),
+    ).toThrow(BadRequestGraphQLError);
+  });
+
+  it('throws for duplicates that only differ by surrounding whitespace', () => {
+    expect(() =>
+      assertValidFieldOptions(FieldType.MULTI_CHOICE, ['Morning', ' Morning ']),
+    ).toThrow(BadRequestGraphQLError);
+  });
+
+  it('ignores non-choice field types even with empty options', () => {
+    expect(() => assertValidFieldOptions(FieldType.TEXT, [''])).not.toThrow();
   });
 
   it('ignores missing options', () => {
@@ -78,22 +73,20 @@ describe('assertValidSystemKeyBinding', () => {
   it('rejects a gender field with custom options', () => {
     expect(() =>
       assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, [
-        { label: 'Female', value: 'female' },
+        'Female',
       ]),
     ).toThrow(BadRequestGraphQLError);
   });
 
   it('ignores other system keys and missing keys', () => {
     expect(() =>
-      assertValidSystemKeyBinding('name', FieldType.TEXT, null),
+      assertValidSystemKeyBinding('firstname', FieldType.TEXT, null),
     ).not.toThrow();
     expect(() =>
       assertValidSystemKeyBinding(null, FieldType.TEXT, null),
     ).not.toThrow();
     expect(() =>
-      assertValidSystemKeyBinding(undefined, FieldType.SINGLE_CHOICE, [
-        { label: 'A', value: 'a' },
-      ]),
+      assertValidSystemKeyBinding(undefined, FieldType.SINGLE_CHOICE, ['A']),
     ).not.toThrow();
   });
 });

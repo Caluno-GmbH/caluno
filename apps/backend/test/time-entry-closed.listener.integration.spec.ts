@@ -38,8 +38,8 @@ import {
 import { createPermission } from './factories/role.factory';
 import { createUser } from './factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 describe('TimeEntryClosedListener', () => {
@@ -48,6 +48,7 @@ describe('TimeEntryClosedListener', () => {
   let listener: TimeEntryClosedListener;
   let organizationUnitDataService: OrganizationUnitDataService;
   let contractService: ContractService;
+  closeTestingModuleAfterAll(() => moduleRef);
   const captureException = mock(() => {});
   const observability = {
     captureException,
@@ -105,10 +106,6 @@ describe('TimeEntryClosedListener', () => {
       organizationUnitDataService,
       observability,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setup = async () => {

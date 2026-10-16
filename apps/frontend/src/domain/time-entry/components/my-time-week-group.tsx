@@ -1,5 +1,9 @@
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import type { WeekGroup } from '../my-time-grouping';
+import {
+  WEEK_HEADER_FROM_FORMAT,
+  WEEK_HEADER_TO_FORMAT,
+  type WeekGroup,
+} from '../my-time-grouping';
 import { MyTimeEntryRow } from './my-time-entry-row';
 
 export const MyTimeWeekGroup = ({ week }: { week: WeekGroup }) => {
@@ -9,7 +13,13 @@ export const MyTimeWeekGroup = ({ week }: { week: WeekGroup }) => {
     <section className="space-y-2">
       <header className="flex items-center justify-between px-1 text-sm font-semibold text-muted-foreground">
         <span>
-          {formatRange(week.weekStart, week.weekEnd, '', 'e LLL', 'e LLL y')}
+          {formatRange(
+            week.weekStart,
+            week.weekEnd,
+            '',
+            WEEK_HEADER_FROM_FORMAT,
+            WEEK_HEADER_TO_FORMAT,
+          )}
         </span>
         <span className="tabular-nums">
           {formatDurationByMinutes(week.totalMinutes)}

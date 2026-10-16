@@ -13,4 +13,11 @@ export class TypedNotificationEmitter {
   ): void {
     this.emitter.emit(event, payload);
   }
+
+  async emitAsync<T extends NotificationEvent>(
+    event: T,
+    payload: NotificationEventPayloadMap[T],
+  ): Promise<void> {
+    await this.emitter.emitAsync(event, payload);
+  }
 }

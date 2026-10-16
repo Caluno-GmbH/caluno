@@ -43,10 +43,7 @@ fragment RequiredFormFields on RequirementForm {
         required
         lockType
         systemKey
-        options {
-          label
-          value
-        }
+        options
         documents {
           fileId
           filename
@@ -256,9 +253,6 @@ fragment PublicEventOrganizationUnitFields on EventOrganizationUnit {
   slug
   logoUrl
   myMembershipState
-  requiredForms {
-    ...RequiredFormRefFields
-  }
 }
 
 fragment PublicShiftInstanceFields on ShiftInstance {
@@ -294,6 +288,9 @@ fragment PublicEventFields on Event {
   myInviteStatus
   organizationUnit {
     ...PublicEventOrganizationUnitFields
+    requiredForms {
+      ...RequiredFormRefFields
+    }
   }
   shifts {
     ...PublicShiftFields

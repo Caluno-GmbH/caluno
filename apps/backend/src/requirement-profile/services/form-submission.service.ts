@@ -16,6 +16,7 @@ import {
   type PostHogSurface,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
+import { UserService } from '../../user/user.service';
 import { SYSTEM_PROFILE_KEYS } from '../constants';
 import { FieldType, RequiredFormTargetType } from '../enums';
 import { SubmitFormInput } from '../inputs/submit-form.input';
@@ -27,14 +28,13 @@ import {
   RequiredFormService,
   type RequiredFormTarget,
 } from './required-form.service';
-import { UserProfileService } from './user-profile.service';
 
 @Injectable()
 export class FormSubmissionService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly userProfileService: UserProfileService,
+    private readonly userService: UserService,
     private readonly requiredFormService: RequiredFormService,
     private readonly postHogService: PostHogService,
   ) {}
@@ -319,7 +319,7 @@ export class FormSubmissionService {
         systemKey: string | null;
         type: string;
         label: string;
-        options: Array<{ label: string; value: string }> | null;
+        options: string[] | null;
         minAge: number | null;
       }
     >();
@@ -334,10 +334,7 @@ export class FormSubmissionService {
           systemKey: field.systemKey,
           type: field.type,
           label: field.label,
-          options: field.options as Array<{
-            label: string;
-            value: string;
-          }> | null,
+          options: field.options as string[] | null,
           minAge: field.minAge,
         });
         if (effectiveRequired && field.required) {
@@ -402,7 +399,7 @@ export class FormSubmissionService {
     const submission = await this.db.transaction(async (tx) => {
       // Save profile data
       if (Object.keys(profileData).length > 0) {
-        await this.userProfileService.upsertData(userId, profileData, tx);
+        await this.userService.updateProfileFields(userId, profileData, tx);
       }
 
       // Create submission
@@ -463,7 +460,7 @@ export class FormSubmissionService {
       type: string;
       label: string;
       systemKey: string | null;
-      options: Array<{ label: string; value: string }> | null;
+      options: string[] | null;
       minAge: number | null;
     },
   ): void {
@@ -522,13 +519,13 @@ export class FormSubmissionService {
           throw new BadRequestGraphQLError(`"${label}": must be a valid date`);
         break;
       case FieldType.SINGLE_CHOICE: {
-        const valid = (options ?? []).map((o) => o.value);
+        const valid = options ?? [];
         if (valid.length > 0 && !valid.includes(rawValue))
           throw new BadRequestGraphQLError(`"${label}": invalid option`);
         break;
       }
       case FieldType.MULTI_CHOICE: {
-        const valid = new Set((options ?? []).map((o) => o.value));
+        const valid = new Set(options ?? []);
         const invalid = parseMultiChoiceValue(rawValue).filter(
           (v) => valid.size > 0 && !valid.has(v),
         );

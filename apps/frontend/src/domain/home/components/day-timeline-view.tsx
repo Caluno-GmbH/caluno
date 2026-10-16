@@ -16,12 +16,16 @@ import {
   type SparseDayStripEntry,
   startOfDay,
 } from '../lib/date-helpers';
+import { resolvePendingDiscoverDay } from '../lib/discover-paging';
 import { DayStrip, type DayStripDay } from './day-strip';
 import { DayStripSkeleton } from './day-strip-skeleton';
 
 // Beyond this many viewports away, a smooth scroll just whooshes through
 // everything, so jump instantly instead. Nearer targets glide smoothly.
 const SMOOTH_SCROLL_MAX_VIEWPORTS = 1.5;
+
+// No scroll event for this long means a scroll has settled.
+const SCROLL_SETTLE_MS = 150;
 
 export interface DayGroup<T> {
   date: Date;
@@ -101,12 +105,41 @@ export function DayTimelineView<T>({
   // sticky header — no manual offset arithmetic.
   const scrollMarginTop = headerHeight + 8;
 
+  // Set while the view scrolls itself to a day: the scroll-spy ignores that
+  // scroll, so the strip doesn't step through every day the list glides past.
+  // Released once scrolling settles, or as soon as the user takes over.
+  const isAutoScrollingRef = useRef(false);
+  const autoScrollSettleRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const extendAutoScroll = useCallback(() => {
+    clearTimeout(autoScrollSettleRef.current);
+    autoScrollSettleRef.current = setTimeout(() => {
+      isAutoScrollingRef.current = false;
+    }, SCROLL_SETTLE_MS);
+  }, []);
+
+  useEffect(() => {
+    const release = () => {
+      clearTimeout(autoScrollSettleRef.current);
+      isAutoScrollingRef.current = false;
+    };
+    window.addEventListener('wheel', release, { passive: true });
+    window.addEventListener('touchstart', release, { passive: true });
+    return () => {
+      window.removeEventListener('wheel', release);
+      window.removeEventListener('touchstart', release);
+      release();
+    };
+  }, []);
+
   const scrollToDay = useCallback(
     (date: Date, smooth: boolean) => {
       const el = listRef.current?.querySelector(
         `[data-day="${date.getTime()}"]`,
       );
       if (!el) return;
+      isAutoScrollingRef.current = true;
+      extendAutoScroll();
+      setActiveDay((prev) => (prev.getTime() === date.getTime() ? prev : date));
       // How far the page must travel to bring the target under the header.
       const distance = Math.abs(
         el.getBoundingClientRect().top - scrollMarginTop,
@@ -118,14 +151,38 @@ export function DayTimelineView<T>({
         block: 'start',
       });
     },
-    [scrollMarginTop],
+    [scrollMarginTop, extendAutoScroll],
   );
 
-  // The strip only *requests* a scroll; the scroll-spy below is the single
-  // source of truth for which day is active, so the two can't fight. Far jumps
-  // are instant (no whoosh) so the spy lands on the target in one step; near
-  // jumps glide and the spy simply tracks along.
-  const handleSelectDay = (date: Date) => scrollToDay(date, true);
+  // A strip pick marks its day active straight away and scrolls the list
+  // there; the scroll-spy below sits that scroll out and resumes tracking on
+  // the user's next scroll. Far jumps are instant (no whoosh); near ones glide.
+  //
+  // The strip can offer days past the loaded pages (discover's strip spans the
+  // whole window), so a pick is held as pending: keep loading pages until its
+  // group is rendered, then scroll to it.
+  const [pendingDay, setPendingDay] = useState<Date | null>(null);
+  const handleSelectDay = (date: Date) => setPendingDay(date);
+
+  // Read through a ref: callers pass a fresh closure every render, which must
+  // not re-run the effect below (and re-request the page) on its own.
+  const onStripNextRef = useRef(onStripNext);
+  onStripNextRef.current = onStripNext;
+
+  useEffect(() => {
+    if (!pendingDay) return;
+    const action = resolvePendingDiscoverDay(
+      groups.map((group) => group.date),
+      pendingDay,
+      !!stripHasNext,
+    );
+    if (action.type === 'fetch') {
+      onStripNextRef.current?.();
+      return;
+    }
+    setPendingDay(null);
+    if (action.type === 'scroll') scrollToDay(action.date, true);
+  }, [pendingDay, groups, stripHasNext, scrollToDay]);
 
   // Track the sticky header height reactively.
   useEffect(() => {
@@ -150,6 +207,7 @@ export function DayTimelineView<T>({
     let raf = 0;
     const update = () => {
       raf = 0;
+      if (isAutoScrollingRef.current) return;
       const root = listRef.current;
       if (!root) return;
       // Re-query on every tick — DOM nodes are replaced when groups prepend.
@@ -172,10 +230,17 @@ export function DayTimelineView<T>({
     // rather than a blink.
     let scrollEndTimeout: ReturnType<typeof setTimeout> | undefined;
     const onScroll = () => {
+      if (isAutoScrollingRef.current) {
+        extendAutoScroll();
+        return;
+      }
       if (!raf) raf = requestAnimationFrame(update);
       setIsScrolling(true);
       clearTimeout(scrollEndTimeout);
-      scrollEndTimeout = setTimeout(() => setIsScrolling(false), 150);
+      scrollEndTimeout = setTimeout(
+        () => setIsScrolling(false),
+        SCROLL_SETTLE_MS,
+      );
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -185,7 +250,7 @@ export function DayTimelineView<T>({
       if (raf) cancelAnimationFrame(raf);
       clearTimeout(scrollEndTimeout);
     };
-  }, [groups, isLoading]);
+  }, [groups, isLoading, extendAutoScroll]);
 
   // On first load, either stay at the top (my-shifts) or land on today /
   // the closest upcoming day (discover).
@@ -219,7 +284,7 @@ export function DayTimelineView<T>({
               ) : (
                 <DayStrip
                   days={days}
-                  activeDate={activeDay}
+                  activeDate={pendingDay ?? activeDay}
                   onSelect={handleSelectDay}
                   todayLabel={t('todayButton')}
                   goToTodayLabel={t('goToToday')}

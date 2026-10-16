@@ -9,7 +9,11 @@ import {
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { isSameDay, type SparseDayStripEntry } from '../lib/date-helpers';
+import {
+  getTodayTargetDayIndex,
+  isSameDay,
+  type SparseDayStripEntry,
+} from '../lib/date-helpers';
 
 export interface DayStripDay {
   date: Date;
@@ -277,7 +281,10 @@ function ScrollDayStrip({
   const prevDayCountRef = useRef(days.length);
 
   const todayIndex = days.findIndex((day) => isSameDay(day.date, today));
-  const activeIsToday = isSameDay(activeDate, today);
+  // Today may have no shifts (no list section to land on), so "today" means
+  // the closest day with shifts from today on.
+  const todayTarget = days[getTodayTargetDayIndex(days, today)];
+  const activeIsToday = isSameDay(activeDate, todayTarget?.date ?? today);
 
   const updateArrows = useCallback(() => {
     const strip = stripRef.current;
@@ -342,10 +349,9 @@ function ScrollDayStrip({
 
   const scrollToToday = useCallback(() => {
     // Use the strip's start-of-day date (day groups are keyed by start-of-day),
-    // so onSelect can find and scroll to today's group.
-    const todayDay = days[todayIndex];
-    if (todayDay) onSelect(todayDay.date);
-  }, [days, onSelect, todayIndex]);
+    // so onSelect can find and scroll to that day's group.
+    if (todayTarget) onSelect(todayTarget.date);
+  }, [onSelect, todayTarget]);
 
   // Keep the active pill in view as the selection changes (e.g. scroll-spy).
   // Snapped instantly, not smoothly: scroll-spy can retarget on every frame of

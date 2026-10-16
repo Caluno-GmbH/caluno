@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { updateRole } from '@/domain/role/actions';
 import { RoleForm } from '@/domain/role/components/role-form';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface TimeEntryUpdatePageProps {
   params: Promise<{ orgUId: string; roleId: string; locale: string }>;
@@ -17,13 +17,9 @@ export default async function RoleUpdatePage({
   const t = await getTranslations({ locale, namespace: 'Role.sheet' });
 
   const [role, permissionGroups] = await Promise.all([
-    data.role.findById(roleId),
+    requireFound(() => data.role.findById(roleId)),
     data.role.findPermissionGroups(),
   ]);
-
-  if (!role) {
-    notFound();
-  }
 
   return (
     <RoleForm

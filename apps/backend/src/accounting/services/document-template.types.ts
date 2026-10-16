@@ -47,21 +47,28 @@ export interface TemplateBodyShape {
     closingLine?: TemplateLineShape;
     showSignatures?: boolean;
   };
+  /** Repeated at the bottom of every page; absent on older templates. */
+  pageFooter?: {
+    enabled?: boolean;
+    text?: string;
+  };
 }
 
 /**
- * Maps a template field's bound `source` to the `user_profiles.data` key it
+ * Maps a template field's bound `source` to the user profile systemKey it
  * reads from. Shared by the renderer (fills the field in) and the sign gate /
  * `missingProfileFields` resolver (checks the volunteer has supplied it).
  */
 export const PROFILE_SOURCE_TO_PROFILE_KEY: Record<string, string> = {
+  volunteer_first_name: 'firstname',
+  volunteer_last_name: 'lastname',
   volunteer_iban: 'iban',
-  volunteer_account_holder: 'account-holder',
+  volunteer_account_holder: 'accountHolder',
   volunteer_bic: 'bic',
   volunteer_street: 'street',
   volunteer_zip: 'zip',
   volunteer_city: 'city',
-  volunteer_dob: 'birth-date',
+  volunteer_dob: 'birthdate',
 };
 
 /**
@@ -96,6 +103,19 @@ export const REQUIRED_ORG_PROFILE_SOURCES = [
   'org_city',
 ] as const;
 
+function bodyLines(body: TemplateBodyShape): TemplateLineShape[] {
+  const lines: (TemplateLineShape | undefined)[] = [
+    body.header?.orgIdentityLine,
+    ...(body.header?.metaLines ?? []),
+    ...(body.blocks ?? []).flatMap((block) => [
+      block.line,
+      ...(block.lines ?? []),
+    ]),
+    body.footer?.closingLine,
+  ];
+  return lines.filter((line): line is TemplateLineShape => line !== undefined);
+}
+
 /**
  * Reads a manual (coordinator-typed) field's value out of a template body,
  * wherever in the document it sits. Used for values that have to be read
@@ -106,27 +126,32 @@ export function findManualFieldValue(
   body: TemplateBodyShape,
   fieldId: string,
 ): string | undefined {
-  const findIn = (fields?: TemplateFieldShape[]): string | undefined => {
-    const field = fields?.find(
+  for (const line of bodyLines(body)) {
+    const field = line.fields?.find(
       (f) => f.id === fieldId && f.value.kind === 'manual-template',
     );
-    return field?.value.kind === 'manual-template'
-      ? field.value.value
-      : undefined;
-  };
-
-  const lines: (TemplateLineShape | undefined)[] = [
-    body.header?.orgIdentityLine,
-    ...(body.header?.metaLines ?? []),
-    ...(body.blocks ?? []).flatMap((block) => [
-      block.line,
-      ...(block.lines ?? []),
-    ]),
-    body.footer?.closingLine,
-  ];
-  for (const line of lines) {
-    const value = findIn(line?.fields);
-    if (value !== undefined) return value;
+    if (field?.value.kind === 'manual-template') return field.value.value;
   }
   return undefined;
+}
+
+/**
+ * A copy of `body` with every manual field called `fieldId` set to `value`.
+ * A field quoted in more than one place (the contract lifespan is) moves
+ * everywhere together. Bound fields and the input body are left untouched.
+ */
+export function withManualFieldValue(
+  body: TemplateBodyShape,
+  fieldId: string,
+  value: string,
+): TemplateBodyShape {
+  const next = structuredClone(body);
+  for (const line of bodyLines(next)) {
+    for (const field of line.fields ?? []) {
+      if (field.id === fieldId && field.value.kind === 'manual-template') {
+        field.value.value = value;
+      }
+    }
+  }
+  return next;
 }

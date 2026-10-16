@@ -2,6 +2,7 @@
 
 import {
   Badge,
+  FieldDescription,
   Input,
   Label,
   RadioGroup,
@@ -44,6 +45,7 @@ import {
   type TemplateDocument,
   type TemplateField,
   type TemplateLine,
+  type TemplatePageFooter,
   type TemplateTableBlock,
   type TemplateTextBlock,
   updateManualFieldValue,
@@ -428,6 +430,7 @@ function LineEditor({
     const [soleField] = line.fields;
     const title = soleField ? getFieldTitle(soleField, t) : line.id;
     const isGap =
+      line.enabled &&
       soleField?.value.kind === 'bound' &&
       profileGaps.has(soleField.value.source);
 
@@ -673,9 +676,9 @@ function ExtraClausesCard({
   typeLabel,
   onBlockToggle,
   onFieldChange,
+  extraPanel,
 }: {
   block: TemplateTextBlock;
-  /** Section heading — "Extra clauses" on a contract, "Other information" on a timesheet. */
   heading: string;
   firstOccurrenceByFieldId: Map<string, string>;
   profileGaps: Set<DataSourceKey>;
@@ -683,6 +686,7 @@ function ExtraClausesCard({
   typeLabel: string;
   onBlockToggle: (blockId: string, enabled: boolean) => void;
   onFieldChange: (fieldId: string, value: string) => void;
+  extraPanel?: ReactNode;
 }) {
   const t = useTranslations('Accounting.templates.builder');
   const [line] = block.lines;
@@ -718,7 +722,50 @@ function ExtraClausesCard({
           />
         )}
       </InfoPanel>
+      {extraPanel}
     </div>
+  );
+}
+
+function PageFooterCard({
+  pageFooter,
+  onPageFooterChange,
+}: {
+  pageFooter: TemplatePageFooter | undefined;
+  onPageFooterChange: (next: Partial<TemplatePageFooter>) => void;
+}) {
+  const t = useTranslations('Accounting.templates.builder');
+  const enabled = pageFooter?.enabled ?? false;
+  const title = t('pageFooter.title');
+
+  return (
+    <InfoPanel
+      variant="outline"
+      title={title}
+      inactive={!enabled}
+      headerRight={
+        <Switch
+          checked={enabled}
+          onCheckedChange={(checked) =>
+            onPageFooterChange({ enabled: checked })
+          }
+          aria-label={title}
+        />
+      }
+    >
+      {enabled && (
+        <div className="flex flex-col gap-2">
+          <FieldDescription>{t('pageFooter.description')}</FieldDescription>
+          <Textarea
+            value={pageFooter?.text ?? ''}
+            onChange={(e) => onPageFooterChange({ text: e.target.value })}
+            placeholder={t('pageFooter.placeholder')}
+            aria-label={title}
+            rows={4}
+          />
+        </div>
+      )}
+    </InfoPanel>
   );
 }
 
@@ -950,6 +997,17 @@ export function TemplateBuilderBlockEditor({
     onChange(updateManualFieldValue(templateDoc, fieldId, value));
   }
 
+  function handlePageFooterChange(next: Partial<TemplatePageFooter>) {
+    onChange({
+      ...templateDoc,
+      pageFooter: {
+        enabled: templateDoc.pageFooter?.enabled ?? false,
+        text: templateDoc.pageFooter?.text ?? '',
+        ...next,
+      },
+    });
+  }
+
   function handleTableFirstColumnSourceChange(
     blockId: string,
     source: TableFirstColumnSource,
@@ -1043,13 +1101,19 @@ export function TemplateBuilderBlockEditor({
         {groups.extraBlock && (
           <ExtraClausesCard
             block={groups.extraBlock}
-            heading={t('editorGroups.extra')}
+            heading={t('editorGroups.other')}
             firstOccurrenceByFieldId={firstOccurrenceByFieldId}
             profileGaps={profileGaps}
             knownValues={knownValues}
             typeLabel={typeLabel}
             onBlockToggle={handleBlockToggle}
             onFieldChange={handleFieldChange}
+            extraPanel={
+              <PageFooterCard
+                pageFooter={templateDoc.pageFooter}
+                onPageFooterChange={handlePageFooterChange}
+              />
+            }
           />
         )}
       </div>
@@ -1160,6 +1224,12 @@ export function TemplateBuilderBlockEditor({
           typeLabel={typeLabel}
           onBlockToggle={handleBlockToggle}
           onFieldChange={handleFieldChange}
+          extraPanel={
+            <PageFooterCard
+              pageFooter={templateDoc.pageFooter}
+              onPageFooterChange={handlePageFooterChange}
+            />
+          }
         />
       )}
     </div>

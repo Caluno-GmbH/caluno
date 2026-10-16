@@ -92,8 +92,7 @@ describe('DocumentRenderingService', () => {
             }),
         },
         users: {
-          findFirst: () =>
-            Promise.resolve({ id: 'vol-1', name: 'Max Mustermann' }),
+          findFirst: () => Promise.resolve({ id: 'vol-1' }),
         },
         organizationUnits: {
           findFirst: () =>
@@ -108,11 +107,15 @@ describe('DocumentRenderingService', () => {
       },
       update: () => ({ set: () => ({ where: () => Promise.resolve() }) }),
     } as never;
-    const userProfileService = {
-      findByUserId: () =>
-        Promise.resolve({
-          data: overrides.profileData ?? { street: 'Testweg 2' },
-        }),
+    const userService = {
+      getProfileDataByUserId: () =>
+        Promise.resolve(
+          overrides.profileData ?? {
+            firstname: 'Max',
+            lastname: 'Mustermann',
+            street: 'Testweg 2',
+          },
+        ),
     } as never;
     const reimbursementRateService = {
       getEffectiveRateCents: (...args: unknown[]) => {
@@ -136,7 +139,7 @@ describe('DocumentRenderingService', () => {
     } as never;
     return new DocumentRenderingService(
       db,
-      userProfileService,
+      userService,
       reimbursementRateService,
       fileService,
       organizationService,
@@ -150,6 +153,11 @@ describe('DocumentRenderingService', () => {
       id: 'contract-1',
       volunteerId: 'vol-1',
       reimbursementTypeId: 'type-1',
+      reimbursementType: {
+        id: 'type-1',
+        yearlyLimitCents: 300000,
+        platformDefaultRateCents: 1500,
+      },
       periodStart: new Date('2025-01-01'),
       periodEnd: new Date('2025-01-31'),
       totalAmountCents: 20000,
@@ -218,6 +226,11 @@ describe('DocumentRenderingService', () => {
       id: 'invoice-1',
       volunteerId: 'vol-1',
       reimbursementTypeId: 'type-1',
+      reimbursementType: {
+        id: 'type-1',
+        yearlyLimitCents: 300000,
+        platformDefaultRateCents: 1500,
+      },
       periodStart: new Date('2025-01-01'),
       periodEnd: new Date('2025-01-31'),
       totalAmountCents: 8250,
@@ -344,15 +357,6 @@ describe('DocumentRenderingService', () => {
     expect(rateCallArgs).toEqual(['org-1', 'sub-unit', 'type-1']);
   });
 
-  it('renderAndAttachPdf never throws — returns null when the template is missing', async () => {
-    const service = createService();
-    const fileId = await service.renderAndAttachPdf(
-      contract({ documentTemplate: null }),
-      'actor-1',
-    );
-    expect(fileId).toBeNull();
-  });
-
   describe('signature seats', () => {
     it('renders name and signing date only for parties that have signed', async () => {
       const service = createService({ rateCents: 1500 });
@@ -373,6 +377,70 @@ describe('DocumentRenderingService', () => {
       expect(text).toContain('Max Mustermann');
       expect(text).toContain('01.02.2025 11:00:00');
       expect(text).not.toContain('02.02.2025');
+    });
+
+    it('repeats the page footer and numbers every page when enabled', async () => {
+      const service = createService({ rateCents: 1500 });
+      const base = contract();
+      const template = base.documentTemplate;
+      const body = template.body as Record<string, unknown>;
+      const text = extractPdfText(
+        await service.generatePdf({
+          ...base,
+          documentTemplate: {
+            ...template,
+            body: {
+              ...body,
+              blocks: Array.from({ length: 40 }, (_, i) => ({
+                id: `filler-${i}`,
+                title: `Abschnitt ${i}`,
+                lines: [
+                  {
+                    id: `filler-line-${i}`,
+                    text: 'Vorlesestunde.',
+                    fields: [],
+                  },
+                ],
+              })),
+              pageFooter: {
+                enabled: true,
+                text: 'BSM gGmbH\nAmtsgericht HH, HRB 12345',
+              },
+            },
+          },
+        } as unknown as ContractWithRelations),
+      );
+
+      expect(text).toContain('BSM gGmbH');
+      expect(text).toContain('Amtsgericht HH, HRB 12345');
+      expect(text).toContain('Seite 1 von');
+      expect(text).toContain('Seite 2 von');
+      const total = text.match(/Seite 1 von (\d+)/)?.[1];
+      expect(Number(total)).toBeGreaterThan(1);
+      const footerHits = [...text.matchAll(/BSM gGmbH/g)].length;
+      expect(footerHits).toBe(Number(total));
+    });
+
+    it('still numbers pages when the footer text is switched off', async () => {
+      const service = createService({ rateCents: 1500 });
+      const base = contract();
+      const template = base.documentTemplate;
+      const body = template.body as Record<string, unknown>;
+      const text = extractPdfText(
+        await service.generatePdf({
+          ...base,
+          documentTemplate: {
+            ...template,
+            body: {
+              ...body,
+              pageFooter: { enabled: false, text: 'BSM gGmbH' },
+            },
+          },
+        } as unknown as ContractWithRelations),
+      );
+
+      expect(text).not.toContain('BSM gGmbH');
+      expect(text).toContain('Seite 1 von');
     });
 
     it('leaves signature seats blank while nobody has signed', async () => {

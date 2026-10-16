@@ -30,7 +30,7 @@ describe('gender options', () => {
 describe('hasFixedGenderOptions', () => {
   it('is true only for the gender system key', () => {
     expect(hasFixedGenderOptions('gender')).toBe(true);
-    expect(hasFixedGenderOptions('name')).toBe(false);
+    expect(hasFixedGenderOptions('firstname')).toBe(false);
     expect(hasFixedGenderOptions('email')).toBe(false);
   });
 

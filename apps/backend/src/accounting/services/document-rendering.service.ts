@@ -1,13 +1,14 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import PDFDocument from 'pdfkit';
+
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { OrganizationService } from '../../organization/organization.service';
-import { UserProfileService } from '../../requirement-profile/services/user-profile.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
+import { UserService } from '../../user/user.service';
 import type {
   ContractWithRelations,
   InvoiceWithRelations,
@@ -20,6 +21,17 @@ import {
 import { resolveFirstColumn } from '../utils/invoice-table';
 import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
+import {
+  PAGE_FOOTER_FONT_SIZE,
+  PAGE_FOOTER_LINE_GAP,
+  PAGE_FOOTER_LINE_HEIGHT,
+  type PageFooter,
+  pageFooterHeight,
+  pageFooterLines,
+  pageNumberLabel,
+  resolvePageFooter,
+} from '../utils/page-footer';
+import { PAUSCHALE_TYPE_LABELS } from '../utils/reimbursement-type-labels';
 import {
   findManualFieldValue,
   PROFILE_SOURCE_TO_PROFILE_KEY,
@@ -35,12 +47,6 @@ type RenderableDocument = ContractWithRelations | InvoiceWithRelations;
 const EUR = '€';
 
 const AMOUNT_COLUMN = 'Betrag';
-
-/** Human label for the reimbursement type key rendered for the `pauschalen_type` source. */
-const PAUSCHALE_TYPE_LABELS: Record<string, string> = {
-  EHRENAMT: 'Ehrenamtspauschale',
-  UEBUNGSLEITER: 'Übungsleiterpauschale',
-};
 
 const nonBlank = (value: string | undefined): string | undefined => {
   const trimmed = value?.trim();
@@ -75,7 +81,7 @@ export class DocumentRenderingService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly userProfileService: UserProfileService,
+    private readonly userService: UserService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly fileService: FileService,
     private readonly organizationService: OrganizationService,
@@ -150,7 +156,17 @@ export class DocumentRenderingService {
       'totalAmountCents' in document ? document.totalAmountCents : undefined;
 
     return new Promise<Buffer>((resolve, reject) => {
-      const pdf = new PDFDocument({ size: 'A4', margin: 48 });
+      const pageFooter = resolvePageFooter(body);
+      const pdf = new PDFDocument({
+        size: 'A4',
+        margins: {
+          top: 48,
+          left: 48,
+          right: 48,
+          bottom: 48 + pageFooterHeight(pageFooter),
+        },
+        bufferPages: true,
+      });
       const chunks: Buffer[] = [];
       pdf.on('data', (chunk: Buffer) => chunks.push(chunk));
       pdf.on('end', () => resolve(Buffer.concat(chunks)));
@@ -160,6 +176,7 @@ export class DocumentRenderingService {
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
       this.renderSignatures(pdf, document, resolvedValues);
+      this.renderPageFooters(pdf, pageFooter);
       pdf.end();
     });
   }
@@ -351,6 +368,46 @@ export class DocumentRenderingService {
     }
   }
 
+  private renderPageFooters(pdf: PDFKit.PDFDocument, footer: PageFooter): void {
+    const lines = pageFooterLines(footer);
+    const { start, count } = pdf.bufferedPageRange();
+    const left = pdf.page.margins.left;
+    const width = pdf.page.width - left - pdf.page.margins.right;
+
+    for (let i = 0; i < count; i++) {
+      pdf.switchToPage(start + i);
+      // Zeroed so writing into the reserved strip cannot trigger a new page.
+      const reserved = pdf.page.margins.bottom;
+      pdf.page.margins.bottom = 0;
+
+      const textBlock = lines.length > 0 ? 1 + lines.length : 0;
+      const blockHeight = (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
+      // The true page margin, not the enlarged one: that enlargement is this strip.
+      const pageMargin = reserved - pageFooterHeight(footer);
+      const top = pdf.page.height - pageMargin - blockHeight;
+
+      pdf
+        .fontSize(PAGE_FOOTER_FONT_SIZE)
+        .font('Helvetica')
+        .fillColor('black')
+        .text(pageNumberLabel(i + 1, count), left, top, {
+          width,
+          align: 'right',
+          lineBreak: false,
+        });
+
+      if (lines.length > 0) {
+        pdf.text(lines.join('\n'), left, top + 2 * PAGE_FOOTER_LINE_HEIGHT, {
+          width,
+          align: 'left',
+          lineGap: PAGE_FOOTER_LINE_GAP,
+        });
+      }
+
+      pdf.page.margins.bottom = reserved;
+    }
+  }
+
   private renderSignatures(
     pdf: PDFKit.PDFDocument,
     document: RenderableDocument,
@@ -363,7 +420,7 @@ export class DocumentRenderingService {
         signedAt: this.signatureTimestampFor(document, 'VOLUNTEER'),
       },
       {
-        label: 'Unterschrift Koordination',
+        label: 'Unterschrift (Organisation)',
         name: resolved.org_name || '—',
         signedAt: this.signatureTimestampFor(document, 'PERMISSION_HOLDER'),
       },
@@ -536,25 +593,19 @@ export class DocumentRenderingService {
     if (!template) {
       throw new Error('Document is missing its template');
     }
-    const [rootUnit, volunteer] = await Promise.all([
+    const rootUnit =
       'organizationUnit' in document && document.organizationUnit
-        ? Promise.resolve(document.organizationUnit)
-        : this.resolveTemplateOrgUnit(template),
-      this.db.query.users.findFirst({
-        where: { id: document.volunteerId },
-      }),
-    ]);
-    const [profile, orgProfile] = await Promise.all([
-      this.userProfileService.findByUserId(document.volunteerId),
+        ? document.organizationUnit
+        : await this.resolveTemplateOrgUnit(template);
+    const [profileData, orgProfile] = await Promise.all([
+      this.userService.getProfileDataByUserId(document.volunteerId),
       // The same resolved org details the create gate checked, so a sub-org's
       // document prints what its parents filled in rather than blanks.
       template.organizationId && rootUnit
         ? resolveOrgProfile(this.db, template.organizationId, rootUnit.id)
         : Promise.resolve(undefined),
     ]);
-    const profileData = (profile?.data ?? {}) as Record<string, unknown>;
 
-    const [firstName, lastName] = this.splitName(volunteer?.name);
     const rateCents = await this.resolveRateCents(
       document,
       template.organizationId,
@@ -622,12 +673,26 @@ export class DocumentRenderingService {
         ?.orgOverrides,
     );
 
+    const volunteerFirstName = str(
+      profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_first_name],
+    );
+    const volunteerLastName = str(
+      profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_last_name],
+    );
+
+    const volunteerName = [
+      nonBlank(volunteerFirstName),
+      nonBlank(volunteerLastName),
+    ]
+      .filter((part): part is string => part !== undefined)
+      .join(' ');
+
     return {
       ...orgValues,
       org_legal_rep: orgProfile?.legalRep ?? rootUnit?.legalRep ?? '',
-      volunteer_name: volunteer?.name ?? '',
-      volunteer_first_name: firstName,
-      volunteer_last_name: lastName,
+      volunteer_first_name: volunteerFirstName,
+      volunteer_last_name: volunteerLastName,
+      volunteer_name: volunteerName,
       volunteer_street: str(
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_street],
       ),
@@ -650,7 +715,7 @@ export class DocumentRenderingService {
         profileData[PROFILE_SOURCE_TO_PROFILE_KEY.volunteer_bic],
       ),
       pauschalen_type: document.reimbursementType
-        ? (PAUSCHALE_TYPE_LABELS[document.reimbursementType.key] ?? '')
+        ? PAUSCHALE_TYPE_LABELS[document.reimbursementType.key]
         : '',
       hourly_rate: rateCents !== undefined ? this.formatRate(rateCents) : '',
       total_hours: totalHours !== undefined ? `${totalHours}h` : '',
@@ -843,11 +908,6 @@ export class DocumentRenderingService {
       throw new Error('Organization is missing its id');
     }
     return (await this.organizationService.requireRootUnit(organizationId)).id;
-  }
-
-  private splitName(name: string | undefined): [string, string] {
-    const parts = (name ?? '').trim().split(/\s+/);
-    return [parts[0] ?? '', parts.slice(1).join(' ')];
   }
 
   /**

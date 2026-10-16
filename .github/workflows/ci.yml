@@ -50,7 +50,7 @@ jobs:
           matches() { echo "$files" | grep -qE "$1"; }
 
           # Paths that affect what either app compiles to.
-          shared='^(package\.json|bun\.lock|turbo\.json|tsconfig\.json|biome\.json|bunfig\.toml)$|^packages/(data|ui|observability|typescript-config)/|^\.github/'
+          shared='^(package\.json|bun\.lock|turbo\.json|tsconfig\.json|biome\.json|bunfig\.toml)$|^packages/(data|ui|lifespan|observability|typescript-config)/|^\.github/'
 
           backend=false; frontend=false; infra=false
           matches "^apps/backend/|^scripts/|$shared" && backend=true

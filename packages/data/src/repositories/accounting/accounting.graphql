@@ -63,19 +63,10 @@ query GetYearlyUsage(
   }
 }
 
-query GetInviteAllowanceEligibility(
-  $organizationUnitId: ID!
-  $reimbursementTypeId: ID!
-  $shiftDurationMinutes: Int!
-  $periodStart: DateTime
-  $periodEnd: DateTime
-) {
-  inviteAllowanceEligibility(
-    organizationUnitId: $organizationUnitId
-    reimbursementTypeId: $reimbursementTypeId
-    shiftDurationMinutes: $shiftDurationMinutes
-    periodStart: $periodStart
-    periodEnd: $periodEnd
+query GetVolunteerAllowanceStates($volunteerIds: [ID!]!, $shiftInstanceId: ID) {
+  volunteerAllowanceStates(
+    volunteerIds: $volunteerIds
+    shiftInstanceId: $shiftInstanceId
   ) {
     volunteerId
     state
@@ -212,6 +203,9 @@ fragment InvoiceSummaryFields on Invoice {
   totalAmountCents
   totalHours
   isNonCompliant
+  # Live (does a claimed hour lack an ACTIVE contract right now?), unlike the
+  # stored isNonCompliant above, which is only the state at creation.
+  hasHoursWithoutActiveContract
   declineReason
   declinedAt
   declinedAtSigneeType
@@ -330,6 +324,9 @@ query GetVolunteersNeedingTimesheets(
     periodEnd
     eligibleHours
     estimatedAmountCents
+    hasUncoveredHours
+    firstUncoveredAt
+    hasHoursWithoutActiveContract
   }
 }
 

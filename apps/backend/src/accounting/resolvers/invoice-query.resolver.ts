@@ -143,6 +143,7 @@ export class InvoiceQueryResolver {
     const entries = await this.invoiceService.findEligibleTimeEntries(
       volunteerId,
       reimbursementTypeId,
+      context.organizationUnitId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
     );
@@ -214,6 +215,9 @@ export class InvoiceQueryResolver {
             (rateCentsByTypeId.get(row.reimbursementTypeId) ??
               reimbursementType.platformDefaultRateCents),
         ),
+        hasUncoveredHours: row.hasUncoveredHours,
+        firstUncoveredAt: row.firstUncoveredAt,
+        hasHoursWithoutActiveContract: row.hasHoursWithoutActiveContract,
       };
     });
   }
@@ -224,12 +228,13 @@ export class InvoiceQueryResolver {
     @Args('year', { type: () => Int }) year: number,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<PaidShiftSignupVolunteer[]> {
-    const organizationId =
-      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
-        context.organizationUnitId,
-      );
+    // Gate on accounting-enabled for this org; the signup list itself is
+    // unit-scoped like volunteersNeedingTimesheets / contracts / invoices.
+    await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+      context.organizationUnitId,
+    );
     const rows = await this.invoiceService.findPaidShiftSignupVolunteers(
-      organizationId,
+      context.organizationUnitId,
       year,
     );
     if (rows.length === 0) return [];

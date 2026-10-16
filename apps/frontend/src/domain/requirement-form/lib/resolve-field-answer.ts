@@ -4,7 +4,7 @@ import { parseMultiChoiceValue } from '../option-values';
 export const RESTRICTED_PAYMENT_MASKS = {
   iban: 'XXXX XXXX XXXX XXXX XXXX XX',
   bic: 'XXXXXXXXXXX',
-  'account-holder': 'XXXXXX XXXXXX',
+  accountHolder: 'XXXXXX XXXXXX',
 } as const;
 
 export const isMaskedPaymentAnswer = (answer: string): boolean =>
@@ -15,7 +15,7 @@ export type SubmissionField = {
   label: string;
   type: string;
   systemKey?: string | null;
-  options?: { label: string; value: string }[] | null;
+  options?: string[] | null;
 };
 
 export type SubmissionValue = { fieldId: string; value: string };
@@ -54,10 +54,7 @@ export function resolveFieldAnswer(
     return raw === 'true' ? accepted : dash;
   }
   if (field.type === 'MULTI_CHOICE') {
-    const options = field.options ?? [];
-    return parseMultiChoiceValue(raw)
-      .map((v) => options.find((o) => o.value === v)?.label ?? v)
-      .join(', ');
+    return parseMultiChoiceValue(raw).join(', ');
   }
   if (field.type === 'STATIC_TEXT') return dash;
 

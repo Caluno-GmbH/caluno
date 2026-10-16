@@ -19,7 +19,6 @@ import { RequirementFormBlockRefMapper } from './mappers/requirement-form-block-
 import { RequirementFulfillmentMapper } from './mappers/requirement-fulfillment.mapper';
 import { RequirementProfileMapper } from './mappers/requirement-profile.mapper';
 import { RequirementProfileSubmissionMapper } from './mappers/requirement-profile-submission.mapper';
-import { UserProfileMapper } from './mappers/user-profile.mapper';
 import {
   RequirementFulfillmentFieldResolver,
   RequirementFulfillmentMutationResolver,
@@ -44,8 +43,6 @@ import { RequirementFormFieldResolver } from './resolvers/requirement-form-field
 import { RequirementFormMutationResolver } from './resolvers/requirement-form-mutation.resolver';
 import { RequirementFormQueryResolver } from './resolvers/requirement-form-query.resolver';
 import { RequirementFulfillmentUploadFieldResolver } from './resolvers/requirement-fulfillment-upload-field.resolver';
-import { UserProfileMutationResolver } from './resolvers/user-profile-mutation.resolver';
-import { UserProfileQueryResolver } from './resolvers/user-profile-query.resolver';
 import {
   FormBlockService,
   FormSubmissionService,
@@ -54,7 +51,6 @@ import {
   RequirementProfileService,
   RequirementProfileSubmissionService,
   RequirementService,
-  UserProfileService,
 } from './services';
 
 @Module({
@@ -73,7 +69,6 @@ import {
     RequirementFormService,
     FormSubmissionService,
     RequiredFormService,
-    UserProfileService,
     RequirementProfileMapper,
     RequirementMapper,
     RequirementProfileSubmissionMapper,
@@ -88,7 +83,6 @@ import {
     RequiredFormRefMapper,
     FormSubmissionMapper,
     FormSubmissionValueMapper,
-    UserProfileMapper,
     RequirementProfileQueryResolver,
     RequirementProfileMutationResolver,
     RequirementProfileFieldResolver,
@@ -111,8 +105,6 @@ import {
     RequirementFormBlockRefFieldResolver,
     FormSubmissionQueryResolver,
     FormSubmissionFieldResolver,
-    UserProfileQueryResolver,
-    UserProfileMutationResolver,
   ],
   exports: [
     RequirementService,
@@ -122,7 +114,6 @@ import {
     RequirementFormService,
     FormSubmissionService,
     RequiredFormService,
-    UserProfileService,
     RequiredFormRefMapper,
   ],
 })

@@ -11,7 +11,7 @@ interface RootPagesLayoutProps {
 export default async function RootPagesLayout({
   children,
 }: RootPagesLayoutProps) {
-  const session = await requireAuth();
+  await requireAuth();
   const t = await getTranslations('Common');
   const me = await getDataClient().then((data) => data.user.getMe());
 
@@ -19,9 +19,9 @@ export default async function RootPagesLayout({
     <>
       <div className="fixed inset-x-0 top-0 z-40 w-full">
         <HomeHeader
-          title={t('greeting', { name: session.user.name })}
+          title={t('greeting', { name: me.name })}
           avatarUrl={me.image ?? undefined}
-          avatarName={session.user.name}
+          avatarName={me.name}
         />
       </div>
       <div className="mx-auto w-full max-w-4xl px-6 pt-36 pb-4">{children}</div>

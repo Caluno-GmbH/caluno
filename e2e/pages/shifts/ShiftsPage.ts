@@ -8,15 +8,15 @@ export class ShiftsPage {
   constructor(private readonly page: Page) {}
 
   get heading() {
-    return this.page.getByRole('heading', { name: 'Shifts', exact: true });
+    return this.page.getByRole('heading', { name: 'Assignments', exact: true });
   }
 
   get createShiftButton() {
-    return this.page.getByRole('button', { name: 'Create shift' }).first();
+    return this.page.getByRole('button', { name: 'Create assignment' }).first();
   }
 
   get sidebarLink() {
-    return this.page.getByRole('link', { name: 'Shifts' }).first();
+    return this.page.getByRole('link', { name: 'Assignments' }).first();
   }
 
   // Create-shift form.
@@ -41,7 +41,7 @@ export class ShiftsPage {
   }
 
   get shiftCreatedConfirmation() {
-    return this.page.getByText('Shift created');
+    return this.page.getByText('Assignment created');
   }
 
   get formDialog() {
@@ -64,12 +64,16 @@ export class ShiftsPage {
     return this.formDialog.getByRole('button', { name: 'Browse files' });
   }
 
+  // Recurrence select — the dialog also has a reimbursement-type combobox.
   get recurrenceTrigger() {
-    return this.formDialog.getByRole('combobox');
+    return this.formDialog.getByRole('combobox').filter({
+      hasText:
+        /Does not repeat|Every day|Every working day|Every weekend day|Custom recurrence|No recurrence/,
+    });
   }
 
   get openShiftSwitch() {
-    return this.formDialog.getByRole('switch');
+    return this.formDialog.getByRole('switch', { name: 'Open assignment' });
   }
 
   get cancelButton() {
@@ -82,7 +86,7 @@ export class ShiftsPage {
 
   // Shown only for "Custom recurrence".
   get weekdaySection() {
-    return this.page.getByText('Choose which days this shift repeats');
+    return this.page.getByText('Choose which days this assignment repeats');
   }
 
   async selectRecurrence(option: string) {
@@ -154,8 +158,8 @@ export class ShiftsPage {
     await this.timeInputs.nth(1).fill(shift.endTime);
 
     await this.save();
-    // Open shifts land on a "Shift created" confirmation; invite-only shifts
-    // route to /shifts/<id>/invite.
+    // Open assignments land on an "Assignment created" confirmation; invite-only
+    // assignments route to /shifts/<id>/invite.
     if (shift.openShift) {
       await this.awaitShiftCreated();
       return this.createdShiftId();
@@ -186,14 +190,16 @@ export class ShiftsPage {
     await expect(this.shiftCreatedConfirmation).toBeVisible();
   }
 
-  // One-time shifts show the "One-time" tag and date; recurring shifts list
-  // their weekdays.
+  // One-time shifts show the "One-time" tag and date; invite-only recurring
+  // shifts land on the invite sheet covering future occurrences + weekdays.
   async expectCreatedShift(shift: Shift) {
     if (shift.recurrence === 'Does not repeat') {
       await expect(this.formDialog.getByText('One-time')).toBeVisible();
       await expect(this.formDialog).toContainText(this.expectedShiftDate());
     } else {
-      await expect(this.formDialog).toContainText('future instances');
+      await expect(this.formDialog).toContainText(
+        /future occurrences|future instances/i,
+      );
       for (const day of shift.weekdays ?? []) {
         await expect(this.formDialog).toContainText(day);
       }
@@ -211,14 +217,14 @@ export class ShiftsPage {
 
   // App-level validation messages (not native).
   get nameRequiredError() {
-    return this.formDialog.getByText('Name is required');
+    return this.formDialog.getByText('Please enter a name.');
   }
 
   get startTimeRequiredError() {
-    return this.formDialog.getByText('Start time is required');
+    return this.formDialog.getByText('Please enter a start time.');
   }
 
   get endTimeRequiredError() {
-    return this.formDialog.getByText('End time is required');
+    return this.formDialog.getByText('Please enter an end time.');
   }
 }

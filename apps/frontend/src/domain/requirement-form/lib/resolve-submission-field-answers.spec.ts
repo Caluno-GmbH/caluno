@@ -23,7 +23,7 @@ describe('resolveSubmissionFieldAnswers', () => {
         id: 'f-name',
         type: 'NAME',
         label: 'Full name',
-        systemKey: 'name',
+        systemKey: 'firstname',
       }),
       field({
         id: 'f-street',
@@ -39,7 +39,7 @@ describe('resolveSubmissionFieldAnswers', () => {
       { fieldId: 'f-custom', value: 'Because I care' },
     ];
     const profileData = {
-      name: 'Current profile name',
+      firstname: 'Current profile name',
       street: 'Current profile address',
     };
 
@@ -72,7 +72,7 @@ describe('resolveSubmissionFieldAnswers', () => {
         id: 'f-name',
         type: 'NAME',
         label: 'Full name',
-        systemKey: 'name',
+        systemKey: 'firstname',
       }),
     ];
     const submissionValues: SubmissionValue[] = [

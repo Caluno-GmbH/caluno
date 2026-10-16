@@ -56,7 +56,6 @@ export function DashboardContent({
     const result = await deleteForm({ organizationUnitId: orgUId, formId: id });
     if (result?.serverError) {
       toast.error(result.serverError);
-      throw new Error(result.serverError);
     }
   }
 
@@ -67,7 +66,6 @@ export function DashboardContent({
     });
     if (result?.serverError) {
       toast.error(result.serverError);
-      throw new Error(result.serverError);
     }
   }
 

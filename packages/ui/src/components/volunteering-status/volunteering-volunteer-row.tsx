@@ -64,6 +64,8 @@ export type VolunteeringVolunteerRowProps = {
   statusLabel?: string;
   /** Extra content shown in a tooltip on the status chip (e.g. check-out windows). */
   statusTooltip?: ReactNode;
+  /** Extra content rendered right after the name (e.g. an accounting badge). */
+  nameAdornment?: ReactNode;
   /** When set, renders the status chip as a dropdown offering these targets. */
   statusOptions?: VolunteeringStatusOption[];
   /** Accessible label for the status chip dropdown trigger. */
@@ -91,6 +93,7 @@ export function VolunteeringVolunteerRow({
   completedDuration,
   statusLabel,
   statusTooltip,
+  nameAdornment,
   statusOptions,
   statusMenuAriaLabel,
   actions: actionsOverride,
@@ -180,6 +183,7 @@ export function VolunteeringVolunteerRow({
           <AvatarFallback>{getInitials(name)}</AvatarFallback>
         </Avatar>
         <p className="truncate text-base font-medium">{name}</p>
+        {nameAdornment}
       </div>
 
       {iconActions.length > 0 ? (

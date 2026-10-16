@@ -41,11 +41,11 @@ import {
   getDiscoverWindow,
   groupByDay,
   intervalsOverlap,
-  isSameDay,
   startOfDay,
 } from '../lib/date-helpers';
 import {
   hasNextDiscoverDay,
+  resolveDiscoverDayIndex,
   shouldFetchNextDiscoverPage,
 } from '../lib/discover-paging';
 import type { DiscoverTab } from '../lib/discover-tabs';
@@ -287,13 +287,23 @@ export function VolunteerHomeContent({
 
   // Discover shows one day's shifts at a time, laid out in two columns on
   // desktop. The day strip highlights that day; its arrows step between the
-  // days that actually have shifts.
-  const activeGroupIndex = availableGrouped.findIndex((group) =>
-    isSameDay(group.date, activeDiscoverDay),
-  );
-  const resolvedIndex = activeGroupIndex >= 0 ? activeGroupIndex : 0;
-  const selectedGroup = availableGrouped[resolvedIndex];
+  // days that actually have shifts. The strip spans the whole discover window,
+  // so a picked day can lie past the loaded pages — keep fetching until it
+  // arrives instead of falling back to an already-loaded day.
   const availableDayCount = availableGrouped.length;
+  const targetIndex = resolveDiscoverDayIndex(
+    availableGrouped.map((group) => group.date),
+    activeDiscoverDay,
+  );
+  const isAwaitingDiscoverDay =
+    targetIndex >= availableDayCount && !!hasMoreAvailablePages;
+  const resolvedIndex = Math.min(
+    targetIndex,
+    Math.max(availableDayCount - 1, 0),
+  );
+  const selectedGroup = isAwaitingDiscoverDay
+    ? undefined
+    : availableGrouped[resolvedIndex];
   const hasPrevDay = resolvedIndex > 0;
   const hasNextDay = hasNextDiscoverDay({
     loadedDayCount: availableDayCount,
@@ -310,7 +320,7 @@ export function VolunteerHomeContent({
     if (
       shouldFetchNextDiscoverPage({
         loadedDayCount: availableDayCount,
-        activeIndex: resolvedIndex,
+        activeIndex: targetIndex,
         hasMorePages: hasMoreAvailablePages,
         isFetching: isFetchingAvailable,
       })
@@ -319,7 +329,7 @@ export function VolunteerHomeContent({
     }
   }, [
     availableDayCount,
-    resolvedIndex,
+    targetIndex,
     hasMoreAvailablePages,
     isFetchingAvailable,
     fetchNextAvailablePage,
@@ -546,7 +556,13 @@ export function VolunteerHomeContent({
                 <DayStrip
                   days={discoverDayStrip}
                   activeDate={activeDiscoverDay}
-                  activeDates={selectedGroup ? [selectedGroup.date] : []}
+                  activeDates={
+                    isAwaitingDiscoverDay
+                      ? [activeDiscoverDay]
+                      : selectedGroup
+                        ? [selectedGroup.date]
+                        : []
+                  }
                   onSelect={setActiveDiscoverDay}
                   todayLabel={t('todayButton')}
                   paged
@@ -559,7 +575,7 @@ export function VolunteerHomeContent({
                 />
               )}
 
-              {showLoadingAvailable ? (
+              {showLoadingAvailable || isAwaitingDiscoverDay ? (
                 <div className="space-y-3">
                   <Skeleton className="h-24 w-full rounded-xl" />
                   <Skeleton className="h-24 w-full rounded-xl" />

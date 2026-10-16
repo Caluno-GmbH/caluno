@@ -3,6 +3,8 @@
 import { ShiftInviteStatus } from '@repo/data';
 import { Button, Card } from '@repo/ui';
 import {
+  CalendarDaysIcon,
+  ChevronRightIcon,
   Clock4Icon,
   DoorOpenIcon,
   MapPinIcon,
@@ -32,6 +34,7 @@ export interface ShiftCardMyProps {
       title: string;
       location?: string | null;
       rrule?: string | null;
+      event?: { id: string; title: string } | null;
     };
   };
   /** Show the inline time range. Off when an external time rail already shows it. */
@@ -102,6 +105,7 @@ export function ShiftCardMy({
   const showCheckIn =
     isJoined && (timer.kind === 'soon' || timer.kind === 'overdue');
   const showCheckOut = isJoined && timer.kind === 'active';
+  const event = shiftInstance.master.event;
 
   return (
     <Card className="relative flex flex-col gap-0 overflow-hidden rounded-xl border border-border bg-card p-0">
@@ -173,6 +177,22 @@ export function ShiftCardMy({
           </Button>
         )}
       </div>
+
+      {event && (
+        <Link
+          href={`/events/${event.id}`}
+          prefetch={false}
+          className="relative z-10 flex items-center justify-between gap-2 border-t border-border px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <CalendarDaysIcon className="size-[13px] shrink-0" />
+            <span className="truncate">
+              {t('partOfEvent', { event: event.title })}
+            </span>
+          </span>
+          <ChevronRightIcon className="size-[13px] shrink-0" />
+        </Link>
+      )}
     </Card>
   );
 }

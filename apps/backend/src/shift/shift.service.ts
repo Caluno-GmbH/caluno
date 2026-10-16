@@ -210,18 +210,21 @@ export class ShiftService {
   /**
    * Active (not cancelled) instances starting within `windowHours` of `now`
    * that have an effective minimum staffing requirement (an instance-level
-   * override, or else the series' `minVolunteers`) — candidates for the
-   * understaffed-shift scheduler tick. Instances with no minimum configured
-   * are filtered out in application code since there's nothing to be "below".
+   * override, or else the series' `minVolunteers`). Instances with no
+   * minimum configured are filtered out in application code since there's
+   * nothing to be "below". Restricted to `instanceIds` when given.
    */
-  async findUnderstaffedCandidateInstances(
+  private async findActiveInstancesWithMinimumInWindow(
     now: Date,
     windowHours: number,
+    instanceIds?: string[],
   ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
-    const windowEnd = new Date(now.getTime() + windowHours * 3_600_000);
+    if (instanceIds?.length === 0) return [];
 
+    const windowEnd = new Date(now.getTime() + windowHours * 3_600_000);
     const instances = await this.db.query.shiftInstances.findMany({
       where: {
+        ...(instanceIds ? { id: { in: instanceIds } } : {}),
         isCancelled: false,
         actualStartsAt: { gt: now, lte: windowEnd },
       },
@@ -233,6 +236,96 @@ export class ShiftService {
         (instance.overrideMinVolunteers ?? instance.master.minVolunteers) !=
         null,
     );
+  }
+
+  /** Candidates for the understaffed-shift scheduler tick, see findActiveInstancesWithMinimumInWindow. */
+  async findUnderstaffedCandidateInstances(
+    now: Date,
+    windowHours: number,
+  ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
+    return this.findActiveInstancesWithMinimumInWindow(now, windowHours);
+  }
+
+  /**
+   * Candidates for the pause-approval sweep tick: upcoming instances that
+   * currently have at least one AWAITING_ADMIN_APPROVAL invite, which
+   * re-checks whether those invites should move onto the waitlist now that
+   * the pause covers the instance. See findActiveInstancesWithMinimumInWindow.
+   */
+  async findPauseApprovalSweepCandidates(
+    now: Date,
+    windowHours: number,
+  ): Promise<Array<ShiftInstanceEntity & { master: ShiftEntity }>> {
+    const pending = await this.db
+      .selectDistinct({
+        instanceId: schema.shiftInstanceInvites.instanceId,
+      })
+      .from(schema.shiftInstanceInvites)
+      .where(
+        eq(
+          schema.shiftInstanceInvites.status,
+          ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+        ),
+      );
+    if (pending.length === 0) return [];
+
+    return this.findActiveInstancesWithMinimumInWindow(
+      now,
+      windowHours,
+      pending.map((row) => row.instanceId),
+    );
+  }
+
+  /**
+   * Pause-approval sweep: moves every AWAITING_ADMIN_APPROVAL invite on the
+   * given instances to WAITLIST_JOINED. When a seat is free, the volunteers
+   * who just moved receive the existing spot-opened email. Volunteers already
+   * on the waitlist are not mailed again. Turning approval off still confirms
+   * people via autoResolveAwaitingApprovalInvites.
+   */
+  async sweepPausedApprovalInvites(instanceIds: string[]): Promise<void> {
+    if (instanceIds.length === 0) return;
+
+    const movedByInstance = await this.db.transaction(async (tx) => {
+      const instances = await tx.query.shiftInstances.findMany({
+        where: { id: { in: instanceIds } },
+        with: {
+          invites: {
+            where: { status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL },
+            columns: { id: true, userId: true },
+          },
+        },
+      });
+
+      const moved = new Map<string, string[]>();
+      for (const instance of instances) {
+        if (instance.invites.length === 0) continue;
+
+        await tx
+          .update(schema.shiftInstanceInvites)
+          .set({
+            status: ShiftInviteStatus.WAITLIST_JOINED,
+            remindedAt: null,
+          })
+          .where(
+            inArray(
+              schema.shiftInstanceInvites.id,
+              instance.invites.map((invite) => invite.id),
+            ),
+          );
+
+        moved.set(
+          instance.id,
+          instance.invites.map((invite) => invite.userId),
+        );
+      }
+
+      return moved;
+    });
+
+    for (const [instanceId, userIds] of movedByInstance) {
+      void this.notifyWaitlistOfOpenedSeat(instanceId, this.db, userIds);
+    }
   }
 
   /** Instances of the given shifts in the org unit, keyed by masterId, ordered by start time. */
@@ -416,13 +509,13 @@ export class ShiftService {
       with: { master: true },
     });
 
-    if (!instance?.master) {
+    if (!instance) {
       throw new NotFoundGraphQLError(
         `Shift instance with ID ${instanceId} not found`,
       );
     }
 
-    return instance as ShiftInstanceEntity & { master: ShiftEntity };
+    return instance;
   }
 
   async isVolunteerBooked(
@@ -1886,7 +1979,7 @@ export class ShiftService {
       });
     }
 
-    if (before?.master) {
+    if (before) {
       const previousTitle = before.overrideTitle ?? before.master.title;
       const nextTitle = input.title;
       const previousLocation =
@@ -2059,7 +2152,9 @@ export class ShiftService {
    * oldest-first, now that approval is no longer required for them: admits
    * up to capacity, waitlists the overflow. Mirrors the single-invite admin
    * approval path (resolveAdminApprovalTargetStatus + the same notifications)
-   * but as a bulk sweep triggered by turning approval off.
+   * but as a bulk sweep, triggered by turning approval off for an
+   * instance/series. The pause-approval tick does not use this path: it
+   * moves waiting volunteers onto the waitlist instead of confirming them.
    */
   private async autoResolveAwaitingApprovalInvites(
     tx: Database,
@@ -4028,11 +4123,11 @@ export class ShiftService {
       with: { master: true },
     });
 
-    const shift = instance?.master ?? null;
-
-    if (!instance || !shift) {
+    if (!instance) {
       throw new NotFoundGraphQLError('Shift not found');
     }
+
+    const shift = instance.master;
 
     if (shift.isDeleted || shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
       throw new NotFoundGraphQLError('Shift not found');
@@ -4422,14 +4517,14 @@ export class ShiftService {
       with: { master: true },
     });
 
-    const shift = instance?.master ?? null;
-
-    if (!shift || shift.isDeleted) {
-      throw new NotFoundGraphQLError('Shift not found');
-    }
-
     if (!instance) {
       throw new NotFoundGraphQLError('Shift instance not found');
+    }
+
+    const shift = instance.master;
+
+    if (shift.isDeleted) {
+      throw new NotFoundGraphQLError('Shift not found');
     }
 
     if (shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
@@ -4891,7 +4986,7 @@ export class ShiftService {
       with: { master: true },
     });
 
-    if (!instance?.master || instance.master.isDeleted) {
+    if (!instance || instance.master.isDeleted) {
       throw new NotFoundGraphQLError('Shift instance not found');
     }
 
@@ -5152,11 +5247,14 @@ export class ShiftService {
    * Notifies the waitlist that a seat opened up. Guarded so call sites can
    * invoke it unconditionally after a seat *may* have freed: no-op unless
    * the instance is live and in the future, a seat is actually available,
-   * and someone is waiting (VOLI-1260).
+   * and someone is waiting (VOLI-1260). `onlyUserIds` limits the send to
+   * those volunteers, used when pause-approval has just moved them onto
+   * the waitlist.
    */
   private async notifyWaitlistOfOpenedSeat(
     instanceId: string,
     db: Database = this.db,
+    onlyUserIds?: readonly string[],
   ): Promise<void> {
     try {
       const instance = await db.query.shiftInstances.findFirst({
@@ -5168,7 +5266,7 @@ export class ShiftService {
         with: { master: true },
       });
 
-      if (!instance?.master || instance.master.isDeleted) {
+      if (!instance || instance.master.isDeleted) {
         return;
       }
 
@@ -5178,13 +5276,19 @@ export class ShiftService {
         return;
       }
 
-      const waitlisted = await db.query.shiftInstanceInvites.findMany({
-        where: {
-          instanceId,
-          status: ShiftInviteStatus.WAITLIST_JOINED,
-        },
-        columns: { userId: true },
-      });
+      const allowedUserIds = onlyUserIds ? new Set(onlyUserIds) : null;
+      const waitlisted = (
+        await db.query.shiftInstanceInvites.findMany({
+          where: {
+            instanceId,
+            status: ShiftInviteStatus.WAITLIST_JOINED,
+          },
+          columns: { userId: true },
+        })
+      ).filter(
+        (invite) =>
+          allowedUserIds === null || allowedUserIds.has(invite.userId),
+      );
       if (waitlisted.length === 0) {
         return;
       }
@@ -5224,7 +5328,7 @@ export class ShiftService {
       with: { master: true },
     });
 
-    if (!instance?.master) {
+    if (!instance) {
       throw new NotFoundGraphQLError('Shift instance not found');
     }
 

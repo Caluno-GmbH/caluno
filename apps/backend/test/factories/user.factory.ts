@@ -1,5 +1,7 @@
 import type { Database } from '../../src/database/database.module';
 import * as schema from '../../src/database/schema';
+import { formatUserName } from '../../src/user/user-name';
+import { trimmed } from '../../src/utils';
 
 export type User = typeof schema.users.$inferSelect;
 
@@ -9,14 +11,19 @@ export const createUser = async (
 ): Promise<User> => {
   const suffix = crypto.randomUUID();
   const id = overrides?.id ?? `test-user-${suffix}`;
+  const firstname = trimmed(overrides?.firstname) ?? `Test`;
+  const lastname = trimmed(overrides?.lastname) ?? `User ${suffix}`;
+  const name = formatUserName(firstname, lastname);
 
   const [user] = await db
     .insert(schema.users)
     .values({
       id,
-      name: `Test User ${suffix}`,
       email: `test-user-${suffix}@example.com`,
       ...overrides,
+      firstname,
+      lastname,
+      name,
     })
     .returning();
 

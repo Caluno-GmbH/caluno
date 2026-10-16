@@ -1,7 +1,7 @@
 'use client';
 
 import type { FormBlock, RequirementForm } from '@repo/data';
-import { Badge, Button, Card, CardContent } from '@repo/ui';
+import { Badge, Button, Card, CardContent, cn } from '@repo/ui';
 import { Eye, Pencil, Share2, Trash2, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ConfirmDialog } from './confirm-dialog';
+import { USER_TEXT_BADGE } from './user-text-badge';
 
 export function FormCard({
   form,
@@ -58,7 +59,7 @@ export function FormCard({
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col break-words">
       <CardContent className="flex flex-1 flex-col pt-5">
         <div className="flex flex-1 flex-col">
           {orgUnitName && (
@@ -77,7 +78,11 @@ export function FormCard({
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {usedBlocks.map((block) => (
-                  <Badge key={block.id} variant="outline" className="text-xs">
+                  <Badge
+                    key={block.id}
+                    variant="outline"
+                    className={cn('text-xs', USER_TEXT_BADGE)}
+                  >
                     {block.title}
                   </Badge>
                 ))}

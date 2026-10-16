@@ -45,7 +45,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         type: FieldType.Name,
         label: 'Name',
         required: true,
-        systemKey: 'name',
+        systemKey: 'firstname',
       }),
       true,
       msgs,
@@ -60,7 +60,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         type: FieldType.Name,
         label: 'Name',
         required: true,
-        systemKey: 'name',
+        systemKey: 'firstname',
       }),
       true,
       msgs,
@@ -114,6 +114,15 @@ describe('buildFieldSchema IBAN', () => {
       ).success,
     ).toBe(true);
   });
+  it('accepts a valid spaced IBAN longer than 34 characters', () => {
+    // Malta IBAN: 31 alphanumeric chars; with spaces the typed value is > 34.
+    const spaced = 'MT84 MALT 0110 0001 2345 MTLC AST0 01S';
+    expect(spaced.length).toBeGreaterThan(34);
+    expect(validateIban(spaced)).toBe(true);
+    expect(buildFieldSchema(field, false, msgs).safeParse(spaced).success).toBe(
+      true,
+    );
+  });
 });
 
 describe('validateBic', () => {
@@ -152,23 +161,33 @@ describe('buildFieldSchema BIC', () => {
   });
 });
 
-describe('buildFieldSchema birth-date', () => {
+describe('buildFieldSchema birthdate', () => {
   const field = makeField({
     id: 'dob',
     type: FieldType.Date,
     label: 'Birth date',
-    systemKey: 'birth-date',
+    systemKey: 'birthdate',
   });
-  it('rejects a future birth-date', () => {
+  it('rejects a future birthdate', () => {
     const future = new Date(Date.now() + 86_400_000 * 365).toISOString();
     expect(buildFieldSchema(field, false, msgs).safeParse(future).success).toBe(
       false,
     );
   });
-  it('accepts a past birth-date', () => {
+  it('accepts a past birthdate', () => {
     expect(
       buildFieldSchema(field, false, msgs).safeParse('1990-01-01').success,
     ).toBe(true);
+  });
+  it('rejects an incomplete birthdate with a single date error', () => {
+    const result = buildFieldSchema(field, false, msgs).safeParse('incomplete');
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toHaveLength(1);
+      expect(result.error.issues[0]?.message).toBe(
+        msgs.mustBeValidDate('Birth date'),
+      );
+    }
   });
 });
 
@@ -177,10 +196,7 @@ describe('buildFieldSchema MULTI_CHOICE', () => {
     id: 'times',
     type: FieldType.MultiChoice,
     label: 'Times',
-    options: [
-      { label: '10:30', value: '10:30' },
-      { label: 'Morning, afternoon', value: 'Morning, afternoon' },
-    ],
+    options: ['10:30', 'Morning, afternoon'],
   });
 
   it('accepts a JSON-array selection', () => {

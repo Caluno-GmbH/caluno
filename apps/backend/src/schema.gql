@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AcceptTermsInput {
+  language: String!
+  version: String!
+}
+
 type AccountingOrgProfile {
   city: String
   legalRep: String
@@ -36,11 +41,28 @@ input AddTimeEntryInput {
   volunteerId: String!
 }
 
+enum AgreementStatus {
+  ACTIVE
+  AWAITING_COUNTERSIGNATURE
+  AWAITING_VOLUNTEER_SIGNATURE
+  NOT_APPLICABLE
+  NO_CONTRACT
+  NO_TEMPLATE
+}
+
 type BundleDownloadStatus {
   downloadedAt: DateTime!
   downloadedByUser: User
   reimbursementType: ReimbursementType!
   volunteer: User!
+}
+
+type CheckInAgreement {
+  canManageAgreements: Boolean!
+  contractId: ID
+  managerNames: [String!]!
+  reimbursementTypeName: String
+  status: AgreementStatus!
 }
 
 type CheckInContext {
@@ -50,6 +72,7 @@ type CheckInContext {
 }
 
 type CheckInReadiness {
+  agreement: CheckInAgreement!
   hasOpenTimeEntry: Boolean!
   idVerificationEnabled: Boolean!
   idVerified: Boolean!
@@ -130,6 +153,7 @@ input CreateContractInput {
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementTypeId: ID!
+  sourceDraftId: ID
   volunteerId: ID!
 }
 
@@ -164,7 +188,7 @@ input CreateFormBlockFieldInput {
   label: String!
   lockType: Boolean
   minAge: Float
-  options: [SelectOptionInput!]
+  options: [String!]
   placeholder: String
   required: Boolean
   systemKey: String
@@ -183,6 +207,7 @@ input CreateFormBlockInput {
 input CreateInvoiceInput {
   fieldOverrides: [DocumentFieldOverrideInput!]
   hourlyRateCents: Int
+  manualBaselineCents: Int
   organizationUnitId: ID
   periodEnd: DateTime!
   periodStart: DateTime!
@@ -462,7 +487,7 @@ type FormBlockField {
   label: String!
   lockType: Boolean!
   minAge: Float
-  options: [SelectOption!]
+  options: [String!]
   placeholder: String
   required: Boolean!
   systemKey: String
@@ -534,13 +559,6 @@ type FormSubmissionValue {
   value: String!
 }
 
-enum InviteAllowanceState {
-  ELIGIBLE
-  NEARLY_EXHAUSTED
-  NO_AGREEMENT
-  WOULD_EXCEED
-}
-
 type Invoice {
   createdAt: DateTime!
   declineReason: String
@@ -549,6 +567,11 @@ type Invoice {
   declinedByUser: User
   documentTemplate: DocumentTemplate!
   downloadUrl: String
+
+  """
+  At least one claimed hour has no ACTIVE contract right now. Live, unlike isNonCompliant, which is the state when the timesheet was created.
+  """
+  hasHoursWithoutActiveContract: Boolean!
   hourlyRateCents: Int!
   id: ID!
   invoiceStatus: InvoiceStatus!
@@ -705,6 +728,7 @@ enum MembershipRequestStatus {
 }
 
 type Mutation {
+  acceptTerms(input: AcceptTermsInput!): TermsStatus!
   addTimeEntry(input: AddTimeEntryInput!): TimeEntry!
   approveMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
   cancelMembershipRequest(id: ID!, organizationUnitId: ID!): MembershipRequest!
@@ -770,6 +794,7 @@ type Mutation {
   signInvoice(invoiceId: ID!): Invoice!
   submitForm(input: SubmitFormInput!, organizationUnitId: ID!, token: String!): FormSubmission!
   submitRequiredForm(formId: String!, input: SubmitFormInput!, targetId: String!, targetType: RequiredFormTargetType!): FormSubmission!
+  unsubscribeFromEmails: Boolean!
   updateDocumentTemplate(id: ID!, input: UpdateDocumentTemplateInput!): DocumentTemplate!
   updateEvent(id: ID!, input: UpdateEventInput!): Event!
   updateEventInviteStatus(eventId: ID!, status: EventInviteStatus!, userId: String): EventInvite!
@@ -780,7 +805,7 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
-  updateMyUserProfile(input: UpdateUserProfileInput!): UserProfile!
+  updateMyProfile(input: UpdateMyProfileInput!): UserWithProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
   updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
@@ -796,6 +821,7 @@ type Mutation {
   updateShiftInstanceInviteStatus(instanceId: String!, status: ShiftInviteStatus!, userId: String): ShiftInstanceInvite!
   updateShiftInviteStatus(shiftId: String!, status: ShiftInviteStatus!): ShiftInvite!
   updateTimeEntry(id: ID!, input: UpdateTimeEntryInput!): TimeEntry!
+  updateTodoFillAssignmentFilter(input: UpdateTodoFillAssignmentFilterInput!): TodoFillAssignmentFilter!
 }
 
 type MyDocumentSummary {
@@ -967,7 +993,6 @@ type Query {
   accountingSetupStatus: AccountingSetupStatus!
   activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeId: ID!): DocumentTemplate!
   activeShiftInstances: [ShiftInstance!]!
-  adminUserProfile(userId: String!): UserProfile
   adminVolunteerSubmission(id: String!): FormSubmission
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
@@ -994,12 +1019,11 @@ type Query {
   formSubmissionsByForm(formId: String!, limit: Int! = 10, offset: Int! = 0): FormSubmissionPaginatedResponse!
   formSubmissionsByMembershipRequest(membershipRequestId: String!): [FormSubmission!]!
   formSubmissionsForVolunteer(userId: String!): [FormSubmission!]!
-  inviteAllowanceEligibility(organizationUnitId: ID!, periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, shiftDurationMinutes: Int!): [VolunteerInviteAllowance!]!
   invoice(id: ID!): Invoice!
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
   manualBaseline(reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline
-  me: User!
+  me: UserWithProfile!
   members(organizationUnitId: ID!): [User!]!
   membership(organizationUnitId: ID!): Membership
   membershipRequestCount(status: MembershipRequestStatus): Int!
@@ -1022,8 +1046,8 @@ type Query {
   myOrganizationUnits: [OrganizationUnit!]!
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
+  myTasks: [Task!]!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
-  myUserProfile: UserProfile
   organization(id: String!): Organization
   organizationBySlug(slug: String!): Organization!
   organizationTree: OrganizationTree
@@ -1065,11 +1089,13 @@ type Query {
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
+  termsStatus: TermsStatus!
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
-  user(id: String!): User
-  userByCheckInId(checkInId: String!): User
+  todoFillAssignmentFilter: TodoFillAssignmentFilter!
+  user(id: String!): UserWithProfile
+  volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   yearlyUsage(asOfDate: DateTime, excludeInvoiceId: ID, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): YearlyUsage!
@@ -1327,16 +1353,6 @@ type Role {
   permissions: [Permission!]!
 }
 
-type SelectOption {
-  label: String!
-  value: String!
-}
-
-input SelectOptionInput {
-  label: String!
-  value: String!
-}
-
 type Shift {
   createdAt: DateTime!
   createdBy: User
@@ -1482,11 +1498,42 @@ input SubmitFormInput {
   values: [FormFieldValueInput!]!
 }
 
+type Task {
+  data: JSON!
+  id: ID!
+  link: String!
+  neededPermission: PermissionKey
+  organizationUnitId: ID!
+  type: TaskType!
+}
+
+enum TaskType {
+  CONTRACT_CREATE
+  CONTRACT_EXPIRING
+  CONTRACT_SIGN
+  DOCUMENT_DECLINED
+  EVENT_APPROVAL
+  INVOICE_CREATE
+  MEMBERSHIP_REQUEST
+  SHIFT_APPROVAL
+  SHIFT_BELOW_MINIMUM
+  TIMESHEET_BUNDLES
+  TIMESHEET_SIGN
+}
+
 type TemplateSignee {
   id: ID!
   order: Int!
   requiredPermission: Permission
   signeeType: SigneeType!
+}
+
+type TermsStatus {
+  acceptedAt: DateTime
+  acceptedVersion: String
+  currentClass: String
+  currentVersion: String
+  mustAccept: Boolean!
 }
 
 type TimeEntry {
@@ -1514,6 +1561,16 @@ enum TimeEntrySortField {
   SHIFT
   STARTED_AT
   VOLUNTEER
+}
+
+type TodoFillAssignmentFilter {
+  daysAhead: Int!
+  threshold: TodoFillThreshold!
+}
+
+enum TodoFillThreshold {
+  BELOW_MINIMUM
+  NOT_FULL
 }
 
 input UpdateDocumentTemplateInput {
@@ -1544,7 +1601,7 @@ input UpdateFormBlockFieldInput {
   label: String
   lockType: Boolean
   minAge: Float
-  options: [SelectOptionInput!]
+  options: [String!]
   placeholder: String
   required: Boolean
   systemKey: String
@@ -1567,6 +1624,21 @@ input UpdateMyAccountSettingsInput {
 
 input UpdateMyImageInput {
   imageFileId: String
+}
+
+input UpdateMyProfileInput {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  city: String
+  firstname: String
+  gender: String
+  iban: String
+  lastname: String
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
 }
 
 input UpdateOrganizationInput {
@@ -1683,8 +1755,9 @@ input UpdateTimeEntryInput {
   startedAt: DateTime!
 }
 
-input UpdateUserProfileInput {
-  data: String!
+input UpdateTodoFillAssignmentFilterInput {
+  daysAhead: Int!
+  threshold: TodoFillThreshold!
 }
 
 type User {
@@ -1701,19 +1774,14 @@ type User {
 
   """Whether the volunteer receives the weekly plan email."""
   emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
   id: ID!
   image: String
+  lastname: String!
   locale: String
   name: String!
   permissions: [Permission!]
-}
-
-type UserProfile {
-  createdAt: DateTime!
-  data: JSON!
-  id: ID!
-  updatedAt: DateTime!
-  userId: String!
+  preferredName: String
 }
 
 type UserRequirementStatus {
@@ -1722,14 +1790,57 @@ type UserRequirementStatus {
   status: RequirementFulfillmentStatus!
 }
 
-type VolunteerInviteAllowance {
-  state: InviteAllowanceState!
+type UserWithProfile {
+  accountHolder: String
+  bic: String
+  birthdate: String
+  checkInId: ID!
+  city: String
+  email: String!
+
+  """
+  Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership).
+  """
+  emailPlatformEnabled: Boolean!
+
+  """Whether the volunteer receives urgent call-out emails."""
+  emailUrgentCallsEnabled: Boolean!
+
+  """Whether the volunteer receives the weekly plan email."""
+  emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
+  gender: String
+  iban: String
+  id: ID!
+  image: String
+  lastname: String!
+  locale: String
+  name: String!
+  permissions: [Permission!]
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
+type VolunteerAllowance {
+  state: VolunteerAllowanceState!
   volunteerId: ID!
+}
+
+enum VolunteerAllowanceState {
+  ELIGIBLE
+  NEARLY_EXHAUSTED
+  NO_AGREEMENT
+  WOULD_EXCEED
 }
 
 type VolunteerNeedsTimesheet {
   eligibleHours: Float!
   estimatedAmountCents: Int!
+  firstUncoveredAt: DateTime
+  hasHoursWithoutActiveContract: Boolean!
+  hasUncoveredHours: Boolean!
   periodEnd: DateTime!
   periodStart: DateTime!
   reimbursementType: ReimbursementType!

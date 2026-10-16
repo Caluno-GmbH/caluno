@@ -9,7 +9,7 @@ import {
   optionalNullableTrimmedText,
   zOptionalNullableTrimmedString,
 } from './lib/nullable-trimmed-text';
-import { choiceOptionSchema } from './option-values';
+import { choiceOptionsSchema } from './option-values';
 import { serverCreateBlockSchema, serverCreateFormSchema } from './schemas';
 
 export const createForm = actionClient
@@ -207,14 +207,7 @@ const createBlockFieldSchema = z.object({
   description: zOptionalNullableTrimmedString,
   placeholder: zOptionalNullableTrimmedString,
   required: z.boolean().optional(),
-  options: z
-    .array(
-      z.object({
-        label: z.string(),
-        value: z.string(),
-      }),
-    )
-    .optional(),
+  options: choiceOptionsSchema.optional(),
   documentFileIds: z.array(z.string()).nullish(),
   documentLabel: zOptionalNullableTrimmedString,
   systemKey: z.string().optional(),
@@ -255,14 +248,7 @@ const updateBlockFieldSchema = z.object({
   description: zOptionalNullableTrimmedString,
   placeholder: zOptionalNullableTrimmedString,
   required: z.boolean().optional(),
-  options: z
-    .array(
-      z.object({
-        label: z.string(),
-        value: z.string(),
-      }),
-    )
-    .optional(),
+  options: choiceOptionsSchema.optional(),
   documentFileIds: z.array(z.string()).nullish(),
   documentLabel: zOptionalNullableTrimmedString,
   fieldOrder: z.number().optional(),
@@ -346,7 +332,7 @@ const saveBlockSchema = z.object({
       required: z.boolean().optional(),
       systemKey: z.string().optional(),
       lockType: z.boolean().optional(),
-      options: z.array(choiceOptionSchema).optional(),
+      options: choiceOptionsSchema.optional(),
       documentFileIds: z.array(z.string()).nullish(),
       documentLabel: zOptionalNullableTrimmedString,
     }),
@@ -468,8 +454,10 @@ export const updateUserProfile = actionClient
   .inputSchema(updateUserProfileSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient();
-    const result = await data.requirementForm.updateMyUserProfile({
-      data: JSON.stringify(parsedInput.data),
-    });
+    const result = await data.user.updateMyProfile(
+      parsedInput.data as Parameters<typeof data.user.updateMyProfile>[0],
+    );
+    revalidatePath('/');
+    revalidatePath('/profile');
     return result;
   });

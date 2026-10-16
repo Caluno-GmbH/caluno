@@ -3,6 +3,9 @@ import { addDays, startOfWeek } from 'date-fns';
 
 export type TimeEntry = GetMyTimeQuery['myTime']['items'][number];
 
+export const WEEK_HEADER_FROM_FORMAT = 'd LLL';
+export const WEEK_HEADER_TO_FORMAT = 'd LLL y';
+
 export type EntryState = 'in-progress' | 'completed';
 
 export type WeekGroup = {
@@ -22,7 +25,7 @@ export const getEntryState = (entry: TimeEntry): EntryState =>
 
 export const entryDurationMinutes = (entry: TimeEntry): number => {
   if (!entry.endedAt) return 0;
-  return Math.round(
+  return Math.floor(
     (new Date(entry.endedAt).getTime() - new Date(entry.startedAt).getTime()) /
       60000,
   );

@@ -1,7 +1,14 @@
 import { hashPassword } from 'better-auth/crypto';
-import { eq, inArray } from 'drizzle-orm';
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { and, eq, inArray } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
+import {
+  ContractStatus,
+  DocumentKind,
+  InvoiceStatus,
+  ReimbursementTypeKey,
+  SigneeType,
+} from '../accounting/enums';
 import {
   DEFAULT_MEMBER_ROLE_NAME,
   DEFAULT_OWNER_ROLE_NAME,
@@ -13,27 +20,111 @@ import { EventInviteStatus } from '../event/enums';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
-import { expandShift } from '../shift/utils/rrule-expander';
-import { slugify } from '../utils/slug.util';
+import {
+  addDaysInFixtureTimezone,
+  addHours,
+  assertFixtureIdentitiesAvailable,
+  createAuthUser,
+  type Database,
+  DEFAULT_SHIFT_DURATION_MINUTES,
+  ensureEvent,
+  ensureMembershipWithRole,
+  ensureShiftWithInvites,
+  type FixtureUser,
+  findWeekdayWeeksAgo,
+  fixtureOrgId,
+  fixtureWallClockToUtc,
+  getDateInFixtureTimezone,
+} from './fixture-helpers';
 import { relations } from './relations';
 import * as schema from './schema';
 
 process.env.TZ = 'Europe/Berlin';
 
+function numberToWord(num: number): string {
+  const digits = [
+    'Zero',
+    'One',
+    'Two',
+    'Three',
+    'Four',
+    'Five',
+    'Six',
+    'Seven',
+    'Eight',
+    'Nine',
+    'Ten',
+  ];
+
+  if (num >= 1 && num <= 10) {
+    return digits[num];
+  }
+
+  // Converts numbers after 10 into concatenated digit words (e.g., 11 -> "OneOne")
+  return Math.abs(num)
+    .toString()
+    .split('')
+    .map((digit) => digits[Number(digit)])
+    .join('');
+}
+
 const FIXTURE_PASSWORD = process.env.FIXTURE_PASSWORD ?? 'abcd1234';
-const ORG_NAME = 'Playground';
-const ORG_SLUG = 'playground';
-const FIXTURE_TIMEZONE = 'Europe/Berlin';
-const SHIFT_DURATION_MINUTES = 240;
+const ORG_NAME = 'Testing';
+const ORG_SLUG = 'testing';
+const ORG_DESCRIPTION = 'E2E Testing organization';
+/** Pinned id — fixture ownership is proven by id, never by name or slug. */
+const ORG_ID = fixtureOrgId(ORG_SLUG);
+
+// Single source of truth for every identity these fixtures claim, shared by the
+// pre-flight check and the account creation below so the two cannot drift.
+const MEMBER_COUNT = 10;
+const PENDING_COUNT = 2;
+const memberIdentity = (index: number) => ({
+  firstname: 'Testing',
+  lastname: `Member ${numberToWord(index)}`,
+});
+const pendingIdentity = (index: number) => ({
+  firstname: 'Testing Pending',
+  lastname: `Applicant ${numberToWord(index)}`,
+});
+const pendingEmail = (index: number) => e2eEmail(`pending0${index}`);
+const ADMIN_IDENTITY = { firstname: 'Testing', lastname: 'Admin' } as const;
+const SUPERVISOR_IDENTITY = {
+  firstname: 'Testing',
+  lastname: 'Supervisor',
+} as const;
+const DEMO_IDENTITY = { firstname: 'Testing', lastname: 'Volunteer' } as const;
+const REJECTED_IDENTITY = {
+  firstname: 'Testing Rejected',
+  lastname: 'Applicant',
+} as const;
 const RECURRENCE_WEEKS_BACK = 12;
 
+/**
+ * Testing is the **e2e-only** seed — `bun bootstrap` and deployed
+ * environments load the demo dataset (`demo-fixtures.ts`) instead. Its accounts
+ * still route to the demo@caluno.org group but carry an `e2e_` discriminator,
+ * so they never collide with that dataset's bare `demo+<role>` addresses when
+ * both live in one database.
+ */
+const e2eEmail = (suffix: string): string =>
+  `demo+testing_${suffix}@caluno.org`;
+
 // Stable IDs so e2e specs can rely on fixture data without querying the DB.
-const PUBLIC_EVENT_ID = '213e6757-af0c-4ce3-ba29-fb3500309351';
-const EVENT_ASSISTANCE_SHIFT_ID = 'e2915169-290d-42b2-a2e2-6d9992bb8814';
-const SHOWCASE_EVENT_ID = 'a6f6f1a1-1f2a-4a2a-9c1a-2f6b8b2f9a11';
-const SHOWCASE_OPEN_SHIFT_ID = 'b1e2a3c4-5d6e-4f70-8a91-b2c3d4e5f601';
-const SHOWCASE_FULL_SHIFT_ID = 'c2f3b4d5-6e7f-4081-9a02-c3d4e5f60712';
-const SHOWCASE_UNLIMITED_SHIFT_ID = 'd3a4c5e6-7f80-4192-ab13-d4e5f6071823';
+const PUBLIC_EVENT_ID = '579c7351-933b-4a32-9678-37aee42649d6';
+const EVENT_ASSISTANCE_SHIFT_ID = 'b13bdd59-9965-49c2-84be-7c943c6d8a79';
+const SHOWCASE_EVENT_ID = '475d1157-86b0-4627-bce8-94980957ed1f';
+const SHOWCASE_OPEN_SHIFT_ID = '608d907f-0bbf-4fd0-912c-01a8db7c80ba';
+const SHOWCASE_FULL_SHIFT_ID = '8e6399ac-0b72-489e-b194-e1af6df38f6c';
+const SHOWCASE_UNLIMITED_SHIFT_ID = '3239699e-42b2-456a-b5ff-88de69da23fd';
+const OVERVIEW_UNDERSTAFFED_SHIFT_ID = '2671d466-09b2-460e-a4dd-2e5827a49d5d';
+const OVERVIEW_APPROVAL_SHIFT_ID = 'c63e7b28-95cf-4705-a129-28d8abb92166';
+const OVERVIEW_EVENT_ID = '3785b18b-c2cf-4dd2-8371-a2d9cff07835';
+const OVERVIEW_CONTRACT_ID = 'cad8eff5-edea-4f32-ba25-ab79db85a53e';
+const OVERVIEW_TIMESHEET_ID = '77d88bed-a635-45bc-824b-019692b765ad';
+const OVERVIEW_BUNDLE_APRIL_ID = '7555ae73-b412-43e0-8f4d-a2446f4ef6ec';
+const OVERVIEW_BUNDLE_MAY_ID = 'cbc24e42-37c1-4637-9d50-97edcf1e6747';
+const OVERVIEW_DECLINED_ID = 'fd912b1b-6325-4b10-91f8-254a39bbe742';
 
 const EVENT_COVER_IMAGE_URL =
   'https://images.unsplash.com/photo-1593113646773-028c64a8f1b8?auto=format&fit=crop&w=1200&q=80';
@@ -41,7 +132,8 @@ const SHOWCASE_SHIFT_IMAGE_URL =
   'https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1200&q=80';
 const ORG_COVER_IMAGE_URL =
   'https://images.unsplash.com/photo-1593113646773-028c64a8f1b8?auto=format&fit=crop&w=1200&q=80';
-const DEMO_USER_EMAIL = 'testing+demo@caluno.org';
+const DEMO_USER_EMAIL = e2eEmail('demo');
+const ADMIN_USER_EMAIL = e2eEmail('admin');
 
 const WEEKLY_RRULE = {
   MONDAY: 'FREQ=WEEKLY;BYDAY=MO;WKST=MO',
@@ -62,211 +154,10 @@ const SUPERVISOR_PERMISSIONS = [
   PERMISSIONS.CHECK_IN_MANAGE,
 ] as const;
 
-type Database = NodePgDatabase<typeof relations>;
-
-type FixtureUser = {
-  id: string;
-  email: string;
-  name: string;
-};
-
 const memberEmail = (index: number): string =>
-  `testing+${String(index).padStart(3, '0')}@caluno.org`;
+  e2eEmail(`member${String(index).padStart(2, '0')}`);
 
-type FixtureDateParts = {
-  year: number;
-  month: number;
-  day: number;
-  weekday: number;
-};
-
-const getDateInFixtureTimezone = (instant: Date): FixtureDateParts => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: FIXTURE_TIMEZONE,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-  }).formatToParts(instant);
-
-  const read = (type: string): string =>
-    parts.find((part) => part.type === type)?.value ?? '';
-
-  const weekdayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-
-  return {
-    year: Number(read('year')),
-    month: Number(read('month')),
-    day: Number(read('day')),
-    weekday: weekdayMap[read('weekday')] ?? 0,
-  };
-};
-
-const addDaysInFixtureTimezone = (
-  year: number,
-  month: number,
-  day: number,
-  days: number,
-): Omit<FixtureDateParts, 'weekday'> => {
-  const noonUtc = fixtureWallClockToUtc(year, month, day, 12);
-  return getDateInFixtureTimezone(
-    new Date(noonUtc.getTime() + days * 86_400_000),
-  );
-};
-
-const findWeekdayWeeksAgo = (
-  weekday: number,
-  weeksAgo: number,
-): Omit<FixtureDateParts, 'weekday'> => {
-  for (let daysBack = 0; daysBack < 7; daysBack += 1) {
-    const parts = getDateInFixtureTimezone(
-      new Date(Date.now() - daysBack * 86_400_000),
-    );
-
-    if (parts.weekday === weekday) {
-      return addDaysInFixtureTimezone(
-        parts.year,
-        parts.month,
-        parts.day,
-        -weeksAgo * 7,
-      );
-    }
-  }
-
-  throw new Error(
-    `Could not find weekday ${weekday} in ${FIXTURE_TIMEZONE} calendar`,
-  );
-};
-
-const fixtureWallClockToUtc = (
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute = 0,
-): Date => {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: FIXTURE_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
-
-  const baseUtc = Date.UTC(year, month - 1, day, hour, minute);
-
-  for (let offsetHours = -3; offsetHours <= 3; offsetHours += 0.25) {
-    const candidate = new Date(baseUtc - offsetHours * 3_600_000);
-    const formatted = formatter.formatToParts(candidate);
-    const read = (type: string): number =>
-      Number(formatted.find((part) => part.type === type)?.value);
-
-    if (
-      read('year') === year &&
-      read('month') === month &&
-      read('day') === day &&
-      read('hour') === hour &&
-      read('minute') === minute
-    ) {
-      return candidate;
-    }
-  }
-
-  throw new Error(
-    `Could not resolve ${year}-${month}-${day} ${hour}:${minute} in ${FIXTURE_TIMEZONE}`,
-  );
-};
-
-const addHours = (date: Date, hours: number): Date =>
-  new Date(date.getTime() + hours * 3_600_000);
-
-const createAuthUser = async (
-  db: Database,
-  hashedPassword: string,
-  input: { email: string; name: string },
-): Promise<FixtureUser> => {
-  const existing = await db.query.users.findFirst({
-    where: { email: input.email },
-  });
-
-  if (existing) {
-    return { id: existing.id, email: existing.email, name: existing.name };
-  }
-
-  const id = crypto.randomUUID();
-
-  await db.insert(schema.users).values({
-    id,
-    name: input.name,
-    email: input.email,
-    emailVerified: true,
-    locale: 'en',
-  });
-
-  await db.insert(schema.accounts).values({
-    id: crypto.randomUUID(),
-    // better-auth resolves a credential account by `accountId === user.id`
-    // (see its sign-in route), so the account id must be the user id — the
-    // email here makes the fixture account unreachable for sign-in.
-    accountId: id,
-    providerId: 'credential',
-    userId: id,
-    password: hashedPassword,
-  });
-
-  return { id, email: input.email, name: input.name };
-};
-
-const ensureMembershipWithRole = async (
-  db: Database,
-  userId: string,
-  organizationUnitId: string,
-  roleId: string,
-): Promise<void> => {
-  const existingMembership = await db.query.memberships.findFirst({
-    where: { userId, organizationUnitId },
-  });
-
-  let membershipId: string;
-
-  if (existingMembership) {
-    membershipId = existingMembership.id;
-  } else {
-    const [membership] = await db
-      .insert(schema.memberships)
-      .values({ userId, organizationUnitId })
-      .returning();
-
-    if (!membership) {
-      throw new Error('Failed to create membership');
-    }
-
-    membershipId = membership.id;
-  }
-
-  const existingRole = await db.query.membershipRoles.findFirst({
-    where: { membershipId, roleId },
-  });
-
-  if (!existingRole) {
-    await db.insert(schema.membershipRoles).values({
-      membershipId,
-      roleId,
-    });
-  }
-};
-
-const ensurePlaygroundOrganization = async (
+const ensureTestingOrganization = async (
   db: Database,
   adminUserId: string,
 ): Promise<{
@@ -281,7 +172,7 @@ const ensurePlaygroundOrganization = async (
   );
 
   const existingOrg = await db.query.organizations.findFirst({
-    where: { slug: ORG_SLUG },
+    where: { id: ORG_ID },
   });
 
   if (existingOrg) {
@@ -290,9 +181,7 @@ const ensurePlaygroundOrganization = async (
     });
 
     if (!rootUnit) {
-      throw new Error(
-        'Existing Playground organization is missing its root unit',
-      );
+      throw new Error('Existing Testing organization is missing its root unit');
     }
 
     const roles = await db.query.roles.findMany({
@@ -311,7 +200,7 @@ const ensurePlaygroundOrganization = async (
 
     if (!ownerRole || !memberRole || !supervisorRole) {
       throw new Error(
-        'Existing Playground organization is missing expected roles',
+        'Existing Testing organization is missing expected roles',
       );
     }
 
@@ -359,10 +248,11 @@ const ensurePlaygroundOrganization = async (
     const [organization] = await tx
       .insert(schema.organizations)
       .values({
+        id: ORG_ID,
         name: ORG_NAME,
         slug: ORG_SLUG,
-        contactEmail: 'testing@caluno.org',
-        description: 'Local development playground organization',
+        contactEmail: e2eEmail('contact'),
+        description: ORG_DESCRIPTION,
         street: 'Hauptstraße 1',
         zipCode: '10115',
         city: 'Berlin',
@@ -370,7 +260,7 @@ const ensurePlaygroundOrganization = async (
       .returning();
 
     if (!organization) {
-      throw new Error('Failed to create Playground organization');
+      throw new Error('Failed to create Testing organization');
     }
 
     const [rootType] = await tx
@@ -509,212 +399,6 @@ const ensurePlaygroundOrganization = async (
   });
 };
 
-type ShiftFixture = {
-  /** Defaults to a random UUID. */
-  id?: string;
-  title: string;
-  startsAt: Date;
-  rrule: string;
-  inviteUserIds: string[];
-  /** Defaults to `SHIFT_DURATION_MINUTES`; override for fixed-length overlap-test shifts. */
-  durationMinutes?: number;
-  /** Associates the shift with an event. */
-  eventId?: string;
-  /** Defaults to `ShiftVisibility.INVITED_MEMBERS`. */
-  visibility?: ShiftVisibility;
-  /** Capacity cap; omit for unlimited spots. */
-  maxVolunteers?: number;
-  instructions?: string;
-  location?: string;
-  imageUrl?: string;
-  /** Invites inserted with this status instead of JOINED (does not count toward capacity). */
-  pendingInviteUserIds?: string[];
-  /**
-   * Invites at explicit statuses (e.g. VOLUNTEER_REJECTED, VOLUNTEER_CANCELLED,
-   * WAITLIST_JOINED), seeded to every instance. Only JOINED counts toward capacity.
-   */
-  extraInvites?: Array<{ userIds: string[]; status: ShiftInviteStatus }>;
-};
-
-const pickRecentPastInstance = (
-  instances: Array<typeof schema.shiftInstances.$inferSelect>,
-): typeof schema.shiftInstances.$inferSelect => {
-  const now = Date.now();
-  const pastInstances = instances
-    .filter((instance) => instance.actualStartsAt.getTime() < now)
-    .sort(
-      (left, right) =>
-        right.actualStartsAt.getTime() - left.actualStartsAt.getTime(),
-    );
-
-  const instance = pastInstances[0] ?? instances[0];
-  if (!instance) {
-    throw new Error('Failed to resolve shift instance');
-  }
-
-  return instance;
-};
-
-const ensureShiftWithInvites = async (
-  db: Database,
-  organizationUnitId: string,
-  createdById: string,
-  shift: ShiftFixture,
-): Promise<{ shiftId: string; instanceId: string; instanceStartsAt: Date }> => {
-  const durationMinutes = shift.durationMinutes ?? SHIFT_DURATION_MINUTES;
-
-  const existingShift = shift.id
-    ? await db.query.shifts.findFirst({ where: { id: shift.id } })
-    : await db.query.shifts.findFirst({
-        where: { title: shift.title, organizationUnitId },
-      });
-
-  if (existingShift) {
-    const instances = await db.query.shiftInstances.findMany({
-      where: { masterId: existingShift.id },
-    });
-
-    const recentInstance = pickRecentPastInstance(instances);
-
-    return {
-      shiftId: existingShift.id,
-      instanceId: recentInstance.id,
-      instanceStartsAt: recentInstance.actualStartsAt,
-    };
-  }
-
-  const [createdShift] = await db
-    .insert(schema.shifts)
-    .values({
-      id: shift.id,
-      title: shift.title,
-      slug: slugify(shift.title),
-      instructions: shift.instructions ?? null,
-      location: shift.location ?? null,
-      imageUrl: shift.imageUrl ?? null,
-      organizationUnitId,
-      createdById,
-      visibility: shift.visibility ?? ShiftVisibility.INVITED_MEMBERS,
-      maxVolunteers: shift.maxVolunteers ?? null,
-      originalStartsAt: shift.startsAt,
-      durationMinutes,
-      rrule: shift.rrule,
-      eventId: shift.eventId ?? null,
-    })
-    .returning();
-
-  if (!createdShift) {
-    throw new Error(`Failed to create shift: ${shift.title}`);
-  }
-
-  const instances = expandShift(shift.rrule, shift.startsAt, durationMinutes);
-  const insertedInstances = await db
-    .insert(schema.shiftInstances)
-    .values(
-      instances.map((instance) => ({
-        masterId: createdShift.id,
-        actualStartsAt: instance.actualStartsAt,
-        actualEndsAt: instance.actualEndsAt,
-        occurrenceIndex: instance.occurrenceIndex,
-      })),
-    )
-    .returning();
-
-  if (shift.inviteUserIds.length > 0) {
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        shift.inviteUserIds.map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: ShiftInviteStatus.JOINED,
-        })),
-      ),
-    );
-  }
-
-  if (shift.pendingInviteUserIds && shift.pendingInviteUserIds.length > 0) {
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        (shift.pendingInviteUserIds ?? []).map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: ShiftInviteStatus.ADMIN_INVITED,
-        })),
-      ),
-    );
-  }
-
-  for (const group of shift.extraInvites ?? []) {
-    if (group.userIds.length === 0) {
-      continue;
-    }
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        group.userIds.map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: group.status,
-        })),
-      ),
-    );
-  }
-
-  const recentInstance = pickRecentPastInstance(insertedInstances);
-
-  return {
-    shiftId: createdShift.id,
-    instanceId: recentInstance.id,
-    instanceStartsAt: recentInstance.actualStartsAt,
-  };
-};
-
-const ensureEvent = async (
-  db: Database,
-  organizationUnitId: string,
-  createdById: string,
-  event: {
-    id: string;
-    title: string;
-    description?: string | null;
-    location?: string | null;
-    coverUrl?: string | null;
-    logoUrl?: string | null;
-    startsAt: Date;
-    endsAt: Date;
-  },
-): Promise<typeof schema.events.$inferSelect> => {
-  const existingEvent = await db.query.events.findFirst({
-    where: { id: event.id },
-  });
-
-  if (existingEvent) {
-    return existingEvent;
-  }
-
-  const [createdEvent] = await db
-    .insert(schema.events)
-    .values({
-      id: event.id,
-      title: event.title,
-      slug: slugify(event.title),
-      description: event.description ?? null,
-      location: event.location ?? null,
-      logoUrl: event.logoUrl ?? null,
-      coverUrl: event.coverUrl ?? null,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
-      organizationUnitId,
-      createdById,
-    })
-    .returning();
-
-  if (!createdEvent) {
-    throw new Error(`Failed to create event: ${event.title}`);
-  }
-
-  return createdEvent;
-};
-
 const ensureTimeEntries = async (
   db: Database,
   approvedMembers: FixtureUser[],
@@ -729,6 +413,13 @@ const ensureTimeEntries = async (
     shiftInstances.foodDistribution.instanceId,
   ];
 
+  const supervisor = approvedMembers.find(
+    (member) => member.email === e2eEmail('supervisor'),
+  );
+  if (!supervisor) {
+    throw new Error('Supervisor fixture member missing');
+  }
+
   const existingEntries = await db.query.timeEntries.findMany({
     where: { shiftInstanceId: { in: instanceIds } },
   });
@@ -742,11 +433,12 @@ const ensureTimeEntries = async (
   for (const [index, member] of approvedMembers.entries()) {
     const memberNumber = index + 1;
 
-    if (member.email === 'testing+supervisor@caluno.org') {
+    if (member.email === e2eEmail('supervisor')) {
       entries.push({
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(shiftInstances.communitySupport.startsAt, 0.5),
         endedAt: addHours(shiftInstances.communitySupport.startsAt, 3.5),
         notes: 'Supervisor coverage',
@@ -755,6 +447,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.foodDistribution.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(shiftInstances.foodDistribution.startsAt, 0),
         endedAt: addHours(shiftInstances.foodDistribution.startsAt, 3),
         notes: 'Distribution lead',
@@ -767,6 +460,7 @@ const ensureTimeEntries = async (
       shiftInstanceId: shiftInstances.communitySupport.instanceId,
       organizationUnitId,
       volunteerId: member.id,
+      createdById: supervisor.id,
       startedAt: addHours(
         shiftInstances.communitySupport.startsAt,
         memberNumber % 2,
@@ -783,6 +477,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(
           shiftInstances.communitySupport.startsAt,
           closedHours + 0.5,
@@ -800,6 +495,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.foodDistribution.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(
           shiftInstances.foodDistribution.startsAt,
           memberNumber % 3,
@@ -817,6 +513,7 @@ const ensureTimeEntries = async (
         shiftInstanceId: shiftInstances.communitySupport.instanceId,
         organizationUnitId,
         volunteerId: member.id,
+        createdById: supervisor.id,
         startedAt: addHours(
           shiftInstances.communitySupport.startsAt,
           1 + memberNumber * 0.25,
@@ -981,7 +678,7 @@ const ensureBankingInformationForm = async (
         blockId: block.id,
         type: FieldType.TEXT,
         label: 'Account holder',
-        systemKey: 'account-holder',
+        systemKey: 'accountHolder',
         required: true,
         fieldOrder: 1,
       },
@@ -1101,6 +798,693 @@ const ensureCodeOfConductForm = async (
   return form;
 };
 
+const EMPTY_DOCUMENT_BODY = { header: {}, blocks: [], footer: {} };
+
+/** Berlin midnight on the first of `month` (1–12), or January of the next year when month is 13. */
+const berlinMonthStart = (year: number, month: number): Date => {
+  const resolvedYear = month > 12 ? year + 1 : year;
+  const resolvedMonth = month > 12 ? month - 12 : month;
+  return fixtureWallClockToUtc(resolvedYear, resolvedMonth, 1, 0);
+};
+
+const OVERVIEW_COUNT = 5;
+
+/** Berlin wall time `days` before today, as a UTC instant. */
+const daysBeforeToday = (days: number, hour: number): Date => {
+  const today = getDateInFixtureTimezone(new Date());
+  const day = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    -days,
+  );
+  return fixtureWallClockToUtc(day.year, day.month, day.day, hour);
+};
+
+/**
+ * Five of each waiting action on the Testing root unit, so
+ * testing+admin@caluno.org can open See more on every Übersicht section.
+ * Skips rows that already exist. Requires reimbursement types from `bun run db:seed`.
+ */
+async function ensureOverviewWaitingActions(
+  db: Database,
+  args: {
+    organizationId: string;
+    rootUnitId: string;
+    adminId: string;
+    volunteers: FixtureUser[];
+  },
+): Promise<void> {
+  if (args.volunteers.length < 9) {
+    throw new Error('Overview fixtures need nine Testing members');
+  }
+  const joined = args.volunteers[0];
+  const requestA = args.volunteers[1];
+  const requestB = args.volunteers[2];
+  const eventRequest = args.volunteers[3];
+  if (!joined || !requestA || !requestB || !eventRequest) {
+    throw new Error('Overview fixtures need nine Testing members');
+  }
+
+  const today = getDateInFixtureTimezone(new Date());
+  const upcoming = addDaysInFixtureTimezone(
+    today.year,
+    today.month,
+    today.day,
+    6,
+  );
+
+  const understaffedTitles = [
+    'Overview Understaffed Desk',
+    'Reading Corner',
+    'Homework Help',
+    'Library Desk',
+    'Park Reading',
+  ];
+  const approvalTitles = [
+    'Overview Shift Requests',
+    'Saturday Setup',
+    'Sunday Pack-down',
+    'Weekday Welcome',
+    'Evening Close',
+  ];
+  const eventTitles = [
+    'Overview Open House',
+    'Story Afternoon',
+    'Family Reading',
+    'School Visit',
+    'Winter Fair',
+  ];
+
+  for (let index = 0; index < OVERVIEW_COUNT; index += 1) {
+    const day = addDaysInFixtureTimezone(
+      upcoming.year,
+      upcoming.month,
+      upcoming.day,
+      index,
+    );
+    const morning = fixtureWallClockToUtc(day.year, day.month, day.day, 10);
+    const afternoon = fixtureWallClockToUtc(day.year, day.month, day.day, 14);
+
+    await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+      id:
+        index === 0
+          ? OVERVIEW_UNDERSTAFFED_SHIFT_ID
+          : `e4b5d6f7-8091-4a03-bc24-e5f60718293${index + 4}`,
+      title: understaffedTitles[index] ?? `Understaffed ${index + 1}`,
+      startsAt: morning,
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: 180,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      minVolunteers: 3,
+      maxVolunteers: 6,
+      instructions:
+        'Seeded under the minimum so the Übersicht shows a shift that still needs people.',
+      location: 'Testing Community Center, Front Desk',
+      inviteUserIds: [joined.id],
+    });
+
+    await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+      id:
+        index === 0
+          ? OVERVIEW_APPROVAL_SHIFT_ID
+          : `f5c6e7a8-91a2-4b14-cd35-f6071829344${index + 5}`,
+      title: approvalTitles[index] ?? `Shift requests ${index + 1}`,
+      startsAt: afternoon,
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: 180,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      maxVolunteers: 8,
+      instructions:
+        'Two volunteers are waiting for an admin to accept them onto this shift.',
+      location: 'Testing Community Center, Main Hall',
+      inviteUserIds: [],
+      extraInvites: [
+        {
+          userIds: [requestA.id, requestB.id],
+          status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+        },
+      ],
+    });
+
+    const eventIds = [
+      OVERVIEW_EVENT_ID,
+      'a6d7f8b9-a2b3-4c25-de46-071829344557',
+      'a6d7f8b9-a2b3-4c25-de46-071829344558',
+      'a6d7f8b9-a2b3-4c25-de46-071829344559',
+      'a6d7f8b9-a2b3-4c25-de46-071829344560',
+    ];
+    const overviewEvent = await ensureEvent(db, args.rootUnitId, args.adminId, {
+      id: eventIds[index] ?? OVERVIEW_EVENT_ID,
+      title: eventTitles[index] ?? `Open event ${index + 1}`,
+      description: 'A join request is waiting for an admin.',
+      location: 'Testing Community Center, Hauptstraße 1, 10115 Berlin',
+      startsAt: morning,
+      endsAt: addHours(morning, 4),
+    });
+
+    const existingEventRequest = await db.query.eventInvites.findFirst({
+      where: { eventId: overviewEvent.id, userId: eventRequest.id },
+    });
+    if (!existingEventRequest) {
+      await db.insert(schema.eventInvites).values({
+        eventId: overviewEvent.id,
+        userId: eventRequest.id,
+        status: EventInviteStatus.AWAITING_ADMIN_APPROVAL,
+      });
+    }
+  }
+
+  // Close to the day fixtures run, so the board can show Today, Tomorrow,
+  // shared start times, and different gaps under the minimum.
+  const nearTermUnderstaffed = [
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a1',
+      title: 'Evening Desk',
+      dayOffset: 0,
+      hour: 21,
+      durationMinutes: 300,
+      joined: 0,
+      minVolunteers: 2,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a2',
+      title: 'Evening Desk',
+      dayOffset: 0,
+      hour: 22,
+      durationMinutes: 240,
+      joined: 1,
+      minVolunteers: 3,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a3',
+      title: 'Shelf Duty',
+      dayOffset: 1,
+      hour: 9,
+      durationMinutes: 180,
+      joined: 0,
+      minVolunteers: 2,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a4',
+      title: 'Shelf Duty',
+      dayOffset: 1,
+      hour: 14,
+      durationMinutes: 180,
+      joined: 1,
+      minVolunteers: 4,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a5',
+      title: 'Morning Welcome',
+      dayOffset: 1,
+      hour: 16,
+      durationMinutes: 120,
+      joined: 1,
+      minVolunteers: 3,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a6',
+      title: 'Almost Staffed',
+      dayOffset: 2,
+      hour: 10,
+      durationMinutes: 180,
+      joined: 2,
+      minVolunteers: 3,
+    },
+    {
+      id: 'e4b5d6f7-8091-4a03-bc24-e5f6071829a7',
+      title: 'Empty Reading Room',
+      dayOffset: 3,
+      hour: 11,
+      durationMinutes: 180,
+      joined: 0,
+      minVolunteers: 5,
+    },
+  ] as const;
+
+  for (const shift of nearTermUnderstaffed) {
+    const day = addDaysInFixtureTimezone(
+      today.year,
+      today.month,
+      today.day,
+      shift.dayOffset,
+    );
+    await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+      id: shift.id,
+      title: shift.title,
+      startsAt: fixtureWallClockToUtc(day.year, day.month, day.day, shift.hour),
+      rrule: ONE_TIME_RRULE,
+      durationMinutes: shift.durationMinutes,
+      visibility: ShiftVisibility.ALL_MEMBERS,
+      minVolunteers: shift.minVolunteers,
+      maxVolunteers: Math.max(shift.minVolunteers, 6),
+      instructions:
+        'Seeded under the minimum, close to today, so the To do board shows urgent unfilled assignments.',
+      location: 'Testing Community Center, Front Desk',
+      inviteUserIds: args.volunteers
+        .slice(0, shift.joined)
+        .map((user) => user.id),
+    });
+  }
+
+  const signupVolunteers = [
+    requestA,
+    requestB,
+    eventRequest,
+    args.volunteers[4],
+  ].filter((user): user is FixtureUser => user !== undefined);
+  const nearTermSignups = [
+    {
+      kind: 'shift' as const,
+      id: 'f5c6e7a8-91a2-4b14-cd35-f60718293b01',
+      title: 'Join Desk',
+      dayOffset: 0,
+      hour: 21,
+      durationMinutes: 180,
+      waiting: 1,
+    },
+    {
+      kind: 'shift' as const,
+      id: 'f5c6e7a8-91a2-4b14-cd35-f60718293b02',
+      title: 'Join Desk',
+      dayOffset: 0,
+      hour: 22,
+      durationMinutes: 180,
+      waiting: 2,
+    },
+    {
+      kind: 'event' as const,
+      id: 'a6d7f8b9-a2b3-4c25-de46-0718293445c1',
+      title: 'Reading Hour',
+      dayOffset: 1,
+      hour: 9,
+      durationMinutes: 180,
+      waiting: 1,
+    },
+    {
+      kind: 'event' as const,
+      id: 'a6d7f8b9-a2b3-4c25-de46-0718293445c2',
+      title: 'Reading Hour',
+      dayOffset: 1,
+      hour: 15,
+      durationMinutes: 180,
+      waiting: 3,
+    },
+    {
+      kind: 'shift' as const,
+      id: 'f5c6e7a8-91a2-4b14-cd35-f60718293b03',
+      title: 'Late Signup',
+      dayOffset: 2,
+      hour: 11,
+      durationMinutes: 180,
+      waiting: 1,
+    },
+    {
+      kind: 'event' as const,
+      id: 'a6d7f8b9-a2b3-4c25-de46-0718293445c3',
+      title: 'Family Morning',
+      dayOffset: 3,
+      hour: 10,
+      durationMinutes: 240,
+      waiting: 2,
+    },
+  ];
+
+  for (const signup of nearTermSignups) {
+    const day = addDaysInFixtureTimezone(
+      today.year,
+      today.month,
+      today.day,
+      signup.dayOffset,
+    );
+    const startsAt = fixtureWallClockToUtc(
+      day.year,
+      day.month,
+      day.day,
+      signup.hour,
+    );
+    const waitingUsers = signupVolunteers
+      .slice(0, signup.waiting)
+      .map((user) => user.id);
+    if (signup.kind === 'shift') {
+      await ensureShiftWithInvites(db, args.rootUnitId, args.adminId, {
+        id: signup.id,
+        title: signup.title,
+        startsAt,
+        rrule: ONE_TIME_RRULE,
+        durationMinutes: signup.durationMinutes,
+        visibility: ShiftVisibility.ALL_MEMBERS,
+        maxVolunteers: 8,
+        instructions:
+          'Seeded with sign-ups waiting for approval, close to today.',
+        location: 'Testing Community Center, Main Hall',
+        inviteUserIds: [],
+        extraInvites: [
+          {
+            userIds: waitingUsers,
+            status: ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+          },
+        ],
+      });
+      continue;
+    }
+
+    const overviewEvent = await ensureEvent(db, args.rootUnitId, args.adminId, {
+      id: signup.id,
+      title: signup.title,
+      description: 'Join requests are waiting for an admin.',
+      location: 'Testing Community Center, Hauptstraße 1, 10115 Berlin',
+      startsAt,
+      endsAt: addHours(startsAt, signup.durationMinutes / 60),
+    });
+    for (const userId of waitingUsers) {
+      const existingEventRequest = await db.query.eventInvites.findFirst({
+        where: { eventId: overviewEvent.id, userId },
+      });
+      if (existingEventRequest) continue;
+      await db.insert(schema.eventInvites).values({
+        eventId: overviewEvent.id,
+        userId,
+        status: EventInviteStatus.AWAITING_ADMIN_APPROVAL,
+      });
+    }
+  }
+
+  const reimbursementType = await db.query.reimbursementTypes.findFirst({
+    where: { key: ReimbursementTypeKey.EHRENAMT },
+  });
+  if (!reimbursementType) {
+    throw new Error(
+      'Ehrenamt reimbursement type is missing. Run bun run db:seed before fixtures.',
+    );
+  }
+
+  const ensureTemplate = async (kind: DocumentKind) => {
+    const existing = await db.query.documentTemplates.findFirst({
+      where: {
+        organizationId: args.organizationId,
+        reimbursementTypeId: reimbursementType.id,
+        kind,
+        organizationUnitId: { isNull: true },
+        isDeleted: false,
+      },
+    });
+    if (existing) return existing;
+
+    const [template] = await db
+      .insert(schema.documentTemplates)
+      .values({
+        organizationId: args.organizationId,
+        reimbursementTypeId: reimbursementType.id,
+        kind,
+        body: EMPTY_DOCUMENT_BODY,
+        lastEditedAt: new Date(),
+        lastEditedBy: args.adminId,
+      })
+      .returning();
+    if (!template) throw new Error(`Failed to create ${kind} template`);
+
+    await db.insert(schema.templateSignees).values({
+      documentTemplateId: template.id,
+      order: 0,
+      signeeType: SigneeType.VOLUNTEER,
+    });
+    return template;
+  };
+
+  const contractTemplate = await ensureTemplate(DocumentKind.CONTRACT);
+  const invoiceTemplate = await ensureTemplate(DocumentKind.INVOICE);
+  const yearStart = berlinMonthStart(today.year, 1);
+  const yearEnd = berlinMonthStart(today.year + 1, 1);
+  const contractIds = [
+    OVERVIEW_CONTRACT_ID,
+    'b7e8a9c0-b3c4-4d36-ef57-182934455668',
+    'b7e8a9c0-b3c4-4d36-ef57-182934455669',
+    'b7e8a9c0-b3c4-4d36-ef57-18293445566a',
+    'b7e8a9c0-b3c4-4d36-ef57-18293445566b',
+  ];
+
+  for (let index = 0; index < OVERVIEW_COUNT; index += 1) {
+    const volunteer = args.volunteers[index];
+    const contractId = contractIds[index];
+    if (!volunteer || !contractId) continue;
+    const existingContract = await db.query.contracts.findFirst({
+      where: { id: contractId },
+    });
+    if (existingContract) continue;
+    await db.insert(schema.contracts).values({
+      id: contractId,
+      documentTemplateId: contractTemplate.id,
+      volunteerId: volunteer.id,
+      reimbursementTypeId: reimbursementType.id,
+      organizationUnitId: args.rootUnitId,
+      contractStatus: ContractStatus.AWAITING_NGO_SIGNATURE,
+      periodStart: yearStart,
+      periodEnd: yearEnd,
+      resolvedBody: EMPTY_DOCUMENT_BODY,
+    });
+  }
+
+  const statusAges = [2, 5, 9, 16, 21];
+  const declineAges = [1, 4, 8, 15, 20];
+
+  const insertInvoice = async (invoice: {
+    id: string;
+    volunteerId: string;
+    status: InvoiceStatus;
+    periodStart: Date;
+    periodEnd: Date;
+    documentNumber: string;
+    seq: number;
+    hours?: number;
+    declineReason?: string;
+    declinedAt?: Date;
+  }) => {
+    const existing = await db.query.invoices.findFirst({
+      where: { id: invoice.id },
+    });
+    if (existing) return;
+    const hours = invoice.hours ?? 8;
+    await db.insert(schema.invoices).values({
+      id: invoice.id,
+      documentTemplateId: invoiceTemplate.id,
+      volunteerId: invoice.volunteerId,
+      reimbursementTypeId: reimbursementType.id,
+      organizationUnitId: args.rootUnitId,
+      invoiceStatus: invoice.status,
+      periodStart: invoice.periodStart,
+      periodEnd: invoice.periodEnd,
+      hourlyRateCents: 400,
+      totalHours: hours,
+      totalAmountCents: hours * 400,
+      resolvedBody: EMPTY_DOCUMENT_BODY,
+      documentNumber: invoice.documentNumber,
+      documentNumberSeq: invoice.seq,
+      documentNumberYear: today.year,
+      documentNumberScopeUnitId: args.rootUnitId,
+      ...(invoice.declineReason
+        ? {
+            declinedAtSigneeType: SigneeType.VOLUNTEER,
+            declineReason: invoice.declineReason,
+            declinedAt: invoice.declinedAt ?? new Date(),
+          }
+        : {}),
+    });
+  };
+
+  const signMonths = [9, 8, 7, 6, 10];
+  const signHours = [8, 6, 10, 4, 12];
+  const signIds = [
+    OVERVIEW_TIMESHEET_ID,
+    'c8f9b0d1-c4d5-4e47-f068-293445566779',
+    'c8f9b0d1-c4d5-4e47-f068-29344556677a',
+    'c8f9b0d1-c4d5-4e47-f068-29344556677b',
+    'c8f9b0d1-c4d5-4e47-f068-29344556677c',
+  ];
+  for (let index = 0; index < OVERVIEW_COUNT; index += 1) {
+    const volunteer = args.volunteers[index];
+    const month = signMonths[index];
+    const id = signIds[index];
+    if (!volunteer || month === undefined || !id) continue;
+    await insertInvoice({
+      id,
+      volunteerId: volunteer.id,
+      status: InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
+      periodStart: berlinMonthStart(today.year, month),
+      periodEnd: berlinMonthStart(today.year, month + 1),
+      documentNumber: `overview-timesheet-sign-${index + 1}`,
+      seq: 10 + index,
+      hours: signHours[index],
+    });
+  }
+
+  const bundleVolunteers = args.volunteers.slice(4, 9);
+  const bundleIds = [
+    OVERVIEW_BUNDLE_APRIL_ID,
+    'd9a0c1e2-d5e6-4f58-a179-34455667788a',
+    'd9a0c1e2-d5e6-4f58-a179-34455667788b',
+    'd9a0c1e2-d5e6-4f58-a179-34455667788c',
+    'd9a0c1e2-d5e6-4f58-a179-34455667788d',
+  ];
+  await insertInvoice({
+    id: OVERVIEW_BUNDLE_MAY_ID,
+    volunteerId: bundleVolunteers[0]?.id ?? joined.id,
+    status: InvoiceStatus.READY,
+    periodStart: berlinMonthStart(today.year, 5),
+    periodEnd: berlinMonthStart(today.year, 6),
+    documentNumber: 'overview-bundle-may',
+    seq: 3,
+  });
+  for (const [index, volunteer] of bundleVolunteers.entries()) {
+    const id = bundleIds[index];
+    if (!id) continue;
+    await insertInvoice({
+      id,
+      volunteerId: volunteer.id,
+      status: InvoiceStatus.READY,
+      periodStart: berlinMonthStart(today.year, 4),
+      periodEnd: berlinMonthStart(today.year, 5),
+      documentNumber: `overview-bundle-april-${index + 1}`,
+      seq: 20 + index,
+    });
+  }
+
+  const declineReasons = [
+    'The hours on the timesheet are wrong.',
+    'This is not my timesheet.',
+    'The amount does not match what we agreed.',
+    'Please split this into two months.',
+    'I was away for most of this month.',
+  ];
+  const declinedIds = [
+    OVERVIEW_DECLINED_ID,
+    'f1c2e3a4-f708-417a-c39b-566778899002',
+    'f1c2e3a4-f708-417a-c39b-566778899003',
+    'f1c2e3a4-f708-417a-c39b-566778899004',
+    'f1c2e3a4-f708-417a-c39b-566778899005',
+  ];
+  for (const [index, volunteer] of bundleVolunteers.entries()) {
+    const id = declinedIds[index];
+    if (!id) continue;
+    await insertInvoice({
+      id,
+      volunteerId: volunteer.id,
+      status: InvoiceStatus.DECLINED,
+      periodStart: berlinMonthStart(today.year, 2),
+      periodEnd: berlinMonthStart(today.year, 3),
+      documentNumber: `overview-declined-${index + 1}`,
+      seq: 30 + index,
+      hours: 2,
+      declineReason: declineReasons[index],
+      declinedAt: daysAgo(declineAges[index] ?? 1),
+    });
+  }
+
+  await ensureOverviewStatusAges(db, {
+    contracts: contractIds.map((id, index) => ({
+      id,
+      volunteerId: args.volunteers[index]?.id,
+      daysAgo: statusAges[index] ?? 2,
+    })),
+    timesheets: signIds.map((id, index) => ({
+      id,
+      volunteerId: args.volunteers[index]?.id,
+      daysAgo: statusAges[index] ?? 2,
+    })),
+    declined: declinedIds.map((id, index) => ({
+      id,
+      daysAgo: declineAges[index] ?? 2,
+    })),
+  });
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 86_400_000);
+}
+
+/** Volunteer signature and decline times for the To do accounting chips. */
+async function ensureOverviewStatusAges(
+  db: Database,
+  ages: {
+    contracts: Array<{ id: string; volunteerId?: string; daysAgo: number }>;
+    timesheets: Array<{ id: string; volunteerId?: string; daysAgo: number }>;
+    declined: Array<{ id: string; daysAgo: number }>;
+  },
+) {
+  for (const document of ages.contracts) {
+    if (!document.volunteerId) continue;
+    await ensureVolunteerSignature(db, 'contract', document);
+  }
+  for (const document of ages.timesheets) {
+    if (!document.volunteerId) continue;
+    await ensureVolunteerSignature(db, 'invoice', document);
+  }
+  for (const document of ages.declined) {
+    await db
+      .update(schema.invoices)
+      .set({ declinedAt: daysAgo(document.daysAgo) })
+      .where(eq(schema.invoices.id, document.id));
+  }
+}
+
+async function ensureVolunteerSignature(
+  db: Database,
+  kind: 'contract' | 'invoice',
+  document: { id: string; volunteerId?: string; daysAgo: number },
+) {
+  if (!document.volunteerId) return;
+  const signedAt = daysAgo(document.daysAgo);
+  if (kind === 'contract') {
+    const existing = await db.query.contractSignatures.findFirst({
+      where: { contractId: document.id, signeeType: SigneeType.VOLUNTEER },
+    });
+    if (existing?.signedAt) return;
+    if (existing) {
+      await db
+        .update(schema.contractSignatures)
+        .set({ signedAt, signedByUserId: document.volunteerId })
+        .where(eq(schema.contractSignatures.id, existing.id));
+      return;
+    }
+    const contract = await db.query.contracts.findFirst({
+      where: { id: document.id },
+    });
+    if (!contract) return;
+    await db.insert(schema.contractSignatures).values({
+      contractId: document.id,
+      order: 0,
+      signeeType: SigneeType.VOLUNTEER,
+      signedByUserId: document.volunteerId,
+      signedAt,
+    });
+    return;
+  }
+
+  const existing = await db.query.invoiceSignatures.findFirst({
+    where: { invoiceId: document.id, signeeType: SigneeType.VOLUNTEER },
+  });
+  if (existing?.signedAt) return;
+  if (existing) {
+    await db
+      .update(schema.invoiceSignatures)
+      .set({ signedAt, signedByUserId: document.volunteerId })
+      .where(eq(schema.invoiceSignatures.id, existing.id));
+    return;
+  }
+  const invoice = await db.query.invoices.findFirst({
+    where: { id: document.id },
+  });
+  if (!invoice) return;
+  await db.insert(schema.invoiceSignatures).values({
+    invoiceId: document.id,
+    order: 0,
+    signeeType: SigneeType.VOLUNTEER,
+    signedByUserId: document.volunteerId,
+    signedAt,
+  });
+}
+
 async function seedFixtures() {
   const pool = new Pool({
     host: process.env.DB_HOST,
@@ -1115,12 +1499,33 @@ async function seedFixtures() {
 
   const hashedPassword = await hashPassword(FIXTURE_PASSWORD);
 
-  const admin = await createAuthUser(db, hashedPassword, {
-    email: 'testing+admin@caluno.org',
-    name: 'Playground Admin',
+  // Verify every identity BEFORE the first write, so a clash with real data
+  // aborts cleanly instead of leaving a half-populated database.
+  await assertFixtureIdentitiesAvailable(db, {
+    orgSlug: ORG_SLUG,
+    accounts: [
+      { email: ADMIN_USER_EMAIL, ...ADMIN_IDENTITY },
+      { email: e2eEmail('supervisor'), ...SUPERVISOR_IDENTITY },
+      ...Array.from({ length: MEMBER_COUNT }, (_, index) => ({
+        email: memberEmail(index + 1),
+        ...memberIdentity(index + 1),
+      })),
+      { email: DEMO_USER_EMAIL, ...DEMO_IDENTITY },
+      ...Array.from({ length: PENDING_COUNT }, (_, index) => ({
+        email: pendingEmail(index + 1),
+        ...pendingIdentity(index + 1),
+      })),
+      { email: e2eEmail('rejected01'), ...REJECTED_IDENTITY },
+    ],
   });
 
-  const org = await ensurePlaygroundOrganization(db, admin.id);
+  const admin = await createAuthUser(db, hashedPassword, {
+    locale: 'en',
+    email: ADMIN_USER_EMAIL,
+    ...ADMIN_IDENTITY,
+  });
+
+  const org = await ensureTestingOrganization(db, admin.id);
 
   await ensurePersonalInformationForm(
     db,
@@ -1130,16 +1535,18 @@ async function seedFixtures() {
   );
 
   const supervisor = await createAuthUser(db, hashedPassword, {
-    email: 'testing+supervisor@caluno.org',
-    name: 'Playground Supervisor',
+    locale: 'en',
+    email: e2eEmail('supervisor'),
+    ...SUPERVISOR_IDENTITY,
   });
 
   const members: FixtureUser[] = [];
-  for (let index = 1; index <= 10; index += 1) {
+  for (let index = 1; index <= MEMBER_COUNT; index += 1) {
     members.push(
       await createAuthUser(db, hashedPassword, {
+        locale: 'en',
         email: memberEmail(index),
-        name: `Playground Member ${String(index).padStart(2, '0')}`,
+        ...memberIdentity(index),
       }),
     );
   }
@@ -1148,8 +1555,9 @@ async function seedFixtures() {
   // invites plus untouched ALL_MEMBERS shifts left to discover, so both the
   // "my shifts" and "discover" flows have real content on first login.
   const demoUser = await createAuthUser(db, hashedPassword, {
+    locale: 'en',
     email: DEMO_USER_EMAIL,
-    name: 'Demo Volunteer',
+    ...DEMO_IDENTITY,
   });
 
   await ensureMembershipWithRole(
@@ -1176,18 +1584,21 @@ async function seedFixtures() {
   }
 
   const pendingUsers = await Promise.all(
-    ['testing+pending01@caluno.org', 'testing+pending02@caluno.org'].map(
-      (email, index) =>
-        createAuthUser(db, hashedPassword, {
-          email,
-          name: `Pending Applicant ${String(index + 1).padStart(2, '0')}`,
-        }),
+    Array.from({ length: PENDING_COUNT }, (_, index) =>
+      pendingEmail(index + 1),
+    ).map((email, index) =>
+      createAuthUser(db, hashedPassword, {
+        locale: 'en',
+        email,
+        ...pendingIdentity(index + 1),
+      }),
     ),
   );
 
   const rejectedUser = await createAuthUser(db, hashedPassword, {
-    email: 'testing+rejected01@caluno.org',
-    name: 'Rejected Applicant',
+    locale: 'en',
+    email: e2eEmail('rejected01'),
+    ...REJECTED_IDENTITY,
   });
 
   // The document signing chain requires the volunteer's bank/personal profile
@@ -1195,23 +1606,18 @@ async function seedFixtures() {
   // PDF comes out with gaps). Seed a complete profile for the members so the
   // fixture accounts can sign documents out of the box.
   for (const [index, member] of members.entries()) {
-    const existing = await db.query.userProfiles.findFirst({
-      where: { userId: member.id },
-    });
-    if (!existing) {
-      await db.insert(schema.userProfiles).values({
-        userId: member.id,
-        data: {
-          // A valid German IBAN (mod-97 checksum). Same account for the
-          // fixture members so it round-trips the validator.
-          iban: 'DE89 3704 0044 0532 0130 00',
-          'account-holder': `Erika Musterfrau ${index + 1}`,
-          bic: 'COBADEFFXXX',
-          street: `Musterstraße ${index + 1}`,
-          'birth-date': '1990-08-02',
-        },
-      });
-    }
+    await db
+      .update(schema.users)
+      .set({
+        // A valid German IBAN (mod-97 checksum). Same account for the
+        // fixture members so it round-trips the validator.
+        iban: 'DE89 3704 0044 0532 0130 00',
+        accountHolder: `Erika Musterfrau ${index + 1}`,
+        bic: 'COBADEFFXXX',
+        street: `Musterstraße ${index + 1}`,
+        birthdate: '1990-08-02',
+      })
+      .where(eq(schema.users.id, member.id));
   }
 
   const ensureMembershipRequest = async (
@@ -1238,6 +1644,30 @@ async function seedFixtures() {
 
   for (const user of pendingUsers) {
     await ensureMembershipRequest(user.id, MembershipRequestStatus.PENDING);
+  }
+
+  // Refresh these on every fixture run so the chips stay relative to today.
+  const applicationRequestedAt = [
+    daysBeforeToday(6, 10),
+    daysBeforeToday(4, 10),
+    daysBeforeToday(2, 11),
+    daysBeforeToday(1, 9),
+    daysBeforeToday(0, 8),
+    daysBeforeToday(8, 10),
+    fixtureWallClockToUtc(2025, 10, 2, 12),
+  ];
+  for (const [index, user] of pendingUsers.entries()) {
+    const createdAt = applicationRequestedAt[index];
+    if (!createdAt) continue;
+    await db
+      .update(schema.membershipRequests)
+      .set({ createdAt })
+      .where(
+        and(
+          eq(schema.membershipRequests.userId, user.id),
+          eq(schema.membershipRequests.organizationUnitId, org.rootUnitId),
+        ),
+      );
   }
 
   await ensureMembershipRequest(
@@ -1290,11 +1720,14 @@ async function seedFixtures() {
     id: PUBLIC_EVENT_ID,
     title: 'Public Test Event',
     description:
-      'A recurring weekly program at the Playground Community Center: community support on Mondays, food distribution on Wednesdays, and general event assistance on Fridays.',
-    location: 'Playground Community Center, Hauptstraße 1, 10115 Berlin',
+      'A recurring weekly program at the Testing Community Center: community support on Mondays, food distribution on Wednesdays, and general event assistance on Fridays.',
+    location: 'Testing Community Center, Hauptstraße 1, 10115 Berlin',
     coverUrl: ORG_COVER_IMAGE_URL,
     startsAt: communitySupportStart,
-    endsAt: addHours(eventAssistanceStart, SHIFT_DURATION_MINUTES / 60 + 4),
+    endsAt: addHours(
+      eventAssistanceStart,
+      DEFAULT_SHIFT_DURATION_MINUTES / 60 + 4,
+    ),
   });
 
   const communitySupport = await ensureShiftWithInvites(
@@ -1309,7 +1742,7 @@ async function seedFixtures() {
       maxVolunteers: approvedUserIds.length + 3,
       instructions:
         'Staff the weekly community desk: check people in, hand out care packages, and point visitors to the right resource table. A short briefing runs 15 minutes before the desk opens.',
-      location: 'Playground Community Center, Front Desk',
+      location: 'Testing Community Center, Front Desk',
       imageUrl: SHOWCASE_SHIFT_IMAGE_URL,
       inviteUserIds: approvedUserIds,
     },
@@ -1327,7 +1760,7 @@ async function seedFixtures() {
       maxVolunteers: partialInviteUserIds.length + 5,
       instructions:
         'Sort donated groceries into family-sized boxes, then help load them into pickup vehicles at the loading dock. Closed-toe shoes required.',
-      location: 'Playground Community Center, Loading Dock B',
+      location: 'Testing Community Center, Loading Dock B',
       imageUrl: EVENT_COVER_IMAGE_URL,
       inviteUserIds: partialInviteUserIds,
     },
@@ -1342,7 +1775,7 @@ async function seedFixtures() {
     maxVolunteers: 8,
     instructions:
       'General support for whatever the Friday program needs that week — registration, signage, seating, or directing attendees. Great shift for new volunteers.',
-    location: 'Playground Community Center, Main Hall',
+    location: 'Testing Community Center, Main Hall',
     imageUrl: SHOWCASE_SHIFT_IMAGE_URL,
     inviteUserIds: [
       demoUser.id,
@@ -1394,10 +1827,10 @@ async function seedFixtures() {
     title: 'Volunteer Fair',
     description:
       'A showcase event bringing together every shift capacity state: open with spots left, fully booked, and unlimited. Come see the whole program in one place.',
-    location: 'Playground Exhibition Hall, Hauptstraße 1, 10115 Berlin',
+    location: 'Testing Exhibition Hall, Hauptstraße 1, 10115 Berlin',
     coverUrl: EVENT_COVER_IMAGE_URL,
     startsAt: showcaseOpenStart,
-    endsAt: addHours(showcaseFullStart, SHIFT_DURATION_MINUTES / 60),
+    endsAt: addHours(showcaseFullStart, DEFAULT_SHIFT_DURATION_MINUTES / 60),
   });
 
   await ensureCodeOfConductForm(
@@ -1417,7 +1850,7 @@ async function seedFixtures() {
     title: 'Welcome Desk',
     startsAt: showcaseOpenStart,
     rrule: ONE_TIME_RRULE,
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.ALL_MEMBERS,
     maxVolunteers: 12,
     instructions:
@@ -1449,7 +1882,7 @@ async function seedFixtures() {
     title: 'Stage Setup',
     startsAt: showcaseFullStart,
     rrule: ONE_TIME_RRULE,
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.ALL_MEMBERS,
     maxVolunteers: showcaseFullInviteIds.length,
     instructions:
@@ -1465,7 +1898,7 @@ async function seedFixtures() {
     title: 'Cleanup Crew',
     startsAt: showcaseUnlimitedStart,
     rrule: ONE_TIME_RRULE,
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.ALL_MEMBERS,
     instructions:
       'Help break down the exhibition hall after the fair: fold tables, bag trash, and load the van. As many hands as show up — no cap.',
@@ -1521,7 +1954,7 @@ async function seedFixtures() {
     visibility: ShiftVisibility.ALL_MEMBERS,
     maxVolunteers: 15,
     instructions:
-      'Pick up litter, clear brush from the walking paths, and help repaint the playground fence. Gloves and bags provided — wear clothes you don’t mind getting dirty.',
+      'Pick up litter, clear brush from the walking paths, and help repaint the Testing fence. Gloves and bags provided — wear clothes you don’t mind getting dirty.',
     location: 'Tiergarten Park, Berlin · Main gate',
     imageUrl: SHOWCASE_SHIFT_IMAGE_URL,
     inviteUserIds: members.slice(0, 2).map((member) => member.id),
@@ -1541,7 +1974,7 @@ async function seedFixtures() {
     maxVolunteers: 8,
     instructions:
       'Sort incoming donation pallets by category, check items for damage, and restock the shelves ready for next week’s distribution.',
-    location: 'Playground Warehouse, Hauptstraße 1, 10115 Berlin',
+    location: 'Testing Warehouse, Hauptstraße 1, 10115 Berlin',
     imageUrl: EVENT_COVER_IMAGE_URL,
     inviteUserIds: members.slice(2, 4).map((member) => member.id),
   });
@@ -1559,7 +1992,7 @@ async function seedFixtures() {
     visibility: ShiftVisibility.ALL_MEMBERS,
     instructions:
       'Help kids aged 8–12 with homework and reading practice. No teaching experience needed, just patience and a friendly face — materials are provided.',
-    location: 'Playground Community Center, Room 2',
+    location: 'Testing Community Center, Room 2',
     imageUrl: SHOWCASE_SHIFT_IMAGE_URL,
     inviteUserIds: members.slice(4, 5).map((member) => member.id),
   });
@@ -1578,7 +2011,7 @@ async function seedFixtures() {
     maxVolunteers: 10,
     instructions:
       'Plant the spring vegetable beds, turn compost, and set up the new watering system. Great outdoor shift for beginners.',
-    location: 'Playground Community Garden, Hauptstraße 1, 10115 Berlin',
+    location: 'Testing Community Garden, Hauptstraße 1, 10115 Berlin',
     imageUrl: EVENT_COVER_IMAGE_URL,
     inviteUserIds: members.slice(5, 7).map((member) => member.id),
   });
@@ -1627,7 +2060,7 @@ async function seedFixtures() {
     },
     {
       title: 'Food Bank Packing',
-      location: 'Playground Warehouse',
+      location: 'Testing Warehouse',
       hour: 9,
       maxVolunteers: 10,
     },
@@ -1657,7 +2090,7 @@ async function seedFixtures() {
       title: entry.title,
       startsAt: fixtureWallClockToUtc(day.year, day.month, day.day, entry.hour),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: entry.maxVolunteers,
       location: entry.location,
@@ -1679,7 +2112,7 @@ async function seedFixtures() {
       17,
     ),
     rrule: 'FREQ=WEEKLY;COUNT=3',
-    durationMinutes: SHIFT_DURATION_MINUTES,
+    durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
     visibility: ShiftVisibility.INVITED_MEMBERS,
     maxVolunteers: 6,
     location: 'Community Center · Kitchen',
@@ -1706,7 +2139,7 @@ async function seedFixtures() {
         9,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: 5,
       location: 'Town Hall Foyer',
@@ -1728,7 +2161,7 @@ async function seedFixtures() {
         20,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: 4,
       location: 'City Shelter',
@@ -1756,7 +2189,7 @@ async function seedFixtures() {
         13,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.INVITED_MEMBERS,
       maxVolunteers: 6,
       location: 'Exhibition Hall B',
@@ -1784,7 +2217,7 @@ async function seedFixtures() {
         10,
       ),
       rrule: ONE_TIME_RRULE,
-      durationMinutes: SHIFT_DURATION_MINUTES,
+      durationMinutes: DEFAULT_SHIFT_DURATION_MINUTES,
       visibility: ShiftVisibility.ALL_MEMBERS,
       maxVolunteers: 12,
       location: 'Community Garden',
@@ -1875,6 +2308,13 @@ async function seedFixtures() {
     });
   }
 
+  await ensureOverviewWaitingActions(db, {
+    organizationId: org.organizationId,
+    rootUnitId: org.rootUnitId,
+    adminId: admin.id,
+    volunteers: members,
+  });
+
   await ensureTimeEntries(
     db,
     [supervisor, ...members],
@@ -1891,12 +2331,12 @@ async function seedFixtures() {
     org.rootUnitId,
   );
 
-  console.log(`Created Playground organization (${org.organizationId})`);
+  console.log(`Created Testing organization (${org.organizationId})`);
   console.log(`Root unit: ${org.rootUnitId}`);
   console.log(
-    'Users: 16 accounts seeded (password from FIXTURE_PASSWORD, default: abcd1234)',
+    'Users: 19 accounts seeded (password from FIXTURE_PASSWORD, default: abcd1234)',
   );
-  console.log('Memberships: 13 approved, 2 pending, 1 rejected');
+  console.log('Memberships: 13 approved, 5 pending, 1 rejected');
   console.log(
     'Requirement forms: Personal Information (org unit), Banking Information (Welcome Desk shift), Code of Conduct (Volunteer Fair event)',
   );
@@ -1917,6 +2357,9 @@ async function seedFixtures() {
     'Time entries: created across Community Support and Food Distribution',
   );
   console.log(
+    `Overview (${ADMIN_USER_EMAIL}): 5 of each waiting action, including 5 membership requests`,
+  );
+  console.log(
     [
       `Demo invites (${DEMO_USER_EMAIL}): 12 pending (9 one-time + Weekly Meal Prep x3) → home Invitations section (10 preview) + /invitations`,
       `  accepted → /shifts/${acceptedInvite.shiftId} (Accepted badge + Cancel)`,
@@ -1926,22 +2369,30 @@ async function seedFixtures() {
     ].join('\n'),
   );
 
-  // No admin UI to toggle accountingEnabled yet — this script never runs in production.
-  const enabledOrgs = await db
+  // No admin UI to toggle accountingEnabled yet. Scoped strictly to the seeded
+  // Testing org — these fixtures must never write to another org's rows.
+  await db
     .update(schema.organizations)
     .set({ accountingEnabled: true })
-    .returning({ id: schema.organizations.id });
-  console.log(`Accounting enabled on ${enabledOrgs.length} organization(s).`);
+    // Only when it actually needs flipping: `updatedAt` has an $onUpdate, so an
+    // unconditional write would bump the row (and the WAL) on every deploy that
+    // re-runs these fixtures.
+    .where(
+      and(
+        eq(schema.organizations.id, org.organizationId),
+        eq(schema.organizations.accountingEnabled, false),
+      ),
+    );
+  console.log(`Accounting enabled on the Testing org (${org.organizationId}).`);
 
-  // Backfill missing unit postal fields so accounting documents have an org
-  // street/zip/city to render (a document with "—" in the footer is a hard
-  // dead-end the org can't fix without an edit form). The document renders the
-  // UNIT's profile, so patch the org's root unit. Only fills gaps.
-  for (const enabledOrg of enabledOrgs) {
-    const rootUnit = await db.query.organizationUnits.findFirst({
-      where: { organizationId: enabledOrg.id, parentId: { isNull: true } },
-    });
-    if (!rootUnit) continue;
+  // Backfill missing postal fields on the Testing root unit so accounting
+  // documents have a street/zip/city to render (a document with "—" in the
+  // footer is a hard dead-end the org can't fix without an edit form). Only
+  // fills gaps, and only on the seeded org's own root unit.
+  const rootUnit = await db.query.organizationUnits.findFirst({
+    where: { organizationId: org.organizationId, parentId: { isNull: true } },
+  });
+  if (rootUnit) {
     const patch: Partial<typeof schema.organizationUnits.$inferInsert> = {};
     if (!rootUnit.street) patch.street = 'Hauptstraße 1';
     if (!rootUnit.zipCode) patch.zipCode = '10115';

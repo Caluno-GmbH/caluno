@@ -11,8 +11,8 @@ import {
 import { FileTextIcon, LogOutIcon, SettingsIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type PropsWithChildren, useState } from 'react';
+import { useSignOut } from '@/hooks/use-sign-out';
 import { useRouter } from '@/i18n/navigation';
-import { signOut } from '@/lib/auth';
 
 type ProfileDropdownProps = PropsWithChildren & {};
 
@@ -22,6 +22,7 @@ export function ProfileDropdown({ children }: ProfileDropdownProps) {
   const router = useRouter();
   const [popoverOpen, setPopoverOpen] = useState(false);
   const summary = useMyDocumentSummary();
+  const signOut = useSignOut();
 
   const handleProfileOpen = async () => {
     setPopoverOpen(false);

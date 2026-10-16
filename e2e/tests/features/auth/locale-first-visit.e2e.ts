@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BASE_URL } from '../../pages/AuthPage';
+import { BASE_URL } from '../../../pages/AuthPage';
 
 /**
  * First-visit locale detection (locale-browser-to-profile).

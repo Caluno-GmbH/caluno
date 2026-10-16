@@ -1,10 +1,11 @@
 import { type JoinOrganizationMutation, JoinStatus } from '@repo/data';
 import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { redirect as redirectWithLocale } from '@/i18n/navigation';
 import { isAuthenticated } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { JoinError } from './components/join-error';
 import { RequestPending } from './components/request-pending';
@@ -27,11 +28,9 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   const data = await getDataClient();
-  const orgUnit = await data.organization.findUnitWithOrg(organizationUnitId);
-
-  if (!orgUnit) {
-    notFound();
-  }
+  const orgUnit = await requireFound(() =>
+    data.organization.findUnitWithOrg(organizationUnitId),
+  );
 
   let result: JoinOrganizationMutation['joinOrganization'];
   try {

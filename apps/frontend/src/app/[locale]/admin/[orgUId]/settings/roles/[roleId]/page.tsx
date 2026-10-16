@@ -1,6 +1,5 @@
 import { Badge, Card, CardContent } from '@repo/ui';
 import { Lock, Shield, ShieldCheck, Unlock } from 'lucide-react';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/role/components/action-bar';
 import {
@@ -10,6 +9,7 @@ import {
   permissionTitleKey,
 } from '@/domain/role/lib/role-label';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface RoleDetailsPageProps {
   params: Promise<{ orgUId: string; roleId: string; locale: string }>;
@@ -24,13 +24,9 @@ export default async function RoleDetailsPage({
   const t = await getTranslations({ locale, namespace: 'Role' });
   const tp = await getTranslations({ locale, namespace: 'Role.permissions' });
   const [role, permissionGroups] = await Promise.all([
-    data.role.findById(roleId),
+    requireFound(() => data.role.findById(roleId)),
     data.role.findPermissionGroups(),
   ]);
-
-  if (!role) {
-    notFound();
-  }
 
   const rolePermissionIds = new Set(role.permissions.map((p) => p.id));
   const assignedGroups = permissionGroups

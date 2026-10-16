@@ -16,10 +16,11 @@ import {
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
 import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import type { ProfileShape } from '@/domain/user/lib/profile-field-values';
 import { useRouter } from '@/i18n/navigation';
 
 type EditIdentityFormProps = {
-  profile: { data: Record<string, unknown> } | null;
+  profile: ProfileShape | null | undefined;
 };
 
 const editableFields = SYSTEM_PROFILE_FIELDS.filter((f) => f.key !== 'email');
@@ -33,7 +34,7 @@ const fieldToRenderable = (
   systemKey: f.key,
   type: f.type,
   label,
-  required: false,
+  required: f.key === 'firstname' || f.key === 'lastname',
   description: subtitle ?? null,
   placeholder: null,
   options: null,
@@ -50,15 +51,13 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const router = useRouter();
   const messages = useValidationMessages();
 
-  const data = (profile?.data ?? {}) as Record<string, unknown>;
-
   const subtitleByKey = useMemo<Record<string, string>>(
     () => ({
-      'preferred-name': tSubtitles('preferredName'),
-      name: tSubtitles('firstName'),
+      preferredName: tSubtitles('preferredName'),
+      firstname: tSubtitles('firstName'),
       lastname: tSubtitles('lastName'),
       iban: tSubtitles('iban'),
-      'account-holder': tSubtitles('accountHolder'),
+      accountHolder: tSubtitles('accountHolder'),
       bic: tSubtitles('bic'),
     }),
     [tSubtitles],
@@ -67,11 +66,11 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   const defaultValues = useMemo(() => {
     const vals: Record<string, string> = {};
     for (const f of editableFields) {
-      const v = data[f.key];
+      const v = profile?.[f.key as keyof ProfileShape];
       vals[f.key] = typeof v === 'string' ? v : '';
     }
     return vals;
-  }, [data]);
+  }, [profile]);
 
   const schema = useMemo(
     () =>
@@ -81,7 +80,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
             f.key,
             buildFieldSchema(
               fieldToRenderable(f, tFields(f.labelKey), subtitleByKey[f.key]),
-              false,
+              f.key === 'firstname' || f.key === 'lastname',
               messages,
             ),
           ]),
@@ -95,7 +94,12 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
     handleSubmit,
     formState: { errors, isDirty, isValid, isSubmitting },
   } = useForm<Record<string, string>>({
-    resolver: zodResolver(schema) as Resolver<Record<string, string>>,
+    // raw: true keeps empty optional fields as '' in form state. Without it,
+    // zod preprocess (e.g. gender '' → undefined) rewrites values after the
+    // first validation and desyncs dirty tracking from what the inputs show.
+    resolver: zodResolver(schema, undefined, {
+      raw: true,
+    }) as Resolver<Record<string, string>>,
     defaultValues,
     mode: 'onChange',
   });
@@ -109,12 +113,15 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
       }
       toast.success(tProfile('saved'));
       router.replace('/profile');
+      router.refresh();
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : tProfile('saveFailed'),
       );
     }
   };
+
+  const emailValue = typeof profile?.email === 'string' ? profile.email : '';
 
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
@@ -129,7 +136,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
                 <div className="flex items-center gap-2">
                   <Input
                     id="email-locked"
-                    value={data.email as string}
+                    value={emailValue}
                     readOnly
                     disabled
                     className="flex-1"

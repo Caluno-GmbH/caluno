@@ -5,6 +5,7 @@ import {
   contractPeriodForLifespan,
   formatHours,
   hoursBetween,
+  lifespanForPeriod,
   mapEligibleTimeEntry,
   sumHours,
 } from './creation-modal.utils';
@@ -38,6 +39,14 @@ describe('contractPeriodForLifespan', () => {
   it('returns undefined for an empty entry', () => {
     expect(contractPeriodForLifespan('')).toBeUndefined();
   });
+
+  it('refuses a month outside 1 to 12 instead of rolling into the next year', () => {
+    expect(contractPeriodForLifespan('13/2026')).toBeUndefined();
+  });
+
+  it('refuses a day range with a day that does not exist', () => {
+    expect(contractPeriodForLifespan('31.02.2026–05.03.2026')).toBeUndefined();
+  });
 });
 
 describe('hoursBetween', () => {
@@ -63,6 +72,7 @@ function makeEntry(
     shiftInstance: {
       id: 'si-1',
       master: { title: 'Sonntagsdienst' },
+      overrideTitle: null,
     },
     ...overrides,
   };
@@ -133,5 +143,46 @@ describe('sumHours', () => {
 
   it('Is zero for an empty selection', () => {
     expect(sumHours([])).toBe(0);
+  });
+});
+
+describe('lifespanForPeriod', () => {
+  it('prints a whole Berlin month as MM/YYYY', () => {
+    expect(
+      lifespanForPeriod('2026-07-31T22:00:00.000Z', '2026-08-31T22:00:00.000Z'),
+    ).toBe('08/2026');
+  });
+
+  it('prints a whole Berlin year as YYYY', () => {
+    expect(
+      lifespanForPeriod('2025-12-31T23:00:00.000Z', '2026-12-31T23:00:00.000Z'),
+    ).toBe('2026');
+  });
+
+  it('prints a day range with an en dash, inclusive of the last day', () => {
+    expect(
+      lifespanForPeriod('2026-07-31T22:00:00.000Z', '2026-08-15T22:00:00.000Z'),
+    ).toBe('01.08.2026–15.08.2026');
+  });
+
+  it('is what contractPeriodForLifespan reads back to the same bounds', () => {
+    const periods = [
+      {
+        periodStart: '2026-09-30T22:00:00.000Z',
+        periodEnd: '2026-10-31T23:00:00.000Z',
+      },
+      {
+        periodStart: '2026-12-31T23:00:00.000Z',
+        periodEnd: '2027-12-31T23:00:00.000Z',
+      },
+      {
+        periodStart: '2026-10-04T22:00:00.000Z',
+        periodEnd: '2026-10-11T22:00:00.000Z',
+      },
+    ];
+    for (const period of periods) {
+      const lifespan = lifespanForPeriod(period.periodStart, period.periodEnd);
+      expect(contractPeriodForLifespan(lifespan)).toEqual(period);
+    }
   });
 });

@@ -1,13 +1,14 @@
-import { type DataClient, DataError, JoinStatus } from '@repo/data';
-import { notFound } from 'next/navigation';
+import { JoinStatus } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { EventFormsClient } from '@/app/[locale]/(public)/events/[eventId]/forms/event-forms-client';
 import { EventPageHeader } from '@/domain/event/components/event-page-header';
 import type { RequiredFormItem } from '@/domain/requirement-form/components/required-form-renderer';
+import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound, requireFoundOrNull } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 
 interface EventFormsPageProps {
@@ -15,20 +16,13 @@ interface EventFormsPageProps {
   searchParams: Promise<{ redirectTo?: string }>;
 }
 
-type PublicEvent = Awaited<ReturnType<DataClient['publicEvent']['findById']>>;
-
 export async function generateMetadata({ params }: EventFormsPageProps) {
   const { eventId, locale } = await params;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  let event: PublicEvent;
-  try {
-    event = await data.publicEvent.findById(eventId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    return { title: 'Event — Caluno' };
-  }
+  const event = await requireFoundOrNull(() =>
+    data.publicEvent.findById(eventId),
+  );
+  if (!event) return { title: 'Event — Caluno' };
   const t = await getTranslations({ locale, namespace: 'EventDetail' });
   return { title: `${t('forms.title', { eventTitle: event.title })} — Caluno` };
 }
@@ -41,15 +35,7 @@ export default async function EventFormsPage({
   const { redirectTo } = await searchParams;
   const data = await getDataClient({ locale: resolveLocale(locale) });
 
-  let event: PublicEvent;
-  try {
-    event = await data.publicEvent.findById(eventId);
-  } catch (error) {
-    if (error instanceof DataError && error.options?.code === 'NOT_FOUND') {
-      notFound();
-    }
-    throw error;
-  }
+  const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const session = await getSession();
   if (!session) {
@@ -85,8 +71,8 @@ export default async function EventFormsPage({
 
   let profileData: Record<string, string> = {};
   try {
-    const userProfile = await data.requirementForm.getMyUserProfile();
-    profileData = (userProfile?.data ?? {}) as Record<string, string>;
+    const userProfile = await data.user.getMe();
+    profileData = profileFieldValues(userProfile);
   } catch {
     // Ignore profile fetch errors; form will render without prefilled values.
   }

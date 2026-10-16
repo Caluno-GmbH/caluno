@@ -29,10 +29,12 @@ export const organizationRelations = defineRelationsPart(schema, (r) => ({
     organization: r.one.organizations({
       from: r.organizationUnits.organizationId,
       to: r.organizations.id,
+      optional: false,
     }),
     type: r.one.organizationUnitTypes({
       from: r.organizationUnits.typeId,
       to: r.organizationUnitTypes.id,
+      optional: false,
     }),
     parent: r.one.organizationUnits({
       from: r.organizationUnits.parentId,
@@ -63,22 +65,26 @@ export const organizationRelations = defineRelationsPart(schema, (r) => ({
     organizationUnit: r.one.organizationUnits({
       from: r.organizationUnitAutomations.organizationUnitId,
       to: r.organizationUnits.id,
+      optional: false,
     }),
   },
   organizationUnitRequiredForms: {
     organizationUnit: r.one.organizationUnits({
       from: r.organizationUnitRequiredForms.organizationUnitId,
       to: r.organizationUnits.id,
+      optional: false,
     }),
     form: r.one.requirementForms({
       from: r.organizationUnitRequiredForms.formId,
       to: r.requirementForms.id,
+      optional: false,
     }),
   },
   organizationUnitTypes: {
     organization: r.one.organizations({
       from: r.organizationUnitTypes.organizationId,
       to: r.organizations.id,
+      optional: false,
     }),
     units: r.many.organizationUnits({
       from: r.organizationUnitTypes.id,

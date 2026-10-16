@@ -1,16 +1,17 @@
 'use client';
 
-import { RequirementProfileRepository } from '@repo/data';
+import { UserRepository } from '@repo/data';
 import { useQuery } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
 
+/** Admin volunteer profile via `user(id)` (membership-gated, payment-masked). */
 export function useAdminUserProfile(userId: string) {
   const sdk = useSdk();
-  const repository = new RequirementProfileRepository(sdk);
+  const repository = new UserRepository(sdk);
 
   return useQuery({
-    queryKey: ['adminUserProfile', userId],
-    queryFn: () => repository.getAdminUserProfile(userId),
+    queryKey: ['user', userId, 'profile'],
+    queryFn: () => repository.findById(userId),
     staleTime: 5 * 60 * 1000,
     enabled: !!userId,
   });

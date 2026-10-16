@@ -24,7 +24,7 @@ export type RequiredFormField = {
   documentLabel?: string | null;
   minAge?: number | null;
   fieldOrder: number;
-  options?: Array<{ label: string; value: string }> | null;
+  options?: Array<string> | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };

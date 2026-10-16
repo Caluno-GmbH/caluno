@@ -1,4 +1,62 @@
 {
+  "Todo": {
+    "empty": "Nothing is waiting for you.",
+    "loadFailed": "Waiting actions could not be loaded.",
+    "seeAll": "See all",
+    "groups": {
+      "volunteersAndShifts": "Volunteers and shifts",
+      "accounting": "Accounting"
+    },
+    "types": {
+      "contract": "Contract",
+      "timesheet": "Timesheet"
+    },
+    "back": "Back to to do",
+    "waiting": "{count, plural, one {# waiting} other {# waiting}}",
+    "appliedRelative": "Applied {when}",
+    "declinedAgo": "Declined {when}",
+    "signedAgo": "Signed {when}",
+    "short": "{missing, plural, one {# needed} other {# needed}}",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} of {total} spots filled",
+    "hours": "{hours} h",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} days",
+      "staffing": "Staffing",
+      "daysAhead": "Days ahead",
+      "BELOW_MINIMUM": "Below minimum",
+      "NOT_FULL": "Not full",
+      "emptyBelowMinimum": "No assignments below minimum in the next {count} days",
+      "emptyNotFull": "No assignments that aren't full in the next {count} days"
+    },
+    "sections": {
+      "FILL_OPEN_ASSIGNMENTS": "Fill upcoming assignments",
+      "REVIEW_APPLICATIONS": "Review applications",
+      "APPROVE_SIGNUPS": "Approve sign-ups",
+      "DECLINED_DOCUMENTS": "Declined documents",
+      "CREATE_AGREEMENTS": "Create agreements",
+      "CREATE_TIMESHEETS": "Create timesheets",
+      "COUNTERSIGN_DOCUMENTS": "Countersign documents",
+      "SEND_TIMESHEET_BUNDLES": "Timesheet bundles ready to send"
+    }
+  },
+  "Terms": {
+    "accept": "Accept and continue",
+    "accepting": "Accepting...",
+    "redirecting": "Redirecting...",
+    "acceptFailed": "Something went wrong. Please try again.",
+    "loadFailed": "The terms document could not be loaded. Please refresh the page."
+  },
+  "Unsubscribe": {
+    "confirm": "Unsubscribe from all emails",
+    "confirming": "Unsubscribing...",
+    "description": "Stop receiving all email notifications from caluno.",
+    "error": "We couldn't update your email preferences. Please try again.",
+    "success": "You will no longer receive email notifications from caluno.",
+    "successTitle": "You're unsubscribed",
+    "title": "Unsubscribe from emails"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Join {orgName}",
@@ -52,8 +110,11 @@
       "emailPlaceholder": "you@example.com",
       "genericError": "We couldn't create your account. Please try again.",
       "hasAccount": "Already have an account?",
-      "nameLabel": "Full name",
-      "namePlaceholder": "John Doe",
+      "firstnameLabel": "First name",
+      "firstnamePlaceholder": "John",
+      "lastnameLabel": "Last name",
+      "lastnamePlaceholder": "Doe",
+      "namePartsRequired": "Please enter your first and last name.",
       "passwordHint": "At least 6 characters",
       "passwordLabel": "Password",
       "passwordPlaceholder": "••••••••",
@@ -62,6 +123,8 @@
       "signInLink": "Sign in",
       "submit": "Create account",
       "submitting": "Creating account...",
+      "termsAcknowledge": "I have read and accept the <termsLink>Terms and Conditions</termsLink>.",
+      "termsRequired": "Please accept the Terms and Conditions to continue.",
       "title": "Create your account",
       "description": "Welcome to caluno. Sign up to join assignments and volunteer with your organisation."
     },
@@ -139,16 +202,33 @@
     "selectShiftPlaceholder": "Select the assignment",
     "shiftSearchPlaceholder": "Assignment name",
     "shiftSheetTitle": "Select assignment",
-    "shiftlessWarningDuplicateAtSubmit": "If this volunteer already has an open check-in without an assignment, the check-in will fail with an error.",
-    "shiftlessWarningEmptyTaskCell": "The hour record shows an empty task column. You can add a note to the entry later.",
-    "shiftlessWarningNoReimbursement": "These hours have no compensation type yet. They'll only appear in the hour record and the accounting once you edit the entry.",
-    "shiftlessWarningNoShiftStats": "The hours count toward general totals only, not toward any assignment's capacity or planning.",
+    "shiftlessWarningBody": "If this volunteer should receive compensation for this assignment, the compensation type needs to be added manually to the entry on the Tracked times page.",
     "shiftlessWarningTitle": "Checking in without an assignment",
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
     "today": "Today",
     "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
-    "unavailableTitle": "Can't check in this person"
+    "unavailableTitle": "Can't check in this person",
+    "agreementNoTemplateTitle": "No agreement template set up",
+    "agreementNoTemplateManageBody": "Set up the template first to create contracts with volunteers.",
+    "agreementNoTemplateNoRightsBody": "There's no agreement template for {reimbursementType} shifts yet. Ask {admins} to set one up.",
+    "agreementSetUpTemplateButton": "Set up template",
+    "agreementNoContractTitle": "No active agreement",
+    "agreementNoContractManageBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts.",
+    "agreementNoContractNoRightsBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts. Ask {admins} to create one.",
+    "agreementCreateButton": "Create agreement",
+    "agreementAwaitingCountersignTitle": "Agreement needs a countersignature",
+    "agreementAwaitingCountersignManageBody": "The agreement for {reimbursementType} shifts is waiting for your organization to countersign.",
+    "agreementAwaitingCountersignNoRightsBody": "The agreement for {reimbursementType} shifts is waiting to be countersigned. Ask {admins} to complete it.",
+    "agreementCountersignButton": "Countersign",
+    "agreementAwaitingVolunteerTitle": "Agreement not signed yet",
+    "agreementAwaitingVolunteerBody": "This volunteer hasn't signed their agreement for {reimbursementType} shifts. Ask them to open their app and sign it before they start.",
+    "agreementColleagues": "{name} or any other colleague with reimbursement access",
+    "unverifiedCheckInButton": "Unverified checkin",
+    "unverifiedCheckInConfirmTitle": "Check in without a valid agreement?",
+    "unverifiedCheckInConfirmBody": "You can check them in, but they won't be able to get reimbursed without the contract.",
+    "unverifiedCheckInConfirmAction": "Check in anyway",
+    "cancel": "Cancel"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",
@@ -443,7 +523,7 @@
         "decline": "Decline"
       },
       "missingProfileWarning": "Your profile is missing details this document needs.",
-      "missingProfileCta": "Complete your profile to sign",
+      "completeDetailsCta": "Complete details",
       "toasts": {
         "signed": "{name} signed.",
         "signedError": "We couldn't sign {name}. Please try again.",
@@ -479,23 +559,34 @@
     },
     "card": {
       "label": "Enable ID verification",
-      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in.",
-      "updateError": "We couldn't save the setting. Please try again."
+      "description": "When enabled, the volunteer is asked for their ID at check-in. Verification is optional and never blocks check-in."
     }
   },
   "ShiftSettings": {
     "page": {
-      "title": "Shifts and check-in",
-      "subtitle": "Settings for shifts in {orgName}."
+      "title": "Assignments and check-in",
+      "subtitle": "Settings for assignments in {orgName}."
+    },
+    "actions": {
+      "saved": "Settings saved",
+      "saveError": "We couldn't save these settings. Please try again.",
+      "savePartialError": "Some changes were saved. The rest are still waiting. Save again to retry, or cancel to drop them.",
+      "unsavedChangesTitle": "Unsaved changes",
+      "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
+      "unsavedChangesLeave": "Leave without saving",
+      "unsavedChangesStay": "Keep editing",
+      "confirmEnableTitle": "Turn this on?",
+      "confirmEnableDescription": "Saving starts {names}. That can change who gets onto an assignment.",
+      "confirmEnableAction": "Save and turn on"
     },
     "sections": {
       "staffing": {
         "title": "Staffing",
-        "description": "How volunteers are asked to fill shifts."
+        "description": "How volunteers are asked to fill assignments."
       },
       "moderation": {
         "title": "Moderation",
-        "description": "Rules for who gets into a shift."
+        "description": "Rules for who gets into an assignment."
       },
       "checkIn": {
         "title": "Check-in",
@@ -526,7 +617,7 @@
       }
     },
     "stepIn": {
-      "label": "When to step in",
+      "label": "Time frame before the start",
       "option": "{hours} hours before"
     },
     "sendAt": {
@@ -534,27 +625,24 @@
     },
     "callOut": {
       "title": "Automatic urgent call",
-      "description": "Sends an urgent call to everyone eligible to help when a shift is below its minimum shortly before it starts. Shifts without a minimum are never affected.",
-      "daysDescription": "Shifts on these days can trigger an urgent call.",
-      "stepInDescription": "How long before its start a shift below its minimum gets an urgent call.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "description": "Sends an urgent call to everyone eligible to help when an assignment is below its minimum shortly before it starts. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can trigger an urgent call.",
+      "stepInDescription": "How long before its start an assignment below its minimum gets an urgent call.",
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "discovery": {
       "title": "Discovery email",
-      "description": "Sends volunteers an overview of their upcoming shifts in this unit and the shifts that still need people. Volunteers can turn it off in their account settings.",
+      "description": "Sends volunteers an overview of their upcoming assignments in this unit and the assignments that still need people. Volunteers can turn it off in their account settings.",
       "daysDescription": "Days the email goes out.",
       "sendAtDescription": "Time of day the email goes out, in local time.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "noDaysHint": "No days selected, so this automation will not run."
     },
     "approval": {
       "title": "Pause approval",
-      "description": "Confirms sign-ups straight away when a shift is below its minimum shortly before it starts. Approval applies again once the shift reaches its minimum. Shifts without a minimum are never affected.",
-      "daysDescription": "Shifts on these days can have approval paused.",
-      "stepInDescription": "How long before its start a shift below its minimum stops needing approval.",
-      "noDaysHint": "No days selected, so this automation will not run.",
-      "updateError": "Could not save this automation."
+      "description": "Confirms sign-ups straight away when an assignment is below its minimum shortly before it starts. Approval applies again once the assignment reaches its minimum. Assignments without a minimum are never affected.",
+      "daysDescription": "Assignments on these days can have approval paused.",
+      "stepInDescription": "How long before its start an assignment below its minimum stops needing approval.",
+      "noDaysHint": "No days selected, so this automation will not run."
     }
   },
   "MembershipRequest": {
@@ -709,7 +797,7 @@
     "orgUnits": "Org units",
     "organizationSettings": "Organisation settings",
     "organizations": "Organisations",
-    "overview": "Overview",
+    "todo": "To do",
     "profile": "Profile",
     "qrIdDescription": "Show this QR code on-site to confirm your attendance.",
     "qrIdTitle": "QR ID",
@@ -720,13 +808,13 @@
     "shortcuts": "Shortcuts",
     "timesheets": "Tracked times",
     "volunteeringApp": "Volunteering app",
-    "volunteers": "Volunteers",
+    "volunteers": "Users",
     "accounting": "Accounting",
     "reimbursements": "Reimbursements",
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
     "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
-    "shiftSettings": "Shifts and check-in"
+    "shiftSettings": "Assignments and check-in"
   },
   "OrgDetail": {
     "aboutHeading": "About us",
@@ -765,6 +853,7 @@
       "title": "Request to delete \"{name}\""
     },
     "detail": {
+      "title": "Overview",
       "aboutTitle": "About",
       "contactTitle": "Contact",
       "editButton": "Edit",
@@ -822,6 +911,7 @@
       "deleteAria": "Delete",
       "editAria": "Edit",
       "empty": "No organisation unit hierarchy found. Contact your coordinator.",
+      "title": "Organisational structure",
       "visitAria": "Visit"
     },
     "validation": {
@@ -881,7 +971,7 @@
     "emailUrgentCalls": "Urgent calls",
     "emailUrgentCallsDescription": "Urgent calls for short-staffed assignments.",
     "emailWeeklyUpdate": "Discovery email",
-    "emailWeeklyUpdateDescription": "An overview of your upcoming shifts and the shifts that still need people.",
+    "emailWeeklyUpdateDescription": "An overview of your upcoming assignments and the assignments that still need people.",
     "identity": {
       "subtitles": {
         "firstName": "As on your ID",
@@ -980,8 +1070,7 @@
       "loading": "Loading...",
       "lockedNotice": "This block is locked because it's used in a form that has received submissions.",
       "noFields": "No fields yet. Add your first field to this block.",
-      "optionLabelPlaceholder": "Label {n}",
-      "optionValuePlaceholder": "Value {n}",
+      "optionPlaceholder": "Option {n}",
       "optional": "Optional",
       "optionsLabel": "Options",
       "placeholderLabel": "Placeholder",
@@ -1091,6 +1180,8 @@
       "enterDocumentFileError": "Please upload a document.",
       "enterDocumentLabelError": "Please enter a document label.",
       "enterLabelError": "Please enter a label.",
+      "duplicateOptionError": "Options must be unique.",
+      "emptyOptionError": "Please fill in every option.",
       "enterOptionError": "Please enter at least one option.",
       "enterTextError": "Please enter text.",
       "fieldTypeLabel": "Field type",
@@ -1274,13 +1365,13 @@
       "all": "All",
       "descriptions": {
         "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
-        "checkInManage": "Look up volunteers; see which shifts are available for check-in; check volunteers in or out; add people to shifts; invite people to the organisation and approve join requests from this screen.",
+        "checkInManage": "Look up volunteers; see which assignments are available for check-in; check volunteers in or out; add people to assignments; invite people to the organisation and approve join requests from this screen.",
         "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
         "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
         "requirementProfileEdit": "Create and change forms and blocks.",
         "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
-        "shiftEdit": "Create, change, and delete shifts and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
-        "shiftView": "See shifts and their occurrences, events, who is invited or signed up, and timesheet entries.",
+        "shiftEdit": "Create, change, and delete assignments and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
+        "shiftView": "See assignments and their occurrences, events, who is invited or signed up, and timesheet entries.",
         "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
         "volunteerView": "See members, pending and past join requests, and volunteer profiles, including submitted forms (excluding payment-related data)."
       },
@@ -1303,7 +1394,7 @@
         "checkIn": "Check-in",
         "organization": "Organisation wide settings",
         "requirementProfile": "Requirement forms and blocks",
-        "shift": "Shifts, events, timesheets",
+        "shift": "Assignments, events, timesheets",
         "volunteer": "Volunteer information and membership"
       }
     },
@@ -1379,7 +1470,6 @@
     "card": {
       "inviteAria": "Invite",
       "inviteToShift": "Invite to the assignment",
-      "invited": "Invited",
       "noVolunteers": "No volunteers invited",
       "openInstanceAria": "Open",
       "waitlist": "Waitlist",
@@ -1547,7 +1637,7 @@
       "groupComing": "Coming",
       "groupNotComing": "Not coming",
       "groupPending": "Pending",
-      "removeSuccess": "Volunteer removed from this shift",
+      "removeSuccess": "Volunteer removed from this assignment",
       "invited": "Invited",
       "inviteSuccess": "Volunteer invited again",
       "pendingApproval": "Pending approval",
@@ -1699,10 +1789,10 @@
     "transferList": {
       "addAria": "Add",
       "allowance": {
-        "eligible": "Allowance available",
-        "nearlyExhausted": "Allowance nearly exhausted",
-        "noAgreement": "Agreement needed",
-        "wouldExceed": "Would exceed allowance"
+        "eligible": "eligible for payout",
+        "nearlyExhausted": "close to limit",
+        "noAgreement": "contract needed",
+        "wouldExceed": "exceeds allowance!"
       },
       "available": "Available",
       "confirmExceedAllowance": {
@@ -1872,7 +1962,6 @@
       "recorded": "Recorded",
       "recordedBy": "by {name}",
       "recordedByUnknown": "Unknown",
-      "recordedOnBehalf": "entered on behalf",
       "date": "Date",
       "shift": "Assignment",
       "volunteer": "Volunteer"
@@ -1900,20 +1989,20 @@
       "remove": "Remove",
       "removeAria": "Remove",
       "removeDescription": "Are you sure you want to remove {name} from this organisation? This cannot be undone.",
-      "removeFailedToast": "We couldn't remove this volunteer. Please try again.",
+      "removeFailedToast": "We couldn't remove this person. Please try again.",
       "removeTitle": "Remove from organisation",
       "removedToast": "{name} was removed from this organisation",
       "viewProfileAria": "View"
     },
     "empty": {
-      "description": "Share the invite link to get volunteers to sign up.",
-      "title": "No volunteers yet"
+      "description": "Share the invite link to get people to sign up.",
+      "title": "No users yet"
     },
     "page": {
       "copyInviteLink": "Copy invite link",
       "inviteLinkCopied": "Invite link copied to clipboard",
-      "subtitle": "Manage volunteers in your organisation",
-      "title": "Volunteers"
+      "subtitle": "Manage people and their roles in your organisation",
+      "title": "Users"
     },
     "requests": {
       "pendingEmpty": "No pending requests yet.",
@@ -1942,8 +2031,8 @@
     "search": {
       "clearAria": "Clear search",
       "countFiltered": "{count} of {total}",
-      "emptyDescription": "No volunteer matches this search. Try a different name, email or role.",
-      "emptyTitle": "No volunteers found",
+      "emptyDescription": "No person matches this search. Try a different name, email or role.",
+      "emptyTitle": "No users found",
       "placeholder": "Search by name, email or role"
     },
     "sheet": {
@@ -2104,7 +2193,7 @@
       "periodLabel": "Period",
       "yearLabel": "Year",
       "periodPicker": {
-        "allTime": "All time",
+        "fullYear": "Full year",
         "thisMonth": "This month",
         "lastMonth": "Last month",
         "customPeriod": "Custom period",
@@ -2136,8 +2225,8 @@
       },
       "toolbar": {
         "typeAll": "All allowance types",
-        "typeEP": "Ehrenamt",
-        "typeUL": "Übungsleiter",
+        "typeEP": "Ehrenamtspauschale",
+        "typeUL": "Übungsleiterpauschale",
         "searchPlaceholder": "Search volunteers...",
         "sortActionNeeded": "Action needed first",
         "sortNewest": "Newest first"
@@ -2213,7 +2302,6 @@
             "declined": "Declined",
             "volSign": "Volunteer",
             "coordSign": "Coordinator",
-            "superSign": "Supervisor",
             "active": "Active",
             "ready": "Ready",
             "actorOrg": "Organisation"
@@ -2253,10 +2341,10 @@
           "contractExpired": "Expired contract",
           "timesheetGenerate": "Create timesheet",
           "timesheetSigningVol": "Waiting for signature",
-          "timesheetSigningSuper": "Supervisor signature",
+          "timesheetSigningCoord": "Countersignature required",
           "timesheetReady": "Ready to submit",
           "nonCompliant": "No active agreement",
-          "nonCompliantHint": "No active agreement for this allowance type yet. Create or activate one to make this timesheet compliant.",
+          "nonCompliantHint": "Some hours of this timesheet are not covered by an active agreement. Create or activate one that covers them.",
           "notYetCreated": "Not yet created",
           "overCap": "Will exceed yearly allowance",
           "overCapHint": "This timesheet's amount pushes the volunteer at or over their yearly allowance",
@@ -2271,7 +2359,7 @@
           "countersign": "Countersign",
           "decline": "Decline",
           "seeDetails": "See details",
-          "createNew": "Create new {docType}"
+          "createNew": "Create new {kind, select, contract {Agreement} timesheet {Timesheet} other {Document}}"
         },
         "nonCompliantDialog": {
           "titleSingle": "{action, select, create {Create} remind {Send a reminder for} countersign {Countersign} other {Proceed with}} a timesheet without an active agreement?",
@@ -2330,7 +2418,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Supplementary agreement",
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2374,7 +2462,7 @@
           "cancelButtonLabel": "Cancel",
           "inputLabel": "Initial amount in euros",
           "projectedAfter": "Projected after this timesheet: {after}",
-          "successToast": "Initial amount saved.",
+          "deferredToast": "Initial amount will be saved when you send the timesheet.",
           "errorToast": "The initial amount couldn't be saved. Please try again."
         },
         "hoursCard": {
@@ -2390,7 +2478,7 @@
           "disclaimerBadge": "Preview",
           "documentTitle": "Timesheet",
           "signatureVolunteer": "Volunteer signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         }
       },
@@ -2429,6 +2517,7 @@
         "saveButton": "Save template",
         "saveSuccessToast": "Template saved",
         "saveErrorToast": "We couldn't save the template. Please try again.",
+        "signeesUnavailableToast": "We couldn't load the signing roles yet. Please wait a moment and try again.",
         "orgProfile": {
           "blockedMessage": "Your organisation info is missing details this template needs. Complete the organisation info before saving.",
           "blockedCta": "Complete organisation info",
@@ -2442,8 +2531,7 @@
             "invoice": "Timesheet"
           },
           "signatureVolunteer": "Volunteer signature",
-          "signatureCoordinator": "Coordinator signature",
-          "signatureSupervisor": "Organisation signature",
+          "signatureCoordinator": "Organisation signature",
           "unsigned": "Not yet signed"
         },
         "orgOverride": {
@@ -2463,8 +2551,8 @@
           "firstColumnSourceLabel": "First column content",
           "firstColumnSourceOptions": {
             "shift_name": {
-              "label": "Name of the tracked shift",
-              "hint": "Each row shows the shift its hours came from. Hours tracked without a shift show the agreement's task description instead."
+              "label": "Name of the tracked assignment",
+              "hint": "Each row shows the assignment its hours came from. Hours tracked without an assignment show the agreement's task description instead."
             },
             "agreement_task_description": {
               "label": "Task description from the agreement",
@@ -2476,7 +2564,7 @@
             }
           },
           "firstColumnPlaceholders": {
-            "shiftName": "Shift name",
+            "shiftName": "Assignment name",
             "agreementTaskDescription": "Task description",
             "custom": "e.g. Other task"
           },
@@ -2500,7 +2588,6 @@
           "org": "Organisation details",
           "volunteer": "Volunteer details",
           "engagement": "Engagement details",
-          "extra": "Extra clauses",
           "other": "Other information"
         },
         "hoursUnit": {
@@ -2587,6 +2674,11 @@
           "already_received_amount": "Amount already received",
           "already_received_period": "Year to date (1 Jan to period end)",
           "yearly_limit_amount": "Annual allowance"
+        },
+        "pageFooter": {
+          "title": "Page footer",
+          "description": "Appears at the bottom of every page.",
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
         }
       },
       "card": {
@@ -2613,6 +2705,17 @@
     "empty": {
       "title": "No documents yet",
       "description": "Agreements and timesheets from your organisations will appear here."
+    },
+    "completeProfile": {
+      "title": "Complete your details",
+      "description": "Required for {documentName} at {orgName}.",
+      "descriptionWithoutOrg": "Required for {documentName}.",
+      "savedToProfile": "The details are saved to your profile and used for all your documents.",
+      "success": "Details saved",
+      "allComplete": "All details are complete — there is nothing left to fill in.",
+      "error": "We couldn't load this document. Please try again.",
+      "saveError": "We couldn't save your details. Please try again.",
+      "close": "Close"
     }
   }
 }

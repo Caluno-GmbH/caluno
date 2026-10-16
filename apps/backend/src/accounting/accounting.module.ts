@@ -40,7 +40,7 @@ import {
   DocumentTemplateMutationResolver,
   DocumentTemplateQueryResolver,
   DocumentTemplateSigneesLoader,
-  InviteAllowanceQueryResolver,
+  InvoiceCoverLoader,
   InvoiceFieldResolver,
   InvoiceLoader,
   InvoiceMutationResolver,
@@ -53,6 +53,7 @@ import {
   ReimbursementQueryResolver,
   ReimbursementRateFieldResolver,
   TemplateSigneeFieldResolver,
+  VolunteerAllowanceQueryResolver,
 } from './resolvers';
 import {
   AccountingOrgAccessService,
@@ -64,9 +65,9 @@ import {
   DocumentRenderingService,
   DocumentSigningService,
   DocumentTemplateService,
-  InviteAllowanceEligibilityService,
   InvoiceService,
   ReimbursementRateService,
+  VolunteerAllowanceService,
   VolunteerDocumentsService,
 } from './services';
 
@@ -98,7 +99,7 @@ import {
     DocumentNotificationService,
     ContractService,
     InvoiceService,
-    InviteAllowanceEligibilityService,
+    VolunteerAllowanceService,
     ContractMapper,
     ContractSignatureMapper,
     ContractStatusChangeMapper,
@@ -134,11 +135,13 @@ import {
     DocumentTemplateSigneesLoader,
     ContractLoader,
     InvoiceLoader,
+    InvoiceCoverLoader,
     MyDocumentsQueryResolver,
-    InviteAllowanceQueryResolver,
+    VolunteerAllowanceQueryResolver,
     AccountingSetupQueryResolver,
   ],
   exports: [
+    AccountingOrgAccessService,
     ReimbursementRateService,
     DocumentTemplateService,
     DocumentSigningService,

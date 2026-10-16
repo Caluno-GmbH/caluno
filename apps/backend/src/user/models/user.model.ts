@@ -37,6 +37,15 @@ export class User {
   })
   emailPlatformEnabled!: boolean;
 
+  @Field(() => String)
+  firstname!: string;
+
+  @Field(() => String)
+  lastname!: string;
+
+  @Field(() => String, { nullable: true })
+  preferredName?: string | null;
+
   @Field(() => [Permission], { nullable: true })
   permissions?: Permission[] | null;
 }

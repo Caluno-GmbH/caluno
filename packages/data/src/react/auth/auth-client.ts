@@ -17,6 +17,14 @@ const additionalFieldsClient = inferAdditionalFields({
       type: 'string',
       required: false,
     },
+    firstname: {
+      type: 'string',
+      required: true,
+    },
+    lastname: {
+      type: 'string',
+      required: true,
+    },
     privacyPolicyAccepted: {
       type: 'boolean',
       required: false,
@@ -27,6 +35,20 @@ const additionalFieldsClient = inferAdditionalFields({
       required: false,
     },
     privacyPolicyAcceptedAt: {
+      type: 'date',
+      required: false,
+      input: false,
+    },
+    termsAccepted: {
+      type: 'boolean',
+      required: false,
+      returned: false,
+    },
+    termsVersion: {
+      type: 'string',
+      required: false,
+    },
+    termsAcceptedAt: {
       type: 'date',
       required: false,
       input: false,

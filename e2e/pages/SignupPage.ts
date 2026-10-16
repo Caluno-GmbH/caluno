@@ -2,8 +2,12 @@ import { expect, type Response } from '@playwright/test';
 import { AuthPage } from './AuthPage';
 
 export class SignupPage extends AuthPage {
-  get nameInput() {
-    return this.page.getByLabel('Full Name');
+  get firstnameInput() {
+    return this.page.getByLabel('First name');
+  }
+
+  get lastnameInput() {
+    return this.page.getByLabel('Last name');
   }
 
   get submitButton() {
@@ -22,6 +26,14 @@ export class SignupPage extends AuthPage {
     return this.page.getByRole('link', { name: 'Privacy Policy' });
   }
 
+  get termsCheckbox() {
+    return this.page.getByRole('checkbox', { name: /terms/i });
+  }
+
+  get termsLink() {
+    return this.page.getByRole('link', { name: /terms and conditions/i });
+  }
+
   async goto() {
     await this.page.goto(this.url('/signup'), { waitUntil: 'load' });
   }
@@ -30,15 +42,22 @@ export class SignupPage extends AuthPage {
     await this.privacyCheckbox.check();
   }
 
+  async acceptTerms() {
+    await this.termsCheckbox.check();
+  }
+
   async signup(
-    name: string,
+    firstname: string,
+    lastname: string,
     email: string,
     password: string,
   ): Promise<Response> {
-    await this.nameInput.fill(name);
+    await this.firstnameInput.fill(firstname);
+    await this.lastnameInput.fill(lastname);
     await this.emailInput.fill(email);
     await this.passwordInput.fill(password);
     await this.acceptPrivacyPolicy();
+    await this.acceptTerms();
     const [res] = await Promise.all([
       this.page.waitForResponse(
         (r) => r.url().includes('/api/auth/sign-up/email'),
@@ -68,27 +87,36 @@ export class SignupPage extends AuthPage {
 
   // Fills only the provided fields; leaves the rest untouched.
   async fillForm(values: {
-    name?: string;
+    firstname?: string;
+    lastname?: string;
     email?: string;
     password?: string;
     privacyAccepted?: boolean;
+    termsAccepted?: boolean;
   }) {
-    if (values.name !== undefined) await this.nameInput.fill(values.name);
+    if (values.firstname !== undefined) {
+      await this.firstnameInput.fill(values.firstname);
+    }
+    if (values.lastname !== undefined) {
+      await this.lastnameInput.fill(values.lastname);
+    }
     if (values.email !== undefined) await this.emailInput.fill(values.email);
     if (values.password !== undefined) {
       await this.passwordInput.fill(values.password);
     }
     if (values.privacyAccepted) await this.acceptPrivacyPolicy();
+    if (values.termsAccepted) await this.acceptTerms();
   }
 
-  private fieldLocator(field: 'name' | 'email' | 'password') {
-    if (field === 'name') return this.nameInput;
+  private fieldLocator(field: 'firstname' | 'lastname' | 'email' | 'password') {
+    if (field === 'firstname') return this.firstnameInput;
+    if (field === 'lastname') return this.lastnameInput;
     if (field === 'email') return this.emailInput;
     return this.passwordInput;
   }
 
   // Native HTML5 constraint-validation state for a field.
-  fieldValidity(field: 'name' | 'email' | 'password') {
+  fieldValidity(field: 'firstname' | 'lastname' | 'email' | 'password') {
     return this.fieldLocator(field).evaluate((el) => {
       const input = el as HTMLInputElement;
       return {

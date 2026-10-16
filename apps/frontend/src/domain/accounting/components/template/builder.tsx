@@ -1,10 +1,8 @@
 'use client';
 
 import {
-  type CreateTemplateSigneeInput,
   PermissionKey,
   parseTemplateBody,
-  SigneeType,
   serializeTemplateBody,
 } from '@repo/data';
 import {
@@ -25,6 +23,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { usePageBreadcrumb } from '@/components/navigation/page-header-context';
+import { PageActions, type PageActionsCancel } from '@/components/page-actions';
 import { Link, useRouter } from '@/i18n/navigation';
 import {
   apiDocumentKindFor,
@@ -43,6 +42,10 @@ import {
   getKnownOrgValues,
 } from './builder-document-presets';
 import {
+  defaultSignees,
+  findAccountingManagePermissionId,
+} from './builder-signees';
+import {
   ALWAYS_AVAILABLE_SOURCES,
   countIncompleteManualFields,
   type DataSourceKey,
@@ -55,7 +58,7 @@ import { GeneratedDocumentPreview } from './generated-document-preview';
 import { TemplateListingPageError } from './listing-page';
 
 // Mock: profile-required sources this org hasn't collected yet.
-const MOCK_PROFILE_GAPS = new Set<DataSourceKey>(['volunteer_bic']);
+const EMPTY_PROFILE_GAPS = new Set<DataSourceKey>();
 
 // The org-unit edit sheet's URL id — mirrors FORM_ID in
 // org-unit-create-edit-sheet.tsx, so the org-profile CTA opens it directly.
@@ -105,29 +108,6 @@ function getPlaceholderTableRows(
     [firstColumnPlaceholder, '', '', '', '', ''],
     [firstColumnPlaceholder, '', '', '', '', ''],
     [firstColumnPlaceholder, '', '', '', '', ''],
-  ];
-}
-
-/**
- * Signee chain for a newly created template: the volunteer signs first, then a
- * permission holder (ACCOUNTING_MANAGE) countersigns — the same ordering the
- * prototype mocks used. Falls back to volunteer-only when the permission
- * lookup hasn't loaded (the backend requires at least one signee).
- */
-function defaultSignees(
-  accountingManagePermissionId: string | undefined,
-): CreateTemplateSigneeInput[] {
-  return [
-    { order: 0, signeeType: SigneeType.Volunteer },
-    ...(accountingManagePermissionId
-      ? [
-          {
-            order: 1,
-            signeeType: SigneeType.PermissionHolder,
-            requiredPermissionId: accountingManagePermissionId,
-          },
-        ]
-      : []),
   ];
 }
 
@@ -245,11 +225,7 @@ export function TemplateBuilder({
       ? 'preview.documentTitle.contract'
       : 'preview.documentTitle.invoice') as Parameters<typeof t>[0],
   );
-  const signerRightLabel = t(
-    (kind === 'contract'
-      ? 'preview.signatureCoordinator'
-      : 'preview.signatureSupervisor') as Parameters<typeof t>[0],
-  );
+  const signerRightLabel = t('preview.signatureCoordinator');
 
   async function handleSave() {
     if (!templateDoc) return;
@@ -282,16 +258,23 @@ export function TemplateBuilder({
             `No reimbursement type found for key ${reimbursementTypeKey}`,
           );
         }
-        const accountingManagePermission = permissionsQuery.data?.find(
-          (permission) => permission.key === PermissionKey.AccountingManage,
+        // Never create a volunteer-only chain: without ACCOUNTING_MANAGE the
+        // coordinator countersign step is missing from every document that
+        // uses this template (seen on ÜL contracts).
+        const accountingManagePermissionId = findAccountingManagePermissionId(
+          permissionsQuery.data,
         );
+        if (!accountingManagePermissionId) {
+          toast.error(t('signeesUnavailableToast'));
+          return;
+        }
         await createTemplate.mutateAsync({
           kind: apiDocumentKindFor(slotKind),
           reimbursementTypeId: reimbursementType.id,
           organizationUnitId: orgUId,
           body,
           invoiceNumberFormat,
-          signees: defaultSignees(accountingManagePermission?.id),
+          signees: defaultSignees(accountingManagePermissionId),
         });
       }
       toast.success(t('saveSuccessToast'));
@@ -373,13 +356,71 @@ export function TemplateBuilder({
   const canEditOrg =
     permissionsQuery.data?.some((p) => p.key === PermissionKey.OrgEdit) ??
     false;
+  const accountingManagePermissionId = findAccountingManagePermissionId(
+    permissionsQuery.data,
+  );
+  // Creates need the permission id up front; edits keep the stored chain.
+  const createBlockedBySignees =
+    !detailQuery.data &&
+    (permissionsQuery.isLoading ||
+      permissionsQuery.isError ||
+      !accountingManagePermissionId);
   const saving = createTemplate.isPending || updateTemplate.isPending;
+  const cancel: PageActionsCancel | undefined = backHref
+    ? { label: tCommon('cancel'), href: backHref }
+    : undefined;
 
   return (
-    <div className="flex h-[calc(100svh-6rem-1px)] flex-col gap-6">
-      <div className="grid min-h-0 flex-1 grid-cols-[3fr_2fr] gap-6">
+    <div className="flex h-[calc(100svh-6rem-1px)] flex-col">
+      <PageActions
+        cancel={cancel}
+        contentClassName="grid grid-cols-[3fr_2fr] gap-6"
+        saveLabel={t('saveButton')}
+        onSave={handleSave}
+        saveDisabled={
+          incompleteCount > 0 ||
+          missingOrgSources.length > 0 ||
+          orgProfileBlocked ||
+          createBlockedBySignees ||
+          saving
+        }
+        {...(backHref
+          ? { cancelLabel: tCommon('cancel'), cancelHref: backHref }
+          : {})}
+        notice={
+          <>
+            {incompleteCount > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {t('blockEditor.incompleteCount', {
+                  count: incompleteCount,
+                } as Parameters<typeof t>[1])}
+              </span>
+            )}
+            {(missingOrgSources.length > 0 || orgProfileBlocked) && (
+              <div className="flex w-full items-center justify-between gap-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
+                <p className="text-sm text-foreground">
+                  {t('orgProfile.blockedMessage')}
+                </p>
+                {canEditOrg ? (
+                  <Button type="button" variant="outline" size="sm" asChild>
+                    <Link
+                      href={`/admin/${orgUId}/settings/org-units?sheet=${ORG_UNIT_EDIT_SHEET_ID}&id=${orgUId}`}
+                    >
+                      {t('orgProfile.blockedCta')}
+                    </Link>
+                  </Button>
+                ) : (
+                  <span className="text-sm text-muted-foreground">
+                    {t('orgProfile.blockedAskSomeone')}
+                  </span>
+                )}
+              </div>
+            )}
+          </>
+        }
+      >
         <section
-          className="min-h-0 overflow-y-auto pb-12 [mask-image:linear-gradient(to_bottom,black_0,black_calc(100%-2rem),transparent_100%)]"
+          className="min-h-0 overflow-y-auto pb-12"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1 requires this independently-scrollable region to be keyboard-reachable (axe "scrollable-region-focusable").
           tabIndex={0}
           aria-label={t('previewScrollRegionLabel')}
@@ -397,7 +438,7 @@ export function TemplateBuilder({
             unsignedLabel={t('preview.unsigned')}
             values={knownValues}
             unresolvedLabels={unresolvedLabels}
-            gapSources={MOCK_PROFILE_GAPS}
+            gapSources={EMPTY_PROFILE_GAPS}
             tableRows={
               kind === 'invoice'
                 ? getPlaceholderTableRows(templateDoc, t)
@@ -413,7 +454,7 @@ export function TemplateBuilder({
           />
         </section>
         <section
-          className="min-h-0 overflow-y-auto pb-12 [mask-image:linear-gradient(to_bottom,black_0,black_calc(100%-2rem),transparent_100%)]"
+          className="min-h-0 overflow-y-auto pb-12"
           // biome-ignore lint/a11y/noNoninteractiveTabindex: WCAG 2.1.1 requires this independently-scrollable region to be keyboard-reachable (axe "scrollable-region-focusable").
           tabIndex={0}
           aria-label={t('blockEditor.scrollRegionLabel')}
@@ -421,62 +462,13 @@ export function TemplateBuilder({
           <TemplateBuilderBlockEditor
             document={templateDoc}
             kind={kind}
-            profileGaps={MOCK_PROFILE_GAPS}
+            profileGaps={EMPTY_PROFILE_GAPS}
             knownValues={knownValues}
             typeLabel={typeLabel}
             onChange={setTemplateDoc}
           />
         </section>
-      </div>
-
-      <div className="flex shrink-0 flex-col items-end gap-3">
-        {incompleteCount > 0 && (
-          <span className="text-sm text-muted-foreground">
-            {t('blockEditor.incompleteCount', {
-              count: incompleteCount,
-            } as Parameters<typeof t>[1])}
-          </span>
-        )}
-        {(missingOrgSources.length > 0 || orgProfileBlocked) && (
-          <div className="flex w-full items-center justify-between gap-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3">
-            <p className="text-sm text-foreground">
-              {t('orgProfile.blockedMessage')}
-            </p>
-            {canEditOrg ? (
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link
-                  href={`/admin/${orgUId}/settings/org-units?sheet=${ORG_UNIT_EDIT_SHEET_ID}&id=${orgUId}`}
-                >
-                  {t('orgProfile.blockedCta')}
-                </Link>
-              </Button>
-            ) : (
-              <span className="text-sm text-muted-foreground">
-                {t('orgProfile.blockedAskSomeone')}
-              </span>
-            )}
-          </div>
-        )}
-        <div className="flex items-center gap-2">
-          {backHref && (
-            <Button type="button" variant="outline" asChild>
-              <Link href={backHref}>{tCommon('cancel')}</Link>
-            </Button>
-          )}
-          <Button
-            type="button"
-            onClick={handleSave}
-            disabled={
-              incompleteCount > 0 ||
-              missingOrgSources.length > 0 ||
-              orgProfileBlocked ||
-              saving
-            }
-          >
-            {t('saveButton')}
-          </Button>
-        </div>
-      </div>
+      </PageActions>
     </div>
   );
 }

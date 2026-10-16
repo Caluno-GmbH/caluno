@@ -28,10 +28,10 @@ import { FormSubmissionService } from '../src/requirement-profile/services/form-
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
 import { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
-import { UserProfileService } from '../src/requirement-profile/services/user-profile.service';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
+import { UserService } from '../src/user/user.service';
 import {
   cancelShiftInstance,
   createFormSubmission,
@@ -51,8 +51,8 @@ import {
 } from './factories/org.factory';
 import { createShift } from './factories/shift.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 const createDefaultMemberRole = async (
@@ -79,6 +79,7 @@ describe('RequiredFormService', () => {
   let membershipService: MembershipService;
   let requirementFormService: RequirementFormService;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -89,12 +90,12 @@ describe('RequiredFormService', () => {
     requiredFormService = new RequiredFormService(db, {
       capture: () => {},
     } as unknown as PostHogService);
-    const userProfileService = new UserProfileService(db, {
+    const userService = new UserService(db, {
       capture: () => {},
     } as unknown as PostHogService);
     formSubmissionService = new FormSubmissionService(
       db,
-      userProfileService,
+      userService,
       requiredFormService,
       { capture: () => {} } as unknown as PostHogService,
     );
@@ -122,10 +123,6 @@ describe('RequiredFormService', () => {
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const setupOrg = async () => {
@@ -763,7 +760,7 @@ describe('RequiredFormService', () => {
         .update(schema.formBlockFields)
         .set({
           type: 'MULTI_CHOICE',
-          options: [{ label: 'A', value: 'A' }],
+          options: ['A'],
         })
         .where(eq(schema.formBlockFields.id, field.id));
       await setRequiredForms(db, {
@@ -798,7 +795,7 @@ describe('RequiredFormService', () => {
         .update(schema.formBlockFields)
         .set({
           type: 'MULTI_CHOICE',
-          options: [{ label: 'A, B', value: 'A, B' }],
+          options: ['A, B'],
         })
         .where(eq(schema.formBlockFields.id, field.id));
       await setRequiredForms(db, {
@@ -981,6 +978,7 @@ describe('RequiredFormService', () => {
     let db: Database;
     let service: RequiredFormService;
 
+    closeTestingModuleAfterAll(() => moduleRef);
     beforeAll(async () => {
       await ensureTestDatabase();
       moduleRef = await Test.createTestingModule({
@@ -990,10 +988,6 @@ describe('RequiredFormService', () => {
       service = new RequiredFormService(db, {
         capture: () => {},
       } as unknown as PostHogService);
-
-      registerTestResourceCleanup(async () => {
-        await moduleRef.close();
-      });
     });
 
     // Per-test seeded ids, cleaned up in afterEach.

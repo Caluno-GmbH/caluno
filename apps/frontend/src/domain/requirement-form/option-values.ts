@@ -1,17 +1,47 @@
 import { z } from 'zod';
 
 /**
- * Choice-field options render one control per value; an empty value can never
- * stay selected on the volunteer form, so label and value must be non-empty.
+ * Choice-field options render one control per option; an empty option can never
+ * stay selected on the volunteer form, so each entry must be non-empty.
  */
-export const choiceOptionSchema = z.object({
-  label: z.string().trim().min(1, 'Option label is required'),
-  value: z.string().trim().min(1, 'Option value is required'),
-});
+export const choiceOptionSchema = z
+  .string()
+  .trim()
+  .min(1, 'Option is required');
 
-/** Mirror the label into the value while no explicit value is set. */
-export const deriveOptionValue = (label: string, value: string): string =>
-  value.trim() === '' ? label : value;
+/** Unique non-empty options (compared after trim). */
+export const choiceOptionsSchema = z
+  .array(choiceOptionSchema)
+  .superRefine((options, ctx) => {
+    const seen = new Set<string>();
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+      if (option) {
+        if (seen.has(option)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Options must be unique',
+            path: [i],
+          });
+        }
+        seen.add(option);
+      }
+    }
+  });
+
+/** Indexes whose trimmed text appears more than once (empty entries ignored). */
+export const duplicateOptionIndexes = (options: string[]): number[] => {
+  const counts = new Map<string, number>();
+  for (const option of options) {
+    const key = option.trim();
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return options.flatMap((option, index) => {
+    const key = option.trim();
+    return key && (counts.get(key) ?? 0) > 1 ? [index] : [];
+  });
+};
 
 /**
  * MULTI_CHOICE selections travel through the GraphQL `String` value channel as

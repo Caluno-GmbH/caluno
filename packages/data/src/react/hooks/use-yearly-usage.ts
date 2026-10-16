@@ -1,7 +1,7 @@
 'use client';
 import {
   AccountingRepository,
-  type RawVolunteerInviteAllowance,
+  type RawVolunteerAllowance,
   type RawVolunteerYearlyUsage,
   type RawYearlyUsage,
 } from '@repo/data';
@@ -54,49 +54,35 @@ export function useRosterYearlyUsage(
 }
 
 /**
- * Per-volunteer allowance state for the "invite volunteers" list on a paid
- * shift (VOLI-1248). Only meaningful — and only enabled — when the shift is
- * paid under a known reimbursement type; an unpaid shift never enables this,
- * so its invite list is unaffected.
+ * Per-volunteer allowance state (VOLI-1248), a property of the person: shown
+ * in the invite list, the shift instance volunteer table and the volunteer
+ * profile panel. Pass `shiftInstanceId` to measure against that shift;
+ * without it the state describes the person only. Status signals only —
+ * never amounts. The query fails when accounting is disabled or the caller
+ * may not staff shifts, in which case there is simply no data to show.
  */
-export function useInviteAllowanceEligibility(input: {
-  organizationUnitId?: string;
-  reimbursementTypeId?: string;
-  shiftDurationMinutes?: number;
-  periodStart?: string | null;
-  periodEnd?: string | null;
+export function useVolunteerAllowanceStates(input: {
+  volunteerIds: string[];
+  shiftInstanceId?: string | null;
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
-  const {
-    organizationUnitId,
-    reimbursementTypeId,
-    shiftDurationMinutes,
-    periodStart,
-    periodEnd,
-  } = input;
+  const { volunteerIds, shiftInstanceId } = input;
 
-  return useQuery<RawVolunteerInviteAllowance[]>({
+  return useQuery<RawVolunteerAllowance[]>({
     queryKey: [
       'accounting',
-      'invite-allowance-eligibility',
-      organizationUnitId,
-      reimbursementTypeId,
-      shiftDurationMinutes,
-      periodStart,
-      periodEnd,
+      'volunteer-allowance-states',
+      shiftInstanceId ?? null,
+      [...volunteerIds].sort(),
     ],
     queryFn: () =>
-      repository.findInviteAllowanceEligibility({
-        organizationUnitId: organizationUnitId ?? '',
-        reimbursementTypeId: reimbursementTypeId ?? '',
-        shiftDurationMinutes: shiftDurationMinutes ?? 0,
-        periodStart,
-        periodEnd,
+      repository.findVolunteerAllowanceStates({
+        volunteerIds,
+        shiftInstanceId,
       }),
     staleTime: 30 * 1000,
-    enabled: Boolean(
-      organizationUnitId && reimbursementTypeId && shiftDurationMinutes,
-    ),
+    retry: false,
+    enabled: volunteerIds.length > 0,
   });
 }

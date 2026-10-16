@@ -21,8 +21,8 @@ import { slugify } from '../src/utils/slug.util';
 import { createShift, createUser } from './factories';
 import { createShiftInstanceInvite } from './factories/shift-instance-invite.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from './helpers/ensure-test-database';
 
 const DAILY_RRULE = 'FREQ=DAILY;INTERVAL=1';
@@ -36,6 +36,7 @@ describe('ShiftService.updateShiftInstanceApproval', () => {
   let notifyShiftInstanceJoinApproved: ReturnType<typeof mock>;
   let notifyShiftInstanceWaitlistJoined: ReturnType<typeof mock>;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
@@ -114,10 +115,6 @@ describe('ShiftService.updateShiftInstanceApproval', () => {
       .returning();
 
     organizationUnitId = rootUnit.id;
-
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   const future = (msFromNow: number) => new Date(Date.now() + msFromNow);

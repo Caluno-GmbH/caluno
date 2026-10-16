@@ -1,5 +1,5 @@
+import type { CreateRequirementProfileSubmissionInput } from '../../generated/base-types';
 import type {
-  CreateRequirementProfileSubmissionInput,
   CreateRequirementProfileSubmissionMutation,
   GetAdminUserProfileQuery,
 } from '../../generated/graphql';
@@ -17,8 +17,8 @@ export class RequirementProfileRepository extends BaseRepository {
 
   async getAdminUserProfile(
     userId: string,
-  ): Promise<GetAdminUserProfileQuery['adminUserProfile']> {
+  ): Promise<GetAdminUserProfileQuery['user']> {
     const data = await this.sdk.GetAdminUserProfile({ userId });
-    return data.adminUserProfile;
+    return data.user ?? null;
   }
 }

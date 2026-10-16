@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+    "test": "bun test",
     "dev": "bun run db:up && turbo run dev",
     "mdev": "bun run --cwd apps/backend db:migrate && turbo run dev",
     "lint": "turbo run format-and-lint",
@@ -21,18 +22,19 @@
     "db:generate": "bun run --cwd apps/backend db:generate",
     "db:seed": "bun run --cwd apps/backend db:seed",
     "codegen": "turbo run codegen",
-    "setup:hooks": "bash .githooks/install-hooks.sh"
+    "setup:hooks": "bash .githooks/install-hooks.sh",
+    "terms:publish": "bun run --cwd apps/backend terms:publish"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.13",
+    "@biomejs/biome": "^2.5.15",
     "@svgr/webpack": "^8.1.0",
-    "turbo": "^2.9.9",
+    "turbo": "^2.11.8",
     "typescript": "6.0.3",
-    "typescript-language-server": "^6.0.0",
+    "typescript-language-server": "^6.0.2",
     "vite-plugin-svgr": "^5.2.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "packageManager": "bun@1.4.2",
   "workspaces": [

@@ -1,7 +1,7 @@
 import type { InvoiceNumberFormat, RenewalCadence } from '@repo/data';
 import type { DocumentKind, PauschalenType } from '../doc-type-header';
 
-export type SigneeRole = 'volunteer' | 'coordinator' | 'supervisor';
+export type SigneeRole = 'volunteer' | 'coordinator';
 
 export interface OrgRole {
   id: string;

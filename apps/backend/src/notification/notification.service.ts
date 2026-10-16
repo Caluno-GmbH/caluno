@@ -121,6 +121,9 @@ type DocumentDeclinedByOrgInput =
 type DocumentDeclinedByVolunteerInput =
   NotificationEventPayloadMap[typeof NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER];
 
+type TermsUpdatedInput =
+  NotificationEventPayloadMap[typeof NotificationEvent.TERMS_UPDATED];
+
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
@@ -369,5 +372,9 @@ export class NotificationService {
     input: DocumentDeclinedByVolunteerInput,
   ): void {
     this.emitter.emit(NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER, input);
+  }
+
+  async notifyTermsUpdatedAsync(input: TermsUpdatedInput): Promise<void> {
+    await this.emitter.emitAsync(NotificationEvent.TERMS_UPDATED, input);
   }
 }

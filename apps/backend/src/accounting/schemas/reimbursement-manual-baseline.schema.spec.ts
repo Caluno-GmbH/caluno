@@ -5,8 +5,8 @@ import { createReimbursementType } from '../../../test/factories/accounting.fact
 import { createOrganizationWithType } from '../../../test/factories/org.factory';
 import { createUser } from '../../../test/factories/user.factory';
 import {
+  closeTestingModuleAfterAll,
   ensureTestDatabase,
-  registerTestResourceCleanup,
 } from '../../../test/helpers/ensure-test-database';
 import { type Database, DatabaseModule } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
@@ -17,15 +17,13 @@ describe('reimbursementManualBaselines schema', () => {
   let moduleRef: TestingModule;
   let db: Database;
 
+  closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
-    registerTestResourceCleanup(async () => {
-      await moduleRef.close();
-    });
   });
 
   it('enforces one row per volunteer + reimbursement type + year', async () => {

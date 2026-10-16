@@ -1,4 +1,62 @@
 {
+  "Todo": {
+    "empty": "Es wartet nichts auf dich.",
+    "loadFailed": "Die offenen Aufgaben konnten nicht geladen werden.",
+    "seeAll": "Alle anzeigen",
+    "groups": {
+      "volunteersAndShifts": "Freiwillige und Einsätze",
+      "accounting": "Buchhaltung"
+    },
+    "types": {
+      "contract": "Vereinbarung",
+      "timesheet": "Stundennachweis"
+    },
+    "back": "Zurück zu Zu erledigen",
+    "waiting": "{count, plural, one {# wartet} other {# warten}}",
+    "appliedRelative": "{when} beworben",
+    "declinedAgo": "Abgelehnt {when}",
+    "signedAgo": "Unterschrieben {when}",
+    "short": "{missing, plural, one {# nötig} other {# nötig}}",
+    "filledOf": "{filled}/{total}",
+    "filledSpots": "{filled} von {total} Plätzen besetzt",
+    "hours": "{hours} Std.",
+    "fillFilter": {
+      "summary": "{threshold} · {days}",
+      "days": "{count} Tage",
+      "staffing": "Besetzung",
+      "daysAhead": "Tage im Voraus",
+      "BELOW_MINIMUM": "Unter Minimum",
+      "NOT_FULL": "Nicht voll",
+      "emptyBelowMinimum": "Keine Einsätze unter Minimum in den nächsten {count} Tagen",
+      "emptyNotFull": "Keine Einsätze, die nicht voll sind, in den nächsten {count} Tagen"
+    },
+    "sections": {
+      "FILL_OPEN_ASSIGNMENTS": "Anstehende Einsätze besetzen",
+      "REVIEW_APPLICATIONS": "Anfragen prüfen",
+      "APPROVE_SIGNUPS": "Anmeldungen freigeben",
+      "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
+      "CREATE_AGREEMENTS": "Vereinbarungen erstellen",
+      "CREATE_TIMESHEETS": "Stundennachweise erstellen",
+      "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen",
+      "SEND_TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand"
+    }
+  },
+  "Terms": {
+    "accept": "Akzeptieren und fortfahren",
+    "accepting": "Wird akzeptiert...",
+    "redirecting": "Weiterleitung...",
+    "acceptFailed": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "loadFailed": "Das AGB-Dokument konnte nicht geladen werden. Bitte lade die Seite neu."
+  },
+  "Unsubscribe": {
+    "confirm": "Alle E-Mails abbestellen",
+    "confirming": "Wird abbestellt...",
+    "description": "Erhalte keine E-Mail-Benachrichtigungen mehr von caluno.",
+    "error": "Wir konnten deine E-Mail-Einstellungen nicht aktualisieren. Bitte versuche es erneut.",
+    "success": "Du erhältst keine E-Mail-Benachrichtigungen mehr von caluno.",
+    "successTitle": "Abbestellt",
+    "title": "E-Mails abbestellen"
+  },
   "Auth": {
     "brandName": "caluno",
     "joinTitle": "Tritt {orgName} bei",
@@ -52,8 +110,11 @@
       "emailPlaceholder": "du@beispiel.de",
       "genericError": "Dein Konto ließ sich nicht erstellen. Versuch es bitte erneut.",
       "hasAccount": "Hast du bereits ein Konto?",
-      "nameLabel": "Vollständiger Name",
-      "namePlaceholder": "Max Mustermann",
+      "firstnameLabel": "Vorname",
+      "firstnamePlaceholder": "Max",
+      "lastnameLabel": "Nachname",
+      "lastnamePlaceholder": "Mustermann",
+      "namePartsRequired": "Bitte gib Vor- und Nachname ein.",
       "passwordHint": "Mindestens 6 Zeichen",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
@@ -62,6 +123,8 @@
       "signInLink": "Anmelden",
       "submit": "Konto erstellen",
       "submitting": "Konto wird erstellt...",
+      "termsAcknowledge": "Ich habe die <termsLink>Nutzungsbedingungen</termsLink> gelesen und akzeptiere sie.",
+      "termsRequired": "Bitte akzeptiere die Nutzungsbedingungen, um fortzufahren.",
       "title": "Erstelle dein Konto",
       "description": "Willkommen bei caluno. Registriere dich, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
@@ -139,16 +202,33 @@
     "selectShiftPlaceholder": "Einsatz wählen",
     "shiftSearchPlaceholder": "Einsatzname",
     "shiftSheetTitle": "Einsatz wählen",
-    "shiftlessWarningDuplicateAtSubmit": "Wenn diese Person bereits ein offenes Check-in ohne Einsatz hat, schlägt das Check-in mit einer Fehlermeldung fehl.",
-    "shiftlessWarningEmptyTaskCell": "Im Stundennachweis bleibt die Spalte für die Aufgabe leer. Du kannst später eine Notiz zum Eintrag hinzufügen.",
-    "shiftlessWarningNoReimbursement": "Diese Stunden bekommen keine Vergütungsart. Sie erscheinen erst im Stundennachweis und in der Abrechnung, wenn du den Eintrag später bearbeitest.",
-    "shiftlessWarningNoShiftStats": "Die Stunden zählen nur in die Gesamtstunden, nicht in die Kapazität oder Planung eines Einsatzes.",
+    "shiftlessWarningBody": "Wenn diese:r Freiwillige für diesen Einsatz eine Vergütung erhalten soll, muss dem Eintrag auf der Seite „Zeiterfassung“ manuell eine Vergütungsart hinzugefügt werden.",
     "shiftlessWarningTitle": "Check-in ohne Einsatz",
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
     "today": "Heute",
     "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
-    "unavailableTitle": "Einchecken nicht möglich"
+    "unavailableTitle": "Einchecken nicht möglich",
+    "agreementNoTemplateTitle": "Keine Vertragsvorlage vorhanden",
+    "agreementNoTemplateManageBody": "Richte zuerst die Vorlage ein, um Verträge mit Freiwilligen zu erstellen.",
+    "agreementNoTemplateNoRightsBody": "Für {reimbursementType}-Einsätze gibt es noch keine Vertragsvorlage. Bitte {admins}, eine einzurichten.",
+    "agreementSetUpTemplateButton": "Vorlage einrichten",
+    "agreementNoContractTitle": "Kein aktiver Vertrag",
+    "agreementNoContractManageBody": "Diese:r Freiwillige hat keinen aktiven Vertrag für {reimbursementType}-Einsätze.",
+    "agreementNoContractNoRightsBody": "Diese:r Freiwillige hat keinen aktiven Vertrag für {reimbursementType}-Einsätze. Bitte {admins}, einen zu erstellen.",
+    "agreementCreateButton": "Vertrag erstellen",
+    "agreementAwaitingCountersignTitle": "Vertrag braucht eine Gegenzeichnung",
+    "agreementAwaitingCountersignManageBody": "Der Vertrag für {reimbursementType}-Einsätze wartet darauf, von eurer Organisation gegengezeichnet zu werden.",
+    "agreementAwaitingCountersignNoRightsBody": "Der Vertrag für {reimbursementType}-Einsätze wartet auf eine Gegenzeichnung. Bitte {admins}, ihn abzuschließen.",
+    "agreementCountersignButton": "Gegenzeichnen",
+    "agreementAwaitingVolunteerTitle": "Vertrag noch nicht unterzeichnet",
+    "agreementAwaitingVolunteerBody": "Diese:r Freiwillige hat den Vertrag für {reimbursementType}-Einsätze noch nicht unterzeichnet. Bitte sie/ihn, die App zu öffnen und den Vertrag vor dem Einsatz zu unterschreiben.",
+    "agreementColleagues": "{name} oder eine andere Person mit Zugriff auf Vergütungen",
+    "unverifiedCheckInButton": "Unverifizierter Check-in",
+    "unverifiedCheckInConfirmTitle": "Ohne gültigen Vertrag einchecken?",
+    "unverifiedCheckInConfirmBody": "Du kannst die Person einchecken, sie kann jedoch ohne Vertrag keine Vergütung erhalten.",
+    "unverifiedCheckInConfirmAction": "Trotzdem einchecken",
+    "cancel": "Abbrechen"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
@@ -443,7 +523,7 @@
         "decline": "Ablehnen"
       },
       "missingProfileWarning": "In deinem Profil fehlen Angaben, die dieses Dokument benötigt.",
-      "missingProfileCta": "Profil vervollständigen, um zu unterschreiben",
+      "completeDetailsCta": "Daten vervollständigen",
       "toasts": {
         "signed": "{name} unterschrieben.",
         "signedError": "{name} ließ sich nicht unterschreiben. Versuch es bitte erneut.",
@@ -479,23 +559,34 @@
     },
     "card": {
       "label": "Ausweisprüfung aktivieren",
-      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht.",
-      "updateError": "Die Einstellung ließ sich nicht speichern. Versuch es bitte erneut."
+      "description": "Wenn aktiviert, wird beim Check-in nach dem Ausweis der freiwilligen Person gefragt. Die Prüfung ist optional und blockiert den Check-in nicht."
     }
   },
   "ShiftSettings": {
     "page": {
-      "title": "Schichten und Check-in",
-      "subtitle": "Einstellungen für Schichten in {orgName}."
+      "title": "Einsätze und Check-in",
+      "subtitle": "Einstellungen für Einsätze in {orgName}."
+    },
+    "actions": {
+      "saved": "Einstellungen gespeichert",
+      "saveError": "Die Einstellungen ließen sich nicht speichern. Versuch es bitte erneut.",
+      "savePartialError": "Ein Teil wurde gespeichert. Der Rest wartet noch. Speichere erneut, oder brich ab, um ihn zu verwerfen.",
+      "unsavedChangesTitle": "Ungespeicherte Änderungen",
+      "unsavedChangesDescription": "Du hast ungespeicherte Änderungen. Wenn du jetzt gehst, gehen sie verloren.",
+      "unsavedChangesLeave": "Ohne Speichern verlassen",
+      "unsavedChangesStay": "Weiter bearbeiten",
+      "confirmEnableTitle": "Wirklich einschalten?",
+      "confirmEnableDescription": "Beim Speichern startet {names}. Das kann ändern, wer in einen Einsatz kommt.",
+      "confirmEnableAction": "Speichern und einschalten"
     },
     "sections": {
       "staffing": {
         "title": "Besetzung",
-        "description": "Wie Freiwillige gebeten werden, Schichten zu besetzen."
+        "description": "Wie Freiwillige gebeten werden, Einsätze zu besetzen."
       },
       "moderation": {
         "title": "Moderation",
-        "description": "Regeln dafür, wer in eine Schicht kommt."
+        "description": "Regeln dafür, wer in einen Einsatz kommt."
       },
       "checkIn": {
         "title": "Check-in",
@@ -526,7 +617,7 @@
       }
     },
     "stepIn": {
-      "label": "Wann eingegriffen wird",
+      "label": "Zeitfenster vor Beginn",
       "option": "{hours} Stunden vorher"
     },
     "sendAt": {
@@ -534,27 +625,24 @@
     },
     "callOut": {
       "title": "Automatischer dringender Aufruf",
-      "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Schichten ohne Mindestbesetzung sind nie betroffen.",
-      "daysDescription": "Schichten an diesen Tagen können einen dringenden Aufruf auslösen.",
-      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung einen dringenden Aufruf erhält.",
-      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
-      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+      "description": "Sendet einen dringenden Aufruf an alle, die infrage kommen, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Einsätze ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Einsätze an diesen Tagen können einen dringenden Aufruf auslösen.",
+      "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung einen dringenden Aufruf erhält.",
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht."
     },
     "discovery": {
       "title": "Übersichts-E-Mail",
-      "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Schichten in dieser Einheit und der Schichten, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
+      "description": "Sendet Freiwilligen eine Übersicht ihrer bevorstehenden Einsätze in dieser Einheit und der Einsätze, für die noch Leute fehlen. Freiwillige können sie in ihren Kontoeinstellungen abschalten.",
       "daysDescription": "Tage, an denen die E-Mail verschickt wird.",
       "sendAtDescription": "Uhrzeit, zu der die E-Mail verschickt wird (Ortszeit).",
-      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
-      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht."
     },
     "approval": {
       "title": "Freigabe pausieren",
-      "description": "Bestätigt Anmeldungen sofort, wenn eine Schicht kurz vor Beginn unter ihrer Mindestbesetzung liegt. Sobald die Schicht ihre Mindestbesetzung erreicht, gilt die Freigabe wieder. Schichten ohne Mindestbesetzung sind nie betroffen.",
-      "daysDescription": "Bei Schichten an diesen Tagen kann die Freigabe pausiert werden.",
-      "stepInDescription": "Wie lange vor Beginn eine Schicht unter ihrer Mindestbesetzung keine Freigabe mehr braucht.",
-      "noDaysHint": "Keine Tage ausgewählt – diese Automatisierung läuft nicht.",
-      "updateError": "Diese Automatisierung konnte nicht gespeichert werden."
+      "description": "Bestätigt Anmeldungen sofort, wenn ein Einsatz kurz vor Beginn unter seiner Mindestbesetzung liegt. Sobald der Einsatz seine Mindestbesetzung erreicht, gilt die Freigabe wieder. Einsätze ohne Mindestbesetzung sind nie betroffen.",
+      "daysDescription": "Bei Einsätzen an diesen Tagen kann die Freigabe pausiert werden.",
+      "stepInDescription": "Wie lange vor Beginn ein Einsatz unter seiner Mindestbesetzung keine Freigabe mehr braucht.",
+      "noDaysHint": "Keine Tage ausgewählt, also läuft diese Automatisierung nicht."
     }
   },
   "MembershipRequest": {
@@ -709,7 +797,7 @@
     "orgUnits": "Organisationseinheiten",
     "organizationSettings": "Organisationseinstellungen",
     "organizations": "Organisationen",
-    "overview": "Übersicht",
+    "todo": "Zu erledigen",
     "profile": "Profil",
     "qrIdDescription": "Zeig diesen QR-Code vor Ort, um deine Anwesenheit zu bestätigen.",
     "qrIdTitle": "QR-ID",
@@ -720,13 +808,13 @@
     "shortcuts": "Verknüpfungen",
     "timesheets": "Zeiterfassung",
     "volunteeringApp": "Freiwilligen-App",
-    "volunteers": "Freiwillige",
+    "volunteers": "Nutzende",
     "accounting": "Buchhaltung",
     "reimbursements": "Abrechnungen",
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
     "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}",
-    "shiftSettings": "Schichten und Check-in"
+    "shiftSettings": "Einsätze und Check-in"
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",
@@ -765,6 +853,7 @@
       "title": "Löschung von \"{name}\" anfragen"
     },
     "detail": {
+      "title": "Übersicht",
       "aboutTitle": "Über",
       "contactTitle": "Kontakt",
       "editButton": "Bearbeiten",
@@ -822,6 +911,7 @@
       "deleteAria": "Löschen",
       "editAria": "Bearbeiten",
       "empty": "Keine Organisationseinheit-Hierarchie gefunden. Wende dich an deine Koordination.",
+      "title": "Organisationsstruktur",
       "visitAria": "Besuchen"
     },
     "validation": {
@@ -881,7 +971,7 @@
     "emailUrgentCalls": "Dringende Aufrufe",
     "emailUrgentCallsDescription": "Dringende Aufrufe für unterbesetzte Einsätze.",
     "emailWeeklyUpdate": "Übersichts-E-Mail",
-    "emailWeeklyUpdateDescription": "Eine Übersicht deiner bevorstehenden Schichten und der Schichten, für die noch Leute fehlen.",
+    "emailWeeklyUpdateDescription": "Eine Übersicht deiner bevorstehenden Einsätze und der Einsätze, für die noch Leute fehlen.",
     "identity": {
       "subtitles": {
         "firstName": "Wie auf deinem Ausweis",
@@ -980,8 +1070,7 @@
       "loading": "Wird geladen...",
       "lockedNotice": "Dieser Block ist gesperrt, weil er in einem Formular mit Einsendungen verwendet wird.",
       "noFields": "Noch keine Felder. Füge das erste Feld zu diesem Block hinzu.",
-      "optionLabelPlaceholder": "Bezeichnung {n}",
-      "optionValuePlaceholder": "Wert {n}",
+      "optionPlaceholder": "Option {n}",
       "optional": "Optional",
       "optionsLabel": "Optionen",
       "placeholderLabel": "Platzhalter",
@@ -1091,6 +1180,8 @@
       "enterDocumentFileError": "Bitte lade ein Dokument hoch.",
       "enterDocumentLabelError": "Bitte gib eine Dokumentenbezeichnung ein.",
       "enterLabelError": "Bitte gib eine Bezeichnung ein.",
+      "duplicateOptionError": "Optionen müssen eindeutig sein.",
+      "emptyOptionError": "Bitte fülle alle Optionen aus.",
       "enterOptionError": "Bitte gib mindestens eine Option ein.",
       "enterTextError": "Bitte gib einen Text ein.",
       "fieldTypeLabel": "Feldtyp",
@@ -1379,7 +1470,6 @@
     "card": {
       "inviteAria": "Einladen",
       "inviteToShift": "Zum Einsatz einladen",
-      "invited": "Eingeladen",
       "noVolunteers": "Noch keine Freiwilligen eingeladen",
       "openInstanceAria": "Öffnen",
       "waitlist": "Warteliste",
@@ -1547,7 +1637,7 @@
       "groupComing": "Zugesagt",
       "groupNotComing": "Nicht dabei",
       "groupPending": "Ausstehend",
-      "removeSuccess": "Freiwillige:r von dieser Schicht entfernt",
+      "removeSuccess": "Freiwillige:r von diesem Einsatz entfernt",
       "invited": "Eingeladen",
       "inviteSuccess": "Freiwillige:r erneut eingeladen",
       "pendingApproval": "Genehmigung ausstehend",
@@ -1699,10 +1789,10 @@
     "transferList": {
       "addAria": "Hinzufügen",
       "allowance": {
-        "eligible": "Vergütung möglich",
-        "nearlyExhausted": "Freibetrag der Pauschale fast erreicht",
+        "eligible": "auszahlungsberechtigt",
+        "nearlyExhausted": "Limit fast erreicht",
         "noAgreement": "Vereinbarung nötig",
-        "wouldExceed": "Überschreitet den zulässigen Freibetrag"
+        "wouldExceed": "überschreitet Limit!"
       },
       "available": "Verfügbar",
       "confirmExceedAllowance": {
@@ -1872,7 +1962,6 @@
       "recorded": "Erfasst",
       "recordedBy": "von {name}",
       "recordedByUnknown": "Unbekannt",
-      "recordedOnBehalf": "im Auftrag erfasst",
       "date": "Datum",
       "shift": "Einsatz",
       "volunteer": "Freiwillige:r"
@@ -1906,14 +1995,14 @@
       "viewProfileAria": "Ansehen"
     },
     "empty": {
-      "description": "Teile den Einladungslink, damit sich Freiwillige anmelden.",
-      "title": "Noch keine Freiwilligen"
+      "description": "Teile den Einladungslink, damit sich Personen anmelden.",
+      "title": "Noch keine Nutzenden"
     },
     "page": {
       "copyInviteLink": "Einladungslink kopieren",
       "inviteLinkCopied": "Einladungslink in Zwischenablage kopiert",
-      "subtitle": "Verwalte Freiwillige in deiner Organisation",
-      "title": "Freiwillige"
+      "subtitle": "Verwalte Personen und ihre Rollen in deiner Organisation",
+      "title": "Nutzende"
     },
     "requests": {
       "pendingEmpty": "Noch keine ausstehenden Anfragen.",
@@ -1942,8 +2031,8 @@
     "search": {
       "clearAria": "Suche zurücksetzen",
       "countFiltered": "{count} von {total}",
-      "emptyDescription": "Keine Freiwilligen entsprechen dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
-      "emptyTitle": "Keine Freiwilligen gefunden",
+      "emptyDescription": "Keine Person entspricht dieser Suche. Versuche einen anderen Namen, eine andere E-Mail-Adresse oder Rolle.",
+      "emptyTitle": "Keine Nutzenden gefunden",
       "placeholder": "Nach Name, E-Mail oder Rolle suchen"
     },
     "sheet": {
@@ -2104,7 +2193,7 @@
       "periodLabel": "Zeitraum",
       "yearLabel": "Jahr",
       "periodPicker": {
-        "allTime": "Gesamter Zeitraum",
+        "fullYear": "Gesamtes Jahr",
         "thisMonth": "Dieser Monat",
         "lastMonth": "Letzter Monat",
         "customPeriod": "Benutzerdefinierter Zeitraum",
@@ -2136,8 +2225,8 @@
       },
       "toolbar": {
         "typeAll": "Alle Pauschalen",
-        "typeEP": "Ehrenamt",
-        "typeUL": "Übungsleiter",
+        "typeEP": "Ehrenamtspauschale",
+        "typeUL": "Übungsleiterpauschale",
         "searchPlaceholder": "Freiwillige suchen...",
         "sortActionNeeded": "Dringend zuerst",
         "sortNewest": "Neueste zuerst"
@@ -2213,7 +2302,6 @@
             "declined": "Abgelehnt",
             "volSign": "Freiwillige:r",
             "coordSign": "Koordinator:in",
-            "superSign": "Supervisor",
             "active": "Aktiv",
             "ready": "Bereit",
             "actorOrg": "Organisation"
@@ -2253,10 +2341,10 @@
           "contractExpired": "Abgelaufene Vereinbarung",
           "timesheetGenerate": "Stundennachweis erstellen",
           "timesheetSigningVol": "Wartet auf Unterschrift",
-          "timesheetSigningSuper": "Supervisorunterschrift",
+          "timesheetSigningCoord": "Gegenzeichnung erforderlich",
           "timesheetReady": "Bereit zur Abgabe",
           "nonCompliant": "Keine aktive Vereinbarung",
-          "nonCompliantHint": "Noch keine aktive Vereinbarung für diese Pauschale. Erstelle oder aktiviere eine, damit dieser Stundennachweis konform ist.",
+          "nonCompliantHint": "Nicht alle Stunden dieses Stundennachweises sind durch eine aktive Vereinbarung abgedeckt. Erstelle oder aktiviere eine, die sie abdeckt.",
           "notYetCreated": "Noch nicht erstellt",
           "overCap": "Jährlicher Freibetrag wird überschritten",
           "overCapHint": "Der Betrag dieses Stundennachweises bringt die Person an oder über ihren jährlichen Freibetrag",
@@ -2271,7 +2359,7 @@
           "countersign": "Gegenzeichnen",
           "decline": "Ablehnen",
           "seeDetails": "Details ansehen",
-          "createNew": "Neues {docType} erstellen"
+          "createNew": "{kind, select, contract {Neue Vereinbarung} timesheet {Neuen Stundennachweis} other {Neues Dokument}} erstellen"
         },
         "nonCompliantDialog": {
           "titleSingle": "Ohne aktive Vereinbarung {action, select, create {erstellen} remind {erinnern} countersign {gegenzeichnen} other {bearbeiten}}?",
@@ -2330,7 +2418,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Zusatzvereinbarung",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift (Koordination)",
+          "signatureCoordinator": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2374,7 +2462,7 @@
           "cancelButtonLabel": "Abbrechen",
           "inputLabel": "Anfangsbetrag in Euro",
           "projectedAfter": "Nach diesem Stundennachweis: {after}",
-          "successToast": "Anfangsbetrag gespeichert.",
+          "deferredToast": "Der Anfangsbetrag wird beim Senden des Stundennachweises gespeichert.",
           "errorToast": "Der Anfangsbetrag ließ sich nicht speichern. Versuch es bitte erneut."
         },
         "hoursCard": {
@@ -2390,7 +2478,7 @@
           "disclaimerBadge": "Vorschau",
           "documentTitle": "Stundennachweis",
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureSupervisor": "Unterschrift (Organisation)",
+          "signatureCoordinator": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         }
       },
@@ -2429,6 +2517,7 @@
         "saveButton": "Vorlage speichern",
         "saveSuccessToast": "Vorlage gespeichert",
         "saveErrorToast": "Die Vorlage ließ sich nicht speichern. Versuch es bitte erneut.",
+        "signeesUnavailableToast": "Die Unterschriftenrollen konnten noch nicht geladen werden. Bitte warte einen Moment und versuch es erneut.",
         "orgProfile": {
           "blockedMessage": "In deinen Organisationsdaten fehlen Angaben, die diese Vorlage benötigt. Vervollständige die Organisationsdaten, bevor du speicherst.",
           "blockedCta": "Organisationsdaten vervollständigen",
@@ -2442,8 +2531,7 @@
             "invoice": "Stundennachweis"
           },
           "signatureVolunteer": "Unterschrift (Freiwillige:r)",
-          "signatureCoordinator": "Unterschrift (Koordination)",
-          "signatureSupervisor": "Unterschrift (Organisation)",
+          "signatureCoordinator": "Unterschrift (Organisation)",
           "unsigned": "Noch nicht unterschrieben"
         },
         "orgOverride": {
@@ -2500,7 +2588,6 @@
           "org": "Angaben der Organisation",
           "volunteer": "Angaben der ehrenamtlich tätigen Person",
           "engagement": "Einsatzdetails",
-          "extra": "Weitere Vereinbarungen",
           "other": "Sonstiges"
         },
         "hoursUnit": {
@@ -2587,6 +2674,11 @@
           "already_received_amount": "Bereits erhaltener Betrag",
           "already_received_period": "Jahr bis dato (1. Januar bis Zeitraum Ende)",
           "yearly_limit_amount": "Jahresfreibetrag"
+        },
+        "pageFooter": {
+          "title": "Fußzeile",
+          "description": "Erscheint unten auf jeder Seite.",
+          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB"
         }
       },
       "card": {
@@ -2613,6 +2705,17 @@
     "empty": {
       "title": "Noch keine Dokumente",
       "description": "Vereinbarungen und Stundennachweise deiner Organisationen erscheinen hier."
+    },
+    "completeProfile": {
+      "title": "Vervollständige deine Daten",
+      "description": "Wird für {documentName} bei {orgName} benötigt.",
+      "descriptionWithoutOrg": "Wird für {documentName} benötigt.",
+      "savedToProfile": "Die Angaben werden in deinem Profil gespeichert und für alle deine Dokumente verwendet.",
+      "success": "Angaben gespeichert",
+      "allComplete": "Alle Angaben sind vollständig – es gibt nichts mehr auszufüllen.",
+      "error": "Wir konnten dieses Dokument nicht laden. Bitte versuche es erneut.",
+      "saveError": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
+      "close": "Schließen"
     }
   }
 }

@@ -3,7 +3,7 @@ import { Test } from '@nestjs/testing';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { AppModule } from '../../src/app.module';
 import { PermissionGuard } from '../../src/auth/guards/permission.guard';
-import { getAuthMockUserId } from './auth-mocks';
+import { getAuthMockUserId, getAuthMockUserTermsVersion } from './auth-mocks';
 import { ensureTestDatabase } from './ensure-test-database';
 
 const applyRemainingTestEnvironmentDefaults = () => {
@@ -25,10 +25,13 @@ export const createGraphqlFullTestApp = async (): Promise<INestApplication> => {
   const app = moduleRef.createNestApplication({ logger: false });
   app.use((req, _res, next) => {
     const mutableReq = req as {
-      user?: { id: string };
-      session?: { user: { id: string } };
+      user?: { id: string; termsVersion: string | null };
+      session?: { user: { id: string; termsVersion: string | null } };
     };
-    mutableReq.user = { id: getAuthMockUserId() };
+    mutableReq.user = {
+      id: getAuthMockUserId(),
+      termsVersion: getAuthMockUserTermsVersion(),
+    };
     mutableReq.session = { user: mutableReq.user };
     next();
   });

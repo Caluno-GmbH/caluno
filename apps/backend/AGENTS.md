@@ -4,8 +4,9 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 
 ## Commands
 - `bun run dev` - Start NestJS development server
-- `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load Playground fixtures, then start all dev servers
-- `bun run db:fixtures` - Load Playground dev fixtures only (run after migrate + seed)
+- `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load the demo fixtures, then start all dev servers
+- `bun run db:fixtures:demo` - Load the demo dataset (the app's data; run after migrate + seed)
+- `bun run db:fixtures:e2e` - Load the e2e-only Testing seed (run after migrate + seed)
 - `bun run build` - Build a production bundle
 - `bun run lint` - Lint with Biome
 - `bun run format` - Format with Biome
@@ -107,22 +108,50 @@ bun test apps/backend/test/
 
 Integration tests connect to the `postgres` maintenance database to create/drop an isolated `${POSTGRES_DB}_test_<pid>_<id>` database, so the Postgres user needs CREATEDB privileges (the default `postgres` superuser has this).
 
-### Playground fixtures (`bun bootstrap`)
+### Fixture datasets — never both
 
-`bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads [`src/database/fixtures.ts`](src/database/fixtures.ts). Refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`.
+Two fixture datasets exist and are mutually exclusive, because both address their accounts on the `demo@caluno.org` group:
 
-The same fixture script is used for staging via `bun run db:fixtures:staging`.
+| Dataset | Script | Who loads it |
+|---|---|---|
+| **Altonaer Lesepaten** (the app's data) | [`src/database/demo-fixtures.ts`](src/database/demo-fixtures.ts) | `bun bootstrap` locally; **every deployed container** — the entrypoint always seeds it |
+| **Testing** (e2e only) | [`src/database/fixtures.ts`](src/database/fixtures.ts) | the Playwright suite, via `bun run db:fixtures:e2e` |
+
+`bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads the **demo** dataset only. It refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`.
+
+### Fixture safety — they run in production
+
+The backend entrypoint seeds the demo dataset on **every** boot, staging and production alike, so the seed is written to be safe against a live, populated database:
+
+- **Non-destructive.** No `DROP`, `TRUNCATE` or `DELETE` anywhere in `demo-fixtures.ts` / `fixtures.ts`; every write is an upsert scoped to the fixture organization and its own accounts.
+- **Identity is the pinned id, not the name.** `fixtureId()` in `fixture-helpers.ts` derives a deterministic UUID for each fixture account (from its address) and organization (from its slug), so ownership is proven by id — names are not unique and a real person can share one. `assertFixtureIdentitiesAvailable` verifies the whole planned set *before* the seed's first insert: any row holding a fixture id, email or slug that the fixtures did not create (a legacy random-id row, a real customer org, a real user) aborts the run with the full list of clashes and writes nothing. The per-call guards in `createAuthUser` / the org resolvers remain as defence in depth.
+- The only volume wipe (`docker compose down -v`) lives in `scripts/bootstrap-db.ts`, which refuses to run against a non-local `DB_HOST` — it is unreachable from the deploy path.
+
+**Never load both into one database.** The second load silently reuses the first's users and cross-links memberships (it will look like it succeeded). The Testing seed is deliberately e2e-only: it carries the contract the specs depend on — stable UUIDs, the `Overlap Test Pair/Pile` shifts, exact account names — none of which is app content.
+
+**Demo dataset** — password `abcd1234` (override with `DEMO_FIXTURE_PASSWORD`), organization **Altonaer Lesepaten** (slug `demo-altonaer-lesepaten`; units Nord/Süd/West):
 
 | Account | Role / status |
 |---|---|
-| `testing+admin@caluno.org` | Owner |
-| `testing+supervisor@caluno.org` | Supervisor |
-| `testing+demo@caluno.org` | Member (demo account) |
-| `testing+001@` … `testing+010@caluno.org` | Member |
-| `testing+pending01@`, `testing+pending02@caluno.org` | Pending membership request |
-| `testing+rejected01@caluno.org` | Rejected membership request |
+| `demo+owner@caluno.org` | Owner |
+| `demo+supervisor@caluno.org` | Supervisor |
+| `demo@caluno.org` | Member (demo account) |
+| `demo+member01@` … `demo+member29@caluno.org` | Member |
+| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
+| `demo+rejected01@caluno.org` | Rejected membership request |
 
-Password for all fixture accounts: `abcd1234` (override with `FIXTURE_PASSWORD`). Organization: **Playground**. Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields.
+**Testing seed (e2e only)** — password `abcd1234` (override with `FIXTURE_PASSWORD`), organization **Testing**. Its accounts carry an `+testing_` discriminator precisely so they cannot collide with the demo dataset. Generated member/applicant names use number words (`Testing Member One`, `Testing Pending Applicant Two`) because the requirement-form name fields reject digits (`NAME_RE` in `apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`):
+
+| Account | Role / status |
+|---|---|
+| `demo+testing_admin@caluno.org` | Owner |
+| `demo+testing_supervisor@caluno.org` | Supervisor |
+| `demo+testing_demo@caluno.org` | Member (demo account) |
+| `demo+testing_member01@` … `demo+testing_member10@caluno.org` | Member |
+| `demo+testing_pending01@`, `demo+testing_pending02@caluno.org` | Pending membership request |
+| `demo+testing_rejected01@caluno.org` | Rejected membership request |
+
+Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields.
 
 ## Tech Stack
 - **NestJS 11** primary web framework
@@ -157,7 +186,7 @@ src/
 ├── utils       # Shared generic code
 test/
 ```
-Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`) are self-contained NestJS modules:
+Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`, `task`) are self-contained NestJS modules:
 ```
 domain/
 ├── domain.module.ts
@@ -205,6 +234,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 - Soft deletes via `deletedAt` timestamp — no hard deletes on important records
 - Export entity types: `$inferSelect` / `$inferInsert`
 - Migration `snapshot.json` files (`src/database/migrations/*/`) duplicate the full schema once per migration and drown out real search hits — they are excluded from search via the root `.ignore`. Trace schema history through the `migration.sql` diffs; read a specific snapshot by naming its path explicitly.
+- Schema fields with notNull() are marked with `optional: false` in relations
 
 ### Querying: Relational Query v2 by default
 For fetching entities and their relations, use Relational Query v2:
@@ -222,17 +252,18 @@ only base-table columns, so those sorts use `select().leftJoin()` with an explic
 
 ## Known constraints (decision-log extracts — architectural, must stay)
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
-- **`UserProfile.data` is `@Field(() => GraphQLJSON)`**, not `String`. graphql-js v16 throws serializing an object as a String; returning it as String silently yielded `null`. (VOLI-592)
+- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `systemKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / systemKey-column-align)
 - **`FormSubmissionStatus` is `SUBMITTED` / `REJECTED` only** (no DRAFT/APPROVED). Gating logic keys off these two. (form-submission-status-simplification)
 - **No `forwardRef` in `apps/backend`**. Module dependencies must form a DAG. Cycles are broken by extracting lower-level data modules (`OrganizationUnitDataModule`) or by moving cross-domain GraphQL field resolution into the higher-level module (`EventModule` owns the `Shift.event` field).
 - **`OrganizationUnitDataModule`** sits below `AuthModule` in the dependency graph. `AuthService` uses `OrganizationUnitDataService` for ancestor-unit lookups and org resolution, so `AuthModule` does not depend on `OrganizationModule`.
 - **Shift vs event participation are separate vocabularies — do not unify them.** `ShiftInstance` exposes only the raw `myInviteStatus` (nullable `ShiftInviteStatus`); there is no coarse `myJoinStatus`. The volunteer CTA is derived client-side from `myInviteStatus` + `OrganizationUnit.myMembershipState` (two orthogonal facts). Events are a lower-commitment "following" shortlist, so `Event.isFollowing` is a boolean — deliberately not shift-invite vocabulary; org membership state is read separately. Retiring the old ambiguous `myJoinStatus` projection is the reason for this split. (volunteer-shift-invite-response / VOLI-839)
 - **`InviteStatus` (in `apps/frontend/src/domain/shift/invite-status-display.ts`) intentionally shares admin-invite vocabulary between shift and event.** `ShiftInviteStatus` and `EventInviteStatus` mirror each other (`AdminInvited` / `AwaitingAdminApproval` / `WaitlistJoined` / `Joined` / `VolunteerRejected` / `VolunteerCancelled` / `AdminRejected`); `toInviteDisplayState()` maps both to the same `ShiftVolunteeringDisplayState` for admin UI. Events never enter `WAITLIST_JOINED` (no capacity). This is a different axis from the follow vocabulary (`isFollowing` / `myInviteStatus`), which stays unshared. (invite-status-model / event-invite-status-display / VOLI-1028)
-- **Invite capacity and approval are server-resolved; freed seats are claimed, not auto-promoted.** Only `JOINED` counts toward `filledCount` / seats. `joinRequiresApproval` on shift/event (default false) sends volunteer join/accept to `AWAITING_ADMIN_APPROVAL`. When a `JOINED` seat frees, every waitlisted volunteer on that instance gets a spot-opened email; the seat goes to whoever claims first — no auto-promotion (`promoteOldestWaitlisted` was deleted). A waitlisted volunteer may self-request `WAITLIST_JOINED` → `JOINED` (claim), re-resolved by capacity at both instance and series level — full ⇒ invite unchanged, no error. Admin-driven transitions are unchanged, and events never waitlist. (invite-status-model / VOLI-1139 / VOLI-1260)
+- **Invite capacity and approval are server-resolved; freed seats are claimed, not auto-promoted.** Only `JOINED` counts toward `filledCount` / seats. `joinRequiresApproval` on shift/event (default false) sends volunteer join/accept to `AWAITING_ADMIN_APPROVAL`. When a `JOINED` seat frees, every waitlisted volunteer on that instance gets a spot-opened email; the seat goes to whoever claims first — no auto-promotion (`promoteOldestWaitlisted` was deleted). A waitlisted volunteer may self-request `WAITLIST_JOINED` → `JOINED` (claim), re-resolved by capacity at both instance and series level — full ⇒ invite unchanged, no error. Admin-driven transitions are unchanged, and events never waitlist. Pause-approval does not confirm waiting volunteers: it moves `AWAITING_ADMIN_APPROVAL` to `WAITLIST_JOINED` and sends the spot-opened email only to the people just moved, and only when a seat is free. Turning approval off still confirms whoever fits. (invite-status-model / VOLI-1139 / VOLI-1260 / VOLI-1572)
 - **`myShiftInstances` default roster is `MY_SHIFT_INVITE_STATUSES`** (`JOINED`, `AWAITING_ADMIN_APPROVAL`, `WAITLIST_JOINED`) — not `PARTICIPATING_SHIFT_INVITE_STATUSES` (`JOINED` only). Coordinator invites stay on the invitations query (`ADMIN_INVITED`). (VOLI-1316)
 - **`availableShiftInstances` excludes the same `MY_SHIFT_INVITE_STATUSES` roster** so waitlisted / pending-approval shifts do not reappear in Discover; `ADMIN_INVITED` still shows (coordinator invite, not self-roster). (VOLI-1316)
 - **Admin event uninvite/re-invite cascades to event-linked shifts.** Setting an event invite to `ADMIN_REJECTED` also sets active shift + shift-instance invites for that user on shifts with the same `eventId` to `ADMIN_REJECTED` (via `ShiftService.adminRejectInvitesForEventUser`). No notification is sent. Admin re-invite (`ADMIN_REJECTED` → `ADMIN_INVITED`) reverses this: `ShiftService.adminReinviteInvitesForEventUser` restores this user's `ADMIN_REJECTED` shift + shift-instance invites on the event's shifts back to `ADMIN_INVITED`; shift invites in other states (e.g. `VOLUNTEER_REJECTED`) are left untouched. Admin event volunteer lists include `ADMIN_REJECTED` so re-invite stays available. The event invite sheet does not preselect `ADMIN_REJECTED` (`preselectedInviteMemberIds`); `inviteMembersToEvent` only resurrects them when explicitly included in `memberIds`. `Event.myJoinStatus` / `requestJoinEvent` map event-invite `ADMIN_REJECTED` to `JoinStatus.REJECTED` so the public Follow CTA stays disabled (membership `REJECTED` remains the org-level path). Admin-only invite targets (`ADMIN_REJECTED`, `ADMIN_INVITED` via `updateEventInviteStatus`) always require `SHIFT_EDIT`, including self. (VOLI-997)
 - **Ending a membership hard-deletes org-unit invites and the membership request.** `leaveMembership` and `removeMembership` share one path: after deleting the membership row, hard-delete that user's membership request for that unit, all `shift_invites` on that unit (past or future — they seed instance expansion), `shift_instance_invites` for instances that have not ended, and `event_invites` for events that have not ended. Past events/instances keep their invites. Sibling/child units, other organizations, and other users are untouched. This is complete removal, not `ADMIN_REJECTED`. Time entries, form submissions, and remaining memberships in other units of the same org are not part of this path yet. (VOLI-1109)
 - **Privacy policy PDFs live in `apps/backend/legal/`** as `datenschutzhinweise-YYYY-MM-DD.pdf`. The current version is the newest matching filename. `GET /legal/privacy-policy.pdf` (`@AllowAnonymous()`) serves that file. Signup sends `privacyPolicyAccepted: true` on the request body only — it is not a Better Auth `additionalField` (those must exist on the Drizzle `users` table, and create hooks merge rather than replace). A non-null `privacyPolicyAcceptedAt` is the stored proof of acceptance; the server also stamps `privacyPolicyVersion`. The client does not send a version. (privacy-policy-backend-source)
+- **Terms & conditions documents live in `apps/backend/legal/`** as `terms_<version>_<YYYY-MM-DD>_<locale>.pdf` (locale `en`|`de`), e.g. `terms_1.0_2026-10-06_en.pdf` and `terms_1.0_2026-10-06_de.pdf`. A version requires BOTH locales. To ship a new version: add the two files with exact, immutable names (never edit or delete a published version — they are the evidence for `terms_acceptances.document_hash`) and merge. The **deployed backend publishes automatically** shortly after boot (`TERMS_AUTO_PUBLISH=true` on staging/release/production) and emails every user — nobody runs the command against production, because no one holds production DB credentials. `bun run terms:publish` is only for local development against the local DB (auto-publish is off there); it runs the identical idempotent path. If a released version was never published or emailed (e.g. an interrupted run), restart/redeploy the backend to retry — a version with no ledger row or `notification_sent_at IS NULL` is picked up on the next boot. Publishing writes the `terms_versions` ledger row (class from the version shape — `X.0` = MAJOR, `X.Y` = MINOR, frozen at publish), emails every user, and for a MAJOR gates them until they re-accept. A Postgres advisory lock around the publish pass makes it single-publisher per DB, so concurrent boots (e.g. a rolling deploy) cannot double-send; the lock releases if the process dies, so a crashed run retries on the next boot. The guard is inert until the first publish. Acceptance is append-only in `terms_acceptances` (version, language, timestamp, sha256 of the exact file) and denormalised to `users.termsVersion`/`termsAcceptedAt`; it is deliberately separate from the privacy acknowledgement. The committed `terms_1.0_2026-10-06_*` files are placeholders containing `%CALUNO-TERMS-PLACEHOLDER%` — `terms:publish` refuses them unless `TERMS_ALLOW_PLACEHOLDER=1`; replace them with the real documents from VOLI-982. (terms-conditions-acceptance / VOLI-1319)
 - **Gender is a fixed single-choice system field.** Four option values (`female`/`male`/`diverse`/`prefer-not-to-say`) are defined in code and mirrored frontend (`src/domain/requirement-form/gender-options.ts`) and backend (`GENDER_OPTION_VALUES` in `src/requirement-profile/constants.ts`); labels are localised client-side from `RequirementForm.genderOptions`. Gender field rows carry empty DB options — rendering and validation inject the fixed list by `systemKey`. (VOLI-1267)
-- **`email` system profile key is backed by `users.email`, not `user_profiles.data`.** Identity edit shows it locked from the account. Account email is merged into the profile map so requirement forms and submission views can prefill/display it. Do not treat a missing `data.email` as "volunteer has no email".
+- **`email` system profile key is backed by `users.email`.** Identity edit shows it locked from the account. Do not treat a missing profile firstname as "volunteer has no email".

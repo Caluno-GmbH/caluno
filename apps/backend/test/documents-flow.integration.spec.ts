@@ -27,7 +27,7 @@ import * as schema from '../src/database/schema';
 import { NotificationEvent } from '../src/notification/notification-events';
 import type { DocumentAwaitingSignaturePayload } from '../src/notification/payloads/document-awaiting-signature.payload';
 import type { DocumentDeclinedByOrgPayload } from '../src/notification/payloads/document-declined-by-org.payload';
-import { userProfiles } from '../src/requirement-profile/schemas/user-profile.schema';
+import { pickWritableProfileFields } from '../src/user/profile-fields';
 import {
   createDocumentTemplate,
   createReimbursementRate,
@@ -224,6 +224,43 @@ const INVOICE_DETAIL = `
   }
 `;
 
+// Volunteer "My documents" / complete-profile: no x-organization-unit-id.
+const INVOICE_DETAIL_WITH_TIME_ENTRIES = `
+  query InvoiceDetailWithTimeEntries($id: ID!) {
+    invoice(id: $id) {
+      id
+      invoiceTimeEntries {
+        id
+        timeEntry {
+          id
+          startedAt
+          endedAt
+        }
+      }
+    }
+  }
+`;
+
+const INVOICE_COVER_FLAGS_LIST = `
+  query InvoiceCoverFlagsList {
+    invoices {
+      id
+      isNonCompliant
+      hasHoursWithoutActiveContract
+    }
+  }
+`;
+
+const INVOICE_COVER_FLAGS = `
+  query InvoiceCoverFlags($id: ID!) {
+    invoice(id: $id) {
+      id
+      isNonCompliant
+      hasHoursWithoutActiveContract
+    }
+  }
+`;
+
 // ─── Setup helpers ────────────────────────────────────────────────────────────
 
 /**
@@ -376,28 +413,32 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
 };
 
 /**
- * Seeds (or merges into) the volunteer's `user_profiles.data`. Document name
- * fields (`volunteer_first_name` / `volunteer_last_name`) now read `name` /
- * `lastname` from here, not from `users.name`.
+ * Seeds (or merges into) the volunteer's profile columns on `users`. Document
+ * name fields (`volunteer_first_name` / `volunteer_last_name`) read
+ * `firstname` / `lastname` from here, not from `users.name`.
  */
 const seedVolunteerProfile = async (
   db: Database,
   userId: string,
   data: Record<string, unknown>,
 ) => {
-  const existing = await db.query.userProfiles.findFirst({
-    where: { userId },
-  });
-  if (existing) {
-    await db
-      .update(userProfiles)
-      .set({
-        data: { ...(existing.data as Record<string, unknown>), ...data },
-      })
-      .where(eq(userProfiles.userId, userId));
-    return;
+  const { email: _email, ...columns } = pickWritableProfileFields(data);
+  const changes: Record<string, string> = {};
+  for (const [key, value] of Object.entries(columns)) {
+    if (typeof value === 'string') {
+      changes[key] = value;
+    }
   }
-  await db.insert(userProfiles).values({ userId, data });
+  if (changes.firstname !== undefined || changes.lastname !== undefined) {
+    const existing = await db.query.users.findFirst({ where: { id: userId } });
+    const first = changes.firstname ?? existing?.firstname;
+    const last = changes.lastname ?? existing?.lastname;
+    if (first && last) {
+      changes.name = `${first} ${last}`;
+    }
+  }
+  if (Object.keys(changes).length === 0) return;
+  await db.update(schema.users).set(changes).where(eq(schema.users.id, userId));
 };
 
 /** A completed, unclaimed, paid time entry — the raw material for an invoice. */
@@ -499,6 +540,148 @@ describe('documents flow — admin + volunteer', () => {
   };
 
   describe('contract lifecycle', () => {
+    // The paper trail has to read in lifecycle order whatever order the rows
+    // come back in, and the countersign and activation rows of one signing
+    // share a transaction timestamp, so the type breaks the tie.
+    it('lists the paper trail in lifecycle order whatever the row order', async () => {
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createContract',
+      );
+
+      const signedAt = new Date(Date.now() + 60_000);
+      const countersignedAt = new Date(Date.now() + 120_000);
+      // Inserted newest first, so storage order is the reverse of the trail.
+      await db.insert(schema.contractStatusChanges).values([
+        {
+          contractId: createContract.id,
+          type: DocumentStatusChange.ACTIVATED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          contractId: createContract.id,
+          type: DocumentStatusChange.COUNTERSIGNED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          contractId: createContract.id,
+          type: DocumentStatusChange.SIGNED,
+          actorUserId: own.volunteerId,
+          occurredAt: signedAt,
+        },
+      ]);
+
+      const detail = await graphqlRequestRequiringData<{
+        contract: { statusChanges: Array<{ type: string }> };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: createContract.id },
+          headers: ownHeader,
+        },
+        'contract',
+      );
+      expect(detail.contract.statusChanges.map((s) => s.type)).toEqual([
+        DocumentStatusChange.CREATED,
+        DocumentStatusChange.SIGNED,
+        DocumentStatusChange.COUNTERSIGNED,
+        DocumentStatusChange.ACTIVATED,
+      ]);
+    });
+
+    it('lists a timesheet paper trail in lifecycle order whatever the row order', async () => {
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: own.organizationUnitId,
+        volunteerId: own.volunteerId,
+        reimbursementTypeId: own.reimbursementTypeId,
+      });
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createInvoice',
+      );
+
+      const signedAt = new Date(Date.now() + 60_000);
+      const countersignedAt = new Date(Date.now() + 120_000);
+      await db.insert(schema.invoiceStatusChanges).values([
+        {
+          invoiceId: createInvoice.id,
+          type: DocumentStatusChange.ACTIVATED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          invoiceId: createInvoice.id,
+          type: DocumentStatusChange.COUNTERSIGNED,
+          actorUserId: own.adminId,
+          occurredAt: countersignedAt,
+        },
+        {
+          invoiceId: createInvoice.id,
+          type: DocumentStatusChange.SIGNED,
+          actorUserId: own.volunteerId,
+          occurredAt: signedAt,
+        },
+      ]);
+
+      const detail = await graphqlRequestRequiringData<{
+        invoice: { statusChanges: Array<{ type: string }> };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL,
+          variables: { id: createInvoice.id },
+          headers: ownHeader,
+        },
+        'invoice',
+      );
+      expect(detail.invoice.statusChanges.map((s) => s.type)).toEqual([
+        DocumentStatusChange.CREATED,
+        DocumentStatusChange.SIGNED,
+        DocumentStatusChange.COUNTERSIGNED,
+        DocumentStatusChange.ACTIVATED,
+      ]);
+    });
+
     it('goes AWAITING_VOLUNTEER_SIGNATURE → AWAITING_NGO_SIGNATURE → ACTIVE with a full paper trail, and emails the volunteer once', async () => {
       const { createContract } = await createContractAsAdmin();
       expect(createContract.contractStatus).toBe(
@@ -838,6 +1021,135 @@ describe('documents flow — admin + volunteer', () => {
       ]);
     });
 
+    // VOLI-1588: the board reads the live flag through GraphQL, in a list and
+    // on one invoice, while `isNonCompliant` stays the creation snapshot.
+    it('exposes the live no-active-contract flag on invoices and clears it when the contract is signed', async () => {
+      // Its own org: the shared one already holds an ACTIVE contract from the
+      // lifecycle tests, which would cover the hours.
+      const own = await setupFlowOrg(db);
+      const ownHeader = { 'x-organization-unit-id': own.organizationUnitId };
+      setAuthMockUserId(own.adminId);
+      const { createContract } = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createContract',
+      );
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: own.organizationUnitId,
+        volunteerId: own.volunteerId,
+        reimbursementTypeId: own.reimbursementTypeId,
+      });
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: own.organizationUnitId,
+              reimbursementTypeId: own.reimbursementTypeId,
+              volunteerId: own.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-06-30T22:00:00.000Z',
+              periodEnd: '2026-07-31T22:00:00.000Z',
+            },
+          },
+          headers: ownHeader,
+        },
+        'createInvoice',
+      );
+
+      const readFlags = async () => {
+        const { invoices } = await graphqlRequestRequiringData<{
+          invoices: Array<{
+            id: string;
+            isNonCompliant: boolean;
+            hasHoursWithoutActiveContract: boolean;
+          }>;
+        }>(
+          app,
+          { query: INVOICE_COVER_FLAGS_LIST, headers: ownHeader },
+          'invoices',
+        );
+        const { invoice } = await graphqlRequestRequiringData<{
+          invoice: {
+            isNonCompliant: boolean;
+            hasHoursWithoutActiveContract: boolean;
+          };
+        }>(
+          app,
+          {
+            query: INVOICE_COVER_FLAGS,
+            variables: { id: createInvoice.id },
+            headers: ownHeader,
+          },
+          'invoice',
+        );
+        return {
+          listed: invoices.find((i) => i.id === createInvoice.id),
+          invoice,
+        };
+      };
+
+      // Only a contract awaiting signature exists: the hours have no ACTIVE one.
+      const before = await readFlags();
+      expect(before.listed).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: true,
+      });
+      expect(before.invoice).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: true,
+      });
+
+      setAuthMockUserId(own.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: ownHeader,
+        },
+        'signContract',
+      );
+      setAuthMockUserId(own.adminId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: ownHeader,
+        },
+        'signContract',
+      );
+
+      // Signed: the live flag clears, the creation snapshot stays as it was.
+      const after = await readFlags();
+      expect(after.listed).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: false,
+      });
+      expect(after.invoice).toMatchObject({
+        isNonCompliant: true,
+        hasHoursWithoutActiveContract: false,
+      });
+    });
+
     it('records an invoice decline with the reason', async () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: org.organizationUnitId,
@@ -898,9 +1210,162 @@ describe('documents flow — admin + volunteer', () => {
       );
       expect(declined.declineInvoice.declinedByUser?.id).toBe(org.volunteerId);
     });
+
+    it('volunteer can resolve claimed timeEntry without an org-unit header', async () => {
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: org.organizationUnitId,
+        volunteerId: org.volunteerId,
+        reimbursementTypeId: org.reimbursementTypeId,
+        startedAt: new Date('2026-09-03T09:00:00.000Z'),
+        endedAt: new Date('2026-09-03T13:00:00.000Z'),
+      });
+
+      setAuthMockUserId(org.adminId);
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: org.organizationUnitId,
+              reimbursementTypeId: org.reimbursementTypeId,
+              volunteerId: org.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: orgHeader,
+        },
+        'createInvoice',
+      );
+
+      setAuthMockUserId(org.volunteerId);
+      const detail = await graphqlRequestRequiringData<{
+        invoice: {
+          id: string;
+          invoiceTimeEntries: Array<{
+            id: string;
+            timeEntry: { id: string; startedAt: string; endedAt: string };
+          }>;
+        };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL_WITH_TIME_ENTRIES,
+          variables: { id: createInvoice.id },
+          // No x-organization-unit-id — matches volunteering DataProvider.
+        },
+        'invoice',
+      );
+
+      expect(detail.invoice.invoiceTimeEntries).toHaveLength(1);
+      expect(detail.invoice.invoiceTimeEntries[0].timeEntry.id).toBe(
+        timeEntry.id,
+      );
+    });
   });
 
   describe('org scoping', () => {
+    it('createInvoice rejects a sibling organization unit in input', async () => {
+      const scoped = await setupFlowOrg(db);
+      const header = { 'x-organization-unit-id': scoped.organizationUnitId };
+      const unitTypeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: scoped.organizationId },
+          })
+        )?.id ?? '';
+      const sibling = await createUnit(db, {
+        organizationId: scoped.organizationId,
+        typeId: unitTypeId,
+        name: `Sibling ${crypto.randomUUID()}`,
+        parentId: scoped.organizationUnitId,
+      });
+      const rootEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: scoped.organizationUnitId,
+        volunteerId: scoped.volunteerId,
+        reimbursementTypeId: scoped.reimbursementTypeId,
+        startedAt: new Date('2026-09-01T09:00:00.000Z'),
+        endedAt: new Date('2026-09-01T13:00:00.000Z'),
+      });
+      const siblingEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: sibling.id,
+        volunteerId: scoped.volunteerId,
+        reimbursementTypeId: scoped.reimbursementTypeId,
+        startedAt: new Date('2026-09-02T09:00:00.000Z'),
+        endedAt: new Date('2026-09-02T13:00:00.000Z'),
+      });
+
+      setAuthMockUserId(scoped.adminId);
+
+      // A client-supplied unit that does not match the header is forbidden —
+      // do not silently retarget or claim sibling hours.
+      const rejected = await graphqlRequest(app, {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: sibling.id,
+            reimbursementTypeId: scoped.reimbursementTypeId,
+            volunteerId: scoped.volunteerId,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        },
+        headers: header,
+      });
+      expect(rejected.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(rejected.errors?.[0]?.message).toMatch(/organization unit/i);
+
+      // Matching the header unit still creates on that unit; sibling hours
+      // remain ineligible under the header scope.
+      const siblingHoursRejected = await graphqlRequest(app, {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: scoped.organizationUnitId,
+            reimbursementTypeId: scoped.reimbursementTypeId,
+            volunteerId: scoped.volunteerId,
+            timeEntryIds: [siblingEntry.id],
+            periodStart: '2026-08-31T22:00:00.000Z',
+            periodEnd: '2026-09-30T22:00:00.000Z',
+          },
+        },
+        headers: header,
+      });
+      expect(siblingHoursRejected.errors?.[0]?.message).toMatch(
+        /not eligible/i,
+      );
+
+      const { createInvoice } = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: scoped.organizationUnitId,
+              reimbursementTypeId: scoped.reimbursementTypeId,
+              volunteerId: scoped.volunteerId,
+              timeEntryIds: [rootEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: header,
+        },
+        'createInvoice',
+      );
+      const stored = await db.query.invoices.findFirst({
+        where: { id: createInvoice.id },
+      });
+      expect(stored?.organizationUnitId).toBe(scoped.organizationUnitId);
+    });
+
     it('a volunteer in two organisations only ever sees each org\u2019s own documents', async () => {
       // Two fresh orgs, each with its own admin and template — the shared
       // `org` already carries documents from the lifecycle tests above.
@@ -1444,7 +1909,7 @@ describe('documents flow — admin + volunteer', () => {
         );
       // Template binds volunteer_first_name / volunteer_last_name from profile.
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1609,7 +2074,7 @@ describe('documents flow — admin + volunteer', () => {
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1707,7 +2172,7 @@ describe('documents flow — admin + volunteer', () => {
           eq(schema.documentTemplates.organizationId, pdfOrg.organizationId),
         );
       await seedVolunteerProfile(db, pdfOrg.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
 
@@ -1880,7 +2345,7 @@ describe('documents flow — admin + volunteer', () => {
           ),
         );
       await seedVolunteerProfile(db, nested.volunteerId, {
-        name: 'Ada',
+        firstname: 'Ada',
         lastname: 'Lovelace',
       });
       const unitTypeId =
@@ -1954,6 +2419,9 @@ describe('documents flow — admin + volunteer', () => {
         reimbursementTypeId: nested.reimbursementTypeId,
       });
       setAuthMockUserId(nested.adminId);
+      const grandchildHeader = {
+        'x-organization-unit-id': grandchild.id,
+      };
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string; totalAmountCents: number };
       }>(
@@ -1970,7 +2438,7 @@ describe('documents flow — admin + volunteer', () => {
               periodEnd: '2026-07-31T22:00:00.000Z',
             },
           },
-          headers: nestedHeader,
+          headers: grandchildHeader,
         },
         'createInvoice',
       );

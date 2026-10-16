@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'bun:test';
+import { findTextLine } from '../components/template/__tests__/find-text-line';
 import {
   getContractDocument,
   getInvoiceDocument,
 } from '../components/template/builder-document-presets';
 import { deriveEditableFields } from './creation-fields';
+
+// VOLI-1544: the contract preset's payout-bic line is opt-in, so tests that
+// need BIC derived flip the line on — what a coordinator enabling it does.
+function contractWithBicEnabled() {
+  const doc = getContractDocument('ehrenamt');
+  const bic = findTextLine(doc, 'payout-bic');
+  if (!bic) throw new Error('expected a payout-bic line');
+  bic.enabled = true;
+  return doc;
+}
 
 describe('deriveEditableFields', () => {
   it('returns the template-bound volunteer + manual fields, no hardcoded extras', () => {
@@ -11,11 +22,12 @@ describe('deriveEditableFields', () => {
     const ids = fields.map((f) => f.fieldId);
     const sources = fields.map((f) => f.source);
 
-    // IBAN, account holder and BIC are all bound in the default contract
-    // preset (payout lines).
+    // IBAN and account holder are bound in the default contract preset (payout
+    // lines); BIC is an opt-in line (VOLI-1544) and only derives once a
+    // coordinator enables it.
     expect(sources).toContain('volunteer_iban');
     expect(sources).toContain('volunteer_account_holder');
-    expect(sources).toContain('volunteer_bic');
+    expect(sources).not.toContain('volunteer_bic');
 
     // Manual-template fields are derived, not hardcoded.
     expect(ids).toContain('contract-lifespan');
@@ -51,10 +63,27 @@ describe('deriveEditableFields', () => {
   });
 
   it('marks a bound field missing from the profile provenance gap', () => {
-    const fields = deriveEditableFields(getContractDocument('ehrenamt'), {});
+    const fields = deriveEditableFields(contractWithBicEnabled(), {});
     const bic = fields.find((f) => f.source === 'volunteer_bic');
     expect(bic?.provenance).toBe('gap');
     expect(bic?.value).toBeNull();
+  });
+
+  // VOLI-1544: the payout-bic line is optional and off by default, so BIC is
+  // not derived from the untouched preset; enabling the line derives it.
+  it('derives BIC once the coordinator enables the payout-bic line', () => {
+    const fields = deriveEditableFields(contractWithBicEnabled(), {
+      bic: 'GENODEM1GLS',
+    });
+    const bic = fields.find((f) => f.source === 'volunteer_bic');
+    expect(bic?.kind).toBe('bound');
+    expect(bic?.value).toBe('GENODEM1GLS');
+    expect(bic?.provenance).toBe('profile');
+  });
+
+  it('omits BIC from the untouched preset', () => {
+    const fields = deriveEditableFields(getContractDocument('ehrenamt'));
+    expect(fields.map((f) => f.source)).not.toContain('volunteer_bic');
   });
 
   it('dedupes manual field ids (first occurrence wins)', () => {
@@ -86,7 +115,7 @@ describe('deriveEditableFields', () => {
 
   it('prefills the account holder from the profile like the other payout fields', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'), {
-      'account-holder': 'Erika Musterfrau',
+      accountHolder: 'Erika Musterfrau',
     });
     const holder = fields.find((f) => f.source === 'volunteer_account_holder');
     expect(holder?.kind).toBe('bound');
@@ -94,12 +123,11 @@ describe('deriveEditableFields', () => {
     expect(holder?.provenance).toBe('profile');
   });
 
-  it('prefills first/last name from the volunteer name, not the profile', () => {
-    const fields = deriveEditableFields(
-      getContractDocument('ehrenamt'),
-      { name: 'Ignored', lastname: 'Ignored' },
-      'Anna Müller',
-    );
+  it('use firstname and lastname from profile and not volunteer name', () => {
+    const fields = deriveEditableFields(getContractDocument('ehrenamt'), {
+      firstname: 'Anna',
+      lastname: 'Müller',
+    });
     const first = fields.find((f) => f.source === 'volunteer_first_name');
     const last = fields.find((f) => f.source === 'volunteer_last_name');
     expect(first?.value).toBe('Anna');
@@ -108,9 +136,9 @@ describe('deriveEditableFields', () => {
 
   it('marks name sources gap when no volunteer name is supplied', () => {
     const fields = deriveEditableFields(getContractDocument('ehrenamt'), {});
-    const first = fields.find((f) => f.source === 'volunteer_first_name');
-    expect(first?.provenance).toBe('gap');
-    expect(first?.value).toBeNull();
+    const streetField = fields.find((f) => f.source === 'volunteer_street');
+    expect(streetField?.provenance).toBe('gap');
+    expect(streetField?.value).toBeNull();
   });
 
   it('excludes org/rate/generation-time sources (not per-document editable)', () => {

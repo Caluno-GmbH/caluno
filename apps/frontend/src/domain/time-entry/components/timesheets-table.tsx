@@ -13,6 +13,7 @@ import { useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import type { DataTableFeatures } from '@/components/data-table/features';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
 import { Pagination } from '@/components/pagination';
 import { describeRecorder } from '@/domain/time-entry/recorder';
@@ -52,7 +53,7 @@ export const TimesheetsTable = ({
     void setParams({ ...resolved, page: 1 });
   };
 
-  const columns = useMemo<ColumnDef<TimeEntry>[]>(
+  const columns = useMemo<ColumnDef<DataTableFeatures, TimeEntry>[]>(
     () => [
       {
         id: 'SHIFT',
@@ -136,7 +137,6 @@ export const TimesheetsTable = ({
                 {recorder.name
                   ? t('table.recordedBy', { name: recorder.name })
                   : t('table.recordedByUnknown')}
-                {recorder.onBehalf ? ` · ${t('table.recordedOnBehalf')}` : ''}
               </span>
             </div>
           );

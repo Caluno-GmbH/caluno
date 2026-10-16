@@ -23,3 +23,19 @@ export function projectedCapAmount(
 ): number {
   return usedBefore + selectedAmount;
 }
+
+/**
+ * The used-before figure with the coordinator's not-yet-saved initial amount
+ * folded in, so the cap card and the projection reflect the edit before the
+ * timesheet is sent. The stored `usedBefore` already includes the saved
+ * baseline, so only the difference is applied.
+ */
+export function effectiveUsedBefore(
+  usedBefore: number,
+  pendingAmountCents: number | null,
+  existingAmountCents: number | null | undefined,
+): number {
+  if (pendingAmountCents === null) return usedBefore;
+  const deltaCents = pendingAmountCents - (existingAmountCents ?? 0);
+  return usedBefore + centsToEuros(deltaCents);
+}

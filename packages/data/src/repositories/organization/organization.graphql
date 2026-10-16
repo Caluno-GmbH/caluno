@@ -98,10 +98,7 @@ query GetOrganizationUnit($id: String!) {
               required
               lockType
               systemKey
-              options {
-                label
-                value
-              }
+              options
               documents {
                 fileId
                 filename

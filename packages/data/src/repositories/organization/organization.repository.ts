@@ -1,8 +1,8 @@
 import type {
   CreateOrganizationInput,
-  GetMyOrganizationUnitsQuery,
   UpdateOrganizationInput,
-} from '../../generated/graphql';
+} from '../../generated/base-types';
+import type { GetMyOrganizationUnitsQuery } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 
 export type MyOrganizationUnit =

@@ -30,9 +30,11 @@ export const membershipRequests = snakeCase.table(
   {
     ...idColumn,
     ...timestampColumns,
-    userId: text('user_id').references(() => users.id, {
-      onDelete: 'cascade',
-    }),
+    userId: text('user_id')
+      .references(() => users.id, {
+        onDelete: 'cascade',
+      })
+      .notNull(),
     organizationUnitId: uuid('organization_unit_id')
       .references(() => organizationUnits.id, {
         onDelete: 'cascade',

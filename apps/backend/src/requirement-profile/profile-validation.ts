@@ -4,17 +4,17 @@ import { GENDER_OPTION_VALUES } from './constants';
 /** A human label for a system key, used in validation error messages. */
 export const formatSystemKeyLabel = (systemKey: string): string => {
   switch (systemKey) {
-    case 'name':
+    case 'firstname':
       return 'First name';
     case 'lastname':
       return 'Last name';
-    case 'preferred-name':
+    case 'preferredName':
       return 'Preferred name';
-    case 'birth-date':
+    case 'birthdate':
       return 'Birth date';
     case 'iban':
       return 'IBAN';
-    case 'account-holder':
+    case 'accountHolder':
       return 'Account holder';
     case 'bic':
       return 'BIC';
@@ -25,7 +25,7 @@ export const formatSystemKeyLabel = (systemKey: string): string => {
 
 /**
  * Per-key validation for the profile system fields, shared by the form
- * submission path and the `updateMyUserProfile` mutation (the volunteer's
+ * submission path and the `updateMyProfile` mutation (the volunteer's
  * identity/banking edit form). Modelled on the frontend validator so a profile
  * value accepted client-side is accepted here too, and vice versa.
  */
@@ -41,9 +41,9 @@ export const validateSystemKeyValue = (
   if (!value) return;
 
   switch (systemKey) {
-    case 'name':
+    case 'firstname':
     case 'lastname':
-    case 'preferred-name':
+    case 'preferredName':
     case 'city':
       if (value.length > 100)
         throw new BadRequestGraphQLError(
@@ -84,7 +84,7 @@ export const validateSystemKeyValue = (
           `"${label}": must be one of the available gender options`,
         );
       break;
-    case 'birth-date':
+    case 'birthdate':
       if (minAge !== null && minAge !== undefined) {
         const birth = new Date(value);
         const today = new Date();

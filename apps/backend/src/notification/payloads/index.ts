@@ -24,3 +24,4 @@ export type { ShiftInstanceVolunteerLeftPayload } from './shift-instance-volunte
 export type { ShiftSeriesLeftPayload } from './shift-series-left.payload';
 export type { ShiftSeriesRemovedPayload } from './shift-series-removed.payload';
 export type { ShiftSeriesVolunteerLeftPayload } from './shift-series-volunteer-left.payload';
+export type { TermsUpdatedPayload } from './terms-updated.payload';

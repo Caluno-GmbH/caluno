@@ -1,18 +1,18 @@
 export const GENDER_SYSTEM_KEY = 'gender';
 
 export const SYSTEM_PROFILE_KEYS = new Set<string>([
-  'name',
+  'firstname',
   'lastname',
-  'preferred-name',
+  'preferredName',
   GENDER_SYSTEM_KEY,
   'email',
   'phone',
   'street',
   'zip',
   'city',
-  'birth-date',
+  'birthdate',
   'iban',
-  'account-holder',
+  'accountHolder',
   'bic',
 ]);
 

@@ -3,11 +3,11 @@
  * demos and manual testing.
  *
  * Fully fictional non-profit reading-mentorship organisation, built to look
- * like a real Caluno customer instead of the "testing+00X" Playground
- * fixtures. Completely independent from `fixtures.ts` — it creates its own
- * organisation, its own accounts and its own shifts/events, so re-running
- * `bun run src/database/fixtures.ts` (the Playground/e2e dataset) is
- * unaffected, and running this script never touches the Playground org.
+ * like a real Caluno customer instead of the "demo+testing_memberNN" Testing e2e
+ * seed. Creates its own organisation, accounts and shifts/events — so
+ * re-running `bun run db:fixtures:e2e` (the Testing/e2e dataset) is
+ * unaffected, and running this script never touches the Testing org.
+ * Shared date/auth/shift helpers live in `fixture-helpers.ts`.
  *
  * Usage (from apps/backend, after `bun bootstrap` or `bun run db:migrate` +
  * `bun run db:seed` have run at least once so permissions + reimbursement
@@ -16,12 +16,13 @@
  *   bun run db:fixtures:demo
  *
  * All accounts use the password from DEMO_FIXTURE_PASSWORD, default `abcd1234`.
- * All emails are on the `lesepaten-altona.example` domain — reserved by
- * RFC 2606 for documentation/demo use, so nothing is ever actually delivered.
+ * All emails are on the `caluno.org` domain, plus-addressed onto the demo
+ * group (`demo+owner@caluno.org`, `demo+member01@caluno.org`, …), so every
+ * address routes to the single demo@caluno.org inbox.
  */
 import { hashPassword } from 'better-auth/crypto';
-import { eq, inArray } from 'drizzle-orm';
-import { drizzle, type NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { and, eq, inArray } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { ReimbursementTypeKey } from '../accounting/enums';
 import {
@@ -34,8 +35,21 @@ import { permissions } from '../auth/schemas/permission.schema';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
-import { expandShift } from '../shift/utils/rrule-expander';
-import { slugify } from '../utils/slug.util';
+import {
+  addDaysInFixtureTimezone,
+  addHours,
+  assertFixtureIdentitiesAvailable,
+  createAuthUser,
+  type Database,
+  ensureEvent,
+  ensureMembershipWithRole,
+  ensureShiftWithInvites,
+  type FixtureUser,
+  findWeekdayWeeksAgo,
+  fixtureOrgId,
+  fixtureWallClockToUtc,
+  getDateInFixtureTimezone,
+} from './fixture-helpers';
 import { relations } from './relations';
 import * as schema from './schema';
 
@@ -43,9 +57,21 @@ process.env.TZ = 'Europe/Berlin';
 
 const FIXTURE_PASSWORD = process.env.DEMO_FIXTURE_PASSWORD ?? 'abcd1234';
 const ORG_NAME = 'Altonaer Lesepaten';
-const ORG_SLUG = 'altonaer-lesepaten';
-const EMAIL_DOMAIN = 'lesepaten-altona.example';
-const FIXTURE_TIMEZONE = 'Europe/Berlin';
+/**
+ * `demo-` prefixed so a real customer can never take this slug: these fixtures
+ * seed into real environments, and a slug clash would abort the seed on every
+ * deploy.
+ */
+const ORG_SLUG = 'demo-altonaer-lesepaten';
+/** Pinned id — fixture ownership is proven by id, never by name or slug. */
+const ORG_ID = fixtureOrgId(ORG_SLUG);
+const ORG_DESCRIPTION =
+  'Gemeinnütziger Verein: Ehrenamtliche begleiten Kinder, Senior:innen und Menschen mit Leseschwierigkeiten in Hamburg-Altona beim Lesen.';
+const EMAIL_DOMAIN = 'caluno.org';
+/** Local part of the plus-addressed demo-group address: `demo+<role>@caluno.org`. */
+const emailLocalPart = (role: string) => `demo+${role}`;
+/** The demo group address itself — the primary demo login. */
+const DEMO_ACCOUNT_EMAIL = `demo@${EMAIL_DOMAIN}`;
 const RECURRENCE_WEEKS_BACK = 8;
 
 // Real Unsplash photos (via the connected Unsplash search), one per
@@ -181,215 +207,6 @@ const SUPERVISOR_PERMISSIONS = [
   PERMISSIONS.CHECK_IN_MANAGE,
 ] as const;
 
-type Database = NodePgDatabase<typeof relations>;
-
-type FixtureUser = {
-  id: string;
-  email: string;
-  name: string;
-};
-
-type FixtureDateParts = {
-  year: number;
-  month: number;
-  day: number;
-  weekday: number;
-};
-
-// ─── Date helpers (Europe/Berlin wall-clock math, mirrors fixtures.ts) ───
-
-const getDateInFixtureTimezone = (instant: Date): FixtureDateParts => {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: FIXTURE_TIMEZONE,
-    year: 'numeric',
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-  }).formatToParts(instant);
-
-  const read = (type: string): string =>
-    parts.find((part) => part.type === type)?.value ?? '';
-
-  const weekdayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
-
-  return {
-    year: Number(read('year')),
-    month: Number(read('month')),
-    day: Number(read('day')),
-    weekday: weekdayMap[read('weekday')] ?? 0,
-  };
-};
-
-const fixtureWallClockToUtc = (
-  year: number,
-  month: number,
-  day: number,
-  hour: number,
-  minute = 0,
-): Date => {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: FIXTURE_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
-
-  const baseUtc = Date.UTC(year, month - 1, day, hour, minute);
-
-  for (let offsetHours = -3; offsetHours <= 3; offsetHours += 0.25) {
-    const candidate = new Date(baseUtc - offsetHours * 3_600_000);
-    const formatted = formatter.formatToParts(candidate);
-    const read = (type: string): number =>
-      Number(formatted.find((part) => part.type === type)?.value);
-
-    if (
-      read('year') === year &&
-      read('month') === month &&
-      read('day') === day &&
-      read('hour') === hour &&
-      read('minute') === minute
-    ) {
-      return candidate;
-    }
-  }
-
-  throw new Error(
-    `Could not resolve ${year}-${month}-${day} ${hour}:${minute} in ${FIXTURE_TIMEZONE}`,
-  );
-};
-
-const addDaysInFixtureTimezone = (
-  year: number,
-  month: number,
-  day: number,
-  days: number,
-): Omit<FixtureDateParts, 'weekday'> => {
-  const noonUtc = fixtureWallClockToUtc(year, month, day, 12);
-  return getDateInFixtureTimezone(
-    new Date(noonUtc.getTime() + days * 86_400_000),
-  );
-};
-
-const findWeekdayWeeksAgo = (
-  weekday: number,
-  weeksAgo: number,
-): Omit<FixtureDateParts, 'weekday'> => {
-  for (let daysBack = 0; daysBack < 7; daysBack += 1) {
-    const parts = getDateInFixtureTimezone(
-      new Date(Date.now() - daysBack * 86_400_000),
-    );
-
-    if (parts.weekday === weekday) {
-      return addDaysInFixtureTimezone(
-        parts.year,
-        parts.month,
-        parts.day,
-        -weeksAgo * 7,
-      );
-    }
-  }
-
-  throw new Error(
-    `Could not find weekday ${weekday} in ${FIXTURE_TIMEZONE} calendar`,
-  );
-};
-
-const addHours = (date: Date, hours: number): Date =>
-  new Date(date.getTime() + hours * 3_600_000);
-
-// ─── Generic auth/membership helpers (mirrors fixtures.ts) ───
-
-const createAuthUser = async (
-  db: Database,
-  hashedPassword: string,
-  input: { email: string; name: string; image?: string },
-): Promise<FixtureUser> => {
-  const existing = await db.query.users.findFirst({
-    where: { email: input.email },
-  });
-
-  if (existing) {
-    if (input.image && !existing.image) {
-      await db
-        .update(schema.users)
-        .set({ image: input.image })
-        .where(eq(schema.users.id, existing.id));
-    }
-    return { id: existing.id, email: existing.email, name: existing.name };
-  }
-
-  const id = crypto.randomUUID();
-
-  await db.insert(schema.users).values({
-    id,
-    name: input.name,
-    email: input.email,
-    emailVerified: true,
-    locale: 'de',
-    image: input.image ?? null,
-  });
-
-  await db.insert(schema.accounts).values({
-    id: crypto.randomUUID(),
-    accountId: id,
-    providerId: 'credential',
-    userId: id,
-    password: hashedPassword,
-  });
-
-  return { id, email: input.email, name: input.name };
-};
-
-const ensureMembershipWithRole = async (
-  db: Database,
-  userId: string,
-  organizationUnitId: string,
-  roleId: string,
-): Promise<void> => {
-  const existingMembership = await db.query.memberships.findFirst({
-    where: { userId, organizationUnitId },
-  });
-
-  let membershipId: string;
-
-  if (existingMembership) {
-    membershipId = existingMembership.id;
-  } else {
-    const [membership] = await db
-      .insert(schema.memberships)
-      .values({ userId, organizationUnitId })
-      .returning();
-
-    if (!membership) {
-      throw new Error('Failed to create membership');
-    }
-
-    membershipId = membership.id;
-  }
-
-  const existingRole = await db.query.membershipRoles.findFirst({
-    where: { membershipId, roleId },
-  });
-
-  if (!existingRole) {
-    await db.insert(schema.membershipRoles).values({
-      membershipId,
-      roleId,
-    });
-  }
-};
-
 // ─── Organisation + org units ───
 
 type OrganizationHandles = {
@@ -410,7 +227,7 @@ const ensureAltonaerLesepatenOrganization = async (
   );
 
   const existingOrg = await db.query.organizations.findFirst({
-    where: { slug: ORG_SLUG },
+    where: { id: ORG_ID },
   });
 
   if (existingOrg) {
@@ -463,11 +280,11 @@ const ensureAltonaerLesepatenOrganization = async (
     const [organization] = await tx
       .insert(schema.organizations)
       .values({
+        id: ORG_ID,
         name: ORG_NAME,
         slug: ORG_SLUG,
-        contactEmail: `kontakt@${EMAIL_DOMAIN}`,
-        description:
-          'Gemeinnütziger Verein: Ehrenamtliche begleiten Kinder, Senior:innen und Menschen mit Leseschwierigkeiten in Hamburg-Altona beim Lesen.',
+        contactEmail: DEMO_ACCOUNT_EMAIL,
+        description: ORG_DESCRIPTION,
         street: 'Museumstraße 23',
         zipCode: '22765',
         city: 'Hamburg',
@@ -680,206 +497,6 @@ const ensureAltonaerLesepatenOrganization = async (
       supervisorRoleId: supervisorRole.id,
     };
   });
-};
-
-// ─── Shifts & events (mirrors fixtures.ts' ensureShiftWithInvites/ensureEvent) ───
-
-type ShiftFixture = {
-  id?: string;
-  title: string;
-  startsAt: Date;
-  rrule: string;
-  inviteUserIds: string[];
-  durationMinutes: number;
-  eventId?: string;
-  visibility?: ShiftVisibility;
-  maxVolunteers?: number;
-  instructions?: string;
-  location?: string;
-  imageUrl?: string;
-  joinRequiresApproval?: boolean;
-  reimbursementTypeId?: string;
-  pendingInviteUserIds?: string[];
-  extraInvites?: Array<{ userIds: string[]; status: ShiftInviteStatus }>;
-};
-
-const pickRecentPastInstance = (
-  instances: Array<typeof schema.shiftInstances.$inferSelect>,
-): typeof schema.shiftInstances.$inferSelect => {
-  const now = Date.now();
-  const pastInstances = instances
-    .filter((instance) => instance.actualStartsAt.getTime() < now)
-    .sort(
-      (left, right) =>
-        right.actualStartsAt.getTime() - left.actualStartsAt.getTime(),
-    );
-
-  const instance = pastInstances[0] ?? instances[0];
-  if (!instance) {
-    throw new Error('Failed to resolve shift instance');
-  }
-
-  return instance;
-};
-
-const ensureShiftWithInvites = async (
-  db: Database,
-  organizationUnitId: string,
-  createdById: string,
-  shift: ShiftFixture,
-): Promise<{ shiftId: string; instanceId: string; instanceStartsAt: Date }> => {
-  const existingShift = shift.id
-    ? await db.query.shifts.findFirst({ where: { id: shift.id } })
-    : await db.query.shifts.findFirst({
-        where: { title: shift.title, organizationUnitId },
-      });
-
-  if (existingShift) {
-    const instances = await db.query.shiftInstances.findMany({
-      where: { masterId: existingShift.id },
-    });
-
-    const recentInstance = pickRecentPastInstance(instances);
-
-    return {
-      shiftId: existingShift.id,
-      instanceId: recentInstance.id,
-      instanceStartsAt: recentInstance.actualStartsAt,
-    };
-  }
-
-  const [createdShift] = await db
-    .insert(schema.shifts)
-    .values({
-      id: shift.id,
-      title: shift.title,
-      slug: slugify(shift.title),
-      instructions: shift.instructions ?? null,
-      location: shift.location ?? null,
-      imageUrl: shift.imageUrl ?? null,
-      organizationUnitId,
-      createdById,
-      visibility: shift.visibility ?? ShiftVisibility.INVITED_MEMBERS,
-      joinRequiresApproval: shift.joinRequiresApproval ?? false,
-      reimbursementTypeId: shift.reimbursementTypeId ?? null,
-      maxVolunteers: shift.maxVolunteers ?? null,
-      originalStartsAt: shift.startsAt,
-      durationMinutes: shift.durationMinutes,
-      rrule: shift.rrule,
-      eventId: shift.eventId ?? null,
-    })
-    .returning();
-
-  if (!createdShift) {
-    throw new Error(`Failed to create shift: ${shift.title}`);
-  }
-
-  const instances = expandShift(
-    shift.rrule,
-    shift.startsAt,
-    shift.durationMinutes,
-  );
-  const insertedInstances = await db
-    .insert(schema.shiftInstances)
-    .values(
-      instances.map((instance) => ({
-        masterId: createdShift.id,
-        actualStartsAt: instance.actualStartsAt,
-        actualEndsAt: instance.actualEndsAt,
-        occurrenceIndex: instance.occurrenceIndex,
-      })),
-    )
-    .returning();
-
-  if (shift.inviteUserIds.length > 0) {
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        shift.inviteUserIds.map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: ShiftInviteStatus.JOINED,
-        })),
-      ),
-    );
-  }
-
-  if (shift.pendingInviteUserIds && shift.pendingInviteUserIds.length > 0) {
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        (shift.pendingInviteUserIds ?? []).map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: ShiftInviteStatus.ADMIN_INVITED,
-        })),
-      ),
-    );
-  }
-
-  for (const group of shift.extraInvites ?? []) {
-    if (group.userIds.length === 0) {
-      continue;
-    }
-    await db.insert(schema.shiftInstanceInvites).values(
-      insertedInstances.flatMap((instance) =>
-        group.userIds.map((userId) => ({
-          instanceId: instance.id,
-          userId,
-          status: group.status,
-        })),
-      ),
-    );
-  }
-
-  const recentInstance = pickRecentPastInstance(insertedInstances);
-
-  return {
-    shiftId: createdShift.id,
-    instanceId: recentInstance.id,
-    instanceStartsAt: recentInstance.actualStartsAt,
-  };
-};
-
-const ensureEvent = async (
-  db: Database,
-  organizationUnitId: string,
-  createdById: string,
-  event: {
-    title: string;
-    description?: string | null;
-    location?: string | null;
-    coverUrl?: string | null;
-    startsAt: Date;
-    endsAt: Date;
-  },
-): Promise<typeof schema.events.$inferSelect> => {
-  const existingEvent = await db.query.events.findFirst({
-    where: { title: event.title, organizationUnitId },
-  });
-
-  if (existingEvent) {
-    return existingEvent;
-  }
-
-  const [createdEvent] = await db
-    .insert(schema.events)
-    .values({
-      title: event.title,
-      slug: slugify(event.title),
-      description: event.description ?? null,
-      location: event.location ?? null,
-      coverUrl: event.coverUrl ?? null,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
-      organizationUnitId,
-      createdById,
-    })
-    .returning();
-
-  if (!createdEvent) {
-    throw new Error(`Failed to create event: ${event.title}`);
-  }
-
-  return createdEvent;
 };
 
 // ─── Requirement forms (individuelle Anforderungsformulare & Dokumentenannahme) ───
@@ -1161,11 +778,152 @@ async function seedDemoFixtures() {
 
   const hashedPassword = await hashPassword(FIXTURE_PASSWORD);
 
-  const email = (localPart: string) => `${localPart}@${EMAIL_DOMAIN}`;
+  const email = (role: string) => `${emailLocalPart(role)}@${EMAIL_DOMAIN}`;
+  const memberEmail = (index: number) =>
+    email(`member${String(index).padStart(2, '0')}`);
+
+  // Every identity these fixtures claim is declared before the first write, so
+  // the pre-flight below can verify all of them against the live database.
+  const COORDINATOR = { firstname: 'Friederike', lastname: 'Lange' };
+  const SUPERVISOR = { firstname: 'Jonas', lastname: 'Petersen' };
+  const DEMO_VOLUNTEER = { firstname: 'Lena', lastname: 'Vogt' };
+  const REJECTED_APPLICANT = { firstname: 'Sabine', lastname: 'Wolff' };
+  const PENDING_APPLICANTS = [
+    {
+      portraitKey: 'marie.albrecht',
+      firstname: 'Marie',
+      lastname: 'Albrecht',
+    },
+    { portraitKey: 'david.kern', firstname: 'David', lastname: 'Kern' },
+  ];
+
+  const memberDefinitions: Array<{
+    portraitKey: string;
+    firstname: string;
+    lastname: string;
+    unit: 'nord' | 'sued' | 'west';
+  }> = [
+    {
+      portraitKey: 'hannah.reimers',
+      firstname: 'Hannah',
+      lastname: 'Reimers',
+      unit: 'nord',
+    },
+    {
+      portraitKey: 'mehmet.aydin',
+      firstname: 'Mehmet',
+      lastname: 'Aydın',
+      unit: 'nord',
+    },
+    {
+      portraitKey: 'sophie.brandt',
+      firstname: 'Sophie',
+      lastname: 'Brandt',
+      unit: 'nord',
+    },
+    {
+      portraitKey: 'klaus.dietrich',
+      firstname: 'Klaus',
+      lastname: 'Dietrich',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'layla.hoffmann',
+      firstname: 'Layla',
+      lastname: 'Hoffmann',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'tom.vogel',
+      firstname: 'Tom',
+      lastname: 'Vogel',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'ingrid.neumann',
+      firstname: 'Ingrid',
+      lastname: 'Neumann',
+      unit: 'sued',
+    },
+    {
+      portraitKey: 'noah.fischer',
+      firstname: 'Noah',
+      lastname: 'Fischer',
+      unit: 'west',
+    },
+    {
+      portraitKey: 'elif.yildiz',
+      firstname: 'Elif',
+      lastname: 'Yıldız',
+      unit: 'west',
+    },
+    {
+      portraitKey: 'peter.schulz',
+      firstname: 'Peter',
+      lastname: 'Schulz',
+      unit: 'west',
+    },
+  ];
+
+  const additionalNordMemberDefinitions: Array<{
+    portraitKey: string;
+    firstname: string;
+    lastname: string;
+  }> = [
+    {
+      portraitKey: 'julia.schroeder',
+      firstname: 'Julia',
+      lastname: 'Schröder',
+    },
+    { portraitKey: 'finn.kowalski', firstname: 'Finn', lastname: 'Kowalski' },
+    { portraitKey: 'amara.boateng', firstname: 'Amara', lastname: 'Boateng' },
+    { portraitKey: 'paul.lehmann', firstname: 'Paul', lastname: 'Lehmann' },
+    { portraitKey: 'zeynep.demir', firstname: 'Zeynep', lastname: 'Demir' },
+    { portraitKey: 'clara.winkler', firstname: 'Clara', lastname: 'Winkler' },
+    { portraitKey: 'leon.kraus', firstname: 'Leon', lastname: 'Kraus' },
+    { portraitKey: 'fatima.elamin', firstname: 'Fatima', lastname: 'El-Amin' },
+    { portraitKey: 'tobias.richter', firstname: 'Tobias', lastname: 'Richter' },
+    { portraitKey: 'greta.sommer', firstname: 'Greta', lastname: 'Sommer' },
+    { portraitKey: 'ali.hassan', firstname: 'Ali', lastname: 'Hassan' },
+    { portraitKey: 'marlene.vogel', firstname: 'Marlene', lastname: 'Vogel' },
+    { portraitKey: 'tarek.younes', firstname: 'Tarek', lastname: 'Younes' },
+    { portraitKey: 'nele.krueger', firstname: 'Nele', lastname: 'Krüger' },
+    { portraitKey: 'milan.petrov', firstname: 'Milan', lastname: 'Petrov' },
+    { portraitKey: 'ida.wagner', firstname: 'Ida', lastname: 'Wagner' },
+    { portraitKey: 'samuel.owusu', firstname: 'Samuel', lastname: 'Owusu' },
+    { portraitKey: 'franziska.berg', firstname: 'Franziska', lastname: 'Berg' },
+    { portraitKey: 'yusuf.kaya', firstname: 'Yusuf', lastname: 'Kaya' },
+  ];
+
+  await assertFixtureIdentitiesAvailable(db, {
+    orgSlug: ORG_SLUG,
+    accounts: [
+      { email: email('owner'), ...COORDINATOR },
+      { email: email('supervisor'), ...SUPERVISOR },
+      ...memberDefinitions.map((definition, index) => ({
+        email: memberEmail(index + 1),
+        firstname: definition.firstname,
+        lastname: definition.lastname,
+      })),
+      { email: DEMO_ACCOUNT_EMAIL, ...DEMO_VOLUNTEER },
+      ...additionalNordMemberDefinitions.map((definition, index) => ({
+        email: memberEmail(memberDefinitions.length + index + 1),
+        firstname: definition.firstname,
+        lastname: definition.lastname,
+      })),
+      ...PENDING_APPLICANTS.map((applicant, index) => ({
+        email: email(`pending0${index + 1}`),
+        firstname: applicant.firstname,
+        lastname: applicant.lastname,
+      })),
+      { email: email('rejected01'), ...REJECTED_APPLICANT },
+    ],
+  });
 
   const coordinator = await createAuthUser(db, hashedPassword, {
-    email: email('friederike.lange'),
-    name: 'Friederike Lange',
+    locale: 'de',
+    email: email('owner'),
+    ...COORDINATOR,
     image: PORTRAIT_URLS['friederike.lange'],
   });
 
@@ -1208,8 +966,9 @@ async function seedDemoFixtures() {
   );
 
   const supervisor = await createAuthUser(db, hashedPassword, {
-    email: email('jonas.petersen'),
-    name: 'Jonas Petersen',
+    locale: 'de',
+    email: email('supervisor'),
+    ...SUPERVISOR,
     image: PORTRAIT_URLS['jonas.petersen'],
   });
   await ensureMembershipWithRole(
@@ -1219,29 +978,14 @@ async function seedDemoFixtures() {
     org.supervisorRoleId,
   );
 
-  const memberDefinitions: Array<{
-    localPart: string;
-    name: string;
-    unit: 'nord' | 'sued' | 'west';
-  }> = [
-    { localPart: 'hannah.reimers', name: 'Hannah Reimers', unit: 'nord' },
-    { localPart: 'mehmet.aydin', name: 'Mehmet Aydın', unit: 'nord' },
-    { localPart: 'sophie.brandt', name: 'Sophie Brandt', unit: 'nord' },
-    { localPart: 'klaus.dietrich', name: 'Klaus Dietrich', unit: 'sued' },
-    { localPart: 'layla.hoffmann', name: 'Layla Hoffmann', unit: 'sued' },
-    { localPart: 'tom.vogel', name: 'Tom Vogel', unit: 'sued' },
-    { localPart: 'ingrid.neumann', name: 'Ingrid Neumann', unit: 'sued' },
-    { localPart: 'noah.fischer', name: 'Noah Fischer', unit: 'west' },
-    { localPart: 'elif.yildiz', name: 'Elif Yıldız', unit: 'west' },
-    { localPart: 'peter.schulz', name: 'Peter Schulz', unit: 'west' },
-  ];
-
   const members: Array<FixtureUser & { unit: 'nord' | 'sued' | 'west' }> = [];
-  for (const definition of memberDefinitions) {
+  for (const [index, definition] of memberDefinitions.entries()) {
     const user = await createAuthUser(db, hashedPassword, {
-      email: email(definition.localPart),
-      name: definition.name,
-      image: PORTRAIT_URLS[definition.localPart],
+      locale: 'de',
+      email: memberEmail(index + 1),
+      firstname: definition.firstname,
+      lastname: definition.lastname,
+      image: PORTRAIT_URLS[definition.portraitKey],
     });
     await ensureMembershipWithRole(
       db,
@@ -1253,11 +997,12 @@ async function seedDemoFixtures() {
   }
 
   // The primary demo account: a member with a realistic mix
-  // of accepted, pending and self-joined shifts (mirrors the Playground
+  // of accepted, pending and self-joined shifts (mirrors the Testing
   // "Demo Volunteer" pattern), plus complete personal/banking-style data.
   const demoUser = await createAuthUser(db, hashedPassword, {
-    email: email('lena.vogt'),
-    name: 'Lena Vogt',
+    locale: 'de',
+    email: DEMO_ACCOUNT_EMAIL,
+    ...DEMO_VOLUNTEER,
     image: PORTRAIT_URLS['lena.vogt'],
   });
   await ensureMembershipWithRole(
@@ -1273,37 +1018,14 @@ async function seedDemoFixtures() {
   // Referenzen wie nordMembers[3] weiterhin auf sie zeigen, statt sich zu
   // verschieben. Ohne weitere Einsatz-Zuordnung — sie zählen zur
   // Mitgliederliste und tauchen unten in der Zeiterfassung auf.
-  const additionalNordMemberDefinitions: Array<{
-    localPart: string;
-    name: string;
-  }> = [
-    { localPart: 'julia.schroeder', name: 'Julia Schröder' },
-    { localPart: 'finn.kowalski', name: 'Finn Kowalski' },
-    { localPart: 'amara.boateng', name: 'Amara Boateng' },
-    { localPart: 'paul.lehmann', name: 'Paul Lehmann' },
-    { localPart: 'zeynep.demir', name: 'Zeynep Demir' },
-    { localPart: 'clara.winkler', name: 'Clara Winkler' },
-    { localPart: 'leon.kraus', name: 'Leon Kraus' },
-    { localPart: 'fatima.elamin', name: 'Fatima El-Amin' },
-    { localPart: 'tobias.richter', name: 'Tobias Richter' },
-    { localPart: 'greta.sommer', name: 'Greta Sommer' },
-    { localPart: 'ali.hassan', name: 'Ali Hassan' },
-    { localPart: 'marlene.vogel', name: 'Marlene Vogel' },
-    { localPart: 'tarek.younes', name: 'Tarek Younes' },
-    { localPart: 'nele.krueger', name: 'Nele Krüger' },
-    { localPart: 'milan.petrov', name: 'Milan Petrov' },
-    { localPart: 'ida.wagner', name: 'Ida Wagner' },
-    { localPart: 'samuel.owusu', name: 'Samuel Owusu' },
-    { localPart: 'franziska.berg', name: 'Franziska Berg' },
-    { localPart: 'yusuf.kaya', name: 'Yusuf Kaya' },
-  ];
-
   const additionalNordMembers: FixtureUser[] = [];
-  for (const definition of additionalNordMemberDefinitions) {
+  for (const [index, definition] of additionalNordMemberDefinitions.entries()) {
     const user = await createAuthUser(db, hashedPassword, {
-      email: email(definition.localPart),
-      name: definition.name,
-      image: PORTRAIT_URLS[definition.localPart],
+      locale: 'de',
+      email: memberEmail(memberDefinitions.length + index + 1),
+      firstname: definition.firstname,
+      lastname: definition.lastname,
+      image: PORTRAIT_URLS[definition.portraitKey],
     });
     await ensureMembershipWithRole(
       db,
@@ -1320,21 +1042,21 @@ async function seedDemoFixtures() {
 
   // Pending / rejected Interessensbekundungen (Use Case 1: Einladen & Verwalten)
   const pendingApplicants = await Promise.all(
-    [
-      { localPart: 'marie.albrecht', name: 'Marie Albrecht' },
-      { localPart: 'david.kern', name: 'David Kern' },
-    ].map((applicant) =>
+    PENDING_APPLICANTS.map((applicant, index) =>
       createAuthUser(db, hashedPassword, {
-        email: email(applicant.localPart),
-        name: applicant.name,
-        image: PORTRAIT_URLS[applicant.localPart],
+        locale: 'de',
+        email: email(`pending0${index + 1}`),
+        firstname: applicant.firstname,
+        lastname: applicant.lastname,
+        image: PORTRAIT_URLS[applicant.portraitKey],
       }),
     ),
   );
 
   const rejectedApplicant = await createAuthUser(db, hashedPassword, {
-    email: email('sabine.wolff'),
-    name: 'Sabine Wolff',
+    locale: 'de',
+    email: email('rejected01'),
+    ...REJECTED_APPLICANT,
     image: PORTRAIT_URLS['sabine.wolff'],
   });
 
@@ -2160,6 +1882,7 @@ async function seedDemoFixtures() {
           organizationUnitId: org.unitIds.sued,
           volunteerId: member.id,
           reimbursementTypeId: ehrenamtType.id,
+          createdById: supervisor.id,
           startedAt: addHours(lesenImElisabethstift.instanceStartsAt, 0),
           endedAt: addHours(lesenImElisabethstift.instanceStartsAt, 1.5),
           notes: 'Vorlesestunde Elisabethstift — manuell erfasst',
@@ -2170,6 +1893,7 @@ async function seedDemoFixtures() {
           organizationUnitId: org.unitIds.sued,
           volunteerId: member.id,
           reimbursementTypeId: ehrenamtType.id,
+          createdById: supervisor.id,
           startedAt: addHours(seniorenkreis.instanceStartsAt, index * 0.25),
           endedAt: addHours(seniorenkreis.instanceStartsAt, 2 + index * 0.25),
           notes: 'Seniorenkreis — QR-Check-in vor Ort',
@@ -2182,6 +1906,7 @@ async function seedDemoFixtures() {
           organizationUnitId: org.unitIds.west,
           volunteerId: member.id,
           reimbursementTypeId: uebungsleiterType.id,
+          createdById: supervisor.id,
           startedAt: addHours(literaturKurs.instanceStartsAt, 0),
           endedAt: addHours(literaturKurs.instanceStartsAt, 1.5),
           notes: 'Lesekurs — Übungsleiterpauschale',
@@ -2240,6 +1965,7 @@ async function seedDemoFixtures() {
         organizationUnitId: params.organizationUnitId,
         volunteerId: params.volunteerId,
         reimbursementTypeId: params.reimbursementTypeId,
+        createdById: supervisor.id,
         startedAt,
         endedAt: addHours(startedAt, params.durationHours),
         notes: params.notes,
@@ -2512,7 +2238,15 @@ async function seedDemoFixtures() {
   await db
     .update(schema.organizations)
     .set({ accountingEnabled: true })
-    .where(eq(schema.organizations.id, org.organizationId));
+    // Only when it actually needs flipping: `updatedAt` has an $onUpdate, so an
+    // unconditional write would bump the row (and the WAL) on every deploy that
+    // re-runs these fixtures.
+    .where(
+      and(
+        eq(schema.organizations.id, org.organizationId),
+        eq(schema.organizations.accountingEnabled, false),
+      ),
+    );
 
   console.log(
     `Created Altonaer Lesepaten organization (${org.organizationId})`,

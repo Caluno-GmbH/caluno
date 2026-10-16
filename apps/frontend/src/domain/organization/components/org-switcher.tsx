@@ -51,14 +51,18 @@ export function OrgSwitcher() {
         >
           {currentOrg ? (
             <span className="flex min-w-0 items-center gap-2 text-left">
-              <Building2 className="shrink-0" />
               <span className="flex min-w-0 flex-col">
                 {isNested ? (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground pl-7 truncate">
                     {currentOrg.rootOrganizationName}
                   </span>
                 ) : null}
-                <span className="truncate font-medium">{currentOrg.name}</span>
+                <div className="flex items-center gap-2">
+                  <Building2 className="shrink-0" />
+                  <span className="truncate font-medium">
+                    {currentOrg.name}
+                  </span>
+                </div>
               </span>
             </span>
           ) : (

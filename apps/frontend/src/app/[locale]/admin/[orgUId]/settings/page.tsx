@@ -1,10 +1,10 @@
 import { PermissionKey } from '@repo/data';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { OrganizationProfileForm } from '@/domain/organization/components/organization-profile-form';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
+import { requireFound } from '@/lib/require-found';
 
 interface SettingsPageProps {
   params: Promise<{ orgUId: string; locale: string }>;
@@ -23,15 +23,13 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
   // The organization profile lives on the root unit: the record the overview
   // edits and accounting documents read. The organization row is still fetched
   // for its logo, which the form carries through unchanged on save.
-  const root = await data.organization.findRootUnit(org.organizationId);
+  const root = await requireFound(() =>
+    data.organization.findRootUnit(org.organizationId),
+  );
   const [rootUnit, organization] = await Promise.all([
-    root ? data.organizationUnit.findById(root.id) : Promise.resolve(null),
+    requireFound(() => data.organizationUnit.findById(root.id)),
     data.organization.findById(org.organizationId),
   ]);
-
-  if (!rootUnit) {
-    notFound();
-  }
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { addDays, getDayStripDaysFromCounts, startOfDay } from './date-helpers';
+import {
+  addDays,
+  getDayStripDaysFromCounts,
+  getTodayTargetDayIndex,
+  startOfDay,
+} from './date-helpers';
 
 const today = () => startOfDay(new Date());
 
@@ -83,10 +88,57 @@ describe('getDayStripDaysFromCounts', () => {
     expect(days[0]?.shiftCount).toBe(9);
   });
 
+  it('starts at today even when the first shift day is later', () => {
+    const base = today();
+    const counts = [{ date: addDays(base, 3).toISOString(), count: 2 }];
+
+    const days = getDayStripDaysFromCounts(counts, { minDays: 1 });
+
+    expect(days[0]?.date.getTime()).toBe(base.getTime());
+    expect(days.map((d) => d.shiftCount)).toEqual([0, 0, 0, 2]);
+  });
+
+  it('reaches today when includePast is set and every count is past', () => {
+    const base = today();
+    const counts = [{ date: addDays(base, -2).toISOString(), count: 9 }];
+
+    const days = getDayStripDaysFromCounts(counts, {
+      minDays: 1,
+      includePast: true,
+    });
+
+    expect(days.at(-1)?.date.getTime()).toBe(base.getTime());
+  });
+
   it('returns an all-zero minDays window when there are no counts', () => {
     const days = getDayStripDaysFromCounts([], { minDays: 4 });
 
     expect(days).toHaveLength(4);
     expect(days.every((d) => d.shiftCount === 0)).toBe(true);
+  });
+});
+
+describe('getTodayTargetDayIndex', () => {
+  const base = today();
+  const strip = (counts: number[], startOffset = 0) =>
+    counts.map((shiftCount, i) => ({
+      date: addDays(base, startOffset + i),
+      shiftCount,
+    }));
+
+  it('targets today when it has shifts', () => {
+    expect(getTodayTargetDayIndex(strip([2, 1]), base)).toBe(0);
+  });
+
+  it('targets the next day with shifts when today has none', () => {
+    expect(getTodayTargetDayIndex(strip([0, 0, 3, 1]), base)).toBe(2);
+  });
+
+  it('falls back to the latest earlier day with shifts', () => {
+    expect(getTodayTargetDayIndex(strip([1, 4, 0, 0], -2), base)).toBe(1);
+  });
+
+  it('returns -1 when no day has shifts', () => {
+    expect(getTodayTargetDayIndex(strip([0, 0]), base)).toBe(-1);
   });
 });

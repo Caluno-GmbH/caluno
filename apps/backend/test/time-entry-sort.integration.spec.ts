@@ -104,8 +104,8 @@ describe('TimeEntry sorting', () => {
   });
 
   it('orders by volunteer name', async () => {
-    const alice = await createUser(db, { name: 'AAA Alice' });
-    const bob = await createUser(db, { name: 'BBB Bob' });
+    const alice = await createUser(db, { firstname: 'AAA', lastname: 'Alice' });
+    const bob = await createUser(db, { firstname: 'BBB', lastname: 'Bob' });
     // Closed entries: the duration test below asserts a specific open entry is
     // last, and with `nulls last` + the `id asc` UUID tie-break several open
     // entries would make that ordering non-deterministic.

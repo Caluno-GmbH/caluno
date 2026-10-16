@@ -1,0 +1,19 @@
+query TermsStatus {
+  termsStatus {
+    mustAccept
+    currentVersion
+    currentClass
+    acceptedVersion
+    acceptedAt
+  }
+}
+
+mutation AcceptTerms($input: AcceptTermsInput!) {
+  acceptTerms(input: $input) {
+    mustAccept
+    currentVersion
+    currentClass
+    acceptedVersion
+    acceptedAt
+  }
+}

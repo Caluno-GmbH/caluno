@@ -122,10 +122,7 @@ export class DocumentSigningService {
     };
   }
 
-  organizationIdOf(documentTemplate: DocumentTemplateEntity | null): string {
-    if (!documentTemplate) {
-      throw new ConflictGraphQLError('Document is missing its template');
-    }
+  organizationIdOf(documentTemplate: DocumentTemplateEntity): string {
     return documentTemplate.organizationId;
   }
 

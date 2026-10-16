@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { updateTimeEntry } from '@/domain/time-entry/actions';
 import { TimeEntryForm } from '@/domain/time-entry/components/time-entry-form';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 
 interface TimeEntryUpdatePageProps {
   params: Promise<{ orgUId: string; timeEntryId: string; locale: string }>;
@@ -16,13 +16,9 @@ export default async function TimeEntryUpdatePage({
   const t = await getTranslations({ locale, namespace: 'TimeEntry.sheet' });
 
   const [entry, allVolunteers] = await Promise.all([
-    data.timeEntry.findById(timeEntryId),
+    requireFound(() => data.timeEntry.findById(timeEntryId)),
     data.organization.findVolunteersByUnit(orgUId),
   ]);
-
-  if (!entry) {
-    notFound();
-  }
 
   return (
     <TimeEntryForm

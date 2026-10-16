@@ -4,6 +4,10 @@ import type {
   CreateDocumentTemplateInput,
   CreateInvoiceInput,
   DocumentKind,
+  InvoiceFilterInput,
+  UpdateDocumentTemplateInput,
+} from '../../generated/base-types';
+import type {
   GetAccountingSetupStatusQuery,
   GetBundleDownloadStatusQuery,
   GetContractQuery,
@@ -12,7 +16,6 @@ import type {
   GetDocumentTemplatesQuery,
   GetEffectiveRatesQuery,
   GetEligibleTimeEntriesForInvoiceQuery,
-  GetInviteAllowanceEligibilityQuery,
   GetInvoiceQuery,
   GetInvoicesQuery,
   GetManualBaselineQuery,
@@ -20,14 +23,13 @@ import type {
   GetPendingContractSigneeQuery,
   GetReimbursementTypesQuery,
   GetRosterYearlyUsageQuery,
+  GetVolunteerAllowanceStatesQuery,
   GetVolunteersNeedingTimesheetsQuery,
   GetYearlyUsageQuery,
-  InvoiceFilterInput,
   MyDocumentSummaryQuery,
   MyDocumentsQuery,
   RecordBundleDownloadMutation,
   SetManualBaselineMutation,
-  UpdateDocumentTemplateInput,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
 
@@ -40,8 +42,8 @@ export type RawEffectiveRate = GetEffectiveRatesQuery['effectiveRates'][number];
 export type RawYearlyUsage = GetYearlyUsageQuery['yearlyUsage'];
 export type RawVolunteerYearlyUsage =
   GetRosterYearlyUsageQuery['rosterYearlyUsage'][number];
-export type RawVolunteerInviteAllowance =
-  GetInviteAllowanceEligibilityQuery['inviteAllowanceEligibility'][number];
+export type RawVolunteerAllowance =
+  GetVolunteerAllowanceStatesQuery['volunteerAllowanceStates'][number];
 
 export type ContractSummary = GetContractsQuery['contracts'][number];
 export type ContractDetail = GetContractQuery['contract'];
@@ -132,15 +134,12 @@ export class AccountingRepository extends BaseRepository {
     return data.rosterYearlyUsage;
   }
 
-  async findInviteAllowanceEligibility(input: {
-    organizationUnitId: string;
-    reimbursementTypeId: string;
-    shiftDurationMinutes: number;
-    periodStart?: string | null;
-    periodEnd?: string | null;
-  }): Promise<RawVolunteerInviteAllowance[]> {
-    const data = await this.sdk.GetInviteAllowanceEligibility(input);
-    return data.inviteAllowanceEligibility;
+  async findVolunteerAllowanceStates(input: {
+    volunteerIds: string[];
+    shiftInstanceId?: string | null;
+  }): Promise<RawVolunteerAllowance[]> {
+    const data = await this.sdk.GetVolunteerAllowanceStates(input);
+    return data.volunteerAllowanceStates;
   }
 
   async findContracts(
