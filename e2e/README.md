@@ -39,19 +39,22 @@ bun run --cwd apps/backend db:fixtures:e2e
 ```
 
 It uses `demo+testing_*@caluno.org` accounts (password `abcd1234`) in the
-"Testing" org. It must never be loaded into a database that already holds the
-demo dataset (`demo+<role>@caluno.org`) — the two share the `demo@caluno.org`
-group and would cross-link.
+"Testing" org.
 
 ## Running
 
 From this directory (`e2e`):
 
 ```bash
-bun playwright test                 # run the suite
-bun playwright test --reporter=html # run + generate HTML report
+bun run test                        # run the suite again staging
+bun run test:headed                 # run the suite again staging showing a browser
+bun run test:local                  # run the suite again localhost
+bun run test:local:headed           # run the suite again localhost showing a browser
+bun run test --reporter=html        # run + generate HTML report
 bun playwright show-report          # open the last HTML report
 ```
+
+You can append a test file to only run the tests in that file.
 
 Browsers install once with `bun playwright install chromium`.
 Target another environment with `E2E_BASE_URL=https://... bun playwright test`
