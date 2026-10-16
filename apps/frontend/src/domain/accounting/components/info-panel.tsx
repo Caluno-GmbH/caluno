@@ -15,6 +15,8 @@ interface InfoPanelProps {
   inactive?: boolean;
   /** Override the title's default variant-based size/weight — e.g. a larger heading for a block-level card versus a field-level one. */
   titleClassName?: string;
+  /** Appends the red asterisk used elsewhere for required form fields (Save-gated template builder inputs). */
+  required?: boolean;
 }
 
 /** Titled box for supporting-info cards (creation modals) and, as `variant="outline"`, the template builder's editor cards. */
@@ -27,6 +29,7 @@ export function InfoPanel({
   badge,
   inactive = false,
   titleClassName,
+  required = false,
 }: InfoPanelProps) {
   return (
     <div
@@ -50,6 +53,7 @@ export function InfoPanel({
             )}
           >
             {title}
+            {required && <span className="text-destructive"> *</span>}
           </p>
           {badge}
         </div>
