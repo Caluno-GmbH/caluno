@@ -4,8 +4,95 @@ import type {
   BoardDocument,
   BoardVolunteer,
   DocStatus,
-  TileFilter,
+  FilterSettings,
+  NextActionFilter,
+  PauschaleTypeFilter,
 } from './board-types';
+
+/** Display-time Pauschale filter — `all` keeps every type. */
+export function matchesPauschale(
+  doc: BoardDocument,
+  pauschaleType: PauschaleTypeFilter,
+): boolean {
+  return pauschaleType === 'all' || doc.pauschale === pauschaleType;
+}
+
+/**
+ * Whether a status matches the selected next-action stage.
+ * Combined with `documentType` this replaces the old per-tile status lists.
+ */
+export function matchesNextAction(
+  status: DocStatus,
+  nextAction: NextActionFilter,
+): boolean {
+  switch (nextAction) {
+    case 'any':
+      return true;
+    case 'generate':
+      return (
+        status === 'contract-generate' ||
+        status === 'contract-draft' ||
+        status === 'timesheet-generate'
+      );
+    case 'countersign':
+      return (
+        status === 'contract-signing-coord' ||
+        status === 'timesheet-signing-coord'
+      );
+    case 'send':
+      return status === 'timesheet-ready';
+  }
+}
+
+/**
+ * Whether one document satisfies the board's document-level filters.
+ * `volunteerName` is ignored here (volunteer-level). Ready-to-go still
+ * synthesizes contract rows via `getReadyToGoDocs`; this only judges real
+ * documents for inclusion / non-ready tabs.
+ */
+export function documentMatchesFilterSettings(
+  doc: BoardDocument,
+  settings: FilterSettings,
+): boolean {
+  return (
+    matchesPauschale(doc, settings.pauschaleType) &&
+    matchesNextAction(doc.status, settings.nextAction) &&
+    (settings.documentType === 'all' ||
+      doc.status.startsWith(settings.documentType)) &&
+    docVisibleInRange(doc, settings.dateRange)
+  );
+}
+
+/**
+ * Filter a document list with the shared settings (ignores `volunteerName`).
+ */
+export function filterDocuments(
+  documents: BoardDocument[],
+  settings: FilterSettings,
+): BoardDocument[] {
+  return documents.filter((doc) =>
+    documentMatchesFilterSettings(doc, settings),
+  );
+}
+
+/**
+ * Which volunteers show, without mutating `vol.documents`. Inclusion needs at
+ * least one document matching every document-level filter together, plus an
+ * optional name match.
+ */
+export function filterVolunteers(
+  volunteers: BoardVolunteer[],
+  settings: FilterSettings,
+): BoardVolunteer[] {
+  const name = settings.volunteerName.trim().toLowerCase();
+  return volunteers.filter((volunteer) => {
+    if (volunteer.documents.length === 0) return false;
+    if (name && !volunteer.name.toLowerCase().includes(name)) return false;
+    return volunteer.documents.some((doc) =>
+      documentMatchesFilterSettings(doc, settings),
+    );
+  });
+}
 
 /**
  * A timesheet is non-compliant when at least one of its hours has no ACTIVE
@@ -124,8 +211,8 @@ function contractCoversRange(doc: BoardDocument, range: DateRange): boolean {
  * Display-time date filter for a document. Contracts are annual — active for
  * every month of their year — so they never get hidden by an exact-day
  * range; timesheets still match by their own date. Never mutates the
- * volunteer's document list (see `applyFilters`) — this only decides what to
- * render, so compliance checks keep seeing the true, unfiltered data.
+ * volunteer's document list — this only decides what to render, so compliance
+ * checks keep seeing the true, unfiltered data.
  */
 export function docVisibleInRange(
   doc: BoardDocument,
@@ -137,22 +224,24 @@ export function docVisibleInRange(
 }
 
 /**
- * Row set for the "Ready to go" tab: only the ready timesheets (date-scoped)
- * plus, per pauschale type they cover, that type's real contract document —
- * whatever its status, so an in-progress signing keeps its normal action —
- * or a synthesized, greyed `contract-missing` placeholder for the
- * timesheet's year when no contract exists at all. Every other document
- * (generate/signing docs from other periods) is excluded, so nothing but the
- * bundle-download action and this one placeholder's "Create" can surface
- * here.
+ * Row set for the "Ready to go" / `nextAction: 'send'` tab: only the ready
+ * timesheets (date-scoped) plus, per pauschale type they cover, that type's
+ * real contract document — whatever its status, so an in-progress signing
+ * keeps its normal action — or a synthesized, greyed `contract-missing`
+ * placeholder for the timesheet's year when no contract exists at all. Every
+ * other document (generate/signing docs from other periods) is excluded, so
+ * nothing but the bundle-download action and this one placeholder's "Create"
+ * can surface here.
  */
 export function getReadyToGoDocs(
   volunteer: BoardVolunteer,
-  range: DateRange | undefined,
+  settings: FilterSettings,
 ): BoardDocument[] {
-  const readyTimesheets = volunteer.documents.filter(
-    (d) => d.status === 'timesheet-ready' && docInRange(d, range),
-  );
+  const readyTimesheets = filterDocuments(volunteer.documents, {
+    ...settings,
+    nextAction: 'send',
+    documentType: 'timesheet',
+  });
   if (readyTimesheets.length === 0) return [];
 
   const pauschaleTypes = Array.from(
@@ -185,19 +274,17 @@ export function getReadyToGoDocs(
   return [...readyTimesheets, ...contractRows];
 }
 
-export function matchesTile(status: DocStatus, tile: TileFilter): boolean {
-  switch (tile) {
-    case 'all':
-      return true;
-    case 'contract-generate':
-      return status === 'contract-generate' || status === 'contract-draft';
-    case 'contract-signing':
-      return status === 'contract-signing-coord';
-    case 'timesheet-generate':
-      return status === 'timesheet-generate';
-    case 'timesheet-signing':
-      return status === 'timesheet-signing-coord';
-    case 'ready-to-go':
-      return status === 'timesheet-ready';
+/**
+ * Documents visible for a volunteer under the current settings. Uses the
+ * ready-to-go row builder when `nextAction` is `send`; otherwise the shared
+ * document matcher.
+ */
+export function visibleDocumentsForVolunteer(
+  volunteer: BoardVolunteer,
+  settings: FilterSettings,
+): BoardDocument[] {
+  if (settings.nextAction === 'send') {
+    return getReadyToGoDocs(volunteer, settings);
   }
+  return filterDocuments(volunteer.documents, settings);
 }
