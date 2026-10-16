@@ -2004,14 +2004,15 @@ export class ShiftService {
         },
       );
 
-      const fromDate =
-        options.applyToAllFuture || before.master.rrule === null
-          ? new Date(before.actualStartsAt)
-          : null;
+      const applyToSeries =
+        Boolean(options.applyToAllFuture) || before.master.rrule === null;
+      const fromDate = applyToSeries ? new Date(before.actualStartsAt) : null;
       void this.loadAndEmitShiftDetailsChangedNotification(
         before.master,
         changes,
         fromDate,
+        applyToSeries ? undefined : before.id,
+        applyToSeries ? undefined : before.actualStartsAt,
       );
     }
 
@@ -3866,11 +3867,13 @@ export class ShiftService {
 
   private async findShiftDetailsChangeRecipients(
     shiftId: string,
+    instanceId?: string,
   ): Promise<string[]> {
     const participants = await this.db.query.shiftInstanceInvites.findMany({
       where: {
         instance: {
           masterId: shiftId,
+          ...(instanceId ? { id: instanceId } : {}),
           isCancelled: false,
           actualStartsAt: { gte: new Date() },
         },
@@ -3886,6 +3889,8 @@ export class ShiftService {
     shift: ShiftEntity,
     changes: ChangedField[],
     fromDate: Date | null,
+    instanceId?: string,
+    instanceStartsAt?: Date,
   ): Promise<void> {
     if (changes.length === 0) {
       return;
@@ -3897,7 +3902,7 @@ export class ShiftService {
           where: { id: shift.organizationUnitId },
           columns: { id: true, name: true },
         }),
-        this.findShiftDetailsChangeRecipients(shift.id),
+        this.findShiftDetailsChangeRecipients(shift.id, instanceId),
       ]);
 
       if (!organizationUnit || recipientUserIds.length === 0) {
@@ -3910,6 +3915,7 @@ export class ShiftService {
         shiftId: shift.id,
         shiftTitle: shift.title,
         fromDate,
+        instanceStartsAt,
         recipientUserIds,
         changes,
       });

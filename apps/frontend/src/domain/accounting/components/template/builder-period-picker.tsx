@@ -124,12 +124,15 @@ interface TemplateBuilderPeriodPickerProps {
   value: string;
   placeholder: string;
   onChange: (value: string) => void;
+  /** Marks the trigger as required for assistive tech (Save-gated manual field). */
+  required?: boolean;
 }
 
 export function TemplateBuilderPeriodPicker({
   value,
   placeholder,
   onChange,
+  required = false,
 }: TemplateBuilderPeriodPickerProps) {
   const t = useTranslations('Accounting.templates.builder.periodPicker');
   const parsed = parseValue(value);
@@ -186,6 +189,7 @@ export function TemplateBuilderPeriodPicker({
           type="button"
           variant="outline"
           className="w-full justify-start gap-2 font-normal"
+          aria-required={required || undefined}
         >
           <CalendarIcon
             size={14}
