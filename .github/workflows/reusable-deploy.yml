@@ -24,6 +24,11 @@ on:
         description: Public web origin baked into the frontend bundle.
         type: string
         required: true
+      notify-slack:
+        description: Post to Slack after Terraform apply succeeds or fails (release/production).
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -251,10 +256,31 @@ jobs:
           path: ${{ env.TF_ROOT }}
       # The saved plan file, so what was reviewed is what gets applied.
       - name: Apply the reviewed plan
+        id: tf-apply
         working-directory: ${{ env.TF_ROOT }}
         run: |
           terraform init -backend-config="key=${{ inputs.environment }}/terraform.tfstate"
           terraform apply -auto-approve plan.tfplan
+      # Release/production only (`notify-slack`). Fires after apply ran — not when
+      # this job is skipped for an empty plan. Incoming webhook → #caluno-release-management.
+      # continue-on-error: a dead webhook must not fail a successful apply.
+      - name: Notify Slack
+        if: >-
+          always()
+          && inputs.notify-slack
+          && (steps.tf-apply.outcome == 'success' || steps.tf-apply.outcome == 'failure')
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "${{ steps.tf-apply.outcome == 'success' && format(':rocket: {0} deployed', inputs.environment) || format(':x: {0} deploy failed', inputs.environment) }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "${{ steps.tf-apply.outcome == 'success' && format(':rocket: *{0}* deployed', inputs.environment) || format(':x: *{0}* deploy failed', inputs.environment) }}\n`${{ github.sha }}` · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> · ${{ github.actor }}"
 
   sentry-release:
     name: Finalize Sentry release

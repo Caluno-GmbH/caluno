@@ -28,7 +28,7 @@ async function expandMyShiftsUntil(
   // Same DOM node through idle ("Load more" / "Mehr laden") and in-flight
   // ("Loading...") — a /load more/-only locator goes empty mid-fetch.
   const pagingButton = page.getByRole('button', {
-    name: /^(load more|mehr laden|loading)/i,
+    name: /^(load more|mehr laden|loading|wird geladen)/i,
   });
 
   for (let i = 0; i < 16; i++) {
