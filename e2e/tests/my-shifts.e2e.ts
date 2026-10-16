@@ -13,27 +13,83 @@ import { LoginPage } from '../pages/LoginPage';
 const MEMBER_EMAIL = 'demo+testing_member02@caluno.org';
 const MEMBER_PASSWORD = 'abcd1234';
 
-/** Keep clicking progressive "Load more" until `locator` matches. */
+/**
+ * Keep clicking progressive "Load more" until `locator` is visible.
+ *
+ * While a page is in flight the same control is labelled Common.loading
+ * ("Loading...") and disabled — matching only /load more/i then looks like
+ * the button vanished and the loop stops after one click (common on slow
+ * staging). Track both labels and wait the fetch out before the next click.
+ */
 async function expandMyShiftsUntil(
   page: import('@playwright/test').Page,
   locator: import('@playwright/test').Locator,
 ) {
+  // Same DOM node through idle ("Load more" / "Mehr laden") and in-flight
+  // ("Loading...") — a /load more/-only locator goes empty mid-fetch.
+  const pagingButton = page.getByRole('button', {
+    name: /^(load more|mehr laden|loading)/i,
+  });
+
   for (let i = 0; i < 16; i++) {
-    if ((await locator.count()) > 0) {
+    if (
+      await locator
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
       await locator
         .first()
         .scrollIntoViewIfNeeded()
         .catch(() => {});
       return;
     }
-    const loadMore = page.getByRole('button', { name: /load more/i });
-    if ((await loadMore.count()) === 0) break;
-    await loadMore
-      .last()
-      .scrollIntoViewIfNeeded()
-      .catch(() => {});
-    await loadMore.last().click();
-    await page.waitForTimeout(400);
+
+    if ((await pagingButton.count()) === 0) break;
+
+    const button = pagingButton.last();
+    if (await button.isDisabled()) {
+      await expect
+        .poll(
+          async () => {
+            if (
+              await locator
+                .first()
+                .isVisible()
+                .catch(() => false)
+            )
+              return true;
+            if ((await pagingButton.count()) === 0) return true;
+            return pagingButton.last().isEnabled();
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
+      continue;
+    }
+
+    await button.scrollIntoViewIfNeeded().catch(() => {});
+    await button.click();
+
+    // Require the disabled/Loading transition so the still-idle pre-fetch
+    // frame is not treated as "fetch done".
+    await expect(button).toBeDisabled({ timeout: 10_000 });
+    await expect
+      .poll(
+        async () => {
+          if (
+            await locator
+              .first()
+              .isVisible()
+              .catch(() => false)
+          )
+            return true;
+          if ((await pagingButton.count()) === 0) return true;
+          return pagingButton.last().isEnabled();
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(true);
   }
   await expect(locator.first()).toBeVisible({ timeout: 15_000 });
 }
@@ -92,6 +148,10 @@ test.describe('my-shifts conflict clustering + day strip', () => {
       name: /Show all \d+ overlapping assignments/,
     });
     await expandMyShiftsUntil(page, moreToggle);
+    const lastVisiblePile = page.getByText('Overlap Test Pile E', {
+      exact: true,
+    });
+    await expandMyShiftsUntil(page, lastVisiblePile);
     await moreToggle.first().scrollIntoViewIfNeeded();
 
     for (const letter of ['A', 'B', 'C', 'D', 'E']) {
