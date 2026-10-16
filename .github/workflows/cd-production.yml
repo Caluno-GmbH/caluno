@@ -27,4 +27,5 @@ jobs:
       moving-tag: latest
       api-url: https://api.caluno.org
       web-url: https://app.caluno.org
+      notify-slack: true
     secrets: inherit

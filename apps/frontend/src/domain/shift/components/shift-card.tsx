@@ -150,6 +150,8 @@ export function ShiftCard({
     instance.id,
   );
 
+  const title = instance.overrideTitle ?? instance.master.title;
+
   const reimbursementTypeId =
     instance.overrideReimbursementTypeId ?? instance.master.reimbursementTypeId;
 
@@ -173,9 +175,11 @@ export function ShiftCard({
               </ActionTooltip>
             )}
           </p>
-          <p className="line-clamp-2 text-lg text-card-foreground">
-            {instance.overrideTitle ?? instance.master.title}
-          </p>
+          <ActionTooltip label={title}>
+            <p className="line-clamp-3 hyphens-auto break-words text-lg text-card-foreground">
+              {title}
+            </p>
+          </ActionTooltip>
         </Link>
 
         <div className="flex w-full items-stretch gap-1">

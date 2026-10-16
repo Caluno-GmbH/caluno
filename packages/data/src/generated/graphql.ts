@@ -282,13 +282,13 @@ export type GetAccountingSetupStatusQuery = { accountingSetupStatus: { orgProfil
 
 export type EventListFieldsFragment = { id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, coverUrl: string | null, signedUpCount: number };
 
-export type RequiredFormFieldsFragment = { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null };
+export type RequiredFormFieldsFragment = { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null };
 
-export type RequiredFormRefFieldsFragment = { order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } };
+export type RequiredFormRefFieldsFragment = { order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } };
 
-export type RequiredFormWithStatusFieldsFragment = { order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } };
+export type RequiredFormWithStatusFieldsFragment = { order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } };
 
-export type EventDetailFieldsFragment = { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type EventDetailFieldsFragment = { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
 
 export type GetEventsQueryVariables = Exact<{
   limit: number;
@@ -331,7 +331,7 @@ export type GetEventQueryVariables = Exact<{
 }>;
 
 
-export type GetEventQuery = { event: { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
+export type GetEventQuery = { event: { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
 
 export type GetEventInvitesQueryVariables = Exact<{
   eventId: string;
@@ -345,7 +345,7 @@ export type CreateEventMutationVariables = Exact<{
 }>;
 
 
-export type CreateEventMutation = { createEvent: { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
+export type CreateEventMutation = { createEvent: { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
 
 export type UpdateEventMutationVariables = Exact<{
   id: string;
@@ -353,7 +353,7 @@ export type UpdateEventMutationVariables = Exact<{
 }>;
 
 
-export type UpdateEventMutation = { updateEvent: { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
+export type UpdateEventMutation = { updateEvent: { createdAt: string, location: string | null, coverUrl: string | null, logoUrl: string | null, id: string, title: string, slug: string, startsAt: string, endsAt: string, shiftsCount: number, requiredFormsCount: number, signedUpCount: number, organizer: { id: string, name: string, image: string | null } | null, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
 
 export type DeleteEventMutationVariables = Exact<{
   id: string;
@@ -379,27 +379,27 @@ export type UpdateEventInviteStatusMutationVariables = Exact<{
 
 export type UpdateEventInviteStatusMutation = { updateEventInviteStatus: { id: string, status: Types.EventInviteStatus, userId: string } };
 
-export type PublicEventOrganizationUnitFieldsFragment = { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type PublicEventOrganizationUnitFieldsFragment = { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus };
 
 export type PublicShiftInstanceFieldsFragment = { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null };
 
 export type PublicShiftFieldsFragment = { id: string, title: string, maxVolunteers: number | null, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null }> };
 
-export type PublicEventFieldsFragment = { id: string, title: string, slug: string, description: string | null, location: string | null, coverImageUrl: string | null, startsAt: string, endsAt: string, shiftsCount: number, myJoinStatus: Types.JoinStatus, myInviteStatus: Types.EventInviteStatus | null, organizationUnit: { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } | null, shifts: Array<{ id: string, title: string, maxVolunteers: number | null, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null }> }>, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type PublicEventFieldsFragment = { id: string, title: string, slug: string, description: string | null, location: string | null, coverImageUrl: string | null, startsAt: string, endsAt: string, shiftsCount: number, myJoinStatus: Types.JoinStatus, myInviteStatus: Types.EventInviteStatus | null, organizationUnit: { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } | null, shifts: Array<{ id: string, title: string, maxVolunteers: number | null, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null }> }>, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
 
 export type GetPublicEventQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetPublicEventQuery = { publicEvent: { id: string, title: string, slug: string, description: string | null, location: string | null, coverImageUrl: string | null, startsAt: string, endsAt: string, shiftsCount: number, myJoinStatus: Types.JoinStatus, myInviteStatus: Types.EventInviteStatus | null, organizationUnit: { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } | null, shifts: Array<{ id: string, title: string, maxVolunteers: number | null, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null }> }>, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
+export type GetPublicEventQuery = { publicEvent: { id: string, title: string, slug: string, description: string | null, location: string | null, coverImageUrl: string | null, startsAt: string, endsAt: string, shiftsCount: number, myJoinStatus: Types.JoinStatus, myInviteStatus: Types.EventInviteStatus | null, organizationUnit: { id: string, name: string, slug: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } | null, shifts: Array<{ id: string, title: string, maxVolunteers: number | null, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null }> }>, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
 
 export type JoinEventMutationVariables = Exact<{
   eventId: string;
 }>;
 
 
-export type JoinEventMutation = { joinEvent: { status: Types.JoinStatus, event: { id: string }, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> | null } };
+export type JoinEventMutation = { joinEvent: { status: Types.JoinStatus, event: { id: string }, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> | null } };
 
 export type SetEventRequiredFormsMutationVariables = Exact<{
   eventId: string;
@@ -407,7 +407,7 @@ export type SetEventRequiredFormsMutationVariables = Exact<{
 }>;
 
 
-export type SetEventRequiredFormsMutation = { setEventRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type SetEventRequiredFormsMutation = { setEventRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
 
 export type GetOrganizationUnitMembershipsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -559,7 +559,7 @@ export type GetOrganizationUnitQueryVariables = Exact<{
 }>;
 
 
-export type GetOrganizationUnitQuery = { organizationUnit: { id: string, slug: string, name: string, description: string | null, logoUrl: string | null, websiteUrl: string | null, contactEmail: string | null, contactPersonName: string | null, phone: string | null, welcomeMessage: string | null, street: string | null, zipCode: string | null, city: string | null, legalRep: string | null, idVerificationEnabled: boolean, organizationId: string, organization: { id: string, name: string }, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, parent: { id: string, name: string } | null, type: { id: string, name: string, icon: string } } | null };
+export type GetOrganizationUnitQuery = { organizationUnit: { id: string, slug: string, name: string, description: string | null, logoUrl: string | null, websiteUrl: string | null, contactEmail: string | null, contactPersonName: string | null, phone: string | null, welcomeMessage: string | null, street: string | null, zipCode: string | null, city: string | null, legalRep: string | null, idVerificationEnabled: boolean, organizationId: string, organization: { id: string, name: string }, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, parent: { id: string, name: string } | null, type: { id: string, name: string, icon: string } } | null };
 
 export type GetOrganizationVolunteersByUnitQueryVariables = Exact<{
   id: string;
@@ -729,7 +729,7 @@ export type GetFormBlockQueryVariables = Exact<{
 }>;
 
 
-export type GetFormBlockQuery = { formBlock: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null };
+export type GetFormBlockQuery = { formBlock: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null };
 
 export type GetFormBlocksQueryVariables = Exact<{
   organizationId: string;
@@ -738,14 +738,14 @@ export type GetFormBlocksQueryVariables = Exact<{
 }>;
 
 
-export type GetFormBlocksQuery = { formBlocks: { items: Array<{ id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetFormBlocksQuery = { formBlocks: { items: Array<{ id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type CreateFormBlockMutationVariables = Exact<{
   input: Types.CreateFormBlockInput;
 }>;
 
 
-export type CreateFormBlockMutation = { createFormBlock: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
+export type CreateFormBlockMutation = { createFormBlock: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
 
 export type UpdateFormBlockMutationVariables = Exact<{
   id: string;
@@ -753,7 +753,7 @@ export type UpdateFormBlockMutationVariables = Exact<{
 }>;
 
 
-export type UpdateFormBlockMutation = { updateFormBlock: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
+export type UpdateFormBlockMutation = { updateFormBlock: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
 
 export type DeleteFormBlockMutationVariables = Exact<{
   id: string;
@@ -768,7 +768,7 @@ export type CreateFormBlockFieldMutationVariables = Exact<{
 }>;
 
 
-export type CreateFormBlockFieldMutation = { createFormBlockField: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
+export type CreateFormBlockFieldMutation = { createFormBlockField: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
 
 export type UpdateFormBlockFieldMutationVariables = Exact<{
   fieldId: string;
@@ -776,28 +776,28 @@ export type UpdateFormBlockFieldMutationVariables = Exact<{
 }>;
 
 
-export type UpdateFormBlockFieldMutation = { updateFormBlockField: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
+export type UpdateFormBlockFieldMutation = { updateFormBlockField: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
 
 export type DeleteFormBlockFieldMutationVariables = Exact<{
   fieldId: string;
 }>;
 
 
-export type DeleteFormBlockFieldMutation = { deleteFormBlockField: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
+export type DeleteFormBlockFieldMutation = { deleteFormBlockField: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } };
 
 export type GetRequirementFormQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetRequirementFormQuery = { requirementForm: { id: string, organizationId: string, organizationUnitId: string | null, slug: string, name: string, description: string | null, shareToken: string, submissionCount: number, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null, allowEmbed: boolean | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, createdAt: string, updatedAt: string, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } | null };
+export type GetRequirementFormQuery = { requirementForm: { id: string, organizationId: string, organizationUnitId: string | null, slug: string, name: string, description: string | null, shareToken: string, submissionCount: number, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null, allowEmbed: boolean | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, createdAt: string, updatedAt: string, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, createdBy: string, updatedBy: string, createdAt: string, updatedAt: string, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, createdAt: string, updatedAt: string, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } | null };
 
 export type GetRequirementFormByShareTokenQueryVariables = Exact<{
   token: string;
 }>;
 
 
-export type GetRequirementFormByShareTokenQuery = { requirementFormByShareToken: { id: string, organizationUnitId: string | null, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null, allowEmbed: boolean | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, title: string, description: string | null, icon: string | null, required: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, systemKey: string | null, documentLabel: string | null, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } | null };
+export type GetRequirementFormByShareTokenQuery = { requirementFormByShareToken: { id: string, organizationUnitId: string | null, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null, allowEmbed: boolean | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, title: string, description: string | null, icon: string | null, required: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } | null };
 
 export type GetRequirementFormsQueryVariables = Exact<{
   organizationId: string;
@@ -889,7 +889,7 @@ export type GetAdminFormSubmissionQueryVariables = Exact<{
 }>;
 
 
-export type GetAdminFormSubmissionQuery = { adminVolunteerSubmission: { id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string } | null, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, systemKey: string | null, options: Array<{ label: string, value: string }> | null }> | null } | null }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
+export type GetAdminFormSubmissionQuery = { adminVolunteerSubmission: { id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string } | null, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, systemKey: string | null, options: Array<string> | null }> | null } | null }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
 
 export type GetFormSubmissionsByFormQueryVariables = Exact<{
   formId: string;
@@ -912,7 +912,7 @@ export type MyFormSubmissionQueryVariables = Exact<{
 }>;
 
 
-export type MyFormSubmissionQuery = { myFormSubmission: { id: string, submittedAt: string, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, systemKey: string | null, options: Array<{ label: string, value: string }> | null }> | null } | null }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
+export type MyFormSubmissionQuery = { myFormSubmission: { id: string, submittedAt: string, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, systemKey: string | null, options: Array<string> | null }> | null } | null }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
 
 export type GetAdminUserProfileQueryVariables = Exact<{
   userId: string;
@@ -977,7 +977,7 @@ export type GetShiftQueryVariables = Exact<{
 }>;
 
 
-export type GetShiftQuery = { shift: { id: string, title: string, slug: string, instructions: string | null, location: string | null, imageUrl: string | null, visibility: Types.ShiftVisibility, joinRequiresApproval: boolean, createdAt: string, maxVolunteers: number | null, minVolunteers: number | null, reimbursementTypeId: string | null, rrule: string | null, originalStartsAt: string, durationMinutes: number, organizationUnitId: string, reimbursementTypeKey: Types.ReimbursementTypeKey | null, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, organizationUnit: { id: string, name: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, organization: { id: string, name: string } }, createdBy: { id: string, name: string, image: string | null } | null, event: { id: string, title: string, coverImageUrl: string | null } | null } };
+export type GetShiftQuery = { shift: { id: string, title: string, slug: string, instructions: string | null, location: string | null, imageUrl: string | null, visibility: Types.ShiftVisibility, joinRequiresApproval: boolean, createdAt: string, maxVolunteers: number | null, minVolunteers: number | null, reimbursementTypeId: string | null, rrule: string | null, originalStartsAt: string, durationMinutes: number, organizationUnitId: string, reimbursementTypeKey: Types.ReimbursementTypeKey | null, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, organizationUnit: { id: string, name: string, logoUrl: string | null, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, organization: { id: string, name: string } }, createdBy: { id: string, name: string, image: string | null } | null, event: { id: string, title: string, coverImageUrl: string | null } | null } };
 
 export type GetShiftsQueryVariables = Exact<{
   limit: number;
@@ -1039,7 +1039,7 @@ export type SetShiftRequiredFormsMutationVariables = Exact<{
 }>;
 
 
-export type SetShiftRequiredFormsMutation = { setShiftRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type SetShiftRequiredFormsMutation = { setShiftRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
 
 export type SetShiftInstanceRequiredFormsMutationVariables = Exact<{
   instanceId: string;
@@ -1047,7 +1047,7 @@ export type SetShiftInstanceRequiredFormsMutationVariables = Exact<{
 }>;
 
 
-export type SetShiftInstanceRequiredFormsMutation = { setShiftInstanceRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type SetShiftInstanceRequiredFormsMutation = { setShiftInstanceRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
 
 export type UpdateMembersForShiftInstanceMutationVariables = Exact<{
   instanceId: string;
@@ -1135,7 +1135,7 @@ export type JoinShiftInstanceMutationVariables = Exact<{
 }>;
 
 
-export type JoinShiftInstanceMutation = { joinShiftInstance: { status: Types.JoinStatus, membershipRequestId: string | null, shiftInstance: { id: string, myInviteStatus: Types.ShiftInviteStatus | null, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideInstructions: string | null, overrideLocation: string | null, overrideMaxVolunteers: number | null, isException: boolean, isCancelled: boolean, occurrenceIndex: number, master: { id: string, title: string } }, requirementProfile: { id: string, name: string, description: string | null, requirements: Array<{ id: string, name: string, description: string | null, type: Types.RequirementType, mandatory: boolean }> | null } | null, requirementStatuses: Array<{ requirementId: string, name: string, status: Types.RequirementFulfillmentStatus }> | null, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> | null } };
+export type JoinShiftInstanceMutation = { joinShiftInstance: { status: Types.JoinStatus, membershipRequestId: string | null, shiftInstance: { id: string, myInviteStatus: Types.ShiftInviteStatus | null, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideInstructions: string | null, overrideLocation: string | null, overrideMaxVolunteers: number | null, isException: boolean, isCancelled: boolean, occurrenceIndex: number, master: { id: string, title: string } }, requirementProfile: { id: string, name: string, description: string | null, requirements: Array<{ id: string, name: string, description: string | null, type: Types.RequirementType, mandatory: boolean }> | null } | null, requirementStatuses: Array<{ requirementId: string, name: string, status: Types.RequirementFulfillmentStatus }> | null, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> | null } };
 
 export type GetShiftVolunteersQueryVariables = Exact<{
   instanceId: string;
@@ -1164,7 +1164,7 @@ export type GetShiftInstanceQueryVariables = Exact<{
 }>;
 
 
-export type GetShiftInstanceQuery = { shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideLocation: string | null, overrideInstructions: string | null, overrideMaxVolunteers: number | null, overrideMinVolunteers: number | null, overrideReimbursementTypeId: string | null, overrideJoinRequiresApproval: boolean | null, isCancelled: boolean, filledCount: number, spotsLeft: number | null, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, master: { id: string, title: string, location: string | null, instructions: string | null, minVolunteers: number | null, maxVolunteers: number | null, reimbursementTypeId: string | null, joinRequiresApproval: boolean, visibility: Types.ShiftVisibility, rrule: string | null, createdAt: string, imageUrl: string | null, createdBy: { id: string, name: string, image: string | null } | null }, invites: Array<{ status: Types.ShiftInviteStatus, remindedAt: string | null, user: { id: string, name: string, email: string, image: string | null, checkInId: string } }> | null, timeEntries: Array<{ id: string, startedAt: string, endedAt: string | null, volunteer: { id: string } }> } };
+export type GetShiftInstanceQuery = { shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideLocation: string | null, overrideInstructions: string | null, overrideMaxVolunteers: number | null, overrideMinVolunteers: number | null, overrideReimbursementTypeId: string | null, overrideJoinRequiresApproval: boolean | null, isCancelled: boolean, filledCount: number, spotsLeft: number | null, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, master: { id: string, title: string, location: string | null, instructions: string | null, minVolunteers: number | null, maxVolunteers: number | null, reimbursementTypeId: string | null, joinRequiresApproval: boolean, visibility: Types.ShiftVisibility, rrule: string | null, createdAt: string, imageUrl: string | null, createdBy: { id: string, name: string, image: string | null } | null }, invites: Array<{ status: Types.ShiftInviteStatus, remindedAt: string | null, user: { id: string, name: string, email: string, image: string | null, checkInId: string } }> | null, timeEntries: Array<{ id: string, startedAt: string, endedAt: string | null, volunteer: { id: string } }> } };
 
 export type GetWeeklyShiftsQueryVariables = Exact<{
   startsAfter: string;
@@ -1175,21 +1175,21 @@ export type GetWeeklyShiftsQueryVariables = Exact<{
 
 export type GetWeeklyShiftsQuery = { weeklyShifts: Array<{ id: string, overrideTitle: string | null, actualStartsAt: string, actualEndsAt: string, isCancelled: boolean, overrideMinVolunteers: number | null, overrideMaxVolunteers: number | null, overrideReimbursementTypeId: string | null, master: { id: string, title: string, minVolunteers: number | null, maxVolunteers: number | null, visibility: Types.ShiftVisibility, rrule: string | null, reimbursementTypeId: string | null }, volunteers: Array<{ id: string, name: string }> | null, invites: Array<{ status: Types.ShiftInviteStatus, user: { id: string, name: string, email: string, image: string | null } }> | null }> };
 
-export type PublicShiftDetailInstanceFieldsFragment = { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, reimbursementTypeKey: Types.ReimbursementTypeKey | null, overrideJoinRequiresApproval: boolean | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, isIntendingToJoin: boolean, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
+export type PublicShiftDetailInstanceFieldsFragment = { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, reimbursementTypeKey: Types.ReimbursementTypeKey | null, overrideJoinRequiresApproval: boolean | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, isIntendingToJoin: boolean, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> };
 
 export type GetPublicShiftInstancesQueryVariables = Exact<{
   shiftId: string;
 }>;
 
 
-export type GetPublicShiftInstancesQuery = { publicShiftInstances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, reimbursementTypeKey: Types.ReimbursementTypeKey | null, overrideJoinRequiresApproval: boolean | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, isIntendingToJoin: boolean, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> }> };
+export type GetPublicShiftInstancesQuery = { publicShiftInstances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, reimbursementTypeKey: Types.ReimbursementTypeKey | null, overrideJoinRequiresApproval: boolean | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, isIntendingToJoin: boolean, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> }> };
 
 export type GetPublicShiftInstanceQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetPublicShiftInstanceQuery = { publicShiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, reimbursementTypeKey: Types.ReimbursementTypeKey | null, overrideJoinRequiresApproval: boolean | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, isIntendingToJoin: boolean, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, options: Array<{ label: string, value: string }> | null, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
+export type GetPublicShiftInstanceQuery = { publicShiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideMaxVolunteers: number | null, reimbursementTypeKey: Types.ReimbursementTypeKey | null, overrideJoinRequiresApproval: boolean | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, isIntendingToJoin: boolean, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }> } };
 
 export type VolunteerHomeShiftInstanceFragment = { id: string, overrideTitle: string | null, actualStartsAt: string, actualEndsAt: string, isCheckedIn: boolean, reimbursementTypeKey: Types.ReimbursementTypeKey | null, filledCount: number, spotsLeft: number | null, myInviteStatus: Types.ShiftInviteStatus | null, myInvitedAt: string | null, isIntendingToJoin: boolean, master: { id: string, title: string, location: string | null, rrule: string | null, maxVolunteers: number | null, organizationUnit: { id: string, name: string, logoUrl: string | null }, event: { id: string, title: string, coverImageUrl: string | null } | null } };
 
@@ -1647,10 +1647,7 @@ export const RequiredFormFieldsFragmentDoc = gql`
         required
         lockType
         systemKey
-        options {
-          label
-          value
-        }
+        options
         documents {
           fileId
           filename
@@ -1754,11 +1751,8 @@ export const PublicEventOrganizationUnitFieldsFragmentDoc = gql`
   slug
   logoUrl
   myMembershipState
-  requiredForms {
-    ...RequiredFormRefFields
-  }
 }
-    ${RequiredFormRefFieldsFragmentDoc}`;
+    `;
 export const PublicShiftInstanceFieldsFragmentDoc = gql`
     fragment PublicShiftInstanceFields on ShiftInstance {
   id
@@ -1795,6 +1789,9 @@ export const PublicEventFieldsFragmentDoc = gql`
   myInviteStatus
   organizationUnit {
     ...PublicEventOrganizationUnitFields
+    requiredForms {
+      ...RequiredFormRefFields
+    }
   }
   shifts {
     ...PublicShiftFields
@@ -1804,8 +1801,8 @@ export const PublicEventFieldsFragmentDoc = gql`
   }
 }
     ${PublicEventOrganizationUnitFieldsFragmentDoc}
-${PublicShiftFieldsFragmentDoc}
-${RequiredFormRefFieldsFragmentDoc}`;
+${RequiredFormRefFieldsFragmentDoc}
+${PublicShiftFieldsFragmentDoc}`;
 export const OrganizationUnitAutomationFieldsFragmentDoc = gql`
     fragment OrganizationUnitAutomationFields on OrganizationUnitAutomation {
   organizationUnitId
@@ -2915,10 +2912,7 @@ export const GetOrganizationUnitDocument = gql`
               required
               lockType
               systemKey
-              options {
-                label
-                value
-              }
+              options
               documents {
                 fileId
                 filename
@@ -3274,10 +3268,7 @@ export const GetFormBlockDocument = gql`
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -3317,10 +3308,7 @@ export const GetFormBlocksDocument = gql`
         required
         lockType
         systemKey
-        options {
-          label
-          value
-        }
+        options
         documents {
           fileId
           filename
@@ -3366,10 +3354,7 @@ export const CreateFormBlockDocument = gql`
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -3408,10 +3393,7 @@ export const UpdateFormBlockDocument = gql`
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -3457,10 +3439,7 @@ export const CreateFormBlockFieldDocument = gql`
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -3499,10 +3478,7 @@ export const UpdateFormBlockFieldDocument = gql`
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -3541,10 +3517,7 @@ export const DeleteFormBlockFieldDocument = gql`
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -3610,10 +3583,7 @@ export const GetRequirementFormDocument = gql`
           required
           lockType
           systemKey
-          options {
-            label
-            value
-          }
+          options
           documents {
             fileId
             filename
@@ -3664,10 +3634,7 @@ export const GetRequirementFormByShareTokenDocument = gql`
           description
           required
           systemKey
-          options {
-            label
-            value
-          }
+          options
           documents {
             fileId
             filename
@@ -3884,10 +3851,7 @@ export const GetAdminFormSubmissionDocument = gql`
             label
             type
             systemKey
-            options {
-              label
-              value
-            }
+            options
           }
         }
       }
@@ -3949,10 +3913,7 @@ export const MyFormSubmissionDocument = gql`
             label
             type
             systemKey
-            options {
-              label
-              value
-            }
+            options
           }
         }
       }

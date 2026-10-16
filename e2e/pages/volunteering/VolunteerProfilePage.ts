@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { BASE_URL } from '../AuthPage';
 
 /**
@@ -13,13 +13,27 @@ export class VolunteerProfilePage {
   }
 
   /**
-   * Opens the first membership ("Open" card link) and returns its absolute
-   * URL so the caller can navigate straight to it.
+   * Opens the membership card for the given organisation and returns its
+   * absolute URL so the caller can navigate straight to it. Name is required:
+   * volunteers can belong to more than one org (e.g. leftover "Testing" from
+   * other suites), and `.first()` would open the wrong documents list.
    */
-  async openMembership(): Promise<string> {
-    const link = this.page.getByRole('link', { name: 'Open' }).first();
+  async openMembership(organizationName: string): Promise<string> {
+    // Scope to the membership Card — a bare `div` filter matches a page-level
+    // ancestor that contains every org's Open link (and the volunteer's name
+    // can also mention the org, e.g. "Testing Member Two").
+    const card = this.page
+      .locator('[data-slot="card"]')
+      .filter({
+        has: this.page.getByText(organizationName, { exact: true }),
+      })
+      .filter({ has: this.page.getByRole('link', { name: 'Open' }) });
+    await expect(card).toHaveCount(1);
+    const link = card.getByRole('link', { name: 'Open' });
     const href = await link.getAttribute('href');
-    if (!href) throw new Error('Membership card has no link');
+    if (!href) {
+      throw new Error(`Membership card for ${organizationName} has no link`);
+    }
     await link.click();
     await this.page.waitForURL(/\/en\/profile\/memberships\//, {
       timeout: 15_000,

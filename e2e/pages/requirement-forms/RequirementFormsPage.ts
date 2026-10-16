@@ -8,15 +8,17 @@ export class RequirementFormsPage {
   constructor(private readonly page: Page) {}
 
   get createFormButton() {
-    return this.page.getByRole('button', { name: 'Create Form' });
+    return this.page.getByRole('button', { name: 'Create form' });
   }
 
   get formNameInput() {
-    return this.page.locator('#name');
+    return this.page.locator('#form-name');
   }
 
   get createSubmit() {
-    return this.page.getByRole('button', { name: 'Create', exact: true });
+    return this.page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Create', exact: true });
   }
 
   async goto(orgUId: string) {
@@ -27,8 +29,12 @@ export class RequirementFormsPage {
 
   // Opens the create dialog, submits, and lands on the new form's builder.
   async createForm(name: string): Promise<string> {
-    await this.createFormButton.click();
-    await this.formNameInput.waitFor({ state: 'visible', timeout: 20000 });
+    // First click may be dropped before hydration; retry until the dialog opens.
+    await expect(async () => {
+      if (await this.formNameInput.isVisible()) return;
+      await this.createFormButton.click();
+      await this.formNameInput.waitFor({ state: 'visible', timeout: 5_000 });
+    }).toPass({ timeout: 30_000 });
     await this.formNameInput.fill(name);
     await this.createSubmit.click();
     await this.page.waitForURL(BUILDER_URL, { timeout: 20000 });

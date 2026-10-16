@@ -2,15 +2,16 @@
 
 Everything runs on GitHub-hosted runners (`ubuntu-latest`).
 
-| File                  | Trigger                          | What it does                                               |
-| --------------------- | -------------------------------- | ---------------------------------------------------------- |
-| `ci.yml`              | `pull_request` → main/release/prod | Full gate, plus the pre-merge-only checks.                |
-| `cd-staging.yml`      | `push` → `main`                  | Gate alongside build/push, then deploy to staging.          |
-| `cd-release.yml`      | `push` → `release`               | Same, to the release environment, applied unattended.       |
-| `cd-production.yml`   | `push` → `production`            | Same, to production, with approval on the apply.            |
-| `mirror-images.yml`   | weekly + `workflow_dispatch`     | Refreshes the GHCR base-image mirror.                       |
-| `reusable-verify.yml` | `workflow_call`                  | Lint, type-check, migration drift, tests.                   |
-| `reusable-deploy.yml` | `workflow_call`                  | Build + push images, Terraform plan/apply, Sentry release.  |
+| File                       | Trigger                          | What it does                                               |
+| -------------------------- | -------------------------------- | ---------------------------------------------------------- |
+| `ci.yml`                   | `pull_request` → main/release/prod | Full gate, plus the pre-merge-only checks.                |
+| `cd-staging.yml`           | `push` → `main`                  | Gate alongside build/push, then deploy to staging.          |
+| `cd-release.yml`           | `push` → `release`               | Same, to the release environment, applied unattended.       |
+| `cd-production.yml`        | `push` → `production`            | Same, to production, with approval on the apply.            |
+| `e2e-staging-nightly.yml`  | nightly 00:00 UTC + `workflow_dispatch` | Full Playwright suite against staging.               |
+| `mirror-images.yml`        | weekly + `workflow_dispatch`     | Refreshes the GHCR base-image mirror.                       |
+| `reusable-verify.yml`      | `workflow_call`                  | Lint, type-check, migration drift, tests.                   |
+| `reusable-deploy.yml`      | `workflow_call`                  | Build + push images, Terraform plan/apply, Sentry release; Slack on apply for release/production. |
 
 The three CD workflows differ only in the inputs they pass to
 `reusable-deploy.yml`: the environment name (which is also the Terraform state
@@ -101,10 +102,15 @@ exported by `cache-to`, and CI runners are ephemeral.
    `ORG_REPO_PAT` in each of the three repos.
 
 2. **Deploy/registry secrets and variables** — add these in `caluno`:
-   - Secrets: `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SENTRY_AUTH_TOKEN`. The
-     Scaleway keys are reused as `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` for
-     the S3-compatible Terraform state backend, which authenticates through the
-     AWS SDK credential chain and so needs real process env vars.
+   - Secrets: `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SENTRY_AUTH_TOKEN`,
+     `MAILBOX_PASSWORD` (staging Mailpit basic auth for
+     `e2e-staging-nightly.yml`), `SLACK_WEBHOOK_URL` (Incoming Webhook for
+     `#caluno-release-management` — release/production Terraform apply result
+     only; create via Slack → Apps → Incoming Webhooks, then paste the URL).
+     The Scaleway keys are reused as `AWS_ACCESS_KEY_ID` /
+     `AWS_SECRET_ACCESS_KEY` for the S3-compatible Terraform state backend,
+     which authenticates through the AWS SDK credential chain and so needs real
+     process env vars.
    - Variables: `SCW_REGISTRY_HOST`, `SCW_REGISTRY_NAMESPACE`,
      `SCW_DEFAULT_PROJECT_ID`, `SCW_DEFAULT_REGION`, `SCW_DEFAULT_ZONE`,
      `AWS_DEFAULT_REGION`, `SENTRY_ORG`, `SENTRY_PROJECT_BACKEND`,

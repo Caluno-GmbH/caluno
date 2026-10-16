@@ -188,7 +188,7 @@ input CreateFormBlockFieldInput {
   label: String!
   lockType: Boolean
   minAge: Float
-  options: [SelectOptionInput!]
+  options: [String!]
   placeholder: String
   required: Boolean
   systemKey: String
@@ -487,7 +487,7 @@ type FormBlockField {
   label: String!
   lockType: Boolean!
   minAge: Float
-  options: [SelectOption!]
+  options: [String!]
   placeholder: String
   required: Boolean!
   systemKey: String
@@ -1353,16 +1353,6 @@ type Role {
   permissions: [Permission!]!
 }
 
-type SelectOption {
-  label: String!
-  value: String!
-}
-
-input SelectOptionInput {
-  label: String!
-  value: String!
-}
-
 type Shift {
   createdAt: DateTime!
   createdBy: User
@@ -1611,7 +1601,7 @@ input UpdateFormBlockFieldInput {
   label: String
   lockType: Boolean
   minAge: Float
-  options: [SelectOptionInput!]
+  options: [String!]
   placeholder: String
   required: Boolean
   systemKey: String

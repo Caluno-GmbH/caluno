@@ -8,18 +8,23 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   // Sequential, single browser session — no parallel windows / tab flicker.
   fullyParallel: false,
-  workers: 1,
+  workers: process.env.PLAYWRIGHT_WORKERS ?? 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   use: {
-    // Headed locally for debugging; headless in CI or with HEADLESS=1.
-    headless: !!process.env.CI || process.env.HEADLESS === '1',
+    // runs headless by default; use HEADED=1 to run headed.
+    headless: !process.env.HEADED,
     // Staging's `load` event can be slow; absorb spikes without failing.
     navigationTimeout: 60_000,
     actionTimeout: 20_000,
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    trace: 'retain-on-failure',
+    // `retain-on-failure` records for the whole run and finalizes on every
+    // context.close(); with two long-lived contexts that races Playwright's
+    // network-trace copy (ENOENT on `*-pwnetcopy-*.network`) and fails green
+    // tests. `on-first-retry` only traces the retry (CI has retries: 2).
+    // Local debugging: `bun playwright test --trace on <file>`.
+    trace: 'on-first-retry',
     viewport: { width: 1280, height: 720 },
   },
 });

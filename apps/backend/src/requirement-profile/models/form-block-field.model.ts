@@ -6,15 +6,6 @@ registerEnumType(FieldType, {
 });
 
 @ObjectType()
-export class SelectOption {
-  @Field(() => String)
-  label!: string;
-
-  @Field(() => String)
-  value!: string;
-}
-
-@ObjectType()
 export class FormBlockFieldDocument {
   @Field(() => String)
   fileId!: string;
@@ -55,8 +46,8 @@ export class FormBlockField {
   @Field(() => String, { nullable: true })
   systemKey?: string | null;
 
-  @Field(() => [SelectOption], { nullable: true })
-  options?: SelectOption[] | null;
+  @Field(() => [String], { nullable: true })
+  options?: string[] | null;
 
   // filled from the entity during mapping. But not exposed to clients. Converted to FormBlockFieldDocument in resolver
   documentFileIds?: string[] | null;

@@ -4,6 +4,11 @@ import type { Page } from '@playwright/test';
 export const BASE_URL =
   process.env.E2E_BASE_URL ?? 'https://staging.app.caluno.org';
 
+// Local stack (`bun run dev`) disables email verification; staging requires it.
+export const IS_LOCAL = /(^|:\/\/)(localhost|127\.0\.0\.1)(:|\/|$)/.test(
+  BASE_URL,
+);
+
 // Override with E2E_API_URL. Staging web/api hosts differ by subdomain;
 // local frontend (3000) talks to the local API (8080).
 export const API_URL =

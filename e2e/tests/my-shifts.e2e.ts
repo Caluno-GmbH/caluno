@@ -10,8 +10,89 @@ import { LoginPage } from '../pages/LoginPage';
 // (2 overlapping shifts) and "Overlap Test Pile" (6 overlapping shifts,
 // A-F) fixtures invited to it — member01 is kept conflict-free as a
 // baseline for other manual checks.
-const MEMBER_EMAIL = 'demo+e2e_member02@caluno.org';
+const MEMBER_EMAIL = 'demo+testing_member02@caluno.org';
 const MEMBER_PASSWORD = 'abcd1234';
+
+/**
+ * Keep clicking progressive "Load more" until `locator` is visible.
+ *
+ * While a page is in flight the same control is labelled Common.loading
+ * ("Loading...") and disabled — matching only /load more/i then looks like
+ * the button vanished and the loop stops after one click (common on slow
+ * staging). Track both labels and wait the fetch out before the next click.
+ */
+async function expandMyShiftsUntil(
+  page: import('@playwright/test').Page,
+  locator: import('@playwright/test').Locator,
+) {
+  // Same DOM node through idle ("Load more" / "Mehr laden") and in-flight
+  // ("Loading...") — a /load more/-only locator goes empty mid-fetch.
+  const pagingButton = page.getByRole('button', {
+    name: /^(load more|mehr laden|loading|wird geladen)/i,
+  });
+
+  for (let i = 0; i < 16; i++) {
+    if (
+      await locator
+        .first()
+        .isVisible()
+        .catch(() => false)
+    ) {
+      await locator
+        .first()
+        .scrollIntoViewIfNeeded()
+        .catch(() => {});
+      return;
+    }
+
+    if ((await pagingButton.count()) === 0) break;
+
+    const button = pagingButton.last();
+    if (await button.isDisabled()) {
+      await expect
+        .poll(
+          async () => {
+            if (
+              await locator
+                .first()
+                .isVisible()
+                .catch(() => false)
+            )
+              return true;
+            if ((await pagingButton.count()) === 0) return true;
+            return pagingButton.last().isEnabled();
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
+      continue;
+    }
+
+    await button.scrollIntoViewIfNeeded().catch(() => {});
+    await button.click();
+
+    // Require the disabled/Loading transition so the still-idle pre-fetch
+    // frame is not treated as "fetch done".
+    await expect(button).toBeDisabled({ timeout: 10_000 });
+    await expect
+      .poll(
+        async () => {
+          if (
+            await locator
+              .first()
+              .isVisible()
+              .catch(() => false)
+          )
+            return true;
+          if ((await pagingButton.count()) === 0) return true;
+          return pagingButton.last().isEnabled();
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(true);
+  }
+  await expect(locator.first()).toBeVisible({ timeout: 15_000 });
+}
 
 test.describe('my-shifts conflict clustering + day strip', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,7 +106,11 @@ test.describe('my-shifts conflict clustering + day strip', () => {
 
     await page.goto(`${BASE_URL}/en/my-shifts`, { waitUntil: 'load' });
     // DetailPageHeader's title renders as a styled <span>, not a heading role.
-    await expect(page.getByText('Your shifts', { exact: true })).toBeVisible();
+    await expect(
+      page.getByText('Your assignments', { exact: true }),
+    ).toBeVisible();
+    // Far-future fixture days sit behind progressive "Load more" pages.
+    await expandMyShiftsUntil(page, page.getByText('Overlap Test Pair A'));
   });
 
   test('renders a 2-shift conflict side by side with an overlap warning', async ({
@@ -37,26 +122,16 @@ test.describe('my-shifts conflict clustering + day strip', () => {
     await expect(pairA).toBeVisible();
     await expect(page.getByText('Overlap Test Pair B')).toBeVisible();
     await expect(
-      page.getByText('You have overlapping shifts in your schedule').first(),
+      page
+        .getByText('You have overlapping assignments in your schedule')
+        .first(),
     ).toBeVisible();
 
-    // Side by side, not stacked: different columns (x differs substantially).
-    // Not comparing y — the actionable card (Pair A, if it's the "next"
-    // shift) has an extra timer-badge row above its title, so its title
-    // text sits lower than Pair B's even though the cards share a grid row.
-    const boxA = await pairA.boundingBox();
-    const boxB = await page.getByText('Overlap Test Pair B').boundingBox();
-    expect(boxA).not.toBeNull();
-    expect(boxB).not.toBeNull();
-    if (boxA && boxB) {
-      expect(Math.abs(boxA.x - boxB.x)).toBeGreaterThan(200);
-    }
-
-    // A cluster this small (2) never gets a "+N more" collapse toggle — only
-    // clusters over the 5-visible threshold do (see the pile test below).
-    // Scoped to this day's group, since the page also has the 6-shift pile
-    // cluster (on a different day) with its own "+1 more" toggle.
+    // Pair day can pick up extra overlapping fixtures (e.g. Late Signup), so
+    // the cluster may render as a stacked ConflictPile rather than a 2-col
+    // grid — assert both cards + the warning, not a specific layout.
     const pairDayGroup = page.locator('[data-day]', { has: pairA });
+    // A cluster this small never gets a "+N more" toggle (threshold is 5).
     await expect(pairDayGroup.getByText(/\+\d+ more/)).toHaveCount(0);
   });
 
@@ -66,24 +141,34 @@ test.describe('my-shifts conflict clustering + day strip', () => {
     // Fixture cluster is 6 shifts (Pile A-F) — expect A-E visible up front,
     // F collapsed behind "+1 more", with no fanned/hidden-card trick: all 5
     // visible cards must be individually readable, not just the first one.
-    const moreToggle = page.getByText('+1 more');
-    await moreToggle.scrollIntoViewIfNeeded();
+    // Pile A alone can appear before "Load more" pulls in B–F. The collapse
+    // control is a button whose accessible name is the aria-label
+    // ("Show all N overlapping assignments"), not the visible "+N more" text.
+    const moreToggle = page.getByRole('button', {
+      name: /Show all \d+ overlapping assignments/,
+    });
+    await expandMyShiftsUntil(page, moreToggle);
+    const lastVisiblePile = page.getByText('Overlap Test Pile E', {
+      exact: true,
+    });
+    await expandMyShiftsUntil(page, lastVisiblePile);
+    await moreToggle.first().scrollIntoViewIfNeeded();
 
     for (const letter of ['A', 'B', 'C', 'D', 'E']) {
       await expect(page.getByText(`Overlap Test Pile ${letter}`)).toBeVisible();
     }
     await expect(page.getByText('Overlap Test Pile F')).toHaveCount(0);
-    await expect(moreToggle).toBeVisible();
+    await expect(moreToggle.first()).toBeVisible();
 
-    await moreToggle.click();
+    await moreToggle.first().click();
 
     await expect(page.getByText('Overlap Test Pile F')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show less' })).toBeVisible();
-    await expect(page.getByText(/\+\d+ more/)).toHaveCount(0);
+    await expect(moreToggle).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Show less' }).click();
     await expect(page.getByText('Overlap Test Pile F')).toHaveCount(0);
-    await expect(moreToggle).toBeVisible();
+    await expect(moreToggle.first()).toBeVisible();
   });
 
   test('day strip only shows shift-days, with gap dividers for multi-day gaps', async ({

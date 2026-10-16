@@ -84,7 +84,7 @@ describe('FormBlockService gender system field contract', () => {
           type: FieldType.SINGLE_CHOICE,
           label: 'Gender',
           systemKey: 'gender',
-          options: [{ label: 'Female', value: 'female' }],
+          options: ['Female'],
         },
         user.id,
       ),
@@ -156,7 +156,7 @@ describe('FormBlockService gender system field contract', () => {
       formBlockService.updateField(
         genderField.id,
         unit.id,
-        { options: [{ label: 'Female', value: 'female' }] },
+        { options: ['Female'] },
         user.id,
       ),
     ).rejects.toBeInstanceOf(BadRequestGraphQLError);

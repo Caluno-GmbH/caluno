@@ -1,61 +1,58 @@
 import { describe, expect, it } from 'bun:test';
 import {
   choiceOptionSchema,
-  deriveOptionValue,
+  choiceOptionsSchema,
+  duplicateOptionIndexes,
   parseMultiChoiceValue,
   serializeMultiChoiceValue,
 } from './option-values';
 
 describe('choiceOptionSchema', () => {
   it('accepts a valid option', () => {
-    const result = choiceOptionSchema.safeParse({
-      label: '10:30',
-      value: '10:30',
-    });
+    const result = choiceOptionSchema.safeParse('10:30');
     expect(result.success).toBe(true);
   });
 
-  it('trims label and value', () => {
-    const result = choiceOptionSchema.safeParse({
-      label: '  Morning  ',
-      value: ' morning ',
-    });
+  it('trims the option', () => {
+    const result = choiceOptionSchema.safeParse('  Morning  ');
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data).toEqual({ label: 'Morning', value: 'morning' });
+      expect(result.data).toBe('Morning');
     }
   });
 
-  it('rejects an empty value', () => {
-    expect(
-      choiceOptionSchema.safeParse({ label: '10:30', value: '' }).success,
-    ).toBe(false);
+  it('rejects an empty option', () => {
+    expect(choiceOptionSchema.safeParse('').success).toBe(false);
   });
 
-  it('rejects a blank value', () => {
-    expect(
-      choiceOptionSchema.safeParse({ label: '10:30', value: '   ' }).success,
-    ).toBe(false);
+  it('rejects a blank option', () => {
+    expect(choiceOptionSchema.safeParse('   ').success).toBe(false);
+  });
+});
+
+describe('choiceOptionsSchema', () => {
+  it('accepts unique options', () => {
+    expect(choiceOptionsSchema.safeParse(['Morning', 'Evening']).success).toBe(
+      true,
+    );
   });
 
-  it('rejects an empty label', () => {
+  it('rejects duplicates after trim', () => {
     expect(
-      choiceOptionSchema.safeParse({ label: '', value: 'morning' }).success,
+      choiceOptionsSchema.safeParse(['Morning', ' Morning ']).success,
     ).toBe(false);
   });
 });
 
-describe('deriveOptionValue', () => {
-  it('mirrors the label when the value is empty', () => {
-    expect(deriveOptionValue('10:30', '')).toBe('10:30');
+describe('duplicateOptionIndexes', () => {
+  it('returns indexes of duplicated trimmed text', () => {
+    expect(duplicateOptionIndexes(['A', 'B', 'A', ' B '])).toEqual([
+      0, 1, 2, 3,
+    ]);
   });
 
-  it('mirrors the label when the value is blank', () => {
-    expect(deriveOptionValue('10:30', '   ')).toBe('10:30');
-  });
-
-  it('keeps an explicitly set value', () => {
-    expect(deriveOptionValue('10:30', 'morning')).toBe('morning');
+  it('ignores empty entries', () => {
+    expect(duplicateOptionIndexes(['', 'A', ''])).toEqual([]);
   });
 });
 

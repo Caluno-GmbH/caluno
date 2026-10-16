@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 import { BASE_URL } from '../AuthPage';
 
 const ORG_DASHBOARD = /\/admin\/[0-9a-f-]{36}/;
+const ORG_UNIT_EDIT_SHEET = 'org-unit-create-edit-form';
 
 export class OrgPage {
   constructor(private readonly page: Page) {}
@@ -10,16 +11,32 @@ export class OrgPage {
     return this.page.getByRole('button', { name: 'Get started' });
   }
 
+  get formDialog() {
+    return this.page.getByRole('dialog');
+  }
+
   get nameInput() {
-    return this.page.getByLabel('Organization name');
+    return this.page.locator('#name');
   }
 
   get descriptionInput() {
-    return this.page.getByLabel('Description');
+    return this.page.locator('#description');
   }
 
   get createButton() {
-    return this.page.getByRole('button', { name: 'Create organization' });
+    return this.page.getByRole('button', { name: 'Create organisation' });
+  }
+
+  get saveButton() {
+    return this.formDialog.getByRole('button', { name: 'Save changes' });
+  }
+
+  get editButton() {
+    return this.page.getByRole('button', { name: 'Edit' }).first();
+  }
+
+  get nameValidationError() {
+    return this.formDialog.getByText('Name must be at least 2 characters');
   }
 
   // Onboarding entry for org-less accounts.
@@ -31,6 +48,22 @@ export class OrgPage {
     await this.page.goto(`${BASE_URL}/en/admin/create-organization`, {
       waitUntil: 'load',
     });
+  }
+
+  async gotoSettings(orgUId: string) {
+    await this.page.goto(`${BASE_URL}/en/admin/${orgUId}/settings/org-units`, {
+      waitUntil: 'load',
+    });
+  }
+
+  // Opens the org-unit edit sheet on the settings page (query-param handshake).
+  async gotoEditSettings(orgUId: string) {
+    await this.page.goto(
+      `${BASE_URL}/en/admin/${orgUId}/settings/org-units?sheet=${ORG_UNIT_EDIT_SHEET}&id=${orgUId}`,
+      { waitUntil: 'load' },
+    );
+    await expect(this.formDialog).toBeVisible();
+    await expect(this.nameInput).toBeVisible();
   }
 
   // The "Get started" click can be dropped before hydration, so retry it.
@@ -62,23 +95,49 @@ export class OrgPage {
     await expect(this.page.getByRole('heading', { name })).toBeVisible();
   }
 
+  get contactPersonNameInput() {
+    return this.page.locator('#contactPersonName');
+  }
+
   get contactEmailInput() {
-    return this.page.getByLabel('Email', { exact: true });
+    return this.page.locator('#contactEmail');
   }
 
   get phoneInput() {
-    return this.page.getByLabel('Phone');
+    return this.page.locator('#phone');
+  }
+
+  get welcomeMessageInput() {
+    return this.page.locator('#welcomeMessage');
   }
 
   get websiteUrlInput() {
-    return this.page.getByLabel('Website');
+    // Create form uses #websiteUrl; edit sheet uses #website.
+    return this.page.locator('#website, #websiteUrl');
   }
 
   get streetInput() {
-    return this.page.getByLabel('Street name and number');
+    return this.page.locator('#street');
+  }
+
+  get zipCodeInput() {
+    return this.page.locator('#zipCode');
+  }
+
+  get cityInput() {
+    return this.page.locator('#city');
+  }
+
+  get legalRepInput() {
+    return this.page.locator('#legalRep');
   }
 
   async submit() {
+    const save = this.saveButton;
+    if (await save.isVisible()) {
+      await save.click();
+      return;
+    }
     await this.createButton.click();
   }
 
@@ -86,24 +145,44 @@ export class OrgPage {
   async fillForm(values: {
     name?: string;
     description?: string;
+    contactPersonName?: string;
     contactEmail?: string;
     phone?: string;
+    welcomeMessage?: string;
     websiteUrl?: string;
     street?: string;
+    zipCode?: string;
+    city?: string;
+    legalRep?: string;
   }) {
     if (values.name !== undefined) await this.nameInput.fill(values.name);
     if (values.description !== undefined) {
       await this.descriptionInput.fill(values.description);
     }
+    if (values.contactPersonName !== undefined) {
+      await this.contactPersonNameInput.fill(values.contactPersonName);
+    }
     if (values.contactEmail !== undefined) {
       await this.contactEmailInput.fill(values.contactEmail);
     }
     if (values.phone !== undefined) await this.phoneInput.fill(values.phone);
+    if (values.welcomeMessage !== undefined) {
+      await this.welcomeMessageInput.fill(values.welcomeMessage);
+    }
     if (values.websiteUrl !== undefined) {
       await this.websiteUrlInput.fill(values.websiteUrl);
     }
     if (values.street !== undefined) {
       await this.streetInput.fill(values.street);
+    }
+    if (values.zipCode !== undefined) {
+      await this.zipCodeInput.fill(values.zipCode);
+    }
+    if (values.city !== undefined) {
+      await this.cityInput.fill(values.city);
+    }
+    if (values.legalRep !== undefined) {
+      await this.legalRepInput.fill(values.legalRep);
     }
   }
 

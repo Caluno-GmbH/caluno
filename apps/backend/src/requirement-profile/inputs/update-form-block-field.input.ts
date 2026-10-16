@@ -1,6 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
 import { FieldType } from '../enums';
-import { SelectOptionInput } from './create-form-block-field.input';
 
 @InputType()
 export class UpdateFormBlockFieldInput {
@@ -30,8 +29,8 @@ export class UpdateFormBlockFieldInput {
   @Field(() => String, { nullable: true })
   systemKey?: string | null;
 
-  @Field(() => [SelectOptionInput], { nullable: true })
-  options?: SelectOptionInput[] | null;
+  @Field(() => [String], { nullable: true })
+  options?: string[] | null;
 
   // Nullable in DB — undefined means "don't update", null or [] means "clear"
   @Field(() => [String], { nullable: true })

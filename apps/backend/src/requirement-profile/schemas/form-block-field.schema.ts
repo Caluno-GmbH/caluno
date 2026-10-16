@@ -24,7 +24,7 @@ export const formBlockFields = snakeCase.table(
     required: boolean('required').notNull().default(false),
     lockType: boolean('lock_type').notNull().default(false),
     systemKey: text('system_key'),
-    options: jsonb('options').$type<Array<{ label: string; value: string }>>(),
+    options: jsonb('options').$type<string[]>(),
     documentFileIds: uuid('document_file_ids').array(),
     documentLabel: text('document_label'),
     minAge: integer('min_age'),
