@@ -186,20 +186,20 @@ export function ShiftActionCard({
       )}
 
       {inviteStatus === ShiftInviteStatus.Joined && (
-        <Badge variant="secondary" className="gap-1">
+        <Badge variant="neutral" className="gap-1">
           <CheckIcon className="size-3.5" />
           {t('acceptedBadge')}
         </Badge>
       )}
       {inviteStatus === ShiftInviteStatus.AwaitingAdminApproval && (
-        <Badge variant="secondary" className="gap-1">
+        <Badge variant="neutral" className="gap-1">
           <ClockIcon className="size-3.5" />
           {t('pendingApprovalBadge')}
         </Badge>
       )}
       {inviteStatus === ShiftInviteStatus.VolunteerCancelled &&
         !showWaitlistCta && (
-          <Badge variant="secondary" className="gap-1">
+          <Badge variant="neutral" className="gap-1">
             <XIcon className="size-3.5" />
             {t('cancelledBadge')}
           </Badge>

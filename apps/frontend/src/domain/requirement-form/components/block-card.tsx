@@ -91,7 +91,7 @@ export function BlockCard({
               </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {usedInForms.map((f) => (
-                  <Badge key={f.id} variant="secondary" className="text-xs">
+                  <Badge key={f.id} variant="neutral" className="text-xs">
                     {f.name}
                   </Badge>
                 ))}

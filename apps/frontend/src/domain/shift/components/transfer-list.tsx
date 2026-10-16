@@ -65,11 +65,11 @@ const ALLOWANCE_ICON: Record<InviteAllowanceState, typeof CircleCheck> = {
 
 const ALLOWANCE_BADGE_VARIANT: Record<
   InviteAllowanceState,
-  'success' | 'info' | 'destructive'
+  'success' | 'info' | 'default'
 > = {
   ELIGIBLE: 'success',
   NEARLY_EXHAUSTED: 'info',
-  WOULD_EXCEED: 'destructive',
+  WOULD_EXCEED: 'default',
   NO_AGREEMENT: 'info',
 };
 
@@ -79,7 +79,7 @@ function AllowanceBadge({ state }: { state: InviteAllowanceState }) {
   const Icon = ALLOWANCE_ICON[state];
   return (
     <Badge variant={ALLOWANCE_BADGE_VARIANT[state]} className="gap-1 shrink-0">
-      <Icon className="size-3" />
+      <Icon className="size-3.5" />
       {t(display.labelKey)}
     </Badge>
   );

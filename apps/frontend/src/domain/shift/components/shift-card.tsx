@@ -67,7 +67,7 @@ function StaffingBadge({
       variant={variant}
       className={`flex-1 justify-center self-stretch gap-1${interactive ? ' cursor-pointer' : ''}`}
     >
-      <Icon className="size-3" />
+      <Icon className="size-3.5" />
       {staffingBadgeText(count, min, max, state)}
     </Badge>
   );

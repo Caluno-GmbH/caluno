@@ -58,7 +58,7 @@ export function FormBuilderAddBlockDialog({
                 )}
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {block.fields?.map((f) => (
-                    <Badge key={f.id} variant="secondary" className="text-sm">
+                    <Badge key={f.id} variant="neutral" className="text-sm">
                       {f.label}
                     </Badge>
                   ))}

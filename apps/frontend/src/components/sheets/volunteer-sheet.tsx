@@ -30,9 +30,9 @@ import { Link } from '@/i18n/navigation';
 
 function statusVariant(
   status: MembershipRequestStatus,
-): 'default' | 'secondary' | 'destructive' {
-  if (status === MembershipRequestStatus.Pending) return 'secondary';
-  if (status === MembershipRequestStatus.Rejected) return 'destructive';
+): 'default' | 'neutral' | 'error' {
+  if (status === MembershipRequestStatus.Pending) return 'neutral';
+  if (status === MembershipRequestStatus.Rejected) return 'error';
   return 'default';
 }
 

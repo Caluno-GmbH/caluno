@@ -545,8 +545,8 @@ function FieldCard({
             {t('fieldN', { n: index + 1 })}
           </span>
           {isSystemField && (
-            <Badge variant="secondary" className="text-xs">
-              <UserCircle2 className="mr-1 size-3" />
+            <Badge variant="neutral" className="text-xs">
+              <UserCircle2 className="mr-1 size-3.5" />
               {t('systemField')}
             </Badge>
           )}

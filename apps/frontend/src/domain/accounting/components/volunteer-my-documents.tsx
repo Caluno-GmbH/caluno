@@ -149,7 +149,7 @@ export function VolunteerMyDocuments() {
                   )}
                 </span>
                 {pendingInOrg > 0 && (
-                  <Badge variant="destructive" size="count">
+                  <Badge size="count">
                     {pendingInOrg}
                   </Badge>
                 )}

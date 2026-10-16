@@ -61,7 +61,6 @@ export function ProfileDropdown({ children }: ProfileDropdownProps) {
             <span className="flex-1 text-left">{t('myDocuments')}</span>
             {pendingCount > 0 && (
               <Badge
-                variant="destructive"
                 size="count"
                 role="img"
                 aria-label={t('myDocumentsBadge', { count: pendingCount })}

@@ -123,7 +123,7 @@ export function BlocksTable({
                       {usedInForms.map((f) => (
                         <Badge
                           key={f.id}
-                          variant="secondary"
+                          variant="neutral"
                           className="text-xs"
                         >
                           {f.name}
