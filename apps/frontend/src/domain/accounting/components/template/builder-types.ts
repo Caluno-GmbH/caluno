@@ -129,7 +129,7 @@ function allLines(doc: TemplateDocument): TemplateLine[] {
       lines.push(...block.lines);
     }
   }
-  if (doc.footer?.closingLine) lines.push(doc.footer.closingLine);
+  lines.push(doc.footer.closingLine);
   return lines;
 }
 
