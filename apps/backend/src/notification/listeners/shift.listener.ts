@@ -493,6 +493,7 @@ export class ShiftListener {
             shiftTitle: payload.shiftTitle,
             recipientFirstName: recipient.firstName,
             fromDate: payload.fromDate,
+            instanceStartsAt: payload.instanceStartsAt,
             changes: payload.changes,
           },
           templateContext,

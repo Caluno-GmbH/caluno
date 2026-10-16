@@ -67,7 +67,7 @@ export async function eventDetailsChangedTemplate(
       t('eventDetailsChanged.greeting', {
         firstName,
         eventTitle,
-        organizationUnitName,
+        organizationName: organizationUnitName,
       }),
       {
         padding: '0 0 16px',

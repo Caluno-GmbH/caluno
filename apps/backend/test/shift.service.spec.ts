@@ -70,6 +70,7 @@ describe('ShiftService', () => {
       notifyShiftSeriesLeft: mock(() => {}),
       notifyShiftSeriesRemoved: mock(() => {}),
       notifyShiftInstanceWaitlistSpotOpened: mock(() => {}),
+      notifyShiftDetailsChanged: mock(() => {}),
     } as unknown as NotificationService;
 
     capture = mock(() => {});
@@ -297,6 +298,66 @@ describe('ShiftService', () => {
       });
 
       expect(updated?.slug).toBe(originalSlug);
+    });
+  });
+
+  describe('updateShiftInstance — details changed notification', () => {
+    it('notifies only volunteers signed up for the edited instance of a series', async () => {
+      const startsAt = new Date(Date.now() + 3 * 24 * 3600_000);
+      startsAt.setUTCMinutes(0, 0, 0);
+      startsAt.setUTCHours(8);
+      const shiftId = await createRecurringShift(
+        startsAt,
+        new Date(startsAt.getTime() + 2 * 3600_000),
+      );
+      const instances = await getInstances(shiftId);
+      const [editedInstance, otherInstance] = instances;
+      if (!editedInstance || !otherInstance) {
+        throw new Error('Expected the series to expand to multiple instances');
+      }
+
+      const editedVolunteer = await createUser(db);
+      const otherVolunteer = await createUser(db);
+      await db.insert(schema.shiftInstanceInvites).values({
+        instanceId: editedInstance.id,
+        userId: editedVolunteer.id,
+        status: ShiftInviteStatus.JOINED,
+      });
+      await db.insert(schema.shiftInstanceInvites).values({
+        instanceId: otherInstance.id,
+        userId: otherVolunteer.id,
+        status: ShiftInviteStatus.JOINED,
+      });
+
+      await shiftService.updateShiftInstance(
+        editedInstance.id,
+        {
+          title: `Edited ${crypto.randomUUID()}`,
+          startsAt: editedInstance.actualStartsAt,
+          endsAt: editedInstance.actualEndsAt,
+        } as never,
+        organizationUnitId,
+      );
+
+      // The notification is emitted fire-and-forget after the transaction;
+      // poll with real time until the recipient query resolves.
+      const notify =
+        notificationService.notifyShiftDetailsChanged as ReturnType<
+          typeof mock
+        >;
+      const deadline = Date.now() + 2000;
+      while (notify.mock.calls.length === 0 && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(notify).toHaveBeenCalledTimes(1);
+      const payload = notify.mock.calls[0]?.[0] as {
+        recipientUserIds: string[];
+        instanceStartsAt?: Date;
+      };
+      expect(payload.recipientUserIds).toEqual([editedVolunteer.id]);
+      expect(payload.instanceStartsAt?.toISOString()).toBe(
+        editedInstance.actualStartsAt.toISOString(),
+      );
     });
   });
 
