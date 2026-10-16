@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { isUUID } from 'class-validator';
-import { and, eq, inArray, isNull } from 'drizzle-orm';
+import { and, eq, gte, inArray, isNull, lt, lte, ne } from 'drizzle-orm';
 import type { UserEntity } from '../../auth/schemas/auth.schema';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
@@ -256,6 +256,10 @@ export class ReimbursementRateService {
   }
 
   /**
+   * Year-to-date usage for one volunteer + type inside one Organization.
+   * Invoices and the Anfangsbetrag from other Organizations are never
+   * included — sibling units of the same tenant are.
+   *
    * `asOfDate` bounds the sum to invoices whose own period has ended by that
    * date — pass a document's `periodEnd` when computing the Jahresdeckel
    * "already received" figure so a reissued/regenerated document keeps
@@ -265,6 +269,7 @@ export class ReimbursementRateService {
    * requirement and should reflect everything on record for the year.
    */
   async getYearlyUsage(
+    organizationId: string,
     volunteerId: string,
     reimbursementTypeId: string,
     year: number,
@@ -275,23 +280,41 @@ export class ReimbursementRateService {
     const reimbursementType =
       await this.findReimbursementTypeById(reimbursementTypeId);
 
+    const conditions = [
+      eq(schema.documentTemplates.organizationId, organizationId),
+      eq(schema.invoices.volunteerId, volunteerId),
+      eq(schema.invoices.reimbursementTypeId, reimbursementTypeId),
+      gte(schema.invoices.periodStart, yearStart),
+      lt(schema.invoices.periodStart, yearEnd),
+    ];
+    if (asOfDate) {
+      conditions.push(lte(schema.invoices.periodEnd, asOfDate));
+    }
+    // The invoice being reissued or rendered must not count toward what was
+    // already received before it. A non-UUID id can't match an invoice, so
+    // it's ignored.
+    if (excludeInvoiceId && isUUID(excludeInvoiceId)) {
+      conditions.push(ne(schema.invoices.id, excludeInvoiceId));
+    }
+
     const [invoices, baseline] = await Promise.all([
-      this.db.query.invoices.findMany({
-        where: {
-          volunteerId,
-          reimbursementTypeId,
-          periodStart: { gte: yearStart, lt: yearEnd },
-          ...(asOfDate ? { periodEnd: { lte: asOfDate } } : {}),
-          // The invoice being reissued or rendered must not count toward
-          // what was already received before it. A non-UUID id can't match
-          // an invoice and would fail the uuid comparison, so it's ignored.
-          ...(excludeInvoiceId && isUUID(excludeInvoiceId)
-            ? { id: { ne: excludeInvoiceId } }
-            : {}),
-        },
-        columns: { totalAmountCents: true, invoiceStatus: true },
-      }),
-      this.getManualBaseline(volunteerId, reimbursementTypeId, year),
+      this.db
+        .select({
+          totalAmountCents: schema.invoices.totalAmountCents,
+          invoiceStatus: schema.invoices.invoiceStatus,
+        })
+        .from(schema.invoices)
+        .innerJoin(
+          schema.documentTemplates,
+          eq(schema.documentTemplates.id, schema.invoices.documentTemplateId),
+        )
+        .where(and(...conditions)),
+      this.getManualBaseline(
+        organizationId,
+        volunteerId,
+        reimbursementTypeId,
+        year,
+      ),
     ]);
 
     const usedCents =
@@ -308,12 +331,23 @@ export class ReimbursementRateService {
    * Roster-scale version of `getYearlyUsage`: one query per volunteer would
    * be N+1 for a board view, so this fetches every member and every
    * reimbursement type once, then aggregates invoices for the whole unit in
-   * a single query keyed by volunteer-and-type.
+   * a single query keyed by volunteer-and-type. Scoped to the Organization
+   * that owns `organizationUnitId`.
    */
   async getRosterYearlyUsage(
     organizationUnitId: string,
     year: number,
   ): Promise<VolunteerYearlyUsageResult[]> {
+    const organization =
+      await this.organizationUnitDataService.findOrganizationByUnitId(
+        organizationUnitId,
+      );
+    if (!organization) {
+      throw new NotFoundGraphQLError(
+        `Organization unit with ID ${organizationUnitId} not found`,
+      );
+    }
+
     const [members, types] = await Promise.all([
       this.membershipService.getMembers(organizationUnitId),
       this.db.query.reimbursementTypes.findMany(),
@@ -324,20 +358,32 @@ export class ReimbursementRateService {
     const memberIds = members.map((member) => member.id);
 
     const [invoices, baselines] = await Promise.all([
-      this.db.query.invoices.findMany({
-        where: {
-          volunteerId: { in: memberIds },
-          periodStart: { gte: yearStart, lt: yearEnd },
-        },
-        columns: {
-          volunteerId: true,
-          reimbursementTypeId: true,
-          totalAmountCents: true,
-          invoiceStatus: true,
-        },
-      }),
+      this.db
+        .select({
+          volunteerId: schema.invoices.volunteerId,
+          reimbursementTypeId: schema.invoices.reimbursementTypeId,
+          totalAmountCents: schema.invoices.totalAmountCents,
+          invoiceStatus: schema.invoices.invoiceStatus,
+        })
+        .from(schema.invoices)
+        .innerJoin(
+          schema.documentTemplates,
+          eq(schema.documentTemplates.id, schema.invoices.documentTemplateId),
+        )
+        .where(
+          and(
+            eq(schema.documentTemplates.organizationId, organization.id),
+            inArray(schema.invoices.volunteerId, memberIds),
+            gte(schema.invoices.periodStart, yearStart),
+            lt(schema.invoices.periodStart, yearEnd),
+          ),
+        ),
       this.db.query.reimbursementManualBaselines.findMany({
-        where: { volunteerId: { in: memberIds }, year },
+        where: {
+          organizationId: organization.id,
+          volunteerId: { in: memberIds },
+          year,
+        },
         columns: {
           volunteerId: true,
           reimbursementTypeId: true,
@@ -469,12 +515,13 @@ export class ReimbursementRateService {
   }
 
   async getManualBaseline(
+    organizationId: string,
     volunteerId: string,
     reimbursementTypeId: string,
     year: number,
   ): Promise<ManualBaselineEntity | undefined> {
     return this.db.query.reimbursementManualBaselines.findFirst({
-      where: { volunteerId, reimbursementTypeId, year },
+      where: { organizationId, volunteerId, reimbursementTypeId, year },
     });
   }
 
@@ -503,6 +550,7 @@ export class ReimbursementRateService {
       })
       .onConflictDoUpdate({
         target: [
+          schema.reimbursementManualBaselines.organizationId,
           schema.reimbursementManualBaselines.volunteerId,
           schema.reimbursementManualBaselines.reimbursementTypeId,
           schema.reimbursementManualBaselines.year,

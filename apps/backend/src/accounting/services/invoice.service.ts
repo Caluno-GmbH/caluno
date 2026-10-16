@@ -756,6 +756,7 @@ export class InvoiceService {
           })
           .onConflictDoUpdate({
             target: [
+              schema.reimbursementManualBaselines.organizationId,
               schema.reimbursementManualBaselines.volunteerId,
               schema.reimbursementManualBaselines.reimbursementTypeId,
               schema.reimbursementManualBaselines.year,
