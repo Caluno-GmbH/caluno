@@ -1477,6 +1477,7 @@
       "waitlistInviteSuccess": "Volunteer invited to the assignment"
     },
     "checkIn": {
+      "checkInForAnotherShift": "Check in for another shift instead",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
       "checkOutLoading": "Checking out {name}…",

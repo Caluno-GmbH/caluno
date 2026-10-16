@@ -1,16 +1,18 @@
-import { Card, CardContent } from '@repo/ui';
+import { Button, Card, CardContent } from '@repo/ui';
 import { Calendar, Hand, ScanQrCode } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { UserCard } from '@/components/user-card';
 import { CheckInUnavailableCard } from '@/domain/shift/components/check-in-unavailable-card';
 import { CheckOutButton } from '@/domain/shift/components/checkout-button';
+import { checkInPath } from '@/domain/shift/routes';
+import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 
 interface VolunteeringCheckOutPageProps {
   params: Promise<{ checkInId: string }>;
-  searchParams: Promise<{ entryId?: string }>;
+  searchParams: Promise<{ entryId?: string; orgUId?: string }>;
 }
 
 export default async function VolunteeringCheckOutPage({
@@ -18,7 +20,7 @@ export default async function VolunteeringCheckOutPage({
   searchParams,
 }: VolunteeringCheckOutPageProps) {
   const { checkInId } = await params;
-  const { entryId } = await searchParams;
+  const { entryId, orgUId } = await searchParams;
 
   const data = await getDataClient();
   const context = await data.timeEntry.getCheckInContext(checkInId);
@@ -77,6 +79,12 @@ export default async function VolunteeringCheckOutPage({
               timeEntryId={entry.id}
             />
           </div>
+
+          <Button asChild variant="outline" size="lg" className="w-full">
+            <Link href={checkInPath(checkInId, orgUId)}>
+              {t('checkInForAnotherShift')}
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
