@@ -1363,7 +1363,7 @@ export type GetCheckInContextQueryVariables = Exact<{
 }>;
 
 
-export type GetCheckInContextQuery = { checkInContext: { volunteer: { id: string, name: string, email: string, image: string | null }, eligibleOrganizationUnits: Array<{ id: string, name: string }>, openTimeEntries: Array<{ id: string, startedAt: string, shiftInstance: { id: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }> } | null };
+export type GetCheckInContextQuery = { checkInContext: { volunteer: { id: string, name: string, email: string, image: string | null }, eligibleOrganizationUnits: Array<{ id: string, name: string }>, openTimeEntries: Array<{ id: string, startedAt: string, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }> } | null };
 
 export type GetCheckInReadinessQueryVariables = Exact<{
   volunteerId: string;
@@ -4886,6 +4886,8 @@ export const GetCheckInContextDocument = gql`
       startedAt
       shiftInstance {
         id
+        actualStartsAt
+        actualEndsAt
         overrideTitle
         master {
           id
