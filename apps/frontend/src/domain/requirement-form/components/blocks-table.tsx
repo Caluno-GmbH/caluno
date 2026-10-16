@@ -125,7 +125,7 @@ export function BlocksTable({
                       {usedInForms.map((f) => (
                         <Badge
                           key={f.id}
-                          variant="secondary"
+                          variant="neutral"
                           className={cn('text-xs', USER_TEXT_BADGE)}
                         >
                           {f.name}

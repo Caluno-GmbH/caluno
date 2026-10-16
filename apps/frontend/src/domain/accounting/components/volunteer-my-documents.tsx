@@ -6,6 +6,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
+  Badge,
   Button,
   Empty,
   EmptyDescription,
@@ -147,11 +148,7 @@ export function VolunteerMyDocuments() {
                     </span>
                   )}
                 </span>
-                {pendingInOrg > 0 && (
-                  <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-medium text-white tabular-nums">
-                    {pendingInOrg}
-                  </span>
-                )}
+                {pendingInOrg > 0 && <Badge size="count">{pendingInOrg}</Badge>}
               </AccordionTrigger>
               <AccordionContent className="pb-4">
                 <div className="flex flex-col gap-3">

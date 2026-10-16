@@ -346,9 +346,7 @@ export default function ManageVolunteersClient({ orgUId }: Props) {
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}
               {tab.value === TAB_PENDING && (pendingCount ?? 0) > 0 && (
-                <Badge className="h-5 min-w-5 rounded-full px-1.5">
-                  {pendingCount}
-                </Badge>
+                <Badge size="count">{pendingCount}</Badge>
               )}
             </TabsTrigger>
           ))}

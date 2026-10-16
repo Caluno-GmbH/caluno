@@ -35,8 +35,8 @@ export function CompensationNotice({
 
   return (
     <div className={cn('flex flex-col gap-1', className)}>
-      <Badge variant="secondary" className="w-fit gap-1">
-        <Coins className="size-3" aria-hidden="true" />
+      <Badge variant="neutral" className="w-fit gap-1">
+        <Coins className="size-3.5" aria-hidden="true" />
         {label}
       </Badge>
       <p className="text-[13px] text-muted-foreground">{t('agreementNote')}</p>

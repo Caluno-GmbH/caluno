@@ -56,7 +56,7 @@ export function PauschaleMarker({
           borderColor: `${color}40`,
         }}
       >
-        <Icon className="size-3" aria-hidden="true" />
+        <Icon className="size-3.5" aria-hidden="true" />
         {shortLabel}
       </Badge>
     </ActionTooltip>

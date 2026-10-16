@@ -14,13 +14,19 @@ const meta = {
       control: 'select',
       options: [
         'default',
-        'secondary',
-        'destructive',
+        'neutral',
         'outline',
         'info',
         'success',
+        'alert',
         'error',
+        'ghost',
+        'link',
       ],
+    },
+    size: {
+      control: 'select',
+      options: ['default', 'count'],
     },
     children: {
       control: 'text',
@@ -29,6 +35,7 @@ const meta = {
   },
   args: {
     variant: 'default',
+    size: 'default',
     children: 'Badge',
   },
   parameters: {
@@ -46,22 +53,12 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 /**
- * Use the `secondary` badge to call for less urgent information, blending
- * into the interface while still signaling minor updates or statuses.
+ * Use the `neutral` badge for low-emphasis, informational labels and counts
+ * that blend into the interface using the muted surface.
  */
-export const Secondary: Story = {
+export const Neutral: Story = {
   args: {
-    variant: 'secondary',
-  },
-};
-
-/**
- * Use the `destructive` badge to  indicate errors, alerts, or the need for
- * immediate attention.
- */
-export const Destructive: Story = {
-  args: {
-    variant: 'destructive',
+    variant: 'neutral',
   },
 };
 
@@ -87,8 +84,44 @@ export const Success: Story = {
   },
 };
 
+/**
+ * Use the `alert` badge to flag warnings or near-limit states that need
+ * attention without being as severe as an error.
+ */
+export const Alert: Story = {
+  args: {
+    variant: 'alert',
+  },
+};
+
+/**
+ * Use the `error` badge for errors or rejected states — an outlined red,
+ * the replacement for the former filled `destructive` badge.
+ */
 export const Error: Story = {
   args: {
     variant: 'error',
+  },
+};
+
+/**
+ * Use `size="count"` for compact, circular numeric indicators such as
+ * notification or pending-item counts.
+ */
+export const Count: Story = {
+  args: {
+    size: 'count',
+    children: '3',
+  },
+};
+
+/**
+ * A neutral numeric count indicator, e.g. a sidebar item count.
+ */
+export const CountNeutral: Story = {
+  args: {
+    variant: 'neutral',
+    size: 'count',
+    children: '12',
   },
 };
