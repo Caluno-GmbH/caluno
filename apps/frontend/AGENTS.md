@@ -30,7 +30,7 @@ tests are placed in __tests__ subdirectories
 Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-scoped, `(public)` invites/shifts/forms, `api/` auth routes, `unauthorized/` 403 fallback.
 
 ## Server-side auth & org context — use these, never roll your own
-- `lib/auth-server.ts`: `getSession()`, `requireAuth(redirectTo?)`, `getCurrentUser()`, `isAuthenticated()` — server components, layouts, and server actions only
+- `lib/auth-server.ts`: `getSession()`, `requireAuth()`, `getCurrentUser()`, `isAuthenticated()` — server components, layouts, and server actions only
 - `lib/org-context-server.ts`: `requireOrgAccess(orgUId)`, `getMyAdministrableOrgUnits()` (cached), `getMyAccessibleOrganizationUnits()`, `resolveOrgFromId(orgUId)`
 - Data access: `const data = await getDataClient(orgUId)` (`lib/data-client.ts`) — auto-adds the `x-organization-unit-id` header and auth cookies; a 403 throws `ForbiddenDataError` → server-side `redirect('/unauthorized')` in `data-client.ts` / server components. This is the org-safety mechanism: never construct GraphQL calls that bypass it.
 
