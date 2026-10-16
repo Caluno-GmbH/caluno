@@ -15,12 +15,20 @@ const meta = {
       options: [
         'default',
         'secondary',
+        'neutral',
         'destructive',
         'outline',
         'info',
         'success',
+        'alert',
         'error',
+        'ghost',
+        'link',
       ],
+    },
+    size: {
+      control: 'select',
+      options: ['default', 'count'],
     },
     children: {
       control: 'text',
@@ -29,6 +37,7 @@ const meta = {
   },
   args: {
     variant: 'default',
+    size: 'default',
     children: 'Badge',
   },
   parameters: {
@@ -52,6 +61,16 @@ export const Default: Story = {};
 export const Secondary: Story = {
   args: {
     variant: 'secondary',
+  },
+};
+
+/**
+ * Use the `neutral` badge for low-emphasis, informational labels and counts
+ * that blend into the interface using the muted surface.
+ */
+export const Neutral: Story = {
+  args: {
+    variant: 'neutral',
   },
 };
 
@@ -87,8 +106,42 @@ export const Success: Story = {
   },
 };
 
+/**
+ * Use the `alert` badge to flag warnings or near-limit states that need
+ * attention without being as severe as an error.
+ */
+export const Alert: Story = {
+  args: {
+    variant: 'alert',
+  },
+};
+
 export const Error: Story = {
   args: {
     variant: 'error',
+  },
+};
+
+/**
+ * Use `size="count"` for compact, circular numeric indicators such as
+ * notification or pending-item counts. Pair with `destructive` for urgent
+ * counts.
+ */
+export const Count: Story = {
+  args: {
+    variant: 'destructive',
+    size: 'count',
+    children: '3',
+  },
+};
+
+/**
+ * A neutral numeric count indicator, e.g. a sidebar item count.
+ */
+export const CountNeutral: Story = {
+  args: {
+    variant: 'neutral',
+    size: 'count',
+    children: '12',
   },
 };
