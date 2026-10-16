@@ -223,17 +223,21 @@ export function serializeTemplateBody(
 }
 
 /**
- * Stand-in for a stored body that has no closing line (e.g. a seeded
- * `footer: {}`). Empty text and no fields, so nothing renders and nothing is
- * counted as missing.
+ * Missing or partial stored closing lines (e.g. seeded `footer: {}`, or
+ * `{ id, text }` without `fields`) must still satisfy `TemplateLine` so
+ * builder helpers can safely read `.fields`. Absent pieces stay empty /
+ * inert — nothing renders and nothing is counted as missing.
  */
-function emptyClosingLine(): TemplateLine {
+function normalizeClosingLine(
+  raw: Partial<TemplateLine> | undefined,
+): TemplateLine {
   return {
-    id: 'closing',
-    text: '',
-    fields: [],
-    optional: false,
-    enabled: true,
+    id: raw?.id ?? 'closing',
+    text: raw?.text ?? '',
+    fields: Array.isArray(raw?.fields) ? raw.fields : [],
+    optional: raw?.optional ?? false,
+    enabled: raw?.enabled ?? true,
+    ...(raw?.inline !== undefined ? { inline: raw.inline } : {}),
   };
 }
 
@@ -260,7 +264,7 @@ export function parseTemplateBody(
   const rawFooter = (raw.footer ?? {}) as Partial<TemplateFooter>;
   const footer: TemplateFooter = {
     ...rawFooter,
-    closingLine: rawFooter.closingLine ?? emptyClosingLine(),
+    closingLine: normalizeClosingLine(rawFooter.closingLine),
     showSignatures: rawFooter.showSignatures ?? true,
   };
   const rawPageFooter = raw.pageFooter as TemplatePageFooter | undefined;
