@@ -1,17 +1,18 @@
 'use client';
 
 import { Button } from '@repo/ui';
-import type { Column } from '@tanstack/react-table';
+import type { Column, RowData } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import type { DataTableFeatures } from './features';
 import { activeDir } from './table-sort';
 
-interface DataTableColumnHeaderProps<TData, TValue> {
-  column: Column<TData, TValue>;
+interface DataTableColumnHeaderProps<TData extends RowData, TValue> {
+  column: Column<DataTableFeatures, TData, TValue>;
   title: string;
 }
 
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue>({
   column,
   title,
 }: DataTableColumnHeaderProps<TData, TValue>) {
