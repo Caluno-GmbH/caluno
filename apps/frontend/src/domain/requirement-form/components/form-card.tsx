@@ -15,13 +15,11 @@ export function FormCard({
   form,
   blocks,
   orgUId,
-  orgUnitName,
   onDelete,
 }: {
   form: RequirementForm;
   blocks: FormBlock[];
   orgUId: string;
-  orgUnitName?: string;
   onDelete?: (id: string) => Promise<void>;
 }) {
   const t = useTranslations('RequirementForm.card');
@@ -62,9 +60,6 @@ export function FormCard({
     <Card className="flex flex-col break-words">
       <CardContent className="flex flex-1 flex-col pt-5">
         <div className="flex flex-1 flex-col">
-          {orgUnitName && (
-            <p className="text-muted-foreground mb-1 text-xs">{orgUnitName}</p>
-          )}
           <h2 className="mt-1 text-xl font-bold">{form.name}</h2>
           {form.description && (
             <p className="text-muted-foreground mt-1 text-sm">

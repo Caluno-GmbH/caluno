@@ -17,13 +17,11 @@ export function DashboardContent({
   forms,
   blocks,
   orgUId,
-  orgUnitName,
   organizationId,
 }: {
   forms: RequirementForm[];
   blocks: FormBlock[];
   orgUId: string;
-  orgUnitName: string;
   organizationId: string;
 }) {
   const t = useTranslations('RequirementForm.dashboard');
@@ -124,7 +122,6 @@ export function DashboardContent({
                     form={f}
                     blocks={blocks}
                     orgUId={orgUId}
-                    orgUnitName={orgUnitName}
                     onDelete={handleDeleteForm}
                   />
                 ))}
