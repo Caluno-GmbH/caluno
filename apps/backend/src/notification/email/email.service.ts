@@ -33,6 +33,9 @@ interface SmtpConfig {
   fromName?: string;
 }
 
+const SEND_MAX_ATTEMPTS = 3;
+const SEND_TIMEOUT_MS = 5_000;
+
 function summarize(text: string, maxLength = 300): string {
   const collapsed = text.replace(/\s+/g, ' ').trim();
   return collapsed.length > maxLength
@@ -46,6 +49,7 @@ export class EmailService {
   private readonly scaleway: ScalewayConfig | null = null;
   private readonly smtp: SmtpConfig | null = null;
   private transporter: nodemailer.Transporter | null = null;
+  protected retryBaseDelayMs = 500;
   /**
    * Dev fallback: when no mailer is configured, emails are logged instead of
    * sent. The full HTML (recipient names, OTPs, reset links) is only included
@@ -130,6 +134,57 @@ export class EmailService {
 
     const url = `https://api.scaleway.com/transactional-email/v1alpha1/regions/${this.scaleway.region}/emails`;
 
+    const body = JSON.stringify({
+      from: {
+        email: this.scaleway.fromEmail,
+        name: this.scaleway.fromName,
+      },
+      to: [{ email: options.to }],
+      subject: options.subject,
+      html: options.html,
+      text: options.text ?? this.htmlToText(options.html),
+      project_id: this.scaleway.projectId,
+      attachments: options.attachments?.map((attachment) => ({
+        name: attachment.filename,
+        type: attachment.contentType,
+        content: attachment.content.toString('base64'),
+        ...(attachment.cid ? { content_id: attachment.cid } : {}),
+      })),
+    });
+
+    for (let attempt = 1; attempt <= SEND_MAX_ATTEMPTS; attempt++) {
+      const failure = await this.attemptDelivery(
+        this.scaleway,
+        url,
+        body,
+        maskedTo,
+      );
+      if (!failure) {
+        this.logger.debug(`Email sent to ${maskedTo}`);
+        return;
+      }
+      if (!failure.retryable || attempt === SEND_MAX_ATTEMPTS) {
+        this.logger.error(failure.error.message);
+        throw failure.error;
+      }
+      const delay = Math.round(
+        this.retryBaseDelayMs *
+          2 ** (attempt - 1) *
+          (0.5 + Math.random() * 0.5),
+      );
+      this.logger.warn(
+        `Retrying email to ${maskedTo} in ${delay}ms (attempt ${attempt}/${SEND_MAX_ATTEMPTS}): ${failure.error.message}`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  private async attemptDelivery(
+    config: ScalewayConfig,
+    url: string,
+    body: string,
+    maskedTo: string,
+  ): Promise<{ error: Error; retryable: boolean } | null> {
     let response: Response;
 
     try {
@@ -137,48 +192,35 @@ export class EmailService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Auth-Token': this.scaleway.secretKey,
+          'X-Auth-Token': config.secretKey,
         },
-        body: JSON.stringify({
-          from: {
-            email: this.scaleway.fromEmail,
-            name: this.scaleway.fromName,
-          },
-          to: [{ email: options.to }],
-          subject: options.subject,
-          html: options.html,
-          text: options.text ?? this.htmlToText(options.html),
-          project_id: this.scaleway.projectId,
-          attachments: options.attachments?.map((attachment) => ({
-            name: attachment.filename,
-            type: attachment.contentType,
-            content: attachment.content.toString('base64'),
-            ...(attachment.cid ? { content_id: attachment.cid } : {}),
-          })),
-        }),
+        body,
+        signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send email to ${maskedTo}: ${message}`);
-      throw new Error(
-        `Failed to send email to ${maskedTo}: ${summarize(message)}`,
-        { cause: error },
-      );
+      return {
+        error: new Error(
+          `Failed to send email to ${maskedTo}: ${summarize(message)}`,
+          { cause: error },
+        ),
+        retryable: true,
+      };
     }
 
-    if (!response.ok) {
-      const body = await response.text();
-      this.logger.error(
-        `Scaleway Transactional Email responded ${response.status} for ${maskedTo}: ${body}`,
-      );
-      throw new Error(
+    if (response.ok) {
+      return null;
+    }
+
+    const responseBody = await response.text().catch(() => '');
+    return {
+      error: new Error(
         `Failed to send email to ${maskedTo}: Scaleway responded ${response.status}${
-          body ? ` — ${summarize(body)}` : ''
+          responseBody ? ` — ${summarize(responseBody)}` : ''
         }`,
-      );
-    }
-
-    this.logger.debug(`Email sent to ${maskedTo}`);
+      ),
+      retryable: response.status === 429 || response.status >= 500,
+    };
   }
 
   private htmlToText(html: string): string {
