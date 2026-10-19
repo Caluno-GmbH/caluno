@@ -106,7 +106,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
 
   return (
     <div className="overflow-hidden rounded-md border">
-      <Table className="table-fixed">
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
