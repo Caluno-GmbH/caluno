@@ -7,6 +7,7 @@ import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
 import { checkPermission, requirePermission } from '@/lib/permissions-server';
+import { resolveRootOrgIdentity } from '@/lib/resolve-root-org-identity';
 
 interface RolesPageProps {
   params: Promise<{ orgUId: string; locale: string }>;
@@ -14,13 +15,16 @@ interface RolesPageProps {
 
 export default async function RolesPage({ params }: RolesPageProps) {
   const { orgUId, locale } = await params;
-  const { org } = await requireOrgAccess(orgUId);
+  await requireOrgAccess(orgUId);
   await requirePermission(orgUId, PermissionKey.OrgView);
   const [canEdit] = await checkPermission(orgUId, PermissionKey.OrgEdit);
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Role' });
 
-  const roles = await data.role.findAll();
+  const [roles, root] = await Promise.all([
+    data.role.findAll(),
+    resolveRootOrgIdentity(orgUId),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -28,7 +32,7 @@ export default async function RolesPage({ params }: RolesPageProps) {
         <div>
           <h1 className="page-title">{t('page.title')}</h1>
           <p className="text-muted-foreground mt-1">
-            {t('page.subtitle', { orgName: org.name })}
+            {t('page.subtitle', { orgName: root.name })}
           </p>
         </div>
         {canEdit && (

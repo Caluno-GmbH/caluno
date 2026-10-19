@@ -1359,7 +1359,7 @@
     "page": {
       "createButton": "Rolle erstellen",
       "empty": "Noch keine Rollen. Erstelle deine erste Rolle, um loszulegen.",
-      "subtitle": "Verwalte Rollen und Berechtigungen für {orgName}",
+      "subtitle": "Verwalte Rollen und Berechtigungen für die gesamte Organisation {orgName}",
       "title": "Rollen"
     },
     "permissions": {
