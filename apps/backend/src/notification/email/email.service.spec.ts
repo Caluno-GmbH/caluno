@@ -20,15 +20,18 @@ function configService(values: Record<string, string> = SCALEWAY_ENV) {
   };
 }
 
-/** Runs `send` with `fetch` stubbed, returning whatever it threw. */
-async function sendFailure(
-  fetchImpl: () => Promise<Response>,
-  to: string,
+class FastRetryEmailService extends EmailService {
+  protected override retryBaseDelayMs = 1;
+}
+
+async function runSend(
+  fetchImpl: typeof fetch,
+  to = 'volunteer@example.com',
 ): Promise<Error | undefined> {
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = fetchImpl as unknown as typeof fetch;
+  globalThis.fetch = fetchImpl;
   try {
-    const service = new EmailService(configService() as never);
+    const service = new FastRetryEmailService(configService() as never);
     return await service
       .send({ to, subject: 'Subject', html: '<p>Body</p>' })
       .then(
@@ -39,6 +42,95 @@ async function sendFailure(
     globalThis.fetch = originalFetch;
   }
 }
+
+async function sendFailure(
+  fetchImpl: () => Promise<Response>,
+  to: string,
+): Promise<Error | undefined> {
+  return runSend(fetchImpl as unknown as typeof fetch, to);
+}
+
+async function sendWithSequence(responses: Array<() => Promise<Response>>) {
+  let calls = 0;
+  const error = await runSend((async () => {
+    const next = responses[Math.min(calls, responses.length - 1)];
+    calls++;
+    return next();
+  }) as unknown as typeof fetch);
+  return { calls, error };
+}
+
+describe('EmailService retries', () => {
+  it('retries a transport failure and succeeds', async () => {
+    const { calls, error } = await sendWithSequence([
+      async () => {
+        throw new Error('ECONNRESET');
+      },
+      async () => new Response('{}', { status: 200 }),
+    ]);
+
+    expect(error).toBeUndefined();
+    expect(calls).toBe(2);
+  });
+
+  it('retries 5xx and 429 responses', async () => {
+    const { calls, error } = await sendWithSequence([
+      async () => new Response('busy', { status: 503 }),
+      async () => new Response('slow down', { status: 429 }),
+      async () => new Response('{}', { status: 200 }),
+    ]);
+
+    expect(error).toBeUndefined();
+    expect(calls).toBe(3);
+  });
+
+  it('gives up after three attempts and throws the last error', async () => {
+    const { calls, error } = await sendWithSequence([
+      async () => new Response('down', { status: 502 }),
+    ]);
+
+    expect(calls).toBe(3);
+    expect(error?.message).toContain('Scaleway responded 502');
+  });
+
+  it('retries a request timeout and sends an abort signal', async () => {
+    const signals: Array<AbortSignal | null | undefined> = [];
+    let calls = 0;
+    const error = await runSend((async (_url: unknown, init?: RequestInit) => {
+      signals.push(init?.signal);
+      calls++;
+      if (calls === 1) {
+        throw new DOMException('The operation timed out', 'TimeoutError');
+      }
+      return new Response('{}', { status: 200 });
+    }) as unknown as typeof fetch);
+
+    expect(error).toBeUndefined();
+    expect(calls).toBe(2);
+    expect(signals.every((signal) => signal instanceof AbortSignal)).toBe(true);
+  });
+
+  it('wraps a failure while reading the error body', async () => {
+    const brokenBody = new Response('x', { status: 500 });
+    brokenBody.text = async () => {
+      throw new Error('socket hang up');
+    };
+    const { calls, error } = await sendWithSequence([async () => brokenBody]);
+
+    expect(calls).toBe(3);
+    expect(error?.message).toContain('Scaleway responded 500');
+    expect(error?.message).not.toContain('volunteer@example.com');
+  });
+
+  it('does not retry other 4xx responses', async () => {
+    const { calls, error } = await sendWithSequence([
+      async () => new Response('bad', { status: 400 }),
+    ]);
+
+    expect(calls).toBe(1);
+    expect(error?.message).toContain('Scaleway responded 400');
+  });
+});
 
 describe('EmailService error reporting', () => {
   it('surfaces the provider status and reason, and masks the recipient', async () => {

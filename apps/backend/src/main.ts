@@ -19,6 +19,12 @@ async function bootstrap() {
   };
   process.once('SIGTERM', onSignal);
   process.once('SIGINT', onSignal);
+  // Envoy (Scaleway Serverless Containers) must close idle upstream sockets
+  // before Node does. Node's default keepAliveTimeout is 5000 ms; if Node
+  // closes first, Envoy reuses a dead socket → RST → intermittent 502.
+  const server = app.getHttpServer() as import('node:http').Server;
+  server.keepAliveTimeout = 65_000;
+  server.headersTimeout = 66_000;
   await app.listen(process.env.PORT ?? 8080);
   void app.get(TermsAutoPublishService).runIfEnabled();
 }
