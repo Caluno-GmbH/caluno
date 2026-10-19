@@ -6,8 +6,6 @@ import { TimesheetsTable } from '@/domain/time-entry/components/timesheets-table
 import { timesheetsSearchParamsCache } from '@/domain/time-entry/timesheets-search-params.server';
 import { getDataClient } from '@/lib/data-client';
 
-const PAGE_SIZE = 10;
-
 interface TimesheetsPageProps {
   params: Promise<{ orgUId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -20,15 +18,16 @@ export default async function TimesheetsPage({
   const { orgUId } = await params;
   const t = await getTranslations('TimeEntry');
 
-  const { sort, dir, page } = timesheetsSearchParamsCache.parse(
+  const { sort, dir, page, pageSize } = timesheetsSearchParamsCache.parse(
     await searchParams,
   );
 
+  const limit = Number(pageSize);
   const data = await getDataClient({ orgUId });
 
   const timeEntries = await data.timeEntry.findAll({
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE,
+    limit,
+    offset: (page - 1) * limit,
     sort,
     order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
   });
