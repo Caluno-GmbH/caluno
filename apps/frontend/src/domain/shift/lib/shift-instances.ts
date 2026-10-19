@@ -1,5 +1,5 @@
 import { tz } from '@date-fns/tz';
-import { addDays, isSameDay, startOfWeek } from 'date-fns';
+import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 
 const appTz = { in: tz(DEFAULT_TIMEZONE) };
@@ -15,6 +15,10 @@ export interface ShiftInstanceDay {
 
 export function getCurrentWeekStart(reference: Date): Date {
   return startOfWeek(reference, { weekStartsOn: 1, ...appTz });
+}
+
+export function toWeekParam(reference: Date): string {
+  return format(getCurrentWeekStart(reference), 'yyyy-MM-dd', appTz);
 }
 
 export function getWeekRange(reference: Date): {
