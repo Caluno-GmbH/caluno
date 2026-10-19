@@ -1894,6 +1894,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Zeilen pro Seite",
     "sortAscending": "Aufsteigend sortieren",
     "sortDescending": "Absteigend sortieren",
     "sortedAscending": "Aufsteigend sortiert",

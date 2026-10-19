@@ -1894,6 +1894,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Rows per page",
     "sortAscending": "Sort ascending",
     "sortDescending": "Sort descending",
     "sortedAscending": "Sorted ascending",
