@@ -17,6 +17,7 @@ import type {
   GetAvailableShiftInstancesQuery,
   GetCheckInShiftInstancesQuery,
   GetCheckInShiftsQuery,
+  GetEventShiftInstanceStartsQuery,
   GetMyShiftInstancesQuery,
   GetPublicShiftInstancesQuery,
   GetShiftInstanceCallOutHistoryQuery,
@@ -307,6 +308,11 @@ export class ShiftRepository extends BaseRepository {
       eventId: eventId ?? undefined,
     });
     return data.weeklyShifts;
+  }
+
+  async findInstanceStartsForEvent(eventId: string): Promise<string[]> {
+    const data = await this.sdk.GetEventShiftInstanceStarts({ eventId });
+    return data.eventShiftInstanceStarts;
   }
 
   /**

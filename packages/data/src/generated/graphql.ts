@@ -1265,6 +1265,13 @@ export type CheckInInviteToShiftInstanceMutationVariables = Exact<{
 
 export type CheckInInviteToShiftInstanceMutation = { checkInInviteToShiftInstance: { id: string } };
 
+export type GetEventShiftInstanceStartsQueryVariables = Exact<{
+  eventId: string;
+}>;
+
+
+export type GetEventShiftInstanceStartsQuery = { eventShiftInstanceStarts: Array<string> };
+
 export type MyTasksQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -4624,6 +4631,11 @@ export const CheckInInviteToShiftInstanceDocument = gql`
   }
 }
     `;
+export const GetEventShiftInstanceStartsDocument = gql`
+    query GetEventShiftInstanceStarts($eventId: ID!) {
+  eventShiftInstanceStarts(eventId: $eventId)
+}
+    `;
 export const MyTasksDocument = gql`
     query MyTasks {
   myTasks {
@@ -5589,6 +5601,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CheckInInviteToShiftInstance(variables: CheckInInviteToShiftInstanceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInInviteToShiftInstanceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInInviteToShiftInstanceMutation>({ document: CheckInInviteToShiftInstanceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInInviteToShiftInstance', 'mutation', variables);
+    },
+    GetEventShiftInstanceStarts(variables: GetEventShiftInstanceStartsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetEventShiftInstanceStartsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetEventShiftInstanceStartsQuery>({ document: GetEventShiftInstanceStartsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetEventShiftInstanceStarts', 'query', variables);
     },
     MyTasks(variables?: MyTasksQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyTasksQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<MyTasksQuery>({ document: MyTasksDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyTasks', 'query', variables);
