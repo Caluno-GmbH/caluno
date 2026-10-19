@@ -2,6 +2,17 @@ import { describe, expect, it, mock } from 'bun:test';
 import { DataError, ForbiddenDataError } from '@repo/data';
 import { handleServerDataClientError } from '../data-client-errors';
 
+/** Simulates a duplicated DataError class (Next SSR dual-package hazard). */
+class OtherDataError extends Error {
+  name = 'DataError';
+  constructor(
+    message: string,
+    public readonly options?: { code?: string; statusCode?: number },
+  ) {
+    super(message);
+  }
+}
+
 describe('handleServerDataClientError', () => {
   it('redirects to login on UNAUTHENTICATED by default', () => {
     const navigate = mock((path: string) => {
@@ -14,8 +25,23 @@ describe('handleServerDataClientError', () => {
         {},
         navigate,
       ),
-    ).toThrow('NEXT_REDIRECT:/auth/login');
-    expect(navigate).toHaveBeenCalledWith('/auth/login');
+    ).toThrow('NEXT_REDIRECT:/login');
+    expect(navigate).toHaveBeenCalledWith('/login');
+  });
+
+  it('redirects to login for a duck-typed UNAUTHENTICATED error', () => {
+    const navigate = mock((path: string) => {
+      throw new Error(`NEXT_REDIRECT:${path}`);
+    });
+    const error = new OtherDataError('Unauthorized', {
+      code: 'UNAUTHENTICATED',
+    });
+    expect(error instanceof DataError).toBe(false);
+
+    expect(() =>
+      handleServerDataClientError(error as unknown as DataError, {}, navigate),
+    ).toThrow('NEXT_REDIRECT:/login');
+    expect(navigate).toHaveBeenCalledWith('/login');
   });
 
   it('throws UNAUTHENTICATED when redirectOnUnauthenticated is false', () => {
