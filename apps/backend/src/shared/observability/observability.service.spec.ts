@@ -24,6 +24,13 @@ describe('ObservabilityService', () => {
     expect(captureException).toHaveBeenCalledWith(error);
   });
 
+  it('passes the context along with the exception', () => {
+    const error = new Error('boom');
+    const context = { tags: { stage: 'store' }, extra: { documentId: 'd1' } };
+    service.captureException(error, context);
+    expect(captureException).toHaveBeenCalledWith(error, context);
+  });
+
   it('delegates startSpan', () => {
     const result = service.startSpan({ name: 'op' }, (span) => span);
     expect(startSpan).toHaveBeenCalled();

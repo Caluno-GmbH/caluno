@@ -7,7 +7,10 @@ import {
   it,
   spyOn,
 } from 'bun:test';
-import { BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import AdmZip from 'adm-zip';
@@ -22,6 +25,7 @@ import {
 } from '../src/accounting/enums';
 import { BundleDownloadService } from '../src/accounting/services/bundle-download.service';
 import { ContractService } from '../src/accounting/services/contract.service';
+import type { InvoiceService } from '../src/accounting/services/invoice.service';
 import { ReimbursementRateService } from '../src/accounting/services/reimbursement-rate.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
@@ -54,6 +58,12 @@ describe('BundleDownloadService', () => {
   let service: BundleDownloadService;
   let fetchSpy: ReturnType<typeof spyOn>;
   let failUrlResolution = false;
+  /** Stands in for rendering a timesheet's missing PDF: the new file id, or null. */
+  let renderMissingPdf: (
+    invoiceId: string,
+    actorUserId: string,
+  ) => Promise<string | null>;
+  const renderCalls: string[] = [];
 
   /**
    * Every stored file is served as a PDF whose pages have a width of its own,
@@ -101,16 +111,27 @@ describe('BundleDownloadService', () => {
         return `https://files.test/${fileId}`;
       },
     } as unknown as FileService;
+    const invoiceService = {
+      ensurePdf: (invoiceId: string, actorUserId: string) => {
+        renderCalls.push(invoiceId);
+        return renderMissingPdf(invoiceId, actorUserId);
+      },
+    } as unknown as InvoiceService;
     service = new BundleDownloadService(
       db,
       fileService,
       reimbursementRateService,
       contractService,
+      invoiceService,
     );
   });
 
   beforeEach(() => {
     failUrlResolution = false;
+    renderCalls.length = 0;
+    renderMissingPdf = async () => {
+      throw new Error('no timesheet should need rendering');
+    };
     fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
       servePdfs as unknown as typeof fetch,
     );
@@ -248,9 +269,10 @@ describe('BundleDownloadService', () => {
       unitId?: string;
       reimbursementTypeId?: string;
       status?: InvoiceStatus;
+      withFile?: boolean;
     } = {},
   ) => {
-    const file = await createPdfFile(s);
+    const file = options.withFile === false ? null : await createPdfFile(s);
     const [invoice] = await db
       .insert(schema.invoices)
       .values({
@@ -266,7 +288,7 @@ describe('BundleDownloadService', () => {
         totalHours: 2,
         hourlyRateCents: 1_500,
         resolvedBody: { header: {}, blocks: [], footer: {} },
-        fileId: file.id,
+        fileId: file?.id ?? null,
         paidAt:
           options.paid instanceof Date
             ? options.paid
@@ -433,6 +455,61 @@ describe('BundleDownloadService', () => {
       await expect(download(s)).rejects.toThrow(
         'No ready documents to download',
       );
+    });
+  });
+
+  describe('a READY timesheet whose PDF was never rendered (VOLI-1637)', () => {
+    it('renders the PDF and bundles the timesheet', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const contract = await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [entry], { withFile: false });
+      let renderedFileId = '';
+      renderMissingPdf = async (invoiceId, actorUserId) => {
+        expect(actorUserId).toBe(s.downloader.id);
+        const file = await createPdfFile(s);
+        await db
+          .update(schema.invoices)
+          .set({ fileId: file.id })
+          .where(eq(schema.invoices.id, invoiceId));
+        renderedFileId = file.id;
+        return file.id;
+      };
+
+      const { buffer } = await download(s);
+
+      expect(renderCalls).toEqual([invoice.id]);
+      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page({ fileId: renderedFileId }),
+        page(contract),
+      ]);
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).not.toBeNull();
+    });
+
+    it('fails with a server error and marks nothing paid when the PDF cannot be rendered', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const invoice = await readyTimesheet(s, [entry], { withFile: false });
+      renderMissingPdf = async () => null;
+
+      const attempt = download(s);
+      await expect(attempt).rejects.toBeInstanceOf(
+        InternalServerErrorException,
+      );
+      await expect(attempt).rejects.toThrow('could not be generated');
+
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).toBeNull();
+      const audit = await db.query.reimbursementBundleDownloads.findFirst({
+        where: { volunteerId: s.volunteer.id },
+      });
+      expect(audit).toBeUndefined();
     });
   });
 
