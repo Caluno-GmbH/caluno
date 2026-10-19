@@ -15,7 +15,7 @@ runs:
 
     - name: Save the Turborepo cache
       if: github.event_name == 'push'
-      uses: actions/cache/save@v4
+      uses: actions/cache/save@v5
       with:
         path: .turbo/cache
         key: turbo-${{ runner.os }}-${{ github.sha }}
