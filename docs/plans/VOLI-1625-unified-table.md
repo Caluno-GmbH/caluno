@@ -55,7 +55,8 @@ built to them; no feature may override them.
 - Height **32px**, padding **0 vertical / 8px horizontal**.
 - Background **`--muted`**; label **14px**, color **`--muted-foreground`**.
 - **Border-right 1px `--border`** on every column **except the last**.
-- **Min width 120px.** Label **truncates** with ellipsis when the column is narrower.
+- **Columns hug their content** (the table is not fixed-width); each column is still at
+  least **min width 120px**, and the label **truncates** with ellipsis when narrower.
 - When the label is truncated, a **tooltip reveals the full column name**.
 - Sortable columns show the **sort control as a right-aligned island** inside the header
   (the existing `DataTableColumnHeader` button covers this behaviour).
@@ -67,8 +68,7 @@ built to them; no feature may override them.
 - **Vertical column separators run through the body too:** every data cell has
   **border-right 1px `--border` except the last column** — same rule as the header, so the
   column grid is continuous from header through the rows.
-- Column widths are per-column; the **actions cell fills remaining width and
-  right-aligns** its buttons.
+- Columns **hug their content**; the **actions cell right-aligns** its buttons.
 
 ### Cell anatomy — the four cell types (this is the heart of the unification)
 Every column renders through exactly one of these. Nothing else is allowed.
