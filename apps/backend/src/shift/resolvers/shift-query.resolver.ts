@@ -179,6 +179,18 @@ export class ShiftQueryResolver {
     return this.shiftInstanceMapper.toArray(instances);
   }
 
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @Query(() => [Date])
+  async eventShiftInstanceStarts(
+    @Args('eventId', { type: () => ID }) eventId: string,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<Date[]> {
+    return this.shiftService.findInstanceStartsForEvent(
+      context.organizationUnitId,
+      eventId,
+    );
+  }
+
   // Check-in surface: `check-in:manage` is a separate permission from
   // `shift:view`, and the guard requires every listed permission, so a
   // front-desk admin cannot use `weeklyShifts`. Scoped by the header unit
