@@ -20,6 +20,7 @@ import { EventMetaCard } from '@/domain/event/components/event-meta-card';
 import { EventRequiredFormsPopover } from '@/domain/event/components/event-required-forms-popover';
 import { EventVolunteersSection } from '@/domain/event/components/event-volunteers-section';
 import { EventWeekEmptyNote } from '@/domain/event/components/event-week-empty-note';
+import { PendingEventWeekRedirect } from '@/domain/event/components/pending-event-week-redirect';
 import {
   findAdjacentShiftWeek,
   pickInitialWeek,
@@ -127,6 +128,7 @@ export default async function EventDetailPage({
   return (
     <div className="space-y-6">
       <ShiftCreatedDialog />
+      <PendingEventWeekRedirect orgUId={orgUId} eventId={eventId} />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
