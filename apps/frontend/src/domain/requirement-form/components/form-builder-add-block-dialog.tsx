@@ -62,7 +62,7 @@ export function FormBuilderAddBlockDialog({
                   {block.fields?.map((f) => (
                     <Badge
                       key={f.id}
-                      variant="secondary"
+                      variant="neutral"
                       className={cn('text-sm', USER_TEXT_BADGE)}
                     >
                       {f.label}

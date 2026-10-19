@@ -1,0 +1,2 @@
+DROP INDEX "uq_reimbursement_manual_baselines_volunteer_type_year";--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_reimbursement_manual_baselines_org_volunteer_type_year" ON "reimbursement_manual_baselines" ("organization_id","volunteer_id","reimbursement_type_id","year");

@@ -8,15 +8,8 @@ import { mergeInvitations } from '@/domain/home/lib/merge-invitations';
 import { requireAuth } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
 
-interface InvitationsPageProps {
-  params: Promise<{ locale: string }>;
-}
-
-export default async function InvitationsPage({
-  params,
-}: InvitationsPageProps) {
-  const { locale } = await params;
-  await requireAuth(`/${locale}/auth/login`);
+export default async function InvitationsPage() {
+  await requireAuth();
   const client = await getDataClient();
   const [shiftInvites, eventInvites] = await Promise.all([
     client.shift.findMyShiftInstances({

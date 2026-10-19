@@ -38,7 +38,7 @@ export function getVisibilityConfig(t: (key: string) => string) {
       label: t('visibility.ALL_MEMBERS'),
     },
     INVITED_MEMBERS: {
-      variant: 'secondary' as const,
+      variant: 'neutral' as const,
       label: t('visibility.INVITED_MEMBERS'),
     },
   };
@@ -50,7 +50,7 @@ export function getApprovalConfig(
 ) {
   return joinRequiresApproval
     ? {
-        variant: 'secondary' as const,
+        variant: 'neutral' as const,
         label: t('detail.approvalRequiredLabel'),
       }
     : {

@@ -102,7 +102,7 @@ export function FormSubmissionsClient({
                   </TableCell>
                   <TableCell>{entry.user.email}</TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{entry.count}</Badge>
+                    <Badge variant="neutral">{entry.count}</Badge>
                   </TableCell>
                   <TableCell>
                     {formatDate(new Date(entry.latestSubmittedAt), {

@@ -59,7 +59,7 @@ export function RolesTable({ roles }: RolesTableProps) {
                     {roleLabel(role)}
                   </Link>
                   {role.isInternal && (
-                    <Badge variant="secondary">{t('table.systemBadge')}</Badge>
+                    <Badge variant="neutral">{t('table.systemBadge')}</Badge>
                   )}
                 </div>
               </TableCell>

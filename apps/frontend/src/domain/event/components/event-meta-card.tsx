@@ -34,7 +34,7 @@ export async function EventMetaCard({
             </dt>
             <dd className="ml-6">
               {isFinished ? (
-                <Badge variant="secondary">{t('status.finished')}</Badge>
+                <Badge variant="neutral">{t('status.finished')}</Badge>
               ) : (
                 <Badge variant="success">{t('status.active')}</Badge>
               )}

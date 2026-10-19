@@ -255,6 +255,11 @@ export function countIncompleteManualFields(doc: TemplateDocument): number {
       count++;
     }
   }
+  // Page footer is opt-in; once switched on its text is required, same as other
+  // enabled manual fields.
+  if (doc.pageFooter?.enabled && !doc.pageFooter.text.trim()) {
+    count++;
+  }
   return count;
 }
 

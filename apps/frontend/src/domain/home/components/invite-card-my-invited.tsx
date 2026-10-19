@@ -151,7 +151,7 @@ export function InviteCardMyInvited({ invite }: { invite: MergedInvitation }) {
                   variant="outline"
                   className="gap-1 rounded-[10px] font-semibold text-muted-foreground"
                 >
-                  <TypeIcon className="size-3" />
+                  <TypeIcon className="size-3.5" />
                   {typeLabel}
                 </Badge>
               </div>

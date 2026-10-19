@@ -12,25 +12,17 @@ import {
 import {
   type ColumnDef,
   flexRender,
-  getCoreRowModel,
   type OnChangeFn,
   type RowData,
   type SortingState,
-  useReactTable,
+  useTable,
 } from '@tanstack/react-table';
+import { type DataTableFeatures, dataTableFeatures } from './features';
 import { activeDir, ariaSort } from './table-sort';
 
-declare module '@tanstack/react-table' {
-  // Layout hooks so a table can pin column widths and opt a column out of the
-  // default cell wrapping without forking the shared component.
-  interface ColumnMeta<TData extends RowData, TValue> {
-    headerClassName?: string;
-    cellClassName?: string;
-  }
-}
-
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[];
+interface DataTableProps<TData extends RowData> {
+  // Table options fix cell TValue to unknown; column defs stay typed per-column.
+  columns: ColumnDef<DataTableFeatures, TData, unknown>[];
   data: TData[];
   pageCount: number;
   sorting: SortingState;
@@ -39,7 +31,7 @@ interface DataTableProps<TData, TValue> {
   getRowClassName?: (row: TData) => string | undefined;
 }
 
-export function DataTable<TData, TValue>({
+export function DataTable<TData extends RowData>({
   columns,
   data,
   pageCount,
@@ -47,8 +39,9 @@ export function DataTable<TData, TValue>({
   onSortingChange,
   emptyMessage,
   getRowClassName,
-}: DataTableProps<TData, TValue>) {
-  const table = useReactTable({
+}: DataTableProps<TData>) {
+  const table = useTable({
+    features: dataTableFeatures,
     data,
     columns,
     state: { sorting },
@@ -59,7 +52,6 @@ export function DataTable<TData, TValue>({
     // cycles to "no sort" and the sort silently resets instead of reversing.
     enableSortingRemoval: false,
     pageCount,
-    getCoreRowModel: getCoreRowModel(),
   });
 
   return (

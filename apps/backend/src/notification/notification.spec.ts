@@ -1645,6 +1645,59 @@ describe('NotificationModule', () => {
     expect(expected.html).toContain('Bring gloves.');
   });
 
+  it('sends shift details changed email naming the affected instance date', async () => {
+    const user = {
+      id: 'volunteer-1',
+      name: 'Sam Volunteer',
+      email: 'sam@example.com',
+    };
+    userService.findById.mockResolvedValue(user);
+
+    const instanceStartsAt = new Date('2026-07-10T09:00:00.000Z');
+    const changes = [
+      {
+        field: 'location',
+        kind: 'value' as const,
+        previous: 'Main hall',
+        current: 'Side hall',
+      },
+    ];
+    const payload = {
+      organizationUnitId: 'unit-root-1',
+      organizationUnitName: 'Acme Volunteers',
+      shiftId: 'shift-1',
+      shiftTitle: 'Morning Kitchen',
+      recipientUserIds: [user.id],
+      instanceStartsAt,
+      changes,
+    };
+    const expected = await shiftDetailsChangedTemplate(
+      {
+        organizationUnitName: payload.organizationUnitName,
+        shiftTitle: payload.shiftTitle,
+        recipientFirstName: 'Sam',
+        fromDate: null,
+        instanceStartsAt,
+        changes,
+      },
+      createFixtureTranslator('en'),
+    );
+
+    notificationService.notifyShiftDetailsChanged(payload);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(emailService.send).toHaveBeenCalledWith({
+      to: user.email,
+      subject: expected.subject,
+      html: expected.html,
+    });
+    expect(expected.html).toContain(formatLocaleDate(instanceStartsAt, 'en'));
+    expect(expected.html).not.toContain(instanceStartsAt.toISOString());
+    expect(expected.html).toContain('at Acme Volunteers');
+    expect(expected.html).not.toContain('{organizationName}');
+  });
+
   it('sends event details changed email naming the diff', async () => {
     const user = {
       id: 'volunteer-1',
@@ -1704,6 +1757,8 @@ describe('NotificationModule', () => {
     expect(expected.html).not.toContain(endsAtCurrent.toISOString());
     expect(expected.html).toContain('Main hall → Side hall');
     expect(expected.html).toContain('Community Fair 2');
+    expect(expected.html).toContain('at Acme Volunteers');
+    expect(expected.html).not.toContain('{organizationName}');
   });
 
   it('sends shift instance volunteer left email to managers with coverage', async () => {

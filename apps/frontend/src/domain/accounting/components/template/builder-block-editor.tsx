@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Badge,
   FieldDescription,
   Input,
   Label,
@@ -247,10 +248,10 @@ interface FieldRowProps {
 /** Amber "profile data was never collected" badge — shared by a bound field's own card and its parent optional-line card. */
 function ProfileGapBadge({ t }: { t: ReturnType<typeof useTranslations> }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-alert/30 bg-alert/15 px-2 py-0.5 text-xs font-medium text-alert">
-      <TriangleAlertIcon size={12} aria-hidden="true" />
+    <Badge variant="alert">
+      <TriangleAlertIcon aria-hidden="true" />
       {t('fieldList.requiresCollection')}
-    </span>
+    </Badge>
   );
 }
 
@@ -364,6 +365,7 @@ function FieldRow({
     );
   }
 
+  // Blank manual-template values on enabled lines gate Save (`countIncompleteManualFields`).
   const control =
     field.control === 'textarea' ? (
       <Textarea
@@ -372,6 +374,7 @@ function FieldRow({
         onChange={(e) => onManualChange(field.id, e.target.value)}
         placeholder={placeholder}
         aria-label={title}
+        aria-required
         rows={4}
       />
     ) : field.control === 'period' ? (
@@ -379,6 +382,7 @@ function FieldRow({
         value={field.value.value}
         placeholder={placeholder}
         onChange={(value) => onManualChange(field.id, value)}
+        required
       />
     ) : (
       <Input
@@ -389,13 +393,14 @@ function FieldRow({
         onChange={(e) => onManualChange(field.id, e.target.value)}
         placeholder={placeholder}
         aria-label={title}
+        aria-required
       />
     );
 
   if (hideTitle) return <div className="py-1">{control}</div>;
 
   return (
-    <InfoPanel variant="outline" title={title}>
+    <InfoPanel variant="outline" title={title} required>
       {control}
     </InfoPanel>
   );
@@ -432,12 +437,16 @@ function LineEditor({
       line.enabled &&
       soleField?.value.kind === 'bound' &&
       profileGaps.has(soleField.value.source);
+    // Enabled optional lines with a blank manual value count toward incompleteCount.
+    const isManualRequired =
+      line.enabled && soleField?.value.kind === 'manual-template';
 
     return (
       <InfoPanel
         variant="outline"
         title={title}
         inactive={!line.enabled}
+        required={isManualRequired}
         badge={isGap && <ProfileGapBadge t={t} />}
         headerRight={
           <Switch
@@ -538,6 +547,10 @@ function TableFirstColumnSourceCard({
                       typeof t
                     >[0],
                   )}
+                  {/* Custom needs a typed label — same gate as countIncompleteManualFields. */}
+                  {source === 'custom' && (
+                    <span className="text-destructive"> *</span>
+                  )}
                 </span>
                 <span className="text-sm text-muted-foreground">
                   {t(
@@ -558,6 +571,7 @@ function TableFirstColumnSourceCard({
           onChange={(e) => onCustomLabelChange(e.target.value)}
           placeholder={t('blockEditor.firstColumnPlaceholders.custom')}
           aria-label={t('blockEditor.firstColumnSourceOptions.custom.label')}
+          aria-required
         />
       )}
     </InfoPanel>
@@ -700,6 +714,7 @@ function ExtraClausesCard({
         variant="outline"
         title={title}
         inactive={!block.enabled}
+        required={block.enabled && field.value.kind === 'manual-template'}
         headerRight={
           <Switch
             checked={block.enabled}
@@ -742,6 +757,7 @@ function PageFooterCard({
       variant="outline"
       title={title}
       inactive={!enabled}
+      required={enabled}
       headerRight={
         <Switch
           checked={enabled}
@@ -760,6 +776,7 @@ function PageFooterCard({
             onChange={(e) => onPageFooterChange({ text: e.target.value })}
             placeholder={t('pageFooter.placeholder')}
             aria-label={title}
+            aria-required
             rows={4}
           />
         </div>
@@ -797,7 +814,7 @@ function HoursFieldCard({
   );
 
   return (
-    <InfoPanel variant="outline" title={title}>
+    <InfoPanel variant="outline" title={title} required>
       <div className="flex flex-col gap-2">
         <Tabs
           value={unitValue}
@@ -819,6 +836,7 @@ function HoursFieldCard({
           onChange={(e) => onFieldChange(amountField.id, e.target.value)}
           placeholder={amountPlaceholder}
           aria-label={title}
+          aria-required
         />
       </div>
     </InfoPanel>

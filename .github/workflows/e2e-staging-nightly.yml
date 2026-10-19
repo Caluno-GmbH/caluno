@@ -37,7 +37,7 @@ jobs:
           bun-version-file: package.json
 
       - name: Restore e2e install cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.bun/install/cache
           key: bun-e2e-${{ runner.os }}-${{ hashFiles('e2e/bun.lock') }}
@@ -65,7 +65,7 @@ jobs:
 
       - name: Upload Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ github.run_id }}
           path: |

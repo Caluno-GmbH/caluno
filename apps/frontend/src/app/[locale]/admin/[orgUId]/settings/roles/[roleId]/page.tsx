@@ -78,7 +78,7 @@ export default async function RoleDetailsPage({
                         {group.items.map((item) => (
                           <Badge
                             key={item.permission.id}
-                            variant="secondary"
+                            variant="neutral"
                             title={item.permission.description ?? undefined}
                           >
                             {tp(permissionLabelKey(item.permission.key))}
@@ -104,11 +104,11 @@ export default async function RoleDetailsPage({
                   </dt>
                   <dd className="ml-6">
                     {role.isInternal ? (
-                      <Badge variant="secondary">
+                      <Badge variant="neutral">
                         <Lock /> {t('detail.system')}
                       </Badge>
                     ) : (
-                      <Badge variant="secondary">
+                      <Badge variant="neutral">
                         <Unlock /> {t('detail.custom')}
                       </Badge>
                     )}
