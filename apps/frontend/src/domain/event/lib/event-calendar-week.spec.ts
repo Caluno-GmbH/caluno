@@ -77,3 +77,46 @@ describe('findAdjacentShiftWeek', () => {
     expect(findAdjacentShiftWeek([], weekStart)).toBeNull();
   });
 });
+
+describe('plain Date results (safe to pass from server to client components)', () => {
+  const isPlainDate = (value: Date) =>
+    Object.getPrototypeOf(value) === Date.prototype;
+
+  it('pickInitialWeek returns a plain Date for the current week', () => {
+    const result = pickInitialWeek({
+      instanceStarts: ['2026-09-17T08:00:00.000Z'],
+      now,
+      eventStartsAt,
+    });
+    expect(isPlainDate(result)).toBe(true);
+  });
+
+  it('pickInitialWeek returns a plain Date for the earliest instance week', () => {
+    const result = pickInitialWeek({
+      instanceStarts: ['2026-09-29T08:00:00.000Z'],
+      now,
+      eventStartsAt,
+    });
+    expect(isPlainDate(result)).toBe(true);
+  });
+
+  it('pickInitialWeek returns a plain Date for the event start week', () => {
+    const result = pickInitialWeek({
+      instanceStarts: [],
+      now,
+      eventStartsAt,
+    });
+    expect(isPlainDate(result)).toBe(true);
+  });
+
+  it('findAdjacentShiftWeek returns a plain Date for next and previous', () => {
+    const weekStart = new Date('2026-09-14T00:00:00.000+02:00');
+    const next = findAdjacentShiftWeek(['2026-10-06T08:00:00.000Z'], weekStart);
+    const previous = findAdjacentShiftWeek(
+      ['2026-09-01T08:00:00.000Z'],
+      weekStart,
+    );
+    expect(next && isPlainDate(next.weekStart)).toBe(true);
+    expect(previous && isPlainDate(previous.weekStart)).toBe(true);
+  });
+});

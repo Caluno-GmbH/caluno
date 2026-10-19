@@ -107,7 +107,9 @@ export default async function EventDetailPage({
       );
     }
   } else {
-    weekStart = parsedWeekStart ?? getWeekRange(eventStartsAt).weekStart;
+    weekStart =
+      parsedWeekStart ??
+      new Date(getWeekRange(eventStartsAt).weekStart.getTime());
   }
 
   const weekIso = toWeekParam(weekStart);

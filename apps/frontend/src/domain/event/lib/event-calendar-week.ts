@@ -1,5 +1,11 @@
 import { getWeekRange } from '@/domain/shift/lib/shift-instances';
 
+// getWeekRange returns TZDate instances, which do not survive RSC
+// serialization; callers pass these across the server/client boundary.
+function weekStartOf(date: Date): Date {
+  return new Date(getWeekRange(date).weekStart.getTime());
+}
+
 export function pickInitialWeek(input: {
   instanceStarts: string[];
   now: Date;
@@ -13,13 +19,13 @@ export function pickInitialWeek(input: {
     (time) =>
       time >= current.weekStart.getTime() && time < current.weekEnd.getTime(),
   );
-  if (hasInstanceInCurrentWeek) return current.weekStart;
+  if (hasInstanceInCurrentWeek) return new Date(current.weekStart.getTime());
 
   if (times.length > 0) {
-    return getWeekRange(new Date(Math.min(...times))).weekStart;
+    return weekStartOf(new Date(Math.min(...times)));
   }
 
-  return getWeekRange(eventStartsAt).weekStart;
+  return weekStartOf(eventStartsAt);
 }
 
 export function findAdjacentShiftWeek(
@@ -33,7 +39,7 @@ export function findAdjacentShiftWeek(
   if (next.length > 0) {
     return {
       direction: 'next',
-      weekStart: getWeekRange(new Date(Math.min(...next))).weekStart,
+      weekStart: weekStartOf(new Date(Math.min(...next))),
     };
   }
 
@@ -41,7 +47,7 @@ export function findAdjacentShiftWeek(
   if (previous.length > 0) {
     return {
       direction: 'previous',
-      weekStart: getWeekRange(new Date(Math.max(...previous))).weekStart,
+      weekStart: weekStartOf(new Date(Math.max(...previous))),
     };
   }
 
