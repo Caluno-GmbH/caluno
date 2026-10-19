@@ -219,7 +219,7 @@
     "agreementNoContractNoRightsBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts. Ask {admins} to create one.",
     "agreementCreateButton": "Create agreement",
     "agreementAwaitingCountersignTitle": "Agreement needs a countersignature",
-    "agreementAwaitingCountersignManageBody": "The agreement for {reimbursementType} shifts is waiting for your organization to countersign.",
+    "agreementAwaitingCountersignManageBody": "The agreement for {reimbursementType} shifts is waiting for your organisation to countersign.",
     "agreementAwaitingCountersignNoRightsBody": "The agreement for {reimbursementType} shifts is waiting to be countersigned. Ask {admins} to complete it.",
     "agreementCountersignButton": "Countersign",
     "agreementAwaitingVolunteerTitle": "Agreement not signed yet",
@@ -1359,7 +1359,7 @@
     "page": {
       "createButton": "Create role",
       "empty": "No roles yet. Create your first role to get started.",
-      "subtitle": "Manage roles and permissions for {orgName}",
+      "subtitle": "Manage roles and permissions for the whole organisation {orgName}",
       "title": "Roles"
     },
     "permissions": {
