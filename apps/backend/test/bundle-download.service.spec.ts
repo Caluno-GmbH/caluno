@@ -12,6 +12,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import AdmZip from 'adm-zip';
 import { eq } from 'drizzle-orm';
+import { PDFDocument } from 'pdf-lib';
 import {
   ContractStatus,
   DocumentKind,
@@ -54,6 +55,22 @@ describe('BundleDownloadService', () => {
   let fetchSpy: ReturnType<typeof spyOn>;
   let failUrlResolution = false;
 
+  /**
+   * Every stored file is served as a PDF whose pages have a width of its own,
+   * so the pages of a merged PDF show which document each came from.
+   */
+  const pageWidthByFileId = new Map<string, number>();
+  const pageCountByFileId = new Map<string, number>();
+  const servePdfs = async (url: unknown): Promise<Response> => {
+    const fileId = String(url).split('/').pop() ?? '';
+    const doc = await PDFDocument.create();
+    for (let i = 0; i < (pageCountByFileId.get(fileId) ?? 1); i++) {
+      doc.addPage([pageWidthByFileId.get(fileId) ?? 1, 100]);
+    }
+    return new Response((await doc.save()) as Uint8Array<ArrayBuffer>);
+  };
+  const notAPdf = () => new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]));
+
   closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
     await ensureTestDatabase();
@@ -95,10 +112,7 @@ describe('BundleDownloadService', () => {
   beforeEach(() => {
     failUrlResolution = false;
     fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
-      (async () =>
-        new Response(
-          new Uint8Array([0x25, 0x50, 0x44, 0x46]),
-        )) as unknown as typeof fetch,
+      servePdfs as unknown as typeof fetch,
     );
   });
 
@@ -170,6 +184,7 @@ describe('BundleDownloadService', () => {
       })
       .returning();
     if (!file) throw new Error('failed to insert file');
+    pageWidthByFileId.set(file.id, 100 + pageWidthByFileId.size);
     return file;
   };
 
@@ -287,18 +302,22 @@ describe('BundleDownloadService', () => {
       .map((entry) => entry.entryName)
       .sort();
   const sorted = (names: string[]) => [...names].sort();
-  /** Entry names in the order they were written, for the order tests. */
-  const zipOrder = (buffer: Buffer) =>
-    new AdmZip(buffer, { noSort: true })
-      .getEntries()
-      .map((entry) => entry.entryName);
-  const contractName = (id: string) =>
-    `Vereinbarung-${id.slice(0, 8)}-${id.slice(8, 12)}.pdf`;
+  /** The pages of one PDF in the ZIP, each as the document it came from. */
+  const pagesIn = async (buffer: Buffer, invoice: { id: string }) => {
+    const entry = new AdmZip(buffer).getEntry(timesheetName(invoice.id));
+    if (!entry)
+      throw new Error(`${timesheetName(invoice.id)} is not in the ZIP`);
+    const doc = await PDFDocument.load(entry.getData());
+    return doc.getPages().map((page) => Math.round(page.getWidth()));
+  };
+  /** The page a document contributes, in the terms `pagesIn` returns. */
+  const page = (doc: { fileId: string | null }) =>
+    pageWidthByFileId.get(String(doc.fileId));
   const timesheetName = (id: string) =>
     `Stundennachweis-${id.slice(0, 8)}-${id.slice(8, 12)}.pdf`;
 
   describe('characterisation of today’s behaviour', () => {
-    it('zips the contract and the READY timesheet and names the file after the volunteer', async () => {
+    it('zips one PDF for the READY timesheet, the timesheet then its contract, and names the file after the volunteer', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       const contract = await insertContract(s, JULY);
@@ -307,9 +326,11 @@ describe('BundleDownloadService', () => {
       const { buffer, zipName } = await download(s);
 
       expect(zipName).toBe(`Abrechnung-${s.volunteer.id.slice(0, 8)}.zip`);
-      expect(zipNames(buffer)).toEqual(
-        sorted([contractName(contract.id), timesheetName(invoice.id)]),
-      );
+      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(contract),
+      ]);
     });
 
     it('marks the downloaded timesheets paid and records the download', async () => {
@@ -371,9 +392,7 @@ describe('BundleDownloadService', () => {
       fetchSpy.mockImplementation((async (url: unknown) =>
         String(url).endsWith(String(invoice.fileId))
           ? new Response('missing', { status: 404 })
-          : new Response(
-              new Uint8Array([0x25, 0x50, 0x44, 0x46]),
-            )) as unknown as typeof fetch);
+          : servePdfs(url)) as unknown as typeof fetch);
 
       await expect(download(s)).rejects.toThrow('could not be fetched');
 
@@ -395,13 +414,12 @@ describe('BundleDownloadService', () => {
       fetchSpy.mockImplementation((async (url: unknown) =>
         String(url).endsWith(String(contract.fileId))
           ? new Response('missing', { status: 404 })
-          : new Response(
-              new Uint8Array([0x25, 0x50, 0x44, 0x46]),
-            )) as unknown as typeof fetch);
+          : servePdfs(url)) as unknown as typeof fetch);
 
       const { buffer } = await download(s);
 
       expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
       const stored = await db.query.invoices.findFirst({
         where: { id: invoice.id },
       });
@@ -429,9 +447,11 @@ describe('BundleDownloadService', () => {
       const second = await download(s);
 
       expect(zipNames(second.buffer)).toEqual(zipNames(first.buffer));
-      expect(zipNames(second.buffer)).toEqual(
-        sorted([contractName(contract.id), timesheetName(invoice.id)]),
-      );
+      expect(zipNames(second.buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(second.buffer, invoice)).toEqual([
+        page(invoice),
+        page(contract),
+      ]);
     });
 
     it('keeps the original payment stamp and records the new download', async () => {
@@ -479,12 +499,13 @@ describe('BundleDownloadService', () => {
       const { buffer } = await download(s);
 
       expect(zipNames(buffer)).toEqual(
-        sorted([
-          contractName(contract.id),
-          timesheetName(paid.id),
-          timesheetName(fresh.id),
-        ]),
+        sorted([timesheetName(paid.id), timesheetName(fresh.id)]),
       );
+      expect(await pagesIn(buffer, paid)).toEqual([page(paid), page(contract)]);
+      expect(await pagesIn(buffer, fresh)).toEqual([
+        page(fresh),
+        page(contract),
+      ]);
     });
 
     it('pays only the timesheets that were not paid yet', async () => {
@@ -516,16 +537,14 @@ describe('BundleDownloadService', () => {
           readyTimesheet(s, [await entryAt(s, `${day}T09:00:00.000Z`)]),
         ),
       );
-      expect(zipNames((await download(s)).buffer).length).toBe(
-        first.length + 1,
-      );
+      expect(zipNames((await download(s)).buffer).length).toBe(first.length);
 
       const added = await readyTimesheet(s, [
         await entryAt(s, '2026-07-24T09:00:00.000Z'),
       ]);
 
       const names = zipNames((await download(s)).buffer);
-      expect(names).toHaveLength(first.length + 2);
+      expect(names).toHaveLength(first.length + 1);
       expect(names).toContain(timesheetName(added.id));
       for (const invoice of first) {
         expect(names).toContain(timesheetName(invoice.id));
@@ -671,7 +690,7 @@ describe('BundleDownloadService', () => {
       end: '2026-07-31T22:00:00.000Z',
     };
 
-    it('contains both contracts when one timesheet spans two of them, then the timesheet', async () => {
+    it('appends both contracts when one timesheet spans two of them', async () => {
       const s = await setup();
       const early = await entryAt(s, '2026-07-05T09:00:00.000Z');
       const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
@@ -681,16 +700,15 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(
-        sorted([
-          contractName(first.id),
-          contractName(second.id),
-          timesheetName(invoice.id),
-        ]),
-      );
+      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(first),
+        page(second),
+      ]);
     });
 
-    it('contains only the newest of two contracts that cover the same time', async () => {
+    it('appends only the newest of two contracts that cover the same time', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       await insertContract(s, JULY, { createdAt: '2026-06-01T10:00:00.000Z' });
@@ -701,12 +719,13 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(
-        sorted([contractName(newest.id), timesheetName(invoice.id)]),
-      );
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(newest),
+      ]);
     });
 
-    it('contains the union of covering contracts of several timesheets, each once', async () => {
+    it('gives each timesheet its own covering contracts, fetching each document once', async () => {
       const s = await setup();
       const a = await entryAt(s, '2026-07-05T09:00:00.000Z');
       const b = await entryAt(s, '2026-07-08T09:00:00.000Z');
@@ -719,15 +738,19 @@ describe('BundleDownloadService', () => {
       const { buffer } = await download(s);
 
       expect(zipNames(buffer)).toEqual(
-        sorted([
-          contractName(first.id),
-          contractName(second.id),
-          timesheetName(sheetOne.id),
-          timesheetName(sheetTwo.id),
-        ]),
+        sorted([timesheetName(sheetOne.id), timesheetName(sheetTwo.id)]),
       );
-      // One fetch per document: the ZIP collapses a duplicate name, so only
-      // the fetch count shows a contract that was resolved twice.
+      expect(await pagesIn(buffer, sheetOne)).toEqual([
+        page(sheetOne),
+        page(first),
+      ]);
+      expect(await pagesIn(buffer, sheetTwo)).toEqual([
+        page(sheetTwo),
+        page(first),
+        page(second),
+      ]);
+      // Two timesheets and two contracts: a contract both timesheets need is
+      // fetched once and appended to each.
       expect(fetchSpy).toHaveBeenCalledTimes(4);
     });
 
@@ -745,9 +768,10 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(
-        sorted([contractName(covering.id), timesheetName(invoice.id)]),
-      );
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(covering),
+      ]);
     });
 
     for (const [label, status] of [
@@ -755,7 +779,7 @@ describe('BundleDownloadService', () => {
       ['awaiting signature', ContractStatus.AWAITING_VOLUNTEER_SIGNATURE],
       ['declined', ContractStatus.DECLINED],
     ] as const) {
-      it(`never includes a ${label} contract`, async () => {
+      it(`never appends a ${label} contract`, async () => {
         const s = await setup();
         const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
         await insertContract(s, JULY, { status });
@@ -763,18 +787,19 @@ describe('BundleDownloadService', () => {
 
         const { buffer } = await download(s);
 
-        expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+        expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
       });
     }
 
-    it('still builds the bundle from the timesheets when no contract covers any entry, and marks them paid', async () => {
+    it('delivers the timesheet alone when no contract covers any entry, and marks it paid', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       const invoice = await readyTimesheet(s, [entry]);
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
       const stored = await db.query.invoices.findFirst({
         where: { id: invoice.id },
       });
@@ -789,7 +814,7 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
     });
 
     it('does not use an older contract with a file in place of the newest one that has none', async () => {
@@ -804,10 +829,10 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
     });
 
-    it('does not include a contract of another volunteer, another unit or another type', async () => {
+    it('does not append a contract of another volunteer, another unit or another type', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       const otherVolunteer = await createUser(db);
@@ -823,7 +848,7 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
     });
 
     it('does not count an entry that starts exactly when the contract ends', async () => {
@@ -834,7 +859,7 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(sorted([timesheetName(invoice.id)]));
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
     });
 
     it('chooses contracts for the hours of a paid timesheet as well', async () => {
@@ -848,36 +873,29 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(
-        sorted([
-          contractName(first.id),
-          contractName(second.id),
-          timesheetName(paid.id),
-          timesheetName(invoice.id),
-        ]),
-      );
+      expect(await pagesIn(buffer, paid)).toEqual([page(paid), page(first)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(second),
+      ]);
     });
 
-    it('puts the contracts ahead of the timesheets, oldest period first', async () => {
+    it('puts the timesheet first, then its contracts oldest period first', async () => {
       const s = await setup();
       const early = await entryAt(s, '2026-07-05T09:00:00.000Z');
       const late = await entryAt(s, '2026-07-20T09:00:00.000Z');
       // Inserted newest period first on purpose.
       const second = await insertContract(s, SECOND_HALF);
       const first = await insertContract(s, FIRST_HALF);
-      const sheetOne = await readyTimesheet(s, [early]);
-      const sheetTwo = await readyTimesheet(s, [late]);
+      const invoice = await readyTimesheet(s, [late, early]);
 
       const { buffer } = await download(s);
 
-      const order = zipOrder(buffer);
-      expect(order.slice(0, 2)).toEqual([
-        contractName(first.id),
-        contractName(second.id),
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(first),
+        page(second),
       ]);
-      expect(sorted(order.slice(2))).toEqual(
-        sorted([timesheetName(sheetOne.id), timesheetName(sheetTwo.id)]),
-      );
     });
 
     it('does not pull in a contract of another reimbursement type when a claimed entry was moved to it', async () => {
@@ -897,7 +915,7 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual([timesheetName(invoice.id)]);
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
     });
 
     it('does not read claims that were released from the timesheet', async () => {
@@ -914,9 +932,72 @@ describe('BundleDownloadService', () => {
 
       const { buffer } = await download(s);
 
-      expect(zipNames(buffer)).toEqual(
-        sorted([contractName(first.id), timesheetName(invoice.id)]),
-      );
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(first),
+      ]);
+    });
+  });
+
+  describe('one PDF per timesheet (VOLI-1551)', () => {
+    it('keeps every page of a multi-page timesheet ahead of every page of its contract', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const contract = await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [entry]);
+      pageCountByFileId.set(String(invoice.fileId), 2);
+      pageCountByFileId.set(String(contract.fileId), 3);
+
+      const { buffer } = await download(s);
+
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page(invoice),
+        page(contract),
+        page(contract),
+        page(contract),
+      ]);
+    });
+
+    it('delivers the timesheet alone, still paid, when its contract file is not a readable PDF', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const contract = await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [entry]);
+      fetchSpy.mockImplementation((async (url: unknown) =>
+        String(url).endsWith(String(contract.fileId))
+          ? notAPdf()
+          : servePdfs(url)) as unknown as typeof fetch);
+
+      const { buffer } = await download(s);
+
+      expect(await pagesIn(buffer, invoice)).toEqual([page(invoice)]);
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).not.toBeNull();
+    });
+
+    it('fails and marks nothing paid when a timesheet file is not a readable PDF', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [entry]);
+      fetchSpy.mockImplementation((async (url: unknown) =>
+        String(url).endsWith(String(invoice.fileId))
+          ? notAPdf()
+          : servePdfs(url)) as unknown as typeof fetch);
+
+      await expect(download(s)).rejects.toThrow('could not be read');
+
+      const stored = await db.query.invoices.findFirst({
+        where: { id: invoice.id },
+      });
+      expect(stored?.paidAt).toBeNull();
+      const audit = await db.query.reimbursementBundleDownloads.findFirst({
+        where: { volunteerId: s.volunteer.id },
+      });
+      expect(audit).toBeUndefined();
     });
   });
 });
