@@ -45,6 +45,9 @@ import { ReimbursementRateService } from './reimbursement-rate.service';
 
 type RenderableDocument = ContractWithRelations | InvoiceWithRelations;
 
+/** The steps of rendering a PDF, named in the Sentry report of a failure. */
+type RenderStage = 'generate' | 'resolve-unit' | 'store' | 'attach';
+
 const EUR = '€';
 
 const AMOUNT_COLUMN = 'Betrag';
@@ -98,17 +101,23 @@ export class DocumentRenderingService {
     document: RenderableDocument,
     actorUserId: string,
   ): Promise<string | null> {
+    const isContract = 'contractStatus' in document;
+    // The step running when it fails, so the report says where it broke.
+    let stage: RenderStage = 'generate';
+    let organizationUnitId: string | null = null;
     try {
       const template = document.documentTemplate;
       if (!template) {
         throw new Error('Document is missing its template');
       }
       const bytes = await this.generatePdf(document);
-      const isContract = 'contractStatus' in document;
-      const organizationUnitId =
+
+      stage = 'resolve-unit';
+      organizationUnitId =
         template.organizationUnitId ??
         (await this.requireOrgRootUnitId(template.organizationId));
 
+      stage = 'store';
       const file = await this.fileService.saveGeneratedFile({
         organizationUnitId,
         filename: `${isContract ? 'Vereinbarung' : 'Stundennachweis'}-${document.id.slice(0, 8)}.pdf`,
@@ -118,6 +127,7 @@ export class DocumentRenderingService {
         purpose: FilePurpose.DOCUMENT,
       });
 
+      stage = 'attach';
       const table = isContract ? schema.contracts : schema.invoices;
       await this.db
         .update(table)
@@ -126,12 +136,24 @@ export class DocumentRenderingService {
 
       return file.id;
     } catch (error) {
+      const documentKind = isContract ? 'contract' : 'invoice';
       this.logger.error(
-        `Failed to render PDF for document ${document.id}: ${
+        `Failed to render PDF for ${documentKind} ${document.id} at ${stage}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
-      this.observabilityService.captureException(error);
+      this.observabilityService.captureException(error, {
+        tags: { feature: 'document-pdf', stage, documentKind },
+        extra: {
+          documentId: document.id,
+          documentTemplateId:
+            document.documentTemplate?.id ?? document.documentTemplateId,
+          organizationId: document.documentTemplate?.organizationId,
+          organizationUnitId:
+            organizationUnitId ?? document.organizationUnitId ?? null,
+          actorUserId,
+        },
+      });
       return null;
     }
   }

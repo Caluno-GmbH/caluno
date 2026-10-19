@@ -63,6 +63,7 @@ describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
   let rateCallArgs: unknown[] = [];
   let captured: unknown[] = [];
+  let capturedContexts: unknown[] = [];
 
   const createService = (
     overrides: {
@@ -139,9 +140,11 @@ describe('DocumentRenderingService', () => {
         Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
     } as never;
     captured = [];
+    capturedContexts = [];
     const observabilityService = {
-      captureException: (error: unknown) => {
+      captureException: (error: unknown, context?: unknown) => {
         captured.push(error);
+        capturedContexts.push(context);
       },
     } as never;
     return new DocumentRenderingService(
@@ -359,6 +362,46 @@ describe('DocumentRenderingService', () => {
     const fileId = await service.renderAndAttachPdf(contract(), 'actor-1');
     expect(fileId).toBeNull();
     expect(captured).toEqual([failure]);
+  });
+
+  it('renderAndAttachPdf names the step that failed and the document in the report', async () => {
+    const service = createService({
+      rateCents: 1500,
+      saveFile: () => Promise.reject(new Error('S3 timeout')),
+    });
+    await service.renderAndAttachPdf(
+      contract({ documentTemplateId: 'template-1' }),
+      'actor-1',
+    );
+    expect(capturedContexts).toEqual([
+      {
+        tags: {
+          feature: 'document-pdf',
+          stage: 'store',
+          documentKind: 'contract',
+        },
+        extra: {
+          documentId: 'contract-1',
+          documentTemplateId: 'template-1',
+          organizationId: 'org-1',
+          organizationUnitId: 'unit-1',
+          actorUserId: 'actor-1',
+        },
+      },
+    ]);
+  });
+
+  it('renderAndAttachPdf reports a failure while generating as the generate step', async () => {
+    const service = createService({ rateCents: 1500 });
+    await service.renderAndAttachPdf(
+      contract({ documentTemplate: null as never }),
+      'actor-1',
+    );
+    expect(capturedContexts).toEqual([
+      expect.objectContaining({
+        tags: expect.objectContaining({ stage: 'generate' }),
+      }),
+    ]);
   });
 
   it('resolves the rate at the document own unit, not the template unit', async () => {
