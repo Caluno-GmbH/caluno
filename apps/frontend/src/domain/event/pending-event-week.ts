@@ -21,6 +21,7 @@ export const takePendingEventWeek = (eventId: string): string | null => {
     return pending.week;
   } catch (error) {
     console.error('Failed to parse pending event week data', error);
+    sessionStorage.removeItem(PENDING_EVENT_WEEK);
     return null;
   }
 };

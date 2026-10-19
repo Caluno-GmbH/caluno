@@ -17,7 +17,6 @@ import type {
   GetAvailableShiftInstancesQuery,
   GetCheckInShiftInstancesQuery,
   GetCheckInShiftsQuery,
-  GetEventShiftInstanceStartsQuery,
   GetMyShiftInstancesQuery,
   GetPublicShiftInstancesQuery,
   GetShiftInstanceCallOutHistoryQuery,

@@ -195,7 +195,7 @@ export default async function EventDetailPage({
             orgUId={orgUId}
             eventId={eventId}
             activeTab={activeTab}
-            week={weekIso}
+            week={parsedWeekStart ? weekIso : undefined}
           />
         </div>
 

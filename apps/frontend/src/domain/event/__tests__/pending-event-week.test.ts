@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import {
   setPendingEventWeek,
   takePendingEventWeek,
@@ -7,6 +7,11 @@ import {
 const KEY = 'pending_event_week';
 
 describe('pending event week', () => {
+  afterAll(() => {
+    delete (globalThis as { window?: unknown }).window;
+    delete (globalThis as { sessionStorage?: unknown }).sessionStorage;
+  });
+
   let store: Map<string, string>;
 
   beforeEach(() => {
@@ -40,6 +45,7 @@ describe('pending event week', () => {
     try {
       expect(takePendingEventWeek('e1')).toBeNull();
       expect(errorMock).toHaveBeenCalledTimes(1);
+      expect(store.has(KEY)).toBe(false);
     } finally {
       console.error = originalError;
     }
