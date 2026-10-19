@@ -342,7 +342,10 @@
         "addButton": "Einsatz erstellen",
         "emptyDescription": "Erstelle einen Einsatz für diese Veranstaltung, um loszulegen.",
         "emptyTitle": "Noch keine Einsätze",
-        "title": "Einsätze"
+        "nextWeekWithShifts": "Zur nächsten Woche mit Einsätzen",
+        "previousWeekWithShifts": "Zur vorherigen Woche mit Einsätzen",
+        "title": "Einsätze",
+        "weekEmpty": "Keine Einsätze in dieser Woche"
       },
       "volunteersCard": {
         "checkInAria": "Einchecken",

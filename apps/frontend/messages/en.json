@@ -342,7 +342,10 @@
         "addButton": "Create assignment",
         "emptyDescription": "Create an assignment for this event to get started.",
         "emptyTitle": "No assignments yet",
-        "title": "Assignments"
+        "nextWeekWithShifts": "Go to next week with assignments",
+        "previousWeekWithShifts": "Go to previous week with assignments",
+        "title": "Assignments",
+        "weekEmpty": "No assignments this week"
       },
       "volunteersCard": {
         "checkInAria": "Check in",
