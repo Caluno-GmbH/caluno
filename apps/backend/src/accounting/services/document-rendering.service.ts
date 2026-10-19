@@ -6,6 +6,7 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { OrganizationService } from '../../organization/organization.service';
+import { ObservabilityService } from '../../shared/observability/observability.service';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
 import { UserService } from '../../user/user.service';
@@ -85,12 +86,13 @@ export class DocumentRenderingService {
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly fileService: FileService,
     private readonly organizationService: OrganizationService,
+    private readonly observabilityService: ObservabilityService,
   ) {}
 
   /**
-   * Renders, stores and attaches the PDF. Never throws — a rendering failure
-   * only logs, so signing still succeeds and the download stays unavailable
-   * until the PDF actually exists.
+   * Renders, stores and attaches the PDF. Never throws, so signing still
+   * succeeds; a failure is logged and reported to Sentry, and the PDF is
+   * rendered again when the document is next downloaded.
    */
   async renderAndAttachPdf(
     document: RenderableDocument,
@@ -129,6 +131,7 @@ export class DocumentRenderingService {
           error instanceof Error ? error.message : String(error)
         }`,
       );
+      this.observabilityService.captureException(error);
       return null;
     }
   }

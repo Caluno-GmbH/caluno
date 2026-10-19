@@ -14,6 +14,7 @@ import { InvoiceStatus } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
 import { ContractCover, type CoverageTarget } from '../utils/contract-coverage';
 import { ContractService } from './contract.service';
+import { InvoiceService } from './invoice.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
 
 interface BuiltBundle {
@@ -44,6 +45,7 @@ export class BundleDownloadService {
     private readonly fileService: FileService,
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly contractService: ContractService,
+    private readonly invoiceService: InvoiceService,
   ) {}
 
   async buildAndRecord(
@@ -78,13 +80,19 @@ export class BundleDownloadService {
       scope,
     );
 
-    const timesheets = invoices.flatMap((invoice) =>
-      invoice.fileId ? [{ ...invoice, fileId: invoice.fileId }] : [],
-    );
-    if (timesheets.length === 0) {
+    if (invoices.length === 0) {
       throw new BadRequestException(
         'No ready documents to download for this volunteer and reimbursement type.',
       );
+    }
+
+    // A READY timesheet without a PDF had its rendering fail when it was
+    // signed; it is rendered now rather than left out of the bundle.
+    const timesheets: ((typeof invoices)[number] & { fileId: string })[] = [];
+    for (const invoice of invoices) {
+      const fileId =
+        invoice.fileId ?? (await this.renderMissingTimesheet(invoice, userId));
+      timesheets.push({ ...invoice, fileId });
     }
 
     // A contract that covers several timesheets is fetched once and appended
@@ -191,6 +199,26 @@ export class BundleDownloadService {
       );
     }
     return contractsByInvoice;
+  }
+
+  /**
+   * Renders the PDF a READY timesheet is missing. When that fails again the
+   * download fails as well: a ZIP without the timesheet would mark it paid.
+   */
+  private async renderMissingTimesheet(
+    invoice: { id: string },
+    userId: string,
+  ): Promise<string> {
+    this.logger.warn(
+      `Bundle download: timesheet ${invoice.id} is READY without a PDF, rendering it now`,
+    );
+    const fileId = await this.invoiceService.ensurePdf(invoice.id, userId);
+    if (!fileId) {
+      throw new InternalServerErrorException(
+        `The timesheet ${invoice.id} has no PDF and it could not be generated, so the bundle was not built and nothing was marked as paid.`,
+      );
+    }
+    return fileId;
   }
 
   /**

@@ -62,6 +62,7 @@ const pdfGlyphs = (pdfBytes: Buffer): string => {
 describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
   let rateCallArgs: unknown[] = [];
+  let captured: unknown[] = [];
 
   const createService = (
     overrides: {
@@ -137,12 +138,19 @@ describe('DocumentRenderingService', () => {
       requireRootUnit: () =>
         Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
     } as never;
+    captured = [];
+    const observabilityService = {
+      captureException: (error: unknown) => {
+        captured.push(error);
+      },
+    } as never;
     return new DocumentRenderingService(
       db,
       userService,
       reimbursementRateService,
       fileService,
       organizationService,
+      observabilityService,
     );
   };
 
@@ -340,6 +348,17 @@ describe('DocumentRenderingService', () => {
       purpose: FilePurpose.DOCUMENT,
     });
     expect(saved).toHaveProperty('bytes');
+  });
+
+  it('renderAndAttachPdf reports a failure to Sentry and returns null', async () => {
+    const failure = new Error('storage is down');
+    const service = createService({
+      rateCents: 1500,
+      saveFile: () => Promise.reject(failure),
+    });
+    const fileId = await service.renderAndAttachPdf(contract(), 'actor-1');
+    expect(fileId).toBeNull();
+    expect(captured).toEqual([failure]);
   });
 
   it('resolves the rate at the document own unit, not the template unit', async () => {
