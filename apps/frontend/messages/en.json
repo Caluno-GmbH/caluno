@@ -1779,6 +1779,10 @@
       "time": "Time",
       "visibility": "Visibility"
     },
+    "search": {
+      "placeholder": "Search by name",
+      "clearAria": "Clear search"
+    },
     "tabs": {
       "allShifts": "All assignments",
       "weekplan": "Weekly plan"

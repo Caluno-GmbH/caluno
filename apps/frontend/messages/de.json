@@ -1779,6 +1779,10 @@
       "time": "Zeit",
       "visibility": "Sichtbarkeit"
     },
+    "search": {
+      "placeholder": "Nach Name suchen",
+      "clearAria": "Suche zurücksetzen"
+    },
     "tabs": {
       "allShifts": "Alle Einsätze",
       "weekplan": "Wochenplan"
