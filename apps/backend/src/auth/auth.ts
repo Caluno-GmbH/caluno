@@ -1,5 +1,10 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { Logger } from '@nestjs/common';
+import {
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  passwordUserInputs,
+} from '@repo/password-policy';
 import { APIError, type BetterAuthOptions, betterAuth } from 'better-auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { emailOTP } from 'better-auth/plugins';
@@ -12,6 +17,7 @@ import {
 import { formatUserName } from '../user/user-name';
 import { isBlank, trimmed } from '../utils';
 import { headersFromRequest } from './auth-headers';
+import { checkPasswordPolicy } from './password-policy';
 import {
   applyPrivacyPolicyAcceptance,
   PrivacyPolicyAcceptanceError,
@@ -32,6 +38,20 @@ type EmailOtpType =
   | 'email-verification'
   | 'forget-password'
   | 'change-email';
+
+/**
+ * Endpoints that accept a new password, mapped to the body field carrying it.
+ * Sign-in is deliberately excluded: existing passwords keep working, and the
+ * policy applies whenever a password is created or changed.
+ */
+const passwordPolicyFields: Partial<
+  Record<string, 'password' | 'newPassword'>
+> = {
+  '/sign-up/email': 'password',
+  '/email-otp/reset-password': 'password',
+  '/reset-password': 'newPassword',
+  '/change-password': 'newPassword',
+};
 
 export interface SendVerificationOtpOptions {
   email: string;
@@ -274,6 +294,25 @@ export const createAuthConfig = ({
     },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
+        const passwordField = ctx.path
+          ? passwordPolicyFields[ctx.path]
+          : undefined;
+        if (passwordField) {
+          const password = ctx.body?.[passwordField];
+          if (typeof password === 'string') {
+            const violation = checkPasswordPolicy(
+              password,
+              passwordUserInputs(ctx.body),
+            );
+            if (violation) {
+              throw new APIError('BAD_REQUEST', {
+                message: violation.message,
+                code: violation.code,
+              });
+            }
+          }
+        }
+
         if (ctx.path !== '/sign-up/email') {
           return;
         }
@@ -302,8 +341,8 @@ export const createAuthConfig = ({
     }),
     emailAndPassword: {
       enabled: true,
-      minPasswordLength: 6,
-      maxPasswordLength: 128,
+      minPasswordLength: MIN_PASSWORD_LENGTH,
+      maxPasswordLength: MAX_PASSWORD_LENGTH,
       autoSignIn: false,
       requireEmailVerification: emailVerificationEnabled,
       async sendResetPassword({ user, token }, request) {
