@@ -50,4 +50,28 @@ describe('pending event week', () => {
       console.error = originalError;
     }
   });
+
+  it('does not throw when storage is unavailable', () => {
+    const blocked = () => {
+      throw new Error('SecurityError');
+    };
+    Object.assign(globalThis, {
+      sessionStorage: {
+        getItem: blocked,
+        setItem: blocked,
+        removeItem: blocked,
+      },
+    });
+    const originalError = console.error;
+    console.error = mock(() => {});
+
+    try {
+      expect(() =>
+        setPendingEventWeek({ eventId: 'e1', week: '2026-09-07' }),
+      ).not.toThrow();
+      expect(takePendingEventWeek('e1')).toBeNull();
+    } finally {
+      console.error = originalError;
+    }
+  });
 });
