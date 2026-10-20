@@ -54,7 +54,7 @@ test.describe('Shift creation', () => {
   });
 
   test('marks shift name and date/time as required', async ({ page }) => {
-    await expect(page.getByText('Shift name *')).toBeVisible();
+    await expect(page.getByText('Assignment name *')).toBeVisible();
     await expect(page.getByText('Date and time *')).toBeVisible();
   });
 

@@ -141,6 +141,7 @@ import {
     AccountingSetupQueryResolver,
   ],
   exports: [
+    AccountingOrgAccessService,
     ReimbursementRateService,
     DocumentTemplateService,
     DocumentSigningService,

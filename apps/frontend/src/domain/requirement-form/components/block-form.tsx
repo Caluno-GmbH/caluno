@@ -56,7 +56,7 @@ interface BlockFormFieldInput {
   required: boolean;
   systemKey?: string;
   lockType?: boolean;
-  options?: { label: string; value: string }[];
+  options?: string[];
   documents?: {
     fileId: string;
     filename?: string | null;
@@ -545,8 +545,8 @@ function FieldCard({
             {t('fieldN', { n: index + 1 })}
           </span>
           {isSystemField && (
-            <Badge variant="secondary" className="text-xs">
-              <UserCircle2 className="mr-1 size-3" />
+            <Badge variant="neutral" className="text-xs">
+              <UserCircle2 className="mr-1 size-3.5" />
               {t('systemField')}
             </Badge>
           )}
@@ -759,11 +759,28 @@ function FieldCard({
           <Controller
             control={control}
             name={`fields.${index}.options`}
-            render={({ field }) => (
+            rules={{
+              validate: (opts) => {
+                const list = opts ?? [];
+                if (list.length === 0) return tField('enterOptionError');
+                if (list.some((option) => option.trim() === '')) {
+                  return tField('emptyOptionError');
+                }
+                const seen = new Set<string>();
+                for (const option of list) {
+                  const key = option.trim();
+                  if (seen.has(key)) return tField('duplicateOptionError');
+                  seen.add(key);
+                }
+                return true;
+              },
+            }}
+            render={({ field, fieldState }) => (
               <OptionsEditor
                 options={field.value ?? []}
                 onChange={field.onChange}
                 disabled={readOnly}
+                error={fieldState.error?.message}
               />
             )}
           />

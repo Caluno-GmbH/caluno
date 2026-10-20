@@ -66,6 +66,8 @@ describe('InvoiceService', () => {
   let contractService: ContractService;
   closeTestingModuleAfterAll(() => moduleRef);
   const declinedByVolunteerCalls: unknown[] = [];
+  const renderCalls: { invoiceId: string; actorUserId: string }[] = [];
+  let renderedFileId: string | null = null;
 
   beforeAll(async () => {
     await ensureTestDatabase();
@@ -144,7 +146,10 @@ describe('InvoiceService', () => {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
       {
-        renderAndAttachPdf: () => Promise.resolve(null),
+        renderAndAttachPdf: (document: { id: string }, actorUserId: string) => {
+          renderCalls.push({ invoiceId: document.id, actorUserId });
+          return Promise.resolve(renderedFileId);
+        },
       } as unknown as DocumentRenderingService,
       organizationService,
       { capture: () => {} } as unknown as PostHogService,
@@ -2740,6 +2745,51 @@ describe('InvoiceService', () => {
           supervisor.id,
         ),
       ).rejects.toBeInstanceOf(ConflictGraphQLError);
+    });
+  });
+
+  describe('ensurePdf (VOLI-1637)', () => {
+    const issueTimesheet = async () => {
+      const {
+        organization,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+      const invoice = await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+      renderCalls.length = 0;
+      return { invoice, supervisor };
+    };
+
+    it('renders the PDF of an invoice that has none and returns its id', async () => {
+      const { invoice, supervisor } = await issueTimesheet();
+      renderedFileId = 'rendered-file';
+
+      const fileId = await service.ensurePdf(invoice.id, supervisor.id);
+
+      expect(fileId).toBe('rendered-file');
+      expect(renderCalls).toEqual([
+        { invoiceId: invoice.id, actorUserId: supervisor.id },
+      ]);
+      renderedFileId = null;
+    });
+
+    it('returns null when rendering fails again', async () => {
+      const { invoice, supervisor } = await issueTimesheet();
+
+      expect(await service.ensurePdf(invoice.id, supervisor.id)).toBeNull();
     });
   });
 

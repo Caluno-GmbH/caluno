@@ -106,32 +106,26 @@ describe('resolveFieldAnswer', () => {
     expect(result).toBe('Accepted');
   });
 
-  it('maps MULTI_CHOICE values to their option labels', () => {
+  it('joins MULTI_CHOICE values for display', () => {
     const result = resolveFieldAnswer(
       field({
         type: 'MULTI_CHOICE',
-        options: [
-          { label: 'Red', value: 'red' },
-          { label: 'Blue', value: 'blue' },
-        ],
+        options: ['Red', 'Blue'],
       }),
-      [{ fieldId: 'f1', value: 'red,blue' }],
+      [{ fieldId: 'f1', value: 'Red,Blue' }],
       {},
       opts,
     );
     expect(result).toBe('Red, Blue');
   });
 
-  it('maps JSON-encoded MULTI_CHOICE values to their option labels', () => {
+  it('joins JSON-encoded MULTI_CHOICE values for display', () => {
     const result = resolveFieldAnswer(
       field({
         type: 'MULTI_CHOICE',
-        options: [
-          { label: 'Red', value: 'red' },
-          { label: 'Blue', value: 'blue' },
-        ],
+        options: ['Red', 'Blue'],
       }),
-      [{ fieldId: 'f1', value: '["red","blue"]' }],
+      [{ fieldId: 'f1', value: '["Red","Blue"]' }],
       {},
       opts,
     );

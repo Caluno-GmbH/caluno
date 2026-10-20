@@ -16,6 +16,8 @@ import {
 import { getTranslations } from 'next-intl/server';
 import { UserCard } from '@/components/user-card';
 import { CheckInUnavailableCard } from '@/domain/shift/components/check-in-unavailable-card';
+import { resolveDirectCheckOutEntryId } from '@/domain/shift/direct-check-out';
+import { checkInPath, checkOutPath } from '@/domain/shift/routes';
 import { Link, redirect } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
@@ -46,13 +48,23 @@ export default async function VolunteeringDecidePage({
 
   // The check-in page resolves its own org unit from the caller's
   // check-in:manage units; `orgUId` is forwarded only as a preference.
-  const checkInHref = orgUIdParam
-    ? `/check-in/${checkInId}/check-in?orgUId=${encodeURIComponent(orgUIdParam)}`
-    : `/check-in/${checkInId}/check-in`;
+  const checkInHref = checkInPath(checkInId, orgUIdParam);
 
   // Nothing to check out -> straight to check-in.
   if (context.openTimeEntries.length === 0) {
     redirect({ href: checkInHref, locale });
+  }
+
+  // Exactly one open entry from today -> straight to check-out.
+  const directEntryId = resolveDirectCheckOutEntryId(
+    context.openTimeEntries,
+    new Date(),
+  );
+  if (directEntryId) {
+    redirect({
+      href: checkOutPath(checkInId, directEntryId, orgUIdParam),
+      locale,
+    });
   }
 
   const t = await getTranslations('CheckIn');
@@ -72,7 +84,7 @@ export default async function VolunteeringDecidePage({
           {context.openTimeEntries.map((entry) => (
             <Link
               key={entry.id}
-              href={`/check-in/${checkInId}/check-out?entryId=${entry.id}`}
+              href={checkOutPath(checkInId, entry.id, orgUIdParam)}
               className="flex items-center gap-2 rounded-lg border p-4 hover:bg-accent"
             >
               <ul className="flex-1 space-y-2">

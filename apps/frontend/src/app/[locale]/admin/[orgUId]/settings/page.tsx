@@ -1,5 +1,4 @@
 import { PermissionKey } from '@repo/data';
-import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { OrganizationProfileForm } from '@/domain/organization/components/organization-profile-form';
 import { getDataClient } from '@/lib/data-client';

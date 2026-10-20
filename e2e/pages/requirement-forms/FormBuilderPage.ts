@@ -4,15 +4,15 @@ export class FormBuilderPage {
   constructor(private readonly page: Page) {}
 
   get emptyStateHeading() {
-    return this.page.getByRole('heading', { name: 'You have no blocks yet' });
+    return this.page.getByRole('heading', { name: 'No blocks yet' });
   }
 
   get addBlockButton() {
-    return this.page.getByRole('button', { name: 'Add Block' }).first();
+    return this.page.getByRole('button', { name: 'Add block' }).first();
   }
 
   get saveFormButton() {
-    return this.page.getByRole('button', { name: 'Save Form' });
+    return this.page.getByRole('button', { name: 'Save form' });
   }
 
   get cancelButton() {
@@ -20,7 +20,7 @@ export class FormBuilderPage {
   }
 
   get copyShareLinkButton() {
-    return this.page.getByRole('button', { name: 'Copy Share Link' });
+    return this.page.getByRole('button', { name: 'Copy share link' });
   }
 
   get createNewBlockButton() {
@@ -32,7 +32,7 @@ export class FormBuilderPage {
   }
 
   get createBlockSubmit() {
-    return this.page.getByRole('button', { name: 'Create Block' });
+    return this.page.getByRole('button', { name: 'Create block' });
   }
 
   get savedToast() {
@@ -44,7 +44,8 @@ export class FormBuilderPage {
   }
 
   previewBlockHeading(title: string) {
-    return this.page.getByRole('heading', { name: title, level: 4 });
+    // Builder list and preview both use h3; preview is the last match.
+    return this.page.getByRole('heading', { name: title, level: 3 }).last();
   }
 
   async expectEmptyState() {

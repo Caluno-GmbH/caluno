@@ -27,7 +27,6 @@ export default async function RequirementFormsPage({ params }: Props) {
       forms={formsResult.items}
       blocks={blocksResult.items}
       orgUId={orgUId}
-      orgUnitName={org.name}
       organizationId={org.organizationId}
     />
   );

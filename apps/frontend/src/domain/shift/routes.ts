@@ -7,6 +7,24 @@ export function extractCheckInPath(scannedValue: string): string | null {
   return match ? `/check-in/${match[1]?.toLowerCase()}/decide` : null;
 }
 
+function orgUIdParam(orgUId?: string): string {
+  return orgUId ? `orgUId=${encodeURIComponent(orgUId)}` : '';
+}
+
+export function checkInPath(checkInId: string, orgUId?: string): string {
+  const query = orgUIdParam(orgUId);
+  return `/check-in/${checkInId}/check-in${query ? `?${query}` : ''}`;
+}
+
+export function checkOutPath(
+  checkInId: string,
+  entryId: string,
+  orgUId?: string,
+): string {
+  const query = orgUIdParam(orgUId);
+  return `/check-in/${checkInId}/check-out?entryId=${encodeURIComponent(entryId)}${query ? `&${query}` : ''}`;
+}
+
 export type ShiftListQuery = {
   view?: ShiftListView;
   week?: string;

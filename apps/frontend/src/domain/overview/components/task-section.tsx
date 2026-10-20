@@ -3,6 +3,8 @@
 import {
   CheckIcon,
   ChevronRightIcon,
+  ClipboardPlus,
+  FilePlus,
   OctagonXIcon,
   Package,
   SignatureIcon,
@@ -30,6 +32,8 @@ const SECTION_ICONS = {
   REVIEW_APPLICATIONS: [UserSearch],
   APPROVE_SIGNUPS: [CheckIcon],
   DECLINED_DOCUMENTS: [OctagonXIcon],
+  CREATE_AGREEMENTS: [FilePlus],
+  CREATE_TIMESHEETS: [ClipboardPlus],
   COUNTERSIGN_DOCUMENTS: [SignatureIcon],
   SEND_TIMESHEET_BUNDLES: [Package],
 } as const satisfies Record<OverviewSectionId, readonly (typeof UserPlus)[]>;

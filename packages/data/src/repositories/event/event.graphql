@@ -43,10 +43,7 @@ fragment RequiredFormFields on RequirementForm {
         required
         lockType
         systemKey
-        options {
-          label
-          value
-        }
+        options
         documents {
           fileId
           filename

@@ -1,7 +1,13 @@
 'use client';
 
 import { useMyDocumentSummary } from '@repo/data/react';
-import { Button, Popover, PopoverContent, PopoverTrigger } from '@repo/ui';
+import {
+  Badge,
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@repo/ui';
 import { FileTextIcon, LogOutIcon, SettingsIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type PropsWithChildren, useState } from 'react';
@@ -55,13 +61,13 @@ export function ProfileDropdown({ children }: ProfileDropdownProps) {
             <FileTextIcon className="size-4 mr-2" />
             <span className="flex-1 text-left">{t('myDocuments')}</span>
             {pendingCount > 0 && (
-              <span
+              <Badge
+                size="count"
                 role="img"
                 aria-label={t('myDocumentsBadge', { count: pendingCount })}
-                className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-xs font-medium text-white tabular-nums"
               >
                 {pendingCount > 99 ? '99+' : pendingCount}
-              </span>
+              </Badge>
             )}
           </Button>
         )}

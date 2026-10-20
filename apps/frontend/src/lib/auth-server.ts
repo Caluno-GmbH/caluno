@@ -1,6 +1,8 @@
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { getLocale } from 'next-intl/server';
+import { redirect } from '@/i18n/navigation';
 import { API_URL } from './constants';
+import { buildSignInHref } from './sign-in-redirect';
 
 export async function getSession() {
   const headersList = await headers();
@@ -29,11 +31,16 @@ export async function getSession() {
   }
 }
 
-export async function requireAuth(redirectTo: string = '/signup') {
+export async function requireAuth() {
   const session = await getSession();
 
   if (!session?.user) {
-    redirect(redirectTo);
+    const headersList = await headers();
+    const locale = await getLocale();
+    redirect({
+      href: buildSignInHref(headersList.get('x-pathname')),
+      locale,
+    });
   }
 
   return session;

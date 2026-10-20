@@ -28,4 +28,8 @@ jobs:
       moving-tag: release
       api-url: https://release.api.caluno.org
       web-url: https://release.app.caluno.org
+      notify-slack: true
+      # After apply: Playwright against release (seeded by entrypoint on boot).
+      run-e2e: true
+      mailbox-url: https://release.mailbox.caluno.org
     secrets: inherit

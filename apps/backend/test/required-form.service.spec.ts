@@ -760,7 +760,7 @@ describe('RequiredFormService', () => {
         .update(schema.formBlockFields)
         .set({
           type: 'MULTI_CHOICE',
-          options: [{ label: 'A', value: 'A' }],
+          options: ['A'],
         })
         .where(eq(schema.formBlockFields.id, field.id));
       await setRequiredForms(db, {
@@ -795,7 +795,7 @@ describe('RequiredFormService', () => {
         .update(schema.formBlockFields)
         .set({
           type: 'MULTI_CHOICE',
-          options: [{ label: 'A, B', value: 'A, B' }],
+          options: ['A, B'],
         })
         .where(eq(schema.formBlockFields.id, field.id));
       await setRequiredForms(db, {

@@ -35,6 +35,8 @@
       "REVIEW_APPLICATIONS": "Anfragen prüfen",
       "APPROVE_SIGNUPS": "Anmeldungen freigeben",
       "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
+      "CREATE_AGREEMENTS": "Vereinbarungen erstellen",
+      "CREATE_TIMESHEETS": "Stundennachweise erstellen",
       "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen",
       "SEND_TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand"
     }
@@ -124,6 +126,7 @@
       "termsAcknowledge": "Ich habe die <termsLink>Nutzungsbedingungen</termsLink> gelesen und akzeptiere sie.",
       "termsRequired": "Bitte akzeptiere die Nutzungsbedingungen, um fortzufahren.",
       "title": "Erstelle dein Konto",
+      "useAnotherEmail": "Bitte verwende eine andere E-Mail-Adresse.",
       "description": "Willkommen bei caluno. Registriere dich, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
     "verifyEmail": {
@@ -1068,8 +1071,7 @@
       "loading": "Wird geladen...",
       "lockedNotice": "Dieser Block ist gesperrt, weil er in einem Formular mit Einsendungen verwendet wird.",
       "noFields": "Noch keine Felder. Füge das erste Feld zu diesem Block hinzu.",
-      "optionLabelPlaceholder": "Bezeichnung {n}",
-      "optionValuePlaceholder": "Wert {n}",
+      "optionPlaceholder": "Option {n}",
       "optional": "Optional",
       "optionsLabel": "Optionen",
       "placeholderLabel": "Platzhalter",
@@ -1179,6 +1181,8 @@
       "enterDocumentFileError": "Bitte lade ein Dokument hoch.",
       "enterDocumentLabelError": "Bitte gib eine Dokumentenbezeichnung ein.",
       "enterLabelError": "Bitte gib eine Bezeichnung ein.",
+      "duplicateOptionError": "Optionen müssen eindeutig sein.",
+      "emptyOptionError": "Bitte fülle alle Optionen aus.",
       "enterOptionError": "Bitte gib mindestens eine Option ein.",
       "enterTextError": "Bitte gib einen Text ein.",
       "fieldTypeLabel": "Feldtyp",
@@ -1355,7 +1359,7 @@
     "page": {
       "createButton": "Rolle erstellen",
       "empty": "Noch keine Rollen. Erstelle deine erste Rolle, um loszulegen.",
-      "subtitle": "Verwalte Rollen und Berechtigungen für {orgName}",
+      "subtitle": "Verwalte Rollen und Berechtigungen für die gesamte Organisation {orgName}",
       "title": "Rollen"
     },
     "permissions": {
@@ -1474,6 +1478,7 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
+      "checkInForAnotherShift": "Stattdessen für eine andere Schicht einchecken",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutLoading": "{name} wird ausgecheckt…",

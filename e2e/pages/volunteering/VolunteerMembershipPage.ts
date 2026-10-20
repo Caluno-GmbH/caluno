@@ -51,13 +51,17 @@ export class VolunteerMembershipPage {
   }
 
   /**
-   * Signs the newest card awaiting the volunteer's signature (cards sort
-   * newest-first within the awaiting group, so `.first()` is the document
-   * just created for this run). Afterwards the freshly signed card is the
-   * only one in the awaiting-countersignature state.
+   * Signs the newest agreement card awaiting the volunteer's signature (cards
+   * sort newest-first within the awaiting group, so `.first()` is the
+   * document just created for this run). Volunteer copy calls every contract
+   * "Supplementary agreement" — the admin board's "Agreement
+   * Ehrenamtspauschale" label does not appear here. Afterwards the freshly
+   * signed card is the only one in the awaiting-countersignature state.
    */
   async signAwaitingCard() {
-    const awaiting = this.cardForState('awaiting-signature').first();
+    const awaiting = this.cardForState('awaiting-signature')
+      .filter({ hasText: 'Supplementary agreement' })
+      .first();
     await expect(awaiting).toBeVisible();
     await expect(awaiting).toContainText('To sign');
     await expect(
@@ -98,7 +102,9 @@ export class VolunteerMembershipPage {
     // and nothing but Download remains.
     await this.page.goBack({ waitUntil: 'load' });
     await this.page.reload({ waitUntil: 'load' });
-    const signed = this.cardForState('awaiting-countersignature').first();
+    const signed = this.cardForState('awaiting-countersignature')
+      .filter({ hasText: 'Supplementary agreement' })
+      .first();
     await expect(signed).toContainText('To countersign');
     await expect(
       signed.getByRole('button', { name: 'Sign', exact: true }),
@@ -111,9 +117,11 @@ export class VolunteerMembershipPage {
     ).toBeVisible();
   }
 
-  /** Declines the card currently awaiting the volunteer's signature. */
+  /** Declines the agreement card currently awaiting the volunteer's signature. */
   async declineAwaitingCard(reason: string) {
-    const card = this.cardForState('awaiting-signature').first();
+    const card = this.cardForState('awaiting-signature')
+      .filter({ hasText: 'Supplementary agreement' })
+      .first();
     await expect(card).toBeVisible();
     await card.getByRole('button', { name: 'Decline', exact: true }).click();
 

@@ -10,21 +10,21 @@ import { VolunteerProfilePage } from '../../../pages/volunteering/VolunteerProfi
 // The whole document signing chain, both sides.
 //
 // Depends on the e2e seed (apps/backend/src/database/fixtures.ts, `bun run
-// db:fixtures:e2e`): the Playground org has accounting enabled, reimbursement
+// db:fixtures:e2e`): the Testing org has accounting enabled, reimbursement
 // rates, and the fixture accounts below exist. Templates are no longer seeded
 // (removed with the setup-gating change), so this suite configures the Ehrenamt
 // contract + invoice templates itself in beforeAll. Runs against the default
 // staging base URL like the other suites, or locally with
 // E2E_BASE_URL=http://localhost:3000.
 //
-// Playground Member 02 is the volunteer (kept document-free in the fresh
+// Testing Member Two is the volunteer (kept document-free in the fresh
 // fixtures so the run's documents are uniquely identifiable); the admin is
-// the Playground owner. Like the other auth-gated suites, sessions are
+// the Testing owner. Like the other auth-gated suites, sessions are
 // authenticated once in beforeAll and persisted to .auth/ (storageState).
-const ADMIN_EMAIL = 'demo+e2e_admin@caluno.org';
-const VOLUNTEER_EMAIL = 'demo+e2e_member02@caluno.org';
+const ADMIN_EMAIL = 'demo+testing_admin@caluno.org';
+const VOLUNTEER_EMAIL = 'demo+testing_member02@caluno.org';
 const PASSWORD = 'abcd1234';
-const VOLUNTEER_NAME = 'Playground Member 02';
+const VOLUNTEER_NAME = 'Testing Member Two';
 const DECLINE_REASON = `E2E decline ${Date.now()}: Zeitraum stimmt nicht`;
 
 const adminAuthFile = '.auth/accounting-admin.json';
@@ -211,7 +211,7 @@ test.describe('accounting documents flow — admin + volunteer', () => {
 
     const profile = new VolunteerProfilePage(volunteerPage);
     await profile.goto();
-    const membershipUrl = await profile.openMembership();
+    const membershipUrl = await profile.openMembership('Testing');
 
     const membership = new VolunteerMembershipPage(volunteerPage);
     await membership.goto(membershipUrl);
@@ -219,11 +219,14 @@ test.describe('accounting documents flow — admin + volunteer', () => {
     await membership.signAwaitingCard();
 
     // ── Admin side: it has moved on and is waiting on them ──────────────────
-    await board.countersignContract();
+    await board.countersignContract(VOLUNTEER_NAME);
 
     // ── Volunteer side: fully signed, both signatures on the card ──────────
     await volunteerPage.reload({ waitUntil: 'load' });
-    const signedCard = membership.cardForState('signed').first();
+    const signedCard = membership
+      .cardForState('signed')
+      .filter({ hasText: 'Supplementary agreement' })
+      .first();
     await expect(signedCard).toContainText('Active');
     await expect(signedCard).toContainText('You signed on');
     await expect(signedCard).toContainText('countersigned on');
@@ -258,13 +261,17 @@ test.describe('accounting documents flow — admin + volunteer', () => {
     await board.createContractFor(VOLUNTEER_NAME);
     await volunteerPage.reload({ waitUntil: 'load' });
     await membership.declineAwaitingCard(DECLINE_REASON);
+    // Drop the volunteer context before the final admin assertion. Keeping two
+    // long-lived traced contexts open until the end races Playwright's shared
+    // network-trace copy on close (ENOENT on `*-pwnetcopy-*.network`) and
+    // fails a green run.
+    await volunteerContext.close();
 
     // The org's dashboard reads Declined, attributed to the volunteer, with
     // the reason shown in full.
     await board.expectDeclinedWithReason(DECLINE_REASON);
 
     await adminContext.close();
-    await volunteerContext.close();
   });
 
   test('profile dropdown leads to the cross-org "My documents" page, whose badge matches the cards awaiting the signature', async ({

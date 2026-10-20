@@ -2,15 +2,6 @@ import { Field, InputType } from '@nestjs/graphql';
 import { FieldType } from '../enums';
 
 @InputType()
-export class SelectOptionInput {
-  @Field(() => String)
-  label!: string;
-
-  @Field(() => String)
-  value!: string;
-}
-
-@InputType()
 export class CreateFormBlockFieldInput {
   @Field(() => FieldType)
   type!: FieldType;
@@ -33,8 +24,8 @@ export class CreateFormBlockFieldInput {
   @Field(() => String, { nullable: true })
   systemKey?: string | null;
 
-  @Field(() => [SelectOptionInput], { nullable: true })
-  options?: SelectOptionInput[] | null;
+  @Field(() => [String], { nullable: true })
+  options?: string[] | null;
 
   @Field(() => [String], { nullable: true })
   documentFileIds?: string[] | null;

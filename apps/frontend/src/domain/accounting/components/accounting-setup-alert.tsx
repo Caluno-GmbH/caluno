@@ -27,7 +27,7 @@ export function AccountingSetupAlert({
 
   const isOrgProfile = blocker.kind === 'org-profile';
   const href = isOrgProfile
-    ? `/admin/${orgUId}`
+    ? `/admin/${orgUId}/settings/org-units`
     : `/admin/${orgUId}/accounting/settings?tab=templates`;
 
   return (

@@ -40,7 +40,7 @@ test.describe('Signup privacy policy', () => {
     // Terms acceptance is required too (covered by terms.e2e.ts); accept it
     // here so this test isolates the privacy checkbox.
     await signup.fillForm({
-      firstname: 'E2E',
+      firstname: 'E Two E',
       lastname: 'User',
       email: uniqueEmail(),
       password: TEST_PASSWORD,
@@ -63,7 +63,7 @@ test.describe('Signup privacy policy', () => {
     await signup.goto();
 
     const response = await signup.signup(
-      'E2E',
+      'E Two E',
       'User',
       uniqueEmail(),
       TEST_PASSWORD,
@@ -98,7 +98,7 @@ test.describe('Signup privacy policy', () => {
     const missing = await request.post(`${API_URL}/api/auth/sign-up/email`, {
       headers: signupHeaders,
       data: {
-        name: 'E2E User',
+        name: 'E Two E User',
         email: missingEmail,
         password: TEST_PASSWORD,
       },
@@ -108,7 +108,7 @@ test.describe('Signup privacy policy', () => {
     const stale = await request.post(`${API_URL}/api/auth/sign-up/email`, {
       headers: signupHeaders,
       data: {
-        name: 'E2E User',
+        name: 'E Two E User',
         email: staleEmail,
         password: TEST_PASSWORD,
         privacyPolicyVersion: '1999-01-01',

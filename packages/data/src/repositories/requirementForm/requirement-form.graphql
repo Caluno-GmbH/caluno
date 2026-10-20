@@ -21,10 +21,7 @@ query GetFormBlock($id: String!) {
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -63,10 +60,7 @@ query GetFormBlocks($organizationId: String!, $limit: Int!, $offset: Int!) {
         required
         lockType
         systemKey
-        options {
-          label
-          value
-        }
+        options
         documents {
           fileId
           filename
@@ -111,10 +105,7 @@ mutation CreateFormBlock($input: CreateFormBlockInput!) {
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -152,10 +143,7 @@ mutation UpdateFormBlock($id: String!, $input: UpdateFormBlockInput!) {
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -202,10 +190,7 @@ mutation CreateFormBlockField(
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -246,10 +231,7 @@ mutation UpdateFormBlockField(
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -287,10 +269,7 @@ mutation DeleteFormBlockField($fieldId: String!) {
       required
       lockType
       systemKey
-      options {
-        label
-        value
-      }
+      options
       documents {
         fileId
         filename
@@ -355,10 +334,7 @@ query GetRequirementForm($id: String!) {
           required
           lockType
           systemKey
-          options {
-            label
-            value
-          }
+          options
           documents {
             fileId
             filename
@@ -408,10 +384,7 @@ query GetRequirementFormByShareToken($token: String!) {
           description
           required
           systemKey
-          options {
-            label
-            value
-          }
+          options
           documents {
             fileId
             filename
@@ -634,10 +607,7 @@ query GetAdminFormSubmission($id: String!) {
             label
             type
             systemKey
-            options {
-              label
-              value
-            }
+            options
           }
         }
       }
@@ -696,10 +666,7 @@ query MyFormSubmission($id: ID!) {
             label
             type
             systemKey
-            options {
-              label
-              value
-            }
+            options
           }
         }
       }

@@ -106,6 +106,24 @@ export class InvoiceService {
     return invoice;
   }
 
+  /**
+   * The id of the invoice's PDF, rendering it first when it has none. The PDF
+   * is rendered once the invoice is fully signed, but a failure there does not
+   * undo the signing, so a READY invoice can be left without one; it is then
+   * rendered when it is needed. Null when rendering fails again.
+   */
+  async ensurePdf(
+    invoiceId: string,
+    actorUserId: string,
+  ): Promise<string | null> {
+    const invoice = await this.findInvoice(invoiceId);
+    if (invoice.fileId) return invoice.fileId;
+    return this.documentRenderingService.renderAndAttachPdf(
+      invoice,
+      actorUserId,
+    );
+  }
+
   async findInvoicesForOrganization(
     organizationId: string,
     filter: InvoiceFilter = {},
@@ -276,18 +294,19 @@ export class InvoiceService {
   /**
    * Volunteers who signed up for (JOINED) a paid shift instance in the given
    * year but have no contract or invoice for that reimbursement type yet.
-   * Scoped org-wide: a shift counts when its organization unit belongs to
-   * `organizationId`, mirroring how the accounting board scopes contracts and
-   * invoices to the organization rather than a single unit.
+   * Unit-scoped: only shifts of `organizationUnitId` count, matching how the
+   * reimbursement board and overview tasks scope contracts, invoices, and
+   * timesheet candidates to the header org unit.
    *
    * "Paid" = the instance's effective reimbursement type is non-null
    * (`shiftInstances.overrideReimbursementTypeId ?? shifts.reimbursementTypeId`).
    * Returns one row per (volunteer, reimbursement type), excluding any pair
-   * that already has a non-declined contract or an invoice overlapping the
-   * requested year — those are already surfaced by the contract/invoice maps.
+   * that already has a non-declined contract or an invoice in this unit
+   * overlapping the requested year — those are already surfaced by the
+   * contract/invoice maps.
    */
   async findPaidShiftSignupVolunteers(
-    organizationId: string,
+    organizationUnitId: string,
     year: number,
   ): Promise<
     Array<{
@@ -316,15 +335,11 @@ export class InvoiceService {
         schema.shifts,
         eq(schema.shifts.id, schema.shiftInstances.masterId),
       )
-      .innerJoin(
-        schema.organizationUnits,
-        eq(schema.organizationUnits.id, schema.shifts.organizationUnitId),
-      )
       .where(
         and(
           eq(schema.shiftInstanceInvites.status, ShiftInviteStatus.JOINED),
           eq(schema.shiftInstances.isCancelled, false),
-          eq(schema.organizationUnits.organizationId, organizationId),
+          eq(schema.shifts.organizationUnitId, organizationUnitId),
           gte(schema.shiftInstances.actualStartsAt, yearStart),
           lt(schema.shiftInstances.actualStartsAt, yearEnd),
         ),
@@ -367,6 +382,7 @@ export class InvoiceService {
         where: {
           volunteerId: { in: volunteerIds },
           reimbursementTypeId: { in: reimbursementTypeIds },
+          organizationUnitId,
           // An open (non-declined) contract is this pair's contract *task* —
           // create it if DRAFT, countersign it otherwise. That is distinct from
           // the ACTIVE-only "valid cover" predicate the payment checks use; the
@@ -386,6 +402,7 @@ export class InvoiceService {
         where: {
           volunteerId: { in: volunteerIds },
           reimbursementTypeId: { in: reimbursementTypeIds },
+          organizationUnitId,
           periodStart: { lt: yearEnd },
           periodEnd: { gt: yearStart },
         },
@@ -757,6 +774,7 @@ export class InvoiceService {
           })
           .onConflictDoUpdate({
             target: [
+              schema.reimbursementManualBaselines.organizationId,
               schema.reimbursementManualBaselines.volunteerId,
               schema.reimbursementManualBaselines.reimbursementTypeId,
               schema.reimbursementManualBaselines.year,

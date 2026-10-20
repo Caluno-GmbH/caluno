@@ -2,11 +2,12 @@ import { expect, test } from '@playwright/test';
 import { OrgPage } from '../../../pages/org/OrgPage';
 import { signUpVerifyAndLogin } from '../../../utils/auth';
 
-// Frontend-only validation of the create-organization form. Auth once per worker
-// (storageState); no org is created — invalid fields block native submission.
+// Frontend validation of the org-unit settings edit form
+// (/admin/<orgUId>/settings/org-units). Auth + one org per worker (storageState);
+// invalid fields block submission — no profile updates are persisted.
 
 const authFile = '.auth/org-user.json';
-const CREATE_FORM = /\/admin\/create-organization/;
+const SETTINGS_FORM = /\/admin\/[0-9a-f-]{36}\/settings\/org-units/;
 
 // 1x1 transparent PNG used to exercise the logo upload.
 const PNG_1x1 = Buffer.from(
@@ -14,7 +15,10 @@ const PNG_1x1 = Buffer.from(
   'base64',
 );
 
-test.describe('Organization creation validation', () => {
+const orgName = `E2E Org Settings ${Date.now()}`;
+let orgUId = '';
+
+test.describe('Organization settings validation', () => {
   test.use({ storageState: authFile });
 
   let org: OrgPage;
@@ -24,43 +28,60 @@ test.describe('Organization creation validation', () => {
     const context = await browser.newContext({ storageState: undefined });
     const page = await context.newPage();
     await signUpVerifyAndLogin(page);
+    const setup = new OrgPage(page);
+    await setup.gotoCreate();
+    orgUId = await setup.createOrganization(orgName);
     await context.storageState({ path: authFile });
     await context.close();
   });
 
   test.beforeEach(async ({ page }) => {
     org = new OrgPage(page);
-    await org.gotoCreate();
-    await expect(org.nameInput).toBeVisible();
+    await org.gotoEditSettings(orgUId);
   });
 
   test.describe('form structure', () => {
-    test('shows all organization fields and controls', async () => {
+    test('shows all organisation unit fields and controls', async () => {
       await expect(org.nameInput).toBeVisible();
-      await expect(org.descriptionInput).toBeVisible();
+      await expect(org.contactPersonNameInput).toBeVisible();
       await expect(org.contactEmailInput).toBeVisible();
       await expect(org.phoneInput).toBeVisible();
+      await expect(org.welcomeMessageInput).toBeVisible();
       await expect(org.websiteUrlInput).toBeVisible();
-      await expect(org.streetInput).toBeVisible();
       await expect(org.browseFilesButton).toBeVisible(); // logo upload control
       await expect(org.logoInput).toBeAttached();
-      await expect(org.createButton).toBeVisible();
+      await expect(org.streetInput).toBeVisible();
+      await expect(org.zipCodeInput).toBeVisible();
+      await expect(org.cityInput).toBeVisible();
+      await expect(org.legalRepInput).toBeVisible();
+      await expect(org.descriptionInput).toBeVisible();
+      await expect(org.saveButton).toBeVisible();
     });
 
     test('logo input accepts only image types', async () => {
       await expect(org.logoInput).toHaveAttribute('accept', /image\/png/);
     });
+
+    test('loads the existing organisation unit name', async () => {
+      await expect(org.nameInput).toHaveValue(orgName);
+    });
   });
 
   test.describe('required fields', () => {
-    test('organization name is required', async ({ page }) => {
+    test('organisation name must be at least 2 characters', async ({
+      page,
+    }) => {
+      await org.fillForm({ name: '' });
       await org.submit();
 
-      expect(await org.fieldValidity('name')).toMatchObject({
-        valid: false,
-        valueMissing: true,
-      });
-      await expect(page).toHaveURL(CREATE_FORM);
+      await expect(org.nameValidationError).toBeVisible();
+      await expect(page).toHaveURL(SETTINGS_FORM);
+
+      await org.fillForm({ name: 'a' });
+      await org.submit();
+
+      await expect(org.nameValidationError).toBeVisible();
+      await expect(page).toHaveURL(SETTINGS_FORM);
     });
   });
 
@@ -69,14 +90,14 @@ test.describe('Organization creation validation', () => {
       test(`rejects malformed contact email "${contactEmail}"`, async ({
         page,
       }) => {
-        await org.fillForm({ name: 'Valid Org', contactEmail });
+        await org.fillForm({ contactEmail });
         await org.submit();
 
         expect(await org.fieldValidity('contactEmail')).toMatchObject({
           valid: false,
           typeMismatch: true,
         });
-        await expect(page).toHaveURL(CREATE_FORM);
+        await expect(page).toHaveURL(SETTINGS_FORM);
       });
     }
 
@@ -91,14 +112,14 @@ test.describe('Organization creation validation', () => {
   test.describe('website format', () => {
     for (const websiteUrl of ['notaurl', 'example.com']) {
       test(`rejects malformed website "${websiteUrl}"`, async ({ page }) => {
-        await org.fillForm({ name: 'Valid Org', websiteUrl });
+        await org.fillForm({ websiteUrl });
         await org.submit();
 
         expect(await org.fieldValidity('websiteUrl')).toMatchObject({
           valid: false,
           typeMismatch: true,
         });
-        await expect(page).toHaveURL(CREATE_FORM);
+        await expect(page).toHaveURL(SETTINGS_FORM);
       });
     }
 
@@ -138,14 +159,15 @@ test.describe('Organization creation validation', () => {
   });
 
   test.describe('submit button state', () => {
-    test('create button is enabled even when the form is empty', async () => {
-      await expect(org.createButton).toBeEnabled();
+    test('save button is enabled even when optional fields are empty', async () => {
+      await expect(org.saveButton).toBeEnabled();
     });
   });
 
   test.describe('input handling', () => {
     test('whitespace-only name is not blocked client-side (no trim on text field)', async () => {
       await org.fillForm({ name: '   ' });
+      // Native validity has no required/minLength; zod min(2) also passes (length 3).
       expect(await org.fieldValidity('name')).toMatchObject({ valid: true });
     });
 
@@ -163,26 +185,27 @@ test.describe('Organization creation validation', () => {
   });
 
   test.describe('keyboard', () => {
-    test('pressing Enter with an empty name is blocked by required validation', async ({
+    test('pressing Enter with an empty name is blocked by zod validation', async ({
       page,
     }) => {
+      await org.nameInput.fill('');
       await org.nameInput.click();
       await page.keyboard.press('Enter');
 
-      expect(await org.fieldValidity('name')).toMatchObject({
-        valid: false,
-        valueMissing: true,
-      });
-      await expect(page).toHaveURL(CREATE_FORM);
+      await expect(org.nameValidationError).toBeVisible();
+      await expect(page).toHaveURL(SETTINGS_FORM);
     });
   });
 
   test.describe('form reset', () => {
-    test('form does not persist values after a page reload', async () => {
-      await org.fillForm({ name: 'Draft Org', description: 'temp' });
-      await org.gotoCreate();
+    test('unsaved edits do not persist after reopening the sheet', async () => {
+      await org.fillForm({
+        name: 'Draft Org',
+        description: 'temp',
+      });
+      await org.gotoEditSettings(orgUId);
 
-      await expect(org.nameInput).toHaveValue('');
+      await expect(org.nameInput).toHaveValue(orgName);
       await expect(org.descriptionInput).toHaveValue('');
     });
   });

@@ -12,7 +12,7 @@ const authHeader = `Basic ${Buffer.from(`${MAILBOX_USER}:${MAILBOX_PASSWORD}`).t
 // biome-ignore lint/complexity/noStaticOnlyClass: namespacing mailbox helpers under a class for a cleaner import surface
 export class Mailbox {
   // Unique recipient per run; Mailpit accepts any domain.
-  static uniqueAddress(prefix = 'clippy-e2e'): string {
+  static uniqueAddress(prefix = 'caluno-e2e'): string {
     const unique = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
     return `${prefix}-${unique}@example.com`;
   }

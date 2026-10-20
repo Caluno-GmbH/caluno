@@ -196,10 +196,7 @@ describe('buildFieldSchema MULTI_CHOICE', () => {
     id: 'times',
     type: FieldType.MultiChoice,
     label: 'Times',
-    options: [
-      { label: '10:30', value: '10:30' },
-      { label: 'Morning, afternoon', value: 'Morning, afternoon' },
-    ],
+    options: ['10:30', 'Morning, afternoon'],
   });
 
   it('accepts a JSON-array selection', () => {

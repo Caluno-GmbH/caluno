@@ -11,7 +11,7 @@ import type { VolunteerAllowanceState } from '../allowance-display';
 /**
  * One row per state: never colour-only, each state has its own label and icon.
  * Colours: eligible → --success; no agreement / nearly exhausted → --alert
- * (design-system warning); would exceed → --destructive.
+ * (design-system warning); would exceed → --primary.
  * `labelKey` is under `Shift.transferList.allowance`.
  */
 const ALLOWANCE_BADGE: Record<
@@ -19,7 +19,7 @@ const ALLOWANCE_BADGE: Record<
   {
     labelKey: 'eligible' | 'nearlyExhausted' | 'wouldExceed' | 'noAgreement';
     icon: typeof CircleCheck;
-    variant: 'success' | 'alert' | 'destructive';
+    variant: 'success' | 'alert' | 'default';
     className?: string;
   }
 > = {
@@ -37,7 +37,7 @@ const ALLOWANCE_BADGE: Record<
   WOULD_EXCEED: {
     labelKey: 'wouldExceed',
     icon: CircleAlert,
-    variant: 'destructive',
+    variant: 'default',
   },
   NO_AGREEMENT: {
     labelKey: 'noAgreement',
@@ -56,7 +56,7 @@ export function AllowanceBadge({ state }: { state: VolunteerAllowanceState }) {
       title={label}
       className={cn('max-w-full min-w-0 shrink gap-1', className)}
     >
-      <Icon className="size-3 shrink-0" />
+      <Icon className="size-3.5 shrink-0" />
       <span className="truncate">{label}</span>
     </Badge>
   );

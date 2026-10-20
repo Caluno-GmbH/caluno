@@ -25,6 +25,8 @@ export interface ShiftDetailsChangedPayload {
   shiftTitle: string;
   /** One mail per series edit, listing the affected range. */
   fromDate?: Date | null;
+  /** Start of the single edited instance — names the affected date in a series. */
+  instanceStartsAt?: Date | null;
   /** Volunteers with an active invite, excluding the actor. */
   recipientUserIds: string[];
   changes: ChangedField[];

@@ -413,4 +413,69 @@ describe('TaskService.myTasks', () => {
       limited.some((task) => task.type === TaskType.SHIFT_BELOW_MINIMUM),
     ).toBe(true);
   });
+
+  it('omits accounting tasks when accountingEnabled is false', async () => {
+    const admin = await adminWith([PermissionKey.ACCOUNTING_MANAGE]);
+    const volunteer = await createUser(db);
+    const reimbursementType = await createReimbursementType(db);
+    let contractTemplate = await db.query.documentTemplates.findFirst({
+      where: {
+        organizationId,
+        reimbursementTypeId: reimbursementType.id,
+        kind: DocumentKind.CONTRACT,
+        isDeleted: false,
+      },
+    });
+    if (!contractTemplate) {
+      contractTemplate = await createDocumentTemplate(db, {
+        organizationId,
+        reimbursementTypeId: reimbursementType.id,
+        kind: DocumentKind.CONTRACT,
+        signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+      });
+    }
+    await db
+      .update(schema.organizations)
+      .set({ accountingEnabled: true })
+      .where(eq(schema.organizations.id, organizationId));
+
+    const [draft] = await db
+      .insert(schema.contracts)
+      .values({
+        documentTemplateId: contractTemplate.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        organizationUnitId,
+        contractStatus: ContractStatus.DRAFT,
+        periodStart: new Date('2026-01-01T00:00:00.000Z'),
+        periodEnd: new Date('2027-01-01T00:00:00.000Z'),
+        resolvedBody: { header: {}, blocks: [], footer: {} },
+      })
+      .returning();
+    if (!draft) throw new Error('Failed to create draft contract');
+
+    const enabled = await service.myTasks(admin.id, organizationUnitId);
+    expect(enabled.some((task) => task.id === draft.id)).toBe(true);
+
+    await db
+      .update(schema.organizations)
+      .set({ accountingEnabled: false })
+      .where(eq(schema.organizations.id, organizationId));
+
+    const disabled = await service.myTasks(admin.id, organizationUnitId);
+    const accountingTypes = new Set([
+      TaskType.CONTRACT_CREATE,
+      TaskType.CONTRACT_SIGN,
+      TaskType.INVOICE_CREATE,
+      TaskType.TIMESHEET_SIGN,
+      TaskType.TIMESHEET_BUNDLES,
+      TaskType.DOCUMENT_DECLINED,
+    ]);
+    expect(disabled.some((task) => accountingTypes.has(task.type))).toBe(false);
+
+    await db
+      .update(schema.organizations)
+      .set({ accountingEnabled: true })
+      .where(eq(schema.organizations.id, organizationId));
+  });
 });

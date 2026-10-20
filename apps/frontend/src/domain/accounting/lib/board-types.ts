@@ -30,15 +30,61 @@ export type DocStatus =
   | 'contract-declined'
   | 'timesheet-declined';
 
-export type TileFilter =
-  | 'all'
-  | 'contract-generate'
-  | 'contract-signing'
-  | 'timesheet-generate'
-  | 'timesheet-signing'
-  | 'ready-to-go';
+export type DocumentTypeFilter = 'all' | 'contract' | 'timesheet';
 
-export type DocTypeFilter = 'all' | 'contract' | 'timesheet';
+export type PauschaleTypeFilter = 'all' | PauschalenType;
+
+/** Pipeline stage the coordinator is filtering for. Tiles set this with `documentType`. */
+export type NextActionFilter = 'any' | 'generate' | 'countersign' | 'send';
+
+/**
+ * All board filter controls as one object. Tiles set `documentType` + `nextAction`;
+ * the dropdowns and search update the matching field. Never mutate `vol.documents`
+ * from these — they only decide inclusion / display.
+ */
+export interface FilterSettings {
+  documentType: DocumentTypeFilter;
+  pauschaleType: PauschaleTypeFilter;
+  dateRange: { from: Date | undefined; to?: Date | undefined } | undefined;
+  volunteerName: string;
+  nextAction: NextActionFilter;
+}
+
+export const DEFAULT_FILTER_SETTINGS: FilterSettings = {
+  documentType: 'all',
+  pauschaleType: 'all',
+  dateRange: undefined,
+  volunteerName: '',
+  nextAction: 'any',
+};
+
+/** Display order for board filter tiles (All first, then the pipeline). */
+export const BOARD_TILE_IDS = [
+  'all',
+  'contract-generate',
+  'contract-signing',
+  'timesheet-generate',
+  'timesheet-signing',
+  'ready-to-go',
+] as const;
+
+export type BoardTileId = (typeof BOARD_TILE_IDS)[number];
+
+/** UI tile presets: each maps to a `documentType` + `nextAction` pair. */
+export const BOARD_TILE_PRESETS: Record<
+  BoardTileId,
+  { documentType: DocumentTypeFilter; nextAction: NextActionFilter }
+> = {
+  all: { documentType: 'all', nextAction: 'any' },
+  'contract-generate': { documentType: 'contract', nextAction: 'generate' },
+  'contract-signing': { documentType: 'contract', nextAction: 'countersign' },
+  'timesheet-generate': { documentType: 'timesheet', nextAction: 'generate' },
+  'timesheet-signing': {
+    documentType: 'timesheet',
+    nextAction: 'countersign',
+  },
+  'ready-to-go': { documentType: 'all', nextAction: 'send' },
+};
 
 export interface BoardDocument {
   id: string;

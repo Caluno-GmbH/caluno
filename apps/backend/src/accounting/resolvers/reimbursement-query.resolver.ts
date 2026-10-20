@@ -87,12 +87,14 @@ export class ReimbursementQueryResolver {
     excludeInvoiceId: string | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<YearlyUsage> {
-    await this.accountingOrgAccessService.resolveEnabledOrganizationId(
-      context.organizationUnitId,
-    );
+    const organizationId =
+      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+        context.organizationUnitId,
+      );
     await this.assertVolunteerInScope(context, volunteerId);
 
     return this.reimbursementRateService.getYearlyUsage(
+      organizationId,
       volunteerId,
       reimbursementTypeId,
       year,
@@ -163,12 +165,14 @@ export class ReimbursementQueryResolver {
     @Args('year', { type: () => Int }) year: number,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ManualBaseline | null> {
-    await this.accountingOrgAccessService.resolveEnabledOrganizationId(
-      context.organizationUnitId,
-    );
+    const organizationId =
+      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+        context.organizationUnitId,
+      );
     await this.assertVolunteerInScope(context, volunteerId);
 
     const baseline = await this.reimbursementRateService.getManualBaseline(
+      organizationId,
       volunteerId,
       reimbursementTypeId,
       year,

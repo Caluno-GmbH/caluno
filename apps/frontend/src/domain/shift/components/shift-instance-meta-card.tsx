@@ -51,7 +51,7 @@ export async function ShiftInstanceMetaCard({
             </dt>
             <dd className="ml-6">
               {isFinished ? (
-                <Badge variant="secondary">{t('status.finished')}</Badge>
+                <Badge variant="neutral">{t('status.finished')}</Badge>
               ) : (
                 <Badge variant="success">{t('status.active')}</Badge>
               )}
@@ -94,7 +94,7 @@ export async function ShiftInstanceMetaCard({
                     >
                       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
                         {entry.source === ShiftCallOutSource.Automatic ? (
-                          <Badge variant="secondary">
+                          <Badge variant="neutral">
                             {t('detail.urgentCallAutomaticBadge')}
                           </Badge>
                         ) : (

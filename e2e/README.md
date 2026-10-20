@@ -19,7 +19,6 @@ e2e/
 ├── utils/
 │   ├── auth.ts            # signUpVerifyAndLogin helper
 │   ├── mailbox.ts         # Mailpit client: reads verification codes
-│   ├── session.ts         # signUpAndLogin helper
 │   └── test-data.ts       # password + unique email generator
 ├── tests/
 │   ├── flow.e2e.ts        # the end-to-end journey (smoke)
@@ -39,20 +38,23 @@ by deployed environments. Load it yourself (after migrate + seed):
 bun run --cwd apps/backend db:fixtures:e2e
 ```
 
-It uses `demo+e2e_*@caluno.org` accounts (password `abcd1234`) in the
-"Playground" org. It must never be loaded into a database that already holds the
-demo dataset (`demo+<role>@caluno.org`) — the two share the `demo@caluno.org`
-group and would cross-link.
+It uses `demo+testing_*@caluno.org` accounts (password `abcd1234`) in the
+"Testing" org.
 
 ## Running
 
 From this directory (`e2e`):
 
 ```bash
-bun playwright test                 # run the suite
-bun playwright test --reporter=html # run + generate HTML report
+bun run test                        # run the suite again staging
+bun run test:headed                 # run the suite again staging showing a browser
+bun run test:local                  # run the suite again localhost
+bun run test:local:headed           # run the suite again localhost showing a browser
+bun run test --reporter=html        # run + generate HTML report
 bun playwright show-report          # open the last HTML report
 ```
+
+You can append a test file to only run the tests in that file.
 
 Browsers install once with `bun playwright install chromium`.
 Target another environment with `E2E_BASE_URL=https://... bun playwright test`
@@ -77,6 +79,24 @@ bun playwright test
 Prefer supplying `MAILBOX_PASSWORD` via a CI secret rather than relying on the
 committed default.
 
+## CI against deployed environments
+
+- **Staging nightly** — `.github/workflows/e2e-staging-nightly.yml` (cron
+  `0 0 * * *` UTC ≈ 02:00 CEST, plus `workflow_dispatch`).
+- **Release post-deploy** — `cd-release.yml` runs the same suite via
+  `reusable-e2e.yml` after a successful Terraform apply.
+
+Both pin `E2E_BASE_URL` / `E2E_API_URL` / Mailpit and upload the Playwright
+report on failure. Staging/release deploys load the Testing e2e seed
+automatically (backend entrypoint when `APP_ENV` is `staging` or `release`
+runs `db:fixtures:e2e` after the demo seed), so `demo+testing_*@caluno.org`
+accounts and today-relative overlap fixtures stay fresh without a manual
+step. Password defaults to `abcd1234` (override with `FIXTURE_PASSWORD`).
+
+Repo secrets: `MAILBOX_PASSWORD` (staging Mailpit), `RELEASE_MAILBOX_PASSWORD`
+(release Mailpit). Specs that require a local DB (e.g. the terms acceptance
+gate) stay skipped via `IS_LOCAL`.
+
 ## Conventions
 
 - **Specs use the `*.e2e.ts` suffix** so the repo's `bun test` runner ignores
@@ -84,6 +104,11 @@ committed default.
 - **Selectors** are role- and label-based, captured from the live app — not guessed.
 - **Waits** are locator- and URL-driven (`waitForURL`, `waitFor`); no
   `networkidle` and no fixed sleeps.
+- **Person names must not contain digits.** The signup requirement-form name
+  fields reject anything but letters, marks, apostrophe, hyphen and space
+  (`NAME_RE` in `apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`).
+  Write numbers as words: `E Two E`, matching the Testing seed's
+  `Testing Member One` style (see `apps/backend/src/database/fixtures.ts`).
 - Each run **provisions data on staging** (one user, org, and shift).
 - `test-results/` and `playwright-report/` are git-ignored.
 ```

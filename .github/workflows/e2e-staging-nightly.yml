@@ -1,0 +1,36 @@
+# Full Playwright suite against the deployed staging app.
+# Defaults in e2e/ already target staging; this job pins them and runs on a cron.
+#
+# Staging/release deploys load the Testing e2e seed via the backend entrypoint
+# (`APP_ENV=staging|release` → `db:fixtures:e2e`), so demo+testing_* accounts
+# and today-relative overlap fixtures are refreshed on every boot — this job
+# does not re-seed. Repo secret `MAILBOX_PASSWORD` is required for staging
+# Mailpit basic auth.
+#
+# Local-only specs (e.g. terms acceptance gate) stay skipped via IS_LOCAL.
+name: Nightly e2e (staging)
+
+on:
+  schedule:
+    # 00:00 UTC ≈ 02:00 Europe/Berlin in CEST (01:00 in CET).
+    - cron: '0 0 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-staging-nightly
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Playwright against staging
+    uses: ./.github/workflows/reusable-e2e.yml
+    with:
+      app-url: https://staging.app.caluno.org
+      api-url: https://staging.api.caluno.org
+      mailbox-url: https://staging.mailbox.caluno.org
+      report-name: playwright-report-staging
+    secrets:
+      MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}

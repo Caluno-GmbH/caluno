@@ -3,10 +3,10 @@
  * demos and manual testing.
  *
  * Fully fictional non-profit reading-mentorship organisation, built to look
- * like a real Caluno customer instead of the "demo+e2e_memberNN" Playground e2e
+ * like a real Caluno customer instead of the "demo+testing_memberNN" Testing e2e
  * seed. Creates its own organisation, accounts and shifts/events — so
- * re-running `bun run db:fixtures:e2e` (the Playground/e2e dataset) is
- * unaffected, and running this script never touches the Playground org.
+ * re-running `bun run db:fixtures:e2e` (the Testing/e2e dataset) is
+ * unaffected, and running this script never touches the Testing org.
  * Shared date/auth/shift helpers live in `fixture-helpers.ts`.
  *
  * Usage (from apps/backend, after `bun bootstrap` or `bun run db:migrate` +
@@ -997,7 +997,7 @@ async function seedDemoFixtures() {
   }
 
   // The primary demo account: a member with a realistic mix
-  // of accepted, pending and self-joined shifts (mirrors the Playground
+  // of accepted, pending and self-joined shifts (mirrors the Testing
   // "Demo Volunteer" pattern), plus complete personal/banking-style data.
   const demoUser = await createAuthUser(db, hashedPassword, {
     locale: 'de',
@@ -1882,6 +1882,7 @@ async function seedDemoFixtures() {
           organizationUnitId: org.unitIds.sued,
           volunteerId: member.id,
           reimbursementTypeId: ehrenamtType.id,
+          createdById: supervisor.id,
           startedAt: addHours(lesenImElisabethstift.instanceStartsAt, 0),
           endedAt: addHours(lesenImElisabethstift.instanceStartsAt, 1.5),
           notes: 'Vorlesestunde Elisabethstift — manuell erfasst',
@@ -1892,6 +1893,7 @@ async function seedDemoFixtures() {
           organizationUnitId: org.unitIds.sued,
           volunteerId: member.id,
           reimbursementTypeId: ehrenamtType.id,
+          createdById: supervisor.id,
           startedAt: addHours(seniorenkreis.instanceStartsAt, index * 0.25),
           endedAt: addHours(seniorenkreis.instanceStartsAt, 2 + index * 0.25),
           notes: 'Seniorenkreis — QR-Check-in vor Ort',
@@ -1904,6 +1906,7 @@ async function seedDemoFixtures() {
           organizationUnitId: org.unitIds.west,
           volunteerId: member.id,
           reimbursementTypeId: uebungsleiterType.id,
+          createdById: supervisor.id,
           startedAt: addHours(literaturKurs.instanceStartsAt, 0),
           endedAt: addHours(literaturKurs.instanceStartsAt, 1.5),
           notes: 'Lesekurs — Übungsleiterpauschale',
@@ -1962,6 +1965,7 @@ async function seedDemoFixtures() {
         organizationUnitId: params.organizationUnitId,
         volunteerId: params.volunteerId,
         reimbursementTypeId: params.reimbursementTypeId,
+        createdById: supervisor.id,
         startedAt,
         endedAt: addHours(startedAt, params.durationHours),
         notes: params.notes,

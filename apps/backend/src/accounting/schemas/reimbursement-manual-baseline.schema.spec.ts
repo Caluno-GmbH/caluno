@@ -26,7 +26,7 @@ describe('reimbursementManualBaselines schema', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
   });
 
-  it('enforces one row per volunteer + reimbursement type + year', async () => {
+  it('enforces one row per organization + volunteer + reimbursement type + year', async () => {
     const { organization } = await createOrganizationWithType(
       db,
       `Manual Baseline Org ${crypto.randomUUID()}`,
@@ -59,6 +59,45 @@ describe('reimbursementManualBaselines schema', () => {
         })
         .execute(),
     ).rejects.toThrow();
+  });
+
+  it('allows the same volunteer + type + year in different organizations', async () => {
+    const orgA = await createOrganizationWithType(
+      db,
+      `Manual Baseline Org A ${crypto.randomUUID()}`,
+    );
+    const orgB = await createOrganizationWithType(
+      db,
+      `Manual Baseline Org B ${crypto.randomUUID()}`,
+    );
+    const reimbursementType = await createReimbursementType(db, {
+      key: ReimbursementTypeKey.EHRENAMT,
+    });
+    const volunteer = await createUser(db);
+
+    await db
+      .insert(schema.reimbursementManualBaselines)
+      .values({
+        organizationId: orgA.organization.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        year: 2026,
+        amountCents: 10_000,
+      })
+      .execute();
+
+    await expect(
+      db
+        .insert(schema.reimbursementManualBaselines)
+        .values({
+          organizationId: orgB.organization.id,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          year: 2026,
+          amountCents: 20_000,
+        })
+        .execute(),
+    ).resolves.toBeDefined();
   });
 
   it('allows the same volunteer + type across different years', async () => {
