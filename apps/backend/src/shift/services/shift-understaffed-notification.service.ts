@@ -399,7 +399,12 @@ export class ShiftUnderstaffedNotificationService {
             recipient.firstName,
             templateContext,
           );
-          await this.emailService.send({ to: recipient.email, subject, html });
+          await this.emailService.send({
+            userId: recipient.userId,
+            to: recipient.email,
+            subject,
+            html,
+          });
           return {
             userId: recipient.userId,
             status: ShiftCallOutDeliveryStatus.SENT,

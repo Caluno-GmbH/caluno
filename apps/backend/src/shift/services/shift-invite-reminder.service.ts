@@ -111,7 +111,12 @@ export class ShiftInviteReminderService {
 
     // `remindedAt` means "email sent" — only stamp it after a successful
     // send, so a transport failure leaves the reminder available to retry.
-    await this.emailService.send({ to: recipient.email, subject, html });
+    await this.emailService.send({
+      userId: recipient.userId,
+      to: recipient.email,
+      subject,
+      html,
+    });
 
     const remindedAt = new Date();
     const [updated] = await this.db

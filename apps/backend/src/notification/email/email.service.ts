@@ -16,6 +16,7 @@ export interface EmailSendOptions {
   html: string;
   text?: string;
   attachments?: EmailAttachment[];
+  userId?: string;
 }
 
 interface ScalewayConfig {
@@ -109,10 +110,10 @@ export class EmailService {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         this.logger.error(
-          `Failed to send email to ${maskedTo} via SMTP: ${message}`,
+          `Failed to send email to ${options.userId}:${maskedTo} via SMTP: ${message}`,
         );
         throw new Error(
-          `Failed to send email to ${maskedTo} via SMTP: ${summarize(message)}`,
+          `Failed to send email to ${options.userId}:${maskedTo} via SMTP: ${summarize(message)}`,
           { cause: error },
         );
       }
@@ -158,6 +159,7 @@ export class EmailService {
         url,
         body,
         maskedTo,
+        options.userId,
       );
       if (!failure) {
         this.logger.debug(`Email sent to ${maskedTo}`);
@@ -173,7 +175,7 @@ export class EmailService {
           (0.5 + Math.random() * 0.5),
       );
       this.logger.warn(
-        `Retrying email to ${maskedTo} in ${delay}ms (attempt ${attempt}/${SEND_MAX_ATTEMPTS}): ${failure.error.message}`,
+        `Retrying email to ${options.userId}:${maskedTo} in ${delay}ms (attempt ${attempt}/${SEND_MAX_ATTEMPTS}): ${failure.error.message}`,
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -184,6 +186,7 @@ export class EmailService {
     url: string,
     body: string,
     maskedTo: string,
+    userId?: string,
   ): Promise<{ error: Error; retryable: boolean } | null> {
     let response: Response;
 
@@ -201,7 +204,7 @@ export class EmailService {
       const message = error instanceof Error ? error.message : String(error);
       return {
         error: new Error(
-          `Failed to send email to ${maskedTo}: ${summarize(message)}`,
+          `Failed to send email to ${userId}:${maskedTo}: ${summarize(message)}`,
           { cause: error },
         ),
         retryable: true,
@@ -215,7 +218,7 @@ export class EmailService {
     const responseBody = await response.text().catch(() => '');
     return {
       error: new Error(
-        `Failed to send email to ${maskedTo}: Scaleway responded ${response.status}${
+        `Failed to send email to ${userId}:${maskedTo}: Scaleway responded ${response.status}${
           responseBody ? ` — ${summarize(responseBody)}` : ''
         }`,
       ),

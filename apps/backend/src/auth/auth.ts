@@ -38,6 +38,7 @@ export interface SendVerificationOtpOptions {
   otp: string;
   type: EmailOtpType;
   headers: Record<string, unknown>;
+  userId?: string;
 }
 
 export interface SendResetPasswordOptions {
@@ -327,11 +328,15 @@ export const createAuthConfig = ({
       emailOTP({
         overrideDefaultEmailVerification: true,
         async sendVerificationOTP({ email, otp, type }, ctx) {
+          const found = ctx
+            ? await ctx.context.internalAdapter.findUserByEmail(email)
+            : null;
           await sendVerificationOTP({
             email,
             otp,
             type,
             headers: headersFromRequest(ctx?.request),
+            userId: found?.user?.id,
           });
         },
       }),

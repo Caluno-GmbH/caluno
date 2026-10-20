@@ -31,6 +31,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { APIError } from 'better-auth';
+import { emailOTP } from 'better-auth/plugins';
 import { createAuthConfig } from './auth';
 
 const privacyPolicyDirectory = mkdtempSync(
@@ -486,6 +487,68 @@ describe('createAuthConfig', () => {
     expect(sendResetPassword).toHaveBeenCalledWith({
       email: 'volunteer@example.com',
       token: 'reset-token-1',
+      userId: 'user-1',
+      headers: {
+        'x-locale': 'de',
+      },
+    });
+  });
+
+  it('delegates Better Auth verification OTP emails to the configured sender', async () => {
+    const sendVerificationOTP = jest.fn().mockResolvedValue(undefined);
+    createAuthConfig({
+      database: {},
+      trustedOrigins: [],
+      sendVerificationOTP,
+      sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
+    });
+
+    const emailOtpOptions = (emailOTP as jest.Mock).mock.calls.at(-1)?.[0] as {
+      sendVerificationOTP: (
+        data: { email: string; otp: string; type: string },
+        ctx?: {
+          request?: Request;
+          context: {
+            internalAdapter: {
+              findUserByEmail: (
+                email: string,
+              ) => Promise<{ user: { id: string } } | null>;
+            };
+          };
+        },
+      ) => Promise<void>;
+    };
+
+    const request = new Request(
+      'http://localhost:8080/api/auth/email-otp/send-verification-otp',
+      {
+        headers: {
+          'x-locale': 'de',
+        },
+      },
+    );
+
+    await emailOtpOptions.sendVerificationOTP(
+      {
+        email: 'volunteer@example.com',
+        otp: '123456',
+        type: 'email-verification',
+      },
+      {
+        request,
+        context: {
+          internalAdapter: {
+            findUserByEmail: async () => ({ user: { id: 'user-1' } }),
+          },
+        },
+      },
+    );
+
+    expect(sendVerificationOTP).toHaveBeenCalledWith({
+      email: 'volunteer@example.com',
+      otp: '123456',
+      type: 'email-verification',
       userId: 'user-1',
       headers: {
         'x-locale': 'de',
