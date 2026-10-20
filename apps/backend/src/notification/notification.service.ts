@@ -212,6 +212,7 @@ export class NotificationService {
         try {
           const { subject, html, attachments } = await callback(recipient);
           await this.emailService.send({
+            userId: recipient.userId,
             to: recipient.email,
             subject,
             html,
@@ -219,7 +220,7 @@ export class NotificationService {
           });
         } catch (error) {
           this.logger.error(
-            `Failed to send email for ${maskEmail(recipient.email)}: ${error instanceof Error ? error.message : String(error)}`,
+            `Failed to send email for ${recipient.userId}:${maskEmail(recipient.email)}: ${error instanceof Error ? error.message : String(error)}`,
           );
         }
       }),
