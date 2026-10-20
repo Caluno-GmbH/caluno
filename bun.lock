@@ -32,8 +32,13 @@
         "@nestjs/schedule": "^12.0.2",
         "@repo/lifespan": "*",
         "@repo/observability": "*",
+        "@repo/password-policy": "*",
         "@sentry/nestjs": "^11.8.0",
         "@thallesp/nestjs-better-auth": "^2.8.0",
+        "@zxcvbn-ts/core": "^4.2.0",
+        "@zxcvbn-ts/language-common": "^4.1.3",
+        "@zxcvbn-ts/language-de": "^4.1.1",
+        "@zxcvbn-ts/language-en": "^4.1.1",
         "adm-zip": "^0.6.1",
         "better-auth": "1.7.11",
         "class-transformer": "^0.5.1",
@@ -97,11 +102,16 @@
         "@repo/data": "*",
         "@repo/lifespan": "*",
         "@repo/observability": "*",
+        "@repo/password-policy": "*",
         "@repo/ui": "*",
         "@sentry/nextjs": "^11.8.0",
         "@tanstack/react-table": "^9.3.1",
         "@teispace/next-themes": "^3.0.2",
         "@yudiel/react-qr-scanner": "^2.6.0",
+        "@zxcvbn-ts/core": "^4.2.0",
+        "@zxcvbn-ts/language-common": "^4.1.3",
+        "@zxcvbn-ts/language-de": "^4.1.1",
+        "@zxcvbn-ts/language-en": "^4.1.1",
         "better-auth": "1.7.11",
         "date-fns": "^4.4.0",
         "js-cookie": "^3.0.8",
@@ -187,6 +197,16 @@
         "@types/bun": "^1.4.3",
         "@types/node": "^24.19.2",
         "pino-pretty": "^13.2.0",
+        "typescript": "^6.0.3",
+      },
+    },
+    "packages/password-policy": {
+      "name": "@repo/password-policy",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@repo/typescript-config": "*",
+        "@types/bun": "^1.4.3",
+        "@types/node": "^24.19.2",
         "typescript": "^6.0.3",
       },
     },
@@ -1298,6 +1318,8 @@
 
     "@repo/observability": ["@repo/observability@workspace:packages/observability"],
 
+    "@repo/password-policy": ["@repo/password-policy@workspace:packages/password-policy"],
+
     "@repo/typescript-config": ["@repo/typescript-config@workspace:packages/typescript-config"],
 
     "@repo/ui": ["@repo/ui@workspace:packages/ui"],
@@ -1848,6 +1870,16 @@
 
     "@yudiel/react-qr-scanner": ["@yudiel/react-qr-scanner@2.6.0", "", { "dependencies": { "barcode-detector": "^3.1.3", "webrtc-adapter": "^9.0.5" }, "peerDependencies": { "react": "^17 || ^18 || ^19", "react-dom": "^17 || ^18 || ^19" } }, "sha512-WjNcSt7qquYUz1LVbwKzSnRQI47sNrh4Vh6nNiGKVxnYcP+KgN5q9rcSzXyZ/7GRV9PPrnzoIuE5YdOxB9yAog=="],
 
+    "@zxcvbn-ts/core": ["@zxcvbn-ts/core@4.2.0", "", { "dependencies": { "fastest-levenshtein": "1.0.16" } }, "sha512-tuwzwOcYVca9MufHuUvzKGRyL04iP52OjCNoRDuGXjzzrtPiPcl8r5QtOotbx0AyTR/CMcDTU9qLkN16b9fXiw=="],
+
+    "@zxcvbn-ts/dictionary-compression": ["@zxcvbn-ts/dictionary-compression@3.0.1", "", {}, "sha512-p3KyPzxGc3vWSap5hHA6SllbUCmh7s+NtpGyC3qEWrxYJT9t9TUAzjPm48Okipo+UUyPQfDlIvTcs9JRShBFiQ=="],
+
+    "@zxcvbn-ts/language-common": ["@zxcvbn-ts/language-common@4.1.3", "", { "dependencies": { "@zxcvbn-ts/dictionary-compression": "^3.0.1" } }, "sha512-g2bg4skmlJG9aJqC/nWziZzgYpSe/f3rKeGobrkdFiOrfZVFqqzUgC6BUQWuX54Sua9j0Jxxt+1bf4f/Mal1Kg=="],
+
+    "@zxcvbn-ts/language-de": ["@zxcvbn-ts/language-de@4.1.1", "", { "dependencies": { "@zxcvbn-ts/dictionary-compression": "^3.0.1" } }, "sha512-ig4zeCxg4yp5VU4/Iuq5CCHLJtbmHjczK87HKw/K2jYkpk1s7C4jRi+n3XgcPNRP71nvTxGhpPWWlsziCnm5xA=="],
+
+    "@zxcvbn-ts/language-en": ["@zxcvbn-ts/language-en@4.1.1", "", { "dependencies": { "@zxcvbn-ts/dictionary-compression": "^3.0.1" } }, "sha512-6UdzuBd3Uex8TKubohcn+uXRVAH34Zjs2eCfT4hQVo9zeTy7AkQRQfdV4OnHR5hQfW/XBrK/AGTZk7VBWh7wwQ=="],
+
     "abbrev": ["abbrev@5.0.0", "", {}, "sha512-/XrFJgzQQQHpti1raDJC6m4ws6aNktmjBlhk8Fdlk7LwCEuDoieEJJY9OFHjfiFJFFRM2tK+Ky/IsfbbmlMu1w=="],
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
@@ -2291,6 +2323,8 @@
     "fast-uri": ["fast-uri@3.1.8", "", {}, "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg=="],
 
     "fast-wrap-ansi": ["fast-wrap-ansi@0.2.2", "", { "dependencies": { "fast-string-width": "^3.0.2" } }, "sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q=="],
+
+    "fastest-levenshtein": ["fastest-levenshtein@1.0.16", "", {}, "sha512-eRnCtTTtGZFpQCwhJiUOuxPQWRXVKYDn0b2PeHfXL6/Zi53SLAzAHfVhVWK2AryC/WH05kGfxhFIPvTF0SXQzg=="],
 
     "fastq": ["fastq@1.20.3", "", { "dependencies": { "reusify": "^1.0.4" } }, "sha512-XKv5nnLs6nLF71NgiKJLIZFLkPyIEuOselLG7ujZnGrRfQK8HpvY+WqKhAJUAdLomwVHErVS4LfxFlPq0/FTAw=="],
 
