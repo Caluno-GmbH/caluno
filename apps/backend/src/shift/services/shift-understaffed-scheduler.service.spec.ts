@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
+import type { AdvisoryLockService } from '../../database/advisory-lock.service';
 import { findLog, recordSchedulerLogs } from './scheduler-log-recorder';
 import type { UnderstaffedTickSummary } from './shift-understaffed-notification.service';
 import { ShiftUnderstaffedSchedulerService } from './shift-understaffed-scheduler.service';
@@ -14,10 +15,22 @@ const SUMMARY: UnderstaffedTickSummary = {
   failed: 0,
 };
 
-function scheduler(runTick: () => Promise<UnderstaffedTickSummary>) {
-  const service = new ShiftUnderstaffedSchedulerService({
-    runTick,
-  } as never);
+function passThroughLock(): AdvisoryLockService {
+  return {
+    tryWithLock: <T>(_key: number, run: () => Promise<T>) => run(),
+  } as unknown as AdvisoryLockService;
+}
+
+function scheduler(
+  runTick: () => Promise<UnderstaffedTickSummary>,
+  advisoryLock: AdvisoryLockService = passThroughLock(),
+) {
+  const service = new ShiftUnderstaffedSchedulerService(
+    {
+      runTick,
+    } as never,
+    advisoryLock,
+  );
   return { service, records: recordSchedulerLogs(service) };
 }
 
@@ -56,6 +69,19 @@ describe('ShiftUnderstaffedSchedulerService', () => {
     const failed = findLog(records, 'understaffed_tick.failed');
     expect(failed?.level).toBe('error');
     expect(failed?.fields.err).toBe(boom);
+    expect(findLog(records, 'understaffed_tick.finished')).toBeUndefined();
+  });
+
+  it('skips the tick when another instance holds the lock', async () => {
+    const runTick = mock(async () => SUMMARY);
+    const { service, records } = scheduler(runTick, {
+      tryWithLock: async () => null,
+    } as unknown as AdvisoryLockService);
+
+    await service.handleTick();
+
+    expect(runTick).not.toHaveBeenCalled();
+    expect(findLog(records, 'understaffed_tick.skipped_locked')).toBeDefined();
     expect(findLog(records, 'understaffed_tick.finished')).toBeUndefined();
   });
 });

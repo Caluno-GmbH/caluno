@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
+import type { AdvisoryLockService } from '../../database/advisory-lock.service';
 import { findLog, recordSchedulerLogs } from './scheduler-log-recorder';
 import { ShiftPauseApprovalSchedulerService } from './shift-pause-approval-scheduler.service';
 import type { PauseApprovalSweepSummary } from './shift-pause-approval-sweep.service';
@@ -10,10 +11,22 @@ const SUMMARY: PauseApprovalSweepSummary = {
   failed: 0,
 };
 
-function scheduler(runTick: () => Promise<PauseApprovalSweepSummary>) {
-  const service = new ShiftPauseApprovalSchedulerService({
-    runTick,
-  } as never);
+function passThroughLock(): AdvisoryLockService {
+  return {
+    tryWithLock: <T>(_key: number, run: () => Promise<T>) => run(),
+  } as unknown as AdvisoryLockService;
+}
+
+function scheduler(
+  runTick: () => Promise<PauseApprovalSweepSummary>,
+  advisoryLock: AdvisoryLockService = passThroughLock(),
+) {
+  const service = new ShiftPauseApprovalSchedulerService(
+    {
+      runTick,
+    } as never,
+    advisoryLock,
+  );
   return { service, records: recordSchedulerLogs(service) };
 }
 
@@ -51,6 +64,21 @@ describe('ShiftPauseApprovalSchedulerService', () => {
     const failed = findLog(records, 'pause_approval_tick.failed');
     expect(failed?.level).toBe('error');
     expect(failed?.fields.err).toBe(boom);
+    expect(findLog(records, 'pause_approval_tick.finished')).toBeUndefined();
+  });
+
+  it('skips the tick when another instance holds the lock', async () => {
+    const runTick = mock(async () => SUMMARY);
+    const { service, records } = scheduler(runTick, {
+      tryWithLock: async () => null,
+    } as unknown as AdvisoryLockService);
+
+    await service.handleTick();
+
+    expect(runTick).not.toHaveBeenCalled();
+    expect(
+      findLog(records, 'pause_approval_tick.skipped_locked'),
+    ).toBeDefined();
     expect(findLog(records, 'pause_approval_tick.finished')).toBeUndefined();
   });
 });
