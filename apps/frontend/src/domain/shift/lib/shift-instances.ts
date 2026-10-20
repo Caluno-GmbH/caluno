@@ -1,5 +1,5 @@
 import { tz } from '@date-fns/tz';
-import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
+import { addDays, format, getISOWeek, isSameDay, startOfWeek } from 'date-fns';
 import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 
 const appTz = { in: tz(DEFAULT_TIMEZONE) };
@@ -19,6 +19,17 @@ export function getCurrentWeekStart(reference: Date): Date {
 
 export function toWeekParam(reference: Date): string {
   return format(getCurrentWeekStart(reference), 'yyyy-MM-dd', appTz);
+}
+
+export function getAdjacentWeekParam(
+  weekStart: Date,
+  direction: 'prev' | 'next',
+): string {
+  return toWeekParam(addDays(weekStart, direction === 'prev' ? -7 : 7, appTz));
+}
+
+export function getWeekNumber(weekStart: Date): number {
+  return getISOWeek(weekStart, appTz);
 }
 
 export function getWeekRange(reference: Date): {
