@@ -98,10 +98,10 @@ export class BundleDownloadService {
     // A contract that covers several timesheets is fetched once and appended
     // to each of them.
     const contractPdfs = new Map<string, Promise<PDFDocument | null>>();
-    const contractPdf = (contract: ContractEntity & { fileId: string }) => {
+    const contractPdf = (contract: ContractEntity) => {
       let pdf = contractPdfs.get(contract.id);
       if (!pdf) {
-        pdf = this.loadContractPdf(contract);
+        pdf = this.loadContractPdf(contract, userId);
         contractPdfs.set(contract.id, pdf);
       }
       return pdf;
@@ -113,8 +113,7 @@ export class BundleDownloadService {
       const name = `Stundennachweis-${invoice.id.slice(0, 8)}-${invoice.id.slice(8, 12)}.pdf`;
       const parts: PDFDocument[] = [await this.loadTimesheetPdf(name, invoice)];
       for (const contract of contractsByInvoice.get(invoice.id) ?? []) {
-        if (!contract.fileId) continue;
-        const pdf = await contractPdf({ ...contract, fileId: contract.fileId });
+        const pdf = await contractPdf(contract);
         if (pdf) parts.push(pdf);
       }
       zip.addFile(name, await mergePdfs(parts));
@@ -251,20 +250,36 @@ export class BundleDownloadService {
   }
 
   /**
-   * A contract only accompanies the timesheets: when its file cannot be
-   * fetched or read, the timesheets go out without it and a warning is logged.
+   * A contract only accompanies the timesheets: when it has no PDF, one is
+   * rendered; when that fails or its file cannot be fetched or read, the
+   * timesheets go out without it and a warning is logged.
    */
   private async loadContractPdf(
-    contract: ContractEntity & { fileId: string },
+    contract: ContractEntity,
+    userId: string,
   ): Promise<PDFDocument | null> {
-    const url = await this.fileService.resolvePublicUrlForUploadedFile(
-      contract.fileId,
-    );
+    const fileId =
+      contract.fileId ??
+      (await this.contractService
+        .ensurePdf(contract.id, userId)
+        .catch((error: unknown) => {
+          this.logger.warn(
+            `Bundle download: rendering contract ${contract.id} failed: ${reasonOf(error)}`,
+          );
+          return null;
+        }));
+    if (!fileId) {
+      this.logger.warn(
+        `Bundle download: leaving out contract ${contract.id}, it has no PDF`,
+      );
+      return null;
+    }
+    const url = await this.fileService.resolvePublicUrlForUploadedFile(fileId);
     try {
       return await PDFDocument.load(await fetchBytes(url));
     } catch (error) {
       this.logger.warn(
-        `Bundle download: leaving out contract ${contract.id} (${contract.fileId}): ${reasonOf(error)}`,
+        `Bundle download: leaving out contract ${contract.id} (${fileId}): ${reasonOf(error)}`,
       );
       return null;
     }

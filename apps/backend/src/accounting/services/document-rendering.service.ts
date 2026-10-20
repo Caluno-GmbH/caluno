@@ -14,6 +14,7 @@ import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
+import type { DocumentRenderInputs } from '../schemas/document-render-inputs';
 import {
   billingYearBounds,
   billingYearOf,
@@ -158,12 +159,32 @@ export class DocumentRenderingService {
     }
   }
 
+  /**
+   * Everything the PDF shows besides the document's own body, resolved from
+   * the live profiles, organisation, rates and time entries. Stored on the
+   * document when the volunteer signs (see DocumentRenderInputs).
+   */
+  async resolveRenderInputs(
+    document: RenderableDocument,
+  ): Promise<DocumentRenderInputs> {
+    const values = await this.resolveValues(document);
+    if (!('invoiceTimeEntries' in document)) return { values };
+    return {
+      values,
+      tableRows: await this.resolveInvoiceTableRows(document),
+    };
+  }
+
   async generatePdf(document: RenderableDocument): Promise<Buffer> {
     const template = document.documentTemplate;
     if (!template) {
       throw new Error('Document is missing its template');
     }
-    const resolvedValues = await this.resolveValues(document);
+    // Once the volunteer has signed, the PDF shows what they signed: the
+    // inputs frozen then, not what profiles or time entries say today.
+    const inputs =
+      document.renderInputs ?? (await this.resolveRenderInputs(document));
+    const resolvedValues = inputs.values;
     // Render from the document's own creation-time snapshot, not the live
     // template: a template edit (e.g. the monthly Zeitraum the coordinators
     // change) must never rewrite an already-issued agreement (VOLI-1370).
@@ -174,9 +195,7 @@ export class DocumentRenderingService {
       document.fieldOverrides ?? {},
     );
     const tableRows =
-      'invoiceTimeEntries' in document
-        ? await this.resolveInvoiceTableRows(document)
-        : undefined;
+      'invoiceTimeEntries' in document ? (inputs.tableRows ?? []) : undefined;
     const totalAmountCents =
       'totalAmountCents' in document ? document.totalAmountCents : undefined;
 

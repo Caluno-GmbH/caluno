@@ -36,6 +36,7 @@ import { PostHogService } from '../src/shared/observability/posthog.service';
 import { FileService } from '../src/storage/services/file.service';
 import {
   createCompletedTimeEntry,
+  createDocumentFile,
   createReimbursementType,
   createTwoStepTemplate,
   stubInvoiceDocumentNumber,
@@ -65,6 +66,12 @@ describe('InvoiceService', () => {
   let service: InvoiceService;
   let contractService: ContractService;
   closeTestingModuleAfterAll(() => moduleRef);
+  /** Each resolution is numbered, so a test sees which one was stored. */
+  let renderInputsResolved = 0;
+  const resolveRenderInputs = () =>
+    Promise.resolve({
+      values: { resolution: String(++renderInputsResolved) },
+    });
   const declinedByVolunteerCalls: unknown[] = [];
   const renderCalls: { invoiceId: string; actorUserId: string }[] = [];
   let renderedFileId: string | null = null;
@@ -124,6 +131,7 @@ describe('InvoiceService', () => {
       } as unknown as DocumentProfileRequirementService,
       {
         renderAndAttachPdf: () => Promise.resolve(null),
+        resolveRenderInputs: () => resolveRenderInputs(),
       } as unknown as DocumentRenderingService,
       { capture: () => {} } as unknown as PostHogService,
     );
@@ -146,6 +154,7 @@ describe('InvoiceService', () => {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
       {
+        resolveRenderInputs: () => resolveRenderInputs(),
         renderAndAttachPdf: (document: { id: string }, actorUserId: string) => {
           renderCalls.push({ invoiceId: document.id, actorUserId });
           return Promise.resolve(renderedFileId);
@@ -2794,6 +2803,57 @@ describe('InvoiceService', () => {
   });
 
   describe('signInvoice', () => {
+    const issueForSigning = async () => {
+      const f = await setup();
+      const invoice = await service.createInvoice(
+        f.organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: f.volunteer.id,
+          reimbursementTypeId: f.reimbursementType.id,
+          timeEntryIds: [f.timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        f.supervisor.id,
+      );
+      return { ...f, invoice };
+    };
+    const stored = (id: string) =>
+      db.query.invoices.findFirst({ where: { id } });
+
+    it('freezes the render inputs when the volunteer signs and keeps them through the countersignature (VOLI-1637)', async () => {
+      const { invoice, volunteer, supervisor } = await issueForSigning();
+      expect((await stored(invoice.id))?.renderInputs).toBeNull();
+
+      await service.signInvoice(invoice.id, volunteer.id);
+      const frozen = (await stored(invoice.id))?.renderInputs;
+      expect(frozen).toEqual({
+        values: { resolution: expect.any(String) },
+      });
+
+      await service.signInvoice(invoice.id, supervisor.id);
+      expect((await stored(invoice.id))?.renderInputs).toEqual(frozen);
+    });
+
+    it('drops the PDF of the previous step when a signature is added (VOLI-1637)', async () => {
+      const { invoice, root, volunteer } = await issueForSigning();
+      const previous = await createDocumentFile(db, {
+        organizationUnitId: root.id,
+        uploadedByUserId: volunteer.id,
+      });
+      await db
+        .update(schema.invoices)
+        .set({ fileId: previous.id })
+        .where(eq(schema.invoices.id, invoice.id));
+
+      await service.signInvoice(invoice.id, volunteer.id);
+
+      // Rendering the new PDF failed (the stub returns null): no stale PDF
+      // without the new signature is left in its place.
+      expect((await stored(invoice.id))?.fileId).toBeNull();
+    });
+
     it('marks claimed time entries as paid once the invoice reaches READY', async () => {
       const {
         organization,
