@@ -185,6 +185,7 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith(user.id);
     expect(userLocaleService.resolveForUser).toHaveBeenCalledWith(user.id);
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -219,6 +220,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -306,11 +308,13 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith('reviewer-1');
     expect(userService.findById).toHaveBeenCalledWith('reviewer-2');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'reviewer-1',
       to: 'alice@example.com',
       subject: expectedAlice.subject,
       html: expectedAlice.html,
     });
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'reviewer-2',
       to: 'bob@example.com',
       subject: expectedBob.subject,
       html: expectedBob.html,
@@ -347,6 +351,7 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith(user.id);
     expect(expected.html).toContain('cid:check-in-qr-code');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -427,11 +432,13 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith('reviewer-1');
     expect(userService.findById).toHaveBeenCalledWith('reviewer-2');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'reviewer-1',
       to: 'alice@example.com',
       subject: expectedAlice.subject,
       html: expectedAlice.html,
     });
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'reviewer-2',
       to: 'bob@example.com',
       subject: expectedBob.subject,
       html: expectedBob.html,
@@ -465,6 +472,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith(user.id);
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -548,11 +556,13 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith('manager-1');
     expect(userService.findById).toHaveBeenCalledWith('manager-2');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-1',
       to: 'alice@example.com',
       subject: expectedAlice.subject,
       html: expectedAlice.html,
     });
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-2',
       to: 'bob@example.com',
       subject: expectedBob.subject,
       html: expectedBob.html,
@@ -636,11 +646,13 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith('manager-1');
     expect(userService.findById).toHaveBeenCalledWith('manager-2');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-1',
       to: 'alice@example.com',
       subject: expectedAlice.subject,
       html: expectedAlice.html,
     });
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-2',
       to: 'bob@example.com',
       subject: expectedBob.subject,
       html: expectedBob.html,
@@ -692,6 +704,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -747,11 +760,13 @@ describe('NotificationModule', () => {
 
     expect(emailService.send).toHaveBeenCalledTimes(2);
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'waitlist-1',
       to: 'sam@example.com',
       subject: expectedSam.subject,
       html: expectedSam.html,
     });
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'waitlist-2',
       to: 'robin@example.com',
       subject: expectedRobin.subject,
       html: expectedRobin.html,
@@ -801,6 +816,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -850,6 +866,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -899,6 +916,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -946,6 +964,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -989,6 +1008,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -1047,6 +1067,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -1094,6 +1115,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -1174,11 +1196,13 @@ describe('NotificationModule', () => {
     expect(userService.findById).toHaveBeenCalledWith('manager-1');
     expect(userService.findById).toHaveBeenCalledWith('manager-2');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-1',
       to: 'alice@example.com',
       subject: expectedAlice.subject,
       html: expectedAlice.html,
     });
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-2',
       to: 'bob@example.com',
       subject: expectedBob.subject,
       html: expectedBob.html,
@@ -1224,6 +1248,7 @@ describe('NotificationModule', () => {
 
     expect(userService.findById).toHaveBeenCalledWith('volunteer-1');
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'volunteer-1',
       to: 'sam@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -1258,6 +1283,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1296,6 +1322,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1332,6 +1359,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1367,6 +1395,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1411,6 +1440,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1451,6 +1481,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1494,6 +1525,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1537,6 +1569,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1577,6 +1610,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1632,6 +1666,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1688,6 +1723,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1746,6 +1782,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: user.id,
       to: user.email,
       subject: expected.subject,
       html: expected.html,
@@ -1813,6 +1850,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-1',
       to: 'alice@example.com',
       subject: expected.subject,
       html: expected.html,
@@ -1872,6 +1910,7 @@ describe('NotificationModule', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(emailService.send).toHaveBeenCalledWith({
+      userId: 'manager-1',
       to: 'alice@example.com',
       subject: expected.subject,
       html: expected.html,
