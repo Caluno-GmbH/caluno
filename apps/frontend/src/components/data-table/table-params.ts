@@ -6,6 +6,9 @@ import {
 } from 'nuqs/server';
 import type { SortDir } from './table-sort';
 
+/** Debounce (ms) applied to search-box URL writes to avoid a refetch per keystroke. */
+export const SEARCH_DEBOUNCE_MS = 300;
+
 export const PAGE_SIZES = [15, 25, 50, 100] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
 export const DEFAULT_PAGE_SIZE: PageSize = 25;

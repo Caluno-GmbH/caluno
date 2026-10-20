@@ -17,12 +17,13 @@ import type {
 } from '@tanstack/react-table';
 import { Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useQueryStates } from 'nuqs';
+import { debounce, useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
+import { SEARCH_DEBOUNCE_MS } from '@/components/data-table/table-params';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
 import {
   eventShiftEditPath,
@@ -217,7 +218,10 @@ export function ShiftsTable({
         <Input
           value={q}
           onChange={(e) => {
-            void setParams({ q: e.target.value, page: 1 });
+            void setParams(
+              { q: e.target.value, page: 1 },
+              { limitUrlUpdates: debounce(SEARCH_DEBOUNCE_MS) },
+            );
           }}
           placeholder={t('search.placeholder')}
           className="pl-9 pr-10"

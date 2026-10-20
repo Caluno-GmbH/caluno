@@ -22,7 +22,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Copy, ScanQrCode, Search, UserRound, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useQueryStates } from 'nuqs';
+import { debounce, useQueryStates } from 'nuqs';
 import { useMemo, useState } from 'react';
 import { ButtonClipboard } from '@/components/button-clipboard';
 import { DataTable } from '@/components/data-table/data-table';
@@ -33,6 +33,7 @@ import {
   createFilterParsers,
   pageParser,
   pageSizeParser,
+  SEARCH_DEBOUNCE_MS,
 } from '@/components/data-table/table-params';
 import MembershipRequestCard from '@/domain/membership-requests/components/membership-request-card';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
@@ -243,7 +244,10 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           <Input
             value={q}
             onChange={(e) => {
-              void setParams({ q: e.target.value, page: 1 });
+              void setParams(
+                { q: e.target.value, page: 1 },
+                { limitUrlUpdates: debounce(SEARCH_DEBOUNCE_MS) },
+              );
             }}
             placeholder={t('search.placeholder')}
             className="pl-9 pr-10"
