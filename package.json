@@ -23,6 +23,7 @@
     "db:seed": "bun run --cwd apps/backend db:seed",
     "codegen": "turbo run codegen",
     "setup:hooks": "bash .githooks/install-hooks.sh",
+    "security:audit": "bun run --cwd packages/security audit",
     "terms:publish": "bun run --cwd apps/backend terms:publish"
   },
   "devDependencies": {
