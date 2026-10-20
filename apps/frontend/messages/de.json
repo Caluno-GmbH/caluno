@@ -90,6 +90,19 @@
       "title": "Anmelden",
       "description": "Willkommen zurück bei caluno. Melde dich an, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
+    "passwordStrength": {
+      "checking": "Wird geprüft…",
+      "label": "Passwortstärke",
+      "levels": {
+        "fair": "Mittel",
+        "good": "Gut",
+        "strong": "Stark",
+        "weak": "Schwach"
+      },
+      "minimum": "Verwende mindestens 8 Zeichen.",
+      "unavailable": "Stärkeprüfung nicht verfügbar. Verwende eine lange Passphrase.",
+      "weak": "Füge weitere, weniger verbreitete Wörter hinzu."
+    },
     "resetPassword": {
       "confirmPasswordLabel": "Passwort bestätigen",
       "description": "Gib ein neues Passwort für dein Konto ein.",
@@ -98,6 +111,8 @@
       "newPasswordLabel": "Neues Passwort",
       "passwordMismatch": "Die Passwörter stimmen nicht überein",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Verwende mindestens 8 Zeichen.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einer längeren Passphrase.",
       "resetFailed": "Passwort konnte nicht zurückgesetzt werden. Bitte fordere einen neuen Link an.",
       "signInLink": "Zurück zur Anmeldung",
       "submit": "Passwort zurücksetzen",
@@ -115,9 +130,11 @@
       "lastnameLabel": "Nachname",
       "lastnamePlaceholder": "Mustermann",
       "namePartsRequired": "Bitte gib Vor- und Nachname ein.",
-      "passwordHint": "Mindestens 6 Zeichen",
+      "passwordHint": "Mindestens 8 Zeichen. Am besten eine lange Passphrase.",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Verwende mindestens 8 Zeichen.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einer längeren Passphrase.",
       "privacyAcknowledge": "Ich habe die <privacyLink>Datenschutzhinweise</privacyLink> gelesen und akzeptiere sie.",
       "privacyRequired": "Bitte akzeptiere die Datenschutzhinweise, um ein Konto zu erstellen.",
       "signInLink": "Anmelden",

@@ -90,6 +90,19 @@
       "title": "Sign in",
       "description": "Welcome back to caluno. Sign in to join assignments and volunteer with your organisation."
     },
+    "passwordStrength": {
+      "checking": "Checking…",
+      "label": "Password strength",
+      "levels": {
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong",
+        "weak": "Weak"
+      },
+      "minimum": "Use at least 8 characters.",
+      "unavailable": "Strength check unavailable. Use a long passphrase.",
+      "weak": "Add more words that are less common."
+    },
     "resetPassword": {
       "confirmPasswordLabel": "Confirm password",
       "description": "Enter a new password for your account.",
@@ -98,6 +111,8 @@
       "newPasswordLabel": "New password",
       "passwordMismatch": "Passwords do not match",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Use at least 8 characters.",
+      "passwordTooWeak": "That password is too easy to guess. Try a longer passphrase.",
       "resetFailed": "Failed to reset password. Please request a new reset link.",
       "signInLink": "Back to sign in",
       "submit": "Reset password",
@@ -115,9 +130,11 @@
       "lastnameLabel": "Last name",
       "lastnamePlaceholder": "Doe",
       "namePartsRequired": "Please enter your first and last name.",
-      "passwordHint": "At least 6 characters",
+      "passwordHint": "At least 8 characters. A long passphrase is best.",
       "passwordLabel": "Password",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Use at least 8 characters.",
+      "passwordTooWeak": "That password is too easy to guess. Try a longer passphrase.",
       "privacyAcknowledge": "I have read and acknowledge the <privacyLink>Privacy Policy</privacyLink>.",
       "privacyRequired": "Please acknowledge the Privacy Policy to create an account.",
       "signInLink": "Sign in",
