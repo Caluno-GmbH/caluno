@@ -10,6 +10,7 @@ import {
 } from '@repo/ui';
 import { CalendarRange, Plus, UserPlus } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 import {
   DetailCoverImage,
   DetailCoverImagePlaceholder,
@@ -138,7 +139,9 @@ export default async function EventDetailPage({
         </div>
         {canEdit ? (
           <div className="flex shrink-0 flex-wrap gap-2">
-            <EventRequiredFormsPopover orgUId={orgUId} eventId={eventId} />
+            <Suspense fallback={null}>
+              <EventRequiredFormsPopover orgUId={orgUId} eventId={eventId} />
+            </Suspense>
             <Button asChild variant="outline" size="sm">
               <Link href={inviteEventPath(orgUId, eventId)}>
                 <UserPlus />
