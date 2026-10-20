@@ -301,7 +301,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
                 typeof updater === 'function' ? updater(pagination) : updater;
               void setParams({
                 page: next.pageIndex + 1,
-                pageSize: String(next.pageSize) as '25' | '50' | '100',
+                pageSize: String(next.pageSize) as '15' | '25' | '50' | '100',
               });
             }}
           />

@@ -47,7 +47,7 @@ export function DataTablePagination({ total, name }: DataTablePaginationProps) {
   };
 
   const handlePageSizeChange = (value: string) => {
-    void setParams({ pageSize: value as '25' | '50' | '100', page: 1 });
+    void setParams({ pageSize: value as '15' | '25' | '50' | '100', page: 1 });
   };
 
   return (

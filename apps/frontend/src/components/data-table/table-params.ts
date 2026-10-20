@@ -6,7 +6,7 @@ import {
 } from 'nuqs/server';
 import type { SortDir } from './table-sort';
 
-export const PAGE_SIZES = [25, 50, 100] as const;
+export const PAGE_SIZES = [15, 25, 50, 100] as const;
 export type PageSize = (typeof PAGE_SIZES)[number];
 export const DEFAULT_PAGE_SIZE: PageSize = 25;
 
@@ -18,6 +18,7 @@ export const pageParser = parseAsInteger.withDefault(1);
  * convert to number with `Number(pageSize)` at the use site.
  */
 export const pageSizeParser = parseAsStringLiteral([
+  '15',
   '25',
   '50',
   '100',
