@@ -106,7 +106,7 @@ describe('isTimesheetNonCompliant', () => {
     }) as never;
 
   // The flag is the backend's live per-hour answer; whether some other active
-  // contract of the Pauschale exists is not an input any more (VOLI-1588).
+  // contract of the Pauschale exists is not an input anymore (VOLI-1588).
   it('follows the document flag', () => {
     expect(isTimesheetNonCompliant(doc({ isNonCompliant: true }))).toBe(true);
     expect(isTimesheetNonCompliant(doc({ isNonCompliant: false }))).toBe(false);

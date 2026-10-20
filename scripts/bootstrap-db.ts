@@ -94,9 +94,12 @@ const logDemoFixtureSummary = (): void => {
   );
   console.log('  demo+rejected01@caluno.org   (rejected request)');
   console.log(
-    '\nThe e2e-only Testing seed (demo+testing_*@caluno.org) is loaded separately',
+    '\nThe Testing e2e seed (demo+testing_*@caluno.org) is loaded separately',
   );
-  console.log('with `bun run db:fixtures:e2e` — never into the same database.');
+  console.log(
+    'with `bun run db:fixtures:e2e` when you need it (safe alongside demo;',
+  );
+  console.log('staging/release load it automatically on deploy).');
 };
 
 const main = (): void => {
@@ -115,8 +118,9 @@ const main = (): void => {
   console.log('Seeding permissions…');
   run('bun', ['run', 'src/database/seed.ts'], BACKEND_ROOT);
 
-  // One dataset only: the Testing seed is e2e-only (`db:fixtures:e2e`) and
-  // must never share a database with this one.
+  // Demo only here — Testing (`db:fixtures:e2e`) is opt-in locally and
+  // staging/release-entrypoint-only in deploy. The +testing_ discriminator
+  // keeps the two sets from colliding when both are present.
   console.log('Loading demo fixtures (Altonaer Lesepaten)…');
   run('bun', ['run', 'db:fixtures:demo'], BACKEND_ROOT);
   logDemoFixtureSummary();

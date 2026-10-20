@@ -1,0 +1,98 @@
+# Full Playwright suite against a deployed environment.
+# Callers pin app / API / Mailpit URLs; the Testing seed is loaded by that
+# environment's backend entrypoint (staging/release), not by this job.
+name: E2E
+
+on:
+  workflow_call:
+    inputs:
+      app-url:
+        description: Public web origin (E2E_BASE_URL).
+        type: string
+        required: true
+      api-url:
+        description: Public API origin (E2E_API_URL).
+        type: string
+        required: true
+      mailbox-url:
+        description: Mailpit web UI origin (MAILBOX_URL).
+        type: string
+        required: true
+      report-name:
+        description: Artifact name for the Playwright report on failure.
+        type: string
+        required: false
+        default: playwright-report
+    secrets:
+      MAILBOX_PASSWORD:
+        description: Mailpit basic-auth password.
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: Restore e2e install cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.bun/install/cache
+          key: bun-e2e-${{ runner.os }}-${{ hashFiles('e2e/bun.lock') }}
+          restore-keys: |
+            bun-e2e-${{ runner.os }}-
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: bun install --frozen-lockfile
+
+      - name: Install Chromium
+        working-directory: e2e
+        run: bunx playwright install --with-deps chromium
+
+      # Entrypoint may still be migrating / seeding after a fresh deploy.
+      - name: Wait for app
+        env:
+          E2E_BASE_URL: ${{ inputs.app-url }}
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null "$E2E_BASE_URL/en/login"; then
+              echo "App ready after ${i} attempt(s)"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "App not ready at $E2E_BASE_URL/en/login within 10 minutes" >&2
+          exit 1
+
+      - name: Run Playwright suite
+        working-directory: e2e
+        env:
+          CI: true
+          E2E_BASE_URL: ${{ inputs.app-url }}
+          E2E_API_URL: ${{ inputs.api-url }}
+          MAILBOX_URL: ${{ inputs.mailbox-url }}
+          MAILBOX_USER: mailpit
+          MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}
+        run: bun playwright test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.report-name }}-${{ github.run_id }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14

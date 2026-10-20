@@ -62,6 +62,8 @@ const pdfGlyphs = (pdfBytes: Buffer): string => {
 describe('DocumentRenderingService', () => {
   let yearlyUsageCallArgs: unknown[] = [];
   let rateCallArgs: unknown[] = [];
+  let captured: unknown[] = [];
+  let capturedContexts: unknown[] = [];
 
   const createService = (
     overrides: {
@@ -137,12 +139,21 @@ describe('DocumentRenderingService', () => {
       requireRootUnit: () =>
         Promise.resolve(overrides.unit ?? { id: 'root-unit' }),
     } as never;
+    captured = [];
+    capturedContexts = [];
+    const observabilityService = {
+      captureException: (error: unknown, context?: unknown) => {
+        captured.push(error);
+        capturedContexts.push(context);
+      },
+    } as never;
     return new DocumentRenderingService(
       db,
       userService,
       reimbursementRateService,
       fileService,
       organizationService,
+      observabilityService,
     );
   };
 
@@ -342,6 +353,57 @@ describe('DocumentRenderingService', () => {
     expect(saved).toHaveProperty('bytes');
   });
 
+  it('renderAndAttachPdf reports a failure to Sentry and returns null', async () => {
+    const failure = new Error('storage is down');
+    const service = createService({
+      rateCents: 1500,
+      saveFile: () => Promise.reject(failure),
+    });
+    const fileId = await service.renderAndAttachPdf(contract(), 'actor-1');
+    expect(fileId).toBeNull();
+    expect(captured).toEqual([failure]);
+  });
+
+  it('renderAndAttachPdf names the step that failed and the document in the report', async () => {
+    const service = createService({
+      rateCents: 1500,
+      saveFile: () => Promise.reject(new Error('S3 timeout')),
+    });
+    await service.renderAndAttachPdf(
+      contract({ documentTemplateId: 'template-1' }),
+      'actor-1',
+    );
+    expect(capturedContexts).toEqual([
+      {
+        tags: {
+          feature: 'document-pdf',
+          stage: 'store',
+          documentKind: 'contract',
+        },
+        extra: {
+          documentId: 'contract-1',
+          documentTemplateId: 'template-1',
+          organizationId: 'org-1',
+          organizationUnitId: 'unit-1',
+          actorUserId: 'actor-1',
+        },
+      },
+    ]);
+  });
+
+  it('renderAndAttachPdf reports a failure while generating as the generate step', async () => {
+    const service = createService({ rateCents: 1500 });
+    await service.renderAndAttachPdf(
+      contract({ documentTemplate: null as never }),
+      'actor-1',
+    );
+    expect(capturedContexts).toEqual([
+      expect.objectContaining({
+        tags: expect.objectContaining({ stage: 'generate' }),
+      }),
+    ]);
+  });
+
   it('resolves the rate at the document own unit, not the template unit', async () => {
     rateCallArgs = [];
     const service = createService({ rateCents: 1500 });
@@ -358,6 +420,32 @@ describe('DocumentRenderingService', () => {
   });
 
   describe('signature seats', () => {
+    it('renders from the frozen render inputs, not from the live profile', async () => {
+      const service = createService({ rateCents: 1500 });
+      const live = extractPdfText(await service.generatePdf(contract()));
+      expect(live).toContain('Max Mustermann');
+
+      const frozen = await service.resolveRenderInputs(contract());
+      const changed = createService({
+        rateCents: 1500,
+        profileData: { firstname: 'Erika', lastname: 'Neu', street: 'X' },
+      });
+      const text = extractPdfText(
+        await changed.generatePdf(contract({ renderInputs: frozen })),
+      );
+      expect(text).toContain('Max Mustermann');
+      expect(text).not.toContain('Erika Neu');
+    });
+
+    it('resolves the live values while nothing is frozen', async () => {
+      const changed = createService({
+        rateCents: 1500,
+        profileData: { firstname: 'Erika', lastname: 'Neu', street: 'X' },
+      });
+      const text = extractPdfText(await changed.generatePdf(contract()));
+      expect(text).toContain('Erika Neu');
+    });
+
     it('renders name and signing date only for parties that have signed', async () => {
       const service = createService({ rateCents: 1500 });
       const text = extractPdfText(

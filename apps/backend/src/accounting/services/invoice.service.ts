@@ -106,6 +106,24 @@ export class InvoiceService {
     return invoice;
   }
 
+  /**
+   * The id of the invoice's PDF, rendering it first when it has none. The PDF
+   * is rendered once the invoice is fully signed, but a failure there does not
+   * undo the signing, so a READY invoice can be left without one; it is then
+   * rendered when it is needed. Null when rendering fails again.
+   */
+  async ensurePdf(
+    invoiceId: string,
+    actorUserId: string,
+  ): Promise<string | null> {
+    const invoice = await this.findInvoice(invoiceId);
+    if (invoice.fileId) return invoice.fileId;
+    return this.documentRenderingService.renderAndAttachPdf(
+      invoice,
+      actorUserId,
+    );
+  }
+
   async findInvoicesForOrganization(
     organizationId: string,
     filter: InvoiceFilter = {},
@@ -850,6 +868,15 @@ export class InvoiceService {
 
     const isFinal = pendingIndex === orderedSignatures.length - 1;
 
+    // What the PDF shows is frozen when the volunteer signs (their profile is
+    // complete by then), or at the final signature when no volunteer signs.
+    // Every later render, a retry or a bundle download, shows what was signed.
+    const renderInputs =
+      !invoice.renderInputs &&
+      (pending.signeeType === SigneeType.VOLUNTEER || isFinal)
+        ? await this.documentRenderingService.resolveRenderInputs(invoice)
+        : undefined;
+
     const updated = await this.db.transaction(async (tx) => {
       await tx
         .update(schema.invoiceSignatures)
@@ -859,6 +886,10 @@ export class InvoiceService {
       const [signed] = await tx
         .update(schema.invoices)
         .set({
+          // The PDF of the previous step lacks this signature. It is replaced
+          // below; if that fails, no stale PDF is left in its place.
+          fileId: null,
+          ...(renderInputs ? { renderInputs } : {}),
           invoiceStatus: isFinal
             ? InvoiceStatus.READY
             : this.nextInvoiceStatus(

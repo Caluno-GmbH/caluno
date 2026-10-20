@@ -1,10 +1,11 @@
 # Full Playwright suite against the deployed staging app.
 # Defaults in e2e/ already target staging; this job pins them and runs on a cron.
 #
-# Preconditions (manual, one-time / as needed):
-# - Testing e2e accounts (`demo+testing_*@caluno.org`) exist on staging with
-#   password matching FIXTURE_PASSWORD (default `abcd1234`).
-# - Repo secret `MAILBOX_PASSWORD` for staging Mailpit basic auth.
+# Staging/release deploys load the Testing e2e seed via the backend entrypoint
+# (`APP_ENV=staging|release` → `db:fixtures:e2e`), so demo+testing_* accounts
+# and today-relative overlap fixtures are refreshed on every boot — this job
+# does not re-seed. Repo secret `MAILBOX_PASSWORD` is required for staging
+# Mailpit basic auth.
 #
 # Local-only specs (e.g. terms acceptance gate) stay skipped via IS_LOCAL.
 name: Nightly e2e (staging)
@@ -25,50 +26,11 @@ concurrency:
 jobs:
   e2e:
     name: Playwright against staging
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          persist-credentials: false
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version-file: package.json
-
-      - name: Restore e2e install cache
-        uses: actions/cache@v5
-        with:
-          path: ~/.bun/install/cache
-          key: bun-e2e-${{ runner.os }}-${{ hashFiles('e2e/bun.lock') }}
-          restore-keys: |
-            bun-e2e-${{ runner.os }}-
-
-      - name: Install e2e dependencies
-        working-directory: e2e
-        run: bun install --frozen-lockfile
-
-      - name: Install Chromium
-        working-directory: e2e
-        run: bunx playwright install --with-deps chromium
-
-      - name: Run Playwright suite
-        working-directory: e2e
-        env:
-          CI: true
-          E2E_BASE_URL: https://staging.app.caluno.org
-          E2E_API_URL: https://staging.api.caluno.org
-          MAILBOX_URL: https://staging.mailbox.caluno.org
-          MAILBOX_USER: mailpit
-          MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}
-        run: bun playwright test
-
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: playwright-report-${{ github.run_id }}
-          path: |
-            e2e/playwright-report/
-            e2e/test-results/
-          retention-days: 14
+    uses: ./.github/workflows/reusable-e2e.yml
+    with:
+      app-url: https://staging.app.caluno.org
+      api-url: https://staging.api.caluno.org
+      mailbox-url: https://staging.mailbox.caluno.org
+      report-name: playwright-report-staging
+    secrets:
+      MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}

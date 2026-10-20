@@ -328,7 +328,12 @@ export class VolunteerDigestService {
     );
 
     try {
-      await this.emailService.send({ to: recipient.email, subject, html });
+      await this.emailService.send({
+        userId: recipient.userId,
+        to: recipient.email,
+        subject,
+        html,
+      });
     } catch (error) {
       this.logger.error(
         {

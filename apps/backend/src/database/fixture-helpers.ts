@@ -564,6 +564,71 @@ export const ensureShiftWithInvites = async (
   };
 };
 
+/**
+ * Like `ensureShiftWithInvites`, but for one-time shifts whose wall-clock
+ * must stay relative to "today" across re-seeds (e.g. e2e overlap clusters).
+ * `ensureShiftWithInvites` skips existing rows by title, so without this
+ * re-anchor those fixtures drift into the past and my-shifts e2e has to
+ * dig them out of "Load past" — or never finds them behind "Load more".
+ */
+export const ensureAnchoredOneTimeShiftWithInvites = async (
+  db: Database,
+  organizationUnitId: string,
+  createdById: string,
+  shift: ShiftFixture,
+): Promise<{ shiftId: string; instanceId: string; instanceStartsAt: Date }> => {
+  const durationMinutes =
+    shift.durationMinutes ?? DEFAULT_SHIFT_DURATION_MINUTES;
+  const endsAt = new Date(shift.startsAt.getTime() + durationMinutes * 60_000);
+
+  const existingShift = shift.id
+    ? await db.query.shifts.findFirst({ where: { id: shift.id } })
+    : await db.query.shifts.findFirst({
+        where: { title: shift.title, organizationUnitId },
+      });
+
+  if (!existingShift) {
+    return ensureShiftWithInvites(db, organizationUnitId, createdById, shift);
+  }
+
+  await db
+    .update(schema.shifts)
+    .set({
+      originalStartsAt: shift.startsAt,
+      durationMinutes,
+      rrule: shift.rrule,
+    })
+    .where(eq(schema.shifts.id, existingShift.id));
+
+  const instances = await db.query.shiftInstances.findMany({
+    where: { masterId: existingShift.id },
+  });
+
+  for (const instance of instances) {
+    await db
+      .update(schema.shiftInstances)
+      .set({
+        actualStartsAt: shift.startsAt,
+        actualEndsAt: endsAt,
+      })
+      .where(eq(schema.shiftInstances.id, instance.id));
+  }
+
+  const recentInstance = pickRecentPastInstance(
+    instances.map((instance) => ({
+      ...instance,
+      actualStartsAt: shift.startsAt,
+      actualEndsAt: endsAt,
+    })),
+  );
+
+  return {
+    shiftId: existingShift.id,
+    instanceId: recentInstance.id,
+    instanceStartsAt: shift.startsAt,
+  };
+};
+
 export const ensureEvent = async (
   db: Database,
   organizationUnitId: string,

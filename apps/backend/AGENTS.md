@@ -6,7 +6,7 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 - `bun run dev` - Start NestJS development server
 - `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load the demo fixtures, then start all dev servers
 - `bun run db:fixtures:demo` - Load the demo dataset (the app's data; run after migrate + seed)
-- `bun run db:fixtures:e2e` - Load the e2e-only Testing seed (run after migrate + seed)
+- `bun run db:fixtures:e2e` - Load the Testing e2e seed (run after migrate + seed; also on staging/release boot)
 - `bun run build` - Build a production bundle
 - `bun run lint` - Lint with Biome
 - `bun run format` - Format with Biome
@@ -108,26 +108,26 @@ bun test apps/backend/test/
 
 Integration tests connect to the `postgres` maintenance database to create/drop an isolated `${POSTGRES_DB}_test_<pid>_<id>` database, so the Postgres user needs CREATEDB privileges (the default `postgres` superuser has this).
 
-### Fixture datasets — never both
+### Fixture datasets
 
-Two fixture datasets exist and are mutually exclusive, because both address their accounts on the `demo@caluno.org` group:
+Two fixture datasets exist. Accounts share the `demo@caluno.org` group but Testing uses a `+testing_` discriminator so the sets do not collide when both are present:
 
 | Dataset | Script | Who loads it |
 |---|---|---|
 | **Altonaer Lesepaten** (the app's data) | [`src/database/demo-fixtures.ts`](src/database/demo-fixtures.ts) | `bun bootstrap` locally; **every deployed container** — the entrypoint always seeds it |
-| **Testing** (e2e only) | [`src/database/fixtures.ts`](src/database/fixtures.ts) | the Playwright suite, via `bun run db:fixtures:e2e` |
+| **Testing** (e2e) | [`src/database/fixtures.ts`](src/database/fixtures.ts) | `bun run db:fixtures:e2e` locally; **staging + release entrypoint** (`APP_ENV=staging|release`) after the demo seed — never production |
 
-`bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads the **demo** dataset only. It refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`.
+`bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads the **demo** dataset only. It refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`. Locally, load Testing yourself with `db:fixtures:e2e` when you need it — do not treat both as the default bootstrap.
 
 ### Fixture safety — they run in production
 
-The backend entrypoint seeds the demo dataset on **every** boot, staging and production alike, so the seed is written to be safe against a live, populated database:
+The backend entrypoint seeds the demo dataset on **every** boot, staging and production alike, so the seed is written to be safe against a live, populated database. Staging and release additionally run `db:fixtures:e2e` so Playwright keeps today-relative overlap fixtures fresh:
 
 - **Non-destructive.** No `DROP`, `TRUNCATE` or `DELETE` anywhere in `demo-fixtures.ts` / `fixtures.ts`; every write is an upsert scoped to the fixture organization and its own accounts.
 - **Identity is the pinned id, not the name.** `fixtureId()` in `fixture-helpers.ts` derives a deterministic UUID for each fixture account (from its address) and organization (from its slug), so ownership is proven by id — names are not unique and a real person can share one. `assertFixtureIdentitiesAvailable` verifies the whole planned set *before* the seed's first insert: any row holding a fixture id, email or slug that the fixtures did not create (a legacy random-id row, a real customer org, a real user) aborts the run with the full list of clashes and writes nothing. The per-call guards in `createAuthUser` / the org resolvers remain as defence in depth.
 - The only volume wipe (`docker compose down -v`) lives in `scripts/bootstrap-db.ts`, which refuses to run against a non-local `DB_HOST` — it is unreachable from the deploy path.
 
-**Never load both into one database.** The second load silently reuses the first's users and cross-links memberships (it will look like it succeeded). The Testing seed is deliberately e2e-only: it carries the contract the specs depend on — stable UUIDs, the `Overlap Test Pair/Pile` shifts, exact account names — none of which is app content.
+**Never load Testing into production.** Staging and release run `db:fixtures:e2e` on boot; production stays demo-only. The Testing seed carries the Playwright contract — stable UUIDs, `Overlap Test Pair/Pile` shifts, exact account names — none of which is app content.
 
 **Demo dataset** — password `abcd1234` (override with `DEMO_FIXTURE_PASSWORD`), organization **Altonaer Lesepaten** (slug `demo-altonaer-lesepaten`; units Nord/Süd/West):
 
