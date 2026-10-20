@@ -6,10 +6,27 @@ import {
 
 const KEY = 'pending_event_week';
 
+// Other test files in the same `bun test` run may leave these globals
+// non-writable, so stub via defineProperty and restore the original descriptors.
+const GLOBALS = ['window', 'sessionStorage'] as const;
+const originalDescriptors = GLOBALS.map(
+  (name) => [name, Object.getOwnPropertyDescriptor(globalThis, name)] as const,
+);
+
+const stubGlobal = (name: (typeof GLOBALS)[number], value: unknown) => {
+  Object.defineProperty(globalThis, name, {
+    value,
+    configurable: true,
+    writable: true,
+  });
+};
+
 describe('pending event week', () => {
   afterAll(() => {
-    delete (globalThis as { window?: unknown }).window;
-    delete (globalThis as { sessionStorage?: unknown }).sessionStorage;
+    for (const [name, descriptor] of originalDescriptors) {
+      if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+      else delete (globalThis as Record<string, unknown>)[name];
+    }
   });
 
   let store: Map<string, string>;
@@ -25,7 +42,8 @@ describe('pending event week', () => {
         store.delete(key);
       },
     };
-    Object.assign(globalThis, { window: {}, sessionStorage });
+    stubGlobal('window', {});
+    stubGlobal('sessionStorage', sessionStorage);
   });
 
   it('only hands the week to the matching event, once', () => {
@@ -55,12 +73,10 @@ describe('pending event week', () => {
     const blocked = () => {
       throw new Error('SecurityError');
     };
-    Object.assign(globalThis, {
-      sessionStorage: {
-        getItem: blocked,
-        setItem: blocked,
-        removeItem: blocked,
-      },
+    stubGlobal('sessionStorage', {
+      getItem: blocked,
+      setItem: blocked,
+      removeItem: blocked,
     });
     const originalError = console.error;
     console.error = mock(() => {});
