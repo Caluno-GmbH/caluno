@@ -2254,7 +2254,7 @@ async function seedFixtures() {
     today.year,
     today.month,
     today.day,
-    2,
+    5,
   );
   const pileDay = addDaysInFixtureTimezone(
     today.year,
