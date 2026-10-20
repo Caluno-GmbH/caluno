@@ -9,14 +9,15 @@ Everything runs on GitHub-hosted runners (`ubuntu-latest`).
 | `cd-release.yml`           | `push` → `release`               | Same, to the release environment, applied unattended.       |
 | `cd-production.yml`        | `push` → `production`            | Same, to production, with approval on the apply.            |
 | `e2e-staging-nightly.yml`  | nightly 00:00 UTC + `workflow_dispatch` | Full Playwright suite against staging.               |
+| `reusable-e2e.yml`         | `workflow_call`                          | Shared Playwright job (staging nightly + release CD). |
 | `mirror-images.yml`        | weekly + `workflow_dispatch`     | Refreshes the GHCR base-image mirror.                       |
 | `reusable-verify.yml`      | `workflow_call`                  | Lint, type-check, migration drift, tests.                   |
-| `reusable-deploy.yml`      | `workflow_call`                  | Build + push images, Terraform plan/apply, Sentry release; Slack on apply for release/production. |
+| `reusable-deploy.yml`      | `workflow_call`                  | Build + push images, Terraform plan/apply, Sentry release; optional post-apply e2e; Slack on apply for release/production. |
 
-The three CD workflows differ only in the inputs they pass to
+The three CD workflows differ mainly in the inputs they pass to
 `reusable-deploy.yml`: the environment name (which is also the Terraform state
-prefix), the moving image tag, and the public origins baked into the frontend
-bundle.
+prefix), the moving image tag, the public origins baked into the frontend
+bundle, and (release only) `run-e2e` / `mailbox-url`.
 
 Shared steps live in composite actions: `.github/actions/setup` (Bun + caches +
 install), `.github/actions/save-turbo-cache` (prune + upload) and
@@ -104,7 +105,10 @@ exported by `cache-to`, and CI runners are ephemeral.
 2. **Deploy/registry secrets and variables** — add these in `caluno`:
    - Secrets: `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SENTRY_AUTH_TOKEN`,
      `MAILBOX_PASSWORD` (staging Mailpit basic auth for
-     `e2e-staging-nightly.yml`), `SLACK_WEBHOOK_URL` (Incoming Webhook for
+     `e2e-staging-nightly.yml`), `RELEASE_MAILBOX_PASSWORD` (release Mailpit
+     basic auth for post-deploy Playwright in `cd-release.yml` — value from
+     Scaleway Secret Manager `caluno-release-mailpit-ui-auth`, password after
+     `mailpit:`), `SLACK_WEBHOOK_URL` (Incoming Webhook for
      `#caluno-release-management` — release/production Terraform apply result
      only; create via Slack → Apps → Incoming Webhooks, then paste the URL).
      The Scaleway keys are reused as `AWS_ACCESS_KEY_ID` /

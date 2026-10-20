@@ -79,19 +79,23 @@ bun playwright test
 Prefer supplying `MAILBOX_PASSWORD` via a CI secret rather than relying on the
 committed default.
 
-## Nightly CI
+## CI against deployed environments
 
-GitHub Actions runs the full suite against staging every night
-(`.github/workflows/e2e-staging-nightly.yml`: cron `0 0 * * *` UTC ≈ 02:00
-CEST, plus `workflow_dispatch`). The job installs only this package, pins
-`E2E_BASE_URL` / `E2E_API_URL` / Mailpit to staging, and uploads the Playwright
-report on failure.
+- **Staging nightly** — `.github/workflows/e2e-staging-nightly.yml` (cron
+  `0 0 * * *` UTC ≈ 02:00 CEST, plus `workflow_dispatch`).
+- **Release post-deploy** — `cd-release.yml` runs the same suite via
+  `reusable-e2e.yml` after a successful Terraform apply.
 
-You must keep the Testing e2e accounts (`demo+testing_*@caluno.org`, password
-`abcd1234` unless you override `FIXTURE_PASSWORD`) present on staging — the
-deployed environments do not load `db:fixtures:e2e`. Set the repo secret
-`MAILBOX_PASSWORD` to the staging Mailpit password. Specs that require a local
-DB (e.g. the terms acceptance gate) stay skipped via `IS_LOCAL`.
+Both pin `E2E_BASE_URL` / `E2E_API_URL` / Mailpit and upload the Playwright
+report on failure. Staging/release deploys load the Testing e2e seed
+automatically (backend entrypoint when `APP_ENV` is `staging` or `release`
+runs `db:fixtures:e2e` after the demo seed), so `demo+testing_*@caluno.org`
+accounts and today-relative overlap fixtures stay fresh without a manual
+step. Password defaults to `abcd1234` (override with `FIXTURE_PASSWORD`).
+
+Repo secrets: `MAILBOX_PASSWORD` (staging Mailpit), `RELEASE_MAILBOX_PASSWORD`
+(release Mailpit). Specs that require a local DB (e.g. the terms acceptance
+gate) stay skipped via `IS_LOCAL`.
 
 ## Conventions
 

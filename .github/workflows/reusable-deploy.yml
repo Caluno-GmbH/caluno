@@ -29,6 +29,16 @@ on:
         type: boolean
         required: false
         default: false
+      run-e2e:
+        description: After a successful Terraform apply, run the Playwright suite against web-url / api-url.
+        type: boolean
+        required: false
+        default: false
+      mailbox-url:
+        description: Mailpit web UI origin for run-e2e (required when run-e2e is true).
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -305,3 +315,23 @@ jobs:
         run: |
           bunx @sentry/cli@2 releases --org "$SENTRY_ORG" set-commits "$RELEASE" --auto
           bunx @sentry/cli@2 releases --org "$SENTRY_ORG" finalize "$RELEASE"
+
+  # Only after a real apply — skipped when the plan was empty. Failures fail
+  # the deploy workflow so a bad release is visible on the branch.
+  e2e:
+    name: Playwright e2e
+    needs: [apply]
+    if: >-
+      always()
+      && inputs.run-e2e
+      && needs.apply.result == 'success'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-e2e.yml
+    with:
+      app-url: ${{ inputs.web-url }}
+      api-url: ${{ inputs.api-url }}
+      mailbox-url: ${{ inputs.mailbox-url }}
+      report-name: playwright-report-${{ inputs.environment }}
+    secrets:
+      MAILBOX_PASSWORD: ${{ secrets.RELEASE_MAILBOX_PASSWORD }}
