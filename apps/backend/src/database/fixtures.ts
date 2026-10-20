@@ -27,6 +27,7 @@ import {
   createAuthUser,
   type Database,
   DEFAULT_SHIFT_DURATION_MINUTES,
+  ensureAnchoredOneTimeShiftWithInvites,
   ensureEvent,
   ensureMembershipWithRole,
   ensureShiftWithInvites,
@@ -101,11 +102,12 @@ const REJECTED_IDENTITY = {
 const RECURRENCE_WEEKS_BACK = 12;
 
 /**
- * Testing is the **e2e-only** seed — `bun bootstrap` and deployed
- * environments load the demo dataset (`demo-fixtures.ts`) instead. Its accounts
- * still route to the demo@caluno.org group but carry an `e2e_` discriminator,
- * so they never collide with that dataset's bare `demo+<role>` addresses when
- * both live in one database.
+ * Testing is the e2e seed — `bun bootstrap` and production load only the demo
+ * dataset (`demo-fixtures.ts`). Staging and release entrypoints also run this
+ * script (`APP_ENV=staging|release`) so Playwright keeps today-relative
+ * fixtures fresh. Accounts still route to the demo@caluno.org group but carry
+ * a `testing_` discriminator, so they never collide with demo's bare
+ * `demo+<role>` addresses when both live in one database.
  */
 const e2eEmail = (suffix: string): string =>
   `demo+testing_${suffix}@caluno.org`;
@@ -2261,7 +2263,10 @@ async function seedFixtures() {
     9,
   );
 
-  await ensureShiftWithInvites(db, org.rootUnitId, admin.id, {
+  // Re-anchor on every seed: these are one-time and must stay at today+N,
+  // otherwise they fall into the past and my-shifts e2e keeps clicking
+  // "Load more" forever past where they used to be.
+  await ensureAnchoredOneTimeShiftWithInvites(db, org.rootUnitId, admin.id, {
     title: 'Overlap Test Pair A',
     startsAt: fixtureWallClockToUtc(
       pairDay.year,
@@ -2273,7 +2278,7 @@ async function seedFixtures() {
     durationMinutes: 240,
     inviteUserIds: [overlapMember.id],
   });
-  await ensureShiftWithInvites(db, org.rootUnitId, admin.id, {
+  await ensureAnchoredOneTimeShiftWithInvites(db, org.rootUnitId, admin.id, {
     title: 'Overlap Test Pair B',
     startsAt: fixtureWallClockToUtc(
       pairDay.year,
@@ -2293,7 +2298,7 @@ async function seedFixtures() {
   // so the sweep-line clusterer groups all 6 together.
   const PILE_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'] as const;
   for (const [index, letter] of PILE_LETTERS.entries()) {
-    await ensureShiftWithInvites(db, org.rootUnitId, admin.id, {
+    await ensureAnchoredOneTimeShiftWithInvites(db, org.rootUnitId, admin.id, {
       title: `Overlap Test Pile ${letter}`,
       startsAt: fixtureWallClockToUtc(
         pileDay.year,

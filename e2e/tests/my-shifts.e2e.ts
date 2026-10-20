@@ -13,54 +13,67 @@ import { LoginPage } from '../pages/LoginPage';
 const MEMBER_EMAIL = 'demo+testing_member02@caluno.org';
 const MEMBER_PASSWORD = 'abcd1234';
 
+type Page = import('@playwright/test').Page;
+type Locator = import('@playwright/test').Locator;
+
+/** Day keys + text lengths — detects new days and same-day page growth. */
+async function myShiftsListFingerprint(page: Page) {
+  return page
+    .locator('[data-day]')
+    .evaluateAll((els) =>
+      els
+        .map(
+          (el) =>
+            `${el.getAttribute('data-day')}:${el.textContent?.length ?? 0}`,
+        )
+        .join('|'),
+    );
+}
+
 /**
- * Keep clicking progressive "Load more" until `locator` is visible.
+ * Click one progressive paging control (Load more / Load past) until
+ * `locator` is visible or that direction is exhausted.
  *
- * While a page is in flight the same control is labelled Common.loading
- * ("Loading...") and disabled — matching only /load more/i then looks like
- * the button vanished and the loop stops after one click (common on slow
- * staging). Track both labels and wait the fetch out before the next click.
+ * Idle labels are locale-specific; while a page is in flight the same
+ * control is labelled Common.loading ("Loading...") and disabled — so a
+ * /load more/-only locator looks empty mid-fetch. We click by idle name,
+ * then wait for list growth / the idle label to return, without requiring
+ * Playwright to observe the disabled frame (fast local backends skip it).
  */
-async function expandMyShiftsUntil(
-  page: import('@playwright/test').Page,
-  locator: import('@playwright/test').Locator,
-) {
-  // Same DOM node through idle ("Load more" / "Mehr laden") and in-flight
-  // ("Loading...") — a /load more/-only locator goes empty mid-fetch.
-  const pagingButton = page.getByRole('button', {
-    name: /^(load more|mehr laden|loading|wird geladen)/i,
+async function pageMyShiftsDirection(
+  page: Page,
+  locator: Locator,
+  idleName: RegExp,
+  maxClicks: number,
+): Promise<boolean> {
+  const isFound = async () =>
+    locator
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+  const idleButton = page.getByRole('button', { name: idleName });
+  const loadingButton = page.getByRole('button', {
+    name: /^(loading|wird geladen)/i,
   });
 
-  for (let i = 0; i < 16; i++) {
-    if (
-      await locator
-        .first()
-        .isVisible()
-        .catch(() => false)
-    ) {
+  for (let i = 0; i < maxClicks; i++) {
+    if (await isFound()) {
       await locator
         .first()
         .scrollIntoViewIfNeeded()
         .catch(() => {});
-      return;
+      return true;
     }
 
-    if ((await pagingButton.count()) === 0) break;
-
-    const button = pagingButton.last();
-    if (await button.isDisabled()) {
+    if ((await idleButton.count()) === 0) {
+      if ((await loadingButton.count()) === 0) return false;
       await expect
         .poll(
           async () => {
-            if (
-              await locator
-                .first()
-                .isVisible()
-                .catch(() => false)
-            )
-              return true;
-            if ((await pagingButton.count()) === 0) return true;
-            return pagingButton.last().isEnabled();
+            if (await isFound()) return true;
+            if ((await idleButton.count()) > 0) return true;
+            return (await loadingButton.count()) === 0;
           },
           { timeout: 15_000 },
         )
@@ -68,30 +81,103 @@ async function expandMyShiftsUntil(
       continue;
     }
 
-    await button.scrollIntoViewIfNeeded().catch(() => {});
+    const button = idleButton.last();
+    if (await button.isDisabled()) {
+      await expect
+        .poll(
+          async () => {
+            if (await isFound()) return true;
+            if ((await idleButton.count()) === 0) return true;
+            return idleButton.last().isEnabled();
+          },
+          { timeout: 15_000 },
+        )
+        .toBe(true);
+      continue;
+    }
+
+    const fingerprintBefore = await myShiftsListFingerprint(page);
+    // Let Playwright scroll only as needed for the click — an explicit
+    // scrollIntoViewIfNeeded parks the viewport on the button and past
+    // already-loaded targets when the fetch finishes in the same tick.
     await button.click();
 
-    // Require the disabled/Loading transition so the still-idle pre-fetch
-    // frame is not treated as "fetch done".
-    await expect(button).toBeDisabled({ timeout: 10_000 });
+    await expect(button)
+      .toBeDisabled({ timeout: 2_000 })
+      .catch(() => {});
+
+    let progressed = false;
     await expect
       .poll(
         async () => {
-          if (
-            await locator
-              .first()
-              .isVisible()
-              .catch(() => false)
-          )
+          if (await isFound()) return true;
+          if ((await myShiftsListFingerprint(page)) !== fingerprintBefore) {
+            progressed = true;
             return true;
-          if ((await pagingButton.count()) === 0) return true;
-          return pagingButton.last().isEnabled();
+          }
+          if ((await loadingButton.count()) > 0) return false;
+          if ((await idleButton.count()) === 0) return true;
+          if (
+            await idleButton
+              .last()
+              .isDisabled()
+              .catch(() => false)
+          ) {
+            return false;
+          }
+          // Idle again with the same fingerprint — no more pages this way.
+          return true;
         },
         { timeout: 15_000 },
       )
       .toBe(true);
+
+    if (await isFound()) {
+      await locator
+        .first()
+        .scrollIntoViewIfNeeded()
+        .catch(() => {});
+      return true;
+    }
+
+    if (
+      !progressed &&
+      (await myShiftsListFingerprint(page)) === fingerprintBefore
+    ) {
+      return false;
+    }
+  }
+
+  return isFound();
+}
+
+/**
+ * Keep clicking progressive paging until `locator` is visible.
+ * Tries future ("Load more") first, then past ("Load past") — overlap
+ * fixtures are today-relative and a stale seed can leave them behind
+ * Load past while Load more only scrolls further into the future.
+ */
+async function expandMyShiftsUntil(page: Page, locator: Locator) {
+  if (
+    await pageMyShiftsDirection(page, locator, /^(load more|mehr laden)$/i, 16)
+  ) {
+    return;
+  }
+  if (
+    await pageMyShiftsDirection(
+      page,
+      locator,
+      /^(load past|vergangene laden)$/i,
+      16,
+    )
+  ) {
+    return;
   }
   await expect(locator.first()).toBeVisible({ timeout: 15_000 });
+  await locator
+    .first()
+    .scrollIntoViewIfNeeded()
+    .catch(() => {});
 }
 
 test.describe('my-shifts conflict clustering + day strip', () => {
@@ -192,12 +278,11 @@ test.describe('my-shifts conflict clustering + day strip', () => {
   test('"Go to top" scrolls back to the closest-upcoming day after scrolling away', async ({
     page,
   }) => {
-    // The list includes past shifts too (includePast: true), so "the first
-    // heading in the DOM" isn't what "Go to top" targets — it targets the
-    // closest-upcoming day, which is wherever the page's own initial-scroll
-    // effect already landed on load. Capture that, not `h3.first()` — but
-    // only after that effect has actually run (it fires post-mount, so
-    // reading immediately after navigation can still catch scrollY=0).
+    // beforeEach scrolled down to the overlap fixture — restore the page's
+    // resting position first. my-shifts uses initialScroll="top", and the
+    // strip's "Go to top" is scrollY=0 (Load past stays reachable), not the
+    // closest-upcoming day discover uses.
+    await page.getByRole('button', { name: 'Go to top' }).click();
     await page.waitForTimeout(1000);
     const landingHeadingText = await page.evaluate(() => {
       const header = document.querySelector('.sticky');
