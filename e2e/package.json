@@ -5,6 +5,8 @@
   "scripts": {
     "test": "bun playwright test",
     "test:headed": "HEADED=1 bun playwright test",
+    "test:release": "E2E_BASE_URL=https://release.app.caluno.org MAILBOX_URL=https://release.mailbox.caluno.org bun playwright test",
+    "test:release:headed": "E2E_BASE_URL=https://release.app.caluno.org MAILBOX_URL=https://release.mailbox.caluno.org HEADED=1 bun playwright test",
     "test:local": "E2E_BASE_URL=http://localhost:3000 MAILBOX_URL=http://localhost:8025 bun playwright test",
     "test:local:headed": "E2E_BASE_URL=http://localhost:3000 MAILBOX_URL=http://localhost:8025 HEADED=1 bun playwright test"
   },
