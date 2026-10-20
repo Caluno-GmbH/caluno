@@ -81,7 +81,7 @@ After `bun bootstrap`, the database contains the **Altonaer Lesepaten** demo org
 | `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
 | `demo+rejected01@caluno.org` | Rejected membership request |
 
-The **Testing** seed — weekly Community Support / Food Distribution / Event Assistance shifts, a requirement form, and the stable IDs and Overlap Test shifts the Testing suite asserts on — is **e2e-only**. It is not loaded by `bun bootstrap` or by any deployed environment; load it with `bun run --cwd apps/backend db:fixtures:e2e`.
+The **Testing** seed — weekly Community Support / Food Distribution / Event Assistance shifts, a requirement form, and the stable IDs and Overlap Test shifts the Testing suite asserts on — is for e2e. It is not loaded by `bun bootstrap`; staging/release backend entrypoints load it when `APP_ENV` is `staging` or `release` (never production). Locally: `bun run --cwd apps/backend db:fixtures:e2e`.
 
 The demo dataset is also seeded on **every deploy**: the backend entrypoint runs `bun run db:fixtures:demo` on boot, in staging **and production**. That is safe against a live, populated database:
 
@@ -115,7 +115,7 @@ From `apps/backend`:
 - `bun run db:migrate` - Run pending migrations
 - `bun run db:studio` - Open Drizzle Studio (database GUI)
 - `bun run db:fixtures:demo` - Load the demo dataset (the app's data)
-- `bun run db:fixtures:e2e` - Load the e2e-only Testing seed
+- `bun run db:fixtures:e2e` - Load the Testing e2e seed
 
 ### Building
 

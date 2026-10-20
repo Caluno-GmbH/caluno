@@ -32,6 +32,7 @@ import type {
   FilterSettings,
   PauschalenLimit,
 } from '../lib/board-types';
+import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
   documentCreationBlockedFor,
   type TemplateReadinessByPauschale,
@@ -117,6 +118,10 @@ function BundleDownloadButton({
       });
       if (!response.ok) {
         toast.error(t('bundle.downloadError'));
+        void reportBundleDownloadFailure(response, {
+          volunteerId,
+          reimbursementTypeId,
+        });
         return;
       }
       const blob = await response.blob();
@@ -132,8 +137,12 @@ function BundleDownloadButton({
       // invoices as paid, so refresh the board + "last downloaded" hint.
       queryClient.invalidateQueries({ queryKey: ['accounting'] });
       toast.success(t('batchBar.bundleDownloadToast', { count: readyCount }));
-    } catch {
+    } catch (error) {
       toast.error(t('bundle.downloadError'));
+      void reportBundleDownloadFailure(error, {
+        volunteerId,
+        reimbursementTypeId,
+      });
     } finally {
       setIsDownloading(false);
     }
