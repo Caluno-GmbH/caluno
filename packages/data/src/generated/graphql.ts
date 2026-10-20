@@ -982,6 +982,9 @@ export type GetShiftQuery = { shift: { id: string, title: string, slug: string, 
 export type GetShiftsQueryVariables = Exact<{
   limit: number;
   offset: number;
+  sort?: Types.ShiftSortField | null | undefined;
+  order?: Types.SortOrder | null | undefined;
+  search?: string | null | undefined;
 }>;
 
 
@@ -4097,8 +4100,14 @@ export const GetShiftDocument = gql`
 }
     ${RequiredFormRefFieldsFragmentDoc}`;
 export const GetShiftsDocument = gql`
-    query GetShifts($limit: Int!, $offset: Int!) {
-  shifts(limit: $limit, offset: $offset) {
+    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String) {
+  shifts(
+    limit: $limit
+    offset: $offset
+    sort: $sort
+    order: $order
+    search: $search
+  ) {
     items {
       id
       title
