@@ -14,7 +14,7 @@ export async function EventWeekEmptyNote({
   const t = await getTranslations('Event.detail.shiftsCard');
 
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className="pointer-events-auto flex flex-col items-center gap-1 rounded-lg border bg-background px-6 py-4 text-center text-sm text-muted-foreground shadow-sm">
       {t('weekEmpty')}
       {href && direction ? (
         <Button asChild variant="link" size="sm">

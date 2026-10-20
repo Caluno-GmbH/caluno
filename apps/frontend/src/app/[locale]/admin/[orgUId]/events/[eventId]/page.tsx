@@ -232,17 +232,19 @@ export default async function EventDetailPage({
             orgUId={orgUId}
           />
         ) : instanceStarts.length > 0 ? (
-          <div className="space-y-3">
-            <EventWeekEmptyNote
-              href={adjacentWeekHref}
-              direction={adjacentWeek?.direction ?? null}
-            />
+          <div className="relative">
             <WeeklyCalendar
               instances={[]}
               canManage={canEdit}
               weekStart={weekStart}
               orgUId={orgUId}
             />
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
+              <EventWeekEmptyNote
+                href={adjacentWeekHref}
+                direction={adjacentWeek?.direction ?? null}
+              />
+            </div>
           </div>
         ) : (
           <Empty className="border border-dashed">
