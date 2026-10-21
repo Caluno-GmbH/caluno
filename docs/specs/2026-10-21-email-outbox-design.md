@@ -30,8 +30,6 @@ flowchart TB
   TR[EmailTransportService]
   SMTP[SMTP / Mailpit]
   TEM[Scaleway TEM API]
-  A1[(shift_call_out_recipients)]
-  A2[(shift_manager_notifications)]
 
   CO --> OB
   US --> OB
@@ -47,20 +45,21 @@ flowchart TB
   OB -->|sendOnce| TR
   TR -->|SMTP| SMTP
   TR -->|HTTPS| TEM
-  OB -->|syncAuditStatus| A1
-  OB -->|syncAuditStatus| A2
 ```
 
 - **`EmailService`** is the only entry point for `NotificationService` and auth
   mail. `send()` enqueues; `sendImmediately()` enqueues and tries once now.
-- **`EmailOutboxService`** owns the durable row, dedupe, claiming, backoff,
-  expiry and audit sync.
+- **`EmailOutboxService`** owns the durable row, dedupe, claiming, backoff and
+  expiry.
 - **`EmailOutboxWorkerService`** drains due rows every 10 seconds.
 - **`EmailTransportService`** performs exactly one provider attempt and returns
   a retryable/non-retryable result.
 - **`email_outbox`** stores the rendered payload, so retries are byte-identical.
-- **Domain audit tables** keep the per-recipient record for call-outs and
-  manager notifications, linked by `outbox_id`.
+
+Call-outs and understaffed manager notifications still write their own
+per-recipient rows (`shift_call_out_recipients`, `shift_manager_notifications`).
+Those rows record who was asked or notified and are independent of delivery;
+the outbox does not update them.
 
 ## Send path
 
@@ -101,40 +100,14 @@ sequenceDiagram
   end
 ```
 
-## Audit-linked flows
+## Domain audit rows
 
-Only two callers write a domain audit row:
-
-| Caller | Table | What it records |
-|---|---|---|
-| `ShiftCallOutService` | `shift_call_out_recipients` | one row per volunteer asked to help |
-| `ShiftUnderstaffedNotificationService` | `shift_manager_notifications` | one row per manager notified about an understaffed shift |
-
-They insert the row with `outbox_id` and `PENDING`, then call
-`refreshAuditStatuses()` once. The worker mirrors `SENT`/`FAILED` onto that row
-when it finishes the delivery.
+Call-outs and understaffed manager notifications write their own per-recipient
+rows. Those rows record who was asked or notified, when, and by whom; they have
+no delivery-status column and the outbox does not update them.
 
 The other senders — digest, invite reminder, the “nobody left to ask” fallback,
 auth mail and support mail — have no audit row.
-
-```mermaid
-sequenceDiagram
-  participant C as Call-out / understaffed service
-  participant O as EmailOutboxService
-  participant A as domain audit table
-  participant W as Worker
-
-  C->>O: enqueue(...)
-  O-->>C: outbox row
-  C->>A: INSERT (outbox_id, PENDING)
-  C->>O: refreshAuditStatuses([outboxId])
-  Note over W: Worker may already have sent
-  W->>O: mark SENT / FAILED
-  O->>A: sync status by outbox_id
-```
-
-`refreshAuditStatuses` exists because the audit row is inserted after `enqueue`;
-the worker may already have delivered and synced before the row existed.
 
 ## Auth mail
 

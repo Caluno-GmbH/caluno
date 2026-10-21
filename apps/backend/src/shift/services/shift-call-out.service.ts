@@ -21,7 +21,6 @@ import {
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import {
-  ShiftCallOutDeliveryStatus,
   ShiftCallOutSource,
   ShiftInviteStatus,
   ShiftVisibility,
@@ -333,7 +332,7 @@ export class ShiftCallOutService {
             templateContext,
           );
           // Store the rendered email so retries never re-render it.
-          const outboxRow = await this.emailOutbox.enqueue({
+          await this.emailOutbox.enqueue({
             category: EmailCategory.CALL_OUT,
             userId: recipient.userId,
             to: recipient.email,
@@ -344,50 +343,34 @@ export class ShiftCallOutService {
             dedupeKey: `call-out:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });
-          return {
-            userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.PENDING,
-            outboxId: outboxRow.id,
-          };
+          return { userId: recipient.userId, enqueued: true };
         } catch (error) {
           this.logger.error(
             `Failed to queue call-out email to user ${recipient.userId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );
-          return {
-            userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.FAILED,
-            outboxId: null,
-          };
+          return { userId: recipient.userId, enqueued: false };
         }
       }),
     );
 
-    if (results.length === 0) {
+    const enqueued = results.filter((result) => result.enqueued);
+    if (enqueued.length === 0) {
       return 0;
     }
 
     await this.db.insert(schema.shiftCallOutRecipients).values(
-      results.map((result) => ({
+      enqueued.map((result) => ({
         instanceId: instance.id,
         recipientId: result.userId,
         sentById: actorUserId,
-        status: result.status,
-        outboxId: result.outboxId,
         source,
         sentAt,
       })),
     );
 
-    // The worker may have synced before this insert; re-read once.
-    await this.emailOutbox.refreshAuditStatuses(
-      results
-        .map((result) => result.outboxId)
-        .filter((id): id is string => id !== null),
-    );
-
-    return results.filter((result) => result.outboxId !== null).length;
+    return enqueued.length;
   }
 
   private captureCallOutSend(input: {
@@ -462,7 +445,7 @@ export class ShiftCallOutService {
               },
               templateContext,
             );
-          const outboxRow = await this.emailOutbox.enqueue({
+          await this.emailOutbox.enqueue({
             category: EmailCategory.CALL_OUT_NO_RECIPIENTS,
             userId: recipient.userId,
             to: recipient.email,
@@ -473,7 +456,7 @@ export class ShiftCallOutService {
             dedupeKey: `call-out-no-recipients:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });
-          return outboxRow.id !== null;
+          return true;
         } catch (error) {
           this.logger.error(
             `Failed to queue "nobody left to ask" email to user ${recipient.userId}: ${

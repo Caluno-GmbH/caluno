@@ -127,7 +127,6 @@ function setup({
       sentEmails.push(options);
       return { id: `outbox-${sentEmails.length}` };
     },
-    refreshAuditStatuses: async () => undefined,
   };
 
   const appI18n = {

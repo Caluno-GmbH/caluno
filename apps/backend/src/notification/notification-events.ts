@@ -26,8 +26,9 @@ export const NotificationEvent = {
   SHIFT_DETAILS_CHANGED: 'notification.shift.details-changed',
   SHIFT_INVITED: 'notification.shift.invited',
   ORGANIZATION_UNIT_INVITED: 'notification.organization-unit.invited',
-  // Call-outs bypass the emitter to link each outbox row to its audit row;
-  // this constant only labels the resolveUsersNotificationData warning.
+  // Call-outs bypass the emitter because they also write their own
+  // per-recipient rows; this constant only labels the
+  // resolveUsersNotificationData warning.
   SHIFT_INSTANCE_CALL_OUT: 'notification.shift-instance.call-out',
   SHIFT_INSTANCE_CALL_OUT_NO_RECIPIENTS:
     'notification.shift-instance.call-out-no-recipients',

@@ -9,13 +9,8 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
-import { ShiftCallOutDeliveryStatus, ShiftCallOutSource } from '../enums';
+import { ShiftCallOutSource } from '../enums';
 import { shiftInstances } from './shift-instance.schema';
-
-export const shiftCallOutDeliveryStatusEnum = pgEnum(
-  'shift_call_out_delivery_status',
-  enumValues(ShiftCallOutDeliveryStatus),
-);
 
 export const shiftCallOutSourceEnum = pgEnum(
   'shift_call_out_source',
@@ -36,11 +31,6 @@ export const shiftCallOutRecipients = snakeCase.table(
     sentById: text('sent_by_id')
       .references(() => users.id, { onDelete: 'restrict' })
       .notNull(),
-    status: shiftCallOutDeliveryStatusEnum('status')
-      .$type<ShiftCallOutDeliveryStatus>()
-      .notNull(),
-    /** The durable outbox row that owns delivery; status follows its transitions. */
-    outboxId: uuid('outbox_id'),
     source: shiftCallOutSourceEnum('source')
       .$type<ShiftCallOutSource>()
       .notNull()
@@ -53,7 +43,6 @@ export const shiftCallOutRecipients = snakeCase.table(
     index('idx_scor_recipient_id').on(table.recipientId),
     index('idx_scor_sent_by_id').on(table.sentById),
     index('idx_scor_sent_at').on(table.sentAt),
-    index('idx_scor_outbox_id').on(table.outboxId),
   ],
 );
 

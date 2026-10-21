@@ -16,15 +16,9 @@ import {
   type EnqueueEmailInput,
 } from '../src/notification/email/outbox/email-outbox.service';
 import {
-  ShiftCallOutDeliveryStatus,
-  ShiftCallOutSource,
-} from '../src/shift/enums';
-import {
   createOrganizationWithType,
   createUnit,
 } from './factories/org.factory';
-import { createShift } from './factories/shift.factory';
-import { createUser } from './factories/user.factory';
 import {
   closeTestingModuleAfterAll,
   ensureTestDatabase,
@@ -265,44 +259,5 @@ describe('EmailOutboxService', () => {
     expect(sendOnce).toHaveBeenCalledTimes(2);
     expect((await findRow(first.id))?.status).toBe(EmailDeliveryStatus.SENT);
     expect((await findRow(second.id))?.status).toBe(EmailDeliveryStatus.SENT);
-  });
-
-  it('mirrors a fast send onto audit rows inserted afterwards', async () => {
-    const recipient = await createUser(db);
-    const sender = await createUser(db);
-    const shift = await createShift(db, {
-      organizationUnitId,
-      createdById: sender.id,
-    });
-    const [instance] = await db
-      .select()
-      .from(schema.shiftInstances)
-      .where(eq(schema.shiftInstances.masterId, shift.id))
-      .limit(1);
-    if (!instance) throw new Error('Failed to create shift instance');
-
-    const row = await enqueue();
-    // Simulate the worker winning the race: the email is SENT before the
-    // caller inserts its audit row.
-    await service.drain();
-    expect((await findRow(row.id))?.status).toBe(EmailDeliveryStatus.SENT);
-
-    await db.insert(schema.shiftCallOutRecipients).values({
-      instanceId: instance.id,
-      recipientId: recipient.id,
-      sentById: sender.id,
-      status: ShiftCallOutDeliveryStatus.PENDING,
-      source: ShiftCallOutSource.MANUAL,
-      sentAt: new Date(),
-      outboxId: row.id,
-    });
-
-    await service.refreshAuditStatuses([row.id]);
-
-    const [audit] = await db
-      .select()
-      .from(schema.shiftCallOutRecipients)
-      .where(eq(schema.shiftCallOutRecipients.outboxId, row.id));
-    expect(audit?.status).toBe(ShiftCallOutDeliveryStatus.SENT);
   });
 });

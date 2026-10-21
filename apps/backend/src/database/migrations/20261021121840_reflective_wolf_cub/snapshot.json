@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "d6112cf2-1db2-4bcf-b8ec-15583e466fac",
+  "id": "68600757-aadc-4a4a-b98b-ccd73fc6d448",
   "prevIds": ["e0a937ee-1b79-4dca-855e-476ba5c602ea"],
   "ddl": [
     {
@@ -155,12 +155,6 @@
     {
       "values": ["INVITED_MEMBERS", "ALL_MEMBERS"],
       "name": "shift_visibility",
-      "entityType": "enums",
-      "schema": "public"
-    },
-    {
-      "values": ["PENDING", "SENT", "FAILED"],
-      "name": "shift_call_out_delivery_status",
       "entityType": "enums",
       "schema": "public"
     },
@@ -6913,32 +6907,6 @@
       "table": "shift_call_out_recipients"
     },
     {
-      "type": "shift_call_out_delivery_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "shift_call_out_recipients"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "outbox_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "shift_call_out_recipients"
-    },
-    {
       "type": "shift_call_out_source",
       "typeSchema": "public",
       "notNull": true,
@@ -7558,32 +7526,6 @@
       "generated": null,
       "identity": null,
       "name": "kind",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "shift_manager_notifications"
-    },
-    {
-      "type": "shift_call_out_delivery_status",
-      "typeSchema": "public",
-      "notNull": true,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "shift_manager_notifications"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "outbox_id",
       "entityType": "columns",
       "schema": "public",
       "table": "shift_manager_notifications"
@@ -10470,27 +10412,6 @@
       "nameExplicit": true,
       "columns": [
         {
-          "value": "outbox_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "idx_scor_outbox_id",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "shift_call_out_recipients"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
           "value": "master_id",
           "isExpression": false,
           "asc": true,
@@ -10805,27 +10726,6 @@
       "method": "btree",
       "concurrently": false,
       "name": "idx_smn_sent_at",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "shift_manager_notifications"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "outbox_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": false,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "idx_smn_outbox_id",
       "entityType": "indexes",
       "schema": "public",
       "table": "shift_manager_notifications"

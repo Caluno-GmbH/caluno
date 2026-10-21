@@ -116,7 +116,6 @@ describe('ShiftCallOutService.sendCallOut PostHog', () => {
       } as never,
       {
         enqueue: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
-        refreshAuditStatuses: jest.fn().mockResolvedValue(undefined),
       } as never,
       { t: jest.fn() } as never,
       { capture } as unknown as PostHogService,
@@ -180,7 +179,6 @@ describe('ShiftCallOutService.sendCallOut PostHog', () => {
       } as never,
       {
         enqueue: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
-        refreshAuditStatuses: jest.fn().mockResolvedValue(undefined),
       } as never,
       { t: jest.fn() } as never,
       { capture } as unknown as PostHogService,

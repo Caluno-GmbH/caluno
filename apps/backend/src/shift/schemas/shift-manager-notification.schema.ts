@@ -9,11 +9,7 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
-import {
-  ShiftCallOutDeliveryStatus,
-  ShiftManagerNotificationKind,
-} from '../enums';
-import { shiftCallOutDeliveryStatusEnum } from './shift-call-out-recipient.schema';
+import { ShiftManagerNotificationKind } from '../enums';
 import { shiftInstances } from './shift-instance.schema';
 
 export const shiftManagerNotificationKindEnum = pgEnum(
@@ -34,11 +30,6 @@ export const shiftManagerNotifications = snakeCase.table(
     kind: shiftManagerNotificationKindEnum('kind')
       .$type<ShiftManagerNotificationKind>()
       .notNull(),
-    status: shiftCallOutDeliveryStatusEnum('status')
-      .$type<ShiftCallOutDeliveryStatus>()
-      .notNull(),
-    /** The durable outbox row that owns delivery; status follows its transitions. */
-    outboxId: uuid('outbox_id'),
     sentAt: timestamp('sent_at').notNull(),
     ...timestampColumns,
   },
@@ -46,7 +37,6 @@ export const shiftManagerNotifications = snakeCase.table(
     index('idx_smn_instance_id').on(table.instanceId),
     index('idx_smn_recipient_id').on(table.recipientId),
     index('idx_smn_sent_at').on(table.sentAt),
-    index('idx_smn_outbox_id').on(table.outboxId),
   ],
 );
 

@@ -3,7 +3,6 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../../database/database.module';
 import { DATABASE_CONNECTION } from '../../../database/database-connection';
 import * as schema from '../../../database/schema';
-import { ShiftCallOutDeliveryStatus } from '../../../shift/enums';
 import type {
   EmailOutboxEntity,
   StoredEmailAttachment,
@@ -204,48 +203,6 @@ export class EmailOutboxService {
     const { result } = await this.deliverRow(claimed);
     const row = (await this.findById(claimed.id)) ?? claimed;
     return { row, result };
-  }
-
-  /**
-   * Mirror the outbox status onto audit rows inserted after the worker may
-   * already have sent. Each table is updated in one statement to avoid a
-   * read/write race.
-   */
-  async refreshAuditStatuses(outboxIds: string[]): Promise<void> {
-    const ids = outboxIds.filter((id): id is string => Boolean(id));
-    if (ids.length === 0) return;
-
-    // Parameterize each id individually; node-postgres does not reliably
-    // bind a JS array as a uuid[] here.
-    const idList = sql.join(
-      ids.map((id) => sql`${id}::uuid`),
-      sql`, `,
-    );
-
-    await Promise.all([
-      this.db.execute(sql`
-        UPDATE shift_call_out_recipients AS r
-        SET status = CASE o.status
-          WHEN 'SENT' THEN 'SENT'::shift_call_out_delivery_status
-          WHEN 'PENDING' THEN 'PENDING'::shift_call_out_delivery_status
-          WHEN 'SENDING' THEN 'PENDING'::shift_call_out_delivery_status
-          ELSE 'FAILED'::shift_call_out_delivery_status
-        END
-        FROM email_outbox AS o
-        WHERE r.outbox_id = o.id AND o.id IN (${idList})
-      `),
-      this.db.execute(sql`
-        UPDATE shift_manager_notifications AS r
-        SET status = CASE o.status
-          WHEN 'SENT' THEN 'SENT'::shift_call_out_delivery_status
-          WHEN 'PENDING' THEN 'PENDING'::shift_call_out_delivery_status
-          WHEN 'SENDING' THEN 'PENDING'::shift_call_out_delivery_status
-          ELSE 'FAILED'::shift_call_out_delivery_status
-        END
-        FROM email_outbox AS o
-        WHERE r.outbox_id = o.id AND o.id IN (${idList})
-      `),
-    ]);
   }
 
   /**
@@ -459,8 +416,6 @@ export class EmailOutboxService {
       this.logStaleTransition(row, EmailDeliveryStatus.SENT);
       return;
     }
-
-    await this.syncAuditStatus(row.id, EmailDeliveryStatus.SENT);
   }
 
   private async markRetry(row: EmailOutboxEntity, error: Error): Promise<void> {
@@ -528,8 +483,6 @@ export class EmailOutboxService {
       return;
     }
 
-    await this.syncAuditStatus(row.id, EmailDeliveryStatus.FAILED);
-
     this.logger.error(
       {
         event: 'email_outbox.failed',
@@ -564,8 +517,6 @@ export class EmailOutboxService {
       return;
     }
 
-    await this.syncAuditStatus(row.id, EmailDeliveryStatus.CANCELLED);
-
     this.logger.warn(
       {
         event: 'email_outbox.cancelled',
@@ -589,42 +540,5 @@ export class EmailOutboxService {
       },
       'Outbox row is no longer SENDING; ignoring late transition',
     );
-  }
-
-  /** Mirror the outbox state onto shift audit rows; log and swallow failures. */
-  private async syncAuditStatus(
-    outboxId: string,
-    status: EmailDeliveryStatus,
-  ): Promise<void> {
-    const auditStatus =
-      status === EmailDeliveryStatus.SENT
-        ? ShiftCallOutDeliveryStatus.SENT
-        : status === EmailDeliveryStatus.PENDING ||
-            status === EmailDeliveryStatus.SENDING
-          ? ShiftCallOutDeliveryStatus.PENDING
-          : ShiftCallOutDeliveryStatus.FAILED;
-
-    try {
-      await Promise.all([
-        this.db
-          .update(schema.shiftCallOutRecipients)
-          .set({ status: auditStatus })
-          .where(eq(schema.shiftCallOutRecipients.outboxId, outboxId)),
-        this.db
-          .update(schema.shiftManagerNotifications)
-          .set({ status: auditStatus })
-          .where(eq(schema.shiftManagerNotifications.outboxId, outboxId)),
-      ]);
-    } catch (error) {
-      this.logger.error(
-        {
-          event: 'email_outbox.audit_sync_failed',
-          email_id: outboxId,
-          status,
-          err: error,
-        },
-        'Failed to mirror email status onto the audit table',
-      );
-    }
   }
 }

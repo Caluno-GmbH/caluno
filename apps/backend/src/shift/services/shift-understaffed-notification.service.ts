@@ -19,7 +19,6 @@ import { OrganizationUnitAutomationService } from '../../organization/organizati
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import type { Weekday } from '../../shared/enums/weekday.enum';
 import {
-  ShiftCallOutDeliveryStatus,
   ShiftCallOutSource,
   ShiftInviteStatus,
   ShiftManagerNotificationKind,
@@ -400,7 +399,7 @@ export class ShiftUnderstaffedNotificationService {
             recipient.firstName,
             templateContext,
           );
-          const outboxRow = await this.emailOutbox.enqueue({
+          await this.emailOutbox.enqueue({
             category: EmailCategory.MANAGER_NOTIFICATION,
             userId: recipient.userId,
             to: recipient.email,
@@ -411,11 +410,7 @@ export class ShiftUnderstaffedNotificationService {
             dedupeKey: `manager-notification:${instance.id}:${recipient.userId}:${kind}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });
-          return {
-            userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.PENDING,
-            outboxId: outboxRow.id,
-          };
+          return { userId: recipient.userId, enqueued: true };
         } catch (error) {
           this.logger.error(
             {
@@ -428,31 +423,23 @@ export class ShiftUnderstaffedNotificationService {
             },
             'Failed to queue manager email',
           );
-          return {
-            userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.FAILED,
-            outboxId: null,
-          };
+          return { userId: recipient.userId, enqueued: false };
         }
       }),
     );
 
+    const enqueued = results.filter((result) => result.enqueued);
+    if (enqueued.length === 0) {
+      return;
+    }
+
     await this.db.insert(schema.shiftManagerNotifications).values(
-      results.map((result) => ({
+      enqueued.map((result) => ({
         instanceId: instance.id,
         recipientId: result.userId,
         kind,
-        status: result.status,
-        outboxId: result.outboxId,
         sentAt,
       })),
-    );
-
-    // The worker may have synced before this insert; re-read once.
-    await this.emailOutbox.refreshAuditStatuses(
-      results
-        .map((result) => result.outboxId)
-        .filter((id): id is string => id !== null),
     );
   }
 

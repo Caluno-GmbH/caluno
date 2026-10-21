@@ -33,12 +33,6 @@ export const INVITE_STATUS_TO_JOIN_SHIFT_STATUS: Record<
   [ShiftInviteStatus.ADMIN_REJECTED]: JoinStatus.REJECTED,
 };
 
-export enum ShiftCallOutDeliveryStatus {
-  PENDING = 'PENDING',
-  SENT = 'SENT',
-  FAILED = 'FAILED',
-}
-
 export enum ShiftCallOutSource {
   MANUAL = 'MANUAL',
   AUTOMATIC = 'AUTOMATIC',
