@@ -49,9 +49,9 @@ flowchart TB
 
 - **`EmailService`** is the only entry point for `NotificationService` and auth
   mail. `send()` enqueues; `sendImmediately()` enqueues and tries once now.
-- **`EmailOutboxService`** owns the durable row, dedupe, claiming, backoff and
-  expiry.
-- **`EmailOutboxWorkerService`** drains due rows every 10 seconds.
+- **`EmailOutboxService`** owns the durable email record, dedupe, claiming,
+  backoff and expiry.
+- **`EmailOutboxWorkerService`** drains due emails every 10 seconds.
 - **`EmailTransportService`** performs exactly one provider attempt and returns
   a retryable/non-retryable result.
 - **`email_outbox`** stores the rendered payload, so retries are byte-identical.
@@ -75,15 +75,15 @@ sequenceDiagram
 
   C->>O: enqueue({ category, to, subject, html, dedupeKey, expiresAt })
   O->>D: INSERT ... ON CONFLICT (dedupe_key) DO NOTHING
-  D-->>O: row (PENDING)
-  O-->>C: row
+  D-->>O: outbox email (PENDING)
+  O-->>C: outbox email
 
   Note over W: Every 10 seconds
   W->>O: drain()
-  O->>D: reclaim stale SENDING rows (10 min)
-  O->>D: claim due PENDING rows (FOR UPDATE SKIP LOCKED)
-  D-->>O: claimed rows (SENDING, attempts + 1)
-  O->>T: sendOnce(row)
+  O->>D: reclaim stale SENDING emails (10 min)
+  O->>D: claim due PENDING emails (FOR UPDATE SKIP LOCKED)
+  D-->>O: claimed emails (SENDING, attempts + 1)
+  O->>T: sendOnce(email)
   T->>P: SMTP or TEM
   alt Provider accepted
     P-->>T: 2xx / message id
@@ -120,10 +120,10 @@ sequenceDiagram
   participant T as Transport
   participant W as Worker
 
-  B->>E: sendImmediately(options, { expiresAt })
+  B->>E: sendImmediately(email, { expiresAt })
   E->>O: enqueueAndDeliver({ category: AUTH, ... })
   O->>D: INSERT PENDING
-  O->>D: claim row (SENDING)
+  O->>D: claim email (SENDING)
   O->>T: sendOnce()
   alt Success
     T-->>O: ok
@@ -176,7 +176,7 @@ flowchart TD
 ```
 
 Backoff ladder: 1 min, 5 min, 15 min, 1 h, 4 h, 12 h, 24 h, with ±20% jitter.
-A row that keeps throwing before the transport is capped at the next claim.
+An email that keeps throwing before the transport is capped at the next claim.
 
 ## Dedupe and expiry
 
@@ -191,18 +191,19 @@ A row that keeps throwing before the transport is capped at the next claim.
 | Support | `SUPPORT` | None | None |
 | Auth | `AUTH` | Optional | OTP 5 min / reset 1 h |
 
-A dedupe key identifies the logical send. Keys that include `sentAt` are
-per-invocation, so they protect a retried enqueue of the same call, not two
-separate user actions.
+A dedupe key identifies the logical send. Digest and invite-reminder keys are
+stable per day/cycle. Call-out and manager-notification keys contain `sentAt`,
+which is generated per invocation, so they do **not** currently dedupe a retry;
+a stable event id would be needed for that.
 
 ## Operational constants
 
 | Setting | Value |
 |---|---|
 | Worker tick | 10 s |
-| Claim batch | 20 rows |
+| Claim batch | 20 emails |
 | Send concurrency | 3 |
-| Max rows per drain | 200 |
+| Max emails per drain | 200 |
 | Drain time budget | 60 s |
 | Max attempts | 8 |
 | Stale `SENDING` reclaim | 10 min |
