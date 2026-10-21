@@ -6,7 +6,6 @@ import {
 
 describe('computeNextAttemptDelayMs', () => {
   it('uses the configured backoff ladder', () => {
-    // random = 0.5 gives the base delay without jitter.
     expect(computeNextAttemptDelayMs(1, () => 0.5)).toBe(60_000);
     expect(computeNextAttemptDelayMs(2, () => 0.5)).toBe(5 * 60_000);
     expect(computeNextAttemptDelayMs(3, () => 0.5)).toBe(15 * 60_000);

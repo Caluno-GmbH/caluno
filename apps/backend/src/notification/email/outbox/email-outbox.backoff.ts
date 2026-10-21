@@ -1,8 +1,5 @@
-/**
- * Backoff after the Nth failed attempt. Deliberately minutes/hours rather than
- * seconds: a provider timeout is ambiguous, and hammering it is how a burst
- * turns into a retry storm.
- */
+// Minutes to hours, not seconds: a provider timeout is ambiguous, and fast
+// retries are how a burst turns into a retry storm.
 export const EMAIL_RETRY_BACKOFF_MS = [
   60_000,
   5 * 60_000,
@@ -22,6 +19,5 @@ export function computeNextAttemptDelayMs(
     EMAIL_RETRY_BACKOFF_MS.length - 1,
   );
   const base = EMAIL_RETRY_BACKOFF_MS[index] as number;
-  // ±20% jitter so a batch that failed together does not retry together.
   return Math.round(base * (0.8 + random() * 0.4));
 }

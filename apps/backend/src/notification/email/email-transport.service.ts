@@ -17,7 +17,6 @@ export interface EmailSendOptions {
   text?: string;
   attachments?: EmailAttachment[];
   userId?: string;
-  /** Outbox row id, forwarded to TEM so webhook events can be correlated. */
   emailId?: string;
 }
 
@@ -49,21 +48,14 @@ function summarize(text: string, maxLength = 300): string {
     : collapsed;
 }
 
-/**
- * One delivery attempt against the configured provider. Retry policy lives in
- * EmailOutboxService, which owns the durable row.
- */
 @Injectable()
 export class EmailTransportService {
   private readonly logger = new Logger(EmailTransportService.name);
   private readonly scaleway: ScalewayConfig | null = null;
   private readonly smtp: SmtpConfig | null = null;
   private readonly transporter: nodemailer.Transporter | null = null;
-  /**
-   * Dev fallback: when no mailer is configured, emails are logged instead of
-   * sent. The full HTML (recipient names, OTPs, reset links) is only included
-   * when explicitly enabled outside production/staging.
-   */
+  // Logged bodies contain OTPs and reset links, so they are opt-in and never
+  // logged in production or staging.
   private readonly logEmailContent =
     process.env.EMAIL_LOG_CONTENT === '1' &&
     process.env.NODE_ENV !== 'production' &&
@@ -123,8 +115,8 @@ export class EmailTransportService {
           sendError instanceof Error ? sendError.message : String(sendError);
         const responseCode = (sendError as { responseCode?: number } | null)
           ?.responseCode;
-        // 4xx SMTP replies are transient; 5xx are permanent. Network errors
-        // (no code) are worth retrying.
+        // SMTP 4xx replies are transient and 5xx are permanent (the reverse of
+        // HTTP). Network errors have no code and are worth retrying.
         const retryable =
           responseCode === undefined ||
           responseCode === 429 ||
@@ -201,9 +193,9 @@ export class EmailTransportService {
         sendError instanceof Error ? sendError.message : String(sendError);
       return {
         ok: false,
-        // A timeout is ambiguous (the request may already have been accepted),
-        // but leaving it queued is still better than dropping the email. The
-        // outbox id header lets a later reconciliation recognise duplicates.
+        // A timeout is ambiguous (the provider may already have accepted it),
+        // but retrying beats dropping the email. The X-Caluno-Email-Id header
+        // lets duplicates be recognised later.
         retryable: true,
         error: new Error(
           `Failed to send email to ${email.userId}:${maskedTo}: ${summarize(errorMessage)}`,

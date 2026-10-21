@@ -1,7 +1,4 @@
-/**
- * Queued-email lifecycle. SENT means the provider accepted the message, not
- * that the mailbox received it; FAILED and CANCELLED are terminal.
- */
+// SENT means the provider accepted the message, not that the mailbox received it.
 export enum EmailDeliveryStatus {
   PENDING = 'PENDING',
   SENDING = 'SENDING',

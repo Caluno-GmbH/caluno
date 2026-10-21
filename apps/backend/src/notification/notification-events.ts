@@ -26,9 +26,9 @@ export const NotificationEvent = {
   SHIFT_DETAILS_CHANGED: 'notification.shift.details-changed',
   SHIFT_INVITED: 'notification.shift.invited',
   ORGANIZATION_UNIT_INVITED: 'notification.organization-unit.invited',
-  // Call-outs bypass the emitter because they also write their own
-  // per-recipient rows; this constant only labels the
-  // resolveUsersNotificationData warning.
+  // Call-outs bypass the emitter/listener: they enqueue directly because they
+  // also write per-recipient rows. These constants only label the
+  // resolveUsersNotificationData "user not found" warning.
   SHIFT_INSTANCE_CALL_OUT: 'notification.shift-instance.call-out',
   SHIFT_INSTANCE_CALL_OUT_NO_RECIPIENTS:
     'notification.shift-instance.call-out-no-recipients',
@@ -36,10 +36,11 @@ export const NotificationEvent = {
     'notification.shift-instance.call-out-summary',
   SHIFT_INSTANCE_UNDERSTAFFED_REMINDER:
     'notification.shift-instance.understaffed-reminder',
-  // The reminder links its outbox row to the invite stamp and bypasses the
-  // emitter; this constant only labels the resolveUserNotificationData warning.
+  // The invite reminder enqueues directly, in the same transaction that stamps
+  // `remindedAt`; this constant only labels the resolveUserNotificationData
+  // warning.
   SHIFT_INSTANCE_INVITE_REMINDER: 'notification.shift-instance.invite-reminder',
-  // The weekly cron enqueues directly; this constant only labels the
+  // The weekly digest cron enqueues directly; this constant only labels the
   // resolveUserNotificationData warning.
   VOLUNTEER_DIGEST_SENT: 'notification.volunteer.digest-sent',
   EVENT_INVITED: 'notification.event.invited',
