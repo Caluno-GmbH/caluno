@@ -90,6 +90,19 @@
       "title": "Anmelden",
       "description": "Willkommen zurück bei caluno. Melde dich an, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
+    "passwordStrength": {
+      "checking": "Wird geprüft…",
+      "hint": "Verwende mindestens 12 Zeichen mit Buchstaben, Zahlen und Sonderzeichen. Vermeide Namen, Daten und gängige Wörter.",
+      "levels": {
+        "fair": "Mittel",
+        "good": "Gut",
+        "strong": "Stark",
+        "weak": "Schwach"
+      },
+      "minimum": "Verwende mindestens 8 Zeichen – mehr ist besser.",
+      "unavailable": "Stärkeprüfung nicht verfügbar. Verwende ein langes, gemischtes Passwort.",
+      "weak": "Zu leicht zu erraten. Verlängere es und mische Buchstaben, Zahlen und Sonderzeichen."
+    },
     "resetPassword": {
       "confirmPasswordLabel": "Passwort bestätigen",
       "description": "Gib ein neues Passwort für dein Konto ein.",
@@ -98,6 +111,8 @@
       "newPasswordLabel": "Neues Passwort",
       "passwordMismatch": "Die Passwörter stimmen nicht überein",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Verwende mindestens 8 Zeichen.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einem längeren Passwort aus Buchstaben, Zahlen und Sonderzeichen.",
       "resetFailed": "Passwort konnte nicht zurückgesetzt werden. Bitte fordere einen neuen Link an.",
       "signInLink": "Zurück zur Anmeldung",
       "submit": "Passwort zurücksetzen",
@@ -115,9 +130,10 @@
       "lastnameLabel": "Nachname",
       "lastnamePlaceholder": "Mustermann",
       "namePartsRequired": "Bitte gib Vor- und Nachname ein.",
-      "passwordHint": "Mindestens 6 Zeichen",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Verwende mindestens 8 Zeichen.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einem längeren Passwort aus Buchstaben, Zahlen und Sonderzeichen.",
       "privacyAcknowledge": "Ich habe die <privacyLink>Datenschutzhinweise</privacyLink> gelesen und akzeptiere sie.",
       "privacyRequired": "Bitte akzeptiere die Datenschutzhinweise, um ein Konto zu erstellen.",
       "signInLink": "Anmelden",
@@ -1684,7 +1700,7 @@
       "rejected": "Deine Mitgliedschaftsanfrage für diese Organisation wurde abgelehnt. Danke, dass du dich engagieren wolltest. Bei Fragen melde dich bei deiner Ehrenamtskoordination.",
       "rejectedCta": "Anfrage nicht genehmigt",
       "requestSent": "Anfrage gesendet",
-      "requirementsFallback": "Anforderungsprofil-Oberfläche (noch zu implementieren)",
+      "requirementsFallback": "Es fehlen noch Anforderungen oder Profilinformationen. Versuch es bitte erneut.",
       "requirementsNeeded": "Noch zu erledigen: {missing}{hasCompleted, select, yes { (bereits erledigt: {completed})} other {}}",
       "unexpected": "Da ist etwas schiefgelaufen. Versuch es bitte erneut.",
       "waitlistJoined": "Du bist auf der Warteliste. Wir schreiben dir per E-Mail, wenn ein Platz frei wird."
