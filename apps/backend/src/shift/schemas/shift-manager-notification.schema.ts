@@ -37,6 +37,8 @@ export const shiftManagerNotifications = snakeCase.table(
     status: shiftCallOutDeliveryStatusEnum('status')
       .$type<ShiftCallOutDeliveryStatus>()
       .notNull(),
+    /** The durable outbox row that owns delivery; status follows its transitions. */
+    outboxId: uuid('outbox_id'),
     sentAt: timestamp('sent_at').notNull(),
     ...timestampColumns,
   },
@@ -44,6 +46,7 @@ export const shiftManagerNotifications = snakeCase.table(
     index('idx_smn_instance_id').on(table.instanceId),
     index('idx_smn_recipient_id').on(table.recipientId),
     index('idx_smn_sent_at').on(table.sentAt),
+    index('idx_smn_outbox_id').on(table.outboxId),
   ],
 );
 

@@ -33,6 +33,7 @@ export const INVITE_STATUS_TO_JOIN_SHIFT_STATUS: Record<
 };
 
 export enum ShiftCallOutDeliveryStatus {
+  PENDING = 'PENDING',
   SENT = 'SENT',
   FAILED = 'FAILED',
 }

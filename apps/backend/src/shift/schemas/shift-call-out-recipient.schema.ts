@@ -39,6 +39,8 @@ export const shiftCallOutRecipients = snakeCase.table(
     status: shiftCallOutDeliveryStatusEnum('status')
       .$type<ShiftCallOutDeliveryStatus>()
       .notNull(),
+    /** The durable outbox row that owns delivery; status follows its transitions. */
+    outboxId: uuid('outbox_id'),
     source: shiftCallOutSourceEnum('source')
       .$type<ShiftCallOutSource>()
       .notNull()
@@ -51,6 +53,7 @@ export const shiftCallOutRecipients = snakeCase.table(
     index('idx_scor_recipient_id').on(table.recipientId),
     index('idx_scor_sent_by_id').on(table.sentById),
     index('idx_scor_sent_at').on(table.sentAt),
+    index('idx_scor_outbox_id').on(table.outboxId),
   ],
 );
 

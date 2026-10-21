@@ -21,6 +21,7 @@ export * from '../event/schemas/event-required-form.schema';
 export * from '../membership/schemas/membership.schema';
 export * from '../membership/schemas/membership-request.schema';
 export * from '../membership/schemas/membership-role.schema';
+export * from '../notification/schemas/email-outbox.schema';
 export * from '../organization/schemas/organization.schema';
 export * from '../organization/schemas/organization-unit.schema';
 export * from '../organization/schemas/organization-unit-automation.schema';
