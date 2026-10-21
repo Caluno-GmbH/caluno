@@ -1795,6 +1795,10 @@
       "time": "Zeit",
       "visibility": "Sichtbarkeit"
     },
+    "search": {
+      "placeholder": "Nach Name suchen",
+      "clearAria": "Suche zurücksetzen"
+    },
     "tabs": {
       "allShifts": "Alle Einsätze",
       "weekplan": "Wochenplan"
@@ -1910,6 +1914,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Zeilen pro Seite",
     "sortAscending": "Aufsteigend sortieren",
     "sortDescending": "Absteigend sortieren",
     "sortedAscending": "Aufsteigend sortiert",

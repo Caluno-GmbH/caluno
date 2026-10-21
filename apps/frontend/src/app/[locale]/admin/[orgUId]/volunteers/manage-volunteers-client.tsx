@@ -7,29 +7,34 @@ import {
   useMemberships,
 } from '@repo/data/react';
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
+  ActionsCell,
   Badge,
   Button,
+  EntityCell,
   Input,
   Skeleton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@repo/ui';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Copy, ScanQrCode, Search, UserRound, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { debounce, useQueryStates } from 'nuqs';
+import { useMemo, useState } from 'react';
 import { ButtonClipboard } from '@/components/button-clipboard';
+import { DataTable } from '@/components/data-table/data-table';
+import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
+import type { DataTableFeatures } from '@/components/data-table/features';
+import {
+  createFilterParsers,
+  pageParser,
+  pageSizeParser,
+  SEARCH_DEBOUNCE_MS,
+} from '@/components/data-table/table-params';
 import MembershipRequestCard from '@/domain/membership-requests/components/membership-request-card';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
 import { organizationUnitUrl } from '@/domain/organization/share';
@@ -50,19 +55,143 @@ import { RoleSelectCell } from './role-select-cell';
 const TAB_APPROVED = 'APPROVED';
 const TAB_PENDING = MembershipRequestStatus.Pending;
 const TAB_REJECTED = MembershipRequestStatus.Rejected;
-const TABLE_COLUMN_COUNT = 4;
 
 interface Props {
   orgUId: string;
 }
 
+type Membership = NonNullable<
+  ReturnType<typeof useMemberships>['data']
+>[number];
+
+function useApprovedTableParams() {
+  return useQueryStates(
+    {
+      ...createFilterParsers(),
+      page: pageParser,
+      pageSize: pageSizeParser,
+    },
+    { shallow: false },
+  );
+}
+
 function ApprovedTab({ orgUId }: { orgUId: string }) {
   const t = useTranslations('Volunteer');
-  const tCommon = useTranslations('Common');
   const tRole = useTranslations('Role');
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
-  const [search, setSearch] = useState('');
+
+  const [{ q, page, pageSize }, setParams] = useApprovedTableParams();
+
+  const [sorting, setSorting] = useState<
+    import('@tanstack/react-table').SortingState
+  >([]);
+
+  const roleLabel = (role: TranslatableRole) => {
+    const key = internalRoleKey(role);
+    return key ? tRole(key) : role.name;
+  };
+
+  const columns = useMemo<ColumnDef<DataTableFeatures, Membership, unknown>[]>(
+    () => [
+      {
+        id: 'name',
+        accessorFn: (row) => row.user.name,
+        enableSorting: true,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.name')} />
+        ),
+        cell: ({ row }) => {
+          const membership = row.original;
+          const openProfile = () =>
+            openVolunteerSheet({
+              userId: membership.user.id,
+              volunteerName: membership.user.name,
+              volunteerStatus: MembershipRequestStatus.Accepted,
+              volunteerEmail: membership.user.email,
+              volunteerCheckInId: membership.user.checkInId,
+              canRemoveMembership: 'true',
+            });
+          return (
+            <button
+              type="button"
+              onClick={openProfile}
+              aria-label={t('table.openProfileAria', {
+                name: membership.user.name,
+              })}
+              className="w-full rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <EntityCell
+                avatar={{
+                  src: membership.user.image ?? undefined,
+                  alt: membership.user.name,
+                  fallback: <UserRound className="size-3" />,
+                }}
+                title={membership.user.name}
+              />
+            </button>
+          );
+        },
+      },
+      {
+        id: 'email',
+        accessorFn: (row) => row.user.email,
+        enableSorting: true,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.email')} />
+        ),
+        cell: ({ row }) => (
+          <CopyableEmailCell
+            email={row.original.user.email}
+            volunteerName={row.original.user.name}
+          />
+        ),
+      },
+      {
+        id: 'roles',
+        enableSorting: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.roles')} />
+        ),
+        cell: ({ row }) => (
+          <RoleSelectCell
+            membershipId={row.original.id}
+            roles={row.original.roles}
+            orgUId={orgUId}
+          />
+        ),
+      },
+      {
+        id: 'actions',
+        enableSorting: false,
+        header: () => null,
+        cell: ({ row }) => {
+          const membership = row.original;
+          return (
+            <ActionsCell>
+              <Link
+                href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
+                aria-label={t('action.checkInAria')}
+              >
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  tooltip={t('action.checkInShiftAria')}
+                >
+                  <ScanQrCode />
+                </Button>
+              </Link>
+              <RemoveMembershipButton
+                membershipId={membership.id}
+                volunteerName={membership.user.name}
+              />
+            </ActionsCell>
+          );
+        },
+      },
+    ],
+    [t, orgUId, openVolunteerSheet],
+  );
 
   if (isPending) {
     return (
@@ -88,14 +217,11 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     );
   }
 
-  const roleLabel = (role: TranslatableRole) => {
-    const key = internalRoleKey(role);
-    return key ? tRole(key) : role.name;
-  };
-
   const visible = memberships.filter((membership) =>
-    matchesVolunteerQuery(membership, search, roleLabel),
+    matchesVolunteerQuery(membership, q, roleLabel),
   );
+
+  const query = q.trim();
 
   const handleCopyEmails = () => {
     const emails = visible.map((membership) => membership.user.email);
@@ -105,7 +231,10 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     );
   };
 
-  const query = search.trim();
+  const pagination = {
+    pageIndex: page - 1,
+    pageSize: Number(pageSize),
+  };
 
   return (
     <div className="space-y-2">
@@ -113,16 +242,21 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         <div className="relative w-full sm:max-w-md">
           <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
           <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={q}
+            onChange={(e) => {
+              void setParams(
+                { q: e.target.value, page: 1 },
+                { limitUrlUpdates: debounce(SEARCH_DEBOUNCE_MS) },
+              );
+            }}
             placeholder={t('search.placeholder')}
             className="pl-9 pr-10"
           />
-          {search && (
+          {q && (
             <Button
               size="icon-xs"
               variant="ghost"
-              onClick={() => setSearch('')}
+              onClick={() => void setParams({ q: '', page: 1 })}
               tooltip={t('search.clearAria')}
               className="absolute top-2 right-2"
             >
@@ -154,101 +288,30 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         </div>
       </div>
 
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('table.name')}</TableHead>
-              <TableHead>{t('table.email')}</TableHead>
-              <TableHead>{t('table.roles')}</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {visible.length === 0 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={TABLE_COLUMN_COUNT}>
-                  <EmptyVolunteerMatches />
-                </TableCell>
-              </TableRow>
-            )}
-            {visible.map((membership) => {
-              const openProfile = () =>
-                openVolunteerSheet({
-                  userId: membership.user.id,
-                  volunteerName: membership.user.name,
-                  volunteerStatus: MembershipRequestStatus.Accepted,
-                  volunteerEmail: membership.user.email,
-                  volunteerCheckInId: membership.user.checkInId,
-                  // Managing membership is the point of this screen, so
-                  // this is the one place that offers removal.
-                  canRemoveMembership: 'true',
-                });
-
-              return (
-                <TableRow key={membership.id}>
-                  <TableCell>
-                    <button
-                      type="button"
-                      onClick={openProfile}
-                      aria-label={t('table.openProfileAria', {
-                        name: membership.user.name,
-                      })}
-                      className="flex items-center gap-2 rounded-sm text-left underline-offset-4 hover:underline focus-visible:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                    >
-                      <Avatar size="sm">
-                        <AvatarImage
-                          src={membership.user.image ?? undefined}
-                          alt={tCommon('avatarAlt', {
-                            name: membership.user.name,
-                          })}
-                        />
-                        <AvatarFallback>
-                          <UserRound className="size-3" />
-                        </AvatarFallback>
-                      </Avatar>
-                      {membership.user.name}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    <CopyableEmailCell
-                      email={membership.user.email}
-                      volunteerName={membership.user.name}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <RoleSelectCell
-                      membershipId={membership.id}
-                      roles={membership.roles}
-                      orgUId={orgUId}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
-                        aria-label={t('action.checkInAria')}
-                      >
-                        <Button
-                          size="icon-md"
-                          variant="outline"
-                          tooltip={t('action.checkInShiftAria')}
-                        >
-                          <ScanQrCode />
-                        </Button>
-                      </Link>
-                      <RemoveMembershipButton
-                        membershipId={membership.id}
-                        volunteerName={membership.user.name}
-                      />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      {visible.length === 0 ? (
+        <EmptyVolunteerMatches />
+      ) : (
+        <>
+          <DataTable
+            mode="client"
+            columns={columns}
+            data={visible}
+            emptyMessage={t('search.noResults')}
+            sorting={sorting}
+            onSortingChange={setSorting}
+            pagination={pagination}
+            onPaginationChange={(updater) => {
+              const next =
+                typeof updater === 'function' ? updater(pagination) : updater;
+              void setParams({
+                page: next.pageIndex + 1,
+                pageSize: String(next.pageSize) as '15' | '25' | '50' | '100',
+              });
+            }}
+          />
+          <DataTablePagination total={visible.length} name={t('table.name')} />
+        </>
+      )}
     </div>
   );
 }

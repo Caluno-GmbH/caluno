@@ -1088,7 +1088,7 @@ type Query {
   shiftInstances(shiftId: ID!): [ShiftInstance!]!
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
-  shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
+  shifts(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT): ShiftPaginatedResponse!
   termsStatus: TermsStatus!
   timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
@@ -1477,6 +1477,13 @@ enum ShiftInviteStatus {
 type ShiftPaginatedResponse {
   items: [Shift!]!
   pagination: PaginationInfo!
+}
+
+enum ShiftSortField {
+  CREATED_AT
+  FIRST_DATE
+  TITLE
+  VISIBILITY
 }
 
 enum ShiftVisibility {

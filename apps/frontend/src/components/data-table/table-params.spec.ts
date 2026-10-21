@@ -13,6 +13,7 @@ describe('createTableParsers', () => {
       sort: 'CREATED_AT',
       dir: 'desc',
       page: 1,
+      pageSize: '25',
     });
   });
 
@@ -21,6 +22,7 @@ describe('createTableParsers', () => {
       sort: 'VOLUNTEER',
       dir: 'asc',
       page: 3,
+      pageSize: '25',
     });
   });
 
@@ -30,5 +32,13 @@ describe('createTableParsers', () => {
 
   it('falls back to the default for an unknown direction', () => {
     expect(cache.parse({ dir: 'sideways' }).dir).toBe('desc');
+  });
+
+  it('reads a page size from the allow-list', () => {
+    expect(cache.parse({ pageSize: '50' }).pageSize).toBe('50');
+  });
+
+  it('falls back to the default page size for a value off the allow-list', () => {
+    expect(cache.parse({ pageSize: '7' }).pageSize).toBe('25');
   });
 });

@@ -1795,6 +1795,10 @@
       "time": "Time",
       "visibility": "Visibility"
     },
+    "search": {
+      "placeholder": "Search by name",
+      "clearAria": "Clear search"
+    },
     "tabs": {
       "allShifts": "All assignments",
       "weekplan": "Weekly plan"
@@ -1910,6 +1914,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Rows per page",
     "sortAscending": "Sort ascending",
     "sortDescending": "Sort descending",
     "sortedAscending": "Sorted ascending",
