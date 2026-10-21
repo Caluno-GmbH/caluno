@@ -56,9 +56,17 @@ describe('DownloadBundleQueryDto', () => {
     expect(errors.map((e) => e.property)).toEqual(['invoiceIds']);
   });
 
-  it('rejects a volunteer or type that is not a uuid', async () => {
+  it('accepts a volunteer id issued by better auth', async () => {
     const { errors } = await check({
-      volunteerId: 'x',
+      volunteerId: '3dbX9t0w3VkUbdO2BLzPA8fsBCAe3gAN',
+      reimbursementTypeId: id(),
+    });
+    expect(errors).toHaveLength(0);
+  });
+
+  it('rejects an empty volunteer or a type that is not a uuid', async () => {
+    const { errors } = await check({
+      volunteerId: '',
       reimbursementTypeId: 'y',
     });
     expect(errors.map((e) => e.property).sort()).toEqual([
