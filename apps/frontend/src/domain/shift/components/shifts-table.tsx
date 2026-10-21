@@ -100,7 +100,7 @@ export function ShiftsTable({
           return (
             <div className="flex min-w-0 items-center gap-1.5">
               <Link
-                className="hover:underline truncate"
+                className="max-w-80 truncate hover:underline"
                 href={shiftDetailPath(orgUId, shift.id, returnQuery)}
               >
                 {shift.title}
@@ -266,7 +266,10 @@ export function ShiftsTable({
         emptyMessage={q.trim() ? t('search.noResults') : t('empty.title')}
       />
       {pagination.total > 0 && (
-        <DataTablePagination total={pagination.total} name={t('page.title')} />
+        <DataTablePagination
+          total={pagination.total}
+          name={t('page.paginationName')}
+        />
       )}
     </div>
   );

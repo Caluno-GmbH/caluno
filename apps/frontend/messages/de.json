@@ -1698,6 +1698,7 @@
       "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
+      "paginationName": "Einsätze",
       "createButton": "Einsatz erstellen",
       "subtitle": "Einsatzdetails und Freiwillige",
       "title": "Einsätze"
@@ -2007,6 +2008,7 @@
       "title": "Noch keine Nutzenden"
     },
     "page": {
+      "paginationName": "Nutzende",
       "copyInviteLink": "Einladungslink kopieren",
       "inviteLinkCopied": "Einladungslink in Zwischenablage kopiert",
       "subtitle": "Verwalte Personen und ihre Rollen in deiner Organisation",

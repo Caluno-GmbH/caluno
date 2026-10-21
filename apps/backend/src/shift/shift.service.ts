@@ -69,6 +69,7 @@ import { FileService } from '../storage/services/file.service';
 import type { TimeEntryEntity } from '../time-tracking/schemas/time-entry.schema';
 import { UserService } from '../user/user.service';
 import { slugify } from '../utils/slug.util';
+import { containsPattern } from '../utils/string.util';
 import {
   INVITE_STATUS_TO_JOIN_SHIFT_STATUS,
   ShiftInviteStatus,
@@ -1039,8 +1040,8 @@ export class ShiftService {
       ...(term
         ? {
             OR: [
-              { title: { ilike: `%${term}%` } },
-              { location: { ilike: `%${term}%` } },
+              { title: { ilike: containsPattern(term) } },
+              { location: { ilike: containsPattern(term) } },
             ],
           }
         : {}),
@@ -3344,7 +3345,7 @@ export class ShiftService {
       where: {
         organizationUnitId,
         isDeleted: false,
-        ...(search ? { title: { ilike: `%${search}%` } } : {}),
+        ...(search ? { title: { ilike: containsPattern(search) } } : {}),
       },
       orderBy: { title: 'asc' },
       limit,

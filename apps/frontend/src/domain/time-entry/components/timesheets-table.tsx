@@ -108,6 +108,8 @@ export const TimesheetsTable = ({
       {
         id: 'DURATION',
         accessorFn: (row) => row.endedAt,
+        // Matches NumberCell's right alignment.
+        meta: { headerClassName: 'text-right' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
         ),

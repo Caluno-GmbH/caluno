@@ -200,6 +200,25 @@ describe('shifts query sort + search (VOLI-1625)', () => {
     expect(none.shifts.pagination.total).toBe(0);
   });
 
+  it('matches LIKE wildcards in the search term literally', async () => {
+    // Invite-only so the member-path test below still sees just two shifts.
+    const percent = await createShift(db, {
+      organizationUnitId,
+      title: 'Discount 50% day',
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+    });
+    const underscore = await createShift(db, {
+      organizationUnitId,
+      title: 'snake_case meetup',
+      visibility: ShiftVisibility.INVITED_MEMBERS,
+    });
+
+    expect(ids(await queryShifts({ search: '50%' }))).toEqual([percent.id]);
+    expect(ids(await queryShifts({ search: 'e_c' }))).toEqual([underscore.id]);
+    // Unescaped, `%` would match every shift.
+    expect(ids(await queryShifts({ search: '%' }))).toEqual([percent.id]);
+  });
+
   it('ignores search for members without SHIFT_VIEW', async () => {
     const member = await createUser(db);
     await addMembership(db, member.id, organizationUnitId);

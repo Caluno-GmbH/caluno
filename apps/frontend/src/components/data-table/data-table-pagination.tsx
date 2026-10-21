@@ -22,16 +22,22 @@ import {
 interface DataTablePaginationProps {
   total: number;
   name: string;
+  /** Client-mode tables hold all rows in the browser, so they skip the server round trip. */
+  shallow?: boolean;
 }
 
-export function DataTablePagination({ total, name }: DataTablePaginationProps) {
+export function DataTablePagination({
+  total,
+  name,
+  shallow = false,
+}: DataTablePaginationProps) {
   const t = useTranslations('Pagination');
   const tDataTable = useTranslations('DataTable');
   const tCommon = useTranslations('Common');
 
   const [{ page, pageSize }, setParams] = useQueryStates(
     { page: pageParser, pageSize: pageSizeParser },
-    { shallow: false },
+    { shallow },
   );
 
   const pageSizeNum = Number(pageSize ?? String(DEFAULT_PAGE_SIZE));
