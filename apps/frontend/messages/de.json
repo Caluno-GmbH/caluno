@@ -1781,7 +1781,8 @@
     },
     "search": {
       "placeholder": "Nach Name suchen",
-      "clearAria": "Suche zurücksetzen"
+      "clearAria": "Suche zurücksetzen",
+      "noResults": "Keine Einsätze passen zu dieser Suche"
     },
     "tabs": {
       "allShifts": "Alle Einsätze",

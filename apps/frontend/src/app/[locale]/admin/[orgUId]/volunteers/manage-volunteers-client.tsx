@@ -231,9 +231,13 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     );
   };
 
+  const size = Number(pageSize);
+  // Clamp locally so the table never renders an out-of-range empty page;
+  // DataTablePagination writes the clamped page back to the URL.
+  const lastPage = Math.max(1, Math.ceil(visible.length / size));
   const pagination = {
-    pageIndex: page - 1,
-    pageSize: Number(pageSize),
+    pageIndex: Math.min(page, lastPage) - 1,
+    pageSize: size,
   };
 
   return (
@@ -296,7 +300,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
             mode="client"
             columns={columns}
             data={visible}
-            emptyMessage={t('search.noResults')}
+            emptyMessage={t('search.emptyTitle')}
             sorting={sorting}
             onSortingChange={setSorting}
             pagination={pagination}

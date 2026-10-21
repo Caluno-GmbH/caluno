@@ -11,6 +11,7 @@ import {
 import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
+import { useEffect } from 'react';
 import {
   DEFAULT_PAGE_SIZE,
   PAGE_SIZES,
@@ -35,15 +36,22 @@ export function DataTablePagination({ total, name }: DataTablePaginationProps) {
 
   const pageSizeNum = Number(pageSize ?? String(DEFAULT_PAGE_SIZE));
   const pageCount = Math.max(1, Math.ceil(total / pageSizeNum));
-  const startItem = Math.min((page - 1) * pageSizeNum + 1, total);
-  const endItem = Math.min(page * pageSizeNum, total);
+  // Stale links or a shrinking list can leave `page` past the end; render the
+  // last page and pull the URL back so the data query follows.
+  const current = Math.min(page, pageCount);
+  const startItem = Math.min((current - 1) * pageSizeNum + 1, total);
+  const endItem = Math.min(current * pageSizeNum, total);
+
+  useEffect(() => {
+    if (page > pageCount) void setParams({ page: pageCount });
+  }, [page, pageCount, setParams]);
 
   const handlePrev = () => {
-    void setParams({ page: Math.max(1, page - 1) });
+    void setParams({ page: Math.max(1, current - 1) });
   };
 
   const handleNext = () => {
-    void setParams({ page: Math.min(pageCount, page + 1) });
+    void setParams({ page: Math.min(pageCount, current + 1) });
   };
 
   const handlePageSizeChange = (value: string) => {
@@ -82,14 +90,14 @@ export function DataTablePagination({ total, name }: DataTablePaginationProps) {
           </Select>
         </div>
         <div className="text-sm text-muted-foreground">
-          {t('pageOf', { current: page, total: pageCount })}
+          {t('pageOf', { current, total: pageCount })}
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={handlePrev}
-            disabled={page <= 1}
+            disabled={current <= 1}
           >
             <ChevronLeftIcon className="h-4 w-4 mr-1" />
             {tCommon('previous')}
@@ -98,7 +106,7 @@ export function DataTablePagination({ total, name }: DataTablePaginationProps) {
             variant="outline"
             size="sm"
             onClick={handleNext}
-            disabled={page >= pageCount}
+            disabled={current >= pageCount}
           >
             {tCommon('next')}
             <ChevronRightIcon className="h-4 w-4 ml-1" />

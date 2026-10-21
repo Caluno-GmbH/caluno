@@ -1781,7 +1781,8 @@
     },
     "search": {
       "placeholder": "Search by name",
-      "clearAria": "Clear search"
+      "clearAria": "Clear search",
+      "noResults": "No assignments match this search"
     },
     "tabs": {
       "allShifts": "All assignments",
