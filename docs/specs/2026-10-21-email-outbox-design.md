@@ -99,9 +99,8 @@ sequenceDiagram
 
 Call-outs and understaffed manager notifications write their own per-recipient
 rows. Those rows record who was asked or notified, when, and by whom; they have
-no delivery status and the outbox does not update them. Their legacy `status`
-column is nullable and no longer written; it is dropped in a follow-up release
-so the previous release keeps working during the deploy.
+no delivery status and the outbox does not update them. The migration drops
+their old `status` column.
 
 The other senders — digest, invite reminder, the “nobody left to ask” fallback,
 auth mail and support mail — have no audit row.
