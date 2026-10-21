@@ -36,12 +36,10 @@ interface DataTableClientProps<TData extends RowData> {
   mode: 'client';
   columns: ColumnDef<DataTableFeatures, TData, unknown>[];
   data: TData[];
-  pageCount?: number;
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
   emptyMessage: string;
   getRowClassName?: (row: TData) => string | undefined;
-  globalFilter?: string;
   pagination?: PaginationState;
   onPaginationChange?: OnChangeFn<PaginationState>;
 }
@@ -51,57 +49,28 @@ type DataTableProps<TData extends RowData> =
   | DataTableClientProps<TData>;
 
 export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
-  const {
-    columns,
-    data,
-    emptyMessage,
-    getRowClassName,
-    mode = 'server',
-  } = props;
-
-  const isClient = mode === 'client';
-
-  const sorting = isClient
-    ? ((props as DataTableClientProps<TData>).sorting ?? [])
-    : (props as DataTableServerProps<TData>).sorting;
-
-  const onSortingChange = isClient
-    ? (props as DataTableClientProps<TData>).onSortingChange
-    : (props as DataTableServerProps<TData>).onSortingChange;
-
-  const pageCount = isClient
-    ? undefined
-    : (props as DataTableServerProps<TData>).pageCount;
-
-  const globalFilter = isClient
-    ? (props as DataTableClientProps<TData>).globalFilter
-    : undefined;
-
-  const pagination = isClient
-    ? (props as DataTableClientProps<TData>).pagination
-    : undefined;
-
-  const onPaginationChange = isClient
-    ? (props as DataTableClientProps<TData>).onPaginationChange
-    : undefined;
+  const { columns, data, emptyMessage, getRowClassName, onSortingChange } =
+    props;
+  const isClient = props.mode === 'client';
+  const client = props.mode === 'client' ? props : undefined;
+  const server = props.mode === 'client' ? undefined : props;
 
   const table = useTable({
     features: dataTableFeatures,
     data,
     columns,
     state: {
-      sorting,
-      ...(globalFilter !== undefined ? { globalFilter } : {}),
-      ...(pagination !== undefined ? { pagination } : {}),
+      sorting: props.sorting ?? [],
+      ...(client?.pagination ? { pagination: client.pagination } : {}),
     },
     ...(onSortingChange ? { onSortingChange } : {}),
-    ...(onPaginationChange ? { onPaginationChange } : {}),
+    ...(client?.onPaginationChange
+      ? { onPaginationChange: client.onPaginationChange }
+      : {}),
     manualSorting: !isClient,
     manualPagination: !isClient,
-    manualFiltering: !isClient,
     enableSortingRemoval: false,
-    ...(pageCount !== undefined ? { pageCount } : {}),
-    ...(isClient ? { globalFilterFn: 'includesString' } : {}),
+    ...(server ? { pageCount: server.pageCount } : {}),
   });
 
   return (

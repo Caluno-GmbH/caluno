@@ -37,7 +37,7 @@ function EntityCell({
           <Icon className="size-8" />
         </div>
       ) : null}
-      <div className="flex flex-col min-w-0">
+      <div className="flex flex-col min-w-0 max-w-80">
         <span className="text-base text-foreground truncate">{title}</span>
         {subtitle && (
           <span className="text-sm text-muted-foreground truncate">
@@ -52,11 +52,16 @@ function EntityCell({
 
 type TextCellProps = { children: React.ReactNode; className?: string };
 
+// Columns hug their content, so the max width is what makes long text
+// truncate instead of widening the table.
 function TextCell({ children, className }: TextCellProps) {
   return (
     <span
       data-slot="text-cell"
-      className={cn('text-base text-foreground min-w-0 truncate', className)}
+      className={cn(
+        'block max-w-80 text-base text-foreground truncate',
+        className,
+      )}
     >
       {children}
     </span>

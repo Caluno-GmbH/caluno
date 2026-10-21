@@ -59,9 +59,23 @@ export function ShiftsTable({
   const t = useTranslations('Shift');
   const { formatDate, formatTimeRange } = useFormatting();
 
-  const [{ sort, dir, q }, setParams] = useQueryStates(shiftsSearchParams, {
-    shallow: false,
-  });
+  const [{ sort, dir, q, pageSize }, setParams] = useQueryStates(
+    shiftsSearchParams,
+    { shallow: false },
+  );
+
+  // Only non-default table state goes on the detail link, keeping URLs short.
+  const returnQuery = useMemo(() => {
+    const defaults = shiftsSearchParams;
+    return {
+      view: 'shifts' as const,
+      ...(page && page > 1 ? { page: String(page) } : {}),
+      ...(pageSize !== defaults.pageSize.defaultValue ? { pageSize } : {}),
+      ...(sort !== defaults.sort.defaultValue ? { sort } : {}),
+      ...(dir !== defaults.dir.defaultValue ? { dir } : {}),
+      ...(q.trim() ? { q } : {}),
+    };
+  }, [page, pageSize, sort, dir, q]);
 
   const sorting = useMemo(() => toSorting(sort, dir), [sort, dir]);
 
@@ -71,7 +85,7 @@ export function ShiftsTable({
     void setParams({ ...resolved, page: 1 });
   };
 
-  const visibilityConfig = getVisibilityConfig(t);
+  const visibilityConfig = useMemo(() => getVisibilityConfig(t), [t]);
 
   const columns = useMemo<ColumnDef<DataTableFeatures, ShiftListItem>[]>(
     () => [
@@ -86,11 +100,8 @@ export function ShiftsTable({
           return (
             <div className="flex min-w-0 items-center gap-1.5">
               <Link
-                className="hover:underline truncate"
-                href={shiftDetailPath(orgUId, shift.id, {
-                  view: 'shifts',
-                  ...(page && page > 1 ? { page: String(page) } : {}),
-                })}
+                className="max-w-80 truncate hover:underline"
+                href={shiftDetailPath(orgUId, shift.id, returnQuery)}
               >
                 {shift.title}
               </Link>
@@ -206,7 +217,15 @@ export function ShiftsTable({
         },
       },
     ],
-    [t, orgUId, page, eventId, formatDate, formatTimeRange, visibilityConfig],
+    [
+      t,
+      orgUId,
+      returnQuery,
+      eventId,
+      formatDate,
+      formatTimeRange,
+      visibilityConfig,
+    ],
   );
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
@@ -244,10 +263,13 @@ export function ShiftsTable({
         pageCount={pageCount}
         sorting={sorting}
         onSortingChange={onSortingChange}
-        emptyMessage={t('empty.title')}
+        emptyMessage={q.trim() ? t('search.noResults') : t('empty.title')}
       />
       {pagination.total > 0 && (
-        <DataTablePagination total={pagination.total} name={t('page.title')} />
+        <DataTablePagination
+          total={pagination.total}
+          name={t('page.paginationName')}
+        />
       )}
     </div>
   );

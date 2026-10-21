@@ -18,12 +18,16 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui';
-import type { ColumnDef } from '@tanstack/react-table';
+import type {
+  ColumnDef,
+  OnChangeFn,
+  SortingState,
+} from '@tanstack/react-table';
 import { Copy, ScanQrCode, Search, UserRound, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { debounce, useQueryStates } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { debounce, parseAsStringLiteral, useQueryStates } from 'nuqs';
+import { useMemo } from 'react';
 import { ButtonClipboard } from '@/components/button-clipboard';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
@@ -35,6 +39,7 @@ import {
   pageSizeParser,
   SEARCH_DEBOUNCE_MS,
 } from '@/components/data-table/table-params';
+import { readSort, toSorting } from '@/components/data-table/table-sort';
 import MembershipRequestCard from '@/domain/membership-requests/components/membership-request-card';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
 import { organizationUnitUrl } from '@/domain/organization/share';
@@ -64,14 +69,20 @@ type Membership = NonNullable<
   ReturnType<typeof useMemberships>['data']
 >[number];
 
+const VOLUNTEER_SORT_FIELDS = ['name', 'email'] as const;
+
+// All rows are loaded client-side, so URL writes stay shallow (no server
+// round trip). `sort` has no default: unset keeps the API's natural order.
 function useApprovedTableParams() {
   return useQueryStates(
     {
       ...createFilterParsers(),
+      sort: parseAsStringLiteral(VOLUNTEER_SORT_FIELDS),
+      dir: parseAsStringLiteral(['asc', 'desc'] as const).withDefault('asc'),
       page: pageParser,
       pageSize: pageSizeParser,
     },
-    { shallow: false },
+    { shallow: true },
   );
 }
 
@@ -81,11 +92,19 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
 
-  const [{ q, page, pageSize }, setParams] = useApprovedTableParams();
+  const [{ q, sort, dir, page, pageSize }, setParams] =
+    useApprovedTableParams();
 
-  const [sorting, setSorting] = useState<
-    import('@tanstack/react-table').SortingState
-  >([]);
+  const sorting = useMemo(
+    () => (sort ? toSorting(sort, dir) : []),
+    [sort, dir],
+  );
+
+  const onSortingChange: OnChangeFn<SortingState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater;
+    const resolved = readSort(next, { sort: sort ?? 'name', dir });
+    void setParams({ ...resolved, page: 1 });
+  };
 
   const roleLabel = (role: TranslatableRole) => {
     const key = internalRoleKey(role);
@@ -231,9 +250,13 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     );
   };
 
+  const size = Number(pageSize);
+  // Clamp locally so the table never renders an out-of-range empty page;
+  // DataTablePagination writes the clamped page back to the URL.
+  const lastPage = Math.max(1, Math.ceil(visible.length / size));
   const pagination = {
-    pageIndex: page - 1,
-    pageSize: Number(pageSize),
+    pageIndex: Math.min(page, lastPage) - 1,
+    pageSize: size,
   };
 
   return (
@@ -296,9 +319,9 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
             mode="client"
             columns={columns}
             data={visible}
-            emptyMessage={t('search.noResults')}
+            emptyMessage={t('search.emptyTitle')}
             sorting={sorting}
-            onSortingChange={setSorting}
+            onSortingChange={onSortingChange}
             pagination={pagination}
             onPaginationChange={(updater) => {
               const next =
@@ -309,7 +332,11 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
               });
             }}
           />
-          <DataTablePagination total={visible.length} name={t('table.name')} />
+          <DataTablePagination
+            total={visible.length}
+            name={t('page.paginationName')}
+            shallow
+          />
         </>
       )}
     </div>
