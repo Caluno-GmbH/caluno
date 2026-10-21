@@ -59,8 +59,8 @@ flowchart TB
 - **`EmailTransportService`** performs exactly one provider attempt and returns
   a retryable/non-retryable result.
 - **`email_outbox`** stores the rendered payload, so retries are byte-identical.
-- **Audit tables** keep the per-recipient record for call-outs and manager
-  notifications, linked by `outbox_id`.
+- **Domain audit tables** keep the per-recipient record for call-outs and
+  manager notifications, linked by `outbox_id`.
 
 ## Send path
 
@@ -70,7 +70,6 @@ sequenceDiagram
   participant C as Caller
   participant O as EmailOutboxService
   participant D as email_outbox
-  participant A as audit table
   participant W as Worker 10s
   participant T as Transport
   participant P as Provider / Mailpit
@@ -79,9 +78,6 @@ sequenceDiagram
   O->>D: INSERT ... ON CONFLICT (dedupe_key) DO NOTHING
   D-->>O: row (PENDING)
   O-->>C: row
-  C->>A: INSERT audit row (outbox_id, PENDING)
-  C->>O: refreshAuditStatuses([outboxId])
-  O->>A: UPDATE ... FROM email_outbox
 
   Note over W: Every 10 seconds
   W->>O: drain()
@@ -94,7 +90,6 @@ sequenceDiagram
     P-->>T: 2xx / message id
     T-->>O: { ok: true }
     O->>D: UPDATE status = SENT
-    O->>A: sync audit status SENT
   else Retryable failure
     P-->>T: timeout / 429 / 5xx
     T-->>O: { ok: false, retryable: true }
@@ -103,13 +98,43 @@ sequenceDiagram
     P-->>T: 4xx / max attempts
     T-->>O: { ok: false, retryable: false }
     O->>D: UPDATE status = FAILED
-    O->>A: sync audit status FAILED
   end
 ```
 
-`refreshAuditStatuses` exists because the caller inserts its audit row after
-`enqueue`; the worker may already have delivered and synced before that row
-existed.
+## Audit-linked flows
+
+Only two callers write a domain audit row:
+
+| Caller | Table | What it records |
+|---|---|---|
+| `ShiftCallOutService` | `shift_call_out_recipients` | one row per volunteer asked to help |
+| `ShiftUnderstaffedNotificationService` | `shift_manager_notifications` | one row per manager notified about an understaffed shift |
+
+They insert the row with `outbox_id` and `PENDING`, then call
+`refreshAuditStatuses()` once. The worker mirrors `SENT`/`FAILED` onto that row
+when it finishes the delivery.
+
+The other senders — digest, invite reminder, the “nobody left to ask” fallback,
+auth mail and support mail — have no audit row.
+
+```mermaid
+sequenceDiagram
+  participant C as Call-out / understaffed service
+  participant O as EmailOutboxService
+  participant A as domain audit table
+  participant W as Worker
+
+  C->>O: enqueue(...)
+  O-->>C: outbox row
+  C->>A: INSERT (outbox_id, PENDING)
+  C->>O: refreshAuditStatuses([outboxId])
+  Note over W: Worker may already have sent
+  W->>O: mark SENT / FAILED
+  O->>A: sync status by outbox_id
+```
+
+`refreshAuditStatuses` exists because the audit row is inserted after `enqueue`;
+the worker may already have delivered and synced before the row existed.
 
 ## Auth mail
 
