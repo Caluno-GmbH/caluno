@@ -49,17 +49,12 @@ flowchart TB
 
 - **`EmailService`** is the only entry point for `NotificationService` and auth
   mail. `send()` enqueues; `sendImmediately()` enqueues and tries once now.
-- **`EmailOutboxService`** owns the durable email record, dedupe, claiming,
+- **`EmailOutboxService`** owns the durable email record, claiming,
   backoff and expiry.
 - **`EmailOutboxWorkerService`** drains due emails every 10 seconds.
 - **`EmailTransportService`** performs exactly one provider attempt and returns
   a retryable/non-retryable result.
 - **`email_outbox`** stores the rendered payload, so retries are byte-identical.
-
-Call-outs and understaffed manager notifications still write their own
-per-recipient rows (`shift_call_out_recipients`, `shift_manager_notifications`).
-Those rows record who was asked or notified and are independent of delivery;
-the outbox does not update them.
 
 ## Send path
 
@@ -73,8 +68,8 @@ sequenceDiagram
   participant T as Transport
   participant P as Provider / Mailpit
 
-  C->>O: enqueue({ category, to, subject, html, dedupeKey, expiresAt })
-  O->>D: INSERT ... ON CONFLICT (dedupe_key) DO NOTHING
+  C->>O: enqueue({ category, to, subject, html, expiresAt })
+  O->>D: INSERT
   D-->>O: outbox email (PENDING)
   O-->>C: outbox email
 
@@ -104,7 +99,9 @@ sequenceDiagram
 
 Call-outs and understaffed manager notifications write their own per-recipient
 rows. Those rows record who was asked or notified, when, and by whom; they have
-no delivery-status column and the outbox does not update them.
+no delivery status and the outbox does not update them. Their legacy `status`
+column is nullable and no longer written; it is dropped in a follow-up release
+so the previous release keeps working during the deploy.
 
 The other senders — digest, invite reminder, the “nobody left to ask” fallback,
 auth mail and support mail — have no audit row.
@@ -159,6 +156,13 @@ stateDiagram-v2
 `SENT` means the provider accepted the message, not that the mailbox received
 it. `deliveredAt` is reserved for TEM delivery webhooks.
 
+## Retention
+
+Entering `SENT`, `FAILED` or `CANCELLED` clears `html`, `text_body` and
+`attachments`, so OTPs, reset links and check-in PDFs are not kept once
+delivery is settled. Recipient, subject and status remain for troubleshooting.
+A daily job at 03:00 (Europe/Berlin) deletes final emails not updated for 30 days.
+
 ## Failure handling
 
 ```mermaid
@@ -173,28 +177,37 @@ flowchart TD
   RETRY --> WAIT[Worker claims when due]
   WAIT --> R
   EXP[expiresAt reached] --> CANCELLED[Mark CANCELLED]
+  MISS[Content missing at claim] --> FAILED
 ```
 
 Backoff ladder: 1 min, 5 min, 15 min, 1 h, 4 h, 12 h, 24 h, with ±20% jitter.
 An email that keeps throwing before the transport is capped at the next claim.
 
-## Dedupe and expiry
+## Expiry and duplicate protection
 
-| Caller | Category | Dedupe key | Expiry |
-|---|---|---|---|
-| Call-out | `CALL_OUT` | `call-out:{instance}:{user}:{sentAt}` | `actualEndsAt` |
-| No recipients | `CALL_OUT_NO_RECIPIENTS` | `call-out-no-recipients:{instance}:{user}:{sentAt}` | `actualEndsAt` |
-| Manager notification | `MANAGER_NOTIFICATION` | `manager-notification:{instance}:{user}:{kind}:{sentAt}` | `actualEndsAt` |
-| Digest | `DIGEST` | `digest:{unit}:{user}:{day}` | Next day |
-| Invite reminder | `INVITE_REMINDER` | `invite-reminder:{instance}:{user}:{invite.updatedAt}` | `actualStartsAt` |
-| Notifications | `NOTIFICATION` | None | None |
-| Support | `SUPPORT` | None | None |
-| Auth | `AUTH` | Optional | OTP 5 min / reset 1 h |
+| Caller | Category | Expiry |
+|---|---|---|
+| Call-out | `CALL_OUT` | `actualEndsAt` |
+| No recipients | `CALL_OUT_NO_RECIPIENTS` | `actualEndsAt` |
+| Manager notification | `MANAGER_NOTIFICATION` | `actualEndsAt` |
+| Digest | `DIGEST` | Next day |
+| Invite reminder | `INVITE_REMINDER` | `actualEndsAt` |
+| Notifications | `NOTIFICATION` | None |
+| Support | `SUPPORT` | None |
+| Auth | `AUTH` | OTP 5 min / reset 1 h |
 
-A dedupe key identifies the logical send. Digest and invite-reminder keys are
-stable per day/cycle. Call-out and manager-notification keys contain `sentAt`,
-which is generated per invocation, so they do **not** currently dedupe a retry;
-a stable event id would be needed for that.
+The outbox has no dedupe key; callers prevent duplicate sends themselves:
+
+- **Invite reminder:** one transaction stamps `remindedAt` (only while it is
+  still empty) and queues the email, so a crash or a concurrent click cannot
+  queue a second reminder.
+- **Digest:** `claimRun` allows one run per unit per day.
+- **Understaffed tick:** the advisory lock and its fired-at state.
+- **Manual call-outs, notifications, support and auth:** no protection; a
+  retried request sends again. Auth resends are intentional (a new code).
+
+`enqueue` accepts an optional transaction so a caller can commit the email
+together with its own writes.
 
 ## Operational constants
 
@@ -208,6 +221,7 @@ a stable event id would be needed for that.
 | Max attempts | 8 |
 | Stale `SENDING` reclaim | 10 min |
 | Provider timeout | 20 s |
+| Final email retention | 30 days |
 
 ## Local verification
 
