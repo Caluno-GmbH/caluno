@@ -1,5 +1,6 @@
 import { afterAll, beforeAll } from 'bun:test';
 import {
+  applyTestDatabaseEnvironment,
   ensureTestDatabase,
   teardownTestDatabase,
 } from './helpers/ensure-test-database';
@@ -19,6 +20,10 @@ const shouldProvisionTestDatabase = (): boolean => {
 };
 
 if (shouldProvisionTestDatabase()) {
+  // Must run before test-file imports: ConfigModule.forRoot() captures
+  // DB_NAME when AppModule is evaluated.
+  applyTestDatabaseEnvironment();
+
   beforeAll(async () => {
     await ensureTestDatabase();
   }, 60_000);

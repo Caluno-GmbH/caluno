@@ -119,12 +119,13 @@ function setup({
     filterRecipientsByEmailPreferences: filterRecipientsForEvent,
   };
 
-  const emailService = {
-    send: async (options: { to: string; subject: string; html: string }) => {
+  const emailOutbox = {
+    enqueue: async (options: { to: string; subject: string; html: string }) => {
       if (failEmailSend) {
         throw new Error('transport down');
       }
       sentEmails.push(options);
+      return { id: `outbox-${sentEmails.length}` };
     },
   };
 
@@ -142,7 +143,7 @@ function setup({
     authService as never,
     membershipService as never,
     notificationService as never,
-    emailService as never,
+    emailOutbox as never,
     appI18n as never,
     postHogService as never,
   );

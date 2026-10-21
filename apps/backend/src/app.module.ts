@@ -211,11 +211,14 @@ const autoSchemaFile =
                   templateContext,
                 );
 
-                await emailService.send({
-                  userId,
-                  to: email,
-                  ...emailContent,
-                });
+                await emailService.sendImmediately(
+                  {
+                    userId,
+                    to: email,
+                    ...emailContent,
+                  },
+                  new Date(Date.now() + 60 * 60 * 1000),
+                );
                 captureAuth(POSTHOG_EVENT.PASSWORD_RESET_SEND, userId);
               },
               sendVerificationOTP: async ({
@@ -246,11 +249,14 @@ const autoSchemaFile =
                   templateContext,
                 );
 
-                await emailService.send({
-                  userId,
-                  to: email,
-                  ...emailContent,
-                });
+                await emailService.sendImmediately(
+                  {
+                    userId,
+                    to: email,
+                    ...emailContent,
+                  },
+                  new Date(Date.now() + 5 * 60 * 1000),
+                );
 
                 let otpUserId = userId;
                 if (!otpUserId) {
