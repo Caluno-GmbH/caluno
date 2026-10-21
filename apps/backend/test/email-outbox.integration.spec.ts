@@ -62,7 +62,6 @@ describe('EmailOutboxService', () => {
   });
 
   beforeEach(async () => {
-    // Retire emails left pending by the previous test so drain() is isolated.
     await db
       .update(schema.emailOutbox)
       .set({ status: EmailDeliveryStatus.CANCELLED })
@@ -89,7 +88,6 @@ describe('EmailOutboxService', () => {
       subject: `Subject ${counter}`,
       html: '<p>Body</p>',
       organizationUnitId,
-      dedupeKey: `test-dedupe-${counter}`,
       ...overrides,
     };
   }
@@ -106,13 +104,29 @@ describe('EmailOutboxService', () => {
     return outboxEmail;
   }
 
-  it('enqueues a pending email and is idempotent by dedupe key', async () => {
-    const firstEmail = await enqueue({ dedupeKey: 'same-action' });
-    const secondEmail = await enqueue({ dedupeKey: 'same-action' });
+  it('enqueues a pending email', async () => {
+    const outboxEmail = await enqueue();
 
-    expect(secondEmail.id).toBe(firstEmail.id);
-    expect(firstEmail.status).toBe(EmailDeliveryStatus.PENDING);
-    expect(firstEmail.attempts).toBe(0);
+    expect(outboxEmail.status).toBe(EmailDeliveryStatus.PENDING);
+    expect(outboxEmail.attempts).toBe(0);
+  });
+
+  it('discards an email enqueued in a rolled-back transaction', async () => {
+    const emailInput = buildEmailInput();
+    const rollback = new Error('rollback');
+
+    await expect(
+      db.transaction(async (tx) => {
+        await service.enqueue(emailInput, tx);
+        throw rollback;
+      }),
+    ).rejects.toBe(rollback);
+
+    const [persistedEmail] = await db
+      .select()
+      .from(schema.emailOutbox)
+      .where(eq(schema.emailOutbox.subject, emailInput.subject));
+    expect(persistedEmail).toBeUndefined();
   });
 
   it('marks the email SENT and stores the provider message id', async () => {
@@ -125,6 +139,79 @@ describe('EmailOutboxService', () => {
     expect(updatedEmail?.status).toBe(EmailDeliveryStatus.SENT);
     expect(updatedEmail?.providerMessageId).toBe('provider-1');
     expect(updatedEmail?.sentAt).toBeInstanceOf(Date);
+  });
+
+  it('clears the email content once delivery reaches a final state', async () => {
+    sendOnce.mockImplementationOnce(async () => ({
+      ok: false,
+      retryable: false,
+      error: new Error('invalid recipient'),
+    }));
+    const failedEmail = await enqueue({
+      attachments: [
+        {
+          filename: 'check-in.pdf',
+          contentType: 'application/pdf',
+          content: Buffer.from('pdf'),
+        },
+      ],
+    });
+    await service.drain();
+    const sentEmail = await enqueue({ text: 'Body' });
+    await service.drain();
+    const expiredEmail = await enqueue({
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+    await service.drain();
+
+    for (const outboxEmail of [failedEmail, sentEmail, expiredEmail]) {
+      const updatedEmail = await findOutboxEmail(outboxEmail.id);
+      expect(updatedEmail?.html).toBeNull();
+      expect(updatedEmail?.textBody).toBeNull();
+      expect(updatedEmail?.attachments).toBeNull();
+      expect(updatedEmail?.subject).toBe(outboxEmail.subject);
+    }
+  });
+
+  it('keeps the email content while a retry is pending', async () => {
+    sendOnce.mockImplementationOnce(async () => ({
+      ok: false,
+      retryable: true,
+      error: new Error('provider timeout'),
+    }));
+    const outboxEmail = await enqueue();
+
+    await service.drain();
+
+    expect((await findOutboxEmail(outboxEmail.id))?.html).toBe('<p>Body</p>');
+  });
+
+  it('purges final emails older than the retention period only', async () => {
+    const oldSentEmail = await enqueue();
+    const oldPendingEmail = await enqueue({
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    });
+    const recentSentEmail = await enqueue();
+    const longAgo = new Date(Date.now() - 31 * 24 * 60 * 60 * 1000);
+    await db
+      .update(schema.emailOutbox)
+      .set({ status: EmailDeliveryStatus.SENT, updatedAt: longAgo })
+      .where(eq(schema.emailOutbox.id, oldSentEmail.id));
+    await db
+      .update(schema.emailOutbox)
+      .set({ nextAttemptAt: longAgo, updatedAt: longAgo })
+      .where(eq(schema.emailOutbox.id, oldPendingEmail.id));
+    await db
+      .update(schema.emailOutbox)
+      .set({ status: EmailDeliveryStatus.SENT })
+      .where(eq(schema.emailOutbox.id, recentSentEmail.id));
+
+    const purgedCount = await service.purgeSettledEmails();
+
+    expect(purgedCount).toBeGreaterThanOrEqual(1);
+    expect(await findOutboxEmail(oldSentEmail.id)).toBeUndefined();
+    expect(await findOutboxEmail(oldPendingEmail.id)).toBeDefined();
+    expect(await findOutboxEmail(recentSentEmail.id)).toBeDefined();
   });
 
   it('schedules a retry with backoff for a retryable failure', async () => {
@@ -187,7 +274,6 @@ describe('EmailOutboxService', () => {
     expect(updatedEmail?.status).toBe(EmailDeliveryStatus.PENDING);
     expect(updatedEmail?.attempts).toBe(1);
 
-    // Make the email due immediately instead of waiting for the backoff.
     await db
       .update(schema.emailOutbox)
       .set({ nextAttemptAt: new Date(Date.now() - 60_000) })

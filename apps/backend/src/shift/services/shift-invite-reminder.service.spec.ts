@@ -31,11 +31,13 @@ function makeInstance(overrides: Record<string, unknown> = {}) {
 function setup(options?: {
   invite?: { status?: ShiftInviteStatus; remindedAt?: Date | null };
   instance?: Record<string, unknown>;
-  sendError?: Error;
+  enqueueError?: Error;
+  stampMatchesNothing?: boolean;
 }) {
   const updates: Array<{ set: Record<string, unknown> }> = [];
   const sentEmails: Array<{ to: string; subject: string; html: string }> = [];
   const captures: Array<{ event: string; userId: string }> = [];
+  const enqueueExecutors: unknown[] = [];
 
   const invite = {
     id: 'invite-1',
@@ -45,6 +47,22 @@ function setup(options?: {
     remindedAt: options?.invite?.remindedAt ?? null,
     updatedAt: new Date('2026-09-01T10:00:00.000Z'),
   };
+
+  const makeUpdate =
+    (target: Array<{ set: Record<string, unknown> }>) => () => ({
+      set: (set: Record<string, unknown>) => {
+        target.push({ set });
+        return {
+          where: () => ({
+            returning: async () =>
+              options?.stampMatchesNothing
+                ? []
+                : [{ remindedAt: set.remindedAt }],
+          }),
+        };
+      },
+    });
+  const transactionExecutor = { update: makeUpdate([]) };
 
   const db = {
     query: {
@@ -59,16 +77,15 @@ function setup(options?: {
         }),
       },
     },
-    update: () => ({
-      set: (set: Record<string, unknown>) => {
-        updates.push({ set });
-        return {
-          where: () => ({
-            returning: async () => [{ remindedAt: set.remindedAt }],
-          }),
-        };
-      },
-    }),
+    transaction: async <T>(
+      run: (tx: typeof transactionExecutor) => Promise<T>,
+    ): Promise<T> => {
+      const pendingUpdates: Array<{ set: Record<string, unknown> }> = [];
+      transactionExecutor.update = makeUpdate(pendingUpdates);
+      const result = await run(transactionExecutor);
+      updates.push(...pendingUpdates);
+      return result;
+    },
   };
 
   const shiftService = {
@@ -86,9 +103,13 @@ function setup(options?: {
   };
 
   const emailOutbox = {
-    enqueue: async (email: { to: string; subject: string; html: string }) => {
-      if (options?.sendError) {
-        throw options.sendError;
+    enqueue: async (
+      email: { to: string; subject: string; html: string },
+      executor?: unknown,
+    ) => {
+      enqueueExecutors.push(executor);
+      if (options?.enqueueError) {
+        throw options.enqueueError;
       }
       sentEmails.push(email);
       return { id: `outbox-${sentEmails.length}` };
@@ -114,7 +135,14 @@ function setup(options?: {
     postHogService as never,
   );
 
-  return { service, updates, sentEmails, captures };
+  return {
+    service,
+    updates,
+    sentEmails,
+    captures,
+    enqueueExecutors,
+    transactionExecutor,
+  };
 }
 
 describe('ShiftInviteReminderService.sendInviteReminder', () => {
@@ -200,11 +228,11 @@ describe('ShiftInviteReminderService.sendInviteReminder', () => {
         ORG_UNIT_ID,
         ACTOR_ID,
       ),
-    ).rejects.toThrow(/already started/);
+    ).rejects.toThrow(/past/);
     expect(sentEmails).toHaveLength(0);
   });
 
-  it('rejects a shift that is already in progress', async () => {
+  it('still sends a reminder while the shift is in progress', async () => {
     const { service, sentEmails } = setup({
       instance: {
         actualStartsAt: new Date(Date.now() - 60 * 60 * 1000),
@@ -212,20 +240,19 @@ describe('ShiftInviteReminderService.sendInviteReminder', () => {
       },
     });
 
-    await expect(
-      service.sendInviteReminder(
-        INSTANCE_ID,
-        VOLUNTEER_ID,
-        ORG_UNIT_ID,
-        ACTOR_ID,
-      ),
-    ).rejects.toThrow(/already started/);
-    expect(sentEmails).toHaveLength(0);
+    await service.sendInviteReminder(
+      INSTANCE_ID,
+      VOLUNTEER_ID,
+      ORG_UNIT_ID,
+      ACTOR_ID,
+    );
+
+    expect(sentEmails).toHaveLength(1);
   });
 
   it('does not stamp remindedAt when the email fails', async () => {
     const { service, updates } = setup({
-      sendError: new Error('smtp down'),
+      enqueueError: new Error('outbox insert failed'),
     });
 
     await expect(
@@ -235,7 +262,37 @@ describe('ShiftInviteReminderService.sendInviteReminder', () => {
         ORG_UNIT_ID,
         ACTOR_ID,
       ),
-    ).rejects.toThrow('smtp down');
+    ).rejects.toThrow('outbox insert failed');
+    expect(updates).toHaveLength(0);
+  });
+
+  it('queues the email in the stamping transaction', async () => {
+    const { service, enqueueExecutors, transactionExecutor } = setup();
+
+    await service.sendInviteReminder(
+      INSTANCE_ID,
+      VOLUNTEER_ID,
+      ORG_UNIT_ID,
+      ACTOR_ID,
+    );
+
+    expect(enqueueExecutors).toEqual([transactionExecutor]);
+  });
+
+  it('queues nothing when the invite was answered or reminded meanwhile', async () => {
+    const { service, sentEmails, updates } = setup({
+      stampMatchesNothing: true,
+    });
+
+    await expect(
+      service.sendInviteReminder(
+        INSTANCE_ID,
+        VOLUNTEER_ID,
+        ORG_UNIT_ID,
+        ACTOR_ID,
+      ),
+    ).rejects.toThrow(/already been answered or reminded/);
+    expect(sentEmails).toHaveLength(0);
     expect(updates).toHaveLength(0);
   });
 });

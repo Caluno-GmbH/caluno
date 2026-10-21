@@ -37,13 +37,12 @@ describe('EmailService', () => {
     const { service, outbox } = setup();
     const expiresAt = new Date(Date.now() + 60_000);
 
-    await service.sendImmediately(MESSAGE, { expiresAt });
+    await service.sendImmediately(MESSAGE, expiresAt);
 
     expect(outbox.enqueueAndDeliver).toHaveBeenCalledWith({
       ...MESSAGE,
       category: EmailCategory.AUTH,
       expiresAt,
-      dedupeKey: undefined,
     });
   });
 
@@ -54,9 +53,9 @@ describe('EmailService', () => {
       error: new Error('invalid recipient'),
     });
 
-    await expect(service.sendImmediately(MESSAGE)).rejects.toThrow(
-      'invalid recipient',
-    );
+    await expect(
+      service.sendImmediately(MESSAGE, new Date(Date.now() + 60_000)),
+    ).rejects.toThrow('invalid recipient');
   });
 
   it('swallows a retryable immediate failure for the worker', async () => {
@@ -66,6 +65,8 @@ describe('EmailService', () => {
       error: new Error('timeout'),
     });
 
-    await expect(service.sendImmediately(MESSAGE)).resolves.toBeUndefined();
+    await expect(
+      service.sendImmediately(MESSAGE, new Date(Date.now() + 60_000)),
+    ).resolves.toBeUndefined();
   });
 });
