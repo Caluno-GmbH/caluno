@@ -17,6 +17,7 @@ COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
 COPY packages/lifespan/package.json ./packages/lifespan/
+COPY packages/password-policy/package.json ./packages/password-policy/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 # --ignore-scripts: @repo/data's postinstall runs codegen, which needs source.
@@ -31,6 +32,7 @@ COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
 COPY packages/lifespan ./packages/lifespan
+COPY packages/password-policy ./packages/password-policy
 COPY packages/typescript-config ./packages/typescript-config
 
 # The @repo/data postinstall, deferred from the install above.
@@ -39,6 +41,7 @@ RUN bun run --cwd packages/data codegen
 # Build @repo/observability (dist/ is dockerignored; next build imports its exports)
 RUN bun run --cwd packages/observability build
 RUN bun run --cwd packages/lifespan build
+RUN bun run --cwd packages/password-policy build
 
 ENV NODE_ENV=production
 

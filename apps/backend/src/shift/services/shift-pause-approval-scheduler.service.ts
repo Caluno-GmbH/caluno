@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { AdvisoryLockService } from '../../database/advisory-lock.service';
+import { ADVISORY_LOCK_KEYS } from '../../database/advisory-lock-keys';
 import { ShiftPauseApprovalSweepService } from './shift-pause-approval-sweep.service';
 
 /**
@@ -14,7 +16,10 @@ import { ShiftPauseApprovalSweepService } from './shift-pause-approval-sweep.ser
 export class ShiftPauseApprovalSchedulerService {
   private readonly logger = new Logger(ShiftPauseApprovalSchedulerService.name);
 
-  constructor(private readonly sweepService: ShiftPauseApprovalSweepService) {}
+  constructor(
+    private readonly sweepService: ShiftPauseApprovalSweepService,
+    private readonly advisoryLock: AdvisoryLockService,
+  ) {}
 
   @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
   async handleTick(): Promise<void> {
@@ -22,7 +27,21 @@ export class ShiftPauseApprovalSchedulerService {
     this.logger.log({ event: 'pause_approval_tick.started' }, 'Tick started');
 
     try {
-      const summary = await this.sweepService.runTick();
+      const summary = await this.advisoryLock.tryWithLock(
+        ADVISORY_LOCK_KEYS.shiftPauseApprovalTick,
+        () => this.sweepService.runTick(),
+      );
+      if (summary === null) {
+        this.logger.log(
+          {
+            event: 'pause_approval_tick.skipped_locked',
+            duration_ms: Date.now() - startedAt,
+          },
+          'Another instance is running the tick; skipping',
+        );
+        return;
+      }
+
       this.logger.log(
         {
           event: 'pause_approval_tick.finished',
