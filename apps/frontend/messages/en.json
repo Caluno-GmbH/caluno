@@ -92,16 +92,16 @@
     },
     "passwordStrength": {
       "checking": "Checking…",
-      "label": "Password strength",
+      "hint": "Use at least 12 characters with letters, numbers, and symbols. Avoid names, dates, and common words.",
       "levels": {
         "fair": "Fair",
         "good": "Good",
         "strong": "Strong",
         "weak": "Weak"
       },
-      "minimum": "Use at least 8 characters.",
-      "unavailable": "Strength check unavailable. Use a long passphrase.",
-      "weak": "Add more words that are less common."
+      "minimum": "Use at least 8 characters — longer is better.",
+      "unavailable": "Strength check unavailable. Use a long, mixed password.",
+      "weak": "Too easy to guess. Make it longer and mix letters, numbers, and symbols."
     },
     "resetPassword": {
       "confirmPasswordLabel": "Confirm password",
@@ -112,7 +112,7 @@
       "passwordMismatch": "Passwords do not match",
       "passwordPlaceholder": "••••••••",
       "passwordTooShort": "Use at least 8 characters.",
-      "passwordTooWeak": "That password is too easy to guess. Try a longer passphrase.",
+      "passwordTooWeak": "That password is too easy to guess. Try a longer password with letters, numbers, and symbols.",
       "resetFailed": "Failed to reset password. Please request a new reset link.",
       "signInLink": "Back to sign in",
       "submit": "Reset password",
@@ -130,11 +130,10 @@
       "lastnameLabel": "Last name",
       "lastnamePlaceholder": "Doe",
       "namePartsRequired": "Please enter your first and last name.",
-      "passwordHint": "At least 8 characters. A long passphrase is best.",
       "passwordLabel": "Password",
       "passwordPlaceholder": "••••••••",
       "passwordTooShort": "Use at least 8 characters.",
-      "passwordTooWeak": "That password is too easy to guess. Try a longer passphrase.",
+      "passwordTooWeak": "That password is too easy to guess. Try a longer password with letters, numbers, and symbols.",
       "privacyAcknowledge": "I have read and acknowledge the <privacyLink>Privacy Policy</privacyLink>.",
       "privacyRequired": "Please acknowledge the Privacy Policy to create an account.",
       "signInLink": "Sign in",

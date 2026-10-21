@@ -117,9 +117,7 @@ export function ResetPasswordForm({
             placeholder={t('passwordPlaceholder')}
             disabled={isPending || !token}
           />
-          {newPassword.length > 0 ? (
-            <PasswordStrengthMeter className="mt-2" password={newPassword} />
-          ) : null}
+          <PasswordStrengthMeter className="mt-2" password={newPassword} />
         </div>
 
         <div>
