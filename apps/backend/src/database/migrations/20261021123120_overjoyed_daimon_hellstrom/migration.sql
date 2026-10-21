@@ -11,7 +11,6 @@ CREATE TABLE "email_outbox" (
 	"text_body" text,
 	"attachments" jsonb,
 	"organization_unit_id" uuid,
-	"instance_id" uuid,
 	"status" "email_delivery_status" DEFAULT 'PENDING'::"email_delivery_status" NOT NULL,
 	"attempts" integer DEFAULT 0 NOT NULL,
 	"max_attempts" integer DEFAULT 8 NOT NULL,

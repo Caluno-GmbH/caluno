@@ -339,7 +339,6 @@ export class ShiftCallOutService {
             subject,
             html,
             organizationUnitId: organizationUnit.id,
-            instanceId: instance.id,
             dedupeKey: `call-out:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });
@@ -452,7 +451,6 @@ export class ShiftCallOutService {
             subject,
             html,
             organizationUnitId: organizationUnit.id,
-            instanceId: instance.id,
             dedupeKey: `call-out-no-recipients:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });

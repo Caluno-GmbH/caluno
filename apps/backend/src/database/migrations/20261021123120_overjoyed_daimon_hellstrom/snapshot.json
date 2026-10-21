@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "68600757-aadc-4a4a-b98b-ccd73fc6d448",
+  "id": "8066af3d-b35b-41fe-94fb-cc46d207a2e0",
   "prevIds": ["e0a937ee-1b79-4dca-855e-476ba5c602ea"],
   "ddl": [
     {
@@ -3990,19 +3990,6 @@
       "generated": null,
       "identity": null,
       "name": "organization_unit_id",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "email_outbox"
-    },
-    {
-      "type": "uuid",
-      "typeSchema": null,
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "instance_id",
       "entityType": "columns",
       "schema": "public",
       "table": "email_outbox"

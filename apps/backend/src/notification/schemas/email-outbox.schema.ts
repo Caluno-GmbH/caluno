@@ -59,7 +59,6 @@ export const emailOutbox = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'set null' },
     ),
-    instanceId: uuid('instance_id'),
     status: emailDeliveryStatusEnum('status')
       .$type<EmailDeliveryStatus>()
       .notNull()

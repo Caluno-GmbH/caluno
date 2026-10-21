@@ -24,7 +24,6 @@ export interface EnqueueEmailInput {
   attachments?: EmailAttachment[];
   userId?: string | null;
   organizationUnitId?: string | null;
-  instanceId?: string | null;
   /** Idempotency key: a re-run of the same business action reuses the row. */
   dedupeKey?: string | null;
   /** After this instant the email is no longer useful and is cancelled. */
@@ -133,7 +132,6 @@ export class EmailOutboxService {
         textBody: input.text ?? null,
         attachments: serializeAttachments(input.attachments),
         organizationUnitId: input.organizationUnitId ?? null,
-        instanceId: input.instanceId ?? null,
         maxAttempts: input.maxAttempts ?? MAX_ATTEMPTS_DEFAULT,
         expiresAt: input.expiresAt ?? null,
       })

@@ -406,7 +406,6 @@ export class ShiftUnderstaffedNotificationService {
             subject,
             html,
             organizationUnitId: instance.master.organizationUnitId,
-            instanceId: instance.id,
             dedupeKey: `manager-notification:${instance.id}:${recipient.userId}:${kind}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });

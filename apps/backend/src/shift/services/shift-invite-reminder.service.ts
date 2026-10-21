@@ -118,7 +118,6 @@ export class ShiftInviteReminderService {
       subject,
       html,
       organizationUnitId: organizationUnit.id,
-      instanceId: instance.id,
       // `updatedAt` identifies the reminder cycle: resetting the invite bumps
       // it, so a new reminder is not suppressed by the previous SENT row.
       dedupeKey: `invite-reminder:${instance.id}:${recipient.userId}:${invite.updatedAt.toISOString()}`,
