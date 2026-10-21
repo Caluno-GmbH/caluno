@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
+import './test-db-env';
 import { AppModule } from '../../src/app.module';
 import { PermissionGuard } from '../../src/auth/guards/permission.guard';
 import { getAuthMockUserId, getAuthMockUserTermsVersion } from './auth-mocks';

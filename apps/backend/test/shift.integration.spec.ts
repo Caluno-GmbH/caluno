@@ -5674,7 +5674,7 @@ describe('remindShiftInstanceInvite (VOLI-1236)', () => {
       variables: { instanceId: instance.id, userId: volunteer.id },
       headers: { 'x-organization-unit-id': organizationUnitId },
     });
-    expect(response.errors?.[0]?.message).toMatch(/past/);
+    expect(response.errors?.[0]?.message).toMatch(/already started/);
   });
 
   // The integration test app bypasses PermissionGuard by design

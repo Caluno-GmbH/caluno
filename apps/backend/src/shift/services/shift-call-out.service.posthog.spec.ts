@@ -114,7 +114,10 @@ describe('ShiftCallOutService.sendCallOut PostHog', () => {
         ]),
         filterRecipientsByEmailPreferences: filterRecipientsForEvent,
       } as never,
-      { send: jest.fn().mockResolvedValue(undefined) } as never,
+      {
+        enqueue: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
+        refreshAuditStatuses: jest.fn().mockResolvedValue(undefined),
+      } as never,
       { t: jest.fn() } as never,
       { capture } as unknown as PostHogService,
     );
@@ -175,7 +178,10 @@ describe('ShiftCallOutService.sendCallOut PostHog', () => {
           },
         ]),
       } as never,
-      { send: jest.fn().mockResolvedValue(undefined) } as never,
+      {
+        enqueue: jest.fn().mockResolvedValue({ id: 'outbox-1' }),
+        refreshAuditStatuses: jest.fn().mockResolvedValue(undefined),
+      } as never,
       { t: jest.fn() } as never,
       { capture } as unknown as PostHogService,
     );
