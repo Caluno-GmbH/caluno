@@ -6,12 +6,12 @@ triage and reason about authorization logic. Nothing here modifies source.
 
 ## Commands
 Run from `packages/security` (or `bun run security:audit` from the root).
-- `bun run audit` - All steps below; results in `out/` (gitignored). Exit 3 if a tool was missing: a skipped step is not a pass.
+- `bun run audit` - All steps below; results in `out/` (gitignored). Exit 3 if a tool was missing or wrote no report: a skipped or failed step is not a pass.
 - `bun run audit:surface` - Every resolver/controller endpoint via AST -> `out/surface.json`, with the tenant-context flags
 - `bun run audit:sast` - Semgrep: registry packs (`rules/semgrep-packs.txt`) + vendored rules (`rules/semgrep-local.yml`)
 - `bun run audit:deps` - osv-scanner on `bun.lock`
 - `bun run audit:secrets` - gitleaks on the full git history, using the root `.gitleaks.toml`
-- `bun run audit:iac` - KICS with the root `kics.config` + trivy on `packages/infra` (needs the submodule)
+- `bun run audit:iac` - KICS with the root `kics.config` + trivy, both on `packages/infra` only (needs the submodule). KICS query library is found automatically; override with `KICS_QUERIES=<dir>`
 - `bun run audit:coverage` - Compares `out/surface.json` with an agent's `out/manifest.jsonl`
 - `bun run check-types`
 
