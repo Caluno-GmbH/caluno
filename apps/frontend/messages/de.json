@@ -1714,6 +1714,7 @@
       "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
+      "paginationName": "Einsätze",
       "createButton": "Einsatz erstellen",
       "subtitle": "Einsatzdetails und Freiwillige",
       "title": "Einsätze"
@@ -1794,6 +1795,11 @@
       "requiredForms": "Formulare",
       "time": "Zeit",
       "visibility": "Sichtbarkeit"
+    },
+    "search": {
+      "placeholder": "Nach Name suchen",
+      "clearAria": "Suche zurücksetzen",
+      "noResults": "Keine Einsätze passen zu dieser Suche"
     },
     "tabs": {
       "allShifts": "Alle Einsätze",
@@ -1910,6 +1916,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Zeilen pro Seite",
     "sortAscending": "Aufsteigend sortieren",
     "sortDescending": "Absteigend sortieren",
     "sortedAscending": "Aufsteigend sortiert",
@@ -2017,6 +2024,7 @@
       "title": "Noch keine Nutzenden"
     },
     "page": {
+      "paginationName": "Nutzende",
       "copyInviteLink": "Einladungslink kopieren",
       "inviteLinkCopied": "Einladungslink in Zwischenablage kopiert",
       "subtitle": "Verwalte Personen und ihre Rollen in deiner Organisation",

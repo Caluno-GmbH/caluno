@@ -11,6 +11,7 @@ export * from './components/base/card';
 export * from './components/base/checkbox';
 export * from './components/base/combobox';
 export * from './components/base/command';
+export * from './components/base/data-table-cells';
 export * from './components/base/dialog';
 export * from './components/base/empty';
 export * from './components/base/field';

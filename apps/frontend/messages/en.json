@@ -1714,6 +1714,7 @@
       "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
+      "paginationName": "assignments",
       "createButton": "Create assignment",
       "subtitle": "Assignment details and volunteers",
       "title": "Assignments"
@@ -1794,6 +1795,11 @@
       "requiredForms": "Forms",
       "time": "Time",
       "visibility": "Visibility"
+    },
+    "search": {
+      "placeholder": "Search by name",
+      "clearAria": "Clear search",
+      "noResults": "No assignments match this search"
     },
     "tabs": {
       "allShifts": "All assignments",
@@ -1910,6 +1916,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Rows per page",
     "sortAscending": "Sort ascending",
     "sortDescending": "Sort descending",
     "sortedAscending": "Sorted ascending",
@@ -2017,6 +2024,7 @@
       "title": "No users yet"
     },
     "page": {
+      "paginationName": "users",
       "copyInviteLink": "Copy invite link",
       "inviteLinkCopied": "Invite link copied to clipboard",
       "subtitle": "Manage people and their roles in your organisation",

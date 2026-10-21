@@ -69,9 +69,11 @@ import { FileService } from '../storage/services/file.service';
 import type { TimeEntryEntity } from '../time-tracking/schemas/time-entry.schema';
 import { UserService } from '../user/user.service';
 import { slugify } from '../utils/slug.util';
+import { containsPattern } from '../utils/string.util';
 import {
   INVITE_STATUS_TO_JOIN_SHIFT_STATUS,
   ShiftInviteStatus,
+  ShiftSortField,
   ShiftVisibility,
   SortOrder,
 } from './enums';
@@ -985,6 +987,9 @@ export class ShiftService {
     userId: string,
     organizationUnitId: string,
     pagination: PaginationInput,
+    sort: ShiftSortField = ShiftSortField.CREATED_AT,
+    order: SortOrder = SortOrder.DESC,
+    search: string | null = null,
   ): Promise<{ shifts: ShiftEntity[]; total: number }> {
     const canViewAllShifts = await this.authService.hasRequiredPermissions(
       userId,
@@ -993,31 +998,64 @@ export class ShiftService {
     );
 
     if (canViewAllShifts) {
-      return this.findAllForOrgUnit(organizationUnitId, pagination);
+      return this.findAllForOrgUnit(
+        organizationUnitId,
+        pagination,
+        sort,
+        order,
+        search,
+      );
     }
 
     return this.findAllVisibleToMember(userId, organizationUnitId, pagination);
   }
 
+  private buildShiftOrderBy(sort: ShiftSortField, order: SortOrder) {
+    const dir = order === SortOrder.ASC ? ('asc' as const) : ('desc' as const);
+    // id tie-breaker keeps offset pagination stable across equal sort values.
+    switch (sort) {
+      case ShiftSortField.TITLE:
+        return { title: dir, id: 'asc' as const };
+      case ShiftSortField.FIRST_DATE:
+        return { originalStartsAt: dir, id: 'asc' as const };
+      case ShiftSortField.VISIBILITY:
+        return { visibility: dir, id: 'asc' as const };
+      default:
+        return { createdAt: dir, id: 'asc' as const };
+    }
+  }
+
   private async findAllForOrgUnit(
     organizationUnitId: string,
     pagination: PaginationInput,
+    sort: ShiftSortField,
+    order: SortOrder,
+    search: string | null,
   ): Promise<{ shifts: ShiftEntity[]; total: number }> {
+    const term = search?.trim();
+    // Same where for rows and count so pagination totals reflect the search.
+    const where = {
+      organizationUnitId,
+      isDeleted: false,
+      ...(term
+        ? {
+            OR: [
+              { title: { ilike: containsPattern(term) } },
+              { location: { ilike: containsPattern(term) } },
+            ],
+          }
+        : {}),
+    };
+
     const shifts = await this.db.query.shifts.findMany({
-      where: {
-        organizationUnitId,
-        isDeleted: false,
-      },
-      orderBy: { createdAt: 'desc' },
+      where,
+      orderBy: this.buildShiftOrderBy(sort, order),
       limit: pagination.limit,
       offset: pagination.offset,
     });
 
     const totalResult = await this.db.query.shifts.findMany({
-      where: {
-        organizationUnitId,
-        isDeleted: false,
-      },
+      where,
       columns: {},
       extras: { total: count() },
     });
@@ -3307,7 +3345,7 @@ export class ShiftService {
       where: {
         organizationUnitId,
         isDeleted: false,
-        ...(search ? { title: { ilike: `%${search}%` } } : {}),
+        ...(search ? { title: { ilike: containsPattern(search) } } : {}),
       },
       orderBy: { title: 'asc' },
       limit,
