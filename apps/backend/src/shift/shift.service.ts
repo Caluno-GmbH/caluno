@@ -3332,6 +3332,30 @@ export class ShiftService {
   }
 
   /**
+   * Start times of every non-cancelled instance of the event's shifts, with no
+   * date filter. Lets the event calendar find weeks that have shifts, even
+   * ones outside the event's own dates.
+   */
+  async findInstanceStartsForEvent(
+    organizationUnitId: string,
+    eventId: string,
+  ): Promise<Date[]> {
+    const shifts = await this.db.query.shifts.findMany({
+      where: { organizationUnitId, isDeleted: false, eventId },
+      columns: { id: true },
+    });
+    const shiftIds = shifts.map((s) => s.id);
+    if (shiftIds.length === 0) return [];
+
+    const instances = await this.db.query.shiftInstances.findMany({
+      where: { masterId: { in: shiftIds }, isCancelled: false },
+      columns: { actualStartsAt: true },
+      orderBy: { actualStartsAt: 'asc' },
+    });
+    return instances.map((instance) => instance.actualStartsAt);
+  }
+
+  /**
    * Shifts in the org unit whose title matches `search`. Used by the check-in
    * shift picker, which searches shift names rather than instances — so this
    * takes no date range.

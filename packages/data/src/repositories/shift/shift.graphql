@@ -652,3 +652,7 @@ mutation CheckInInviteToShiftInstance(
     id
   }
 }
+
+query GetEventShiftInstanceStarts($eventId: ID!) {
+  eventShiftInstanceStarts(eventId: $eventId)
+}

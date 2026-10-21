@@ -1,10 +1,14 @@
 'use client';
 
 import { Button } from '@repo/ui';
-import { addDays, addWeeks, format, getISOWeek, subWeeks } from 'date-fns';
+import { addDays } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
+import {
+  getAdjacentWeekParam,
+  getWeekNumber,
+} from '@/domain/shift/lib/shift-instances';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 
@@ -27,10 +31,8 @@ export function WeeklyCalendarNav({
 
   const navigate = useCallback(
     (direction: 'prev' | 'next') => {
-      const newStart =
-        direction === 'prev' ? subWeeks(weekStart, 1) : addWeeks(weekStart, 1);
       const params = new URLSearchParams(query ?? {});
-      params.set('week', format(newStart, 'yyyy-MM-dd'));
+      params.set('week', getAdjacentWeekParam(weekStart, direction));
       router.push(`${pathname}?${params.toString()}`);
     },
     [weekStart, router, pathname, query],
@@ -49,7 +51,7 @@ export function WeeklyCalendarNav({
 
       <span className="text-sm font-medium">
         <span className="font-bold">
-          {t('calendar.week', { week: getISOWeek(weekStart) })}
+          {t('calendar.week', { week: getWeekNumber(weekStart) })}
         </span>{' '}
         {formatDate(weekStart, { month: 'short', day: 'numeric' })} –{' '}
         {formatDate(addDays(weekStart, 6), {

@@ -11,8 +11,10 @@ import z from 'zod';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
 import { pickFirstShiftInstanceId } from '../shift/create-shift-flow';
+import { toWeekParam } from '../shift/lib/shift-instances';
 import { generateRrule } from '../shift/rrule';
 import { serverShiftFormSchema } from '../shift/schemas';
+import type { PendingEventWeek } from './pending-event-week';
 import { serverEventFormSchema, serverEventInviteFormSchema } from './schemas';
 
 export const createEvent = actionClient
@@ -145,8 +147,18 @@ export const createEventShift = actionClient
     const shift = await data.shift.create(input);
     const instances = await data.shift.findInstances(shift.id);
 
+    const instanceId = pickFirstShiftInstanceId(instances);
+    const firstInstance = instances.find(({ id }) => id === instanceId);
+    const focusWeek: PendingEventWeek | undefined = firstInstance
+      ? {
+          eventId,
+          week: toWeekParam(new Date(firstInstance.actualStartsAt)),
+        }
+      : undefined;
+
     return {
       id: shift.id,
-      instanceId: pickFirstShiftInstanceId(instances),
+      instanceId,
+      ...(focusWeek ? { focusWeek } : {}),
     };
   });

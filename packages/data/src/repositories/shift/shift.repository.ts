@@ -319,6 +319,11 @@ export class ShiftRepository extends BaseRepository {
     return data.weeklyShifts;
   }
 
+  async findInstanceStartsForEvent(eventId: string): Promise<string[]> {
+    const data = await this.sdk.GetEventShiftInstanceStarts({ eventId });
+    return data.eventShiftInstanceStarts;
+  }
+
   /**
    * Check-in shift picker. The org unit travels as a per-request header
    * because the backend derives permissions from it — never from an argument.
