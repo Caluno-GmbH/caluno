@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "3df01ca2-eb56-45c7-8fa1-3cc073841863",
+  "id": "af316bbd-fdad-4520-a7ce-c1a7c33e4dd7",
   "prevIds": ["e0a937ee-1b79-4dca-855e-476ba5c602ea"],
   "ddl": [
     {
@@ -155,12 +155,6 @@
     {
       "values": ["INVITED_MEMBERS", "ALL_MEMBERS"],
       "name": "shift_visibility",
-      "entityType": "enums",
-      "schema": "public"
-    },
-    {
-      "values": ["SENT", "FAILED"],
-      "name": "shift_call_out_delivery_status",
       "entityType": "enums",
       "schema": "public"
     },
@@ -6887,19 +6881,6 @@
       "table": "shift_call_out_recipients"
     },
     {
-      "type": "shift_call_out_delivery_status",
-      "typeSchema": "public",
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "status",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "shift_call_out_recipients"
-    },
-    {
       "type": "shift_call_out_source",
       "typeSchema": "public",
       "notNull": true,
@@ -7519,19 +7500,6 @@
       "generated": null,
       "identity": null,
       "name": "kind",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "shift_manager_notifications"
-    },
-    {
-      "type": "shift_call_out_delivery_status",
-      "typeSchema": "public",
-      "notNull": false,
-      "dimensions": 0,
-      "default": null,
-      "generated": null,
-      "identity": null,
-      "name": "status",
       "entityType": "columns",
       "schema": "public",
       "table": "shift_manager_notifications"

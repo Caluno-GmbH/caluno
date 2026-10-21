@@ -23,11 +23,12 @@ CREATE TABLE "email_outbox" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "shift_call_out_recipients" ALTER COLUMN "status" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "shift_manager_notifications" ALTER COLUMN "status" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "shift_call_out_recipients" DROP COLUMN "status";--> statement-breakpoint
+ALTER TABLE "shift_manager_notifications" DROP COLUMN "status";--> statement-breakpoint
 CREATE INDEX "idx_email_outbox_status_next_attempt" ON "email_outbox" ("status","next_attempt_at");--> statement-breakpoint
 CREATE INDEX "idx_email_outbox_organization_unit_created_at" ON "email_outbox" ("organization_unit_id","created_at");--> statement-breakpoint
 CREATE INDEX "idx_email_outbox_user_id" ON "email_outbox" ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_email_outbox_provider_message_id" ON "email_outbox" ("provider_message_id");--> statement-breakpoint
 ALTER TABLE "email_outbox" ADD CONSTRAINT "email_outbox_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE SET NULL;--> statement-breakpoint
-ALTER TABLE "email_outbox" ADD CONSTRAINT "email_outbox_organization_unit_id_organization_units_id_fkey" FOREIGN KEY ("organization_unit_id") REFERENCES "organization_units"("id") ON DELETE SET NULL;
+ALTER TABLE "email_outbox" ADD CONSTRAINT "email_outbox_organization_unit_id_organization_units_id_fkey" FOREIGN KEY ("organization_unit_id") REFERENCES "organization_units"("id") ON DELETE SET NULL;--> statement-breakpoint
+DROP TYPE "shift_call_out_delivery_status";

@@ -9,11 +9,7 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
-import {
-  ShiftCallOutDeliveryStatus,
-  ShiftManagerNotificationKind,
-} from '../enums';
-import { shiftCallOutDeliveryStatusEnum } from './shift-call-out-recipient.schema';
+import { ShiftManagerNotificationKind } from '../enums';
 import { shiftInstances } from './shift-instance.schema';
 
 export const shiftManagerNotificationKindEnum = pgEnum(
@@ -34,12 +30,6 @@ export const shiftManagerNotifications = snakeCase.table(
     kind: shiftManagerNotificationKindEnum('kind')
       .$type<ShiftManagerNotificationKind>()
       .notNull(),
-    // Legacy: no longer written. Kept nullable so the previous release keeps
-    // working during the deploy; drop it in the next release.
-    status:
-      shiftCallOutDeliveryStatusEnum(
-        'status',
-      ).$type<ShiftCallOutDeliveryStatus>(),
     sentAt: timestamp('sent_at').notNull(),
     ...timestampColumns,
   },
