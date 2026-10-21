@@ -1,4 +1,4 @@
-export const TEST_PASSWORD = 'qewr123ee';
+export const TEST_PASSWORD = 'E2eCheck-7v#Lm9';
 
 // Unique per run so each run gets a fresh account.
 export const uniqueEmail = () =>

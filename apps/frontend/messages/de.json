@@ -92,16 +92,16 @@
     },
     "passwordStrength": {
       "checking": "Wird geprüft…",
-      "label": "Passwortstärke",
+      "hint": "Verwende mindestens 12 Zeichen mit Buchstaben, Zahlen und Sonderzeichen. Vermeide Namen, Daten und gängige Wörter.",
       "levels": {
         "fair": "Mittel",
         "good": "Gut",
         "strong": "Stark",
         "weak": "Schwach"
       },
-      "minimum": "Verwende mindestens 8 Zeichen.",
-      "unavailable": "Stärkeprüfung nicht verfügbar. Verwende eine lange Passphrase.",
-      "weak": "Füge weitere, weniger verbreitete Wörter hinzu."
+      "minimum": "Verwende mindestens 8 Zeichen – mehr ist besser.",
+      "unavailable": "Stärkeprüfung nicht verfügbar. Verwende ein langes, gemischtes Passwort.",
+      "weak": "Zu leicht zu erraten. Verlängere es und mische Buchstaben, Zahlen und Sonderzeichen."
     },
     "resetPassword": {
       "confirmPasswordLabel": "Passwort bestätigen",
@@ -112,7 +112,7 @@
       "passwordMismatch": "Die Passwörter stimmen nicht überein",
       "passwordPlaceholder": "••••••••",
       "passwordTooShort": "Verwende mindestens 8 Zeichen.",
-      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einer längeren Passphrase.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einem längeren Passwort aus Buchstaben, Zahlen und Sonderzeichen.",
       "resetFailed": "Passwort konnte nicht zurückgesetzt werden. Bitte fordere einen neuen Link an.",
       "signInLink": "Zurück zur Anmeldung",
       "submit": "Passwort zurücksetzen",
@@ -130,11 +130,10 @@
       "lastnameLabel": "Nachname",
       "lastnamePlaceholder": "Mustermann",
       "namePartsRequired": "Bitte gib Vor- und Nachname ein.",
-      "passwordHint": "Mindestens 8 Zeichen. Am besten eine lange Passphrase.",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
       "passwordTooShort": "Verwende mindestens 8 Zeichen.",
-      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einer längeren Passphrase.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einem längeren Passwort aus Buchstaben, Zahlen und Sonderzeichen.",
       "privacyAcknowledge": "Ich habe die <privacyLink>Datenschutzhinweise</privacyLink> gelesen und akzeptiere sie.",
       "privacyRequired": "Bitte akzeptiere die Datenschutzhinweise, um ein Konto zu erstellen.",
       "signInLink": "Anmelden",

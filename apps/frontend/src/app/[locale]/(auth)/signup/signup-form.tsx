@@ -215,22 +215,16 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
             placeholder={t('passwordPlaceholder')}
             disabled={isPending}
           />
-          {fields.password.length === 0 ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t('passwordHint')}
-            </p>
-          ) : (
-            <PasswordStrengthMeter
-              className="mt-2"
-              password={fields.password}
-              userInputs={passwordUserInputs({
-                email: fields.email,
-                name: `${fields.firstname} ${fields.lastname}`,
-                firstname: fields.firstname,
-                lastname: fields.lastname,
-              })}
-            />
-          )}
+          <PasswordStrengthMeter
+            className="mt-2"
+            password={fields.password}
+            userInputs={passwordUserInputs({
+              email: fields.email,
+              name: `${fields.firstname} ${fields.lastname}`,
+              firstname: fields.firstname,
+              lastname: fields.lastname,
+            })}
+          />
         </div>
 
         <div className="flex items-start gap-3">

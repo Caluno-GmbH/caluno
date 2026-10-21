@@ -9,8 +9,8 @@ describe('scorePassword', () => {
     expect(result.level).toBe(1);
   });
 
-  it('scores a passphrase above the policy threshold', async () => {
-    const result = await scorePassword('correct-horse-battery-staple', []);
+  it('scores a long password above the policy threshold', async () => {
+    const result = await scorePassword('T7#kQ2!mR9xP', []);
 
     expect(result.score).toBeGreaterThanOrEqual(3);
     expect(result.level).toBeGreaterThanOrEqual(3);

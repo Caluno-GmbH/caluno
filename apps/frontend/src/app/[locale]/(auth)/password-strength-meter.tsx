@@ -40,8 +40,9 @@ export interface PasswordStrengthMeterProps {
 }
 
 /**
- * Local zxcvbn meter that mirrors the server-side password policy, so people see
- * where they stand while typing instead of learning it from a rejected submit.
+ * Password feedback that mirrors the server-side policy: the strength hint
+ * before typing, then the live meter so people see where they stand instead of
+ * learning it from a rejected submit.
  */
 export function PasswordStrengthMeter({
   password,
@@ -91,7 +92,11 @@ export function PasswordStrengthMeter({
   }, [password, inputsKey]);
 
   if (password.length === 0) {
-    return null;
+    return (
+      <p className={cn('text-xs text-muted-foreground', className)}>
+        {t('hint')}
+      </p>
+    );
   }
 
   if (failed) {
