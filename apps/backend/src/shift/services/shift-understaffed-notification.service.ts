@@ -387,7 +387,7 @@ export class ShiftUnderstaffedNotificationService {
     if (recipients.length === 0) return;
 
     const sentAt = new Date();
-    const results = await Promise.all(
+    const enqueueResults = await Promise.all(
       recipients.map(async (recipient) => {
         try {
           const templateContext = createEmailTemplateContext(
@@ -410,7 +410,7 @@ export class ShiftUnderstaffedNotificationService {
             expiresAt: instance.actualEndsAt,
           });
           return { userId: recipient.userId, enqueued: true };
-        } catch (error) {
+        } catch (enqueueError) {
           this.logger.error(
             {
               event: 'understaffed_tick.email_failed',
@@ -418,7 +418,7 @@ export class ShiftUnderstaffedNotificationService {
               organization_unit_id: instance.master.organizationUnitId,
               kind,
               recipient_user_id: recipient.userId,
-              err: error,
+              err: enqueueError,
             },
             'Failed to queue manager email',
           );
@@ -427,15 +427,17 @@ export class ShiftUnderstaffedNotificationService {
       }),
     );
 
-    const enqueued = results.filter((result) => result.enqueued);
-    if (enqueued.length === 0) {
+    const enqueuedNotifications = enqueueResults.filter(
+      (enqueueResult) => enqueueResult.enqueued,
+    );
+    if (enqueuedNotifications.length === 0) {
       return;
     }
 
     await this.db.insert(schema.shiftManagerNotifications).values(
-      enqueued.map((result) => ({
+      enqueuedNotifications.map((enqueueResult) => ({
         instanceId: instance.id,
-        recipientId: result.userId,
+        recipientId: enqueueResult.userId,
         kind,
         sentAt,
       })),

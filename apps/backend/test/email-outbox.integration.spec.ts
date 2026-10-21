@@ -62,7 +62,7 @@ describe('EmailOutboxService', () => {
   });
 
   beforeEach(async () => {
-    // Retire rows left pending by the previous test so drain() is isolated.
+    // Retire emails left pending by the previous test so drain() is isolated.
     await db
       .update(schema.emailOutbox)
       .set({ status: EmailDeliveryStatus.CANCELLED })
@@ -79,7 +79,7 @@ describe('EmailOutboxService', () => {
     }));
   });
 
-  function buildInput(
+  function buildEmailInput(
     overrides: Partial<EnqueueEmailInput> = {},
   ): EnqueueEmailInput {
     counter += 1;
@@ -95,36 +95,36 @@ describe('EmailOutboxService', () => {
   }
 
   function enqueue(overrides: Partial<EnqueueEmailInput> = {}) {
-    return service.enqueue(buildInput(overrides));
+    return service.enqueue(buildEmailInput(overrides));
   }
 
-  async function findRow(id: string) {
-    const [row] = await db
+  async function findOutboxEmail(id: string) {
+    const [outboxEmail] = await db
       .select()
       .from(schema.emailOutbox)
       .where(eq(schema.emailOutbox.id, id));
-    return row;
+    return outboxEmail;
   }
 
-  it('enqueues a pending row and is idempotent by dedupe key', async () => {
-    const first = await enqueue({ dedupeKey: 'same-action' });
-    const second = await enqueue({ dedupeKey: 'same-action' });
+  it('enqueues a pending email and is idempotent by dedupe key', async () => {
+    const firstEmail = await enqueue({ dedupeKey: 'same-action' });
+    const secondEmail = await enqueue({ dedupeKey: 'same-action' });
 
-    expect(second.id).toBe(first.id);
-    expect(first.status).toBe(EmailDeliveryStatus.PENDING);
-    expect(first.attempts).toBe(0);
+    expect(secondEmail.id).toBe(firstEmail.id);
+    expect(firstEmail.status).toBe(EmailDeliveryStatus.PENDING);
+    expect(firstEmail.attempts).toBe(0);
   });
 
-  it('marks the row SENT and stores the provider message id', async () => {
-    const row = await enqueue();
+  it('marks the email SENT and stores the provider message id', async () => {
+    const outboxEmail = await enqueue();
 
-    const summary = await service.drain();
+    const drainSummary = await service.drain();
 
-    expect(summary.sent).toBeGreaterThanOrEqual(1);
-    const updated = await findRow(row.id);
-    expect(updated?.status).toBe(EmailDeliveryStatus.SENT);
-    expect(updated?.providerMessageId).toBe('provider-1');
-    expect(updated?.sentAt).toBeInstanceOf(Date);
+    expect(drainSummary.sent).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.SENT);
+    expect(updatedEmail?.providerMessageId).toBe('provider-1');
+    expect(updatedEmail?.sentAt).toBeInstanceOf(Date);
   });
 
   it('schedules a retry with backoff for a retryable failure', async () => {
@@ -133,16 +133,16 @@ describe('EmailOutboxService', () => {
       retryable: true,
       error: new Error('The operation timed out'),
     }));
-    const row = await enqueue();
+    const outboxEmail = await enqueue();
 
-    const summary = await service.drain();
+    const drainSummary = await service.drain();
 
-    expect(summary.retried).toBeGreaterThanOrEqual(1);
-    const updated = await findRow(row.id);
-    expect(updated?.status).toBe(EmailDeliveryStatus.PENDING);
-    expect(updated?.attempts).toBe(1);
-    expect(updated?.lastError).toContain('timed out');
-    expect(updated?.nextAttemptAt.getTime()).toBeGreaterThan(Date.now());
+    expect(drainSummary.retried).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.PENDING);
+    expect(updatedEmail?.attempts).toBe(1);
+    expect(updatedEmail?.lastError).toContain('timed out');
+    expect(updatedEmail?.nextAttemptAt.getTime()).toBeGreaterThan(Date.now());
   });
 
   it('fails permanently on a non-retryable error', async () => {
@@ -151,26 +151,26 @@ describe('EmailOutboxService', () => {
       retryable: false,
       error: new Error('invalid recipient'),
     }));
-    const row = await enqueue();
+    const outboxEmail = await enqueue();
 
-    const summary = await service.drain();
+    const drainSummary = await service.drain();
 
-    expect(summary.failed).toBeGreaterThanOrEqual(1);
-    const updated = await findRow(row.id);
-    expect(updated?.status).toBe(EmailDeliveryStatus.FAILED);
-    expect(updated?.lastError).toContain('invalid recipient');
+    expect(drainSummary.failed).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.FAILED);
+    expect(updatedEmail?.lastError).toContain('invalid recipient');
   });
 
-  it('cancels an expired row without calling the transport', async () => {
-    const row = await enqueue({
+  it('cancels an expired email without calling the transport', async () => {
+    const outboxEmail = await enqueue({
       expiresAt: new Date(Date.now() - 60_000),
     });
 
-    const summary = await service.drain();
+    const drainSummary = await service.drain();
 
-    expect(summary.cancelled).toBeGreaterThanOrEqual(1);
-    const updated = await findRow(row.id);
-    expect(updated?.status).toBe(EmailDeliveryStatus.CANCELLED);
+    expect(drainSummary.cancelled).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.CANCELLED);
     expect(sendOnce).not.toHaveBeenCalled();
   });
 
@@ -180,38 +180,38 @@ describe('EmailOutboxService', () => {
       retryable: true,
       error: new Error('provider timeout'),
     }));
-    const row = await enqueue({ maxAttempts: 2 });
+    const outboxEmail = await enqueue({ maxAttempts: 2 });
 
     await service.drain();
-    let updated = await findRow(row.id);
-    expect(updated?.status).toBe(EmailDeliveryStatus.PENDING);
-    expect(updated?.attempts).toBe(1);
+    let updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.PENDING);
+    expect(updatedEmail?.attempts).toBe(1);
 
-    // Make the row due immediately instead of waiting for the backoff.
+    // Make the email due immediately instead of waiting for the backoff.
     await db
       .update(schema.emailOutbox)
       .set({ nextAttemptAt: new Date(Date.now() - 60_000) })
-      .where(eq(schema.emailOutbox.id, row.id));
+      .where(eq(schema.emailOutbox.id, outboxEmail.id));
 
-    const due = await findRow(row.id);
-    expect(due?.nextAttemptAt.getTime()).toBeLessThanOrEqual(Date.now());
-    const second = await service.drain();
-    expect(second.claimed).toBeGreaterThanOrEqual(1);
+    const dueEmail = await findOutboxEmail(outboxEmail.id);
+    expect(dueEmail?.nextAttemptAt.getTime()).toBeLessThanOrEqual(Date.now());
+    const secondDrainSummary = await service.drain();
+    expect(secondDrainSummary.claimed).toBeGreaterThanOrEqual(1);
 
-    updated = await findRow(row.id);
-    expect(updated?.status).toBe(EmailDeliveryStatus.FAILED);
-    expect(updated?.attempts).toBe(2);
+    updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.FAILED);
+    expect(updatedEmail?.attempts).toBe(2);
     expect(sendOnce).toHaveBeenCalledTimes(2);
   });
 
   it('delivers inline and returns the transport result', async () => {
-    const outcome = await service.enqueueAndDeliver(buildInput());
+    const deliveryOutcome = await service.enqueueAndDeliver(buildEmailInput());
 
-    expect(outcome.result).toEqual({
+    expect(deliveryOutcome.result).toEqual({
       ok: true,
       providerMessageId: 'provider-1',
     });
-    expect(outcome.row.status).toBe(EmailDeliveryStatus.SENT);
+    expect(deliveryOutcome.outboxEmail.status).toBe(EmailDeliveryStatus.SENT);
   });
 
   it('leaves a retryable inline failure queued', async () => {
@@ -221,16 +221,18 @@ describe('EmailOutboxService', () => {
       error: new Error('provider timeout'),
     }));
 
-    const outcome = await service.enqueueAndDeliver(buildInput());
+    const deliveryOutcome = await service.enqueueAndDeliver(buildEmailInput());
 
-    expect(outcome.result.ok).toBe(false);
-    expect(outcome.row.status).toBe(EmailDeliveryStatus.PENDING);
-    expect(outcome.row.attempts).toBe(1);
-    expect(outcome.row.lastError).toContain('provider timeout');
+    expect(deliveryOutcome.result.ok).toBe(false);
+    expect(deliveryOutcome.outboxEmail.status).toBe(
+      EmailDeliveryStatus.PENDING,
+    );
+    expect(deliveryOutcome.outboxEmail.attempts).toBe(1);
+    expect(deliveryOutcome.outboxEmail.lastError).toContain('provider timeout');
   });
 
-  it('reclaims a stale SENDING row and delivers it', async () => {
-    const row = await enqueue();
+  it('reclaims a stale SENDING email and delivers it', async () => {
+    const outboxEmail = await enqueue();
     await db
       .update(schema.emailOutbox)
       .set({
@@ -238,26 +240,32 @@ describe('EmailOutboxService', () => {
         attempts: 1,
         updatedAt: new Date(Date.now() - 20 * 60 * 1000),
       })
-      .where(eq(schema.emailOutbox.id, row.id));
+      .where(eq(schema.emailOutbox.id, outboxEmail.id));
 
-    const summary = await service.drain();
+    const drainSummary = await service.drain();
 
-    expect(summary.claimed).toBeGreaterThanOrEqual(1);
-    expect((await findRow(row.id))?.status).toBe(EmailDeliveryStatus.SENT);
+    expect(drainSummary.claimed).toBeGreaterThanOrEqual(1);
+    expect((await findOutboxEmail(outboxEmail.id))?.status).toBe(
+      EmailDeliveryStatus.SENT,
+    );
   });
 
-  it('does not send the same row twice when two drains race', async () => {
+  it('does not send the same email twice when two drains race', async () => {
     sendOnce.mockImplementation(async () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
       return { ok: true, providerMessageId: 'provider-race' };
     });
-    const first = await enqueue();
-    const second = await enqueue();
+    const firstEmail = await enqueue();
+    const secondEmail = await enqueue();
 
     await Promise.all([service.drain(), service.drain()]);
 
     expect(sendOnce).toHaveBeenCalledTimes(2);
-    expect((await findRow(first.id))?.status).toBe(EmailDeliveryStatus.SENT);
-    expect((await findRow(second.id))?.status).toBe(EmailDeliveryStatus.SENT);
+    expect((await findOutboxEmail(firstEmail.id))?.status).toBe(
+      EmailDeliveryStatus.SENT,
+    );
+    expect((await findOutboxEmail(secondEmail.id))?.status).toBe(
+      EmailDeliveryStatus.SENT,
+    );
   });
 });

@@ -311,7 +311,7 @@ export class ShiftCallOutService {
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
     const shiftLocation = instance.overrideLocation ?? instance.master.location;
 
-    const results = await Promise.all(
+    const enqueueResults = await Promise.all(
       recipients.map(async (recipient) => {
         try {
           const templateContext = createEmailTemplateContext(
@@ -343,10 +343,12 @@ export class ShiftCallOutService {
             expiresAt: instance.actualEndsAt,
           });
           return { userId: recipient.userId, enqueued: true };
-        } catch (error) {
+        } catch (enqueueError) {
           this.logger.error(
             `Failed to queue call-out email to user ${recipient.userId}: ${
-              error instanceof Error ? error.message : String(error)
+              enqueueError instanceof Error
+                ? enqueueError.message
+                : String(enqueueError)
             }`,
           );
           return { userId: recipient.userId, enqueued: false };
@@ -354,22 +356,24 @@ export class ShiftCallOutService {
       }),
     );
 
-    const enqueued = results.filter((result) => result.enqueued);
-    if (enqueued.length === 0) {
+    const enqueuedRecipients = enqueueResults.filter(
+      (enqueueResult) => enqueueResult.enqueued,
+    );
+    if (enqueuedRecipients.length === 0) {
       return 0;
     }
 
     await this.db.insert(schema.shiftCallOutRecipients).values(
-      enqueued.map((result) => ({
+      enqueuedRecipients.map((enqueueResult) => ({
         instanceId: instance.id,
-        recipientId: result.userId,
+        recipientId: enqueueResult.userId,
         sentById: actorUserId,
         source,
         sentAt,
       })),
     );
 
-    return enqueued.length;
+    return enqueuedRecipients.length;
   }
 
   private captureCallOutSend(input: {
@@ -425,7 +429,7 @@ export class ShiftCallOutService {
     const sentAt = new Date();
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
 
-    const results = await Promise.all(
+    const enqueueResults = await Promise.all(
       recipients.map(async (recipient) => {
         try {
           const templateContext = createEmailTemplateContext(
@@ -466,6 +470,6 @@ export class ShiftCallOutService {
       }),
     );
 
-    return results.some(Boolean);
+    return enqueueResults.some(Boolean);
   }
 }

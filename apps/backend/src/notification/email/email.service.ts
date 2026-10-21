@@ -4,7 +4,7 @@ import type { EmailSendOptions } from './email-transport.service';
 import { EmailCategory } from './outbox/email-outbox.enums';
 import { EmailOutboxService } from './outbox/email-outbox.service';
 
-export interface EmailOutboxOptions {
+export interface EmailDeliveryOptions {
   /** Stop retrying after this instant (e.g. an OTP that has expired). */
   expiresAt?: Date;
   /** Idempotency key for re-runs of the same action. */
@@ -21,30 +21,30 @@ export class EmailService {
 
   constructor(private readonly outbox: EmailOutboxService) {}
 
-  async send(options: EmailSendOptions): Promise<void> {
+  async send(email: EmailSendOptions): Promise<void> {
     await this.outbox.enqueue({
-      ...options,
+      ...email,
       category: EmailCategory.NOTIFICATION,
     });
   }
 
   async sendImmediately(
-    options: EmailSendOptions,
-    outboxOptions: EmailOutboxOptions = {},
+    email: EmailSendOptions,
+    deliveryOptions: EmailDeliveryOptions = {},
   ): Promise<void> {
-    const { result } = await this.outbox.enqueueAndDeliver({
-      ...options,
+    const { result: deliveryResult } = await this.outbox.enqueueAndDeliver({
+      ...email,
       category: EmailCategory.AUTH,
-      expiresAt: outboxOptions.expiresAt,
-      dedupeKey: outboxOptions.dedupeKey,
+      expiresAt: deliveryOptions.expiresAt,
+      dedupeKey: deliveryOptions.dedupeKey,
     });
 
-    if (!result.ok && !result.retryable) {
-      throw result.error;
+    if (!deliveryResult.ok && !deliveryResult.retryable) {
+      throw deliveryResult.error;
     }
-    if (!result.ok) {
+    if (!deliveryResult.ok) {
       this.logger.warn(
-        `Email to ${options.userId ?? 'unknown'}:${maskEmail(options.to)} failed transiently; left queued for retry: ${result.error.message}`,
+        `Email to ${email.userId ?? 'unknown'}:${maskEmail(email.to)} failed transiently; left queued for retry: ${deliveryResult.error.message}`,
       );
     }
   }

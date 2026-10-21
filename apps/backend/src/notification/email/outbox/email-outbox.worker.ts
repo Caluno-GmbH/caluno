@@ -9,13 +9,13 @@ import { EmailOutboxService } from './email-outbox.service';
 @Injectable()
 export class EmailOutboxWorkerService {
   private readonly logger = new Logger(EmailOutboxWorkerService.name);
-  private running = false;
+  private isDraining = false;
 
   constructor(private readonly outbox: EmailOutboxService) {}
 
   @Cron('*/10 * * * * *', { timeZone: 'Europe/Berlin' })
   async handleTick(): Promise<void> {
-    if (this.running) {
+    if (this.isDraining) {
       this.logger.debug(
         { event: 'email_outbox.tick_skipped_running' },
         'Previous outbox drain is still running',
@@ -23,31 +23,31 @@ export class EmailOutboxWorkerService {
       return;
     }
 
-    this.running = true;
-    const startedAt = Date.now();
+    this.isDraining = true;
+    const drainStartedAt = Date.now();
     try {
-      const summary = await this.outbox.drain();
-      if (summary.claimed > 0) {
+      const drainSummary = await this.outbox.drain();
+      if (drainSummary.claimed > 0) {
         this.logger.log(
           {
             event: 'email_outbox.drained',
-            duration_ms: Date.now() - startedAt,
-            ...summary,
+            duration_ms: Date.now() - drainStartedAt,
+            ...drainSummary,
           },
           'Email outbox drained',
         );
       }
-    } catch (error) {
+    } catch (drainError) {
       this.logger.error(
         {
           event: 'email_outbox.drain_failed',
-          duration_ms: Date.now() - startedAt,
-          err: error,
+          duration_ms: Date.now() - drainStartedAt,
+          err: drainError,
         },
         'Email outbox drain failed',
       );
     } finally {
-      this.running = false;
+      this.isDraining = false;
     }
   }
 }

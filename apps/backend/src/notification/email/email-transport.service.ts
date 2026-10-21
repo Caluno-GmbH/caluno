@@ -97,27 +97,31 @@ export class EmailTransportService {
     }
   }
 
-  async sendOnce(options: EmailSendOptions): Promise<EmailSendResult> {
-    const maskedTo = maskEmail(options.to);
+  async sendOnce(email: EmailSendOptions): Promise<EmailSendResult> {
+    const maskedTo = maskEmail(email.to);
 
     if (this.transporter && this.smtp) {
       try {
-        const info = await this.transporter.sendMail({
+        const sendInfo = await this.transporter.sendMail({
           from: `"${this.smtp.fromName}" <${this.smtp.fromEmail}>`,
-          to: options.to,
-          subject: options.subject,
-          html: options.html,
-          text: options.text ?? this.htmlToText(options.html),
-          attachments: options.attachments?.map((attachment) => ({
+          to: email.to,
+          subject: email.subject,
+          html: email.html,
+          text: email.text ?? this.htmlToText(email.html),
+          attachments: email.attachments?.map((attachment) => ({
             ...attachment,
             contentDisposition: attachment.cid ? 'inline' : 'attachment',
           })),
         });
         this.logger.debug(`Email sent to ${maskedTo} via SMTP`);
-        return { ok: true, providerMessageId: info.messageId ?? null };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        const responseCode = (error as { responseCode?: number } | null)
+        return {
+          ok: true,
+          providerMessageId: sendInfo.messageId ?? null,
+        };
+      } catch (sendError) {
+        const errorMessage =
+          sendError instanceof Error ? sendError.message : String(sendError);
+        const responseCode = (sendError as { responseCode?: number } | null)
           ?.responseCode;
         // 4xx SMTP replies are transient; 5xx are permanent. Network errors
         // (no code) are worth retrying.
@@ -129,51 +133,51 @@ export class EmailTransportService {
           ok: false,
           retryable,
           error: new Error(
-            `Failed to send email to ${options.userId}:${maskedTo} via SMTP: ${summarize(message)}`,
-            { cause: error },
+            `Failed to send email to ${email.userId}:${maskedTo} via SMTP: ${summarize(errorMessage)}`,
+            { cause: sendError },
           ),
         };
       }
     }
 
     if (!this.scaleway) {
-      const attachmentNote = options.attachments?.length
-        ? ` attachments=${options.attachments.map((a) => a.filename).join(',')}`
+      const attachmentNote = email.attachments?.length
+        ? ` attachments=${email.attachments.map((a) => a.filename).join(',')}`
         : '';
       this.logger.log(
-        `[Email:LOG] to=${maskedTo} subject="${options.subject}"${attachmentNote}${
+        `[Email:LOG] to=${maskedTo} subject="${email.subject}"${attachmentNote}${
           this.logEmailContent
-            ? `\n${options.html}`
+            ? `\n${email.html}`
             : ' (content omitted; set EMAIL_LOG_CONTENT=1 outside production to log)'
         }`,
       );
       return { ok: true, providerMessageId: null };
     }
 
-    return this.sendViaScaleway(this.scaleway, options, maskedTo);
+    return this.sendViaScaleway(this.scaleway, email, maskedTo);
   }
 
   private async sendViaScaleway(
-    config: ScalewayConfig,
-    options: EmailSendOptions,
+    scalewayConfig: ScalewayConfig,
+    email: EmailSendOptions,
     maskedTo: string,
   ): Promise<EmailSendResult> {
-    const url = `https://api.scaleway.com/transactional-email/v1alpha1/regions/${config.region}/emails`;
+    const url = `https://api.scaleway.com/transactional-email/v1alpha1/regions/${scalewayConfig.region}/emails`;
 
-    const body = JSON.stringify({
+    const requestBody = JSON.stringify({
       from: {
-        email: config.fromEmail,
-        name: config.fromName,
+        email: scalewayConfig.fromEmail,
+        name: scalewayConfig.fromName,
       },
-      to: [{ email: options.to }],
-      subject: options.subject,
-      html: options.html,
-      text: options.text ?? this.htmlToText(options.html),
-      project_id: config.projectId,
-      additional_headers: options.emailId
-        ? [{ key: 'X-Caluno-Email-Id', value: options.emailId }]
+      to: [{ email: email.to }],
+      subject: email.subject,
+      html: email.html,
+      text: email.text ?? this.htmlToText(email.html),
+      project_id: scalewayConfig.projectId,
+      additional_headers: email.emailId
+        ? [{ key: 'X-Caluno-Email-Id', value: email.emailId }]
         : undefined,
-      attachments: options.attachments?.map((attachment) => ({
+      attachments: email.attachments?.map((attachment) => ({
         name: attachment.filename,
         type: attachment.contentType,
         content: attachment.content.toString('base64'),
@@ -187,13 +191,14 @@ export class EmailTransportService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Auth-Token': config.secretKey,
+          'X-Auth-Token': scalewayConfig.secretKey,
         },
-        body,
+        body: requestBody,
         signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
       });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    } catch (sendError) {
+      const errorMessage =
+        sendError instanceof Error ? sendError.message : String(sendError);
       return {
         ok: false,
         // A timeout is ambiguous (the request may already have been accepted),
@@ -201,8 +206,8 @@ export class EmailTransportService {
         // outbox id header lets a later reconciliation recognise duplicates.
         retryable: true,
         error: new Error(
-          `Failed to send email to ${options.userId}:${maskedTo}: ${summarize(message)}`,
-          { cause: error },
+          `Failed to send email to ${email.userId}:${maskedTo}: ${summarize(errorMessage)}`,
+          { cause: sendError },
         ),
       };
     }
@@ -213,7 +218,7 @@ export class EmailTransportService {
         ok: false,
         retryable: response.status === 429 || response.status >= 500,
         error: new Error(
-          `Failed to send email to ${options.userId}:${maskedTo}: Scaleway responded ${response.status}${
+          `Failed to send email to ${email.userId}:${maskedTo}: Scaleway responded ${response.status}${
             responseBody ? ` — ${summarize(responseBody)}` : ''
           }`,
         ),
