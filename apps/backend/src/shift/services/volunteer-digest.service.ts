@@ -4,8 +4,9 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { AppI18nService } from '../../i18n/app-i18n.service';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import {
   type NeedsVolunteersGroup,
   type NeedsVolunteersRow,
@@ -71,7 +72,7 @@ export class VolunteerDigestService {
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly automationService: OrganizationUnitAutomationService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
   ) {}
 
@@ -328,11 +329,15 @@ export class VolunteerDigestService {
     );
 
     try {
-      await this.emailService.send({
+      await this.emailOutbox.enqueue({
+        category: EmailCategory.DIGEST,
         userId: recipient.userId,
         to: recipient.email,
         subject,
         html,
+        organizationUnitId: unit.id,
+        dedupeKey: `digest:${unit.id}:${userId}:${appDateKey(sendAt)}`,
+        expiresAt: addDays(sendAt, 1),
       });
     } catch (error) {
       this.logger.error(
@@ -341,7 +346,7 @@ export class VolunteerDigestService {
           user_id: userId,
           err: error,
         },
-        'Failed to send volunteer digest to user',
+        'Failed to queue volunteer digest to user',
       );
       // Don't log needs-volunteers rows as sent if the send itself failed.
       return 'failed';

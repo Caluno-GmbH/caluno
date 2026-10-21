@@ -73,7 +73,7 @@ function build(
         })),
     } as never,
     { resolveUserNotificationData: async () => null } as never,
-    { send } as never,
+    { enqueue: send } as never,
     {} as never,
   );
 

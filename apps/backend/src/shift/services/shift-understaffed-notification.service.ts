@@ -7,8 +7,9 @@ import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { AppI18nService } from '../../i18n/app-i18n.service';
 import type { EmailTemplateContext } from '../../i18n/email-translate';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import { shiftInstanceCallOutSummaryTemplate } from '../../notification/email/templates/shift-instance-call-out-summary.template';
 import { shiftInstanceUnderstaffedReminderTemplate } from '../../notification/email/templates/shift-instance-understaffed-reminder.template';
 import { NotificationService } from '../../notification/notification.service';
@@ -83,7 +84,7 @@ export class ShiftUnderstaffedNotificationService {
     private readonly authService: AuthService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
     private readonly automationService: OrganizationUnitAutomationService,
   ) {}
@@ -399,15 +400,21 @@ export class ShiftUnderstaffedNotificationService {
             recipient.firstName,
             templateContext,
           );
-          await this.emailService.send({
+          const outboxRow = await this.emailOutbox.enqueue({
+            category: EmailCategory.MANAGER_NOTIFICATION,
             userId: recipient.userId,
             to: recipient.email,
             subject,
             html,
+            organizationUnitId: instance.master.organizationUnitId,
+            instanceId: instance.id,
+            dedupeKey: `manager-notification:${instance.id}:${recipient.userId}:${kind}:${sentAt.toISOString()}`,
+            expiresAt: instance.actualEndsAt,
           });
           return {
             userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.SENT,
+            status: ShiftCallOutDeliveryStatus.PENDING,
+            outboxId: outboxRow.id,
           };
         } catch (error) {
           this.logger.error(
@@ -419,11 +426,12 @@ export class ShiftUnderstaffedNotificationService {
               recipient_user_id: recipient.userId,
               err: error,
             },
-            'Failed to send manager email',
+            'Failed to queue manager email',
           );
           return {
             userId: recipient.userId,
             status: ShiftCallOutDeliveryStatus.FAILED,
+            outboxId: null,
           };
         }
       }),
@@ -435,8 +443,16 @@ export class ShiftUnderstaffedNotificationService {
         recipientId: result.userId,
         kind,
         status: result.status,
+        outboxId: result.outboxId,
         sentAt,
       })),
+    );
+
+    // The worker may have synced before this insert; re-read once.
+    await this.emailOutbox.refreshAuditStatuses(
+      results
+        .map((result) => result.outboxId)
+        .filter((id): id is string => id !== null),
     );
   }
 

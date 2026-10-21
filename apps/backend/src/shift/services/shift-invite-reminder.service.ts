@@ -8,8 +8,9 @@ import {
   NotFoundGraphQLError,
 } from '../../graphql/errors';
 import { AppI18nService } from '../../i18n/app-i18n.service';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import { shiftInstanceRemindedTemplate } from '../../notification/email/templates/shift-instance-reminded.template';
 import { NotificationService } from '../../notification/notification.service';
 import { NotificationEvent } from '../../notification/notification-events';
@@ -28,7 +29,7 @@ export class ShiftInviteReminderService {
     private readonly db: Database,
     private readonly shiftService: ShiftService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
     private readonly postHogService: PostHogService,
   ) {}
@@ -49,9 +50,9 @@ export class ShiftInviteReminderService {
         'Cannot send a reminder for a cancelled shift instance',
       );
     }
-    if (instance.actualEndsAt.getTime() < Date.now()) {
+    if (instance.actualStartsAt.getTime() < Date.now()) {
       throw new ConflictGraphQLError(
-        'Cannot send a reminder for a past shift instance',
+        'Cannot send a reminder for a shift instance that has already started',
       );
     }
 
@@ -109,13 +110,19 @@ export class ShiftInviteReminderService {
       templateContext,
     );
 
-    // `remindedAt` means "email sent" — only stamp it after a successful
-    // send, so a transport failure leaves the reminder available to retry.
-    await this.emailService.send({
+    // `remindedAt` means "reminder queued"; the outbox owns delivery/retries.
+    await this.emailOutbox.enqueue({
+      category: EmailCategory.INVITE_REMINDER,
       userId: recipient.userId,
       to: recipient.email,
       subject,
       html,
+      organizationUnitId: organizationUnit.id,
+      instanceId: instance.id,
+      // `updatedAt` identifies the reminder cycle: resetting the invite bumps
+      // it, so a new reminder is not suppressed by the previous SENT row.
+      dedupeKey: `invite-reminder:${instance.id}:${recipient.userId}:${invite.updatedAt.toISOString()}`,
+      expiresAt: instance.actualStartsAt,
     });
 
     const remindedAt = new Date();

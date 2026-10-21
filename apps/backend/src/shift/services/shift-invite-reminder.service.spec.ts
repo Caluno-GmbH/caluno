@@ -43,6 +43,7 @@ function setup(options?: {
     userId: VOLUNTEER_ID,
     status: options?.invite?.status ?? ShiftInviteStatus.ADMIN_INVITED,
     remindedAt: options?.invite?.remindedAt ?? null,
+    updatedAt: new Date('2026-09-01T10:00:00.000Z'),
   };
 
   const db = {
@@ -84,12 +85,13 @@ function setup(options?: {
     }),
   };
 
-  const emailService = {
-    send: async (email: { to: string; subject: string; html: string }) => {
+  const emailOutbox = {
+    enqueue: async (email: { to: string; subject: string; html: string }) => {
       if (options?.sendError) {
         throw options.sendError;
       }
       sentEmails.push(email);
+      return { id: `outbox-${sentEmails.length}` };
     },
   };
 
@@ -107,7 +109,7 @@ function setup(options?: {
     db as never,
     shiftService as never,
     notificationService as never,
-    emailService as never,
+    emailOutbox as never,
     appI18n as never,
     postHogService as never,
   );
@@ -198,7 +200,26 @@ describe('ShiftInviteReminderService.sendInviteReminder', () => {
         ORG_UNIT_ID,
         ACTOR_ID,
       ),
-    ).rejects.toThrow(/past/);
+    ).rejects.toThrow(/already started/);
+    expect(sentEmails).toHaveLength(0);
+  });
+
+  it('rejects a shift that is already in progress', async () => {
+    const { service, sentEmails } = setup({
+      instance: {
+        actualStartsAt: new Date(Date.now() - 60 * 60 * 1000),
+        actualEndsAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    await expect(
+      service.sendInviteReminder(
+        INSTANCE_ID,
+        VOLUNTEER_ID,
+        ORG_UNIT_ID,
+        ACTOR_ID,
+      ),
+    ).rejects.toThrow(/already started/);
     expect(sentEmails).toHaveLength(0);
   });
 

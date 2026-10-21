@@ -8,8 +8,9 @@ import * as schema from '../../database/schema';
 import { ConflictGraphQLError } from '../../graphql/errors';
 import { AppI18nService } from '../../i18n/app-i18n.service';
 import { MembershipService } from '../../membership/membership.service';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import { shiftInstanceCallOutTemplate } from '../../notification/email/templates/shift-instance-call-out.template';
 import { shiftInstanceCallOutNoRecipientsTemplate } from '../../notification/email/templates/shift-instance-call-out-no-recipients.template';
 import { NotificationService } from '../../notification/notification.service';
@@ -61,7 +62,7 @@ export class ShiftCallOutService {
     private readonly authService: AuthService,
     private readonly membershipService: MembershipService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
     private readonly postHogService: PostHogService,
   ) {}
@@ -331,25 +332,33 @@ export class ShiftCallOutService {
             },
             templateContext,
           );
-          await this.emailService.send({
+          // Store the rendered email so retries never re-render it.
+          const outboxRow = await this.emailOutbox.enqueue({
+            category: EmailCategory.CALL_OUT,
             userId: recipient.userId,
             to: recipient.email,
             subject,
             html,
+            organizationUnitId: organizationUnit.id,
+            instanceId: instance.id,
+            dedupeKey: `call-out:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
+            expiresAt: instance.actualEndsAt,
           });
           return {
             userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.SENT,
+            status: ShiftCallOutDeliveryStatus.PENDING,
+            outboxId: outboxRow.id,
           };
         } catch (error) {
           this.logger.error(
-            `Failed to send call-out email to user ${recipient.userId}: ${
+            `Failed to queue call-out email to user ${recipient.userId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );
           return {
             userId: recipient.userId,
             status: ShiftCallOutDeliveryStatus.FAILED,
+            outboxId: null,
           };
         }
       }),
@@ -365,12 +374,20 @@ export class ShiftCallOutService {
         recipientId: result.userId,
         sentById: actorUserId,
         status: result.status,
+        outboxId: result.outboxId,
         source,
         sentAt,
       })),
     );
 
-    return recipients.length;
+    // The worker may have synced before this insert; re-read once.
+    await this.emailOutbox.refreshAuditStatuses(
+      results
+        .map((result) => result.outboxId)
+        .filter((id): id is string => id !== null),
+    );
+
+    return results.filter((result) => result.outboxId !== null).length;
   }
 
   private captureCallOutSend(input: {
@@ -423,6 +440,7 @@ export class ShiftCallOutService {
       return false;
     }
 
+    const sentAt = new Date();
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
 
     const results = await Promise.all(
@@ -444,16 +462,21 @@ export class ShiftCallOutService {
               },
               templateContext,
             );
-          await this.emailService.send({
+          const outboxRow = await this.emailOutbox.enqueue({
+            category: EmailCategory.CALL_OUT_NO_RECIPIENTS,
             userId: recipient.userId,
             to: recipient.email,
             subject,
             html,
+            organizationUnitId: organizationUnit.id,
+            instanceId: instance.id,
+            dedupeKey: `call-out-no-recipients:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
+            expiresAt: instance.actualEndsAt,
           });
-          return true;
+          return outboxRow.id !== null;
         } catch (error) {
           this.logger.error(
-            `Failed to send "nobody left to ask" email to user ${recipient.userId}: ${
+            `Failed to queue "nobody left to ask" email to user ${recipient.userId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );
