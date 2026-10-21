@@ -38,6 +38,10 @@ import { FileUpload } from '@/components/storage/file-upload';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { pauschaleForReimbursementTypeKey } from '../../accounting/lib/reimbursement-type-mapping';
+import {
+  type PendingEventWeek,
+  setPendingEventWeek,
+} from '../../event/pending-event-week';
 import { resolveCreateShiftSuccessNavigation } from '../create-shift-flow';
 import { shiftDetailPath, shiftInvitePath } from '../routes';
 import { type ShiftFormValues, shiftFormSchema } from '../schemas';
@@ -58,7 +62,11 @@ interface ShiftFormProps {
   initialRequiredFormIds?: string[];
   mutate: (data: ShiftFormValues) => Promise<{
     serverError?: string;
-    data?: { id: string; instanceId?: string };
+    data?: {
+      id: string;
+      instanceId?: string;
+      focusWeek?: PendingEventWeek;
+    };
   }>;
   defaultLocation?: string;
   redirectToInviteOnCreate?: boolean;
@@ -187,6 +195,10 @@ export const ShiftForm = ({
       if (result.serverError) {
         setServerError(result.serverError);
         return;
+      }
+
+      if (result.data?.focusWeek) {
+        setPendingEventWeek(result.data.focusWeek);
       }
 
       if (redirectToDetailOnCreate && result.data) {
