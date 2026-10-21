@@ -1,11 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { EmailOutboxService } from './email-outbox.service';
 
-/**
- * Drains the outbox every 10 seconds. The in-process guard serialises ticks
- * per replica; `FOR UPDATE SKIP LOCKED` handles cross-replica concurrency.
- */
 @Injectable()
 export class EmailOutboxWorkerService {
   private readonly logger = new Logger(EmailOutboxWorkerService.name);
@@ -13,7 +9,7 @@ export class EmailOutboxWorkerService {
 
   constructor(private readonly outbox: EmailOutboxService) {}
 
-  @Cron('*/10 * * * * *', { timeZone: 'Europe/Berlin' })
+  @Cron('*/10 * * * * *')
   async handleTick(): Promise<void> {
     if (this.isDraining) {
       this.logger.debug(
@@ -48,6 +44,24 @@ export class EmailOutboxWorkerService {
       );
     } finally {
       this.isDraining = false;
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_3AM, { timeZone: 'Europe/Berlin' })
+  async purgeSettledEmails(): Promise<void> {
+    try {
+      const purgedCount = await this.outbox.purgeSettledEmails();
+      if (purgedCount > 0) {
+        this.logger.log(
+          { event: 'email_outbox.purged', count: purgedCount },
+          'Purged settled outbox emails',
+        );
+      }
+    } catch (purgeError) {
+      this.logger.error(
+        { event: 'email_outbox.purge_failed', err: purgeError },
+        'Email outbox purge failed',
+      );
     }
   }
 }

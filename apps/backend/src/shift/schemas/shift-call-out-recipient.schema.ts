@@ -9,8 +9,13 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
-import { ShiftCallOutSource } from '../enums';
+import { ShiftCallOutDeliveryStatus, ShiftCallOutSource } from '../enums';
 import { shiftInstances } from './shift-instance.schema';
+
+export const shiftCallOutDeliveryStatusEnum = pgEnum(
+  'shift_call_out_delivery_status',
+  enumValues(ShiftCallOutDeliveryStatus),
+);
 
 export const shiftCallOutSourceEnum = pgEnum(
   'shift_call_out_source',
@@ -31,6 +36,12 @@ export const shiftCallOutRecipients = snakeCase.table(
     sentById: text('sent_by_id')
       .references(() => users.id, { onDelete: 'restrict' })
       .notNull(),
+    // Legacy: no longer written. Kept nullable so the previous release keeps
+    // working during the deploy; drop it in the next release.
+    status:
+      shiftCallOutDeliveryStatusEnum(
+        'status',
+      ).$type<ShiftCallOutDeliveryStatus>(),
     source: shiftCallOutSourceEnum('source')
       .$type<ShiftCallOutSource>()
       .notNull()

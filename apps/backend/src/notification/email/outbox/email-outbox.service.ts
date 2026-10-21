@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import type { Database } from '../../../database/database.module';
 import { DATABASE_CONNECTION } from '../../../database/database-connection';
 import * as schema from '../../../database/schema';
@@ -24,9 +24,6 @@ export interface EnqueueEmailInput {
   attachments?: EmailAttachment[];
   userId?: string | null;
   organizationUnitId?: string | null;
-  /** Idempotency key: a re-run of the same business action reuses the email. */
-  dedupeKey?: string | null;
-  /** After this instant the email is no longer useful and is cancelled. */
   expiresAt?: Date | null;
   maxAttempts?: number;
 }
@@ -42,7 +39,6 @@ export interface DrainSummary {
   retried: number;
   failed: number;
   cancelled: number;
-  /** Emails whose processing threw; they stay SENDING for the stale reclaim. */
   errored: number;
 }
 
@@ -52,6 +48,19 @@ const SEND_CONCURRENCY = 3;
 const MAX_PER_RUN = 200;
 const STALE_SENDING_MS = 10 * 60 * 1000;
 const RUN_BUDGET_MS = 60 * 1000;
+const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+const TERMINAL_STATUSES = [
+  EmailDeliveryStatus.SENT,
+  EmailDeliveryStatus.FAILED,
+  EmailDeliveryStatus.CANCELLED,
+];
+
+const CLEARED_CONTENT = {
+  html: null,
+  textBody: null,
+  attachments: null,
+};
 
 function serializeAttachments(
   attachments: EmailAttachment[] | undefined,
@@ -115,15 +124,13 @@ export class EmailOutboxService {
     private readonly transport: EmailTransportService,
   ) {}
 
-  /**
-   * Persist an email for later delivery. Returns the existing email when
-   * `dedupeKey` already exists.
-   */
-  async enqueue(email: EnqueueEmailInput): Promise<EmailOutboxEntity> {
-    const [insertedEmail] = await this.db
+  async enqueue(
+    email: EnqueueEmailInput,
+    tx: Database = this.db,
+  ): Promise<EmailOutboxEntity> {
+    const [insertedEmail] = await tx
       .insert(schema.emailOutbox)
       .values({
-        dedupeKey: email.dedupeKey ?? null,
         category: email.category,
         userId: email.userId ?? null,
         recipientEmail: email.to,
@@ -135,56 +142,18 @@ export class EmailOutboxService {
         maxAttempts: email.maxAttempts ?? MAX_ATTEMPTS_DEFAULT,
         expiresAt: email.expiresAt ?? null,
       })
-      .onConflictDoNothing({ target: schema.emailOutbox.dedupeKey })
       .returning();
 
-    if (insertedEmail) return insertedEmail;
-
-    if (!email.dedupeKey) {
+    if (!insertedEmail) {
       throw new Error('Email outbox insert returned no email');
     }
-
-    const [existingEmail] = await this.db
-      .select()
-      .from(schema.emailOutbox)
-      .where(eq(schema.emailOutbox.dedupeKey, email.dedupeKey))
-      .limit(1);
-
-    if (!existingEmail) {
-      throw new Error(
-        `Email outbox dedupe key ${email.dedupeKey} conflicted but no email was found`,
-      );
-    }
-    return existingEmail;
+    return insertedEmail;
   }
 
-  /** Enqueue and attempt once now; retryable failures remain queued. */
   async enqueueAndDeliver(
     email: EnqueueEmailInput,
   ): Promise<EmailDeliveryOutcome> {
     const enqueuedEmail = await this.enqueue(email);
-
-    if (enqueuedEmail.status === EmailDeliveryStatus.SENT) {
-      return {
-        outboxEmail: enqueuedEmail,
-        result: {
-          ok: true,
-          providerMessageId: enqueuedEmail.providerMessageId,
-        },
-      };
-    }
-    if (enqueuedEmail.status !== EmailDeliveryStatus.PENDING) {
-      return {
-        outboxEmail: enqueuedEmail,
-        result: {
-          ok: false,
-          retryable: false,
-          error: new Error(
-            `Email ${enqueuedEmail.id} is not deliverable (status ${enqueuedEmail.status})`,
-          ),
-        },
-      };
-    }
 
     const claimedEmail = await this.claimOutboxEmailById(enqueuedEmail.id);
     if (!claimedEmail) {
@@ -205,10 +174,6 @@ export class EmailOutboxService {
     return { outboxEmail: refreshedEmail, result: deliveryResult };
   }
 
-  /**
-   * Drain due emails. Safe to call from every replica: claiming uses
-   * `FOR UPDATE SKIP LOCKED`, so two workers never pick the same email.
-   */
   async drain(): Promise<DrainSummary> {
     const drainSummary: DrainSummary = {
       claimed: 0,
@@ -260,6 +225,19 @@ export class EmailOutboxService {
     return drainSummary;
   }
 
+  async purgeSettledEmails(): Promise<number> {
+    const purgedEmails = await this.db
+      .delete(schema.emailOutbox)
+      .where(
+        and(
+          inArray(schema.emailOutbox.status, TERMINAL_STATUSES),
+          lt(schema.emailOutbox.updatedAt, new Date(Date.now() - RETENTION_MS)),
+        ),
+      )
+      .returning({ id: schema.emailOutbox.id });
+    return purgedEmails.length;
+  }
+
   private async findOutboxEmailById(
     id: string,
   ): Promise<EmailOutboxEntity | undefined> {
@@ -279,7 +257,7 @@ export class EmailOutboxService {
       .set({
         status: EmailDeliveryStatus.SENDING,
         attempts: sql`${schema.emailOutbox.attempts} + 1`,
-        // DB clock: avoids a client/session timezone skew in stale reclaim.
+        // DB clock: the stale reclaim compares updated_at against now().
         updatedAt: sql`now()`,
       })
       .where(
@@ -380,6 +358,15 @@ export class EmailOutboxService {
       };
     }
 
+    if (outboxEmail.html === null) {
+      const deliveryError = new Error('Email content is missing');
+      await this.markOutboxEmailFailed(outboxEmail, deliveryError);
+      return {
+        outcome: 'failed',
+        result: { ok: false, retryable: false, error: deliveryError },
+      };
+    }
+
     const deliveryResult = await this.transport.sendOnce({
       to: outboxEmail.recipientEmail,
       subject: outboxEmail.subject,
@@ -417,6 +404,7 @@ export class EmailOutboxService {
     const [updatedEmail] = await this.db
       .update(schema.emailOutbox)
       .set({
+        ...CLEARED_CONTENT,
         status: EmailDeliveryStatus.SENT,
         sentAt: new Date(),
         providerMessageId,
@@ -448,7 +436,6 @@ export class EmailOutboxService {
       .update(schema.emailOutbox)
       .set({
         status: EmailDeliveryStatus.PENDING,
-        // DB clock, matching the claim's `now()`.
         nextAttemptAt: sql`now() + (${retryDelayMs} * interval '1 millisecond')`,
         lastError: summarizeError(deliveryError.message),
         updatedAt: new Date(),
@@ -488,6 +475,7 @@ export class EmailOutboxService {
     const [updatedEmail] = await this.db
       .update(schema.emailOutbox)
       .set({
+        ...CLEARED_CONTENT,
         status: EmailDeliveryStatus.FAILED,
         lastError: summarizeError(deliveryError.message),
         updatedAt: new Date(),
@@ -524,6 +512,7 @@ export class EmailOutboxService {
     const [updatedEmail] = await this.db
       .update(schema.emailOutbox)
       .set({
+        ...CLEARED_CONTENT,
         status: EmailDeliveryStatus.CANCELLED,
         lastError: 'Expired before delivery',
         updatedAt: new Date(),

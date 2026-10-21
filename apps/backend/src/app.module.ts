@@ -217,7 +217,7 @@ const autoSchemaFile =
                     to: email,
                     ...emailContent,
                   },
-                  { expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
+                  new Date(Date.now() + 60 * 60 * 1000),
                 );
                 captureAuth(POSTHOG_EVENT.PASSWORD_RESET_SEND, userId);
               },
@@ -255,7 +255,7 @@ const autoSchemaFile =
                     to: email,
                     ...emailContent,
                   },
-                  { expiresAt: new Date(Date.now() + 5 * 60 * 1000) },
+                  new Date(Date.now() + 5 * 60 * 1000),
                 );
 
                 let otpUserId = userId;

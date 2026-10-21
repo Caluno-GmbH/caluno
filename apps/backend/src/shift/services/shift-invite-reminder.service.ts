@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -50,9 +50,9 @@ export class ShiftInviteReminderService {
         'Cannot send a reminder for a cancelled shift instance',
       );
     }
-    if (instance.actualStartsAt.getTime() < Date.now()) {
+    if (instance.actualEndsAt.getTime() < Date.now()) {
       throw new ConflictGraphQLError(
-        'Cannot send a reminder for a shift instance that has already started',
+        'Cannot send a reminder for a past shift instance',
       );
     }
 
@@ -110,31 +110,45 @@ export class ShiftInviteReminderService {
       templateContext,
     );
 
-    // `remindedAt` means "reminder queued"; the outbox owns delivery/retries.
-    await this.emailOutbox.enqueue({
-      category: EmailCategory.INVITE_REMINDER,
-      userId: recipient.userId,
-      to: recipient.email,
-      subject,
-      html,
-      organizationUnitId: organizationUnit.id,
-      // `updatedAt` identifies the reminder cycle: resetting the invite bumps
-      // it, so a new reminder is not suppressed by the previous SENT row.
-      dedupeKey: `invite-reminder:${instance.id}:${recipient.userId}:${invite.updatedAt.toISOString()}`,
-      expiresAt: instance.actualStartsAt,
-    });
+    const remindedAt = await this.db.transaction(async (tx) => {
+      // Stamp before queueing: the conditional update locks the invite, so a
+      // concurrent reminder or answer is seen here and nothing is queued.
+      const [stampedInvite] = await tx
+        .update(schema.shiftInstanceInvites)
+        .set({ remindedAt: new Date() })
+        .where(
+          and(
+            eq(schema.shiftInstanceInvites.instanceId, instanceId),
+            eq(schema.shiftInstanceInvites.userId, userId),
+            eq(
+              schema.shiftInstanceInvites.status,
+              ShiftInviteStatus.ADMIN_INVITED,
+            ),
+            isNull(schema.shiftInstanceInvites.remindedAt),
+          ),
+        )
+        .returning({ remindedAt: schema.shiftInstanceInvites.remindedAt });
+      if (!stampedInvite?.remindedAt) {
+        throw new ConflictGraphQLError(
+          'This invite has already been answered or reminded',
+        );
+      }
 
-    const remindedAt = new Date();
-    const [updated] = await this.db
-      .update(schema.shiftInstanceInvites)
-      .set({ remindedAt })
-      .where(
-        and(
-          eq(schema.shiftInstanceInvites.instanceId, instanceId),
-          eq(schema.shiftInstanceInvites.userId, userId),
-        ),
-      )
-      .returning({ remindedAt: schema.shiftInstanceInvites.remindedAt });
+      await this.emailOutbox.enqueue(
+        {
+          category: EmailCategory.INVITE_REMINDER,
+          userId: recipient.userId,
+          to: recipient.email,
+          subject,
+          html,
+          organizationUnitId: organizationUnit.id,
+          expiresAt: instance.actualEndsAt,
+        },
+        tx,
+      );
+
+      return stampedInvite.remindedAt;
+    });
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE_SEND,
@@ -148,6 +162,6 @@ export class ShiftInviteReminderService {
       },
     });
 
-    return updated?.remindedAt ?? remindedAt;
+    return remindedAt;
   }
 }

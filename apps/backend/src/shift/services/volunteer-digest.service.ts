@@ -336,7 +336,6 @@ export class VolunteerDigestService {
         subject,
         html,
         organizationUnitId: unit.id,
-        dedupeKey: `digest:${unit.id}:${userId}:${appDateKey(sendAt)}`,
         expiresAt: addDays(sendAt, 1),
       });
     } catch (error) {

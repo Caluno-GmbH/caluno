@@ -331,7 +331,6 @@ export class ShiftCallOutService {
             },
             templateContext,
           );
-          // Store the rendered email so retries never re-render it.
           await this.emailOutbox.enqueue({
             category: EmailCategory.CALL_OUT,
             userId: recipient.userId,
@@ -339,7 +338,6 @@ export class ShiftCallOutService {
             subject,
             html,
             organizationUnitId: organizationUnit.id,
-            dedupeKey: `call-out:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });
           return { userId: recipient.userId, enqueued: true };
@@ -426,7 +424,6 @@ export class ShiftCallOutService {
       return false;
     }
 
-    const sentAt = new Date();
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
 
     const enqueueResults = await Promise.all(
@@ -455,7 +452,6 @@ export class ShiftCallOutService {
             subject,
             html,
             organizationUnitId: organizationUnit.id,
-            dedupeKey: `call-out-no-recipients:${instance.id}:${recipient.userId}:${sentAt.toISOString()}`,
             expiresAt: instance.actualEndsAt,
           });
           return true;
