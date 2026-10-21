@@ -1701,7 +1701,7 @@
       "rejected": "Your membership request for this organisation was rejected. Thank you for wanting to get involved. If you have questions, reach out to your volunteer coordinator.",
       "rejectedCta": "Request not approved",
       "requestSent": "Request sent",
-      "requirementsFallback": "Requirement profile ui (to be implemented)",
+      "requirementsFallback": "Requirements are needed or profile information is missing. Please try again.",
       "requirementsNeeded": "Requirements needed: {missing}{hasCompleted, select, yes { (already completed: {completed})} other {}}",
       "unexpected": "Something went wrong. Please try again.",
       "waitlistJoined": "You're on the waitlist. We'll email you if a spot opens up."

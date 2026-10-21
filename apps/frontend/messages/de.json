@@ -1701,7 +1701,7 @@
       "rejected": "Deine Mitgliedschaftsanfrage für diese Organisation wurde abgelehnt. Danke, dass du dich engagieren wolltest. Bei Fragen melde dich bei deiner Ehrenamtskoordination.",
       "rejectedCta": "Anfrage nicht genehmigt",
       "requestSent": "Anfrage gesendet",
-      "requirementsFallback": "Anforderungsprofil-Oberfläche (noch zu implementieren)",
+      "requirementsFallback": "Es fehlen noch Anforderungen oder Profilinformationen. Versuch es bitte erneut.",
       "requirementsNeeded": "Noch zu erledigen: {missing}{hasCompleted, select, yes { (bereits erledigt: {completed})} other {}}",
       "unexpected": "Da ist etwas schiefgelaufen. Versuch es bitte erneut.",
       "waitlistJoined": "Du bist auf der Warteliste. Wir schreiben dir per E-Mail, wenn ein Platz frei wird."
