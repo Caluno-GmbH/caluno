@@ -548,7 +548,6 @@ type FormSubmissionPaginatedResponse {
 }
 
 type FormSubmissionValue {
-  blockId: String!
   createdAt: DateTime!
   fieldId: String!
   id: ID!

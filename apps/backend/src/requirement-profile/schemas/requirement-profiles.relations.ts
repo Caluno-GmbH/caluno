@@ -220,11 +220,6 @@ export const requirementProfilesRelations = defineRelationsPart(
         to: r.formBlockFields.id,
         optional: false,
       }),
-      block: r.one.formBlocks({
-        from: r.formSubmissionValues.blockId,
-        to: r.formBlocks.id,
-        optional: false,
-      }),
     },
   }),
 );

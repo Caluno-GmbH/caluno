@@ -307,7 +307,6 @@ export class FormSubmissionService {
     const fieldMap = new Map<
       string,
       {
-        blockId: string;
         systemKey: string | null;
         type: string;
         label: string;
@@ -320,7 +319,6 @@ export class FormSubmissionService {
       const blockFields = fieldsByBlockId.get(ref.blockId) ?? [];
       for (const field of blockFields) {
         fieldMap.set(field.id, {
-          blockId: ref.blockId,
           systemKey: field.systemKey,
           type: field.type,
           label: field.label,
@@ -358,7 +356,6 @@ export class FormSubmissionService {
     const profileData: Record<string, unknown> = {};
     const customValues: Array<{
       fieldId: string;
-      blockId: string;
       value: unknown;
     }> = [];
 
@@ -380,7 +377,6 @@ export class FormSubmissionService {
       } else {
         customValues.push({
           fieldId: valueInput.fieldId,
-          blockId: fieldInfo.blockId,
           value: this.parseValue(valueInput.value, fieldInfo.type),
         });
       }
@@ -408,7 +404,6 @@ export class FormSubmissionService {
           customValues.map((cv) => ({
             submissionId: created.id,
             fieldId: cv.fieldId,
-            blockId: cv.blockId,
             value: cv.value,
           })),
         );
