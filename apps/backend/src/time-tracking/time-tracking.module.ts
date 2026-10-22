@@ -15,6 +15,8 @@ import {
   TimeTrackingQueryResolver,
 } from './resolvers';
 import { TimeEntryLoader } from './resolvers/time-entry.loader';
+import { TimeEntryAutoCloseSchedulerService } from './services/time-entry-auto-close-scheduler.service';
+import { TimeEntryAutoCloseSweepService } from './services/time-entry-auto-close-sweep.service';
 import { TimeEntryAutoClosedNotifier } from './services/time-entry-auto-closed-notifier.service';
 import { TimeTrackingService } from './time-tracking.service';
 
@@ -36,6 +38,8 @@ import { TimeTrackingService } from './time-tracking.service';
     TimeEntryFieldResolver,
     TimeEntryLoader,
     TimeEntryAutoClosedNotifier,
+    TimeEntryAutoCloseSweepService,
+    TimeEntryAutoCloseSchedulerService,
     TimeTrackingMutationResolver,
     TimeTrackingQueryResolver,
   ],

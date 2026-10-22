@@ -275,8 +275,26 @@ export class TimeTrackingService {
           // reopens it, so no closure kind may linger.
           closureKind: effectiveEndedAt ? TimeEntryClosureKind.MANUAL : null,
         })
-        .where(eq(schema.timeEntries.id, id))
+        .where(
+          and(
+            eq(schema.timeEntries.id, id),
+            // closureKind above is derived from this read. If the auto-close
+            // sweep (or anyone) changed the entry since, writing it would
+            // e.g. leave the sweep's end with no closure kind — silently
+            // Closed without review. Only write over what was read.
+            entry.endedAt
+              ? eq(schema.timeEntries.endedAt, entry.endedAt)
+              : isNull(schema.timeEntries.endedAt),
+            entry.closureKind
+              ? eq(schema.timeEntries.closureKind, entry.closureKind)
+              : isNull(schema.timeEntries.closureKind),
+          ),
+        )
         .returning();
+
+      if (!timeEntry) {
+        throw new ConflictGraphQLError('Time entry was changed concurrently');
+      }
 
       this.postHogService.capture({
         event: POSTHOG_EVENT.TIME_ENTRY_UPDATE,

@@ -2,6 +2,7 @@ jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'abcdefghijkl',
 }));
 
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { ConflictGraphQLError, NotFoundGraphQLError } from '../graphql/errors';
 import { AccountingEvent } from '../shared/accounting-events';
 import {
@@ -1002,6 +1003,54 @@ describe('TimeTrackingService manual closes and review', () => {
 
       expect(updateSet).toHaveBeenCalledWith(
         expect.objectContaining({ endedAt: null, closureKind: null }),
+      );
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    const renderedWhere = (updateSet: jest.Mock) => {
+      const where = updateSet.mock.results[0].value.where as jest.Mock;
+      return new PgDialect().sqlToQuery(where.mock.calls[0][0]);
+    };
+
+    it('updates only if the entry still has the end and closure kind it read', async () => {
+      const { service, updateSet } = buildService({
+        entry: { ...existing, closureKind: TimeEntryClosureKind.AUTO },
+      });
+
+      await service.updateTimeEntry('te-1', 'ou-1', updateInput(), 'admin-1');
+
+      const { sql, params } = renderedWhere(updateSet);
+      expect(sql).toContain('"ended_at" = $');
+      expect(sql).toContain('"closure_kind" = $');
+      expect(params).toEqual(
+        expect.arrayContaining(['te-1', TimeEntryClosureKind.AUTO]),
+      );
+    });
+
+    it('on an open entry updates only while it is still open', async () => {
+      const { service, updateSet } = buildService({
+        entry: { ...existing, endedAt: null, closureKind: null },
+      });
+
+      await service.updateTimeEntry('te-1', 'ou-1', updateInput(), 'admin-1');
+
+      const { sql } = renderedWhere(updateSet);
+      expect(sql).toContain('"ended_at" is null');
+      expect(sql).toContain('"closure_kind" is null');
+    });
+
+    it('rejects with ConflictGraphQLError when the entry changed since it was read', async () => {
+      // The sweep auto-closed the open entry between the read and the write:
+      // the conditional update matches no row.
+      const { service, emit } = buildService({
+        entry: { ...existing, endedAt: null, closureKind: null },
+        row: null,
+      });
+
+      await expect(
+        service.updateTimeEntry('te-1', 'ou-1', updateInput(), 'admin-1'),
+      ).rejects.toThrow(
+        new ConflictGraphQLError('Time entry was changed concurrently'),
       );
       expect(emit).not.toHaveBeenCalled();
     });
