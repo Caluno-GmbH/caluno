@@ -8,6 +8,9 @@ interface TimeEntrySchemaMessages {
   endedAtRequired: string;
   timeEntryIdRequired: string;
   reimbursementTypeRequired?: string;
+  endBeforeStart: string;
+  /** `start` lets the message render the shift end relative to the check-in day. */
+  startAfterShiftEnd: (shiftEnd: Date, start: Date) => string;
 }
 
 export function timeEntrySchema(t: TimeEntrySchemaMessages) {
@@ -25,8 +28,35 @@ export function timeEntrySchema(t: TimeEntrySchemaMessages) {
 
 export function clientTimeEntrySchema(t: TimeEntrySchemaMessages) {
   return timeEntrySchema(t)
-    .extend({ hasShift: z.boolean(), isPaidTime: z.boolean() })
+    .extend({
+      hasShift: z.boolean(),
+      isPaidTime: z.boolean(),
+      // The selected shift instance's end. Not submitted data: it only lets the
+      // form mirror the backend's "check-in cannot be later than the shift end".
+      shiftInstanceEndsAt: z.date().nullable().optional(),
+    })
     .superRefine((data, ctx) => {
+      // Compare full date-times so overnight entries (end on the next day) work.
+      if (data.endedAt && data.endedAt.getTime() <= data.startedAt.getTime()) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['endedAt'],
+          message: t.endBeforeStart,
+        });
+      }
+      if (
+        data.shiftInstanceEndsAt &&
+        data.startedAt.getTime() > data.shiftInstanceEndsAt.getTime()
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['startedAt'],
+          message: t.startAfterShiftEnd(
+            data.shiftInstanceEndsAt,
+            data.startedAt,
+          ),
+        });
+      }
       if (data.hasShift && !data.shiftInstanceId) {
         ctx.addIssue({
           code: 'custom',
@@ -51,6 +81,8 @@ export const serverTimeEntrySchema = timeEntrySchema({
   startedAtRequired: 'Start time is required',
   endedAtRequired: 'End time is required',
   timeEntryIdRequired: 'Time Entry ID is required',
+  endBeforeStart: 'Time entry must end after it starts',
+  startAfterShiftEnd: () => 'Check-in cannot be later than the shift end',
 });
 
 export type TimeEntryFormValues = z.infer<

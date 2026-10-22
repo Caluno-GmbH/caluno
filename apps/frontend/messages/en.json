@@ -1995,10 +1995,12 @@
       "volunteer": "Volunteer"
     },
     "validation": {
+      "endBeforeStart": "Check-out must be after check-in",
       "endedAtRequired": "Please enter an end time.",
       "organizationUnitRequired": "Please select an organisation unit.",
       "reimbursementTypeRequired": "Please select an allowance type.",
       "shiftInstanceRequired": "Please select an assignment date.",
+      "startAfterShiftEnd": "Check-in can't be later than the shift end ({end})",
       "startedAtRequired": "Please enter a start time.",
       "timeEntryIdRequired": "Time entry ID is required",
       "volunteerRequired": "Please select a volunteer."

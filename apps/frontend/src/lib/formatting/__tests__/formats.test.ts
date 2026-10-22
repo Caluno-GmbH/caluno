@@ -148,6 +148,27 @@ describe('formats', () => {
     });
   });
 
+  describe('formatTimeRelativeToStart', () => {
+    it('shows time only on the same Berlin calendar day as the start', () => {
+      // 2026-10-22T20:00Z -> 22:00 CEST; 2026-10-22T21:30Z -> 23:30 CEST
+      const start = new Date('2026-10-22T20:00:00Z');
+      const end = new Date('2026-10-22T21:30:00Z');
+      expect(formats('en').formatTimeRelativeToStart(end, start)).toBe('23:30');
+    });
+
+    it('prefixes the weekday when the end is on a later day', () => {
+      // 2026-10-22 is a Thursday; end is Friday 02:00 CEST
+      const start = new Date('2026-10-22T20:00:00Z');
+      const end = new Date('2026-10-23T00:00:00Z');
+      expect(formats('en').formatTimeRelativeToStart(end, start)).toBe(
+        'Fri 02:00',
+      );
+      expect(formats('de').formatTimeRelativeToStart(end, start)).toBe(
+        'Fr. 02:00',
+      );
+    });
+  });
+
   describe('formatDurationByMinutes', () => {
     it('formats minutes as hours and minutes', () => {
       expect(formats('en').formatDurationByMinutes(90)).toBe(

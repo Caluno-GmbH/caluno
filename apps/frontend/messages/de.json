@@ -1995,10 +1995,12 @@
       "volunteer": "Freiwillige:r"
     },
     "validation": {
+      "endBeforeStart": "Check-out muss nach dem Check-in liegen",
       "endedAtRequired": "Bitte gib eine Endzeit an.",
       "organizationUnitRequired": "Bitte wähle eine Organisationseinheit.",
       "reimbursementTypeRequired": "Bitte wähle einen Pauschalentyp.",
       "shiftInstanceRequired": "Bitte wähle einen Einsatztermin.",
+      "startAfterShiftEnd": "Check-in darf nicht nach dem Schichtende liegen ({end})",
       "startedAtRequired": "Bitte gib eine Startzeit an.",
       "timeEntryIdRequired": "Zeiteintrags-ID ist erforderlich",
       "volunteerRequired": "Bitte wähle eine Person aus."

@@ -33,6 +33,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { FormSheet, useFormSheet } from '@/components/form-sheet';
 import { useRouter } from '@/i18n/navigation';
+import { useFormatting } from '@/lib/formatting/use-formatting';
 import { clientTimeEntrySchema, type TimeEntryFormValues } from '../schemas';
 import type { TimeEntryShiftInstance } from '../shift-instance-options';
 
@@ -70,6 +71,7 @@ export const TimeEntryForm = ({
   const router = useRouter();
   const t = useTranslations('TimeEntry.form');
   const tValidation = useTranslations('TimeEntry.validation');
+  const { formatTimeRelativeToStart } = useFormatting();
   const [pending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string>();
   const [selectedInstance, setSelectedInstance] =
@@ -88,6 +90,11 @@ export const TimeEntryForm = ({
     endedAtRequired: tValidation('endedAtRequired'),
     timeEntryIdRequired: tValidation('timeEntryIdRequired'),
     reimbursementTypeRequired: tValidation('reimbursementTypeRequired'),
+    endBeforeStart: tValidation('endBeforeStart'),
+    startAfterShiftEnd: (shiftEnd, start) =>
+      tValidation('startAfterShiftEnd', {
+        end: formatTimeRelativeToStart(shiftEnd, start),
+      }),
   });
 
   const {
@@ -133,6 +140,18 @@ export const TimeEntryForm = ({
       ? tPauschale('uebungsleiter')
       : tPauschale('ehrenamt');
 
+  // The schema checks check-in against the selected instance's end. Cleared
+  // together with the shift (hasShift off / no instance) so it never lingers.
+  const hasShift = watch('hasShift');
+  useEffect(() => {
+    setValue(
+      'shiftInstanceEndsAt',
+      hasShift && selectedInstance
+        ? new Date(selectedInstance.actualEndsAt)
+        : null,
+    );
+  }, [hasShift, selectedInstance, setValue]);
+
   //  When an instance is selected, default the time entry to the instances date range
   //  But don't overwrite any initial range that would be set via the Edit form
   useEffect(() => {
@@ -158,6 +177,16 @@ export const TimeEntryForm = ({
       setSelectedInstance(instance);
     },
     [setValue],
+  );
+
+  // Keep the existing object when a refetch re-resolves the same instance, so the
+  // "default times to the instance range" effect doesn't clobber manual edits.
+  const handleInstanceResolved = useCallback(
+    (instance: TimeEntryShiftInstance) =>
+      setSelectedInstance((prev) =>
+        prev?.id === instance.id ? prev : instance,
+      ),
+    [],
   );
 
   const onSubmit = async (formData: TimeEntryFormValues) => {
@@ -218,6 +247,7 @@ export const TimeEntryForm = ({
           <ShiftPicker
             value={{ shiftId, shiftInstanceId }}
             onChange={handleInstanceSelect}
+            onInstanceResolved={handleInstanceResolved}
             disabled={pending}
             defaultDate={initialValues?.startedAt ?? null}
           />
@@ -332,6 +362,7 @@ export const TimeEntryForm = ({
           }}
           errors={[errors.startedAt?.message, errors.endedAt?.message]}
           disabled={pending}
+          allowOvernight
         />
       </Field>
 
