@@ -44,22 +44,23 @@ const entry = (
 });
 
 describe('getEntryState', () => {
-  it('is in-progress when endedAt is null', () => {
-    expect(
-      getEntryState(
-        entry({ startedAt: '2026-06-10T09:00:00Z', endedAt: null }),
-      ),
-    ).toBe('in-progress');
+  it('returns the entry status as is', () => {
+    for (const status of Object.values(TimeEntryStatus)) {
+      expect(
+        getEntryState(entry({ startedAt: '2026-06-10T09:00:00Z', status })),
+      ).toBe(status);
+    }
   });
-  it('is completed when endedAt is set', () => {
+  it('does not derive the status from endedAt', () => {
     expect(
       getEntryState(
         entry({
           startedAt: '2026-06-10T09:00:00Z',
           endedAt: '2026-06-10T13:00:00Z',
+          status: TimeEntryStatus.AutoClosed,
         }),
       ),
-    ).toBe('completed');
+    ).toBe(TimeEntryStatus.AutoClosed);
   });
 });
 
@@ -67,7 +68,22 @@ describe('entryDurationMinutes', () => {
   it('returns 0 for in-progress entries', () => {
     expect(
       entryDurationMinutes(
-        entry({ startedAt: '2026-06-10T09:00:00Z', endedAt: null }),
+        entry({
+          startedAt: '2026-06-10T09:00:00Z',
+          endedAt: null,
+          status: TimeEntryStatus.Open,
+        }),
+      ),
+    ).toBe(0);
+  });
+  it('returns 0 for auto-closed entries', () => {
+    expect(
+      entryDurationMinutes(
+        entry({
+          startedAt: '2026-06-10T09:00:00Z',
+          endedAt: '2026-06-10T13:00:00Z',
+          status: TimeEntryStatus.AutoClosed,
+        }),
       ),
     ).toBe(0);
   });
@@ -110,10 +126,33 @@ describe('groupMyTime', () => {
         startedAt: '2026-06-10T09:00:00Z',
         endedAt: '2026-06-10T13:00:00Z',
       }), // 240
-      entry({ startedAt: '2026-06-11T09:00:00Z', endedAt: null }), // in-progress: 0
+      entry({
+        startedAt: '2026-06-11T09:00:00Z',
+        endedAt: null,
+        status: TimeEntryStatus.Open,
+      }), // in-progress: 0
     ]);
     const [week] = result.weeks;
     if (!week) throw new Error('expected a week');
+    expect(week.totalMinutes).toBe(240);
+    expect(result.allTimeMinutes).toBe(240);
+  });
+
+  it('auto-closed entry adds 0 to week and all-time totals', () => {
+    const result = groupMyTime([
+      entry({
+        startedAt: '2026-06-10T09:00:00Z',
+        endedAt: '2026-06-10T13:00:00Z',
+      }), // 240
+      entry({
+        startedAt: '2026-06-11T09:00:00Z',
+        endedAt: '2026-06-11T17:00:00Z',
+        status: TimeEntryStatus.AutoClosed,
+      }), // auto-closed: 0
+    ]);
+    const [week] = result.weeks;
+    if (!week) throw new Error('expected a week');
+    expect(week.entries).toHaveLength(2);
     expect(week.totalMinutes).toBe(240);
     expect(result.allTimeMinutes).toBe(240);
   });

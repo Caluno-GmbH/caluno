@@ -797,10 +797,6 @@
       "title": "No hours yet"
     },
     "generalTime": "General time",
-    "state": {
-      "completed": "Completed",
-      "inProgress": "In progress"
-    },
     "summary": {
       "total": "Total volunteered"
     },
@@ -2514,7 +2510,10 @@
           "editHint": "To edit hours or assignment details, go to <link>Tracked times</link>.",
           "emptyOutsidePeriod": "{count, plural, one {# time entry} other {# time entries}} for this allowance fall outside the selected timesheet period. Change the timesheet period to include them.",
           "emptyOtherType": "Hours in this timesheet period were tracked under {types}, not this allowance. Create the timesheet for that allowance, or correct the assignment's allowance in Tracked times.",
-          "emptyNothingTracked": "There are no completed hours for this allowance that aren't already on a timesheet. Track time for this volunteer first, or check the other timesheets."
+          "emptyNothingTracked": "There are no completed hours for this allowance that aren't already on a timesheet. Track time for this volunteer first, or check the other timesheets.",
+          "awaitingReview": "Awaiting review",
+          "awaitingReviewHint": "These hours count once an admin confirms the times.",
+          "awaitingReviewRowLabel": "{shiftName} is awaiting review and not included in this timesheet"
         },
         "preview": {
           "disclaimerBadge": "Preview",

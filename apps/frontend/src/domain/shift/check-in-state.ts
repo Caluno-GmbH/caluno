@@ -1,13 +1,19 @@
+import { TimeEntryStatus } from '@repo/data';
 import type { VolunteeringActionLabel } from '@repo/ui';
 
 export type CheckInTimeEntry = {
   id: string;
+  status: TimeEntryStatus;
   startedAt: string;
   endedAt?: string | null;
   volunteer: { id: string };
 };
 
-export type AcceptedRowCheckInState = 'accepted' | 'checked_in' | 'checked_out';
+export type AcceptedRowCheckInState =
+  | 'accepted'
+  | 'checked_in'
+  | 'checked_out'
+  | 'auto_checked_out';
 
 const MAX_CHECKED_OUT_TOOLTIP_LINES = 5;
 
@@ -23,15 +29,26 @@ export function groupTimeEntriesByVolunteer(
   return byVolunteer;
 }
 
-/** Accepted-row display state, derived purely from time entries — ignores phase/timing. */
+/**
+ * Accepted-row display state, derived purely from time entries — ignores
+ * phase/timing. An open entry wins; otherwise the latest closed entry decides
+ * between a manual and an automatic check-out.
+ */
 export function deriveAcceptedRowState(
   entries: readonly CheckInTimeEntry[] | undefined,
 ): AcceptedRowCheckInState {
   if (!entries || entries.length === 0) {
     return 'accepted';
   }
-  const hasOpenEntry = entries.some((entry) => entry.endedAt == null);
-  return hasOpenEntry ? 'checked_in' : 'checked_out';
+  if (entries.some((entry) => entry.status === TimeEntryStatus.Open)) {
+    return 'checked_in';
+  }
+  const latest = entries.reduce((a, b) =>
+    new Date(b.startedAt).getTime() > new Date(a.startedAt).getTime() ? b : a,
+  );
+  return latest.status === TimeEntryStatus.AutoClosed
+    ? 'auto_checked_out'
+    : 'checked_out';
 }
 
 /**
@@ -58,7 +75,7 @@ export function acceptedRowActions(
 /**
  * Whether an accepted row's check-in state permits the admin removal
  * dropdown target (ADMIN_REJECTED, displayed as "Removed"). A volunteer
- * who is checked in or checked out has a time entry -- open or recorded --
+ * who is checked in or checked out (manually or automatically) has a time entry -- open or recorded --
  * that removing them would orphan; their only status path from there is
  * Check out or re-Check in. Plain 'accepted' (no time entry yet) is
  * unaffected and keeps its normal removal option. `null` covers rows that
@@ -68,13 +85,17 @@ export function acceptedRowActions(
 export function canRemoveAcceptedRow(
   acceptedState: AcceptedRowCheckInState | null,
 ): boolean {
-  return acceptedState !== 'checked_in' && acceptedState !== 'checked_out';
+  return (
+    acceptedState !== 'checked_in' &&
+    acceptedState !== 'checked_out' &&
+    acceptedState !== 'auto_checked_out'
+  );
 }
 
 export function openTimeEntryId(
   entries: readonly CheckInTimeEntry[] | undefined,
 ): string | null {
-  const open = entries?.find((entry) => entry.endedAt == null);
+  const open = entries?.find((entry) => entry.status === TimeEntryStatus.Open);
   return open?.id ?? null;
 }
 
@@ -83,7 +104,8 @@ export function formatCheckedOutWindows(
   formatTime: (date: Date) => string,
 ): { lines: string[]; overflowCount: number } {
   const closed = entries
-    .filter((entry) => entry.endedAt != null)
+    // Auto-closed windows are a guess at the end, not a recorded time.
+    .filter((entry) => entry.status === TimeEntryStatus.Closed)
     .slice()
     .sort(
       (a, b) =>

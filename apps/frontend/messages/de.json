@@ -797,10 +797,6 @@
       "title": "Noch keine Stunden"
     },
     "generalTime": "Allgemeine Zeit",
-    "state": {
-      "completed": "Abgeschlossen",
-      "inProgress": "Läuft"
-    },
     "summary": {
       "total": "Insgesamt geleistet"
     },
@@ -2514,7 +2510,10 @@
           "editHint": "Um Stunden oder Einsatzdetails zu ändern, gehe zu <link>Zeiterfassung</link>.",
           "emptyOutsidePeriod": "{count, plural, one {# Zeiteintrag} other {# Zeiteinträge}} für diese Pauschale liegen außerhalb des gewählten Abrechnungszeitraums. Ändere den Abrechnungszeitraum, um sie aufzunehmen.",
           "emptyOtherType": "In diesem Abrechnungszeitraum wurden Stunden unter {types} erfasst, nicht unter dieser Pauschale. Erstelle den Stundennachweis für diese Pauschale oder korrigiere die Pauschale des Einsatzes in der Zeiterfassung.",
-          "emptyNothingTracked": "Für diese Pauschale sind keine abgeschlossenen, noch nicht abgerechneten Stunden erfasst. Erfasse zuerst Zeiten für diese Person oder prüfe, ob die Stunden bereits in einem anderen Stundennachweis sind."
+          "emptyNothingTracked": "Für diese Pauschale sind keine abgeschlossenen, noch nicht abgerechneten Stunden erfasst. Erfasse zuerst Zeiten für diese Person oder prüfe, ob die Stunden bereits in einem anderen Stundennachweis sind.",
+          "awaitingReview": "Wartet auf Prüfung",
+          "awaitingReviewHint": "Diese Stunden zählen erst, wenn die Zeiten bestätigt wurden.",
+          "awaitingReviewRowLabel": "{shiftName} wartet auf Prüfung und ist nicht in diesem Stundennachweis enthalten"
         },
         "preview": {
           "disclaimerBadge": "Vorschau",
