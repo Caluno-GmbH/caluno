@@ -2830,16 +2830,16 @@ describe('InvoiceService', () => {
       db.query.invoices.findFirst({ where: { id } });
 
     it('freezes the render inputs when the volunteer signs and keeps them through the countersignature (VOLI-1637)', async () => {
-      const { invoice, volunteer, supervisor } = await issueForSigning();
+      const { root, invoice, volunteer, supervisor } = await issueForSigning();
       expect((await stored(invoice.id))?.renderInputs).toBeNull();
 
-      await service.signInvoice(invoice.id, volunteer.id);
+      await service.signInvoice(invoice.id, volunteer.id, root.id);
       const frozen = (await stored(invoice.id))?.renderInputs;
       expect(frozen).toEqual({
         values: { resolution: expect.any(String) },
       });
 
-      await service.signInvoice(invoice.id, supervisor.id);
+      await service.signInvoice(invoice.id, supervisor.id, root.id);
       expect((await stored(invoice.id))?.renderInputs).toEqual(frozen);
     });
 
@@ -2854,7 +2854,7 @@ describe('InvoiceService', () => {
         .set({ fileId: previous.id })
         .where(eq(schema.invoices.id, invoice.id));
 
-      await service.signInvoice(invoice.id, volunteer.id);
+      await service.signInvoice(invoice.id, volunteer.id, root.id);
 
       // Rendering the new PDF failed (the stub returns null): no stale PDF
       // without the new signature is left in its place.

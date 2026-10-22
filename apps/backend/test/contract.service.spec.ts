@@ -628,16 +628,16 @@ describe('ContractService', () => {
       db.query.contracts.findFirst({ where: { id } });
 
     it('freezes the render inputs when the volunteer signs and keeps them through the countersignature (VOLI-1637)', async () => {
-      const { contract, volunteer, signer } = await issueForSigning();
+      const { root, contract, volunteer, signer } = await issueForSigning();
       expect((await stored(contract.id))?.renderInputs).toBeNull();
 
-      await service.signContract(contract.id, volunteer.id);
+      await service.signContract(contract.id, volunteer.id, root.id);
       const frozen = (await stored(contract.id))?.renderInputs;
       expect(frozen).toEqual({
         values: { resolution: expect.any(String) },
       });
 
-      await service.signContract(contract.id, signer.id);
+      await service.signContract(contract.id, signer.id, root.id);
       expect((await stored(contract.id))?.renderInputs).toEqual(frozen);
     });
 
@@ -652,7 +652,7 @@ describe('ContractService', () => {
         .set({ fileId: previous.id })
         .where(eq(schema.contracts.id, contract.id));
 
-      await service.signContract(contract.id, volunteer.id);
+      await service.signContract(contract.id, volunteer.id, root.id);
 
       expect((await stored(contract.id))?.fileId).toBeNull();
     });
