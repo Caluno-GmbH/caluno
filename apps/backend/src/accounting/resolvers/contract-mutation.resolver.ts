@@ -44,10 +44,12 @@ export class ContractMutationResolver {
   async signContract(
     @Args('contractId', { type: () => ID }) contractId: string,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Contract> {
     const contract = await this.contractService.signContract(
       contractId,
       session.user.id,
+      context.organizationUnitId,
     );
     return this.contractMapper.toModelOrThrow(contract);
   }
@@ -57,11 +59,13 @@ export class ContractMutationResolver {
     @Args('contractId', { type: () => ID }) contractId: string,
     @Args('reason') reason: string,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Contract> {
     const contract = await this.contractService.declineContract(
       contractId,
       session.user.id,
       reason,
+      context.organizationUnitId,
     );
     return this.contractMapper.toModelOrThrow(contract);
   }

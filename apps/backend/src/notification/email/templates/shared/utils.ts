@@ -94,13 +94,11 @@ export function publicOrganizationUnitUrl(organizationUnitId: string): string {
 }
 
 /**
- * Deep link to the volunteer's profile — its "Your organizations" section
- * links into each membership, whose page holds "Your documents". There is no
- * standalone /profile/memberships route, so the profile is the closest valid
- * target.
+ * Deep link to the volunteer's cross-org "My documents" page — where
+ * contracts and timesheets awaiting their signature live.
  */
-export function volunteerProfileUrl(): string {
-  return `${resolveAppUrl()}/profile`;
+export function volunteerDocumentsUrl(): string {
+  return `${resolveAppUrl()}/profile/documents`;
 }
 
 /** The volunteering side's home page — not org-scoped, spans all of a volunteer's organizations. */

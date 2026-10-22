@@ -10,7 +10,7 @@ import {
   paragraph,
   renderEmail,
   strong,
-  volunteerProfileUrl,
+  volunteerDocumentsUrl,
 } from './shared';
 
 export interface DocumentAwaitingSignatureTemplateData {
@@ -31,7 +31,7 @@ export async function documentAwaitingSignatureTemplate(
   const firstName = escapeHtml(data.recipientFirstName);
   const organizationName = escapeHtml(data.organizationName);
   const documentName = escapeHtml(data.documentName);
-  const documentsUrl = volunteerProfileUrl();
+  const documentsUrl = volunteerDocumentsUrl();
   const brandName = emailTheme.brandName;
 
   const body = card(`
