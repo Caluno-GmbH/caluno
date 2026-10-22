@@ -9,11 +9,13 @@ import { ShiftService } from '../../shift/shift.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
 import { UserService } from '../../user/user.service';
+import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 import { TimeEntry } from '../models/time-entry.model';
 import type {
   TimeEntryEntity,
   TimeEntryEntityWithRelations,
 } from '../schemas/time-entry.schema';
+import { deriveTimeEntryStatus } from '../utils/time-entry-status';
 import { TimeEntryLoader } from './time-entry.loader';
 
 @Resolver(() => TimeEntry)
@@ -24,6 +26,15 @@ export class TimeEntryFieldResolver {
     private readonly userMapper: UserMapper,
     private readonly shiftInstanceMapper: ShiftInstanceMapper,
   ) {}
+
+  /**
+   * Derived from the parent entity so every path is covered, including
+   * ShiftInstance.timeEntries, which returns loader rows without the mapper.
+   */
+  @ResolveField(() => TimeEntryStatus)
+  status(@Parent() timeEntry: TimeEntryEntity): TimeEntryStatus {
+    return deriveTimeEntryStatus(timeEntry);
+  }
 
   @ResolveField(() => User)
   async volunteer(@Parent() timeEntry: TimeEntryEntity): Promise<User> {
