@@ -66,6 +66,9 @@ export class TimeEntryAutoCloseSweepService {
     };
     if (toNotify.length === 0) return summary;
 
+    // The close is already committed here. Notifier failures are counted but
+    // not retried: the rows stay AUTO and the next tick no longer selects them
+    // (it only picks open entries), so a failed email is not re-sent.
     const { sent, failed } = await this.notifier.notify(toNotify);
     summary.emailed = sent;
     summary.failed = failed;

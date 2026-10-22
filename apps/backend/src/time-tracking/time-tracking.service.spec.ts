@@ -3,7 +3,11 @@ jest.mock('nanoid', () => ({
 }));
 
 import { PgDialect } from 'drizzle-orm/pg-core';
-import { ConflictGraphQLError, NotFoundGraphQLError } from '../graphql/errors';
+import {
+  BadRequestGraphQLError,
+  ConflictGraphQLError,
+  NotFoundGraphQLError,
+} from '../graphql/errors';
 import { AccountingEvent } from '../shared/accounting-events';
 import {
   POSTHOG_EVENT,
@@ -688,6 +692,99 @@ describe('TimeTrackingService time validation', () => {
       expect(updateSet).toHaveBeenCalled();
     });
 
+    it('updateTimeEntry allows editing notes/end of a legacy entry starting after shift end when start and instance are unchanged', async () => {
+      const findInstance = jest.fn().mockResolvedValue(instance(SHIFT_END));
+      const { service, updateSet } = buildService({
+        db: {
+          query: {
+            timeEntries: {
+              findFirst: jest.fn().mockResolvedValue({
+                ...existing,
+                shiftInstanceId: 'si-1',
+                startedAt: AFTER_SHIFT_END,
+              }),
+            },
+            shiftInstances: { findFirst: findInstance },
+          },
+        },
+      });
+
+      await service.updateTimeEntry(
+        'te-1',
+        'ou-1',
+        Object.assign(new UpdateTimeEntryInput(), {
+          startedAt: new Date(AFTER_SHIFT_END.getTime()),
+          endedAt: new Date('2026-10-22T19:00:00.000Z'),
+          notes: 'reviewed',
+        }),
+        'admin-1',
+      );
+
+      expect(updateSet).toHaveBeenCalled();
+    });
+
+    it('updateTimeEntry still rejects moving the start after the shift end', async () => {
+      const { service, updateSet } = buildService({
+        db: {
+          query: {
+            timeEntries: {
+              findFirst: jest.fn().mockResolvedValue({
+                ...existing,
+                shiftInstanceId: 'si-1',
+                startedAt: new Date('2026-10-22T18:30:00.000Z'),
+              }),
+            },
+            shiftInstances: {
+              findFirst: jest.fn().mockResolvedValue(instance(SHIFT_END)),
+            },
+          },
+        },
+      });
+
+      await expect(
+        service.updateTimeEntry(
+          'te-1',
+          'ou-1',
+          Object.assign(new UpdateTimeEntryInput(), {
+            startedAt: new Date('2026-10-22T19:00:00.000Z'),
+          }),
+          'admin-1',
+        ),
+      ).rejects.toThrow('Check-in cannot be later than the shift end');
+      expect(updateSet).not.toHaveBeenCalled();
+    });
+
+    it('updateTimeEntry rejects keeping a late start when moving to another instance that ended earlier', async () => {
+      const { service, updateSet } = buildService({
+        db: {
+          query: {
+            timeEntries: {
+              findFirst: jest.fn().mockResolvedValue({
+                ...existing,
+                startedAt: AFTER_SHIFT_END,
+              }),
+            },
+            shiftInstances: {
+              findFirst: jest.fn().mockResolvedValue(instance(SHIFT_END)),
+            },
+          },
+        },
+      });
+
+      await expect(
+        service.updateTimeEntry(
+          'te-1',
+          'ou-1',
+          Object.assign(new UpdateTimeEntryInput(), {
+            shiftInstanceId: 'si-1',
+            startedAt: AFTER_SHIFT_END,
+          }),
+          'admin-1',
+        ),
+      ).rejects.toThrow('Check-in cannot be later than the shift end');
+      expect(updateSet).not.toHaveBeenCalled();
+    });
+
     it('rejects an end that is not after the new start, keeping the existing end when omitted', async () => {
       const { service, updateSet } = buildService({
         db: {
@@ -846,18 +943,19 @@ describe('TimeTrackingService manual closes and review', () => {
       update: jest.fn().mockReturnValue({ set: updateSet }),
     };
     const emit = jest.fn();
+    const postHogCapture = jest.fn();
     const service = new TimeTrackingService(
       db as never,
       (options.membership ?? {}) as never,
       (options.shift ?? {}) as never,
-      { capture: jest.fn() } as unknown as PostHogService,
+      { capture: postHogCapture } as unknown as PostHogService,
       {} as never,
       {} as never,
       {} as never,
       {} as never,
       { emit } as never,
     );
-    return { service, insertValues, updateSet, emit, db };
+    return { service, insertValues, updateSet, emit, db, postHogCapture };
   };
 
   const existing = {
@@ -953,6 +1051,108 @@ describe('TimeTrackingService manual closes and review', () => {
         closureKind: TimeEntryClosureKind.MANUAL,
       }),
     );
+  });
+
+  it('checkOut closes only a still-open entry', async () => {
+    const { service, updateSet } = buildService({
+      entry: { ...existing, endedAt: null, closureKind: null },
+      shift: {
+        findInstanceWithMaster: jest.fn().mockResolvedValue({
+          id: 'si-1',
+          isCancelled: false,
+          master: { organizationUnitId: 'ou-1' },
+        }),
+        findOpenTimeEntry: jest.fn().mockResolvedValue({ id: 'te-1' }),
+      },
+      membership: {
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
+      },
+    });
+
+    await service.checkOut('si-1', 'volunteer-1');
+
+    const where = updateSet.mock.results[0].value.where as jest.Mock;
+    const { sql } = new PgDialect().sqlToQuery(where.mock.calls[0][0]);
+    expect(sql).toContain('"ended_at" is null');
+  });
+
+  it('checkOut rejects with ConflictGraphQLError when the sweep closed the entry first', async () => {
+    const { service, postHogCapture } = buildService({
+      entry: { ...existing, endedAt: null, closureKind: null },
+      row: null,
+      shift: {
+        findInstanceWithMaster: jest.fn().mockResolvedValue({
+          id: 'si-1',
+          isCancelled: false,
+          master: { organizationUnitId: 'ou-1' },
+        }),
+        findOpenTimeEntry: jest.fn().mockResolvedValue({ id: 'te-1' }),
+      },
+      membership: {
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
+      },
+    });
+
+    await expect(service.checkOut('si-1', 'volunteer-1')).rejects.toThrow(
+      new ConflictGraphQLError('Time entry is already closed'),
+    );
+    expect(postHogCapture).not.toHaveBeenCalled();
+  });
+
+  it('admin closeTimeEntry does not require the entry to be open', async () => {
+    const { service, updateSet } = buildService({
+      entry: {
+        ...existing,
+        closureKind: TimeEntryClosureKind.AUTO,
+      },
+    });
+
+    await service.closeTimeEntry(
+      'te-1',
+      'ou-1',
+      Object.assign(new CloseTimeEntryInput(), { endedAt: ENDED }),
+      'admin-1',
+    );
+
+    const where = updateSet.mock.results[0].value.where as jest.Mock;
+    const { sql } = new PgDialect().sqlToQuery(where.mock.calls[0][0]);
+    expect(sql).not.toContain('"ended_at" is null');
+  });
+
+  it('checkOutVolunteer only closes an entry that started before now', async () => {
+    const { service, updateSet } = buildService({});
+
+    await service.checkOutVolunteer('te-1', 'ou-1', 'admin-1');
+
+    const where = updateSet.mock.results[0].value.where as jest.Mock;
+    const { sql } = new PgDialect().sqlToQuery(where.mock.calls[0][0]);
+    expect(sql).toContain('"started_at" <');
+  });
+
+  it('checkOutVolunteer rejects an open entry that starts in the future as BadRequest', async () => {
+    const { service } = buildService({
+      row: null,
+      entry: {
+        ...existing,
+        endedAt: null,
+        closureKind: null,
+        startedAt: new Date(Date.now() + 60 * 60 * 1000),
+      },
+    });
+
+    await expect(
+      service.checkOutVolunteer('te-1', 'ou-1', 'admin-1'),
+    ).rejects.toThrow(
+      new BadRequestGraphQLError('Time entry must end after it starts'),
+    );
+  });
+
+  it('checkOutVolunteer keeps the Conflict for an already closed entry', async () => {
+    const { service } = buildService({ row: null, entry: existing });
+
+    await expect(
+      service.checkOutVolunteer('te-1', 'ou-1', 'admin-1'),
+    ).rejects.toThrow(new ConflictGraphQLError('Time entry is already closed'));
   });
 
   describe('updateTimeEntry', () => {

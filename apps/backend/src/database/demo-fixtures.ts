@@ -35,6 +35,7 @@ import { permissions } from '../auth/schemas/permission.schema';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
+import { TimeEntryClosureKind } from '../time-tracking/enums/time-entry-closure-kind.enum';
 import {
   addDaysInFixtureTimezone,
   addHours,
@@ -1885,6 +1886,7 @@ async function seedDemoFixtures() {
           createdById: supervisor.id,
           startedAt: addHours(lesenImElisabethstift.instanceStartsAt, 0),
           endedAt: addHours(lesenImElisabethstift.instanceStartsAt, 1.5),
+          closureKind: TimeEntryClosureKind.MANUAL,
           notes: 'Vorlesestunde Elisabethstift — manuell erfasst',
         });
 
@@ -1896,6 +1898,7 @@ async function seedDemoFixtures() {
           createdById: supervisor.id,
           startedAt: addHours(seniorenkreis.instanceStartsAt, index * 0.25),
           endedAt: addHours(seniorenkreis.instanceStartsAt, 2 + index * 0.25),
+          closureKind: TimeEntryClosureKind.MANUAL,
           notes: 'Seniorenkreis — QR-Check-in vor Ort',
         });
       }
@@ -1909,6 +1912,7 @@ async function seedDemoFixtures() {
           createdById: supervisor.id,
           startedAt: addHours(literaturKurs.instanceStartsAt, 0),
           endedAt: addHours(literaturKurs.instanceStartsAt, 1.5),
+          closureKind: TimeEntryClosureKind.MANUAL,
           notes: 'Lesekurs — Übungsleiterpauschale',
         });
       }
@@ -1968,6 +1972,7 @@ async function seedDemoFixtures() {
         createdById: supervisor.id,
         startedAt,
         endedAt: addHours(startedAt, params.durationHours),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: params.notes,
       });
     };
