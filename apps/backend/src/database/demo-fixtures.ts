@@ -34,6 +34,7 @@ import {
 import { permissions } from '../auth/schemas/permission.schema';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
+import { runFixtureSeed } from '../shared/observability/fixture-failure-reporter';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import {
   addDaysInFixtureTimezone,
@@ -2294,7 +2295,4 @@ async function seedDemoFixtures() {
   await pool.end();
 }
 
-seedDemoFixtures().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+void runFixtureSeed('demo', seedDemoFixtures);
