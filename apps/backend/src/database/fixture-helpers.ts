@@ -225,6 +225,10 @@ export const fixtureUserId = (email: string): string =>
 /** The pinned id of a fixture organization, derived from its slug. */
 export const fixtureOrgId = (slug: string): string => fixtureId(`org:${slug}`);
 
+/** The pinned id of a fixture organization unit, derived from its slug. */
+export const fixtureOrgUnitId = (slug: string): string =>
+  fixtureId(`org-unit:${slug}`);
+
 /**
  * Pre-flight for both seed scripts.
  *
@@ -234,14 +238,16 @@ export const fixtureOrgId = (slug: string): string => fixtureId(`org:${slug}`);
  * database exactly as it found it instead of half-populated.
  *
  * A clash is: an org holding the fixture slug that these fixtures did not
- * create, or an account owning a fixture address that these fixtures did not
- * create. Re-runs of our own rows pass.
+ * create, an account owning a fixture address that these fixtures did not
+ * create, or a unit of another organization holding a fixture unit slug (unit
+ * slugs are globally unique). Re-runs of our own rows pass.
  */
 export const assertFixtureIdentitiesAvailable = async (
   db: Database,
   input: {
     orgSlug: string;
     accounts: PlannedFixtureAccount[];
+    unitSlugs?: string[];
   },
 ): Promise<void> => {
   const clashes: string[] = [];
@@ -264,6 +270,20 @@ export const assertFixtureIdentitiesAvailable = async (
       `organization "${input.orgSlug}" already exists with id ${orgBySlug.id} and was ` +
         `not created by these fixtures (expected id ${expectedOrgId})`,
     );
+  }
+
+  if (input.unitSlugs && input.unitSlugs.length > 0) {
+    const foreignUnits = await db.query.organizationUnits.findMany({
+      where: {
+        slug: { in: input.unitSlugs },
+        organizationId: { ne: expectedOrgId },
+      },
+    });
+    for (const unit of foreignUnits) {
+      clashes.push(
+        `organization unit slug "${unit.slug}" is held by organization ${unit.organizationId}, not by these fixtures (expected ${expectedOrgId})`,
+      );
+    }
   }
 
   const planned = input.accounts.map((account) => ({

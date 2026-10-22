@@ -19,6 +19,7 @@ import { permissions } from '../auth/schemas/permission.schema';
 import { EventInviteStatus } from '../event/enums';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
+import { runFixtureSeed } from '../shared/observability/fixture-failure-reporter';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import {
   addDaysInFixtureTimezone,
@@ -1499,6 +1500,7 @@ async function seedFixtures() {
   // aborts cleanly instead of leaving a half-populated database.
   await assertFixtureIdentitiesAvailable(db, {
     orgSlug: ORG_SLUG,
+    unitSlugs: [ORG_SLUG],
     accounts: [
       { email: ADMIN_USER_EMAIL, ...ADMIN_IDENTITY },
       { email: e2eEmail('supervisor'), ...SUPERVISOR_IDENTITY },
@@ -2408,7 +2410,4 @@ async function seedFixtures() {
   await pool.end();
 }
 
-seedFixtures().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+void runFixtureSeed('e2e', seedFixtures);
