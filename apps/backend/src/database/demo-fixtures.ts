@@ -21,21 +21,20 @@
  * address routes to the single demo@caluno.org inbox.
  */
 import { hashPassword } from 'better-auth/crypto';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { ReimbursementTypeKey } from '../accounting/enums';
-import {
-  DEFAULT_MEMBER_ROLE_NAME,
-  DEFAULT_OWNER_ROLE_NAME,
-  MEMBER_DEFAULT_PERMISSIONS,
-  PERMISSIONS,
-} from '../auth/constants';
-import { permissions } from '../auth/schemas/permission.schema';
+import { PERMISSIONS } from '../auth/constants';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { runFixtureSeed } from '../shared/observability/fixture-failure-reporter';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
+import { ensureFormBlock, ensureFormBlockRef } from './demo-form-blocks';
+import {
+  type DemoOrganizationConfig,
+  ensureDemoOrganization,
+} from './demo-organization';
 import {
   addDaysInFixtureTimezone,
   addHours,
@@ -210,294 +209,41 @@ const SUPERVISOR_PERMISSIONS = [
 
 // ─── Organisation + org units ───
 
-type OrganizationHandles = {
-  organizationId: string;
-  rootUnitId: string;
-  unitIds: { nord: string; sued: string; west: string };
-  ownerRoleId: string;
-  memberRoleId: string;
-  supervisorRoleId: string;
-};
-
-const ensureAltonaerLesepatenOrganization = async (
-  db: Database,
-  adminUserId: string,
-): Promise<OrganizationHandles> => {
-  const allPermissionKeys = Object.values(PERMISSIONS).filter(
-    (permission) => !permission.startsWith('org-role:'),
-  );
-
-  const existingOrg = await db.query.organizations.findFirst({
-    where: { id: ORG_ID },
-  });
-
-  if (existingOrg) {
-    const units = await db.query.organizationUnits.findMany({
-      where: { organizationId: existingOrg.id },
-    });
-    const rootUnit = units.find((unit) => unit.parentId === null);
-    const nord = units.find((unit) => unit.name === 'Lesepaten Nord');
-    const sued = units.find((unit) => unit.name === 'Lesepaten Süd');
-    const west = units.find((unit) => unit.name === 'Lesepaten West');
-
-    if (!rootUnit || !nord || !sued || !west) {
-      throw new Error(
-        'Existing Altonaer Lesepaten organization is missing an expected unit — delete it and re-run, or extend this script instead of assuming its shape.',
-      );
-    }
-
-    const roles = await db.query.roles.findMany({
-      where: { organizationId: existingOrg.id },
-    });
-    const ownerRole = roles.find(
-      (role) => role.name === DEFAULT_OWNER_ROLE_NAME,
-    );
-    const memberRole = roles.find(
-      (role) => role.name === DEFAULT_MEMBER_ROLE_NAME,
-    );
-    const supervisorRole = roles.find(
-      (role) => role.name === SUPERVISOR_ROLE_NAME,
-    );
-
-    if (!ownerRole || !memberRole || !supervisorRole) {
-      throw new Error(
-        'Existing Altonaer Lesepaten organization is missing expected roles',
-      );
-    }
-
-    await ensureMembershipWithRole(db, adminUserId, rootUnit.id, ownerRole.id);
-
-    return {
-      organizationId: existingOrg.id,
-      rootUnitId: rootUnit.id,
-      unitIds: { nord: nord.id, sued: sued.id, west: west.id },
-      ownerRoleId: ownerRole.id,
-      memberRoleId: memberRole.id,
-      supervisorRoleId: supervisorRole.id,
-    };
-  }
-
-  return db.transaction(async (tx) => {
-    const [organization] = await tx
-      .insert(schema.organizations)
-      .values({
-        id: ORG_ID,
-        name: ORG_NAME,
-        slug: ORG_SLUG,
-        contactEmail: DEMO_ACCOUNT_EMAIL,
-        description: ORG_DESCRIPTION,
-        street: 'Museumstraße 23',
-        zipCode: '22765',
-        city: 'Hamburg',
-      })
-      .returning();
-
-    if (!organization) {
-      throw new Error('Failed to create Altonaer Lesepaten organization');
-    }
-
-    const [rootType] = await tx
-      .insert(schema.organizationUnitTypes)
-      .values({
-        organizationId: organization.id,
-        name: 'Verein',
-        description: `Trägerverein von ${organization.name}`,
-        icon: 'building-2',
-      })
-      .returning();
-
-    const [regionType] = await tx
-      .insert(schema.organizationUnitTypes)
-      .values({
-        organizationId: organization.id,
-        name: 'Regionalgruppe',
-        description: 'Regionale Untergliederung der Lesepatenschaften',
-        icon: 'map-pin',
-      })
-      .returning();
-
-    if (!rootType || !regionType) {
-      throw new Error('Failed to create organization unit types');
-    }
-
-    const [rootUnit] = await tx
-      .insert(schema.organizationUnits)
-      .values({
-        organizationId: organization.id,
-        parentId: null,
-        typeId: rootType.id,
-        name: organization.name,
-        slug: ORG_SLUG,
-        contactEmail: organization.contactEmail,
-        description: organization.description,
-        coverUrl: ORG_COVER_IMAGE_URL,
-        street: 'Museumstraße 23',
-        zipCode: '22765',
-        city: 'Hamburg',
-        legalRep: 'Friederike Lange',
-      })
-      .returning();
-
-    if (!rootUnit) {
-      throw new Error('Failed to create root organization unit');
-    }
-
-    const regionUnits: Record<'nord' | 'sued' | 'west', string> = {
-      nord: '',
-      sued: '',
-      west: '',
-    };
-
-    const regionDefinitions: Array<{
-      key: 'nord' | 'sued' | 'west';
-      name: string;
-      slug: string;
-      description: string;
-    }> = [
-      {
-        key: 'nord',
-        name: 'Lesepaten Nord',
-        slug: `${ORG_SLUG}-nord`,
-        description: 'Eimsbüttel, Schnelsen, Stellingen',
-      },
-      {
-        key: 'sued',
-        name: 'Lesepaten Süd',
-        slug: `${ORG_SLUG}-sued`,
-        description: 'Ottensen, Bahrenfeld, Groß Flottbek',
-      },
-      {
-        key: 'west',
-        name: 'Lesepaten West',
-        slug: `${ORG_SLUG}-west`,
-        description: 'Rissen, Blankenese, Sülldorf',
-      },
-    ];
-
-    for (const region of regionDefinitions) {
-      const [unit] = await tx
-        .insert(schema.organizationUnits)
-        .values({
-          organizationId: organization.id,
-          parentId: rootUnit.id,
-          typeId: regionType.id,
-          name: region.name,
-          slug: region.slug,
-          contactEmail: organization.contactEmail,
-          description: region.description,
-          coverUrl: region.key === 'nord' ? NORD_COVER_IMAGE_URL : null,
-          street: 'Museumstraße 23',
-          zipCode: '22765',
-          city: 'Hamburg',
-        })
-        .returning();
-
-      if (!unit) {
-        throw new Error(`Failed to create organization unit: ${region.name}`);
-      }
-
-      regionUnits[region.key] = unit.id;
-    }
-
-    const [ownerRole] = await tx
-      .insert(schema.roles)
-      .values({
-        name: DEFAULT_OWNER_ROLE_NAME,
-        description: `Owner role for organization ${organization.name}`,
-        isInternal: true,
-        organizationId: organization.id,
-      })
-      .returning();
-
-    const [memberRole] = await tx
-      .insert(schema.roles)
-      .values({
-        name: DEFAULT_MEMBER_ROLE_NAME,
-        description: `Member role for organization ${organization.name}`,
-        isInternal: true,
-        organizationId: organization.id,
-      })
-      .returning();
-
-    const [supervisorRole] = await tx
-      .insert(schema.roles)
-      .values({
-        name: SUPERVISOR_ROLE_NAME,
-        description: `Supervisor role for organization ${organization.name}`,
-        isInternal: false,
-        organizationId: organization.id,
-      })
-      .returning();
-
-    if (!ownerRole || !memberRole || !supervisorRole) {
-      throw new Error('Failed to create organization roles');
-    }
-
-    const memberPermissionRows = await tx
-      .select({ id: permissions.id })
-      .from(permissions)
-      .where(inArray(permissions.key, [...MEMBER_DEFAULT_PERMISSIONS]));
-
-    if (memberPermissionRows.length > 0) {
-      await tx.insert(schema.rolePermissions).values(
-        memberPermissionRows.map((permission) => ({
-          roleId: memberRole.id,
-          permissionId: permission.id,
-        })),
-      );
-    }
-
-    const ownerPermissionRows = await tx
-      .select({ id: permissions.id })
-      .from(permissions)
-      .where(inArray(permissions.key, allPermissionKeys));
-
-    if (ownerPermissionRows.length > 0) {
-      await tx.insert(schema.rolePermissions).values(
-        ownerPermissionRows.map((permission) => ({
-          roleId: ownerRole.id,
-          permissionId: permission.id,
-        })),
-      );
-    }
-
-    const supervisorPermissionRows = await tx
-      .select({ id: permissions.id })
-      .from(permissions)
-      .where(inArray(permissions.key, [...SUPERVISOR_PERMISSIONS]));
-
-    if (supervisorPermissionRows.length > 0) {
-      await tx.insert(schema.rolePermissions).values(
-        supervisorPermissionRows.map((permission) => ({
-          roleId: supervisorRole.id,
-          permissionId: permission.id,
-        })),
-      );
-    }
-
-    const [adminMembership] = await tx
-      .insert(schema.memberships)
-      .values({ userId: adminUserId, organizationUnitId: rootUnit.id })
-      .returning();
-
-    if (!adminMembership) {
-      throw new Error('Failed to create admin membership');
-    }
-
-    await tx.insert(schema.membershipRoles).values({
-      membershipId: adminMembership.id,
-      roleId: ownerRole.id,
-    });
-
-    return {
-      organizationId: organization.id,
-      rootUnitId: rootUnit.id,
-      unitIds: regionUnits,
-      ownerRoleId: ownerRole.id,
-      memberRoleId: memberRole.id,
-      supervisorRoleId: supervisorRole.id,
-    };
-  });
+/**
+ * The demo organization's identity and regional structure, shared by creation
+ * and repair. Unit ids are derived from the region slugs, so they stay stable
+ * across runs.
+ */
+const DEMO_ORGANIZATION: DemoOrganizationConfig = {
+  orgId: ORG_ID,
+  orgSlug: ORG_SLUG,
+  orgName: ORG_NAME,
+  orgDescription: ORG_DESCRIPTION,
+  contactEmail: DEMO_ACCOUNT_EMAIL,
+  rootCoverImageUrl: ORG_COVER_IMAGE_URL,
+  northCoverImageUrl: NORD_COVER_IMAGE_URL,
+  supervisorRoleName: SUPERVISOR_ROLE_NAME,
+  supervisorPermissions: SUPERVISOR_PERMISSIONS,
+  regions: [
+    {
+      key: 'nord',
+      name: 'Lesepaten Nord',
+      slug: `${ORG_SLUG}-nord`,
+      description: 'Eimsbüttel, Schnelsen, Stellingen',
+    },
+    {
+      key: 'sued',
+      name: 'Lesepaten Süd',
+      slug: `${ORG_SLUG}-sued`,
+      description: 'Ottensen, Bahrenfeld, Groß Flottbek',
+    },
+    {
+      key: 'west',
+      name: 'Lesepaten West',
+      slug: `${ORG_SLUG}-west`,
+      description: 'Rissen, Blankenese, Sülldorf',
+    },
+  ],
 };
 
 // ─── Requirement forms (individuelle Anforderungsformulare & Dokumentenannahme) ───
@@ -508,9 +254,10 @@ const ensurePersonalInfoForm = async (
   organizationUnitId: string,
   createdById: string,
 ): Promise<typeof schema.requirementForms.$inferSelect> => {
-  let form = await db.query.requirementForms.findFirst({
+  const existingForm = await db.query.requirementForms.findFirst({
     where: { organizationId, slug: 'interessensbekundung' },
   });
+  let form = existingForm;
 
   if (!form) {
     const [createdForm] = await db
@@ -532,54 +279,45 @@ const ensurePersonalInfoForm = async (
     }
 
     form = createdForm;
+  }
 
-    const [block] = await db
-      .insert(schema.formBlocks)
-      .values({
-        organizationId,
-        title: 'Deine Kontaktdaten',
-        description: 'Damit wir dich erreichen können.',
-        required: true,
-        createdBy: createdById,
-        updatedBy: createdById,
-      })
-      .returning();
-
-    if (!block) {
-      throw new Error('Failed to create Interessensbekundung block');
-    }
-
-    await db.insert(schema.formBlockFields).values([
+  const { block, created } = await ensureFormBlock(db, {
+    organizationId,
+    title: 'Deine Kontaktdaten',
+    description: 'Damit wir dich erreichen können.',
+    createdById,
+    fields: [
       {
-        blockId: block.id,
         type: FieldType.NAME,
         label: 'Vorname',
         required: true,
         fieldOrder: 0,
       },
       {
-        blockId: block.id,
         type: FieldType.LASTNAME,
         label: 'Nachname',
         required: true,
         fieldOrder: 1,
       },
       {
-        blockId: block.id,
         type: FieldType.PHONE,
         label: 'Telefonnummer',
         required: false,
         fieldOrder: 2,
       },
-    ]);
+    ],
+  });
 
-    await db.insert(schema.requirementFormBlockRefs).values({
+  await ensureFormBlockRef(
+    db,
+    {
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
       required: true,
-    });
-  }
+    },
+    { fresh: !existingForm || created },
+  );
 
   const existingUnitRequiredForm =
     await db.query.organizationUnitRequiredForms.findFirst({
@@ -587,11 +325,14 @@ const ensurePersonalInfoForm = async (
     });
 
   if (!existingUnitRequiredForm) {
-    await db.insert(schema.organizationUnitRequiredForms).values({
-      organizationUnitId,
-      formId: form.id,
-      order: 0,
-    });
+    await db
+      .insert(schema.organizationUnitRequiredForms)
+      .values({
+        organizationUnitId,
+        formId: form.id,
+        order: 0,
+      })
+      .onConflictDoNothing();
   }
 
   return form;
@@ -603,9 +344,10 @@ const ensureAgreementForm = async (
   organizationUnitId: string,
   createdById: string,
 ): Promise<typeof schema.requirementForms.$inferSelect> => {
-  let form = await db.query.requirementForms.findFirst({
+  const existingForm = await db.query.requirementForms.findFirst({
     where: { organizationId, slug: 'vereinbarung-ehrenamtliche-mitarbeit' },
   });
+  let form = existingForm;
 
   if (!form) {
     const [createdForm] = await db
@@ -628,39 +370,34 @@ const ensureAgreementForm = async (
     }
 
     form = createdForm;
+  }
 
-    const [block] = await db
-      .insert(schema.formBlocks)
-      .values({
-        organizationId,
-        title: 'Vereinbarung zur ehrenamtlichen Mitarbeit',
-        description:
-          'Bitte einmal lesen und bestätigen, bevor es in den ersten Einsatz geht.',
+  const { block, created } = await ensureFormBlock(db, {
+    organizationId,
+    title: 'Vereinbarung zur ehrenamtlichen Mitarbeit',
+    description:
+      'Bitte einmal lesen und bestätigen, bevor es in den ersten Einsatz geht.',
+    createdById,
+    fields: [
+      {
+        type: FieldType.DOCUMENT_ACKNOWLEDGEMENT,
+        label: 'Ich habe die Vereinbarung zur ehrenamtlichen Mitarbeit gelesen',
         required: true,
-        createdBy: createdById,
-        updatedBy: createdById,
-      })
-      .returning();
+        fieldOrder: 0,
+      },
+    ],
+  });
 
-    if (!block) {
-      throw new Error('Failed to create Vereinbarung block');
-    }
-
-    await db.insert(schema.formBlockFields).values({
-      blockId: block.id,
-      type: FieldType.DOCUMENT_ACKNOWLEDGEMENT,
-      label: 'Ich habe die Vereinbarung zur ehrenamtlichen Mitarbeit gelesen',
-      required: true,
-      fieldOrder: 0,
-    });
-
-    await db.insert(schema.requirementFormBlockRefs).values({
+  await ensureFormBlockRef(
+    db,
+    {
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
       required: true,
-    });
-  }
+    },
+    { fresh: !existingForm || created },
+  );
 
   const existingUnitRequiredForm =
     await db.query.organizationUnitRequiredForms.findFirst({
@@ -668,11 +405,14 @@ const ensureAgreementForm = async (
     });
 
   if (!existingUnitRequiredForm) {
-    await db.insert(schema.organizationUnitRequiredForms).values({
-      organizationUnitId,
-      formId: form.id,
-      order: 1,
-    });
+    await db
+      .insert(schema.organizationUnitRequiredForms)
+      .values({
+        organizationUnitId,
+        formId: form.id,
+        order: 1,
+      })
+      .onConflictDoNothing();
   }
 
   return form;
@@ -689,9 +429,10 @@ const ensureChildSafetyForm = async (
   createdById: string,
   shiftId: string,
 ): Promise<typeof schema.requirementForms.$inferSelect> => {
-  let form = await db.query.requirementForms.findFirst({
+  const existingForm = await db.query.requirementForms.findFirst({
     where: { organizationId, slug: 'erweitertes-fuehrungszeugnis' },
   });
+  let form = existingForm;
 
   if (!form) {
     const [createdForm] = await db
@@ -713,38 +454,33 @@ const ensureChildSafetyForm = async (
     }
 
     form = createdForm;
+  }
 
-    const [block] = await db
-      .insert(schema.formBlocks)
-      .values({
-        organizationId,
-        title: 'Erweitertes Führungszeugnis',
-        description: 'Ausstellungsdatum des vorgelegten Führungszeugnisses.',
+  const { block, created } = await ensureFormBlock(db, {
+    organizationId,
+    title: 'Erweitertes Führungszeugnis',
+    description: 'Ausstellungsdatum des vorgelegten Führungszeugnisses.',
+    createdById,
+    fields: [
+      {
+        type: FieldType.DATE,
+        label: 'Ausstellungsdatum',
         required: true,
-        createdBy: createdById,
-        updatedBy: createdById,
-      })
-      .returning();
+        fieldOrder: 0,
+      },
+    ],
+  });
 
-    if (!block) {
-      throw new Error('Failed to create Führungszeugnis block');
-    }
-
-    await db.insert(schema.formBlockFields).values({
-      blockId: block.id,
-      type: FieldType.DATE,
-      label: 'Ausstellungsdatum',
-      required: true,
-      fieldOrder: 0,
-    });
-
-    await db.insert(schema.requirementFormBlockRefs).values({
+  await ensureFormBlockRef(
+    db,
+    {
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
       required: true,
-    });
-  }
+    },
+    { fresh: !existingForm || created },
+  );
 
   const existingShiftRequiredForm = await db.query.shiftRequiredForms.findFirst(
     {
@@ -753,11 +489,14 @@ const ensureChildSafetyForm = async (
   );
 
   if (!existingShiftRequiredForm) {
-    await db.insert(schema.shiftRequiredForms).values({
-      shiftId,
-      formId: form.id,
-      order: 0,
-    });
+    await db
+      .insert(schema.shiftRequiredForms)
+      .values({
+        shiftId,
+        formId: form.id,
+        order: 0,
+      })
+      .onConflictDoNothing();
   }
 
   return form;
@@ -898,6 +637,10 @@ async function seedDemoFixtures() {
 
   await assertFixtureIdentitiesAvailable(db, {
     orgSlug: ORG_SLUG,
+    unitSlugs: [
+      ORG_SLUG,
+      ...DEMO_ORGANIZATION.regions.map((region) => region.slug),
+    ],
     accounts: [
       { email: email('owner'), ...COORDINATOR },
       { email: email('supervisor'), ...SUPERVISOR },
@@ -928,7 +671,11 @@ async function seedDemoFixtures() {
     image: PORTRAIT_URLS['friederike.lange'],
   });
 
-  const org = await ensureAltonaerLesepatenOrganization(db, coordinator.id);
+  const org = await ensureDemoOrganization(
+    db,
+    coordinator.id,
+    DEMO_ORGANIZATION,
+  );
 
   // Resolved up front (not just before the Zeiterfassung block) so shifts
   // below can also be tagged by Pauschalenart: einige Einsätze mit
