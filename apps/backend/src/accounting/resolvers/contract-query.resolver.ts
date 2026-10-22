@@ -109,7 +109,10 @@ export class ContractQueryResolver {
       session,
       context,
     );
-    return this.contractService.findPendingContractSignee(contractId);
+    return this.contractService.findPendingContractSignee(
+      contractId,
+      context.organizationUnitId,
+    );
   }
 
   private async assertCanViewDocument(

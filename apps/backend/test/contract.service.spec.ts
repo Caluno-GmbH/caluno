@@ -36,15 +36,9 @@ import {
   ForbiddenGraphQLError,
   NotFoundGraphQLError,
 } from '../src/graphql/errors';
-import { MembershipService } from '../src/membership/membership.service';
-import { NotificationService } from '../src/notification';
-import { OrganizationMapper } from '../src/organization/mappers/organization.mapper';
-import { OrganizationService } from '../src/organization/organization.service';
-import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { startOfAppDay } from '../src/shift/utils/app-time';
-import { FileService } from '../src/storage/services/file.service';
 import {
   createDocumentFile,
   createReimbursementType,
@@ -91,15 +85,6 @@ describe('ContractService', () => {
     const authService = new AuthService(db, organizationUnitDataService, {
       capture: () => {},
     } as unknown as PostHogService);
-    const organizationService = new OrganizationService(
-      db,
-      {} as OrganizationMapper,
-      {} as MembershipService,
-      {} as OrganizationUnitService,
-      {} as NotificationService,
-      {} as FileService,
-      { capture: () => {} } as unknown as PostHogService,
-    );
     const documentTemplateService = new DocumentTemplateService(
       db,
       {
@@ -109,11 +94,7 @@ describe('ContractService', () => {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
     );
-    const documentSigningService = new DocumentSigningService(
-      db,
-      authService,
-      organizationService,
-    );
+    const documentSigningService = new DocumentSigningService(db, authService);
     service = new ContractService(
       db,
       documentTemplateService,
@@ -677,7 +658,7 @@ describe('ContractService', () => {
     });
 
     it('walks the contract through the full signing chain to ACTIVE', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -694,6 +675,7 @@ describe('ContractService', () => {
       const afterVolunteer = await service.signContract(
         contract.id,
         volunteer.id,
+        root.id,
       );
       expect(afterVolunteer.contractStatus).toBe(
         ContractStatus.AWAITING_NGO_SIGNATURE,
@@ -702,6 +684,7 @@ describe('ContractService', () => {
       const afterCountersign = await service.signContract(
         contract.id,
         signer.id,
+        root.id,
       );
       expect(afterCountersign.contractStatus).toBe(ContractStatus.ACTIVE);
 
@@ -717,7 +700,7 @@ describe('ContractService', () => {
     });
 
     it('forbids a user who is not the volunteer from signing the first step', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -732,12 +715,12 @@ describe('ContractService', () => {
       );
 
       await expect(
-        service.signContract(contract.id, signer.id),
+        service.signContract(contract.id, signer.id, root.id),
       ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
     });
 
     it('throws ConflictGraphQLError when signing a contract that is already ACTIVE', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -750,18 +733,18 @@ describe('ContractService', () => {
         },
         signer.id,
       );
-      await service.signContract(contract.id, volunteer.id);
-      await service.signContract(contract.id, signer.id);
+      await service.signContract(contract.id, volunteer.id, root.id);
+      await service.signContract(contract.id, signer.id, root.id);
 
       await expect(
-        service.signContract(contract.id, signer.id),
+        service.signContract(contract.id, signer.id, root.id),
       ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
   });
 
   describe('declineContract', () => {
     it('requires a non-empty reason', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -776,12 +759,12 @@ describe('ContractService', () => {
       );
 
       await expect(
-        service.declineContract(contract.id, volunteer.id, '   '),
+        service.declineContract(contract.id, volunteer.id, '   ', root.id),
       ).rejects.toThrow();
     });
 
     it('records the decline reason, actor and signee type', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -799,6 +782,7 @@ describe('ContractService', () => {
         contract.id,
         volunteer.id,
         'Terms are not acceptable',
+        root.id,
       );
 
       expect(declined.contractStatus).toBe(ContractStatus.DECLINED);
@@ -813,7 +797,7 @@ describe('ContractService', () => {
     });
 
     it('notifies the admin side when the volunteer declines (VOLI-1246)', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -832,6 +816,7 @@ describe('ContractService', () => {
         contract.id,
         volunteer.id,
         'Terms are not acceptable',
+        root.id,
       );
 
       expect(declinedByVolunteerCalls.length).toBe(before + 1);
@@ -847,7 +832,7 @@ describe('ContractService', () => {
 
   describe('findActiveContract', () => {
     it('ignores an ACTIVE contract whose period has already ended', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -860,8 +845,8 @@ describe('ContractService', () => {
         },
         signer.id,
       );
-      await service.signContract(contract.id, volunteer.id);
-      await service.signContract(contract.id, signer.id);
+      await service.signContract(contract.id, volunteer.id, root.id);
+      await service.signContract(contract.id, signer.id, root.id);
 
       const active = await service.findActiveContract(
         volunteer.id,
@@ -871,7 +856,7 @@ describe('ContractService', () => {
     });
 
     it('finds an ACTIVE contract whose period covers today', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -884,8 +869,8 @@ describe('ContractService', () => {
         },
         signer.id,
       );
-      await service.signContract(contract.id, volunteer.id);
-      await service.signContract(contract.id, signer.id);
+      await service.signContract(contract.id, volunteer.id, root.id);
+      await service.signContract(contract.id, signer.id, root.id);
 
       const active = await service.findActiveContract(
         volunteer.id,
@@ -896,7 +881,7 @@ describe('ContractService', () => {
 
     // VOLI-1370: a month-scoped contract only covers its own month.
     it('only covers the target period the contract states', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { root, organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -910,8 +895,8 @@ describe('ContractService', () => {
         },
         signer.id,
       );
-      await service.signContract(contract.id, volunteer.id);
-      await service.signContract(contract.id, signer.id);
+      await service.signContract(contract.id, volunteer.id, root.id);
+      await service.signContract(contract.id, signer.id, root.id);
 
       const august = await service.findActiveContract(
         volunteer.id,
