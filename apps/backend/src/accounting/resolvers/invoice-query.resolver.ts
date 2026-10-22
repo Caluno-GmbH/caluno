@@ -150,6 +150,29 @@ export class InvoiceQueryResolver {
     return this.timeEntryMapper.toArray(entries);
   }
 
+  @Query(() => [TimeEntry])
+  async timeEntriesAwaitingReviewForInvoice(
+    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('reimbursementTypeId', { type: () => ID })
+    reimbursementTypeId: string,
+    @Args('periodStart', { type: () => Date, nullable: true })
+    periodStart: Date | null | undefined,
+    @Args('periodEnd', { type: () => Date, nullable: true })
+    periodEnd: Date | null | undefined,
+    @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<TimeEntry[]> {
+    await this.assertCanViewDocument(volunteerId, undefined, session, context);
+    const entries = await this.invoiceService.findTimeEntriesAwaitingReview(
+      volunteerId,
+      reimbursementTypeId,
+      context.organizationUnitId,
+      periodStart ?? undefined,
+      periodEnd ?? undefined,
+    );
+    return this.timeEntryMapper.toArray(entries);
+  }
+
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
   @Query(() => [VolunteerNeedsTimesheet])
   async volunteersNeedingTimesheets(
