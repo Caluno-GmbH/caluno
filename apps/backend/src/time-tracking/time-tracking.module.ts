@@ -15,6 +15,7 @@ import {
   TimeTrackingQueryResolver,
 } from './resolvers';
 import { TimeEntryLoader } from './resolvers/time-entry.loader';
+import { TimeEntryAutoClosedNotifier } from './services/time-entry-auto-closed-notifier.service';
 import { TimeTrackingService } from './time-tracking.service';
 
 @Module({
@@ -34,9 +35,10 @@ import { TimeTrackingService } from './time-tracking.service';
     ReimbursementTypeMapper,
     TimeEntryFieldResolver,
     TimeEntryLoader,
+    TimeEntryAutoClosedNotifier,
     TimeTrackingMutationResolver,
     TimeTrackingQueryResolver,
   ],
-  exports: [TimeTrackingService, TimeEntryMapper],
+  exports: [TimeTrackingService, TimeEntryMapper, TimeEntryAutoClosedNotifier],
 })
 export class TimeTrackingModule {}

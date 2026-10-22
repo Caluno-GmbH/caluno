@@ -87,6 +87,10 @@ export const NOTIFICATION_EMAIL_GROUP: Record<
 
   [NotificationEvent.TERMS_UPDATED]: null,
 
+  // Told to the volunteer, but always sent: it corrects the record of their
+  // own hours, so no email setting can silence it.
+  [NotificationEvent.TIME_ENTRY_AUTO_CLOSED]: null,
+
   // The call-out and digest are sent directly by their own senders rather than
   // through the emitter; the entries below are the groups those senders
   // enforce. Only the volunteer-facing call-out is gated — the "nobody left to
