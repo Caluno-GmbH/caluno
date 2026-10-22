@@ -1506,6 +1506,7 @@ async function seedFixtures() {
   // aborts cleanly instead of leaving a half-populated database.
   await assertFixtureIdentitiesAvailable(db, {
     orgSlug: ORG_SLUG,
+    unitSlugs: [ORG_SLUG],
     accounts: [
       { email: ADMIN_USER_EMAIL, ...ADMIN_IDENTITY },
       { email: e2eEmail('supervisor'), ...SUPERVISOR_IDENTITY },
