@@ -26,7 +26,22 @@ export function timeEntrySchema(t: TimeEntrySchemaMessages) {
   });
 }
 
-export function clientTimeEntrySchema(t: TimeEntrySchemaMessages) {
+/** The stored entry an edit form started from. */
+export interface TimeEntryEditBaseline {
+  startedAt?: Date;
+  shiftInstanceId?: string;
+}
+
+/**
+ * `baseline` is set in edit mode. The shift-end rule is skipped while the start
+ * and the shift instance still match it, mirroring the backend: legacy entries
+ * that start after their shift's end (late check-in window, shift moved
+ * earlier) must stay editable without falsifying the start.
+ */
+export function clientTimeEntrySchema(
+  t: TimeEntrySchemaMessages,
+  baseline?: TimeEntryEditBaseline,
+) {
   return timeEntrySchema(t)
     .extend({
       hasShift: z.boolean(),
@@ -44,7 +59,12 @@ export function clientTimeEntrySchema(t: TimeEntrySchemaMessages) {
           message: t.endBeforeStart,
         });
       }
+      const unchangedFromBaseline =
+        !!baseline?.startedAt &&
+        data.startedAt.getTime() === baseline.startedAt.getTime() &&
+        (data.shiftInstanceId ?? '') === (baseline.shiftInstanceId ?? '');
       if (
+        !unchangedFromBaseline &&
         data.shiftInstanceEndsAt &&
         data.startedAt.getTime() > data.shiftInstanceEndsAt.getTime()
       ) {

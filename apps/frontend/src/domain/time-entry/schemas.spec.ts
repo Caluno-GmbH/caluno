@@ -127,6 +127,59 @@ describe('clientTimeEntrySchema time checks', () => {
     expect(result.success).toBe(true);
   });
 
+  describe('edit mode with the loaded entry as baseline', () => {
+    const shiftInstanceEndsAt = new Date('2026-01-01T08:00:00Z');
+    const initial = {
+      startedAt: new Date(baseValues.startedAt.getTime()),
+      shiftInstanceId: 'si-1',
+    };
+    const values = {
+      ...baseValues,
+      hasShift: true,
+      shiftInstanceId: 'si-1',
+      shiftInstanceEndsAt,
+    };
+
+    it('skips the shift-end check when start and instance are unchanged', () => {
+      const result = clientTimeEntrySchema(messages, initial).safeParse({
+        ...values,
+        startedAt: new Date(initial.startedAt.getTime()),
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('still checks when the start moved', () => {
+      const result = clientTimeEntrySchema(messages, initial).safeParse({
+        ...values,
+        startedAt: new Date('2026-01-01T09:30:00Z'),
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues.some((i) => i.path[0] === 'startedAt')).toBe(
+          true,
+        );
+      }
+    });
+
+    it('still checks when the instance changed', () => {
+      const result = clientTimeEntrySchema(messages, initial).safeParse({
+        ...values,
+        shiftInstanceId: 'si-2',
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues.some((i) => i.path[0] === 'startedAt')).toBe(
+          true,
+        );
+      }
+    });
+
+    it('still checks without a baseline (create mode)', () => {
+      const result = clientTimeEntrySchema(messages).safeParse(values);
+      expect(result.success).toBe(false);
+    });
+  });
+
   it('no shift instance skips the shift check', () => {
     for (const shiftInstanceEndsAt of [undefined, null]) {
       const result = schema().safeParse({

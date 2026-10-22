@@ -82,20 +82,30 @@ export const TimeEntryForm = ({
   const tPauschale = useTranslations('TimeEntry.pauschaleType');
   const reimbursementTypesQuery = useReimbursementTypes();
 
-  const schema = clientTimeEntrySchema({
-    organizationUnitRequired: tValidation('organizationUnitRequired'),
-    shiftInstanceRequired: tValidation('shiftInstanceRequired'),
-    volunteerRequired: tValidation('volunteerRequired'),
-    startedAtRequired: tValidation('startedAtRequired'),
-    endedAtRequired: tValidation('endedAtRequired'),
-    timeEntryIdRequired: tValidation('timeEntryIdRequired'),
-    reimbursementTypeRequired: tValidation('reimbursementTypeRequired'),
-    endBeforeStart: tValidation('endBeforeStart'),
-    startAfterShiftEnd: (shiftEnd, start) =>
-      tValidation('startAfterShiftEnd', {
-        end: formatTimeRelativeToStart(shiftEnd, start),
-      }),
-  });
+  const schema = clientTimeEntrySchema(
+    {
+      organizationUnitRequired: tValidation('organizationUnitRequired'),
+      shiftInstanceRequired: tValidation('shiftInstanceRequired'),
+      volunteerRequired: tValidation('volunteerRequired'),
+      startedAtRequired: tValidation('startedAtRequired'),
+      endedAtRequired: tValidation('endedAtRequired'),
+      timeEntryIdRequired: tValidation('timeEntryIdRequired'),
+      reimbursementTypeRequired: tValidation('reimbursementTypeRequired'),
+      endBeforeStart: tValidation('endBeforeStart'),
+      startAfterShiftEnd: (shiftEnd, start) =>
+        tValidation('startAfterShiftEnd', {
+          end: formatTimeRelativeToStart(shiftEnd, start),
+        }),
+    },
+    // Edit mode: an untouched start/instance is not re-validated against the
+    // shift end (legacy entries may start after it).
+    isEdit
+      ? {
+          startedAt: initialValues?.startedAt,
+          shiftInstanceId: initialValues?.shiftInstanceId,
+        }
+      : undefined,
+  );
 
   const {
     register,
