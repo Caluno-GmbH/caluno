@@ -1,6 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, count, eq, isNotNull, isNull, type SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  count,
+  eq,
+  isNotNull,
+  isNull,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
@@ -41,7 +50,10 @@ import type {
   TimeEntryEntity,
   TimeEntryEntityWithRelations,
 } from './schemas/time-entry.schema';
-import { deriveTimeEntryStatus } from './utils/time-entry-status';
+import {
+  deriveTimeEntryStatus,
+  timeEntryStatusCondition,
+} from './utils/time-entry-status';
 import {
   assertEndAfterStart,
   assertStartNotAfterShiftEnd,
@@ -462,7 +474,15 @@ export class TimeTrackingService {
     pagination: PaginationInput,
     sort: TimeEntrySortField = TimeEntrySortField.CREATED_AT,
     order: SortOrder = SortOrder.DESC,
+    statuses: TimeEntryStatus[] = [],
   ): Promise<{ entries: TimeEntryEntity[]; total: number }> {
+    const where = and(
+      eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+      statuses.length > 0
+        ? or(...statuses.map(timeEntryStatusCondition))
+        : undefined,
+    );
+
     const rows = await this.db
       .select({ timeEntry: schema.timeEntries })
       .from(schema.timeEntries)
@@ -482,7 +502,7 @@ export class TimeTrackingService {
         schema.users,
         eq(schema.timeEntries.volunteerId, schema.users.id),
       )
-      .where(eq(schema.timeEntries.organizationUnitId, organizationUnitId))
+      .where(where)
       .orderBy(...this.buildTimeEntryOrderBy(sort, order))
       .limit(pagination.limit)
       .offset(pagination.offset);
@@ -490,7 +510,7 @@ export class TimeTrackingService {
     const [{ total }] = await this.db
       .select({ total: count() })
       .from(schema.timeEntries)
-      .where(eq(schema.timeEntries.organizationUnitId, organizationUnitId));
+      .where(where);
 
     return { entries: rows.map((row) => row.timeEntry), total };
   }

@@ -27,7 +27,12 @@ import {
   createTimeEntry,
   createUser,
 } from './factories';
-import { applyBunAuthMocks } from './helpers/auth-mocks';
+import {
+  createOrganizationWithType,
+  createUnit,
+} from './factories/org.factory';
+import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
+import { graphqlRequestRequiringData } from './helpers/graphql-request';
 import { getGraphqlTestContext } from './helpers/graphql-test-context';
 
 applyBunAuthMocks(mock.module);
@@ -377,6 +382,123 @@ describe('TimeEntryAutoCloseSweepService', () => {
       failed: 0,
     });
     expect(notify).not.toHaveBeenCalled();
+  });
+});
+
+describe('timeEntries status filter', () => {
+  let app: INestApplication;
+  let unitId: string;
+  let openId: string;
+  let autoClosedId: string;
+  let closedId: string;
+  let legacyClosedId: string;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    const db = context.db;
+    setAuthMockUserId(context.testUserId);
+
+    // A fresh unit keeps the counts exact; fresh dates keep the sweep away.
+    const { organization, type } = await createOrganizationWithType(
+      db,
+      `Status Filter Org ${crypto.randomUUID()}`,
+    );
+    const unit = await createUnit(db, {
+      organizationId: organization.id,
+      typeId: type.id,
+      name: `Status Filter Unit ${crypto.randomUUID()}`,
+    });
+    unitId = unit.id;
+
+    const base = Date.now() - 3 * 3_600_000;
+    const seed = async (
+      offsetMs: number,
+      closed: boolean,
+      closureKind?: TimeEntryClosureKind,
+    ) => {
+      const entry = await createTimeEntry(db, {
+        organizationUnitId: unitId,
+        volunteerId: (await createUser(db)).id,
+        startedAt: new Date(base + offsetMs),
+        endedAt: closed ? new Date(base + offsetMs + 3_600_000) : null,
+      });
+      if (closureKind) {
+        await db
+          .update(schema.timeEntries)
+          .set({ closureKind })
+          .where(eq(schema.timeEntries.id, entry.id));
+      }
+      return entry.id;
+    };
+
+    openId = await seed(0, false);
+    autoClosedId = await seed(1_000, true, TimeEntryClosureKind.AUTO);
+    closedId = await seed(2_000, true, TimeEntryClosureKind.MANUAL);
+    // A closed row with no closure kind at all (pre-feature data).
+    legacyClosedId = await seed(3_000, true);
+  });
+
+  const query = async (statuses?: string[] | null) => {
+    const data = await graphqlRequestRequiringData<{
+      timeEntries: {
+        items: { id: string; status: string }[];
+        pagination: { total: number };
+      };
+    }>(
+      app,
+      {
+        query: `
+          query Entries($statuses: [TimeEntryStatus!]) {
+            timeEntries(limit: 50, offset: 0, statuses: $statuses) {
+              items { id status }
+              pagination { total }
+            }
+          }
+        `,
+        variables: statuses === undefined ? {} : { statuses },
+        headers: { 'x-organization-unit-id': unitId },
+      },
+      'timeEntries',
+    );
+    return data.timeEntries;
+  };
+
+  const ids = (result: Awaited<ReturnType<typeof query>>) =>
+    result.items.map((item) => item.id).sort();
+
+  it('returns every status when no filter is given', async () => {
+    const all = await query();
+    expect(ids(all)).toEqual(
+      [openId, autoClosedId, closedId, legacyClosedId].sort(),
+    );
+    expect(ids(await query([]))).toEqual(ids(all));
+    expect(ids(await query(null))).toEqual(ids(all));
+  });
+
+  it('filters by single status', async () => {
+    expect(ids(await query(['OPEN']))).toEqual([openId]);
+    expect(ids(await query(['AUTO_CLOSED']))).toEqual([autoClosedId]);
+    // CLOSED includes rows whose closure_kind is NULL.
+    expect(ids(await query(['CLOSED']))).toEqual(
+      [closedId, legacyClosedId].sort(),
+    );
+  });
+
+  it('filters by OPEN+AUTO_CLOSED', async () => {
+    const result = await query(['OPEN', 'AUTO_CLOSED']);
+    expect(ids(result)).toEqual([openId, autoClosedId].sort());
+    expect(result.items.map((item) => item.status).sort()).toEqual([
+      'AUTO_CLOSED',
+      'OPEN',
+    ]);
+  });
+
+  it('total matches filtered count', async () => {
+    const result = await query(['OPEN', 'AUTO_CLOSED']);
+    expect(result.pagination.total).toBe(2);
+    expect((await query(['CLOSED'])).pagination.total).toBe(2);
+    expect((await query()).pagination.total).toBe(4);
   });
 });
 

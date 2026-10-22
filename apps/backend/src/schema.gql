@@ -1092,7 +1092,7 @@ type Query {
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT): ShiftPaginatedResponse!
   termsStatus: TermsStatus!
-  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
+  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT, statuses: [TimeEntryStatus!]): TimeEntryPaginatedResponse!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   todoFillAssignmentFilter: TodoFillAssignmentFilter!
