@@ -2,11 +2,14 @@ jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'abcdefghijkl',
 }));
 
+import { ConflictGraphQLError, NotFoundGraphQLError } from '../graphql/errors';
+import { AccountingEvent } from '../shared/accounting-events';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
 } from '../shared/observability/posthog.events';
 import { PostHogService } from '../shared/observability/posthog.service';
+import { TimeEntryClosureKind } from './enums/time-entry-closure-kind.enum';
 import { AddTimeEntryInput } from './inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from './inputs/close-time-enty-input';
 import { UpdateTimeEntryInput } from './inputs/update-time-entry.input';
@@ -792,5 +795,272 @@ describe('TimeTrackingService time validation', () => {
       ),
     ).rejects.toThrow('Check-in cannot be later than the shift end');
     expect(insertValues).not.toHaveBeenCalled();
+  });
+});
+
+describe('TimeTrackingService manual closes and review', () => {
+  const STARTED = new Date('2026-10-22T10:00:00.000Z');
+  const ENDED = new Date('2026-10-22T12:00:00.000Z');
+
+  const buildService = (options: {
+    entry?: Record<string, unknown> | undefined;
+    // null simulates a conditional update that matched no row.
+    row?: Record<string, unknown> | null;
+    shift?: Record<string, unknown>;
+    membership?: Record<string, unknown>;
+  }) => {
+    const insertValues = jest.fn().mockReturnValue({
+      returning: jest.fn().mockResolvedValue([
+        {
+          id: 'te-1',
+          volunteerId: 'volunteer-1',
+          endedAt: ENDED,
+          reimbursementTypeId: 'type-1',
+        },
+      ]),
+    });
+    const updateSet = jest.fn().mockReturnValue({
+      where: jest.fn().mockReturnValue({
+        returning: jest.fn().mockResolvedValue(
+          options.row === null
+            ? []
+            : options.row
+              ? [options.row]
+              : [
+                  {
+                    id: 'te-1',
+                    volunteerId: 'volunteer-1',
+                    endedAt: ENDED,
+                    reimbursementTypeId: 'type-1',
+                  },
+                ],
+        ),
+      }),
+    });
+    const db = {
+      query: {
+        timeEntries: { findFirst: jest.fn().mockResolvedValue(options.entry) },
+      },
+      insert: jest.fn().mockReturnValue({ values: insertValues }),
+      update: jest.fn().mockReturnValue({ set: updateSet }),
+    };
+    const emit = jest.fn();
+    const service = new TimeTrackingService(
+      db as never,
+      (options.membership ?? {}) as never,
+      (options.shift ?? {}) as never,
+      { capture: jest.fn() } as unknown as PostHogService,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { emit } as never,
+    );
+    return { service, insertValues, updateSet, emit, db };
+  };
+
+  const existing = {
+    id: 'te-1',
+    organizationUnitId: 'ou-1',
+    shiftInstanceId: null,
+    startedAt: STARTED,
+    endedAt: ENDED,
+    closureKind: TimeEntryClosureKind.MANUAL,
+  };
+
+  it('addTimeEntry with endedAt stores closureKind MANUAL', async () => {
+    const { service, insertValues } = buildService({});
+    const input = Object.assign(new AddTimeEntryInput(), {
+      shiftInstanceId: null,
+      volunteerId: 'volunteer-1',
+      startedAt: STARTED,
+      endedAt: ENDED,
+      notes: null,
+    });
+
+    await service.addTimeEntry('ou-1', input, 'admin-1');
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ closureKind: TimeEntryClosureKind.MANUAL }),
+    );
+  });
+
+  it('addTimeEntry without endedAt stores no closureKind', async () => {
+    const { service, insertValues } = buildService({});
+    const input = Object.assign(new AddTimeEntryInput(), {
+      shiftInstanceId: null,
+      volunteerId: 'volunteer-1',
+      startedAt: STARTED,
+      notes: null,
+    });
+
+    await service.addTimeEntry('ou-1', input, 'admin-1');
+
+    expect(insertValues).toHaveBeenCalledWith(
+      expect.objectContaining({ closureKind: null }),
+    );
+  });
+
+  it('closeTimeEntry stores closureKind MANUAL', async () => {
+    const { service, updateSet } = buildService({
+      entry: { ...existing, endedAt: null, closureKind: null },
+    });
+
+    await service.closeTimeEntry(
+      'te-1',
+      'ou-1',
+      Object.assign(new CloseTimeEntryInput(), { endedAt: ENDED }),
+      'admin-1',
+    );
+
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ closureKind: TimeEntryClosureKind.MANUAL }),
+    );
+  });
+
+  it('checkOut stores closureKind MANUAL', async () => {
+    const { service, updateSet } = buildService({
+      entry: { ...existing, endedAt: null, closureKind: null },
+      shift: {
+        findInstanceWithMaster: jest.fn().mockResolvedValue({
+          id: 'si-1',
+          isCancelled: false,
+          master: { organizationUnitId: 'ou-1' },
+        }),
+        findOpenTimeEntry: jest.fn().mockResolvedValue({ id: 'te-1' }),
+      },
+      membership: {
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
+      },
+    });
+
+    await service.checkOut('si-1', 'volunteer-1');
+
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({ closureKind: TimeEntryClosureKind.MANUAL }),
+    );
+  });
+
+  it('checkOutVolunteer stores closureKind MANUAL', async () => {
+    const { service, updateSet } = buildService({});
+
+    await service.checkOutVolunteer('te-1', 'ou-1', 'admin-1');
+
+    expect(updateSet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        endedAt: expect.any(Date),
+        closureKind: TimeEntryClosureKind.MANUAL,
+      }),
+    );
+  });
+
+  describe('updateTimeEntry', () => {
+    const updateInput = (extra: Record<string, unknown> = {}) =>
+      Object.assign(new UpdateTimeEntryInput(), {
+        startedAt: STARTED,
+        ...extra,
+      });
+
+    it('on an AUTO entry sets MANUAL and emits TIME_ENTRY_CLOSED', async () => {
+      const { service, updateSet, emit } = buildService({
+        entry: { ...existing, closureKind: TimeEntryClosureKind.AUTO },
+      });
+
+      await service.updateTimeEntry('te-1', 'ou-1', updateInput(), 'admin-1');
+
+      expect(updateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ closureKind: TimeEntryClosureKind.MANUAL }),
+      );
+      expect(emit).toHaveBeenCalledWith(AccountingEvent.TIME_ENTRY_CLOSED, {
+        timeEntryId: 'te-1',
+      });
+    });
+
+    it('on a MANUAL entry keeps MANUAL and does not emit', async () => {
+      const { service, updateSet, emit } = buildService({ entry: existing });
+
+      await service.updateTimeEntry('te-1', 'ou-1', updateInput(), 'admin-1');
+
+      expect(updateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ closureKind: TimeEntryClosureKind.MANUAL }),
+      );
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('clearing endedAt on an AUTO entry clears closureKind and does not emit', async () => {
+      const { service, updateSet, emit } = buildService({
+        entry: { ...existing, closureKind: TimeEntryClosureKind.AUTO },
+        row: { id: 'te-1', volunteerId: 'volunteer-1', endedAt: null },
+      });
+
+      await service.updateTimeEntry(
+        'te-1',
+        'ou-1',
+        updateInput({ endedAt: null }),
+        'admin-1',
+      );
+
+      expect(updateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ endedAt: null, closureKind: null }),
+      );
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('on an open entry leaves closureKind null', async () => {
+      const { service, updateSet } = buildService({
+        entry: { ...existing, endedAt: null, closureKind: null },
+      });
+
+      await service.updateTimeEntry('te-1', 'ou-1', updateInput(), 'admin-1');
+
+      expect(updateSet).toHaveBeenCalledWith(
+        expect.objectContaining({ closureKind: null }),
+      );
+    });
+  });
+
+  describe('confirmTimeEntry', () => {
+    it('flips AUTO to MANUAL keeping times and emits', async () => {
+      const { service, updateSet, emit } = buildService({
+        row: {
+          id: 'te-1',
+          volunteerId: 'volunteer-1',
+          startedAt: STARTED,
+          endedAt: ENDED,
+          reimbursementTypeId: 'type-1',
+          closureKind: TimeEntryClosureKind.MANUAL,
+        },
+      });
+
+      const result = await service.confirmTimeEntry('te-1', 'ou-1', 'admin-1');
+
+      expect(updateSet).toHaveBeenCalledWith({
+        closureKind: TimeEntryClosureKind.MANUAL,
+      });
+      expect(result.endedAt).toEqual(ENDED);
+      expect(emit).toHaveBeenCalledWith(AccountingEvent.TIME_ENTRY_CLOSED, {
+        timeEntryId: 'te-1',
+      });
+    });
+
+    it('rejects a non-auto-closed entry with ConflictGraphQLError', async () => {
+      const { service, emit } = buildService({ row: null, entry: existing });
+
+      await expect(
+        service.confirmTimeEntry('te-1', 'ou-1', 'admin-1'),
+      ).rejects.toThrow(ConflictGraphQLError);
+      expect(emit).not.toHaveBeenCalled();
+    });
+
+    it('rejects an entry from another org unit with NotFoundGraphQLError', async () => {
+      const { service } = buildService({
+        row: null,
+        entry: { ...existing, organizationUnitId: 'ou-other' },
+      });
+
+      await expect(
+        service.confirmTimeEntry('te-1', 'ou-1', 'admin-1'),
+      ).rejects.toThrow(NotFoundGraphQLError);
+    });
   });
 });

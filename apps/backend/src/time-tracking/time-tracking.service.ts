@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, count, eq, isNull, type SQL, sql } from 'drizzle-orm';
+import { and, count, eq, isNotNull, isNull, type SQL, sql } from 'drizzle-orm';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
@@ -29,7 +29,11 @@ import { ShiftInviteStatus } from '../shift/enums';
 import { ShiftService } from '../shift/shift.service';
 import { UserService } from '../user/user.service';
 import { isUniqueConstraintViolation } from '../utils/constraint-violation.util';
-import { TimeEntrySortField } from './enums';
+import {
+  TimeEntryClosureKind,
+  TimeEntrySortField,
+  TimeEntryStatus,
+} from './enums';
 import { AddTimeEntryInput } from './inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from './inputs/close-time-enty-input';
 import { UpdateTimeEntryInput } from './inputs/update-time-entry.input';
@@ -37,6 +41,7 @@ import type {
   TimeEntryEntity,
   TimeEntryEntityWithRelations,
 } from './schemas/time-entry.schema';
+import { deriveTimeEntryStatus } from './utils/time-entry-status';
 import {
   assertEndAfterStart,
   assertStartNotAfterShiftEnd,
@@ -100,6 +105,7 @@ export class TimeTrackingService {
           volunteerId: input.volunteerId,
           startedAt: input.startedAt,
           endedAt: input.endedAt ?? null,
+          closureKind: input.endedAt ? TimeEntryClosureKind.MANUAL : null,
           notes: input.notes,
           reimbursementTypeId,
           createdById: actorUserId,
@@ -200,6 +206,7 @@ export class TimeTrackingService {
       .update(schema.timeEntries)
       .set({
         endedAt: input.endedAt,
+        closureKind: TimeEntryClosureKind.MANUAL,
         ...(input.notes != null ? { notes: input.notes } : {}),
       })
       .where(eq(schema.timeEntries.id, id))
@@ -262,7 +269,12 @@ export class TimeTrackingService {
     try {
       const [timeEntry] = await this.db
         .update(schema.timeEntries)
-        .set(input)
+        .set({
+          ...input,
+          // A human edit confirms an auto-closed entry; clearing the end
+          // reopens it, so no closure kind may linger.
+          closureKind: effectiveEndedAt ? TimeEntryClosureKind.MANUAL : null,
+        })
         .where(eq(schema.timeEntries.id, id))
         .returning();
 
@@ -275,6 +287,12 @@ export class TimeTrackingService {
           shift_instance_id: timeEntry.shiftInstanceId ?? undefined,
         },
       });
+
+      // Auto-closing skipped the accounting event; the human edit is what
+      // makes the hours count, so emit it now.
+      if (deriveTimeEntryStatus(entry) === TimeEntryStatus.AUTO_CLOSED) {
+        this.emitTimeEntryClosed(timeEntry);
+      }
 
       return timeEntry;
     } catch (error) {
@@ -289,6 +307,44 @@ export class TimeTrackingService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Review of an auto-closed entry: the coordinator accepts the times as they
+   * are. Single conditional update keyed on closure_kind = AUTO, so a
+   * concurrent edit or confirm cannot both win.
+   */
+  async confirmTimeEntry(
+    id: string,
+    organizationUnitId: string,
+    _actorUserId: string,
+  ): Promise<TimeEntryEntity> {
+    const [confirmed] = await this.db
+      .update(schema.timeEntries)
+      .set({ closureKind: TimeEntryClosureKind.MANUAL })
+      .where(
+        and(
+          eq(schema.timeEntries.id, id),
+          eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+          eq(schema.timeEntries.closureKind, TimeEntryClosureKind.AUTO),
+          isNotNull(schema.timeEntries.endedAt),
+        ),
+      )
+      .returning();
+
+    if (!confirmed) {
+      const entry = await this.db.query.timeEntries.findFirst({
+        where: { id },
+      });
+      if (!entry || entry.organizationUnitId !== organizationUnitId) {
+        throw new NotFoundGraphQLError('Time entry not found');
+      }
+      throw new ConflictGraphQLError('Time entry is not awaiting review');
+    }
+
+    this.emitTimeEntryClosed(confirmed);
+
+    return confirmed;
   }
 
   async deleteTimeEntry(
@@ -846,7 +902,10 @@ export class TimeTrackingService {
     // check-outs safe (only one wins) and no separate fetch is needed.
     const [closed] = await this.db
       .update(schema.timeEntries)
-      .set({ endedAt: new Date() })
+      .set({
+        endedAt: new Date(),
+        closureKind: TimeEntryClosureKind.MANUAL,
+      })
       .where(
         and(
           eq(schema.timeEntries.id, timeEntryId),
