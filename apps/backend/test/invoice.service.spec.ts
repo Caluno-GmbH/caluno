@@ -98,11 +98,7 @@ describe('InvoiceService', () => {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
     );
-    const documentSigningService = new DocumentSigningService(
-      db,
-      authService,
-      organizationService,
-    );
+    const documentSigningService = new DocumentSigningService(db, authService);
     const reimbursementRateService = new ReimbursementRateService(
       db,
       organizationUnitDataService,
@@ -676,7 +672,12 @@ describe('InvoiceService', () => {
         },
         supervisor.id,
       );
-      await service.declineInvoice(invoice.id, volunteer.id, 'changed my mind');
+      await service.declineInvoice(
+        invoice.id,
+        volunteer.id,
+        'changed my mind',
+        root.id,
+      );
 
       const eligible = await service.findEligibleTimeEntries(
         volunteer.id,
@@ -712,6 +713,7 @@ describe('InvoiceService', () => {
         declinedInvoice.id,
         volunteer.id,
         'changed my mind',
+        root.id,
       );
 
       const replacement = await service.createInvoice(
@@ -878,7 +880,12 @@ describe('InvoiceService', () => {
         },
         supervisor.id,
       );
-      await service.declineInvoice(invoice.id, volunteer.id, 'wrong hours');
+      await service.declineInvoice(
+        invoice.id,
+        volunteer.id,
+        'wrong hours',
+        root.id,
+      );
 
       const result = await service.findVolunteersNeedingTimesheets(
         root.id,
@@ -2796,6 +2803,7 @@ describe('InvoiceService', () => {
   describe('signInvoice', () => {
     it('marks claimed time entries as paid once the invoice reaches READY', async () => {
       const {
+        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2818,6 +2826,7 @@ describe('InvoiceService', () => {
       const afterVolunteer = await service.signInvoice(
         invoice.id,
         volunteer.id,
+        root.id,
       );
       expect(afterVolunteer.invoiceStatus).toBe(
         InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
@@ -2831,6 +2840,7 @@ describe('InvoiceService', () => {
       const afterSupervisor = await service.signInvoice(
         invoice.id,
         supervisor.id,
+        root.id,
       );
       expect(afterSupervisor.invoiceStatus).toBe(InvoiceStatus.READY);
 
@@ -2852,6 +2862,7 @@ describe('InvoiceService', () => {
   describe('declineInvoice', () => {
     it('records the decline reason and leaves the time entry claimed', async () => {
       const {
+        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2875,6 +2886,7 @@ describe('InvoiceService', () => {
         invoice.id,
         volunteer.id,
         'Wrong hours',
+        root.id,
       );
 
       expect(declined.invoiceStatus).toBe(InvoiceStatus.DECLINED);
@@ -2884,6 +2896,7 @@ describe('InvoiceService', () => {
 
     it('notifies the admin side when the volunteer declines (VOLI-1246)', async () => {
       const {
+        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2904,7 +2917,12 @@ describe('InvoiceService', () => {
       );
 
       const before = declinedByVolunteerCalls.length;
-      await service.declineInvoice(invoice.id, volunteer.id, 'Wrong hours');
+      await service.declineInvoice(
+        invoice.id,
+        volunteer.id,
+        'Wrong hours',
+        root.id,
+      );
 
       expect(declinedByVolunteerCalls.length).toBe(before + 1);
       expect(declinedByVolunteerCalls.at(-1)).toMatchObject({
@@ -2920,6 +2938,7 @@ describe('InvoiceService', () => {
   describe('findPendingInvoiceSignee', () => {
     it('returns the volunteer as the pending signee right after creation', async () => {
       const {
+        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2939,7 +2958,10 @@ describe('InvoiceService', () => {
         supervisor.id,
       );
 
-      const pending = await service.findPendingInvoiceSignee(invoice.id);
+      const pending = await service.findPendingInvoiceSignee(
+        invoice.id,
+        root.id,
+      );
       expect(pending).toEqual({
         signeeType: SigneeType.VOLUNTEER,
         userId: volunteer.id,
@@ -2948,6 +2970,7 @@ describe('InvoiceService', () => {
 
     it('returns null once the invoice is fully signed', async () => {
       const {
+        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2966,10 +2989,13 @@ describe('InvoiceService', () => {
         },
         supervisor.id,
       );
-      await service.signInvoice(invoice.id, volunteer.id);
-      await service.signInvoice(invoice.id, supervisor.id);
+      await service.signInvoice(invoice.id, volunteer.id, root.id);
+      await service.signInvoice(invoice.id, supervisor.id, root.id);
 
-      const pending = await service.findPendingInvoiceSignee(invoice.id);
+      const pending = await service.findPendingInvoiceSignee(
+        invoice.id,
+        root.id,
+      );
       expect(pending).toBeNull();
     });
   });
