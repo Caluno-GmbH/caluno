@@ -1,12 +1,14 @@
 'use server';
 
 import type { AddTimeEntryInput, UpdateTimeEntryInput } from '@repo/data';
+import { revalidatePath } from 'next/cache';
 import z from 'zod';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
 import {
   serverCheckInVolunteerSchema,
   serverCheckOutVolunteerSchema,
+  serverConfirmTimeEntrySchema,
   serverDeleteTimeEntrySchema,
   serverTimeEntrySchema,
 } from './schemas';
@@ -79,4 +81,18 @@ export const checkOutVolunteer = actionClient
       orgUId: parsedInput.organizationUnitId,
     });
     return await data.timeEntry.checkOutVolunteer(parsedInput.timeEntryId);
+  });
+
+export const confirmTimeEntry = actionClient
+  .inputSchema(serverConfirmTimeEntrySchema)
+  .bindArgsSchemas([z.string()])
+  .action(async ({ parsedInput, bindArgsParsedInputs: [timeEntryId] }) => {
+    const { organizationUnitId } = parsedInput;
+    const data = await getDataClient({ orgUId: organizationUnitId });
+    const result = await data.timeEntry.confirm(timeEntryId);
+
+    revalidatePath(`/admin/${organizationUnitId}/timesheets`);
+    revalidatePath(`/admin/${organizationUnitId}/timesheets/${timeEntryId}`);
+
+    return result;
   });

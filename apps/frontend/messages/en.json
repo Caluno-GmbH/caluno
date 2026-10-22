@@ -1932,12 +1932,13 @@
       "deleteError": "We couldn't delete the time entry. {error}",
       "deleteSuccess": "Time entry deleted",
       "deleteTitle": "Delete",
-      "editAria": "Edit"
+      "editAria": "Edit",
+      "confirm": "Confirm times",
+      "confirmError": "We couldn't confirm the times. {error}",
+      "confirmSuccess": "Times confirmed"
     },
     "detail": {
-      "closedStatus": "Closed",
       "createdLabel": "Created",
-      "openStatus": "Open",
       "shiftLabel": "Assignment",
       "statusLabel": "Status",
       "title": "Time entry",
@@ -1992,7 +1993,8 @@
       "recordedByUnknown": "Unknown",
       "date": "Date",
       "shift": "Assignment",
-      "volunteer": "Volunteer"
+      "volunteer": "Volunteer",
+      "status": "Status"
     },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",
@@ -2004,6 +2006,15 @@
       "startedAtRequired": "Please enter a start time.",
       "timeEntryIdRequired": "Time entry ID is required",
       "volunteerRequired": "Please select a volunteer."
+    },
+    "filter": {
+      "status": "Status"
+    },
+    "status": {
+      "autoClosed": "Auto checked out",
+      "autoClosedTooltip": "Auto checked out — needs review",
+      "closed": "Checked out",
+      "open": "Checked in"
     }
   },
   "Unauthorized": {

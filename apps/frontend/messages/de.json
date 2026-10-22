@@ -1932,12 +1932,13 @@
       "deleteError": "Der Zeiteintrag ließ sich nicht löschen. {error}",
       "deleteSuccess": "Zeiteintrag gelöscht",
       "deleteTitle": "Löschen",
-      "editAria": "Bearbeiten"
+      "editAria": "Bearbeiten",
+      "confirm": "Zeiten bestätigen",
+      "confirmError": "Die Zeiten konnten nicht bestätigt werden. {error}",
+      "confirmSuccess": "Zeiten bestätigt"
     },
     "detail": {
-      "closedStatus": "Abgeschlossen",
       "createdLabel": "Erstellt",
-      "openStatus": "Offen",
       "shiftLabel": "Einsatz",
       "statusLabel": "Status",
       "title": "Zeiteintrag",
@@ -1992,7 +1993,8 @@
       "recordedByUnknown": "Unbekannt",
       "date": "Datum",
       "shift": "Einsatz",
-      "volunteer": "Freiwillige:r"
+      "volunteer": "Freiwillige:r",
+      "status": "Status"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",
@@ -2004,6 +2006,15 @@
       "startedAtRequired": "Bitte gib eine Startzeit an.",
       "timeEntryIdRequired": "Zeiteintrags-ID ist erforderlich",
       "volunteerRequired": "Bitte wähle eine Person aus."
+    },
+    "filter": {
+      "status": "Status"
+    },
+    "status": {
+      "autoClosed": "Automatisch ausgecheckt",
+      "autoClosedTooltip": "Automatisch ausgecheckt – muss geprüft werden",
+      "closed": "Ausgecheckt",
+      "open": "Eingecheckt"
     }
   },
   "Unauthorized": {
