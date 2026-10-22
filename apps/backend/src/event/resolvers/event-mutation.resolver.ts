@@ -10,8 +10,6 @@ import { RequiredFormRef } from '../../organization/models/organization-unit-req
 import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
 import { RequirementForm } from '../../requirement-profile/models/requirement-form.model';
-import { RequirementProfile } from '../../requirement-profile/models/requirement-profile.model';
-import { UserRequirementStatus } from '../../requirement-profile/models/user-requirement-status.model';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { EventInviteStatus } from '../enums';
 import { EventService } from '../event.service';
@@ -163,13 +161,6 @@ export class EventMutationResolver {
       status: result.status,
       event: this.eventMapper.toModelOrThrow(result.event),
       membershipRequestId: result.membershipRequest?.id ?? null,
-      requirementProfile: result.requirementProfile
-        ? plainToInstance(RequirementProfile, result.requirementProfile)
-        : null,
-      requirementStatuses:
-        result.requirementStatuses?.map((s) =>
-          plainToInstance(UserRequirementStatus, s),
-        ) ?? null,
       requiredForms:
         result.requiredForms?.map((s) => ({
           form: plainToInstance(RequirementForm, s.form),

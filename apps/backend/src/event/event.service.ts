@@ -19,7 +19,6 @@ import { NotificationService } from '../notification/notification.service';
 import type { ChangedField } from '../notification/payloads/shift-details-changed.payload';
 import { OrganizationService } from '../organization/organization.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
-import type { RequirementProfileEntity } from '../requirement-profile/schemas/requirement-profile.schema';
 import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
 import {
   RequiredFormService,
@@ -781,12 +780,6 @@ export class EventService {
     status: JoinStatus;
     event: EventEntity;
     membershipRequest?: MembershipRequestEntity;
-    requirementProfile?: RequirementProfileEntity;
-    requirementStatuses?: Array<{
-      requirementId: string;
-      name: string;
-      status: string;
-    }>;
     requiredForms?: RequiredFormStatus[];
   }> {
     const event = await this.findByIdPublic(eventId);
@@ -836,8 +829,6 @@ export class EventService {
         return {
           status: JoinStatus.REQUIREMENTS_NEEDED,
           event,
-          requirementProfile: result.requirementProfile,
-          requirementStatuses: result.requirementStatuses,
           requiredForms: result.requiredForms,
         };
       }
@@ -901,24 +892,12 @@ export class EventService {
     invite?: EventInviteEntity | null,
     extra?: {
       membershipRequest?: MembershipRequestEntity;
-      requirementProfile?: RequirementProfileEntity;
-      requirementStatuses?: Array<{
-        requirementId: string;
-        name: string;
-        status: string;
-      }>;
       requiredForms?: RequiredFormStatus[];
     },
   ): Promise<{
     status: JoinStatus;
     event: EventEntity;
     membershipRequest?: MembershipRequestEntity;
-    requirementProfile?: RequirementProfileEntity;
-    requirementStatuses?: Array<{
-      requirementId: string;
-      name: string;
-      status: string;
-    }>;
     requiredForms?: RequiredFormStatus[];
   }> {
     const resolvedInvite =

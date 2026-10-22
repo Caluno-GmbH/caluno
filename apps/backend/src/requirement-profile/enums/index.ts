@@ -1,24 +1,3 @@
-export enum RequirementType {
-  DOCUMENT = 'DOCUMENT',
-  CHECK = 'CHECK',
-  DATE = 'DATE',
-  TEXT = 'TEXT',
-}
-
-export enum RequirementProfileSubmissionStatus {
-  DRAFT = 'DRAFT',
-  SUBMITTED = 'SUBMITTED',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
-
-export enum RequirementFulfillmentStatus {
-  DRAFT = 'DRAFT',
-  SUBMITTED = 'SUBMITTED',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
-
 export enum OrganizationUserProfileStatus {
   PENDING = 'PENDING',
   ACTIVE = 'ACTIVE',

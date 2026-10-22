@@ -38,7 +38,6 @@ import { OrganizationUnitAutomationKind } from '../organization/enums';
 import { OrganizationService } from '../organization/organization.service';
 import { OrganizationUnitAutomationService } from '../organization/organization-unit-automation.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
-import type { RequirementProfileEntity } from '../requirement-profile/schemas/requirement-profile.schema';
 import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
 import {
   RequiredFormService,
@@ -4529,24 +4528,12 @@ export class ShiftService {
     invite?: ShiftInstanceInviteEntity | null,
     extra?: {
       membershipRequest?: MembershipRequestEntity;
-      requirementProfile?: RequirementProfileEntity;
-      requirementStatuses?: Array<{
-        requirementId: string;
-        name: string;
-        status: string;
-      }>;
       requiredForms?: RequiredFormStatus[];
     },
   ): Promise<{
     status: JoinStatus;
     shiftInstance: ShiftInstanceEntity;
     membershipRequest?: MembershipRequestEntity;
-    requirementProfile?: RequirementProfileEntity;
-    requirementStatuses?: Array<{
-      requirementId: string;
-      name: string;
-      status: string;
-    }>;
     requiredForms?: RequiredFormStatus[];
   }> {
     const resolvedInvite =
@@ -4572,12 +4559,6 @@ export class ShiftService {
     status: JoinStatus;
     shiftInstance: ShiftInstanceEntity;
     membershipRequest?: MembershipRequestEntity;
-    requirementProfile?: RequirementProfileEntity;
-    requirementStatuses?: Array<{
-      requirementId: string;
-      name: string;
-      status: string;
-    }>;
     requiredForms?: RequiredFormStatus[];
   }> {
     const instance = await this.db.query.shiftInstances.findFirst({
@@ -4659,8 +4640,6 @@ export class ShiftService {
         return {
           status: JoinStatus.REQUIREMENTS_NEEDED,
           shiftInstance: instance,
-          requirementProfile: result.requirementProfile,
-          requirementStatuses: result.requirementStatuses,
           requiredForms: [
             ...(result.requiredForms ?? []),
             ...targetFormsCheck.requiredForms,

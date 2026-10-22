@@ -468,7 +468,7 @@ export type JoinOrganizationMutationVariables = Exact<{
 }>;
 
 
-export type JoinOrganizationMutation = { joinOrganization: { status: Types.JoinStatus, membershipRequestId: string | null, requirementProfile: { id: string, name: string, description: string | null, requirements: Array<{ id: string, name: string, description: string | null, type: Types.RequirementType, mandatory: boolean }> | null } | null, requirementStatuses: Array<{ requirementId: string, name: string, status: Types.RequirementFulfillmentStatus }> | null, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, form: { id: string, name: string, description: string | null } }> | null } };
+export type JoinOrganizationMutation = { joinOrganization: { status: Types.JoinStatus, membershipRequestId: string | null, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, form: { id: string, name: string, description: string | null } }> | null } };
 
 export type ApproveMembershipRequestMutationVariables = Exact<{
   id: string;
@@ -921,13 +921,6 @@ export type GetAdminUserProfileQueryVariables = Exact<{
 
 export type GetAdminUserProfileQuery = { user: { id: string, email: string, firstname: string, lastname: string, preferredName: string | null, gender: string | null, phone: string | null, street: string | null, zip: string | null, city: string | null, birthdate: string | null, iban: string | null, accountHolder: string | null, bic: string | null } | null };
 
-export type CreateRequirementProfileSubmissionMutationVariables = Exact<{
-  input: Types.CreateRequirementProfileSubmissionInput;
-}>;
-
-
-export type CreateRequirementProfileSubmissionMutation = { createRequirementProfileSubmission: { id: string, status: Types.RequirementProfileSubmissionStatus, requirementProfile: { id: string, name: string } } };
-
 export type GetRoleQueryVariables = Exact<{
   id: string;
 }>;
@@ -1138,7 +1131,7 @@ export type JoinShiftInstanceMutationVariables = Exact<{
 }>;
 
 
-export type JoinShiftInstanceMutation = { joinShiftInstance: { status: Types.JoinStatus, membershipRequestId: string | null, shiftInstance: { id: string, myInviteStatus: Types.ShiftInviteStatus | null, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideInstructions: string | null, overrideLocation: string | null, overrideMaxVolunteers: number | null, isException: boolean, isCancelled: boolean, occurrenceIndex: number, master: { id: string, title: string } }, requirementProfile: { id: string, name: string, description: string | null, requirements: Array<{ id: string, name: string, description: string | null, type: Types.RequirementType, mandatory: boolean }> | null } | null, requirementStatuses: Array<{ requirementId: string, name: string, status: Types.RequirementFulfillmentStatus }> | null, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } }> | null } }> | null } };
+export type JoinShiftInstanceMutation = { joinShiftInstance: { status: Types.JoinStatus, membershipRequestId: string | null, shiftInstance: { id: string, myInviteStatus: Types.ShiftInviteStatus | null, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideInstructions: string | null, overrideLocation: string | null, overrideMaxVolunteers: number | null, isException: boolean, isCancelled: boolean, occurrenceIndex: number, master: { id: string, title: string } }, requiredForms: Array<{ order: number, submitted: boolean, submissionId: string | null, targetType: Types.RequiredFormTargetType, targetId: string, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } }> | null } }> | null } };
 
 export type GetShiftVolunteersQueryVariables = Exact<{
   instanceId: string;
@@ -2675,23 +2668,6 @@ export const JoinOrganizationDocument = gql`
   joinOrganization(organizationUnitId: $organizationUnitId) {
     status
     membershipRequestId
-    requirementProfile {
-      id
-      name
-      description
-      requirements {
-        id
-        name
-        description
-        type
-        mandatory
-      }
-    }
-    requirementStatuses {
-      requirementId
-      name
-      status
-    }
     requiredForms {
       form {
         id
@@ -3938,18 +3914,6 @@ export const GetAdminUserProfileDocument = gql`
   }
 }
     `;
-export const CreateRequirementProfileSubmissionDocument = gql`
-    mutation CreateRequirementProfileSubmission($input: CreateRequirementProfileSubmissionInput!) {
-  createRequirementProfileSubmission(input: $input) {
-    id
-    status
-    requirementProfile {
-      id
-      name
-    }
-  }
-}
-    `;
 export const GetRoleDocument = gql`
     query GetRole($id: String!) {
   role(id: $id) {
@@ -4339,23 +4303,6 @@ export const JoinShiftInstanceDocument = gql`
       }
     }
     membershipRequestId
-    requirementProfile {
-      id
-      name
-      description
-      requirements {
-        id
-        name
-        description
-        type
-        mandatory
-      }
-    }
-    requirementStatuses {
-      requirementId
-      name
-      status
-    }
     requiredForms {
       ...RequiredFormWithStatusFields
     }
@@ -5461,9 +5408,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetAdminUserProfile(variables: GetAdminUserProfileQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetAdminUserProfileQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetAdminUserProfileQuery>({ document: GetAdminUserProfileDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetAdminUserProfile', 'query', variables);
-    },
-    CreateRequirementProfileSubmission(variables: CreateRequirementProfileSubmissionMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateRequirementProfileSubmissionMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<CreateRequirementProfileSubmissionMutation>({ document: CreateRequirementProfileSubmissionDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateRequirementProfileSubmission', 'mutation', variables);
     },
     GetRole(variables: GetRoleQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetRoleQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetRoleQuery>({ document: GetRoleDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetRole', 'query', variables);

@@ -4,87 +4,6 @@ import * as schema from '../../database/schema';
 export const requirementProfilesRelations = defineRelationsPart(
   schema,
   (r) => ({
-    requirementProfiles: {
-      organization: r.one.organizations({
-        from: r.requirementProfiles.organizationId,
-        to: r.organizations.id,
-        optional: false,
-      }),
-      requirements: r.many.requirementProfileRequirements({
-        from: r.requirementProfiles.id,
-        to: r.requirementProfileRequirements.profileId,
-      }),
-      requiredByOrgUnits: r.many.organizationUnits({
-        from: r.requirementProfiles.id,
-        to: r.organizationUnits.requiredMembershipRequirementProfileId,
-      }),
-    },
-    requirements: {
-      organization: r.one.organizations({
-        from: r.requirements.organizationId,
-        to: r.organizations.id,
-        optional: false,
-      }),
-      profiles: r.many.requirementProfileRequirements({
-        from: r.requirements.id,
-        to: r.requirementProfileRequirements.requirementId,
-      }),
-    },
-    requirementProfileRequirements: {
-      requirementProfile: r.one.requirementProfiles({
-        from: r.requirementProfileRequirements.profileId,
-        to: r.requirementProfiles.id,
-        optional: false,
-      }),
-      requirement: r.one.requirements({
-        from: r.requirementProfileRequirements.requirementId,
-        to: r.requirements.id,
-        optional: false,
-      }),
-    },
-    requirementProfileSubmissions: {
-      requirementProfile: r.one.requirementProfiles({
-        from: r.requirementProfileSubmissions.profileId,
-        to: r.requirementProfiles.id,
-        optional: false,
-      }),
-      membership: r.one.memberships({
-        from: r.requirementProfileSubmissions.membershipId,
-        to: r.memberships.id,
-      }),
-      membershipRequest: r.one.membershipRequests({
-        from: r.requirementProfileSubmissions.membershipRequestId,
-        to: r.membershipRequests.id,
-      }),
-      reviewedBy: r.one.users({
-        from: r.requirementProfileSubmissions.reviewedById,
-        to: r.users.id,
-      }),
-      fulfillments: r.many.requirementFulfillments({
-        from: r.requirementProfileSubmissions.id,
-        to: r.requirementFulfillments.submissionId,
-      }),
-    },
-    requirementFulfillments: {
-      submission: r.one.requirementProfileSubmissions({
-        from: r.requirementFulfillments.submissionId,
-        to: r.requirementProfileSubmissions.id,
-        optional: false,
-      }),
-      requirement: r.one.requirements({
-        from: r.requirementFulfillments.requirementId,
-        to: r.requirements.id,
-        optional: false,
-      }),
-      reviewedBy: r.one.users({
-        from: r.requirementFulfillments.reviewedById,
-        to: r.users.id,
-      }),
-      profile: r.one.organizationUserProfiles({
-        from: r.requirementFulfillments.organizationUserProfileId,
-        to: r.organizationUserProfiles.id,
-      }),
-    },
     organizationUserProfiles: {
       organization: r.one.organizations({
         from: r.organizationUserProfiles.organizationId,
@@ -93,17 +12,6 @@ export const requirementProfilesRelations = defineRelationsPart(
       }),
       user: r.one.users({
         from: r.organizationUserProfiles.userId,
-        to: r.users.id,
-        optional: false,
-      }),
-      fulfillments: r.many.requirementFulfillments({
-        from: r.organizationUserProfiles.id,
-        to: r.requirementFulfillments.organizationUserProfileId,
-      }),
-    },
-    documents: {
-      user: r.one.users({
-        from: r.documents.userId,
         to: r.users.id,
         optional: false,
       }),

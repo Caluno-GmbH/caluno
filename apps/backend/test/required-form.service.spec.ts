@@ -27,7 +27,6 @@ import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
-import { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
@@ -115,7 +114,6 @@ describe('RequiredFormService', () => {
 
     membershipService = new MembershipService(
       db,
-      {} as unknown as RequirementProfileService,
       authServiceMock,
       notificationServiceMock,
       requiredFormService,
