@@ -138,11 +138,14 @@ export class RequiredFormService {
     }
 
     const formIds = requiredForms.map((item) => item.form.id);
+    const organizationUnitId =
+      await this.resolveTargetOrganizationUnitId(target);
 
     const submissions = await this.db.query.formSubmissions.findMany({
       where: {
         userId,
         formId: { in: formIds },
+        organizationUnitId,
       },
     });
 
@@ -159,6 +162,47 @@ export class RequiredFormService {
         targetId: target.targetId,
       };
     });
+  }
+
+  private async resolveTargetOrganizationUnitId(
+    target: RequiredFormTarget,
+  ): Promise<string> {
+    switch (target.targetType) {
+      case RequiredFormTargetType.ORGANIZATION_UNIT:
+        return target.targetId;
+      case RequiredFormTargetType.EVENT: {
+        const event = await this.db.query.events.findFirst({
+          where: { id: target.targetId },
+          columns: { organizationUnitId: true },
+        });
+        if (!event) throw new NotFoundGraphQLError('Event not found');
+        return event.organizationUnitId;
+      }
+      case RequiredFormTargetType.SHIFT: {
+        const shift = await this.db.query.shifts.findFirst({
+          where: { id: target.targetId },
+          columns: { organizationUnitId: true },
+        });
+        if (!shift) throw new NotFoundGraphQLError('Shift not found');
+        return shift.organizationUnitId;
+      }
+      case RequiredFormTargetType.SHIFT_INSTANCE: {
+        const instance = await this.db.query.shiftInstances.findFirst({
+          where: { id: target.targetId },
+          columns: { masterId: true },
+          with: { master: { columns: { organizationUnitId: true } } },
+        });
+        if (!instance) {
+          throw new NotFoundGraphQLError('Shift instance not found');
+        }
+        // masterId is a NOT NULL FK, so master always exists.
+        return instance.master.organizationUnitId;
+      }
+      default:
+        throw new ConflictGraphQLError(
+          `Unsupported required-form target: ${target.targetType}`,
+        );
+    }
   }
 
   async requiredFormsForUser(

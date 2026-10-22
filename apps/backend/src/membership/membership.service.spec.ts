@@ -39,7 +39,6 @@ function createService(options: {
     {} as never,
     { notifyMembershipApproved: jest.fn() } as never,
     {} as never,
-    { shareSatisfiedRequiredForms: async () => {} } as never,
     options.posthog as PostHogService,
     {} as never,
   );
@@ -138,7 +137,6 @@ describe('MembershipService.removeMembership PostHog', () => {
       {} as never,
       { notifyMembershipRemoved: jest.fn() } as never,
       {} as never,
-      {} as never,
       { capture } as unknown as PostHogService,
       {} as never,
     );
@@ -183,7 +181,6 @@ function createRequestOrgJoinService(existingStatus: string) {
     {} as never,
     {} as never,
     { getRequiredFormStatuses: jest.fn().mockResolvedValue([]) } as never,
-    { shareSubmissionsWithOrgUnit: async () => {} } as never,
     { capture } as unknown as PostHogService,
     {} as never,
   );
@@ -255,7 +252,6 @@ function createIdVerificationService(options: {
   };
   const service = new MembershipService(
     db as never,
-    {} as never,
     {} as never,
     {} as never,
     {} as never,

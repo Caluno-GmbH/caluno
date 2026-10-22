@@ -526,12 +526,23 @@ mutation SubmitRequiredForm(
   }
 }
 
-query GetMyFormSubmissionByToken($token: String!) {
-  myFormSubmissionByToken(token: $token) {
+query GetMyFormSubmissionByToken($token: String!, $organizationUnitId: ID!) {
+  myFormSubmissionByToken(
+    token: $token
+    organizationUnitId: $organizationUnitId
+  ) {
     id
     formId
     userId
+    organizationUnitId
     submittedAt
+  }
+}
+
+query GetMyStoredFormFieldValues($organizationUnitId: ID!) {
+  myStoredFormFieldValues(organizationUnitId: $organizationUnitId) {
+    fieldId
+    value
   }
 }
 

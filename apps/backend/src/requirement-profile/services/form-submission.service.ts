@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -10,6 +10,7 @@ import {
   NotFoundGraphQLError,
 } from '../../graphql/errors';
 import type { PaginationInput } from '../../graphql/pagination.input';
+import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -37,6 +38,7 @@ export class FormSubmissionService {
     private readonly userService: UserService,
     private readonly requiredFormService: RequiredFormService,
     private readonly postHogService: PostHogService,
+    private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
 
   async findById(id: string): Promise<FormSubmissionEntity | undefined> {
@@ -64,17 +66,47 @@ export class FormSubmissionService {
     return { items, total };
   }
 
-  async findByUserAndForm(
+  async findByUserFormAndOrgUnit(
     userId: string,
     formId: string,
+    organizationUnitId: string,
   ): Promise<FormSubmissionEntity | undefined> {
     return this.db.query.formSubmissions.findFirst({
       where: {
         userId,
         formId,
+        organizationUnitId,
       },
       with: { values: true },
     });
+  }
+
+  /** Stored field values anchored on the user's OrganizationUserProfile (latest per field). */
+  async findStoredFieldValues(
+    userId: string,
+    organizationId: string,
+  ): Promise<Array<{ fieldId: string; value: unknown }>> {
+    const profile = await this.db.query.organizationUserProfiles.findFirst({
+      where: { userId, organizationId },
+      columns: { id: true },
+    });
+    if (!profile) return [];
+
+    return await this.db.query.formSubmissionValues.findMany({
+      where: { organizationUserProfileId: profile.id },
+      columns: { fieldId: true, value: true },
+    });
+  }
+
+  async findStoredFieldValuesForOrgUnit(
+    userId: string,
+    organizationUnitId: string,
+  ): Promise<Array<{ fieldId: string; value: unknown }>> {
+    const organizationId =
+      await this.organizationUnitDataService.findOrganizationIdByUnitId(
+        organizationUnitId,
+      );
+    return this.findStoredFieldValues(userId, organizationId);
   }
 
   async findMySubmission(
@@ -129,21 +161,10 @@ export class FormSubmissionService {
     userId: string,
     orgUnitId: string,
   ): Promise<FormSubmissionEntity[]> {
-    const rows = await this.db
-      .select({ submission: schema.formSubmissions })
-      .from(schema.formSubmissions)
-      .innerJoin(
-        schema.formSubmissionShares,
-        eq(schema.formSubmissionShares.submissionId, schema.formSubmissions.id),
-      )
-      .where(
-        and(
-          eq(schema.formSubmissions.userId, userId),
-          eq(schema.formSubmissionShares.organizationUnitId, orgUnitId),
-        ),
-      )
-      .orderBy(asc(schema.formSubmissions.submittedAt));
-    return rows.map((row) => row.submission);
+    return this.db.query.formSubmissions.findMany({
+      where: { userId, organizationUnitId: orgUnitId },
+      orderBy: { submittedAt: 'asc' },
+    });
   }
 
   async submit(
@@ -199,28 +220,6 @@ export class FormSubmissionService {
     });
   }
 
-  async shareSubmissionsWithOrgUnit(
-    userId: string,
-    target: RequiredFormTarget,
-  ): Promise<void> {
-    const requiredForms =
-      await this.requiredFormService.getRequiredForms(target);
-    if (requiredForms.length === 0) return;
-
-    const formIds = requiredForms.map((item) => item.form.id);
-    const submissions = await this.db.query.formSubmissions.findMany({
-      where: { userId, formId: { in: formIds } },
-      columns: { id: true },
-    });
-    if (submissions.length === 0) return;
-
-    const organizationUnitId =
-      await this.resolveTargetOrganizationUnitId(target);
-    for (const submission of submissions) {
-      await this.shareWithOrgUnit(submission.id, organizationUnitId);
-    }
-  }
-
   private async resolveTargetOrganizationUnitId(
     target: RequiredFormTarget,
   ): Promise<string> {
@@ -272,12 +271,6 @@ export class FormSubmissionService {
     organizationUnitId: string,
     captureContext: { surface: PostHogSurface; targetType?: string },
   ): Promise<FormSubmissionEntity> {
-    const existing = await this.findByUserAndForm(userId, form.id);
-    if (existing) {
-      await this.shareWithOrgUnit(existing.id, organizationUnitId);
-      return existing;
-    }
-
     // Load block refs and fields
     const blockRefs = await this.db.query.requirementFormBlockRefs.findMany({
       where: { formId: form.id },
@@ -382,36 +375,82 @@ export class FormSubmissionService {
       }
     }
 
+    const organizationUserProfile =
+      await this.userService.findOrganizationUserProfile(
+        userId,
+        form.organizationId,
+      );
+
+    const existingSubmission = await this.findByUserFormAndOrgUnit(
+      userId,
+      form.id,
+      organizationUnitId,
+    );
+
+    const customFieldIds = customValues.map((cv) => cv.fieldId);
+
     const submission = await this.db.transaction(async (tx) => {
-      // Save profile data
       if (Object.keys(profileData).length > 0) {
         await this.userService.updateProfileFields(userId, profileData, tx);
       }
 
-      // Create submission
-      const [created] = await tx
-        .insert(schema.formSubmissions)
-        .values({
-          formId: form.id,
-          userId,
-          submittedAt: new Date(),
-        })
-        .returning();
+      // Disconnect any prior profile-anchored values for these fields so the
+      // unique (profile, field) index can accept the new rows.
+      if (customFieldIds.length > 0) {
+        await tx
+          .update(schema.formSubmissionValues)
+          .set({ organizationUserProfileId: null })
+          .where(
+            and(
+              eq(
+                schema.formSubmissionValues.organizationUserProfileId,
+                organizationUserProfile.id,
+              ),
+              inArray(schema.formSubmissionValues.fieldId, customFieldIds),
+            ),
+          );
+      }
 
-      // Create submission values
+      let submissionRow: FormSubmissionEntity;
+
+      if (existingSubmission) {
+        await tx
+          .delete(schema.formSubmissionValues)
+          .where(
+            eq(schema.formSubmissionValues.submissionId, existingSubmission.id),
+          );
+
+        const [updated] = await tx
+          .update(schema.formSubmissions)
+          .set({ submittedAt: new Date() })
+          .where(eq(schema.formSubmissions.id, existingSubmission.id))
+          .returning();
+        submissionRow = updated;
+      } else {
+        const [created] = await tx
+          .insert(schema.formSubmissions)
+          .values({
+            formId: form.id,
+            userId,
+            organizationUnitId,
+            submittedAt: new Date(),
+          })
+          .returning();
+        submissionRow = created;
+      }
+
       if (customValues.length > 0) {
         await tx.insert(schema.formSubmissionValues).values(
           customValues.map((cv) => ({
-            submissionId: created.id,
+            submissionId: submissionRow.id,
             fieldId: cv.fieldId,
             value: cv.value,
+            organizationUserProfileId: organizationUserProfile.id,
           })),
         );
       }
 
-      await this.shareWithOrgUnit(created.id, organizationUnitId, tx);
-
-      return created;
+      return submissionRow;
     });
 
     this.postHogService.capture({
@@ -420,23 +459,12 @@ export class FormSubmissionService {
       properties: {
         surface: captureContext.surface,
         organization_id: form.organizationId,
-        organization_unit_id: form.organizationUnitId ?? undefined,
+        organization_unit_id: organizationUnitId,
         target_type: captureContext.targetType,
       },
     });
 
     return submission;
-  }
-
-  private async shareWithOrgUnit(
-    submissionId: string,
-    organizationUnitId: string,
-    tx: Database = this.db,
-  ): Promise<void> {
-    await tx
-      .insert(schema.formSubmissionShares)
-      .values({ submissionId, organizationUnitId })
-      .onConflictDoNothing();
   }
 
   private validateFieldValue(

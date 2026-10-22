@@ -505,6 +505,7 @@ type FormSubmission {
   form: RequirementForm
   formId: String!
   id: ID!
+  organizationUnitId: String!
   submittedAt: DateTime!
   updatedAt: DateTime!
   user: User
@@ -523,6 +524,11 @@ type FormSubmissionValue {
   id: ID!
   submissionId: String!
   updatedAt: DateTime!
+  value: String!
+}
+
+type FormSubmissionValuePrefill {
+  fieldId: ID!
   value: String!
 }
 
@@ -972,7 +978,7 @@ type Query {
   myDocuments: [MyDocumentsGroup!]!
   myEvents(endsBefore: DateTime = null, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [EventInviteStatus!]): EventPaginatedResponse!
   myFormSubmission(id: ID!): FormSubmission
-  myFormSubmissionByToken(token: String!): FormSubmission
+  myFormSubmissionByToken(organizationUnitId: ID!, token: String!): FormSubmission
   myFormSubmissions(organizationUnitId: ID!): [FormSubmission!]!
   myInvoices(filter: InvoiceFilterInput): [Invoice!]!
   myMembership(id: ID!): Membership
@@ -982,6 +988,7 @@ type Query {
   myOrganizationUnits: [OrganizationUnit!]!
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
+  myStoredFormFieldValues(organizationUnitId: ID!): [FormSubmissionValuePrefill!]!
   myTasks: [Task!]!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
   organization(id: String!): Organization

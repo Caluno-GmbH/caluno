@@ -17,6 +17,7 @@ interface ShiftJoinFormsClientProps {
   shiftTitle: string;
   requiredForms: RequiredFormItem[];
   profileData: Record<string, string>;
+  storedFieldValues?: Record<string, string>;
   initialSubmittedFormIds: Set<string>;
   redirectTo?: string;
 }
@@ -27,6 +28,7 @@ export function ShiftJoinFormsClient({
   shiftTitle,
   requiredForms,
   profileData,
+  storedFieldValues,
   initialSubmittedFormIds,
   redirectTo,
 }: ShiftJoinFormsClientProps) {
@@ -69,6 +71,7 @@ export function ShiftJoinFormsClient({
       targetId={shiftId}
       forms={requiredForms}
       profileData={profileData}
+      storedFieldValues={storedFieldValues}
       initialSubmittedFormIds={initialSubmittedFormIds}
       onComplete={handleComplete}
     />

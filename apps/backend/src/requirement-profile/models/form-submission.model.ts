@@ -16,6 +16,9 @@ export class FormSubmission {
   @Field(() => String)
   userId!: string;
 
+  @Field(() => String)
+  organizationUnitId!: string;
+
   @Field(() => Date)
   submittedAt!: Date;
 

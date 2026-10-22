@@ -201,6 +201,7 @@ FormBlock "1" -left- "*" FormBlockField : "contains >"
 
 ' --- Submissions ---
 User "1" -- "*" FormSubmission
+OrgUnit "1" -- "*" FormSubmission : "receives >"
 FormSubmission "*" -up- "1" RequirementForm : "fulfills >"
 FormSubmissionValue "*" -left- "1" FormSubmission
 FormSubmissionValue "*" -up- "1" FormBlockField : "satisfies >"

@@ -4,6 +4,7 @@ import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../database/database.module';
 import { MembershipMapper } from '../membership/mappers/membership.mepper';
 import { MembershipRequestMapper } from '../membership/mappers/membership-request.mepper';
+import { OrganizationUnitDataModule } from '../organization/organization-unit-data.module';
 import { SharedModule } from '../shared/shared.module';
 import { StorageModule } from '../storage/storage.module';
 import { UserModule } from '../user/user.module';
@@ -36,6 +37,7 @@ import {
   imports: [
     AuthModule,
     DatabaseModule,
+    OrganizationUnitDataModule,
     SharedModule,
     UserModule,
     StorageModule,

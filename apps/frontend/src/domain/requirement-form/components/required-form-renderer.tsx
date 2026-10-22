@@ -52,6 +52,8 @@ interface RequiredFormRendererProps {
   targetId: string;
   forms: RequiredFormItem[];
   profileData: Record<string, string>;
+  /** Prefill custom fields from OrganizationUserProfile-anchored FormSubmissionValues (keyed by fieldId). */
+  storedFieldValues?: Record<string, string>;
   initialSubmittedFormIds: Set<string>;
   onComplete: () => Promise<void>;
 }
@@ -94,6 +96,7 @@ export function RequiredFormRenderer({
   targetId,
   forms,
   profileData,
+  storedFieldValues = {},
   initialSubmittedFormIds,
   onComplete,
 }: RequiredFormRendererProps) {
@@ -190,12 +193,14 @@ export function RequiredFormRenderer({
         for (const field of block.fields ?? []) {
           if (field.systemKey && profileData[field.systemKey]) {
             vals[field.id] = profileData[field.systemKey] ?? '';
+          } else if (storedFieldValues[field.id]) {
+            vals[field.id] = storedFieldValues[field.id] ?? '';
           }
         }
       }
     }
     return vals;
-  }, [formBlocksById, profileData]);
+  }, [formBlocksById, profileData, storedFieldValues]);
 
   const {
     control,

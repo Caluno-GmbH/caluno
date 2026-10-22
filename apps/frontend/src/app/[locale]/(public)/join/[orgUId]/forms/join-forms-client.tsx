@@ -16,6 +16,7 @@ interface JoinFormsClientProps {
   orgName: string;
   requiredForms: RequiredFormItem[];
   profileData: Record<string, string>;
+  storedFieldValues?: Record<string, string>;
   initialSubmittedFormIds: Set<string>;
   redirectTo?: string;
 }
@@ -25,6 +26,7 @@ export function JoinFormsClient({
   orgName,
   requiredForms,
   profileData,
+  storedFieldValues,
   initialSubmittedFormIds,
   redirectTo,
 }: JoinFormsClientProps) {
@@ -62,6 +64,7 @@ export function JoinFormsClient({
       targetId={orgUId}
       forms={requiredForms}
       profileData={profileData}
+      storedFieldValues={storedFieldValues}
       initialSubmittedFormIds={initialSubmittedFormIds}
       onComplete={handleComplete}
     />

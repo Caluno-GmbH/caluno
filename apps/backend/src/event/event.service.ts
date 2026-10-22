@@ -19,7 +19,6 @@ import { NotificationService } from '../notification/notification.service';
 import type { ChangedField } from '../notification/payloads/shift-details-changed.payload';
 import { OrganizationService } from '../organization/organization.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
-import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
 import {
   RequiredFormService,
   type RequiredFormStatus,
@@ -70,7 +69,6 @@ export class EventService {
     private readonly organizationService: OrganizationService,
     private readonly fileService: FileService,
     private readonly requiredFormService: RequiredFormService,
-    private readonly formSubmissionService: FormSubmissionService,
     private readonly shiftService: ShiftService,
     private readonly authService: AuthService,
     private readonly notificationService: NotificationService,
@@ -840,11 +838,6 @@ export class EventService {
           membershipRequest: result.membershipRequest,
         };
       }
-
-      await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-        targetType: RequiredFormTargetType.EVENT,
-        targetId: eventId,
-      });
       const eventFormsCheck = await this.checkEventRequiredForms(
         userId,
         eventId,
@@ -868,11 +861,6 @@ export class EventService {
         membershipRequest: result.membershipRequest,
       };
     }
-
-    await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-      targetType: RequiredFormTargetType.EVENT,
-      targetId: eventId,
-    });
     const eventFormsCheck = await this.checkEventRequiredForms(userId, eventId);
     if (!eventFormsCheck.satisfied) {
       return {

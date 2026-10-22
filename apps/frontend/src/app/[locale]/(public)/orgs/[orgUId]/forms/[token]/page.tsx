@@ -1,5 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { VolunteerFormWrapper } from '@/domain/requirement-form/components/volunteer-form-wrapper';
+import { buildStoredFieldValues } from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect as redirectWithLocale } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth-server';
@@ -31,15 +32,17 @@ export default async function PublicFormPage({ params }: Props) {
     });
   }
 
-  const [isMember, userProfile, orgUnit, existingSubmission] =
+  const [isMember, userProfile, orgUnit, existingSubmission, storedRows] =
     await Promise.all([
       isMemberOfOrgUnit(orgUId),
       data.user.getMe(),
       data.publicOrganizationUnit.findById(orgUId),
-      data.requirementForm.getMyFormSubmissionByToken(token),
+      data.requirementForm.getMyFormSubmissionByToken(token, orgUId),
+      data.requirementForm.findMyStoredFormFieldValues(orgUId),
     ]);
 
   const profileData = profileFieldValues(userProfile);
+  const storedFieldValues = buildStoredFieldValues(storedRows);
 
   const t = await getTranslations('RequirementForm.volunteerForm');
 
@@ -68,6 +71,7 @@ export default async function PublicFormPage({ params }: Props) {
           orgUId={orgUId}
           orgName={orgUnit?.name}
           profileData={profileData}
+          storedFieldValues={storedFieldValues}
         />
       </div>
     </div>

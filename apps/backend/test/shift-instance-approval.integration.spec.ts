@@ -81,7 +81,6 @@ describe('ShiftService.updateShiftInstanceApproval', () => {
           'https://example.com/image.png',
       } as never,
       { getRequiredFormStatuses: async () => [] } as never,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: mock(() => {}) } as unknown as PostHogService,
       accountingOrgAccessService,
       { resolve: async () => ({ enabled: false }) } as never,

@@ -109,11 +109,9 @@ export class OrganizationUnitService {
   async findOrganizationIdByUnitId(
     organizationUnitId: string,
   ): Promise<string | undefined> {
-    const unit = await this.db.query.organizationUnits.findFirst({
-      where: { id: organizationUnitId },
-      columns: { organizationId: true },
-    });
-    return unit?.organizationId;
+    return this.organizationUnitDataService.findOrganizationIdByUnitId(
+      organizationUnitId,
+    );
   }
 
   async findAllTypes(

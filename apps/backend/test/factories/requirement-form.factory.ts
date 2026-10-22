@@ -71,6 +71,7 @@ export const createFormSubmission = async (
   args: {
     formId: string;
     userId: string;
+    organizationUnitId: string;
   },
 ) => {
   const [submission] = await db
@@ -78,6 +79,7 @@ export const createFormSubmission = async (
     .values({
       formId: args.formId,
       userId: args.userId,
+      organizationUnitId: args.organizationUnitId,
       submittedAt: new Date(),
     })
     .returning();

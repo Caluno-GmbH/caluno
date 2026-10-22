@@ -15,7 +15,6 @@ import {
 import { NotificationService } from '../notification';
 import { OrganizationUnitDataService } from '../organization/organization-unit-data.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
-import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
 import type { RequiredFormStatus } from '../requirement-profile/services/required-form.service';
 import { RequiredFormService } from '../requirement-profile/services/required-form.service';
 import { JoinStatus } from '../shared/enums/join-status.enum';
@@ -46,7 +45,6 @@ export class MembershipService {
     private readonly authService: AuthService,
     private readonly notificationService: NotificationService,
     private readonly requiredFormService: RequiredFormService,
-    private readonly formSubmissionService: FormSubmissionService,
     private readonly postHogService: PostHogService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
@@ -1217,11 +1215,6 @@ export class MembershipService {
     if (!orgUnit) {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
-
-    await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-      targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-      targetId: organizationUnitId,
-    });
 
     const requiredFormStatuses =
       await this.requiredFormService.getRequiredFormStatuses(userId, {

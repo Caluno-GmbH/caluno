@@ -1,7 +1,10 @@
 import { JoinStatus } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
-import { buildSubmittedFormIds } from '@/domain/requirement-form/resolve-required-forms';
+import {
+  buildStoredFieldValues,
+  buildSubmittedFormIds,
+} from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth-server';
@@ -51,11 +54,13 @@ export default async function JoinFormsPage({
     });
   }
 
-  const mySubmissions =
-    await data.requirementForm.findMyFormSubmissions(orgUId);
+  const [mySubmissions, storedRows] = await Promise.all([
+    data.requirementForm.findMyFormSubmissions(orgUId),
+    data.requirementForm.findMyStoredFormFieldValues(orgUId),
+  ]);
 
   const profileData = profileFieldValues(userProfile);
-
+  const storedFieldValues = buildStoredFieldValues(storedRows);
   const submittedFormIds = buildSubmittedFormIds(mySubmissions);
 
   return (
@@ -67,6 +72,7 @@ export default async function JoinFormsPage({
           orgName={orgUnit.name}
           requiredForms={orgUnit.requiredForms}
           profileData={profileData}
+          storedFieldValues={storedFieldValues}
           initialSubmittedFormIds={submittedFormIds}
           redirectTo={redirectTo}
         />

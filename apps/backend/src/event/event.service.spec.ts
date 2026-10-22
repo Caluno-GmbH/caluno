@@ -22,7 +22,6 @@ describe('EventService.findAvailableEvents', () => {
     {} as never,
     {} as never,
     {} as never,
-    {} as never,
     { capture: () => {} } as never,
   );
 

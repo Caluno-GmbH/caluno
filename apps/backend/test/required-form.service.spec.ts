@@ -23,6 +23,7 @@ import {
 } from '../src/graphql/errors';
 import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification/notification.service';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
@@ -97,6 +98,7 @@ describe('RequiredFormService', () => {
       userService,
       requiredFormService,
       { capture: () => {} } as unknown as PostHogService,
+      new OrganizationUnitDataService(db),
     );
     requirementFormService = new RequirementFormService(
       db,
@@ -117,7 +119,6 @@ describe('RequiredFormService', () => {
       authServiceMock,
       notificationServiceMock,
       requiredFormService,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
@@ -198,6 +199,7 @@ describe('RequiredFormService', () => {
       const submission = await createFormSubmission(db, {
         formId: form.id,
         userId: user.id,
+        organizationUnitId: unit.id,
       });
 
       const statuses = await requiredFormService.getRequiredFormStatuses(
@@ -432,7 +434,11 @@ describe('RequiredFormService', () => {
         organizationUnitId: unit.id,
         formIds: [form.id],
       });
-      await createFormSubmission(db, { formId: form.id, userId: user.id });
+      await createFormSubmission(db, {
+        formId: form.id,
+        userId: user.id,
+        organizationUnitId: unit.id,
+      });
 
       expect(
         await requiredFormService.areRequiredFormsSatisfied(
@@ -854,7 +860,11 @@ describe('RequiredFormService', () => {
         organizationUnitId: unit.id,
         formIds: [form.id],
       });
-      await createFormSubmission(db, { formId: form.id, userId: user.id });
+      await createFormSubmission(db, {
+        formId: form.id,
+        userId: user.id,
+        organizationUnitId: unit.id,
+      });
 
       const result = await membershipService.requestOrgJoin(user.id, unit.id);
 
@@ -914,7 +924,11 @@ describe('RequiredFormService', () => {
         organizationUnitId: unit.id,
         formIds: [form.id],
       });
-      await createFormSubmission(db, { formId: form.id, userId: user.id });
+      await createFormSubmission(db, {
+        formId: form.id,
+        userId: user.id,
+        organizationUnitId: unit.id,
+      });
       const request = await membershipService.requestOrgJoin(user.id, unit.id);
       expect(request.status).toBe(JoinStatus.PENDING_MEMBERSHIP);
 
@@ -1113,6 +1127,7 @@ describe('RequiredFormService', () => {
       const submission = await createFormSubmission(db, {
         formId: submittedFormId,
         userId,
+        organizationUnitId: orgUnitId,
       });
       seededSubmissionIds.push(submission.id);
     };
