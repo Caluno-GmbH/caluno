@@ -470,7 +470,6 @@ type FormBlock {
   id: ID!
   isEditable: Boolean!
   organizationId: String!
-  required: Boolean!
   title: String!
   updatedAt: DateTime!
   updatedBy: String!
@@ -509,7 +508,6 @@ type FormBlockPaginatedResponse {
 input FormBlockRefInput {
   blockId: String!
   order: Float
-  required: Boolean
 }
 
 input FormFieldValueInput {
@@ -1198,13 +1196,12 @@ type RequirementForm {
 }
 
 type RequirementFormBlockRef {
-  block: FormBlock
+  block: FormBlock!
   blockId: String!
   createdAt: DateTime!
   fieldOrder: Float!
   formId: String!
   id: ID!
-  required: Boolean
   updatedAt: DateTime!
 }
 

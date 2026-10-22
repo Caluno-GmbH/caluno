@@ -538,7 +538,6 @@ const ensurePersonalInfoForm = async (
         organizationId,
         title: 'Deine Kontaktdaten',
         description: 'Damit wir dich erreichen können.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -576,7 +575,6 @@ const ensurePersonalInfoForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -635,7 +633,6 @@ const ensureAgreementForm = async (
         title: 'Vereinbarung zur ehrenamtlichen Mitarbeit',
         description:
           'Bitte einmal lesen und bestätigen, bevor es in den ersten Einsatz geht.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -657,7 +654,6 @@ const ensureAgreementForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -719,7 +715,6 @@ const ensureChildSafetyForm = async (
         organizationId,
         title: 'Erweitertes Führungszeugnis',
         description: 'Ausstellungsdatum des vorgelegten Führungszeugnisses.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -741,7 +736,6 @@ const ensureChildSafetyForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 

@@ -1,11 +1,4 @@
-import {
-  boolean,
-  index,
-  snakeCase,
-  text,
-  unique,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { index, snakeCase, text, unique, uuid } from 'drizzle-orm/pg-core';
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { organizations } from '../../organization/schemas/organization.schema';
@@ -20,7 +13,6 @@ export const formBlocks = snakeCase.table(
     title: text('title').notNull(),
     description: text('description'),
     icon: text('icon'),
-    required: boolean('required').notNull().default(true),
     createdBy: text('created_by')
       .references(() => users.id)
       .notNull(),

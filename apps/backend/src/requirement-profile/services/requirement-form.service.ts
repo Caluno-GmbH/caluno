@@ -164,7 +164,6 @@ export class RequirementFormService {
             formId: created.id,
             blockId: ref.blockId,
             fieldOrder: ref.order ?? index,
-            required: ref.required,
           })),
         );
       }
@@ -273,7 +272,6 @@ export class RequirementFormService {
               formId: id,
               blockId: ref.blockId,
               fieldOrder: ref.order ?? index,
-              required: ref.required,
             })),
           );
         }

@@ -5,7 +5,6 @@ query GetFormBlock($id: String!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -44,7 +43,6 @@ query GetFormBlocks($organizationId: String!, $limit: Int!, $offset: Int!) {
       title
       description
       icon
-      required
       isEditable
       createdBy
       updatedBy
@@ -89,7 +87,6 @@ mutation CreateFormBlock($input: CreateFormBlockInput!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -127,7 +124,6 @@ mutation UpdateFormBlock($id: String!, $input: UpdateFormBlockInput!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -174,7 +170,6 @@ mutation CreateFormBlockField(
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -215,7 +210,6 @@ mutation UpdateFormBlockField(
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -253,7 +247,6 @@ mutation DeleteFormBlockField($fieldId: String!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -309,7 +302,6 @@ query GetRequirementForm($id: String!) {
       formId
       blockId
       fieldOrder
-      required
       createdAt
       updatedAt
       block {
@@ -318,7 +310,6 @@ query GetRequirementForm($id: String!) {
         title
         description
         icon
-        required
         isEditable
         createdBy
         updatedBy
@@ -368,13 +359,11 @@ query GetRequirementFormByShareToken($token: String!) {
       formId
       blockId
       fieldOrder
-      required
       block {
         id
         title
         description
         icon
-        required
         fields {
           id
           blockId
@@ -431,7 +420,6 @@ query GetRequirementForms(
         formId
         blockId
         fieldOrder
-        required
         createdAt
         updatedAt
         block {
@@ -440,7 +428,6 @@ query GetRequirementForms(
           title
           description
           icon
-          required
           isEditable
           createdBy
           updatedBy

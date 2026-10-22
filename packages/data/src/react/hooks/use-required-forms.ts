@@ -35,7 +35,6 @@ export type RequiredFormBlock = {
   title: string;
   description?: string | null;
   icon?: string | null;
-  required: boolean;
   isEditable: boolean;
   fields?: Array<RequiredFormField> | null;
 };
@@ -45,8 +44,7 @@ export type RequiredFormBlockRef = {
   formId: string;
   blockId: string;
   fieldOrder: number;
-  required?: boolean | null;
-  block?: RequiredFormBlock | null;
+  block: RequiredFormBlock;
 };
 
 export type RequiredForm = {

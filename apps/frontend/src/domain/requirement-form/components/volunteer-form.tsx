@@ -54,7 +54,6 @@ export function VolunteerForm({
           if (!block) return null;
           return {
             ...block,
-            effectiveRequired: ref.required ?? block.required,
           };
         })
         .filter((b) => !!b) ?? []
@@ -69,10 +68,9 @@ export function VolunteerForm({
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const block of blocks) {
       for (const field of block.fields ?? []) {
-        const isRequired = block.effectiveRequired && field.required;
         shape[field.id] = buildFieldSchema(
           field,
-          isRequired,
+          field.required,
           validationMessages,
         );
       }

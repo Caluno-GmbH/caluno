@@ -110,16 +110,18 @@ export function FormBuilder({
   useEffect(() => {
     const newBlockId = searchParams.get('addBlock');
     if (!newBlockId) return;
-    setBlockRefs((refs) => appendBlockRef(refs, newBlockId, form.id));
+    const block = availableBlocks.find((block) => block.id === newBlockId);
+    if (!block) return;
+    setBlockRefs((refs) => appendBlockRef(refs, block.id, block, form.id));
     const next = new URLSearchParams(searchParams.toString());
     next.delete('addBlock');
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
     router.refresh();
-  }, [searchParams, router, pathname, form.id]);
+  }, [availableBlocks, searchParams, router, pathname, form.id]);
 
-  function handleAddExistingBlock(blockId: string) {
-    setBlockRefs((refs) => appendBlockRef(refs, blockId, form.id));
+  function handleAddExistingBlock(block: FormBlock) {
+    setBlockRefs((refs) => appendBlockRef(refs, block.id, block, form.id));
     setAddBlockOpen(false);
   }
 
@@ -164,7 +166,6 @@ export function FormBuilder({
         blockRefs: blockRefs.map((ref) => ({
           blockId: ref.blockId,
           order: ref.fieldOrder,
-          required: ref.required ?? undefined,
         })),
       });
       if (result?.serverError) {

@@ -285,13 +285,6 @@ export class FormSubmissionService {
     });
 
     const blockIds = blockRefs.map((ref) => ref.blockId);
-    const blocks =
-      blockIds.length > 0
-        ? await this.db
-            .select()
-            .from(schema.formBlocks)
-            .where(inArray(schema.formBlocks.id, blockIds))
-        : [];
 
     const fields =
       blockIds.length > 0
@@ -302,7 +295,6 @@ export class FormSubmissionService {
             .orderBy(schema.formBlockFields.fieldOrder)
         : [];
 
-    const blockMap = new Map(blocks.map((b) => [b.id, b]));
     const fieldsByBlockId = new Map<string, typeof fields>();
     for (const field of fields) {
       const list = fieldsByBlockId.get(field.blockId) ?? [];
@@ -325,8 +317,6 @@ export class FormSubmissionService {
     >();
 
     for (const ref of blockRefs) {
-      const block = blockMap.get(ref.blockId);
-      const effectiveRequired = ref.required ?? block?.required ?? true;
       const blockFields = fieldsByBlockId.get(ref.blockId) ?? [];
       for (const field of blockFields) {
         fieldMap.set(field.id, {
@@ -337,7 +327,7 @@ export class FormSubmissionService {
           options: field.options as string[] | null,
           minAge: field.minAge,
         });
-        if (effectiveRequired && field.required) {
+        if (field.required) {
           requiredFieldIds.add(field.id);
         }
       }
