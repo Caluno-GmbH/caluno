@@ -8,7 +8,12 @@ echo "Seeding permissions…"
 bun run db:seed
 
 echo "Loading fixtures…"
-bun run db:fixtures:demo
+if ! bun run db:fixtures:demo; then
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "WARNING: demo fixtures failed — continuing startup without them."
+  echo "The demo dataset may be incomplete or stale; see the error above."
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+fi
 
 # Staging and release also load the e2e Testing seed so Playwright keeps
 # today-relative overlap fixtures (and demo+testing_* accounts) fresh on every
