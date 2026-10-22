@@ -162,6 +162,16 @@ export type GetEligibleTimeEntriesForInvoiceQueryVariables = Exact<{
 
 export type GetEligibleTimeEntriesForInvoiceQuery = { eligibleTimeEntriesForInvoice: Array<{ id: string, startedAt: string, endedAt: string | null, notes: string | null, shiftInstance: { id: string, overrideTitle: string | null, master: { title: string } } | null }> };
 
+export type GetTimeEntriesAwaitingReviewForInvoiceQueryVariables = Exact<{
+  volunteerId: string;
+  reimbursementTypeId: string;
+  periodStart?: string | null | undefined;
+  periodEnd?: string | null | undefined;
+}>;
+
+
+export type GetTimeEntriesAwaitingReviewForInvoiceQuery = { timeEntriesAwaitingReviewForInvoice: Array<{ id: string, startedAt: string, endedAt: string | null, notes: string | null, shiftInstance: { id: string, overrideTitle: string | null, master: { title: string } } | null }> };
+
 export type CreateInvoiceMutationVariables = Exact<{
   input: Types.CreateInvoiceInput;
 }>;
@@ -1167,7 +1177,7 @@ export type GetShiftInstanceQueryVariables = Exact<{
 }>;
 
 
-export type GetShiftInstanceQuery = { shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideLocation: string | null, overrideInstructions: string | null, overrideMaxVolunteers: number | null, overrideMinVolunteers: number | null, overrideReimbursementTypeId: string | null, overrideJoinRequiresApproval: boolean | null, isCancelled: boolean, filledCount: number, spotsLeft: number | null, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, master: { id: string, title: string, location: string | null, instructions: string | null, minVolunteers: number | null, maxVolunteers: number | null, reimbursementTypeId: string | null, joinRequiresApproval: boolean, visibility: Types.ShiftVisibility, rrule: string | null, createdAt: string, imageUrl: string | null, createdBy: { id: string, name: string, image: string | null } | null }, invites: Array<{ status: Types.ShiftInviteStatus, remindedAt: string | null, user: { id: string, name: string, email: string, image: string | null, checkInId: string } }> | null, timeEntries: Array<{ id: string, startedAt: string, endedAt: string | null, volunteer: { id: string } }> } };
+export type GetShiftInstanceQuery = { shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideLocation: string | null, overrideInstructions: string | null, overrideMaxVolunteers: number | null, overrideMinVolunteers: number | null, overrideReimbursementTypeId: string | null, overrideJoinRequiresApproval: boolean | null, isCancelled: boolean, filledCount: number, spotsLeft: number | null, requiredFormsCount: number, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, settings: { submitButtonLabel: string | null, successTitle: string | null, successMessage: string | null }, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, required: boolean | null, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, required: boolean, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, systemKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } | null }> | null } }>, master: { id: string, title: string, location: string | null, instructions: string | null, minVolunteers: number | null, maxVolunteers: number | null, reimbursementTypeId: string | null, joinRequiresApproval: boolean, visibility: Types.ShiftVisibility, rrule: string | null, createdAt: string, imageUrl: string | null, createdBy: { id: string, name: string, image: string | null } | null }, invites: Array<{ status: Types.ShiftInviteStatus, remindedAt: string | null, user: { id: string, name: string, email: string, image: string | null, checkInId: string } }> | null, timeEntries: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, volunteer: { id: string } }> } };
 
 export type GetWeeklyShiftsQueryVariables = Exact<{
   startsAfter: string;
@@ -1326,12 +1336,19 @@ export type CloseTimeEntryMutationVariables = Exact<{
 
 export type CloseTimeEntryMutation = { closeTimeEntry: { id: string } };
 
+export type ConfirmTimeEntryMutationVariables = Exact<{
+  id: string;
+}>;
+
+
+export type ConfirmTimeEntryMutation = { confirmTimeEntry: { id: string } };
+
 export type GetTimeEntryQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetTimeEntryQuery = { timeEntry: { id: string, startedAt: string, endedAt: string | null, notes: string | null, createdAt: string, isPaid: boolean, createdBy: { id: string, name: string, email: string } | null, reimbursementType: { id: string, key: Types.ReimbursementTypeKey } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } } };
+export type GetTimeEntryQuery = { timeEntry: { id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, notes: string | null, createdAt: string, isPaid: boolean, createdBy: { id: string, name: string, email: string } | null, reimbursementType: { id: string, key: Types.ReimbursementTypeKey } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } } };
 
 export type UpdateTimeEntryMutationVariables = Exact<{
   id: string;
@@ -1346,10 +1363,11 @@ export type GetTimeEntriesQueryVariables = Exact<{
   offset: number;
   sort?: Types.TimeEntrySortField | null | undefined;
   order?: Types.SortOrder | null | undefined;
+  statuses?: Array<Types.TimeEntryStatus> | Types.TimeEntryStatus | null | undefined;
 }>;
 
 
-export type GetTimeEntriesQuery = { timeEntries: { items: Array<{ id: string, startedAt: string, endedAt: string | null, createdAt: string, createdBy: { id: string, name: string, email: string } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetTimeEntriesQuery = { timeEntries: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, createdAt: string, createdBy: { id: string, name: string, email: string } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type GetTimeEntriesByUserQueryVariables = Exact<{
   userId: string;
@@ -1358,7 +1376,7 @@ export type GetTimeEntriesByUserQueryVariables = Exact<{
 }>;
 
 
-export type GetTimeEntriesByUserQuery = { timeEntriesByUser: { items: Array<{ id: string, startedAt: string, endedAt: string | null, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetTimeEntriesByUserQuery = { timeEntriesByUser: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type GetMyTimeQueryVariables = Exact<{
   limit: number;
@@ -1366,7 +1384,7 @@ export type GetMyTimeQueryVariables = Exact<{
 }>;
 
 
-export type GetMyTimeQuery = { myTime: { items: Array<{ id: string, startedAt: string, endedAt: string | null, shiftInstance: { id: string, overrideTitle: string | null, master: { id: string, title: string, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetMyTimeQuery = { myTime: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, shiftInstance: { id: string, overrideTitle: string | null, master: { id: string, title: string, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type GetCheckInContextQueryVariables = Exact<{
   checkInId: string;
@@ -2162,6 +2180,28 @@ export const GetPaidShiftSignupVolunteersDocument = gql`
 export const GetEligibleTimeEntriesForInvoiceDocument = gql`
     query GetEligibleTimeEntriesForInvoice($volunteerId: ID!, $reimbursementTypeId: ID!, $periodStart: DateTime, $periodEnd: DateTime) {
   eligibleTimeEntriesForInvoice(
+    volunteerId: $volunteerId
+    reimbursementTypeId: $reimbursementTypeId
+    periodStart: $periodStart
+    periodEnd: $periodEnd
+  ) {
+    id
+    startedAt
+    endedAt
+    notes
+    shiftInstance {
+      id
+      overrideTitle
+      master {
+        title
+      }
+    }
+  }
+}
+    `;
+export const GetTimeEntriesAwaitingReviewForInvoiceDocument = gql`
+    query GetTimeEntriesAwaitingReviewForInvoice($volunteerId: ID!, $reimbursementTypeId: ID!, $periodStart: DateTime, $periodEnd: DateTime) {
+  timeEntriesAwaitingReviewForInvoice(
     volunteerId: $volunteerId
     reimbursementTypeId: $reimbursementTypeId
     periodStart: $periodStart
@@ -4473,6 +4513,7 @@ export const GetShiftInstanceDocument = gql`
     }
     timeEntries {
       id
+      status
       startedAt
       endedAt
       volunteer {
@@ -4716,10 +4757,18 @@ export const CloseTimeEntryDocument = gql`
   }
 }
     `;
+export const ConfirmTimeEntryDocument = gql`
+    mutation ConfirmTimeEntry($id: ID!) {
+  confirmTimeEntry(id: $id) {
+    id
+  }
+}
+    `;
 export const GetTimeEntryDocument = gql`
     query GetTimeEntry($id: String!) {
   timeEntry(id: $id) {
     id
+    status
     startedAt
     endedAt
     notes
@@ -4768,10 +4817,17 @@ export const UpdateTimeEntryDocument = gql`
 }
     `;
 export const GetTimeEntriesDocument = gql`
-    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder) {
-  timeEntries(limit: $limit, offset: $offset, sort: $sort, order: $order) {
+    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder, $statuses: [TimeEntryStatus!]) {
+  timeEntries(
+    limit: $limit
+    offset: $offset
+    sort: $sort
+    order: $order
+    statuses: $statuses
+  ) {
     items {
       id
+      status
       startedAt
       endedAt
       createdAt
@@ -4818,6 +4874,7 @@ export const GetTimeEntriesByUserDocument = gql`
   timeEntriesByUser(userId: $userId, limit: $limit, offset: $offset) {
     items {
       id
+      status
       startedAt
       endedAt
       shiftInstance {
@@ -4853,6 +4910,7 @@ export const GetMyTimeDocument = gql`
   myTime(limit: $limit, offset: $offset) {
     items {
       id
+      status
       startedAt
       endedAt
       shiftInstance {
@@ -5184,6 +5242,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetEligibleTimeEntriesForInvoice(variables: GetEligibleTimeEntriesForInvoiceQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetEligibleTimeEntriesForInvoiceQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetEligibleTimeEntriesForInvoiceQuery>({ document: GetEligibleTimeEntriesForInvoiceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetEligibleTimeEntriesForInvoice', 'query', variables);
+    },
+    GetTimeEntriesAwaitingReviewForInvoice(variables: GetTimeEntriesAwaitingReviewForInvoiceQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetTimeEntriesAwaitingReviewForInvoiceQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetTimeEntriesAwaitingReviewForInvoiceQuery>({ document: GetTimeEntriesAwaitingReviewForInvoiceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetTimeEntriesAwaitingReviewForInvoice', 'query', variables);
     },
     CreateInvoice(variables: CreateInvoiceMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CreateInvoiceMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CreateInvoiceMutation>({ document: CreateInvoiceDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CreateInvoice', 'mutation', variables);
@@ -5637,6 +5698,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     CloseTimeEntry(variables: CloseTimeEntryMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CloseTimeEntryMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CloseTimeEntryMutation>({ document: CloseTimeEntryDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CloseTimeEntry', 'mutation', variables);
+    },
+    ConfirmTimeEntry(variables: ConfirmTimeEntryMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ConfirmTimeEntryMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ConfirmTimeEntryMutation>({ document: ConfirmTimeEntryDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ConfirmTimeEntry', 'mutation', variables);
     },
     GetTimeEntry(variables: GetTimeEntryQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetTimeEntryQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetTimeEntryQuery>({ document: GetTimeEntryDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetTimeEntry', 'query', variables);

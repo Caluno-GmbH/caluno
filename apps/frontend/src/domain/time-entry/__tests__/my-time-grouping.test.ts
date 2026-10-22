@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { TimeEntryStatus } from '@repo/data';
 import { formats } from '@/lib/formatting/formats';
 import {
   entryDurationMinutes,
@@ -13,6 +14,7 @@ const entry = (
   over: Partial<TimeEntry> & { startedAt: string },
 ): TimeEntry => ({
   id: 'x',
+  status: TimeEntryStatus.Closed,
   endedAt: null,
   shiftInstance: {
     id: 'shift-instance-x',

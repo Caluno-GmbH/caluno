@@ -371,6 +371,32 @@ query GetEligibleTimeEntriesForInvoice(
   }
 }
 
+query GetTimeEntriesAwaitingReviewForInvoice(
+  $volunteerId: ID!
+  $reimbursementTypeId: ID!
+  $periodStart: DateTime
+  $periodEnd: DateTime
+) {
+  timeEntriesAwaitingReviewForInvoice(
+    volunteerId: $volunteerId
+    reimbursementTypeId: $reimbursementTypeId
+    periodStart: $periodStart
+    periodEnd: $periodEnd
+  ) {
+    id
+    startedAt
+    endedAt
+    notes
+    shiftInstance {
+      id
+      overrideTitle
+      master {
+        title
+      }
+    }
+  }
+}
+
 mutation CreateInvoice($input: CreateInvoiceInput!) {
   createInvoice(input: $input) {
     ...InvoiceSummaryFields

@@ -16,9 +16,16 @@ mutation CloseTimeEntry($id: ID!, $input: CloseTimeEntryInput!) {
   }
 }
 
+mutation ConfirmTimeEntry($id: ID!) {
+  confirmTimeEntry(id: $id) {
+    id
+  }
+}
+
 query GetTimeEntry($id: String!) {
   timeEntry(id: $id) {
     id
+    status
     startedAt
     endedAt
     notes
@@ -70,10 +77,18 @@ query GetTimeEntries(
   $offset: Int!
   $sort: TimeEntrySortField
   $order: SortOrder
+  $statuses: [TimeEntryStatus!]
 ) {
-  timeEntries(limit: $limit, offset: $offset, sort: $sort, order: $order) {
+  timeEntries(
+    limit: $limit
+    offset: $offset
+    sort: $sort
+    order: $order
+    statuses: $statuses
+  ) {
     items {
       id
+      status
       startedAt
       endedAt
       createdAt
@@ -119,6 +134,7 @@ query GetTimeEntriesByUser($userId: String!, $limit: Int!, $offset: Int!) {
   timeEntriesByUser(userId: $userId, limit: $limit, offset: $offset) {
     items {
       id
+      status
       startedAt
       endedAt
       shiftInstance {
@@ -153,6 +169,7 @@ query GetMyTime($limit: Int!, $offset: Int!) {
   myTime(limit: $limit, offset: $offset) {
     items {
       id
+      status
       startedAt
       endedAt
       shiftInstance {
