@@ -37,6 +37,10 @@ import type {
   TimeEntryEntity,
   TimeEntryEntityWithRelations,
 } from './schemas/time-entry.schema';
+import {
+  assertEndAfterStart,
+  assertStartNotAfterShiftEnd,
+} from './utils/time-entry-times';
 
 @Injectable()
 export class TimeTrackingService {
@@ -58,12 +62,15 @@ export class TimeTrackingService {
     actorUserId: string,
     options?: { skipCapture?: boolean },
   ): Promise<TimeEntryEntity> {
+    assertEndAfterStart(input.startedAt, input.endedAt);
+
     let reimbursementTypeId: string | null = null;
     if (input.shiftInstanceId) {
       const context = await this.resolveShiftInstanceContext(
         input.shiftInstanceId,
         organizationUnitId,
       );
+      assertStartNotAfterShiftEnd(input.startedAt, context.actualEndsAt);
 
       // Fail fast; closed entries may coexist, so guard only open entries.
       if (!input.endedAt) {
@@ -139,7 +146,7 @@ export class TimeTrackingService {
   private async resolveShiftInstanceContext(
     shiftInstanceId: string,
     organizationUnitId: string,
-  ): Promise<{ reimbursementTypeId: string | null }> {
+  ): Promise<{ reimbursementTypeId: string | null; actualEndsAt: Date }> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: shiftInstanceId },
       with: { master: true },
@@ -159,6 +166,7 @@ export class TimeTrackingService {
         instance.overrideReimbursementTypeId ??
         instance.master.reimbursementTypeId ??
         null,
+      actualEndsAt: instance.actualEndsAt,
     };
   }
 
@@ -183,6 +191,8 @@ export class TimeTrackingService {
     if (!entry || entry.organizationUnitId !== organizationUnitId) {
       throw new NotFoundGraphQLError('Time entry not found');
     }
+
+    assertEndAfterStart(entry.startedAt, input.endedAt);
 
     // Notes are only overwritten when explicitly provided — closing an entry
     // (e.g. check-out) must not wipe notes set at check-in or by an edit.
@@ -226,11 +236,23 @@ export class TimeTrackingService {
       throw new NotFoundGraphQLError('Time entry not found');
     }
 
-    if (input.shiftInstanceId) {
-      await this.resolveShiftInstanceContext(
-        input.shiftInstanceId,
+    // Validate the entry as it will look after the update: input values win,
+    // omitted (undefined) fields keep the stored ones, null clears them.
+    const effectiveShiftInstanceId =
+      input.shiftInstanceId !== undefined
+        ? input.shiftInstanceId
+        : entry.shiftInstanceId;
+    const effectiveEndedAt =
+      input.endedAt !== undefined ? input.endedAt : entry.endedAt;
+
+    assertEndAfterStart(input.startedAt, effectiveEndedAt);
+
+    if (effectiveShiftInstanceId) {
+      const context = await this.resolveShiftInstanceContext(
+        effectiveShiftInstanceId,
         organizationUnitId,
       );
+      assertStartNotAfterShiftEnd(input.startedAt, context.actualEndsAt);
     }
 
     if (input.reimbursementTypeId) {
@@ -711,12 +733,13 @@ export class TimeTrackingService {
       userId,
     );
 
-    // Self check-in is only valid around the shift time (a supervisor/admin can
-    // still add or correct entries anytime via addTimeEntry, which is unbounded).
+    // Self check-in opens 3h before the shift and closes when it ends. A
+    // supervisor/admin can still add or correct entries via addTimeEntry, but
+    // even those cannot start after the shift end.
     const now = Date.now();
     const opensAt =
       instance.actualStartsAt.getTime() - CHECK_IN_OPENS_BEFORE_MS;
-    const closesAt = instance.actualEndsAt.getTime() + CHECK_IN_CLOSES_AFTER_MS;
+    const closesAt = instance.actualEndsAt.getTime();
     if (now < opensAt || now > closesAt) {
       throw new BadRequestGraphQLError(
         'Check-in is only available around the shift time',
@@ -859,9 +882,8 @@ export class TimeTrackingService {
   }
 }
 
-// Self check-in window (relative to the shift instance's actual start/end).
+// Self check-in window: opens before the actual start, closes at the actual end.
 const CHECK_IN_OPENS_BEFORE_MS = 3 * 60 * 60 * 1000; // 3h before start
-const CHECK_IN_CLOSES_AFTER_MS = 60 * 60 * 1000; // 1h after end
 
 const UNIQUE_OPEN_ENTRY_CONSTRAINT =
   'uq_time_entries_open_per_instance_volunteer';
