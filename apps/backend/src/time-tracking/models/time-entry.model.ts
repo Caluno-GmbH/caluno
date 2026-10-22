@@ -4,6 +4,7 @@ import { createPaginatedResponseType } from '../../graphql/paginated-response.mo
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { ShiftInstance } from '../../shift/models/shift-instance.model';
 import { User } from '../../user/models/user.model';
+import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 
 @ObjectType()
 export class TimeEntry {
@@ -15,6 +16,9 @@ export class TimeEntry {
 
   @Field(() => Date, { nullable: true })
   endedAt?: Date | null;
+
+  @Field(() => TimeEntryStatus)
+  status!: TimeEntryStatus;
 
   @Field(() => String, { nullable: true })
   notes?: string | null;

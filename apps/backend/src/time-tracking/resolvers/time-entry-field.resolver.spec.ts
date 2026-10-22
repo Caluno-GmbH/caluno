@@ -67,6 +67,7 @@ const timeEntry = {
   volunteerId: 'user-volunteer',
   startedAt: now,
   endedAt: null,
+  closureKind: null,
   notes: null,
   reimbursementTypeId: null,
   isPaid: false,

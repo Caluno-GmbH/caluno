@@ -1555,6 +1555,7 @@ type TimeEntry {
   reimbursementType: ReimbursementType
   shiftInstance: ShiftInstance
   startedAt: DateTime!
+  status: TimeEntryStatus!
   volunteer: User!
 }
 
@@ -1569,6 +1570,12 @@ enum TimeEntrySortField {
   SHIFT
   STARTED_AT
   VOLUNTEER
+}
+
+enum TimeEntryStatus {
+  AUTO_CLOSED
+  CLOSED
+  OPEN
 }
 
 type TodoFillAssignmentFilter {
