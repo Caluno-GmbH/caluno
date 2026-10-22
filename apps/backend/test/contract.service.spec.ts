@@ -231,7 +231,7 @@ describe('ContractService', () => {
 
   describe('findContract', () => {
     it('returns signatures in signing order regardless of insertion order', async () => {
-      const { root, organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer } =
         await setup();
       const contract = await service.createContract(
         organization.id,
@@ -273,7 +273,7 @@ describe('ContractService', () => {
 
   describe('createContract', () => {
     it('starts at the first signee step and records a CREATED event', async () => {
-      const { root, organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer } =
         await setup();
 
       const contract = await service.createContract(
@@ -300,7 +300,7 @@ describe('ContractService', () => {
     });
 
     it('snapshots the template body onto the contract', async () => {
-      const { root, organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer } =
         await setup();
 
       const contract = await service.createContract(
@@ -323,7 +323,7 @@ describe('ContractService', () => {
     });
 
     it('persists per-document field overrides', async () => {
-      const { root, organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer } =
         await setup();
 
       const contract = await service.createContract(
@@ -473,7 +473,7 @@ describe('ContractService', () => {
     });
 
     it('keeps a draft queued for a different year', async () => {
-      const { root, organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer } =
         await setup();
       const draft = await service.ensureDraftContract(
         organization.id,
@@ -1695,7 +1695,7 @@ describe('ContractService', () => {
     });
 
     it('excludes contracts whose period does not overlap the requested range', async () => {
-      const { root, organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer } =
         await setup();
       const secondVolunteer = await createUser(db);
 

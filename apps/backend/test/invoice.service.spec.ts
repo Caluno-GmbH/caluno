@@ -1201,7 +1201,6 @@ describe('InvoiceService', () => {
     // draft, so it is written in the same transaction and never on its own.
     it('persists the initial yearly amount together with the timesheet', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -1235,7 +1234,6 @@ describe('InvoiceService', () => {
 
     it('leaves the initial yearly amount untouched when none is sent', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -1268,7 +1266,6 @@ describe('InvoiceService', () => {
 
     it('rejects a negative initial yearly amount', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -1358,7 +1355,6 @@ describe('InvoiceService', () => {
 
     it('flags the invoice as non-compliant when the volunteer has no active contract', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -1445,7 +1441,6 @@ describe('InvoiceService', () => {
 
     it('rejects a rate that is not a positive amount', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2374,7 +2369,6 @@ describe('InvoiceService', () => {
 
     it('auto-creates a DRAFT contract when the volunteer has no contract', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2609,7 +2603,6 @@ describe('InvoiceService', () => {
 
     it('queues one year draft that covers every uncovered month of that year', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2725,7 +2718,6 @@ describe('InvoiceService', () => {
 
     it('claims the time entry so it cannot be pulled into a second invoice', async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
@@ -2766,7 +2758,6 @@ describe('InvoiceService', () => {
   describe('ensurePdf (VOLI-1637)', () => {
     const issueTimesheet = async () => {
       const {
-        root,
         organization,
         reimbursementType,
         volunteer,
