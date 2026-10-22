@@ -155,18 +155,29 @@ export const TimesheetsTable = ({
           }
           const duration = formatDuration(entry.startedAt, entry.endedAt);
           if (entry.status === TimeEntryStatus.AutoClosed) {
+            const tooltip = t('status.autoClosedTooltip');
             return (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex justify-end">
-                    <EntityCell
-                      title={duration}
-                      trailing={<AlertTriangle className="text-alert" />}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>{t('status.autoClosedTooltip')}</TooltipContent>
-              </Tooltip>
+              <div className="flex justify-end">
+                <EntityCell
+                  title={duration}
+                  trailing={
+                    // A native button: keyboard-focusable (a div with tabIndex
+                    // trips the a11y lint) and named for screen readers.
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={tooltip}
+                          className="block cursor-default rounded-sm"
+                        >
+                          <AlertTriangle className="size-4 text-alert" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{tooltip}</TooltipContent>
+                    </Tooltip>
+                  }
+                />
+              </div>
             );
           }
           return <NumberCell>{duration}</NumberCell>;

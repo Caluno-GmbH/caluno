@@ -42,9 +42,8 @@ export default async function TimeEntryDetailPage({
   return (
     <div className="space-y-6">
       <div className="flex justify-between">
-        <div className="flex items-center gap-3">
+        <div>
           <h1 className="page-title">{t('detail.title')}</h1>
-          <TimeEntryStatusBadge status={entry.status} />
         </div>
         <ActionBar
           id={timeEntryId}
