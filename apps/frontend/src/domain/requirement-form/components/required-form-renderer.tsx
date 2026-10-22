@@ -44,10 +44,6 @@ export type RequiredFormItem = {
   targetId?: string;
 };
 
-type FormBlockWithEffectiveRequired = RequiredFormBlock & {
-  effectiveRequired: boolean;
-};
-
 interface RequiredFormRendererProps {
   title: string;
   description: string;
@@ -60,24 +56,23 @@ interface RequiredFormRendererProps {
   onComplete: () => Promise<void>;
 }
 
-function getFormBlocks(form: RequiredForm): FormBlockWithEffectiveRequired[] {
+function getFormBlocks(form: RequiredForm): RequiredFormBlock[] {
   return (
     form.blockRefs
       ?.slice()
       .sort((a, b) => (a.fieldOrder ?? 0) - (b.fieldOrder ?? 0))
-      .map((ref): FormBlockWithEffectiveRequired | null => {
+      .map((ref): RequiredFormBlock | null => {
         const block = ref.block;
         if (!block) return null;
         const { fields, ...rest } = block;
         return {
           ...rest,
-          effectiveRequired: ref.required ?? block.required ?? false,
           fields: fields
             ? fields.slice().sort((a, b) => a.fieldOrder - b.fieldOrder)
             : fields,
         };
       })
-      .filter((b): b is FormBlockWithEffectiveRequired => !!b) ?? []
+      .filter((b): b is RequiredFormBlock => !!b) ?? []
   );
 }
 
@@ -150,7 +145,7 @@ export function RequiredFormRenderer({
   const validationMessages = useValidationMessages();
 
   const formBlocksById = useMemo(() => {
-    const map = new Map<string, FormBlockWithEffectiveRequired[]>();
+    const map = new Map<string, RequiredFormBlock[]>();
     for (const item of pendingForms) {
       map.set(item.form.id, getFormBlocks(item.form));
     }
@@ -168,7 +163,7 @@ export function RequiredFormRenderer({
       for (const block of blocks) {
         for (const field of block.fields ?? []) {
           const existing = mergedFields.get(field.id);
-          const isRequired = block.effectiveRequired && field.required;
+          const isRequired = field.required;
           if (existing) {
             existing.isRequired = existing.isRequired || isRequired;
           } else {

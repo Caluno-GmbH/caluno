@@ -24,7 +24,7 @@ type FormsT = (
 export function formHasFileUpload(form: RequiredForm): boolean {
   return (
     form.blockRefs?.some((ref) =>
-      ref.block?.fields?.some(
+      ref.block.fields?.some(
         (field) => field.type === FieldType.DocumentAcknowledgement,
       ),
     ) ?? false

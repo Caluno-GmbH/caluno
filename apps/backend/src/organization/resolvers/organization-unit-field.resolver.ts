@@ -4,12 +4,9 @@ import {
   Session,
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
-import { plainToInstance } from 'class-transformer';
 import { MembershipService } from '../../membership/membership.service';
 import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
-import { RequirementProfile } from '../../requirement-profile/models/requirement-profile.model';
-import { RequirementProfileService } from '../../requirement-profile/services';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { JoinStatus } from '../../shared/enums/join-status.enum';
 import { OrganizationMapper } from '../mappers/organization.mapper';
@@ -29,7 +26,6 @@ export class OrganizationUnitFieldResolver {
     private readonly organizationMapper: OrganizationMapper,
     private readonly organizationUnitMapper: OrganizationUnitMapper,
     private readonly organizationUnitTypeMapper: OrganizationUnitTypeMapper,
-    private readonly requirementProfileService: RequirementProfileService,
     private readonly requiredFormService: RequiredFormService,
     private readonly membershipService: MembershipService,
     private readonly requiredFormRefMapper: RequiredFormRefMapper,
@@ -109,20 +105,6 @@ export class OrganizationUnitFieldResolver {
       organizationUnit.id,
     );
     return this.organizationUnitMapper.toArray(children);
-  }
-
-  @ResolveField(() => RequirementProfile, { nullable: true })
-  async requiredMembershipRequirementProfile(
-    @Parent() organizationUnit: OrganizationUnitEntity,
-  ): Promise<RequirementProfile | null> {
-    if (!organizationUnit.requiredMembershipRequirementProfileId) {
-      return null;
-    }
-
-    const profile = await this.requirementProfileService.findById(
-      organizationUnit.requiredMembershipRequirementProfileId,
-    );
-    return profile ? plainToInstance(RequirementProfile, profile) : null;
   }
 
   @AllowAnonymous()

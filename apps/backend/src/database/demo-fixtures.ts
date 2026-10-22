@@ -314,7 +314,6 @@ const ensurePersonalInfoForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     },
     { fresh: !existingForm || created },
   );
@@ -394,7 +393,6 @@ const ensureAgreementForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     },
     { fresh: !existingForm || created },
   );
@@ -477,7 +475,6 @@ const ensureChildSafetyForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     },
     { fresh: !existingForm || created },
   );

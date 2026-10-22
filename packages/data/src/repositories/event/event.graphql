@@ -24,14 +24,12 @@ fragment RequiredFormFields on RequirementForm {
     formId
     blockId
     fieldOrder
-    required
     block {
       id
       organizationId
       title
       description
       icon
-      required
       isEditable
       fields {
         id

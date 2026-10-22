@@ -12,7 +12,6 @@ import { MembershipRequestStatus } from '../src/membership/enums';
 import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
 import {
@@ -45,7 +44,6 @@ describe('MembershipService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
     service = new MembershipService(
       db,
-      {} as RequirementProfileService,
       {
         findUsersWithPermission: mock(async () => []),
       } as unknown as AuthService,

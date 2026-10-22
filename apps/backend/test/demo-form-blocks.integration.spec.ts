@@ -152,7 +152,6 @@ describe('ensureFormBlock', () => {
         organizationId,
         title,
         description: 'Left empty by an older seed.',
-        required: true,
         createdBy: USER_ID,
         updatedBy: USER_ID,
       })
@@ -207,7 +206,6 @@ describe('ensureFormBlockRef', () => {
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     };
 
     await ensureFormBlockRef(db, ref, { fresh: true });
@@ -245,7 +243,6 @@ describe('ensureFormBlockRef', () => {
       formId: form.id,
       blockId,
       fieldOrder: 0,
-      required: true,
     });
 
     await ensureFormBlockRef(db, refTo(block.id), { fresh: false });

@@ -63,14 +63,10 @@ Add a noun here before inventing an event.
 | `event` | Event |
 | `event_invite` | Event Invite |
 | `time_entry` | Time Entry |
-| `requirement_profile` | Requirement Profile |
-| `requirement` | Requirement |
 | `requirement_form` | Requirement Form |
 | `form_block` | Form Block |
 | `form_block_field` | Form Block Field |
 | `form_submission` | Form Submission |
-| `requirement_fulfillment` | Requirement Fulfillment |
-| `requirement_profile_submission` | Requirement Profile Submission |
 | `required_form` | Required form assignment |
 | `contract` | Accounting |
 | `invoice` | Accounting |

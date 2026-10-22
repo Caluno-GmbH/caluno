@@ -569,7 +569,6 @@ const ensurePersonalInformationForm = async (
         organizationId,
         title: 'Personal Information',
         description: 'Required personal details.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -600,7 +599,6 @@ const ensurePersonalInformationForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -658,7 +656,6 @@ const ensureBankingInformationForm = async (
         organizationId,
         title: 'Banking Information',
         description: 'Bank account details.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -699,7 +696,6 @@ const ensureBankingInformationForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -758,7 +754,6 @@ const ensureCodeOfConductForm = async (
         organizationId,
         title: 'Code of Conduct',
         description: 'Please acknowledge our code of conduct.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -780,7 +775,6 @@ const ensureCodeOfConductForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 

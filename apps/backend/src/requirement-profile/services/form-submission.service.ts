@@ -285,13 +285,6 @@ export class FormSubmissionService {
     });
 
     const blockIds = blockRefs.map((ref) => ref.blockId);
-    const blocks =
-      blockIds.length > 0
-        ? await this.db
-            .select()
-            .from(schema.formBlocks)
-            .where(inArray(schema.formBlocks.id, blockIds))
-        : [];
 
     const fields =
       blockIds.length > 0
@@ -302,7 +295,6 @@ export class FormSubmissionService {
             .orderBy(schema.formBlockFields.fieldOrder)
         : [];
 
-    const blockMap = new Map(blocks.map((b) => [b.id, b]));
     const fieldsByBlockId = new Map<string, typeof fields>();
     for (const field of fields) {
       const list = fieldsByBlockId.get(field.blockId) ?? [];
@@ -315,7 +307,6 @@ export class FormSubmissionService {
     const fieldMap = new Map<
       string,
       {
-        blockId: string;
         systemKey: string | null;
         type: string;
         label: string;
@@ -325,19 +316,16 @@ export class FormSubmissionService {
     >();
 
     for (const ref of blockRefs) {
-      const block = blockMap.get(ref.blockId);
-      const effectiveRequired = ref.required ?? block?.required ?? true;
       const blockFields = fieldsByBlockId.get(ref.blockId) ?? [];
       for (const field of blockFields) {
         fieldMap.set(field.id, {
-          blockId: ref.blockId,
           systemKey: field.systemKey,
           type: field.type,
           label: field.label,
           options: field.options as string[] | null,
           minAge: field.minAge,
         });
-        if (effectiveRequired && field.required) {
+        if (field.required) {
           requiredFieldIds.add(field.id);
         }
       }
@@ -368,7 +356,6 @@ export class FormSubmissionService {
     const profileData: Record<string, unknown> = {};
     const customValues: Array<{
       fieldId: string;
-      blockId: string;
       value: unknown;
     }> = [];
 
@@ -390,7 +377,6 @@ export class FormSubmissionService {
       } else {
         customValues.push({
           fieldId: valueInput.fieldId,
-          blockId: fieldInfo.blockId,
           value: this.parseValue(valueInput.value, fieldInfo.type),
         });
       }
@@ -418,7 +404,6 @@ export class FormSubmissionService {
           customValues.map((cv) => ({
             submissionId: created.id,
             fieldId: cv.fieldId,
-            blockId: cv.blockId,
             value: cv.value,
           })),
         );

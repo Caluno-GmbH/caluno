@@ -38,7 +38,6 @@ export * from './react/hooks/use-check-in-shift-instances';
 export * from './react/hooks/use-check-in-shifts';
 export * from './react/hooks/use-check-out';
 export * from './react/hooks/use-contracts';
-export * from './react/hooks/use-create-requirement-profile-submission';
 export * from './react/hooks/use-document-templates';
 export * from './react/hooks/use-effective-rates';
 export * from './react/hooks/use-events';

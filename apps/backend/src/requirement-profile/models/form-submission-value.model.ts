@@ -12,9 +12,6 @@ export class FormSubmissionValue {
   fieldId!: string;
 
   @Field(() => String)
-  blockId!: string;
-
-  @Field(() => String)
   value!: string;
 
   @Field(() => Date)

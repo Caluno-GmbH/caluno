@@ -37,14 +37,10 @@ export const POSTHOG_OBJECTS = [
   'event',
   'event_invite',
   'time_entry',
-  'requirement_profile',
-  'requirement',
   'requirement_form',
   'form_block',
   'form_block_field',
   'form_submission',
-  'requirement_fulfillment',
-  'requirement_profile_submission',
   'required_form',
   'contract',
   'invoice',
@@ -284,30 +280,6 @@ export const POSTHOG_EVENT_REGISTRY = {
     'required_form_update',
     'Required forms are set on a target.',
   ),
-  requirement_profile_create: defineEvent(
-    'requirement_profile_create',
-    'A requirement profile is created.',
-  ),
-  requirement_profile_update: defineEvent(
-    'requirement_profile_update',
-    'A requirement profile is updated.',
-  ),
-  requirement_profile_delete: defineEvent(
-    'requirement_profile_delete',
-    'A requirement profile is deleted.',
-  ),
-  requirement_create: defineEvent(
-    'requirement_create',
-    'A requirement is created.',
-  ),
-  requirement_update: defineEvent(
-    'requirement_update',
-    'A requirement is updated.',
-  ),
-  requirement_delete: defineEvent(
-    'requirement_delete',
-    'A requirement is deleted.',
-  ),
   requirement_form_create: defineEvent(
     'requirement_form_create',
     'A requirement form is created.',
@@ -351,26 +323,6 @@ export const POSTHOG_EVENT_REGISTRY = {
   form_submission_reject: defineEvent(
     'form_submission_reject',
     'Form submissions are rejected.',
-  ),
-  requirement_profile_submission_create: defineEvent(
-    'requirement_profile_submission_create',
-    'A requirement profile submission is created.',
-  ),
-  requirement_profile_submission_update: defineEvent(
-    'requirement_profile_submission_update',
-    'A requirement profile submission is updated.',
-  ),
-  requirement_profile_submission_delete: defineEvent(
-    'requirement_profile_submission_delete',
-    'A requirement profile submission is deleted.',
-  ),
-  requirement_fulfillment_update: defineEvent(
-    'requirement_fulfillment_update',
-    'A requirement fulfillment is updated.',
-  ),
-  requirement_fulfillment_delete: defineEvent(
-    'requirement_fulfillment_delete',
-    'A requirement fulfillment is deleted.',
   ),
   invoice_create: defineEvent('invoice_create', 'An invoice is created.'),
   invoice_sign: defineEvent('invoice_sign', 'An invoice is signed.'),

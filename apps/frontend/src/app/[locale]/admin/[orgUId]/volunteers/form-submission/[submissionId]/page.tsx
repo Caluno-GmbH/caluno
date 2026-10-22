@@ -34,7 +34,7 @@ export default async function FormSubmissionPage({ params }: Props) {
     submission.form?.blockRefs
       ?.slice()
       .sort((a, b) => a.fieldOrder - b.fieldOrder)
-      .flatMap((ref) => ref.block?.fields ?? []) ?? [];
+      .flatMap((ref) => ref.block.fields ?? []) ?? [];
 
   return (
     <div className="space-y-6">

@@ -305,23 +305,6 @@ mutation JoinShiftInstance($instanceId: String!) {
       }
     }
     membershipRequestId
-    requirementProfile {
-      id
-      name
-      description
-      requirements {
-        id
-        name
-        description
-        type
-        mandatory
-      }
-    }
-    requirementStatuses {
-      requirementId
-      name
-      status
-    }
     requiredForms {
       ...RequiredFormWithStatusFields
     }

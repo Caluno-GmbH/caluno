@@ -51,7 +51,6 @@ export const ensureFormBlock = async (
         organizationId: input.organizationId,
         title: input.title,
         description: input.description,
-        required: true,
         createdBy: input.createdById,
         updatedBy: input.createdById,
       })

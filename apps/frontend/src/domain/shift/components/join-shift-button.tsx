@@ -232,26 +232,7 @@ export function JoinShiftButton({
             return;
           }
 
-          const missing = result.requirementStatuses?.filter(
-            (s) => s.status !== 'APPROVED',
-          );
-          const approved = result.requirementStatuses?.filter(
-            (s) => s.status === 'APPROVED',
-          );
-
-          if (missing && missing.length > 0) {
-            const missingNames = missing.map((s) => s.name).join(', ');
-            const approvedNames = approved?.map((s) => s.name).join(', ');
-            toast.info(
-              t('join.requirementsNeeded', {
-                missing: missingNames,
-                hasCompleted: approved && approved.length > 0 ? 'yes' : 'no',
-                completed: approvedNames ?? '',
-              }),
-            );
-          } else {
-            toast.info(t('join.requirementsFallback'));
-          }
+          toast.info(t('join.requirementsFallback'));
         } else {
           toast.error(t('join.unexpected'));
         }

@@ -8,7 +8,6 @@ describe('FormSubmissionValueMapper', () => {
     id: 'value-1',
     submissionId: 'submission-1',
     fieldId: 'field-1',
-    blockId: 'block-1',
     value: 'a',
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-01T00:00:00Z'),

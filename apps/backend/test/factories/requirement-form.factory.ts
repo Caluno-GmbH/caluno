@@ -37,7 +37,6 @@ export const createRequirementForm = async (
       organizationId: args.organizationId,
       title: `Test Block ${crypto.randomUUID()}`,
       description: 'Test block',
-      required,
       createdBy: args.createdById,
       updatedBy: args.createdById,
     })
@@ -62,7 +61,6 @@ export const createRequirementForm = async (
     formId: form.id,
     blockId: block.id,
     fieldOrder: 0,
-    required,
   });
 
   return { form, block, field };

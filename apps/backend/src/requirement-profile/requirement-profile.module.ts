@@ -13,25 +13,8 @@ import { FormSubmissionMapper } from './mappers/form-submission.mapper';
 import { FormSubmissionValueMapper } from './mappers/form-submission-value.mapper';
 import { OrganizationUserProfileMapper } from './mappers/organization-user-profile.mapper';
 import { RequiredFormRefMapper } from './mappers/required-form-ref.mapper';
-import { RequirementMapper } from './mappers/requirement.mapper';
 import { RequirementFormMapper } from './mappers/requirement-form.mapper';
 import { RequirementFormBlockRefMapper } from './mappers/requirement-form-block-ref.mapper';
-import { RequirementFulfillmentMapper } from './mappers/requirement-fulfillment.mapper';
-import { RequirementProfileMapper } from './mappers/requirement-profile.mapper';
-import { RequirementProfileSubmissionMapper } from './mappers/requirement-profile-submission.mapper';
-import {
-  RequirementFulfillmentFieldResolver,
-  RequirementFulfillmentMutationResolver,
-  RequirementFulfillmentQueryResolver,
-  RequirementMutationResolver,
-  RequirementProfileFieldResolver,
-  RequirementProfileMutationResolver,
-  RequirementProfileQueryResolver,
-  RequirementProfileSubmissionFieldResolver,
-  RequirementProfileSubmissionMutationResolver,
-  RequirementProfileSubmissionQueryResolver,
-  RequirementQueryResolver,
-} from './resolvers';
 import { FormBlockFieldResolver } from './resolvers/form-block-field.resolver';
 import { FormBlockFieldDocumentResolver } from './resolvers/form-block-field-document.resolver';
 import { FormBlockMutationResolver } from './resolvers/form-block-mutation.resolver';
@@ -42,15 +25,11 @@ import { RequirementFormBlockRefFieldResolver } from './resolvers/requirement-fo
 import { RequirementFormFieldResolver } from './resolvers/requirement-form-field.resolver';
 import { RequirementFormMutationResolver } from './resolvers/requirement-form-mutation.resolver';
 import { RequirementFormQueryResolver } from './resolvers/requirement-form-query.resolver';
-import { RequirementFulfillmentUploadFieldResolver } from './resolvers/requirement-fulfillment-upload-field.resolver';
 import {
   FormBlockService,
   FormSubmissionService,
   RequiredFormService,
   RequirementFormService,
-  RequirementProfileService,
-  RequirementProfileSubmissionService,
-  RequirementService,
 } from './services';
 
 @Module({
@@ -62,17 +41,10 @@ import {
     StorageModule,
   ],
   providers: [
-    RequirementService,
-    RequirementProfileService,
-    RequirementProfileSubmissionService,
     FormBlockService,
     RequirementFormService,
     FormSubmissionService,
     RequiredFormService,
-    RequirementProfileMapper,
-    RequirementMapper,
-    RequirementProfileSubmissionMapper,
-    RequirementFulfillmentMapper,
     MembershipMapper,
     MembershipRequestMapper,
     OrganizationUserProfileMapper,
@@ -83,18 +55,6 @@ import {
     RequiredFormRefMapper,
     FormSubmissionMapper,
     FormSubmissionValueMapper,
-    RequirementProfileQueryResolver,
-    RequirementProfileMutationResolver,
-    RequirementProfileFieldResolver,
-    RequirementQueryResolver,
-    RequirementMutationResolver,
-    RequirementProfileSubmissionQueryResolver,
-    RequirementProfileSubmissionMutationResolver,
-    RequirementProfileSubmissionFieldResolver,
-    RequirementFulfillmentQueryResolver,
-    RequirementFulfillmentMutationResolver,
-    RequirementFulfillmentFieldResolver,
-    RequirementFulfillmentUploadFieldResolver,
     FormBlockQueryResolver,
     FormBlockMutationResolver,
     FormBlockFieldResolver,
@@ -107,9 +67,6 @@ import {
     FormSubmissionFieldResolver,
   ],
   exports: [
-    RequirementService,
-    RequirementProfileService,
-    RequirementProfileSubmissionService,
     FormBlockService,
     RequirementFormService,
     FormSubmissionService,
