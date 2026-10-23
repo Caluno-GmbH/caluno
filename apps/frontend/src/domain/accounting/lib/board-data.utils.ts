@@ -276,7 +276,7 @@ export function mapSignatureToSignee(
       id: signature.requiredPermission?.id ?? `role-${role}`,
       name: signature.requiredPermission?.key ?? PermissionKey.AccountingManage,
     },
-    signedByName: signature.signedByUser?.name,
+    signedByName: signature.signedByName ?? signature.signedByUser?.name,
   };
 }
 
