@@ -1,13 +1,5 @@
 import { registerEnumType } from '@nestjs/graphql';
-import {
-  FieldType,
-  OrganizationUserProfileStatus,
-  RequiredFormTargetType,
-} from './index';
-
-registerEnumType(OrganizationUserProfileStatus, {
-  name: 'OrganizationUserProfileStatus',
-});
+import { FieldType, RequiredFormTargetType } from './index';
 
 registerEnumType(FieldType, {
   name: 'FieldType',
