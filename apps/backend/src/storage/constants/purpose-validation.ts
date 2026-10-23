@@ -7,10 +7,19 @@ export const IMAGE_MIME_TYPES = [
   'image/heif',
 ] as const;
 
+/** MIME types browsers can safely render in an iframe (PDF + raster images). */
+export const DOCUMENT_PREVIEW_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
+
 export interface PurposeValidationRule {
   visibility: 'private' | 'public';
   maxByteSize: number;
-  /** Empty = any MIME type (document uploads). Non-empty = allow-list only. */
+  /** Empty = any MIME type. Non-empty = allow-list only. */
   allowedMimeTypes: readonly string[];
   requiredPermission: string;
   requiresOrganizationUnitId: boolean;
@@ -23,7 +32,7 @@ export const PURPOSE_VALIDATION_RULES: Record<
   [FilePurpose.REQUIREMENT_DOCUMENT]: {
     visibility: 'private',
     maxByteSize: 10 * 1024 * 1024,
-    allowedMimeTypes: [],
+    allowedMimeTypes: DOCUMENT_PREVIEW_MIME_TYPES,
     requiredPermission: 'org:view',
     requiresOrganizationUnitId: true,
   },
@@ -39,7 +48,7 @@ export const PURPOSE_VALIDATION_RULES: Record<
   [FilePurpose.FORM_DOCUMENT]: {
     visibility: 'public',
     maxByteSize: 10 * 1024 * 1024,
-    allowedMimeTypes: [],
+    allowedMimeTypes: DOCUMENT_PREVIEW_MIME_TYPES,
     requiredPermission: 'requirement-profile:edit',
     requiresOrganizationUnitId: true,
   },

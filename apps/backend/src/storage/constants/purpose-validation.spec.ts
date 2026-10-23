@@ -1,5 +1,6 @@
 import { FilePurpose } from '../enums';
 import {
+  DOCUMENT_PREVIEW_MIME_TYPES,
   isMimeTypeAllowed,
   PURPOSE_VALIDATION_RULES,
 } from './purpose-validation';
@@ -18,22 +19,37 @@ const DOCUMENT_PURPOSES = [
 ] as const;
 
 describe('purpose-validation document MIME restrictions', () => {
-  it.each(DOCUMENT_PURPOSES)('allows any MIME type for %s', (purpose) => {
-    const rule = PURPOSE_VALIDATION_RULES[purpose];
-    expect(isMimeTypeAllowed(rule, 'application/pdf')).toBe(true);
-    expect(
-      isMimeTypeAllowed(
-        rule,
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      ),
-    ).toBe(true);
-    expect(
-      isMimeTypeAllowed(
-        rule,
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ),
-    ).toBe(true);
-  });
+  it.each(DOCUMENT_PURPOSES)(
+    'allows previewable MIME types for %s',
+    (purpose) => {
+      const rule = PURPOSE_VALIDATION_RULES[purpose];
+      for (const mimeType of DOCUMENT_PREVIEW_MIME_TYPES) {
+        expect(isMimeTypeAllowed(rule, mimeType)).toBe(true);
+      }
+    },
+  );
+
+  it.each(DOCUMENT_PURPOSES)(
+    'rejects non-previewable MIME types for %s',
+    (purpose) => {
+      const rule = PURPOSE_VALIDATION_RULES[purpose];
+      expect(
+        isMimeTypeAllowed(
+          rule,
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ),
+      ).toBe(false);
+      expect(
+        isMimeTypeAllowed(
+          rule,
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ),
+      ).toBe(false);
+      expect(isMimeTypeAllowed(rule, 'image/heic')).toBe(false);
+      expect(isMimeTypeAllowed(rule, 'image/svg+xml')).toBe(false);
+      expect(isMimeTypeAllowed(rule, 'text/plain')).toBe(false);
+    },
+  );
 });
 
 describe('purpose-validation image MIME restrictions', () => {

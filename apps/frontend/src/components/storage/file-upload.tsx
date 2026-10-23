@@ -19,6 +19,7 @@ import { useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
 import {
   getAcceptForPurpose,
+  isDocumentPurpose,
   isMimeTypeAllowedForPurpose,
 } from '@/lib/storage/allowed-mime-types';
 import {
@@ -111,7 +112,13 @@ export function FileUpload({
 
     const mimeType = file.type || 'application/octet-stream';
     if (!isMimeTypeAllowedForPurpose(purpose, mimeType)) {
-      setError(t('invalidFileType'));
+      setError(
+        t(
+          isDocumentPurpose(purpose)
+            ? 'invalidFileTypeDocument'
+            : 'invalidFileType',
+        ),
+      );
       return;
     }
 

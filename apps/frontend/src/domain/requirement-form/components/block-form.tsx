@@ -254,7 +254,7 @@ export function BlockForm({
     });
   }
 
-  function appendSystemField(preset: (typeof systemPresets)[number]) {
+  function appendProfileField(preset: (typeof systemPresets)[number]) {
     append({
       type: preset.type,
       label: preset.label,
@@ -346,7 +346,7 @@ export function BlockForm({
             canMoveDown={index < fields.length - 1}
             fieldType={watchedFields[index]?.type}
             currentRequired={watchedFields[index]?.required ?? false}
-            isSystemField={!!watchedFields[index]?.systemKey}
+            isProfileField={!!watchedFields[index]?.systemKey}
             systemKey={watchedFields[index]?.systemKey}
             lockType={watchedFields[index]?.lockType ?? false}
             onToggleRequired={(next) =>
@@ -422,7 +422,7 @@ export function BlockForm({
                         type="button"
                         className="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors hover:bg-accent"
                         onClick={() => {
-                          appendSystemField(p);
+                          appendProfileField(p);
                           setProfilePickerOpen(false);
                         }}
                       >
@@ -487,7 +487,7 @@ function FieldCard({
   canMoveDown,
   fieldType,
   currentRequired,
-  isSystemField,
+  isProfileField,
   systemKey,
   lockType,
   onToggleRequired,
@@ -507,7 +507,7 @@ function FieldCard({
   canMoveDown: boolean;
   fieldType?: FieldType;
   currentRequired: boolean;
-  isSystemField: boolean;
+  isProfileField: boolean;
   systemKey?: string;
   lockType: boolean;
   onToggleRequired: (next: boolean) => void;
@@ -519,6 +519,7 @@ function FieldCard({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tValidation = useTranslations('RequirementForm.validation');
   const tCommon = useTranslations('Common');
+  const tUpload = useTranslations('Storage.upload');
   const hasFixedOptions = hasFixedGenderOptions(systemKey);
   const showOptions =
     (fieldType === FieldType.SingleChoice ||
@@ -544,10 +545,10 @@ function FieldCard({
           <span className="text-sm font-medium text-muted-foreground">
             {t('fieldN', { n: index + 1 })}
           </span>
-          {isSystemField && (
+          {isProfileField && (
             <Badge variant="neutral" className="text-xs">
               <UserCircle2 className="mr-1 size-3.5" />
-              {t('systemField')}
+              {t('profileField')}
             </Badge>
           )}
         </div>
@@ -703,6 +704,7 @@ function FieldCard({
                       purpose="form_document"
                       organizationUnitId={orgUId}
                       label={`${tField('documentFileLabel')} ${docIndex + 1}`}
+                      description={tUpload('documentHint')}
                       value={doc.fileId}
                       initialPreviewUrl={doc.downloadUrl ?? null}
                       initialFilename={doc.filename ?? null}
@@ -732,6 +734,7 @@ function FieldCard({
                     purpose="form_document"
                     organizationUnitId={orgUId}
                     label={tField('addDocumentFile')}
+                    description={tUpload('documentHint')}
                     value={null}
                     disabled={readOnly}
                     error={fieldState.error?.message}
