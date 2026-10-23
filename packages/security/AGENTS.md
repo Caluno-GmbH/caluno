@@ -8,11 +8,13 @@ triage and reason about authorization logic. Nothing here modifies source.
 Run from `packages/security` (or `bun run security:audit` from the root).
 - `bun run audit` - All steps below; results in `out/` (gitignored). Exit 3 if a tool was missing or wrote no report: a skipped or failed step is not a pass.
 - `bun run audit:surface` - Every resolver/controller endpoint via AST -> `out/surface.json`, with the tenant-context flags
+- `bun run audit:tenant` - Invariant B rule: id-only queries on tenant tables -> `out/tenant-queries.json`
 - `bun run audit:sast` - Semgrep: registry packs (`rules/semgrep-packs.txt`) + vendored rules (`rules/semgrep-local.yml`)
 - `bun run audit:deps` - osv-scanner on `bun.lock`
 - `bun run audit:secrets` - gitleaks on the full git history, using the root `.gitleaks.toml`
 - `bun run audit:iac` - KICS with the root `kics.config` + trivy, both on `packages/infra` only (needs the submodule). KICS query library is found automatically; override with `KICS_QUERIES=<dir>`
 - `bun run audit:coverage` - Compares `out/surface.json` with an agent's `out/manifest.jsonl`
+- `bun run test` - Unit tests of the AST rules
 - `bun run check-types`
 
 ## Project Structure
@@ -20,6 +22,7 @@ Run from `packages/security` (or `bun run security:audit` from the root).
 src/
 ├── config.ts             # Calibration: paths, decorators, tenant context. Update when conventions change
 ├── enumerate-surface.ts  # Endpoint inventory + invariant A
+├── tenant-queries.ts     # Invariant B rule (pure, unit-tested) + check-tenant-queries.ts CLI
 └── coverage-diff.ts      # Surface vs agent manifest -> coverage %, missing and invented ids
 rules/                    # Semgrep packs list + vendored rules
 scripts/audit.sh          # Orchestrator for the external tools
@@ -35,7 +38,15 @@ Verified in code; if any of this changes, update `src/config.ts` and this sectio
 
 ## Invariants
 - **A, tenant context verified**: a handler that reads `context.organizationUnitId` or the header must have `@Permissions`. Checked on 100% of endpoints by `audit:surface` (flag `UNVERIFIED-TENANT-CONTEXT`).
-- **B, tenant-scoped queries**: every Drizzle read/write on a table with `organizationUnitId`/`organizationId` must be constrained to the caller's unit, not only by `id`. Not automated yet: reviewed per endpoint by the `security-audit` skill.
+- **B, tenant-scoped queries**: every Drizzle read/write on a table with `organizationUnitId`/`organizationId` must be constrained to the caller's unit, not only by `id`. `audit:tenant` flags `db.query.<table>.findFirst|findMany({ where: { id } })` and `.where(eq(<table>.id, v))` on those tables (`out/tenant-queries.json`, grouped by table). It is a report, not a gate: it does not fail the run. Limit: tables scoped only through a parent (shift -> event -> unit) are not detected, so the `security-audit` skill still reviews those.
+
+### Closing a finding
+Call `TenantScopeService` (`apps/backend/src/organization/tenant-scope.service.ts`) in the same function, after loading the resource and before returning or writing it:
+- `assertResourceInScope(headerUnitId, resource.organizationUnitId)`: the resource's unit is the header unit or a descendant of it.
+- `assertOrganizationInScope(headerUnitId, resource.organizationId)`: for resources scoped to an organization (e.g. roles).
+
+Both throw NotFound, so a foreign id looks like a missing one. When the id provably cannot cross tenants (e.g. it comes from the caller's own session), exempt the statement instead: `// tenant-scope-ok: <reason>`. A function that calls either helper is not flagged.
+
 
 ## Flags in `out/surface.json`
 - `UNVERIFIED-TENANT-CONTEXT` - Highest priority. Confirm the service does not trust the unit id, or add `@Permissions`.

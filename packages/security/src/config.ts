@@ -61,8 +61,20 @@ export const config = {
     headerParamDecorators: ['Headers', 'Req', 'Request'],
   },
 
-  /** Columns that make a table tenant-scoped (for the planned DB check). */
+  /** Columns that make a table tenant-scoped (invariant B check). */
   tenantFields: ['organizationUnitId', 'organizationId'],
+
+  tenantQueries: {
+    /** Where the Drizzle table definitions live. */
+    schemaGlobs: ['apps/backend/src/**/*.schema.ts'],
+    /** Calls that prove the loaded resource belongs to the caller's tenant. */
+    scopeHelpers: ['assertResourceInScope', 'assertOrganizationInScope'],
+    /**
+     * Comment that exempts the next statement, with a mandatory reason:
+     * `// tenant-scope-ok: <why this cannot cross tenants>`
+     */
+    exemptionMarker: 'tenant-scope-ok:',
+  },
 };
 
 export function isExcluded(filePath: string): boolean {

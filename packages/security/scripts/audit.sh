@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Deterministic security checks. Read-only on the repo; results in out/.
-# Usage: bash scripts/audit.sh [surface|sast|deps|secrets|iac|all]   (default: all)
+# Usage: bash scripts/audit.sh [surface|tenant|sast|deps|secrets|iac|all]   (default: all)
 # A missing tool is skipped with an install hint, never silently passed.
 # Scanners exit non-zero when they find something, so their exit code is
 # ignored; a step only passes when it wrote a fresh, non-empty report.
@@ -51,6 +51,13 @@ run_surface() {
   rm -f "$OUT/surface.json"
   (cd "$PKG" && bun src/enumerate-surface.ts > "$OUT/surface.json")
   require_output surface "$OUT/surface.json"
+}
+
+run_tenant() {
+  say "tenant: id-only queries on tenant tables (invariant B)"
+  rm -f "$OUT/tenant-queries.json"
+  (cd "$PKG" && bun src/check-tenant-queries.ts > "$OUT/tenant-queries.json")
+  require_output tenant-queries "$OUT/tenant-queries.json"
 }
 
 run_sast() {
@@ -121,11 +128,12 @@ run_iac() {
 
 case "$STEP" in
   surface) run_surface ;;
+  tenant) run_tenant ;;
   sast) run_sast ;;
   deps) run_deps ;;
   secrets) run_secrets ;;
   iac) run_iac ;;
-  all) run_surface; run_sast; run_deps; run_secrets; run_iac ;;
+  all) run_surface; run_tenant; run_sast; run_deps; run_secrets; run_iac ;;
   *) echo "Unknown step: $STEP"; exit 2 ;;
 esac
 

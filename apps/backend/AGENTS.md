@@ -167,6 +167,7 @@ Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Dist
 3. **NEVER** return cross-org data, including from field resolvers
 4. Permission checks via `authService.hasRequiredPermissions` (inherits through the org unit hierarchy) — never raw DB lookups
 5. All mutations carry `@Permissions()` — no unguarded writes. Input validation via class-validator on all `@InputType()` classes
+6. The guard only checks permissions on the header unit. A resource loaded by `id` must still be proven to belong to it: inject `TenantScopeService` and call `assertResourceInScope(ctx.organizationUnitId, resource.organizationUnitId)` (or `assertOrganizationInScope` for org-level resources) before returning or writing it. `bun run security:audit` flags id-only queries on tenant tables (`packages/security/AGENTS.md`)
 
 Exemption (documented, narrow): the global `users` directory may be read by a
 server-set id with no org scope when resolving a display field on an

@@ -28,6 +28,7 @@ import type { NotificationService } from '../src/notification';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import type { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import type { FileService } from '../src/storage/services/file.service';
@@ -113,6 +114,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       new UserMapper(),
       membershipService,
       userService,
+      new TenantScopeService(organizationUnitDataService),
     );
     mutationResolver = new ReimbursementMutationResolver(
       reimbursementRateService,

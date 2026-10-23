@@ -5,6 +5,7 @@ import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { MembershipService } from '../../membership/membership.service';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
 import { ReimbursementTypeMapper } from '../mappers';
@@ -29,6 +30,7 @@ export class ReimbursementQueryResolver {
     private readonly userMapper: UserMapper,
     private readonly membershipService: MembershipService,
     private readonly userService: UserService,
+    private readonly tenantScopeService: TenantScopeService,
   ) {}
 
   @Query(() => [ReimbursementType])
@@ -182,23 +184,15 @@ export class ReimbursementQueryResolver {
     return this.toManualBaselineModel(baseline);
   }
 
-  /**
-   * Ensures the caller's own unit (from context) is the target unit itself
-   * or one of its ancestors — i.e. the target is within the caller's
-   * subtree. Rejects siblings, unrelated branches, and units above the
-   * caller's own scope.
-   */
   private async assertUnitInScope(
     context: AuthenticatedGraphQLContext,
     targetUnitId: string,
   ): Promise<void> {
-    const ancestorIds =
-      await this.organizationUnitService.listInclusiveAncestorUnitIds(
-        targetUnitId,
-      );
-    if (!ancestorIds.includes(context.organizationUnitId)) {
-      throw new NotFoundGraphQLError('Organization unit not found');
-    }
+    await this.tenantScopeService.assertResourceInScope(
+      context.organizationUnitId,
+      targetUnitId,
+      'Organization unit not found',
+    );
   }
 
   /**
