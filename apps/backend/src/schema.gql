@@ -126,6 +126,7 @@ type ContractSignature {
   order: Int!
   requiredPermission: Permission
   signedAt: DateTime
+  signedByName: String
   signedByUser: User
   signeeType: SigneeType!
   updatedAt: DateTime
@@ -580,6 +581,7 @@ type InvoiceSignature {
   order: Int!
   requiredPermission: Permission
   signedAt: DateTime
+  signedByName: String
   signedByUser: User
   signeeType: SigneeType!
   updatedAt: DateTime
