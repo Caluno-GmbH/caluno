@@ -13,6 +13,7 @@ Mono-repo powered by TurboRepo.
     ├── infra               # Terraform config for deploying the services and apps
     ├── lifespan            # Contract lifespan string parser (@repo/lifespan), shared by backend and frontend
     ├── observability       # Shared Sentry config builders (@repo/observability) consumed by both apps
+    ├── security            # Security audit tooling (@repo/security): endpoint inventory, tenant invariants, scanners
     ├── typescript-config   # Shared typescript config
     └── ui                  # Shared react components and styles - shadcn, tailwind, storybook
 ```
@@ -27,6 +28,7 @@ Use `bun` - never npm or yarn.
 - `bun run db:migrate` - Migrates database schema
 - `bun run db:up` / `bun run db:down` - Start/stop local Postgres
 - `bun run codegen` - Regenerate GraphQL types (schema + *.graphql)
+- `bun run security:audit` - Deterministic security checks into `packages/security/out/` (see packages/security/AGENTS.md)
 - `bun run terms:publish` - Publish terms versions against the local dev DB (deployed envs auto-publish on boot; never run against production — no prod DB credentials exist locally; see apps/backend/AGENTS.md for the file-naming rule)
 
 ## Local fixtures

@@ -1030,9 +1030,6 @@
     },
     "rescan": "Erneut scannen"
   },
-  "QueryParamTabs": {
-    "empty": "Noch keine Einträge."
-  },
   "RequiredFormRenderer": {
     "formProgress": "Formularfortschritt",
     "noForms": "Es sind keine Formulare erforderlich.",

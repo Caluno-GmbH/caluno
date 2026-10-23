@@ -2,24 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, count, eq, inArray } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
-import type {
-  OrganizationUnitEntity,
-  RequirementFormEntity,
-} from '../../database/schema';
+import type { RequirementFormEntity } from '../../database/schema';
 import * as schema from '../../database/schema';
 import { EventInviteStatus } from '../../event/enums';
-import {
-  BadRequestGraphQLError,
-  ConflictGraphQLError,
-  NotFoundGraphQLError,
-} from '../../graphql/errors';
-import {
-  POSTHOG_EVENT,
-  POSTHOG_SURFACE,
-} from '../../shared/observability/posthog.events';
-import { PostHogService } from '../../shared/observability/posthog.service';
+import { ConflictGraphQLError } from '../../graphql/errors';
 import { ShiftInviteStatus } from '../../shift/enums';
 import { RequiredFormTargetType } from '../enums';
+import { RequiredFormTargetRegistry } from '../targets';
 
 export type RequiredFormTarget = {
   targetType: RequiredFormTargetType;
@@ -40,91 +29,15 @@ export class RequiredFormService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly postHogService: PostHogService,
+    private readonly targetRegistry: RequiredFormTargetRegistry,
   ) {}
-
-  private async verifyFormsHaveBlocks(
-    formIds: string[],
-    runner: Database,
-  ): Promise<void> {
-    const uniqueFormIds = [...new Set(formIds)];
-    if (uniqueFormIds.length === 0) {
-      return;
-    }
-
-    const refs = await runner.query.requirementFormBlockRefs.findMany({
-      where: { formId: { in: uniqueFormIds } },
-      columns: { formId: true },
-    });
-
-    const formsWithBlocks = new Set(refs.map((ref) => ref.formId));
-    if (formsWithBlocks.size !== uniqueFormIds.length) {
-      throw new BadRequestGraphQLError(
-        'One or more forms do not contain any blocks',
-      );
-    }
-  }
 
   async getRequiredForms(
     target: RequiredFormTarget,
   ): Promise<Array<{ form: RequirementFormEntity; order: number }>> {
-    switch (target.targetType) {
-      case RequiredFormTargetType.ORGANIZATION_UNIT: {
-        const rows = await this.db.query.organizationUnitRequiredForms.findMany(
-          {
-            where: { organizationUnitId: target.targetId },
-            orderBy: { order: 'asc' },
-            with: { form: true },
-          },
-        );
-
-        return rows.map((row) => ({
-          // formId is a NOT NULL FK with onDelete: 'restrict', so row.form always exists.
-          form: row.form as RequirementFormEntity,
-          order: row.order,
-        }));
-      }
-      case RequiredFormTargetType.EVENT: {
-        const rows = await this.db.query.eventRequiredForms.findMany({
-          where: { eventId: target.targetId },
-          orderBy: { order: 'asc' },
-          with: { form: true },
-        });
-
-        return rows.map((row) => ({
-          form: row.form as RequirementFormEntity,
-          order: row.order,
-        }));
-      }
-      case RequiredFormTargetType.SHIFT: {
-        const rows = await this.db.query.shiftRequiredForms.findMany({
-          where: { shiftId: target.targetId },
-          orderBy: { order: 'asc' },
-          with: { form: true },
-        });
-
-        return rows.map((row) => ({
-          form: row.form as RequirementFormEntity,
-          order: row.order,
-        }));
-      }
-      case RequiredFormTargetType.SHIFT_INSTANCE: {
-        const rows = await this.db.query.shiftInstanceRequiredForms.findMany({
-          where: { shiftInstanceId: target.targetId },
-          orderBy: { order: 'asc' },
-          with: { form: true },
-        });
-
-        return rows.map((row) => ({
-          form: row.form as RequirementFormEntity,
-          order: row.order,
-        }));
-      }
-      default:
-        throw new ConflictGraphQLError(
-          `Unsupported required-form target: ${target.targetType}`,
-        );
-    }
+    return this.targetRegistry
+      .get(target.targetType)
+      .getRequiredForms(target.targetId);
   }
 
   async getRequiredFormStatuses(
@@ -164,45 +77,12 @@ export class RequiredFormService {
     });
   }
 
-  private async resolveTargetOrganizationUnitId(
+  async resolveTargetOrganizationUnitId(
     target: RequiredFormTarget,
   ): Promise<string> {
-    switch (target.targetType) {
-      case RequiredFormTargetType.ORGANIZATION_UNIT:
-        return target.targetId;
-      case RequiredFormTargetType.EVENT: {
-        const event = await this.db.query.events.findFirst({
-          where: { id: target.targetId },
-          columns: { organizationUnitId: true },
-        });
-        if (!event) throw new NotFoundGraphQLError('Event not found');
-        return event.organizationUnitId;
-      }
-      case RequiredFormTargetType.SHIFT: {
-        const shift = await this.db.query.shifts.findFirst({
-          where: { id: target.targetId },
-          columns: { organizationUnitId: true },
-        });
-        if (!shift) throw new NotFoundGraphQLError('Shift not found');
-        return shift.organizationUnitId;
-      }
-      case RequiredFormTargetType.SHIFT_INSTANCE: {
-        const instance = await this.db.query.shiftInstances.findFirst({
-          where: { id: target.targetId },
-          columns: { masterId: true },
-          with: { master: { columns: { organizationUnitId: true } } },
-        });
-        if (!instance) {
-          throw new NotFoundGraphQLError('Shift instance not found');
-        }
-        // masterId is a NOT NULL FK, so master always exists.
-        return instance.master.organizationUnitId;
-      }
-      default:
-        throw new ConflictGraphQLError(
-          `Unsupported required-form target: ${target.targetType}`,
-        );
-    }
+    return this.targetRegistry
+      .get(target.targetType)
+      .resolveOrganizationUnitId(target.targetId);
   }
 
   async requiredFormsForUser(
@@ -347,179 +227,9 @@ export class RequiredFormService {
     formIds: string[],
     userId?: string,
   ): Promise<Array<{ form: RequirementFormEntity; order: number }>> {
-    switch (target.targetType) {
-      case RequiredFormTargetType.ORGANIZATION_UNIT:
-        return this.setRequiredFormsForOrganizationUnit(
-          target.targetId,
-          formIds,
-          userId,
-        );
-      case RequiredFormTargetType.EVENT:
-        return this.setRequiredFormsForEvent(target.targetId, formIds, userId);
-      case RequiredFormTargetType.SHIFT:
-        return this.setRequiredFormsForShift(target.targetId, formIds, userId);
-      case RequiredFormTargetType.SHIFT_INSTANCE:
-        return this.setRequiredFormsForShiftInstance(
-          target.targetId,
-          formIds,
-          userId,
-        );
-      default:
-        throw new ConflictGraphQLError(
-          `Unsupported required-form target: ${target.targetType}`,
-        );
-    }
-  }
-
-  private async setRequiredFormsForOrganizationUnit(
-    organizationUnitId: string,
-    formIds: string[],
-    userId?: string,
-  ): Promise<Array<{ form: RequirementFormEntity; order: number }>> {
-    const orgUnit = await this.db.query.organizationUnits.findFirst({
-      where: { id: organizationUnitId },
-    });
-
-    if (!orgUnit) {
-      throw new NotFoundGraphQLError('Organization unit not found');
-    }
-
-    if (formIds.length > 0) {
-      const forms = await this.db.query.requirementForms.findMany({
-        where: {
-          id: { in: formIds },
-          organizationId: orgUnit.organizationId,
-        },
-      });
-
-      if (forms.length !== formIds.length) {
-        throw new ConflictGraphQLError(
-          'One or more forms do not belong to this organization',
-        );
-      }
-
-      await this.verifyFormsHaveBlocks(formIds, this.db);
-    }
-
-    await this.db.transaction(async (tx) => {
-      await tx
-        .delete(schema.organizationUnitRequiredForms)
-        .where(
-          eq(
-            schema.organizationUnitRequiredForms.organizationUnitId,
-            organizationUnitId,
-          ),
-        );
-
-      if (formIds.length > 0) {
-        await tx.insert(schema.organizationUnitRequiredForms).values(
-          formIds.map((formId, index) => ({
-            organizationUnitId,
-            formId,
-            order: index,
-          })),
-        );
-      }
-    });
-
-    this.captureRequiredFormUpdate(userId, {
-      organization_id: orgUnit.organizationId,
-      organization_unit_id: organizationUnitId,
-      target_type: RequiredFormTargetType.ORGANIZATION_UNIT.toLowerCase(),
-    });
-
-    return this.getRequiredForms({
-      targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-      targetId: organizationUnitId,
-    });
-  }
-
-  private async setRequiredFormsForEvent(
-    eventId: string,
-    formIds: string[],
-    userId?: string,
-  ): Promise<Array<{ form: RequirementFormEntity; order: number }>> {
-    const event = await this.db.query.events.findFirst({
-      where: { id: eventId, isDeleted: false },
-      with: { organizationUnit: true },
-    });
-
-    if (!event) {
-      throw new NotFoundGraphQLError('Event not found');
-    }
-
-    await this.applyEventRequiredForms(
-      eventId,
-      // organizationUnitId is a NOT NULL FK, so organizationUnit always exists.
-      (event.organizationUnit as OrganizationUnitEntity).organizationId,
-      formIds,
-      undefined,
-      userId,
-    );
-
-    return this.getRequiredForms({
-      targetType: RequiredFormTargetType.EVENT,
-      targetId: eventId,
-    });
-  }
-
-  private async setRequiredFormsForShift(
-    shiftId: string,
-    formIds: string[],
-    userId?: string,
-  ): Promise<Array<{ form: RequirementFormEntity; order: number }>> {
-    const shift = await this.db.query.shifts.findFirst({
-      where: { id: shiftId, isDeleted: false },
-      with: { organizationUnit: true },
-    });
-
-    if (!shift) {
-      throw new NotFoundGraphQLError('Shift not found');
-    }
-
-    await this.applyShiftRequiredForms(
-      shiftId,
-      // organizationUnitId is a NOT NULL FK, so organizationUnit always exists.
-      (shift.organizationUnit as OrganizationUnitEntity).organizationId,
-      formIds,
-      undefined,
-      userId,
-    );
-
-    return this.getRequiredForms({
-      targetType: RequiredFormTargetType.SHIFT,
-      targetId: shiftId,
-    });
-  }
-
-  private async setRequiredFormsForShiftInstance(
-    shiftInstanceId: string,
-    formIds: string[],
-    userId?: string,
-  ): Promise<Array<{ form: RequirementFormEntity; order: number }>> {
-    const instance = await this.db.query.shiftInstances.findFirst({
-      where: { id: shiftInstanceId, isCancelled: false },
-      with: { master: { with: { organizationUnit: true } } },
-    });
-
-    if (!instance) {
-      throw new NotFoundGraphQLError('Shift instance not found');
-    }
-
-    await this.applyShiftInstanceRequiredForms(
-      shiftInstanceId,
-      // masterId and organizationUnitId are NOT NULL FKs, so both always exist.
-      (instance.master.organizationUnit as OrganizationUnitEntity)
-        .organizationId,
-      formIds,
-      undefined,
-      userId,
-    );
-
-    return this.getRequiredForms({
-      targetType: RequiredFormTargetType.SHIFT_INSTANCE,
-      targetId: shiftInstanceId,
-    });
+    return this.targetRegistry
+      .get(target.targetType)
+      .setRequiredForms(target.targetId, formIds, userId);
   }
 
   // Shared by ShiftService.updateShiftInstance (single instance edits).
@@ -530,54 +240,21 @@ export class RequiredFormService {
     tx?: Database,
     userId?: string,
   ): Promise<void> {
-    const runner = tx ?? this.db;
-
-    if (formIds.length > 0) {
-      const forms = await runner.query.requirementForms.findMany({
-        where: { id: { in: formIds }, organizationId },
-      });
-
-      if (forms.length !== formIds.length) {
-        throw new ConflictGraphQLError(
-          'One or more forms do not belong to this organization',
-        );
-      }
-
-      await this.verifyFormsHaveBlocks(formIds, runner);
+    const strategy = this.targetRegistry.get(
+      RequiredFormTargetType.SHIFT_INSTANCE,
+    );
+    if (!strategy.applyRequiredForms) {
+      throw new ConflictGraphQLError(
+        `Unsupported required-form target: ${RequiredFormTargetType.SHIFT_INSTANCE}`,
+      );
     }
-
-    const write = async (writer: Database) => {
-      await writer
-        .delete(schema.shiftInstanceRequiredForms)
-        .where(
-          eq(
-            schema.shiftInstanceRequiredForms.shiftInstanceId,
-            shiftInstanceId,
-          ),
-        );
-
-      if (formIds.length > 0) {
-        await writer.insert(schema.shiftInstanceRequiredForms).values(
-          formIds.map((formId, index) => ({
-            shiftInstanceId,
-            formId,
-            order: index,
-          })),
-        );
-      }
-    };
-
-    if (tx) {
-      await write(tx);
-    } else {
-      await this.db.transaction((innerTx) => write(innerTx));
-    }
-
-    this.captureRequiredFormUpdate(userId, {
-      organization_id: organizationId,
-      target_type: RequiredFormTargetType.SHIFT_INSTANCE.toLowerCase(),
-      shift_instance_id: shiftInstanceId,
-    });
+    await strategy.applyRequiredForms(
+      shiftInstanceId,
+      organizationId,
+      formIds,
+      tx,
+      userId,
+    );
   }
 
   // Shared by the standalone setShiftRequiredForms mutation (no tx: opens
@@ -590,49 +267,19 @@ export class RequiredFormService {
     tx?: Database,
     userId?: string,
   ): Promise<void> {
-    const runner = tx ?? this.db;
-
-    if (formIds.length > 0) {
-      const forms = await runner.query.requirementForms.findMany({
-        where: { id: { in: formIds }, organizationId },
-      });
-
-      if (forms.length !== formIds.length) {
-        throw new ConflictGraphQLError(
-          'One or more forms do not belong to this organization',
-        );
-      }
-
-      await this.verifyFormsHaveBlocks(formIds, runner);
+    const strategy = this.targetRegistry.get(RequiredFormTargetType.SHIFT);
+    if (!strategy.applyRequiredForms) {
+      throw new ConflictGraphQLError(
+        `Unsupported required-form target: ${RequiredFormTargetType.SHIFT}`,
+      );
     }
-
-    const write = async (writer: Database) => {
-      await writer
-        .delete(schema.shiftRequiredForms)
-        .where(eq(schema.shiftRequiredForms.shiftId, shiftId));
-
-      if (formIds.length > 0) {
-        await writer.insert(schema.shiftRequiredForms).values(
-          formIds.map((formId, index) => ({
-            shiftId,
-            formId,
-            order: index,
-          })),
-        );
-      }
-    };
-
-    if (tx) {
-      await write(tx);
-    } else {
-      await this.db.transaction((innerTx) => write(innerTx));
-    }
-
-    this.captureRequiredFormUpdate(userId, {
-      organization_id: organizationId,
-      target_type: RequiredFormTargetType.SHIFT.toLowerCase(),
-      shift_id: shiftId,
-    });
+    await strategy.applyRequiredForms(
+      shiftId,
+      organizationId,
+      formIds,
+      tx,
+      userId,
+    );
   }
 
   async countRequiredFormsByShiftIds(
@@ -701,49 +348,19 @@ export class RequiredFormService {
     tx?: Database,
     userId?: string,
   ): Promise<void> {
-    const runner = tx ?? this.db;
-
-    if (formIds.length > 0) {
-      const forms = await runner.query.requirementForms.findMany({
-        where: { id: { in: formIds }, organizationId },
-      });
-
-      if (forms.length !== formIds.length) {
-        throw new ConflictGraphQLError(
-          'One or more forms do not belong to this organization',
-        );
-      }
-
-      await this.verifyFormsHaveBlocks(formIds, runner);
+    const strategy = this.targetRegistry.get(RequiredFormTargetType.EVENT);
+    if (!strategy.applyRequiredForms) {
+      throw new ConflictGraphQLError(
+        `Unsupported required-form target: ${RequiredFormTargetType.EVENT}`,
+      );
     }
-
-    const write = async (writer: Database) => {
-      await writer
-        .delete(schema.eventRequiredForms)
-        .where(eq(schema.eventRequiredForms.eventId, eventId));
-
-      if (formIds.length > 0) {
-        await writer.insert(schema.eventRequiredForms).values(
-          formIds.map((formId, index) => ({
-            eventId,
-            formId,
-            order: index,
-          })),
-        );
-      }
-    };
-
-    if (tx) {
-      await write(tx);
-    } else {
-      await this.db.transaction((innerTx) => write(innerTx));
-    }
-
-    this.captureRequiredFormUpdate(userId, {
-      organization_id: organizationId,
-      target_type: RequiredFormTargetType.EVENT.toLowerCase(),
-      event_id: eventId,
-    });
+    await strategy.applyRequiredForms(
+      eventId,
+      organizationId,
+      formIds,
+      tx,
+      userId,
+    );
   }
 
   async countRequiredFormsByShiftInstanceIds(
@@ -897,29 +514,5 @@ export class RequiredFormService {
     await runner
       .delete(schema.shiftInstanceRequiredForms)
       .where(eq(schema.shiftInstanceRequiredForms.formId, formId));
-  }
-
-  private captureRequiredFormUpdate(
-    userId: string | undefined,
-    properties: {
-      organization_id: string;
-      organization_unit_id?: string;
-      target_type: string;
-      shift_id?: string;
-      event_id?: string;
-      shift_instance_id?: string;
-    },
-  ): void {
-    if (!userId) {
-      return;
-    }
-    this.postHogService.capture({
-      event: POSTHOG_EVENT.REQUIRED_FORM_UPDATE,
-      userId,
-      properties: {
-        surface: POSTHOG_SURFACE.BACKOFFICE,
-        ...properties,
-      },
-    });
   }
 }

@@ -24,7 +24,6 @@ import type {
   SortingState,
 } from '@tanstack/react-table';
 import { Copy, ScanQrCode, Search, UserRound, X } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { debounce, parseAsStringLiteral, useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
@@ -50,8 +49,9 @@ import {
 import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
 import { matchesVolunteerQuery } from '@/domain/volunteer/volunteer-search';
+import { useQueryParamTab } from '@/hooks/use-query-param-tab';
 import { useSheetTrigger } from '@/hooks/use-sheet';
-import { Link, usePathname, useRouter } from '@/i18n/navigation';
+import { Link } from '@/i18n/navigation';
 import { copyToClipboard } from '@/lib/clipboard';
 import { CopyableEmailCell } from './copyable-email-cell';
 import { VolunteerRequiredFormsPopover } from './required-forms-popover';
@@ -60,6 +60,7 @@ import { RoleSelectCell } from './role-select-cell';
 const TAB_APPROVED = 'APPROVED';
 const TAB_PENDING = MembershipRequestStatus.Pending;
 const TAB_REJECTED = MembershipRequestStatus.Rejected;
+const TAB_VALUES = [TAB_APPROVED, TAB_PENDING, TAB_REJECTED] as const;
 
 interface Props {
   orgUId: string;
@@ -385,24 +386,20 @@ function RequestsTab({
 }
 
 export default function ManageVolunteersClient({ orgUId }: Props) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const t = useTranslations('Volunteer');
   const tMembershipStatus = useTranslations('MembershipRequest.status');
-
-  const activeTab = searchParams.get('status') ?? TAB_APPROVED;
+  const { value: activeTab, onValueChange: handleTabChange } = useQueryParamTab(
+    {
+      values: TAB_VALUES,
+      defaultValue: TAB_APPROVED,
+      param: 'status',
+    },
+  );
 
   const { data: pendingCount } = useMembershipRequestCount(
     orgUId ?? '',
     MembershipRequestStatus.Pending,
   );
-
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('status', value);
-    router.replace(`${pathname}?${params.toString()}`);
-  };
 
   const orgUnitUrl = organizationUnitUrl(orgUId);
 

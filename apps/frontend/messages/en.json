@@ -1030,9 +1030,6 @@
     },
     "rescan": "Rescan"
   },
-  "QueryParamTabs": {
-    "empty": "No items yet."
-  },
   "RequiredFormRenderer": {
     "formProgress": "Form progress",
     "noForms": "No forms are required.",

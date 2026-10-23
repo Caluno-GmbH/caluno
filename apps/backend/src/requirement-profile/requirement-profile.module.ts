@@ -32,6 +32,14 @@ import {
   RequiredFormService,
   RequirementFormService,
 } from './services';
+import {
+  EventRequiredFormTargetStrategy,
+  OrganizationUnitRequiredFormTargetStrategy,
+  RequiredFormTargetRegistry,
+  RequiredFormWriteSupport,
+  ShiftInstanceRequiredFormTargetStrategy,
+  ShiftRequiredFormTargetStrategy,
+} from './targets';
 
 @Module({
   imports: [
@@ -47,6 +55,12 @@ import {
     RequirementFormService,
     FormSubmissionService,
     RequiredFormService,
+    RequiredFormWriteSupport,
+    OrganizationUnitRequiredFormTargetStrategy,
+    EventRequiredFormTargetStrategy,
+    ShiftRequiredFormTargetStrategy,
+    ShiftInstanceRequiredFormTargetStrategy,
+    RequiredFormTargetRegistry,
     MembershipMapper,
     MembershipRequestMapper,
     OrganizationUserProfileMapper,

@@ -11,6 +11,7 @@ import { OrganizationUnitDataService } from '../src/organization/organization-un
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
+import { createRequiredFormTargetRegistry } from '../src/requirement-profile/targets';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { UserService } from '../src/user/user.service';
 import {
@@ -45,13 +46,15 @@ describe('FormSubmissionService per-org-unit submissions', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const postHogService = { capture: () => {} } as unknown as PostHogService;
-    const requiredFormService = new RequiredFormService(db, postHogService);
+    const targetRegistry = createRequiredFormTargetRegistry(db, postHogService);
+    const requiredFormService = new RequiredFormService(db, targetRegistry);
     formSubmissionService = new FormSubmissionService(
       db,
       new UserService(db, postHogService),
       requiredFormService,
       postHogService,
       new OrganizationUnitDataService(db),
+      targetRegistry,
     );
   });
 
