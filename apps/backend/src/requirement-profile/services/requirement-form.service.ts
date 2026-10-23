@@ -148,7 +148,6 @@ export class RequirementFormService {
         slug,
         name: input.name,
         description: input.description,
-        settings: this.normalizeSettings(input.settings),
         shareToken: randomUUID(),
         createdBy: userId,
         updatedBy: userId,
@@ -229,9 +228,9 @@ export class RequirementFormService {
     }
 
     const updated = await this.db.transaction(async (tx) => {
-      // Name/description stay editable after submissions; blockRefs and
-      // settings remain locked (spec: metadata-only unlock).
-      if (input.blockRefs !== undefined || input.settings !== undefined) {
+      // Name/description stay editable after submissions; blockRefs remain
+      // locked (spec: metadata-only unlock).
+      if (input.blockRefs !== undefined) {
         const hasSubmissions = await tx.query.formSubmissions.findFirst({
           where: { formId: id },
           columns: { id: true },
@@ -239,19 +238,16 @@ export class RequirementFormService {
 
         if (hasSubmissions) {
           throw new ConflictGraphQLError(
-            'Cannot edit form structure or settings because it already has submissions',
+            'Cannot edit form structure because it already has submissions',
           );
         }
       }
 
-      const { settings, blockRefs, ...rest } = input;
+      const { blockRefs, ...rest } = input;
       const [form] = await tx
         .update(schema.requirementForms)
         .set({
           ...patch(rest, { ignoreNull: ['name'] }),
-          ...(settings !== undefined && {
-            settings: this.normalizeSettings(settings),
-          }),
           updatedBy: userId,
           updatedAt: new Date(),
         })
@@ -410,39 +406,5 @@ export class RequirementFormService {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
     return base || `form-${Date.now()}`;
-  }
-
-  private normalizeSettings(
-    input:
-      | {
-          submitButtonLabel?: string | null;
-          successTitle?: string | null;
-          successMessage?: string | null;
-          allowEmbed?: boolean | null;
-        }
-      | null
-      | undefined,
-  ): {
-    submitButtonLabel?: string;
-    successTitle?: string;
-    successMessage?: string;
-    allowEmbed?: boolean;
-  } {
-    if (!input) return {};
-    return {
-      ...(input.submitButtonLabel !== null &&
-      input.submitButtonLabel !== undefined
-        ? { submitButtonLabel: input.submitButtonLabel }
-        : {}),
-      ...(input.successTitle !== null && input.successTitle !== undefined
-        ? { successTitle: input.successTitle }
-        : {}),
-      ...(input.successMessage !== null && input.successMessage !== undefined
-        ? { successMessage: input.successMessage }
-        : {}),
-      ...(input.allowEmbed !== null && input.allowEmbed !== undefined
-        ? { allowEmbed: input.allowEmbed }
-        : {}),
-    };
   }
 }

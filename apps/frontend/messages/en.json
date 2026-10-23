@@ -1034,6 +1034,8 @@
     "formProgress": "Form progress",
     "noForms": "No forms are required.",
     "step": "Form {current} of {total}",
+    "submit": "Submit form",
+    "submitting": "Submiting form...",
     "submitAll": "Submit all forms",
     "submittingAll": "Submitting all forms..."
   },
@@ -1339,6 +1341,7 @@
       "validPostalCode": "{label} must be a valid postal code"
     },
     "volunteerForm": {
+      "completeRequiredFormsHint": "Please complete the required forms",
       "alreadySubmittedMessage": "Your form has been submitted.",
       "alreadySubmittedTitle": "Form submitted",
       "back": "Back",

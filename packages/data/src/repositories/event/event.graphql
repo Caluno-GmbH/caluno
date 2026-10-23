@@ -14,11 +14,6 @@ fragment RequiredFormFields on RequirementForm {
   id
   name
   description
-  settings {
-    submitButtonLabel
-    successTitle
-    successMessage
-  }
   blockRefs {
     id
     formId
