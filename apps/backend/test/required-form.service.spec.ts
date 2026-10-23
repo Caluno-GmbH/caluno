@@ -27,7 +27,6 @@ import { OrganizationUnitDataService } from '../src/organization/organization-un
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
@@ -77,7 +76,6 @@ describe('RequiredFormService', () => {
   let requiredFormService: RequiredFormService;
   let formSubmissionService: FormSubmissionService;
   let membershipService: MembershipService;
-  let requirementFormService: RequirementFormService;
 
   closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
@@ -99,11 +97,6 @@ describe('RequiredFormService', () => {
       requiredFormService,
       { capture: () => {} } as unknown as PostHogService,
       new OrganizationUnitDataService(db),
-    );
-    requirementFormService = new RequirementFormService(
-      db,
-      requiredFormService,
-      { capture: () => {} } as unknown as PostHogService,
     );
 
     const authServiceMock = {
@@ -945,43 +938,6 @@ describe('RequiredFormService', () => {
       );
 
       expect(approved.status).toBe('ACCEPTED');
-    });
-  });
-
-  describe('RequirementFormService.delete', () => {
-    it('rejects deletion when the form is required by an org unit', async () => {
-      const { user, unit } = await setupOrg();
-      const { form } = await createRequirementForm(db, {
-        organizationId: unit.organizationId,
-        organizationUnitId: unit.id,
-        createdById: user.id,
-      });
-      await setRequiredForms(db, {
-        organizationUnitId: unit.id,
-        formIds: [form.id],
-      });
-
-      await expect(
-        requirementFormService.delete(form.id, unit.id, user.id),
-      ).rejects.toBeInstanceOf(ConflictGraphQLError);
-    });
-
-    it('rejects deletion when the form is required by a shift', async () => {
-      const { user, unit } = await setupOrg();
-      const shift = await createShift(db, { organizationUnitId: unit.id });
-      const { form } = await createRequirementForm(db, {
-        organizationId: unit.organizationId,
-        organizationUnitId: unit.id,
-        createdById: user.id,
-      });
-      await setShiftRequiredForms(db, {
-        shiftId: shift.id,
-        formIds: [form.id],
-      });
-
-      await expect(
-        requirementFormService.delete(form.id, unit.id, user.id),
-      ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
   });
 

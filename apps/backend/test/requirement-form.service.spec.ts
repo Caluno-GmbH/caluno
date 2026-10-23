@@ -12,7 +12,7 @@ import {
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
-import { createUser } from './factories';
+import { createShift, createUser, setShiftRequiredForms } from './factories';
 import {
   createOrganizationWithType,
   createUnit,
@@ -324,6 +324,12 @@ describe('RequirementFormService block org scoping', () => {
       formIds: [form.id],
     });
 
+    const shift = await createShift(db, { organizationUnitId: unit.id });
+    await setShiftRequiredForms(db, {
+      shiftId: shift.id,
+      formIds: [form.id],
+    });
+
     const impact = await requirementFormService.getDeleteImpact(
       form.id,
       unit.id,
@@ -334,6 +340,11 @@ describe('RequirementFormService block org scoping', () => {
         targetType: 'ORGANIZATION_UNIT',
         targetId: unit.id,
         name: unit.name,
+      }),
+      expect.objectContaining({
+        targetType: 'SHIFT',
+        targetId: shift.id,
+        name: shift.title,
       }),
     ]);
 
@@ -347,6 +358,11 @@ describe('RequirementFormService block org scoping', () => {
     ).toEqual([]);
     expect(
       await db.query.organizationUnitRequiredForms.findMany({
+        where: { formId: form.id },
+      }),
+    ).toEqual([]);
+    expect(
+      await db.query.shiftRequiredForms.findMany({
         where: { formId: form.id },
       }),
     ).toEqual([]);
