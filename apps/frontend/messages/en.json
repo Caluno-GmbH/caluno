@@ -1355,6 +1355,7 @@
       "noFields": "This block has no fields yet.",
       "paymentDataVisibilityHint": "Your bank details are visible only to the people who handle reimbursements.",
       "pickDate": "Pick a date",
+      "prefilledFromPreviousSubmissions": "Form was prefilled with values from previous submissions",
       "profileChangeWarning": "If you change this information, it will also be changed in your profile.",
       "selectOption": "Select an option",
       "sharedWithOrg": "Shared with {orgName}.",

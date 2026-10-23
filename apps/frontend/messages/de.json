@@ -1355,6 +1355,7 @@
       "noFields": "Dieser Block hat noch keine Felder.",
       "paymentDataVisibilityHint": "Deine Bankdaten sind nur für die Personen einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
+      "prefilledFromPreviousSubmissions": "Das Formular wurde mit Werten aus früheren Einreichungen vorausgefüllt",
       "profileChangeWarning": "Wenn du diese Information änderst, wird sie auch in deinem Profil geändert.",
       "selectOption": "Option auswählen",
       "sharedWithOrg": "Wird mit {orgName} geteilt.",

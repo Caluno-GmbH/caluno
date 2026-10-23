@@ -68,6 +68,13 @@ export function VolunteerForm({
   const isLastStep = step === blocks.length - 1;
   const isFirstStep = step === 0;
 
+  const currentStepHasStoredPrefill = useMemo(() => {
+    return (currentBlock?.fields ?? []).some((field) => {
+      if (field.systemKey) return false;
+      return !!storedFieldValues[field.id];
+    });
+  }, [currentBlock, storedFieldValues]);
+
   const formSchema = useMemo(() => {
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const block of blocks) {
@@ -200,6 +207,12 @@ export function VolunteerForm({
         <div className="rounded-lg border bg-blue-50 p-4 text-sm text-blue-800">
           {t('membershipRequestNotice', { orgName: formOrg })}
         </div>
+      )}
+
+      {currentStepHasStoredPrefill && (
+        <p className="text-sm text-muted-foreground">
+          {t('prefilledFromPreviousSubmissions')}
+        </p>
       )}
 
       <div className="rounded-lg border bg-card p-6">
