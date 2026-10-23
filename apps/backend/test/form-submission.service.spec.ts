@@ -349,7 +349,13 @@ describe('FormSubmissionService per-org-unit submissions', () => {
       });
       expect(values).toHaveLength(1);
       expect(values[0]?.value).toBe('second');
-      expect(values[0]?.organizationUserProfileId).toBeTruthy();
+
+      const profileValues =
+        await db.query.organizationUserProfileFieldValues.findMany({
+          where: { fieldId: field.id },
+        });
+      expect(profileValues).toHaveLength(1);
+      expect(profileValues[0]?.value).toBe('second');
     });
   });
 

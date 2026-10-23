@@ -92,6 +92,11 @@ export class RequirementFormRepository extends BaseRepository {
     return data.deleteRequirementForm;
   }
 
+  async getFormDeleteImpact(id: string) {
+    const data = await this.sdk.GetRequirementFormDeleteImpact({ id });
+    return data.requirementFormDeleteImpact;
+  }
+
   async regenerateShareToken(id: string) {
     const data = await this.sdk.RegenerateFormShareToken({ id });
     return data.regenerateFormShareToken;

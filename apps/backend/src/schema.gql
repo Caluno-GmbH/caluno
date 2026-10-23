@@ -1014,6 +1014,7 @@ type Query {
   reimbursementTypes: [ReimbursementType!]!
   requirementForm(id: String!): RequirementForm
   requirementFormByShareToken(token: String!): RequirementForm
+  requirementFormDeleteImpact(id: String!): RequirementFormDeleteImpact!
   requirementForms(limit: Int! = 10, offset: Int! = 0, organizationId: String!): RequirementFormPaginatedResponse!
   role(id: String!): Role!
   roles: [Role!]!
@@ -1130,6 +1131,17 @@ type RequirementFormBlockRef {
   formId: String!
   id: ID!
   updatedAt: DateTime!
+}
+
+type RequirementFormDeleteAttachment {
+  name: String!
+  targetId: String!
+  targetType: RequiredFormTargetType!
+}
+
+type RequirementFormDeleteImpact {
+  attachments: [RequirementFormDeleteAttachment!]!
+  submissionCount: Int!
 }
 
 type RequirementFormPaginatedResponse {

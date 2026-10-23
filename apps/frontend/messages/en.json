@@ -1149,6 +1149,26 @@
       "unsavedChangesTitle": "Unsaved changes",
       "viewBlock": "View"
     },
+    "deleteDialog": {
+      "acknowledge": "I understand that all answers for this form will be permanently deleted.",
+      "answersDeleted": "All submission answers for this form will be permanently deleted.",
+      "attachmentItem": "{type}: {name}",
+      "attachmentsDetach": "The form will be detached and deleted. The shifts, events, and units themselves are not deleted.",
+      "attachmentsIntro": "This form is currently required by:",
+      "deleting": "Deleting...",
+      "intro": "This cannot be undone.",
+      "loadError": "Could not load delete details. Try again.",
+      "loading": "Loading details…",
+      "noAttachments": "This form is not required by any unit, event, or shift.",
+      "submissionCount": "{count, plural, =0 {No submissions yet.} one {# submission will be deleted.} other {# submissions will be deleted.}}",
+      "targetType": {
+        "EVENT": "Event",
+        "ORGANIZATION_UNIT": "Organization unit",
+        "SHIFT": "Shift",
+        "SHIFT_INSTANCE": "Shift instance"
+      },
+      "title": "Delete “{name}”?"
+    },
     "card": {
       "content": "Content",
       "delete": "Delete",

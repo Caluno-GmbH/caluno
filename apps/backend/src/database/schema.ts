@@ -33,6 +33,7 @@ export * from '../requirement-profile/schemas/form-block-field.schema';
 export * from '../requirement-profile/schemas/form-submission.schema';
 export * from '../requirement-profile/schemas/form-submission-value.schema';
 export * from '../requirement-profile/schemas/organization-user-profile.schema';
+export * from '../requirement-profile/schemas/organization-user-profile-field-value.schema';
 export * from '../requirement-profile/schemas/requirement-form.schema';
 export * from '../requirement-profile/schemas/requirement-form-block-ref.schema';
 export * from '../shared/observability/schemas/posthog-distinct-secret.schema';

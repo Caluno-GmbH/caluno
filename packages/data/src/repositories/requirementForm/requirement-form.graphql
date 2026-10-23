@@ -483,6 +483,17 @@ mutation DeleteRequirementForm($id: String!) {
   }
 }
 
+query GetRequirementFormDeleteImpact($id: String!) {
+  requirementFormDeleteImpact(id: $id) {
+    submissionCount
+    attachments {
+      targetType
+      targetId
+      name
+    }
+  }
+}
+
 mutation RegenerateFormShareToken($id: String!) {
   regenerateFormShareToken(id: $id) {
     id

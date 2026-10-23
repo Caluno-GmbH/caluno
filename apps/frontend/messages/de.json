@@ -1149,6 +1149,26 @@
       "unsavedChangesTitle": "Ungespeicherte Änderungen",
       "viewBlock": "Ansehen"
     },
+    "deleteDialog": {
+      "acknowledge": "Ich verstehe, dass alle Antworten zu diesem Formular dauerhaft gelöscht werden.",
+      "answersDeleted": "Alle Einsendungen und Antworten zu diesem Formular werden dauerhaft gelöscht.",
+      "attachmentItem": "{type}: {name}",
+      "attachmentsDetach": "Das Formular wird entkoppelt und gelöscht. Die Einsätze, Events und Organisationseinheiten selbst werden nicht gelöscht.",
+      "attachmentsIntro": "Dieses Formular ist derzeit erforderlich für:",
+      "deleting": "Wird gelöscht...",
+      "intro": "Dies kann nicht rückgängig gemacht werden.",
+      "loadError": "Löschdetails konnten nicht geladen werden. Bitte erneut versuchen.",
+      "loading": "Details werden geladen…",
+      "noAttachments": "Dieses Formular ist für keine Einsätze, Events oder Organisationseinheiten erforderlich.",
+      "submissionCount": "{count, plural, =0 {Noch keine Einsendungen.} one {# Einsendung wird gelöscht.} other {# Einsendungen werden gelöscht.}}",
+      "targetType": {
+        "EVENT": "Event",
+        "ORGANIZATION_UNIT": "Organisationseinheit",
+        "SHIFT": "Einsatz",
+        "SHIFT_INSTANCE": "Einsatztermin"
+      },
+      "title": "„{name}“ löschen?"
+    },
     "card": {
       "content": "Inhalt",
       "delete": "Löschen",
@@ -1497,7 +1517,7 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
-      "checkInForAnotherShift": "Stattdessen für eine andere Schicht einchecken",
+      "checkInForAnotherShift": "Stattdessen für einen anderen Einsatz einchecken",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutLoading": "{name} wird ausgecheckt…",
