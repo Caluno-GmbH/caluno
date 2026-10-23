@@ -18,6 +18,9 @@ interface FormBlockSectionProps {
   readOnly?: boolean;
   control?: Control<Record<string, string>>;
   errors?: FieldErrors<Record<string, string>>;
+  /** Enables profile-prefilled card UX for systemKey fields. */
+  formOrg?: string;
+  onCancelField?: (fieldId: string) => void;
 }
 
 export function FormBlockSection({
@@ -25,6 +28,8 @@ export function FormBlockSection({
   readOnly = false,
   control,
   errors,
+  formOrg,
+  onCancelField,
 }: FormBlockSectionProps) {
   const tForm = useTranslations('RequirementForm.volunteerForm');
 
@@ -77,6 +82,10 @@ export function FormBlockSection({
                   value={ctrlField.value ?? ''}
                   onChange={ctrlField.onChange}
                   error={errors?.[field.id]?.message}
+                  formOrg={formOrg}
+                  onCancel={
+                    onCancelField ? () => onCancelField(field.id) : undefined
+                  }
                 />
               )}
             />

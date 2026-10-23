@@ -16,7 +16,6 @@ import {
   FieldRenderer,
   useValidationMessages,
 } from './field-renderer';
-import { ProfileField } from './profile-field';
 
 export type PublicForm = NonNullable<
   GetRequirementFormByShareTokenQuery['requirementFormByShareToken']
@@ -232,43 +231,24 @@ export function VolunteerForm({
           {(currentBlock.fields?.length ?? 0) === 0 && (
             <p className="text-muted-foreground text-sm">{t('noFields')}</p>
           )}
-          {currentBlock.fields?.map((field) => {
-            const fromProfile = !!field.systemKey;
-
-            return (
-              <Controller
-                key={field.id}
-                name={field.id}
-                control={control}
-                defaultValue=""
-                render={({ field: ctrlField }) => {
-                  const value = ctrlField.value ?? '';
-
-                  if (fromProfile) {
-                    return (
-                      <ProfileField
-                        field={field}
-                        value={value}
-                        onChange={ctrlField.onChange}
-                        error={errors[field.id]?.message}
-                        formOrg={formOrg}
-                        onCancel={() => clearErrors(field.id)}
-                      />
-                    );
-                  }
-
-                  return (
-                    <FieldRenderer
-                      field={field}
-                      value={value}
-                      onChange={ctrlField.onChange}
-                      error={errors[field.id]?.message}
-                    />
-                  );
-                }}
-              />
-            );
-          })}
+          {currentBlock.fields?.map((field) => (
+            <Controller
+              key={field.id}
+              name={field.id}
+              control={control}
+              defaultValue=""
+              render={({ field: ctrlField }) => (
+                <FieldRenderer
+                  field={field}
+                  value={ctrlField.value ?? ''}
+                  onChange={ctrlField.onChange}
+                  error={errors[field.id]?.message}
+                  formOrg={formOrg}
+                  onCancel={() => clearErrors(field.id)}
+                />
+              )}
+            />
+          ))}
         </div>
 
         <div className="mt-6 flex items-center justify-between">

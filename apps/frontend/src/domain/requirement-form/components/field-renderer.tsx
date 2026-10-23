@@ -35,6 +35,7 @@ import {
 import { BirthDateInput } from './birth-date-input';
 import { INCOMPLETE_BIRTH_DATE_VALUE } from './birth-date-segments';
 import { DocumentPreviewSheet } from './document-preview-sheet';
+import { ProfileField } from './profile-field';
 
 const PHONE_RE = /^\+?[\d\s\-().]{7,20}$/;
 const NAME_RE = /^[\p{L}\p{M}'\- ]+$/u;
@@ -331,6 +332,8 @@ export function FieldRenderer({
   error,
   readOnly = false,
   hideLabel = false,
+  formOrg,
+  onCancel,
 }: {
   field: RenderableField;
   value: string;
@@ -341,11 +344,28 @@ export function FieldRenderer({
    *  can render its own title above whatever container wraps the control
    *  (used by profile-prefilled edit mode). */
   hideLabel?: boolean;
+  /** When set with a systemKey field (and not readOnly/hideLabel), renders
+   *  the profile-prefilled card UX instead of a bare control. */
+  formOrg?: string;
+  onCancel?: () => void;
 }) {
   const t = useTranslations('RequirementForm.volunteerForm');
   const tGender = useTranslations('RequirementForm.genderOptions');
   const { formatDate } = useFormatting();
   const description = hideLabel ? null : fieldDescription(field);
+
+  if (field.systemKey && formOrg && !readOnly && !hideLabel) {
+    return (
+      <ProfileField
+        field={field}
+        value={value}
+        onChange={onChange}
+        error={error}
+        formOrg={formOrg}
+        onCancel={onCancel}
+      />
+    );
+  }
 
   if (field.type === 'STATIC_TEXT') {
     const text = field.label.trim();

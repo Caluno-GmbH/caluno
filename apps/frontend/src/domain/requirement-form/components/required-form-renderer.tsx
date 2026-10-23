@@ -54,6 +54,8 @@ interface RequiredFormRendererProps {
   profileData: Record<string, string>;
   /** Prefill custom fields from OrganizationUserProfile-anchored FormSubmissionValues (keyed by fieldId). */
   storedFieldValues?: Record<string, string>;
+  /** Org display name for profile-prefilled field cards; falls back to form name. */
+  orgName?: string;
   initialSubmittedFormIds: Set<string>;
   onComplete: () => Promise<void>;
 }
@@ -97,6 +99,7 @@ export function RequiredFormRenderer({
   forms,
   profileData,
   storedFieldValues = {},
+  orgName,
   initialSubmittedFormIds,
   onComplete,
 }: RequiredFormRendererProps) {
@@ -206,6 +209,7 @@ export function RequiredFormRenderer({
     control,
     trigger,
     getValues,
+    clearErrors,
     formState: { errors },
   } = useForm<Record<string, string>>({
     resolver: zodResolver(formSchema) as Resolver<Record<string, string>>,
@@ -396,6 +400,8 @@ export function RequiredFormRenderer({
             form={currentForm.form}
             control={control}
             errors={errors}
+            formOrg={orgName ?? currentForm.form.name}
+            onCancelField={(fieldId) => clearErrors(fieldId)}
           />
         </div>
 
@@ -519,10 +525,14 @@ function FormBlocks({
   form,
   control,
   errors,
+  formOrg,
+  onCancelField,
 }: {
   form: RequiredForm;
   control: Control<Record<string, string>>;
   errors: FieldErrors<Record<string, string>>;
+  formOrg: string;
+  onCancelField: (fieldId: string) => void;
 }) {
   const tForm = useTranslations('RequirementForm.volunteerForm');
   const blocks = useMemo(() => getFormBlocks(form), [form]);
@@ -539,6 +549,8 @@ function FormBlocks({
           block={block}
           control={control}
           errors={errors}
+          formOrg={formOrg}
+          onCancelField={onCancelField}
         />
       ))}
     </div>
