@@ -421,16 +421,6 @@ export function RequiredFormRenderer({
           />
         </div>
 
-        {/* Buttons keep shrink-0 + nowrap so labels stay full-width while
-            side-by-side. Each has a half-width basis and may grow; when a
-            label needs more than half the row, flex-wrap stacks them and
-            grow fills the full width. max-w-full caps a stacked button at
-            the container; only then does the submit label truncate.
-
-            The basis subtracts a whole gap rather than half: at exactly 50%
-            minus half a gap the pair totals 100%, and on an odd-pixel-wide
-            container each button rounds up and the row wraps although it fits.
-            The extra gap is slack against that rounding. */}
         <div className="flex flex-wrap gap-2 border-t pt-4">
           <Button
             variant="outline"
