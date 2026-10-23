@@ -330,7 +330,6 @@ export function FieldRenderer({
   value,
   onChange,
   error,
-  readOnly = false,
   hideLabel = false,
   formOrg,
   onCancel,
@@ -339,12 +338,11 @@ export function FieldRenderer({
   value: string;
   onChange: (value: string) => void;
   error?: string;
-  readOnly?: boolean;
   /** When true, FieldLabel + FieldDescription are skipped so the caller
    *  can render its own title above whatever container wraps the control
    *  (used by profile-prefilled edit mode). */
   hideLabel?: boolean;
-  /** When set with a systemKey field (and not readOnly/hideLabel), renders
+  /** When set with a systemKey field (and not hideLabel), renders
    *  the profile-prefilled card UX instead of a bare control. */
   formOrg?: string;
   onCancel?: () => void;
@@ -354,7 +352,7 @@ export function FieldRenderer({
   const { formatDate } = useFormatting();
   const description = hideLabel ? null : fieldDescription(field);
 
-  if (field.systemKey && formOrg && !readOnly && !hideLabel) {
+  if (field.systemKey && formOrg && !hideLabel) {
     return (
       <ProfileField
         field={field}
@@ -414,7 +412,6 @@ export function FieldRenderer({
           <Checkbox
             id={field.id}
             checked={value === 'true'}
-            disabled={readOnly}
             aria-describedby={descriptionId}
             onCheckedChange={(checked) =>
               onChange(checked === true ? 'true' : 'false')
@@ -445,7 +442,6 @@ export function FieldRenderer({
         <div className="flex items-start gap-2">
           <Checkbox
             checked={value === 'true'}
-            disabled={readOnly}
             aria-describedby={descriptionId}
             onCheckedChange={(checked) =>
               onChange(checked === true ? 'true' : 'false')
@@ -474,11 +470,7 @@ export function FieldRenderer({
             {field.required && <span className="text-destructive">*</span>}
           </FieldLabel>
         )}
-        <Select
-          value={value || undefined}
-          onValueChange={onChange}
-          disabled={readOnly}
-        >
+        <Select value={value || undefined} onValueChange={onChange}>
           <SelectTrigger className="w-full" aria-describedby={descriptionId}>
             <SelectValue placeholder={t('selectOption')} />
           </SelectTrigger>
@@ -519,7 +511,6 @@ export function FieldRenderer({
               <Checkbox
                 id={`${field.id}-${opt}`}
                 checked={selected.includes(opt)}
-                disabled={readOnly}
                 onCheckedChange={(checked) => {
                   const next = checked
                     ? [...selected, opt]
@@ -557,7 +548,6 @@ export function FieldRenderer({
             id={field.id}
             value={value}
             onChange={onChange}
-            disabled={readOnly}
             aria-invalid={!!error}
             aria-labelledby={hideLabel ? undefined : labelId}
             aria-describedby={descriptionId}
@@ -568,7 +558,6 @@ export function FieldRenderer({
               <Button
                 type="button"
                 variant="outline"
-                disabled={readOnly}
                 aria-describedby={descriptionId}
                 className="w-full justify-start text-left font-normal"
               >
@@ -612,7 +601,6 @@ export function FieldRenderer({
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder || ''}
           rows={4}
-          disabled={readOnly}
           aria-invalid={!!error}
           aria-describedby={descriptionId}
         />
@@ -652,7 +640,6 @@ export function FieldRenderer({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={field.placeholder || ''}
-        disabled={readOnly}
         aria-invalid={!!error}
         aria-describedby={descriptionId}
       />

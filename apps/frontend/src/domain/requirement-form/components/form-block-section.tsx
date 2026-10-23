@@ -15,17 +15,15 @@ export type FormBlockLike = {
 
 interface FormBlockSectionProps {
   block: FormBlockLike;
-  readOnly?: boolean;
-  control?: Control<Record<string, string>>;
+  control: Control<Record<string, string>>;
+  formOrg: string;
   errors?: FieldErrors<Record<string, string>>;
   /** Enables profile-prefilled card UX for systemKey fields. */
-  formOrg?: string;
   onCancelField?: (fieldId: string) => void;
 }
 
 export function FormBlockSection({
   block,
-  readOnly = false,
   control,
   errors,
   formOrg,
@@ -57,18 +55,6 @@ export function FormBlockSection({
       <div className="space-y-4">
         {fields.map((field) => {
           const renderable = field as RenderableField;
-
-          if (readOnly || !control) {
-            return (
-              <FieldRenderer
-                key={field.id}
-                field={renderable}
-                value=""
-                onChange={() => {}}
-                readOnly
-              />
-            );
-          }
 
           return (
             <Controller
