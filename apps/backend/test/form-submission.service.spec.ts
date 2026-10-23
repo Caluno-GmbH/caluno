@@ -451,6 +451,78 @@ describe('FormSubmissionService per-org-unit submissions', () => {
       expect(stored).toEqual([{ fieldId: field.id, value: 'stored' }]);
     });
 
+    it('does not store empty values on OrganizationUserProfileFieldValues', async () => {
+      const { admin, organization, rootUnit, unitA, volunteer } =
+        await setupOrgWithUnits();
+      const { form, field } = await createRequirementForm(db, {
+        organizationId: organization.id,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        required: false,
+      });
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [form.id],
+      });
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [{ fieldId: field.id, blockId: field.blockId, value: '' }],
+        },
+        volunteer.id,
+      );
+
+      expect(
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        ),
+      ).toEqual([]);
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [
+            { fieldId: field.id, blockId: field.blockId, value: 'kept' },
+          ],
+        },
+        volunteer.id,
+      );
+      expect(
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        ),
+      ).toEqual([{ fieldId: field.id, value: 'kept' }]);
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [{ fieldId: field.id, blockId: field.blockId, value: '   ' }],
+        },
+        volunteer.id,
+      );
+      expect(
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        ),
+      ).toEqual([]);
+    });
+
     it('merges profile values across forms: shared field updates, unshared fields kept', async () => {
       const { admin, organization, rootUnit, unitA, volunteer } =
         await setupOrgWithUnits();
