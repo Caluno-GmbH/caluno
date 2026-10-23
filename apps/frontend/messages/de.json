@@ -1034,6 +1034,8 @@
     "formProgress": "Formularfortschritt",
     "noForms": "Es sind keine Formulare erforderlich.",
     "step": "Formular {current} von {total}",
+    "submit": "Formular absenden",
+    "submitting": "Formular wird abgesendet...",
     "submitAll": "Alle Formulare absenden",
     "submittingAll": "Alle Formulare werden abgesendet..."
   },
@@ -1339,6 +1341,7 @@
       "validPostalCode": "{label} muss eine gültige Postleitzahl sein"
     },
     "volunteerForm": {
+      "completeRequiredFormsHint": "Bitte fülle die erforderlichen Formulare aus",
       "alreadySubmittedMessage": "Dein Formular ist abgesendet.",
       "alreadySubmittedTitle": "Formular abgesendet",
       "back": "Zurück",

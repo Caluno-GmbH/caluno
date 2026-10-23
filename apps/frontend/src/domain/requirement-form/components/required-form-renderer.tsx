@@ -27,7 +27,10 @@ import {
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { submitRequiredForm } from '@/domain/requirement-form/actions';
+import {
+  submitForm,
+  submitRequiredForm,
+} from '@/domain/requirement-form/actions';
 import {
   buildFieldSchema,
   type RenderableField,
@@ -56,6 +59,12 @@ interface RequiredFormRendererProps {
   storedFieldValues?: Record<string, string>;
   /** Org display name for profile-prefilled field cards; falls back to form name. */
   orgName?: string;
+  /**
+   * When set, each form is submitted via the public share-token mutation
+   * (`submitForm`) instead of `submitRequiredForm`. `targetId` is the
+   * organization unit id in that path.
+   */
+  shareToken?: string;
   initialSubmittedFormIds: Set<string>;
   onComplete: () => Promise<void>;
 }
@@ -101,10 +110,12 @@ export function RequiredFormRenderer({
   storedFieldValues = {},
   orgName,
   initialSubmittedFormIds,
+  shareToken,
   onComplete,
 }: RequiredFormRendererProps) {
   const t = useTranslations('RequiredFormRenderer');
   const tCommon = useTranslations('Common');
+  const tForm = useTranslations('RequirementForm.volunteerForm');
   const tActions = useTranslations('RequirementForm.actions');
 
   const [submittedFormIds, setSubmittedFormIds] = useState<Set<string>>(
@@ -301,12 +312,18 @@ export function RequiredFormRenderer({
           }
         }
 
-        const result = await submitRequiredForm({
-          targetType: item.targetType ?? targetType,
-          targetId: item.targetId ?? targetId,
-          formId: item.form.id,
-          values: submissionValues,
-        });
+        const result = shareToken
+          ? await submitForm({
+              token: shareToken,
+              organizationUnitId: item.targetId ?? targetId,
+              values: submissionValues,
+            })
+          : await submitRequiredForm({
+              targetType: item.targetType ?? targetType,
+              targetId: item.targetId ?? targetId,
+              formId: item.form.id,
+              values: submissionValues,
+            });
 
         if (result?.serverError) {
           toast.error(result.serverError);
@@ -436,7 +453,14 @@ export function RequiredFormRenderer({
                 <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
               )}
               <span className="min-w-0 truncate">
-                {isSubmitting ? t('submittingAll') : t('submitAll')}
+                {isSubmitting
+                  ? displayForms.length === 1
+                    ? t('submitting')
+                    : t('submittingAll')
+                  : displayForms.length === 1
+                    ? currentForm.form.settings?.submitButtonLabel ||
+                      t('submit')
+                    : t('submitAll')}
               </span>
             </Button>
           ) : (
