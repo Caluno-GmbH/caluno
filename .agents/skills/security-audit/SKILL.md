@@ -17,7 +17,7 @@ Read `packages/security/AGENTS.md` first: it defines the tenant model and invari
 
 ## Steps
 1. `bun run --cwd packages/security audit`. If it exits 3, list the skipped tools in the report; do not treat them as clean.
-2. Read `packages/security/out/surface.json` and `out/tenant-queries.json` (id-only queries on tenant tables; a finding is closed by `TenantScopeService` or a `// tenant-scope-ok: <reason>` comment, see AGENTS.md). Order the work: `UNVERIFIED-TENANT-CONTEXT`, then `ANONYMOUS`, then `AUTHENTICATED-NO-PERMISSION`, then the rest.
+2. Read `packages/security/out/surface.json` and `out/tenant-queries.json` (id-only queries on tenant tables; start with findings whose `reachedFrom` is non-empty and `readsTenantContext` is false; closing rules and limits in AGENTS.md). Order the work: `UNVERIFIED-TENANT-CONTEXT`, then `ANONYMOUS`, then `AUTHENTICATED-NO-PERMISSION`, then the rest.
 3. Review in batches of one module (`apps/backend/src/<domain>`). For each endpoint follow the call into the service and check:
    - Invariant A: a handler using the client tenant has `@Permissions`.
    - Invariant B: every Drizzle `db.query.<table>.findFirst/findMany` and `update/delete/insert/select` on a table with `organizationUnitId`/`organizationId` is constrained to the caller's unit. Loading by `id` alone and comparing later counts only if the comparison happens before any data is returned or written.

@@ -17,7 +17,24 @@ const ORGANIZATION_OF: Record<string, string> = {
   foreign: 'org-b',
 };
 
+const MEMBERSHIP_UNITS_OF: Record<string, string[]> = {
+  'volunteer-in-leaf': ['sibling', 'leaf'],
+  'volunteer-in-sibling': ['sibling'],
+  'volunteer-without-membership': [],
+};
+
 function createService() {
+  const db = {
+    query: {
+      memberships: {
+        findMany: jest.fn(async ({ where }: { where: { userId: string } }) =>
+          (MEMBERSHIP_UNITS_OF[where.userId] ?? []).map(
+            (organizationUnitId) => ({ organizationUnitId }),
+          ),
+        ),
+      },
+    },
+  };
   const unitData = {
     listInclusiveAncestorUnitIds: jest.fn(async (unitId: string) => {
       const chain: string[] = [];
@@ -34,7 +51,7 @@ function createService() {
       return organizationId;
     }),
   };
-  return new TenantScopeService(unitData as never);
+  return new TenantScopeService(db as never, unitData as never);
 }
 
 describe('TenantScopeService.assertResourceInScope', () => {
@@ -81,6 +98,50 @@ describe('TenantScopeService.assertResourceInScope', () => {
     await expect(
       createService().assertResourceInScope('branch', 'sibling', 'No role'),
     ).rejects.toThrow('No role');
+  });
+});
+
+describe('TenantScopeService.assertAnyUnitInScope', () => {
+  it('accepts when one of the units is in scope', async () => {
+    await expect(
+      createService().assertAnyUnitInScope('branch', ['sibling', null, 'leaf']),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects when none of the units is in scope', async () => {
+    await expect(
+      createService().assertAnyUnitInScope('branch', ['sibling', 'root']),
+    ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+  });
+
+  it('rejects an empty list', async () => {
+    await expect(
+      createService().assertAnyUnitInScope('root', [], 'Volunteer not found'),
+    ).rejects.toThrow('Volunteer not found');
+  });
+});
+
+describe('TenantScopeService.assertUserInScope', () => {
+  it('accepts a user with a membership below the header unit', async () => {
+    await expect(
+      createService().assertUserInScope('branch', 'volunteer-in-leaf'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects a user whose memberships are all outside the header unit', async () => {
+    await expect(
+      createService().assertUserInScope('branch', 'volunteer-in-sibling'),
+    ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+  });
+
+  it('rejects a user without memberships, with the given message', async () => {
+    await expect(
+      createService().assertUserInScope(
+        'root',
+        'volunteer-without-membership',
+        'Volunteer not found',
+      ),
+    ).rejects.toThrow('Volunteer not found');
   });
 });
 

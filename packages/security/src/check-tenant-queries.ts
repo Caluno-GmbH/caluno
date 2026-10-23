@@ -11,12 +11,15 @@ import * as path from 'node:path';
 import { Project } from 'ts-morph';
 import { config, isExcluded, repoRoot } from './config.js';
 import {
+  analyzeTenantQueries,
   collectTenantTables,
-  findUnscopedTenantQueries,
+  type TenantQueryOptions,
 } from './tenant-queries.js';
 
 const relpath = (abs: string) =>
   path.relative(repoRoot, abs).split(path.sep).join('/');
+
+const opts: TenantQueryOptions = { ...config.tenantQueries, relpath };
 
 const project = new Project({
   skipAddingFilesFromTsConfig: true,
@@ -25,36 +28,32 @@ const project = new Project({
 const schemaFiles = config.tenantQueries.schemaGlobs.flatMap((glob) =>
   project.addSourceFilesAtPaths(path.join(repoRoot, glob)),
 );
-const tenantTables = collectTenantTables(schemaFiles, config.tenantFields);
+const tenantTables = collectTenantTables(schemaFiles, opts);
 
 for (const glob of config.include) {
   project.addSourceFilesAtPaths(path.join(repoRoot, glob));
 }
 
-const opts = { ...config.tenantQueries, tenantFields: config.tenantFields };
-const findings = project
+const files = project
   .getSourceFiles()
   .filter((sf) => !isExcluded(sf.getFilePath()))
-  .filter((sf) => !schemaFiles.includes(sf))
-  .flatMap((sf) =>
-    findUnscopedTenantQueries(
-      sf,
-      tenantTables,
-      opts,
-      config.tenantContext.contextProperty,
-      relpath,
-    ),
-  )
-  .sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+  .filter((sf) => !schemaFiles.includes(sf));
+const findings = analyzeTenantQueries(files, tenantTables, opts).sort(
+  (a, b) => a.file.localeCompare(b.file) || a.line - b.line,
+);
 
-const inTenantResolver = findings.filter((f) => f.inTenantResolver).length;
 const byTable: Record<string, number> = {};
 for (const f of findings) byTable[f.table] = (byTable[f.table] ?? 0) + 1;
+const reachedFromHandler = findings.filter(
+  (f) => f.reachedFrom.length > 0,
+).length;
+const readsTenantContext = findings.filter((f) => f.readsTenantContext).length;
 
 const summary = {
   tenantTables: tenantTables.size,
   findings: findings.length,
-  inTenantResolver,
+  reachedFromHandler,
+  readsTenantContext,
   byTable: Object.fromEntries(
     Object.entries(byTable).sort(([, a], [, b]) => b - a),
   ),
@@ -70,6 +69,7 @@ process.stdout.write(
 );
 process.stderr.write(
   `[tenant-queries] ${summary.findings} id-only queries on ${summary.tenantTables} tenant tables ` +
-    `(${inTenantResolver} directly in resolvers that read the client tenant). ` +
-    `Fix with TenantScopeService, or exempt with "// ${config.tenantQueries.exemptionMarker} <reason>".\n`,
+    `(${reachedFromHandler} run directly by a resolver/controller handler, ` +
+    `${readsTenantContext} of them by one that reads the client tenant). ` +
+    `Fix with TenantScopeService, or exempt with "// ${opts.exemptionMarker} <reason>".\n`,
 );

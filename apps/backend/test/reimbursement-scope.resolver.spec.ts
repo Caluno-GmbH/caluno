@@ -106,25 +106,24 @@ describe('reimbursement-rate resolver unit scoping', () => {
       db,
       organizationUnitService,
     );
+    const tenantScopeService = moduleRef.get(TenantScopeService);
     queryResolver = new ReimbursementQueryResolver(
       reimbursementRateService,
       new ReimbursementTypeMapper(),
-      organizationUnitService,
       accountingOrgAccessService,
       new UserMapper(),
-      membershipService,
       userService,
-      new TenantScopeService(organizationUnitDataService),
+      tenantScopeService,
     );
     mutationResolver = new ReimbursementMutationResolver(
       reimbursementRateService,
       new ReimbursementRateMapper(),
       accountingOrgAccessService,
       organizationUnitService,
-      membershipService,
       new UserMapper(),
       new ReimbursementTypeMapper(),
       userService,
+      tenantScopeService,
     );
   });
 

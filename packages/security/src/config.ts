@@ -27,7 +27,8 @@ export const config = {
     '.e2e-spec.ts',
     '/node_modules/',
     '/dist/',
-    '/database/fixtures',
+    '/database/fixture',
+    '/database/demo-',
     '/database/seed',
     '/migrations/',
     '/drizzle/',
@@ -61,14 +62,37 @@ export const config = {
     headerParamDecorators: ['Headers', 'Req', 'Request'],
   },
 
-  /** Columns that make a table tenant-scoped (invariant B check). */
-  tenantFields: ['organizationUnitId', 'organizationId'],
-
+  /** Invariant B rule (tenant-queries.ts). */
   tenantQueries: {
+    /** Columns that make a table tenant-scoped. */
+    tenantFields: ['organizationUnitId', 'organizationId'],
     /** Where the Drizzle table definitions live. */
     schemaGlobs: ['apps/backend/src/**/*.schema.ts'],
-    /** Calls that prove the loaded resource belongs to the caller's tenant. */
-    scopeHelpers: ['assertResourceInScope', 'assertOrganizationInScope'],
+    /** Tenant tables without a tenant column: the tenant root itself. */
+    tenantRootTables: ['organizations'],
+    /** Drizzle table factories: `snakeCase.table(...)`, `pgTable(...)`. */
+    tableFactories: ['table', 'pgTable'],
+    /** Relational query methods: `db.query.<table>.<method>(...)`. */
+    queryMethods: ['findFirst', 'findMany'],
+    /** Relation names that scope a relational `where` like a tenant column. */
+    tenantRelations: ['organizationUnit', 'organization'],
+    /**
+     * Type-name suffix of a loaded DB row (`ShiftEntity` = `$inferSelect`). An
+     * id read from such a parameter follows a stored reference, not client input.
+     */
+    rowTypeSuffix: 'Entity',
+    /** Relational `where` operators that can carry a tenant condition. */
+    whereOperators: ['AND', 'OR', 'RAW'],
+    /**
+     * Calls that prove the loaded resource belongs to the caller's tenant.
+     * Must be passed the variable holding the query result (or its fields).
+     */
+    scopeHelpers: [
+      'assertResourceInScope',
+      'assertAnyUnitInScope',
+      'assertUserInScope',
+      'assertOrganizationInScope',
+    ],
     /**
      * Comment that exempts the next statement, with a mandatory reason:
      * `// tenant-scope-ok: <why this cannot cross tenants>`
