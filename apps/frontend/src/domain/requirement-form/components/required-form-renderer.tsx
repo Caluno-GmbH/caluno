@@ -44,10 +44,6 @@ export type RequiredFormItem = {
   targetId?: string;
 };
 
-type FormBlockWithEffectiveRequired = RequiredFormBlock & {
-  effectiveRequired: boolean;
-};
-
 interface RequiredFormRendererProps {
   title: string;
   description: string;
@@ -56,28 +52,29 @@ interface RequiredFormRendererProps {
   targetId: string;
   forms: RequiredFormItem[];
   profileData: Record<string, string>;
+  /** Prefill custom fields from OrganizationUserProfile-anchored FormSubmissionValues (keyed by fieldId). */
+  storedFieldValues?: Record<string, string>;
   initialSubmittedFormIds: Set<string>;
   onComplete: () => Promise<void>;
 }
 
-function getFormBlocks(form: RequiredForm): FormBlockWithEffectiveRequired[] {
+function getFormBlocks(form: RequiredForm): RequiredFormBlock[] {
   return (
     form.blockRefs
       ?.slice()
       .sort((a, b) => (a.fieldOrder ?? 0) - (b.fieldOrder ?? 0))
-      .map((ref): FormBlockWithEffectiveRequired | null => {
+      .map((ref): RequiredFormBlock | null => {
         const block = ref.block;
         if (!block) return null;
         const { fields, ...rest } = block;
         return {
           ...rest,
-          effectiveRequired: ref.required ?? block.required ?? false,
           fields: fields
             ? fields.slice().sort((a, b) => a.fieldOrder - b.fieldOrder)
             : fields,
         };
       })
-      .filter((b): b is FormBlockWithEffectiveRequired => !!b) ?? []
+      .filter((b): b is RequiredFormBlock => !!b) ?? []
   );
 }
 
@@ -99,6 +96,7 @@ export function RequiredFormRenderer({
   targetId,
   forms,
   profileData,
+  storedFieldValues = {},
   initialSubmittedFormIds,
   onComplete,
 }: RequiredFormRendererProps) {
@@ -150,7 +148,7 @@ export function RequiredFormRenderer({
   const validationMessages = useValidationMessages();
 
   const formBlocksById = useMemo(() => {
-    const map = new Map<string, FormBlockWithEffectiveRequired[]>();
+    const map = new Map<string, RequiredFormBlock[]>();
     for (const item of pendingForms) {
       map.set(item.form.id, getFormBlocks(item.form));
     }
@@ -168,7 +166,7 @@ export function RequiredFormRenderer({
       for (const block of blocks) {
         for (const field of block.fields ?? []) {
           const existing = mergedFields.get(field.id);
-          const isRequired = block.effectiveRequired && field.required;
+          const isRequired = field.required;
           if (existing) {
             existing.isRequired = existing.isRequired || isRequired;
           } else {
@@ -195,12 +193,14 @@ export function RequiredFormRenderer({
         for (const field of block.fields ?? []) {
           if (field.systemKey && profileData[field.systemKey]) {
             vals[field.id] = profileData[field.systemKey] ?? '';
+          } else if (storedFieldValues[field.id]) {
+            vals[field.id] = storedFieldValues[field.id] ?? '';
           }
         }
       }
     }
     return vals;
-  }, [formBlocksById, profileData]);
+  }, [formBlocksById, profileData, storedFieldValues]);
 
   const {
     control,

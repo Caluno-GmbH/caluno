@@ -17,6 +17,17 @@ export function buildSubmittedFormIds(
   );
 }
 
+/** Map OrganizationUserProfile-anchored form values to fieldId → string for prefills. */
+export function buildStoredFieldValues(
+  rows: Array<{ fieldId: string; value: string }> | null | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const row of rows ?? []) {
+    out[row.fieldId] = row.value;
+  }
+  return out;
+}
+
 export type RequiredFormSource = {
   targetType: RequiredFormTargetType;
   targetId: string;

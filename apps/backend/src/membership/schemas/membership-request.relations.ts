@@ -17,9 +17,5 @@ export const membershipRequestRelations = defineRelationsPart(schema, (r) => ({
       from: r.membershipRequests.reviewedById,
       to: r.users.id,
     }),
-    requirementProfileSubmissions: r.many.requirementProfileSubmissions({
-      from: r.membershipRequests.id,
-      to: r.requirementProfileSubmissions.membershipRequestId,
-    }),
   },
 }));

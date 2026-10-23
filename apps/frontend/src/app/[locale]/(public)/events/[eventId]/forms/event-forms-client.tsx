@@ -16,6 +16,7 @@ interface EventFormsClientProps {
   eventTitle: string;
   requiredForms: RequiredFormItem[];
   profileData: Record<string, string>;
+  storedFieldValues?: Record<string, string>;
   initialSubmittedFormIds: Set<string>;
   redirectTo?: string;
 }
@@ -25,6 +26,7 @@ export function EventFormsClient({
   eventTitle,
   requiredForms,
   profileData,
+  storedFieldValues,
   initialSubmittedFormIds,
   redirectTo,
 }: EventFormsClientProps) {
@@ -65,6 +67,7 @@ export function EventFormsClient({
       targetId={eventId}
       forms={requiredForms}
       profileData={profileData}
+      storedFieldValues={storedFieldValues}
       initialSubmittedFormIds={initialSubmittedFormIds}
       onComplete={handleComplete}
     />

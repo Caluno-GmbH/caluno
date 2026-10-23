@@ -81,44 +81,31 @@ skinparam linetype ortho
 ' }
 
 package "Compliance & Qualifications" {
-    class RequirementProfile {
+    class RequirementForm {
         name
         description
     }
 
-    class RequirementBlock {
-        name
+    class FormBlock {
+        title
         description
     }
 
-    class Requirement {
-        type {CHECK, DATE, DOCUMENT, TEXT}
-        name
+    class FormBlockField {
+        type
+        label
         description
-        mandatory
+        required
     }
 
-    class RequirementProfileSubmission {
-        status {DRAFT, SUBMITTED, APPROVED, REJECTED}
+    class FormSubmission {
         submittedAt
-        reviewedAt
     }
 
-    class RequirementBlockFulfillment {
-    }
-
-    class RequirementFulfillment {
-        type {CHECK, DATE, DOCUMENT, TEXT}
-        value: JSON
-        status {DRAFT, SUBMITTED, APPROVED, REJECTED}
-        submittedAt
-        reviewedAt
+    class FormSubmissionValue {
+        value
     }
     ' note left: Anchored to OrganizationUserProfile\nfor reuse across OrgUnits.
-    class RequirementFulfillmentUpload extends RequirementFulfillment {}
-    class RequirementFulfillmentCheck extends RequirementFulfillment {}
-    class RequirementFulfillmentDate extends RequirementFulfillment {}
-    class RequirementFulfillmentText extends RequirementFulfillment {}
 }
 
 package "Operations" {
@@ -206,24 +193,19 @@ Organization "1" -right- "*" Role : "defines >"
 OrgUnit "1" -- "*" MembershipRequest : "receives >"
 MembershipRequest "*" -- "1" User : "submitted by >"
 
-' --- Requirement Profiles ---
-Organization "1" -- "*" RequirementProfile : "defines >"
-Organization "1" -- "*" RequirementBlock : "defines >"
-RequirementProfile "*" -left- "*" RequirementBlock : "groups >"
-RequirementBlock "*" -left- "*" Requirement : "contains >"
+' --- Requirement Forms ---
+Organization "1" -- "*" RequirementForm : "defines >"
+Organization "1" -- "*" FormBlock : "defines >"
+RequirementForm "*" -left- "*" FormBlock : "groups >"
+FormBlock "1" -left- "*" FormBlockField : "contains >"
 
-' --- Submissions & Fulfillments ---
-Membership "0..1" -- "*" RequirementProfileSubmission
-MembershipRequest "0..1" -- "*" RequirementProfileSubmission
-RequirementProfileSubmission "*" -- "0..1" OrganizationUserProfile : "stored for reuse <"
-RequirementProfileSubmission "*" -up- "1" RequirementProfile : "fulfills >"
-RequirementProfileSubmission "*" -left- "*" RequirementBlockFulfillment : "contains >"
-RequirementBlockFulfillment "*" -up- "1" RequirementBlock : "fulfills >"
-RequirementBlockFulfillment "*" -left- "*" RequirementFulfillment : "contains >"
-RequirementFulfillment "*" -up- "1" Requirement : "satisfies >"
-RequirementFulfillment "*" -- "0..1" OrganizationUserProfile : "stored for reuse <"
-RequirementFulfillmentUpload "*" -- "0..1" Document : "backed by >"
-User "1" -- "*" Document : "owns >"
+' --- Submissions ---
+User "1" -- "*" FormSubmission
+OrgUnit "1" -- "*" FormSubmission : "receives >"
+FormSubmission "*" -up- "1" RequirementForm : "fulfills >"
+FormSubmissionValue "*" -left- "1" FormSubmission
+FormSubmissionValue "*" -up- "1" FormBlockField : "satisfies >"
+FormSubmissionValue "*" -- "0..1" OrganizationUserProfile : "store last submission for each FormBlockField <"
 
 ' --- Shifts ---
 OrgUnit "1" -- "*" Shift : "manages >"

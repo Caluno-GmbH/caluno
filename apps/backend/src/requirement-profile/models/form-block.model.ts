@@ -19,9 +19,6 @@ export class FormBlock {
   @Field(() => String, { nullable: true })
   icon?: string | null;
 
-  @Field(() => Boolean)
-  required!: boolean;
-
   @Field(() => String)
   createdBy!: string;
 

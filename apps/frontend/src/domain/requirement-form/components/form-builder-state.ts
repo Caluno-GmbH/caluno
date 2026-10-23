@@ -1,4 +1,4 @@
-import type { RequirementForm } from '@repo/data';
+import type { FormBlock, RequirementForm } from '@repo/data';
 
 export type BuilderBlockRef = NonNullable<RequirementForm['blockRefs']>[number];
 
@@ -12,6 +12,7 @@ export function canSave(
 export function appendBlockRef(
   refs: readonly BuilderBlockRef[],
   blockId: string,
+  block: FormBlock,
   formId: string,
 ): BuilderBlockRef[] {
   if (refs.some((r) => r.blockId === blockId)) return [...refs];
@@ -21,8 +22,8 @@ export function appendBlockRef(
       id: `temp-${crypto.randomUUID()}`,
       formId,
       blockId,
+      block,
       fieldOrder: refs.length,
-      required: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },

@@ -7,7 +7,4 @@ export class FormBlockRefInput {
 
   @Field(() => Number, { nullable: true })
   order?: number | null;
-
-  @Field(() => Boolean, { nullable: true })
-  required?: boolean | null;
 }

@@ -1026,9 +1026,6 @@
     },
     "rescan": "Rescan"
   },
-  "QueryParamTabs": {
-    "empty": "No items yet."
-  },
   "RequiredFormRenderer": {
     "formProgress": "Form progress",
     "noForms": "No forms are required.",
@@ -1096,7 +1093,7 @@
       "saveBlock": "Save block",
       "saveChanges": "Save changes",
       "saving": "Saving...",
-      "systemField": "System field",
+      "profileField": "Profile field",
       "titlePlaceholder": "e.g. Personal information",
       "typeLabel": "Type",
       "typePlaceholder": "Select type"
@@ -1144,6 +1141,26 @@
       "unsavedChangesStay": "Keep editing",
       "unsavedChangesTitle": "Unsaved changes",
       "viewBlock": "View"
+    },
+    "deleteDialog": {
+      "acknowledge": "I understand that all answers for this form will be permanently deleted.",
+      "answersDeleted": "All submission answers for this form will be permanently deleted.",
+      "attachmentItem": "{type}: {name}",
+      "attachmentsDetach": "The form will be detached and deleted. The shifts, events, and units themselves are not deleted.",
+      "attachmentsIntro": "This form is currently required by:",
+      "deleting": "Deleting...",
+      "intro": "This cannot be undone.",
+      "loadError": "Could not load delete details. Try again.",
+      "loading": "Loading details…",
+      "noAttachments": "This form is not required by any unit, event, or shift.",
+      "submissionCount": "{count, plural, =0 {No submissions yet.} one {# submission will be deleted.} other {# submissions will be deleted.}}",
+      "targetType": {
+        "EVENT": "Event",
+        "ORGANIZATION_UNIT": "Organization unit",
+        "SHIFT": "Shift",
+        "SHIFT_INSTANCE": "Shift instance"
+      },
+      "title": "Delete “{name}”?"
     },
     "card": {
       "content": "Content",
@@ -1322,7 +1339,9 @@
       "alreadySubmittedTitle": "Form submitted",
       "back": "Back",
       "birthDateFormat": "DD/MM/YYYY",
+      "cancelEditAria": "Discard edit",
       "checkboxYes": "Yes",
+      "confirmEditAria": "Confirm change",
       "documentAcknowledgement": "I acknowledge and accept",
       "documentOpenInNewTab": "Open in new tab",
       "failedToSubmit": "We couldn't submit the form. Please try again.",
@@ -1332,7 +1351,10 @@
       "noFields": "This block has no fields yet.",
       "paymentDataVisibilityHint": "Your bank details are visible only to the people who handle reimbursements.",
       "pickDate": "Pick a date",
+      "prefilledFromPreviousSubmissions": "Form was prefilled with values from previous submissions",
+      "profileChangeWarning": "If you change this information, it will also be changed in your profile.",
       "selectOption": "Select an option",
+      "sharedWithOrg": "Shared with {orgName}.",
       "step": "Step {current} of {total}",
       "submit": "Submit",
       "submitting": "Submitting...",
@@ -1905,8 +1927,10 @@
       "clear": "Remove",
       "dropHint": "Drag and drop a file here, or click to browse",
       "failed": "The upload didn't work. Please try again.",
+      "documentHint": "PDF, JPEG, PNG, WebP, or GIF, up to 10 MB",
       "imageHint": "Recommended: JPEG or PNG, up to 2 MB",
       "invalidFileType": "This file type is not allowed. Use JPEG, PNG, or HEIC.",
+      "invalidFileTypeDocument": "This file type is not allowed. Use PDF, JPEG, PNG, WebP, or GIF.",
       "label": "Upload file",
       "previewAlt": "Uploaded file preview",
       "replace": "Replace",

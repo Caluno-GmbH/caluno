@@ -439,6 +439,7 @@ describe('checkInVolunteerRequiredForms query', () => {
     const submission = await createFormSubmission(db, {
       formId: form.id,
       userId: volunteer.id,
+      organizationUnitId: unitId,
     });
 
     const submitted = await graphqlRequestRequiringData<{

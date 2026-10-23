@@ -79,9 +79,7 @@ export async function resolveOrgFromId(
   orgUId: string,
 ): Promise<OrgUnitContextData> {
   const organizations = await getMyAdministrableOrgUnits();
-  const org =
-    organizations.find((item) => item.id === orgUId) ??
-    organizations.find((item) => item.organizationId === orgUId);
+  const org = organizations.find((item) => item.id === orgUId);
   if (!org) {
     return notFound();
   }

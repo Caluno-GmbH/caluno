@@ -11,7 +11,7 @@ import {
   paragraph,
   renderEmail,
   strong,
-  volunteerProfileUrl,
+  volunteerDocumentsUrl,
 } from './shared';
 
 export interface DocumentDeclinedByOrgTemplateData {
@@ -33,7 +33,7 @@ export async function documentDeclinedByOrgTemplate(
   const organizationName = escapeHtml(data.organizationName);
   const documentName = escapeHtml(data.documentName);
   const reason = formatMultilineHtml(data.reason);
-  const documentsUrl = volunteerProfileUrl();
+  const documentsUrl = volunteerDocumentsUrl();
   const brandName = emailTheme.brandName;
 
   const body = card(`

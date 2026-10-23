@@ -79,14 +79,12 @@ query GetOrganizationUnit($id: String!) {
           formId
           blockId
           fieldOrder
-          required
           block {
             id
             organizationId
             title
             description
             icon
-            required
             isEditable
             fields {
               id

@@ -7,9 +7,11 @@ import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
 import { ForbiddenGraphQLError } from '../src/graphql/errors';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
+import { createRequiredFormTargetRegistry } from '../src/requirement-profile/targets';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { UserService } from '../src/user/user.service';
 import {
@@ -30,7 +32,7 @@ import {
   ensureTestDatabase,
 } from './helpers/ensure-test-database';
 
-describe('FormSubmissionService org-unit shares', () => {
+describe('FormSubmissionService per-org-unit submissions', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let formSubmissionService: FormSubmissionService;
@@ -44,12 +46,15 @@ describe('FormSubmissionService org-unit shares', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const postHogService = { capture: () => {} } as unknown as PostHogService;
-    const requiredFormService = new RequiredFormService(db, postHogService);
+    const targetRegistry = createRequiredFormTargetRegistry(db, postHogService);
+    const requiredFormService = new RequiredFormService(db, targetRegistry);
     formSubmissionService = new FormSubmissionService(
       db,
       new UserService(db, postHogService),
       requiredFormService,
       postHogService,
+      new OrganizationUnitDataService(db),
+      targetRegistry,
     );
   });
 
@@ -80,20 +85,9 @@ describe('FormSubmissionService org-unit shares', () => {
     return { admin, organization, rootUnit, unitA, unitB, volunteer };
   };
 
-  const sharesFor = (submissionId: string, organizationUnitId?: string) =>
-    organizationUnitId
-      ? db.query.formSubmissionShares.findMany({
-          where: { submissionId, organizationUnitId },
-        })
-      : db.query.formSubmissionShares.findMany({
-          where: { submissionId },
-        });
-
   describe('findByUserAndOrgUnit', () => {
-    it('returns a submission shared with the unit', async () => {
+    it('returns a submission for that unit', async () => {
       const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
-      // Form owned by the root unit, not required anywhere — visibility
-      // comes from the share row alone.
       const { form } = await createRequirementForm(db, {
         organizationId: rootUnit.organizationId,
         organizationUnitId: rootUnit.id,
@@ -102,9 +96,6 @@ describe('FormSubmissionService org-unit shares', () => {
       const submission = await createFormSubmission(db, {
         formId: form.id,
         userId: volunteer.id,
-      });
-      await db.insert(schema.formSubmissionShares).values({
-        submissionId: submission.id,
         organizationUnitId: unitA.id,
       });
 
@@ -124,12 +115,9 @@ describe('FormSubmissionService org-unit shares', () => {
         organizationUnitId: rootUnit.id,
         createdById: admin.id,
       });
-      const submission = await createFormSubmission(db, {
+      await createFormSubmission(db, {
         formId: form.id,
         userId: volunteer.id,
-      });
-      await db.insert(schema.formSubmissionShares).values({
-        submissionId: submission.id,
         organizationUnitId: unitA.id,
       });
 
@@ -155,6 +143,7 @@ describe('FormSubmissionService org-unit shares', () => {
       await createFormSubmission(db, {
         formId: form.id,
         userId: volunteer.id,
+        organizationUnitId: rootUnit.id,
       });
 
       const [forOwner, forRequirer] = await Promise.all([
@@ -162,7 +151,7 @@ describe('FormSubmissionService org-unit shares', () => {
         formSubmissionService.findByUserAndOrgUnit(volunteer.id, unitA.id),
       ]);
 
-      expect(forOwner).toEqual([]);
+      expect(forOwner).toHaveLength(1);
       expect(forRequirer).toEqual([]);
     });
   });
@@ -191,8 +180,7 @@ describe('FormSubmissionService org-unit shares', () => {
       );
 
       expect(submission.formId).toBe(form.id);
-      expect(await sharesFor(submission.id, unitA.id)).toHaveLength(1);
-      // The owning unit only sees it once shared — not by ownership alone.
+      expect(submission.organizationUnitId).toBe(unitA.id);
       expect(
         await formSubmissionService.findByUserAndOrgUnit(
           volunteer.id,
@@ -223,7 +211,7 @@ describe('FormSubmissionService org-unit shares', () => {
         volunteer.id,
       );
 
-      expect(await sharesFor(submission.id, unitA.id)).toHaveLength(1);
+      expect(submission.organizationUnitId).toBe(unitA.id);
       expect(
         await formSubmissionService.findByUserAndOrgUnit(
           volunteer.id,
@@ -262,7 +250,7 @@ describe('FormSubmissionService org-unit shares', () => {
         volunteer.id,
       );
 
-      expect(await sharesFor(submission.id, unitA.id)).toHaveLength(1);
+      expect(submission.organizationUnitId).toBe(unitA.id);
       expect(
         await formSubmissionService.findByUserAndOrgUnit(
           volunteer.id,
@@ -272,8 +260,8 @@ describe('FormSubmissionService org-unit shares', () => {
     });
   });
 
-  describe('share-on-ask', () => {
-    it('returns the existing submission and shares it with the asking unit', async () => {
+  describe('per-unit submissions (never auto-share)', () => {
+    it('creates a separate submission when another unit asks for the same form', async () => {
       const { admin, rootUnit, unitA, unitB, volunteer } =
         await setupOrgWithUnits();
       const { form } = await createRequirementForm(db, {
@@ -295,7 +283,6 @@ describe('FormSubmissionService org-unit shares', () => {
         volunteer.id,
       );
 
-      // Unit B asks for the same form later.
       await setRequiredForms(db, {
         organizationUnitId: unitB.id,
         formIds: [form.id],
@@ -309,125 +296,74 @@ describe('FormSubmissionService org-unit shares', () => {
         { values: [] },
         volunteer.id,
       );
-      // Asking again never throws and never duplicates the submission.
-      const third = await formSubmissionService.submitRequiredForm(
+
+      expect(second.id).not.toBe(first.id);
+      expect(first.organizationUnitId).toBe(unitA.id);
+      expect(second.organizationUnitId).toBe(unitB.id);
+      const rows = await db.query.formSubmissions.findMany({
+        where: { userId: volunteer.id, formId: form.id },
+      });
+      expect(rows).toHaveLength(2);
+    });
+
+    it('overwrites the existing submission for the same unit on re-submit', async () => {
+      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
+      const { form, field } = await createRequirementForm(db, {
+        organizationId: rootUnit.organizationId,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        required: false,
+      });
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [form.id],
+      });
+
+      const first = await formSubmissionService.submitRequiredForm(
         {
           targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-          targetId: unitB.id,
+          targetId: unitA.id,
         },
         form.id,
-        { values: [] },
+        {
+          values: [
+            { fieldId: field.id, blockId: field.blockId, value: 'first' },
+          ],
+        },
+        volunteer.id,
+      );
+      const second = await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [
+            { fieldId: field.id, blockId: field.blockId, value: 'second' },
+          ],
+        },
         volunteer.id,
       );
 
       expect(second.id).toBe(first.id);
-      expect(third.id).toBe(first.id);
-      const rows = await db.query.formSubmissions.findMany({
-        where: { userId: volunteer.id, formId: form.id },
+      const values = await db.query.formSubmissionValues.findMany({
+        where: { submissionId: first.id },
       });
-      expect(rows).toHaveLength(1);
-      expect(await sharesFor(first.id, unitA.id)).toHaveLength(1);
-      expect(await sharesFor(first.id, unitB.id)).toHaveLength(1);
-      // Both units can see the single shared submission.
-      expect(
-        await formSubmissionService.findByUserAndOrgUnit(
-          volunteer.id,
-          unitA.id,
-        ),
-      ).toHaveLength(1);
-      expect(
-        await formSubmissionService.findByUserAndOrgUnit(
-          volunteer.id,
-          unitB.id,
-        ),
-      ).toHaveLength(1);
-    });
-  });
+      expect(values).toHaveLength(1);
+      expect(values[0]?.value).toBe('second');
 
-  describe('shareSubmissionsWithOrgUnit', () => {
-    it('shares existing submissions for a target’s required forms with its unit', async () => {
-      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
-      const { form } = await createRequirementForm(db, {
-        organizationId: rootUnit.organizationId,
-        organizationUnitId: rootUnit.id,
-        createdById: admin.id,
-      });
-      const event = await createEvent(db, {
-        organizationUnitId: unitA.id,
-      });
-      await setEventRequiredForms(db, {
-        eventId: event.id,
-        formIds: [form.id],
-      });
-      const submission = await createFormSubmission(db, {
-        formId: form.id,
-        userId: volunteer.id,
-      });
-
-      await formSubmissionService.shareSubmissionsWithOrgUnit(volunteer.id, {
-        targetType: RequiredFormTargetType.EVENT,
-        targetId: event.id,
-      });
-
-      expect(await sharesFor(submission.id, unitA.id)).toHaveLength(1);
-      expect(
-        await formSubmissionService.findByUserAndOrgUnit(
-          volunteer.id,
-          unitA.id,
-        ),
-      ).toHaveLength(1);
-    });
-
-    it('shares for org-unit targets too', async () => {
-      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
-      const { form } = await createRequirementForm(db, {
-        organizationId: rootUnit.organizationId,
-        organizationUnitId: rootUnit.id,
-        createdById: admin.id,
-      });
-      await setRequiredForms(db, {
-        organizationUnitId: unitA.id,
-        formIds: [form.id],
-      });
-      const submission = await createFormSubmission(db, {
-        formId: form.id,
-        userId: volunteer.id,
-      });
-
-      await formSubmissionService.shareSubmissionsWithOrgUnit(volunteer.id, {
-        targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-        targetId: unitA.id,
-      });
-
-      expect(await sharesFor(submission.id, unitA.id)).toHaveLength(1);
-    });
-
-    it('does nothing when the user has no submissions', async () => {
-      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
-      const { form } = await createRequirementForm(db, {
-        organizationId: rootUnit.organizationId,
-        organizationUnitId: rootUnit.id,
-        createdById: admin.id,
-      });
-      await setRequiredForms(db, {
-        organizationUnitId: unitA.id,
-        formIds: [form.id],
-      });
-
-      await formSubmissionService.shareSubmissionsWithOrgUnit(volunteer.id, {
-        targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-        targetId: unitA.id,
-      });
-
-      const shares = await db.query.formSubmissionShares.findMany({
-        where: { organizationUnitId: unitA.id },
-      });
-      expect(shares).toEqual([]);
+      const profileValues =
+        await db.query.organizationUserProfileFieldValues.findMany({
+          where: { fieldId: field.id },
+        });
+      expect(profileValues).toHaveLength(1);
+      expect(profileValues[0]?.value).toBe('second');
     });
   });
 
   describe('submit by share token', () => {
-    it('shares the submission with the unit from the link', async () => {
+    it('stores the submission for the unit from the link', async () => {
       const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
       const { form } = await createRequirementForm(db, {
         organizationId: rootUnit.organizationId,
@@ -442,8 +378,13 @@ describe('FormSubmissionService org-unit shares', () => {
         unitA.id,
       );
 
-      expect(await sharesFor(submission.id, unitA.id)).toHaveLength(1);
-      expect(await sharesFor(submission.id, rootUnit.id)).toHaveLength(0);
+      expect(submission.organizationUnitId).toBe(unitA.id);
+      expect(
+        await formSubmissionService.findByUserAndOrgUnit(
+          volunteer.id,
+          rootUnit.id,
+        ),
+      ).toEqual([]);
     });
 
     it('rejects a link unit outside the form’s organization', async () => {
@@ -474,6 +415,211 @@ describe('FormSubmissionService org-unit shares', () => {
     });
   });
 
+  describe('profile-anchored values', () => {
+    it('prefills from OrganizationUserProfile-linked values by fieldId', async () => {
+      const { admin, organization, rootUnit, unitA, unitB, volunteer } =
+        await setupOrgWithUnits();
+      const { form, field } = await createRequirementForm(db, {
+        organizationId: organization.id,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        required: false,
+      });
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [form.id],
+      });
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [
+            { fieldId: field.id, blockId: field.blockId, value: 'stored' },
+          ],
+        },
+        volunteer.id,
+      );
+
+      const stored =
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitB.id,
+        );
+      expect(stored).toEqual([{ fieldId: field.id, value: 'stored' }]);
+    });
+
+    it('does not store empty values on OrganizationUserProfileFieldValues', async () => {
+      const { admin, organization, rootUnit, unitA, volunteer } =
+        await setupOrgWithUnits();
+      const { form, field } = await createRequirementForm(db, {
+        organizationId: organization.id,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        required: false,
+      });
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [form.id],
+      });
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [{ fieldId: field.id, blockId: field.blockId, value: '' }],
+        },
+        volunteer.id,
+      );
+
+      expect(
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        ),
+      ).toEqual([]);
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [
+            { fieldId: field.id, blockId: field.blockId, value: 'kept' },
+          ],
+        },
+        volunteer.id,
+      );
+      expect(
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        ),
+      ).toEqual([{ fieldId: field.id, value: 'kept' }]);
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        form.id,
+        {
+          values: [{ fieldId: field.id, blockId: field.blockId, value: '   ' }],
+        },
+        volunteer.id,
+      );
+      expect(
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        ),
+      ).toEqual([]);
+    });
+
+    it('merges profile values across forms: shared field updates, unshared fields kept', async () => {
+      const { admin, organization, rootUnit, unitA, volunteer } =
+        await setupOrgWithUnits();
+
+      // FormA: fields A and B on one block
+      const {
+        form: formA,
+        block: blockAB,
+        field: fieldA,
+      } = await createRequirementForm(db, {
+        organizationId: organization.id,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        name: `FormA ${crypto.randomUUID()}`,
+        required: false,
+      });
+      const [fieldB] = await db
+        .insert(schema.formBlockFields)
+        .values({
+          blockId: blockAB.id,
+          type: 'text',
+          label: 'Field B',
+          required: false,
+          fieldOrder: 1,
+        })
+        .returning();
+      if (!fieldB) throw new Error('Failed to create field B');
+
+      // FormB: field C on its own block; also includes FormA's block so field A is shared
+      const {
+        form: formB,
+        block: blockC,
+        field: fieldC,
+      } = await createRequirementForm(db, {
+        organizationId: organization.id,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+        name: `FormB ${crypto.randomUUID()}`,
+        required: false,
+      });
+      await db.insert(schema.requirementFormBlockRefs).values({
+        formId: formB.id,
+        blockId: blockAB.id,
+        fieldOrder: 1,
+      });
+
+      await setRequiredForms(db, {
+        organizationUnitId: unitA.id,
+        formIds: [formA.id, formB.id],
+      });
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        formA.id,
+        {
+          values: [
+            { fieldId: fieldA.id, blockId: blockAB.id, value: 'A1' },
+            { fieldId: fieldB.id, blockId: blockAB.id, value: 'B1' },
+          ],
+        },
+        volunteer.id,
+      );
+
+      await formSubmissionService.submitRequiredForm(
+        {
+          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+          targetId: unitA.id,
+        },
+        formB.id,
+        {
+          values: [
+            { fieldId: fieldA.id, blockId: blockAB.id, value: 'A2' },
+            { fieldId: fieldC.id, blockId: blockC.id, value: 'C2' },
+          ],
+        },
+        volunteer.id,
+      );
+
+      const stored =
+        await formSubmissionService.findStoredFieldValuesForOrgUnit(
+          volunteer.id,
+          unitA.id,
+        );
+      expect(stored).toHaveLength(3);
+      expect(stored).toEqual(
+        expect.arrayContaining([
+          { fieldId: fieldA.id, value: 'A2' },
+          { fieldId: fieldB.id, value: 'B1' },
+          { fieldId: fieldC.id, value: 'C2' },
+        ]),
+      );
+    });
+  });
+
   describe('gender system field', () => {
     const setupGenderForm = async (required: boolean) => {
       const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
@@ -487,8 +633,6 @@ describe('FormSubmissionService org-unit shares', () => {
         organizationUnitId: unitA.id,
         formIds: [form.id],
       });
-      // The factory block ships a generic required text field; neutralise
-      // it so only the gender field is enforced.
       await db
         .update(schema.formBlockFields)
         .set({ required: false })

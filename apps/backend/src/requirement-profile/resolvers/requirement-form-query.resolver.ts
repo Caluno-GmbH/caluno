@@ -14,6 +14,7 @@ import {
   RequirementForm,
   RequirementFormPaginatedResponse,
 } from '../models/requirement-form.model';
+import { RequirementFormDeleteImpact } from '../models/requirement-form-delete-impact.model';
 import { RequiredFormService, RequirementFormService } from '../services';
 
 @Resolver(() => RequirementForm)
@@ -24,6 +25,18 @@ export class RequirementFormQueryResolver {
     private readonly requirementFormMapper: RequirementFormMapper,
     private readonly orgAccessService: OrgAccessService,
   ) {}
+
+  @Permissions(PERMISSIONS.REQUIREMENT_PROFILE_EDIT)
+  @Query(() => RequirementFormDeleteImpact)
+  async requirementFormDeleteImpact(
+    @Args('id') id: string,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<RequirementFormDeleteImpact> {
+    return this.requirementFormService.getDeleteImpact(
+      id,
+      context.organizationUnitId,
+    );
+  }
 
   @Permissions(PERMISSIONS.REQUIREMENT_PROFILE_VIEW)
   @Query(() => RequirementForm, { nullable: true })

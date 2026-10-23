@@ -9,13 +9,8 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
-import { ShiftCallOutDeliveryStatus, ShiftCallOutSource } from '../enums';
+import { ShiftCallOutSource } from '../enums';
 import { shiftInstances } from './shift-instance.schema';
-
-export const shiftCallOutDeliveryStatusEnum = pgEnum(
-  'shift_call_out_delivery_status',
-  enumValues(ShiftCallOutDeliveryStatus),
-);
 
 export const shiftCallOutSourceEnum = pgEnum(
   'shift_call_out_source',
@@ -35,9 +30,6 @@ export const shiftCallOutRecipients = snakeCase.table(
       .notNull(),
     sentById: text('sent_by_id')
       .references(() => users.id, { onDelete: 'restrict' })
-      .notNull(),
-    status: shiftCallOutDeliveryStatusEnum('status')
-      .$type<ShiftCallOutDeliveryStatus>()
       .notNull(),
     source: shiftCallOutSourceEnum('source')
       .$type<ShiftCallOutSource>()

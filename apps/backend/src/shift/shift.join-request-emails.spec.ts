@@ -92,7 +92,6 @@ function createShiftService(options: {
     {} as never,
     {} as never,
     {} as never,
-    {} as never,
     { capture: jest.fn() } as never,
     {} as never,
     { resolve: async () => ({ enabled: false }) } as never,
@@ -341,7 +340,6 @@ function createJoinRequestService(options: {
       notifyShiftInstanceWaitlistPromoted:
         options.notifyShiftInstanceWaitlistPromoted ?? jest.fn(),
     } as never,
-    {} as never,
     {} as never,
     {} as never,
     {} as never,

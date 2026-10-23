@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Database } from '../database/database.module';
 import { DATABASE_CONNECTION } from '../database/database-connection';
+import { NotFoundGraphQLError } from '../graphql/errors';
 import type { OrganizationEntity } from './schemas/organization.schema';
 import type { OrganizationUnitEntity } from './schemas/organization-unit.schema';
 
@@ -23,6 +24,19 @@ export class OrganizationUnitDataService {
     return this.db.query.organizationUnits.findMany({
       where: { id: { in: ids } },
     });
+  }
+
+  async findOrganizationIdByUnitId(
+    organizationUnitId: string,
+  ): Promise<string> {
+    const unit = await this.db.query.organizationUnits.findFirst({
+      where: { id: organizationUnitId },
+      columns: { organizationId: true },
+    });
+    if (!unit) {
+      throw new NotFoundGraphQLError('Organization unit not found');
+    }
+    return unit.organizationId;
   }
 
   async findOrganizationByUnitId(

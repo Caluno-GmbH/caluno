@@ -11,14 +11,8 @@ import {
   ConflictGraphQLError,
   ForbiddenGraphQLError,
 } from '../src/graphql/errors';
-import { MembershipService } from '../src/membership/membership.service';
-import { NotificationService } from '../src/notification';
-import { OrganizationMapper } from '../src/organization/mappers/organization.mapper';
-import { OrganizationService } from '../src/organization/organization.service';
-import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
-import { FileService } from '../src/storage/services/file.service';
 import { createUser } from './factories';
 import {
   addMembership,
@@ -53,16 +47,7 @@ describe('DocumentSigningService', () => {
     const authService = new AuthService(db, organizationUnitDataService, {
       capture: () => {},
     } as unknown as PostHogService);
-    const organizationService = new OrganizationService(
-      db,
-      {} as OrganizationMapper,
-      {} as MembershipService,
-      {} as OrganizationUnitService,
-      {} as NotificationService,
-      {} as FileService,
-      { capture: () => {} } as unknown as PostHogService,
-    );
-    service = new DocumentSigningService(db, authService, organizationService);
+    service = new DocumentSigningService(db, authService);
   });
 
   describe('orderSignatures', () => {
@@ -142,7 +127,7 @@ describe('DocumentSigningService', () => {
           volunteer.id,
           SigneeType.VOLUNTEER,
           null,
-          'unused-org-id',
+          'unused-unit-id',
         ),
       ).resolves.toBeUndefined();
     });
@@ -156,12 +141,12 @@ describe('DocumentSigningService', () => {
           volunteer.id,
           SigneeType.VOLUNTEER,
           null,
-          'unused-org-id',
+          'unused-unit-id',
         ),
       ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
     });
 
-    it('allows a user holding the required permission at the org root unit to sign', async () => {
+    it('allows a user holding the required permission at the current org unit to sign', async () => {
       const { organization, type } = await createOrganizationWithType(
         db,
         `Signing Org ${crypto.randomUUID()}`,
@@ -170,6 +155,55 @@ describe('DocumentSigningService', () => {
         organizationId: organization.id,
         typeId: type.id,
         name: 'root',
+      });
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'child',
+        parentId: root.id,
+      });
+      const permission = await createPermission(db, {
+        key: `accounting:manage:${crypto.randomUUID()}`,
+      });
+      const role = await createRole(db, { organizationId: organization.id });
+      await grantPermissionToRole(db, {
+        roleId: role.id,
+        permissionId: permission.id,
+      });
+      const signer = await createUser(db);
+      const membership = await addMembership(db, signer.id, child.id);
+      await assignRoleToMembership(db, {
+        membershipId: membership.id,
+        roleId: role.id,
+      });
+      const volunteer = await createUser(db);
+
+      await expect(
+        service.assertSigneeAuthorized(
+          signer.id,
+          volunteer.id,
+          SigneeType.PERMISSION_HOLDER,
+          permission.id,
+          child.id,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it('allows a user holding the required permission at an ancestor unit to sign', async () => {
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Signing Org Root ${crypto.randomUUID()}`,
+      );
+      const root = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'root',
+      });
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'child',
+        parentId: root.id,
       });
       const permission = await createPermission(db, {
         key: `accounting:manage:${crypto.randomUUID()}`,
@@ -193,7 +227,7 @@ describe('DocumentSigningService', () => {
           volunteer.id,
           SigneeType.PERMISSION_HOLDER,
           permission.id,
-          organization.id,
+          child.id,
         ),
       ).resolves.toBeUndefined();
     });
@@ -203,7 +237,7 @@ describe('DocumentSigningService', () => {
         db,
         `Signing Org No Perm ${crypto.randomUUID()}`,
       );
-      await createUnit(db, {
+      const root = await createUnit(db, {
         organizationId: organization.id,
         typeId: type.id,
         name: 'root',
@@ -220,7 +254,7 @@ describe('DocumentSigningService', () => {
           volunteer.id,
           SigneeType.PERMISSION_HOLDER,
           permission.id,
-          organization.id,
+          root.id,
         ),
       ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
     });
@@ -234,7 +268,7 @@ describe('DocumentSigningService', () => {
           volunteer.id,
           SigneeType.PERMISSION_HOLDER,
           null,
-          'org-1',
+          'unit-1',
         ),
       ).rejects.toBeInstanceOf(ConflictGraphQLError);
     });
@@ -247,7 +281,7 @@ describe('DocumentSigningService', () => {
           { order: 0, signedAt: new Date(), signeeType: SigneeType.VOLUNTEER },
         ] as never,
         'volunteer-1',
-        'org-1',
+        'unit-1',
       );
       expect(result).toBeNull();
     });
@@ -258,7 +292,7 @@ describe('DocumentSigningService', () => {
           { order: 0, signedAt: null, signeeType: SigneeType.VOLUNTEER },
         ] as never,
         'volunteer-1',
-        'org-1',
+        'unit-1',
       );
       expect(result).toEqual({
         signeeType: SigneeType.VOLUNTEER,
@@ -266,7 +300,7 @@ describe('DocumentSigningService', () => {
       });
     });
 
-    it('resolves a pending PERMISSION_HOLDER signee with eligible users', async () => {
+    it('resolves a pending PERMISSION_HOLDER signee with eligible users on the current unit', async () => {
       const { organization, type } = await createOrganizationWithType(
         db,
         `Pending Signee Org ${crypto.randomUUID()}`,
@@ -275,6 +309,12 @@ describe('DocumentSigningService', () => {
         organizationId: organization.id,
         typeId: type.id,
         name: 'root',
+      });
+      const child = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'child',
+        parentId: root.id,
       });
       const permission = await createPermission(db, {
         key: `accounting:manage:${crypto.randomUUID()}`,
@@ -285,7 +325,7 @@ describe('DocumentSigningService', () => {
         permissionId: permission.id,
       });
       const signer = await createUser(db);
-      const membership = await addMembership(db, signer.id, root.id);
+      const membership = await addMembership(db, signer.id, child.id);
       await assignRoleToMembership(db, {
         membershipId: membership.id,
         roleId: role.id,
@@ -302,7 +342,7 @@ describe('DocumentSigningService', () => {
           },
         ] as never,
         volunteer.id,
-        organization.id,
+        child.id,
       );
 
       expect(result).toEqual({

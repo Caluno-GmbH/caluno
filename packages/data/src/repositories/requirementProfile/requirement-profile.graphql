@@ -16,16 +16,3 @@ query GetAdminUserProfile($userId: String!) {
     bic
   }
 }
-
-mutation CreateRequirementProfileSubmission(
-  $input: CreateRequirementProfileSubmissionInput!
-) {
-  createRequirementProfileSubmission(input: $input) {
-    id
-    status
-    requirementProfile {
-      id
-      name
-    }
-  }
-}

@@ -16,6 +16,7 @@ import {
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { patch } from '../../shared/patch';
+import { RequiredFormTargetType } from '../enums';
 import { CreateRequirementFormInput } from '../inputs/create-requirement-form.input';
 import { UpdateRequirementFormInput } from '../inputs/update-requirement-form.input';
 import type {
@@ -164,7 +165,6 @@ export class RequirementFormService {
             formId: created.id,
             blockId: ref.blockId,
             fieldOrder: ref.order ?? index,
-            required: ref.required,
           })),
         );
       }
@@ -273,7 +273,6 @@ export class RequirementFormService {
               formId: id,
               blockId: ref.blockId,
               fieldOrder: ref.order ?? index,
-              required: ref.required,
             })),
           );
         }
@@ -307,26 +306,12 @@ export class RequirementFormService {
 
     await isUnitInOrg(this.db, organizationUnitId, existing.organizationId);
 
-    const isRequired =
-      await this.requiredFormService.isFormRequiredByAnyTarget(id);
-
-    if (isRequired) {
-      throw new ConflictGraphQLError(
-        'Cannot delete form because it is required by an organization unit',
-      );
-    }
-
     const deleted = await this.db.transaction(async (tx) => {
-      const hasSubmissions = await tx.query.formSubmissions.findFirst({
-        where: { formId: id },
-        columns: { id: true },
-      });
+      await this.requiredFormService.detachFormFromAllTargets(id, tx);
 
-      if (hasSubmissions) {
-        throw new ConflictGraphQLError(
-          'Cannot delete form because it already has submissions',
-        );
-      }
+      await tx
+        .delete(schema.formSubmissions)
+        .where(eq(schema.formSubmissions.formId, id));
 
       const [form] = await tx
         .delete(schema.requirementForms)
@@ -351,6 +336,32 @@ export class RequirementFormService {
     });
 
     return deleted;
+  }
+
+  async getDeleteImpact(
+    id: string,
+    organizationUnitId: string,
+  ): Promise<{
+    submissionCount: number;
+    attachments: Array<{
+      targetType: RequiredFormTargetType;
+      targetId: string;
+      name: string;
+    }>;
+  }> {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new NotFoundGraphQLError('Form not found');
+    }
+
+    await isUnitInOrg(this.db, organizationUnitId, existing.organizationId);
+
+    const [submissionCount, attachments] = await Promise.all([
+      this.countSubmissions(id),
+      this.requiredFormService.listFormAttachments(id),
+    ]);
+
+    return { submissionCount, attachments };
   }
 
   async regenerateShareToken(

@@ -13,9 +13,12 @@ import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification';
 import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
+import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftVisibility } from '../src/shift/enums';
 import { ShiftService } from '../src/shift/shift.service';
+import type { FileService } from '../src/storage/services/file.service';
 import { AddTimeEntryInput } from '../src/time-tracking/inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from '../src/time-tracking/inputs/close-time-enty-input';
 import { TimeTrackingService } from '../src/time-tracking/time-tracking.service';
@@ -43,15 +46,26 @@ describe('Time entry -> eligible timesheet flow', () => {
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        DatabaseModule,
+        OrganizationUnitDataModule,
+      ],
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
+    // Creating a shift with reimbursementTypeId calls
+    // AccountingOrgAccessService → OrganizationUnitService.findOrganizationIdByUnitId,
+    // which delegates to OrganizationUnitDataService — stubbing that as `{}`
+    // breaks the reimbursable path.
+    const organizationUnitDataService = moduleRef.get(
+      OrganizationUnitDataService,
+    );
     const organizationUnitService = new OrganizationUnitService(
       db,
-      {} as never,
-      {} as never,
-      {} as never,
+      {} as FileService,
+      organizationUnitDataService,
+      { capture: () => {} } as unknown as PostHogService,
       {} as never,
       {} as never,
     );
@@ -67,7 +81,6 @@ describe('Time entry -> eligible timesheet flow', () => {
       {} as MembershipService,
       {} as NotificationService,
       {} as OrganizationService,
-      {} as never,
       {} as never,
       {} as never,
       { capture: () => {} } as unknown as PostHogService,

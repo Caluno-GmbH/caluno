@@ -154,6 +154,15 @@ export const deleteForm = actionClient
     return { success: true };
   });
 
+export const getFormDeleteImpact = actionClient
+  .inputSchema(deleteFormSchema)
+  .action(async ({ parsedInput }) => {
+    const data = await getDataClient({
+      orgUId: parsedInput.organizationUnitId,
+    });
+    return data.requirementForm.getFormDeleteImpact(parsedInput.formId);
+  });
+
 const deleteBlockSchema = z.object({
   organizationUnitId: z.string().min(1),
   blockId: z.string().min(1),

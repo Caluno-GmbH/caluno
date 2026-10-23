@@ -17,15 +17,9 @@ import { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import { NotFoundGraphQLError } from '../src/graphql/errors';
-import type { MembershipService } from '../src/membership/membership.service';
-import type { NotificationService } from '../src/notification';
-import type { OrganizationMapper } from '../src/organization/mappers/organization.mapper';
-import { OrganizationService } from '../src/organization/organization.service';
-import type { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import type { ObservabilityService } from '../src/shared/observability/observability.service';
 import type { PostHogService } from '../src/shared/observability/posthog.service';
-import type { FileService } from '../src/storage/services/file.service';
 import {
   createCompletedTimeEntry,
   createReimbursementType,
@@ -72,22 +66,13 @@ describe('TimeEntryClosedListener', () => {
       organizationUnitDataService,
       postHog,
     );
-    const organizationService = new OrganizationService(
-      db,
-      {} as OrganizationMapper,
-      {} as MembershipService,
-      {} as OrganizationUnitService,
-      {} as NotificationService,
-      {} as FileService,
-      postHog,
-    );
     const documentTemplateService = new DocumentTemplateService(db, postHog, {
       missingOrgProfileSources: () => Promise.resolve([]),
     } as unknown as DocumentProfileRequirementService);
     contractService = new ContractService(
       db,
       documentTemplateService,
-      new DocumentSigningService(db, authService, organizationService),
+      new DocumentSigningService(db, authService),
       {
         notifyAwaitingVolunteerSignature: () => Promise.resolve(),
       } as unknown as DocumentNotificationService,

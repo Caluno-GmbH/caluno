@@ -122,7 +122,6 @@ export class FormBlockService {
         title: input.title,
         description: input.description,
         icon: input.icon,
-        required: input.required ?? true,
         createdBy: userId,
         updatedBy: userId,
       };

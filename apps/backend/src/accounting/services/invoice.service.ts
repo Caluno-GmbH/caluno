@@ -870,7 +870,11 @@ export class InvoiceService {
     return invoice;
   }
 
-  async signInvoice(invoiceId: string, userId: string): Promise<InvoiceEntity> {
+  async signInvoice(
+    invoiceId: string,
+    userId: string,
+    organizationUnitId: string,
+  ): Promise<InvoiceEntity> {
     const invoice = await this.findInvoice(invoiceId);
     this.documentSigningService.assertAwaitingSignature(invoice.invoiceStatus, [
       InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
@@ -891,7 +895,7 @@ export class InvoiceService {
       invoice.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      this.documentSigningService.organizationIdOf(invoice.documentTemplate),
+      organizationUnitId,
     );
 
     // The volunteer's own signature is the first step of the chain. Require
@@ -996,6 +1000,7 @@ export class InvoiceService {
     invoiceId: string,
     userId: string,
     reason: string,
+    organizationUnitId: string,
   ): Promise<InvoiceEntity> {
     this.documentSigningService.assertReason(reason);
     const invoice = await this.findInvoice(invoiceId);
@@ -1018,7 +1023,7 @@ export class InvoiceService {
       invoice.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      this.documentSigningService.organizationIdOf(invoice.documentTemplate),
+      organizationUnitId,
     );
 
     const updated = await this.db.transaction(async (tx) => {
@@ -1103,12 +1108,13 @@ export class InvoiceService {
 
   async findPendingInvoiceSignee(
     invoiceId: string,
+    organizationUnitId: string,
   ): Promise<PendingSignee | null> {
     const invoice = await this.findInvoice(invoiceId);
     return this.documentSigningService.resolvePendingSignee(
       invoice.signatures,
       invoice.volunteerId,
-      this.documentSigningService.organizationIdOf(invoice.documentTemplate),
+      organizationUnitId,
     );
   }
 

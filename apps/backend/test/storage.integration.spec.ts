@@ -81,6 +81,23 @@ describe('Storage REST API Integration', () => {
     expect(response.body.message).toContain('MIME type is not allowed');
   });
 
+  it('rejects non-previewable MIME types for form document uploads', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/storage/uploads/presign')
+      .set('x-organization-unit-id', organizationUnitId)
+      .send({
+        purpose: FilePurpose.FORM_DOCUMENT,
+        filename: 'notes.docx',
+        mimeType:
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        byteSize: 100,
+        organizationUnitId,
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toContain('MIME type is not allowed');
+  });
+
   it('allows owners to presign private downloads for uploaded files', async () => {
     const context = await getGraphqlTestContext();
     const db = context.db;

@@ -124,7 +124,10 @@ export class InvoiceQueryResolver {
       session,
       context,
     );
-    return this.invoiceService.findPendingInvoiceSignee(invoiceId);
+    return this.invoiceService.findPendingInvoiceSignee(
+      invoiceId,
+      context.organizationUnitId,
+    );
   }
 
   @Query(() => [TimeEntry])

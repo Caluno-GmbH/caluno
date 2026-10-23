@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { ConfirmDialog } from './confirm-dialog';
+import { DeleteFormDialog } from './delete-form-dialog';
 import { USER_TEXT_BADGE } from './user-text-badge';
 
 export function FormCard({
@@ -27,24 +27,12 @@ export function FormCard({
   const tActions = useTranslations('RequirementForm.actions');
   const { formatDateTime } = useFormatting();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   const locked = (form.submissionCount ?? 0) > 0;
   const blockMap = new Map(blocks.map((b) => [b.id, b]));
   const usedBlocks = (form.blockRefs ?? [])
     .map((ref) => blockMap.get(ref.blockId))
     .filter((b): b is FormBlock => b != null);
-
-  async function handleDelete() {
-    if (!onDelete) return;
-    setDeleting(true);
-    try {
-      await onDelete(form.id);
-      setConfirmOpen(false);
-    } finally {
-      setDeleting(false);
-    }
-  }
 
   async function handleShare() {
     const url = `${window.location.origin}/orgs/${orgUId}/forms/${form.shareToken}`;
@@ -139,7 +127,6 @@ export function FormCard({
                 variant="outline"
                 className="text-muted-foreground hover:text-destructive h-10 flex-1 has-[>svg]:px-6 lg:size-10 lg:flex-none lg:shrink-0"
                 tooltip={tTable('deleteFormAria')}
-                disabled={locked}
                 onClick={() => setConfirmOpen(true)}
               >
                 <Trash2 className="size-4" />
@@ -152,20 +139,16 @@ export function FormCard({
         </div>
       </CardContent>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title={t('deleteFormTitle')}
-        description={
-          <>
-            <strong>{form.name}</strong> {t('deleteFormDescription')}
-          </>
-        }
-        confirmLabel={tTable('deleteFormAria')}
-        pendingLabel={t('deleting')}
-        pending={deleting}
-        onConfirm={handleDelete}
-      />
+      {onDelete && (
+        <DeleteFormDialog
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          formId={form.id}
+          formName={form.name}
+          organizationUnitId={orgUId}
+          onDelete={() => onDelete(form.id)}
+        />
+      )}
     </Card>
   );
 }

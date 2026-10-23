@@ -26,10 +26,8 @@ export const NotificationEvent = {
   SHIFT_DETAILS_CHANGED: 'notification.shift.details-changed',
   SHIFT_INVITED: 'notification.shift.invited',
   ORGANIZATION_UNIT_INVITED: 'notification.organization-unit.invited',
-  // These two aren't routed through the emitter/listener like the events
-  // above — the call-out mutation needs each send's outcome synchronously to
-  // persist a per-recipient delivery record, so it calls EmailService
-  // directly. The event constants exist only to label the
+  // Call-outs bypass the emitter/listener: they enqueue directly because they
+  // also write per-recipient rows. These constants only label the
   // resolveUsersNotificationData "user not found" warning.
   SHIFT_INSTANCE_CALL_OUT: 'notification.shift-instance.call-out',
   SHIFT_INSTANCE_CALL_OUT_NO_RECIPIENTS:
@@ -38,15 +36,12 @@ export const NotificationEvent = {
     'notification.shift-instance.call-out-summary',
   SHIFT_INSTANCE_UNDERSTAFFED_REMINDER:
     'notification.shift-instance.understaffed-reminder',
-  // Not routed through the emitter/listener — like the call-out mutation,
-  // the invite reminder needs the send outcome synchronously before
-  // stamping `remindedAt`, so it calls EmailService directly. The event
-  // constant exists only to label the resolveUserNotificationData
-  // "user not found" warning.
+  // The invite reminder enqueues directly, in the same transaction that stamps
+  // `remindedAt`; this constant only labels the resolveUserNotificationData
+  // warning.
   SHIFT_INSTANCE_INVITE_REMINDER: 'notification.shift-instance.invite-reminder',
-  // Not routed through the emitter/listener — the weekly cron sends directly
-  // via EmailService. The event constant exists only to label the
-  // resolveUserNotificationData "user not found" warning.
+  // The weekly digest cron enqueues directly; this constant only labels the
+  // resolveUserNotificationData warning.
   VOLUNTEER_DIGEST_SENT: 'notification.volunteer.digest-sent',
   EVENT_INVITED: 'notification.event.invited',
   EVENT_JOINED: 'notification.event.joined',

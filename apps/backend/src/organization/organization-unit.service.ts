@@ -12,8 +12,9 @@ import {
 import type { Locale } from '../graphql/locale';
 import type { PaginationInput } from '../graphql/pagination.input';
 import { AppI18nService } from '../i18n/app-i18n.service';
-import { EmailService } from '../notification/email/email.service';
 import { createEmailTemplateContext } from '../notification/email/email-template-context';
+import { EmailCategory } from '../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../notification/email/outbox/email-outbox.service';
 import { organizationUnitDeletionRequestTemplate } from '../notification/email/templates/organization-unit-deletion-request.template';
 import { emailTheme } from '../notification/email/templates/shared';
 import {
@@ -40,7 +41,7 @@ export class OrganizationUnitService {
     private readonly fileService: FileService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly postHogService: PostHogService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
   ) {}
 
@@ -108,11 +109,9 @@ export class OrganizationUnitService {
   async findOrganizationIdByUnitId(
     organizationUnitId: string,
   ): Promise<string | undefined> {
-    const unit = await this.db.query.organizationUnits.findFirst({
-      where: { id: organizationUnitId },
-      columns: { organizationId: true },
-    });
-    return unit?.organizationId;
+    return this.organizationUnitDataService.findOrganizationIdByUnitId(
+      organizationUnitId,
+    );
   }
 
   async findAllTypes(
@@ -420,10 +419,12 @@ export class OrganizationUnitService {
       templateContext,
     );
 
-    await this.emailService.send({
+    await this.emailOutbox.enqueue({
+      category: EmailCategory.SUPPORT,
       to: emailTheme.supportEmail,
       subject,
       html,
+      organizationUnitId: unit.id,
     });
 
     return unit;

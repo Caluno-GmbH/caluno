@@ -1,21 +1,7 @@
-import {
-  boolean,
-  index,
-  pgEnum,
-  snakeCase,
-  text,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { index, snakeCase, text, uuid } from 'drizzle-orm/pg-core';
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
-import { enumValues } from '../../database/typeutil';
 import { organizations } from '../../organization/schemas/organization.schema';
-import { OrganizationUserProfileStatus } from '../enums';
-
-export const organizationUserProfileStatusEnum = pgEnum(
-  'organization_user_profile_status',
-  enumValues(OrganizationUserProfileStatus),
-);
 
 export const organizationUserProfiles = snakeCase.table(
   'organization_user_profiles',
@@ -31,13 +17,6 @@ export const organizationUserProfiles = snakeCase.table(
         onDelete: 'cascade',
       })
       .notNull(),
-    status: organizationUserProfileStatusEnum('status')
-      .$type<OrganizationUserProfileStatus>()
-      .notNull()
-      .default(OrganizationUserProfileStatus.PENDING),
-    userProfileAccessApproved: boolean('user_profile_access_approved')
-      .notNull()
-      .default(false),
     note: text('note'),
     ...timestampColumns,
   },

@@ -1026,9 +1026,6 @@
     },
     "rescan": "Erneut scannen"
   },
-  "QueryParamTabs": {
-    "empty": "Noch keine Einträge."
-  },
   "RequiredFormRenderer": {
     "formProgress": "Formularfortschritt",
     "noForms": "Es sind keine Formulare erforderlich.",
@@ -1096,7 +1093,7 @@
       "saveBlock": "Block speichern",
       "saveChanges": "Änderungen speichern",
       "saving": "Wird gespeichert...",
-      "systemField": "Systemfeld",
+      "profileField": "Profilfeld",
       "titlePlaceholder": "z. B. Persönliche Informationen",
       "typeLabel": "Typ",
       "typePlaceholder": "Typ auswählen"
@@ -1144,6 +1141,26 @@
       "unsavedChangesStay": "Weiter bearbeiten",
       "unsavedChangesTitle": "Ungespeicherte Änderungen",
       "viewBlock": "Ansehen"
+    },
+    "deleteDialog": {
+      "acknowledge": "Ich verstehe, dass alle Antworten zu diesem Formular dauerhaft gelöscht werden.",
+      "answersDeleted": "Alle Einsendungen und Antworten zu diesem Formular werden dauerhaft gelöscht.",
+      "attachmentItem": "{type}: {name}",
+      "attachmentsDetach": "Das Formular wird entkoppelt und gelöscht. Die Einsätze, Events und Organisationseinheiten selbst werden nicht gelöscht.",
+      "attachmentsIntro": "Dieses Formular ist derzeit erforderlich für:",
+      "deleting": "Wird gelöscht...",
+      "intro": "Dies kann nicht rückgängig gemacht werden.",
+      "loadError": "Löschdetails konnten nicht geladen werden. Bitte erneut versuchen.",
+      "loading": "Details werden geladen…",
+      "noAttachments": "Dieses Formular ist für keine Einsätze, Events oder Organisationseinheiten erforderlich.",
+      "submissionCount": "{count, plural, =0 {Noch keine Einsendungen.} one {# Einsendung wird gelöscht.} other {# Einsendungen werden gelöscht.}}",
+      "targetType": {
+        "EVENT": "Event",
+        "ORGANIZATION_UNIT": "Organisationseinheit",
+        "SHIFT": "Einsatz",
+        "SHIFT_INSTANCE": "Einsatztermin"
+      },
+      "title": "„{name}“ löschen?"
     },
     "card": {
       "content": "Inhalt",
@@ -1322,7 +1339,9 @@
       "alreadySubmittedTitle": "Formular abgesendet",
       "back": "Zurück",
       "birthDateFormat": "TT.MM.JJJJ",
+      "cancelEditAria": "Bearbeitung verwerfen",
       "checkboxYes": "Ja",
+      "confirmEditAria": "Änderung übernehmen",
       "documentAcknowledgement": "Ich bestätige und akzeptiere",
       "documentOpenInNewTab": "In neuem Tab öffnen",
       "failedToSubmit": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
@@ -1332,7 +1351,10 @@
       "noFields": "Dieser Block hat noch keine Felder.",
       "paymentDataVisibilityHint": "Deine Bankdaten sind nur für die Personen einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
+      "prefilledFromPreviousSubmissions": "Das Formular wurde mit Werten aus früheren Einreichungen vorausgefüllt",
+      "profileChangeWarning": "Wenn du diese Information änderst, wird sie auch in deinem Profil geändert.",
       "selectOption": "Option auswählen",
+      "sharedWithOrg": "Wird mit {orgName} geteilt.",
       "step": "Schritt {current} von {total}",
       "submit": "Absenden",
       "submitting": "Wird abgesendet...",
@@ -1493,7 +1515,7 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
-      "checkInForAnotherShift": "Stattdessen für eine andere Schicht einchecken",
+      "checkInForAnotherShift": "Stattdessen für einen anderen Einsatz einchecken",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutLoading": "{name} wird ausgecheckt…",
@@ -1905,8 +1927,10 @@
       "clear": "Entfernen",
       "dropHint": "Datei hierher ziehen oder zum Durchsuchen klicken",
       "failed": "Das Hochladen hat nicht geklappt. Versuch es bitte erneut.",
+      "documentHint": "PDF, JPEG, PNG, WebP oder GIF, bis zu 10 MB",
       "imageHint": "Empfohlen: JPEG oder PNG, bis zu 2 MB",
       "invalidFileType": "Dieser Dateityp ist nicht erlaubt. Verwende JPEG, PNG oder HEIC.",
+      "invalidFileTypeDocument": "Dieser Dateityp ist nicht erlaubt. Verwende PDF, JPEG, PNG, WebP oder GIF.",
       "label": "Datei hochladen",
       "previewAlt": "Vorschau der hochgeladenen Datei",
       "replace": "Ersetzen",

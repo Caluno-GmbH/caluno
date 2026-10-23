@@ -4,8 +4,9 @@ import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { AppI18nService } from '../../i18n/app-i18n.service';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import {
   type NeedsVolunteersGroup,
   type NeedsVolunteersRow,
@@ -71,14 +72,14 @@ export class VolunteerDigestService {
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly automationService: OrganizationUnitAutomationService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
   ) {}
 
   async sendDigests(
     sendAt: Date = new Date(),
   ): Promise<VolunteerDigestSummary> {
-    const summary: VolunteerDigestSummary = {
+    const digestSummary: VolunteerDigestSummary = {
       due_units: 0,
       already_sent_today: 0,
       recipients: 0,
@@ -102,8 +103,8 @@ export class VolunteerDigestService {
         nowHourMinute,
       }),
     );
-    summary.due_units = due.length;
-    if (due.length === 0) return summary;
+    digestSummary.due_units = due.length;
+    if (due.length === 0) return digestSummary;
 
     const runOn = appDateKey(sendAt);
 
@@ -129,7 +130,7 @@ export class VolunteerDigestService {
         runOn,
       );
       if (!claimed) {
-        summary.already_sent_today += 1;
+        digestSummary.already_sent_today += 1;
         continue;
       }
 
@@ -142,7 +143,7 @@ export class VolunteerDigestService {
           OrganizationUnitAutomationKind.DISCOVERY_EMAIL,
           runOn,
         );
-        summary.failed += 1;
+        digestSummary.failed += 1;
         this.logger.error(
           {
             event: 'volunteer_digest.unit_failed',
@@ -153,18 +154,18 @@ export class VolunteerDigestService {
         );
         continue;
       }
-      summary.recipients += userIds.length;
+      digestSummary.recipients += userIds.length;
 
       for (const userId of userIds) {
         try {
-          const outcome = await this.sendDigestForUnitMember(
+          const digestOutcome = await this.sendDigestForUnitMember(
             userId,
             unit,
             sendAt,
           );
-          summary[outcome] += 1;
+          digestSummary[digestOutcome] += 1;
         } catch (error) {
-          summary.failed += 1;
+          digestSummary.failed += 1;
           this.logger.error(
             {
               event: 'volunteer_digest.user_failed',
@@ -178,7 +179,7 @@ export class VolunteerDigestService {
       }
     }
 
-    return summary;
+    return digestSummary;
   }
 
   private async findUnitRecipientIds(
@@ -328,11 +329,14 @@ export class VolunteerDigestService {
     );
 
     try {
-      await this.emailService.send({
+      await this.emailOutbox.enqueue({
+        category: EmailCategory.DIGEST,
         userId: recipient.userId,
         to: recipient.email,
         subject,
         html,
+        organizationUnitId: unit.id,
+        expiresAt: addDays(sendAt, 1),
       });
     } catch (error) {
       this.logger.error(
@@ -341,7 +345,7 @@ export class VolunteerDigestService {
           user_id: userId,
           err: error,
         },
-        'Failed to send volunteer digest to user',
+        'Failed to queue volunteer digest to user',
       );
       // Don't log needs-volunteers rows as sent if the send itself failed.
       return 'failed';

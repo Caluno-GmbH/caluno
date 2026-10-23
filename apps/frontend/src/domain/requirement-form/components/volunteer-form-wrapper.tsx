@@ -24,6 +24,7 @@ export function VolunteerFormWrapper({
   orgUId,
   orgName,
   profileData,
+  storedFieldValues,
 }: {
   form: PublicForm;
   token: string;
@@ -31,6 +32,7 @@ export function VolunteerFormWrapper({
   orgUId: string;
   orgName?: string;
   profileData?: Record<string, string>;
+  storedFieldValues?: Record<string, string>;
 }) {
   return (
     <VolunteerForm
@@ -40,6 +42,7 @@ export function VolunteerFormWrapper({
       isMember={isMember}
       orgName={orgName}
       profileData={profileData}
+      storedFieldValues={storedFieldValues}
     />
   );
 }
