@@ -441,6 +441,39 @@ describe('DocumentRenderingService', () => {
       expect(text).not.toContain('02.02.2025');
     });
 
+    it('names the person who countersigned in the organisation seat, not the organisation', async () => {
+      const service = createService({
+        rateCents: 1500,
+        unit: { id: 'root-unit', name: 'Bürgerstiftung Musterstadt' },
+      });
+      const signatures = (signedByName: string | null) =>
+        [
+          {
+            signeeType: SigneeType.VOLUNTEER,
+            signedAt: new Date('2025-02-01T10:00:00Z'),
+          },
+          {
+            signeeType: SigneeType.PERMISSION_HOLDER,
+            signedAt: new Date('2025-02-02T10:00:00Z'),
+            signedByName,
+          },
+        ] as unknown as ContractWithRelations['signatures'];
+      const orgNameHits = (text: string) =>
+        [...text.matchAll(/Bürgerstiftung Musterstadt/g)].length;
+
+      const signed = extractPdfText(
+        await service.generatePdf(
+          contract({ signatures: signatures('Erika Musterfrau') }),
+        ),
+      );
+      const legacy = extractPdfText(
+        await service.generatePdf(contract({ signatures: signatures(null) })),
+      );
+
+      expect(signed).toContain('Erika Musterfrau');
+      expect(orgNameHits(legacy)).toBe(orgNameHits(signed) + 1);
+    });
+
     it('repeats the page footer and numbers every page when enabled', async () => {
       const service = createService({ rateCents: 1500 });
       const base = contract();

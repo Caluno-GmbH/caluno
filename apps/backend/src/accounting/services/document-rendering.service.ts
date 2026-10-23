@@ -446,7 +446,11 @@ export class DocumentRenderingService {
       },
       {
         label: 'Unterschrift (Organisation)',
-        name: resolved.org_name || '—',
+        name:
+          this.signedSignatureFor(document, 'PERMISSION_HOLDER')
+            ?.signedByName ||
+          resolved.org_name ||
+          '—',
         signedAt: this.signatureTimestampFor(document, 'PERMISSION_HOLDER'),
       },
     ];
@@ -533,13 +537,20 @@ export class DocumentRenderingService {
     ];
   }
 
+  private signedSignatureFor(
+    document: RenderableDocument,
+    signeeType: string,
+  ): RenderableDocument['signatures'][number] | undefined {
+    return document.signatures.find(
+      (s) => s.signeeType === signeeType && s.signedAt,
+    );
+  }
+
   private signatureTimestampFor(
     document: RenderableDocument,
     signeeType: string,
   ): string | undefined {
-    const signature = document.signatures.find(
-      (s) => s.signeeType === signeeType && s.signedAt,
-    );
+    const signature = this.signedSignatureFor(document, signeeType);
     return signature?.signedAt
       ? this.formatSignatureTimestamp(new Date(signature.signedAt))
       : undefined;

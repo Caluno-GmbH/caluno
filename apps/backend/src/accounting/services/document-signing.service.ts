@@ -120,6 +120,14 @@ export class DocumentSigningService {
     };
   }
 
+  async signerNameOf(userId: string): Promise<string | null> {
+    const user = await this.db.query.users.findFirst({
+      where: { id: userId },
+      columns: { name: true },
+    });
+    return user?.name ?? null;
+  }
+
   organizationIdOf(documentTemplate: DocumentTemplateEntity): string {
     return documentTemplate.organizationId;
   }
