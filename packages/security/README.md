@@ -46,6 +46,7 @@ Or a single step from `packages/security`:
 |---|---|---|
 | `bun run audit` | All steps below | `out/` |
 | `bun run audit:surface` | Lists every resolver/controller endpoint (AST) with tenant-context flags | `out/surface.json` |
+| `bun run audit:tenant` | Flags id-only queries on tenant tables (invariant B, AST) | `out/tenant-queries.json` |
 | `bun run audit:sast` | semgrep registry packs + vendored rules on `apps/`, `packages/data`, `packages/ui` | `out/semgrep.sarif` |
 | `bun run audit:deps` | osv-scanner on `bun.lock` | `out/osv.json` |
 | `bun run audit:secrets` | gitleaks on the full git history with the root `.gitleaks.toml` | `out/gitleaks.json` |
