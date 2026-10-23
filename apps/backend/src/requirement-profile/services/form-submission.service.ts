@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { count, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -387,26 +387,55 @@ export class FormSubmissionService {
           })),
         );
 
-        await tx
-          .insert(schema.organizationUserProfileFieldValues)
-          .values(
-            customValues.map((cv) => ({
-              organizationUserProfileId: organizationUserProfile.id,
-              fieldId: cv.fieldId,
-              value: cv.value,
-            })),
+        const nonEmptyProfileValues = customValues.filter(
+          (cv) => !FormSubmissionService.isEmptyStoredFieldValue(cv.value),
+        );
+        const emptyProfileFieldIds = customValues
+          .filter((cv) =>
+            FormSubmissionService.isEmptyStoredFieldValue(cv.value),
           )
-          .onConflictDoUpdate({
-            target: [
-              schema.organizationUserProfileFieldValues
-                .organizationUserProfileId,
-              schema.organizationUserProfileFieldValues.fieldId,
-            ],
-            set: {
-              value: sql`excluded.value`,
-              updatedAt: new Date(),
-            },
-          });
+          .map((cv) => cv.fieldId);
+
+        if (nonEmptyProfileValues.length > 0) {
+          await tx
+            .insert(schema.organizationUserProfileFieldValues)
+            .values(
+              nonEmptyProfileValues.map((cv) => ({
+                organizationUserProfileId: organizationUserProfile.id,
+                fieldId: cv.fieldId,
+                value: cv.value,
+              })),
+            )
+            .onConflictDoUpdate({
+              target: [
+                schema.organizationUserProfileFieldValues
+                  .organizationUserProfileId,
+                schema.organizationUserProfileFieldValues.fieldId,
+              ],
+              set: {
+                value: sql`excluded.value`,
+                updatedAt: new Date(),
+              },
+            });
+        }
+
+        if (emptyProfileFieldIds.length > 0) {
+          await tx
+            .delete(schema.organizationUserProfileFieldValues)
+            .where(
+              and(
+                eq(
+                  schema.organizationUserProfileFieldValues
+                    .organizationUserProfileId,
+                  organizationUserProfile.id,
+                ),
+                inArray(
+                  schema.organizationUserProfileFieldValues.fieldId,
+                  emptyProfileFieldIds,
+                ),
+              ),
+            );
+        }
       }
 
       return submissionRow;
@@ -541,5 +570,13 @@ export class FormSubmissionService {
       return Number.isNaN(num) ? rawValue : num;
     }
     return rawValue;
+  }
+
+  /** Empty answers are not kept on OrganizationUserProfileFieldValues for prefills. */
+  private static isEmptyStoredFieldValue(value: unknown): boolean {
+    if (value == null) return true;
+    if (typeof value === 'string') return value.trim() === '';
+    if (Array.isArray(value)) return value.length === 0;
+    return false;
   }
 }

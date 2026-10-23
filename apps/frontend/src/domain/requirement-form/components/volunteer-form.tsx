@@ -16,6 +16,7 @@ import {
   FieldRenderer,
   useValidationMessages,
 } from './field-renderer';
+import { ProfileField } from './profile-field';
 
 export type PublicForm = NonNullable<
   GetRequirementFormByShareTokenQuery['requirementFormByShareToken']
@@ -47,6 +48,7 @@ export function VolunteerForm({
   const [submitted, setSubmitted] = useState(false);
 
   const validationMessages = useValidationMessages();
+  const formOrg = orgName ?? form.name;
 
   const blocks = useMemo(() => {
     return (
@@ -65,6 +67,13 @@ export function VolunteerForm({
   const currentBlock = blocks[step];
   const isLastStep = step === blocks.length - 1;
   const isFirstStep = step === 0;
+
+  const currentStepHasStoredPrefill = useMemo(() => {
+    return (currentBlock?.fields ?? []).some((field) => {
+      if (field.systemKey) return false;
+      return !!storedFieldValues[field.id];
+    });
+  }, [currentBlock, storedFieldValues]);
 
   const formSchema = useMemo(() => {
     const shape: Record<string, z.ZodTypeAny> = {};
@@ -98,6 +107,7 @@ export function VolunteerForm({
     control,
     trigger,
     getValues,
+    clearErrors,
     formState: { errors, isSubmitting },
   } = useForm<Record<string, string>>({
     resolver: zodResolver(formSchema) as Resolver<Record<string, string>>,
@@ -195,8 +205,14 @@ export function VolunteerForm({
 
       {!isMember && (
         <div className="rounded-lg border bg-blue-50 p-4 text-sm text-blue-800">
-          {t('membershipRequestNotice', { orgName: orgName ?? form.name })}
+          {t('membershipRequestNotice', { orgName: formOrg })}
         </div>
+      )}
+
+      {currentStepHasStoredPrefill && (
+        <p className="text-sm text-muted-foreground">
+          {t('prefilledFromPreviousSubmissions')}
+        </p>
       )}
 
       <div className="rounded-lg border bg-card p-6">
@@ -212,26 +228,47 @@ export function VolunteerForm({
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-8">
           {(currentBlock.fields?.length ?? 0) === 0 && (
             <p className="text-muted-foreground text-sm">{t('noFields')}</p>
           )}
-          {currentBlock.fields?.map((field) => (
-            <Controller
-              key={field.id}
-              name={field.id}
-              control={control}
-              defaultValue=""
-              render={({ field: ctrlField }) => (
-                <FieldRenderer
-                  field={field}
-                  value={ctrlField.value ?? ''}
-                  onChange={ctrlField.onChange}
-                  error={errors[field.id]?.message}
-                />
-              )}
-            />
-          ))}
+          {currentBlock.fields?.map((field) => {
+            const fromProfile = !!field.systemKey;
+
+            return (
+              <Controller
+                key={field.id}
+                name={field.id}
+                control={control}
+                defaultValue=""
+                render={({ field: ctrlField }) => {
+                  const value = ctrlField.value ?? '';
+
+                  if (fromProfile) {
+                    return (
+                      <ProfileField
+                        field={field}
+                        value={value}
+                        onChange={ctrlField.onChange}
+                        error={errors[field.id]?.message}
+                        formOrg={formOrg}
+                        onCancel={() => clearErrors(field.id)}
+                      />
+                    );
+                  }
+
+                  return (
+                    <FieldRenderer
+                      field={field}
+                      value={value}
+                      onChange={ctrlField.onChange}
+                      error={errors[field.id]?.message}
+                    />
+                  );
+                }}
+              />
+            );
+          })}
         </div>
 
         <div className="mt-6 flex items-center justify-between">

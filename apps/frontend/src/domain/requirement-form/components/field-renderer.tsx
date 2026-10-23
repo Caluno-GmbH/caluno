@@ -330,17 +330,22 @@ export function FieldRenderer({
   onChange,
   error,
   readOnly = false,
+  hideLabel = false,
 }: {
   field: RenderableField;
   value: string;
   onChange: (value: string) => void;
   error?: string;
   readOnly?: boolean;
+  /** When true, FieldLabel + FieldDescription are skipped so the caller
+   *  can render its own title above whatever container wraps the control
+   *  (used by profile-prefilled edit mode). */
+  hideLabel?: boolean;
 }) {
   const t = useTranslations('RequirementForm.volunteerForm');
   const tGender = useTranslations('RequirementForm.genderOptions');
   const { formatDate } = useFormatting();
-  const description = fieldDescription(field);
+  const description = hideLabel ? null : fieldDescription(field);
 
   if (field.type === 'STATIC_TEXT') {
     const text = field.label.trim();
@@ -357,10 +362,12 @@ export function FieldRenderer({
     const docCount = field.documents?.length ?? 0;
     return (
       <Field>
-        <FieldLabel>
-          {field.label}
-          {field.required && <span className="text-destructive">*</span>}
-        </FieldLabel>
+        {!hideLabel && (
+          <FieldLabel>
+            {field.label}
+            {field.required && <span className="text-destructive">*</span>}
+          </FieldLabel>
+        )}
         {docCount > 0 && (
           <FieldDescription>
             <span className="flex flex-col items-start gap-1">
@@ -406,13 +413,15 @@ export function FieldRenderer({
   }
 
   if (field.type === 'CHECKBOX') {
-    const descriptionId = description ? `$field.id-description` : undefined;
+    const descriptionId = description ? `${field.id}-description` : undefined;
     return (
       <Field>
-        <FieldLabel>
-          {field.label}
-          {field.required && <span className="text-destructive">*</span>}
-        </FieldLabel>
+        {!hideLabel && (
+          <FieldLabel>
+            {field.label}
+            {field.required && <span className="text-destructive">*</span>}
+          </FieldLabel>
+        )}
         <div className="flex items-start gap-2">
           <Checkbox
             checked={value === 'true'}
@@ -433,16 +442,18 @@ export function FieldRenderer({
   }
 
   if (field.type === 'SINGLE_CHOICE') {
-    const descriptionId = description ? `$field.id-description` : undefined;
+    const descriptionId = description ? `${field.id}-description` : undefined;
     const opts = hasFixedGenderOptions(field.systemKey)
       ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
       : (field.options ?? []).map((opt) => ({ value: opt, label: opt }));
     return (
       <Field>
-        <FieldLabel>
-          {field.label}
-          {field.required && <span className="text-destructive">*</span>}
-        </FieldLabel>
+        {!hideLabel && (
+          <FieldLabel>
+            {field.label}
+            {field.required && <span className="text-destructive">*</span>}
+          </FieldLabel>
+        )}
         <Select
           value={value || undefined}
           onValueChange={onChange}
@@ -469,22 +480,24 @@ export function FieldRenderer({
 
   if (field.type === 'MULTI_CHOICE') {
     const selected = parseMultiChoiceValue(value);
-    const descriptionId = description ? `$field.id-description` : undefined;
+    const descriptionId = description ? `${field.id}-description` : undefined;
     return (
       <Field>
-        <FieldLabel>
-          {field.label}
-          {field.required && <span className="text-destructive">*</span>}
-        </FieldLabel>
+        {!hideLabel && (
+          <FieldLabel>
+            {field.label}
+            {field.required && <span className="text-destructive">*</span>}
+          </FieldLabel>
+        )}
         <div className="space-y-2">
           {field.options?.map((opt) => (
             <label
               key={opt}
               className="flex items-center gap-2 text-sm"
-              htmlFor={`$field.id-$opt`}
+              htmlFor={`${field.id}-${opt}`}
             >
               <Checkbox
-                id={`$field.id-$opt`}
+                id={`${field.id}-${opt}`}
                 checked={selected.includes(opt)}
                 disabled={readOnly}
                 onCheckedChange={(checked) => {
@@ -508,15 +521,17 @@ export function FieldRenderer({
 
   if (field.type === 'DATE') {
     const dateValue = value ? new Date(value) : undefined;
-    const labelId = `$field.id-label`;
+    const labelId = `${field.id}-label`;
     const isBirthDate = field.systemKey === 'birthdate';
-    const descriptionId = description ? `$field.id-description` : undefined;
+    const descriptionId = description ? `${field.id}-description` : undefined;
     return (
       <Field>
-        <FieldLabel id={isBirthDate ? labelId : undefined} htmlFor={field.id}>
-          {field.label}
-          {field.required && <span className="text-destructive">*</span>}
-        </FieldLabel>
+        {!hideLabel && (
+          <FieldLabel id={isBirthDate ? labelId : undefined} htmlFor={field.id}>
+            {field.label}
+            {field.required && <span className="text-destructive">*</span>}
+          </FieldLabel>
+        )}
         {isBirthDate ? (
           <BirthDateInput
             id={field.id}
@@ -524,7 +539,7 @@ export function FieldRenderer({
             onChange={onChange}
             disabled={readOnly}
             aria-invalid={!!error}
-            aria-labelledby={labelId}
+            aria-labelledby={hideLabel ? undefined : labelId}
             aria-describedby={descriptionId}
           />
         ) : (
@@ -562,13 +577,15 @@ export function FieldRenderer({
   }
 
   if (field.type === 'TEXTAREA') {
-    const descriptionId = description ? `$field.id-description` : undefined;
+    const descriptionId = description ? `${field.id}-description` : undefined;
     return (
       <Field>
-        <FieldLabel htmlFor={field.id}>
-          {field.label}
-          {field.required && <span className="text-destructive">*</span>}
-        </FieldLabel>
+        {!hideLabel && (
+          <FieldLabel htmlFor={field.id}>
+            {field.label}
+            {field.required && <span className="text-destructive">*</span>}
+          </FieldLabel>
+        )}
         <Textarea
           id={field.id}
           value={value}
@@ -594,7 +611,7 @@ export function FieldRenderer({
         ? 'number'
         : 'text';
 
-  const descriptionId = description ? `$field.id-description` : undefined;
+  const descriptionId = description ? `${field.id}-description` : undefined;
 
   const paymentDataVisibilityHint =
     field.systemKey && Object.hasOwn(RESTRICTED_PAYMENT_MASKS, field.systemKey)
@@ -603,10 +620,12 @@ export function FieldRenderer({
 
   return (
     <Field>
-      <FieldLabel htmlFor={field.id}>
-        {field.label}
-        {field.required && <span className="text-destructive">*</span>}
-      </FieldLabel>
+      {!hideLabel && (
+        <FieldLabel htmlFor={field.id}>
+          {field.label}
+          {field.required && <span className="text-destructive">*</span>}
+        </FieldLabel>
+      )}
       <Input
         id={field.id}
         type={inputType}
