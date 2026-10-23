@@ -69,11 +69,6 @@ query GetOrganizationUnit($id: String!) {
         id
         name
         description
-        settings {
-          submitButtonLabel
-          successTitle
-          successMessage
-        }
         blockRefs {
           id
           formId

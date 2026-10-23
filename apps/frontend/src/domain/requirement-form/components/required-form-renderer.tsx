@@ -115,7 +115,6 @@ export function RequiredFormRenderer({
 }: RequiredFormRendererProps) {
   const t = useTranslations('RequiredFormRenderer');
   const tCommon = useTranslations('Common');
-  const tForm = useTranslations('RequirementForm.volunteerForm');
   const tActions = useTranslations('RequirementForm.actions');
 
   const [submittedFormIds, setSubmittedFormIds] = useState<Set<string>>(
@@ -458,8 +457,7 @@ export function RequiredFormRenderer({
                     ? t('submitting')
                     : t('submittingAll')
                   : displayForms.length === 1
-                    ? currentForm.form.settings?.submitButtonLabel ||
-                      t('submit')
+                    ? t('submit')
                     : t('submitAll')}
               </span>
             </Button>

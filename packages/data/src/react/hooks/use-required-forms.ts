@@ -51,11 +51,6 @@ export type RequiredForm = {
   id: string;
   name: string;
   description?: string | null;
-  settings?: {
-    submitButtonLabel?: string | null;
-    successTitle?: string | null;
-    successMessage?: string | null;
-  } | null;
   blockRefs?: Array<RequiredFormBlockRef> | null;
 };
 

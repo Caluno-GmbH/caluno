@@ -51,12 +51,8 @@ export function ShareFormClient({
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
           <Check className="h-6 w-6 text-green-600" />
         </div>
-        <h2 className="mt-4 text-xl font-semibold">
-          {form.settings?.successTitle || t('successTitle')}
-        </h2>
-        <p className="mt-2 text-muted-foreground">
-          {form.settings?.successMessage || t('successMessage')}
-        </p>
+        <h2 className="mt-4 text-xl font-semibold">{t('successTitle')}</h2>
+        <p className="mt-2 text-muted-foreground">{t('successMessage')}</p>
       </div>
     );
   }

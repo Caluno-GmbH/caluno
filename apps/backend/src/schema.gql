@@ -253,7 +253,6 @@ input CreateRequirementFormInput {
   description: String
   name: String!
   organizationId: String!
-  settings: FormSettingsInput
 }
 
 input CreateRoleInput {
@@ -484,20 +483,6 @@ input FormFieldValueInput {
   blockId: String!
   fieldId: String!
   value: String!
-}
-
-type FormSettings {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
-}
-
-input FormSettingsInput {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
 }
 
 type FormSubmission {
@@ -1115,7 +1100,6 @@ type RequirementForm {
   name: String!
   organizationId: String!
   organizationUnitId: String
-  settings: FormSettings!
   shareToken: String!
   slug: String!
   submissionCount: Float!
@@ -1495,7 +1479,6 @@ input UpdateRequirementFormInput {
   blockRefs: [FormBlockRefInput!]
   description: String
   name: String
-  settings: FormSettingsInput
 }
 
 input UpdateShiftInput {
