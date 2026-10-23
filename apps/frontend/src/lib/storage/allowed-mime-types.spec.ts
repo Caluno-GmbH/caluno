@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  DOCUMENT_ACCEPT,
+  DOCUMENT_PREVIEW_MIME_TYPES,
   getAcceptForPurpose,
   isMimeTypeAllowedForPurpose,
 } from './allowed-mime-types';
@@ -21,20 +23,32 @@ describe('allowed-mime-types', () => {
     expect(isMimeTypeAllowedForPurpose('shift_image', 'image/png')).toBe(true);
   });
 
-  it('allows any file type for document upload purposes', () => {
-    expect(
-      isMimeTypeAllowedForPurpose('requirement_document', 'application/pdf'),
-    ).toBe(true);
+  it('allows previewable types for document upload purposes', () => {
+    for (const mimeType of DOCUMENT_PREVIEW_MIME_TYPES) {
+      expect(
+        isMimeTypeAllowedForPurpose('requirement_document', mimeType),
+      ).toBe(true);
+      expect(isMimeTypeAllowedForPurpose('form_document', mimeType)).toBe(true);
+    }
+  });
+
+  it('rejects non-previewable types for document upload purposes', () => {
     expect(
       isMimeTypeAllowedForPurpose(
         'form_document',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(
+      isMimeTypeAllowedForPurpose('requirement_document', 'image/heic'),
+    ).toBe(false);
+    expect(isMimeTypeAllowedForPurpose('form_document', 'image/svg+xml')).toBe(
+      false,
+    );
   });
 
-  it('does not restrict the file picker for document upload purposes', () => {
-    expect(getAcceptForPurpose('requirement_document')).toBeUndefined();
-    expect(getAcceptForPurpose('form_document')).toBeUndefined();
+  it('restricts the file picker for document upload purposes', () => {
+    expect(getAcceptForPurpose('requirement_document')).toBe(DOCUMENT_ACCEPT);
+    expect(getAcceptForPurpose('form_document')).toBe(DOCUMENT_ACCEPT);
   });
 });
