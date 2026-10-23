@@ -20,6 +20,9 @@ export class InvoiceSignature {
   @Field(() => User, { nullable: true })
   signedByUser?: User | null;
 
+  @Field(() => String, { nullable: true })
+  signedByName?: string | null;
+
   @Field(() => Date, { nullable: true })
   signedAt?: Date | null;
 
