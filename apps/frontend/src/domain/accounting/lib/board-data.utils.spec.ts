@@ -197,6 +197,7 @@ describe('mapSignatureToSignee', () => {
       order: 0,
       signeeType: SigneeType.Volunteer,
       signedAt: null,
+      signedByName: null,
       signedByUser: null,
       requiredPermission: null,
     });
@@ -209,6 +210,7 @@ describe('mapSignatureToSignee', () => {
       order: 1,
       signeeType: SigneeType.PermissionHolder,
       signedAt: null,
+      signedByName: null,
       signedByUser: null,
       requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
     });
@@ -221,6 +223,20 @@ describe('mapSignatureToSignee', () => {
       order: 1,
       signeeType: SigneeType.PermissionHolder,
       signedAt: '2026-03-02T00:00:00.000Z',
+      signedByName: 'Boo-Boo',
+      signedByUser: { id: 'u-1', name: 'Boo-Boo Renamed' },
+      requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
+    });
+    expect(signee.signedByName).toBe('Boo-Boo');
+  });
+
+  it('falls back to the signing users current name, when no name was stored at signing', () => {
+    const signee = mapSignatureToSignee({
+      id: 's-5',
+      order: 1,
+      signeeType: SigneeType.PermissionHolder,
+      signedAt: '2026-03-02T00:00:00.000Z',
+      signedByName: null,
       signedByUser: { id: 'u-1', name: 'Boo-Boo' },
       requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
     });
@@ -233,6 +249,7 @@ describe('mapSignatureToSignee', () => {
       order: 1,
       signeeType: SigneeType.PermissionHolder,
       signedAt: null,
+      signedByName: null,
       signedByUser: null,
       requiredPermission: { id: 'p-1', key: PermissionKey.AccountingManage },
     });
