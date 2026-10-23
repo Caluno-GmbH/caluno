@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   index,
+  pgEnum,
   snakeCase,
   text,
   timestamp,
@@ -12,9 +13,16 @@ import {
 import { reimbursementTypes } from '../../accounting/schemas/reimbursement-type.schema';
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
+import { enumValues } from '../../database/typeutil';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
 import type { ShiftInstanceEntity } from '../../shift/schemas/shift-instance.schema';
 import { shiftInstances } from '../../shift/schemas/shift-instance.schema';
+import { TimeEntryClosureKind } from '../enums/time-entry-closure-kind.enum';
+
+export const timeEntryClosureKindEnum = pgEnum(
+  'time_entry_closure_kind',
+  enumValues(TimeEntryClosureKind),
+);
 
 export const timeEntries = snakeCase.table(
   'time_entries',
@@ -32,6 +40,8 @@ export const timeEntries = snakeCase.table(
       .notNull(),
     startedAt: timestamp('started_at').notNull(),
     endedAt: timestamp('ended_at'),
+    closureKind:
+      timeEntryClosureKindEnum('closure_kind').$type<TimeEntryClosureKind>(),
     notes: text('notes'),
     reimbursementTypeId: uuid('reimbursement_type_id').references(
       () => reimbursementTypes.id,

@@ -6,6 +6,7 @@ import {
   type CloseTimeEntryInput,
   SortOrder,
   TimeEntrySortField,
+  type TimeEntryStatus,
   type UpdateTimeEntryInput,
 } from '../../generated/base-types';
 import type {
@@ -24,6 +25,7 @@ export type TimeEntryDetail = GetTimeEntryQuery['timeEntry'];
 export interface TimeEntryListOptions extends PaginationOptions {
   sort?: TimeEntrySortField;
   order?: SortOrder;
+  statuses?: TimeEntryStatus[];
 }
 
 export class TimeEntryRepository extends BaseRepository {
@@ -57,6 +59,11 @@ export class TimeEntryRepository extends BaseRepository {
     return data.closeTimeEntry;
   }
 
+  async confirm(id: string): Promise<{ id: string }> {
+    const data = await this.sdk.ConfirmTimeEntry({ id });
+    return data.confirmTimeEntry;
+  }
+
   async update(id: string, input: UpdateTimeEntryInput) {
     const data = await this.sdk.UpdateTimeEntry({ id, input });
     return data.updateTimeEntry;
@@ -68,6 +75,7 @@ export class TimeEntryRepository extends BaseRepository {
       offset: options.offset ?? 0,
       sort: options.sort ?? TimeEntrySortField.CreatedAt,
       order: options.order ?? SortOrder.Desc,
+      statuses: options.statuses,
     });
     return data.timeEntries;
   }

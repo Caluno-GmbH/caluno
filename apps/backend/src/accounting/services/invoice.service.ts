@@ -27,7 +27,9 @@ import {
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../../shift/enums';
 import { appDateParts } from '../../shift/utils/app-time';
+import { TimeEntryStatus } from '../../time-tracking/enums/time-entry-status.enum';
 import type { TimeEntryEntity } from '../../time-tracking/schemas/time-entry.schema';
+import { timeEntryStatusCondition } from '../../time-tracking/utils/time-entry-status';
 import type {
   EligibleTimesheetVolunteer,
   InvoiceFilter,
@@ -171,7 +173,51 @@ export class InvoiceService {
     return rows.map((row) => row.invoice);
   }
 
+  /**
+   * Hours a timesheet can claim: reviewed (CLOSED), unclaimed and in the
+   * unit, type and period. Auto-closed hours are a guess until an admin
+   * reviews them, so they stay out (see findTimeEntriesAwaitingReview).
+   */
   async findEligibleTimeEntries(
+    volunteerId: string,
+    reimbursementTypeId: string,
+    organizationUnitId: string,
+    periodStart?: Date,
+    periodEnd?: Date,
+  ): Promise<TimeEntryEntity[]> {
+    return this.findUnclaimedTimeEntries(
+      TimeEntryStatus.CLOSED,
+      volunteerId,
+      reimbursementTypeId,
+      organizationUnitId,
+      periodStart,
+      periodEnd,
+    );
+  }
+
+  /**
+   * Auto-closed hours that fit a timesheet (unclaimed, same unit, type and
+   * period) but wait for an admin to review them before they count.
+   */
+  async findTimeEntriesAwaitingReview(
+    volunteerId: string,
+    reimbursementTypeId: string,
+    organizationUnitId: string,
+    periodStart?: Date,
+    periodEnd?: Date,
+  ): Promise<TimeEntryEntity[]> {
+    return this.findUnclaimedTimeEntries(
+      TimeEntryStatus.AUTO_CLOSED,
+      volunteerId,
+      reimbursementTypeId,
+      organizationUnitId,
+      periodStart,
+      periodEnd,
+    );
+  }
+
+  private async findUnclaimedTimeEntries(
+    status: TimeEntryStatus,
     volunteerId: string,
     reimbursementTypeId: string,
     organizationUnitId: string,
@@ -184,7 +230,7 @@ export class InvoiceService {
       // A timesheet is issued in one unit; hours from a sibling unit must
       // never appear on it (or be claimable into it).
       eq(schema.timeEntries.organizationUnitId, organizationUnitId),
-      isNotNull(schema.timeEntries.endedAt),
+      timeEntryStatusCondition(status),
       // Time entries stay claimed while tied to a live (non-declined)
       // invoice. Declining releases the claim (see declineInvoice), so a
       // released row no longer excludes the entry here.
@@ -214,7 +260,7 @@ export class InvoiceService {
 
   /**
    * Timesheets still to be created in the unit: eligible (unclaimed,
-   * completed, in-period) hours grouped by volunteer, reimbursement type and
+   * reviewed, in-period) hours grouped by volunteer, reimbursement type and
    * Berlin calendar month, with the month's bounds and summed hours. Entries
    * are only claimed once a timesheet is issued, so these rows always reflect
    * the current time entries. Each row also says whether any of its hours has
@@ -227,7 +273,7 @@ export class InvoiceService {
   ): Promise<EligibleTimesheetVolunteer[]> {
     const conditions = [
       eq(schema.timeEntries.organizationUnitId, organizationUnitId),
-      isNotNull(schema.timeEntries.endedAt),
+      timeEntryStatusCondition(TimeEntryStatus.CLOSED),
       isNotNull(schema.timeEntries.reimbursementTypeId),
       isNull(schema.invoiceTimeEntries.id),
     ];

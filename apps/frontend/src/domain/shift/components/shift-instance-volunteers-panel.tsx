@@ -81,6 +81,7 @@ export function ShiftInstanceVolunteersPanel({
 }: ShiftInstanceVolunteersPanelProps) {
   const { formatDate, formatTime } = useFormatting();
   const t = useTranslations('Shift');
+  const tTimeEntryStatus = useTranslations('TimeEntry.status');
   const tVolunteer = useTranslations('Volunteer.action');
   const router = useRouter();
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
@@ -132,6 +133,8 @@ export function ShiftInstanceVolunteersPanel({
         return t('inviteStatus.checkedIn');
       case 'checked_out':
         return t('inviteStatus.checkedOut');
+      case 'auto_checked_out':
+        return tTimeEntryStatus('autoClosed');
       default:
         return state;
     }

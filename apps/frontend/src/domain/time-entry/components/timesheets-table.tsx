@@ -1,13 +1,23 @@
 'use client';
 
 import type { GetTimeEntriesQuery, PaginationInfo } from '@repo/data';
-import { ActionsCell, EntityCell, NumberCell, TextCell } from '@repo/ui';
+import { TimeEntryStatus } from '@repo/data';
+import {
+  ActionsCell,
+  EntityCell,
+  NumberCell,
+  TextCell,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui';
 import type {
   ColumnDef,
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
 import { parseISO } from 'date-fns';
+import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
@@ -21,6 +31,7 @@ import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-pa
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
+import { TimeEntryStatusBadge } from './time-entry-status-badge';
 
 type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
 
@@ -29,6 +40,20 @@ interface TimesheetsTableProps {
   pagination: PaginationInfo;
   organizationUnitId: string;
 }
+
+/** Shown instead of a duration for entries that are still running. */
+const NO_DURATION = '—';
+
+const getRowClassName = (entry: TimeEntry) => {
+  switch (entry.status) {
+    case TimeEntryStatus.Open:
+      return 'bg-muted/80';
+    case TimeEntryStatus.AutoClosed:
+      return 'bg-alert/30';
+    default:
+      return undefined;
+  }
+};
 
 export const TimesheetsTable = ({
   entries,
@@ -106,6 +131,16 @@ export const TimesheetsTable = ({
         },
       },
       {
+        id: 'STATUS',
+        enableSorting: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.status')} />
+        ),
+        cell: ({ row }) => (
+          <TimeEntryStatusBadge status={row.original.status} />
+        ),
+      },
+      {
         id: 'DURATION',
         accessorFn: (row) => row.endedAt,
         // Matches NumberCell's right alignment.
@@ -113,11 +148,40 @@ export const TimesheetsTable = ({
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
         ),
-        cell: ({ row }) => (
-          <NumberCell>
-            {formatDuration(row.original.startedAt, row.original.endedAt)}
-          </NumberCell>
-        ),
+        cell: ({ row }) => {
+          const entry = row.original;
+          if (entry.status === TimeEntryStatus.Open) {
+            return <NumberCell>{NO_DURATION}</NumberCell>;
+          }
+          const duration = formatDuration(entry.startedAt, entry.endedAt);
+          if (entry.status === TimeEntryStatus.AutoClosed) {
+            const tooltip = t('status.autoClosedTooltip');
+            return (
+              <div className="flex justify-end">
+                <EntityCell
+                  title={duration}
+                  trailing={
+                    // A native button: keyboard-focusable (a div with tabIndex
+                    // trips the a11y lint) and named for screen readers.
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={tooltip}
+                          className="block cursor-default rounded-sm"
+                        >
+                          <AlertTriangle className="size-4 text-alert" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{tooltip}</TooltipContent>
+                    </Tooltip>
+                  }
+                />
+              </div>
+            );
+          }
+          return <NumberCell>{duration}</NumberCell>;
+        },
       },
       {
         id: 'CREATED_AT',
@@ -152,6 +216,7 @@ export const TimesheetsTable = ({
             <ActionBar
               id={row.original.id}
               organizationUnitId={organizationUnitId}
+              status={row.original.status}
               size="sm"
             />
           </ActionsCell>
@@ -172,7 +237,7 @@ export const TimesheetsTable = ({
         sorting={sorting}
         onSortingChange={onSortingChange}
         emptyMessage={t('empty.title')}
-        getRowClassName={(entry) => (entry.endedAt ? undefined : 'bg-muted/80')}
+        getRowClassName={getRowClassName}
       />
       {pagination.total > 0 && (
         <DataTablePagination
