@@ -8,7 +8,6 @@ import {
   ForbiddenGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
-import { OrganizationService } from '../../organization/organization.service';
 import type { PendingSignee } from '../accounting.types';
 import { SigneeType } from '../enums';
 import type { ContractSignatureEntity } from '../schemas/contract-signature.schema';
@@ -26,7 +25,6 @@ export class DocumentSigningService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
     private readonly authService: AuthService,
-    private readonly organizationService: OrganizationService,
   ) {}
 
   orderSignatures<T extends { order: number; signedAt: Date | null }>(
@@ -65,7 +63,7 @@ export class DocumentSigningService {
     volunteerId: string,
     signeeType: SigneeType,
     requiredPermissionId: string | null,
-    organizationId: string,
+    organizationUnitId: string,
   ): Promise<void> {
     if (signeeType === SigneeType.VOLUNTEER) {
       if (userId !== volunteerId) {
@@ -78,7 +76,7 @@ export class DocumentSigningService {
 
     const eligibleUserIds = await this.findEligiblePermissionHolderIds(
       requiredPermissionId,
-      organizationId,
+      organizationUnitId,
     );
     if (!eligibleUserIds.includes(userId)) {
       throw new ForbiddenGraphQLError(
@@ -90,7 +88,7 @@ export class DocumentSigningService {
   async resolvePendingSignee(
     signatures: (ContractSignatureEntity | InvoiceSignatureEntity)[],
     volunteerId: string,
-    organizationId: string,
+    organizationUnitId: string,
   ): Promise<PendingSignee | null> {
     const pending = this.orderSignatures(signatures).find((s) => !s.signedAt);
     if (!pending) {
@@ -113,7 +111,7 @@ export class DocumentSigningService {
 
     const eligibleUserIds = await this.findEligiblePermissionHolderIds(
       pending.requiredPermissionId,
-      organizationId,
+      organizationUnitId,
     );
     return {
       signeeType: SigneeType.PERMISSION_HOLDER,
@@ -128,7 +126,7 @@ export class DocumentSigningService {
 
   private async findEligiblePermissionHolderIds(
     requiredPermissionId: string | null,
-    organizationId: string,
+    organizationUnitId: string,
   ): Promise<string[]> {
     if (!requiredPermissionId) {
       throw new ConflictGraphQLError(
@@ -145,11 +143,8 @@ export class DocumentSigningService {
       );
     }
 
-    const rootUnit =
-      await this.organizationService.requireRootUnit(organizationId);
-
     const eligibleUsers = await this.authService.findUsersWithPermission(
-      rootUnit.id,
+      organizationUnitId,
       permission.key,
     );
     return eligibleUsers.map((user) => user.id);

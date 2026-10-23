@@ -655,6 +655,7 @@ export class ContractService {
   async signContract(
     contractId: string,
     userId: string,
+    organizationUnitId: string,
   ): Promise<ContractEntity> {
     const contract = await this.findContract(contractId);
     this.documentSigningService.assertAwaitingSignature(
@@ -679,7 +680,7 @@ export class ContractService {
       contract.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      this.documentSigningService.organizationIdOf(contract.documentTemplate),
+      organizationUnitId,
     );
 
     // The volunteer's own signature is the first step of the chain. Require
@@ -760,6 +761,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     reason: string,
+    organizationUnitId: string,
   ): Promise<ContractEntity> {
     this.documentSigningService.assertReason(reason);
     const contract = await this.findContract(contractId);
@@ -785,7 +787,7 @@ export class ContractService {
       contract.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      this.documentSigningService.organizationIdOf(contract.documentTemplate),
+      organizationUnitId,
     );
 
     const updated = await this.db.transaction(async (tx) => {
@@ -861,12 +863,13 @@ export class ContractService {
 
   async findPendingContractSignee(
     contractId: string,
+    organizationUnitId: string,
   ): Promise<PendingSignee | null> {
     const contract = await this.findContract(contractId);
     return this.documentSigningService.resolvePendingSignee(
       contract.signatures,
       contract.volunteerId,
-      this.documentSigningService.organizationIdOf(contract.documentTemplate),
+      organizationUnitId,
     );
   }
 

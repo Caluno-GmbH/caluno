@@ -53,10 +53,12 @@ export class InvoiceMutationResolver {
   async signInvoice(
     @Args('invoiceId', { type: () => ID }) invoiceId: string,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Invoice> {
     const invoice = await this.invoiceService.signInvoice(
       invoiceId,
       session.user.id,
+      context.organizationUnitId,
     );
     return this.invoiceMapper.toModelOrThrow(invoice);
   }
@@ -66,11 +68,13 @@ export class InvoiceMutationResolver {
     @Args('invoiceId', { type: () => ID }) invoiceId: string,
     @Args('reason') reason: string,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Invoice> {
     const invoice = await this.invoiceService.declineInvoice(
       invoiceId,
       session.user.id,
       reason,
+      context.organizationUnitId,
     );
     return this.invoiceMapper.toModelOrThrow(invoice);
   }
