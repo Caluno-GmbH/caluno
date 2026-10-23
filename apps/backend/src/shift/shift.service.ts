@@ -38,7 +38,6 @@ import { OrganizationUnitAutomationKind } from '../organization/enums';
 import { OrganizationService } from '../organization/organization.service';
 import { OrganizationUnitAutomationService } from '../organization/organization-unit-automation.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
-import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
 import {
   RequiredFormService,
   type RequiredFormStatus,
@@ -124,7 +123,6 @@ export class ShiftService {
     private readonly organizationService: OrganizationService,
     private readonly fileService: FileService,
     private readonly requiredFormService: RequiredFormService,
-    private readonly formSubmissionService: FormSubmissionService,
     private readonly postHogService: PostHogService,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
     private readonly automationService: OrganizationUnitAutomationService,
@@ -4212,14 +4210,6 @@ export class ShiftService {
     }
 
     if (!formsAlreadySatisfied) {
-      await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-        targetType: RequiredFormTargetType.SHIFT,
-        targetId: shift.id,
-      });
-      await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-        targetType: RequiredFormTargetType.SHIFT_INSTANCE,
-        targetId: instanceId,
-      });
       const formsCheck = await this.checkShiftAndInstanceRequiredForms(
         userId,
         shift.id,
@@ -4654,14 +4644,6 @@ export class ShiftService {
           membershipRequest: result.membershipRequest,
         };
       }
-      await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-        targetType: RequiredFormTargetType.SHIFT,
-        targetId: shift.id,
-      });
-      await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-        targetType: RequiredFormTargetType.SHIFT_INSTANCE,
-        targetId: instanceId,
-      });
       const targetFormsCheck = await this.checkShiftAndInstanceRequiredForms(
         userId,
         shift.id,
@@ -4693,14 +4675,6 @@ export class ShiftService {
         membershipRequest: result.membershipRequest,
       };
     }
-    await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-      targetType: RequiredFormTargetType.SHIFT,
-      targetId: shift.id,
-    });
-    await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-      targetType: RequiredFormTargetType.SHIFT_INSTANCE,
-      targetId: instanceId,
-    });
     const targetFormsCheck = await this.checkShiftAndInstanceRequiredForms(
       userId,
       shift.id,

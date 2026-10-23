@@ -28,6 +28,7 @@ interface VolunteerFormProps {
   isMember?: boolean;
   orgName?: string;
   profileData?: Record<string, string>;
+  storedFieldValues?: Record<string, string>;
 }
 
 export function VolunteerForm({
@@ -37,6 +38,7 @@ export function VolunteerForm({
   isMember = true,
   orgName,
   profileData = {},
+  storedFieldValues = {},
 }: VolunteerFormProps) {
   const router = useRouter();
   const t = useTranslations('RequirementForm.volunteerForm');
@@ -84,11 +86,13 @@ export function VolunteerForm({
       for (const field of block.fields ?? []) {
         if (field.systemKey && profileData[field.systemKey]) {
           vals[field.id] = profileData[field.systemKey] ?? '';
+        } else if (storedFieldValues[field.id]) {
+          vals[field.id] = storedFieldValues[field.id] ?? '';
         }
       }
     }
     return vals;
-  }, [blocks, profileData]);
+  }, [blocks, profileData, storedFieldValues]);
 
   const {
     control,

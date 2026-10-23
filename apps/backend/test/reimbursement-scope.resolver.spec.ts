@@ -89,7 +89,6 @@ describe('reimbursement-rate resolver unit scoping', () => {
       {} as AuthService,
       {} as NotificationService,
       {} as RequiredFormService,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );

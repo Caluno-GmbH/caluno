@@ -223,7 +223,11 @@ describe('RequirementFormService block org scoping', () => {
       organizationUnitId: unit.id,
       createdById: user.id,
     });
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
+    });
 
     const updated = await requirementFormService.update(
       form.id,
@@ -252,7 +256,11 @@ describe('RequirementFormService block org scoping', () => {
       createdById: user.id,
       name: 'Second form',
     });
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
+    });
 
     await expect(
       requirementFormService.update(
@@ -276,7 +284,11 @@ describe('RequirementFormService block org scoping', () => {
       organizationUnitId: unit.id,
       createdById: user.id,
     });
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
+    });
 
     await expect(
       requirementFormService.update(

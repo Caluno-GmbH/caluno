@@ -125,9 +125,19 @@ export class RequirementFormRepository extends BaseRepository {
     return data.submitRequiredForm;
   }
 
-  async getMyFormSubmissionByToken(token: string) {
-    const data = await this.sdk.GetMyFormSubmissionByToken({ token });
+  async getMyFormSubmissionByToken(token: string, organizationUnitId: string) {
+    const data = await this.sdk.GetMyFormSubmissionByToken({
+      token,
+      organizationUnitId,
+    });
     return data.myFormSubmissionByToken;
+  }
+
+  async findMyStoredFormFieldValues(organizationUnitId: string) {
+    const data = await this.sdk.GetMyStoredFormFieldValues({
+      organizationUnitId,
+    });
+    return data.myStoredFormFieldValues;
   }
 
   async findSubmissionsByMembershipRequestId(membershipRequestId: string) {

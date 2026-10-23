@@ -4553,7 +4553,11 @@ describe('ShiftService.requestJoinShiftInstance — required forms', () => {
 
   it('joins the shift once the required form is submitted', async () => {
     const { user, instance, form } = await setupJoinableShift();
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId,
+    });
 
     const result = await shiftService.requestJoinShiftInstance(
       user.id,
@@ -4706,7 +4710,11 @@ describe('ShiftService.requestJoinShiftInstance — required forms', () => {
       { targetType: RequiredFormTargetType.SHIFT, targetId: shiftId },
       [form.id],
     );
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId,
+    });
 
     const membershipRequest = await createMembershipRequest(db, {
       userId: user.id,
@@ -4837,7 +4845,11 @@ describe('ShiftService.requestJoinShiftInstance — shift-instance required form
       },
       [form.id],
     );
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId,
+    });
 
     const result = await shiftService.requestJoinShiftInstance(
       user.id,

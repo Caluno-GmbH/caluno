@@ -62,7 +62,6 @@ function createEventService(options: { capture: jest.Mock }) {
     {} as never,
     {} as never,
     {} as never,
-    {} as never,
     { capture: options.capture } as unknown as PostHogService,
   );
 }

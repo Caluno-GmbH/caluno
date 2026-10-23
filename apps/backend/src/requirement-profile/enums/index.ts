@@ -1,10 +1,3 @@
-export enum OrganizationUserProfileStatus {
-  PENDING = 'PENDING',
-  ACTIVE = 'ACTIVE',
-  BLACKLISTED = 'BLACKLISTED',
-  INACTIVE = 'INACTIVE',
-}
-
 export enum FieldType {
   TEXT = 'TEXT',
   TEXTAREA = 'TEXTAREA',

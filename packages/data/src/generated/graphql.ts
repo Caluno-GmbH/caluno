@@ -858,10 +858,18 @@ export type SubmitRequiredFormMutation = { submitRequiredForm: { id: string, for
 
 export type GetMyFormSubmissionByTokenQueryVariables = Exact<{
   token: string;
+  organizationUnitId: string;
 }>;
 
 
-export type GetMyFormSubmissionByTokenQuery = { myFormSubmissionByToken: { id: string, formId: string, userId: string, submittedAt: string } | null };
+export type GetMyFormSubmissionByTokenQuery = { myFormSubmissionByToken: { id: string, formId: string, userId: string, organizationUnitId: string, submittedAt: string } | null };
+
+export type GetMyStoredFormFieldValuesQueryVariables = Exact<{
+  organizationUnitId: string;
+}>;
+
+
+export type GetMyStoredFormFieldValuesQuery = { myStoredFormFieldValues: Array<{ fieldId: string, value: string }> };
 
 export type GetMyFormSubmissionsQueryVariables = Exact<{
   organizationUnitId: string;
@@ -3750,12 +3758,21 @@ export const SubmitRequiredFormDocument = gql`
 }
     `;
 export const GetMyFormSubmissionByTokenDocument = gql`
-    query GetMyFormSubmissionByToken($token: String!) {
-  myFormSubmissionByToken(token: $token) {
+    query GetMyFormSubmissionByToken($token: String!, $organizationUnitId: ID!) {
+  myFormSubmissionByToken(token: $token, organizationUnitId: $organizationUnitId) {
     id
     formId
     userId
+    organizationUnitId
     submittedAt
+  }
+}
+    `;
+export const GetMyStoredFormFieldValuesDocument = gql`
+    query GetMyStoredFormFieldValues($organizationUnitId: ID!) {
+  myStoredFormFieldValues(organizationUnitId: $organizationUnitId) {
+    fieldId
+    value
   }
 }
     `;
@@ -5384,6 +5401,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetMyFormSubmissionByToken(variables: GetMyFormSubmissionByTokenQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyFormSubmissionByTokenQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMyFormSubmissionByTokenQuery>({ document: GetMyFormSubmissionByTokenDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyFormSubmissionByToken', 'query', variables);
+    },
+    GetMyStoredFormFieldValues(variables: GetMyStoredFormFieldValuesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyStoredFormFieldValuesQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetMyStoredFormFieldValuesQuery>({ document: GetMyStoredFormFieldValuesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyStoredFormFieldValues', 'query', variables);
     },
     GetMyFormSubmissions(variables: GetMyFormSubmissionsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyFormSubmissionsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMyFormSubmissionsQuery>({ document: GetMyFormSubmissionsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyFormSubmissions', 'query', variables);
