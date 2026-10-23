@@ -23,6 +23,16 @@ const config: StorybookConfig = {
     }
     config.plugins ??= [];
     config.plugins.push(svgr({ include: '**/*.svg' }));
+    // @base-ui/react (and other RSC libs) ship 'use client'; Vite/Rolldown
+    // warns that the directive may not be preserved — harmless in Storybook.
+    config.build ??= {};
+    config.build.rollupOptions ??= {};
+    const prevOnWarn = config.build.rollupOptions.onwarn;
+    config.build.rollupOptions.onwarn = (warning, defaultHandler) => {
+      if (warning.code === 'MODULE_LEVEL_DIRECTIVE') return;
+      if (prevOnWarn) prevOnWarn(warning, defaultHandler);
+      else defaultHandler(warning);
+    };
     return config;
   },
   features: {
