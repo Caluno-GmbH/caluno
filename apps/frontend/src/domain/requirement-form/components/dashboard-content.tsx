@@ -6,12 +6,15 @@ import { Plus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useQueryParamTab } from '@/hooks/use-query-param-tab';
 import { deleteBlock, deleteForm } from '../actions';
 import { BlockCard } from './block-card';
 import { CreateBlockButton } from './create-block-button';
 import { CreateFormDialog } from './create-form-dialog';
 import { FormCard } from './form-card';
 import { ListControls } from './list-controls';
+
+const TAB_VALUES = ['forms', 'blocks'] as const;
 
 export function DashboardContent({
   forms,
@@ -25,7 +28,11 @@ export function DashboardContent({
   organizationId: string;
 }) {
   const t = useTranslations('RequirementForm.dashboard');
-  const [tab, setTab] = useState('forms');
+  const { value: tab, onValueChange: handleTabChange } = useQueryParamTab({
+    values: TAB_VALUES,
+    defaultValue: 'forms',
+    omitDefault: true,
+  });
 
   // --- Create flows ---
   const [createFormOpen, setCreateFormOpen] = useState(false);
@@ -68,7 +75,7 @@ export function DashboardContent({
   }
 
   return (
-    <Tabs value={tab} onValueChange={setTab} suppressHydrationWarning>
+    <Tabs value={tab} onValueChange={handleTabChange} suppressHydrationWarning>
       <div className="flex flex-col gap-3 lg:grid lg:grid-cols-3 lg:items-center">
         <div className="hidden lg:block" />
         <div className="flex justify-center">

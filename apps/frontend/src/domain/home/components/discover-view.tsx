@@ -21,16 +21,16 @@ import {
   Skeleton,
 } from '@repo/ui';
 import { CalendarXIcon } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
-import { usePathname, useRouter } from '@/i18n/navigation';
+import { useQueryParamTab } from '@/hooks/use-query-param-tab';
+import { useRouter } from '@/i18n/navigation';
 import {
   getDayStripDaysFromCounts,
   getDiscoverWindow,
   groupByDay,
 } from '../lib/date-helpers';
-import { parseDiscoverTab } from '../lib/discover-tabs';
+import { DISCOVER_TABS } from '../lib/discover-tabs';
 import { useDelayedLoading } from '../lib/use-delayed-loading';
 import { type DayGroup, DayTimelineView } from './day-timeline-view';
 import { EventCardDiscovery } from './event-card-discovery';
@@ -48,20 +48,11 @@ export function DiscoverView({
   const t = useTranslations('VolunteerHome');
   const ct = useTranslations('Common');
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const tab = parseDiscoverTab(searchParams.get('tab'));
-
-  const handleTabChange = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === 'events') {
-      params.set('tab', 'events');
-    } else {
-      params.delete('tab');
-    }
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname);
-  };
+  const { value: tab, onValueChange: handleTabChange } = useQueryParamTab({
+    values: DISCOVER_TABS,
+    defaultValue: 'assignments',
+    omitDefault: true,
+  });
 
   const tabsControl = (
     <SegmentedControl
