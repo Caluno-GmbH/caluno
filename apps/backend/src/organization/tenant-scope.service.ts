@@ -45,26 +45,6 @@ export class TenantScopeService {
   }
 
   /**
-   * At least one of the units must be in scope. For resources reached through
-   * several units, e.g. a volunteer through their memberships.
-   */
-  async assertAnyUnitInScope(
-    headerUnitId: string,
-    resourceUnitIds: ReadonlyArray<string | null | undefined>,
-    notFoundMessage = 'Resource not found',
-  ): Promise<void> {
-    for (const unitId of resourceUnitIds) {
-      if (!unitId) continue;
-      const ancestorUnitIds =
-        await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
-          unitId,
-        );
-      if (ancestorUnitIds.includes(headerUnitId)) return;
-    }
-    throw new NotFoundGraphQLError(notFoundMessage);
-  }
-
-  /**
    * The user has a membership in the header unit or one of its descendants,
    * e.g. a volunteer whose accounting data the caller manages.
    */
@@ -73,15 +53,21 @@ export class TenantScopeService {
     userId: string,
     notFoundMessage = 'User not found',
   ): Promise<void> {
+    // Read memberships directly: MembershipModule imports this module, so
+    // injecting MembershipService here would be a circular dependency.
     const memberships = await this.db.query.memberships.findMany({
       where: { userId },
       columns: { organizationUnitId: true },
     });
-    await this.assertAnyUnitInScope(
-      headerUnitId,
-      memberships.map((m) => m.organizationUnitId),
-      notFoundMessage,
-    );
+    for (const { organizationUnitId } of memberships) {
+      if (!organizationUnitId) continue;
+      const ancestorUnitIds =
+        await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+          organizationUnitId,
+        );
+      if (ancestorUnitIds.includes(headerUnitId)) return;
+    }
+    throw new NotFoundGraphQLError(notFoundMessage);
   }
 
   /**

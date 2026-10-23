@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import { Project } from 'ts-morph';
-import { config } from './config.js';
 import {
   analyzeTenantQueries,
   collectTenantTables,
-  type TenantQueryOptions,
+  tenantQueryOptions,
 } from './tenant-queries.js';
 
-const opts: TenantQueryOptions = { ...config.tenantQueries, relpath: (p) => p };
+const opts = tenantQueryOptions((p) => p);
 
 const SCHEMA = `
   export const roles = snakeCase.table('roles', {
@@ -72,21 +71,31 @@ describe('analyzeTenantQueries: shapes', () => {
         db.query.events.findFirst({ where: (t, { eq }) => eq(t.id, id) });
       }`);
     expect(findings.map((f) => f.shape)).toEqual([
-      'relational-where-eq-id',
-      'relational-where-eq-id',
+      'relational-where-condition',
+      'relational-where-condition',
     ]);
   });
 
-  it('flags an update/delete constrained by eq(table.id)', () => {
+  it('flags builder conditions: eq, inArray, and() without a tenant arm', () => {
     const findings = scan(`
-      function f(id: string) {
+      function f(id: string, ids: string[], name: string) {
         db.update(schema.events).set({}).where(eq(schema.events.id, id));
-        db.delete(roles).where(eq(roles.id, id));
+        db.delete(roles).where(inArray(roles.id, ids));
+        db.select().from(roles).where(and(eq(roles.id, id), eq(roles.name, name)));
       }`);
     expect(findings.map((f) => f.shape)).toEqual([
-      'builder-where-eq-id',
-      'builder-where-eq-id',
+      'builder-where-condition',
+      'builder-where-condition',
+      'builder-where-condition',
     ]);
+  });
+
+  it('flags an update of the tenant root by id', () => {
+    expect(
+      scan(`function f(organizationId: string) {
+        db.update(schema.organizations).set({}).where(eq(schema.organizations.id, organizationId));
+      }`),
+    ).toHaveLength(1);
   });
 
   it('ignores a query that also constrains the tenant', () => {
@@ -109,14 +118,6 @@ describe('analyzeTenantQueries: shapes', () => {
     ).toEqual([]);
   });
 
-  it('flags an update of the tenant root by id', () => {
-    expect(
-      scan(`function f(organizationId: string) {
-        db.update(schema.organizations).set({}).where(eq(schema.organizations.id, organizationId));
-      }`),
-    ).toHaveLength(1);
-  });
-
   it('ignores tables without a tenant column', () => {
     expect(
       scan(`function f(id: string) {
@@ -136,6 +137,17 @@ describe('analyzeTenantQueries: loaded references', () => {
     ).toEqual([]);
   });
 
+  it('ignores an id read while looping over loaded rows', () => {
+    expect(
+      scan(`async function f(unitId: string) {
+        const shifts = await db.query.shifts.findMany({ where: { unitId } });
+        for (const shift of shifts) {
+          await db.query.events.findFirst({ where: { id: shift.eventId } });
+        }
+      }`),
+    ).toEqual([]);
+  });
+
   it('ignores an id read from a parameter typed as a loaded row', () => {
     expect(
       scan(`function f(shift: ShiftEntity & { master: ShiftEntity }) {
@@ -144,12 +156,17 @@ describe('analyzeTenantQueries: loaded references', () => {
     ).toEqual([]);
   });
 
-  it('still flags an id read from a parameter object', () => {
-    expect(
-      scan(`function f(input: { roleId: string }) {
-        return db.query.roles.findFirst({ where: { id: input.roleId } });
-      }`),
-    ).toHaveLength(1);
+  it('still flags ids from a parameter, a loop over it, or an alias of it', () => {
+    const findings =
+      scan(`async function f(input: { roleId: string; items: { eventId: string }[] }) {
+      await db.query.roles.findFirst({ where: { id: input.roleId } });
+      for (const item of input.items) {
+        await db.query.events.findFirst({ where: { id: item.eventId } });
+      }
+      const args = input;
+      await db.query.roles.findFirst({ where: { id: args.roleId } });
+    }`);
+    expect(findings).toHaveLength(3);
   });
 });
 
@@ -176,13 +193,40 @@ describe('analyzeTenantQueries: closing a finding', () => {
     expect(findings.map((f) => f.table)).toEqual(['roles']);
   });
 
+  it('does not close when the helper is given a client-supplied header', () => {
+    expect(
+      scan(`
+        class R { async f(@Args('input') input: { unitId: string }, id: string) {
+          const event = await this.db.query.events.findFirst({ where: { id } });
+          await this.tenantScope.assertResourceInScope(input.unitId, event?.organizationUnitId);
+          return event;
+        } }`),
+    ).toHaveLength(1);
+  });
+
+  it('closes a write only when the check runs before it', () => {
+    const findings = scan(`
+      class S {
+        async checkedBefore(unitId: string, id: string) {
+          const event = await this.eventService.load(id);
+          await this.tenantScope.assertResourceInScope(unitId, event.organizationUnitId);
+          await this.db.delete(events).where(eq(events.id, id));
+        }
+        async checkedAfter(unitId: string, id: string) {
+          const [deleted] = await this.db.delete(events).where(eq(events.id, id)).returning();
+          await this.tenantScope.assertResourceInScope(unitId, deleted.organizationUnitId);
+        }
+      }`);
+    expect(findings.map((f) => f.method)).toEqual(['S.checkedAfter']);
+  });
+
   it('closes when every caller checks the returned resource', () => {
     expect(
       scan(
         `class RoleService { async findRole(id: string) {
           return this.db.query.roles.findFirst({ where: { id } });
         } }`,
-        `class RoleResolver { async role(ctx: Ctx, id: string) {
+        `class RoleResolver { async role(@Context() ctx: Ctx, id: string) {
           const role = await this.roleService.findRole(id);
           await this.tenantScope.assertOrganizationInScope(ctx.organizationUnitId, role.organizationId);
           return role;
@@ -197,7 +241,7 @@ describe('analyzeTenantQueries: closing a finding', () => {
         `class RoleService { async findRole(id: string) {
           return this.db.query.roles.findFirst({ where: { id } });
         } }`,
-        `class A { async checked(ctx: Ctx, id: string) {
+        `class A { async checked(@Context() ctx: Ctx, id: string) {
           const role = await this.roleService.findRole(id);
           await this.tenantScope.assertOrganizationInScope(ctx.organizationUnitId, role.organizationId);
         } }`,
@@ -208,14 +252,17 @@ describe('analyzeTenantQueries: closing a finding', () => {
     ).toHaveLength(1);
   });
 
-  it('honours an exemption comment', () => {
-    expect(
-      scan(`
-        async function f(id: string) {
-          // tenant-scope-ok: id comes from the caller's own session
-          return db.query.roles.findFirst({ where: { id } });
-        }`),
-    ).toEqual([]);
+  it('honours an exemption comment with a reason, not an empty one', () => {
+    const findings = scan(`
+      async function exempt(id: string) {
+        // tenant-scope-ok: id comes from the caller's own session
+        return db.query.roles.findFirst({ where: { id } });
+      }
+      async function noReason(id: string) {
+        // tenant-scope-ok:
+        return db.query.events.findFirst({ where: { id } });
+      }`);
+    expect(findings.map((f) => f.table)).toEqual(['events']);
   });
 });
 

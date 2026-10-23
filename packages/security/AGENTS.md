@@ -20,15 +20,15 @@ Run from `packages/security` (or `bun run security:audit` from the root).
 ## Project Structure
 ```
 src/
-├── config.ts             # Calibration: paths, decorators, tenant context. Update when conventions change
-├── tenant-context.ts     # Shared AST predicates: decorator names, "handler reads the client tenant"
-├── enumerate-surface.ts  # Endpoint inventory + invariant A
-├── tenant-queries.ts     # Invariant B rule (pure, unit-tested in tenant-queries.spec.ts)
+├── config.ts                # Calibration: paths, decorators, tenant context, tenant-query rule. Update when conventions change
+├── tenant-context.ts        # Shared AST predicates: decorator names, "handler reads the client tenant"
+├── enumerate-surface.ts     # Endpoint inventory + invariant A
+├── tenant-queries.ts        # Invariant B rule (pure, unit-tested in tenant-queries.spec.ts)
 ├── check-tenant-queries.ts  # Invariant B CLI -> out/tenant-queries.json
-└── coverage-diff.ts      # Surface vs agent manifest -> coverage %, missing and invented ids
-rules/                    # Semgrep packs list + vendored rules
-scripts/audit.sh          # Orchestrator for the external tools
-out/                      # Generated reports, never committed
+└── coverage-diff.ts         # Surface vs agent manifest -> coverage %, missing and invented ids
+rules/                       # Semgrep packs list + vendored rules
+scripts/audit.sh             # Orchestrator for the external tools
+out/                         # Generated reports, never committed
 ```
 
 ## Tenant model these checks rely on
@@ -43,23 +43,29 @@ Verified in code; if any of this changes, update `src/config.ts` and this sectio
 - **B, tenant-scoped queries**: every Drizzle read/write on a tenant table must be constrained to the caller's unit, not only by `id`. Tenant tables are those with an `organizationUnitId`/`organizationId` column plus the tenant root (`organizations`). `audit:tenant` writes `out/tenant-queries.json`. It is a report, not a gate: findings do not fail the run.
 
 ### What `audit:tenant` flags
-- `db.query.<table>.findFirst|findMany({ where: { id } })`, also written `where: eq(t.id, v)` or `where: (t, { eq }) => eq(t.id, v)`
-- `.where(eq(<table>.id, v))` on select, update and delete
+- `db.query.<table>.findFirst|findMany({ where: { id } })`, also written as a condition (`where: eq(t.id, v)`) or a callback (`where: (t, { eq }) => eq(t.id, v)`)
+- `.where(<condition>)` on select, update and delete
+- A condition is `eq(t.id, v)`, `inArray(t.id, vs)`, or `and(...)` holding one of those with no arm on a tenant column
 
-Not flagged: a `where` that also has a tenant column, a tenant relation, `AND`/`OR`/`RAW` or a spread; and an id read from a loaded row (a field of a local variable, or of a parameter typed `*Entity`), which follows a stored reference rather than client input.
+Not flagged: a `where` that also has a tenant column, a tenant relation, `AND`/`OR`/`RAW` or a spread; and an id read from a loaded row, which follows a stored reference rather than client input. A loaded row is a variable assigned from a call (`const row = await ...`), a loop over one, a field of one, or a parameter typed `*Entity`. A parameter, a loop over it or an alias of it (`const args = input`) is client input.
 
 Each finding lists `reachedFrom` (the resolver/controller handlers that call the enclosing method, one level up) and `readsTenantContext` (one of them reads the header unit). `readsTenantContext: false` on a handler-reached finding usually means the handler never compares anything with the tenant: start there.
 
 ### Closing a finding
 Pass the loaded resource to a `TenantScopeService` helper (`apps/backend/src/organization/tenant-scope.service.ts`) before returning or writing it:
 - `assertResourceInScope(headerUnitId, resource.organizationUnitId)`: the resource's unit is the header unit or a descendant of it.
-- `assertAnyUnitInScope(headerUnitId, unitIds)`: at least one of the units is.
 - `assertUserInScope(headerUnitId, userId)`: the user has a membership in scope (e.g. a volunteer).
 - `assertOrganizationInScope(headerUnitId, resource.organizationId)`: for resources scoped to an organization (e.g. roles).
 
-All throw NotFound, so a foreign id looks like a missing one. The call closes the finding when its arguments reference the variable holding the query result, either in the same function or in every caller of the enclosing method (the service loads, the resolver checks). A helper call about a different resource closes nothing. When the id provably cannot cross tenants (e.g. it comes from the caller's own session), exempt the statement instead: `// tenant-scope-ok: <reason>`.
+All throw NotFound, so a foreign id looks like a missing one. A helper call closes the finding when:
+- its first argument is the header unit: `ctx.organizationUnitId` on a `@Context()` or `*Context`-typed parameter, or a parameter handed down that is not decorated as client input (`@Args`, `@Body`, ...);
+- for a read, another argument references the variable holding the query result; for an update/delete, it runs before the write;
+- it sits in the same function, or in every caller of the enclosing method (the service loads, the resolver checks).
+
+A helper call about a different resource, or on a client-supplied unit, closes nothing. When the id provably cannot cross tenants (e.g. it comes from the caller's own session), exempt the statement instead: `// tenant-scope-ok: <reason>`. The reason is required; an empty marker does not exempt.
 
 ### Limits
+- Whether a helper call actually runs is not analysed: a call inside a branch or after an early return counts. That needs control flow, not an AST rule.
 - Callers are matched by method name, one level up. A name shared by unrelated classes (`update`) lists extra handlers in `reachedFrom` and makes closing harder, never easier.
 - Tables scoped only through a parent (shift -> event -> unit) are not detected.
 - A `where` that filters on a tenant column with a client-supplied value (`organizationId: input.organizationId`) passes. The rule checks that a tenant filter exists, not where its value comes from.

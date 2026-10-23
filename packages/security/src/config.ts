@@ -17,6 +17,10 @@ export const repoRoot = path.resolve(
   process.env.REPO_ROOT ?? path.join(import.meta.dir, '..', '..', '..'),
 );
 
+/** Repo-relative path with forward slashes, as reports print it. */
+export const relpath = (abs: string): string =>
+  path.relative(repoRoot, abs).split(path.sep).join('/');
+
 export const config = {
   /** Analysed sources, relative to the repo root. */
   include: ['apps/backend/src/**/*.ts'],
@@ -83,13 +87,20 @@ export const config = {
     rowTypeSuffix: 'Entity',
     /** Relational `where` operators that can carry a tenant condition. */
     whereOperators: ['AND', 'OR', 'RAW'],
+    /** Drizzle comparisons that constrain a column by a value: `eq(t.id, v)`. */
+    idComparisons: ['eq', 'inArray'],
+    /** Conjunctions: `and(eq(t.id, v), ...)` is id-only unless an arm hits a tenant column. */
+    conjunctions: ['and'],
+    /** Builder calls that write: a check must run before them, not after. */
+    writeMethods: ['update', 'delete'],
+    /** Parameter decorators carrying client input: never a trusted header unit. */
+    clientInputDecorators: ['Args', 'Body', 'Param', 'Query'],
     /**
      * Calls that prove the loaded resource belongs to the caller's tenant.
      * Must be passed the variable holding the query result (or its fields).
      */
     scopeHelpers: [
       'assertResourceInScope',
-      'assertAnyUnitInScope',
       'assertUserInScope',
       'assertOrganizationInScope',
     ],

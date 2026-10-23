@@ -9,17 +9,14 @@
  */
 import * as path from 'node:path';
 import { Project } from 'ts-morph';
-import { config, isExcluded, repoRoot } from './config.js';
+import { config, isExcluded, relpath, repoRoot } from './config.js';
 import {
   analyzeTenantQueries,
   collectTenantTables,
-  type TenantQueryOptions,
+  tenantQueryOptions,
 } from './tenant-queries.js';
 
-const relpath = (abs: string) =>
-  path.relative(repoRoot, abs).split(path.sep).join('/');
-
-const opts: TenantQueryOptions = { ...config.tenantQueries, relpath };
+const opts = tenantQueryOptions(relpath);
 
 const project = new Project({
   skipAddingFilesFromTsConfig: true,

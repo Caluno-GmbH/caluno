@@ -16,7 +16,7 @@ import {
   Project,
   SyntaxKind,
 } from 'ts-morph';
-import { config, isExcluded, repoRoot } from './config.js';
+import { config, isExcluded, relpath, repoRoot } from './config.js';
 import { decoName, tenantContextUse } from './tenant-context.js';
 
 const t = config.transport;
@@ -56,9 +56,6 @@ const decoArgs = (
             .map((a) => a.getText().replace(/^PERMISSIONS\./, ''))
         : [];
     });
-
-const relpath = (abs: string) =>
-  path.relative(repoRoot, abs).split(path.sep).join('/');
 
 const project = new Project({
   skipAddingFilesFromTsConfig: true,
