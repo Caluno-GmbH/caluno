@@ -10,6 +10,7 @@ import {
 } from '../src/graphql/errors';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
+import { createRequiredFormTargetRegistry } from '../src/requirement-profile/targets';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { createUser } from './factories';
 import {
@@ -38,12 +39,16 @@ describe('RequirementFormService block org scoping', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
+    const postHogService = {
+      capture: () => {},
+    } as unknown as PostHogService;
     requirementFormService = new RequirementFormService(
       db,
-      new RequiredFormService(db, {
-        capture: () => {},
-      } as unknown as PostHogService),
-      { capture: () => {} } as unknown as PostHogService,
+      new RequiredFormService(
+        db,
+        createRequiredFormTargetRegistry(db, postHogService),
+      ),
+      postHogService,
     );
   });
 

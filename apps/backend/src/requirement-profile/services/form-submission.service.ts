@@ -5,7 +5,6 @@ import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import {
   BadRequestGraphQLError,
-  ConflictGraphQLError,
   ForbiddenGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
@@ -19,10 +18,11 @@ import {
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { UserService } from '../../user/user.service';
 import { SYSTEM_PROFILE_KEYS } from '../constants';
-import { FieldType, RequiredFormTargetType } from '../enums';
+import { FieldType } from '../enums';
 import { SubmitFormInput } from '../inputs/submit-form.input';
 import { validateSystemKeyValue } from '../profile-validation';
 import type { FormSubmissionEntity } from '../schemas/form-submission.schema';
+import { RequiredFormTargetRegistry } from '../targets';
 import { isUnitInOrg } from './is-unit-in-org';
 import { parseMultiChoiceValue } from './multi-choice-value';
 import {
@@ -39,6 +39,7 @@ export class FormSubmissionService {
     private readonly requiredFormService: RequiredFormService,
     private readonly postHogService: PostHogService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
+    private readonly targetRegistry: RequiredFormTargetRegistry,
   ) {}
 
   async findById(id: string): Promise<FormSubmissionEntity | undefined> {
@@ -212,56 +213,13 @@ export class FormSubmissionService {
       throw new NotFoundGraphQLError('Form not found');
     }
 
-    const organizationUnitId =
-      await this.resolveTargetOrganizationUnitId(target);
+    const organizationUnitId = await this.targetRegistry
+      .get(target.targetType)
+      .resolveOrganizationUnitId(target.targetId);
     return this.submitToForm(form, input, userId, organizationUnitId, {
       surface: POSTHOG_SURFACE.VOLUNTEERING,
       targetType: target.targetType.toLowerCase(),
     });
-  }
-
-  private async resolveTargetOrganizationUnitId(
-    target: RequiredFormTarget,
-  ): Promise<string> {
-    switch (target.targetType) {
-      case RequiredFormTargetType.ORGANIZATION_UNIT:
-        return target.targetId;
-      case RequiredFormTargetType.EVENT: {
-        const event = await this.db.query.events.findFirst({
-          where: { id: target.targetId },
-          columns: { organizationUnitId: true },
-        });
-        if (!event) throw new NotFoundGraphQLError('Event not found');
-        return event.organizationUnitId;
-      }
-      case RequiredFormTargetType.SHIFT: {
-        const shift = await this.db.query.shifts.findFirst({
-          where: { id: target.targetId },
-          columns: { organizationUnitId: true },
-        });
-        if (!shift) throw new NotFoundGraphQLError('Shift not found');
-        return shift.organizationUnitId;
-      }
-      case RequiredFormTargetType.SHIFT_INSTANCE: {
-        const instance = await this.db.query.shiftInstances.findFirst({
-          where: { id: target.targetId },
-          columns: { masterId: true },
-        });
-        if (!instance) {
-          throw new NotFoundGraphQLError('Shift instance not found');
-        }
-        const shift = await this.db.query.shifts.findFirst({
-          where: { id: instance.masterId },
-          columns: { organizationUnitId: true },
-        });
-        if (!shift) throw new NotFoundGraphQLError('Shift not found');
-        return shift.organizationUnitId;
-      }
-      default:
-        throw new ConflictGraphQLError(
-          `Unsupported required-form target: ${target.targetType}`,
-        );
-    }
   }
 
   private async submitToForm(

@@ -28,6 +28,7 @@ import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
+import { createRequiredFormTargetRegistry } from '../src/requirement-profile/targets';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
@@ -87,18 +88,19 @@ describe('RequiredFormService', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
-    requiredFormService = new RequiredFormService(db, {
+    const postHogService = {
       capture: () => {},
-    } as unknown as PostHogService);
-    const userService = new UserService(db, {
-      capture: () => {},
-    } as unknown as PostHogService);
+    } as unknown as PostHogService;
+    const targetRegistry = createRequiredFormTargetRegistry(db, postHogService);
+    requiredFormService = new RequiredFormService(db, targetRegistry);
+    const userService = new UserService(db, postHogService);
     formSubmissionService = new FormSubmissionService(
       db,
       userService,
       requiredFormService,
-      { capture: () => {} } as unknown as PostHogService,
+      postHogService,
       new OrganizationUnitDataService(db),
+      targetRegistry,
     );
     requirementFormService = new RequirementFormService(
       db,
@@ -997,9 +999,13 @@ describe('RequiredFormService', () => {
         imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
       }).compile();
       db = moduleRef.get<Database>(DATABASE_CONNECTION);
-      service = new RequiredFormService(db, {
+      const postHogService = {
         capture: () => {},
-      } as unknown as PostHogService);
+      } as unknown as PostHogService;
+      service = new RequiredFormService(
+        db,
+        createRequiredFormTargetRegistry(db, postHogService),
+      );
     });
 
     // Per-test seeded ids, cleaned up in afterEach.
