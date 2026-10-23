@@ -830,6 +830,13 @@ export type DeleteRequirementFormMutationVariables = Exact<{
 
 export type DeleteRequirementFormMutation = { deleteRequirementForm: { id: string } };
 
+export type GetRequirementFormDeleteImpactQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type GetRequirementFormDeleteImpactQuery = { requirementFormDeleteImpact: { submissionCount: number, attachments: Array<{ targetType: Types.RequiredFormTargetType, targetId: string, name: string }> } };
+
 export type RegenerateFormShareTokenMutationVariables = Exact<{
   id: string;
 }>;
@@ -3720,6 +3727,18 @@ export const DeleteRequirementFormDocument = gql`
   }
 }
     `;
+export const GetRequirementFormDeleteImpactDocument = gql`
+    query GetRequirementFormDeleteImpact($id: String!) {
+  requirementFormDeleteImpact(id: $id) {
+    submissionCount
+    attachments {
+      targetType
+      targetId
+      name
+    }
+  }
+}
+    `;
 export const RegenerateFormShareTokenDocument = gql`
     mutation RegenerateFormShareToken($id: String!) {
   regenerateFormShareToken(id: $id) {
@@ -5389,6 +5408,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     DeleteRequirementForm(variables: DeleteRequirementFormMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<DeleteRequirementFormMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<DeleteRequirementFormMutation>({ document: DeleteRequirementFormDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'DeleteRequirementForm', 'mutation', variables);
+    },
+    GetRequirementFormDeleteImpact(variables: GetRequirementFormDeleteImpactQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetRequirementFormDeleteImpactQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetRequirementFormDeleteImpactQuery>({ document: GetRequirementFormDeleteImpactDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetRequirementFormDeleteImpact', 'query', variables);
     },
     RegenerateFormShareToken(variables: RegenerateFormShareTokenMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<RegenerateFormShareTokenMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<RegenerateFormShareTokenMutation>({ document: RegenerateFormShareTokenDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'RegenerateFormShareToken', 'mutation', variables);

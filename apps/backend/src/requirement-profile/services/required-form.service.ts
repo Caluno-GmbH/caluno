@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, inArray, sql } from 'drizzle-orm';
+import { and, count, eq, inArray } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import type { RequirementFormEntity } from '../../database/schema';
@@ -416,38 +416,103 @@ export class RequiredFormService {
   }
 
   async isFormRequiredByAnyTarget(formId: string): Promise<boolean> {
-    const [orgUnitRow] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.organizationUnitRequiredForms)
+    const attachments = await this.listFormAttachments(formId);
+    return attachments.length > 0;
+  }
+
+  async listFormAttachments(formId: string): Promise<
+    Array<{
+      targetType: RequiredFormTargetType;
+      targetId: string;
+      name: string;
+    }>
+  > {
+    const attachments: Array<{
+      targetType: RequiredFormTargetType;
+      targetId: string;
+      name: string;
+    }> = [];
+
+    const orgUnitRows =
+      await this.db.query.organizationUnitRequiredForms.findMany({
+        where: { formId },
+        with: { organizationUnit: { columns: { id: true, name: true } } },
+      });
+    for (const row of orgUnitRows) {
+      attachments.push({
+        targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+        targetId: row.organizationUnitId,
+        name: row.organizationUnit.name,
+      });
+    }
+
+    const eventRows = await this.db.query.eventRequiredForms.findMany({
+      where: { formId },
+      with: { event: { columns: { id: true, title: true } } },
+    });
+    for (const row of eventRows) {
+      attachments.push({
+        targetType: RequiredFormTargetType.EVENT,
+        targetId: row.eventId,
+        name: row.event.title,
+      });
+    }
+
+    const shiftRows = await this.db.query.shiftRequiredForms.findMany({
+      where: { formId },
+      with: { shift: { columns: { id: true, title: true } } },
+    });
+    for (const row of shiftRows) {
+      attachments.push({
+        targetType: RequiredFormTargetType.SHIFT,
+        targetId: row.shiftId,
+        name: row.shift.title,
+      });
+    }
+
+    const shiftInstanceRows =
+      await this.db.query.shiftInstanceRequiredForms.findMany({
+        where: { formId },
+        with: {
+          shiftInstance: {
+            columns: {
+              id: true,
+              overrideTitle: true,
+              actualStartsAt: true,
+            },
+            with: { master: { columns: { title: true } } },
+          },
+        },
+      });
+    for (const row of shiftInstanceRows) {
+      const instance = row.shiftInstance;
+      if (!instance) continue;
+      const title = instance.overrideTitle ?? instance.master.title;
+      attachments.push({
+        targetType: RequiredFormTargetType.SHIFT_INSTANCE,
+        targetId: row.shiftInstanceId,
+        name: `${title} (${instance.actualStartsAt.toISOString()})`,
+      });
+    }
+
+    return attachments;
+  }
+
+  async detachFormFromAllTargets(
+    formId: string,
+    runner: Pick<Database, 'delete'> = this.db,
+  ): Promise<void> {
+    await runner
+      .delete(schema.organizationUnitRequiredForms)
       .where(eq(schema.organizationUnitRequiredForms.formId, formId));
-
-    if ((orgUnitRow?.count ?? 0) > 0) {
-      return true;
-    }
-
-    const [eventRow] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.eventRequiredForms)
+    await runner
+      .delete(schema.eventRequiredForms)
       .where(eq(schema.eventRequiredForms.formId, formId));
-
-    if ((eventRow?.count ?? 0) > 0) {
-      return true;
-    }
-
-    const [shiftRow] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.shiftRequiredForms)
+    await runner
+      .delete(schema.shiftRequiredForms)
       .where(eq(schema.shiftRequiredForms.formId, formId));
-
-    if ((shiftRow?.count ?? 0) > 0) {
-      return true;
-    }
-
-    const [shiftInstanceRow] = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.shiftInstanceRequiredForms)
+    await runner
+      .delete(schema.shiftInstanceRequiredForms)
       .where(eq(schema.shiftInstanceRequiredForms.formId, formId));
-
-    return (shiftInstanceRow?.count ?? 0) > 0;
   }
 }

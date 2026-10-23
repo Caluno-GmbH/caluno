@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, count, eq, inArray } from 'drizzle-orm';
+import { count, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
@@ -93,7 +93,7 @@ export class FormSubmissionService {
     });
     if (!profile) return [];
 
-    return await this.db.query.formSubmissionValues.findMany({
+    return await this.db.query.organizationUserProfileFieldValues.findMany({
       where: { organizationUserProfileId: profile.id },
       columns: { fieldId: true, value: true },
     });
@@ -345,28 +345,9 @@ export class FormSubmissionService {
       organizationUnitId,
     );
 
-    const customFieldIds = customValues.map((cv) => cv.fieldId);
-
     const submission = await this.db.transaction(async (tx) => {
       if (Object.keys(profileData).length > 0) {
         await this.userService.updateProfileFields(userId, profileData, tx);
-      }
-
-      // Disconnect any prior profile-anchored values for these fields so the
-      // unique (profile, field) index can accept the new rows.
-      if (customFieldIds.length > 0) {
-        await tx
-          .update(schema.formSubmissionValues)
-          .set({ organizationUserProfileId: null })
-          .where(
-            and(
-              eq(
-                schema.formSubmissionValues.organizationUserProfileId,
-                organizationUserProfile.id,
-              ),
-              inArray(schema.formSubmissionValues.fieldId, customFieldIds),
-            ),
-          );
       }
 
       let submissionRow: FormSubmissionEntity;
@@ -403,9 +384,29 @@ export class FormSubmissionService {
             submissionId: submissionRow.id,
             fieldId: cv.fieldId,
             value: cv.value,
-            organizationUserProfileId: organizationUserProfile.id,
           })),
         );
+
+        await tx
+          .insert(schema.organizationUserProfileFieldValues)
+          .values(
+            customValues.map((cv) => ({
+              organizationUserProfileId: organizationUserProfile.id,
+              fieldId: cv.fieldId,
+              value: cv.value,
+            })),
+          )
+          .onConflictDoUpdate({
+            target: [
+              schema.organizationUserProfileFieldValues
+                .organizationUserProfileId,
+              schema.organizationUserProfileFieldValues.fieldId,
+            ],
+            set: {
+              value: sql`excluded.value`,
+              updatedAt: new Date(),
+            },
+          });
       }
 
       return submissionRow;

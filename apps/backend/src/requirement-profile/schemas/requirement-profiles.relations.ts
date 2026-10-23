@@ -15,9 +15,21 @@ export const requirementProfilesRelations = defineRelationsPart(
         to: r.users.id,
         optional: false,
       }),
-      storedFormSubmissionValues: r.many.formSubmissionValues({
+      fieldValues: r.many.organizationUserProfileFieldValues({
         from: r.organizationUserProfiles.id,
-        to: r.formSubmissionValues.organizationUserProfileId,
+        to: r.organizationUserProfileFieldValues.organizationUserProfileId,
+      }),
+    },
+    organizationUserProfileFieldValues: {
+      organizationUserProfile: r.one.organizationUserProfiles({
+        from: r.organizationUserProfileFieldValues.organizationUserProfileId,
+        to: r.organizationUserProfiles.id,
+        optional: false,
+      }),
+      field: r.one.formBlockFields({
+        from: r.organizationUserProfileFieldValues.fieldId,
+        to: r.formBlockFields.id,
+        optional: false,
       }),
     },
     formBlocks: {
@@ -120,10 +132,6 @@ export const requirementProfilesRelations = defineRelationsPart(
         from: r.formSubmissionValues.fieldId,
         to: r.formBlockFields.id,
         optional: false,
-      }),
-      organizationUserProfile: r.one.organizationUserProfiles({
-        from: r.formSubmissionValues.organizationUserProfileId,
-        to: r.organizationUserProfiles.id,
       }),
     },
   }),
