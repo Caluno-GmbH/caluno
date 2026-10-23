@@ -25,5 +25,8 @@ staging|release)
   ;;
 esac
 
+echo "Re-rendering countersigned PDFs…"
+bun run scripts/rerender-signer-names.ts --apply || echo "Re-rendering countersigned PDFs failed"
+
 echo "Starting backend…"
 exec bun run start:prod
