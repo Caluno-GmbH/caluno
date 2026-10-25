@@ -168,6 +168,17 @@ export function RequiredFormRenderer({
     return map;
   }, [pendingForms]);
 
+  const currentStepHasStoredPrefill = useMemo(() => {
+    if (!currentForm) return false;
+    const blocks = formBlocksById.get(currentForm.form.id) ?? [];
+    return blocks.some((block) =>
+      (block.fields ?? []).some((field) => {
+        if (field.systemKey) return false;
+        return !!storedFieldValues[field.id];
+      }),
+    );
+  }, [currentForm, formBlocksById, storedFieldValues]);
+
   const formSchema = useMemo(() => {
     const shape: Record<string, z.ZodTypeAny> = {};
     const mergedFields = new Map<
@@ -391,6 +402,12 @@ export function RequiredFormRenderer({
       </CardHeader>
       <CardContent className="space-y-6">
         <RequiredFormStepper forms={displayForms} currentStep={currentStep} />
+
+        {currentStepHasStoredPrefill && (
+          <p className="text-sm text-muted-foreground">
+            {t('prefilledFromPreviousSubmissions')}
+          </p>
+        )}
 
         <div className="space-y-6">
           <div>
