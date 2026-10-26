@@ -4,7 +4,7 @@
 
 **Goal:** Turn the gender system profile field from free text into a select with five fixed options, localised DE/EN, with a backfill of existing answers.
 
-**Architecture:** Reuse `FieldType.SINGLE_CHOICE`. The five option values live in a mirrored constant (frontend `gender-options.ts`, backend `constants.ts`); localized labels come from a new `RequirementForm.genderOptions` message namespace. The frontend injects the fixed options whenever `systemKey === 'gender'`; the backend validates membership in `validateSystemKeyValue`. Two custom drizzle migrations convert existing field rows and backfill `user_profiles.data.gender`.
+**Architecture:** Reuse `FieldType.SINGLE_CHOICE`. The five option values live in a mirrored constant (frontend `gender-options.ts`, backend `constants.ts`); localized labels come from a new `RequirementForm.genderOptions` message namespace. The frontend injects the fixed options whenever `profileKey === 'gender'`; the backend validates membership in `validateProfileKeyValue`. Two custom drizzle migrations convert existing field rows and backfill `user_profiles.data.gender`.
 
 **Tech Stack:** NestJS + Drizzle (backend), Next.js 16 + next-intl + react-hook-form/zod (frontend), bun:test, Biome.
 
@@ -138,11 +138,11 @@ git commit -m "feat(frontend): fixed gender option catalog with DE/EN labels"
 - Test: `apps/backend/src/requirement-profile/profile-validation.spec.ts`
 
 **Interfaces:**
-- Produces: `GENDER_OPTION_VALUES` from `apps/backend/src/requirement-profile/constants.ts` — same five strings as Task 1. Consumed by Task 2 only (the form-submission service picks the rule up through the existing `validateSystemKeyValue` call).
+- Produces: `GENDER_OPTION_VALUES` from `apps/backend/src/requirement-profile/constants.ts` — same five strings as Task 1. Consumed by Task 2 only (the form-submission service picks the rule up through the existing `validateProfileKeyValue` call).
 
 - [ ] **Step 1: Write the failing test**
 
-Append inside the existing `describe('validateSystemKeyValue', ...)` in `apps/backend/src/requirement-profile/profile-validation.spec.ts`:
+Append inside the existing `describe('validateProfileKeyValue', ...)` in `apps/backend/src/requirement-profile/profile-validation.spec.ts`:
 
 ```ts
   describe('gender', () => {
@@ -252,7 +252,7 @@ describe('buildFieldSchema gender', () => {
     id: 'gender',
     type: FieldType.SingleChoice,
     label: 'Gender',
-    systemKey: 'gender',
+    profileKey: 'gender',
   });
 
   it('accepts each fixed option value when optional', () => {
@@ -317,7 +317,7 @@ with:
 
 ```ts
   if (type === FieldType.SingleChoice) {
-    if (systemKey === 'gender') {
+    if (profileKey === 'gender') {
       const e = z.enum(GENDER_OPTION_VALUES, {
         message: messages.fieldRequired(label),
       });
@@ -348,7 +348,7 @@ In the `SINGLE_CHOICE` render branch (starts ~line 400), replace the options sou
 
 ```ts
     const opts =
-      field.systemKey === 'gender'
+      field.profileKey === 'gender'
         ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
         : (field.options ?? []);
 ```
@@ -423,7 +423,7 @@ Append two tests:
 ```ts
   it('maps gender system values to localized labels', () => {
     const result = resolveFieldAnswer(
-      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
       [{ fieldId: 'f1', value: 'female' }],
       {},
       opts,
@@ -433,7 +433,7 @@ Append two tests:
 
   it('passes unknown gender values through unchanged', () => {
     const result = resolveFieldAnswer(
-      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
       [{ fieldId: 'f1', value: 'legacy-free-text' }],
       {},
       opts,
@@ -463,7 +463,7 @@ export type ResolveFieldAnswerOptions = {
 Add the gender branch directly after `if (!raw) { return dash; }` (line 30-32):
 
 ```ts
-  if (field.systemKey === 'gender') {
+  if (field.profileKey === 'gender') {
     return genderLabels[raw] ?? raw;
   }
 ```
@@ -556,11 +556,11 @@ Create `apps/frontend/src/domain/requirement-form/system-profile-fields.spec.ts`
 ```ts
 import { describe, expect, it } from 'bun:test';
 import { FieldType } from '@repo/data';
-import { SYSTEM_PROFILE_FIELDS } from './system-profile-fields';
+import { PROFILE_FIELDS } from './system-profile-fields';
 
-describe('SYSTEM_PROFILE_FIELDS', () => {
+describe('PROFILE_FIELDS', () => {
   it('defines gender as an optional single-choice system field', () => {
-    const gender = SYSTEM_PROFILE_FIELDS.find((f) => f.key === 'gender');
+    const gender = PROFILE_FIELDS.find((f) => f.key === 'gender');
     expect(gender?.type).toBe(FieldType.SingleChoice);
     expect(gender?.required).toBe(false);
     expect(gender?.labelKey).toBe('gender');
@@ -575,7 +575,7 @@ Expected: FAIL — gender's type is currently `FieldType.Text`.
 
 - [ ] **Step 3: Write the implementation — preset**
 
-In `apps/frontend/src/domain/requirement-form/system-profile-fields.ts` line 24, replace:
+In `../../apps/frontend/src/domain/requirement-form/profile-fields.ts` line 24, replace:
 
 ```ts
   { key: 'gender', labelKey: 'gender', type: FieldType.Text, required: false },
@@ -604,16 +604,16 @@ In `apps/frontend/src/domain/requirement-form/components/block-form.tsx`:
 1. In the `FieldCard` usage (the `fields.map` block, ~line 328-351), add the prop:
 
 ```tsx
-            systemKey={watchedFields[index]?.systemKey}
+            profileKey={watchedFields[index]?.profileKey}
 ```
 
-(pass it right after `isSystemField={!!watchedFields[index]?.systemKey}`.)
+(pass it right after `isSystemField={!!watchedFields[index]?.profileKey}`.)
 
-2. In the `FieldCard` function signature (~line 470-508), add `systemKey` to the destructured props and to the type:
+2. In the `FieldCard` function signature (~line 470-508), add `profileKey` to the destructured props and to the type:
 
 ```ts
   isSystemField,
-  systemKey,
+  profileKey,
   lockType,
 ```
 
@@ -621,7 +621,7 @@ and in the props type:
 
 ```ts
   isSystemField: boolean;
-  systemKey?: string;
+  profileKey?: string;
   lockType: boolean;
 ```
 
@@ -635,7 +635,7 @@ and in the props type:
 with:
 
 ```ts
-  const hasFixedOptions = systemKey === 'gender';
+  const hasFixedOptions = profileKey === 'gender';
   const showOptions =
     (fieldType === FieldType.SingleChoice ||
       fieldType === FieldType.MultiChoice) &&
@@ -651,7 +651,7 @@ with:
 with:
 
 ```tsx
-                disabled={isSystemField && systemKey !== 'gender'}
+                disabled={isSystemField && profileKey !== 'gender'}
 ```
 
 - [ ] **Step 6: Write the implementation — field-form binding hint**
@@ -659,9 +659,9 @@ with:
 In `apps/frontend/src/domain/requirement-form/components/field-form.tsx`, replace the auto-system-key hint (lines 246-250):
 
 ```tsx
-          {autoSystemKey && (
+          {autoProfileKey && (
             <p className="text-muted-foreground text-xs">
-              {t('profileField', { key: autoSystemKey })}
+              {t('profileField', { key: autoProfileKey })}
             </p>
           )}
 ```
@@ -669,9 +669,9 @@ In `apps/frontend/src/domain/requirement-form/components/field-form.tsx`, replac
 with:
 
 ```tsx
-          {(autoSystemKey || (isLocked && manualSystemKey && !showSystemKeyPicker)) && (
+          {(autoProfileKey || (isLocked && manualProfileKey && !showProfileKeyPicker)) && (
             <p className="text-muted-foreground text-xs">
-              {t('profileField', { key: autoSystemKey || manualSystemKey })}
+              {t('profileField', { key: autoProfileKey || manualProfileKey })}
             </p>
           )}
 ```
@@ -686,7 +686,7 @@ Expected: PASS, no errors.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add apps/frontend/src/domain/requirement-form/system-profile-fields.ts apps/frontend/src/domain/requirement-form/system-profile-fields.spec.ts apps/frontend/src/domain/requirement-form/components/block-form.tsx apps/frontend/src/domain/requirement-form/components/field-form.tsx
+git add apps/frontend/src/domain/requirement-form/profile-fields.ts apps/frontend/src/domain/requirement-form/system-profile-fields.spec.ts apps/frontend/src/domain/requirement-form/components/block-form.tsx apps/frontend/src/domain/requirement-form/components/field-form.tsx
 git commit -m "feat(frontend): gender preset as dropdown, required toggle, locked options"
 ```
 
@@ -801,7 +801,7 @@ git commit -m "feat(backend): migrate gender fields to single-choice and backfil
 - Modify: `apps/backend/test/form-submission.service.spec.ts`
 
 **Interfaces:**
-- Consumes: backend `GENDER_OPTION_VALUES` rule from Task 2 (through `validateSystemKeyValue`).
+- Consumes: backend `GENDER_OPTION_VALUES` rule from Task 2 (through `validateProfileKeyValue`).
 - Produces: no new exports — regression coverage for the submission → `user_profiles.data` path.
 
 - [ ] **Step 1: Write the failing test**
@@ -835,7 +835,7 @@ Append to `apps/backend/test/form-submission.service.spec.ts` (inside the top-le
           type: 'SINGLE_CHOICE',
           label: 'Gender',
           required,
-          systemKey: 'gender',
+          profileKey: 'gender',
           options: [],
           fieldOrder: 1,
         })
@@ -931,7 +931,7 @@ git commit -m "test(backend): gender submission accepts options, rejects free te
 Append to the "Known constraints (decision-log extracts — architectural, must stay)" section of `apps/backend/AGENTS.md`:
 
 ```markdown
-- **Gender is a fixed single-choice system field.** Five option values (`female`/`male`/`diverse`/`other`/`prefer-not-to-say`) are defined in code and mirrored frontend (`src/domain/requirement-form/gender-options.ts`) and backend (`GENDER_OPTION_VALUES` in `src/requirement-profile/constants.ts`); labels are localised client-side from `RequirementForm.genderOptions`. Gender field rows carry empty DB options — rendering and validation inject the fixed list by `systemKey`. (VOLI-1267)
+- **Gender is a fixed single-choice system field.** Five option values (`female`/`male`/`diverse`/`other`/`prefer-not-to-say`) are defined in code and mirrored frontend (`src/domain/requirement-form/gender-options.ts`) and backend (`GENDER_OPTION_VALUES` in `src/requirement-profile/constants.ts`); labels are localised client-side from `RequirementForm.genderOptions`. Gender field rows carry empty DB options — rendering and validation inject the fixed list by `profileKey`. (VOLI-1267)
 ```
 
 - [ ] **Step 2: Run the full verification**

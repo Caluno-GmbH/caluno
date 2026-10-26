@@ -12,15 +12,14 @@
 import * as path from 'node:path';
 import {
   type ClassDeclaration,
-  type Decorator,
   type MethodDeclaration,
   Project,
   SyntaxKind,
 } from 'ts-morph';
-import { config, isExcluded, repoRoot } from './config.js';
+import { config, isExcluded, relpath, repoRoot } from './config.js';
+import { decoName, tenantContextUse } from './tenant-context.js';
 
 const t = config.transport;
-const tc = config.tenantContext;
 
 type Flag =
   | 'ANONYMOUS'
@@ -42,15 +41,6 @@ type Endpoint = {
   flags: Flag[];
 };
 
-const decoName = (d: Decorator): string => {
-  const expr = d.getExpression();
-  const call = expr.asKind(SyntaxKind.CallExpression);
-  return (call ? call.getExpression().getText() : expr.getText()).replace(
-    /^.*\./,
-    '',
-  );
-};
-
 const decoArgs = (
   node: MethodDeclaration | ClassDeclaration,
   names: string[],
@@ -66,36 +56,6 @@ const decoArgs = (
             .map((a) => a.getText().replace(/^PERMISSIONS\./, ''))
         : [];
     });
-
-const relpath = (abs: string) =>
-  path.relative(repoRoot, abs).split(path.sep).join('/');
-
-/** Does the handler read the client-chosen tenant? Returns the evidence. */
-function tenantContextUse(m: MethodDeclaration): string | null {
-  const body = m.getBody()?.getText() ?? '';
-  const names: string[] = [];
-  for (const p of m.getParameters()) {
-    const decos = p.getDecorators();
-    const ds = decos.map(decoName);
-    const isCtx = ds.some((n) => tc.contextParamDecorators.includes(n));
-    const isHdr = ds.some((n) => tc.headerParamDecorators.includes(n));
-    if (isHdr && decos.some((d) => d.getText().includes(tc.header))) {
-      return `@Headers('${tc.header}') ${p.getName()}`;
-    }
-    if (isCtx || isHdr) names.push(p.getName());
-  }
-  for (const n of names) {
-    if (new RegExp(`\\b${n}\\.${tc.contextProperty}\\b`).test(body)) {
-      return `${n}.${tc.contextProperty}`;
-    }
-    const destructure = new RegExp(
-      `\\{[^}]*\\b${tc.contextProperty}\\b[^}]*\\}\\s*=\\s*${n}\\b`,
-    );
-    if (destructure.test(body)) return `destructured from ${n}`;
-    if (body.includes(tc.header)) return `header ${tc.header} via ${n}`;
-  }
-  return null;
-}
 
 const project = new Project({
   skipAddingFilesFromTsConfig: true,

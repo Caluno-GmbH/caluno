@@ -191,8 +191,8 @@ input CreateFormBlockFieldInput {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean
-  systemKey: String
   type: FieldType!
 }
 
@@ -458,8 +458,8 @@ type FormBlockField {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean!
-  systemKey: String
   type: FieldType!
   updatedAt: DateTime!
 }
@@ -1410,8 +1410,8 @@ input UpdateFormBlockFieldInput {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean
-  systemKey: String
   type: FieldType
 }
 

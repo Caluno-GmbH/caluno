@@ -15,7 +15,7 @@ export type RequiredFormField = {
   description?: string | null;
   required: boolean;
   lockType: boolean;
-  systemKey?: string | null;
+  profileKey?: string | null;
   documents: Array<{
     fileId: string;
     filename?: string | null;

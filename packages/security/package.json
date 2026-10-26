@@ -6,7 +6,9 @@
   "scripts": {
     "audit": "bash scripts/audit.sh",
     "audit:surface": "mkdir -p out && bun src/enumerate-surface.ts > out/surface.json",
+    "audit:tenant": "bash scripts/audit.sh tenant",
     "audit:coverage": "bun src/coverage-diff.ts out/surface.json",
+    "test": "bun test src",
     "audit:sast": "bash scripts/audit.sh sast",
     "audit:deps": "bash scripts/audit.sh deps",
     "audit:secrets": "bash scripts/audit.sh secrets",

@@ -59,13 +59,13 @@ The stored value is always the stable key; only the label is localised. A `useGe
 
 `apps/backend/src/requirement-profile/constants.ts` gains the same five values in a `GENDER_OPTION_VALUES` constant. This mirrors the frontend list, following the codebase's existing convention of mirrored validators (a value accepted client-side is accepted by the backend, and vice versa).
 
-In `apps/backend/src/requirement-profile/profile-validation.ts`, the gender case of `validateSystemKeyValue` changes from a 50-character maximum to a membership check against `GENDER_OPTION_VALUES`. An empty value still means "no answer" and stays valid: profile fields can be left blank and are only enforced where they are actually needed.
+In `apps/backend/src/requirement-profile/profile-validation.ts`, the gender case of `validateProfileKeyValue` changes from a 50-character maximum to a membership check against `GENDER_OPTION_VALUES`. An empty value still means "no answer" and stays valid: profile fields can be left blank and are only enforced where they are actually needed.
 
-In `apps/backend/src/requirement-profile/services/form-submission.service.ts`, the `SINGLE_CHOICE` branch of `validateFieldValue` validates against the field's stored options. For `systemKey === 'gender'` it validates against the fixed list instead, because gender field rows carry no DB options.
+In `apps/backend/src/requirement-profile/services/form-submission.service.ts`, the `SINGLE_CHOICE` branch of `validateFieldValue` validates against the field's stored options. For `profileKey === 'gender'` it validates against the fixed list instead, because gender field rows carry no DB options.
 
 ## Frontend rendering
 
-`FieldRenderer`'s `SINGLE_CHOICE` branch (`apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`) is the single render point to change: when `field.systemKey === 'gender'`, it renders the localized fixed options instead of `field.options`. This covers every surface that renders through `FieldRenderer`:
+`FieldRenderer`'s `SINGLE_CHOICE` branch (`apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`) is the single render point to change: when `field.profileKey === 'gender'`, it renders the localized fixed options instead of `field.options`. This covers every surface that renders through `FieldRenderer`:
 
 - the volunteer profile edit form (`edit-identity-form.tsx`),
 - volunteer-facing required forms,
@@ -83,7 +83,7 @@ Two display-only spots need a value-to-label mapping added:
 
 Three changes:
 
-- The gender preset in `apps/frontend/src/domain/requirement-form/system-profile-fields.ts` becomes `type: FieldType.SingleChoice` (still `required: false` by default, still `lockType`, so the type stays read-only).
+- The gender preset in `../../apps/frontend/src/domain/requirement-form/profile-fields.ts` becomes `type: FieldType.SingleChoice` (still `required: false` by default, still `lockType`, so the type stays read-only).
 - The options editor in `block-form.tsx` is hidden for gender: admins cannot add or remove options. Description and help text stay editable.
 - The required switch in `block-form.tsx` is enabled for gender only; other system fields keep their preset locked behavior. A required gender is safe because "Prefer not to say" is always available.
 

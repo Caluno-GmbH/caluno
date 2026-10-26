@@ -1,4 +1,4 @@
-import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import { PROFILE_FIELDS } from '@/domain/requirement-form/profile-fields';
 
 export type ProfileShape = {
   firstname?: string | null;
@@ -18,14 +18,14 @@ export type ProfileShape = {
 
 /**
  * Sparse string bag of profile columns for form prefills / submission views.
- * Keys are the same as users columns / form systemKeys (no remapping).
+ * Keys are the same as users columns / form profileKeys (no remapping).
  */
 export function profileFieldValues(
   user: ProfileShape | null | undefined,
 ): Record<string, string> {
   if (!user) return {};
   const data: Record<string, string> = {};
-  for (const { key } of SYSTEM_PROFILE_FIELDS) {
+  for (const { key } of PROFILE_FIELDS) {
     const value = user[key as keyof ProfileShape];
     if (typeof value === 'string' && value.trim() !== '') {
       data[key] = value;

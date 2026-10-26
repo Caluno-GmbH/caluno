@@ -2,8 +2,8 @@ import { BadRequestGraphQLError } from '../../graphql/errors';
 import { FieldType } from '../enums';
 import {
   assertValidFieldOptions,
+  assertValidProfileKeyBinding,
   assertValidRequiredFlag,
-  assertValidSystemKeyBinding,
 } from './validate-field-options';
 
 describe('assertValidFieldOptions', () => {
@@ -51,42 +51,42 @@ describe('assertValidFieldOptions', () => {
   });
 });
 
-describe('assertValidSystemKeyBinding', () => {
+describe('assertValidProfileKeyBinding', () => {
   it('accepts a gender single-choice field without options', () => {
     expect(() =>
-      assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, null),
+      assertValidProfileKeyBinding('gender', FieldType.SINGLE_CHOICE, null),
     ).not.toThrow();
     expect(() =>
-      assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, []),
+      assertValidProfileKeyBinding('gender', FieldType.SINGLE_CHOICE, []),
     ).not.toThrow();
   });
 
   it('rejects a gender field with a non-choice type', () => {
     expect(() =>
-      assertValidSystemKeyBinding('gender', FieldType.TEXT, null),
+      assertValidProfileKeyBinding('gender', FieldType.TEXT, null),
     ).toThrow(BadRequestGraphQLError);
     expect(() =>
-      assertValidSystemKeyBinding('gender', FieldType.MULTI_CHOICE, null),
+      assertValidProfileKeyBinding('gender', FieldType.MULTI_CHOICE, null),
     ).toThrow(BadRequestGraphQLError);
   });
 
   it('rejects a gender field with custom options', () => {
     expect(() =>
-      assertValidSystemKeyBinding('gender', FieldType.SINGLE_CHOICE, [
+      assertValidProfileKeyBinding('gender', FieldType.SINGLE_CHOICE, [
         'Female',
       ]),
     ).toThrow(BadRequestGraphQLError);
   });
 
-  it('ignores other system keys and missing keys', () => {
+  it('ignores other profile keys and missing keys', () => {
     expect(() =>
-      assertValidSystemKeyBinding('firstname', FieldType.TEXT, null),
+      assertValidProfileKeyBinding('firstname', FieldType.TEXT, null),
     ).not.toThrow();
     expect(() =>
-      assertValidSystemKeyBinding(null, FieldType.TEXT, null),
+      assertValidProfileKeyBinding(null, FieldType.TEXT, null),
     ).not.toThrow();
     expect(() =>
-      assertValidSystemKeyBinding(undefined, FieldType.SINGLE_CHOICE, ['A']),
+      assertValidProfileKeyBinding(undefined, FieldType.SINGLE_CHOICE, ['A']),
     ).not.toThrow();
   });
 });
