@@ -927,10 +927,12 @@ export class InvoiceService {
         ? await this.documentRenderingService.resolveRenderInputs(invoice)
         : undefined;
 
+    const signedByName = await this.documentSigningService.signerNameOf(userId);
+
     const updated = await this.db.transaction(async (tx) => {
       await tx
         .update(schema.invoiceSignatures)
-        .set({ signedByUserId: userId, signedAt: new Date() })
+        .set({ signedByUserId: userId, signedByName, signedAt: new Date() })
         .where(eq(schema.invoiceSignatures.id, pending.id));
 
       const [signed] = await tx

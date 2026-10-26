@@ -284,34 +284,6 @@ describe('RequirementFormService block org scoping', () => {
     expect(refs.map((r) => r.blockId)).toEqual([block.id]);
   });
 
-  it('update rejects settings when form has submissions', async () => {
-    const { user, organization, unit } = await setupOrg('Form Org');
-    const { form } = await createRequirementForm(db, {
-      organizationId: organization.id,
-      organizationUnitId: unit.id,
-      createdById: user.id,
-    });
-    await createFormSubmission(db, {
-      formId: form.id,
-      userId: user.id,
-      organizationUnitId: unit.id,
-    });
-
-    await expect(
-      requirementFormService.update(
-        form.id,
-        unit.id,
-        { settings: { successTitle: 'Changed after submit' } },
-        user.id,
-      ),
-    ).rejects.toBeInstanceOf(ConflictGraphQLError);
-
-    const reloaded = await db.query.requirementForms.findFirst({
-      where: { id: form.id },
-    });
-    expect(reloaded?.settings).toEqual(form.settings);
-  });
-
   it('delete removes form with submissions and detaches required-form links', async () => {
     const { user, organization, unit } = await setupOrg('Form Org');
     const { form } = await createRequirementForm(db, {

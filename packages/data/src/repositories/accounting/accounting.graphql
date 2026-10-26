@@ -129,6 +129,7 @@ fragment ContractSummaryFields on Contract {
     order
     signeeType
     signedAt
+    signedByName
     signedByUser {
       id
       name
@@ -240,6 +241,7 @@ fragment InvoiceSummaryFields on Invoice {
     order
     signeeType
     signedAt
+    signedByName
     signedByUser {
       id
       name

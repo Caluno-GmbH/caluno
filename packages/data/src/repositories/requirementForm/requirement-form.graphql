@@ -285,12 +285,6 @@ query GetRequirementForm($id: String!) {
     slug
     name
     description
-    settings {
-      submitButtonLabel
-      successTitle
-      successMessage
-      allowEmbed
-    }
     shareToken
     submissionCount
     createdBy
@@ -348,12 +342,6 @@ query GetRequirementFormByShareToken($token: String!) {
     organizationUnitId
     name
     description
-    settings {
-      submitButtonLabel
-      successTitle
-      successMessage
-      allowEmbed
-    }
     blockRefs {
       id
       formId
@@ -403,12 +391,6 @@ query GetRequirementForms(
       slug
       name
       description
-      settings {
-        submitButtonLabel
-        successTitle
-        successMessage
-        allowEmbed
-      }
       shareToken
       submissionCount
       createdBy

@@ -41,6 +41,8 @@ interface FormBuilderProps {
   form: RequirementForm;
   availableBlocks: FormBlock[];
   orgUId: string;
+  /** Org display name for the volunteer-style preview (profile-field cards). */
+  orgName: string;
 }
 
 function normalizeBlockRefs(
@@ -70,6 +72,7 @@ export function FormBuilder({
   form,
   availableBlocks,
   orgUId,
+  orgName,
 }: FormBuilderProps) {
   const router = useRouter();
   const t = useTranslations('RequirementForm.builder');
@@ -240,6 +243,7 @@ export function FormBuilder({
         <FormBuilderPreview
           blockRefs={blockRefs}
           availableBlocks={availableBlocks}
+          formOrg={orgName}
         />
       </div>
 

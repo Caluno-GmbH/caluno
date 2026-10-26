@@ -126,6 +126,7 @@ type ContractSignature {
   order: Int!
   requiredPermission: Permission
   signedAt: DateTime
+  signedByName: String
   signedByUser: User
   signeeType: SigneeType!
   updatedAt: DateTime
@@ -253,7 +254,6 @@ input CreateRequirementFormInput {
   description: String
   name: String!
   organizationId: String!
-  settings: FormSettingsInput
 }
 
 input CreateRoleInput {
@@ -486,20 +486,6 @@ input FormFieldValueInput {
   value: String!
 }
 
-type FormSettings {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
-}
-
-input FormSettingsInput {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
-}
-
 type FormSubmission {
   createdAt: DateTime!
   form: RequirementForm
@@ -580,6 +566,7 @@ type InvoiceSignature {
   order: Int!
   requiredPermission: Permission
   signedAt: DateTime
+  signedByName: String
   signedByUser: User
   signeeType: SigneeType!
   updatedAt: DateTime
@@ -1117,7 +1104,6 @@ type RequirementForm {
   name: String!
   organizationId: String!
   organizationUnitId: String
-  settings: FormSettings!
   shareToken: String!
   slug: String!
   submissionCount: Float!
@@ -1504,7 +1490,6 @@ input UpdateRequirementFormInput {
   blockRefs: [FormBlockRefInput!]
   description: String
   name: String
-  settings: FormSettingsInput
 }
 
 input UpdateShiftInput {

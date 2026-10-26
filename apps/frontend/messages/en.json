@@ -1029,7 +1029,10 @@
   "RequiredFormRenderer": {
     "formProgress": "Form progress",
     "noForms": "No forms are required.",
+    "prefilledFromPreviousSubmissions": "Form was prefilled with values from previous submissions",
     "step": "Form {current} of {total}",
+    "submit": "Submit form",
+    "submitting": "Submiting form...",
     "submitAll": "Submit all forms",
     "submittingAll": "Submitting all forms..."
   },
@@ -1335,6 +1338,7 @@
       "validPostalCode": "{label} must be a valid postal code"
     },
     "volunteerForm": {
+      "completeRequiredFormsHint": "Please complete the required forms",
       "alreadySubmittedMessage": "Your form has been submitted.",
       "alreadySubmittedTitle": "Form submitted",
       "back": "Back",
@@ -1351,7 +1355,6 @@
       "noFields": "This block has no fields yet.",
       "paymentDataVisibilityHint": "Your bank details are visible only to the people who handle reimbursements.",
       "pickDate": "Pick a date",
-      "prefilledFromPreviousSubmissions": "Form was prefilled with values from previous submissions",
       "profileChangeWarning": "If you change this information, it will also be changed in your profile.",
       "selectOption": "Select an option",
       "sharedWithOrg": "Shared with {orgName}.",

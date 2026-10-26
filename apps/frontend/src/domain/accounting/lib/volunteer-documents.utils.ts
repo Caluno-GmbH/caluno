@@ -23,6 +23,7 @@ export type VolunteerDocumentKind = 'contract' | 'invoice';
 interface SignatureEntry {
   signeeType: SigneeType;
   signedAt?: string | null;
+  signedByName?: string | null;
   signedByUser?: { name?: string } | null;
 }
 
@@ -141,7 +142,7 @@ export function documentLines(args: {
       { kind: 'signed-by-me', occurredAt: mine },
       {
         kind: 'countersigned-by',
-        actorName: org?.signedByUser?.name,
+        actorName: org?.signedByName ?? org?.signedByUser?.name,
         occurredAt: orgDate,
       },
     ];

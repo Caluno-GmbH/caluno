@@ -1,0 +1,1 @@
+ALTER TABLE "requirement_forms" DROP COLUMN "settings";

@@ -65,6 +65,7 @@ export function JoinFormsClient({
       forms={requiredForms}
       profileData={profileData}
       storedFieldValues={storedFieldValues}
+      orgName={orgName}
       initialSubmittedFormIds={initialSubmittedFormIds}
       onComplete={handleComplete}
     />
