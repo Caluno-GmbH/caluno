@@ -9,7 +9,6 @@ import {
   isNull,
   lt,
   max,
-  ne,
 } from 'drizzle-orm';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
@@ -143,9 +142,6 @@ export class InvoiceService {
     }
     if (filter.status) {
       conditions.push(eq(schema.invoices.invoiceStatus, filter.status));
-    }
-    if (filter.issuedOnly) {
-      conditions.push(ne(schema.invoices.invoiceStatus, InvoiceStatus.DRAFT));
     }
     // Periods end exclusively, so one ending exactly at the range start
     // doesn't overlap it.

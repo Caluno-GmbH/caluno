@@ -105,7 +105,6 @@ export class InvoiceQueryResolver {
       {
         ...toInvoiceFilter(filter),
         volunteerId: session.user.id,
-        issuedOnly: true,
       },
     );
     return this.invoiceMapper.toArray(invoices);

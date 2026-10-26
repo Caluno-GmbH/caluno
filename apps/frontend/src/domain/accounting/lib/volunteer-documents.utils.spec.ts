@@ -13,7 +13,6 @@ import {
   contractToVolunteerDocument,
   documentLines,
   documentState,
-  invoiceToVolunteerDocument,
   periodLabel,
 } from './volunteer-documents.utils';
 
@@ -75,9 +74,8 @@ describe('documentState', () => {
     expect(documentState(InvoiceStatus.Declined)).toBe('declined');
   });
 
-  it('drops drafts instead of rendering them as active', () => {
+  it('drops draft contracts instead of rendering them as active', () => {
     expect(documentState(ContractStatus.Draft)).toBeNull();
-    expect(documentState(InvoiceStatus.Draft)).toBeNull();
   });
 
   it('maps an expired contract to its own state, never signed', () => {
@@ -304,40 +302,6 @@ describe('contractToVolunteerDocument', () => {
         volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
         reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
         documentTemplate: { id: 'dt-1', kind: DocumentKind.Contract },
-        signatures: [],
-        statusChanges: [statusChange()],
-      },
-      formatMonth,
-    );
-    expect(doc).toBeNull();
-  });
-});
-
-describe('invoiceToVolunteerDocument', () => {
-  it('returns null for a draft invoice summary', () => {
-    const doc = invoiceToVolunteerDocument(
-      {
-        id: 'invoice-1',
-        invoiceStatus: InvoiceStatus.Draft,
-        periodStart: '2026-07-01T00:00:00.000Z',
-        periodEnd: '2026-07-31T23:59:59.000Z',
-        totalAmountCents: 12_000,
-        totalHours: 8,
-        isNonCompliant: false,
-        hasHoursWithoutActiveContract: false,
-        declineReason: null,
-        declinedAt: null,
-        declinedAtSigneeType: null,
-        declinedByUser: null,
-        downloadUrl: null,
-        missingProfileFields: [],
-        missingOrgProfileFields: [],
-        createdAt: '2026-07-01T00:00:00.000Z',
-        updatedAt: null,
-        volunteer: { id: 'v-1', name: 'Alexandra Bauer', image: null },
-        reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
-        documentTemplate: { id: 'dt-2', kind: DocumentKind.Invoice },
-        invoiceTimeEntries: [],
         signatures: [],
         statusChanges: [statusChange()],
       },

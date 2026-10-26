@@ -582,7 +582,6 @@ export class TaskService {
             InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
             InvoiceStatus.READY,
             InvoiceStatus.DECLINED,
-            InvoiceStatus.DRAFT,
             InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
           ]),
         ),
