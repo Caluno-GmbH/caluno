@@ -41,6 +41,7 @@ export * from './components/sheet';
 export * from './components/sidebar';
 export * from './components/skeleton';
 export * from './components/tab-bar';
+export * from './components/table-toolbar';
 export * from './components/tooltip';
 
 export * from './components/volunteering-status';
