@@ -19,7 +19,9 @@ export function clampActions(actions: ReactNode[] | undefined): ReactNode[] {
   return actions.slice(0, MAX_ACTIONS);
 }
 
-export function hasActiveFilters(filters: TableToolbarActiveFilter[] | undefined): boolean {
+export function hasActiveFilters(
+  filters: TableToolbarActiveFilter[] | undefined,
+): boolean {
   return (filters?.length ?? 0) > 0;
 }
 

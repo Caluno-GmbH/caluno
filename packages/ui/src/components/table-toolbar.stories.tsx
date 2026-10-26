@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 import { expect, userEvent, waitFor } from 'storybook/test';
 import { Button } from '@/components/base/button';
 import {
@@ -31,12 +31,19 @@ const FILL_OPTIONS = [
   { label: 'Full', value: 'full' },
 ];
 
-function labelFor(options: { label: string; value: string }[], value: string): string {
+function labelFor(
+  options: { label: string; value: string }[],
+  value: string,
+): string {
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
-function formatDateRange(range: { from?: Date; to?: Date }): string | undefined {
-  const fmt = (date: Date) => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function formatDateRange(range: {
+  from?: Date;
+  to?: Date;
+}): string | undefined {
+  const fmt = (date: Date) =>
+    date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   if (range.from && range.to) return `${fmt(range.from)} – ${fmt(range.to)}`;
   if (range.from) return `From ${fmt(range.from)}`;
   if (range.to) return `Until ${fmt(range.to)}`;
@@ -59,7 +66,11 @@ export const WithSearch: Story = {
     const [q, setQ] = useState('');
     return (
       <TableToolbar>
-        <TableToolbar.Search value={q} onChange={setQ} placeholder="Search name or location" />
+        <TableToolbar.Search
+          value={q}
+          onChange={setQ}
+          placeholder="Search name or location"
+        />
       </TableToolbar>
     );
   },
@@ -72,12 +83,18 @@ export const ShouldClearSearch: Story = {
     const [q, setQ] = useState('cleanup');
     return (
       <TableToolbar>
-        <TableToolbar.Search value={q} onChange={setQ} placeholder="Search name or location" />
+        <TableToolbar.Search
+          value={q}
+          onChange={setQ}
+          placeholder="Search name or location"
+        />
       </TableToolbar>
     );
   },
   play: async ({ canvas }) => {
-    await userEvent.click(canvas.getByRole('button', { name: /clear search/i }));
+    await userEvent.click(
+      canvas.getByRole('button', { name: /clear search/i }),
+    );
     await waitFor(() =>
       expect(canvas.getByLabelText(/search name or location/i)).toHaveValue(''),
     );
@@ -94,8 +111,16 @@ export const AllControls: Story = {
     const [fill, setFill] = useState<string>();
     return (
       <TableToolbar>
-        <TableToolbar.Search value={q} onChange={setQ} placeholder="Search name or location" />
-        <TableToolbar.DateRange value={range} onChange={setRange} placeholder="Date range" />
+        <TableToolbar.Search
+          value={q}
+          onChange={setQ}
+          placeholder="Search name or location"
+        />
+        <TableToolbar.DateRange
+          value={range}
+          onChange={setRange}
+          placeholder="Date range"
+        />
         <TableToolbar.Select
           value={location}
           onChange={setLocation}
@@ -131,14 +156,23 @@ export const FullyLoaded: Story = {
       to: new Date(2026, 10, 30),
     });
     const [location, setLocation] = useState<string | undefined>('hall-a');
-    const [visibility, setVisibility] = useState<string | undefined>('ALL_MEMBERS');
+    const [visibility, setVisibility] = useState<string | undefined>(
+      'ALL_MEMBERS',
+    );
     const [fill, setFill] = useState<string | undefined>('below');
 
     const rangeDisplay = formatDateRange(range);
     const activeFilters: TableToolbarActiveFilter[] = [
-      q ? { key: 'q', label: 'Search', display: q, onClear: () => setQ('') } : null,
+      q
+        ? { key: 'q', label: 'Search', display: q, onClear: () => setQ('') }
+        : null,
       rangeDisplay
-        ? { key: 'range', label: 'Dates', display: rangeDisplay, onClear: () => setRange({}) }
+        ? {
+            key: 'range',
+            label: 'Dates',
+            display: rangeDisplay,
+            onClear: () => setRange({}),
+          }
         : null,
       location
         ? {
@@ -185,8 +219,16 @@ export const FullyLoaded: Story = {
           </Button>,
         ]}
       >
-        <TableToolbar.Search value={q} onChange={setQ} placeholder="Search name or location" />
-        <TableToolbar.DateRange value={range} onChange={setRange} placeholder="Date range" />
+        <TableToolbar.Search
+          value={q}
+          onChange={setQ}
+          placeholder="Search name or location"
+        />
+        <TableToolbar.DateRange
+          value={range}
+          onChange={setRange}
+          placeholder="Date range"
+        />
         <TableToolbar.Select
           value={location}
           onChange={setLocation}
@@ -215,17 +257,19 @@ function FiltersHarness({ withClearAll }: { withClearAll: boolean }) {
     location: 'Hall A',
     fill: 'Below min',
   });
-  const activeFilters: TableToolbarActiveFilter[] = Object.entries(filters).map(([key, value]) => ({
-    key,
-    label: key === 'location' ? 'Location' : 'Fill status',
-    display: value,
-    onClear: () =>
-      setFilters((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }),
-  }));
+  const activeFilters: TableToolbarActiveFilter[] = Object.entries(filters).map(
+    ([key, value]) => ({
+      key,
+      label: key === 'location' ? 'Location' : 'Fill status',
+      display: value,
+      onClear: () =>
+        setFilters((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        }),
+    }),
+  );
   return (
     <TableToolbar
       activeFilters={activeFilters}
@@ -247,8 +291,12 @@ export const ShouldClearSingleFilter: Story = {
   render: () => <FiltersHarness withClearAll />,
   play: async ({ canvas, step }) => {
     await step('clear the Location chip', async () => {
-      await userEvent.click(canvas.getByRole('button', { name: /clear location filter/i }));
-      await waitFor(() => expect(canvas.queryByText('Hall A')).not.toBeInTheDocument());
+      await userEvent.click(
+        canvas.getByRole('button', { name: /clear location filter/i }),
+      );
+      await waitFor(() =>
+        expect(canvas.queryByText('Hall A')).not.toBeInTheDocument(),
+      );
     });
     await step('Fill status chip remains', async () => {
       expect(canvas.getByText('Below min')).toBeInTheDocument();
@@ -261,9 +309,15 @@ export const FiltersActiveWithoutClearAll: Story = {
   tags: ['!dev', '!autodocs'],
   render: () => <FiltersHarness withClearAll={false} />,
   play: async ({ canvas }) => {
-    expect(canvas.queryByRole('button', { name: /clear all/i })).not.toBeInTheDocument();
-    await userEvent.click(canvas.getByRole('button', { name: /clear location filter/i }));
-    await waitFor(() => expect(canvas.queryByText('Hall A')).not.toBeInTheDocument());
+    expect(
+      canvas.queryByRole('button', { name: /clear all/i }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      canvas.getByRole('button', { name: /clear location filter/i }),
+    );
+    await waitFor(() =>
+      expect(canvas.queryByText('Hall A')).not.toBeInTheDocument(),
+    );
   },
 };
 
@@ -342,7 +396,9 @@ function MobileHarness({
 }) {
   const [q, setQ] = useState(initialSelected ? 'cleanup' : '');
   const [range, setRange] = useState<{ from?: Date; to?: Date }>(
-    initialSelected ? { from: new Date(2026, 10, 1), to: new Date(2026, 10, 30) } : {},
+    initialSelected
+      ? { from: new Date(2026, 10, 1), to: new Date(2026, 10, 30) }
+      : {},
   );
   const [location, setLocation] = useState<string | undefined>(
     initialSelected ? 'hall-a' : undefined,
@@ -350,13 +406,22 @@ function MobileHarness({
   const [visibility, setVisibility] = useState<string | undefined>(
     initialSelected ? 'ALL_MEMBERS' : undefined,
   );
-  const [fill, setFill] = useState<string | undefined>(initialSelected ? 'below' : undefined);
+  const [fill, setFill] = useState<string | undefined>(
+    initialSelected ? 'below' : undefined,
+  );
 
   const rangeDisplay = formatDateRange(range);
   const activeFilters: TableToolbarActiveFilter[] = [
-    q ? { key: 'q', label: 'Search', display: q, onClear: () => setQ('') } : null,
+    q
+      ? { key: 'q', label: 'Search', display: q, onClear: () => setQ('') }
+      : null,
     rangeDisplay
-      ? { key: 'range', label: 'Dates', display: rangeDisplay, onClear: () => setRange({}) }
+      ? {
+          key: 'range',
+          label: 'Dates',
+          display: rangeDisplay,
+          onClear: () => setRange({}),
+        }
       : null,
     location
       ? {
@@ -408,8 +473,16 @@ function MobileHarness({
           : undefined
       }
     >
-      <TableToolbar.Search value={q} onChange={setQ} placeholder="Search name or location" />
-      <TableToolbar.DateRange value={range} onChange={setRange} placeholder="Date range" />
+      <TableToolbar.Search
+        value={q}
+        onChange={setQ}
+        placeholder="Search name or location"
+      />
+      <TableToolbar.DateRange
+        value={range}
+        onChange={setRange}
+        placeholder="Date range"
+      />
       <TableToolbar.Select
         value={location}
         onChange={setLocation}

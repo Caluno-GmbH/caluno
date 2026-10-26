@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { clampActions, formatResultsLabel, hasActiveFilters } from './table-toolbar.utils';
+import {
+  clampActions,
+  formatResultsLabel,
+  hasActiveFilters,
+} from './table-toolbar.utils';
 
 describe('clampActions', () => {
   it('returns an empty array when actions is undefined', () => {
@@ -41,7 +45,9 @@ describe('hasActiveFilters', () => {
 
   it('is true when at least one filter is present', () => {
     expect(
-      hasActiveFilters([{ key: 'loc', label: 'Location', display: 'Hall A', onClear: () => {} }]),
+      hasActiveFilters([
+        { key: 'loc', label: 'Location', display: 'Hall A', onClear: () => {} },
+      ]),
     ).toBe(true);
   });
 });

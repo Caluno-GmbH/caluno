@@ -1,7 +1,9 @@
-import { type ReactNode, useState } from 'react';
+'use client';
+
 import { SearchIcon, SlidersHorizontalIcon, XIcon } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { type ReactNode, useState } from 'react';
 import { useIsMobile } from '../hooks/use-mobile';
+import { cn } from '../lib/utils';
 import { Badge } from './base/badge';
 import { Button } from './base/button';
 import {
@@ -17,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './base/select';
+import { DatePickerWithRange } from './date-picker';
 import {
   Sheet,
   SheetContent,
@@ -24,7 +27,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from './sheet';
-import { DatePickerWithRange } from './date-picker';
 import {
   clampActions,
   formatResultsLabel,
@@ -48,7 +50,11 @@ export type TableToolbarProps = {
 const ISLAND_CLASSNAME =
   'sticky top-0 z-30 rounded-lg border bg-card p-3 shadow-sm';
 
-function ActiveFilterChips({ filters }: { filters: TableToolbarActiveFilter[] }) {
+function ActiveFilterChips({
+  filters,
+}: {
+  filters: TableToolbarActiveFilter[];
+}) {
   return (
     <div className="flex flex-1 flex-wrap items-center gap-1.5">
       {filters.map((filter) => (
@@ -131,11 +137,18 @@ function TableToolbar({
               {children}
             </div>
             <SheetFooter>
-              <Button className="w-full" onClick={() => setFilterSheetOpen(false)}>
+              <Button
+                className="w-full"
+                onClick={() => setFilterSheetOpen(false)}
+              >
                 {formatResultsLabel(resultCount)}
               </Button>
               {onClearAll && (
-                <Button variant="outline" className="w-full" onClick={onClearAll}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={onClearAll}
+                >
                   Clear all
                 </Button>
               )}
@@ -238,10 +251,19 @@ type FilterSelectProps = {
   ariaLabel?: string;
 };
 
-function FilterSelect({ value, onChange, options, placeholder, ariaLabel }: FilterSelectProps) {
+function FilterSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  ariaLabel,
+}: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger aria-label={ariaLabel ?? placeholder} className="w-auto min-w-36">
+      <SelectTrigger
+        aria-label={ariaLabel ?? placeholder}
+        className="w-auto min-w-36"
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -267,7 +289,9 @@ function DateRange({ value, onChange, placeholder }: DateRangeProps) {
   return (
     <DatePickerWithRange
       value={{ start: value.from ?? null, end: value.to ?? null }}
-      onChange={(start, end) => onChange({ from: start ?? undefined, to: end ?? undefined })}
+      onChange={(start, end) =>
+        onChange({ from: start ?? undefined, to: end ?? undefined })
+      }
       placeholder={placeholder}
     />
   );
@@ -277,5 +301,5 @@ TableToolbar.Search = Search;
 TableToolbar.Select = FilterSelect;
 TableToolbar.DateRange = DateRange;
 
-export { TableToolbar };
 export type { TableToolbarActiveFilter } from './table-toolbar.utils';
+export { TableToolbar };
