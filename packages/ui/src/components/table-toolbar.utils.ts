@@ -22,3 +22,8 @@ export function clampActions(actions: ReactNode[] | undefined): ReactNode[] {
 export function hasActiveFilters(filters: TableToolbarActiveFilter[] | undefined): boolean {
   return (filters?.length ?? 0) > 0;
 }
+
+export function formatResultsLabel(count: number | undefined): string {
+  if (count === undefined) return 'Show results';
+  return `Show ${count} ${count === 1 ? 'result' : 'results'}`;
+}
