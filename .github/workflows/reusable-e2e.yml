@@ -85,7 +85,7 @@ jobs:
           MAILBOX_URL: ${{ inputs.mailbox-url }}
           MAILBOX_USER: mailpit
           MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}
-        run: bun playwright test
+        run: bun playwright test --reporter=html
 
       - name: Upload Playwright report
         if: failure()
