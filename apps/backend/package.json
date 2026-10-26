@@ -50,7 +50,7 @@
     "@repo/lifespan": "*",
     "@repo/observability": "*",
     "@repo/password-policy": "*",
-    "@sentry/nestjs": "^11.8.0",
+    "@sentry/nestjs": "^11.9.0",
     "@thallesp/nestjs-better-auth": "^2.8.0",
     "@zxcvbn-ts/core": "^4.2.0",
     "@zxcvbn-ts/language-common": "^4.1.3",
