@@ -9,7 +9,9 @@ import { DatabaseHealthIndicator } from './database.health';
  * `live` must not depend on any collaborator: a failing liveness probe
  * restarts the container, which would not fix a database outage.
  * `ready` checks the dependencies required to serve requests and backs the
- * startup probe, so traffic is withheld from half-started instances.
+ * startup probe, so traffic is withheld from half-started instances. It also
+ * reports the running commit, so a deploy check can tell a new revision from
+ * the previous one that keeps serving while the new one fails to start.
  */
 @AllowAnonymous()
 @Controller('health')
@@ -27,7 +29,10 @@ export class HealthController {
 
   @Get('ready')
   @HealthCheck()
-  ready() {
-    return this.health.check([() => this.database.pingCheck('database')]);
+  async ready() {
+    const result = await this.health.check([
+      () => this.database.pingCheck('database'),
+    ]);
+    return { ...result, release: process.env.SENTRY_RELEASE };
   }
 }
