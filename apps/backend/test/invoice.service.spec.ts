@@ -96,6 +96,7 @@ describe('InvoiceService', () => {
       {} as NotificationService,
       {} as FileService,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
     );
     const documentTemplateService = new DocumentTemplateService(
       db,
