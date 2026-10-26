@@ -81,6 +81,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       db,
       {} as FileService,
       organizationUnitDataService,
+      {} as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
       {} as never,

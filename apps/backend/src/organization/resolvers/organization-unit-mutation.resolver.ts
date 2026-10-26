@@ -5,7 +5,10 @@ import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { ForbiddenGraphQLError } from '../../graphql/errors';
-import type { GraphQLContext } from '../../graphql/graphql.context';
+import type {
+  AuthenticatedGraphQLContext,
+  GraphQLContext,
+} from '../../graphql/graphql.context';
 import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
@@ -49,10 +52,12 @@ export class OrganizationUnitMutationResolver {
   async createOrganizationUnit(
     @Args('input') input: CreateOrganizationUnitInput,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<OrganizationUnit> {
     const organizationUnit = await this.organizationUnitService.create(
       session.user.id,
       input,
+      context.organizationUnitId,
     );
     return this.organizationUnitMapper.toModelOrThrow(organizationUnit);
   }

@@ -397,6 +397,7 @@ describe('OrganizationUnitService', () => {
           'https://example.com/logo.png',
       } as never,
       new OrganizationUnitDataService(db),
+      {} as never,
       { capture: () => {} } as never,
       {} as never,
       {} as never,

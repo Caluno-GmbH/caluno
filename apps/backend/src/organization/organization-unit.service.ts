@@ -32,6 +32,7 @@ import { OrganizationUnitDataService } from './organization-unit-data.service';
 import type { OrganizationEntity } from './schemas/organization.schema';
 import type { OrganizationUnitEntity } from './schemas/organization-unit.schema';
 import type { OrganizationUnitTypeEntity } from './schemas/organization-unit-type.schema';
+import { TenantScopeService } from './tenant-scope.service';
 
 @Injectable()
 export class OrganizationUnitService {
@@ -40,6 +41,7 @@ export class OrganizationUnitService {
     private readonly db: Database,
     private readonly fileService: FileService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
+    private readonly tenantScopeService: TenantScopeService,
     private readonly postHogService: PostHogService,
     private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
@@ -153,21 +155,28 @@ export class OrganizationUnitService {
   async create(
     userId: string,
     input: CreateOrganizationUnitInput,
+    headerUnitId: string,
   ): Promise<OrganizationUnitEntity> {
     const name = trimmed(input.name);
     if (isBlank(name)) {
       throw new BadRequestGraphQLError('Organization unit name is required');
     }
 
-    const type = await this.findType(input.typeId, input.organizationId);
+    // Never trust input.organizationId / a foreign parentId: derive the org
+    // from the header unit and require parent to sit in that unit's subtree.
+    await this.tenantScopeService.assertResourceInScope(
+      headerUnitId,
+      input.parentId,
+      'Parent organization unit not found',
+    );
+    const organizationId =
+      await this.organizationUnitDataService.findOrganizationIdByUnitId(
+        headerUnitId,
+      );
+
+    const type = await this.findType(input.typeId, organizationId);
     if (!type) {
       throw new NotFoundGraphQLError('Organization unit type not found');
-    }
-
-    const parent = await this.findParent(input.parentId);
-
-    if (!parent) {
-      throw new NotFoundGraphQLError('Parent organization unit not found');
     }
 
     const slug = slugify(name);
@@ -178,7 +187,11 @@ export class OrganizationUnitService {
       );
     }
 
-    const { logoFileId, ...unitInput } = input;
+    const {
+      logoFileId,
+      organizationId: _ignoredOrganizationId,
+      ...unitInput
+    } = input;
     const logoUrl = logoFileId ? await this.resolveLogoUrl(logoFileId) : null;
 
     const [organizationUnit] = await this.db.transaction(async (tx) => {
@@ -188,12 +201,12 @@ export class OrganizationUnitService {
           ...unitInput,
           name,
           logoUrl,
-          organizationId: input.organizationId,
+          organizationId,
           slug,
         })
         .returning();
 
-      await this.addOwnerMembership(userId, unit.id, input.organizationId, tx);
+      await this.addOwnerMembership(userId, unit.id, organizationId, tx);
 
       return [unit];
     });
