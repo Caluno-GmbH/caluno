@@ -35,4 +35,16 @@ describe('HealthController', () => {
     await controller.ready();
     expect(pinged).toBe(true);
   });
+
+  it('reports the running release on readiness', async () => {
+    const previous = process.env.SENTRY_RELEASE;
+    process.env.SENTRY_RELEASE = 'abc123';
+    try {
+      const result = await build(async () => ({})).ready();
+      expect(result.release).toBe('abc123');
+    } finally {
+      if (previous === undefined) delete process.env.SENTRY_RELEASE;
+      else process.env.SENTRY_RELEASE = previous;
+    }
+  });
 });
