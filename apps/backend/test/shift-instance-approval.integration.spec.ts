@@ -58,6 +58,7 @@ describe('ShiftService.updateShiftInstanceApproval', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
     const accountingOrgAccessService = new AccountingOrgAccessService(
       db,

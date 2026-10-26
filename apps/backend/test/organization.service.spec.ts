@@ -9,6 +9,7 @@ import { OrganizationMapper } from '../src/organization/mappers/organization.map
 import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { FileService } from '../src/storage/services';
 import { createUser } from './factories';
@@ -390,6 +391,7 @@ describe('OrganizationUnitService', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
+    const organizationUnitDataService = new OrganizationUnitDataService(db);
     organizationUnitService = new OrganizationUnitService(
       db,
       {
@@ -397,7 +399,8 @@ describe('OrganizationUnitService', () => {
         resolvePublicUrlForUploadedFile: async () =>
           'https://example.com/logo.png',
       } as never,
-      new OrganizationUnitDataService(db),
+      organizationUnitDataService,
+      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as never,
       {} as never,
       {} as never,
@@ -443,6 +446,7 @@ describe('OrganizationUnitService', () => {
           parentId: root.id,
         },
         (await createUser(db)).id,
+        root.id,
       );
 
       expect(updated.slug).toBe(originalSlug);
@@ -467,6 +471,7 @@ describe('OrganizationUnitService', () => {
           name: 'All New Name',
         },
         (await createUser(db)).id,
+        rootUnit.id,
       );
 
       expect(updateRootUnit.name).toBe('All New Name');
@@ -499,6 +504,7 @@ describe('OrganizationUnitService', () => {
           name: 'All New Name',
         },
         (await createUser(db)).id,
+        rootUnit.id,
       );
 
       expect(updateChildUnit.name).toBe('All New Name');
