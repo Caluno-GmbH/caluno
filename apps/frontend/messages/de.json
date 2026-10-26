@@ -1033,7 +1033,10 @@
   "RequiredFormRenderer": {
     "formProgress": "Formularfortschritt",
     "noForms": "Es sind keine Formulare erforderlich.",
+    "prefilledFromPreviousSubmissions": "Das Formular wurde mit Werten aus früheren Einreichungen vorausgefüllt",
     "step": "Formular {current} von {total}",
+    "submit": "Formular absenden",
+    "submitting": "Formular wird abgesendet...",
     "submitAll": "Alle Formulare absenden",
     "submittingAll": "Alle Formulare werden abgesendet..."
   },
@@ -1339,6 +1342,7 @@
       "validPostalCode": "{label} muss eine gültige Postleitzahl sein"
     },
     "volunteerForm": {
+      "completeRequiredFormsHint": "Bitte fülle die erforderlichen Formulare aus",
       "alreadySubmittedMessage": "Dein Formular ist abgesendet.",
       "alreadySubmittedTitle": "Formular abgesendet",
       "back": "Zurück",
@@ -1355,7 +1359,6 @@
       "noFields": "Dieser Block hat noch keine Felder.",
       "paymentDataVisibilityHint": "Deine Bankdaten sind nur für die Personen einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
-      "prefilledFromPreviousSubmissions": "Das Formular wurde mit Werten aus früheren Einreichungen vorausgefüllt",
       "profileChangeWarning": "Wenn du diese Information änderst, wird sie auch in deinem Profil geändert.",
       "selectOption": "Option auswählen",
       "sharedWithOrg": "Wird mit {orgName} geteilt.",

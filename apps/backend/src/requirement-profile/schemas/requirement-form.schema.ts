@@ -1,11 +1,4 @@
-import {
-  index,
-  jsonb,
-  snakeCase,
-  text,
-  unique,
-  uuid,
-} from 'drizzle-orm/pg-core';
+import { index, snakeCase, text, unique, uuid } from 'drizzle-orm/pg-core';
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { organizations } from '../../organization/schemas/organization.schema';
@@ -25,15 +18,6 @@ export const requirementForms = snakeCase.table(
     slug: text('slug').notNull(),
     name: text('name').notNull(),
     description: text('description'),
-    settings: jsonb('settings')
-      .$type<{
-        submitButtonLabel?: string;
-        successTitle?: string;
-        successMessage?: string;
-        allowEmbed?: boolean;
-      }>()
-      .notNull()
-      .default({}),
     shareToken: text('share_token').notNull().unique(),
     createdBy: text('created_by')
       .references(() => users.id)

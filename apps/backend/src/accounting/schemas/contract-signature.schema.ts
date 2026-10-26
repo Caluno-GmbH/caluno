@@ -30,6 +30,7 @@ export const contractSignatures = snakeCase.table(
     signedByUserId: text('signed_by_user_id').references(() => users.id, {
       onDelete: 'restrict',
     }),
+    signedByName: text('signed_by_name'),
     signedAt: timestamp('signed_at'),
     ...timestampColumns,
   },

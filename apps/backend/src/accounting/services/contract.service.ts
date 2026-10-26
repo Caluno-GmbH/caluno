@@ -728,10 +728,12 @@ export class ContractService {
         ? await this.documentRenderingService.resolveRenderInputs(contract)
         : undefined;
 
+    const signedByName = await this.documentSigningService.signerNameOf(userId);
+
     const updated = await this.db.transaction(async (tx) => {
       await tx
         .update(schema.contractSignatures)
-        .set({ signedByUserId: userId, signedAt: new Date() })
+        .set({ signedByUserId: userId, signedByName, signedAt: new Date() })
         .where(eq(schema.contractSignatures.id, pending.id));
 
       const [signed] = await tx

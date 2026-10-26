@@ -1,10 +1,8 @@
 import { Args, Context, ID, Int, Query, Resolver } from '@nestjs/graphql';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
-import { MembershipService } from '../../membership/membership.service';
-import { OrganizationUnitService } from '../../organization/organization-unit.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
 import { ReimbursementTypeMapper } from '../mappers';
@@ -24,11 +22,10 @@ export class ReimbursementQueryResolver {
   constructor(
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly reimbursementTypeMapper: ReimbursementTypeMapper,
-    private readonly organizationUnitService: OrganizationUnitService,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
     private readonly userMapper: UserMapper,
-    private readonly membershipService: MembershipService,
     private readonly userService: UserService,
+    private readonly tenantScopeService: TenantScopeService,
   ) {}
 
   @Query(() => [ReimbursementType])
@@ -52,7 +49,11 @@ export class ReimbursementQueryResolver {
       organizationUnitId &&
       organizationUnitId !== context.organizationUnitId
     ) {
-      await this.assertUnitInScope(context, organizationUnitId);
+      await this.tenantScopeService.assertResourceInScope(
+        context.organizationUnitId,
+        organizationUnitId,
+        'Organization unit not found',
+      );
     }
     const targetUnitId = organizationUnitId ?? context.organizationUnitId;
 
@@ -91,7 +92,11 @@ export class ReimbursementQueryResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
-    await this.assertVolunteerInScope(context, volunteerId);
+    await this.tenantScopeService.assertUserInScope(
+      context.organizationUnitId,
+      volunteerId,
+      'Volunteer not found',
+    );
 
     return this.reimbursementRateService.getYearlyUsage(
       organizationId,
@@ -114,7 +119,11 @@ export class ReimbursementQueryResolver {
       context.organizationUnitId,
     );
     if (organizationUnitId !== context.organizationUnitId) {
-      await this.assertUnitInScope(context, organizationUnitId);
+      await this.tenantScopeService.assertResourceInScope(
+        context.organizationUnitId,
+        organizationUnitId,
+        'Organization unit not found',
+      );
     }
 
     const usage = await this.reimbursementRateService.getRosterYearlyUsage(
@@ -145,7 +154,11 @@ export class ReimbursementQueryResolver {
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
       context.organizationUnitId,
     );
-    await this.assertVolunteerInScope(context, volunteerId);
+    await this.tenantScopeService.assertUserInScope(
+      context.organizationUnitId,
+      volunteerId,
+      'Volunteer not found',
+    );
 
     const status = await this.reimbursementRateService.getBundleDownloadStatus(
       volunteerId,
@@ -169,7 +182,11 @@ export class ReimbursementQueryResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
-    await this.assertVolunteerInScope(context, volunteerId);
+    await this.tenantScopeService.assertUserInScope(
+      context.organizationUnitId,
+      volunteerId,
+      'Volunteer not found',
+    );
 
     const baseline = await this.reimbursementRateService.getManualBaseline(
       organizationId,
@@ -180,50 +197,6 @@ export class ReimbursementQueryResolver {
     if (!baseline) return null;
 
     return this.toManualBaselineModel(baseline);
-  }
-
-  /**
-   * Ensures the caller's own unit (from context) is the target unit itself
-   * or one of its ancestors — i.e. the target is within the caller's
-   * subtree. Rejects siblings, unrelated branches, and units above the
-   * caller's own scope.
-   */
-  private async assertUnitInScope(
-    context: AuthenticatedGraphQLContext,
-    targetUnitId: string,
-  ): Promise<void> {
-    const ancestorIds =
-      await this.organizationUnitService.listInclusiveAncestorUnitIds(
-        targetUnitId,
-      );
-    if (!ancestorIds.includes(context.organizationUnitId)) {
-      throw new NotFoundGraphQLError('Organization unit not found');
-    }
-  }
-
-  /**
-   * Ensures the volunteer has a membership whose org unit is the caller's
-   * own unit (from context) or a descendant of it — i.e. the volunteer is
-   * within the caller's subtree. Rejects volunteers in sibling/unrelated
-   * branches and volunteers with no qualifying membership at all.
-   */
-  private async assertVolunteerInScope(
-    context: AuthenticatedGraphQLContext,
-    volunteerId: string,
-  ): Promise<void> {
-    const memberships =
-      await this.membershipService.getMyMemberships(volunteerId);
-    for (const membership of memberships) {
-      if (!membership.organizationUnitId) continue;
-      const ancestorIds =
-        await this.organizationUnitService.listInclusiveAncestorUnitIds(
-          membership.organizationUnitId,
-        );
-      if (ancestorIds.includes(context.organizationUnitId)) {
-        return;
-      }
-    }
-    throw new NotFoundGraphQLError('Volunteer not found');
   }
 
   private async toBundleDownloadStatusModel(status: {

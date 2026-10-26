@@ -126,6 +126,7 @@ type ContractSignature {
   order: Int!
   requiredPermission: Permission
   signedAt: DateTime
+  signedByName: String
   signedByUser: User
   signeeType: SigneeType!
   updatedAt: DateTime
@@ -190,8 +191,8 @@ input CreateFormBlockFieldInput {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean
-  systemKey: String
   type: FieldType!
 }
 
@@ -253,7 +254,6 @@ input CreateRequirementFormInput {
   description: String
   name: String!
   organizationId: String!
-  settings: FormSettingsInput
 }
 
 input CreateRoleInput {
@@ -458,8 +458,8 @@ type FormBlockField {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean!
-  systemKey: String
   type: FieldType!
   updatedAt: DateTime!
 }
@@ -484,20 +484,6 @@ input FormFieldValueInput {
   blockId: String!
   fieldId: String!
   value: String!
-}
-
-type FormSettings {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
-}
-
-input FormSettingsInput {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
 }
 
 type FormSubmission {
@@ -580,6 +566,7 @@ type InvoiceSignature {
   order: Int!
   requiredPermission: Permission
   signedAt: DateTime
+  signedByName: String
   signedByUser: User
   signeeType: SigneeType!
   updatedAt: DateTime
@@ -1115,7 +1102,6 @@ type RequirementForm {
   name: String!
   organizationId: String!
   organizationUnitId: String
-  settings: FormSettings!
   shareToken: String!
   slug: String!
   submissionCount: Float!
@@ -1415,8 +1401,8 @@ input UpdateFormBlockFieldInput {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean
-  systemKey: String
   type: FieldType
 }
 
@@ -1495,7 +1481,6 @@ input UpdateRequirementFormInput {
   blockRefs: [FormBlockRefInput!]
   description: String
   name: String
-  settings: FormSettingsInput
 }
 
 input UpdateShiftInput {

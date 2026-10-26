@@ -44,7 +44,7 @@ export class FormBlockField {
   lockType!: boolean;
 
   @Field(() => String, { nullable: true })
-  systemKey?: string | null;
+  profileKey?: string | null;
 
   @Field(() => [String], { nullable: true })
   options?: string[] | null;

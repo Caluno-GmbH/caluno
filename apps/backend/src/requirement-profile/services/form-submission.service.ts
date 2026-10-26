@@ -17,10 +17,10 @@ import {
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { UserService } from '../../user/user.service';
-import { SYSTEM_PROFILE_KEYS } from '../constants';
+import { PROFILE_KEYS } from '../constants';
 import { FieldType } from '../enums';
 import { SubmitFormInput } from '../inputs/submit-form.input';
-import { validateSystemKeyValue } from '../profile-validation';
+import { validateProfileKeyValue } from '../profile-validation';
 import type { FormSubmissionEntity } from '../schemas/form-submission.schema';
 import { RequiredFormTargetRegistry } from '../targets';
 import { isUnitInOrg } from './is-unit-in-org';
@@ -258,7 +258,7 @@ export class FormSubmissionService {
     const fieldMap = new Map<
       string,
       {
-        systemKey: string | null;
+        profileKey: string | null;
         type: string;
         label: string;
         options: string[] | null;
@@ -270,7 +270,7 @@ export class FormSubmissionService {
       const blockFields = fieldsByBlockId.get(ref.blockId) ?? [];
       for (const field of blockFields) {
         fieldMap.set(field.id, {
-          systemKey: field.systemKey,
+          profileKey: field.profileKey,
           type: field.type,
           label: field.label,
           options: field.options as string[] | null,
@@ -320,8 +320,8 @@ export class FormSubmissionService {
 
       this.validateFieldValue(valueInput.value, fieldInfo);
 
-      if (fieldInfo.systemKey && SYSTEM_PROFILE_KEYS.has(fieldInfo.systemKey)) {
-        profileData[fieldInfo.systemKey] = this.parseValue(
+      if (fieldInfo.profileKey && PROFILE_KEYS.has(fieldInfo.profileKey)) {
+        profileData[fieldInfo.profileKey] = this.parseValue(
           valueInput.value,
           fieldInfo.type,
         );
@@ -460,12 +460,12 @@ export class FormSubmissionService {
     field: {
       type: string;
       label: string;
-      systemKey: string | null;
+      profileKey: string | null;
       options: string[] | null;
       minAge: number | null;
     },
   ): void {
-    const { type, label, systemKey, options, minAge } = field;
+    const { type, label, profileKey, options, minAge } = field;
 
     if (type === FieldType.STATIC_TEXT) return;
     if (!rawValue) return;
@@ -541,18 +541,18 @@ export class FormSubmissionService {
         break;
     }
 
-    if (systemKey) {
-      this.validateSystemKey(rawValue, systemKey, label, minAge);
+    if (profileKey) {
+      this.validateProfileKey(rawValue, profileKey, label, minAge);
     }
   }
 
-  private validateSystemKey(
+  private validateProfileKey(
     value: string,
-    systemKey: string,
+    profileKey: string,
     label: string,
     minAge: number | null,
   ): void {
-    validateSystemKeyValue(value, systemKey, label, minAge);
+    validateProfileKeyValue(value, profileKey, label, minAge);
   }
 
   private parseValue(rawValue: string, fieldType: string): unknown {
