@@ -326,3 +326,118 @@ export const NarrowWrapping: Story = {
     </div>
   ),
 };
+
+// --- Mobile ---
+// The mobile layout triggers via `useIsMobile()` (window width < 768px). This
+// Storybook install has no viewport addon, so narrow the browser window below
+// 768px to see these: a collapsed island (chips + "Filters" button), a bottom
+// filter sheet, and a fixed bottom CTA bar.
+
+function MobileHarness({
+  initialSelected,
+  withActions,
+}: {
+  initialSelected: boolean;
+  withActions: boolean;
+}) {
+  const [q, setQ] = useState(initialSelected ? 'cleanup' : '');
+  const [range, setRange] = useState<{ from?: Date; to?: Date }>(
+    initialSelected ? { from: new Date(2026, 10, 1), to: new Date(2026, 10, 30) } : {},
+  );
+  const [location, setLocation] = useState<string | undefined>(
+    initialSelected ? 'hall-a' : undefined,
+  );
+  const [visibility, setVisibility] = useState<string | undefined>(
+    initialSelected ? 'ALL_MEMBERS' : undefined,
+  );
+  const [fill, setFill] = useState<string | undefined>(initialSelected ? 'below' : undefined);
+
+  const rangeDisplay = formatDateRange(range);
+  const activeFilters: TableToolbarActiveFilter[] = [
+    q ? { key: 'q', label: 'Search', display: q, onClear: () => setQ('') } : null,
+    rangeDisplay
+      ? { key: 'range', label: 'Dates', display: rangeDisplay, onClear: () => setRange({}) }
+      : null,
+    location
+      ? {
+          key: 'location',
+          label: 'Location',
+          display: labelFor(LOCATION_OPTIONS, location),
+          onClear: () => setLocation(undefined),
+        }
+      : null,
+    visibility
+      ? {
+          key: 'visibility',
+          label: 'Visibility',
+          display: labelFor(VISIBILITY_OPTIONS, visibility),
+          onClear: () => setVisibility(undefined),
+        }
+      : null,
+    fill
+      ? {
+          key: 'fill',
+          label: 'Fill status',
+          display: labelFor(FILL_OPTIONS, fill),
+          onClear: () => setFill(undefined),
+        }
+      : null,
+  ].filter((filter): filter is TableToolbarActiveFilter => filter !== null);
+
+  const clearAll = () => {
+    setQ('');
+    setRange({});
+    setLocation(undefined);
+    setVisibility(undefined);
+    setFill(undefined);
+  };
+
+  return (
+    <TableToolbar
+      resultCount={23}
+      activeFilters={activeFilters}
+      onClearAll={activeFilters.length > 0 ? clearAll : undefined}
+      actions={
+        withActions
+          ? [
+              <Button key="new">New shift</Button>,
+              <Button key="import" variant="outline">
+                Import
+              </Button>,
+            ]
+          : undefined
+      }
+    >
+      <TableToolbar.Search value={q} onChange={setQ} placeholder="Search name or location" />
+      <TableToolbar.DateRange value={range} onChange={setRange} placeholder="Date range" />
+      <TableToolbar.Select
+        value={location}
+        onChange={setLocation}
+        placeholder="Location"
+        options={LOCATION_OPTIONS}
+      />
+      <TableToolbar.Select
+        value={visibility}
+        onChange={setVisibility}
+        placeholder="Visibility"
+        options={VISIBILITY_OPTIONS}
+      />
+      <TableToolbar.Select
+        value={fill}
+        onChange={setFill}
+        placeholder="Fill status"
+        options={FILL_OPTIONS}
+      />
+    </TableToolbar>
+  );
+}
+
+/** Mobile (narrow the window < 768px): filters selected + two actions. */
+export const MobileFullyLoaded: Story = {
+  render: () => <MobileHarness initialSelected withActions />,
+};
+
+/** Mobile with no filters selected — collapsed island shows just the Filters button. */
+export const MobileNoFilters: Story = {
+  render: () => <MobileHarness initialSelected={false} withActions />,
+};
