@@ -36,6 +36,7 @@ import { OrganizationMapper } from './mappers/organization.mapper';
 import { type Organization } from './models/organization.model';
 import { OrganizationTree } from './models/organization-tree.model';
 import { OrganizationUnitService } from './organization-unit.service';
+import { TenantScopeService } from './tenant-scope.service';
 import { OrganizationNode } from './types/organization-node';
 
 type OrganizationUnitWithType = OrganizationUnitEntity & {
@@ -57,6 +58,7 @@ export class OrganizationService {
     private readonly notificationService: NotificationService,
     private readonly fileService: FileService,
     private readonly postHogService: PostHogService,
+    private readonly tenantScope: TenantScopeService,
   ) {}
 
   async findById(id: string): Promise<OrganizationEntity | undefined> {
@@ -558,9 +560,25 @@ export class OrganizationService {
   }
 
   async update(
+    headerUnitId: string,
     organizationId: string,
     input: UpdateOrganizationInput,
   ): Promise<Organization> {
+    // PermissionGuard only checks ORG_EDIT on the header unit. Org profile
+    // edits are root-only; assertOrganizationInScope rejects a foreign id.
+    const headerUnit =
+      await this.organizationUnitService.findById(headerUnitId);
+    if (!headerUnit || headerUnit.parentId !== null) {
+      throw new NotFoundGraphQLError(
+        `Organization with ID ${organizationId} not found`,
+      );
+    }
+    await this.tenantScope.assertOrganizationInScope(
+      headerUnitId,
+      organizationId,
+      `Organization with ID ${organizationId} not found`,
+    );
+
     const { logoFileId, ...profileInput } = input;
     const logoUrl = logoFileId
       ? await this.resolveLogoUrl(logoFileId)

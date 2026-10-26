@@ -82,6 +82,7 @@ describe('OrganizationService', () => {
       {} as NotificationService,
       {} as FileService,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
     );
   });
 
@@ -410,6 +411,7 @@ describe('OrganizationUnitService', () => {
       {} as NotificationService,
       {} as FileService,
       { capture: () => {} } as unknown as PostHogService,
+      {} as never,
     );
   });
 
