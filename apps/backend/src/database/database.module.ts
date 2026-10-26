@@ -25,6 +25,6 @@ export { DatabasePoolService } from './database-pool.service';
       inject: [DatabasePoolService],
     },
   ],
-  exports: [DATABASE_CONNECTION, AdvisoryLockService],
+  exports: [DATABASE_CONNECTION, AdvisoryLockService, DatabasePoolService],
 })
 export class DatabaseModule {}

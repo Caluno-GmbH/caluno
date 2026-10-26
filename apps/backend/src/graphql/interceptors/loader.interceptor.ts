@@ -5,7 +5,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { ContextIdFactory, ModuleRef } from '@nestjs/core';
-import { GqlExecutionContext } from '@nestjs/graphql';
+import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import { Observable } from 'rxjs';
 
 export const LOADER_REGISTRY = new Map<string, any>();
@@ -24,6 +24,11 @@ export class LoaderInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<any>> {
+    // Loaders are GraphQL-only; REST routes (health probes, downloads) skip them.
+    if (context.getType<GqlContextType>() !== 'graphql') {
+      return next.handle();
+    }
+
     const ctx = GqlExecutionContext.create(context);
     const graphqlContext = ctx.getContext();
 

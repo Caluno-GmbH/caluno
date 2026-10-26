@@ -1,4 +1,4 @@
-import { Injectable, type OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 
@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 @Injectable()
 export class DatabasePoolService implements OnModuleDestroy {
   readonly pool: Pool;
+  private readonly logger = new Logger(DatabasePoolService.name);
   private ended = false;
 
   constructor(configService: ConfigService) {
@@ -22,6 +23,12 @@ export class DatabasePoolService implements OnModuleDestroy {
         10,
       ),
       keepAlive: true,
+    });
+    // Without a listener, an error on an idle client (DB restart, failover)
+    // is an unhandled 'error' event and kills the process. The pool discards
+    // the client and reconnects on the next query.
+    this.pool.on('error', (error) => {
+      this.logger.error(`idle database client error: ${error.message}`);
     });
   }
 
