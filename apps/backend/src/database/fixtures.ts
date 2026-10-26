@@ -19,7 +19,9 @@ import { permissions } from '../auth/schemas/permission.schema';
 import { EventInviteStatus } from '../event/enums';
 import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
+import { runFixtureSeed } from '../shared/observability/fixture-failure-reporter';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
+import { TimeEntryClosureKind } from '../time-tracking/enums/time-entry-closure-kind.enum';
 import {
   addDaysInFixtureTimezone,
   addHours,
@@ -443,6 +445,7 @@ const ensureTimeEntries = async (
         createdById: supervisor.id,
         startedAt: addHours(shiftInstances.communitySupport.startsAt, 0.5),
         endedAt: addHours(shiftInstances.communitySupport.startsAt, 3.5),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Supervisor coverage',
       });
       entries.push({
@@ -452,6 +455,7 @@ const ensureTimeEntries = async (
         createdById: supervisor.id,
         startedAt: addHours(shiftInstances.foodDistribution.startsAt, 0),
         endedAt: addHours(shiftInstances.foodDistribution.startsAt, 3),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Distribution lead',
       });
       continue;
@@ -471,6 +475,7 @@ const ensureTimeEntries = async (
         shiftInstances.communitySupport.startsAt,
         (memberNumber % 2) + closedHours,
       ),
+      closureKind: TimeEntryClosureKind.MANUAL,
       notes: `Community support (${closedHours}h)`,
     });
 
@@ -488,6 +493,7 @@ const ensureTimeEntries = async (
           shiftInstances.communitySupport.startsAt,
           closedHours + 1.5,
         ),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Additional community support block',
       });
     }
@@ -506,6 +512,7 @@ const ensureTimeEntries = async (
           shiftInstances.foodDistribution.startsAt,
           (memberNumber % 3) + 2,
         ),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Food distribution',
       });
     }
@@ -568,7 +575,6 @@ const ensurePersonalInformationForm = async (
         organizationId,
         title: 'Personal Information',
         description: 'Required personal details.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -599,7 +605,6 @@ const ensurePersonalInformationForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -657,7 +662,6 @@ const ensureBankingInformationForm = async (
         organizationId,
         title: 'Banking Information',
         description: 'Bank account details.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -672,7 +676,7 @@ const ensureBankingInformationForm = async (
         blockId: block.id,
         type: FieldType.IBAN,
         label: 'IBAN',
-        systemKey: 'iban',
+        profileKey: 'iban',
         required: true,
         fieldOrder: 0,
       },
@@ -680,7 +684,7 @@ const ensureBankingInformationForm = async (
         blockId: block.id,
         type: FieldType.TEXT,
         label: 'Account holder',
-        systemKey: 'accountHolder',
+        profileKey: 'accountHolder',
         required: true,
         fieldOrder: 1,
       },
@@ -688,7 +692,7 @@ const ensureBankingInformationForm = async (
         blockId: block.id,
         type: FieldType.TEXT,
         label: 'BIC',
-        systemKey: 'bic',
+        profileKey: 'bic',
         required: true,
         fieldOrder: 2,
       },
@@ -698,7 +702,6 @@ const ensureBankingInformationForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -757,7 +760,6 @@ const ensureCodeOfConductForm = async (
         organizationId,
         title: 'Code of Conduct',
         description: 'Please acknowledge our code of conduct.',
-        required: true,
         createdBy: createdById,
         updatedBy: createdById,
       })
@@ -779,7 +781,6 @@ const ensureCodeOfConductForm = async (
       formId: form.id,
       blockId: block.id,
       fieldOrder: 0,
-      required: true,
     });
   }
 
@@ -1505,6 +1506,7 @@ async function seedFixtures() {
   // aborts cleanly instead of leaving a half-populated database.
   await assertFixtureIdentitiesAvailable(db, {
     orgSlug: ORG_SLUG,
+    unitSlugs: [ORG_SLUG],
     accounts: [
       { email: ADMIN_USER_EMAIL, ...ADMIN_IDENTITY },
       { email: e2eEmail('supervisor'), ...SUPERVISOR_IDENTITY },
@@ -2414,7 +2416,4 @@ async function seedFixtures() {
   await pool.end();
 }
 
-seedFixtures().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+void runFixtureSeed('e2e', seedFixtures);

@@ -25,9 +25,9 @@ const opts = {
 };
 
 describe('resolveFieldAnswer', () => {
-  it('prefers profile data over the submission value when a systemKey is set', () => {
+  it('prefers profile data over the submission value when a profileKey is set', () => {
     const result = resolveFieldAnswer(
-      field({ id: 'f1', systemKey: 'firstName' }),
+      field({ id: 'f1', profileKey: 'firstName' }),
       [{ fieldId: 'f1', value: 'from-submission' }],
       { firstName: 'from-profile' },
       opts,
@@ -152,9 +152,9 @@ describe('resolveFieldAnswer', () => {
     expect(result).toBe('—');
   });
 
-  it('maps gender system values to localized labels', () => {
+  it('maps gender profile values to localized labels', () => {
     const result = resolveFieldAnswer(
-      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
       [{ fieldId: 'f1', value: 'female' }],
       {},
       opts,
@@ -164,7 +164,7 @@ describe('resolveFieldAnswer', () => {
 
   it('passes unknown gender values through unchanged', () => {
     const result = resolveFieldAnswer(
-      field({ type: 'SINGLE_CHOICE', systemKey: 'gender' }),
+      field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
       [{ fieldId: 'f1', value: 'legacy-free-text' }],
       {},
       opts,
@@ -184,7 +184,7 @@ describe('resolveFieldAnswer', () => {
 
   it('passes a masked payment value through unchanged so the viewer sees it masked', () => {
     const result = resolveFieldAnswer(
-      field({ type: 'IBAN', systemKey: 'iban' }),
+      field({ type: 'IBAN', profileKey: 'iban' }),
       [],
       { iban: 'XXXX XXXX XXXX XXXX XXXX XX' },
       opts,

@@ -77,6 +77,22 @@ export class ContractService {
     private readonly postHogService: PostHogService,
   ) {}
 
+  /**
+   * The id of the contract's PDF, rendering it first when it has none (a
+   * failed render does not undo the signing). Null when rendering fails again.
+   */
+  async ensurePdf(
+    contractId: string,
+    actorUserId: string,
+  ): Promise<string | null> {
+    const contract = await this.findContract(contractId);
+    if (contract.fileId) return contract.fileId;
+    return this.documentRenderingService.renderAndAttachPdf(
+      contract,
+      actorUserId,
+    );
+  }
+
   async findContract(id: string): Promise<ContractWithRelations> {
     const contract = await this.db.query.contracts.findFirst({
       where: { id },
@@ -703,6 +719,15 @@ export class ContractService {
 
     const isFinal = pendingIndex === orderedSignatures.length - 1;
 
+    // What the PDF shows is frozen when the volunteer signs (their profile is
+    // complete by then), or at the final signature when no volunteer signs.
+    // Every later render, a retry or a bundle download, shows what was signed.
+    const renderInputs =
+      !contract.renderInputs &&
+      (pending.signeeType === SigneeType.VOLUNTEER || isFinal)
+        ? await this.documentRenderingService.resolveRenderInputs(contract)
+        : undefined;
+
     const signedByName = await this.documentSigningService.signerNameOf(userId);
 
     const updated = await this.db.transaction(async (tx) => {
@@ -714,6 +739,10 @@ export class ContractService {
       const [signed] = await tx
         .update(schema.contracts)
         .set({
+          // The PDF of the previous step lacks this signature. It is replaced
+          // below; if that fails, no stale PDF is left in its place.
+          fileId: null,
+          ...(renderInputs ? { renderInputs } : {}),
           contractStatus: isFinal
             ? ContractStatus.ACTIVE
             : this.nextContractStatus(

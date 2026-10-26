@@ -14,7 +14,7 @@ import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequirementForm } from '../../requirement-profile/models/requirement-form.model';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
-import { TimeEntrySortField } from '../enums';
+import { TimeEntrySortField, TimeEntryStatus } from '../enums';
 import { TimeEntryMapper } from '../mappers/time-entry.mapper';
 import { CheckInContext } from '../models/check-in-context.model';
 import { CheckInReadiness } from '../models/check-in-readiness.model';
@@ -62,6 +62,8 @@ export class TimeTrackingQueryResolver {
       defaultValue: SortOrder.DESC,
     })
     order: SortOrder,
+    @Args('statuses', { type: () => [TimeEntryStatus], nullable: true })
+    statuses: TimeEntryStatus[] | null,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntryPaginatedResponse> {
     const { entries, total } = await this.timeTrackingService.findAll(
@@ -69,6 +71,7 @@ export class TimeTrackingQueryResolver {
       pagination,
       sort,
       order,
+      statuses ?? [],
     );
     return new TimeEntryPaginatedResponse({
       items: this.timeEntryMapper.toArray(entries),

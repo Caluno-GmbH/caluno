@@ -7,8 +7,9 @@ import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import { AppI18nService } from '../../i18n/app-i18n.service';
 import type { EmailTemplateContext } from '../../i18n/email-translate';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import { shiftInstanceCallOutSummaryTemplate } from '../../notification/email/templates/shift-instance-call-out-summary.template';
 import { shiftInstanceUnderstaffedReminderTemplate } from '../../notification/email/templates/shift-instance-understaffed-reminder.template';
 import { NotificationService } from '../../notification/notification.service';
@@ -18,7 +19,6 @@ import { OrganizationUnitAutomationService } from '../../organization/organizati
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import type { Weekday } from '../../shared/enums/weekday.enum';
 import {
-  ShiftCallOutDeliveryStatus,
   ShiftCallOutSource,
   ShiftInviteStatus,
   ShiftManagerNotificationKind,
@@ -83,7 +83,7 @@ export class ShiftUnderstaffedNotificationService {
     private readonly authService: AuthService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
     private readonly automationService: OrganizationUnitAutomationService,
   ) {}
@@ -387,7 +387,7 @@ export class ShiftUnderstaffedNotificationService {
     if (recipients.length === 0) return;
 
     const sentAt = new Date();
-    const results = await Promise.all(
+    const enqueueResults = await Promise.all(
       recipients.map(async (recipient) => {
         try {
           const templateContext = createEmailTemplateContext(
@@ -399,12 +399,17 @@ export class ShiftUnderstaffedNotificationService {
             recipient.firstName,
             templateContext,
           );
-          await this.emailService.send({ to: recipient.email, subject, html });
-          return {
+          await this.emailOutbox.enqueue({
+            category: EmailCategory.MANAGER_NOTIFICATION,
             userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.SENT,
-          };
-        } catch (error) {
+            to: recipient.email,
+            subject,
+            html,
+            organizationUnitId: instance.master.organizationUnitId,
+            expiresAt: instance.actualEndsAt,
+          });
+          return { userId: recipient.userId, enqueued: true };
+        } catch (enqueueError) {
           this.logger.error(
             {
               event: 'understaffed_tick.email_failed',
@@ -412,24 +417,27 @@ export class ShiftUnderstaffedNotificationService {
               organization_unit_id: instance.master.organizationUnitId,
               kind,
               recipient_user_id: recipient.userId,
-              err: error,
+              err: enqueueError,
             },
-            'Failed to send manager email',
+            'Failed to queue manager email',
           );
-          return {
-            userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.FAILED,
-          };
+          return { userId: recipient.userId, enqueued: false };
         }
       }),
     );
 
+    const enqueuedNotifications = enqueueResults.filter(
+      (enqueueResult) => enqueueResult.enqueued,
+    );
+    if (enqueuedNotifications.length === 0) {
+      return;
+    }
+
     await this.db.insert(schema.shiftManagerNotifications).values(
-      results.map((result) => ({
+      enqueuedNotifications.map((enqueueResult) => ({
         instanceId: instance.id,
-        recipientId: result.userId,
+        recipientId: enqueueResult.userId,
         kind,
-        status: result.status,
         sentAt,
       })),
     );

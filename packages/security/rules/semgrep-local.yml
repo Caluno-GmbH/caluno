@@ -1,0 +1,13 @@
+# Vendored rules (stable, unlike registry packs). Run by `bun run audit:sast`.
+rules:
+  - id: drizzle-raw-sql
+    languages: [typescript]
+    severity: WARNING
+    message: >
+      Raw SQL bypasses Drizzle's parameterisation and any tenant scoping in the
+      query builder. Check that inputs are parameterised and the statement is
+      constrained to the caller's organization unit.
+    metadata: { category: security, cwe: "CWE-89", owasp: "A03:2021" }
+    pattern-either:
+      - pattern: sql.raw(...)
+      - pattern: $DB.execute(...)

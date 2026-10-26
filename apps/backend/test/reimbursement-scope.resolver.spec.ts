@@ -28,8 +28,8 @@ import type { NotificationService } from '../src/notification';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import type { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import type { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import type { FileService } from '../src/storage/services/file.service';
 import { UserMapper } from '../src/user/mappers/user.mapper';
@@ -87,11 +87,9 @@ describe('reimbursement-rate resolver unit scoping', () => {
     );
     const membershipService = new MembershipService(
       db,
-      {} as RequirementProfileService,
       {} as AuthService,
       {} as NotificationService,
       {} as RequiredFormService,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
@@ -108,24 +106,24 @@ describe('reimbursement-rate resolver unit scoping', () => {
       db,
       organizationUnitService,
     );
+    const tenantScopeService = moduleRef.get(TenantScopeService);
     queryResolver = new ReimbursementQueryResolver(
       reimbursementRateService,
       new ReimbursementTypeMapper(),
-      organizationUnitService,
       accountingOrgAccessService,
       new UserMapper(),
-      membershipService,
       userService,
+      tenantScopeService,
     );
     mutationResolver = new ReimbursementMutationResolver(
       reimbursementRateService,
       new ReimbursementRateMapper(),
       accountingOrgAccessService,
       organizationUnitService,
-      membershipService,
       new UserMapper(),
       new ReimbursementTypeMapper(),
       userService,
+      tenantScopeService,
     );
   });
 

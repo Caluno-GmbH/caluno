@@ -19,7 +19,7 @@ import { ShiftRequiredFormsPopover } from '@/domain/shift/components/shift-requi
 import {
   getApprovalConfig,
   getVisibilityConfig,
-} from '@/domain/shift/components/shifts-table';
+} from '@/domain/shift/lib/shift-badge-config';
 import { parseShiftListQuery } from '@/domain/shift/routes';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';

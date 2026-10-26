@@ -15,11 +15,8 @@ import {
 import { NotificationService } from '../notification';
 import { OrganizationUnitDataService } from '../organization/organization-unit-data.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
-import type { RequirementProfileEntity } from '../requirement-profile/schemas/requirement-profile.schema';
-import { FormSubmissionService } from '../requirement-profile/services/form-submission.service';
 import type { RequiredFormStatus } from '../requirement-profile/services/required-form.service';
 import { RequiredFormService } from '../requirement-profile/services/required-form.service';
-import { RequirementProfileService } from '../requirement-profile/services/requirement-profile.service';
 import { JoinStatus } from '../shared/enums/join-status.enum';
 import {
   POSTHOG_EVENT,
@@ -45,11 +42,9 @@ export class MembershipService {
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
-    private readonly requirementProfileService: RequirementProfileService,
     private readonly authService: AuthService,
     private readonly notificationService: NotificationService,
     private readonly requiredFormService: RequiredFormService,
-    private readonly formSubmissionService: FormSubmissionService,
     private readonly postHogService: PostHogService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
@@ -751,27 +746,6 @@ export class MembershipService {
           throw new NotFoundGraphQLError('Default member role not found');
         }
 
-        if (organizationUnit.requiredMembershipRequirementProfileId) {
-          if (!requestToApprove.userId) {
-            throw new ConflictGraphQLError(
-              'Cannot approve: membership request has no associated user.',
-            );
-          }
-          const requirementStatuses =
-            await this.requirementProfileService.getUserRequirementStatus(
-              requestToApprove.userId,
-              organizationUnit.requiredMembershipRequirementProfileId,
-            );
-          const allApproved = requirementStatuses.every(
-            (s) => s.status === 'APPROVED',
-          );
-          if (!allApproved) {
-            throw new ConflictGraphQLError(
-              'Cannot approve: user has not completed the required membership profile.',
-            );
-          }
-        }
-
         const [updatedRequest] = await tx
           .update(schema.membershipRequests)
           .set({
@@ -1176,7 +1150,6 @@ export class MembershipService {
         user: true,
         organizationUnit: true,
         reviewedBy: true,
-        requirementProfileSubmissions: true,
       },
     });
   }
@@ -1206,7 +1179,6 @@ export class MembershipService {
         user: true,
         organizationUnit: true,
         reviewedBy: true,
-        requirementProfileSubmissions: true,
       },
     });
   }
@@ -1229,12 +1201,6 @@ export class MembershipService {
       }
     | {
         status: 'REQUIREMENTS_NEEDED';
-        requirementProfile?: RequirementProfileEntity;
-        requirementStatuses?: Array<{
-          requirementId: string;
-          name: string;
-          status: string;
-        }>;
         requiredForms?: RequiredFormStatus[];
       }
   > {
@@ -1250,35 +1216,6 @@ export class MembershipService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
-    await this.formSubmissionService.shareSubmissionsWithOrgUnit(userId, {
-      targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-      targetId: organizationUnitId,
-    });
-
-    let requirementProfile: RequirementProfileEntity | undefined;
-    let requirementStatuses:
-      | Array<{ requirementId: string; name: string; status: string }>
-      | undefined;
-
-    if (orgUnit.requiredMembershipRequirementProfileId) {
-      const statuses =
-        await this.requirementProfileService.getUserRequirementStatus(
-          userId,
-          orgUnit.requiredMembershipRequirementProfileId,
-        );
-      const allApproved = statuses.every((s) => s.status === 'APPROVED');
-      if (!allApproved) {
-        const profile = await this.requirementProfileService.findById(
-          orgUnit.requiredMembershipRequirementProfileId,
-        );
-        if (!profile) {
-          throw new NotFoundGraphQLError('Requirement profile not found');
-        }
-        requirementProfile = profile;
-        requirementStatuses = statuses;
-      }
-    }
-
     const requiredFormStatuses =
       await this.requiredFormService.getRequiredFormStatuses(userId, {
         targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
@@ -1286,7 +1223,7 @@ export class MembershipService {
       });
     const missingForms = requiredFormStatuses.filter((s) => !s.submitted);
 
-    if (requirementProfile || missingForms.length > 0) {
+    if (missingForms.length > 0) {
       this.postHogService.capture({
         event: POSTHOG_EVENT.MEMBERSHIP_REQUEST_START,
         userId,
@@ -1298,10 +1235,6 @@ export class MembershipService {
       });
       return {
         status: 'REQUIREMENTS_NEEDED',
-        ...(requirementProfile && {
-          requirementProfile,
-          requirementStatuses,
-        }),
         requiredForms: requiredFormStatuses,
       };
     }

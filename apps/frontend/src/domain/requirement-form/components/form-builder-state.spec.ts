@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import type { FormBlock } from '@repo/data';
 import {
   appendBlockRef,
   type BuilderBlockRef,
@@ -7,13 +8,26 @@ import {
   removeBlockRef,
 } from './form-builder-state';
 
+function makeBlock(id: string): FormBlock {
+  return {
+    id,
+    organizationId: 'org-1',
+    title: `Block ${id}`,
+    isEditable: true,
+    createdBy: 'user-1',
+    updatedBy: 'user-1',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  };
+}
+
 function makeRef(blockId: string, fieldOrder: number): BuilderBlockRef {
   return {
     id: `ref-${blockId}`,
     formId: 'form-1',
     blockId,
+    block: makeBlock(blockId),
     fieldOrder,
-    required: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
   };
@@ -36,18 +50,18 @@ describe('canSave', () => {
 describe('appendBlockRef', () => {
   it('appends a temp ref with the next fieldOrder', () => {
     const refs = [makeRef('b1', 0)];
-    const next = appendBlockRef(refs, 'b2', 'form-1');
+    const next = appendBlockRef(refs, 'b2', makeBlock('b2'), 'form-1');
     expect(next).toHaveLength(2);
     const added = next[1];
     expect(added?.blockId).toBe('b2');
+    expect(added?.block.id).toBe('b2');
     expect(added?.id).toStartWith('temp-');
     expect(added?.fieldOrder).toBe(1);
-    expect(added?.required).toBeNull();
   });
 
   it('does not duplicate a block already in the form', () => {
     const refs = [makeRef('b1', 0)];
-    const next = appendBlockRef(refs, 'b1', 'form-1');
+    const next = appendBlockRef(refs, 'b1', makeBlock('b1'), 'form-1');
     expect(next).toHaveLength(1);
   });
 });

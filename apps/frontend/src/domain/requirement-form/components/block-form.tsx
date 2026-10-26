@@ -43,8 +43,8 @@ import { toast } from 'sonner';
 import { FileUpload } from '@/components/storage/file-upload';
 import { saveBlock } from '../actions';
 import { hasFixedGenderOptions } from '../gender-options';
+import { PROFILE_FIELDS } from '../profile-fields';
 import { requiredToggleState } from '../required-toggle';
-import { SYSTEM_PROFILE_FIELDS } from '../system-profile-fields';
 import { OptionsEditor } from './options-editor';
 
 interface BlockFormFieldInput {
@@ -54,7 +54,7 @@ interface BlockFormFieldInput {
   description?: string;
   placeholder?: string;
   required: boolean;
-  systemKey?: string;
+  profileKey?: string;
   lockType?: boolean;
   options?: string[];
   documents?: {
@@ -98,7 +98,7 @@ export function BlockForm({
   const [fieldPickerOpen, setFieldPickerOpen] = useState(false);
   const [profilePickerOpen, setProfilePickerOpen] = useState(false);
 
-  const systemPresets = SYSTEM_PROFILE_FIELDS.map((field) => ({
+  const profilePresets = PROFILE_FIELDS.map((field) => ({
     ...field,
     label: tField(field.labelKey),
   }));
@@ -171,7 +171,7 @@ export function BlockForm({
             description: f.description ?? '',
             placeholder: f.placeholder ?? '',
             required: f.required,
-            systemKey: f.systemKey ?? '',
+            profileKey: f.profileKey ?? '',
             lockType: f.lockType ?? false,
             options: f.options ?? [],
             documents:
@@ -213,7 +213,7 @@ export function BlockForm({
         description: f.description,
         placeholder: f.placeholder,
         required: f.required,
-        systemKey: f.systemKey || undefined,
+        profileKey: f.profileKey || undefined,
         lockType: f.lockType ?? false,
         options: f.options,
         documentFileIds: f.documents?.map((d) => d.fileId),
@@ -245,7 +245,7 @@ export function BlockForm({
       description: '',
       placeholder: '',
       required: false,
-      systemKey: '',
+      profileKey: '',
       lockType: false,
       options: [],
       ...(type === FieldType.DocumentAcknowledgement
@@ -254,14 +254,14 @@ export function BlockForm({
     });
   }
 
-  function appendSystemField(preset: (typeof systemPresets)[number]) {
+  function appendProfileField(preset: (typeof profilePresets)[number]) {
     append({
       type: preset.type,
       label: preset.label,
       description: '',
       placeholder: '',
       required: false,
-      systemKey: preset.key,
+      profileKey: preset.key,
       lockType: true,
       options: [],
     });
@@ -277,11 +277,11 @@ export function BlockForm({
 
   const showSaveButton = !readOnly && (isDirty || !isEdit);
 
-  const usedSystemKeys = new Set(
-    watchedFields.map((f) => f.systemKey).filter(Boolean),
+  const usedProfileKeys = new Set(
+    watchedFields.map((f) => f.profileKey).filter(Boolean),
   );
-  const availablePresets = systemPresets.filter(
-    (p) => !usedSystemKeys.has(p.key),
+  const availablePresets = profilePresets.filter(
+    (p) => !usedProfileKeys.has(p.key),
   );
 
   return (
@@ -346,8 +346,8 @@ export function BlockForm({
             canMoveDown={index < fields.length - 1}
             fieldType={watchedFields[index]?.type}
             currentRequired={watchedFields[index]?.required ?? false}
-            isSystemField={!!watchedFields[index]?.systemKey}
-            systemKey={watchedFields[index]?.systemKey}
+            isProfileField={!!watchedFields[index]?.profileKey}
+            profileKey={watchedFields[index]?.profileKey}
             lockType={watchedFields[index]?.lockType ?? false}
             onToggleRequired={(next) =>
               setValue(`fields.${index}.required`, next, { shouldDirty: true })
@@ -422,7 +422,7 @@ export function BlockForm({
                         type="button"
                         className="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors hover:bg-accent"
                         onClick={() => {
-                          appendSystemField(p);
+                          appendProfileField(p);
                           setProfilePickerOpen(false);
                         }}
                       >
@@ -487,8 +487,8 @@ function FieldCard({
   canMoveDown,
   fieldType,
   currentRequired,
-  isSystemField,
-  systemKey,
+  isProfileField,
+  profileKey,
   lockType,
   onToggleRequired,
   readOnly,
@@ -507,8 +507,8 @@ function FieldCard({
   canMoveDown: boolean;
   fieldType?: FieldType;
   currentRequired: boolean;
-  isSystemField: boolean;
-  systemKey?: string;
+  isProfileField: boolean;
+  profileKey?: string;
   lockType: boolean;
   onToggleRequired: (next: boolean) => void;
   readOnly?: boolean;
@@ -519,7 +519,8 @@ function FieldCard({
   const tField = useTranslations('RequirementForm.fieldForm');
   const tValidation = useTranslations('RequirementForm.validation');
   const tCommon = useTranslations('Common');
-  const hasFixedOptions = hasFixedGenderOptions(systemKey);
+  const tUpload = useTranslations('Storage.upload');
+  const hasFixedOptions = hasFixedGenderOptions(profileKey);
   const showOptions =
     (fieldType === FieldType.SingleChoice ||
       fieldType === FieldType.MultiChoice) &&
@@ -544,10 +545,10 @@ function FieldCard({
           <span className="text-sm font-medium text-muted-foreground">
             {t('fieldN', { n: index + 1 })}
           </span>
-          {isSystemField && (
+          {isProfileField && (
             <Badge variant="neutral" className="text-xs">
               <UserCircle2 className="mr-1 size-3.5" />
-              {t('systemField')}
+              {t('profileField')}
             </Badge>
           )}
         </div>
@@ -703,6 +704,7 @@ function FieldCard({
                       purpose="form_document"
                       organizationUnitId={orgUId}
                       label={`${tField('documentFileLabel')} ${docIndex + 1}`}
+                      description={tUpload('documentHint')}
                       value={doc.fileId}
                       initialPreviewUrl={doc.downloadUrl ?? null}
                       initialFilename={doc.filename ?? null}
@@ -732,6 +734,7 @@ function FieldCard({
                     purpose="form_document"
                     organizationUnitId={orgUId}
                     label={tField('addDocumentFile')}
+                    description={tUpload('documentHint')}
                     value={null}
                     disabled={readOnly}
                     error={fieldState.error?.message}

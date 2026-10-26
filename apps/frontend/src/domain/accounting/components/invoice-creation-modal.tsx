@@ -17,6 +17,7 @@ import {
   useManualBaseline,
   usePermissions,
   useReimbursementTypes,
+  useTimeEntriesAwaitingReviewForInvoice,
   useVolunteersNeedingTimesheets,
   useYearlyUsage,
 } from '@repo/data/react';
@@ -256,6 +257,14 @@ export function InvoiceCreationModal({
     volunteerId: volunteerId ?? undefined,
     reimbursementTypeId: reimbursementType?.id,
   });
+  // Auto-closed hours nobody confirmed yet: listed under the eligible ones,
+  // never selectable and never part of the totals.
+  const awaitingReviewQuery = useTimeEntriesAwaitingReviewForInvoice({
+    volunteerId: volunteerId ?? undefined,
+    reimbursementTypeId: reimbursementType?.id,
+    periodStart: periodBounds?.periodStart,
+    periodEnd: periodBounds?.periodEnd,
+  });
   const needsTimesheetInPeriodQuery = useVolunteersNeedingTimesheets({
     periodStart: periodBounds?.periodStart,
     periodEnd: periodBounds?.periodEnd,
@@ -284,6 +293,14 @@ export function InvoiceCreationModal({
         mapEligibleTimeEntry(entry, formatting),
       ),
     [eligibleQuery.data, formatting],
+  );
+
+  const awaitingReviewLines = useMemo(
+    () =>
+      (awaitingReviewQuery.data ?? []).map((entry) =>
+        mapEligibleTimeEntry(entry, formatting),
+      ),
+    [awaitingReviewQuery.data, formatting],
   );
 
   const createInvoice = useCreateInvoice();
@@ -504,6 +521,7 @@ export function InvoiceCreationModal({
   const periodStart = period.from ?? new Date();
   const monthParam = `${periodStart.getFullYear()}-${String(periodStart.getMonth() + 1).padStart(2, '0')}`;
   const timesheetsHref = `/admin/${orgUId}/timesheets?month=${monthParam}&volunteer=${volunteerId}`;
+  const entryHref = (id: string) => `/admin/${orgUId}/timesheets/${id}`;
 
   // This document's own edit first, then the template's stored value — the same
   // order the backend uses when it allocates the real number.
@@ -861,6 +879,8 @@ export function InvoiceCreationModal({
               selectedIds={checkedIds}
               onToggle={toggleLine}
               timesheetsHref={timesheetsHref}
+              awaitingReviewLines={awaitingReviewLines}
+              entryHref={entryHref}
               emptyMessage={hoursEmptyMessage}
             />
           </>

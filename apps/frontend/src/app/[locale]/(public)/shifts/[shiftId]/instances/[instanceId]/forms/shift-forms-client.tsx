@@ -18,6 +18,7 @@ interface ShiftFormsClientProps {
   shiftTitle: string;
   requiredForms: RequiredFormItem[];
   profileData: Record<string, string>;
+  storedFieldValues?: Record<string, string>;
   initialSubmittedFormIds: Set<string>;
   redirectTo?: string;
 }
@@ -28,6 +29,7 @@ export function ShiftFormsClient({
   shiftTitle,
   requiredForms,
   profileData,
+  storedFieldValues,
   initialSubmittedFormIds,
   redirectTo,
 }: ShiftFormsClientProps) {
@@ -69,6 +71,7 @@ export function ShiftFormsClient({
       targetId={shiftId}
       forms={requiredForms}
       profileData={profileData}
+      storedFieldValues={storedFieldValues}
       initialSubmittedFormIds={initialSubmittedFormIds}
       onComplete={handleComplete}
     />

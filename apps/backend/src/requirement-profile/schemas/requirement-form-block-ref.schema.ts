@@ -1,4 +1,4 @@
-import { boolean, index, integer, snakeCase, uuid } from 'drizzle-orm/pg-core';
+import { index, integer, snakeCase, uuid } from 'drizzle-orm/pg-core';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { formBlocks } from './form-block.schema';
 import { requirementForms } from './requirement-form.schema';
@@ -14,7 +14,6 @@ export const requirementFormBlockRefs = snakeCase.table(
       .references(() => formBlocks.id, { onDelete: 'restrict' })
       .notNull(),
     fieldOrder: integer('field_order').notNull().default(0),
-    required: boolean('required'),
     ...timestampColumns,
   },
   (table) => [

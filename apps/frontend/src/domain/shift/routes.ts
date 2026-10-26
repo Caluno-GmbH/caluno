@@ -29,13 +29,29 @@ export type ShiftListQuery = {
   view?: ShiftListView;
   week?: string;
   page?: string;
+  // Table state carried to the detail page so "back" restores the same rows.
+  pageSize?: string;
+  sort?: string;
+  dir?: string;
+  q?: string;
 };
+
+const SHIFT_LIST_QUERY_KEYS = [
+  'view',
+  'week',
+  'page',
+  'pageSize',
+  'sort',
+  'dir',
+  'q',
+] as const satisfies readonly (keyof ShiftListQuery)[];
 
 function parseQuery(query?: ShiftListQuery) {
   const params = new URLSearchParams();
-  if (query?.view) params.set('view', query.view);
-  if (query?.week) params.set('week', query.week);
-  if (query?.page) params.set('page', query.page);
+  for (const key of SHIFT_LIST_QUERY_KEYS) {
+    const value = query?.[key];
+    if (value) params.set(key, value);
+  }
   return params.toString();
 }
 
@@ -108,8 +124,10 @@ export function parseShiftListQuery(
   searchParams: Record<string, string | string[] | undefined>,
 ): ShiftListQuery {
   const view = searchParams.view;
-  const week = searchParams.week;
-  const page = searchParams.page;
+  const str = (key: Exclude<keyof ShiftListQuery, 'view'>) => {
+    const value = searchParams[key];
+    return typeof value === 'string' ? value : undefined;
+  };
 
   return {
     view:
@@ -118,7 +136,11 @@ export function parseShiftListQuery(
         : view === 'weekplan'
           ? 'weekplan'
           : undefined,
-    week: typeof week === 'string' ? week : undefined,
-    page: typeof page === 'string' ? page : undefined,
+    week: str('week'),
+    page: str('page'),
+    pageSize: str('pageSize'),
+    sort: str('sort'),
+    dir: str('dir'),
+    q: str('q'),
   };
 }

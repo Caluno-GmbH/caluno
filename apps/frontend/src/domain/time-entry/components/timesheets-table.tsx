@@ -1,26 +1,37 @@
 'use client';
 
 import type { GetTimeEntriesQuery, PaginationInfo } from '@repo/data';
+import { TimeEntryStatus } from '@repo/data';
+import {
+  ActionsCell,
+  EntityCell,
+  NumberCell,
+  TextCell,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui';
 import type {
   ColumnDef,
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
 import { parseISO } from 'date-fns';
-import { useSearchParams } from 'next/navigation';
+import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
+import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
-import { Pagination } from '@/components/pagination';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
+import { TimeEntryStatusBadge } from './time-entry-status-badge';
 
 type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
 
@@ -30,6 +41,20 @@ interface TimesheetsTableProps {
   organizationUnitId: string;
 }
 
+/** Shown instead of a duration for entries that are still running. */
+const NO_DURATION = '—';
+
+const getRowClassName = (entry: TimeEntry) => {
+  switch (entry.status) {
+    case TimeEntryStatus.Open:
+      return 'bg-muted/80';
+    case TimeEntryStatus.AutoClosed:
+      return 'bg-alert/30';
+    default:
+      return undefined;
+  }
+};
+
 export const TimesheetsTable = ({
   entries,
   pagination,
@@ -38,12 +63,10 @@ export const TimesheetsTable = ({
   const t = useTranslations('TimeEntry');
   const { formatWorkedPeriod, formatDuration, formatDateTime } =
     useFormatting();
-  const searchParams = useSearchParams();
 
-  const [{ sort, dir, page }, setParams] = useQueryStates(
-    timesheetsSearchParams,
-    { shallow: false },
-  );
+  const [{ sort, dir }, setParams] = useQueryStates(timesheetsSearchParams, {
+    shallow: false,
+  });
 
   const sorting = useMemo(() => toSorting(sort, dir), [sort, dir]);
 
@@ -57,7 +80,6 @@ export const TimesheetsTable = ({
     () => [
       {
         id: 'SHIFT',
-        meta: { headerClassName: 'w-[17%]' },
         accessorFn: (row) =>
           row.shiftInstance?.master?.title ?? row.organizationUnit?.name,
         header: ({ column }) => (
@@ -70,28 +92,31 @@ export const TimesheetsTable = ({
               className="block hover:underline"
               href={`/admin/${organizationUnitId}/timesheets/${entry.id}`}
             >
-              {entry.shiftInstance?.master?.title ??
-                entry.organizationUnit?.name ??
-                t('table.notAvailable')}
+              <TextCell>
+                {entry.shiftInstance?.master?.title ??
+                  entry.organizationUnit?.name ??
+                  t('table.notAvailable')}
+              </TextCell>
             </Link>
           );
         },
       },
       {
         id: 'VOLUNTEER',
-        meta: { headerClassName: 'w-[15%]' },
         accessorFn: (row) => row.volunteer?.name ?? row.volunteer?.email,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
         ),
-        cell: ({ row }) =>
-          row.original.volunteer?.name ??
-          row.original.volunteer?.email ??
-          t('table.notAvailable'),
+        cell: ({ row }) => (
+          <TextCell>
+            {row.original.volunteer?.name ??
+              row.original.volunteer?.email ??
+              t('table.notAvailable')}
+          </TextCell>
+        ),
       },
       {
         id: 'STARTED_AT',
-        meta: { headerClassName: 'w-[19%]' },
         accessorFn: (row) => row.startedAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.date')} />
@@ -102,27 +127,64 @@ export const TimesheetsTable = ({
             row.original.endedAt,
             t('format.open'),
           );
-          return (
-            <div className="flex flex-col">
-              <span>{date}</span>
-              <span className="text-muted-foreground text-xs">{time}</span>
-            </div>
-          );
+          return <EntityCell title={date} subtitle={time} />;
         },
       },
       {
+        id: 'STATUS',
+        enableSorting: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.status')} />
+        ),
+        cell: ({ row }) => (
+          <TimeEntryStatusBadge status={row.original.status} />
+        ),
+      },
+      {
         id: 'DURATION',
-        meta: { headerClassName: 'w-[12%]' },
         accessorFn: (row) => row.endedAt,
+        // Matches NumberCell's right alignment.
+        meta: { headerClassName: 'text-right' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
         ),
-        cell: ({ row }) =>
-          formatDuration(row.original.startedAt, row.original.endedAt),
+        cell: ({ row }) => {
+          const entry = row.original;
+          if (entry.status === TimeEntryStatus.Open) {
+            return <NumberCell>{NO_DURATION}</NumberCell>;
+          }
+          const duration = formatDuration(entry.startedAt, entry.endedAt);
+          if (entry.status === TimeEntryStatus.AutoClosed) {
+            const tooltip = t('status.autoClosedTooltip');
+            return (
+              <div className="flex justify-end">
+                <EntityCell
+                  title={duration}
+                  trailing={
+                    // A native button: keyboard-focusable (a div with tabIndex
+                    // trips the a11y lint) and named for screen readers.
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={tooltip}
+                          className="block cursor-default rounded-sm"
+                        >
+                          <AlertTriangle className="size-4 text-alert" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{tooltip}</TooltipContent>
+                    </Tooltip>
+                  }
+                />
+              </div>
+            );
+          }
+          return <NumberCell>{duration}</NumberCell>;
+        },
       },
       {
         id: 'CREATED_AT',
-        meta: { headerClassName: 'w-[27%]' },
         accessorFn: (row) => row.createdAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.recorded')} />
@@ -131,14 +193,14 @@ export const TimesheetsTable = ({
           const entry = row.original;
           const recorder = describeRecorder(entry);
           return (
-            <div className="flex flex-col">
-              <span>{formatDateTime(parseISO(entry.createdAt))}</span>
-              <span className="text-muted-foreground text-xs">
-                {recorder.name
+            <EntityCell
+              title={formatDateTime(parseISO(entry.createdAt))}
+              subtitle={
+                recorder.name
                   ? t('table.recordedBy', { name: recorder.name })
-                  : t('table.recordedByUnknown')}
-              </span>
-            </div>
+                  : t('table.recordedByUnknown')
+              }
+            />
           );
         },
       },
@@ -146,16 +208,18 @@ export const TimesheetsTable = ({
         id: 'actions',
         enableSorting: false,
         meta: {
-          headerClassName: 'w-[10%]',
           cellClassName: 'whitespace-nowrap',
         },
         header: () => null,
         cell: ({ row }) => (
-          <ActionBar
-            id={row.original.id}
-            organizationUnitId={organizationUnitId}
-            size="xs"
-          />
+          <ActionsCell>
+            <ActionBar
+              id={row.original.id}
+              organizationUnitId={organizationUnitId}
+              status={row.original.status}
+              size="sm"
+            />
+          </ActionsCell>
         ),
       },
     ],
@@ -173,13 +237,11 @@ export const TimesheetsTable = ({
         sorting={sorting}
         onSortingChange={onSortingChange}
         emptyMessage={t('empty.title')}
-        getRowClassName={(entry) => (entry.endedAt ? undefined : 'bg-muted/80')}
+        getRowClassName={getRowClassName}
       />
-      {pagination.total > pagination.limit && (
-        <Pagination
-          pagination={pagination}
-          url={`/admin/${organizationUnitId}/timesheets?${searchParams.toString()}`}
-          currentPage={page}
+      {pagination.total > 0 && (
+        <DataTablePagination
+          total={pagination.total}
           name={t('page.paginationName')}
         />
       )}

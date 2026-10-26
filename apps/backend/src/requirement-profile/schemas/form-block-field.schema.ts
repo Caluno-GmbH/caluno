@@ -23,7 +23,7 @@ export const formBlockFields = snakeCase.table(
     description: text('description'),
     required: boolean('required').notNull().default(false),
     lockType: boolean('lock_type').notNull().default(false),
-    systemKey: text('system_key'),
+    profileKey: text('profile_key'),
     options: jsonb('options').$type<string[]>(),
     documentFileIds: uuid('document_file_ids').array(),
     documentLabel: text('document_label'),
@@ -33,7 +33,7 @@ export const formBlockFields = snakeCase.table(
   },
   (table) => [
     index('idx_form_block_fields_block_id').on(table.blockId),
-    index('idx_form_block_fields_system_key').on(table.systemKey),
+    index('idx_form_block_fields_system_key').on(table.profileKey),
   ],
 );
 

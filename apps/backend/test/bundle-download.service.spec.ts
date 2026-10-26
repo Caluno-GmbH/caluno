@@ -64,6 +64,8 @@ describe('BundleDownloadService', () => {
     actorUserId: string,
   ) => Promise<string | null>;
   const renderCalls: string[] = [];
+  /** The same for a covering contract's missing PDF; none by default. */
+  let renderMissingContractPdf: (contractId: string) => Promise<string | null>;
 
   /**
    * Every stored file is served as a PDF whose pages have a width of its own,
@@ -111,6 +113,8 @@ describe('BundleDownloadService', () => {
         return `https://files.test/${fileId}`;
       },
     } as unknown as FileService;
+    contractService.ensurePdf = (contractId: string) =>
+      renderMissingContractPdf(contractId);
     const invoiceService = {
       ensurePdf: (invoiceId: string, actorUserId: string) => {
         renderCalls.push(invoiceId);
@@ -129,6 +133,7 @@ describe('BundleDownloadService', () => {
   beforeEach(() => {
     failUrlResolution = false;
     renderCalls.length = 0;
+    renderMissingContractPdf = async () => null;
     renderMissingPdf = async () => {
       throw new Error('no timesheet should need rendering');
     };
@@ -883,7 +888,24 @@ describe('BundleDownloadService', () => {
       expect(stored?.paidAt).not.toBeNull();
     });
 
-    it('skips a covering contract that has no file', async () => {
+    it('renders the PDF of a covering contract that has none and appends it (VOLI-1637)', async () => {
+      const s = await setup();
+      const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
+      const contract = await insertContract(s, JULY, { withFile: false });
+      const invoice = await readyTimesheet(s, [entry]);
+      const rendered = await createPdfFile(s);
+      renderMissingContractPdf = async (contractId) =>
+        contractId === contract.id ? rendered.id : null;
+
+      const { buffer } = await download(s);
+
+      expect(await pagesIn(buffer, invoice)).toEqual([
+        page(invoice),
+        page({ fileId: rendered.id }),
+      ]);
+    });
+
+    it('skips a covering contract whose missing PDF cannot be rendered', async () => {
       const s = await setup();
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       await insertContract(s, JULY, { withFile: false });

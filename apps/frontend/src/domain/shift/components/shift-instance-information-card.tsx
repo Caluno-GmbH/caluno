@@ -20,10 +20,13 @@ import {
   Users,
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
+import {
+  getApprovalConfig,
+  getVisibilityConfig,
+} from '@/domain/shift/lib/shift-badge-config';
 import { Link } from '@/i18n/navigation';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { shiftInstanceEditPath } from '../routes';
-import { getApprovalConfig, getVisibilityConfig } from './shifts-table';
 
 type ShiftInstanceInformationCardProps = {
   orgUId: string;

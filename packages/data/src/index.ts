@@ -23,8 +23,6 @@ export * from './errors/translate';
 // Generated types (all GraphQL types, queries, mutations)
 export * from './generated/base-types';
 export * from './generated/graphql';
-// Server-side utilities (framework-agnostic, requires DI)
-export * from './integrations/server-org-context';
 // Repositories (if you want to use them directly)
 export * from './repositories/accounting/accounting.repository';
 export * from './repositories/accounting/profile-source-keys';

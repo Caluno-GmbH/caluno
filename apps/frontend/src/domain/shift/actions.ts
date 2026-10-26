@@ -10,6 +10,7 @@ import { ShiftInviteStatus, ShiftVisibility } from '@repo/data';
 import z from 'zod';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
+import { buildUpdateShiftInstanceSeriesFields } from './build-update-shift-instance-input';
 import { pickFirstShiftInstanceId } from './create-shift-flow';
 import { generateRrule } from './rrule';
 import {
@@ -170,21 +171,17 @@ export const updateShiftInstance = actionClient
         maxVolunteers: parsedInput.maxVolunteers ?? null,
         reimbursementTypeId: parsedInput.reimbursementTypeId ?? null,
         requiredFormIds: parsedInput.requiredFormIds,
-        // Image always lands on the shift master (backend keeps a one-off
-        // instance's master in sync even without applyToAllFuture), so it
-        // must be sent regardless of that flag — unlike rrule/visibility,
-        // which are only meaningful for a recurring series.
+        // Image and visibility live on the shift master. The backend keeps a
+        // one-off instance's master in sync even without applyToAllFuture, so
+        // both must be sent regardless of that flag. rrule is series-only.
         ...(parsedInput.imageFileId !== undefined
           ? { imageFileId: parsedInput.imageFileId }
           : {}),
-        ...(applyToAllFuture
-          ? {
-              rrule,
-              visibility: parsedInput.openShift
-                ? ShiftVisibility.AllMembers
-                : ShiftVisibility.InvitedMembers,
-            }
-          : {}),
+        ...buildUpdateShiftInstanceSeriesFields({
+          openShift: parsedInput.openShift,
+          applyToAllFuture,
+          rrule,
+        }),
       };
 
       return await data.shift.updateInstance(

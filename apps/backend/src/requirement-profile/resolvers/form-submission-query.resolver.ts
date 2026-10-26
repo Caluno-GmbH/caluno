@@ -11,6 +11,7 @@ import {
   FormSubmission,
   FormSubmissionPaginatedResponse,
 } from '../models/form-submission.model';
+import { FormSubmissionValuePrefill } from '../models/form-submission-value-prefill.model';
 import { FormSubmissionService, RequirementFormService } from '../services';
 
 @Resolver(() => FormSubmission)
@@ -25,15 +26,36 @@ export class FormSubmissionQueryResolver {
   @Query(() => FormSubmission, { nullable: true })
   async myFormSubmissionByToken(
     @Args('token') token: string,
+    @Args('organizationUnitId', { type: () => ID }) organizationUnitId: string,
     @Session() session: UserSession,
   ): Promise<FormSubmission | null> {
     const form = await this.requirementFormService.findByShareToken(token);
     if (!form) return null;
-    const item = await this.formSubmissionService.findByUserAndForm(
+    const item = await this.formSubmissionService.findByUserFormAndOrgUnit(
       session.user.id,
       form.id,
+      organizationUnitId,
     );
     return this.formSubmissionMapper.toModel(item);
+  }
+
+  @Query(() => [FormSubmissionValuePrefill])
+  async myStoredFormFieldValues(
+    @Args('organizationUnitId', { type: () => ID })
+    organizationUnitId: string,
+    @Session() session: UserSession,
+  ): Promise<FormSubmissionValuePrefill[]> {
+    const rows =
+      await this.formSubmissionService.findStoredFieldValuesForOrgUnit(
+        session.user.id,
+        organizationUnitId,
+      );
+    return rows.map((row) => {
+      const value = Array.isArray(row.value)
+        ? JSON.stringify(row.value)
+        : String(row.value ?? '');
+      return { fieldId: row.fieldId, value };
+    });
   }
 
   @Query(() => [FormSubmission])

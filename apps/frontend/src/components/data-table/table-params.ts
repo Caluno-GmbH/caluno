@@ -1,9 +1,31 @@
 import {
   parseAsInteger,
+  parseAsString,
   parseAsStringEnum,
   parseAsStringLiteral,
 } from 'nuqs/server';
 import type { SortDir } from './table-sort';
+
+/** Debounce (ms) applied to search-box URL writes to avoid a refetch per keystroke. */
+export const SEARCH_DEBOUNCE_MS = 300;
+
+export const PAGE_SIZES = [15, 25, 50, 100] as const;
+export type PageSize = (typeof PAGE_SIZES)[number];
+export const DEFAULT_PAGE_SIZE: PageSize = 25;
+
+/** URL param for the current page (1-based). */
+export const pageParser = parseAsInteger.withDefault(1);
+
+/**
+ * URL param for rows per page. Stored as a string literal to constrain inputs;
+ * convert to number with `Number(pageSize)` at the use site.
+ */
+export const pageSizeParser = parseAsStringLiteral([
+  '15',
+  '25',
+  '50',
+  '100',
+] as const).withDefault('25');
 
 export function createTableParsers<T extends string>(
   sortFields: readonly T[],
@@ -13,6 +35,11 @@ export function createTableParsers<T extends string>(
   return {
     sort: parseAsStringEnum([...sortFields]).withDefault(defaultSort),
     dir: parseAsStringLiteral(['asc', 'desc'] as const).withDefault(defaultDir),
-    page: parseAsInteger.withDefault(1),
+    page: pageParser,
+    pageSize: pageSizeParser,
   };
+}
+
+export function createFilterParsers() {
+  return { q: parseAsString.withDefault('') };
 }

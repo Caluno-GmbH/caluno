@@ -10,6 +10,8 @@ import type { ShiftInstanceEntity } from '../../shift/schemas/shift-instance.sch
 import { ShiftService } from '../../shift/shift.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
+import { TimeEntryClosureKind } from '../enums/time-entry-closure-kind.enum';
+import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 import type { TimeEntryEntity } from '../schemas/time-entry.schema';
 import type { TimeEntryLoader } from './time-entry.loader';
 import { TimeEntryFieldResolver } from './time-entry-field.resolver';
@@ -67,6 +69,7 @@ const timeEntry = {
   volunteerId: 'user-volunteer',
   startedAt: now,
   endedAt: null,
+  closureKind: null,
   notes: null,
   reimbursementTypeId: null,
   isPaid: false,
@@ -139,5 +142,35 @@ describe('TimeEntryFieldResolver', () => {
 
     expect(result.id).toBe('unit-1');
     expect(load).toHaveBeenCalledWith('unit-1');
+  });
+
+  describe('status', () => {
+    // Raw entities reach this resolver on every path, including
+    // ShiftInstance.timeEntries, which returns loader rows unmapped.
+    const closedAt = new Date('2026-06-24T12:00:00Z');
+
+    it('is OPEN for an entry without endedAt', () => {
+      expect(resolver.status(timeEntry)).toBe(TimeEntryStatus.OPEN);
+    });
+
+    it('is AUTO_CLOSED for an auto-closed entity', () => {
+      expect(
+        resolver.status({
+          ...timeEntry,
+          endedAt: closedAt,
+          closureKind: TimeEntryClosureKind.AUTO,
+        }),
+      ).toBe(TimeEntryStatus.AUTO_CLOSED);
+    });
+
+    it('is CLOSED for a manually closed entity', () => {
+      expect(
+        resolver.status({
+          ...timeEntry,
+          endedAt: closedAt,
+          closureKind: TimeEntryClosureKind.MANUAL,
+        }),
+      ).toBe(TimeEntryStatus.CLOSED);
+    });
   });
 });

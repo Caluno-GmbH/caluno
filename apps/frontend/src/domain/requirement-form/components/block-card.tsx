@@ -1,12 +1,14 @@
 'use client';
 
 import type { FormBlock, RequirementForm } from '@repo/data';
+import { useOrgUId } from '@repo/data/react';
 import { Badge, Button, Card, CardContent, cn } from '@repo/ui';
 import type { LucideIcon } from 'lucide-react';
 import { Eye, FileCheck, MapPin, Pencil, Trash2, User } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useSheetTrigger } from '@/hooks/use-sheet';
+import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ConfirmDialog } from './confirm-dialog';
 import { USER_TEXT_BADGE } from './user-text-badge';
@@ -29,6 +31,7 @@ export function BlockCard({
   const t = useTranslations('RequirementForm.card');
   const tTable = useTranslations('RequirementForm.table');
   const { formatDateTime } = useFormatting();
+  const orgUId = useOrgUId();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const { open: openSheet } = useSheetTrigger('block-form');
@@ -98,10 +101,15 @@ export function BlockCard({
                 {usedInForms.map((f) => (
                   <Badge
                     key={f.id}
+                    asChild
                     variant="neutral"
                     className={cn('text-xs', USER_TEXT_BADGE)}
                   >
-                    {f.name}
+                    <Link
+                      href={`/admin/${orgUId}/requirement-forms/${f.id}/builder`}
+                    >
+                      {f.name}
+                    </Link>
                   </Badge>
                 ))}
               </div>

@@ -7,6 +7,7 @@ import {
   type CreateShiftInput,
   type DuplicateShiftInput,
   type ShiftInviteStatus,
+  type ShiftSortField,
   SortOrder,
   type UpdateShiftInput,
   type UpdateShiftInstanceInput,
@@ -35,6 +36,12 @@ import {
   BaseRepository,
   type PaginationOptions,
 } from '../base/base.repository';
+
+export interface ShiftListOptions extends PaginationOptions {
+  sort?: ShiftSortField;
+  order?: SortOrder;
+  search?: string | null;
+}
 
 export type ActiveShiftInstance =
   GetActiveShiftInstancesQuery['activeShiftInstances'][number];
@@ -100,10 +107,13 @@ export class ShiftRepository extends BaseRepository {
     return enrichShift(shift);
   }
 
-  async findAll(options: PaginationOptions = {}) {
+  async findAll(options: ShiftListOptions = {}) {
     const data = await this.sdk.GetShifts({
       limit: options.limit ?? 10,
       offset: options.offset ?? 0,
+      sort: options.sort,
+      order: options.order,
+      search: options.search ?? null,
     });
     return data.shifts;
   }
@@ -307,6 +317,11 @@ export class ShiftRepository extends BaseRepository {
       eventId: eventId ?? undefined,
     });
     return data.weeklyShifts;
+  }
+
+  async findInstanceStartsForEvent(eventId: string): Promise<string[]> {
+    const data = await this.sdk.GetEventShiftInstanceStarts({ eventId });
+    return data.eventShiftInstanceStarts;
   }
 
   /**

@@ -2,11 +2,10 @@
 
 import type { ShiftInviteStatus } from '@repo/data';
 import { Card, cn } from '@repo/ui';
-import { MapPinIcon, RepeatIcon } from 'lucide-react';
+import { MapPinIcon } from 'lucide-react';
 import { shiftPublicPath } from '@/domain/shift/share';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { useRecurrenceLabel } from '../lib/recurrence-label';
 import { ShiftRosterStatusLine } from './shift-roster-status-line';
 
 export interface ShiftCardMyShiftProps {
@@ -19,7 +18,6 @@ export interface ShiftCardMyShiftProps {
       id: string;
       title: string;
       location?: string | null;
-      rrule?: string | null;
     };
   };
   /** Show the shift's date (used in the home preview where there is no day head). */
@@ -40,8 +38,6 @@ export function ShiftCardMyShift({
   isPending = false,
 }: ShiftCardMyShiftProps) {
   const { formatTimeRange, formatDate } = useFormatting();
-  const getRecurrenceLabel = useRecurrenceLabel();
-  const recurrence = getRecurrenceLabel(shiftInstance.master.rrule);
 
   const card = (
     <Card
@@ -66,12 +62,6 @@ export function ShiftCardMyShift({
             shiftInstance.actualEndsAt,
           )}
         </p>
-      )}
-      {recurrence && (
-        <span className="flex items-center gap-1 text-sm text-muted-foreground">
-          <RepeatIcon className="size-3.5 shrink-0" />
-          {recurrence}
-        </span>
       )}
       <ShiftRosterStatusLine
         isIntendingToJoin={isPending}

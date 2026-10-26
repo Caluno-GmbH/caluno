@@ -22,19 +22,21 @@ export function MembershipCard({ entry }: Props) {
   return (
     <Card>
       <CardHeader className="flex flex-row gap-3">
-        <CardTitle className="flex min-w-0 flex-1 items-center gap-2">
+        <CardTitle className="flex min-w-0 flex-1 items-start gap-2">
           <OrgUnitAvatar
             name={orgUnit.name}
             logoUrl={orgUnit.logoUrl}
             typeIcon={orgUnit.typeIcon}
           />
-          <span className="min-w-0 truncate">{organizationName}</span>
-          {!orgUnit.isRoot && (
-            <>
-              <span className="text-muted-foreground shrink-0">·</span>
-              <span className="min-w-0 truncate">{orgUnit.name}</span>
-            </>
-          )}
+          <span className="min-w-0 break-words">
+            {organizationName}
+            {!orgUnit.isRoot && (
+              <>
+                <span className="text-muted-foreground"> · </span>
+                {orgUnit.name}
+              </>
+            )}
+          </span>
         </CardTitle>
         <CardAction>
           <MembershipStatusBadge state={entry.state} />

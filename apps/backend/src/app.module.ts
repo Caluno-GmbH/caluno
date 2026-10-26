@@ -42,6 +42,8 @@ import { ObservabilityModule } from './shared/observability/observability.module
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
+  type PostHogCaptureProperties,
+  type PostHogEventName,
 } from './shared/observability/posthog.events';
 import { PostHogService } from './shared/observability/posthog.service';
 import { validatePostHogEnv } from './shared/observability/validate-posthog-env';
@@ -155,6 +157,18 @@ const autoSchemaFile =
           },
         };
 
+        const captureAuth = (
+          event: PostHogEventName,
+          userId: string,
+          properties: Omit<PostHogCaptureProperties, 'surface'> = {},
+        ) => {
+          postHogService.capture({
+            event,
+            userId,
+            properties: { surface: POSTHOG_SURFACE.AUTH, ...properties },
+          });
+        };
+
         return {
           auth: betterAuth(
             createAuthConfig({
@@ -164,48 +178,21 @@ const autoSchemaFile =
               logger: betterAuthLogger,
               termsService,
               emailVerificationEnabled: shouldVerifyEmail,
-              onSessionCreated: (userId) => {
-                postHogService.capture({
-                  event: POSTHOG_EVENT.USER_LOG_IN,
-                  userId,
-                  properties: { surface: POSTHOG_SURFACE.AUTH },
-                });
-              },
-              onSessionDeleted: (userId) => {
-                postHogService.capture({
-                  event: POSTHOG_EVENT.USER_LOG_OUT,
-                  userId,
-                  properties: { surface: POSTHOG_SURFACE.AUTH },
-                });
-              },
-              onUserCreated: (userId) => {
-                postHogService.capture({
-                  event: POSTHOG_EVENT.USER_SIGN_UP,
-                  userId,
-                  properties: { surface: POSTHOG_SURFACE.AUTH },
-                });
-              },
-              onEmailVerified: (userId) => {
-                postHogService.capture({
-                  event: POSTHOG_EVENT.USER_UPDATE,
-                  userId,
-                  properties: {
-                    surface: POSTHOG_SURFACE.AUTH,
-                    source: 'email_verified',
-                    updated_field: 'email_verified',
-                  },
-                });
-              },
-              onPasswordResetCompleted: (userId) => {
-                postHogService.capture({
-                  event: POSTHOG_EVENT.USER_UPDATE,
-                  userId,
-                  properties: {
-                    surface: POSTHOG_SURFACE.AUTH,
-                    source: 'password_reset',
-                  },
-                });
-              },
+              onSessionCreated: (userId) =>
+                captureAuth(POSTHOG_EVENT.USER_LOG_IN, userId),
+              onSessionDeleted: (userId) =>
+                captureAuth(POSTHOG_EVENT.USER_LOG_OUT, userId),
+              onUserCreated: (userId) =>
+                captureAuth(POSTHOG_EVENT.USER_SIGN_UP, userId),
+              onEmailVerified: (userId) =>
+                captureAuth(POSTHOG_EVENT.USER_UPDATE, userId, {
+                  source: 'email_verified',
+                  updated_field: 'email_verified',
+                }),
+              onPasswordResetCompleted: (userId) =>
+                captureAuth(POSTHOG_EVENT.USER_UPDATE, userId, {
+                  source: 'password_reset',
+                }),
               sendResetPassword: async ({ email, token, userId, headers }) => {
                 const locale = await userLocaleService.resolveForUser(
                   userId,
@@ -224,27 +211,32 @@ const autoSchemaFile =
                   templateContext,
                 );
 
-                await emailService.send({
-                  to: email,
-                  ...emailContent,
-                });
-                postHogService.capture({
-                  event: POSTHOG_EVENT.PASSWORD_RESET_SEND,
-                  userId,
-                  properties: { surface: POSTHOG_SURFACE.AUTH },
-                });
+                await emailService.sendImmediately(
+                  {
+                    userId,
+                    to: email,
+                    ...emailContent,
+                  },
+                  new Date(Date.now() + 60 * 60 * 1000),
+                );
+                captureAuth(POSTHOG_EVENT.PASSWORD_RESET_SEND, userId);
               },
-              sendVerificationOTP: async ({ email, otp, type, headers }) => {
+              sendVerificationOTP: async ({
+                email,
+                otp,
+                type,
+                headers,
+                userId,
+              }) => {
                 // TODO: When enabling OTP sign-in or email change,
                 // add type-specific templates here instead of sending generic copy.
                 if (type !== 'email-verification') {
                   return;
                 }
 
-                const locale = await userLocaleService.resolveForEmail(
-                  email,
-                  headers,
-                );
+                const locale = userId
+                  ? await userLocaleService.resolveForUser(userId, headers)
+                  : await userLocaleService.resolveForEmail(email, headers);
                 const templateContext = createEmailTemplateContext(
                   appI18n,
                   locale,
@@ -257,21 +249,25 @@ const autoSchemaFile =
                   templateContext,
                 );
 
-                await emailService.send({
-                  to: email,
-                  ...emailContent,
-                });
-                const user = await database.query.users.findFirst({
-                  where: { email },
-                });
-                if (user) {
-                  postHogService.capture({
-                    event: POSTHOG_EVENT.OTP_SEND,
-                    userId: user.id,
-                    properties: {
-                      surface: POSTHOG_SURFACE.AUTH,
-                      source: type,
-                    },
+                await emailService.sendImmediately(
+                  {
+                    userId,
+                    to: email,
+                    ...emailContent,
+                  },
+                  new Date(Date.now() + 5 * 60 * 1000),
+                );
+
+                let otpUserId = userId;
+                if (!otpUserId) {
+                  const user = await database.query.users.findFirst({
+                    where: { email },
+                  });
+                  otpUserId = user?.id;
+                }
+                if (otpUserId) {
+                  captureAuth(POSTHOG_EVENT.OTP_SEND, otpUserId, {
+                    source: type,
                   });
                 }
               },

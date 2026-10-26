@@ -3,6 +3,11 @@ import { ReimbursementTypeKey } from '../../src/accounting/enums';
 import type { DocumentTemplateBody } from '../../src/accounting/schemas/document-template.schema';
 import type { Database } from '../../src/database/database.module';
 import * as schema from '../../src/database/schema';
+import {
+  FilePurpose,
+  FileStatus,
+  FileVisibility,
+} from '../../src/storage/enums';
 import { createShift } from './shift.factory';
 import { createShiftInstance } from './shift-instance.factory';
 
@@ -200,4 +205,30 @@ export const createCompletedTimeEntry = async (
     throw new Error('Failed to create time entry');
   }
   return entry;
+};
+
+/** A stored document PDF, as rendering one leaves behind. */
+export const createDocumentFile = async (
+  db: Database,
+  input: { organizationUnitId: string; uploadedByUserId: string },
+) => {
+  const [file] = await db
+    .insert(schema.files)
+    .values({
+      storageKey: `test/${crypto.randomUUID()}.pdf`,
+      bucket: 'test',
+      visibility: FileVisibility.PUBLIC,
+      purpose: FilePurpose.DOCUMENT,
+      mimeType: 'application/pdf',
+      filename: 'document.pdf',
+      byteSize: 4,
+      status: FileStatus.UPLOADED,
+      uploadedAt: new Date(),
+      ...input,
+    })
+    .returning();
+  if (!file) {
+    throw new Error('Failed to create file');
+  }
+  return file;
 };

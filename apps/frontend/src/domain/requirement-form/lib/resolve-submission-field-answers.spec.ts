@@ -17,19 +17,19 @@ const opts = {
 };
 
 describe('resolveSubmissionFieldAnswers', () => {
-  it('shows loaded profile values for system-key fields on a submitted form', () => {
+  it('shows loaded profile values for profileKey fields on a submitted form', () => {
     const fields = [
       field({
         id: 'f-name',
         type: 'NAME',
         label: 'Full name',
-        systemKey: 'firstname',
+        profileKey: 'firstname',
       }),
       field({
         id: 'f-street',
         type: 'TEXT',
         label: 'Address',
-        systemKey: 'street',
+        profileKey: 'street',
       }),
       field({ id: 'f-custom', type: 'TEXT', label: 'Motivation' }),
     ];
@@ -72,7 +72,7 @@ describe('resolveSubmissionFieldAnswers', () => {
         id: 'f-name',
         type: 'NAME',
         label: 'Full name',
-        systemKey: 'firstname',
+        profileKey: 'firstname',
       }),
     ];
     const submissionValues: SubmissionValue[] = [

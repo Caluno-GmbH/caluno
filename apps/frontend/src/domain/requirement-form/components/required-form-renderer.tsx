@@ -27,7 +27,10 @@ import {
 } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-import { submitRequiredForm } from '@/domain/requirement-form/actions';
+import {
+  submitForm,
+  submitRequiredForm,
+} from '@/domain/requirement-form/actions';
 import {
   buildFieldSchema,
   type RenderableField,
@@ -44,10 +47,6 @@ export type RequiredFormItem = {
   targetId?: string;
 };
 
-type FormBlockWithEffectiveRequired = RequiredFormBlock & {
-  effectiveRequired: boolean;
-};
-
 interface RequiredFormRendererProps {
   title: string;
   description: string;
@@ -56,28 +55,37 @@ interface RequiredFormRendererProps {
   targetId: string;
   forms: RequiredFormItem[];
   profileData: Record<string, string>;
+  /** Prefill custom fields from OrganizationUserProfile-anchored FormSubmissionValues (keyed by fieldId). */
+  storedFieldValues?: Record<string, string>;
+  /** Org display name for profile-prefilled field cards; falls back to form name. */
+  orgName?: string;
+  /**
+   * When set, each form is submitted via the public share-token mutation
+   * (`submitForm`) instead of `submitRequiredForm`. `targetId` is the
+   * organization unit id in that path.
+   */
+  shareToken?: string;
   initialSubmittedFormIds: Set<string>;
   onComplete: () => Promise<void>;
 }
 
-function getFormBlocks(form: RequiredForm): FormBlockWithEffectiveRequired[] {
+function getFormBlocks(form: RequiredForm): RequiredFormBlock[] {
   return (
     form.blockRefs
       ?.slice()
       .sort((a, b) => (a.fieldOrder ?? 0) - (b.fieldOrder ?? 0))
-      .map((ref): FormBlockWithEffectiveRequired | null => {
+      .map((ref): RequiredFormBlock | null => {
         const block = ref.block;
         if (!block) return null;
         const { fields, ...rest } = block;
         return {
           ...rest,
-          effectiveRequired: ref.required ?? block.required ?? false,
           fields: fields
             ? fields.slice().sort((a, b) => a.fieldOrder - b.fieldOrder)
             : fields,
         };
       })
-      .filter((b): b is FormBlockWithEffectiveRequired => !!b) ?? []
+      .filter((b): b is RequiredFormBlock => !!b) ?? []
   );
 }
 
@@ -99,7 +107,10 @@ export function RequiredFormRenderer({
   targetId,
   forms,
   profileData,
+  storedFieldValues = {},
+  orgName,
   initialSubmittedFormIds,
+  shareToken,
   onComplete,
 }: RequiredFormRendererProps) {
   const t = useTranslations('RequiredFormRenderer');
@@ -150,12 +161,23 @@ export function RequiredFormRenderer({
   const validationMessages = useValidationMessages();
 
   const formBlocksById = useMemo(() => {
-    const map = new Map<string, FormBlockWithEffectiveRequired[]>();
+    const map = new Map<string, RequiredFormBlock[]>();
     for (const item of pendingForms) {
       map.set(item.form.id, getFormBlocks(item.form));
     }
     return map;
   }, [pendingForms]);
+
+  const currentStepHasStoredPrefill = useMemo(() => {
+    if (!currentForm) return false;
+    const blocks = formBlocksById.get(currentForm.form.id) ?? [];
+    return blocks.some((block) =>
+      (block.fields ?? []).some((field) => {
+        if (field.profileKey) return false;
+        return !!storedFieldValues[field.id];
+      }),
+    );
+  }, [currentForm, formBlocksById, storedFieldValues]);
 
   const formSchema = useMemo(() => {
     const shape: Record<string, z.ZodTypeAny> = {};
@@ -168,7 +190,7 @@ export function RequiredFormRenderer({
       for (const block of blocks) {
         for (const field of block.fields ?? []) {
           const existing = mergedFields.get(field.id);
-          const isRequired = block.effectiveRequired && field.required;
+          const isRequired = field.required;
           if (existing) {
             existing.isRequired = existing.isRequired || isRequired;
           } else {
@@ -193,19 +215,22 @@ export function RequiredFormRenderer({
     for (const blocks of formBlocksById.values()) {
       for (const block of blocks) {
         for (const field of block.fields ?? []) {
-          if (field.systemKey && profileData[field.systemKey]) {
-            vals[field.id] = profileData[field.systemKey] ?? '';
+          if (field.profileKey && profileData[field.profileKey]) {
+            vals[field.id] = profileData[field.profileKey] ?? '';
+          } else if (storedFieldValues[field.id]) {
+            vals[field.id] = storedFieldValues[field.id] ?? '';
           }
         }
       }
     }
     return vals;
-  }, [formBlocksById, profileData]);
+  }, [formBlocksById, profileData, storedFieldValues]);
 
   const {
     control,
     trigger,
     getValues,
+    clearErrors,
     formState: { errors },
   } = useForm<Record<string, string>>({
     resolver: zodResolver(formSchema) as Resolver<Record<string, string>>,
@@ -297,12 +322,18 @@ export function RequiredFormRenderer({
           }
         }
 
-        const result = await submitRequiredForm({
-          targetType: item.targetType ?? targetType,
-          targetId: item.targetId ?? targetId,
-          formId: item.form.id,
-          values: submissionValues,
-        });
+        const result = shareToken
+          ? await submitForm({
+              token: shareToken,
+              organizationUnitId: item.targetId ?? targetId,
+              values: submissionValues,
+            })
+          : await submitRequiredForm({
+              targetType: item.targetType ?? targetType,
+              targetId: item.targetId ?? targetId,
+              formId: item.form.id,
+              values: submissionValues,
+            });
 
         if (result?.serverError) {
           toast.error(result.serverError);
@@ -372,6 +403,12 @@ export function RequiredFormRenderer({
       <CardContent className="space-y-6">
         <RequiredFormStepper forms={displayForms} currentStep={currentStep} />
 
+        {currentStepHasStoredPrefill && (
+          <p className="text-sm text-muted-foreground">
+            {t('prefilledFromPreviousSubmissions')}
+          </p>
+        )}
+
         <div className="space-y-6">
           <div>
             <div className="flex items-center gap-2">
@@ -396,19 +433,11 @@ export function RequiredFormRenderer({
             form={currentForm.form}
             control={control}
             errors={errors}
+            formOrg={orgName ?? currentForm.form.name}
+            onCancelField={(fieldId) => clearErrors(fieldId)}
           />
         </div>
 
-        {/* Buttons keep shrink-0 + nowrap so labels stay full-width while
-            side-by-side. Each has a half-width basis and may grow; when a
-            label needs more than half the row, flex-wrap stacks them and
-            grow fills the full width. max-w-full caps a stacked button at
-            the container; only then does the submit label truncate.
-
-            The basis subtracts a whole gap rather than half: at exactly 50%
-            minus half a gap the pair totals 100%, and on an odd-pixel-wide
-            container each button rounds up and the row wraps although it fits.
-            The extra gap is slack against that rounding. */}
         <div className="flex flex-wrap gap-2 border-t pt-4">
           <Button
             variant="outline"
@@ -430,7 +459,13 @@ export function RequiredFormRenderer({
                 <Loader2 className="mr-2 h-4 w-4 shrink-0 animate-spin" />
               )}
               <span className="min-w-0 truncate">
-                {isSubmitting ? t('submittingAll') : t('submitAll')}
+                {isSubmitting
+                  ? displayForms.length === 1
+                    ? t('submitting')
+                    : t('submittingAll')
+                  : displayForms.length === 1
+                    ? t('submit')
+                    : t('submitAll')}
               </span>
             </Button>
           ) : (
@@ -519,10 +554,14 @@ function FormBlocks({
   form,
   control,
   errors,
+  formOrg,
+  onCancelField,
 }: {
   form: RequiredForm;
   control: Control<Record<string, string>>;
   errors: FieldErrors<Record<string, string>>;
+  formOrg: string;
+  onCancelField: (fieldId: string) => void;
 }) {
   const tForm = useTranslations('RequirementForm.volunteerForm');
   const blocks = useMemo(() => getFormBlocks(form), [form]);
@@ -539,6 +578,8 @@ function FormBlocks({
           block={block}
           control={control}
           errors={errors}
+          formOrg={formOrg}
+          onCancelField={onCancelField}
         />
       ))}
     </div>

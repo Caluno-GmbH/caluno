@@ -1,6 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { and, count, eq, isNull, type SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  count,
+  eq,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
@@ -29,7 +39,11 @@ import { ShiftInviteStatus } from '../shift/enums';
 import { ShiftService } from '../shift/shift.service';
 import { UserService } from '../user/user.service';
 import { isUniqueConstraintViolation } from '../utils/constraint-violation.util';
-import { TimeEntrySortField } from './enums';
+import {
+  TimeEntryClosureKind,
+  TimeEntrySortField,
+  TimeEntryStatus,
+} from './enums';
 import { AddTimeEntryInput } from './inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from './inputs/close-time-enty-input';
 import { UpdateTimeEntryInput } from './inputs/update-time-entry.input';
@@ -37,6 +51,14 @@ import type {
   TimeEntryEntity,
   TimeEntryEntityWithRelations,
 } from './schemas/time-entry.schema';
+import {
+  deriveTimeEntryStatus,
+  timeEntryStatusCondition,
+} from './utils/time-entry-status';
+import {
+  assertEndAfterStart,
+  assertStartNotAfterShiftEnd,
+} from './utils/time-entry-times';
 
 @Injectable()
 export class TimeTrackingService {
@@ -58,12 +80,15 @@ export class TimeTrackingService {
     actorUserId: string,
     options?: { skipCapture?: boolean },
   ): Promise<TimeEntryEntity> {
+    assertEndAfterStart(input.startedAt, input.endedAt);
+
     let reimbursementTypeId: string | null = null;
     if (input.shiftInstanceId) {
       const context = await this.resolveShiftInstanceContext(
         input.shiftInstanceId,
         organizationUnitId,
       );
+      assertStartNotAfterShiftEnd(input.startedAt, context.actualEndsAt);
 
       // Fail fast; closed entries may coexist, so guard only open entries.
       if (!input.endedAt) {
@@ -93,6 +118,7 @@ export class TimeTrackingService {
           volunteerId: input.volunteerId,
           startedAt: input.startedAt,
           endedAt: input.endedAt ?? null,
+          closureKind: input.endedAt ? TimeEntryClosureKind.MANUAL : null,
           notes: input.notes,
           reimbursementTypeId,
           createdById: actorUserId,
@@ -139,7 +165,7 @@ export class TimeTrackingService {
   private async resolveShiftInstanceContext(
     shiftInstanceId: string,
     organizationUnitId: string,
-  ): Promise<{ reimbursementTypeId: string | null }> {
+  ): Promise<{ reimbursementTypeId: string | null; actualEndsAt: Date }> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: shiftInstanceId },
       with: { master: true },
@@ -159,6 +185,7 @@ export class TimeTrackingService {
         instance.overrideReimbursementTypeId ??
         instance.master.reimbursementTypeId ??
         null,
+      actualEndsAt: instance.actualEndsAt,
     };
   }
 
@@ -174,7 +201,7 @@ export class TimeTrackingService {
     organizationUnitId: string,
     input: CloseTimeEntryInput,
     _actorUserId: string,
-    options?: { skipCapture?: boolean },
+    options?: { skipCapture?: boolean; requireOpen?: boolean },
   ): Promise<TimeEntryEntity> {
     const entry = await this.db.query.timeEntries.findFirst({
       where: { id },
@@ -184,16 +211,35 @@ export class TimeTrackingService {
       throw new NotFoundGraphQLError('Time entry not found');
     }
 
+    assertEndAfterStart(entry.startedAt, input.endedAt);
+
     // Notes are only overwritten when explicitly provided — closing an entry
     // (e.g. check-out) must not wipe notes set at check-in or by an edit.
     const [timeEntry] = await this.db
       .update(schema.timeEntries)
       .set({
         endedAt: input.endedAt,
+        closureKind: TimeEntryClosureKind.MANUAL,
         ...(input.notes != null ? { notes: input.notes } : {}),
       })
-      .where(eq(schema.timeEntries.id, id))
+      .where(
+        and(
+          eq(schema.timeEntries.id, id),
+          // Self check-out: never overwrite an end the auto-close sweep (or
+          // anyone) wrote since the read — that would turn AUTO into MANUAL
+          // after the volunteer was already emailed. The admin mutation
+          // keeps closing regardless of the current state.
+          ...(options?.requireOpen ? [isNull(schema.timeEntries.endedAt)] : []),
+        ),
+      )
       .returning();
+
+    if (!timeEntry) {
+      // Unconditional closes only miss when the row vanished meanwhile.
+      throw options?.requireOpen
+        ? new ConflictGraphQLError('Time entry is already closed')
+        : new NotFoundGraphQLError('Time entry not found');
+    }
 
     if (!options?.skipCapture) {
       this.postHogService.capture({
@@ -226,11 +272,32 @@ export class TimeTrackingService {
       throw new NotFoundGraphQLError('Time entry not found');
     }
 
-    if (input.shiftInstanceId) {
-      await this.resolveShiftInstanceContext(
-        input.shiftInstanceId,
+    // Validate the entry as it will look after the update: input values win,
+    // omitted (undefined) fields keep the stored ones, null clears them.
+    const effectiveShiftInstanceId =
+      input.shiftInstanceId !== undefined
+        ? input.shiftInstanceId
+        : entry.shiftInstanceId;
+    const effectiveEndedAt =
+      input.endedAt !== undefined ? input.endedAt : entry.endedAt;
+
+    assertEndAfterStart(input.startedAt, effectiveEndedAt);
+
+    if (effectiveShiftInstanceId) {
+      const context = await this.resolveShiftInstanceContext(
+        effectiveShiftInstanceId,
         organizationUnitId,
       );
+      // Only a changed start or instance is validated: legacy entries (late
+      // self check-in window, shift moved earlier) must stay editable — e.g.
+      // to review an auto-closed one — without falsifying their start.
+      const startChanged =
+        input.startedAt.getTime() !== entry.startedAt.getTime();
+      const instanceChanged =
+        effectiveShiftInstanceId !== entry.shiftInstanceId;
+      if (startChanged || instanceChanged) {
+        assertStartNotAfterShiftEnd(input.startedAt, context.actualEndsAt);
+      }
     }
 
     if (input.reimbursementTypeId) {
@@ -240,9 +307,35 @@ export class TimeTrackingService {
     try {
       const [timeEntry] = await this.db
         .update(schema.timeEntries)
-        .set(input)
-        .where(eq(schema.timeEntries.id, id))
+        .set({
+          ...input,
+          // A human edit confirms an auto-closed entry; clearing the end
+          // reopens it, so no closure kind may linger.
+          closureKind: effectiveEndedAt ? TimeEntryClosureKind.MANUAL : null,
+        })
+        .where(
+          and(
+            eq(schema.timeEntries.id, id),
+            // closureKind above is derived from this read. If the auto-close
+            // sweep (or anyone) changed the entry since, writing it would
+            // e.g. leave the sweep's end with no closure kind — silently
+            // Closed without review. Only write over what was read.
+            // The endedAt equality relies on ms-precision writes: every
+            // writer stores JS Dates or ms-preserving SQL, so the Date read
+            // here round-trips exactly.
+            entry.endedAt
+              ? eq(schema.timeEntries.endedAt, entry.endedAt)
+              : isNull(schema.timeEntries.endedAt),
+            entry.closureKind
+              ? eq(schema.timeEntries.closureKind, entry.closureKind)
+              : isNull(schema.timeEntries.closureKind),
+          ),
+        )
         .returning();
+
+      if (!timeEntry) {
+        throw new ConflictGraphQLError('Time entry was changed concurrently');
+      }
 
       this.postHogService.capture({
         event: POSTHOG_EVENT.TIME_ENTRY_UPDATE,
@@ -253,6 +346,12 @@ export class TimeTrackingService {
           shift_instance_id: timeEntry.shiftInstanceId ?? undefined,
         },
       });
+
+      // Auto-closing skipped the accounting event; the human edit is what
+      // makes the hours count, so emit it now.
+      if (deriveTimeEntryStatus(entry) === TimeEntryStatus.AUTO_CLOSED) {
+        this.emitTimeEntryClosed(timeEntry);
+      }
 
       return timeEntry;
     } catch (error) {
@@ -267,6 +366,46 @@ export class TimeTrackingService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Review of an auto-closed entry: the coordinator accepts the times as they
+   * are. Single conditional update keyed on closure_kind = AUTO, so two
+   * concurrent confirms cannot both win. A concurrent edit is rejected on the
+   * other side: updateTimeEntry writes only over the end and closure kind it
+   * read.
+   */
+  async confirmTimeEntry(
+    id: string,
+    organizationUnitId: string,
+    _actorUserId: string,
+  ): Promise<TimeEntryEntity> {
+    const [confirmed] = await this.db
+      .update(schema.timeEntries)
+      .set({ closureKind: TimeEntryClosureKind.MANUAL })
+      .where(
+        and(
+          eq(schema.timeEntries.id, id),
+          eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+          eq(schema.timeEntries.closureKind, TimeEntryClosureKind.AUTO),
+          isNotNull(schema.timeEntries.endedAt),
+        ),
+      )
+      .returning();
+
+    if (!confirmed) {
+      const entry = await this.db.query.timeEntries.findFirst({
+        where: { id },
+      });
+      if (!entry || entry.organizationUnitId !== organizationUnitId) {
+        throw new NotFoundGraphQLError('Time entry not found');
+      }
+      throw new ConflictGraphQLError('Time entry is not awaiting review');
+    }
+
+    this.emitTimeEntryClosed(confirmed);
+
+    return confirmed;
   }
 
   async deleteTimeEntry(
@@ -366,7 +505,15 @@ export class TimeTrackingService {
     pagination: PaginationInput,
     sort: TimeEntrySortField = TimeEntrySortField.CREATED_AT,
     order: SortOrder = SortOrder.DESC,
+    statuses: TimeEntryStatus[] = [],
   ): Promise<{ entries: TimeEntryEntity[]; total: number }> {
+    const where = and(
+      eq(schema.timeEntries.organizationUnitId, organizationUnitId),
+      statuses.length > 0
+        ? or(...statuses.map(timeEntryStatusCondition))
+        : undefined,
+    );
+
     const rows = await this.db
       .select({ timeEntry: schema.timeEntries })
       .from(schema.timeEntries)
@@ -386,7 +533,7 @@ export class TimeTrackingService {
         schema.users,
         eq(schema.timeEntries.volunteerId, schema.users.id),
       )
-      .where(eq(schema.timeEntries.organizationUnitId, organizationUnitId))
+      .where(where)
       .orderBy(...this.buildTimeEntryOrderBy(sort, order))
       .limit(pagination.limit)
       .offset(pagination.offset);
@@ -394,7 +541,7 @@ export class TimeTrackingService {
     const [{ total }] = await this.db
       .select({ total: count() })
       .from(schema.timeEntries)
-      .where(eq(schema.timeEntries.organizationUnitId, organizationUnitId));
+      .where(where);
 
     return { entries: rows.map((row) => row.timeEntry), total };
   }
@@ -711,12 +858,13 @@ export class TimeTrackingService {
       userId,
     );
 
-    // Self check-in is only valid around the shift time (a supervisor/admin can
-    // still add or correct entries anytime via addTimeEntry, which is unbounded).
+    // Self check-in opens 3h before the shift and closes when it ends. A
+    // supervisor/admin can still add or correct entries via addTimeEntry, but
+    // even those cannot start after the shift end.
     const now = Date.now();
     const opensAt =
       instance.actualStartsAt.getTime() - CHECK_IN_OPENS_BEFORE_MS;
-    const closesAt = instance.actualEndsAt.getTime() + CHECK_IN_CLOSES_AFTER_MS;
+    const closesAt = instance.actualEndsAt.getTime();
     if (now < opensAt || now > closesAt) {
       throw new BadRequestGraphQLError(
         'Check-in is only available around the shift time',
@@ -792,7 +940,7 @@ export class TimeTrackingService {
       instance.master.organizationUnitId,
       closeInput,
       userId,
-      { skipCapture: true },
+      { skipCapture: true, requireOpen: true },
     );
 
     this.postHogService.capture({
@@ -820,15 +968,21 @@ export class TimeTrackingService {
     _actorUserId: string,
   ): Promise<TimeEntryEntity> {
     // Single conditional update: the endedAt-IS-NULL guard makes concurrent
-    // check-outs safe (only one wins) and no separate fetch is needed.
+    // check-outs safe (only one wins) and no separate fetch is needed. The
+    // start-before-now guard keeps the end strictly after the start.
+    const now = new Date();
     const [closed] = await this.db
       .update(schema.timeEntries)
-      .set({ endedAt: new Date() })
+      .set({
+        endedAt: now,
+        closureKind: TimeEntryClosureKind.MANUAL,
+      })
       .where(
         and(
           eq(schema.timeEntries.id, timeEntryId),
           eq(schema.timeEntries.organizationUnitId, organizationUnitId),
           isNull(schema.timeEntries.endedAt),
+          lt(schema.timeEntries.startedAt, now),
         ),
       )
       .returning();
@@ -839,6 +993,10 @@ export class TimeTrackingService {
       });
       if (!entry || entry.organizationUnitId !== organizationUnitId) {
         throw new NotFoundGraphQLError('Time entry not found');
+      }
+      if (!entry.endedAt) {
+        // Open, so the start guard rejected it: it starts in the future.
+        throw new BadRequestGraphQLError('Time entry must end after it starts');
       }
       throw new ConflictGraphQLError('Time entry is already closed');
     }
@@ -859,9 +1017,8 @@ export class TimeTrackingService {
   }
 }
 
-// Self check-in window (relative to the shift instance's actual start/end).
+// Self check-in window: opens before the actual start, closes at the actual end.
 const CHECK_IN_OPENS_BEFORE_MS = 3 * 60 * 60 * 1000; // 3h before start
-const CHECK_IN_CLOSES_AFTER_MS = 60 * 60 * 1000; // 1h after end
 
 const UNIQUE_OPEN_ENTRY_CONSTRAINT =
   'uq_time_entries_open_per_instance_volunteer';

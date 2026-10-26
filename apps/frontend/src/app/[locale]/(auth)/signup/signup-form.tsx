@@ -1,6 +1,7 @@
 'use client';
 
 import type { Locale } from '@repo/data';
+import { passwordUserInputs } from '@repo/password-policy';
 import { Button, Checkbox, Input } from '@repo/ui';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
@@ -13,6 +14,7 @@ import {
 } from '@/lib/privacy-policy';
 import { termsPdfUrl } from '@/lib/terms';
 import { getVerifyEmailPath } from '@/lib/verify-email-url';
+import { PasswordStrengthMeter } from '../password-strength-meter';
 
 function switchAuthHref(
   path: '/signup' | '/login',
@@ -41,6 +43,30 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
   const [isPending, setIsPending] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [fields, setFields] = useState({
+    email: '',
+    firstname: '',
+    lastname: '',
+    password: '',
+  });
+
+  function handleFieldChange(event: React.ChangeEvent<HTMLFormElement>) {
+    if (!(event.target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const { name, value } = event.target;
+    if (
+      name !== 'firstname' &&
+      name !== 'lastname' &&
+      name !== 'email' &&
+      name !== 'password'
+    ) {
+      return;
+    }
+
+    setFields((current) => ({ ...current, [name]: value }));
+  }
 
   async function handleSignupSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -77,10 +103,15 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
       const result = await signUp.email(payload);
 
       if (result.error) {
+        const messages: Record<string, string> = {
+          SIGNUP_EMAIL_UNAVAILABLE: t('useAnotherEmail'),
+          PASSWORD_TOO_SHORT: t('passwordTooShort'),
+          PASSWORD_TOO_WEAK: t('passwordTooWeak'),
+        };
         setError(
-          result.error.code === 'SIGNUP_EMAIL_UNAVAILABLE'
-            ? t('useAnotherEmail')
-            : result.error.message || t('createAccountFailed'),
+          messages[result.error.code ?? ''] ||
+            result.error.message ||
+            t('createAccountFailed'),
         );
         setIsPending(false);
         return;
@@ -113,7 +144,11 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
   }
 
   return (
-    <form onSubmit={handleSignupSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSignupSubmit}
+      onChange={handleFieldChange}
+      className="space-y-6"
+    >
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
           {error}
@@ -175,14 +210,21 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
             name="password"
             type="password"
             required
-            minLength={6}
+            minLength={8}
             className="mt-1"
             placeholder={t('passwordPlaceholder')}
             disabled={isPending}
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            {t('passwordHint')}
-          </p>
+          <PasswordStrengthMeter
+            className="mt-2"
+            password={fields.password}
+            userInputs={passwordUserInputs({
+              email: fields.email,
+              name: `${fields.firstname} ${fields.lastname}`,
+              firstname: fields.firstname,
+              lastname: fields.lastname,
+            })}
+          />
         </div>
 
         <div className="flex items-start gap-3">

@@ -47,8 +47,20 @@ query GetShift($id: String!) {
   }
 }
 
-query GetShifts($limit: Int!, $offset: Int!) {
-  shifts(limit: $limit, offset: $offset) {
+query GetShifts(
+  $limit: Int!
+  $offset: Int!
+  $sort: ShiftSortField
+  $order: SortOrder
+  $search: String
+) {
+  shifts(
+    limit: $limit
+    offset: $offset
+    sort: $sort
+    order: $order
+    search: $search
+  ) {
     items {
       id
       title
@@ -293,23 +305,6 @@ mutation JoinShiftInstance($instanceId: String!) {
       }
     }
     membershipRequestId
-    requirementProfile {
-      id
-      name
-      description
-      requirements {
-        id
-        name
-        description
-        type
-        mandatory
-      }
-    }
-    requirementStatuses {
-      requirementId
-      name
-      status
-    }
     requiredForms {
       ...RequiredFormWithStatusFields
     }
@@ -406,6 +401,7 @@ query GetShiftInstance($id: ID!) {
     }
     timeEntries {
       id
+      status
       startedAt
       endedAt
       volunteer {
@@ -639,4 +635,8 @@ mutation CheckInInviteToShiftInstance(
   ) {
     id
   }
+}
+
+query GetEventShiftInstanceStarts($eventId: ID!) {
+  eventShiftInstanceStarts(eventId: $eventId)
 }

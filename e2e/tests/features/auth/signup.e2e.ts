@@ -5,7 +5,7 @@ import { SignupPage } from '../../../pages/SignupPage';
  * Signup validation suite — strictly frontend-only.
  *
  * The signup form validates via native HTML5 constraints (required,
- * type=email, password minLength=6) plus a privacy-policy checkbox that
+ * type=email, password minLength=8) plus a privacy-policy checkbox that
  * disables submit until checked. Tests that click submit therefore accept
  * the privacy policy first so native validation can run.
  *
@@ -19,7 +19,7 @@ import { SignupPage } from '../../../pages/SignupPage';
 const VALID_FIRSTNAME = 'E Two E';
 const VALID_LASTNAME = 'User';
 const VALID_EMAIL = 'user@example.com';
-const VALID_PASSWORD = 'Test1234!aB';
+const VALID_PASSWORD = 'T7#kQ2!mR9xP';
 
 test.describe('Signup validation', () => {
   let signup: SignupPage;
@@ -146,8 +146,8 @@ test.describe('Signup validation', () => {
   });
 
   test.describe('password length', () => {
-    for (const password of ['1', '12345']) {
-      test(`rejects password shorter than 6 ("${password}")`, async ({
+    for (const password of ['1', '1234567']) {
+      test(`rejects password shorter than 8 ("${password}")`, async ({
         page,
       }) => {
         await signup.fillForm({

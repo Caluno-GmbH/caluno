@@ -19,7 +19,7 @@ interface FormBuilderAddBlockDialogProps {
   onOpenChange: (open: boolean) => void;
   availableBlocks: FormBlock[];
   usedBlockIds: Set<string>;
-  onSelectBlock: (blockId: string) => void;
+  onSelectBlock: (block: FormBlock) => void;
   onCreateNew: () => void;
 }
 
@@ -50,7 +50,7 @@ export function FormBuilderAddBlockDialog({
                 type="button"
                 key={block.id}
                 className="hover:border-primary hover:bg-accent cursor-pointer rounded-xl border p-4 text-left transition-colors"
-                onClick={() => onSelectBlock(block.id)}
+                onClick={() => onSelectBlock(block)}
               >
                 <p className="text-base font-semibold">{block.title}</p>
                 {block.description && (

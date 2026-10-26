@@ -5,7 +5,6 @@ query GetFormBlock($id: String!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -20,7 +19,7 @@ query GetFormBlock($id: String!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -44,7 +43,6 @@ query GetFormBlocks($organizationId: String!, $limit: Int!, $offset: Int!) {
       title
       description
       icon
-      required
       isEditable
       createdBy
       updatedBy
@@ -59,7 +57,7 @@ query GetFormBlocks($organizationId: String!, $limit: Int!, $offset: Int!) {
         description
         required
         lockType
-        systemKey
+        profileKey
         options
         documents {
           fileId
@@ -89,7 +87,6 @@ mutation CreateFormBlock($input: CreateFormBlockInput!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -104,7 +101,7 @@ mutation CreateFormBlock($input: CreateFormBlockInput!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -127,7 +124,6 @@ mutation UpdateFormBlock($id: String!, $input: UpdateFormBlockInput!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -142,7 +138,7 @@ mutation UpdateFormBlock($id: String!, $input: UpdateFormBlockInput!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -174,7 +170,6 @@ mutation CreateFormBlockField(
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -189,7 +184,7 @@ mutation CreateFormBlockField(
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -215,7 +210,6 @@ mutation UpdateFormBlockField(
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -230,7 +224,7 @@ mutation UpdateFormBlockField(
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -253,7 +247,6 @@ mutation DeleteFormBlockField($fieldId: String!) {
     title
     description
     icon
-    required
     isEditable
     createdBy
     updatedBy
@@ -268,7 +261,7 @@ mutation DeleteFormBlockField($fieldId: String!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -292,12 +285,6 @@ query GetRequirementForm($id: String!) {
     slug
     name
     description
-    settings {
-      submitButtonLabel
-      successTitle
-      successMessage
-      allowEmbed
-    }
     shareToken
     submissionCount
     createdBy
@@ -309,7 +296,6 @@ query GetRequirementForm($id: String!) {
       formId
       blockId
       fieldOrder
-      required
       createdAt
       updatedAt
       block {
@@ -318,7 +304,6 @@ query GetRequirementForm($id: String!) {
         title
         description
         icon
-        required
         isEditable
         createdBy
         updatedBy
@@ -333,7 +318,7 @@ query GetRequirementForm($id: String!) {
           description
           required
           lockType
-          systemKey
+          profileKey
           options
           documents {
             fileId
@@ -357,24 +342,16 @@ query GetRequirementFormByShareToken($token: String!) {
     organizationUnitId
     name
     description
-    settings {
-      submitButtonLabel
-      successTitle
-      successMessage
-      allowEmbed
-    }
     blockRefs {
       id
       formId
       blockId
       fieldOrder
-      required
       block {
         id
         title
         description
         icon
-        required
         fields {
           id
           blockId
@@ -383,7 +360,7 @@ query GetRequirementFormByShareToken($token: String!) {
           placeholder
           description
           required
-          systemKey
+          profileKey
           options
           documents {
             fileId
@@ -414,12 +391,6 @@ query GetRequirementForms(
       slug
       name
       description
-      settings {
-        submitButtonLabel
-        successTitle
-        successMessage
-        allowEmbed
-      }
       shareToken
       submissionCount
       createdBy
@@ -431,7 +402,6 @@ query GetRequirementForms(
         formId
         blockId
         fieldOrder
-        required
         createdAt
         updatedAt
         block {
@@ -440,7 +410,6 @@ query GetRequirementForms(
           title
           description
           icon
-          required
           isEditable
           createdBy
           updatedBy
@@ -496,6 +465,17 @@ mutation DeleteRequirementForm($id: String!) {
   }
 }
 
+query GetRequirementFormDeleteImpact($id: String!) {
+  requirementFormDeleteImpact(id: $id) {
+    submissionCount
+    attachments {
+      targetType
+      targetId
+      name
+    }
+  }
+}
+
 mutation RegenerateFormShareToken($id: String!) {
   regenerateFormShareToken(id: $id) {
     id
@@ -539,12 +519,23 @@ mutation SubmitRequiredForm(
   }
 }
 
-query GetMyFormSubmissionByToken($token: String!) {
-  myFormSubmissionByToken(token: $token) {
+query GetMyFormSubmissionByToken($token: String!, $organizationUnitId: ID!) {
+  myFormSubmissionByToken(
+    token: $token
+    organizationUnitId: $organizationUnitId
+  ) {
     id
     formId
     userId
+    organizationUnitId
     submittedAt
+  }
+}
+
+query GetMyStoredFormFieldValues($organizationUnitId: ID!) {
+  myStoredFormFieldValues(organizationUnitId: $organizationUnitId) {
+    fieldId
+    value
   }
 }
 
@@ -606,7 +597,7 @@ query GetAdminFormSubmission($id: String!) {
             id
             label
             type
-            systemKey
+            profileKey
             options
           }
         }
@@ -665,7 +656,7 @@ query MyFormSubmission($id: ID!) {
             id
             label
             type
-            systemKey
+            profileKey
             options
           }
         }

@@ -63,9 +63,11 @@ export function ManualCheckInPage({
   checkInId,
 }: ManualCheckInPageProps) {
   const t = useTranslations('CheckIn');
+  const tValidation = useTranslations('TimeEntry.validation');
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { formatDate, formatTimeRange } = useFormatting();
+  const { formatDate, formatTimeRange, formatTimeRelativeToStart } =
+    useFormatting();
 
   const [selection, setSelection] = useState<CheckInSelection>(() => ({
     orgUnitId: initialOrgUnitId,
@@ -208,6 +210,20 @@ export function ManualCheckInPage({
       setStartTimeError(t('startTimeInvalid'));
       return;
     }
+
+    // Ended shifts are listed and the start defaults to now, so a start past
+    // the shift end is easy to hit. The backend rejects it; say so up front.
+    if (selection.selectedInstance) {
+      const shiftEnd = new Date(selection.selectedInstance.actualEndsAt);
+      if (startedAt.getTime() > shiftEnd.getTime()) {
+        setStartTimeError(
+          tValidation('startAfterShiftEnd', {
+            end: formatTimeRelativeToStart(shiftEnd, startedAt),
+          }),
+        );
+        return;
+      }
+    }
     setStartTimeError(null);
 
     startSubmitTransition(async () => {
@@ -281,7 +297,10 @@ export function ManualCheckInPage({
           }}
           onOpenShift={() => setOpenSheet('shift')}
           startTime={startTime}
-          onStartTimeChange={setStartTime}
+          onStartTimeChange={(value) => {
+            setStartTime(value);
+            setStartTimeError(null);
+          }}
           startTimeError={startTimeError}
         />
 

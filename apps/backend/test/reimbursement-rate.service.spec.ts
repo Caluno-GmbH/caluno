@@ -23,7 +23,6 @@ import type { NotificationService } from '../src/notification';
 import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import type { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import type { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import {
   createDocumentTemplate,
@@ -60,11 +59,9 @@ describe('ReimbursementRateService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
     const membershipService = new MembershipService(
       db,
-      {} as RequirementProfileService,
       {} as AuthService,
       {} as NotificationService,
       {} as RequiredFormService,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );

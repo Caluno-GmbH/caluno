@@ -90,6 +90,19 @@
       "title": "Anmelden",
       "description": "Willkommen zurück bei caluno. Melde dich an, um Einsätze zu übernehmen und dich in deiner Organisation zu engagieren."
     },
+    "passwordStrength": {
+      "checking": "Wird geprüft…",
+      "hint": "Verwende mindestens 12 Zeichen mit Buchstaben, Zahlen und Sonderzeichen. Vermeide Namen, Daten und gängige Wörter.",
+      "levels": {
+        "fair": "Mittel",
+        "good": "Gut",
+        "strong": "Stark",
+        "weak": "Schwach"
+      },
+      "minimum": "Verwende mindestens 8 Zeichen – mehr ist besser.",
+      "unavailable": "Stärkeprüfung nicht verfügbar. Verwende ein langes, gemischtes Passwort.",
+      "weak": "Zu leicht zu erraten. Verlängere es und mische Buchstaben, Zahlen und Sonderzeichen."
+    },
     "resetPassword": {
       "confirmPasswordLabel": "Passwort bestätigen",
       "description": "Gib ein neues Passwort für dein Konto ein.",
@@ -98,6 +111,8 @@
       "newPasswordLabel": "Neues Passwort",
       "passwordMismatch": "Die Passwörter stimmen nicht überein",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Verwende mindestens 8 Zeichen.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einem längeren Passwort aus Buchstaben, Zahlen und Sonderzeichen.",
       "resetFailed": "Passwort konnte nicht zurückgesetzt werden. Bitte fordere einen neuen Link an.",
       "signInLink": "Zurück zur Anmeldung",
       "submit": "Passwort zurücksetzen",
@@ -115,9 +130,10 @@
       "lastnameLabel": "Nachname",
       "lastnamePlaceholder": "Mustermann",
       "namePartsRequired": "Bitte gib Vor- und Nachname ein.",
-      "passwordHint": "Mindestens 6 Zeichen",
       "passwordLabel": "Passwort",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Verwende mindestens 8 Zeichen.",
+      "passwordTooWeak": "Dieses Passwort ist zu leicht zu erraten. Versuch es mit einem längeren Passwort aus Buchstaben, Zahlen und Sonderzeichen.",
       "privacyAcknowledge": "Ich habe die <privacyLink>Datenschutzhinweise</privacyLink> gelesen und akzeptiere sie.",
       "privacyRequired": "Bitte akzeptiere die Datenschutzhinweise, um ein Konto zu erstellen.",
       "signInLink": "Anmelden",
@@ -342,7 +358,10 @@
         "addButton": "Einsatz erstellen",
         "emptyDescription": "Erstelle einen Einsatz für diese Veranstaltung, um loszulegen.",
         "emptyTitle": "Noch keine Einsätze",
-        "title": "Einsätze"
+        "nextWeekWithShifts": "Zur nächsten Woche mit Einsätzen",
+        "previousWeekWithShifts": "Zur vorherigen Woche mit Einsätzen",
+        "title": "Einsätze",
+        "weekEmpty": "Keine Einsätze in dieser Woche"
       },
       "volunteersCard": {
         "checkInAria": "Einchecken",
@@ -778,10 +797,6 @@
       "title": "Noch keine Stunden"
     },
     "generalTime": "Allgemeine Zeit",
-    "state": {
-      "completed": "Abgeschlossen",
-      "inProgress": "Läuft"
-    },
     "summary": {
       "total": "Insgesamt geleistet"
     },
@@ -1011,13 +1026,13 @@
     },
     "rescan": "Erneut scannen"
   },
-  "QueryParamTabs": {
-    "empty": "Noch keine Einträge."
-  },
   "RequiredFormRenderer": {
     "formProgress": "Formularfortschritt",
     "noForms": "Es sind keine Formulare erforderlich.",
+    "prefilledFromPreviousSubmissions": "Das Formular wurde mit Werten aus früheren Einreichungen vorausgefüllt",
     "step": "Formular {current} von {total}",
+    "submit": "Formular absenden",
+    "submitting": "Formular wird abgesendet...",
     "submitAll": "Alle Formulare absenden",
     "submittingAll": "Alle Formulare werden abgesendet..."
   },
@@ -1081,7 +1096,7 @@
       "saveBlock": "Block speichern",
       "saveChanges": "Änderungen speichern",
       "saving": "Wird gespeichert...",
-      "systemField": "Systemfeld",
+      "profileField": "Profilfeld",
       "titlePlaceholder": "z. B. Persönliche Informationen",
       "typeLabel": "Typ",
       "typePlaceholder": "Typ auswählen"
@@ -1129,6 +1144,26 @@
       "unsavedChangesStay": "Weiter bearbeiten",
       "unsavedChangesTitle": "Ungespeicherte Änderungen",
       "viewBlock": "Ansehen"
+    },
+    "deleteDialog": {
+      "acknowledge": "Ich verstehe, dass alle Antworten zu diesem Formular dauerhaft gelöscht werden.",
+      "answersDeleted": "Alle Einsendungen und Antworten zu diesem Formular werden dauerhaft gelöscht.",
+      "attachmentItem": "{type}: {name}",
+      "attachmentsDetach": "Das Formular wird entkoppelt und gelöscht. Die Einsätze, Events und Organisationseinheiten selbst werden nicht gelöscht.",
+      "attachmentsIntro": "Dieses Formular ist derzeit erforderlich für:",
+      "deleting": "Wird gelöscht...",
+      "intro": "Dies kann nicht rückgängig gemacht werden.",
+      "loadError": "Löschdetails konnten nicht geladen werden. Bitte erneut versuchen.",
+      "loading": "Details werden geladen…",
+      "noAttachments": "Dieses Formular ist für keine Einsätze, Events oder Organisationseinheiten erforderlich.",
+      "submissionCount": "{count, plural, =0 {Noch keine Einsendungen.} one {# Einsendung wird gelöscht.} other {# Einsendungen werden gelöscht.}}",
+      "targetType": {
+        "EVENT": "Event",
+        "ORGANIZATION_UNIT": "Organisationseinheit",
+        "SHIFT": "Einsatz",
+        "SHIFT_INSTANCE": "Einsatztermin"
+      },
+      "title": "„{name}“ löschen?"
     },
     "card": {
       "content": "Inhalt",
@@ -1303,11 +1338,14 @@
       "validPostalCode": "{label} muss eine gültige Postleitzahl sein"
     },
     "volunteerForm": {
+      "completeRequiredFormsHint": "Bitte fülle die erforderlichen Formulare aus",
       "alreadySubmittedMessage": "Dein Formular ist abgesendet.",
       "alreadySubmittedTitle": "Formular abgesendet",
       "back": "Zurück",
       "birthDateFormat": "TT.MM.JJJJ",
+      "cancelEditAria": "Bearbeitung verwerfen",
       "checkboxYes": "Ja",
+      "confirmEditAria": "Änderung übernehmen",
       "documentAcknowledgement": "Ich bestätige und akzeptiere",
       "documentOpenInNewTab": "In neuem Tab öffnen",
       "failedToSubmit": "Das Formular ließ sich nicht absenden. Versuch es bitte erneut.",
@@ -1317,7 +1355,9 @@
       "noFields": "Dieser Block hat noch keine Felder.",
       "paymentDataVisibilityHint": "Deine Bankdaten sind nur für die Personen einsichtig, die die Abrechnungen bearbeiten.",
       "pickDate": "Datum auswählen",
+      "profileChangeWarning": "Wenn du diese Information änderst, wird sie auch in deinem Profil geändert.",
       "selectOption": "Option auswählen",
+      "sharedWithOrg": "Wird mit {orgName} geteilt.",
       "step": "Schritt {current} von {total}",
       "submit": "Absenden",
       "submitting": "Wird abgesendet...",
@@ -1478,7 +1518,7 @@
       "waitlistInviteSuccess": "Freiwillige:r zum Einsatz eingeladen"
     },
     "checkIn": {
-      "checkInForAnotherShift": "Stattdessen für eine andere Schicht einchecken",
+      "checkInForAnotherShift": "Stattdessen für einen anderen Einsatz einchecken",
       "checkOut": "Auschecken",
       "checkOutError": "Freiwillige:r konnte nicht ausgecheckt werden",
       "checkOutLoading": "{name} wird ausgecheckt…",
@@ -1684,7 +1724,7 @@
       "rejected": "Deine Mitgliedschaftsanfrage für diese Organisation wurde abgelehnt. Danke, dass du dich engagieren wolltest. Bei Fragen melde dich bei deiner Ehrenamtskoordination.",
       "rejectedCta": "Anfrage nicht genehmigt",
       "requestSent": "Anfrage gesendet",
-      "requirementsFallback": "Anforderungsprofil-Oberfläche (noch zu implementieren)",
+      "requirementsFallback": "Es fehlen noch Anforderungen oder Profilinformationen. Versuch es bitte erneut.",
       "requirementsNeeded": "Noch zu erledigen: {missing}{hasCompleted, select, yes { (bereits erledigt: {completed})} other {}}",
       "unexpected": "Da ist etwas schiefgelaufen. Versuch es bitte erneut.",
       "waitlistJoined": "Du bist auf der Warteliste. Wir schreiben dir per E-Mail, wenn ein Platz frei wird."
@@ -1698,6 +1738,7 @@
       "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
+      "paginationName": "Einsätze",
       "createButton": "Einsatz erstellen",
       "subtitle": "Einsatzdetails und Freiwillige",
       "title": "Einsätze"
@@ -1778,6 +1819,11 @@
       "requiredForms": "Formulare",
       "time": "Zeit",
       "visibility": "Sichtbarkeit"
+    },
+    "search": {
+      "placeholder": "Nach Name suchen",
+      "clearAria": "Suche zurücksetzen",
+      "noResults": "Keine Einsätze passen zu dieser Suche"
     },
     "tabs": {
       "allShifts": "Alle Einsätze",
@@ -1884,8 +1930,10 @@
       "clear": "Entfernen",
       "dropHint": "Datei hierher ziehen oder zum Durchsuchen klicken",
       "failed": "Das Hochladen hat nicht geklappt. Versuch es bitte erneut.",
+      "documentHint": "PDF, JPEG, PNG, WebP oder GIF, bis zu 10 MB",
       "imageHint": "Empfohlen: JPEG oder PNG, bis zu 2 MB",
       "invalidFileType": "Dieser Dateityp ist nicht erlaubt. Verwende JPEG, PNG oder HEIC.",
+      "invalidFileTypeDocument": "Dieser Dateityp ist nicht erlaubt. Verwende PDF, JPEG, PNG, WebP oder GIF.",
       "label": "Datei hochladen",
       "previewAlt": "Vorschau der hochgeladenen Datei",
       "replace": "Ersetzen",
@@ -1894,6 +1942,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Zeilen pro Seite",
     "sortAscending": "Aufsteigend sortieren",
     "sortDescending": "Absteigend sortieren",
     "sortedAscending": "Aufsteigend sortiert",
@@ -1906,12 +1955,13 @@
       "deleteError": "Der Zeiteintrag ließ sich nicht löschen. {error}",
       "deleteSuccess": "Zeiteintrag gelöscht",
       "deleteTitle": "Löschen",
-      "editAria": "Bearbeiten"
+      "editAria": "Bearbeiten",
+      "confirm": "Zeiten bestätigen",
+      "confirmError": "Die Zeiten konnten nicht bestätigt werden. {error}",
+      "confirmSuccess": "Zeiten bestätigt"
     },
     "detail": {
-      "closedStatus": "Abgeschlossen",
       "createdLabel": "Erstellt",
-      "openStatus": "Offen",
       "shiftLabel": "Einsatz",
       "statusLabel": "Status",
       "title": "Zeiteintrag",
@@ -1966,16 +2016,28 @@
       "recordedByUnknown": "Unbekannt",
       "date": "Datum",
       "shift": "Einsatz",
-      "volunteer": "Freiwillige:r"
+      "volunteer": "Freiwillige:r",
+      "status": "Status"
     },
     "validation": {
+      "endBeforeStart": "Check-out muss nach dem Check-in liegen",
       "endedAtRequired": "Bitte gib eine Endzeit an.",
       "organizationUnitRequired": "Bitte wähle eine Organisationseinheit.",
       "reimbursementTypeRequired": "Bitte wähle einen Pauschalentyp.",
       "shiftInstanceRequired": "Bitte wähle einen Einsatztermin.",
+      "startAfterShiftEnd": "Check-in darf nicht nach dem Schichtende liegen ({end})",
       "startedAtRequired": "Bitte gib eine Startzeit an.",
       "timeEntryIdRequired": "Zeiteintrags-ID ist erforderlich",
       "volunteerRequired": "Bitte wähle eine Person aus."
+    },
+    "filter": {
+      "status": "Status"
+    },
+    "status": {
+      "autoClosed": "Automatisch ausgecheckt",
+      "autoClosedTooltip": "Automatisch ausgecheckt – muss geprüft werden",
+      "closed": "Ausgecheckt",
+      "open": "Eingecheckt"
     }
   },
   "Unauthorized": {
@@ -2001,6 +2063,7 @@
       "title": "Noch keine Nutzenden"
     },
     "page": {
+      "paginationName": "Nutzende",
       "copyInviteLink": "Einladungslink kopieren",
       "inviteLinkCopied": "Einladungslink in Zwischenablage kopiert",
       "subtitle": "Verwalte Personen und ihre Rollen in deiner Organisation",
@@ -2474,7 +2537,10 @@
           "editHint": "Um Stunden oder Einsatzdetails zu ändern, gehe zu <link>Zeiterfassung</link>.",
           "emptyOutsidePeriod": "{count, plural, one {# Zeiteintrag} other {# Zeiteinträge}} für diese Pauschale liegen außerhalb des gewählten Abrechnungszeitraums. Ändere den Abrechnungszeitraum, um sie aufzunehmen.",
           "emptyOtherType": "In diesem Abrechnungszeitraum wurden Stunden unter {types} erfasst, nicht unter dieser Pauschale. Erstelle den Stundennachweis für diese Pauschale oder korrigiere die Pauschale des Einsatzes in der Zeiterfassung.",
-          "emptyNothingTracked": "Für diese Pauschale sind keine abgeschlossenen, noch nicht abgerechneten Stunden erfasst. Erfasse zuerst Zeiten für diese Person oder prüfe, ob die Stunden bereits in einem anderen Stundennachweis sind."
+          "emptyNothingTracked": "Für diese Pauschale sind keine abgeschlossenen, noch nicht abgerechneten Stunden erfasst. Erfasse zuerst Zeiten für diese Person oder prüfe, ob die Stunden bereits in einem anderen Stundennachweis sind.",
+          "awaitingReview": "Wartet auf Prüfung",
+          "awaitingReviewHint": "Diese Stunden zählen erst, wenn die Zeiten bestätigt wurden.",
+          "awaitingReviewRowLabel": "{shiftName} wartet auf Prüfung und ist nicht in diesem Stundennachweis enthalten"
         },
         "preview": {
           "disclaimerBadge": "Vorschau",

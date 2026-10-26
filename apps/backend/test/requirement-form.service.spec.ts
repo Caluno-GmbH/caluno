@@ -4,14 +4,16 @@ import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
+import * as schema from '../src/database/schema';
 import {
   BadRequestGraphQLError,
   ConflictGraphQLError,
 } from '../src/graphql/errors';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
+import { createRequiredFormTargetRegistry } from '../src/requirement-profile/targets';
 import { PostHogService } from '../src/shared/observability/posthog.service';
-import { createUser } from './factories';
+import { createShift, createUser, setShiftRequiredForms } from './factories';
 import {
   createOrganizationWithType,
   createUnit,
@@ -19,6 +21,7 @@ import {
 import {
   createFormSubmission,
   createRequirementForm,
+  setRequiredForms,
 } from './factories/requirement-form.factory';
 import {
   closeTestingModuleAfterAll,
@@ -38,12 +41,16 @@ describe('RequirementFormService block org scoping', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
+    const postHogService = {
+      capture: () => {},
+    } as unknown as PostHogService;
     requirementFormService = new RequirementFormService(
       db,
-      new RequiredFormService(db, {
-        capture: () => {},
-      } as unknown as PostHogService),
-      { capture: () => {} } as unknown as PostHogService,
+      new RequiredFormService(
+        db,
+        createRequiredFormTargetRegistry(db, postHogService),
+      ),
+      postHogService,
     );
   });
 
@@ -223,7 +230,11 @@ describe('RequirementFormService block org scoping', () => {
       organizationUnitId: unit.id,
       createdById: user.id,
     });
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
+    });
 
     const updated = await requirementFormService.update(
       form.id,
@@ -252,7 +263,11 @@ describe('RequirementFormService block org scoping', () => {
       createdById: user.id,
       name: 'Second form',
     });
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
+    });
 
     await expect(
       requirementFormService.update(
@@ -269,27 +284,102 @@ describe('RequirementFormService block org scoping', () => {
     expect(refs.map((r) => r.blockId)).toEqual([block.id]);
   });
 
-  it('update rejects settings when form has submissions', async () => {
+  it('delete removes form with submissions and detaches required-form links', async () => {
     const { user, organization, unit } = await setupOrg('Form Org');
     const { form } = await createRequirementForm(db, {
       organizationId: organization.id,
       organizationUnitId: unit.id,
       createdById: user.id,
     });
-    await createFormSubmission(db, { formId: form.id, userId: user.id });
-
-    await expect(
-      requirementFormService.update(
-        form.id,
-        unit.id,
-        { settings: { successTitle: 'Changed after submit' } },
-        user.id,
-      ),
-    ).rejects.toBeInstanceOf(ConflictGraphQLError);
-
-    const reloaded = await db.query.requirementForms.findFirst({
-      where: { id: form.id },
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
     });
-    expect(reloaded?.settings).toEqual(form.settings);
+    await setRequiredForms(db, {
+      organizationUnitId: unit.id,
+      formIds: [form.id],
+    });
+
+    const shift = await createShift(db, { organizationUnitId: unit.id });
+    await setShiftRequiredForms(db, {
+      shiftId: shift.id,
+      formIds: [form.id],
+    });
+
+    const impact = await requirementFormService.getDeleteImpact(
+      form.id,
+      unit.id,
+    );
+    expect(impact.submissionCount).toBe(1);
+    expect(impact.attachments).toEqual([
+      expect.objectContaining({
+        targetType: 'ORGANIZATION_UNIT',
+        targetId: unit.id,
+        name: unit.name,
+      }),
+      expect.objectContaining({
+        targetType: 'SHIFT',
+        targetId: shift.id,
+        name: shift.title,
+      }),
+    ]);
+
+    await requirementFormService.delete(form.id, unit.id, user.id);
+
+    expect(
+      await db.query.requirementForms.findFirst({ where: { id: form.id } }),
+    ).toBeUndefined();
+    expect(
+      await db.query.formSubmissions.findMany({ where: { formId: form.id } }),
+    ).toEqual([]);
+    expect(
+      await db.query.organizationUnitRequiredForms.findMany({
+        where: { formId: form.id },
+      }),
+    ).toEqual([]);
+    expect(
+      await db.query.shiftRequiredForms.findMany({
+        where: { formId: form.id },
+      }),
+    ).toEqual([]);
+  });
+
+  it('delete leaves organization user profile field values intact', async () => {
+    const { user, organization, unit } = await setupOrg('Form Org');
+    const { form, field } = await createRequirementForm(db, {
+      organizationId: organization.id,
+      organizationUnitId: unit.id,
+      createdById: user.id,
+    });
+    const [profile] = await db
+      .insert(schema.organizationUserProfiles)
+      .values({
+        organizationId: organization.id,
+        userId: user.id,
+      })
+      .returning();
+    if (!profile) throw new Error('Failed to create profile');
+
+    await db.insert(schema.organizationUserProfileFieldValues).values({
+      organizationUserProfileId: profile.id,
+      fieldId: field.id,
+      value: 'keep-me',
+    });
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId: unit.id,
+    });
+
+    await requirementFormService.delete(form.id, unit.id, user.id);
+
+    const profileValues =
+      await db.query.organizationUserProfileFieldValues.findMany({
+        where: { organizationUserProfileId: profile.id },
+      });
+    expect(profileValues).toEqual([
+      expect.objectContaining({ fieldId: field.id, value: 'keep-me' }),
+    ]);
   });
 });

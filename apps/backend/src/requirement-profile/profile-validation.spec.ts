@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import { BadRequestGraphQLError } from '../graphql/errors';
-import { validateSystemKeyValue } from './profile-validation';
+import { validateProfileKeyValue } from './profile-validation';
 
-describe('validateSystemKeyValue', () => {
+describe('validateProfileKeyValue', () => {
   const expectOk = (value: string, key: string) => {
     expect(() =>
-      validateSystemKeyValue(value, key, 'Label', null),
+      validateProfileKeyValue(value, key, 'Label', null),
     ).not.toThrow();
   };
   const expectBad = (value: string, key: string) => {
-    expect(() => validateSystemKeyValue(value, key, 'Label', null)).toThrow(
+    expect(() => validateProfileKeyValue(value, key, 'Label', null)).toThrow(
       BadRequestGraphQLError,
     );
   };

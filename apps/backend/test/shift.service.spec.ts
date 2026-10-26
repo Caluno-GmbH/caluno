@@ -17,11 +17,14 @@ import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification/notification.service';
 import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
+import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { ACTIVE_SHIFT_INVITE_STATUSES } from '../src/shared/invite-status';
 import { POSTHOG_EVENT } from '../src/shared/observability/posthog.events';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus, ShiftVisibility } from '../src/shift/enums';
 import { ShiftService } from '../src/shift/shift.service';
+import type { FileService } from '../src/storage/services/file.service';
 import { UserService } from '../src/user/user.service';
 import { slugify } from '../src/utils/slug.util';
 import {
@@ -55,7 +58,11 @@ describe('ShiftService', () => {
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        DatabaseModule,
+        OrganizationUnitDataModule,
+      ],
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
@@ -75,11 +82,17 @@ describe('ShiftService', () => {
 
     capture = mock(() => {});
 
+    // Reimbursement-type create/update paths call AccountingOrgAccessService →
+    // OrganizationUnitService.findOrganizationIdByUnitId, which needs a real
+    // OrganizationUnitDataService (not `{}`).
+    const organizationUnitDataService = moduleRef.get(
+      OrganizationUnitDataService,
+    );
     const organizationUnitService = new OrganizationUnitService(
       db,
-      {} as never,
-      {} as never,
-      {} as never,
+      {} as FileService,
+      organizationUnitDataService,
+      { capture: () => {} } as unknown as PostHogService,
       {} as never,
       {} as never,
     );
@@ -106,7 +119,6 @@ describe('ShiftService', () => {
           'https://example.com/image.png',
       } as never,
       { getRequiredFormStatuses: async () => [] } as never,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture } as unknown as PostHogService,
       accountingOrgAccessService,
       { resolve: async () => ({ enabled: false }) } as never,

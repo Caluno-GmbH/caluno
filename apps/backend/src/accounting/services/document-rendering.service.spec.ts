@@ -420,6 +420,32 @@ describe('DocumentRenderingService', () => {
   });
 
   describe('signature seats', () => {
+    it('renders from the frozen render inputs, not from the live profile', async () => {
+      const service = createService({ rateCents: 1500 });
+      const live = extractPdfText(await service.generatePdf(contract()));
+      expect(live).toContain('Max Mustermann');
+
+      const frozen = await service.resolveRenderInputs(contract());
+      const changed = createService({
+        rateCents: 1500,
+        profileData: { firstname: 'Erika', lastname: 'Neu', street: 'X' },
+      });
+      const text = extractPdfText(
+        await changed.generatePdf(contract({ renderInputs: frozen })),
+      );
+      expect(text).toContain('Max Mustermann');
+      expect(text).not.toContain('Erika Neu');
+    });
+
+    it('resolves the live values while nothing is frozen', async () => {
+      const changed = createService({
+        rateCents: 1500,
+        profileData: { firstname: 'Erika', lastname: 'Neu', street: 'X' },
+      });
+      const text = extractPdfText(await changed.generatePdf(contract()));
+      expect(text).toContain('Erika Neu');
+    });
+
     it('renders name and signing date only for parties that have signed', async () => {
       const service = createService({ rateCents: 1500 });
       const text = extractPdfText(

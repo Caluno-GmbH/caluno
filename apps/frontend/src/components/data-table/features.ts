@@ -1,19 +1,26 @@
 import {
   columnVisibilityFeature,
+  createPaginatedRowModel,
+  createSortedRowModel,
   metaHelper,
   rowPaginationFeature,
   rowSortingFeature,
   tableFeatures,
 } from '@tanstack/react-table';
 
-/** Shared feature set for app data tables (manual sort + pagination). */
+/**
+ * Shared feature set for app data tables.
+ * Server mode uses manualSorting/manualPagination = true, so the registered
+ * row models are bypassed. Client mode sets them to false and relies on the
+ * row models below. Client-mode search filters `data` before it is passed in,
+ * so the filtering features are not registered.
+ */
 export const dataTableFeatures = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
-  // Needed for row.getVisibleCells(); we do not hide columns today.
   columnVisibilityFeature,
-  // Layout hooks so a table can pin column widths and opt a column out of the
-  // default cell wrapping without forking the shared component.
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
   columnMeta: metaHelper<{
     headerClassName?: string;
     cellClassName?: string;

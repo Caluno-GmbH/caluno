@@ -12,8 +12,9 @@ import {
 import type { Locale } from '../graphql/locale';
 import type { PaginationInput } from '../graphql/pagination.input';
 import { AppI18nService } from '../i18n/app-i18n.service';
-import { EmailService } from '../notification/email/email.service';
 import { createEmailTemplateContext } from '../notification/email/email-template-context';
+import { EmailCategory } from '../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../notification/email/outbox/email-outbox.service';
 import { organizationUnitDeletionRequestTemplate } from '../notification/email/templates/organization-unit-deletion-request.template';
 import { emailTheme } from '../notification/email/templates/shared';
 import {
@@ -24,7 +25,7 @@ import { PostHogService } from '../shared/observability/posthog.service';
 import { startOfTodayInAppTimeZone } from '../shift/utils/app-time';
 import { FilePurpose } from '../storage/enums';
 import { FileService } from '../storage/services/file.service';
-import { slugify } from '../utils';
+import { isBlank, slugify, trimmed } from '../utils';
 import type { CreateOrganizationUnitInput } from './inputs/create-organization-unit.input';
 import type { UpdateOrganizationUnitInput } from './inputs/update-organization-unit.input';
 import { OrganizationUnitDataService } from './organization-unit-data.service';
@@ -40,7 +41,7 @@ export class OrganizationUnitService {
     private readonly fileService: FileService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly postHogService: PostHogService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
   ) {}
 
@@ -108,11 +109,9 @@ export class OrganizationUnitService {
   async findOrganizationIdByUnitId(
     organizationUnitId: string,
   ): Promise<string | undefined> {
-    const unit = await this.db.query.organizationUnits.findFirst({
-      where: { id: organizationUnitId },
-      columns: { organizationId: true },
-    });
-    return unit?.organizationId;
+    return this.organizationUnitDataService.findOrganizationIdByUnitId(
+      organizationUnitId,
+    );
   }
 
   async findAllTypes(
@@ -155,6 +154,11 @@ export class OrganizationUnitService {
     userId: string,
     input: CreateOrganizationUnitInput,
   ): Promise<OrganizationUnitEntity> {
+    const name = trimmed(input.name);
+    if (isBlank(name)) {
+      throw new BadRequestGraphQLError('Organization unit name is required');
+    }
+
     const type = await this.findType(input.typeId, input.organizationId);
     if (!type) {
       throw new NotFoundGraphQLError('Organization unit type not found');
@@ -166,7 +170,7 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Parent organization unit not found');
     }
 
-    const slug = slugify(input.name);
+    const slug = slugify(name);
     const existing = await this.findBySlug(slug);
     if (existing) {
       throw new ConflictGraphQLError(
@@ -182,6 +186,7 @@ export class OrganizationUnitService {
         .insert(schema.organizationUnits)
         .values({
           ...unitInput,
+          name,
           logoUrl,
           organizationId: input.organizationId,
           slug,
@@ -242,6 +247,11 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
+    const name = input.name === undefined ? undefined : trimmed(input.name);
+    if (isBlank(name)) {
+      throw new BadRequestGraphQLError('Organization unit name is required');
+    }
+
     if (input.organizationId !== unit.organizationId) {
       throw new BadRequestGraphQLError(
         'Organization unit must be in the same organization',
@@ -279,10 +289,12 @@ export class OrganizationUnitService {
       }
     }
 
+    const updateInput = name === undefined ? input : { ...input, name };
+
     const [updated] = await this.db
       .update(schema.organizationUnits)
       .set({
-        ...(await this.resolveUpdateInput(input)),
+        ...(await this.resolveUpdateInput(updateInput)),
       })
       .where(
         and(
@@ -296,7 +308,7 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
-    if (updated.parentId === null && input.name !== undefined) {
+    if (updated.parentId === null && name !== undefined) {
       await this.db
         .update(schema.organizations)
         .set({ name: updated.name })
@@ -407,10 +419,12 @@ export class OrganizationUnitService {
       templateContext,
     );
 
-    await this.emailService.send({
+    await this.emailOutbox.enqueue({
+      category: EmailCategory.SUPPORT,
       to: emailTheme.supportEmail,
       subject,
       html,
+      organizationUnitId: unit.id,
     });
 
     return unit;

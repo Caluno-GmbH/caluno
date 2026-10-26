@@ -29,4 +29,5 @@ export { shiftSeriesLeftTemplate } from './shift-series-left.template';
 export { shiftSeriesRemovedTemplate } from './shift-series-removed.template';
 export { shiftSeriesVolunteerLeftTemplate } from './shift-series-volunteer-left.template';
 export { termsUpdatedTemplate } from './terms-updated.template';
+export { timeEntryAutoClosedTemplate } from './time-entry-auto-closed.template';
 export { volunteerDigestTemplate } from './volunteer-digest.template';

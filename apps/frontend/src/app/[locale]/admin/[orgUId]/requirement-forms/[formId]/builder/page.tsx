@@ -44,6 +44,7 @@ export default async function BuilderPage({ params }: Props) {
         form={form}
         availableBlocks={blocksResult.items}
         orgUId={orgUId}
+        orgName={org.name}
       />
     </div>
   );

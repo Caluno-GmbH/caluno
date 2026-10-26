@@ -16,6 +16,7 @@ export type ShiftVolunteeringDisplayState =
   | 'cancelled'
   | 'checked_in'
   | 'checked_out'
+  | 'auto_checked_out'
   | 'no_show'
   | 'invited_never_responded'
   | 'requested_never_responded';

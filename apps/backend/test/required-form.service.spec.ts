@@ -23,11 +23,11 @@ import {
 } from '../src/graphql/errors';
 import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification/notification.service';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
-import { RequirementFormService } from '../src/requirement-profile/services/requirement-form.service';
-import { RequirementProfileService } from '../src/requirement-profile/services/requirement-profile.service';
+import { createRequiredFormTargetRegistry } from '../src/requirement-profile/targets';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus } from '../src/shift/enums';
@@ -77,7 +77,6 @@ describe('RequiredFormService', () => {
   let requiredFormService: RequiredFormService;
   let formSubmissionService: FormSubmissionService;
   let membershipService: MembershipService;
-  let requirementFormService: RequirementFormService;
 
   closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
@@ -87,22 +86,19 @@ describe('RequiredFormService', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
-    requiredFormService = new RequiredFormService(db, {
+    const postHogService = {
       capture: () => {},
-    } as unknown as PostHogService);
-    const userService = new UserService(db, {
-      capture: () => {},
-    } as unknown as PostHogService);
+    } as unknown as PostHogService;
+    const targetRegistry = createRequiredFormTargetRegistry(db, postHogService);
+    requiredFormService = new RequiredFormService(db, targetRegistry);
+    const userService = new UserService(db, postHogService);
     formSubmissionService = new FormSubmissionService(
       db,
       userService,
       requiredFormService,
-      { capture: () => {} } as unknown as PostHogService,
-    );
-    requirementFormService = new RequirementFormService(
-      db,
-      requiredFormService,
-      { capture: () => {} } as unknown as PostHogService,
+      postHogService,
+      new OrganizationUnitDataService(db),
+      targetRegistry,
     );
 
     const authServiceMock = {
@@ -115,11 +111,9 @@ describe('RequiredFormService', () => {
 
     membershipService = new MembershipService(
       db,
-      {} as unknown as RequirementProfileService,
       authServiceMock,
       notificationServiceMock,
       requiredFormService,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
@@ -200,6 +194,7 @@ describe('RequiredFormService', () => {
       const submission = await createFormSubmission(db, {
         formId: form.id,
         userId: user.id,
+        organizationUnitId: unit.id,
       });
 
       const statuses = await requiredFormService.getRequiredFormStatuses(
@@ -434,7 +429,11 @@ describe('RequiredFormService', () => {
         organizationUnitId: unit.id,
         formIds: [form.id],
       });
-      await createFormSubmission(db, { formId: form.id, userId: user.id });
+      await createFormSubmission(db, {
+        formId: form.id,
+        userId: user.id,
+        organizationUnitId: unit.id,
+      });
 
       expect(
         await requiredFormService.areRequiredFormsSatisfied(
@@ -856,7 +855,11 @@ describe('RequiredFormService', () => {
         organizationUnitId: unit.id,
         formIds: [form.id],
       });
-      await createFormSubmission(db, { formId: form.id, userId: user.id });
+      await createFormSubmission(db, {
+        formId: form.id,
+        userId: user.id,
+        organizationUnitId: unit.id,
+      });
 
       const result = await membershipService.requestOrgJoin(user.id, unit.id);
 
@@ -916,7 +919,11 @@ describe('RequiredFormService', () => {
         organizationUnitId: unit.id,
         formIds: [form.id],
       });
-      await createFormSubmission(db, { formId: form.id, userId: user.id });
+      await createFormSubmission(db, {
+        formId: form.id,
+        userId: user.id,
+        organizationUnitId: unit.id,
+      });
       const request = await membershipService.requestOrgJoin(user.id, unit.id);
       expect(request.status).toBe(JoinStatus.PENDING_MEMBERSHIP);
 
@@ -936,43 +943,6 @@ describe('RequiredFormService', () => {
     });
   });
 
-  describe('RequirementFormService.delete', () => {
-    it('rejects deletion when the form is required by an org unit', async () => {
-      const { user, unit } = await setupOrg();
-      const { form } = await createRequirementForm(db, {
-        organizationId: unit.organizationId,
-        organizationUnitId: unit.id,
-        createdById: user.id,
-      });
-      await setRequiredForms(db, {
-        organizationUnitId: unit.id,
-        formIds: [form.id],
-      });
-
-      await expect(
-        requirementFormService.delete(form.id, unit.id, user.id),
-      ).rejects.toBeInstanceOf(ConflictGraphQLError);
-    });
-
-    it('rejects deletion when the form is required by a shift', async () => {
-      const { user, unit } = await setupOrg();
-      const shift = await createShift(db, { organizationUnitId: unit.id });
-      const { form } = await createRequirementForm(db, {
-        organizationId: unit.organizationId,
-        organizationUnitId: unit.id,
-        createdById: user.id,
-      });
-      await setShiftRequiredForms(db, {
-        shiftId: shift.id,
-        formIds: [form.id],
-      });
-
-      await expect(
-        requirementFormService.delete(form.id, unit.id, user.id),
-      ).rejects.toBeInstanceOf(ConflictGraphQLError);
-    });
-  });
-
   describe('RequiredFormService.formsForUser', () => {
     let moduleRef: TestingModule;
     let db: Database;
@@ -985,9 +955,13 @@ describe('RequiredFormService', () => {
         imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
       }).compile();
       db = moduleRef.get<Database>(DATABASE_CONNECTION);
-      service = new RequiredFormService(db, {
+      const postHogService = {
         capture: () => {},
-      } as unknown as PostHogService);
+      } as unknown as PostHogService;
+      service = new RequiredFormService(
+        db,
+        createRequiredFormTargetRegistry(db, postHogService),
+      );
     });
 
     // Per-test seeded ids, cleaned up in afterEach.
@@ -1115,6 +1089,7 @@ describe('RequiredFormService', () => {
       const submission = await createFormSubmission(db, {
         formId: submittedFormId,
         userId,
+        organizationUnitId: orgUnitId,
       });
       seededSubmissionIds.push(submission.id);
     };

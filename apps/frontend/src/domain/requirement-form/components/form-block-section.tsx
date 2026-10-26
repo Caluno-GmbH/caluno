@@ -15,16 +15,19 @@ export type FormBlockLike = {
 
 interface FormBlockSectionProps {
   block: FormBlockLike;
-  readOnly?: boolean;
-  control?: Control<Record<string, string>>;
+  control: Control<Record<string, string>>;
+  formOrg: string;
   errors?: FieldErrors<Record<string, string>>;
+  /** Enables profile-prefilled card UX for profileKey fields. */
+  onCancelField?: (fieldId: string) => void;
 }
 
 export function FormBlockSection({
   block,
-  readOnly = false,
   control,
   errors,
+  formOrg,
+  onCancelField,
 }: FormBlockSectionProps) {
   const tForm = useTranslations('RequirementForm.volunteerForm');
 
@@ -53,18 +56,6 @@ export function FormBlockSection({
         {fields.map((field) => {
           const renderable = field as RenderableField;
 
-          if (readOnly || !control) {
-            return (
-              <FieldRenderer
-                key={field.id}
-                field={renderable}
-                value=""
-                onChange={() => {}}
-                readOnly
-              />
-            );
-          }
-
           return (
             <Controller
               key={field.id}
@@ -77,6 +68,10 @@ export function FormBlockSection({
                   value={ctrlField.value ?? ''}
                   onChange={ctrlField.onChange}
                   error={errors?.[field.id]?.message}
+                  formOrg={formOrg}
+                  onCancel={
+                    onCancelField ? () => onCancelField(field.id) : undefined
+                  }
                 />
               )}
             />
