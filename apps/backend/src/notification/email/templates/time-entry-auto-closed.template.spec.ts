@@ -21,8 +21,10 @@ describe('timeEntryAutoClosedTemplate', () => {
     expect(subject).toBe('You were checked out automatically');
     expect(html).toContain('Food Distribution');
     expect(html).toContain('Acme Volunteers');
-    expect(html).toContain('10.09.2026, 10:15');
-    expect(html).toContain('10.09.2026, 14:30');
+    // ICU data differs per platform: en-DE renders `10.09.2026` on macOS but
+    // `10/09/2026` on the Linux CI runner.
+    expect(html).toMatch(/10[./]09[./]2026, 10:15/);
+    expect(html).toMatch(/10[./]09[./]2026, 14:30/);
     expect(html).toContain(
       'If these times are wrong, please contact your coordinator.',
     );
