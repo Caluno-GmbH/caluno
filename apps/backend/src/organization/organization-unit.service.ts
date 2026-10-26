@@ -253,7 +253,16 @@ export class OrganizationUnitService {
     id: string,
     input: UpdateOrganizationUnitInput,
     userId: string,
+    headerUnitId: string,
   ): Promise<OrganizationUnitEntity> {
+    // Never trust a foreign id / input.organizationId: the target must sit in
+    // the header unit's subtree, and the org is taken from the loaded unit.
+    await this.tenantScopeService.assertResourceInScope(
+      headerUnitId,
+      id,
+      'Organization unit not found',
+    );
+
     const unit = await this.findById(id);
 
     if (!unit) {
@@ -263,12 +272,6 @@ export class OrganizationUnitService {
     const name = input.name === undefined ? undefined : trimmed(input.name);
     if (isBlank(name)) {
       throw new BadRequestGraphQLError('Organization unit name is required');
-    }
-
-    if (input.organizationId !== unit.organizationId) {
-      throw new BadRequestGraphQLError(
-        'Organization unit must be in the same organization',
-      );
     }
 
     if (input.parentId === null) {
@@ -284,6 +287,11 @@ export class OrganizationUnitService {
     }
 
     if (input.parentId) {
+      await this.tenantScopeService.assertResourceInScope(
+        headerUnitId,
+        input.parentId,
+        'Parent organization unit not found',
+      );
       const parent = await this.findParent(input.parentId);
       if (!parent) {
         throw new NotFoundGraphQLError('Parent organization unit not found');
@@ -302,17 +310,29 @@ export class OrganizationUnitService {
       }
     }
 
-    const updateInput = name === undefined ? input : { ...input, name };
+    const {
+      organizationId: _ignoredOrganizationId,
+      logoFileId,
+      ...rest
+    } = input;
+    const updateFields = name === undefined ? rest : { ...rest, name };
 
     const [updated] = await this.db
       .update(schema.organizationUnits)
       .set({
-        ...(await this.resolveUpdateInput(updateInput)),
+        ...updateFields,
+        ...(logoFileId === undefined
+          ? {}
+          : {
+              logoUrl: logoFileId
+                ? await this.resolveLogoUrl(logoFileId)
+                : null,
+            }),
       })
       .where(
         and(
           eq(schema.organizationUnits.id, id),
-          eq(schema.organizationUnits.organizationId, input.organizationId),
+          eq(schema.organizationUnits.organizationId, unit.organizationId),
         ),
       )
       .returning();
@@ -347,23 +367,6 @@ export class OrganizationUnitService {
       FilePurpose.ORG_LOGO,
     );
     return this.fileService.resolvePublicUrlForUploadedFile(logoFileId);
-  }
-
-  private async resolveUpdateInput(input: UpdateOrganizationUnitInput): Promise<
-    Omit<UpdateOrganizationUnitInput, 'logoFileId'> & {
-      logoUrl?: string | null;
-    }
-  > {
-    const { logoFileId, ...rest } = input;
-
-    if (logoFileId === undefined) {
-      return rest;
-    }
-
-    return {
-      ...rest,
-      logoUrl: logoFileId ? await this.resolveLogoUrl(logoFileId) : null,
-    };
   }
 
   async countMembers(organizationUnitId: string): Promise<number> {
@@ -408,7 +411,14 @@ export class OrganizationUnitService {
     requester: { name: string; email: string },
     message: string | undefined,
     locale: Locale,
+    headerUnitId: string,
   ): Promise<OrganizationUnitEntity> {
+    await this.tenantScopeService.assertResourceInScope(
+      headerUnitId,
+      id,
+      'Organization unit not found',
+    );
+
     const unit = await this.findById(id);
 
     if (!unit) {

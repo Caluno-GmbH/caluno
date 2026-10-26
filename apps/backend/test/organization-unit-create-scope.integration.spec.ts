@@ -109,14 +109,23 @@ describe('createOrganizationUnit tenant scope', () => {
     expect(response.errors?.[0]?.message).toMatch(/not found/i);
     expect(response.data?.createOrganizationUnit).toBeFalsy();
 
+    // Shared GraphQL test user accumulates memberships from earlier suite
+    // files — assert the security property (no foothold in org A), not an
+    // exact global membership list.
+    const orgAUnits = await db.query.organizationUnits.findMany({
+      where: { organizationId: orgA.organization.id },
+      columns: { id: true },
+    });
+    expect(orgAUnits.map((u) => u.id)).toEqual([unitARoot.id]);
+
     const attackerMemberships = await db.query.memberships.findMany({
       where: { userId: testUserId },
       columns: { organizationUnitId: true },
     });
-    const attackerUnitIds = attackerMemberships.map(
-      (m) => m.organizationUnitId,
-    );
-    expect(attackerUnitIds).toEqual([unitBId]);
+    const orgAUnitIds = new Set(orgAUnits.map((u) => u.id));
+    expect(
+      attackerMemberships.some((m) => orgAUnitIds.has(m.organizationUnitId)),
+    ).toBe(false);
   });
 
   it('creates a child under the header unit using the header org', async () => {

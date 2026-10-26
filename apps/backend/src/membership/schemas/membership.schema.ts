@@ -7,15 +7,16 @@ export const memberships = snakeCase.table(
   'memberships',
   {
     ...idColumn,
-    userId: text('user_id').references(() => users.id, {
-      onDelete: 'cascade',
-    }),
-    organizationUnitId: uuid('organization_unit_id').references(
-      () => organizationUnits.id,
-      {
+    userId: text('user_id')
+      .references(() => users.id, {
         onDelete: 'cascade',
-      },
-    ),
+      })
+      .notNull(),
+    organizationUnitId: uuid('organization_unit_id')
+      .references(() => organizationUnits.id, {
+        onDelete: 'cascade',
+      })
+      .notNull(),
     idVerifiedAt: timestamp('id_verified_at'),
     idVerifiedById: text('id_verified_by_id').references(() => users.id, {
       onDelete: 'set null',
