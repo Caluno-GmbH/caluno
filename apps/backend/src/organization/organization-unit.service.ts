@@ -270,7 +270,7 @@ export class OrganizationUnitService {
     }
 
     const name = input.name === undefined ? undefined : trimmed(input.name);
-    if (isBlank(name)) {
+    if (name !== undefined && isBlank(name)) {
       throw new BadRequestGraphQLError('Organization unit name is required');
     }
 
