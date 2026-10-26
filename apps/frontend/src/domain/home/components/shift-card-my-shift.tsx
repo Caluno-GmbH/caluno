@@ -95,6 +95,7 @@ export function ShiftCardMyShift({
         <Link
           href={`/events/${event.id}`}
           prefetch={false}
+          title={t('partOfEvent', { event: event.title })}
           className="relative z-10 flex items-center justify-between gap-2 border-t border-border px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <span className="flex min-w-0 items-center gap-2">
