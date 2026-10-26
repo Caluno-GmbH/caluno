@@ -25,6 +25,7 @@ import { EventModule } from './event/event.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { LoaderInterceptor } from './graphql/interceptors';
 import { resolveRequestLocale } from './graphql/locale';
+import { HealthModule } from './health/health.module';
 import { AppI18nService } from './i18n/app-i18n.service';
 import { AppI18nModule } from './i18n/i18n.module';
 import { UserLocaleService } from './i18n/user-locale.service';
@@ -295,6 +296,7 @@ const autoSchemaFile =
     TimeTrackingModule,
     CheckInAgreementModule,
     GraphqlModule,
+    HealthModule,
     LegalModule,
     ShiftModule,
     EventModule,
