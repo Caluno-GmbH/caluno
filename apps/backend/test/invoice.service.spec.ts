@@ -41,7 +41,6 @@ import {
   createDocumentFile,
   createReimbursementType,
   createTwoStepTemplate,
-  stubInvoiceDocumentNumber,
 } from './factories/accounting.factory';
 import {
   addMembership,
