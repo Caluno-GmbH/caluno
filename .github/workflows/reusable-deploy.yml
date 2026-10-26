@@ -293,13 +293,15 @@ jobs:
           done
           echo "::error::Backend never reported release $GITHUB_SHA on $READY_URL"
           exit 1
-      # Says which PR failed to deploy. continue-on-error: a dead webhook must not
-      # hide the failed deploy, which already fails this job.
+      # Says which PR failed to deploy. Posts to the environment's alert channel via
+      # the environment-scoped SLACK_ALERT_WEBHOOK_URL, falling back to the shared
+      # release-management webhook until that exists. continue-on-error: a dead
+      # webhook must not hide the failed deploy, which already fails this job.
       - name: Notify Slack (backend not healthy)
         if: failure() && steps.verify.outcome == 'failure'
         continue-on-error: true
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_ALERT_WEBHOOK_URL || secrets.SLACK_WEBHOOK_URL }}
           ENVIRONMENT: ${{ inputs.environment }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
