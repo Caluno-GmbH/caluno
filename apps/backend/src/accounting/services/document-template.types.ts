@@ -55,7 +55,7 @@ export interface TemplateBodyShape {
 }
 
 /**
- * Maps a template field's bound `source` to the user profile systemKey it
+ * Maps a template field's bound `source` to the user profile profileKey it
  * reads from. Shared by the renderer (fills the field in) and the sign gate /
  * `missingProfileFields` resolver (checks the volunteer has supplied it).
  */

@@ -173,7 +173,7 @@ export function RequiredFormRenderer({
     const blocks = formBlocksById.get(currentForm.form.id) ?? [];
     return blocks.some((block) =>
       (block.fields ?? []).some((field) => {
-        if (field.systemKey) return false;
+        if (field.profileKey) return false;
         return !!storedFieldValues[field.id];
       }),
     );
@@ -215,8 +215,8 @@ export function RequiredFormRenderer({
     for (const blocks of formBlocksById.values()) {
       for (const block of blocks) {
         for (const field of block.fields ?? []) {
-          if (field.systemKey && profileData[field.systemKey]) {
-            vals[field.id] = profileData[field.systemKey] ?? '';
+          if (field.profileKey && profileData[field.profileKey]) {
+            vals[field.id] = profileData[field.profileKey] ?? '';
           } else if (storedFieldValues[field.id]) {
             vals[field.id] = storedFieldValues[field.id] ?? '';
           }

@@ -19,7 +19,7 @@ query GetFormBlock($id: String!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -57,7 +57,7 @@ query GetFormBlocks($organizationId: String!, $limit: Int!, $offset: Int!) {
         description
         required
         lockType
-        systemKey
+        profileKey
         options
         documents {
           fileId
@@ -101,7 +101,7 @@ mutation CreateFormBlock($input: CreateFormBlockInput!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -138,7 +138,7 @@ mutation UpdateFormBlock($id: String!, $input: UpdateFormBlockInput!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -184,7 +184,7 @@ mutation CreateFormBlockField(
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -224,7 +224,7 @@ mutation UpdateFormBlockField(
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -261,7 +261,7 @@ mutation DeleteFormBlockField($fieldId: String!) {
       description
       required
       lockType
-      systemKey
+      profileKey
       options
       documents {
         fileId
@@ -318,7 +318,7 @@ query GetRequirementForm($id: String!) {
           description
           required
           lockType
-          systemKey
+          profileKey
           options
           documents {
             fileId
@@ -360,7 +360,7 @@ query GetRequirementFormByShareToken($token: String!) {
           placeholder
           description
           required
-          systemKey
+          profileKey
           options
           documents {
             fileId
@@ -597,7 +597,7 @@ query GetAdminFormSubmission($id: String!) {
             id
             label
             type
-            systemKey
+            profileKey
             options
           }
         }
@@ -656,7 +656,7 @@ query MyFormSubmission($id: ID!) {
             id
             label
             type
-            systemKey
+            profileKey
             options
           }
         }

@@ -125,8 +125,8 @@ documents/
 A client component built on `FormSheet` / `useFormSheet`.
 
 1. **Load:** `useContract(id)` or `useInvoice(id)` depending on `kind`. While loading, show a skeleton inside the sheet.
-2. **Derive fields:** `toMissingProfileKeys(document.missingProfileFields)`, then look up each key's definition (`key`, `labelKey`, `type`) in `SYSTEM_PROFILE_FIELDS`, keeping that list's order so the address fields stay grouped.
-3. **Schema:** a zod object with one entry per field from `buildFieldSchema(field, messages)`, every field required, and `useValidationMessages()` for the copy. The rules (IBAN checksum, BIC, zip, letters-only names, birthdate) match the profile edit form and the backend's `validateSystemKeyValue`.
+2. **Derive fields:** `toMissingProfileKeys(document.missingProfileFields)`, then look up each key's definition (`key`, `labelKey`, `type`) in `PROFILE_FIELDS`, keeping that list's order so the address fields stay grouped.
+3. **Schema:** a zod object with one entry per field from `buildFieldSchema(field, messages)`, every field required, and `useValidationMessages()` for the copy. The rules (IBAN checksum, BIC, zip, letters-only names, birthdate) match the profile edit form and the backend's `validateProfileKeyValue`.
 4. **Form:** react-hook-form with `zodResolver`, `mode: 'onChange'`; each field is a `Controller` rendering `FieldRenderer`, as in `EditIdentityForm`.
 5. **Prefill:** if `account-holder` is rendered and the volunteer's first and last name are known (from the current user), its default value is `"<firstname> <lastname>"`. Everything else starts empty, since only missing fields are shown.
 6. **Submit:** map the form values to `UpdateMyProfileInput`, sending only the rendered fields (reuse `profileDataToUpdateInput` from `domain/user/lib/profile-data-map.ts` if its shape fits). Call `useUpdateMyProfile().mutateAsync`, then on success show the toast "Details saved", close the sheet and `router.replace('/profile/documents')`. On error, show the server message in a toast and keep the sheet open with the values intact.
@@ -180,5 +180,5 @@ Field labels reuse `RequirementForm.fieldForm.*`, and validation messages reuse 
 ## Testing
 
 - **Unit (`packages/data`):** `toMissingProfileKeys`: maps all 9 sources, drops unknown values, removes duplicates.
-- **Unit (frontend):** the field/schema builder for the sheet. Given a set of missing keys it renders exactly those fields in `SYSTEM_PROFILE_FIELDS` order, all required, rejects an invalid IBAN and zip, and prefills the account holder from the names.
+- **Unit (frontend):** the field/schema builder for the sheet. Given a set of missing keys it renders exactly those fields in `PROFILE_FIELDS` order, all required, rejects an invalid IBAN and zip, and prefills the account holder from the names.
 - **E2E:** extend `e2e/tests/features/accounting/documents-flow.e2e.ts`. A volunteer with a missing address opens a contract card, sees Sign disabled, clicks "Complete details", fills in the sheet, saves, lands back on My documents, and Sign is enabled.

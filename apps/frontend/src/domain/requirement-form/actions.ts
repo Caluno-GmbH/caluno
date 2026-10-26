@@ -100,14 +100,13 @@ export const submitForm = actionClient
   .inputSchema(submitFormSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient();
-    const result = await data.requirementForm.submitForm(
+    return await data.requirementForm.submitForm(
       parsedInput.token,
       parsedInput.organizationUnitId,
       {
         values: parsedInput.values,
       },
     );
-    return result;
   });
 
 const submitRequiredFormSchema = z.object({
@@ -127,13 +126,12 @@ export const submitRequiredForm = actionClient
   .inputSchema(submitRequiredFormSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient();
-    const result = await data.requirementForm.submitRequiredForm(
+    return await data.requirementForm.submitRequiredForm(
       parsedInput.targetType,
       parsedInput.targetId,
       parsedInput.formId,
       { values: parsedInput.values },
     );
-    return result;
   });
 
 const deleteFormSchema = z.object({
@@ -219,7 +217,7 @@ const createBlockFieldSchema = z.object({
   options: choiceOptionsSchema.optional(),
   documentFileIds: z.array(z.string()).nullish(),
   documentLabel: zOptionalNullableTrimmedString,
-  systemKey: z.string().optional(),
+  profileKey: z.string().optional(),
   lockType: z.boolean().optional(),
 });
 
@@ -240,7 +238,7 @@ export const createBlockField = actionClient
         options: parsedInput.options,
         documentFileIds: parsedInput.documentFileIds,
         documentLabel: parsedInput.documentLabel,
-        systemKey: parsedInput.systemKey,
+        profileKey: parsedInput.profileKey,
         lockType: parsedInput.lockType,
       },
     );
@@ -261,7 +259,7 @@ const updateBlockFieldSchema = z.object({
   documentFileIds: z.array(z.string()).nullish(),
   documentLabel: zOptionalNullableTrimmedString,
   fieldOrder: z.number().optional(),
-  systemKey: z.string().nullable().optional(),
+  profileKey: z.string().nullable().optional(),
   lockType: z.boolean().optional(),
 });
 
@@ -282,7 +280,7 @@ export const updateBlockField = actionClient
         documentFileIds: parsedInput.documentFileIds,
         documentLabel: parsedInput.documentLabel,
         fieldOrder: parsedInput.fieldOrder,
-        systemKey: parsedInput.systemKey,
+        profileKey: parsedInput.profileKey,
         lockType: parsedInput.lockType,
       },
     );
@@ -318,10 +316,7 @@ export const joinOrganization = actionClient
   .inputSchema(joinOrganizationSchema)
   .action(async ({ parsedInput }) => {
     const data = await getDataClient();
-    const result = await data.membershipRequest.join(
-      parsedInput.organizationUnitId,
-    );
-    return result;
+    return await data.membershipRequest.join(parsedInput.organizationUnitId);
   });
 
 const saveBlockSchema = z.object({
@@ -339,7 +334,7 @@ const saveBlockSchema = z.object({
       description: zOptionalNullableTrimmedString,
       placeholder: zOptionalNullableTrimmedString,
       required: z.boolean().optional(),
-      systemKey: z.string().optional(),
+      profileKey: z.string().optional(),
       lockType: z.boolean().optional(),
       options: choiceOptionsSchema.optional(),
       documentFileIds: z.array(z.string()).nullish(),
@@ -404,7 +399,7 @@ export const saveBlock = actionClient
             description: field.description,
             placeholder: field.placeholder,
             required: field.required,
-            systemKey: field.systemKey ?? null,
+            profileKey: field.profileKey ?? null,
             lockType: field.lockType,
             options: field.options,
             documentFileIds: field.documentFileIds,
@@ -418,7 +413,7 @@ export const saveBlock = actionClient
             description: field.description,
             placeholder: field.placeholder,
             required: field.required,
-            systemKey: field.systemKey,
+            profileKey: field.profileKey,
             lockType: field.lockType,
             options: field.options,
             documentFileIds: field.documentFileIds,
@@ -438,7 +433,7 @@ export const saveBlock = actionClient
           description: field.description,
           placeholder: field.placeholder,
           required: field.required,
-          systemKey: field.systemKey,
+          profileKey: field.profileKey,
           lockType: field.lockType,
           options: field.options,
           documentFileIds: field.documentFileIds,

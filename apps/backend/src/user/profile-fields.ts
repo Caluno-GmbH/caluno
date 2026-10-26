@@ -18,7 +18,7 @@ export const WRITABLE_PROFILE_FIELD_KEYS = [
 
 /**
  * Profile field keys — identical to `users` column / GraphQL names and to
- * requirement-form `systemKey`s. Email is account-owned (`users.email`) and is
+ * requirement-form `profileKey`s. Email is account-owned (`users.email`) and is
  * included on reads only.
  */
 export const PROFILE_FIELD_KEYS = [

@@ -17,7 +17,7 @@ import { PostHogService } from '../../shared/observability/posthog.service';
 import { patch } from '../../shared/patch';
 import { FilePurpose } from '../../storage/enums';
 import { FileService } from '../../storage/services/file.service';
-import { SYSTEM_PROFILE_KEYS } from '../constants';
+import { PROFILE_KEYS } from '../constants';
 import { FieldType } from '../enums';
 import { CreateFormBlockInput } from '../inputs/create-form-block.input';
 import { CreateFormBlockFieldInput } from '../inputs/create-form-block-field.input';
@@ -31,8 +31,8 @@ import type { FormBlockFieldInsert } from '../schemas/form-block-field.schema';
 import { isUnitInOrg } from './is-unit-in-org';
 import {
   assertValidFieldOptions,
+  assertValidProfileKeyBinding,
   assertValidRequiredFlag,
-  assertValidSystemKeyBinding,
 } from './validate-field-options';
 
 @Injectable()
@@ -134,8 +134,8 @@ export class FormBlockService {
       if (input.fields && input.fields.length > 0) {
         for (const field of input.fields) {
           assertValidFieldOptions(field.type, field.options);
-          assertValidSystemKeyBinding(
-            field.systemKey,
+          assertValidProfileKeyBinding(
+            field.profileKey,
             field.type,
             field.options,
           );
@@ -285,13 +285,13 @@ export class FormBlockService {
     input: CreateFormBlockFieldInput,
     userId: string,
   ): Promise<FormBlockEntity> {
-    if (input.systemKey && !SYSTEM_PROFILE_KEYS.has(input.systemKey)) {
+    if (input.profileKey && !PROFILE_KEYS.has(input.profileKey)) {
       throw new BadRequestGraphQLError(
-        `Invalid systemKey: "${input.systemKey}". Must be one of: ${[...SYSTEM_PROFILE_KEYS].join(', ')}`,
+        `Invalid profileKey: "${input.profileKey}". Must be one of: ${[...PROFILE_KEYS].join(', ')}`,
       );
     }
     assertValidFieldOptions(input.type, input.options);
-    assertValidSystemKeyBinding(input.systemKey, input.type, input.options);
+    assertValidProfileKeyBinding(input.profileKey, input.type, input.options);
     assertValidRequiredFlag(input.type, input.required);
     await this.validateDocumentFiles(input.documentFileIds);
 
@@ -340,9 +340,9 @@ export class FormBlockService {
     input: UpdateFormBlockFieldInput,
     userId: string,
   ): Promise<FormBlockEntity> {
-    if (input.systemKey && !SYSTEM_PROFILE_KEYS.has(input.systemKey)) {
+    if (input.profileKey && !PROFILE_KEYS.has(input.profileKey)) {
       throw new BadRequestGraphQLError(
-        `Invalid systemKey: "${input.systemKey}". Must be one of: ${[...SYSTEM_PROFILE_KEYS].join(', ')}`,
+        `Invalid profileKey: "${input.profileKey}". Must be one of: ${[...PROFILE_KEYS].join(', ')}`,
       );
     }
     await this.validateDocumentFiles(input.documentFileIds);
@@ -363,8 +363,8 @@ export class FormBlockService {
       );
     }
 
-    assertValidSystemKeyBinding(
-      input.systemKey === undefined ? field.systemKey : input.systemKey,
+    assertValidProfileKeyBinding(
+      input.profileKey === undefined ? field.profileKey : input.profileKey,
       input.type ?? (field.type as FieldType),
       input.options === undefined ? field.options : input.options,
     );
@@ -456,7 +456,7 @@ export class FormBlockService {
       description: input.description,
       required: input.required ?? false,
       lockType: input.lockType ?? false,
-      systemKey: input.systemKey,
+      profileKey: input.profileKey,
       options: input.options,
       documentFileIds: input.documentFileIds,
       documentLabel: input.documentLabel,

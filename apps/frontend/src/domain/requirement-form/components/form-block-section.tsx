@@ -18,7 +18,7 @@ interface FormBlockSectionProps {
   control: Control<Record<string, string>>;
   formOrg: string;
   errors?: FieldErrors<Record<string, string>>;
-  /** Enables profile-prefilled card UX for systemKey fields. */
+  /** Enables profile-prefilled card UX for profileKey fields. */
   onCancelField?: (fieldId: string) => void;
 }
 

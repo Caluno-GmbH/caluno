@@ -1,12 +1,12 @@
 import { FieldType } from '@repo/data';
 
-export type SystemProfileField = {
+export type ProfileField = {
   key: string;
   labelKey: string;
   type: FieldType;
 };
 
-export const SYSTEM_PROFILE_FIELDS: readonly SystemProfileField[] = [
+export const PROFILE_FIELDS: readonly ProfileField[] = [
   {
     key: 'preferredName',
     labelKey: 'preferredName',
