@@ -68,8 +68,8 @@ describe('updateOrganizationUnit / requestOrganizationUnitDeletion tenant scope'
       where: { id: unitBId },
     });
     expect(before).toBeTruthy();
-    const originalName = before!.name;
-    const nextEnabled = !before!.idVerificationEnabled;
+    const originalName = before?.name;
+    const nextEnabled = !before?.idVerificationEnabled;
 
     const response = await graphqlRequest<{
       updateOrganizationUnit?: {
