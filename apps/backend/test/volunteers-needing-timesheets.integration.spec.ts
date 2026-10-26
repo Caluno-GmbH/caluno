@@ -66,6 +66,7 @@ describe('volunteersNeedingTimesheets projection', () => {
       db,
       {} as FileService,
       organizationUnitDataService,
+      {} as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
       {} as never,

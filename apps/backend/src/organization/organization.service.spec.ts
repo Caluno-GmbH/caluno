@@ -33,6 +33,7 @@ describe('OrganizationService.create PostHog', () => {
       notificationService as never,
       {} as never,
       { capture } as unknown as PostHogService,
+      {} as never,
     );
 
     await service.create('user-1', { name: 'Org' } as never);
@@ -92,6 +93,7 @@ describe('OrganizationService.findUnitsWithPermission', () => {
 
     const service = new OrganizationService(
       db as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

@@ -54,6 +54,7 @@ describe('ShiftService pause approval', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     shiftService = new ShiftService(
@@ -290,6 +291,7 @@ describe('ShiftPauseApprovalSweepService', () => {
 
     const organizationUnitService = new OrganizationUnitService(
       db,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

@@ -197,7 +197,7 @@ export class MembershipService {
       await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
         organizationUnitId,
       );
-    if (!allowedUnitIds.includes(membership.organizationUnitId ?? '')) {
+    if (!allowedUnitIds.includes(membership.organizationUnitId)) {
       throw new ForbiddenGraphQLError(
         'Membership does not belong to the current organization unit.',
       );
@@ -942,18 +942,16 @@ export class MembershipService {
       return { row: deleted, identity };
     });
 
-    const orgUnit = row.organizationUnitId
-      ? await this.db.query.organizationUnits.findFirst({
-          where: { id: row.organizationUnitId },
-        })
-      : undefined;
+    const orgUnit = await this.db.query.organizationUnits.findFirst({
+      where: { id: row.organizationUnitId },
+    });
     this.postHogService.capture({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_LEAVE,
       userId,
       properties: {
         surface: POSTHOG_SURFACE.VOLUNTEERING,
         organization_id: orgUnit?.organizationId ?? undefined,
-        organization_unit_id: row.organizationUnitId ?? undefined,
+        organization_unit_id: row.organizationUnitId,
         membership_id: row.id,
         source: 'self',
       },
@@ -995,18 +993,16 @@ export class MembershipService {
       return { row: deleted, identity };
     });
 
-    const orgUnit = row.organizationUnitId
-      ? await this.db.query.organizationUnits.findFirst({
-          where: { id: row.organizationUnitId },
-        })
-      : undefined;
+    const orgUnit = await this.db.query.organizationUnits.findFirst({
+      where: { id: row.organizationUnitId },
+    });
     this.postHogService.capture({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_LEAVE,
       userId: identity.userId,
       properties: {
         surface: POSTHOG_SURFACE.BACKOFFICE,
         organization_id: orgUnit?.organizationId ?? undefined,
-        organization_unit_id: row.organizationUnitId ?? undefined,
+        organization_unit_id: row.organizationUnitId,
         membership_id: row.id,
         source: 'admin',
       },
@@ -1024,9 +1020,6 @@ export class MembershipService {
     userId: string;
     organizationUnitId: string;
   } {
-    if (!row.userId || !row.organizationUnitId) {
-      throw new NotFoundGraphQLError('Membership not found');
-    }
     return {
       userId: row.userId,
       organizationUnitId: row.organizationUnitId,
@@ -1456,19 +1449,16 @@ export class MembershipService {
       throw new NotFoundGraphQLError('Membership not found after update');
     }
 
-    if (updatedMembership.userId) {
-      this.postHogService.capture({
-        event: POSTHOG_EVENT.MEMBERSHIP_UPDATE,
-        userId: updatedMembership.userId,
-        properties: {
-          surface: POSTHOG_SURFACE.BACKOFFICE,
-          organization_id: organizationId,
-          organization_unit_id:
-            updatedMembership.organizationUnitId ?? undefined,
-          membership_id: updatedMembership.id,
-        },
-      });
-    }
+    this.postHogService.capture({
+      event: POSTHOG_EVENT.MEMBERSHIP_UPDATE,
+      userId: updatedMembership.userId,
+      properties: {
+        surface: POSTHOG_SURFACE.BACKOFFICE,
+        organization_id: organizationId,
+        organization_unit_id: updatedMembership.organizationUnitId,
+        membership_id: updatedMembership.id,
+      },
+    });
 
     return updatedMembership;
   }

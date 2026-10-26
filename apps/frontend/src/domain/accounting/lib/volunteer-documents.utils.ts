@@ -203,10 +203,10 @@ export function documentState(
   if (status === ContractStatus.Declined || status === InvoiceStatus.Declined) {
     return 'declined';
   }
-  // DRAFT rows are auto-queued for the admin and were never sent. Failing
+  // DRAFT contracts are auto-queued for the admin and were never sent. Failing
   // closed on them (and on any future unknown status) keeps a leak from
   // rendering as Active.
-  if (status === ContractStatus.Draft || status === InvoiceStatus.Draft) {
+  if (status === ContractStatus.Draft) {
     return null;
   }
   if (

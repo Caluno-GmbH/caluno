@@ -65,6 +65,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       db,
       {} as FileService,
       organizationUnitDataService,
+      {} as never,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
       {} as never,
