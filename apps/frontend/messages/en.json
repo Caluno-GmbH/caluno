@@ -797,10 +797,6 @@
       "title": "No hours yet"
     },
     "generalTime": "General time",
-    "state": {
-      "completed": "Completed",
-      "inProgress": "In progress"
-    },
     "summary": {
       "total": "Total volunteered"
     },
@@ -1959,12 +1955,13 @@
       "deleteError": "We couldn't delete the time entry. {error}",
       "deleteSuccess": "Time entry deleted",
       "deleteTitle": "Delete",
-      "editAria": "Edit"
+      "editAria": "Edit",
+      "confirm": "Confirm times",
+      "confirmError": "We couldn't confirm the times. {error}",
+      "confirmSuccess": "Times confirmed"
     },
     "detail": {
-      "closedStatus": "Closed",
       "createdLabel": "Created",
-      "openStatus": "Open",
       "shiftLabel": "Assignment",
       "statusLabel": "Status",
       "title": "Time entry",
@@ -2019,16 +2016,28 @@
       "recordedByUnknown": "Unknown",
       "date": "Date",
       "shift": "Assignment",
-      "volunteer": "Volunteer"
+      "volunteer": "Volunteer",
+      "status": "Status"
     },
     "validation": {
+      "endBeforeStart": "Check-out must be after check-in",
       "endedAtRequired": "Please enter an end time.",
       "organizationUnitRequired": "Please select an organisation unit.",
       "reimbursementTypeRequired": "Please select an allowance type.",
       "shiftInstanceRequired": "Please select an assignment date.",
+      "startAfterShiftEnd": "Check-in can't be later than the shift end ({end})",
       "startedAtRequired": "Please enter a start time.",
       "timeEntryIdRequired": "Time entry ID is required",
       "volunteerRequired": "Please select a volunteer."
+    },
+    "filter": {
+      "status": "Status"
+    },
+    "status": {
+      "autoClosed": "Auto checked out",
+      "autoClosedTooltip": "Auto checked out — needs review",
+      "closed": "Checked out",
+      "open": "Checked in"
     }
   },
   "Unauthorized": {
@@ -2528,7 +2537,10 @@
           "editHint": "To edit hours or assignment details, go to <link>Tracked times</link>.",
           "emptyOutsidePeriod": "{count, plural, one {# time entry} other {# time entries}} for this allowance fall outside the selected timesheet period. Change the timesheet period to include them.",
           "emptyOtherType": "Hours in this timesheet period were tracked under {types}, not this allowance. Create the timesheet for that allowance, or correct the assignment's allowance in Tracked times.",
-          "emptyNothingTracked": "There are no completed hours for this allowance that aren't already on a timesheet. Track time for this volunteer first, or check the other timesheets."
+          "emptyNothingTracked": "There are no completed hours for this allowance that aren't already on a timesheet. Track time for this volunteer first, or check the other timesheets.",
+          "awaitingReview": "Awaiting review",
+          "awaitingReviewHint": "These hours count once an admin confirms the times.",
+          "awaitingReviewRowLabel": "{shiftName} is awaiting review and not included in this timesheet"
         },
         "preview": {
           "disclaimerBadge": "Preview",

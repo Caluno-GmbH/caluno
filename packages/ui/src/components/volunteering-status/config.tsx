@@ -12,6 +12,7 @@ import {
   type LucideIcon,
   ScanQrCode,
   Timer,
+  TriangleAlert,
   UserPlus,
   UserRound,
   UserX,
@@ -42,6 +43,7 @@ export const volunteeringStatusIcons: Record<
   cancelled: CircleMinus,
   checked_in: CircleCheck,
   checked_out: Timer,
+  auto_checked_out: TriangleAlert,
   no_show: UserX,
   invited_never_responded: Clock,
   requested_never_responded: Inbox,
@@ -62,6 +64,7 @@ export const volunteeringStatusIconTone: Record<
   cancelled: 'warning',
   checked_in: 'positive',
   checked_out: 'positive',
+  auto_checked_out: 'warning',
   no_show: 'warning',
   invited_never_responded: 'neutral',
   requested_never_responded: 'neutral',
@@ -108,6 +111,7 @@ export const volunteeringLifecycleDescriptions: Record<
   cancelled: 'No longer joining this shift.',
   checked_in: 'Here — time is tracking.',
   checked_out: 'Volunteer time recorded.',
+  auto_checked_out: 'Checked out automatically — hours wait for review.',
   no_show: "Didn't check in.",
   invited_never_responded: 'No reply before shift ended.',
   requested_never_responded: "You didn't review in time.",
@@ -207,6 +211,13 @@ export function getVolunteeringStatusPresentation(
         label: completedDuration ?? 'Completed',
         description: volunteeringLifecycleDescriptions.checked_out,
         actions: ['Check in'],
+      };
+    case 'auto_checked_out':
+      return {
+        iconTone: volunteeringStatusIconTone.auto_checked_out,
+        label: 'Auto checked out',
+        description: volunteeringLifecycleDescriptions.auto_checked_out,
+        actions: [],
       };
     case 'no_show':
       return {

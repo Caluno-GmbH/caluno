@@ -59,6 +59,10 @@ export const NotificationEvent = {
   // reason, and whoever can correct and reissue it needs to know (VOLI-1246).
   DOCUMENT_DECLINED_BY_VOLUNTEER: 'notification.document.declined-by-volunteer',
   TERMS_UPDATED: 'notification.terms.updated',
+  // Not routed through the emitter/listener — the hourly auto-close sweep
+  // sends directly via TimeEntryAutoClosedNotifier. The event constant exists
+  // only to label the resolveUsersNotificationData "user not found" warning.
+  TIME_ENTRY_AUTO_CLOSED: 'notification.time-entry.auto-closed',
 } as const;
 
 export type NotificationEvent =

@@ -14,4 +14,5 @@ export const ADVISORY_LOCK_KEYS = {
   termsPublish: 874_213_001,
   shiftUnderstaffedTick: 874_213_002,
   shiftPauseApprovalTick: 874_213_003,
+  timeEntryAutoCloseTick: 874_213_004,
 } as const;

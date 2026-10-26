@@ -21,6 +21,7 @@ import { MembershipRequestStatus } from '../membership/enums';
 import { FieldType } from '../requirement-profile/enums';
 import { runFixtureSeed } from '../shared/observability/fixture-failure-reporter';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
+import { TimeEntryClosureKind } from '../time-tracking/enums/time-entry-closure-kind.enum';
 import {
   addDaysInFixtureTimezone,
   addHours,
@@ -444,6 +445,7 @@ const ensureTimeEntries = async (
         createdById: supervisor.id,
         startedAt: addHours(shiftInstances.communitySupport.startsAt, 0.5),
         endedAt: addHours(shiftInstances.communitySupport.startsAt, 3.5),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Supervisor coverage',
       });
       entries.push({
@@ -453,6 +455,7 @@ const ensureTimeEntries = async (
         createdById: supervisor.id,
         startedAt: addHours(shiftInstances.foodDistribution.startsAt, 0),
         endedAt: addHours(shiftInstances.foodDistribution.startsAt, 3),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Distribution lead',
       });
       continue;
@@ -472,6 +475,7 @@ const ensureTimeEntries = async (
         shiftInstances.communitySupport.startsAt,
         (memberNumber % 2) + closedHours,
       ),
+      closureKind: TimeEntryClosureKind.MANUAL,
       notes: `Community support (${closedHours}h)`,
     });
 
@@ -489,6 +493,7 @@ const ensureTimeEntries = async (
           shiftInstances.communitySupport.startsAt,
           closedHours + 1.5,
         ),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Additional community support block',
       });
     }
@@ -507,6 +512,7 @@ const ensureTimeEntries = async (
           shiftInstances.foodDistribution.startsAt,
           (memberNumber % 3) + 2,
         ),
+        closureKind: TimeEntryClosureKind.MANUAL,
         notes: 'Food distribution',
       });
     }

@@ -694,6 +694,7 @@ type Mutation {
   checkOut(shiftInstanceId: ID!): TimeEntry!
   checkOutVolunteer(timeEntryId: ID!): TimeEntry!
   closeTimeEntry(id: ID!, input: CloseTimeEntryInput!): TimeEntry!
+  confirmTimeEntry(id: ID!): TimeEntry!
   createContract(input: CreateContractInput!): Contract!
   createDocumentTemplate(input: CreateDocumentTemplateInput!): DocumentTemplate!
   createEvent(input: CreateEventInput!): Event!
@@ -1013,7 +1014,8 @@ type Query {
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
   shifts(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT): ShiftPaginatedResponse!
   termsStatus: TermsStatus!
-  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
+  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT, statuses: [TimeEntryStatus!]): TimeEntryPaginatedResponse!
+  timeEntriesAwaitingReviewForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, volunteerId: ID!): [TimeEntry!]!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   todoFillAssignmentFilter: TodoFillAssignmentFilter!
@@ -1345,6 +1347,7 @@ type TimeEntry {
   reimbursementType: ReimbursementType
   shiftInstance: ShiftInstance
   startedAt: DateTime!
+  status: TimeEntryStatus!
   volunteer: User!
 }
 
@@ -1359,6 +1362,12 @@ enum TimeEntrySortField {
   SHIFT
   STARTED_AT
   VOLUNTEER
+}
+
+enum TimeEntryStatus {
+  AUTO_CLOSED
+  CLOSED
+  OPEN
 }
 
 type TodoFillAssignmentFilter {
