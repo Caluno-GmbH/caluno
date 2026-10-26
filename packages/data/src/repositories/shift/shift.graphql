@@ -401,6 +401,7 @@ query GetShiftInstance($id: ID!) {
     }
     timeEntries {
       id
+      status
       startedAt
       endedAt
       volunteer {

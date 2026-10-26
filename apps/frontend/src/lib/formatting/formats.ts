@@ -41,6 +41,13 @@ export const formats = (locale: string) => {
     return format(date, 'P');
   };
   const formatDateTime = (date: Date) => format(date, 'Pp');
+
+  // Compact clock for an end time shown next to a start: time only on the same
+  // calendar day, otherwise prefixed with the weekday ("Fri 02:00").
+  const formatTimeRelativeToStart = (end: Date, start: Date) =>
+    isSameDay(end, start, { in: tz(DEFAULT_TIMEZONE) })
+      ? format(end, 'HH:mm')
+      : format(end, 'EEE HH:mm');
   const formatTime = (date: Date) => format(date, 'p');
 
   const formatRange = (
@@ -144,6 +151,7 @@ export const formats = (locale: string) => {
     formatDate,
     formatDateTime,
     formatTime,
+    formatTimeRelativeToStart,
     formatRange,
     formatDateRange,
     formatTimeRange,

@@ -7,6 +7,7 @@ import {
   DocumentKind,
   DocumentStatusChange,
   InvoiceStatus,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
 import { ContractService } from '../src/accounting/services/contract.service';
@@ -34,12 +35,12 @@ import { OrganizationUnitService } from '../src/organization/organization-unit.s
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { FileService } from '../src/storage/services/file.service';
+import { TimeEntryClosureKind } from '../src/time-tracking/enums/time-entry-closure-kind.enum';
 import {
   createCompletedTimeEntry,
   createDocumentFile,
   createReimbursementType,
   createTwoStepTemplate,
-  stubInvoiceDocumentNumber,
 } from './factories/accounting.factory';
 import {
   addMembership,
@@ -226,6 +227,18 @@ describe('InvoiceService', () => {
       timeEntry,
       contractTemplate,
     };
+  };
+
+  /** A completed entry the auto-close job ended, so its hours await review. */
+  const createAutoClosedTimeEntry = async (
+    args: Parameters<typeof createCompletedTimeEntry>[1],
+  ) => {
+    const entry = await createCompletedTimeEntry(db, args);
+    await db
+      .update(schema.timeEntries)
+      .set({ closureKind: TimeEntryClosureKind.AUTO })
+      .where(eq(schema.timeEntries.id, entry.id));
+    return entry;
   };
 
   type Fixture = Awaited<ReturnType<typeof setup>>;
@@ -436,63 +449,6 @@ describe('InvoiceService', () => {
       const ids = rootOnly.map((i) => i.id);
       expect(ids).toContain(inRoot.id);
       expect(ids).not.toContain(inSibling.id);
-    });
-
-    it('excludes DRAFT invoices when issuedOnly is set', async () => {
-      const {
-        organization,
-        root,
-        reimbursementType,
-        volunteer,
-        supervisor,
-        timeEntry,
-      } = await setup();
-
-      const issued = await service.createInvoice(
-        organization.id,
-        {
-          organizationUnitId: root.id,
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-          timeEntryIds: [timeEntry.id],
-          periodStart: new Date('2026-07-01'),
-          periodEnd: new Date('2026-07-31'),
-        },
-        supervisor.id,
-      );
-
-      // No public API creates a draft invoice; insert one directly to prove the
-      // defensive filter, mirroring a legacy/other writer.
-      const template = await db.query.documentTemplates.findFirst({
-        where: { organizationId: organization.id, kind: DocumentKind.INVOICE },
-      });
-      if (!template) throw new Error('missing invoice template');
-      const [draft] = await db
-        .insert(schema.invoices)
-        .values({
-          documentTemplateId: template.id,
-          volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
-          invoiceStatus: InvoiceStatus.DRAFT,
-          periodStart: new Date('2026-08-01'),
-          periodEnd: new Date('2026-08-31'),
-          totalAmountCents: 0,
-          totalHours: 0,
-          resolvedBody: { header: {}, blocks: [], footer: {} },
-          hourlyRateCents: 1000,
-          ...stubInvoiceDocumentNumber(root.id),
-        })
-        .returning();
-      if (!draft) throw new Error('failed to insert draft invoice');
-
-      const all = await service.findInvoicesForOrganization(organization.id);
-      expect(all.map((i) => i.id).sort()).toEqual([issued.id, draft.id].sort());
-
-      const onlyIssued = await service.findInvoicesForOrganization(
-        organization.id,
-        { issuedOnly: true },
-      );
-      expect(onlyIssued.map((i) => i.id)).toEqual([issued.id]);
     });
   });
 
@@ -752,6 +708,117 @@ describe('InvoiceService', () => {
       );
       expect(eligible.map((e) => e.id)).not.toContain(timeEntry.id);
     });
+    it('excludes AUTO_CLOSED entries until they are reviewed', async () => {
+      const { root, reimbursementType, volunteer, timeEntry } = await setup();
+      const autoClosed = await createAutoClosedTimeEntry({
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-02T09:00:00.000Z'),
+        endedAt: new Date('2026-07-02T13:00:00.000Z'),
+      });
+
+      const eligible = await service.findEligibleTimeEntries(
+        volunteer.id,
+        reimbursementType.id,
+        root.id,
+      );
+
+      const ids = eligible.map((entry) => entry.id);
+      expect(ids).toContain(timeEntry.id);
+      expect(ids).not.toContain(autoClosed.id);
+    });
+  });
+
+  describe('findTimeEntriesAwaitingReview', () => {
+    it('returns only AUTO_CLOSED, unclaimed entries of the unit and type, in the period', async () => {
+      const {
+        organization,
+        root,
+        type,
+        reimbursementType,
+        volunteer,
+        supervisor,
+        timeEntry,
+      } = await setup();
+      const base = {
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+      };
+      const awaiting = await createAutoClosedTimeEntry({
+        ...base,
+        startedAt: new Date('2026-07-02T09:00:00.000Z'),
+        endedAt: new Date('2026-07-02T13:00:00.000Z'),
+      });
+      const outOfPeriod = await createAutoClosedTimeEntry({
+        ...base,
+        startedAt: new Date('2026-08-02T09:00:00.000Z'),
+        endedAt: new Date('2026-08-02T13:00:00.000Z'),
+      });
+      const otherType = await createReimbursementType(db, {
+        key: ReimbursementTypeKey.UEBUNGSLEITER,
+      });
+      const wrongType = await createAutoClosedTimeEntry({
+        ...base,
+        reimbursementTypeId: otherType.id,
+        startedAt: new Date('2026-07-03T09:00:00.000Z'),
+        endedAt: new Date('2026-07-03T13:00:00.000Z'),
+      });
+      const sibling = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        parentId: root.id,
+        name: `Sibling ${crypto.randomUUID()}`,
+      });
+      const wrongUnit = await createAutoClosedTimeEntry({
+        ...base,
+        organizationUnitId: sibling.id,
+        startedAt: new Date('2026-07-04T09:00:00.000Z'),
+        endedAt: new Date('2026-07-04T13:00:00.000Z'),
+      });
+      const otherVolunteer = await createAutoClosedTimeEntry({
+        ...base,
+        volunteerId: (await createUser(db)).id,
+        startedAt: new Date('2026-07-05T09:00:00.000Z'),
+        endedAt: new Date('2026-07-05T13:00:00.000Z'),
+      });
+      // Claimed by a live timesheet: no longer up for review here.
+      await service.createInvoice(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          timeEntryIds: [timeEntry.id],
+          periodStart: new Date('2026-07-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-07-31T00:00:00.000Z'),
+        },
+        supervisor.id,
+      );
+      await db
+        .update(schema.timeEntries)
+        .set({ closureKind: TimeEntryClosureKind.AUTO })
+        .where(eq(schema.timeEntries.id, timeEntry.id));
+
+      const july = billingMonthBoundsOf(new Date('2026-07-15T12:00:00.000Z'));
+      const result = await service.findTimeEntriesAwaitingReview(
+        volunteer.id,
+        reimbursementType.id,
+        root.id,
+        july.start,
+        july.end,
+      );
+
+      const ids = result.map((entry) => entry.id);
+      expect(ids).toContain(awaiting.id);
+      expect(ids).not.toContain(outOfPeriod.id);
+      expect(ids).not.toContain(wrongType.id);
+      expect(ids).not.toContain(wrongUnit.id);
+      expect(ids).not.toContain(otherVolunteer.id);
+      expect(ids).not.toContain(timeEntry.id);
+      expect(ids).toEqual([awaiting.id]);
+    });
   });
 
   describe('findVolunteersNeedingTimesheets', () => {
@@ -785,6 +852,28 @@ describe('InvoiceService', () => {
         hasHoursWithoutActiveContract: true,
       });
       expect(result[0]?.volunteerId).toBe(timeEntry.volunteerId);
+    });
+
+    it('ignores AUTO_CLOSED hours until they are reviewed', async () => {
+      const { root, reimbursementType, volunteer } = await setup();
+      await createAutoClosedTimeEntry({
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-02T09:00:00.000Z'),
+        endedAt: new Date('2026-07-02T11:00:00.000Z'),
+      });
+      const [periodStart, periodEnd] = yearPeriod();
+
+      const result = await service.findVolunteersNeedingTimesheets(
+        root.id,
+        periodStart,
+        periodEnd,
+      );
+
+      // Only the 4 regular hours from setup(); the 2 auto-closed ones wait.
+      expect(result).toHaveLength(1);
+      expect(result[0]?.eligibleHours).toBe(4);
     });
 
     it('adds up every unclaimed entry per Berlin month into one row', async () => {
@@ -1200,6 +1289,33 @@ describe('InvoiceService', () => {
             timeEntryIds: [crypto.randomUUID()],
             periodStart: new Date(),
             periodEnd: new Date(),
+          },
+          supervisor.id,
+        ),
+      ).rejects.toBeInstanceOf(ConflictGraphQLError);
+    });
+
+    it('rejects an AUTO_CLOSED time entry id', async () => {
+      const { organization, root, reimbursementType, volunteer, supervisor } =
+        await setup();
+      const autoClosed = await createAutoClosedTimeEntry({
+        organizationUnitId: root.id,
+        volunteerId: volunteer.id,
+        reimbursementTypeId: reimbursementType.id,
+        startedAt: new Date('2026-07-02T09:00:00.000Z'),
+        endedAt: new Date('2026-07-02T13:00:00.000Z'),
+      });
+
+      await expect(
+        service.createInvoice(
+          organization.id,
+          {
+            organizationUnitId: null,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            timeEntryIds: [autoClosed.id],
+            periodStart: new Date('2026-07-01T00:00:00.000Z'),
+            periodEnd: new Date('2026-07-31T00:00:00.000Z'),
           },
           supervisor.id,
         ),

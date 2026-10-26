@@ -18,10 +18,7 @@ describe('isIssuedDocument', () => {
     }
   });
 
-  it('treats every invoice status except DRAFT as issued', () => {
-    expect(isIssuedDocument(DocumentKind.INVOICE, InvoiceStatus.DRAFT)).toBe(
-      false,
-    );
+  it('treats every invoice status as issued', () => {
     for (const status of [
       InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
       InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,

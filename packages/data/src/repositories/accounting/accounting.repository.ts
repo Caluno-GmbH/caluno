@@ -23,6 +23,7 @@ import type {
   GetPendingContractSigneeQuery,
   GetReimbursementTypesQuery,
   GetRosterYearlyUsageQuery,
+  GetTimeEntriesAwaitingReviewForInvoiceQuery,
   GetVolunteerAllowanceStatesQuery,
   GetVolunteersNeedingTimesheetsQuery,
   GetYearlyUsageQuery,
@@ -56,6 +57,9 @@ export type InvoiceSummary = GetInvoicesQuery['invoices'][number];
 export type InvoiceDetail = GetInvoiceQuery['invoice'];
 export type EligibleTimeEntry =
   GetEligibleTimeEntriesForInvoiceQuery['eligibleTimeEntriesForInvoice'][number];
+
+export type AwaitingReviewTimeEntry =
+  GetTimeEntriesAwaitingReviewForInvoiceQuery['timeEntriesAwaitingReviewForInvoice'][number];
 export type RawVolunteerNeedsTimesheet =
   GetVolunteersNeedingTimesheetsQuery['volunteersNeedingTimesheets'][number];
 export type RawPaidShiftSignupVolunteer =
@@ -224,6 +228,16 @@ export class AccountingRepository extends BaseRepository {
   }): Promise<EligibleTimeEntry[]> {
     const data = await this.sdk.GetEligibleTimeEntriesForInvoice(input);
     return data.eligibleTimeEntriesForInvoice;
+  }
+
+  async findTimeEntriesAwaitingReviewForInvoice(input: {
+    volunteerId: string;
+    reimbursementTypeId: string;
+    periodStart?: string;
+    periodEnd?: string;
+  }): Promise<AwaitingReviewTimeEntry[]> {
+    const data = await this.sdk.GetTimeEntriesAwaitingReviewForInvoice(input);
+    return data.timeEntriesAwaitingReviewForInvoice;
   }
 
   async findVolunteersNeedingTimesheets(input: {

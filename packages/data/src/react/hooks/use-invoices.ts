@@ -1,6 +1,7 @@
 'use client';
 import {
   AccountingRepository,
+  type AwaitingReviewTimeEntry,
   type CreateInvoiceInput,
   type EligibleTimeEntry,
   type InvoiceDetail,
@@ -68,6 +69,29 @@ export function useEligibleTimeEntriesForInvoice(input: {
     queryKey: ['accounting', 'eligible-time-entries', input],
     queryFn: () =>
       repository.findEligibleTimeEntriesForInvoice({
+        volunteerId: input.volunteerId ?? '',
+        reimbursementTypeId: input.reimbursementTypeId ?? '',
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd,
+      }),
+    staleTime: 30 * 1000,
+    enabled: !!input.volunteerId && !!input.reimbursementTypeId,
+  });
+}
+
+export function useTimeEntriesAwaitingReviewForInvoice(input: {
+  volunteerId?: string;
+  reimbursementTypeId?: string;
+  periodStart?: string;
+  periodEnd?: string;
+}) {
+  const sdk = useSdk();
+  const repository = new AccountingRepository(sdk);
+
+  return useQuery<AwaitingReviewTimeEntry[]>({
+    queryKey: ['accounting', 'awaiting-review-time-entries', input],
+    queryFn: () =>
+      repository.findTimeEntriesAwaitingReviewForInvoice({
         volunteerId: input.volunteerId ?? '',
         reimbursementTypeId: input.reimbursementTypeId ?? '',
         periodStart: input.periodStart,

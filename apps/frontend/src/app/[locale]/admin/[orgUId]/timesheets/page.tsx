@@ -2,6 +2,7 @@ import { SortOrder } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { CreateTimeEntryButton } from '@/domain/time-entry/components/create-time-entry-button';
 import { EmptyTimeEntries } from '@/domain/time-entry/components/empty-time-entries';
+import { TimeEntryStatusFilter } from '@/domain/time-entry/components/time-entry-status-filter';
 import { TimesheetsTable } from '@/domain/time-entry/components/timesheets-table';
 import { timesheetsSearchParamsCache } from '@/domain/time-entry/timesheets-search-params.server';
 import { getDataClient } from '@/lib/data-client';
@@ -18,9 +19,8 @@ export default async function TimesheetsPage({
   const { orgUId } = await params;
   const t = await getTranslations('TimeEntry');
 
-  const { sort, dir, page, pageSize } = timesheetsSearchParamsCache.parse(
-    await searchParams,
-  );
+  const { sort, dir, page, pageSize, status } =
+    timesheetsSearchParamsCache.parse(await searchParams);
 
   const limit = Number(pageSize);
   const data = await getDataClient({ orgUId });
@@ -30,8 +30,11 @@ export default async function TimesheetsPage({
     offset: (page - 1) * limit,
     sort,
     order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
+    statuses: status.length > 0 ? status : undefined,
   });
-  const hasTimeEntries = timeEntries.pagination.total > 0;
+  const isFiltered = status.length > 0;
+  // Keep the filter and table visible when a filter matches nothing.
+  const showTable = timeEntries.pagination.total > 0 || isFiltered;
 
   return (
     <div className="space-y-6">
@@ -40,12 +43,15 @@ export default async function TimesheetsPage({
         <CreateTimeEntryButton orgUId={orgUId} />
       </div>
 
-      {hasTimeEntries ? (
-        <TimesheetsTable
-          entries={timeEntries.items}
-          pagination={timeEntries.pagination}
-          organizationUnitId={orgUId}
-        />
+      {showTable ? (
+        <div className="space-y-4">
+          <TimeEntryStatusFilter />
+          <TimesheetsTable
+            entries={timeEntries.items}
+            pagination={timeEntries.pagination}
+            organizationUnitId={orgUId}
+          />
+        </div>
       ) : (
         <EmptyTimeEntries>
           <CreateTimeEntryButton orgUId={orgUId} />

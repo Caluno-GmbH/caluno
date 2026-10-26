@@ -315,13 +315,6 @@ describe('TaskService.myTasks', () => {
       periodEnd,
       ...stubInvoiceDocumentNumber(organizationUnitId),
     });
-    await db.insert(schema.invoices).values({
-      ...invoiceBase,
-      invoiceStatus: InvoiceStatus.DRAFT,
-      periodStart,
-      periodEnd,
-      ...stubInvoiceDocumentNumber(organizationUnitId),
-    });
 
     const tasks = await service.myTasks(admin.id, organizationUnitId);
     const of = (type: TaskType) => tasks.filter((task) => task.type === type);

@@ -636,12 +636,12 @@ describe('reimbursement-rate resolver unit scoping', () => {
         invoiceStatus: InvoiceStatus.READY,
         scopeUnitId: branchA.id,
       });
-      const draft = await insertInvoice({
+      const inProgress = await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
         reimbursementTypeId: reimbursementType.id,
         totalAmountCents: 4_000,
-        invoiceStatus: InvoiceStatus.DRAFT,
+        invoiceStatus: InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
         scopeUnitId: branchA.id,
       });
 
@@ -650,7 +650,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         reimbursementType.id,
         2026,
         undefined,
-        draft.id,
+        inProgress.id,
         contextFor(branchA.id),
       );
 

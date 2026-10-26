@@ -51,6 +51,21 @@ export class TimeTrackingMutationResolver {
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
   @Mutation(() => TimeEntry)
+  async confirmTimeEntry(
+    @Args('id', { type: () => ID }) id: string,
+    @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
+  ): Promise<TimeEntry> {
+    const entity = await this.timeTrackingService.confirmTimeEntry(
+      id,
+      context.organizationUnitId,
+      session.user.id,
+    );
+    return this.entryMapper.toModelOrThrow(entity);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_EDIT)
+  @Mutation(() => TimeEntry)
   async updateTimeEntry(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateTimeEntryInput,

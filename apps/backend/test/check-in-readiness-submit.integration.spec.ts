@@ -49,6 +49,13 @@ import { getGraphqlTestContext } from './helpers/graphql-test-context';
 applyBunAuthMocks(mock.module);
 setDefaultTimeout(20_000);
 
+// checkInVolunteer cannot start an entry after the shift end, so instances
+// used for it must still be running.
+const RUNNING_SHIFT_WINDOW = () => ({
+  actualStartsAt: new Date(Date.now() - 60 * 60 * 1000),
+  actualEndsAt: new Date(Date.now() + 60 * 60 * 1000),
+});
+
 const CHECK_IN_READINESS = `
   query CheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID!) {
     checkInReadiness(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
@@ -520,7 +527,11 @@ describe('checkInVolunteer mutation', () => {
     });
 
     const shift = await createShift(db, { organizationUnitId: unit.id });
-    const instance = await createShiftInstance(db, shift.id);
+    const instance = await createShiftInstance(
+      db,
+      shift.id,
+      RUNNING_SHIFT_WINDOW(),
+    );
     instanceId = instance.id;
   });
 
@@ -627,7 +638,11 @@ describe('checkInVolunteer mutation', () => {
     });
 
     const shift = await createShift(db, { organizationUnitId: childUnit.id });
-    const childInstance = await createShiftInstance(db, shift.id);
+    const childInstance = await createShiftInstance(
+      db,
+      shift.id,
+      RUNNING_SHIFT_WINDOW(),
+    );
 
     // Volunteer is a member of the PARENT only.
     const volunteer = await createUser(db);

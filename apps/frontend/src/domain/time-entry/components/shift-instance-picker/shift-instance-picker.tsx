@@ -43,6 +43,11 @@ type ShiftPickerProps = {
     shiftInstance?: TimeEntryShiftInstance,
   ) => void;
   disabled?: boolean;
+  /**
+   * Reports the instance behind `value` once it is loaded, so a form editing an
+   * existing entry knows the instance without the user re-picking it.
+   */
+  onInstanceResolved?: (shiftInstance: TimeEntryShiftInstance) => void;
   /** Seeds the date filter (an existing entry's date when editing). */
   defaultDate?: Date | null;
 };
@@ -50,6 +55,7 @@ type ShiftPickerProps = {
 export function ShiftPicker({
   value,
   onChange,
+  onInstanceResolved,
   disabled,
   defaultDate,
 }: ShiftPickerProps) {
@@ -89,6 +95,10 @@ export function ShiftPicker({
   const selectedInstance = dayInstances.find(
     (i) => i.id === value.shiftInstanceId,
   );
+
+  useEffect(() => {
+    if (selectedInstance) onInstanceResolved?.(selectedInstance);
+  }, [selectedInstance, onInstanceResolved]);
 
   const handleInstanceSelect = (instance: TimeEntryShiftInstance) => {
     onChange(
