@@ -1956,6 +1956,18 @@ describe('documents flow — admin + volunteer', () => {
         'signContract',
       );
 
+      const admin = await db.query.users.findFirst({
+        where: { id: pdfOrg.adminId },
+      });
+      const orgSignature = await db.query.contractSignatures.findFirst({
+        where: {
+          contractId: createContract.id,
+          signeeType: SigneeType.PERMISSION_HOLDER,
+        },
+      });
+      expect(admin?.name).toBeTruthy();
+      expect(orgSignature?.signedByName).toBe(admin?.name);
+
       // The mutation response predates the render — refetch for the file link.
       const detail = await graphqlRequestRequiringData<{
         contract: {
@@ -1998,6 +2010,7 @@ describe('documents flow — admin + volunteer', () => {
       expect(glyphs).toContain('Ada');
       expect(glyphs).toContain('Lovelace');
       expect(glyphs).toContain('Unterschrift');
+      expect(glyphs).toContain(admin?.name ?? '');
     });
 
     it('renders the unsigned PDF at creation so the volunteer can preview it before signing', async () => {

@@ -24,7 +24,7 @@ const msgs = {
 };
 
 describe('missingFieldsToRenderable', () => {
-  it('renders exactly the missing fields, in SYSTEM_PROFILE_FIELDS order, all required', () => {
+  it('renders exactly the missing fields, in PROFILE_FIELDS order, all required', () => {
     const fields = missingFieldsToRenderable(
       ['iban', 'street', 'zip'],
       labelFor,
@@ -39,7 +39,7 @@ describe('missingFieldsToRenderable', () => {
   });
 
   it('rejects an invalid IBAN and zip, accepts valid ones', () => {
-    // SYSTEM_PROFILE_FIELDS orders zip before iban regardless of input order.
+    // PROFILE_FIELDS orders zip before iban regardless of input order.
     const fields = missingFieldsToRenderable(['iban', 'zip'], labelFor);
     expect(fields.map((f) => f.id)).toEqual(['zip', 'iban']);
     const [zipField, ibanField] = fields;

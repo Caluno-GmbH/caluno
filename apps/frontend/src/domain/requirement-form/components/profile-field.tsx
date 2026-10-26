@@ -153,7 +153,7 @@ function formatProfileFieldValue(
     return parseMultiChoiceValue(value).join(', ') || opts.dash;
   }
 
-  if (hasFixedGenderOptions(field.systemKey)) {
+  if (hasFixedGenderOptions(field.profileKey)) {
     return opts.genderLabel(value);
   }
 

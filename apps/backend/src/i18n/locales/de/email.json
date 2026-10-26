@@ -576,7 +576,7 @@
     "needsVolunteersHeading": "Einsätze, die noch Freiwillige brauchen",
     "needsVolunteersSeeAll": "Alle offenen Einsätze ansehen",
     "rowWhen": "{date} · {timeRange}",
-    "reasonNeedsMore": "{count, plural, one {Braucht noch # weitere Person} other {Braucht noch # weitere Freiwillige}}",
+    "reasonNeedsMore": "{count, plural, one {Braucht noch # weiteren Freiwilligen} other {Braucht noch # weitere Freiwillige}}",
     "reasonNoVolunteersYet": "Noch keine Freiwilligen",
     "reasonHasRoom": "Hat noch Platz für weitere Freiwillige",
     "subject": "Deine Woche im Überblick auf {brandName}",

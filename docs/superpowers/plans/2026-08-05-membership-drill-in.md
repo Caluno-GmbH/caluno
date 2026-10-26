@@ -539,7 +539,7 @@ query MyFormSubmission($id: ID!) {
             id
             label
             type
-            systemKey
+            profileKey
             options { label value }
           }
         }
@@ -614,7 +614,7 @@ type SubmissionField = {
   id: string;
   label: string;
   type: string;
-  systemKey?: string | null;
+  profileKey?: string | null;
   options?: { label: string; value: string }[] | null;
 };
 
@@ -629,8 +629,8 @@ const resolveFieldAnswer = (
   formatDate: (date: Date) => string,
 ): string => {
   const raw =
-    field.systemKey && profileData[field.systemKey] !== undefined
-      ? String(profileData[field.systemKey])
+    field.profileKey && profileData[field.profileKey] !== undefined
+      ? String(profileData[field.profileKey])
       : (submissionValues.find((v) => v.fieldId === field.id)?.value ?? null);
   if (!raw) return dash;
   if (field.type === 'DATE') {

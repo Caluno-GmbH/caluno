@@ -10,8 +10,8 @@ import {
 } from '../graphql/errors';
 import { type Locale, resolveRequestLocale } from '../graphql/locale';
 import {
-  formatSystemKeyLabel,
-  validateSystemKeyValue,
+  formatProfileKeyLabel,
+  validateProfileKeyValue,
 } from '../requirement-profile/profile-validation';
 import type { OrganizationUserProfileEntity } from '../requirement-profile/schemas/organization-user-profile.schema';
 import {
@@ -112,7 +112,7 @@ export class UserService {
 
   /**
    * Merge writable profile columns onto the user row. Skips email.
-   * Accepts a column-keyed bag (same keys as form systemKeys).
+   * Accepts a column-keyed bag (same keys as form profileKeys).
    */
   async updateProfileFields(
     userId: string,
@@ -125,7 +125,7 @@ export class UserService {
       if (!Object.hasOwn(columns, key)) continue;
       const value = columns[key];
       if (typeof value !== 'string') continue;
-      validateSystemKeyValue(value, key, formatSystemKeyLabel(key), null);
+      validateProfileKeyValue(value, key, formatProfileKeyLabel(key), null);
     }
 
     return this.applyProfileColumns(userId, columns, tx);

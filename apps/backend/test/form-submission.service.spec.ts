@@ -644,7 +644,7 @@ describe('FormSubmissionService per-org-unit submissions', () => {
           type: 'SINGLE_CHOICE',
           label: 'Gender',
           required,
-          systemKey: 'gender',
+          profileKey: 'gender',
           options: [],
           fieldOrder: 1,
         })
@@ -681,7 +681,7 @@ describe('FormSubmissionService per-org-unit submissions', () => {
       expect(user?.gender).toBe('female');
     });
 
-    it('merges systemKey values onto user columns without wiping unset fields', async () => {
+    it('merges profileKey values onto user columns without wiping unset fields', async () => {
       const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
       await db
         .update(schema.users)
@@ -709,7 +709,7 @@ describe('FormSubmissionService per-org-unit submissions', () => {
           type: 'PHONE',
           label: 'Phone',
           required: false,
-          systemKey: 'phone',
+          profileKey: 'phone',
           fieldOrder: 1,
         })
         .returning();

@@ -99,7 +99,7 @@ Create `packages/data/src/repositories/accounting/profile-source-keys.ts`:
 import type { DataSourceKey } from './template-body.types';
 
 /**
- * Maps a template field's bound `source` to the user profile systemKey it
+ * Maps a template field's bound `source` to the user profile profileKey it
  * reads from. Mirrors the backend's PROFILE_SOURCE_TO_PROFILE_KEY
  * (apps/backend/src/accounting/services/document-template.types.ts) — the two
  * must stay in sync. The document's `missingProfileFields` carries these
@@ -562,7 +562,7 @@ git commit -m "feat(accounting): gate card sign on missing profile details, link
 - Create: `apps/frontend/src/domain/accounting/components/complete-profile-sheet.tsx`
 
 **Interfaces:**
-- Consumes: `toMissingProfileKeys`, `MissingProfileKey` (Task 1); `useUpdateMyProfile` (Task 2); `MyDocuments.completeProfile.*`, `MembershipDetail.documents.names`, `RequirementForm.fieldForm.*` (Task 3); `buildFieldSchema`/`FieldRenderer`/`useValidationMessages`/`RenderableField` from `@/domain/requirement-form/components/field-renderer`; `SYSTEM_PROFILE_FIELDS` from `@/domain/requirement-form/system-profile-fields`; `profileDataToUpdateInput` from `@/domain/user/lib/profile-data-map`; `FormSheet`/`useFormSheet` from `@/components/form-sheet`.
+- Consumes: `toMissingProfileKeys`, `MissingProfileKey` (Task 1); `useUpdateMyProfile` (Task 2); `MyDocuments.completeProfile.*`, `MembershipDetail.documents.names`, `RequirementForm.fieldForm.*` (Task 3); `buildFieldSchema`/`FieldRenderer`/`useValidationMessages`/`RenderableField` from `@/domain/requirement-form/components/field-renderer`; `PROFILE_FIELDS` from `@/domain/requirement-form/system-profile-fields`; `profileDataToUpdateInput` from `@/domain/user/lib/profile-data-map`; `FormSheet`/`useFormSheet` from `@/components/form-sheet`.
 - Produces: `CompleteProfileSheet` (consumed by Task 6's sheet page) and pure helpers `missingFieldsToRenderable(missingKeys, labelFor): RenderableField[]`, `completeProfileDefaultValues(missingKeys, names): Record<string, string>`.
 
 - [ ] **Step 1: Write the failing test for the field helpers**
@@ -597,7 +597,7 @@ const msgs = {
 };
 
 describe('missingFieldsToRenderable', () => {
-  it('renders exactly the missing fields, in SYSTEM_PROFILE_FIELDS order, all required', () => {
+  it('renders exactly the missing fields, in PROFILE_FIELDS order, all required', () => {
     const fields = missingFieldsToRenderable(['iban', 'street', 'zip'], labelFor);
     expect(fields.map((f) => f.id)).toEqual(['street', 'zip', 'iban']);
     expect(fields.every((f) => f.required)).toBe(true);
@@ -609,7 +609,7 @@ describe('missingFieldsToRenderable', () => {
   });
 
   it('rejects an invalid IBAN and zip, accepts valid ones', () => {
-    // SYSTEM_PROFILE_FIELDS orders zip before iban regardless of input order.
+    // PROFILE_FIELDS orders zip before iban regardless of input order.
     const fields = missingFieldsToRenderable(['iban', 'zip'], labelFor);
     expect(fields.map((f) => f.id)).toEqual(['zip', 'iban']);
     const zip = buildFieldSchema(fields[0], true, msgs);
@@ -661,11 +661,11 @@ Create `apps/frontend/src/domain/accounting/lib/complete-profile-fields.ts`:
 ```ts
 import type { MissingProfileKey } from '@repo/data';
 import type { RenderableField } from '../../requirement-form/components/field-renderer';
-import { SYSTEM_PROFILE_FIELDS } from '../../requirement-form/system-profile-fields';
+import { PROFILE_FIELDS } from '../../requirement-form/system-profile-fields';
 
 /**
  * The complete-profile sheet renders exactly the document's missing profile
- * fields, each required, in SYSTEM_PROFILE_FIELDS order so the address fields
+ * fields, each required, in PROFILE_FIELDS order so the address fields
  * stay grouped regardless of the order the backend reports them in.
  */
 export function missingFieldsToRenderable(
@@ -673,10 +673,10 @@ export function missingFieldsToRenderable(
   labelFor: (labelKey: string) => string,
 ): RenderableField[] {
   const missing = new Set<string>(missingKeys);
-  return SYSTEM_PROFILE_FIELDS.filter((field) => missing.has(field.key)).map(
+  return PROFILE_FIELDS.filter((field) => missing.has(field.key)).map(
     (field) => ({
       id: field.key,
-      systemKey: field.key,
+      profileKey: field.key,
       type: field.type,
       label: labelFor(field.labelKey),
       required: true,

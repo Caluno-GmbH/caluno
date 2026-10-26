@@ -69,11 +69,6 @@ query GetOrganizationUnit($id: String!) {
         id
         name
         description
-        settings {
-          submitButtonLabel
-          successTitle
-          successMessage
-        }
         blockRefs {
           id
           formId
@@ -95,7 +90,7 @@ query GetOrganizationUnit($id: String!) {
               description
               required
               lockType
-              systemKey
+              profileKey
               options
               documents {
                 fileId

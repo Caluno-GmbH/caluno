@@ -1,10 +1,10 @@
 import type { MissingProfileKey } from '@repo/data';
 import type { RenderableField } from '../../requirement-form/components/field-renderer';
-import { SYSTEM_PROFILE_FIELDS } from '../../requirement-form/system-profile-fields';
+import { PROFILE_FIELDS } from '../../requirement-form/profile-fields';
 
 /**
  * The complete-profile sheet renders exactly the document's missing profile
- * fields, each required, in SYSTEM_PROFILE_FIELDS order so the address fields
+ * fields, each required, in PROFILE_FIELDS order so the address fields
  * stay grouped regardless of the order the backend reports them in.
  */
 export function missingFieldsToRenderable(
@@ -12,10 +12,10 @@ export function missingFieldsToRenderable(
   labelFor: (labelKey: string) => string,
 ): RenderableField[] {
   const missing = new Set<string>(missingKeys);
-  return SYSTEM_PROFILE_FIELDS.filter((field) => missing.has(field.key)).map(
+  return PROFILE_FIELDS.filter((field) => missing.has(field.key)).map(
     (field) => ({
       id: field.key,
-      systemKey: field.key,
+      profileKey: field.key,
       type: field.type,
       label: labelFor(field.labelKey),
       required: true,

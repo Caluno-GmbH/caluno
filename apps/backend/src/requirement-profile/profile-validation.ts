@@ -2,8 +2,8 @@ import { BadRequestGraphQLError } from '../graphql/errors';
 import { GENDER_OPTION_VALUES } from './constants';
 
 /** A human label for a system key, used in validation error messages. */
-export const formatSystemKeyLabel = (systemKey: string): string => {
-  switch (systemKey) {
+export const formatProfileKeyLabel = (profileKey: string): string => {
+  switch (profileKey) {
     case 'firstname':
       return 'First name';
     case 'lastname':
@@ -19,7 +19,7 @@ export const formatSystemKeyLabel = (systemKey: string): string => {
     case 'bic':
       return 'BIC';
     default:
-      return systemKey;
+      return profileKey;
   }
 };
 
@@ -29,9 +29,9 @@ export const formatSystemKeyLabel = (systemKey: string): string => {
  * identity/banking edit form). Modelled on the frontend validator so a profile
  * value accepted client-side is accepted here too, and vice versa.
  */
-export const validateSystemKeyValue = (
+export const validateProfileKeyValue = (
   value: string,
-  systemKey: string,
+  profileKey: string,
   label: string,
   minAge: number | null,
 ): void => {
@@ -40,7 +40,7 @@ export const validateSystemKeyValue = (
   // document sign gate), so don't reject an empty optional field here.
   if (!value) return;
 
-  switch (systemKey) {
+  switch (profileKey) {
     case 'firstname':
     case 'lastname':
     case 'preferredName':
