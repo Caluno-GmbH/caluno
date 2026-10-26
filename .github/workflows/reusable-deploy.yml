@@ -29,6 +29,11 @@ on:
         type: boolean
         required: false
         default: false
+      notify-slack-on-failure:
+        description: Post to Slack only when Terraform apply fails (staging); `notify-slack` also posts on success.
+        type: boolean
+        required: false
+        default: false
       run-e2e:
         description: After a successful Terraform apply, run the Playwright suite against web-url / api-url.
         type: boolean
@@ -271,14 +276,16 @@ jobs:
         run: |
           terraform init -backend-config="key=${{ inputs.environment }}/terraform.tfstate"
           terraform apply -auto-approve plan.tfplan
-      # Release/production only (`notify-slack`). Fires after apply ran — not when
+      # Release/production (`notify-slack`) and staging failures (`notify-slack-on-failure`). Fires after apply ran — not when
       # this job is skipped for an empty plan. Incoming webhook → #caluno-release-management.
       # continue-on-error: a dead webhook must not fail a successful apply.
       - name: Notify Slack
         if: >-
           always()
-          && inputs.notify-slack
-          && (steps.tf-apply.outcome == 'success' || steps.tf-apply.outcome == 'failure')
+          && (
+            (inputs.notify-slack && (steps.tf-apply.outcome == 'success' || steps.tf-apply.outcome == 'failure'))
+            || (inputs.notify-slack-on-failure && steps.tf-apply.outcome == 'failure')
+          )
         continue-on-error: true
         uses: slackapi/slack-github-action@v2.1.1
         with:

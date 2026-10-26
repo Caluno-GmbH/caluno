@@ -26,4 +26,5 @@ jobs:
       moving-tag: staging
       api-url: https://staging.api.caluno.org
       web-url: https://staging.app.caluno.org
+      notify-slack-on-failure: true
     secrets: inherit
