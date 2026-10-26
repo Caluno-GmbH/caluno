@@ -90,7 +90,7 @@ query GetOrganizationUnit($id: String!) {
               description
               required
               lockType
-              systemKey
+              profileKey
               options
               documents {
                 fileId

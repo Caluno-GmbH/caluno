@@ -5,7 +5,7 @@ import {
 } from './profile-source-keys';
 
 describe('toMissingProfileKeys', () => {
-  it('maps all 9 template source keys to profile system keys', () => {
+  it('maps all 9 template source keys to profile keys', () => {
     expect(
       toMissingProfileKeys(Object.keys(PROFILE_SOURCE_TO_PROFILE_KEY)),
     ).toEqual([

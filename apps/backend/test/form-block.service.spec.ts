@@ -21,7 +21,7 @@ import {
   ensureTestDatabase,
 } from './helpers/ensure-test-database';
 
-describe('FormBlockService gender system field contract', () => {
+describe('FormBlockService gender profile field contract', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let formBlockService: FormBlockService;
@@ -67,7 +67,7 @@ describe('FormBlockService gender system field contract', () => {
       formBlockService.createField(
         block.id,
         unit.id,
-        { type: FieldType.TEXT, label: 'Gender', systemKey: 'gender' },
+        { type: FieldType.TEXT, label: 'Gender', profileKey: 'gender' },
         user.id,
       ),
     ).rejects.toBeInstanceOf(BadRequestGraphQLError);
@@ -83,7 +83,7 @@ describe('FormBlockService gender system field contract', () => {
         {
           type: FieldType.SINGLE_CHOICE,
           label: 'Gender',
-          systemKey: 'gender',
+          profileKey: 'gender',
           options: ['Female'],
         },
         user.id,
@@ -97,12 +97,12 @@ describe('FormBlockService gender system field contract', () => {
     const updated = await formBlockService.createField(
       block.id,
       unit.id,
-      { type: FieldType.SINGLE_CHOICE, label: 'Gender', systemKey: 'gender' },
+      { type: FieldType.SINGLE_CHOICE, label: 'Gender', profileKey: 'gender' },
       user.id,
     );
 
     const fields = await formBlockService.findFields(block.id);
-    expect(fields.some((f) => f.systemKey === 'gender')).toBe(true);
+    expect(fields.some((f) => f.profileKey === 'gender')).toBe(true);
     expect(updated.id).toBe(block.id);
   });
 
@@ -115,7 +115,7 @@ describe('FormBlockService gender system field contract', () => {
           organizationId: organization.id,
           title: `Block ${crypto.randomUUID()}`,
           fields: [
-            { type: FieldType.TEXT, label: 'Gender', systemKey: 'gender' },
+            { type: FieldType.TEXT, label: 'Gender', profileKey: 'gender' },
           ],
         },
         unit.id,
@@ -131,7 +131,7 @@ describe('FormBlockService gender system field contract', () => {
       formBlockService.updateField(
         field.id,
         unit.id,
-        { systemKey: 'gender' },
+        { profileKey: 'gender' },
         user.id,
       ),
     ).rejects.toBeInstanceOf(BadRequestGraphQLError);
@@ -145,7 +145,7 @@ describe('FormBlockService gender system field contract', () => {
         blockId: block.id,
         type: 'SINGLE_CHOICE',
         label: 'Gender',
-        systemKey: 'gender',
+        profileKey: 'gender',
         options: [],
         fieldOrder: 1,
       })
@@ -170,7 +170,7 @@ describe('FormBlockService gender system field contract', () => {
         blockId: block.id,
         type: 'SINGLE_CHOICE',
         label: 'Gender',
-        systemKey: 'gender',
+        profileKey: 'gender',
         options: [],
         fieldOrder: 1,
       })
@@ -188,7 +188,7 @@ describe('FormBlockService gender system field contract', () => {
       where: { id: genderField.id },
     });
     expect(updated?.label).toBe('Gender identity');
-    expect(updated?.systemKey).toBe('gender');
+    expect(updated?.profileKey).toBe('gender');
   });
 });
 
