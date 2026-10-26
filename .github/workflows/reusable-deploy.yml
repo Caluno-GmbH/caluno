@@ -334,4 +334,4 @@ jobs:
       mailbox-url: ${{ inputs.mailbox-url }}
       report-name: playwright-report-${{ inputs.environment }}
     secrets:
-      MAILBOX_PASSWORD: ${{ secrets.RELEASE_MAILBOX_PASSWORD }}
+      MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}
