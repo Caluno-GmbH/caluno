@@ -893,28 +893,28 @@ export type GetMyFormSubmissionsQueryVariables = Exact<{
 }>;
 
 
-export type GetMyFormSubmissionsQuery = { myFormSubmissions: Array<{ id: string, submittedAt: string, form: { id: string, name: string, description: string | null, shareToken: string } | null }> };
+export type GetMyFormSubmissionsQuery = { myFormSubmissions: Array<{ id: string, submittedAt: string, form: { id: string, name: string, description: string | null, shareToken: string } }> };
 
 export type GetFormSubmissionsByMembershipRequestQueryVariables = Exact<{
   membershipRequestId: string;
 }>;
 
 
-export type GetFormSubmissionsByMembershipRequestQuery = { formSubmissionsByMembershipRequest: Array<{ id: string, submittedAt: string, form: { id: string, name: string } | null }> };
+export type GetFormSubmissionsByMembershipRequestQuery = { formSubmissionsByMembershipRequest: Array<{ id: string, submittedAt: string, form: { id: string, name: string } }> };
 
 export type GetFormSubmissionsForVolunteerQueryVariables = Exact<{
   userId: string;
 }>;
 
 
-export type GetFormSubmissionsForVolunteerQuery = { formSubmissionsForVolunteer: Array<{ id: string, submittedAt: string, form: { id: string, name: string } | null }> };
+export type GetFormSubmissionsForVolunteerQuery = { formSubmissionsForVolunteer: Array<{ id: string, submittedAt: string, form: { id: string, name: string } }> };
 
 export type GetAdminFormSubmissionQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetAdminFormSubmissionQuery = { adminVolunteerSubmission: { id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string } | null, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
+export type GetAdminFormSubmissionQuery = { adminVolunteerSubmission: { id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string }, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null }, values: Array<{ fieldId: string, value: string }> | null } | null };
 
 export type GetFormSubmissionsByFormQueryVariables = Exact<{
   formId: string;
@@ -923,7 +923,7 @@ export type GetFormSubmissionsByFormQueryVariables = Exact<{
 }>;
 
 
-export type GetFormSubmissionsByFormQuery = { formSubmissionsByForm: { items: Array<{ id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string, image: string | null } | null }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetFormSubmissionsByFormQuery = { formSubmissionsByForm: { items: Array<{ id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string, image: string | null } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type MyRequiredOrgUnitFormsQueryVariables = Exact<{
   organizationUnitId: string;
@@ -937,7 +937,7 @@ export type MyFormSubmissionQueryVariables = Exact<{
 }>;
 
 
-export type MyFormSubmissionQuery = { myFormSubmission: { id: string, submittedAt: string, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
+export type MyFormSubmissionQuery = { myFormSubmission: { id: string, submittedAt: string, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null }, values: Array<{ fieldId: string, value: string }> | null } | null };
 
 export type GetAdminUserProfileQueryVariables = Exact<{
   userId: string;
