@@ -68,6 +68,16 @@ export const Text: Story = {
   render: () => <TextCell>Participant</TextCell>,
 };
 
+export const TextLongAddressWraps: Story = {
+  render: () => (
+    <div className="w-64 border p-2">
+      <TextCell>
+        Musterstraße 47, 3. Hinterhof links, 10115 Berlin-Mitte, Deutschland
+      </TextCell>
+    </div>
+  ),
+};
+
 export const StatusWithBadge: Story = {
   render: () => (
     <StatusCell>

@@ -37,10 +37,12 @@ function EntityCell({
           <Icon className="size-8" />
         </div>
       ) : null}
-      <div className="flex flex-col min-w-0 max-w-80">
-        <span className="text-base text-foreground truncate">{title}</span>
+      <div className="flex flex-col min-w-0">
+        <span className="text-base text-foreground line-clamp-3 break-words">
+          {title}
+        </span>
         {subtitle && (
-          <span className="text-sm text-muted-foreground truncate">
+          <span className="text-sm text-muted-foreground line-clamp-1 break-words">
             {subtitle}
           </span>
         )}
@@ -52,14 +54,14 @@ function EntityCell({
 
 type TextCellProps = { children: React.ReactNode; className?: string };
 
-// Columns hug their content, so the max width is what makes long text
-// truncate instead of widening the table.
+// Wraps up to 3 lines then clamps, so long values (addresses, names) stay
+// fully readable within the column instead of being cut off on one line.
 function TextCell({ children, className }: TextCellProps) {
   return (
     <span
       data-slot="text-cell"
       className={cn(
-        'block max-w-80 text-base text-foreground truncate',
+        'block text-base text-foreground line-clamp-3 break-words',
         className,
       )}
     >
@@ -78,7 +80,7 @@ function StatusCell({ children, trailing, className }: StatusCellProps) {
   return (
     <span
       data-slot="status-cell"
-      className={cn('inline-flex items-center gap-1.5', className)}
+      className={cn('inline-flex flex-wrap items-center gap-1.5', className)}
     >
       {children}
       {trailing && <span className="[&>svg]:size-4">{trailing}</span>}
@@ -108,7 +110,7 @@ function ActionsCell({ children, className }: ActionsCellProps) {
   return (
     <div
       data-slot="actions-cell"
-      className={cn('flex items-center justify-end gap-2', className)}
+      className={cn('flex flex-wrap items-center justify-end gap-2', className)}
     >
       {children}
     </div>
