@@ -10,7 +10,9 @@ export const MANUAL_FIELD_MAX_LENGTH: Readonly<Record<string, number>> = {
 };
 
 export function manualFieldMaxLength(fieldId: string): number | undefined {
-  return MANUAL_FIELD_MAX_LENGTH[fieldId];
+  return Object.hasOwn(MANUAL_FIELD_MAX_LENGTH, fieldId)
+    ? MANUAL_FIELD_MAX_LENGTH[fieldId]
+    : undefined;
 }
 
 export function exceedsManualFieldLimit(

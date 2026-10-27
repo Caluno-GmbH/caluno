@@ -104,6 +104,25 @@ describe('assertManualFieldLengthsInBody', () => {
     ).toThrow(BadRequestGraphQLError);
   });
 
+  it('ignores over-limit text in a disabled block', () => {
+    const body = bodyWithField('freeform-text', 'x'.repeat(1001));
+    expect(() =>
+      assertManualFieldLengthsInBody({
+        blocks: [{ ...body.blocks[0], enabled: false }],
+      }),
+    ).not.toThrow();
+  });
+
+  it('ignores over-limit text in a disabled line', () => {
+    const body = bodyWithField('freeform-text', 'x'.repeat(1001));
+    const line = body.blocks[0]?.lines[0];
+    expect(() =>
+      assertManualFieldLengthsInBody({
+        blocks: [{ id: 'b1', lines: [{ ...line, enabled: false }] }],
+      }),
+    ).not.toThrow();
+  });
+
   it('ignores bound fields and unrelated manual fields', () => {
     expect(() =>
       assertManualFieldLengthsInBody({

@@ -124,8 +124,8 @@ describe('measureHelvetica', () => {
     expect(measureHelvetica('Straße · Köln €', 8)).toBeGreaterThan(0);
   });
 
-  it('falls back for unknown characters', () => {
-    expect(measureHelvetica('漢', 1000)).toBe(556);
+  it('counts unknown characters as zero width, like pdfkit', () => {
+    expect(measureHelvetica('漢', 1000)).toBe(0);
   });
 
   it('reads the generated width table', () => {
@@ -142,6 +142,7 @@ describe('measureHelvetica', () => {
       'AVATAR Tower',
       'Yo, We… Te Ta Vo',
       'Straße · Köln €',
+      '漢ł',
       'BSM gGmbH · Musterstraße 1 · 20095 Hamburg',
     ]) {
       expect(measure8(text)).toBeCloseTo(pdf.widthOfString(text), 6);

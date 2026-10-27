@@ -28,6 +28,10 @@ describe('manual field limits', () => {
     expect(manualFieldMaxLength('kostenstelle')).toBeUndefined();
   });
 
+  it('does not resolve inherited object keys to a limit', () => {
+    expect(manualFieldMaxLength('constructor')).toBeUndefined();
+  });
+
   it('exposes the limits as constants', () => {
     expect(TASK_DESCRIPTION_MAX_LENGTH).toBe(300);
     expect(FREEFORM_TEXT_MAX_LENGTH).toBe(1000);

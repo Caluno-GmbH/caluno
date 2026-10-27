@@ -22,7 +22,7 @@ export function CharacterCounter({ length, max }: CharacterCounterProps) {
         {length} / {max}
       </span>
       {isOver && (
-        <p role="alert" className="text-destructive">
+        <p aria-live="polite" className="text-destructive">
           {t('tooLong', { count: overBy })}
         </p>
       )}
