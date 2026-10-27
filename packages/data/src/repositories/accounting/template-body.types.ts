@@ -188,18 +188,16 @@ export const PAGE_FOOTER_FONT_SIZE = 8;
 /** A4 (595.28pt) minus 48pt margins on each side. */
 export const PAGE_FOOTER_COLUMN_WIDTH = 499.28;
 
-/** Digit width, the stand-in for characters outside WinAnsi. */
-const FALLBACK_WIDTH = 556;
-
 /**
  * Width of `text` in Helvetica at `fontSize` pt, matching pdfkit's
  * `widthOfString` (advance widths plus kerning between adjacent characters).
+ * Characters outside WinAnsi (ł, č, 漢, emoji) have no width, as in pdfkit.
  */
 export function measureHelvetica(text: string, fontSize: number): number {
   let total = 0;
   for (let i = 0; i < text.length; i++) {
     const ch = text.charAt(i);
-    total += HELVETICA_WIDTHS[ch] ?? FALLBACK_WIDTH;
+    total += HELVETICA_WIDTHS[ch] ?? 0;
     if (i > 0) total += HELVETICA_KERNING[text.charAt(i - 1) + ch] ?? 0;
   }
   return (total * fontSize) / 1000;

@@ -35,7 +35,8 @@ function assertWithinLimit(fieldId: string, value: unknown): void {
 }
 
 function assertLine(line: TemplateLineShape | undefined): void {
-  if (!line || !Array.isArray(line.fields)) return;
+  // Switched-off lines are not rendered, so their text is not checked.
+  if (!line || line.enabled === false || !Array.isArray(line.fields)) return;
   for (const field of line.fields) {
     if (field?.value?.kind === 'manual-template') {
       assertWithinLimit(field.id, field.value.value);
@@ -59,6 +60,7 @@ export function assertManualFieldLengthsInBody(body: unknown): void {
   assertLine(shape.header?.orgIdentityLine);
   if (Array.isArray(shape.blocks)) {
     for (const block of shape.blocks) {
+      if (block?.enabled === false) continue;
       assertLines(block?.lines);
       assertLine(block?.line);
     }
