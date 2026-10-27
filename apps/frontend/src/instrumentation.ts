@@ -25,7 +25,10 @@ export async function register() {
  * Skipped (expected control flow, not server failures):
  * - Client-aborted RSC streams (vercel/next.js#96704)
  * - Next redirect / notFound digests
- * - GraphQL UNAUTHENTICATED (login redirect via getDataClient onError)
+ *
+ * GraphQL UNAUTHENTICATED is not skipped: successful login redirect is a
+ * NEXT_REDIRECT digest; a bare UNAUTHENTICATED DataError means redirect
+ * failed and should still alert.
  */
 export const onRequestError: Instrumentation.onRequestError = async (
   error,

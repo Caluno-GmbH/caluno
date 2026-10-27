@@ -60,12 +60,22 @@ describe('isNextControlFlowError', () => {
 });
 
 describe('isBenignRequestError', () => {
-  it('skips UNAUTHENTICATED DataErrors (login redirect path)', () => {
+  it('skips Next redirect digests (successful login redirect)', () => {
+    expect(
+      isBenignRequestError(
+        Object.assign(new Error('redirect'), {
+          digest: 'NEXT_REDIRECT;replace;/login;307;',
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not skip UNAUTHENTICATED DataErrors (redirect failed)', () => {
     expect(
       isBenignRequestError(
         new DataError('Unauthorized', { code: 'UNAUTHENTICATED' }),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it('does not skip other DataErrors', () => {
