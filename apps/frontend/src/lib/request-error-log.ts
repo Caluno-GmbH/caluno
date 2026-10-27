@@ -8,8 +8,6 @@
  * `sanitizeUrl` in pino-http options.
  */
 
-import { isUnauthenticatedDataError } from '@repo/data';
-
 /** React's generic message when an RSC/HTML stream destination closes mid-pipe. */
 const DESTINATION_STREAM_CLOSED_EARLY = 'The destination stream closed early.';
 
@@ -53,15 +51,14 @@ export function isNextControlFlowError(error: unknown): boolean {
 
 /**
  * Errors that must not create Loki / Sentry request-failure noise:
- * client aborts, Next redirect/notFound signals, and GraphQL
- * UNAUTHENTICATED (handled by redirect-to-login in `getDataClient`).
+ * client aborts and Next redirect/notFound signals.
+ *
+ * GraphQL UNAUTHENTICATED is intentionally *not* skipped: a successful
+ * login redirect surfaces as `NEXT_REDIRECT` (filtered above). A bare
+ * UNAUTHENTICATED DataError means redirect failed and should alert.
  */
 export function isBenignRequestError(error: unknown): boolean {
-  return (
-    isBenignClientAbortError(error) ||
-    isNextControlFlowError(error) ||
-    isUnauthenticatedDataError(error)
-  );
+  return isBenignClientAbortError(error) || isNextControlFlowError(error);
 }
 
 export function sanitizeRequestPath(path: string): string {
