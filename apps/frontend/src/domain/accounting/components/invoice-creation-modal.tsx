@@ -2,6 +2,7 @@
 
 import {
   DataError,
+  exceedsManualFieldLimit,
   PermissionKey,
   parseTemplateBody,
   type TableFirstColumnSource,
@@ -58,6 +59,7 @@ import { EligibleHoursCard } from './eligible-hours-card';
 import { InfoPanel } from './info-panel';
 import { InvoiceCapCard } from './invoice-cap-card';
 import { ManualCapEditor } from './manual-cap-editor';
+import { ManualFieldCounter } from './manual-field-counter';
 import type { DateRange } from './period-picker';
 import { lastMonthRange, PeriodPicker, thisMonthRange } from './period-picker';
 import { getKnownOrgValues } from './template/builder-document-presets';
@@ -417,6 +419,16 @@ export function InvoiceCreationModal({
     setEditedValues((prev) => ({ ...prev, [fieldId]: value }));
   };
 
+  // A manual value past its field's character limit blocks sending.
+  const overLimit = (derivedFields ?? []).some(
+    (field) =>
+      field.kind === 'manual' &&
+      exceedsManualFieldLimit(
+        field.fieldId,
+        currentValue(field.fieldId, field.value) ?? '',
+      ),
+  );
+
   const selectedLines = lines.filter((line) => checkedIds.has(line.id));
   const selectedHours = sumHours(selectedLines.map((line) => line.hours));
   const selectedAmount = selectedHours * ratePerHour;
@@ -734,7 +746,7 @@ export function InvoiceCreationModal({
       sendingLabel={t('sending')}
       isSending={isSending}
       onSend={handleSend}
-      sendDisabled={selectedHours === 0}
+      sendDisabled={selectedHours === 0 || overLimit}
       preview={
         template && (
           <GeneratedDocumentPreview
@@ -794,6 +806,10 @@ export function InvoiceCreationModal({
                       onChange={(e) =>
                         handleFieldChange(field.fieldId)(e.target.value)
                       }
+                    />
+                    <ManualFieldCounter
+                      fieldId={field.fieldId}
+                      value={currentValue(field.fieldId, field.value) ?? ''}
                     />
                   </InfoPanel>
                 ),
@@ -857,6 +873,10 @@ export function InvoiceCreationModal({
                     onChange={(e) =>
                       handleFieldChange(field.fieldId)(e.target.value)
                     }
+                  />
+                  <ManualFieldCounter
+                    fieldId={field.fieldId}
+                    value={currentValue(field.fieldId, field.value) ?? ''}
                   />
                 </InfoPanel>
               ))}
