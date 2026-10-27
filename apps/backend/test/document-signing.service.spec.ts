@@ -12,6 +12,7 @@ import {
   ForbiddenGraphQLError,
 } from '../src/graphql/errors';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { createUser } from './factories';
 import {
@@ -44,9 +45,12 @@ describe('DocumentSigningService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const organizationUnitDataService = new OrganizationUnitDataService(db);
-    const authService = new AuthService(db, organizationUnitDataService, {
-      capture: () => {},
-    } as unknown as PostHogService);
+    const authService = new AuthService(
+      db,
+      organizationUnitDataService,
+      { capture: () => {} } as unknown as PostHogService,
+      new TenantScopeService(db, organizationUnitDataService),
+    );
     service = new DocumentSigningService(db, authService);
   });
 
