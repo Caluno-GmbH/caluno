@@ -27,6 +27,7 @@ export * from './generated/graphql';
 export * from './repositories/accounting/accounting.repository';
 export * from './repositories/accounting/profile-source-keys';
 export * from './repositories/accounting/template-body.types';
+export * from './repositories/accounting/text-limits';
 export * from './repositories/base/base.repository';
 export * from './repositories/event/event.repository';
 export * from './repositories/membership/membership.repository';
