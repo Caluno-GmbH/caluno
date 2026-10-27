@@ -374,6 +374,59 @@ describe('DocumentTemplateService', () => {
       expect(signees).toHaveLength(2);
     });
 
+    it('rejects a template body with an over-limit freeform text', async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { organization } = await createOrganizationWithType(
+        db,
+        `Update Template Org ${crypto.randomUUID()}`,
+      );
+      const editor = await createUser(db);
+      const template = await service.createDocumentTemplate(
+        organization.id,
+        {
+          reimbursementTypeId: reimbursementType.id,
+          kind: DocumentKind.CONTRACT,
+          body: { header: {}, blocks: [], footer: {} },
+          signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+        },
+        editor.id,
+      );
+
+      await expect(
+        service.updateDocumentTemplate(
+          organization.id,
+          template.id,
+          {
+            body: {
+              header: {},
+              blocks: [
+                {
+                  id: 'free',
+                  lines: [
+                    {
+                      id: 'line',
+                      text: '{freeform}',
+                      fields: [
+                        {
+                          id: 'freeform-text',
+                          value: {
+                            kind: 'manual-template',
+                            value: 'x'.repeat(1001),
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+              footer: {},
+            },
+          },
+          editor.id,
+        ),
+      ).rejects.toThrow('Freeform text must be at most 1000 characters');
+    });
+
     it('does not retroactively change a contract already issued from the template', async () => {
       const reimbursementType = await createReimbursementType(db);
       const { organization } = await createOrganizationWithType(

@@ -22,6 +22,7 @@ import type {
   DocumentTemplateEntity,
 } from '../schemas/document-template.schema';
 import type { TemplateSigneeEntity } from '../schemas/template-signee.schema';
+import { assertManualFieldLengthsInBody } from '../utils/text-limits';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 
 @Injectable()
@@ -64,6 +65,7 @@ export class DocumentTemplateService {
     editedByUserId: string,
   ): Promise<DocumentTemplateEntity> {
     this.assertValidSignees(input.signees);
+    assertManualFieldLengthsInBody(input.body);
 
     if (input.organizationUnitId) {
       const unit = await this.db.query.organizationUnits.findFirst({
@@ -160,6 +162,7 @@ export class DocumentTemplateService {
     // unit (or org root unit, for an org-wide template) the template is
     // scoped to before overwriting its body.
     if (input.body !== undefined) {
+      assertManualFieldLengthsInBody(input.body);
       await this.assertOrgProfileComplete(
         organizationId,
         existingTemplate.organizationUnitId,

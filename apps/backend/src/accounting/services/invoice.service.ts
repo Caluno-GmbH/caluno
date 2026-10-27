@@ -58,6 +58,7 @@ import {
   entriesWithoutCover,
 } from '../utils/contract-coverage';
 import { formatInvoiceNumber } from '../utils/invoice-number';
+import { assertFieldOverrideLengths } from '../utils/text-limits';
 import { groupTimesheetCandidates } from '../utils/timesheet-groups';
 import { ContractService } from './contract.service';
 import { DocumentNotificationService } from './document-notification.service';
@@ -571,6 +572,8 @@ export class InvoiceService {
     input: CreateInvoiceInput,
     actorUserId: string,
   ): Promise<InvoiceEntity> {
+    assertFieldOverrideLengths(input.fieldOverrides);
+
     if (input.timeEntryIds.length === 0) {
       throw new BadRequestGraphQLError(
         'At least one time entry must be selected',
