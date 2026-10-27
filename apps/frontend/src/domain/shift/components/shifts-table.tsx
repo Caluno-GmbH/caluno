@@ -214,6 +214,10 @@ export function ShiftsTable({
         id: 'TITLE',
         accessorFn: (row) =>
           row.kind === 'master' ? row.title : row.actualStartsAt,
+        meta: {
+          headerClassName: 'w-[30%]',
+          cellClassName: 'w-[30%]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.name')} />
         ),
@@ -265,6 +269,10 @@ export function ShiftsTable({
       {
         id: 'FIRST_DATE',
         enableSorting: false,
+        meta: {
+          headerClassName: 'w-[12%]',
+          cellClassName: 'w-[12%]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.time')} />
         ),
@@ -287,6 +295,10 @@ export function ShiftsTable({
       {
         id: 'location',
         enableSorting: false,
+        meta: {
+          headerClassName: 'w-[28%]',
+          cellClassName: 'w-[28%]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.location')} />
         ),
@@ -310,8 +322,8 @@ export function ShiftsTable({
         id: 'staffing',
         enableSorting: false,
         meta: {
-          headerClassName: 'w-[1%] whitespace-nowrap',
-          cellClassName: 'whitespace-nowrap',
+          headerClassName: 'w-[10%]',
+          cellClassName: 'w-[10%]',
         },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.staffing')} />
@@ -356,6 +368,10 @@ export function ShiftsTable({
         id: 'VISIBILITY',
         accessorFn: (row) =>
           row.kind === 'master' ? row.visibility : undefined,
+        meta: {
+          headerClassName: 'w-[10%]',
+          cellClassName: 'w-[10%]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader
             column={column}
@@ -378,6 +394,10 @@ export function ShiftsTable({
       {
         id: 'actions',
         enableSorting: false,
+        meta: {
+          headerClassName: 'w-[10%]',
+          cellClassName: 'w-[10%]',
+        },
         header: () => null,
         cell: ({ row }) => {
           const item = row.original;
