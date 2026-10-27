@@ -1176,6 +1176,21 @@ export class MembershipService {
     });
   }
 
+  async getMyMembershipRequest(
+    userId: string,
+    id: string,
+  ): Promise<MembershipRequestEntity | null> {
+    const request = await this.db.query.membershipRequests.findFirst({
+      where: { id, userId },
+      with: {
+        user: true,
+        organizationUnit: true,
+        reviewedBy: true,
+      },
+    });
+    return request ?? null;
+  }
+
   async requestOrgJoin(
     userId: string,
     organizationUnitId: string,
