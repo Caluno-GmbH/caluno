@@ -41,8 +41,17 @@ export default async function ShiftsPage({
   await requireOrgAccess(orgUId);
   const [canManage] = await checkPermission(orgUId, PermissionKey.ShiftEdit);
 
-  const { sort, dir, page, pageSize, q, dateFrom, dateTo, location, visibility } =
-    shiftsSearchParamsCache.parse(rawSearchParams);
+  const {
+    sort,
+    dir,
+    page,
+    pageSize,
+    q,
+    dateFrom,
+    dateTo,
+    location,
+    visibility,
+  } = shiftsSearchParamsCache.parse(rawSearchParams);
 
   const view =
     (rawSearchParams.view as ShiftViewType | undefined) ?? 'weekplan';
@@ -73,19 +82,25 @@ export default async function ShiftsPage({
 
   if (!isWeekplan) {
     const limit = Number(pageSize);
-    const result = await data.shift.findAll({
-      limit,
-      offset: (page - 1) * limit,
-      sort,
-      order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
-      search: q || null,
-      dateFrom: dateFrom ? dateFrom.toISOString().slice(0, 10) : undefined,
-      dateTo: dateTo ? dateTo.toISOString().slice(0, 10) : undefined,
-      location: location || undefined,
-      visibility: visibility ?? undefined,
-    });
+    const [result, locationOptions] = await Promise.all([
+      data.shift.findAll({
+        limit,
+        offset: (page - 1) * limit,
+        sort,
+        order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
+        search: q || null,
+        dateFrom: dateFrom ? dateFrom.toISOString().slice(0, 10) : undefined,
+        dateTo: dateTo ? dateTo.toISOString().slice(0, 10) : undefined,
+        location: location || undefined,
+        visibility: visibility ?? undefined,
+      }),
+      data.shift.findLocations(),
+    ]);
 
-    const showTable = result.pagination.total > 0 || !!q;
+    const hasActiveFilters = Boolean(
+      q || dateFrom || dateTo || location || visibility,
+    );
+    const showTable = result.pagination.total > 0 || hasActiveFilters;
 
     return (
       <div className="flex flex-col h-full gap-4">
@@ -105,6 +120,7 @@ export default async function ShiftsPage({
             pagination={result.pagination}
             orgUId={orgUId}
             page={page}
+            locationOptions={locationOptions}
           />
         ) : (
           <EmptyShifts>

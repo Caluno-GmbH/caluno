@@ -1576,7 +1576,10 @@
       "applyToAllLabel": "Apply to all future occurrences"
     },
     "empty": {
+      "clearFilters": "Clear all filters",
       "description": "Get started by creating your first assignment and inviting volunteers.",
+      "noMatchDescription": "Try adjusting or clearing your filters to see more results.",
+      "noMatchTitle": "No shifts match your filters",
       "title": "No assignments yet"
     },
     "eventBadge": "Event",
@@ -1821,7 +1824,28 @@
       "time": "Time",
       "visibility": "Visibility",
       "location": "Location",
-      "staffing": "Staffing"
+      "staffing": "Staffing",
+      "recurrenceSince": "Since {date}"
+    },
+    "filter": {
+      "location": "Location",
+      "visibility": "Visibility",
+      "date": "Date range",
+      "fill": "Staffing",
+      "locationPlaceholder": "All locations",
+      "locationEmpty": "No locations found",
+      "visibilityAll": "All",
+      "visibilityInviteOnly": "Invite-only",
+      "visibilityOpen": "Open",
+      "visibilityPlaceholder": "All visibilities",
+      "fillPlaceholder": "Any staffing",
+      "datePlaceholder": "Date range",
+      "fillAll": "All",
+      "fillUnderstaffed": "Understaffed",
+      "fillBelow": "Below min",
+      "fillOk": "OK",
+      "fillFull": "Full",
+      "sheetTitle": "Filters"
     },
     "search": {
       "placeholder": "Search by name",

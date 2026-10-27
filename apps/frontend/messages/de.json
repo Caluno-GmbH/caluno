@@ -1576,7 +1576,10 @@
       "applyToAllLabel": "Auf alle zukünftigen Termine anwenden"
     },
     "empty": {
+      "clearFilters": "Alle Filter zurücksetzen",
       "description": "Erstelle deinen ersten Einsatz und lade Freiwillige ein, um loszulegen.",
+      "noMatchDescription": "Passe deine Filter an oder setze sie zurück, um mehr Ergebnisse zu sehen.",
+      "noMatchTitle": "Keine Einsätze entsprechen deinen Filtern",
       "title": "Noch keine Einsätze"
     },
     "eventBadge": "Veranstaltung",
@@ -1821,7 +1824,28 @@
       "time": "Zeit",
       "visibility": "Sichtbarkeit",
       "location": "Ort",
-      "staffing": "Besetzung"
+      "staffing": "Besetzung",
+      "recurrenceSince": "Seit {date}"
+    },
+    "filter": {
+      "location": "Ort",
+      "visibility": "Sichtbarkeit",
+      "date": "Zeitraum",
+      "fill": "Besetzung",
+      "locationPlaceholder": "Alle Orte",
+      "locationEmpty": "Keine Orte gefunden",
+      "visibilityAll": "Alle",
+      "visibilityInviteOnly": "Nur auf Einladung",
+      "visibilityOpen": "Offen",
+      "visibilityPlaceholder": "Alle Sichtbarkeiten",
+      "fillPlaceholder": "Beliebige Besetzung",
+      "datePlaceholder": "Zeitraum",
+      "fillAll": "Alle",
+      "fillUnderstaffed": "Unterbesetzt",
+      "fillBelow": "Unter Minimum",
+      "fillOk": "OK",
+      "fillFull": "Voll",
+      "sheetTitle": "Filter"
     },
     "search": {
       "placeholder": "Nach Name suchen",
