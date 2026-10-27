@@ -542,6 +542,38 @@ describe('DocumentRenderingService', () => {
       expect(footerHits).toBe(Number(total));
     });
 
+    it('does not overflow the page with a wrapping footer', async () => {
+      const service = createService({ rateCents: 1500 });
+      const base = contract();
+      const template = base.documentTemplate;
+      const body = template.body as Record<string, unknown>;
+      const sample =
+        'Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium';
+      const render = async (footerText: string) =>
+        extractPdfText(
+          await service.generatePdf({
+            ...base,
+            documentTemplate: {
+              ...template,
+              body: {
+                ...body,
+                pageFooter: { enabled: true, text: footerText },
+              },
+            },
+          } as unknown as ContractWithRelations),
+        );
+      const pageCount = (text: string) =>
+        Number(text.match(/Seite 1 von (\d+)/)?.[1]);
+
+      const oneLine = await render(sample);
+      const wrapping = await render(Array(6).fill(sample).join(' '));
+
+      expect(pageCount(wrapping)).toBe(pageCount(oneLine));
+      // Cut to three printed lines, the last ending in an ellipsis.
+      expect([...wrapping.matchAll(/Lorem ipsum/g)]).toHaveLength(3);
+      expect([...oneLine.matchAll(/Lorem ipsum/g)]).toHaveLength(1);
+    });
+
     it('still numbers pages when the footer text is switched off', async () => {
       const service = createService({ rateCents: 1500 });
       const base = contract();
