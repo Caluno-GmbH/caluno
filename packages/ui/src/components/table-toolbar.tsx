@@ -7,6 +7,14 @@ import { cn } from '../lib/utils';
 import { Badge } from './base/badge';
 import { Button } from './base/button';
 import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from './base/combobox';
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
@@ -277,6 +285,60 @@ function FilterSelect({
   );
 }
 
+type FilterComboboxProps = {
+  value: string | undefined;
+  onChange: (value: string) => void;
+  /** Searchable options; filtered as the user types. */
+  options: string[];
+  placeholder: string;
+  emptyText: string;
+  ariaLabel?: string;
+  /** Optional leading icon rendered at the start of the input. */
+  icon?: ReactNode;
+};
+
+/** A searchable single-select filter: the input doubles as the search field. */
+function FilterCombobox({
+  value,
+  onChange,
+  options,
+  placeholder,
+  emptyText,
+  ariaLabel,
+  icon,
+}: FilterComboboxProps) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <Combobox
+      items={options}
+      value={value ?? null}
+      onValueChange={(next: string | null) => onChange(next ?? '')}
+    >
+      <ComboboxInput
+        // Drop the placeholder on focus so it doesn't compete with typing.
+        placeholder={focused ? undefined : placeholder}
+        aria-label={ariaLabel ?? placeholder}
+        className="w-auto min-w-36"
+        showClear={Boolean(value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      >
+        {icon && <InputGroupAddon>{icon}</InputGroupAddon>}
+      </ComboboxInput>
+      <ComboboxContent>
+        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxList>
+          {(item: string) => (
+            <ComboboxItem key={item} value={item}>
+              {item}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
+
 export type TableToolbarDateRangeValue = { from?: Date; to?: Date };
 
 type DateRangeProps = {
@@ -299,6 +361,7 @@ function DateRange({ value, onChange, placeholder }: DateRangeProps) {
 
 TableToolbar.Search = Search;
 TableToolbar.Select = FilterSelect;
+TableToolbar.Combobox = FilterCombobox;
 TableToolbar.DateRange = DateRange;
 
 export type { TableToolbarActiveFilter } from './table-toolbar.utils';
