@@ -4,7 +4,7 @@ import type {
   CreateOrganizationInput,
   UpdateOrganizationUnitInput,
 } from '@repo/data';
-import { redirect } from 'next/navigation';
+import { redirect, unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { getDataClient } from '@/lib/data-client';
 import { actionClient } from '@/lib/safe-action';
@@ -53,6 +53,7 @@ export async function createOrganization(
   try {
     org = await data.organization.create(input);
   } catch (error) {
+    unstable_rethrow(error);
     return {
       success: false,
       error: error instanceof Error ? error.message : t('errors.generic'),

@@ -1,6 +1,6 @@
 import { type JoinOrganizationMutation, JoinStatus } from '@repo/data';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { redirect, unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { redirect as redirectWithLocale } from '@/i18n/navigation';
 import { isAuthenticated } from '@/lib/auth-server';
@@ -34,6 +34,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   try {
     result = await data.membershipRequest.join(organizationUnitId);
   } catch (error) {
+    unstable_rethrow(error);
     const message =
       error instanceof Error ? error.message : t('invite.joinErrorFallback');
     return <JoinError message={message} />;
