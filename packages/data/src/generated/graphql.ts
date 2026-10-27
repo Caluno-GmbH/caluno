@@ -536,6 +536,13 @@ export type GetMyMembershipRequestsQueryVariables = Exact<{
 
 export type GetMyMembershipRequestsQuery = { myMembershipRequests: { items: Array<{ id: string, status: Types.MembershipRequestStatus, reviewedAt: string | null, rejectionReason: string | null, createdAt: string, organizationUnit: { id: string, name: string, logoUrl: string | null, type: { icon: string }, parent: { id: string } | null, organization: { name: string } }, user: { id: string, name: string, email: string }, contact: { name: string | null, email: string | null, phone: string | null } | null }> } };
 
+export type MyMembershipRequestQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type MyMembershipRequestQuery = { myMembershipRequest: { id: string, status: Types.MembershipRequestStatus, reviewedAt: string | null, rejectionReason: string | null, createdAt: string, organizationUnit: { id: string, name: string, logoUrl: string | null, type: { icon: string }, parent: { id: string } | null, organization: { name: string } }, user: { id: string, name: string, email: string }, contact: { name: string | null, email: string | null, phone: string | null } | null } | null };
+
 export type CheckInApproveMembershipRequestMutationVariables = Exact<{
   requestId: string;
 }>;
@@ -2833,6 +2840,41 @@ export const GetMyMembershipRequestsDocument = gql`
       rejectionReason
       createdAt
     }
+  }
+}
+    `;
+export const MyMembershipRequestDocument = gql`
+    query MyMembershipRequest($id: ID!) {
+  myMembershipRequest(id: $id) {
+    id
+    organizationUnit {
+      id
+      name
+      logoUrl
+      type {
+        icon
+      }
+      parent {
+        id
+      }
+      organization {
+        name
+      }
+    }
+    user {
+      id
+      name
+      email
+    }
+    contact {
+      name
+      email
+      phone
+    }
+    status
+    reviewedAt
+    rejectionReason
+    createdAt
   }
 }
     `;
@@ -5320,6 +5362,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetMyMembershipRequests(variables: GetMyMembershipRequestsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyMembershipRequestsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMyMembershipRequestsQuery>({ document: GetMyMembershipRequestsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyMembershipRequests', 'query', variables);
+    },
+    MyMembershipRequest(variables: MyMembershipRequestQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyMembershipRequestQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyMembershipRequestQuery>({ document: MyMembershipRequestDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyMembershipRequest', 'query', variables);
     },
     CheckInApproveMembershipRequest(variables: CheckInApproveMembershipRequestMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInApproveMembershipRequestMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInApproveMembershipRequestMutation>({ document: CheckInApproveMembershipRequestDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInApproveMembershipRequest', 'mutation', variables);

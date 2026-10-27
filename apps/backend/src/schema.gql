@@ -969,6 +969,7 @@ type Query {
   myFormSubmissions(organizationUnitId: ID!): [FormSubmission!]!
   myInvoices(filter: InvoiceFilterInput): [Invoice!]!
   myMembership(id: ID!): Membership
+  myMembershipRequest(id: ID!): MembershipRequest
   myMembershipRequests(limit: Int! = 10, offset: Int! = 0): MembershipRequestPaginatedResponse!
   myMembershipStatus(organizationUnitId: ID!): Boolean!
   myMemberships: [Membership!]!
