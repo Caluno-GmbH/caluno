@@ -2773,7 +2773,8 @@
         "pageFooter": {
           "title": "Page footer",
           "description": "Appears at the bottom of every page.",
-          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB",
+          "clampedWarning": "Only the first 3 lines will be printed. Shorten the text so nothing is cut off."
         }
       },
       "card": {

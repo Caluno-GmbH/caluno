@@ -2773,7 +2773,8 @@
         "pageFooter": {
           "title": "Fußzeile",
           "description": "Erscheint unten auf jeder Seite.",
-          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB"
+          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB",
+          "clampedWarning": "Nur die ersten 3 Zeilen werden gedruckt. Den Text kürzen, damit nichts abgeschnitten wird."
         }
       },
       "card": {
