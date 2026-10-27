@@ -8,6 +8,7 @@ import {
   type DuplicateShiftInput,
   type ShiftInviteStatus,
   type ShiftSortField,
+  type ShiftVisibility,
   SortOrder,
   type UpdateShiftInput,
   type UpdateShiftInstanceInput,
@@ -24,6 +25,7 @@ import type {
   GetShiftInstanceCallOutSummaryQuery,
   GetShiftInstanceQuery,
   GetShiftInstancesQuery,
+  GetShiftLocationsQuery,
   GetShiftQuery,
   GetWeeklyShiftsQuery,
   JoinShiftInstanceMutation,
@@ -41,6 +43,10 @@ export interface ShiftListOptions extends PaginationOptions {
   sort?: ShiftSortField;
   order?: SortOrder;
   search?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  location?: string | null;
+  visibility?: ShiftVisibility | null;
 }
 
 export type ActiveShiftInstance =
@@ -62,6 +68,7 @@ export type RawPublicShiftInstance =
 export type CheckInShiftInstance =
   GetCheckInShiftInstancesQuery['checkInShiftInstances'][number];
 export type CheckInShift = GetCheckInShiftsQuery['checkInShifts'][number];
+export type ShiftLocations = GetShiftLocationsQuery['shiftLocations'];
 export interface ShiftDetail extends RawShift {
   startDate: Date;
   endDate: Date;
@@ -114,8 +121,17 @@ export class ShiftRepository extends BaseRepository {
       sort: options.sort,
       order: options.order,
       search: options.search ?? null,
+      dateFrom: options.dateFrom ?? null,
+      dateTo: options.dateTo ?? null,
+      location: options.location ?? null,
+      visibility: options.visibility ?? null,
     });
     return data.shifts;
+  }
+
+  async findLocations(): Promise<ShiftLocations> {
+    const data = await this.sdk.GetShiftLocations();
+    return data.shiftLocations;
   }
 
   async findAllForEvent(eventId: string, options: PaginationOptions = {}) {

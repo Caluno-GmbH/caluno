@@ -1003,10 +1003,19 @@ export type GetShiftsQueryVariables = Exact<{
   sort?: Types.ShiftSortField | null | undefined;
   order?: Types.SortOrder | null | undefined;
   search?: string | null | undefined;
+  dateFrom?: string | null | undefined;
+  dateTo?: string | null | undefined;
+  location?: string | null | undefined;
+  visibility?: Types.ShiftVisibility | null | undefined;
 }>;
 
 
-export type GetShiftsQuery = { shifts: { items: Array<{ id: string, title: string, rrule: string | null, originalStartsAt: string, durationMinutes: number, visibility: Types.ShiftVisibility, maxVolunteers: number | null, minVolunteers: number | null, reimbursementTypeId: string | null, requiredFormsCount: number, createdBy: { id: string, name: string, email: string } | null }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetShiftsQuery = { shifts: { items: Array<{ id: string, title: string, rrule: string | null, originalStartsAt: string, durationMinutes: number, visibility: Types.ShiftVisibility, location: string | null, maxVolunteers: number | null, minVolunteers: number | null, reimbursementTypeId: string | null, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, isCancelled: boolean, overrideLocation: string | null, overrideMinVolunteers: number | null, overrideMaxVolunteers: number | null, filledCount: number, pendingCount: number }>, createdBy: { id: string, name: string, email: string } | null }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+
+export type GetShiftLocationsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetShiftLocationsQuery = { shiftLocations: Array<string> };
 
 export type GetEventShiftsQueryVariables = Exact<{
   eventId: string;
@@ -4104,13 +4113,17 @@ export const GetShiftDocument = gql`
 }
     ${RequiredFormRefFieldsFragmentDoc}`;
 export const GetShiftsDocument = gql`
-    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String) {
+    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String, $dateFrom: DateTime, $dateTo: DateTime, $location: String, $visibility: ShiftVisibility) {
   shifts(
     limit: $limit
     offset: $offset
     sort: $sort
     order: $order
     search: $search
+    dateFrom: $dateFrom
+    dateTo: $dateTo
+    location: $location
+    visibility: $visibility
   ) {
     items {
       id
@@ -4119,10 +4132,21 @@ export const GetShiftsDocument = gql`
       originalStartsAt
       durationMinutes
       visibility
+      location
       maxVolunteers
       minVolunteers
       reimbursementTypeId
-      requiredFormsCount
+      instances {
+        id
+        actualStartsAt
+        actualEndsAt
+        isCancelled
+        overrideLocation
+        overrideMinVolunteers
+        overrideMaxVolunteers
+        filledCount
+        pendingCount
+      }
       createdBy {
         id
         name
@@ -4136,6 +4160,11 @@ export const GetShiftsDocument = gql`
       hasMore
     }
   }
+}
+    `;
+export const GetShiftLocationsDocument = gql`
+    query GetShiftLocations {
+  shiftLocations
 }
     `;
 export const GetEventShiftsDocument = gql`
@@ -5512,6 +5541,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetShifts(variables: GetShiftsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetShiftsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetShiftsQuery>({ document: GetShiftsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetShifts', 'query', variables);
+    },
+    GetShiftLocations(variables?: GetShiftLocationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetShiftLocationsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetShiftLocationsQuery>({ document: GetShiftLocationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetShiftLocations', 'query', variables);
     },
     GetEventShifts(variables: GetEventShiftsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetEventShiftsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetEventShiftsQuery>({ document: GetEventShiftsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetEventShifts', 'query', variables);
