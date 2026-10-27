@@ -47,7 +47,11 @@ function EntityCell({
           </span>
         )}
       </div>
-      {trailing && <div className="shrink-0 [&>svg]:size-4">{trailing}</div>}
+      {trailing && (
+        <div className="shrink-0 [&_svg:not([class*='size-'])]:size-4">
+          {trailing}
+        </div>
+      )}
     </div>
   );
 }
