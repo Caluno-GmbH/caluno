@@ -48,6 +48,7 @@ import {
 import {
   ALWAYS_AVAILABLE_SOURCES,
   countIncompleteManualFields,
+  countOverLimitManualFields,
   type DataSourceKey,
   missingOrgProfileSourcesForOrg,
   PROFILE_REQUIRED_SOURCES,
@@ -346,6 +347,7 @@ export function TemplateBuilder({
   }
 
   const incompleteCount = countIncompleteManualFields(templateDoc);
+  const overLimitCount = countOverLimitManualFields(templateDoc);
   // The org-profile fields the template's bound org sources need the creating
   // unit to have. When any is missing, the Save button is blocked up front and
   // the coordinator is pointed at the unit's edit sheet (or told to ask someone
@@ -379,6 +381,7 @@ export function TemplateBuilder({
         onSave={handleSave}
         saveDisabled={
           incompleteCount > 0 ||
+          overLimitCount > 0 ||
           missingOrgSources.length > 0 ||
           orgProfileBlocked ||
           createBlockedBySignees ||
@@ -393,6 +396,13 @@ export function TemplateBuilder({
               <span className="text-sm text-muted-foreground">
                 {t('blockEditor.incompleteCount', {
                   count: incompleteCount,
+                } as Parameters<typeof t>[1])}
+              </span>
+            )}
+            {overLimitCount > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {t('blockEditor.overLimitCount', {
+                  count: overLimitCount,
                 } as Parameters<typeof t>[1])}
               </span>
             )}

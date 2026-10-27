@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'bun:test';
-import { getInvoiceDocument } from './builder-document-presets';
 import {
+  getContractDocument,
+  getInvoiceDocument,
+} from './builder-document-presets';
+import {
+  countOverLimitManualFields,
   invoiceNumberNeedsKostenstelle,
   KOSTENSTELLE_LINE_ID,
+  updateManualFieldValue,
   withKostenstelleForNumberFormat,
 } from './builder-types';
 
@@ -65,5 +70,55 @@ describe('invoice header meta lines', () => {
       'Rechnungsnummer: {documentNumber}',
     );
     expect(byId.get('meta-date')?.text).toBe('Datum: {date}');
+  });
+});
+
+describe('countOverLimitManualFields', () => {
+  it('counts a task description over 300 characters', () => {
+    const doc = updateManualFieldValue(
+      getContractDocument('ehrenamt'),
+      'tasks',
+      'x'.repeat(301),
+    );
+
+    expect(countOverLimitManualFields(doc)).toBe(1);
+  });
+
+  it('does not count a value at the limit', () => {
+    const doc = updateManualFieldValue(
+      getContractDocument('ehrenamt'),
+      'tasks',
+      'x'.repeat(300),
+    );
+
+    expect(countOverLimitManualFields(doc)).toBe(0);
+  });
+
+  it('ignores fields on disabled lines', () => {
+    const base = getContractDocument('ehrenamt');
+    const freeform = base.blocks.find((b) => b.id === 'sonstiges');
+    expect(freeform?.kind === 'text' && freeform.enabled).toBe(false);
+
+    const doc = updateManualFieldValue(base, 'freeform-text', 'x'.repeat(1001));
+
+    expect(countOverLimitManualFields(doc)).toBe(0);
+  });
+
+  it('counts the freeform text once its block is switched on', () => {
+    const base = getContractDocument('ehrenamt');
+    const enabled = {
+      ...base,
+      blocks: base.blocks.map((b) =>
+        b.kind === 'text' && b.id === 'sonstiges' ? { ...b, enabled: true } : b,
+      ),
+    };
+
+    const doc = updateManualFieldValue(
+      enabled,
+      'freeform-text',
+      'x'.repeat(1001),
+    );
+
+    expect(countOverLimitManualFields(doc)).toBe(1);
   });
 });
