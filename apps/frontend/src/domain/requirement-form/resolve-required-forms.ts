@@ -51,3 +51,62 @@ export function resolveRequiredForms(
     )
     .sort((a, b) => a.order - b.order);
 }
+
+/**
+ * Which share token (if any) to use when submitting one item from a
+ * RequiredFormRenderer batch. Item-level token wins; a top-level token only
+ * applies to a single-form list (legacy share page).
+ */
+export function resolveShareSubmitToken(
+  item: Pick<RequiredFormItem, 'form' | 'shareToken'>,
+  topLevelShareToken: string | undefined,
+  formsCount: number,
+): string | undefined {
+  if (item.shareToken) return item.shareToken;
+  if (!topLevelShareToken) return undefined;
+  return formsCount === 1 ? topLevelShareToken : undefined;
+}
+
+/**
+ * Non-member share-link list: org-unit required forms, plus the shared form
+ * when it is not already required. Shared-only forms carry `shareToken` so
+ * they submit via the public token mutation.
+ */
+export function mergeShareFormWithRequiredForms(options: {
+  sharedForm: RequiredForm;
+  shareToken: string;
+  requiredForms: RequiredFormItem[];
+  submittedFormIds: ReadonlySet<string>;
+  targetType: RequiredFormTargetType;
+  targetId: string;
+}): RequiredFormItem[] {
+  const {
+    sharedForm,
+    shareToken,
+    requiredForms,
+    submittedFormIds,
+    targetType,
+    targetId,
+  } = options;
+
+  if (requiredForms.some((item) => item.form.id === sharedForm.id)) {
+    return requiredForms;
+  }
+
+  const minOrder =
+    requiredForms.length > 0
+      ? Math.min(...requiredForms.map((item) => item.order))
+      : 0;
+
+  return [
+    {
+      form: sharedForm,
+      order: minOrder - 1,
+      submitted: submittedFormIds.has(sharedForm.id),
+      targetType,
+      targetId,
+      shareToken,
+    },
+    ...requiredForms,
+  ];
+}
