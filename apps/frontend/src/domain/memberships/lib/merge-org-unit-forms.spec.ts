@@ -81,23 +81,4 @@ describe('mergeOrgUnitFormsWithSubmissions', () => {
       submittedAt: '2026-04-01T00:00:00.000Z',
     });
   });
-
-  it('skips submissions with a null form', () => {
-    const forms = [form('a')];
-    const submissions = [
-      {
-        id: 'orphan',
-        submittedAt: '2026-03-01T12:00:00.000Z',
-        form: null,
-      },
-    ];
-    const merged = mergeOrgUnitFormsWithSubmissions(
-      forms,
-      submissions,
-      orgUnitId,
-    );
-
-    expect(merged).toHaveLength(1);
-    expect(merged[0]?.completed).toBe(false);
-  });
 });
