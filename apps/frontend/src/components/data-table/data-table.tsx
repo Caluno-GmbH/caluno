@@ -14,12 +14,22 @@ import {
   flexRender,
   type OnChangeFn,
   type PaginationState,
+  type Row,
   type RowData,
   type SortingState,
   useTable,
 } from '@tanstack/react-table';
 import { type DataTableFeatures, dataTableFeatures } from './features';
 import { activeDir, ariaSort } from './table-sort';
+
+interface DataTableExpansionProps<TData> {
+  /** Returns child rows for a parent, or undefined for leaf rows. */
+  getSubRows: (row: TData, index?: number) => TData[] | undefined;
+  /** Whether a row renders an expander. Defaults to "has sub-rows". */
+  getRowCanExpand?: (row: TData) => boolean;
+  /** Start with every expandable row open. Default false. */
+  defaultAllExpanded?: boolean;
+}
 
 interface DataTableServerProps<TData extends RowData> {
   mode?: 'server';
@@ -30,6 +40,7 @@ interface DataTableServerProps<TData extends RowData> {
   onSortingChange: OnChangeFn<SortingState>;
   emptyMessage: string;
   getRowClassName?: (row: TData) => string | undefined;
+  expansion?: DataTableExpansionProps<TData>;
 }
 
 interface DataTableClientProps<TData extends RowData> {
@@ -63,6 +74,9 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
       sorting: props.sorting ?? [],
       ...(client?.pagination ? { pagination: client.pagination } : {}),
     },
+    ...(server?.expansion?.defaultAllExpanded
+      ? { initialState: { expanded: true } }
+      : {}),
     ...(onSortingChange ? { onSortingChange } : {}),
     ...(client?.onPaginationChange
       ? { onPaginationChange: client.onPaginationChange }
@@ -71,6 +85,16 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
     manualPagination: !isClient,
     enableSortingRemoval: false,
     ...(server ? { pageCount: server.pageCount } : {}),
+    ...(server?.expansion
+      ? {
+          getSubRows: (originalRow: TData, index: number) =>
+            server.expansion?.getSubRows(originalRow, index),
+          getRowCanExpand: (row: Row<DataTableFeatures, TData>) =>
+            server.expansion?.getRowCanExpand
+              ? server.expansion.getRowCanExpand(row.original)
+              : (server.expansion?.getSubRows(row.original)?.length ?? 0) > 0,
+        }
+      : {}),
   });
 
   return (
@@ -120,6 +144,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
               return (
                 <TableRow
                   key={row.id}
+                  data-depth={row.depth}
                   className={getRowClassName?.(row.original)}
                 >
                   {cells.map((cell, index) => (
