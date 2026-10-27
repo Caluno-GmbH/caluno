@@ -1,45 +1,69 @@
 'use client';
 
-import type { GetRequirementFormByShareTokenQuery } from '@repo/data';
-import { RequiredFormTargetType } from '@repo/data';
-import type { RequiredForm } from '@repo/data/react';
+import { JoinStatus, RequiredFormTargetType } from '@repo/data';
+import { useJoinOrganization } from '@repo/data/react';
 import { Check } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { RequiredFormRenderer } from '@/domain/requirement-form/components/required-form-renderer';
+import { toast } from 'sonner';
+import {
+  type RequiredFormItem,
+  RequiredFormRenderer,
+} from '@/domain/requirement-form/components/required-form-renderer';
 import { useRouter } from '@/i18n/navigation';
 
-export type PublicShareForm = NonNullable<
-  GetRequirementFormByShareTokenQuery['requirementFormByShareToken']
->;
-
 interface ShareFormClientProps {
-  form: PublicShareForm;
-  token: string;
+  forms: RequiredFormItem[];
   orgUId: string;
   orgName?: string;
+  formName: string;
+  formDescription?: string | null;
   isMember: boolean;
   profileData: Record<string, string>;
   storedFieldValues?: Record<string, string>;
+  initialSubmittedFormIds: Set<string>;
 }
 
 export function ShareFormClient({
-  form,
-  token,
+  forms,
   orgUId,
   orgName,
+  formName,
+  formDescription,
   isMember,
   profileData,
   storedFieldValues = {},
+  initialSubmittedFormIds,
 }: ShareFormClientProps) {
   const router = useRouter();
   const t = useTranslations('RequirementForm.volunteerForm');
+  const tJoin = useTranslations('MembershipRequest.joinForms');
+  const joinOrganization = useJoinOrganization();
   const [submitted, setSubmitted] = useState(false);
-  const formOrg = orgName ?? form.name;
+  const displayOrgName = orgName ?? formName;
 
   const handleComplete = async () => {
     if (!isMember) {
-      router.push('/profile#memberships');
+      try {
+        const result = await joinOrganization.mutateAsync(orgUId);
+
+        if (result.status === JoinStatus.Joined) {
+          toast.success(tJoin('joined'));
+          router.push(`/orgs/${orgUId}`);
+        } else if (result.status === JoinStatus.PendingMembership) {
+          toast.success(tJoin('requestPending'));
+          router.push('/profile#memberships');
+        } else if (result.status === JoinStatus.Rejected) {
+          toast.error(tJoin('rejected'));
+          router.push(`/invite/${orgUId}`);
+        } else if (result.status === JoinStatus.RequirementsNeeded) {
+          toast.error(tJoin('requirementsNeeded'));
+        }
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : tJoin('requestFailed'),
+        );
+      }
       return;
     }
     setSubmitted(true);
@@ -61,25 +85,27 @@ export function ShareFormClient({
     <div className="space-y-6">
       {!isMember && (
         <div className="rounded-lg border bg-blue-50 p-4 text-sm text-blue-800">
-          {t('membershipRequestNotice', { orgName: formOrg })}
+          {t('membershipRequestNotice', { orgName: displayOrgName })}
         </div>
       )}
 
       <RequiredFormRenderer
-        title={form.name}
-        description={
-          token
-            ? t('completeRequiredFormsHint')
-            : (form.description?.trim() ?? '')
+        title={
+          isMember ? formName : tJoin('title', { orgName: displayOrgName })
         }
+        description={
+          isMember
+            ? (formDescription?.trim() ?? '')
+            : t('completeRequiredFormsHint')
+        }
+        emptyMessage={tJoin('noForms')}
         targetType={RequiredFormTargetType.OrganizationUnit}
         targetId={orgUId}
-        forms={[{ form: form as RequiredForm, order: 0 }]}
+        forms={forms}
         profileData={profileData}
         storedFieldValues={storedFieldValues}
-        orgName={formOrg}
-        shareToken={token}
-        initialSubmittedFormIds={new Set()}
+        orgName={displayOrgName}
+        initialSubmittedFormIds={initialSubmittedFormIds}
         onComplete={handleComplete}
       />
     </div>
