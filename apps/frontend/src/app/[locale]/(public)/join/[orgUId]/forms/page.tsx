@@ -1,4 +1,5 @@
 import { JoinStatus } from '@repo/data';
+import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import {
@@ -26,7 +27,7 @@ export default async function JoinFormsPage({
   const _t = await getTranslations('MembershipRequest');
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const searchParams = new URLSearchParams({
       orgUId,
       redirectTo: redirectTo ?? `/join/${orgUId}/forms`,
@@ -37,9 +38,13 @@ export default async function JoinFormsPage({
   const data = await getDataClient();
 
   const [orgUnit, userProfile, joinResult] = await Promise.all([
-    data.organizationUnit.findById(orgUId),
+    // Public query — org display + requiredForms field resolvers are anonymous.
+    data.publicOrganizationUnit.findByIdWithRequiredForms(orgUId),
     data.user.getMe(),
-    data.membershipRequest.join(orgUId).catch(() => null),
+    data.membershipRequest.join(orgUId).catch((error) => {
+      unstable_rethrow(error);
+      return null;
+    }),
   ]);
 
   if (!orgUnit) {

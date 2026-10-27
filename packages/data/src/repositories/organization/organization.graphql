@@ -138,18 +138,6 @@ query GetOrganizationUnitWithOrg($id: String!) {
   }
 }
 
-query GetOrganizationUnitPublicInfo($id: String!) {
-  organizationUnit(id: $id) {
-    id
-    name
-    description
-    logoUrl
-    websiteUrl
-    contactEmail
-    phone
-  }
-}
-
 query GetOrganizationsWithRoot($limit: Int!, $offset: Int!) {
   organizations(limit: $limit, offset: $offset) {
     items {

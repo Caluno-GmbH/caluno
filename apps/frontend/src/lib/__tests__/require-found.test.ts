@@ -8,6 +8,20 @@ const loggerError = mock(() => undefined);
 
 mock.module('next/navigation', () => ({
   notFound: notFoundMock,
+  redirect: (path: string) => {
+    throw new Error(`NEXT_REDIRECT:${path}`);
+  },
+  unstable_rethrow: (error: unknown) => {
+    if (
+      error instanceof Error &&
+      (error.message.startsWith('NEXT_') ||
+        ('digest' in error &&
+          typeof (error as { digest?: unknown }).digest === 'string' &&
+          String((error as { digest: string }).digest).startsWith('NEXT_')))
+    ) {
+      throw error;
+    }
+  },
 }));
 
 mock.module('@/lib/logger', () => ({
@@ -104,5 +118,17 @@ describe('requireFoundOrNull', () => {
     expect(loggerError).toHaveBeenCalledTimes(1);
     expect(loggerError.mock.calls[0]?.[0]).toEqual({ err: error });
     expect(notFoundMock).not.toHaveBeenCalled();
+  });
+
+  it('rethrows Next redirect signals without logging', async () => {
+    const redirectError = Object.assign(new Error('NEXT_REDIRECT'), {
+      digest: 'NEXT_REDIRECT;replace;/login;307;',
+    });
+    await expect(
+      requireFoundOrNull(async () => {
+        throw redirectError;
+      }),
+    ).rejects.toThrow('NEXT_REDIRECT');
+    expect(loggerError).not.toHaveBeenCalled();
   });
 });

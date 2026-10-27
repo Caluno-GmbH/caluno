@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'bun:test';
+import { DataError } from '@repo/data';
 import {
   buildRequestErrorLogFields,
   isBenignClientAbortError,
+  isBenignRequestError,
+  isNextControlFlowError,
   sanitizeRequestPath,
 } from './request-error-log';
 
@@ -28,6 +31,47 @@ describe('isBenignClientAbortError', () => {
     expect(isBenignClientAbortError(new Error('boom'))).toBe(false);
     expect(isBenignClientAbortError('string')).toBe(false);
     expect(isBenignClientAbortError(null)).toBe(false);
+  });
+});
+
+describe('isNextControlFlowError', () => {
+  it('matches Next redirect / notFound digests', () => {
+    expect(
+      isNextControlFlowError(
+        Object.assign(new Error('redirect'), {
+          digest: 'NEXT_REDIRECT;replace;/login;307;',
+        }),
+      ),
+    ).toBe(true);
+    expect(
+      isNextControlFlowError(
+        Object.assign(new Error('not found'), { digest: 'NEXT_NOT_FOUND' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not match hashed application digests', () => {
+    expect(
+      isNextControlFlowError(
+        Object.assign(new Error('boom'), { digest: '366472912' }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('isBenignRequestError', () => {
+  it('skips UNAUTHENTICATED DataErrors (login redirect path)', () => {
+    expect(
+      isBenignRequestError(
+        new DataError('Unauthorized', { code: 'UNAUTHENTICATED' }),
+      ),
+    ).toBe(true);
+  });
+
+  it('does not skip other DataErrors', () => {
+    expect(
+      isBenignRequestError(new DataError('nope', { code: 'INTERNAL_ERROR' })),
+    ).toBe(false);
   });
 });
 

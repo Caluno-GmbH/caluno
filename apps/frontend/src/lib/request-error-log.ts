@@ -8,8 +8,16 @@
  * `sanitizeUrl` in pino-http options.
  */
 
+import { isUnauthenticatedDataError } from '@repo/data';
+
 /** React's generic message when an RSC/HTML stream destination closes mid-pipe. */
 const DESTINATION_STREAM_CLOSED_EARLY = 'The destination stream closed early.';
+
+const NEXT_CONTROL_FLOW_DIGEST_PREFIXES = [
+  'NEXT_REDIRECT',
+  'NEXT_NOT_FOUND',
+  'NEXT_HTTP_ERROR_FALLBACK',
+] as const;
 
 /**
  * Client disconnect / cancelled RSC flight — expected lifecycle, not a
@@ -29,6 +37,31 @@ export function isBenignClientAbortError(error: unknown): boolean {
 
   const message = 'message' in error ? String(error.message) : '';
   return message === DESTINATION_STREAM_CLOSED_EARLY;
+}
+
+/** Next.js navigation / HTTP-fallback control-flow signals (by digest). */
+export function isNextControlFlowError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || !('digest' in error)) {
+    return false;
+  }
+  const digest = (error as { digest?: unknown }).digest;
+  if (typeof digest !== 'string') return false;
+  return NEXT_CONTROL_FLOW_DIGEST_PREFIXES.some((prefix) =>
+    digest.startsWith(prefix),
+  );
+}
+
+/**
+ * Errors that must not create Loki / Sentry request-failure noise:
+ * client aborts, Next redirect/notFound signals, and GraphQL
+ * UNAUTHENTICATED (handled by redirect-to-login in `getDataClient`).
+ */
+export function isBenignRequestError(error: unknown): boolean {
+  return (
+    isBenignClientAbortError(error) ||
+    isNextControlFlowError(error) ||
+    isUnauthenticatedDataError(error)
+  );
 }
 
 export function sanitizeRequestPath(path: string): string {

@@ -585,13 +585,6 @@ export type GetOrganizationUnitWithOrgQueryVariables = Exact<{
 
 export type GetOrganizationUnitWithOrgQuery = { organizationUnit: { id: string, name: string, organization: { name: string } } | null };
 
-export type GetOrganizationUnitPublicInfoQueryVariables = Exact<{
-  id: string;
-}>;
-
-
-export type GetOrganizationUnitPublicInfoQuery = { organizationUnit: { id: string, name: string, description: string | null, logoUrl: string | null, websiteUrl: string | null, contactEmail: string | null, phone: string | null } | null };
-
 export type GetOrganizationsWithRootQueryVariables = Exact<{
   limit: number;
   offset: number;
@@ -713,12 +706,21 @@ export type PublicOrgShiftInstanceFieldsFragment = { id: string, actualStartsAt:
 
 export type PublicOrgShiftFieldsFragment = { id: string, title: string, maxVolunteers: number | null, rrule: string | null, originalStartsAt: string, durationMinutes: number, instances: Array<{ id: string, actualStartsAt: string, actualEndsAt: string, overrideMaxVolunteers: number | null, filledCount: number, spotsLeft: number | null }> };
 
+export type PublicOrganizationUnitRequiredFormsFragment = { requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, profileKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } }> | null } }> };
+
 export type GetPublicOrganizationUnitQueryVariables = Exact<{
   id: string;
 }>;
 
 
 export type GetPublicOrganizationUnitQuery = { publicOrganizationUnit: { id: string, name: string, slug: string, description: string | null, logoUrl: string | null, coverUrl: string | null, street: string | null, zipCode: string | null, city: string | null, memberCount: number, openShiftsCount: number, myMembershipState: Types.JoinStatus } };
+
+export type GetPublicOrganizationUnitWithRequiredFormsQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type GetPublicOrganizationUnitWithRequiredFormsQuery = { publicOrganizationUnit: { id: string, name: string, slug: string, description: string | null, logoUrl: string | null, coverUrl: string | null, street: string | null, zipCode: string | null, city: string | null, memberCount: number, openShiftsCount: number, myMembershipState: Types.JoinStatus, requiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, profileKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } }> | null } }> } };
 
 export type GetPublicEventsByOrganizationUnitQueryVariables = Exact<{
   organizationUnitId: string;
@@ -1901,6 +1903,52 @@ export const PublicOrgShiftFieldsFragmentDoc = gql`
   }
 }
     ${PublicOrgShiftInstanceFieldsFragmentDoc}`;
+export const PublicOrganizationUnitRequiredFormsFragmentDoc = gql`
+    fragment PublicOrganizationUnitRequiredForms on OrganizationUnit {
+  requiredForms {
+    form {
+      id
+      name
+      description
+      blockRefs {
+        id
+        formId
+        blockId
+        fieldOrder
+        block {
+          id
+          organizationId
+          title
+          description
+          icon
+          isEditable
+          fields {
+            id
+            blockId
+            type
+            label
+            placeholder
+            description
+            required
+            lockType
+            profileKey
+            options
+            documents {
+              fileId
+              filename
+              downloadUrl
+            }
+            documentLabel
+            minAge
+            fieldOrder
+          }
+        }
+      }
+    }
+    order
+  }
+}
+    `;
 export const PublicShiftDetailInstanceFieldsFragmentDoc = gql`
     fragment PublicShiftDetailInstanceFields on ShiftInstance {
   id
@@ -2990,19 +3038,6 @@ export const GetOrganizationUnitWithOrgDocument = gql`
   }
 }
     `;
-export const GetOrganizationUnitPublicInfoDocument = gql`
-    query GetOrganizationUnitPublicInfo($id: String!) {
-  organizationUnit(id: $id) {
-    id
-    name
-    description
-    logoUrl
-    websiteUrl
-    contactEmail
-    phone
-  }
-}
-    `;
 export const GetOrganizationsWithRootDocument = gql`
     query GetOrganizationsWithRoot($limit: Int!, $offset: Int!) {
   organizations(limit: $limit, offset: $offset) {
@@ -3259,6 +3294,15 @@ export const GetPublicOrganizationUnitDocument = gql`
   }
 }
     ${PublicOrganizationUnitFieldsFragmentDoc}`;
+export const GetPublicOrganizationUnitWithRequiredFormsDocument = gql`
+    query GetPublicOrganizationUnitWithRequiredForms($id: ID!) {
+  publicOrganizationUnit(id: $id) {
+    ...PublicOrganizationUnitFields
+    ...PublicOrganizationUnitRequiredForms
+  }
+}
+    ${PublicOrganizationUnitFieldsFragmentDoc}
+${PublicOrganizationUnitRequiredFormsFragmentDoc}`;
 export const GetPublicEventsByOrganizationUnitDocument = gql`
     query GetPublicEventsByOrganizationUnit($organizationUnitId: ID!) {
   publicEventsByOrganizationUnit(organizationUnitId: $organizationUnitId) {
@@ -5342,9 +5386,6 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     GetOrganizationUnitWithOrg(variables: GetOrganizationUnitWithOrgQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationUnitWithOrgQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationUnitWithOrgQuery>({ document: GetOrganizationUnitWithOrgDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationUnitWithOrg', 'query', variables);
     },
-    GetOrganizationUnitPublicInfo(variables: GetOrganizationUnitPublicInfoQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationUnitPublicInfoQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationUnitPublicInfoQuery>({ document: GetOrganizationUnitPublicInfoDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationUnitPublicInfo', 'query', variables);
-    },
     GetOrganizationsWithRoot(variables: GetOrganizationsWithRootQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationsWithRootQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationsWithRootQuery>({ document: GetOrganizationsWithRootDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationsWithRoot', 'query', variables);
     },
@@ -5395,6 +5436,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetPublicOrganizationUnit(variables: GetPublicOrganizationUnitQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetPublicOrganizationUnitQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetPublicOrganizationUnitQuery>({ document: GetPublicOrganizationUnitDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetPublicOrganizationUnit', 'query', variables);
+    },
+    GetPublicOrganizationUnitWithRequiredForms(variables: GetPublicOrganizationUnitWithRequiredFormsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetPublicOrganizationUnitWithRequiredFormsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetPublicOrganizationUnitWithRequiredFormsQuery>({ document: GetPublicOrganizationUnitWithRequiredFormsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetPublicOrganizationUnitWithRequiredForms', 'query', variables);
     },
     GetPublicEventsByOrganizationUnit(variables: GetPublicEventsByOrganizationUnitQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetPublicEventsByOrganizationUnitQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetPublicEventsByOrganizationUnitQuery>({ document: GetPublicEventsByOrganizationUnitDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetPublicEventsByOrganizationUnit', 'query', variables);
