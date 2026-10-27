@@ -1,5 +1,5 @@
 import { isNotFoundDataError } from '@repo/data';
-import { notFound } from 'next/navigation';
+import { notFound, unstable_rethrow } from 'next/navigation';
 import { logger } from '@/lib/logger';
 
 /**
@@ -8,7 +8,8 @@ import { logger } from '@/lib/logger';
  * Other errors are rethrown unless `onOtherError` is provided.
  *
  * `notFound()` is invoked outside the loader catch path so Next's control-flow
- * throw is never swallowed by `onOtherError`.
+ * throw is never swallowed by `onOtherError`. `unstable_rethrow` keeps
+ * `redirect()` / `notFound()` signals from nested loaders intact.
  */
 export async function requireFound<T>(
   load: () => Promise<T | null | undefined>,
@@ -25,6 +26,7 @@ export async function requireFound<T, F>(
   try {
     value = await load();
   } catch (error) {
+    unstable_rethrow(error);
     if (isNotFoundDataError(error)) {
       notFound();
     }

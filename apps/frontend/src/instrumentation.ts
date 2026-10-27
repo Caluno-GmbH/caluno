@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { Instrumentation } from 'next';
 import {
   buildRequestErrorLogFields,
-  isBenignClientAbortError,
+  isBenignRequestError,
 } from './lib/request-error-log';
 
 export async function register() {
@@ -22,15 +22,17 @@ export async function register() {
  * Infra HTTP metrics alone do not produce log lines — without this,
  * Cockpit 500s have no matching `caluno-frontend` Loki record.
  *
- * Client-aborted RSC streams are skipped (benign disconnects that Next
- * still forwards to onRequestError — vercel/next.js#96704).
+ * Skipped (expected control flow, not server failures):
+ * - Client-aborted RSC streams (vercel/next.js#96704)
+ * - Next redirect / notFound digests
+ * - GraphQL UNAUTHENTICATED (login redirect via getDataClient onError)
  */
 export const onRequestError: Instrumentation.onRequestError = async (
   error,
   request,
   context,
 ) => {
-  if (isBenignClientAbortError(error)) {
+  if (isBenignRequestError(error)) {
     return;
   }
 

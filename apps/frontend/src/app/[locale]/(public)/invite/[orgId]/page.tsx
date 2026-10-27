@@ -27,7 +27,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
 
   const data = await getDataClient();
   const orgUnit = await requireFound(() =>
-    data.organization.findUnitWithOrg(organizationUnitId),
+    data.publicOrganizationUnit.findById(organizationUnitId),
   );
 
   let result: JoinOrganizationMutation['joinOrganization'];

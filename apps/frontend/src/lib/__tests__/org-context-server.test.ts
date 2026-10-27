@@ -21,6 +21,14 @@ mock.module('next/navigation', () => ({
   redirect: () => {
     throw new Error('REDIRECT');
   },
+  unstable_rethrow: (error: unknown) => {
+    if (
+      error instanceof Error &&
+      (error.message === 'NOT_FOUND' || error.message === 'REDIRECT')
+    ) {
+      throw error;
+    }
+  },
 }));
 
 mock.module('../data-client', () => ({
