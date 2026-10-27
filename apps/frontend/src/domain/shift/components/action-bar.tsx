@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@repo/ui';
+import { ActionsCell, Button } from '@repo/ui';
 import { Copy, Edit, Loader2, Trash, UserPlus } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -56,7 +56,7 @@ export const ActionBar = ({
   };
 
   return (
-    <aside className="space-x-2">
+    <ActionsCell>
       {!hideEdit && (
         <Link href={resolvedEditHref}>
           <Button
@@ -110,6 +110,6 @@ export const ActionBar = ({
           </Button>
         }
       />
-    </aside>
+    </ActionsCell>
   );
 };

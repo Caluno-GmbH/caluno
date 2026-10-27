@@ -1,7 +1,7 @@
 'use client';
 
 import { PermissionKey } from '@repo/data';
-import { Button } from '@repo/ui';
+import { ActionsCell, Button } from '@repo/ui';
 import { Edit, Loader2, Trash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -47,7 +47,7 @@ export const ActionBar = ({
   };
 
   return (
-    <aside className="flex items-center gap-2">
+    <ActionsCell>
       {!isInternal && (
         <RequirePermission permission={PermissionKey.OrgEdit}>
           <Button
@@ -78,6 +78,6 @@ export const ActionBar = ({
           />
         </RequirePermission>
       )}
-    </aside>
+    </ActionsCell>
   );
 };
