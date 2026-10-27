@@ -2,10 +2,13 @@
 
 import type { GetShiftsQuery, PaginationInfo } from '@repo/data';
 import { formatRrulePattern } from '@repo/data';
+import { useReimbursementTypes } from '@repo/data/react';
 import {
-  ActionsCell,
+  ActionTooltip,
   Badge,
   Button,
+  cn,
+  EntityCell,
   Input,
   StatusCell,
   TextCell,
@@ -15,34 +18,113 @@ import type {
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
-import { Search, X } from 'lucide-react';
+import {
+  Calendar,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  HeartHandshake,
+  Search,
+  TriangleAlert,
+  UsersRound,
+  X,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { debounce, useQueryStates } from 'nuqs';
-import { useMemo } from 'react';
+import { type CSSProperties, type ElementType, useMemo } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { SEARCH_DEBOUNCE_MS } from '@/components/data-table/table-params';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
-import {
-  eventShiftEditPath,
-  eventShiftInvitePath,
-} from '@/domain/event/routes';
+import { TYPE_COLOR } from '@/domain/accounting/components/doc-type-header';
+import { eventShiftEditPath } from '@/domain/event/routes';
 import { getVisibilityConfig } from '@/domain/shift/lib/shift-badge-config';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import { resolvePauschaleMarker } from '../pauschale-marker';
 import { shiftDetailPath, shiftEditPath } from '../routes';
 import { shiftsSearchParams } from '../shifts-search-params';
+import { getStaffingState, staffingBadgeText } from '../staffing';
 import { ActionBar } from './action-bar';
-import { PauschaleMarker } from './pauschale-marker';
 
-type ShiftListItem = GetShiftsQuery['shifts']['items'][number] & {
-  instance?: { id: string } | null;
-};
+type ApiShiftItem = GetShiftsQuery['shifts']['items'][number];
+type ApiInstanceItem = ApiShiftItem['instances'][number];
+
+export interface ShiftInstanceRow {
+  kind: 'instance';
+  id: string;
+  masterId: string;
+  actualStartsAt: string;
+  actualEndsAt: string;
+  isCancelled: boolean;
+  resolvedLocation: string | null;
+  resolvedMin: number | null;
+  resolvedMax: number | null;
+  filledCount: number;
+  pendingCount: number;
+  /** Whether location is inherited (no override) */
+  locationInherited: boolean;
+}
+
+export interface ShiftMasterRow {
+  kind: 'master';
+  id: string;
+  title: string;
+  rrule: string | null;
+  originalStartsAt: string;
+  durationMinutes: number;
+  visibility: ApiShiftItem['visibility'];
+  location: string | null;
+  minVolunteers: number | null;
+  maxVolunteers: number | null;
+  reimbursementTypeId: string | null;
+  subRows: ShiftInstanceRow[];
+}
+
+export type ShiftRow = ShiftMasterRow | ShiftInstanceRow;
+
+function toInstanceRow(
+  inst: ApiInstanceItem,
+  master: ApiShiftItem,
+): ShiftInstanceRow {
+  return {
+    kind: 'instance',
+    id: inst.id,
+    masterId: master.id,
+    actualStartsAt: inst.actualStartsAt,
+    actualEndsAt: inst.actualEndsAt,
+    isCancelled: inst.isCancelled,
+    resolvedLocation: inst.overrideLocation ?? master.location,
+    resolvedMin: inst.overrideMinVolunteers ?? master.minVolunteers,
+    resolvedMax: inst.overrideMaxVolunteers ?? master.maxVolunteers,
+    filledCount: inst.filledCount,
+    pendingCount: inst.pendingCount,
+    locationInherited: inst.overrideLocation == null,
+  };
+}
+
+function toMasterRow(item: ApiShiftItem): ShiftMasterRow {
+  return {
+    kind: 'master',
+    id: item.id,
+    title: item.title,
+    rrule: item.rrule,
+    originalStartsAt: item.originalStartsAt,
+    durationMinutes: item.durationMinutes,
+    visibility: item.visibility,
+    location: item.location,
+    minVolunteers: item.minVolunteers,
+    maxVolunteers: item.maxVolunteers,
+    reimbursementTypeId: item.reimbursementTypeId,
+    subRows: item.instances.map((inst) => toInstanceRow(inst, item)),
+  };
+}
 
 interface ShiftsTableProps {
-  shifts: ShiftListItem[];
+  shifts: ApiShiftItem[];
   pagination: PaginationInfo;
   orgUId: string;
   page?: number;
@@ -64,7 +146,6 @@ export function ShiftsTable({
     { shallow: false },
   );
 
-  // Only non-default table state goes on the detail link, keeping URLs short.
   const returnQuery = useMemo(() => {
     const defaults = shiftsSearchParams;
     return {
@@ -87,73 +168,194 @@ export function ShiftsTable({
 
   const visibilityConfig = useMemo(() => getVisibilityConfig(t), [t]);
 
-  const columns = useMemo<ColumnDef<DataTableFeatures, ShiftListItem>[]>(
+  const { data: reimbursementTypes } = useReimbursementTypes();
+
+  // Icon components for the Name EntityCell: the paid Pauschale type (coloured)
+  // or a muted calendar for unpaid shifts, each with an explanatory tooltip.
+  const nameIcons = useMemo(() => {
+    const make =
+      (
+        Icon: ElementType,
+        label: string,
+        style?: CSSProperties,
+        extraClass?: string,
+      ) =>
+      ({ className }: { className?: string }) => (
+        <ActionTooltip label={label}>
+          <Icon
+            role="img"
+            aria-label={label}
+            className={cn(className, extraClass)}
+            style={style}
+          />
+        </ActionTooltip>
+      );
+    return {
+      ehrenamt: make(HeartHandshake, t('paidMarker.ehrenamt'), {
+        color: TYPE_COLOR.ehrenamt,
+      }),
+      uebungsleiter: make(GraduationCap, t('paidMarker.uebungsleiter'), {
+        color: TYPE_COLOR.uebungsleiter,
+      }),
+      unpaid: make(
+        Calendar,
+        t('paidMarker.unpaid'),
+        undefined,
+        'text-muted-foreground',
+      ),
+    };
+  }, [t]);
+
+  const masterRows = useMemo(() => shifts.map(toMasterRow), [shifts]);
+
+  const columns = useMemo<ColumnDef<DataTableFeatures, ShiftRow>[]>(
     () => [
       {
         id: 'TITLE',
-        accessorFn: (row) => row.title,
+        accessorFn: (row) =>
+          row.kind === 'master' ? row.title : row.actualStartsAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.name')} />
         ),
         cell: ({ row }) => {
-          const shift = row.original;
+          const item = row.original;
+          if (item.kind === 'master') {
+            const marker = resolvePauschaleMarker(
+              item.reimbursementTypeId,
+              reimbursementTypes,
+            );
+            const NameIcon = marker ? nameIcons[marker] : nameIcons.unpaid;
+            return (
+              <div className="flex min-w-0 items-center gap-1">
+                {row.getCanExpand() && (
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={row.getToggleExpandedHandler()}
+                    className="shrink-0"
+                  >
+                    {row.getIsExpanded() ? (
+                      <ChevronDown className="size-4" />
+                    ) : (
+                      <ChevronRight className="size-4" />
+                    )}
+                  </Button>
+                )}
+                <EntityCell
+                  icon={NameIcon}
+                  title={
+                    <Link
+                      className="hover:underline"
+                      href={shiftDetailPath(orgUId, item.id, returnQuery)}
+                    >
+                      {item.title}
+                    </Link>
+                  }
+                />
+              </div>
+            );
+          }
           return (
-            <div className="flex min-w-0 items-center gap-1.5">
-              <Link
-                className="max-w-80 truncate hover:underline"
-                href={shiftDetailPath(orgUId, shift.id, returnQuery)}
-              >
-                {shift.title}
-              </Link>
-              <PauschaleMarker
-                reimbursementTypeId={shift.reimbursementTypeId}
-              />
-            </div>
+            <TextCell className="pl-6 text-muted-foreground">
+              {formatDate(new Date(item.actualStartsAt))}
+            </TextCell>
           );
         },
       },
       {
         id: 'FIRST_DATE',
-        accessorFn: (row) => row.originalStartsAt,
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('table.firstDate')} />
-        ),
-        cell: ({ row }) => {
-          const startDate = new Date(row.original.originalStartsAt);
-          return <TextCell>{formatDate(startDate)}</TextCell>;
-        },
-      },
-      {
-        id: 'pattern',
-        enableSorting: false,
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('table.pattern')} />
-        ),
-        cell: ({ row }) => (
-          <StatusCell>
-            <Badge variant="outline">
-              {formatRrulePattern(row.original.rrule)}
-            </Badge>
-          </StatusCell>
-        ),
-      },
-      {
-        id: 'time',
         enableSorting: false,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.time')} />
         ),
         cell: ({ row }) => {
-          const startDate = new Date(row.original.originalStartsAt);
-          const endDate = new Date(
-            startDate.getTime() + row.original.durationMinutes * 60000,
+          const item = row.original;
+          if (item.kind === 'master') {
+            return (
+              <StatusCell>
+                <Badge variant="outline">
+                  {formatRrulePattern(item.rrule)}
+                </Badge>
+              </StatusCell>
+            );
+          }
+          const start = new Date(item.actualStartsAt);
+          const end = new Date(item.actualEndsAt);
+          return <TextCell>{formatTimeRange(start, end)}</TextCell>;
+        },
+      },
+      {
+        id: 'location',
+        enableSorting: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.location')} />
+        ),
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.kind === 'master') {
+            return <TextCell>{item.location ?? ''}</TextCell>;
+          }
+          return (
+            <TextCell
+              className={
+                item.locationInherited ? 'text-muted-foreground' : undefined
+              }
+            >
+              {item.resolvedLocation ?? ''}
+            </TextCell>
           );
-          return <TextCell>{formatTimeRange(startDate, endDate)}</TextCell>;
+        },
+      },
+      {
+        id: 'staffing',
+        enableSorting: false,
+        meta: {
+          headerClassName: 'w-[1%] whitespace-nowrap',
+          cellClassName: 'whitespace-nowrap',
+        },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.staffing')} />
+        ),
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.kind !== 'instance') {
+            return null;
+          }
+          const {
+            resolvedMin: min,
+            resolvedMax: max,
+            filledCount: count,
+          } = item;
+          const state = getStaffingState(count, min, max);
+          const variant =
+            state === 'full'
+              ? 'success'
+              : state === 'alert'
+                ? 'alert'
+                : 'outline';
+          const belowMin =
+            state === 'alert' && min != null && count > 0 && count < min;
+          const Icon = belowMin ? TriangleAlert : UsersRound;
+          return (
+            <StatusCell>
+              <Badge variant={variant} className="gap-1">
+                <Icon className="size-3.5" />
+                {staffingBadgeText(count, min, max, state)}
+              </Badge>
+              {item.pendingCount > 0 && (
+                <Badge variant="neutral" className="gap-1">
+                  <Clock className="size-3.5" aria-hidden="true" />
+                  {item.pendingCount}
+                </Badge>
+              )}
+            </StatusCell>
+          );
         },
       },
       {
         id: 'VISIBILITY',
-        accessorFn: (row) => row.visibility,
+        accessorFn: (row) =>
+          row.kind === 'master' ? row.visibility : undefined,
         header: ({ column }) => (
           <DataTableColumnHeader
             column={column}
@@ -161,7 +363,11 @@ export function ShiftsTable({
           />
         ),
         cell: ({ row }) => {
-          const cfg = visibilityConfig[row.original.visibility];
+          const item = row.original;
+          if (item.kind !== 'master') {
+            return null;
+          }
+          const cfg = visibilityConfig[item.visibility];
           return (
             <StatusCell>
               <Badge variant={cfg.variant}>{cfg.label}</Badge>
@@ -170,49 +376,26 @@ export function ShiftsTable({
         },
       },
       {
-        id: 'forms',
-        enableSorting: false,
-        header: ({ column }) => (
-          <DataTableColumnHeader
-            column={column}
-            title={t('table.requiredForms')}
-          />
-        ),
-        cell: ({ row }) => (
-          <StatusCell>
-            <Badge variant="outline">{row.original.requiredFormsCount}</Badge>
-          </StatusCell>
-        ),
-      },
-      {
         id: 'actions',
         enableSorting: false,
         header: () => null,
         cell: ({ row }) => {
-          const shift = row.original;
+          const item = row.original;
+          if (item.kind !== 'master') {
+            return null;
+          }
           return (
-            <ActionsCell>
-              <ActionBar
-                organizationUnitId={orgUId}
-                id={shift.id}
-                size="sm"
-                editHref={
-                  eventId
-                    ? eventShiftEditPath(orgUId, eventId, shift.id)
-                    : shiftEditPath(orgUId, shift.id)
-                }
-                inviteHref={
-                  eventId && shift.instance
-                    ? eventShiftInvitePath(
-                        orgUId,
-                        eventId,
-                        shift.id,
-                        shift.instance.id,
-                      )
-                    : undefined
-                }
-              />
-            </ActionsCell>
+            <ActionBar
+              organizationUnitId={orgUId}
+              id={item.id}
+              size="sm"
+              editHref={
+                eventId
+                  ? eventShiftEditPath(orgUId, eventId, item.id)
+                  : shiftEditPath(orgUId, item.id)
+              }
+              inviteHref={undefined}
+            />
           );
         },
       },
@@ -225,6 +408,8 @@ export function ShiftsTable({
       formatDate,
       formatTimeRange,
       visibilityConfig,
+      reimbursementTypes,
+      nameIcons,
     ],
   );
 
@@ -259,11 +444,15 @@ export function ShiftsTable({
       </div>
       <DataTable
         columns={columns}
-        data={shifts}
+        data={masterRows}
         pageCount={pageCount}
         sorting={sorting}
         onSortingChange={onSortingChange}
         emptyMessage={q.trim() ? t('search.noResults') : t('empty.title')}
+        expansion={{
+          getSubRows: (r) => (r.kind === 'master' ? r.subRows : undefined),
+          defaultAllExpanded: true,
+        }}
       />
       {pagination.total > 0 && (
         <DataTablePagination

@@ -1735,7 +1735,8 @@
       "ehrenamt": "Ehrenamtspauschale",
       "ehrenamtShort": "Ehrenamt",
       "uebungsleiter": "Übungsleiterpauschale",
-      "uebungsleiterShort": "Übungsleiter"
+      "uebungsleiterShort": "Übungsleiter",
+      "unpaid": "Keine Vergütung"
     },
     "page": {
       "paginationName": "Einsätze",
@@ -1818,7 +1819,9 @@
       "pattern": "Muster",
       "requiredForms": "Formulare",
       "time": "Zeit",
-      "visibility": "Sichtbarkeit"
+      "visibility": "Sichtbarkeit",
+      "location": "Ort",
+      "staffing": "Besetzung"
     },
     "search": {
       "placeholder": "Nach Name suchen",

@@ -41,7 +41,7 @@ export default async function ShiftsPage({
   await requireOrgAccess(orgUId);
   const [canManage] = await checkPermission(orgUId, PermissionKey.ShiftEdit);
 
-  const { sort, dir, page, pageSize, q } =
+  const { sort, dir, page, pageSize, q, dateFrom, dateTo, location, visibility } =
     shiftsSearchParamsCache.parse(rawSearchParams);
 
   const view =
@@ -79,6 +79,10 @@ export default async function ShiftsPage({
       sort,
       order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
       search: q || null,
+      dateFrom: dateFrom ? dateFrom.toISOString().slice(0, 10) : undefined,
+      dateTo: dateTo ? dateTo.toISOString().slice(0, 10) : undefined,
+      location: location || undefined,
+      visibility: visibility ?? undefined,
     });
 
     const showTable = result.pagination.total > 0 || !!q;

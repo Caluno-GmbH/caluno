@@ -1,4 +1,10 @@
-import { ShiftSortField } from '@repo/data';
+import { ShiftSortField, ShiftVisibility } from '@repo/data';
+import {
+  parseAsIsoDate,
+  parseAsString,
+  parseAsStringEnum,
+  parseAsStringLiteral,
+} from 'nuqs/server';
 import {
   createFilterParsers,
   createTableParsers,
@@ -11,4 +17,9 @@ export const shiftsSearchParams = {
     'desc',
   ),
   ...createFilterParsers(),
+  dateFrom: parseAsIsoDate,
+  dateTo: parseAsIsoDate,
+  location: parseAsString.withDefault(''),
+  visibility: parseAsStringEnum(Object.values(ShiftVisibility)),
+  fill: parseAsStringLiteral(['', 'below', 'ok', 'full'] as const).withDefault(''),
 };
