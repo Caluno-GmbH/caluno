@@ -19,6 +19,8 @@ import {
   type SortingState,
   useTable,
 } from '@tanstack/react-table';
+import type { ReactNode } from 'react';
+import { useRouter } from '@/i18n/navigation';
 import { type DataTableFeatures, dataTableFeatures } from './features';
 import { activeDir, ariaSort } from './table-sort';
 
@@ -38,8 +40,10 @@ interface DataTableServerProps<TData extends RowData> {
   pageCount: number;
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
-  emptyMessage: string;
+  emptyMessage: ReactNode;
   getRowClassName?: (row: TData) => string | undefined;
+  /** When set, the whole row navigates to this href on click. */
+  getRowHref?: (row: TData) => string | null | undefined;
   expansion?: DataTableExpansionProps<TData>;
 }
 
@@ -49,8 +53,10 @@ interface DataTableClientProps<TData extends RowData> {
   data: TData[];
   sorting?: SortingState;
   onSortingChange?: OnChangeFn<SortingState>;
-  emptyMessage: string;
+  emptyMessage: ReactNode;
   getRowClassName?: (row: TData) => string | undefined;
+  /** When set, the whole row navigates to this href on click. */
+  getRowHref?: (row: TData) => string | null | undefined;
   pagination?: PaginationState;
   onPaginationChange?: OnChangeFn<PaginationState>;
 }
@@ -60,8 +66,15 @@ type DataTableProps<TData extends RowData> =
   | DataTableClientProps<TData>;
 
 export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
-  const { columns, data, emptyMessage, getRowClassName, onSortingChange } =
-    props;
+  const {
+    columns,
+    data,
+    emptyMessage,
+    getRowClassName,
+    getRowHref,
+    onSortingChange,
+  } = props;
+  const router = useRouter();
   const isClient = props.mode === 'client';
   const client = props.mode === 'client' ? props : undefined;
   const server = props.mode === 'client' ? undefined : props;
@@ -141,11 +154,30 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
           ) : (
             table.getRowModel().rows.map((row) => {
               const cells = row.getVisibleCells();
+              const href = getRowHref?.(row.original);
               return (
                 <TableRow
                   key={row.id}
                   data-depth={row.depth}
-                  className={getRowClassName?.(row.original)}
+                  className={cn(
+                    getRowClassName?.(row.original),
+                    href && 'cursor-pointer',
+                  )}
+                  onClick={
+                    href
+                      ? (event) => {
+                          // Let inner links/buttons handle their own clicks.
+                          if (
+                            (event.target as HTMLElement).closest(
+                              'a,button,input,select,textarea,[role="button"],[role="menuitem"]',
+                            )
+                          ) {
+                            return;
+                          }
+                          router.push(href);
+                        }
+                      : undefined
+                  }
                 >
                   {cells.map((cell, index) => (
                     <TableCell
