@@ -154,6 +154,15 @@ export class ShiftInstanceFieldResolver {
   }
 
   @AllowAnonymous()
+  @ResolveField(() => Number)
+  async pendingCount(
+    @Parent() instance: ShiftInstanceEntity,
+    @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
+  ): Promise<number> {
+    return loader.pendingCountByInstanceId.load(instance.id);
+  }
+
+  @AllowAnonymous()
   @ResolveField(() => Int, { nullable: true })
   async spotsLeft(
     @Parent()

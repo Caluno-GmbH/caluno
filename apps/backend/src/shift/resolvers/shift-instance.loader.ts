@@ -25,6 +25,15 @@ export class ShiftInstanceLoader {
     },
   );
 
+  public readonly pendingCountByInstanceId = new DataLoader<string, number>(
+    async (instanceIds) => {
+      const counts = await this.shiftService.getPendingCounts(
+        instanceIds as string[],
+      );
+      return instanceIds.map((id) => counts.get(id) ?? 0);
+    },
+  );
+
   public readonly lastCallOutByInstanceId = new DataLoader<
     string,
     ShiftCallOutSummary | null

@@ -15,7 +15,7 @@ import {
 import { MY_SHIFT_INVITE_STATUSES } from '../../shared/invite-status';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
-import { ShiftInviteStatus, ShiftSortField, SortOrder } from '../enums';
+import { ShiftInviteStatus, ShiftSortField, ShiftVisibility, SortOrder } from '../enums';
 import { ShiftMapper } from '../mappers/shift.mapper';
 import { ShiftInstanceMapper } from '../mappers/shift-instance.mapper';
 import { Shift, ShiftPaginatedResponse } from '../models/shift.model';
@@ -100,6 +100,14 @@ export class ShiftQueryResolver {
     order: SortOrder,
     @Args('search', { type: () => String, nullable: true })
     search: string | null | undefined,
+    @Args('dateFrom', { type: () => Date, nullable: true })
+    dateFrom: Date | null | undefined,
+    @Args('dateTo', { type: () => Date, nullable: true })
+    dateTo: Date | null | undefined,
+    @Args('location', { type: () => String, nullable: true })
+    location: string | null | undefined,
+    @Args('visibility', { type: () => ShiftVisibility, nullable: true })
+    visibility: ShiftVisibility | null | undefined,
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ShiftPaginatedResponse> {
@@ -110,6 +118,10 @@ export class ShiftQueryResolver {
       sort,
       order,
       search ?? null,
+      dateFrom ?? null,
+      dateTo ?? null,
+      location ?? null,
+      visibility ?? null,
     );
     return new ShiftPaginatedResponse({
       items: this.shiftMapper.toArray(shifts),
@@ -117,6 +129,14 @@ export class ShiftQueryResolver {
       limit: pagination.limit,
       offset: pagination.offset,
     });
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @Query(() => [String])
+  async shiftLocations(
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<string[]> {
+    return this.shiftService.findDistinctLocations(context.organizationUnitId);
   }
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)

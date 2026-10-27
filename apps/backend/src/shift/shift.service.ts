@@ -3,12 +3,17 @@ import {
   and,
   asc,
   count,
+  desc,
   eq,
+  exists,
   gte,
+  ilike,
   inArray,
   isNull,
   lt,
+  lte,
   ne,
+  or,
   sql,
 } from 'drizzle-orm';
 import { ReimbursementTypeKey } from '../accounting/enums';
@@ -51,6 +56,7 @@ import {
   isVolunteerJoinResolveSource,
   MY_SHIFT_INVITE_STATUSES,
   PARTICIPATING_SHIFT_INVITE_STATUSES,
+  PENDING_SHIFT_INVITE_STATUSES,
   resolveAdminApprovalTargetStatus,
   resolveVolunteerJoinTargetStatus,
   volunteerMayRequestInviteStatus,
@@ -203,6 +209,27 @@ export class ShiftService {
       )
       .groupBy(schema.shiftInstanceInvites.instanceId);
 
+    return new Map(rows.map((row) => [row.instanceId, Number(row.total)]));
+  }
+
+  /** Pending-invite counts (not yet joined) for many instances in one query. */
+  async getPendingCounts(instanceIds: string[]): Promise<Map<string, number>> {
+    if (instanceIds.length === 0) return new Map();
+    const rows = await this.db
+      .select({
+        instanceId: schema.shiftInstanceInvites.instanceId,
+        total: count(),
+      })
+      .from(schema.shiftInstanceInvites)
+      .where(
+        and(
+          inArray(schema.shiftInstanceInvites.instanceId, instanceIds),
+          inArray(schema.shiftInstanceInvites.status, [
+            ...PENDING_SHIFT_INVITE_STATUSES,
+          ]),
+        ),
+      )
+      .groupBy(schema.shiftInstanceInvites.instanceId);
     return new Map(rows.map((row) => [row.instanceId, Number(row.total)]));
   }
 
@@ -406,6 +433,30 @@ export class ShiftService {
       },
       orderBy: { originalStartsAt: 'asc' },
     });
+  }
+
+  /** Distinct non-null, non-empty location values for the org unit, ordered alphabetically. */
+  async findDistinctLocations(organizationUnitId: string): Promise<string[]> {
+    const rows = await this.db
+      .selectDistinct({ location: schema.shifts.location })
+      .from(schema.shifts)
+      .where(
+        and(
+          eq(schema.shifts.organizationUnitId, organizationUnitId),
+          eq(schema.shifts.isDeleted, false),
+          ne(schema.shifts.location, ''),
+          sql`${schema.shifts.location} is not null`,
+        ),
+      )
+      .orderBy(asc(schema.shifts.location));
+
+    return [
+      ...new Set(
+        rows
+          .map((r) => r.location)
+          .filter((loc): loc is string => loc !== null && loc !== ''),
+      ),
+    ].sort();
   }
 
   /** A user's open time entries across many instances in one query (DataLoader batch). */
@@ -987,7 +1038,11 @@ export class ShiftService {
     sort: ShiftSortField = ShiftSortField.CREATED_AT,
     order: SortOrder = SortOrder.DESC,
     search: string | null = null,
-  ): Promise<{ shifts: ShiftEntity[]; total: number }> {
+    dateFrom: Date | null = null,
+    dateTo: Date | null = null,
+    location: string | null = null,
+    visibility: ShiftVisibility | null = null,
+  ): Promise<{ shifts: (ShiftEntity & { windowedInstances?: ShiftInstanceEntity[] })[]; total: number }> {
     const canViewAllShifts = await this.authService.hasRequiredPermissions(
       userId,
       organizationUnitId,
@@ -1001,25 +1056,29 @@ export class ShiftService {
         sort,
         order,
         search,
+        dateFrom,
+        dateTo,
+        location,
+        visibility,
       );
     }
 
-    return this.findAllVisibleToMember(userId, organizationUnitId, pagination);
+    const result = await this.findAllVisibleToMember(userId, organizationUnitId, pagination);
+    return {
+      shifts: result.shifts,
+      total: result.total,
+    };
   }
 
-  private buildShiftOrderBy(sort: ShiftSortField, order: SortOrder) {
-    const dir = order === SortOrder.ASC ? ('asc' as const) : ('desc' as const);
-    // id tie-breaker keeps offset pagination stable across equal sort values.
-    switch (sort) {
-      case ShiftSortField.TITLE:
-        return { title: dir, id: 'asc' as const };
-      case ShiftSortField.FIRST_DATE:
-        return { originalStartsAt: dir, id: 'asc' as const };
-      case ShiftSortField.VISIBILITY:
-        return { visibility: dir, id: 'asc' as const };
-      default:
-        return { createdAt: dir, id: 'asc' as const };
-    }
+  private resolveWindow(dateFrom: Date | null, dateTo: Date | null): { from: Date; to: Date } {
+    const from = dateFrom ?? startOfTodayInAppTimeZone();
+    const to = dateTo ?? (() => {
+      const d = startOfTodayInAppTimeZone();
+      d.setDate(d.getDate() + 31);
+      d.setHours(23, 59, 59, 999);
+      return d;
+    })();
+    return { from, to };
   }
 
   private async findAllForOrgUnit(
@@ -1028,36 +1087,111 @@ export class ShiftService {
     sort: ShiftSortField,
     order: SortOrder,
     search: string | null,
-  ): Promise<{ shifts: ShiftEntity[]; total: number }> {
+    dateFrom: Date | null = null,
+    dateTo: Date | null = null,
+    locationFilter: string | null = null,
+    visibilityFilter: ShiftVisibility | null = null,
+  ): Promise<{ shifts: (ShiftEntity & { windowedInstances: ShiftInstanceEntity[] })[]; total: number }> {
     const term = search?.trim();
-    // Same where for rows and count so pagination totals reflect the search.
-    const where = {
-      organizationUnitId,
-      isDeleted: false,
+    const { from: windowFrom, to: windowTo } = this.resolveWindow(dateFrom, dateTo);
+
+    // EXISTS subquery: master has at least one non-cancelled instance overlapping [windowFrom, windowTo].
+    // Overlap condition: actualStartsAt <= windowTo AND actualEndsAt >= windowFrom.
+    const instanceExistsSubquery = this.db
+      .select({ one: sql`1` })
+      .from(schema.shiftInstances)
+      .where(
+        and(
+          eq(schema.shiftInstances.masterId, schema.shifts.id),
+          lte(schema.shiftInstances.actualStartsAt, windowTo),
+          gte(schema.shiftInstances.actualEndsAt, windowFrom),
+          eq(schema.shiftInstances.isCancelled, false),
+        ),
+      );
+
+    const conditions = [
+      eq(schema.shifts.organizationUnitId, organizationUnitId),
+      eq(schema.shifts.isDeleted, false),
+      exists(instanceExistsSubquery),
       ...(term
-        ? {
-            OR: [
-              { title: { ilike: containsPattern(term) } },
-              { location: { ilike: containsPattern(term) } },
-            ],
-          }
-        : {}),
-    };
+        ? [
+            or(
+              ilike(schema.shifts.title, containsPattern(term)),
+              ilike(schema.shifts.location, containsPattern(term)),
+            )!,
+          ]
+        : []),
+      ...(locationFilter ? [eq(schema.shifts.location, locationFilter)] : []),
+      ...(visibilityFilter ? [eq(schema.shifts.visibility, visibilityFilter)] : []),
+    ];
 
-    const shifts = await this.db.query.shifts.findMany({
-      where,
-      orderBy: this.buildShiftOrderBy(sort, order),
-      limit: pagination.limit,
-      offset: pagination.offset,
-    });
+    const whereClause = and(...conditions)!;
 
-    const totalResult = await this.db.query.shifts.findMany({
-      where,
-      columns: {},
-      extras: { total: count() },
-    });
+    const orderByClause = this.buildShiftOrderBySQL(sort, order);
 
-    return { shifts, total: totalResult[0]?.total ?? 0 };
+    const [shifts, countResult] = await Promise.all([
+      this.db
+        .select()
+        .from(schema.shifts)
+        .where(whereClause)
+        .orderBy(...orderByClause)
+        .limit(pagination.limit)
+        .offset(pagination.offset) as Promise<ShiftEntity[]>,
+      this.db
+        .select({ total: count() })
+        .from(schema.shifts)
+        .where(whereClause)
+        .orderBy() as Promise<{ total: number }[]>,
+    ]);
+
+    const total = countResult[0]?.total ?? 0;
+
+    if (shifts.length === 0) {
+      return { shifts: [], total };
+    }
+
+    const shiftIds = shifts.map((s) => s.id);
+    const allInstances = await this.db
+      .select()
+      .from(schema.shiftInstances)
+      .where(
+        and(
+          inArray(schema.shiftInstances.masterId, shiftIds),
+          lte(schema.shiftInstances.actualStartsAt, windowTo),
+          gte(schema.shiftInstances.actualEndsAt, windowFrom),
+          eq(schema.shiftInstances.isCancelled, false),
+        ),
+      )
+      .orderBy(asc(schema.shiftInstances.actualStartsAt)) as ShiftInstanceEntity[];
+
+    const instancesByMaster = new Map<string, ShiftInstanceEntity[]>();
+    for (const inst of allInstances) {
+      const list = instancesByMaster.get(inst.masterId) ?? [];
+      list.push(inst);
+      instancesByMaster.set(inst.masterId, list);
+    }
+
+    const shiftsWithInstances = shifts.map((s) => ({
+      ...s,
+      windowedInstances: instancesByMaster.get(s.id) ?? [],
+    }));
+
+    return { shifts: shiftsWithInstances, total };
+  }
+
+  private buildShiftOrderBySQL(sort: ShiftSortField, order: SortOrder) {
+    const dirFn = order === SortOrder.ASC ? asc : desc;
+    // id tie-breaker keeps offset pagination stable across equal sort values.
+    switch (sort) {
+      case ShiftSortField.TITLE:
+        return [dirFn(schema.shifts.title), asc(schema.shifts.id)] as const;
+      case ShiftSortField.FIRST_DATE:
+        return [dirFn(schema.shifts.originalStartsAt), asc(schema.shifts.id)] as const;
+      case ShiftSortField.VISIBILITY:
+        return [dirFn(schema.shifts.visibility), asc(schema.shifts.id)] as const;
+      default:
+        return [dirFn(schema.shifts.createdAt), asc(schema.shifts.id)] as const;
+    }
   }
 
   private async findVisibleShiftIdsForMember(
