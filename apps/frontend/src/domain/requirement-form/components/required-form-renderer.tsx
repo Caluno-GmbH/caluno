@@ -31,6 +31,7 @@ import {
   submitForm,
   submitRequiredForm,
 } from '@/domain/requirement-form/actions';
+import { resolveShareSubmitToken } from '@/domain/requirement-form/resolve-required-forms';
 import {
   buildFieldSchema,
   type RenderableField,
@@ -45,6 +46,11 @@ export type RequiredFormItem = {
   /** When provided, submissions for this form are sent to this target instead of the component-level targetType/targetId. */
   targetType?: RequiredFormTargetType;
   targetId?: string;
+  /**
+   * When set, this form is submitted via the public share-token mutation
+   * (`submitForm`) instead of `submitRequiredForm`.
+   */
+  shareToken?: string;
 };
 
 interface RequiredFormRendererProps {
@@ -60,9 +66,9 @@ interface RequiredFormRendererProps {
   /** Org display name for profile-prefilled field cards; falls back to form name. */
   orgName?: string;
   /**
-   * When set, each form is submitted via the public share-token mutation
-   * (`submitForm`) instead of `submitRequiredForm`. `targetId` is the
-   * organization unit id in that path.
+   * Legacy single-form share path: when set and `forms.length === 1`, that
+   * form is submitted via `submitForm`. Prefer `RequiredFormItem.shareToken`
+   * for multi-form lists so only the shared form uses the token.
    */
   shareToken?: string;
   initialSubmittedFormIds: Set<string>;
@@ -322,9 +328,14 @@ export function RequiredFormRenderer({
           }
         }
 
-        const result = shareToken
+        const token = resolveShareSubmitToken(
+          item,
+          shareToken,
+          sortedForms.length,
+        );
+        const result = token
           ? await submitForm({
-              token: shareToken,
+              token,
               organizationUnitId: item.targetId ?? targetId,
               values: submissionValues,
             })
