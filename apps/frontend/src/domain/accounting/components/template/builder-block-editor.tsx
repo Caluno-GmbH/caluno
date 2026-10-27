@@ -1,6 +1,6 @@
 'use client';
 
-import { clampPageFooter } from '@repo/data';
+import { clampPageFooter, manualFieldMaxLength } from '@repo/data';
 import {
   Badge,
   FieldDescription,
@@ -26,6 +26,7 @@ import { LockIcon, TriangleAlertIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { useId } from 'react';
+import { CharacterCounter } from '../character-counter';
 import type { DocumentKind } from '../doc-type-header';
 import { InfoPanel } from '../info-panel';
 import { blockHeadingKey } from './builder-headings';
@@ -398,11 +399,23 @@ function FieldRow({
       />
     );
 
-  if (hideTitle) return <div className="py-1">{control}</div>;
+  // Values past a field's character limit gate Save too (`countOverLimitManualFields`).
+  const maxLength = manualFieldMaxLength(field.id);
+  const controlWithCounter =
+    maxLength === undefined ? (
+      control
+    ) : (
+      <div className="flex flex-col gap-1">
+        {control}
+        <CharacterCounter length={field.value.value.length} max={maxLength} />
+      </div>
+    );
+
+  if (hideTitle) return <div className="py-1">{controlWithCounter}</div>;
 
   return (
     <InfoPanel variant="outline" title={title} required>
-      {control}
+      {controlWithCounter}
     </InfoPanel>
   );
 }
