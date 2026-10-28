@@ -39,6 +39,7 @@ export class RoleMutationResolver {
     @Session() session: UserSession,
   ): Promise<Role> {
     const updatedRole = await this.authService.updateRole(
+      context.organizationUnitId,
       id,
       input,
       session.user.id,
@@ -53,7 +54,11 @@ export class RoleMutationResolver {
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<Role> {
-    const deletedRole = await this.authService.deleteRole(id, session.user.id);
+    const deletedRole = await this.authService.deleteRole(
+      context.organizationUnitId,
+      id,
+      session.user.id,
+    );
     return this.roleMapper.toModelOrThrow(deletedRole);
   }
 }

@@ -71,6 +71,7 @@ describe('AuthService role mutations', () => {
 
     await expect(
       service.updateRole(
+        organizationUnitId,
         roleToRename.id,
         {
           name: existingName,

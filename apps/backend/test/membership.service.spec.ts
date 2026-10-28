@@ -705,4 +705,68 @@ describe('MembershipService', () => {
       ]);
     });
   });
+
+  describe('getMyMembershipRequest', () => {
+    it('returns the request when it belongs to the user', async () => {
+      const user = await createUser(db);
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Own Request Org ${crypto.randomUUID()}`,
+      );
+      const unit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'unit',
+      });
+      const [request] = await db
+        .insert(schema.membershipRequests)
+        .values({
+          userId: user.id,
+          organizationUnitId: unit.id,
+          status: MembershipRequestStatus.PENDING,
+          metadata: {},
+        })
+        .returning();
+
+      const found = await service.getMyMembershipRequest(user.id, request.id);
+      expect(found?.id).toBe(request.id);
+      expect(found?.organizationUnitId).toBe(unit.id);
+      expect(found?.status).toBe(MembershipRequestStatus.PENDING);
+    });
+
+    it('returns null when the request belongs to another user', async () => {
+      const owner = await createUser(db);
+      const other = await createUser(db);
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Foreign Request Org ${crypto.randomUUID()}`,
+      );
+      const unit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'unit',
+      });
+      const [request] = await db
+        .insert(schema.membershipRequests)
+        .values({
+          userId: owner.id,
+          organizationUnitId: unit.id,
+          status: MembershipRequestStatus.PENDING,
+          metadata: {},
+        })
+        .returning();
+
+      const found = await service.getMyMembershipRequest(other.id, request.id);
+      expect(found).toBeNull();
+    });
+
+    it('returns null for an unknown id', async () => {
+      const user = await createUser(db);
+      const found = await service.getMyMembershipRequest(
+        user.id,
+        crypto.randomUUID(),
+      );
+      expect(found).toBeNull();
+    });
+  });
 });

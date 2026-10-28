@@ -2,7 +2,7 @@ import { JoinStatus, RequiredFormTargetType } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { ShiftJoinFormsClient } from '@/app/[locale]/(public)/shifts/[shiftId]/instances/[instanceId]/join-forms/shift-join-forms-client';
 import {
-  buildSubmittedFormIds,
+  getSubmittedFormIds,
   resolveRequiredForms,
 } from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
@@ -66,7 +66,7 @@ export default async function ShiftJoinFormsPage({
     .findMyFormSubmissions(shift.organizationUnitId)
     .catch(() => []);
 
-  const submittedFormIds = buildSubmittedFormIds(submissionsResult);
+  const submittedFormIds = getSubmittedFormIds(submissionsResult);
 
   const requiredForms = resolveRequiredForms(
     [

@@ -37,6 +37,7 @@ import {
   NotFoundGraphQLError,
 } from '../src/graphql/errors';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { startOfAppDay } from '../src/shift/utils/app-time';
 import {
@@ -82,9 +83,12 @@ describe('ContractService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const organizationUnitDataService = new OrganizationUnitDataService(db);
-    const authService = new AuthService(db, organizationUnitDataService, {
-      capture: () => {},
-    } as unknown as PostHogService);
+    const authService = new AuthService(
+      db,
+      organizationUnitDataService,
+      { capture: () => {} } as unknown as PostHogService,
+      new TenantScopeService(db, organizationUnitDataService),
+    );
     const documentTemplateService = new DocumentTemplateService(
       db,
       {
