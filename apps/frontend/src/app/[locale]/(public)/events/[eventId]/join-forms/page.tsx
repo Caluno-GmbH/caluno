@@ -43,7 +43,7 @@ export default async function EventJoinFormsPage({
   const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const searchParams = new URLSearchParams({
       signup: '1',
       redirectTo: redirectTo ?? `/events/${eventId}/join-forms`,

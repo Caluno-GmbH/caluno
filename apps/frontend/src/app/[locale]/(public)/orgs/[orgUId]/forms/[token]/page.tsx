@@ -21,7 +21,7 @@ export default async function PublicFormPage({ params }: Props) {
   );
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const inviteParams = new URLSearchParams({
       redirectTo: `/orgs/${orgUId}/forms/${token}`,
       orgUId,

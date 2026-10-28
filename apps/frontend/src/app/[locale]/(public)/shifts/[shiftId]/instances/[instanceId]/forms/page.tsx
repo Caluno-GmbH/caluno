@@ -44,7 +44,7 @@ export default async function ShiftFormsPage({
   );
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const params = new URLSearchParams({
       orgUId: shift.organizationUnitId,
       redirectTo:
