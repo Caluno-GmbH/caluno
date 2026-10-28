@@ -1,56 +1,25 @@
-import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import {
+  type DataClient,
+  type DataClientConfig,
   DataError,
   ForbiddenDataError,
-  isForbiddenDataError,
-  isUnauthenticatedDataError,
-  LOCALE_HEADER,
 } from '@repo/data';
+import { createGetDataClient } from '../data-client-core';
 
-type ErrorHandler = (error: DataError) => void;
-
-let onError: ErrorHandler | undefined;
-const createDataClientMock = mock((config: { onError?: ErrorHandler }) => {
+let onError: DataClientConfig['onError'];
+const createDataClientMock = mock((config: DataClientConfig) => {
   onError = config.onError;
-  return {};
+  return {} as DataClient;
 });
 const redirectMock = mock((_args: { href: string; locale: string }) => {
   throw new Error('NEXT_REDIRECT');
 });
-
-mock.module('next/headers', () => ({
-  cookies: async () => ({ get: () => undefined }),
-  headers: async () => new Headers(),
-}));
-
-mock.module('next-intl/server', () => ({
-  getLocale: async () => 'de',
-  getTranslations: async () => (key: string) => key,
-}));
-
-mock.module('@/i18n/navigation', () => ({
-  redirect: redirectMock,
-}));
-
-mock.module('next/navigation', () => ({
-  redirect: () => {
-    throw new Error('UNLOCALIZED_REDIRECT');
-  },
-}));
-
-mock.module('@repo/data', () => ({
-  DataError,
-  ForbiddenDataError,
-  isForbiddenDataError,
-  isUnauthenticatedDataError,
-  LOCALE_HEADER,
+const getDataClient = createGetDataClient({
   createDataClient: createDataClientMock,
-}));
-
-const { getDataClient } = await import('../data-client');
-
-afterAll(() => {
-  mock.restore();
+  getLocale: async () => 'de',
+  getHeaders: async () => new Headers(),
+  redirect: redirectMock,
 });
 
 async function expectErrorRedirect(
