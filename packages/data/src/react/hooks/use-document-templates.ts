@@ -71,6 +71,21 @@ export interface TemplateSlotRef {
   reimbursementTypeId?: string;
 }
 
+/**
+ * An unset slot is a NotFound on the backend, which is a normal state here, so
+ * it maps to null. Any other failure is a real error and is rethrown.
+ */
+export async function nullIfNotFound<T>(
+  load: () => Promise<T>,
+): Promise<T | null> {
+  try {
+    return await load();
+  } catch (error) {
+    if (isNotFoundDataError(error)) return null;
+    throw error;
+  }
+}
+
 function resolvedTemplateQuery(
   repository: AccountingRepository,
   slot: TemplateSlotRef,
@@ -84,20 +99,15 @@ function resolvedTemplateQuery(
       slot.reimbursementTypeId,
       organizationUnitId,
     ],
-    // The backend walks own unit, ancestors, then org-wide. An unset slot is
-    // a NotFound there, which is a normal state here, so it maps to null.
-    queryFn: async (): Promise<DocumentTemplateDetail | null> => {
-      try {
-        return await repository.findActiveDocumentTemplate({
+    // The backend walks own unit, ancestors, then org-wide.
+    queryFn: (): Promise<DocumentTemplateDetail | null> =>
+      nullIfNotFound(() =>
+        repository.findActiveDocumentTemplate({
           kind: slot.kind,
           reimbursementTypeId: slot.reimbursementTypeId ?? '',
           organizationUnitId,
-        });
-      } catch (error) {
-        if (isNotFoundDataError(error)) return null;
-        throw error;
-      }
-    },
+        }),
+      ),
     staleTime: 30 * 1000,
     enabled: !!slot.reimbursementTypeId,
   };
