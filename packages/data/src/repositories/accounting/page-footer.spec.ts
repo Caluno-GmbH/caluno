@@ -38,8 +38,8 @@ describe('page footer helpers (preview side)', () => {
 describe('pageFooterMayBeCut', () => {
   const on = (text: string) => ({ enabled: true, text });
 
-  it('is three full sample lines long', () => {
-    expect(PAGE_FOOTER_WARN_LENGTH).toBe(417);
+  it('warns past 300 characters', () => {
+    expect(PAGE_FOOTER_WARN_LENGTH).toBe(300);
   });
 
   it('accepts three typed lines within the length', () => {

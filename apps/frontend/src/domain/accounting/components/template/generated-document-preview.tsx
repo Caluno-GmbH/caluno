@@ -481,7 +481,7 @@ export function GeneratedDocumentPreview({
             {pageNumberLabel('x', 'y')}
           </p>
           {pageFooterLines.length > 0 && (
-            <p className="mt-[1.803cqw] line-clamp-3 whitespace-pre-line">
+            <p className="mt-[1.803cqw] max-h-[3lh] overflow-hidden whitespace-pre-line">
               {pageFooterLines.join('\n')}
             </p>
           )}

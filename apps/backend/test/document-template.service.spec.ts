@@ -374,7 +374,7 @@ describe('DocumentTemplateService', () => {
       expect(signees).toHaveLength(2);
     });
 
-    it('rejects a template body with an over-limit freeform text', async () => {
+    it('rejects a template body with an over-limit task description', async () => {
       const reimbursementType = await createReimbursementType(db);
       const { organization } = await createOrganizationWithType(
         db,
@@ -401,17 +401,17 @@ describe('DocumentTemplateService', () => {
               header: {},
               blocks: [
                 {
-                  id: 'free',
+                  id: 'engagement',
                   lines: [
                     {
                       id: 'line',
-                      text: '{freeform}',
+                      text: '{tasks}',
                       fields: [
                         {
-                          id: 'freeform-text',
+                          id: 'tasks',
                           value: {
                             kind: 'manual-template',
-                            value: 'x'.repeat(1001),
+                            value: 'x'.repeat(301),
                           },
                         },
                       ],
@@ -424,7 +424,7 @@ describe('DocumentTemplateService', () => {
           },
           editor.id,
         ),
-      ).rejects.toThrow('Freeform text must be at most 1000 characters');
+      ).rejects.toThrow('Task description must be at most 300 characters');
     });
 
     it('does not retroactively change a contract already issued from the template', async () => {

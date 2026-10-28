@@ -42,12 +42,12 @@ describe('assertFieldOverrideLengths', () => {
     ).not.toThrow();
   });
 
-  it('rejects freeform text over 1000 characters', () => {
+  it('does not limit freeform text', () => {
     expect(() =>
       assertFieldOverrideLengths([
-        { fieldId: 'freeform-text', value: 'x'.repeat(1001) },
+        { fieldId: 'freeform-text', value: 'x'.repeat(5000) },
       ]),
-    ).toThrow('Freeform text must be at most 1000 characters');
+    ).not.toThrow();
   });
 
   it('does not limit unrelated field ids', () => {
@@ -78,18 +78,18 @@ describe('assertManualFieldLengthsInBody', () => {
     ).not.toThrow();
   });
 
-  it('rejects a freeform-text manual field over 1000 characters', () => {
+  it('does not limit a freeform-text manual field', () => {
     expect(() =>
       assertManualFieldLengthsInBody(
-        bodyWithField('freeform-text', 'x'.repeat(1001)),
+        bodyWithField('freeform-text', 'x'.repeat(5000)),
       ),
-    ).toThrow('Freeform text must be at most 1000 characters');
+    ).not.toThrow();
   });
 
   it('checks fields in header, note blocks and footer too', () => {
-    const long = 'x'.repeat(1001);
+    const long = 'x'.repeat(301);
     const field = {
-      id: 'freeform-text',
+      id: 'tasks',
       value: { kind: 'manual-template', value: long },
     };
     const line = { id: 'l', text: '{{0}}', fields: [field] };
@@ -105,7 +105,7 @@ describe('assertManualFieldLengthsInBody', () => {
   });
 
   it('ignores over-limit text in a disabled block', () => {
-    const body = bodyWithField('freeform-text', 'x'.repeat(1001));
+    const body = bodyWithField('tasks', 'x'.repeat(301));
     expect(() =>
       assertManualFieldLengthsInBody({
         blocks: [{ ...body.blocks[0], enabled: false }],
@@ -114,7 +114,7 @@ describe('assertManualFieldLengthsInBody', () => {
   });
 
   it('ignores over-limit text in a disabled line', () => {
-    const body = bodyWithField('freeform-text', 'x'.repeat(1001));
+    const body = bodyWithField('tasks', 'x'.repeat(301));
     const line = body.blocks[0]?.lines[0];
     expect(() =>
       assertManualFieldLengthsInBody({

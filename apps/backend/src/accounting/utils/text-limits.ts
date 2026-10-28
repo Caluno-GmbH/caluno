@@ -9,12 +9,10 @@ import type {
 /** Character limits per manual field id; fields not listed are unlimited. */
 export const MANUAL_FIELD_MAX_LENGTH: Readonly<Record<string, number>> = {
   tasks: 300,
-  'freeform-text': 1000,
 };
 
 const MANUAL_FIELD_LABEL: Readonly<Record<string, string>> = {
   tasks: 'Task description',
-  'freeform-text': 'Freeform text',
 };
 
 /** Own-property lookup, so ids like `constructor` never resolve to a limit. */

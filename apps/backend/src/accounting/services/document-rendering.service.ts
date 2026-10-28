@@ -443,14 +443,12 @@ export class DocumentRenderingService {
         });
 
       if (text !== '') {
-        // pdfkit wraps to the column and stops at `height`, ending the last
-        // kept line in "…" when text is cut.
+        // pdfkit wraps to the column and drops whatever does not fit in `height`.
         pdf.text(text, left, top + 2 * PAGE_FOOTER_LINE_HEIGHT, {
           width,
           align: 'left',
           lineGap: PAGE_FOOTER_LINE_GAP,
           height: PAGE_FOOTER_TEXT_HEIGHT,
-          ellipsis: true,
         });
       }
 
