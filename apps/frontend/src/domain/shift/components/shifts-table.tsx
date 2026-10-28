@@ -472,6 +472,7 @@ export function ShiftsTable({
       },
       {
         id: 'VISIBILITY',
+        enableSorting: false,
         accessorFn: (row) =>
           row.kind === 'master' ? row.visibility : undefined,
         meta: {
