@@ -563,10 +563,9 @@ export function ShiftsTable({
 
   const displayVisibility = (v: ShiftVisibility) => visibilityConfig[v].label;
 
-  const displayFill = (f: 'below' | 'ok' | 'full') =>
+  const displayFill = (f: 'below' | 'full') =>
     ({
       below: t('filter.fillUnderstaffed'),
-      ok: t('filter.fillOk'),
       full: t('filter.fillFull'),
     })[f];
 
@@ -594,15 +593,8 @@ export function ShiftsTable({
   });
 
   const onClearAll = () => {
-    void setParams({
-      q: '',
-      location: '',
-      visibility: null,
-      dateFrom: null,
-      dateTo: null,
-      fill: '',
-      page: 1,
-    });
+    void setParams({ fill: '' }, { shallow: true });
+    void setParams({ q: '', location: '', visibility: null, dateFrom: null, dateTo: null, page: 1 });
   };
 
   const filtersActive = activeFilters.length > 0;

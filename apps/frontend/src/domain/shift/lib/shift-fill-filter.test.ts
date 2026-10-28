@@ -95,16 +95,6 @@ describe('applyFillFilter', () => {
     ]);
   });
 
-  it("fill='ok' keeps only neutral instances", () => {
-    const result = applyFillFilter(masters, 'ok');
-    // only m1 has a neutral instance
-    expect(result).toHaveLength(1);
-    expect(result.map((m) => m.id)).toEqual(['m1']);
-    expect(result.map((m) => m.subRows.map((i) => i.id))).toEqual([
-      ['inst-neutral'],
-    ]);
-  });
-
   it('returns new master objects with filtered subRows (does not mutate input)', () => {
     const result = applyFillFilter(masters, 'full');
     const m3filtered = result.find((m) => m.id === 'm3');

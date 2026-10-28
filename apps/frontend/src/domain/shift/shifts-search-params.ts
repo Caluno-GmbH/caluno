@@ -21,5 +21,5 @@ export const shiftsSearchParams = {
   dateTo: parseAsIsoDate,
   location: parseAsString.withDefault(''),
   visibility: parseAsStringEnum(Object.values(ShiftVisibility)),
-  fill: parseAsStringLiteral(['', 'below', 'ok', 'full'] as const).withDefault(''),
+  fill: parseAsStringLiteral(['', 'below', 'full'] as const).withDefault(''),
 };

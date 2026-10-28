@@ -14,7 +14,7 @@ export interface ShiftFilterValues {
   visibility: ShiftVisibility | null;
   dateFrom: Date | null;
   dateTo: Date | null;
-  fill: '' | 'below' | 'ok' | 'full';
+  fill: '' | 'below' | 'full';
 }
 
 export function buildShiftActiveFilters(args: {
@@ -22,7 +22,7 @@ export function buildShiftActiveFilters(args: {
   labels: Record<ShiftFilterField, string>;
   formatDateRange: (from: Date | null, to: Date | null) => string;
   displayVisibility: (v: ShiftVisibility) => string;
-  displayFill: (f: 'below' | 'ok' | 'full') => string;
+  displayFill: (f: 'below' | 'full') => string;
   onClear: (field: ShiftFilterField) => void;
 }): TableToolbarActiveFilter[] {
   const {

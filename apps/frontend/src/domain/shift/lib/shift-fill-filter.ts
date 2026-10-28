@@ -1,11 +1,10 @@
 import type { ShiftMasterRow } from '../components/shifts-table';
 import { getStaffingState, type StaffingState } from '../staffing';
 
-export type ShiftFillValue = '' | 'below' | 'ok' | 'full';
+export type ShiftFillValue = '' | 'below' | 'full';
 
-const FILL_TO_STATE: Record<'below' | 'ok' | 'full', StaffingState> = {
+const FILL_TO_STATE: Record<'below' | 'full', StaffingState> = {
   below: 'alert',
-  ok: 'neutral',
   full: 'full',
 };
 
