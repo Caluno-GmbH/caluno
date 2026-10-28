@@ -2,10 +2,8 @@ import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { PaginationInput } from '../../graphql/pagination.input';
-import { OrgAccessService } from '../../shared/org-access.service';
 import { FormSubmissionMapper } from '../mappers/form-submission.mapper';
 import {
   FormSubmission,
@@ -20,7 +18,6 @@ export class FormSubmissionQueryResolver {
     private readonly formSubmissionService: FormSubmissionService,
     private readonly requirementFormService: RequirementFormService,
     private readonly formSubmissionMapper: FormSubmissionMapper,
-    private readonly orgAccessService: OrgAccessService,
   ) {}
 
   @Query(() => FormSubmission, { nullable: true })
@@ -132,17 +129,10 @@ export class FormSubmissionQueryResolver {
     id: string,
     organizationUnitId: string,
   ): Promise<FormSubmission | null> {
-    const item = await this.formSubmissionService.findById(id);
-    if (item) {
-      const form = await this.requirementFormService.findById(item.formId);
-      if (!form) {
-        throw new NotFoundGraphQLError('Form not found');
-      }
-      await this.orgAccessService.verifyUnitInOrg(
-        organizationUnitId,
-        form.organizationId,
-      );
-    }
+    const item = await this.formSubmissionService.findById(
+      organizationUnitId,
+      id,
+    );
     return this.formSubmissionMapper.toModel(item);
   }
 
@@ -153,15 +143,8 @@ export class FormSubmissionQueryResolver {
     @Args() pagination: PaginationInput,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<FormSubmissionPaginatedResponse> {
-    const form = await this.requirementFormService.findById(formId);
-    if (!form) {
-      throw new NotFoundGraphQLError('Form not found');
-    }
-    await this.orgAccessService.verifyUnitInOrg(
-      context.organizationUnitId,
-      form.organizationId,
-    );
     const { items, total } = await this.formSubmissionService.findByFormId(
+      context.organizationUnitId,
       formId,
       pagination,
     );
