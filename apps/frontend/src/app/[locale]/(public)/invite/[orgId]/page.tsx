@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { redirect as redirectWithLocale } from '@/i18n/navigation';
 import { isAuthenticated } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { stripLocalePrefix } from '@/lib/locale-path';
 import { requireFound } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { JoinError } from './components/join-error';
@@ -44,7 +45,9 @@ export default async function InvitePage({ params }: InvitePageProps) {
     const cookieStore = await cookies();
     const pendingRedirect = cookieStore.get('pending_redirect')?.value;
     redirectWithLocale({
-      href: getSafeRedirect(pendingRedirect, `/admin/${organizationUnitId}`),
+      href: stripLocalePrefix(
+        getSafeRedirect(pendingRedirect, `/admin/${organizationUnitId}`),
+      ),
       locale,
     });
   }
