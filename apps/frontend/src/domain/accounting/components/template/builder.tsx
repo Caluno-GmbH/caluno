@@ -168,26 +168,38 @@ export function TemplateBuilder({
   const [templateDoc, setTemplateDoc] = useState<TemplateDocument | null>(null);
   const [orgProfileBlocked, setOrgProfileBlocked] = useState(false);
   const initialized = useRef(false);
+  // The document as first shown. For an inherited or org-wide template this is
+  // the pre-filled content, so an untouched editor is not worth an override.
+  const baseline = useRef<string | null>(null);
   useEffect(() => {
     if (initialized.current) return;
     if (resolvedTemplate) {
       initialized.current = true;
       // A stored template may predate the rule that a Kostenstelle number format
       // must collect one, so normalise on the way in as well as on every change.
-      setTemplateDoc(
-        withKostenstelleForNumberFormat(
-          parseTemplateBody(resolvedTemplate.body),
-        ),
+      const initial = withKostenstelleForNumberFormat(
+        parseTemplateBody(resolvedTemplate.body),
       );
+      baseline.current = JSON.stringify(initial);
+      setTemplateDoc(initial);
     } else if (resolvedQuery.isSuccess) {
       initialized.current = true;
-      setTemplateDoc(
+      const initial =
         slotKind === 'contract'
           ? getContractDocument(pauschale)
-          : withKostenstelleForNumberFormat(getInvoiceDocument(pauschale)),
-      );
+          : withKostenstelleForNumberFormat(getInvoiceDocument(pauschale));
+      baseline.current = JSON.stringify(initial);
+      setTemplateDoc(initial);
     }
   }, [resolvedTemplate, resolvedQuery.isSuccess, slotKind, pauschale]);
+
+  // Saving an inherited or org-wide template creates an override. Without an
+  // edit that would only duplicate the original and freeze it for this unit.
+  const copyUnchanged =
+    !!provenance &&
+    provenance.kind !== 'own' &&
+    !!templateDoc &&
+    JSON.stringify(templateDoc) === baseline.current;
 
   const effectiveRate = ratesQuery.data?.find(
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,
@@ -232,7 +244,7 @@ export function TemplateBuilder({
   const signerRightLabel = t('preview.signatureCoordinator');
 
   async function handleSave() {
-    if (!templateDoc) return;
+    if (!templateDoc || copyUnchanged) return;
     if (missingOrgSources.length > 0) {
       setOrgProfileBlocked(true);
       return;
@@ -353,7 +365,10 @@ export function TemplateBuilder({
     };
   }, []);
 
-  if (typesQuery.isError || resolvedQuery.isError) {
+  // Types loaded but none matches this route: nothing to build, and waiting
+  // would leave the skeleton up forever.
+  const typeMissing = typesQuery.isSuccess && !reimbursementType;
+  if (typesQuery.isError || resolvedQuery.isError || typeMissing) {
     return <TemplateListingPageError />;
   }
 
@@ -399,6 +414,7 @@ export function TemplateBuilder({
           missingOrgSources.length > 0 ||
           orgProfileBlocked ||
           createBlockedBySignees ||
+          copyUnchanged ||
           saving
         }
         {...(backHref
@@ -412,7 +428,9 @@ export function TemplateBuilder({
                   ? t('provenance.inheritedHint', {
                       unit: provenance.unitName,
                     })
-                  : t('provenance.orgWideHint')}
+                  : org.isRoot
+                    ? t('provenance.orgWideRootHint')
+                    : t('provenance.orgWideHint')}
               </span>
             )}
             {incompleteCount > 0 && (

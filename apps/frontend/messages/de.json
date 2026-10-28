@@ -2587,7 +2587,8 @@
         "saveErrorToast": "Die Vorlage ließ sich nicht speichern. Versuch es bitte erneut.",
         "provenance": {
           "inheritedHint": "Diese Vorlage wurde von {unit} übernommen. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert.",
-          "orgWideHint": "Das ist die organisationsweite Vorlage. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert."
+          "orgWideHint": "Das ist die organisationsweite Vorlage. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert.",
+          "orgWideRootHint": "Beim Speichern entsteht eine eigene Version für die Organisation. Sie gilt für alle Einheiten ohne eigene Vorlage."
         },
         "signeesUnavailableToast": "Die Unterschriftenrollen konnten noch nicht geladen werden. Bitte warte einen Moment und versuch es erneut.",
         "orgProfile": {
