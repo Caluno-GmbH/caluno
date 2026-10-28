@@ -2778,7 +2778,7 @@
           "title": "Fußzeile",
           "description": "Erscheint unten auf jeder Seite.",
           "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB",
-          "clampedWarning": "Nur die ersten 3 Zeilen werden gedruckt. Den Text kürzen, damit nichts abgeschnitten wird."
+          "mayBeCutWarning": "Die Fußzeile wird eventuell abgeschnitten: Unten auf der Seite ist Platz für höchstens 3 Zeilen. Bitte die Vorschau prüfen."
         }
       },
       "card": {

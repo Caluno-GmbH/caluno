@@ -12,8 +12,6 @@
 // mutation helpers (e.g. `updateManualFieldValue`) belong to the builder
 // component itself and are intentionally not ported here.
 
-import { HELVETICA_KERNING, HELVETICA_WIDTHS } from './helvetica-widths';
-
 export type DataSourceKey =
   | 'volunteer_first_name'
   | 'volunteer_last_name'
@@ -184,88 +182,26 @@ export function pageFooterTextLines(
 
 /** The PDF footer holds at most this many printed lines; the rest is cut. */
 export const PAGE_FOOTER_MAX_LINES = 3;
-export const PAGE_FOOTER_FONT_SIZE = 8;
-/** A4 (595.28pt) minus 48pt margins on each side. */
-export const PAGE_FOOTER_COLUMN_WIDTH = 499.28;
+/**
+ * Characters in a full printed footer line, from the sample "Lorem ipsum
+ * dolor sit amet … In id cursus mi pretium". Real widths vary by character.
+ */
+export const PAGE_FOOTER_MAX_LINE_CHARS_LENGTH = 139;
+export const PAGE_FOOTER_WARN_LENGTH =
+  PAGE_FOOTER_MAX_LINE_CHARS_LENGTH * PAGE_FOOTER_MAX_LINES;
 
 /**
- * Width of `text` in Helvetica at `fontSize` pt, matching pdfkit's
- * `widthOfString` (advance widths plus kerning between adjacent characters).
- * Characters outside WinAnsi (ł, č, 漢, emoji) have no width, as in pdfkit.
+ * Rough check for the builder warning: the PDF wraps by width, which is not
+ * measured here, so long text may still fit.
  */
-export function measureHelvetica(text: string, fontSize: number): number {
-  let total = 0;
-  for (let i = 0; i < text.length; i++) {
-    const ch = text.charAt(i);
-    total += HELVETICA_WIDTHS[ch] ?? 0;
-    if (i > 0) total += HELVETICA_KERNING[text.charAt(i - 1) + ch] ?? 0;
-  }
-  return (total * fontSize) / 1000;
-}
-
-/**
- * Greedy word wrap of one typed line into printed lines. A word wider than
- * `maxWidth` is broken between characters.
- */
-export function wrapText(
-  text: string,
-  maxWidth: number,
-  measure: (s: string) => number,
-): string[] {
-  const lines: string[] = [];
-  let current = '';
-  text.split(' ').forEach((token, index) => {
-    if (index > 0) {
-      const joined = `${current} ${token}`;
-      if (measure(joined) <= maxWidth) {
-        current = joined;
-        return;
-      }
-      lines.push(current);
-      current = '';
-    }
-    if (measure(token) <= maxWidth) {
-      current = token;
-      return;
-    }
-    let chunk = '';
-    for (const ch of token) {
-      if (chunk !== '' && measure(chunk + ch) > maxWidth) {
-        lines.push(chunk);
-        chunk = ch;
-      } else {
-        chunk += ch;
-      }
-    }
-    current = chunk;
-  });
-  lines.push(current);
-  return lines;
-}
-
-/**
- * The footer as printed: each typed line wrapped to the column, cut to
- * `PAGE_FOOTER_MAX_LINES` with an ellipsis on the last kept line. The backend
- * keeps a copy of this algorithm, measured with pdfkit.
- */
-export function clampPageFooter(
+export function pageFooterMayBeCut(
   footer: TemplatePageFooter | undefined,
-  measure: (s: string) => number = (s) =>
-    measureHelvetica(s, PAGE_FOOTER_FONT_SIZE),
-): { lines: string[]; clamped: boolean } {
-  const printed = pageFooterTextLines(footer).flatMap((line) =>
-    wrapText(line, PAGE_FOOTER_COLUMN_WIDTH, measure),
+): boolean {
+  if (footer?.enabled !== true) return false;
+  return (
+    footer.text.trimEnd().length > PAGE_FOOTER_WARN_LENGTH ||
+    pageFooterTextLines(footer).length > PAGE_FOOTER_MAX_LINES
   );
-  if (printed.length <= PAGE_FOOTER_MAX_LINES) {
-    return { lines: printed, clamped: false };
-  }
-  const lines = printed.slice(0, PAGE_FOOTER_MAX_LINES);
-  let last = lines[PAGE_FOOTER_MAX_LINES - 1] ?? '';
-  while (last !== '' && measure(`${last}…`) > PAGE_FOOTER_COLUMN_WIDTH) {
-    last = last.slice(0, -1);
-  }
-  lines[PAGE_FOOTER_MAX_LINES - 1] = `${last.trimEnd()}…`;
-  return { lines, clamped: true };
 }
 
 export function pageNumberLabel(

@@ -2778,7 +2778,7 @@
           "title": "Page footer",
           "description": "Appears at the bottom of every page.",
           "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB",
-          "clampedWarning": "Only the first 3 lines will be printed. Shorten the text so nothing is cut off."
+          "mayBeCutWarning": "The page footer may be cut: at most 3 lines fit at the bottom of the page. Check the preview."
         }
       },
       "card": {

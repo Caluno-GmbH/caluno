@@ -24,10 +24,13 @@ import { resolveFirstColumn } from '../utils/invoice-table';
 import { applyOrgOverrides, type OrgOverrides } from '../utils/org-overrides';
 import { resolveOrgProfile } from '../utils/org-profile';
 import {
-  clampPageFooterLines,
   PAGE_FOOTER_FONT_SIZE,
+  PAGE_FOOTER_LINE_GAP,
   PAGE_FOOTER_LINE_HEIGHT,
+  PAGE_FOOTER_TEXT_HEIGHT,
+  type PageFooter,
   pageFooterHeight,
+  pageFooterText,
   pageNumberLabel,
   resolvePageFooter,
 } from '../utils/page-footer';
@@ -198,20 +201,14 @@ export class DocumentRenderingService {
       'totalAmountCents' in document ? document.totalAmountCents : undefined;
 
     return new Promise<Buffer>((resolve, reject) => {
-      // Measured on a throwaway document: the real one needs the footer's
-      // height for its bottom margin before it exists.
-      const ruler = new PDFDocument({ size: 'A4' });
-      ruler.font('Helvetica').fontSize(PAGE_FOOTER_FONT_SIZE);
-      const footerLines = clampPageFooterLines(resolvePageFooter(body), (s) =>
-        ruler.widthOfString(s),
-      );
+      const pageFooter = resolvePageFooter(body);
       const pdf = new PDFDocument({
         size: 'A4',
         margins: {
           top: 48,
           left: 48,
           right: 48,
-          bottom: 48 + pageFooterHeight(footerLines.length),
+          bottom: 48 + pageFooterHeight(pageFooter),
         },
         bufferPages: true,
       });
@@ -224,7 +221,7 @@ export class DocumentRenderingService {
       this.renderBlocks(pdf, body, fieldValues, tableRows, totalAmountCents);
       this.renderClosing(pdf, body, fieldValues);
       this.renderSignatures(pdf, document, resolvedValues);
-      this.renderPageFooters(pdf, footerLines);
+      this.renderPageFooters(pdf, pageFooter);
       pdf.end();
     });
   }
@@ -416,7 +413,8 @@ export class DocumentRenderingService {
     }
   }
 
-  private renderPageFooters(pdf: PDFKit.PDFDocument, lines: string[]): void {
+  private renderPageFooters(pdf: PDFKit.PDFDocument, footer: PageFooter): void {
+    const text = pageFooterText(footer);
     const { start, count } = pdf.bufferedPageRange();
     const left = pdf.page.margins.left;
     const width = pdf.page.width - left - pdf.page.margins.right;
@@ -427,10 +425,11 @@ export class DocumentRenderingService {
       const reserved = pdf.page.margins.bottom;
       pdf.page.margins.bottom = 0;
 
-      const textBlock = lines.length > 0 ? 1 + lines.length : 0;
-      const blockHeight = (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
+      const textBlock =
+        text === '' ? 0 : PAGE_FOOTER_LINE_HEIGHT + PAGE_FOOTER_TEXT_HEIGHT;
+      const blockHeight = PAGE_FOOTER_LINE_HEIGHT + textBlock;
       // The true page margin, not the enlarged one: that enlargement is this strip.
-      const pageMargin = reserved - pageFooterHeight(lines.length);
+      const pageMargin = reserved - pageFooterHeight(footer);
       const top = pdf.page.height - pageMargin - blockHeight;
 
       pdf
@@ -443,13 +442,17 @@ export class DocumentRenderingService {
           lineBreak: false,
         });
 
-      // One call per line: pdfkit never wraps, so the printed lines are the
-      // ones clampPageFooterLines measured.
-      lines.forEach((line, index) => {
-        pdf.text(line, left, top + (2 + index) * PAGE_FOOTER_LINE_HEIGHT, {
-          lineBreak: false,
+      if (text !== '') {
+        // pdfkit wraps to the column and stops at `height`, ending the last
+        // kept line in "…" when text is cut.
+        pdf.text(text, left, top + 2 * PAGE_FOOTER_LINE_HEIGHT, {
+          width,
+          align: 'left',
+          lineGap: PAGE_FOOTER_LINE_GAP,
+          height: PAGE_FOOTER_TEXT_HEIGHT,
+          ellipsis: true,
         });
-      });
+      }
 
       pdf.page.margins.bottom = reserved;
     }
