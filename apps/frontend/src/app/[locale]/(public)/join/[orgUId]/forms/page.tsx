@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import { OrgPageHeader } from '@/domain/org-unit/components/org-page-header';
 import {
   buildStoredFieldValues,
-  buildSubmittedFormIds,
+  getSubmittedFormIds,
 } from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
@@ -64,7 +64,7 @@ export default async function JoinFormsPage({
 
   const profileData = profileFieldValues(userProfile);
   const storedFieldValues = buildStoredFieldValues(storedRows);
-  const submittedFormIds = buildSubmittedFormIds(mySubmissions);
+  const submittedFormIds = getSubmittedFormIds(mySubmissions);
 
   return (
     <div className="min-h-screen bg-muted/30">

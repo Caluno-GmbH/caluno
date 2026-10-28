@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'bun:test';
-import { getInvoiceDocument } from './builder-document-presets';
 import {
+  getContractDocument,
+  getInvoiceDocument,
+} from './builder-document-presets';
+import {
+  countOverLimitManualFields,
   invoiceNumberNeedsKostenstelle,
   KOSTENSTELLE_LINE_ID,
+  updateManualFieldValue,
   withKostenstelleForNumberFormat,
 } from './builder-types';
 
@@ -65,5 +70,58 @@ describe('invoice header meta lines', () => {
       'Rechnungsnummer: {documentNumber}',
     );
     expect(byId.get('meta-date')?.text).toBe('Datum: {date}');
+  });
+});
+
+describe('countOverLimitManualFields', () => {
+  it('counts a task description over 300 characters', () => {
+    const doc = updateManualFieldValue(
+      getContractDocument('ehrenamt'),
+      'tasks',
+      'x'.repeat(301),
+    );
+
+    expect(countOverLimitManualFields(doc)).toBe(1);
+  });
+
+  it('does not count a value at the limit', () => {
+    const doc = updateManualFieldValue(
+      getContractDocument('ehrenamt'),
+      'tasks',
+      'x'.repeat(300),
+    );
+
+    expect(countOverLimitManualFields(doc)).toBe(0);
+  });
+
+  it('ignores fields on disabled lines', () => {
+    const base = getContractDocument('ehrenamt');
+    const disabled = {
+      ...base,
+      blocks: base.blocks.map((b) =>
+        b.kind === 'text'
+          ? {
+              ...b,
+              lines: b.lines.map((l) =>
+                l.id === 'engagement-tasks' ? { ...l, enabled: false } : l,
+              ),
+            }
+          : b,
+      ),
+    };
+
+    const doc = updateManualFieldValue(disabled, 'tasks', 'x'.repeat(301));
+
+    expect(countOverLimitManualFields(doc)).toBe(0);
+  });
+
+  it('leaves freeform text unlimited', () => {
+    const doc = updateManualFieldValue(
+      getContractDocument('ehrenamt'),
+      'freeform-text',
+      'x'.repeat(5000),
+    );
+
+    expect(countOverLimitManualFields(doc)).toBe(0);
   });
 });

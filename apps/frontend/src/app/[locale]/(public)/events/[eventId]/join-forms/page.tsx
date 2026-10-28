@@ -3,7 +3,7 @@ import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { EventJoinFormsClient } from '@/app/[locale]/(public)/events/[eventId]/join-forms/event-join-forms-client';
 import {
-  buildSubmittedFormIds,
+  getSubmittedFormIds,
   resolveRequiredForms,
 } from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
@@ -68,7 +68,7 @@ export default async function EventJoinFormsPage({
       return [];
     });
 
-  const submittedFormIds = buildSubmittedFormIds(submissionsResult);
+  const submittedFormIds = getSubmittedFormIds(submissionsResult);
 
   const requiredForms = resolveRequiredForms(
     [

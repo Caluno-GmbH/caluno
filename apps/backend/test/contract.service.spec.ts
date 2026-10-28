@@ -37,6 +37,7 @@ import {
   NotFoundGraphQLError,
 } from '../src/graphql/errors';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { startOfAppDay } from '../src/shift/utils/app-time';
 import {
@@ -82,9 +83,12 @@ describe('ContractService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const organizationUnitDataService = new OrganizationUnitDataService(db);
-    const authService = new AuthService(db, organizationUnitDataService, {
-      capture: () => {},
-    } as unknown as PostHogService);
+    const authService = new AuthService(
+      db,
+      organizationUnitDataService,
+      { capture: () => {} } as unknown as PostHogService,
+      new TenantScopeService(db, organizationUnitDataService),
+    );
     const documentTemplateService = new DocumentTemplateService(
       db,
       {
@@ -355,6 +359,68 @@ describe('ContractService', () => {
       expect(contract.fieldOverrides).toEqual({
         'volunteer-iban-field': 'DE00 0000 0000 0000 0000 00',
       });
+    });
+
+    it('rejects an over-limit task description override', async () => {
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup();
+
+      await expect(
+        service.createContract(
+          organization.id,
+          {
+            organizationUnitId: null,
+            volunteerId: volunteer.id,
+            reimbursementTypeId: reimbursementType.id,
+            periodStart: new Date('2026-01-01T00:00:00.000Z'),
+            periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+            fieldOverrides: [{ fieldId: 'tasks', value: 'x'.repeat(301) }],
+          },
+          signer.id,
+        ),
+      ).rejects.toThrow('Task description must be at most 300 characters');
+    });
+
+    it('accepts a template value over the limit when not overridden', async () => {
+      const longTasks = 'x'.repeat(400);
+      const { organization, reimbursementType, volunteer, signer } =
+        await setup({
+          contractBody: {
+            header: {},
+            blocks: [
+              {
+                id: 'duties',
+                lines: [
+                  {
+                    id: 'duty',
+                    text: 'Aufgaben {tasks}',
+                    fields: [
+                      {
+                        id: 'tasks',
+                        value: { kind: 'manual-template', value: longTasks },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+            footer: {},
+          },
+        });
+
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date('2026-01-01T00:00:00.000Z'),
+          periodEnd: new Date('2026-12-31T00:00:00.000Z'),
+        },
+        signer.id,
+      );
+
+      expect(contract.id).toBeDefined();
     });
 
     it('replaces the auto-queued draft for the same volunteer, type and year', async () => {

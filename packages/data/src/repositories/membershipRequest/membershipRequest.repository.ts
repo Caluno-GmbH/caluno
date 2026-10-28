@@ -77,6 +77,11 @@ export class MembershipRequestRepository extends BaseRepository {
     return data.myMembershipRequests;
   }
 
+  async findMineById(id: string) {
+    const data = await this.sdk.MyMembershipRequest({ id });
+    return data.myMembershipRequest;
+  }
+
   async join(
     organizationUnitId: string,
   ): Promise<JoinOrganizationMutation['joinOrganization']> {

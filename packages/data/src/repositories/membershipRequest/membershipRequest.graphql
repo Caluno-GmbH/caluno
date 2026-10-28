@@ -119,6 +119,40 @@ query GetMyMembershipRequests($limit: Int!, $offset: Int!) {
   }
 }
 
+query MyMembershipRequest($id: ID!) {
+  myMembershipRequest(id: $id) {
+    id
+    organizationUnit {
+      id
+      name
+      logoUrl
+      type {
+        icon
+      }
+      parent {
+        id
+      }
+      organization {
+        name
+      }
+    }
+    user {
+      id
+      name
+      email
+    }
+    contact {
+      name
+      email
+      phone
+    }
+    status
+    reviewedAt
+    rejectionReason
+    createdAt
+  }
+}
+
 mutation CheckInApproveMembershipRequest($requestId: ID!) {
   checkInApproveMembershipRequest(requestId: $requestId) {
     id

@@ -536,6 +536,13 @@ export type GetMyMembershipRequestsQueryVariables = Exact<{
 
 export type GetMyMembershipRequestsQuery = { myMembershipRequests: { items: Array<{ id: string, status: Types.MembershipRequestStatus, reviewedAt: string | null, rejectionReason: string | null, createdAt: string, organizationUnit: { id: string, name: string, logoUrl: string | null, type: { icon: string }, parent: { id: string } | null, organization: { name: string } }, user: { id: string, name: string, email: string }, contact: { name: string | null, email: string | null, phone: string | null } | null }> } };
 
+export type MyMembershipRequestQueryVariables = Exact<{
+  id: string;
+}>;
+
+
+export type MyMembershipRequestQuery = { myMembershipRequest: { id: string, status: Types.MembershipRequestStatus, reviewedAt: string | null, rejectionReason: string | null, createdAt: string, organizationUnit: { id: string, name: string, logoUrl: string | null, type: { icon: string }, parent: { id: string } | null, organization: { name: string } }, user: { id: string, name: string, email: string }, contact: { name: string | null, email: string | null, phone: string | null } | null } | null };
+
 export type CheckInApproveMembershipRequestMutationVariables = Exact<{
   requestId: string;
 }>;
@@ -895,28 +902,28 @@ export type GetMyFormSubmissionsQueryVariables = Exact<{
 }>;
 
 
-export type GetMyFormSubmissionsQuery = { myFormSubmissions: Array<{ id: string, submittedAt: string, form: { id: string, name: string, description: string | null, shareToken: string } | null }> };
+export type GetMyFormSubmissionsQuery = { myFormSubmissions: Array<{ id: string, submittedAt: string, form: { id: string, name: string, description: string | null, shareToken: string } }> };
 
 export type GetFormSubmissionsByMembershipRequestQueryVariables = Exact<{
   membershipRequestId: string;
 }>;
 
 
-export type GetFormSubmissionsByMembershipRequestQuery = { formSubmissionsByMembershipRequest: Array<{ id: string, submittedAt: string, form: { id: string, name: string } | null }> };
+export type GetFormSubmissionsByMembershipRequestQuery = { formSubmissionsByMembershipRequest: Array<{ id: string, submittedAt: string, form: { id: string, name: string } }> };
 
 export type GetFormSubmissionsForVolunteerQueryVariables = Exact<{
   userId: string;
 }>;
 
 
-export type GetFormSubmissionsForVolunteerQuery = { formSubmissionsForVolunteer: Array<{ id: string, submittedAt: string, form: { id: string, name: string } | null }> };
+export type GetFormSubmissionsForVolunteerQuery = { formSubmissionsForVolunteer: Array<{ id: string, submittedAt: string, form: { id: string, name: string } }> };
 
 export type GetAdminFormSubmissionQueryVariables = Exact<{
   id: string;
 }>;
 
 
-export type GetAdminFormSubmissionQuery = { adminVolunteerSubmission: { id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string } | null, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
+export type GetAdminFormSubmissionQuery = { adminVolunteerSubmission: { id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string }, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null }, values: Array<{ fieldId: string, value: string }> | null } | null };
 
 export type GetFormSubmissionsByFormQueryVariables = Exact<{
   formId: string;
@@ -925,7 +932,7 @@ export type GetFormSubmissionsByFormQueryVariables = Exact<{
 }>;
 
 
-export type GetFormSubmissionsByFormQuery = { formSubmissionsByForm: { items: Array<{ id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string, image: string | null } | null }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetFormSubmissionsByFormQuery = { formSubmissionsByForm: { items: Array<{ id: string, submittedAt: string, user: { id: string, name: string, email: string, checkInId: string, image: string | null } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type MyRequiredOrgUnitFormsQueryVariables = Exact<{
   organizationUnitId: string;
@@ -939,7 +946,7 @@ export type MyFormSubmissionQueryVariables = Exact<{
 }>;
 
 
-export type MyFormSubmissionQuery = { myFormSubmission: { id: string, submittedAt: string, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null } | null, values: Array<{ fieldId: string, value: string }> | null } | null };
+export type MyFormSubmissionQuery = { myFormSubmission: { id: string, submittedAt: string, form: { id: string, name: string, blockRefs: Array<{ fieldOrder: number, block: { id: string, fields: Array<{ id: string, label: string, type: Types.FieldType, profileKey: string | null, options: Array<string> | null }> | null } }> | null }, values: Array<{ fieldId: string, value: string }> | null } | null };
 
 export type GetAdminUserProfileQueryVariables = Exact<{
   userId: string;
@@ -2881,6 +2888,41 @@ export const GetMyMembershipRequestsDocument = gql`
       rejectionReason
       createdAt
     }
+  }
+}
+    `;
+export const MyMembershipRequestDocument = gql`
+    query MyMembershipRequest($id: ID!) {
+  myMembershipRequest(id: $id) {
+    id
+    organizationUnit {
+      id
+      name
+      logoUrl
+      type {
+        icon
+      }
+      parent {
+        id
+      }
+      organization {
+        name
+      }
+    }
+    user {
+      id
+      name
+      email
+    }
+    contact {
+      name
+      email
+      phone
+    }
+    status
+    reviewedAt
+    rejectionReason
+    createdAt
   }
 }
     `;
@@ -5364,6 +5406,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetMyMembershipRequests(variables: GetMyMembershipRequestsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyMembershipRequestsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetMyMembershipRequestsQuery>({ document: GetMyMembershipRequestsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyMembershipRequests', 'query', variables);
+    },
+    MyMembershipRequest(variables: MyMembershipRequestQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyMembershipRequestQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<MyMembershipRequestQuery>({ document: MyMembershipRequestDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyMembershipRequest', 'query', variables);
     },
     CheckInApproveMembershipRequest(variables: CheckInApproveMembershipRequestMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<CheckInApproveMembershipRequestMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<CheckInApproveMembershipRequestMutation>({ document: CheckInApproveMembershipRequestDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'CheckInApproveMembershipRequest', 'mutation', variables);

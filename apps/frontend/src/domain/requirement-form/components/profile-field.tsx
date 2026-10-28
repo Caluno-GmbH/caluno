@@ -3,7 +3,7 @@
 import { Button, FieldDescription, FieldLabel } from '@repo/ui';
 import { Check, Pencil, Undo2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { type KeyboardEvent, useState } from 'react';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { hasFixedGenderOptions, isGenderOptionValue } from '../gender-options';
 import { parseMultiChoiceValue } from '../option-values';
@@ -51,6 +51,21 @@ export function ProfileField({
     setEditing(false);
   }
 
+  function handleEditorKeyDown(e: KeyboardEvent<HTMLElement>) {
+    if (e.nativeEvent.isComposing) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEdit();
+      return;
+    }
+    // Textareas need Enter for newlines; selects use Enter to open/choose.
+    if (e.key !== 'Enter') return;
+    if (e.currentTarget instanceof HTMLTextAreaElement) return;
+    if (e.currentTarget.getAttribute('role') === 'combobox') return;
+    e.preventDefault();
+    handleConfirmEdit();
+  }
+
   const displayValue = formatProfileFieldValue(value, field, {
     dash: tCommon('dash'),
     yes: tCommon('yes'),
@@ -82,6 +97,8 @@ export function ProfileField({
                 onChange={onChange}
                 error={error}
                 hideLabel
+                autoFocus
+                onKeyDown={handleEditorKeyDown}
               />
             </div>
             <Button
