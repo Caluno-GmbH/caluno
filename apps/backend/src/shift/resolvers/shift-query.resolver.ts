@@ -4,6 +4,7 @@ import {
   Session,
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
+import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
@@ -34,6 +35,7 @@ export class ShiftQueryResolver {
     private readonly shiftMapper: ShiftMapper,
     private readonly shiftInstanceMapper: ShiftInstanceMapper,
     private readonly userMapper: UserMapper,
+    private readonly authService: AuthService,
   ) {}
 
   @AllowAnonymous()
@@ -134,9 +136,18 @@ export class ShiftQueryResolver {
   @Permissions(PERMISSIONS.SHIFT_VIEW)
   @Query(() => [String])
   async shiftLocations(
+    @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<string[]> {
-    return this.shiftService.findDistinctLocations(context.organizationUnitId);
+    const canManage = await this.authService.hasRequiredPermissions(
+      session.user.id,
+      context.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
+    return this.shiftService.findDistinctLocations(
+      context.organizationUnitId,
+      canManage ? null : ShiftVisibility.ALL_MEMBERS,
+    );
   }
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)

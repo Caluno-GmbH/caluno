@@ -437,7 +437,10 @@ export class ShiftService {
   }
 
   /** Distinct non-null, non-empty location values for the org unit, ordered alphabetically. */
-  async findDistinctLocations(organizationUnitId: string): Promise<string[]> {
+  async findDistinctLocations(
+    organizationUnitId: string,
+    visibilityFilter: ShiftVisibility | null = null,
+  ): Promise<string[]> {
     const rows = await this.db
       .selectDistinct({ location: schema.shifts.location })
       .from(schema.shifts)
@@ -447,6 +450,7 @@ export class ShiftService {
           eq(schema.shifts.isDeleted, false),
           ne(schema.shifts.location, ''),
           sql`${schema.shifts.location} is not null`,
+          ...(visibilityFilter ? [eq(schema.shifts.visibility, visibilityFilter)] : []),
         ),
       )
       .orderBy(asc(schema.shifts.location));

@@ -586,4 +586,67 @@ describe('ShiftService.findDistinctLocations', () => {
     await service.findDistinctLocations('org-1');
     expect(selectDistinct).toHaveBeenCalledTimes(1);
   });
+
+  it('when visibilityFilter is ALL_MEMBERS, adds visibility eq condition to the query', async () => {
+    const { db } = makeDistinctDb([]);
+    const service = new ShiftService(
+      db,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    const eqSpy = jest.spyOn(drizzleOrm, 'eq');
+    await service.findDistinctLocations('org-1', ShiftVisibility.ALL_MEMBERS);
+
+    const visibilityEqCall = eqSpy.mock.calls.find(
+      ([col]) =>
+        col != null &&
+        typeof col === 'object' &&
+        'name' in col &&
+        (col as { name: string }).name === 'visibility',
+    );
+    expect(visibilityEqCall).toBeDefined();
+    expect(visibilityEqCall![1]).toBe(ShiftVisibility.ALL_MEMBERS);
+
+    eqSpy.mockRestore();
+  });
+
+  it('when visibilityFilter is null, does not add visibility eq condition to the query', async () => {
+    const { db } = makeDistinctDb([]);
+    const service = new ShiftService(
+      db,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    const eqSpy = jest.spyOn(drizzleOrm, 'eq');
+    await service.findDistinctLocations('org-1', null);
+
+    const visibilityEqCall = eqSpy.mock.calls.find(
+      ([col]) =>
+        col != null &&
+        typeof col === 'object' &&
+        'name' in col &&
+        (col as { name: string }).name === 'visibility',
+    );
+    expect(visibilityEqCall).toBeUndefined();
+
+    eqSpy.mockRestore();
+  });
 });
