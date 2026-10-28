@@ -569,7 +569,7 @@ describe('DocumentRenderingService', () => {
       const wrapping = await render(Array(6).fill(sample).join(' '));
 
       expect(pageCount(wrapping)).toBe(pageCount(oneLine));
-      // Cut to three printed lines, the last ending in an ellipsis.
+      // Cut to three printed lines.
       expect([...wrapping.matchAll(/Lorem ipsum/g)]).toHaveLength(3);
       expect([...oneLine.matchAll(/Lorem ipsum/g)]).toHaveLength(1);
     });
@@ -595,7 +595,6 @@ describe('DocumentRenderingService', () => {
 
       const three = await render('Zeile1\nZeile2\nZeile3');
       expect(three).toContain('Zeile3');
-      expect(three).not.toContain('…');
 
       const four = await render('Zeile1\nZeile2\nZeile3\nZeile4');
       expect(four).toContain('Zeile3');

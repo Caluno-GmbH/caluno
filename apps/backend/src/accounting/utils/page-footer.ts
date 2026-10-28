@@ -19,7 +19,7 @@ export function resolvePageFooter(body: {
   };
 }
 
-/** The PDF footer holds at most this many printed lines; the rest is cut. */
+/** The PDF footer holds at most this many printed lines; the rest is dropped. */
 export const PAGE_FOOTER_MAX_LINES = 3;
 /**
  * One printed footer line as pdfkit steps it: Helvetica's line height at 8pt

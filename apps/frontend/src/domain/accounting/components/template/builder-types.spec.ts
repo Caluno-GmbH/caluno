@@ -96,29 +96,32 @@ describe('countOverLimitManualFields', () => {
 
   it('ignores fields on disabled lines', () => {
     const base = getContractDocument('ehrenamt');
-    const freeform = base.blocks.find((b) => b.id === 'sonstiges');
-    expect(freeform?.kind === 'text' && freeform.enabled).toBe(false);
+    const disabled = {
+      ...base,
+      blocks: base.blocks.map((b) =>
+        b.kind === 'text'
+          ? {
+              ...b,
+              lines: b.lines.map((l) =>
+                l.id === 'engagement-tasks' ? { ...l, enabled: false } : l,
+              ),
+            }
+          : b,
+      ),
+    };
 
-    const doc = updateManualFieldValue(base, 'freeform-text', 'x'.repeat(1001));
+    const doc = updateManualFieldValue(disabled, 'tasks', 'x'.repeat(301));
 
     expect(countOverLimitManualFields(doc)).toBe(0);
   });
 
-  it('counts the freeform text once its block is switched on', () => {
-    const base = getContractDocument('ehrenamt');
-    const enabled = {
-      ...base,
-      blocks: base.blocks.map((b) =>
-        b.kind === 'text' && b.id === 'sonstiges' ? { ...b, enabled: true } : b,
-      ),
-    };
-
+  it('leaves freeform text unlimited', () => {
     const doc = updateManualFieldValue(
-      enabled,
+      getContractDocument('ehrenamt'),
       'freeform-text',
-      'x'.repeat(1001),
+      'x'.repeat(5000),
     );
 
-    expect(countOverLimitManualFields(doc)).toBe(1);
+    expect(countOverLimitManualFields(doc)).toBe(0);
   });
 });

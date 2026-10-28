@@ -182,13 +182,8 @@ export function pageFooterTextLines(
 
 /** The PDF footer holds at most this many printed lines; the rest is cut. */
 export const PAGE_FOOTER_MAX_LINES = 3;
-/**
- * Characters in a full printed footer line, from the sample "Lorem ipsum
- * dolor sit amet … In id cursus mi pretium". Real widths vary by character.
- */
-export const PAGE_FOOTER_MAX_LINE_CHARS_LENGTH = 139;
-export const PAGE_FOOTER_WARN_LENGTH =
-  PAGE_FOOTER_MAX_LINE_CHARS_LENGTH * PAGE_FOOTER_MAX_LINES;
+/** Past this many characters the footer may not fit in its lines; deliberately cautious. */
+export const PAGE_FOOTER_WARN_LENGTH = 300;
 
 /**
  * Rough check for the builder warning: the PDF wraps by width, which is not

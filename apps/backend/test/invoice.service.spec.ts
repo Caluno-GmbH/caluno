@@ -1276,29 +1276,6 @@ describe('InvoiceService', () => {
       ).rejects.toBeInstanceOf(BadRequestGraphQLError);
     });
 
-    it('rejects an over-limit freeform text override', async () => {
-      const { organization, reimbursementType, volunteer, supervisor } =
-        await setup();
-
-      await expect(
-        service.createInvoice(
-          organization.id,
-          {
-            organizationUnitId: null,
-            volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.id,
-            timeEntryIds: [crypto.randomUUID()],
-            periodStart: new Date(),
-            periodEnd: new Date(),
-            fieldOverrides: [
-              { fieldId: 'freeform-text', value: 'x'.repeat(1001) },
-            ],
-          },
-          supervisor.id,
-        ),
-      ).rejects.toThrow('Freeform text must be at most 1000 characters');
-    });
-
     it('rejects a time entry id that is not eligible', async () => {
       const { organization, reimbursementType, volunteer, supervisor } =
         await setup();
