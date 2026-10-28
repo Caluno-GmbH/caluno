@@ -290,6 +290,21 @@ describe('document templates resolve through the unit ancestor chain', () => {
     expect(response.data?.activeDocumentTemplate.id).toBe(rootTemplate.id);
   });
 
+  it('ignores a seeded stub that was never saved and falls through to the next template', async () => {
+    const rootTemplate = await seed(rootId);
+    const childTemplate = await seed(childId);
+    await db
+      .update(schema.documentTemplates)
+      .set({ lastEditedAt: null })
+      .where(eq(schema.documentTemplates.id, childTemplate.id));
+    asOwner();
+
+    const response = await resolveFor(childId);
+
+    expect(response.errors).toBeUndefined();
+    expect(response.data?.activeDocumentTemplate.id).toBe(rootTemplate.id);
+  });
+
   it('skips deleted templates on the chain', async () => {
     const rootTemplate = await seed(rootId);
     const childTemplate = await seed(childId);

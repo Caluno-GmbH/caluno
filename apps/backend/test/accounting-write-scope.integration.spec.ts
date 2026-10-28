@@ -86,6 +86,22 @@ const ACTIVE_TEMPLATE = `
   }
 `;
 
+const LIST_TEMPLATES = `
+  query ListTemplates {
+    documentTemplates {
+      id
+    }
+  }
+`;
+
+const GET_TEMPLATE = `
+  query GetTemplate($id: ID!) {
+    documentTemplate(id: $id) {
+      id
+    }
+  }
+`;
+
 const SIGNEES = [{ order: 1, signeeType: SigneeType.VOLUNTEER }];
 const BODY = { header: {}, blocks: [], footer: {} };
 
@@ -98,6 +114,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
   let rootId: string;
   let unitAId: string;
   let unitBId: string;
+  let unitTypeId: string;
   let ownerOnAId: string;
   let ownerOnRootId: string;
 
@@ -183,6 +200,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
       name: 'unit b',
       parentId: root.id,
     });
+    unitTypeId = type.id;
     rootId = root.id;
     unitAId = unitA.id;
     unitBId = unitB.id;
@@ -490,6 +508,65 @@ describe('accounting writes are scoped to the header unit tree', () => {
 
       expect(response.errors).toBeUndefined();
       expect(response.data?.activeDocumentTemplate.id).toBe(template.id);
+    });
+  });
+  describe('documentTemplates and documentTemplate reads', () => {
+    const seed = (organizationUnitId: string | null) =>
+      createDocumentTemplate(db, {
+        organizationId,
+        organizationUnitId,
+        reimbursementTypeId: typeId,
+        kind: DocumentKind.CONTRACT,
+        signees: SIGNEES,
+      });
+
+    it('lists org-wide, ancestor, own and descendant templates but not siblings', async () => {
+      const childOfA = await createUnit(db, {
+        organizationId,
+        typeId: unitTypeId,
+        name: 'child of a',
+        parentId: unitAId,
+      });
+      const orgWide = await seed(null);
+      const atRoot = await seed(rootId);
+      const atA = await seed(unitAId);
+      const atChildOfA = await seed(childOfA.id);
+      const atB = await seed(unitBId);
+      setAuthMockUserId(ownerOnAId);
+
+      const response = await graphqlRequest<{
+        documentTemplates: Array<{ id: string }>;
+      }>(app, { query: LIST_TEMPLATES, headers: asHeader(unitAId) });
+
+      expect(response.errors).toBeUndefined();
+      const ids = response.data?.documentTemplates.map((t) => t.id) ?? [];
+      expect(ids.sort()).toEqual(
+        [orgWide.id, atRoot.id, atA.id, atChildOfA.id].sort(),
+      );
+      expect(ids).not.toContain(atB.id);
+    });
+
+    it('returns a readable template and hides a sibling one behind NotFound', async () => {
+      const atRoot = await seed(rootId);
+      const atB = await seed(unitBId);
+      setAuthMockUserId(ownerOnAId);
+
+      const readable = await graphqlRequest<{
+        documentTemplate: { id: string };
+      }>(app, {
+        query: GET_TEMPLATE,
+        variables: { id: atRoot.id },
+        headers: asHeader(unitAId),
+      });
+      const hidden = await graphqlRequest(app, {
+        query: GET_TEMPLATE,
+        variables: { id: atB.id },
+        headers: asHeader(unitAId),
+      });
+
+      expect(readable.errors).toBeUndefined();
+      expect(readable.data?.documentTemplate.id).toBe(atRoot.id);
+      expect(hidden.errors?.[0]?.message).toBe('Document template not found');
     });
   });
 });

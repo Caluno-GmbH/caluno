@@ -45,4 +45,51 @@ export class AccountingScopeService {
       throw new NotFoundGraphQLError(notFoundMessage);
     }
   }
+
+  /**
+   * Reads are wider than writes: a unit sees what it inherits (org-wide rows
+   * and rows of its ancestors) plus what it manages (its own row and rows of
+   * its descendants). Siblings and other branches are excluded.
+   */
+  async filterReadable<T extends { organizationUnitId: string | null }>(
+    headerUnitId: string,
+    rows: T[],
+  ): Promise<T[]> {
+    const headerChain =
+      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+        headerUnitId,
+      );
+    const verdicts = new Map<string, boolean>();
+    const readable: T[] = [];
+    for (const row of rows) {
+      const unitId = row.organizationUnitId;
+      if (!unitId || headerChain.includes(unitId)) {
+        readable.push(row);
+        continue;
+      }
+      let isDescendant = verdicts.get(unitId);
+      if (isDescendant === undefined) {
+        const chain =
+          await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+            unitId,
+          );
+        isDescendant = chain.includes(headerUnitId);
+        verdicts.set(unitId, isDescendant);
+      }
+      if (isDescendant) readable.push(row);
+    }
+    return readable;
+  }
+
+  /** Single-row form of {@link filterReadable}; rejects with NotFound. */
+  async assertCanRead(
+    headerUnitId: string,
+    row: { organizationUnitId: string | null },
+    notFoundMessage: string,
+  ): Promise<void> {
+    const readable = await this.filterReadable(headerUnitId, [row]);
+    if (readable.length === 0) {
+      throw new NotFoundGraphQLError(notFoundMessage);
+    }
+  }
 }

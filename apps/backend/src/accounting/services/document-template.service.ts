@@ -256,7 +256,7 @@ export class DocumentTemplateService {
     const [template] = await this.findResolvedTemplates(
       organizationId,
       organizationUnitId,
-      { reimbursementTypeId, kind },
+      { reimbursementTypeId, kind, onlyEdited: true },
     );
     if (!template) {
       throw new NotFoundGraphQLError(

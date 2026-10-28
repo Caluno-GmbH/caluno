@@ -8,6 +8,7 @@ import { DocumentTemplateMapper } from '../mappers';
 import { DocumentTemplate } from '../models/document-template.model';
 import {
   AccountingOrgAccessService,
+  AccountingScopeService,
   DocumentTemplateService,
 } from '../services';
 
@@ -18,6 +19,7 @@ export class DocumentTemplateQueryResolver {
     private readonly documentTemplateMapper: DocumentTemplateMapper,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
     private readonly tenantScopeService: TenantScopeService,
+    private readonly accountingScopeService: AccountingScopeService,
   ) {}
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -31,7 +33,11 @@ export class DocumentTemplateQueryResolver {
       );
     const templates =
       await this.documentTemplateService.findDocumentTemplates(organizationId);
-    return this.documentTemplateMapper.toArray(templates);
+    const readable = await this.accountingScopeService.filterReadable(
+      context.organizationUnitId,
+      templates,
+    );
+    return this.documentTemplateMapper.toArray(readable);
   }
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -47,6 +53,11 @@ export class DocumentTemplateQueryResolver {
     const template = await this.documentTemplateService.findDocumentTemplate(
       organizationId,
       id,
+    );
+    await this.accountingScopeService.assertCanRead(
+      context.organizationUnitId,
+      template,
+      'Document template not found',
     );
     return this.documentTemplateMapper.toModelOrThrow(template);
   }
