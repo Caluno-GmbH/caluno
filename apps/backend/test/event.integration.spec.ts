@@ -14,11 +14,13 @@ import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { EventInviteStatus } from '../src/event/enums';
 import { EventService } from '../src/event/event.service';
+import { ConflictGraphQLError } from '../src/graphql/errors';
 import { MembershipRequestStatus } from '../src/membership/enums';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
 import { ShiftInviteStatus, ShiftVisibility } from '../src/shift/enums';
 import {
   createEvent,
+  createFormSubmission,
   createMembershipRequest,
   createRequirementForm,
   createShift,
@@ -2664,5 +2666,92 @@ describe('updateEventInviteStatus (volunteer cancel/withdraw)', () => {
     } finally {
       setAuthMockUserId(originalUserId);
     }
+  });
+});
+
+describe('EventService.updateEventInviteStatus — required forms (VOLI-1702)', () => {
+  let app: INestApplication;
+  let db: Database;
+  let organizationId: string;
+  let organizationUnitId: string;
+  let eventService: EventService;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+    organizationId = context.organizationId;
+    organizationUnitId = context.organizationUnitId;
+    eventService = app.get(EventService);
+  });
+
+  const setupInvitedWithRequiredForm = async () => {
+    const user = await createUser(db);
+    await addMembership(db, user.id, organizationUnitId);
+
+    const event = await createEvent(db, { organizationUnitId });
+    const { form } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId,
+      createdById: user.id,
+    });
+    await setEventRequiredForms(db, { eventId: event.id, formIds: [form.id] });
+
+    await db.insert(schema.eventInvites).values({
+      eventId: event.id,
+      userId: user.id,
+      status: EventInviteStatus.ADMIN_INVITED,
+    });
+
+    return { user, event, form };
+  };
+
+  it('rejects volunteer accept when a required form is missing', async () => {
+    const { user, event } = await setupInvitedWithRequiredForm();
+
+    await expect(
+      eventService.updateEventInviteStatus(
+        user.id,
+        event.id,
+        EventInviteStatus.JOINED,
+      ),
+    ).rejects.toBeInstanceOf(ConflictGraphQLError);
+
+    const invite = await db.query.eventInvites.findFirst({
+      where: { eventId: event.id, userId: user.id },
+    });
+    expect(invite?.status).toBe(EventInviteStatus.ADMIN_INVITED);
+  });
+
+  it('allows volunteer accept after the required form is submitted', async () => {
+    const { user, event, form } = await setupInvitedWithRequiredForm();
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId,
+    });
+
+    const updated = await eventService.updateEventInviteStatus(
+      user.id,
+      event.id,
+      EventInviteStatus.JOINED,
+    );
+
+    expect(updated.status).toBe(EventInviteStatus.JOINED);
+  });
+
+  it('lets an admin set another volunteer to JOINED despite missing forms', async () => {
+    const { user, event } = await setupInvitedWithRequiredForm();
+    const admin = await createUser(db);
+
+    const updated = await eventService.updateEventInviteStatus(
+      user.id,
+      event.id,
+      EventInviteStatus.JOINED,
+      admin.id,
+      true,
+    );
+
+    expect(updated.status).toBe(EventInviteStatus.JOINED);
   });
 });
