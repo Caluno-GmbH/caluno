@@ -593,8 +593,15 @@ export function ShiftsTable({
   });
 
   const onClearAll = () => {
-    void setParams({ fill: '' }, { shallow: true });
-    void setParams({ q: '', location: '', visibility: null, dateFrom: null, dateTo: null, page: 1 });
+    void setParams({
+      q: '',
+      location: '',
+      visibility: null,
+      dateFrom: null,
+      dateTo: null,
+      fill: '',
+      page: 1,
+    });
   };
 
   const filtersActive = activeFilters.length > 0;
