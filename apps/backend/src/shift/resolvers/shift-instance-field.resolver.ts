@@ -153,7 +153,6 @@ export class ShiftInstanceFieldResolver {
     return loader.filledCountByInstanceId.load(instance.id);
   }
 
-  @AllowAnonymous()
   @ResolveField(() => Number)
   async pendingCount(
     @Parent() instance: ShiftInstanceEntity,
