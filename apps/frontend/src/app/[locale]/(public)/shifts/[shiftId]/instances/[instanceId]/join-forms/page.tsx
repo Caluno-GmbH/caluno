@@ -45,7 +45,7 @@ export default async function ShiftJoinFormsPage({
   );
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const searchParams = new URLSearchParams({
       signup: '1',
       redirectTo:

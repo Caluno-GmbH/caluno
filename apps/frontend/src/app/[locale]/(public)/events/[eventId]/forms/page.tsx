@@ -39,7 +39,7 @@ export default async function EventFormsPage({
   const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const inviteParams = new URLSearchParams({
       redirectTo: redirectTo ?? `/events/${eventId}/forms`,
     });
