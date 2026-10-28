@@ -2,7 +2,6 @@ import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
-import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { DocumentKind } from '../enums';
 import { DocumentTemplateMapper } from '../mappers';
 import { DocumentTemplate } from '../models/document-template.model';
@@ -18,7 +17,6 @@ export class DocumentTemplateQueryResolver {
     private readonly documentTemplateService: DocumentTemplateService,
     private readonly documentTemplateMapper: DocumentTemplateMapper,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
-    private readonly tenantScopeService: TenantScopeService,
     private readonly accountingScopeService: AccountingScopeService,
   ) {}
 
@@ -76,11 +74,8 @@ export class DocumentTemplateQueryResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
-    if (
-      organizationUnitId &&
-      organizationUnitId !== context.organizationUnitId
-    ) {
-      await this.tenantScopeService.assertResourceInScope(
+    if (organizationUnitId) {
+      await this.accountingScopeService.assertUnitReadable(
         context.organizationUnitId,
         organizationUnitId,
         'Organization unit not found',

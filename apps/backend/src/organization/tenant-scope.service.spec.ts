@@ -47,13 +47,19 @@ function createService() {
       }
       return chain;
     }),
+    findById: jest.fn(async (unitId: string) =>
+      unitId in PARENT_OF
+        ? { id: unitId, parentId: PARENT_OF[unitId] }
+        : undefined,
+    ),
     findOrganizationIdByUnitId: jest.fn(async (unitId: string) => {
       const organizationId = ORGANIZATION_OF[unitId];
       if (!organizationId) throw new NotFoundGraphQLError('unit not found');
       return organizationId;
     }),
   };
-  return new TenantScopeService(db as never, unitData as never);
+  const service = new TenantScopeService(db as never, unitData as never);
+  return Object.assign(service, { unitData });
 }
 
 describe('TenantScopeService.assertResourceInScope', () => {
@@ -163,4 +169,56 @@ describe('TenantScopeService.assertOrganizationInScope', () => {
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
     },
   );
+});
+
+describe('TenantScopeService.createBranchMatcher', () => {
+  it.each([
+    ['the header unit itself', 'branch', 'branch'],
+    ['an ancestor of the header unit', 'leaf', 'root'],
+    ['a descendant of the header unit', 'root', 'leaf'],
+  ])('matches %s', async (_label, headerUnitId, unitId) => {
+    const isOnBranch = createService().createBranchMatcher(headerUnitId);
+    expect(await isOnBranch(unitId)).toBe(true);
+  });
+
+  it.each([
+    ['a sibling branch', 'branch', 'sibling'],
+    ['a unit of another organization', 'root', 'foreign'],
+  ])('does not match %s', async (_label, headerUnitId, unitId) => {
+    const isOnBranch = createService().createBranchMatcher(headerUnitId);
+    expect(await isOnBranch(unitId)).toBe(false);
+  });
+
+  it('walks each unit chain once, however often the unit is asked about', async () => {
+    const service = createService();
+    const isOnBranch = service.createBranchMatcher('branch');
+    await isOnBranch('sibling');
+    await isOnBranch('sibling');
+    await isOnBranch('leaf');
+    await isOnBranch('leaf');
+    // header chain once, then one lookup each for sibling and leaf
+    expect(service.unitData.listInclusiveAncestorUnitIds).toHaveBeenCalledTimes(
+      3,
+    );
+  });
+});
+
+describe('TenantScopeService.assertHeaderUnitIsTopUnit', () => {
+  it('accepts the top unit', async () => {
+    await expect(
+      createService().assertHeaderUnitIsTopUnit('root'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('rejects a sub-unit, with the given message', async () => {
+    await expect(
+      createService().assertHeaderUnitIsTopUnit('branch', 'Only the top unit'),
+    ).rejects.toThrow('Only the top unit');
+  });
+
+  it('rejects an unknown unit', async () => {
+    await expect(
+      createService().assertHeaderUnitIsTopUnit('missing'),
+    ).rejects.toBeInstanceOf(NotFoundGraphQLError);
+  });
 });

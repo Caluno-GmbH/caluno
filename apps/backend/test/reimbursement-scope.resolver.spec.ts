@@ -126,10 +126,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       new ReimbursementTypeMapper(),
       userService,
       tenantScopeService,
-      new AccountingScopeService(
-        tenantScopeService,
-        organizationUnitDataService,
-      ),
+      new AccountingScopeService(tenantScopeService),
     );
   });
 

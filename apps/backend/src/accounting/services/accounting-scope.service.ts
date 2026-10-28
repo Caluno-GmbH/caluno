@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { NotFoundGraphQLError } from '../../graphql/errors';
-import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import { TenantScopeService } from '../../organization/tenant-scope.service';
 
 /**
@@ -14,10 +13,7 @@ import { TenantScopeService } from '../../organization/tenant-scope.service';
  */
 @Injectable()
 export class AccountingScopeService {
-  constructor(
-    private readonly tenantScopeService: TenantScopeService,
-    private readonly organizationUnitDataService: OrganizationUnitDataService,
-  ) {}
+  constructor(private readonly tenantScopeService: TenantScopeService) {}
 
   /**
    * `targetUnitId` set: it must be the header unit or one of its descendants.
@@ -39,11 +35,10 @@ export class AccountingScopeService {
       return;
     }
 
-    const headerUnit =
-      await this.organizationUnitDataService.findById(headerUnitId);
-    if (!headerUnit || headerUnit.parentId !== null) {
-      throw new NotFoundGraphQLError(notFoundMessage);
-    }
+    await this.tenantScopeService.assertHeaderUnitIsTopUnit(
+      headerUnitId,
+      notFoundMessage,
+    );
   }
 
   /**
@@ -55,28 +50,12 @@ export class AccountingScopeService {
     headerUnitId: string,
     rows: T[],
   ): Promise<T[]> {
-    const headerChain =
-      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
-        headerUnitId,
-      );
-    const verdicts = new Map<string, boolean>();
+    const isOnBranch =
+      this.tenantScopeService.createBranchMatcher(headerUnitId);
     const readable: T[] = [];
     for (const row of rows) {
       const unitId = row.organizationUnitId;
-      if (!unitId || headerChain.includes(unitId)) {
-        readable.push(row);
-        continue;
-      }
-      let isDescendant = verdicts.get(unitId);
-      if (isDescendant === undefined) {
-        const chain =
-          await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
-            unitId,
-          );
-        isDescendant = chain.includes(headerUnitId);
-        verdicts.set(unitId, isDescendant);
-      }
-      if (isDescendant) readable.push(row);
+      if (!unitId || (await isOnBranch(unitId))) readable.push(row);
     }
     return readable;
   }
@@ -91,5 +70,22 @@ export class AccountingScopeService {
     if (readable.length === 0) {
       throw new NotFoundGraphQLError(notFoundMessage);
     }
+  }
+
+  /**
+   * A unit named by the caller (e.g. a query argument) must be the header unit
+   * or one of its descendants; rejects with NotFound.
+   */
+  async assertUnitReadable(
+    headerUnitId: string,
+    unitId: string,
+    notFoundMessage: string,
+  ): Promise<void> {
+    if (unitId === headerUnitId) return;
+    await this.tenantScopeService.assertResourceInScope(
+      headerUnitId,
+      unitId,
+      notFoundMessage,
+    );
   }
 }
