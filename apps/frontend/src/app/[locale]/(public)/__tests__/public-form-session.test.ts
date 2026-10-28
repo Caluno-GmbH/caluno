@@ -25,6 +25,7 @@ mock.module('next/navigation', () => ({
 
 mock.module('@/lib/auth-server', () => ({
   getSession: async () => ({ user: null }),
+  isAuthenticated: async () => false,
 }));
 
 mock.module('@/lib/org-context-server', () => ({

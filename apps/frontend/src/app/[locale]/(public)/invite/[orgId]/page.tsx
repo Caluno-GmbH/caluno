@@ -1,6 +1,6 @@
 import { type JoinOrganizationMutation, JoinStatus } from '@repo/data';
 import { cookies } from 'next/headers';
-import { redirect, unstable_rethrow } from 'next/navigation';
+import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { redirect as redirectWithLocale } from '@/i18n/navigation';
 import { isAuthenticated } from '@/lib/auth-server';
@@ -43,7 +43,10 @@ export default async function InvitePage({ params }: InvitePageProps) {
   if (result.status === JoinStatus.Joined) {
     const cookieStore = await cookies();
     const pendingRedirect = cookieStore.get('pending_redirect')?.value;
-    redirect(getSafeRedirect(pendingRedirect, `/admin/${organizationUnitId}`));
+    redirectWithLocale({
+      href: getSafeRedirect(pendingRedirect, `/admin/${organizationUnitId}`),
+      locale,
+    });
   }
 
   if (result.status === JoinStatus.PendingMembership) {
@@ -55,7 +58,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   if (result.status === JoinStatus.RequirementsNeeded) {
-    redirect(`/join/${organizationUnitId}/forms`);
+    redirectWithLocale({ href: `/join/${organizationUnitId}/forms`, locale });
   }
 
   return <JoinError message={t('invite.unexpectedError')} />;
