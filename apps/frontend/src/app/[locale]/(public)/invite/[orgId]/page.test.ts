@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { JoinStatus } from '@repo/data';
 
 let joinStatus = JoinStatus.Joined;
+let pendingRedirect = '/admin/org-1';
 const redirectMock = mock((_args: { href: string; locale: string }) => {
   throw new Error('NEXT_REDIRECT');
 });
@@ -9,7 +10,7 @@ const redirectMock = mock((_args: { href: string; locale: string }) => {
 mock.module('next/headers', () => ({
   cookies: async () => ({
     get: (name: string) =>
-      name === 'pending_redirect' ? { value: '/admin/org-1' } : undefined,
+      name === 'pending_redirect' ? { value: pendingRedirect } : undefined,
   }),
 }));
 
@@ -76,11 +77,24 @@ async function expectLocalizedRedirect(expected: {
 
 describe('InvitePage redirects', () => {
   beforeEach(() => {
+    pendingRedirect = '/admin/org-1';
     redirectMock.mockClear();
   });
 
   it('preserves the locale and safe return path for a joined user', async () => {
     joinStatus = JoinStatus.Joined;
+    await expectLocalizedRedirect({ href: '/admin/org-1', locale: 'en' });
+  });
+
+  it('strips a matching locale prefix from the return path', async () => {
+    joinStatus = JoinStatus.Joined;
+    pendingRedirect = '/en/admin/org-1';
+    await expectLocalizedRedirect({ href: '/admin/org-1', locale: 'en' });
+  });
+
+  it('replaces a different locale prefix with the active locale', async () => {
+    joinStatus = JoinStatus.Joined;
+    pendingRedirect = '/de/admin/org-1';
     await expectLocalizedRedirect({ href: '/admin/org-1', locale: 'en' });
   });
 
