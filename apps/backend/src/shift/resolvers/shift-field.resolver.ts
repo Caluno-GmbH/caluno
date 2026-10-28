@@ -66,7 +66,9 @@ export class ShiftFieldResolver {
   @AllowAnonymous()
   @ResolveField(() => [ShiftInstance])
   async instances(
-    @Parent() shift: ShiftEntity & { windowedInstances?: ShiftInstanceEntity[] },
+    @Parent() shift: ShiftEntity & {
+      windowedInstances?: ShiftInstanceEntity[];
+    },
     @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
   ): Promise<ShiftInstance[]> {
     if (shift.windowedInstances !== undefined) {

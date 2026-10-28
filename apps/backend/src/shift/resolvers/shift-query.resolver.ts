@@ -16,7 +16,12 @@ import {
 import { MY_SHIFT_INVITE_STATUSES } from '../../shared/invite-status';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
-import { ShiftInviteStatus, ShiftSortField, ShiftVisibility, SortOrder } from '../enums';
+import {
+  ShiftInviteStatus,
+  ShiftSortField,
+  ShiftVisibility,
+  SortOrder,
+} from '../enums';
 import { ShiftMapper } from '../mappers/shift.mapper';
 import { ShiftInstanceMapper } from '../mappers/shift-instance.mapper';
 import { Shift, ShiftPaginatedResponse } from '../models/shift.model';

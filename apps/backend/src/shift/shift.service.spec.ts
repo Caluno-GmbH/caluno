@@ -3,12 +3,20 @@ jest.mock('nanoid', () => ({
 }));
 
 import * as drizzleOrm from 'drizzle-orm';
-import { ShiftInviteStatus, ShiftSortField, ShiftVisibility, SortOrder } from './enums';
-import { ShiftService } from './shift.service';
+import {
+  ShiftInviteStatus,
+  ShiftSortField,
+  ShiftVisibility,
+  SortOrder,
+} from './enums';
 import type { ShiftInstanceEntity } from './schemas/shift-instance.schema';
+import { ShiftService } from './shift.service';
 import { endOfAppDay, startOfAppDay } from './utils/app-time';
 
-function makeSelectChain(rows: unknown[], captureWhere?: (arg: unknown) => void) {
+function makeSelectChain(
+  rows: unknown[],
+  captureWhere?: (arg: unknown) => void,
+) {
   const where = jest.fn().mockImplementation((arg: unknown) => {
     captureWhere?.(arg);
     return { groupBy: jest.fn().mockResolvedValue(rows) };
@@ -18,7 +26,10 @@ function makeSelectChain(rows: unknown[], captureWhere?: (arg: unknown) => void)
   return { select };
 }
 
-function createService(selectRows: unknown[], captureWhere?: (arg: unknown) => void) {
+function createService(
+  selectRows: unknown[],
+  captureWhere?: (arg: unknown) => void,
+) {
   const { select } = makeSelectChain(selectRows, captureWhere);
   const db = { select } as never;
   return new ShiftService(
@@ -75,10 +86,7 @@ function makeInstance(
  * Call #1 only needs to return a chainable object (the result is passed to exists() as SQL,
  * never awaited by findAllForOrgUnit itself).
  */
-function makeFindAllDb(
-  shiftRows: unknown[],
-  instanceRows: unknown[] = [],
-) {
+function makeFindAllDb(shiftRows: unknown[], instanceRows: unknown[] = []) {
   // 1. Subquery chain — just needs to be chainable, not awaitable
   const subWhere = jest.fn().mockReturnValue({});
   const subFrom = jest.fn().mockReturnValue({ where: subWhere });
@@ -93,7 +101,9 @@ function makeFindAllDb(
   const mainSelect = { from: mainFrom };
 
   // 3. Count query chain
-  const countOrderBy = jest.fn().mockResolvedValue([{ total: shiftRows.length }]);
+  const countOrderBy = jest
+    .fn()
+    .mockResolvedValue([{ total: shiftRows.length }]);
   const countWhere = jest.fn().mockReturnValue({ orderBy: countOrderBy });
   const countFrom = jest.fn().mockReturnValue({ where: countWhere });
   const countSelect = { from: countFrom };
@@ -276,12 +286,21 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
     // Service calls db.select() 4 times: (1) EXISTS subquery, (2) main page, (3) count, (4) windowed instances
     const { select } = makeFindAllDb([shiftRow], [inWindow, cancelled]);
     const db = { select } as never;
-    const authService = { hasRequiredPermissions: jest.fn().mockResolvedValue(true) };
+    const authService = {
+      hasRequiredPermissions: jest.fn().mockResolvedValue(true),
+    };
     const service = new ShiftService(
       db,
       authService as never,
-      {} as never, {} as never, {} as never, {} as never,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
     );
 
     const result = await service.findAll(
@@ -294,7 +313,9 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
     );
 
     expect(result.shifts).toHaveLength(1);
-    const shift = result.shifts[0] as typeof shiftRow & { windowedInstances?: ShiftInstanceEntity[] };
+    const shift = result.shifts[0] as typeof shiftRow & {
+      windowedInstances?: ShiftInstanceEntity[];
+    };
     expect(shift.windowedInstances).toBeDefined();
     // The service attaches ALL instances returned from the DB query; the DB query already
     // filters cancelled/out-of-window. Our mock returns both; the service trusts the DB.
@@ -330,12 +351,21 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
 
     const { select } = makeFindAllDb([shiftRow], [inst1, inst2]);
     const db = { select } as never;
-    const authService = { hasRequiredPermissions: jest.fn().mockResolvedValue(true) };
+    const authService = {
+      hasRequiredPermissions: jest.fn().mockResolvedValue(true),
+    };
     const service = new ShiftService(
       db,
       authService as never,
-      {} as never, {} as never, {} as never, {} as never,
-      {} as never, {} as never, {} as never, {} as never, {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
     );
 
     await service.findAll(
@@ -362,13 +392,13 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
 
 describe('endOfAppDay', () => {
   it('is exactly 1ms before start of next app day', () => {
-    const end = endOfAppDay(2026, 9, 28);         // Oct 28 (month 0-indexed)
+    const end = endOfAppDay(2026, 9, 28); // Oct 28 (month 0-indexed)
     const nextStart = startOfAppDay(2026, 9, 29); // Oct 29
     expect(end.getTime()).toBe(nextStart.getTime() - 1);
   });
 
   it('handles day-overflow into next month', () => {
-    const end = endOfAppDay(2026, 9, 31);         // Oct 31 overflow
+    const end = endOfAppDay(2026, 9, 31); // Oct 31 overflow
     const nextStart = startOfAppDay(2026, 10, 1); // Nov 1
     expect(end.getTime()).toBe(nextStart.getTime() - 1);
   });
@@ -429,7 +459,9 @@ describe('ShiftService.findAll — volunteer (non-admin) path', () => {
 
     expect(result.shifts.length).toBeGreaterThan(0);
     for (const shift of result.shifts) {
-      expect((shift as { windowedInstances?: unknown }).windowedInstances).toBeUndefined();
+      expect(
+        (shift as { windowedInstances?: unknown }).windowedInstances,
+      ).toBeUndefined();
     }
   });
 });
@@ -447,7 +479,11 @@ describe('ShiftService.getPendingCounts', () => {
       { instanceId: 'inst-2', total: 1 },
     ];
     const service = createService(rows);
-    const result = await service.getPendingCounts(['inst-1', 'inst-2', 'inst-3']);
+    const result = await service.getPendingCounts([
+      'inst-1',
+      'inst-2',
+      'inst-3',
+    ]);
 
     expect(result.get('inst-1')).toBe(2);
     expect(result.get('inst-2')).toBe(1);

@@ -451,7 +451,9 @@ export class ShiftService {
           eq(schema.shifts.isDeleted, false),
           isNotNull(schema.shifts.location),
           ne(schema.shifts.location, ''),
-          ...(visibilityFilter ? [eq(schema.shifts.visibility, visibilityFilter)] : []),
+          ...(visibilityFilter
+            ? [eq(schema.shifts.visibility, visibilityFilter)]
+            : []),
         ),
       )
       .orderBy(asc(schema.shifts.location));
@@ -1042,7 +1044,10 @@ export class ShiftService {
     dateTo: Date | null = null,
     location: string | null = null,
     visibility: ShiftVisibility | null = null,
-  ): Promise<{ shifts: (ShiftEntity & { windowedInstances?: ShiftInstanceEntity[] })[]; total: number }> {
+  ): Promise<{
+    shifts: (ShiftEntity & { windowedInstances?: ShiftInstanceEntity[] })[];
+    total: number;
+  }> {
     const canViewAllShifts = await this.authService.hasRequiredPermissions(
       userId,
       organizationUnitId,
@@ -1063,14 +1068,21 @@ export class ShiftService {
       );
     }
 
-    const result = await this.findAllVisibleToMember(userId, organizationUnitId, pagination);
+    const result = await this.findAllVisibleToMember(
+      userId,
+      organizationUnitId,
+      pagination,
+    );
     return {
       shifts: result.shifts,
       total: result.total,
     };
   }
 
-  private resolveWindow(dateFrom: Date | null, dateTo: Date | null): { from: Date; to: Date } {
+  private resolveWindow(
+    dateFrom: Date | null,
+    dateTo: Date | null,
+  ): { from: Date; to: Date } {
     const from = dateFrom ?? startOfTodayInAppTimeZone();
     if (dateTo) {
       const { year, month, day } = appDateParts(dateTo);
@@ -1090,9 +1102,15 @@ export class ShiftService {
     dateTo: Date | null = null,
     locationFilter: string | null = null,
     visibilityFilter: ShiftVisibility | null = null,
-  ): Promise<{ shifts: (ShiftEntity & { windowedInstances: ShiftInstanceEntity[] })[]; total: number }> {
+  ): Promise<{
+    shifts: (ShiftEntity & { windowedInstances: ShiftInstanceEntity[] })[];
+    total: number;
+  }> {
     const term = search?.trim();
-    const { from: windowFrom, to: windowTo } = this.resolveWindow(dateFrom, dateTo);
+    const { from: windowFrom, to: windowTo } = this.resolveWindow(
+      dateFrom,
+      dateTo,
+    );
 
     // EXISTS subquery: master has at least one non-cancelled instance overlapping [windowFrom, windowTo].
     // Overlap condition: actualStartsAt <= windowTo AND actualEndsAt >= windowFrom.
@@ -1121,7 +1139,9 @@ export class ShiftService {
           ]
         : []),
       ...(locationFilter ? [eq(schema.shifts.location, locationFilter)] : []),
-      ...(visibilityFilter ? [eq(schema.shifts.visibility, visibilityFilter)] : []),
+      ...(visibilityFilter
+        ? [eq(schema.shifts.visibility, visibilityFilter)]
+        : []),
     ];
 
     const whereClause = and(...conditions)!;
@@ -1150,7 +1170,7 @@ export class ShiftService {
     }
 
     const shiftIds = shifts.map((s) => s.id);
-    const allInstances = await this.db
+    const allInstances = (await this.db
       .select()
       .from(schema.shiftInstances)
       .where(
@@ -1161,7 +1181,9 @@ export class ShiftService {
           eq(schema.shiftInstances.isCancelled, false),
         ),
       )
-      .orderBy(asc(schema.shiftInstances.actualStartsAt)) as ShiftInstanceEntity[];
+      .orderBy(
+        asc(schema.shiftInstances.actualStartsAt),
+      )) as ShiftInstanceEntity[];
 
     const instancesByMaster = new Map<string, ShiftInstanceEntity[]>();
     for (const inst of allInstances) {
@@ -1185,9 +1207,15 @@ export class ShiftService {
       case ShiftSortField.TITLE:
         return [dirFn(schema.shifts.title), asc(schema.shifts.id)] as const;
       case ShiftSortField.FIRST_DATE:
-        return [dirFn(schema.shifts.originalStartsAt), asc(schema.shifts.id)] as const;
+        return [
+          dirFn(schema.shifts.originalStartsAt),
+          asc(schema.shifts.id),
+        ] as const;
       case ShiftSortField.VISIBILITY:
-        return [dirFn(schema.shifts.visibility), asc(schema.shifts.id)] as const;
+        return [
+          dirFn(schema.shifts.visibility),
+          asc(schema.shifts.id),
+        ] as const;
       default:
         return [dirFn(schema.shifts.createdAt), asc(schema.shifts.id)] as const;
     }
