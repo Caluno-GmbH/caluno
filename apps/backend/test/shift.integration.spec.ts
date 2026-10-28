@@ -14,7 +14,10 @@ import { PERMISSIONS } from '../src/auth/constants';
 import { PERMISSIONS_KEY } from '../src/auth/decorators/permissions.decorator';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
-import { NotFoundGraphQLError } from '../src/graphql/errors';
+import {
+  ConflictGraphQLError,
+  NotFoundGraphQLError,
+} from '../src/graphql/errors';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { JoinStatus } from '../src/shared/enums/join-status.enum';
@@ -5092,6 +5095,151 @@ describe('ShiftService.requestJoinShiftInstance — JoinStatus resolution', () =
       where: { instanceId: instance.id, userId: user.id },
     });
     expect(invite?.status).toBe(ShiftInviteStatus.AWAITING_ADMIN_APPROVAL);
+  });
+});
+
+describe('ShiftService.updateShiftInstanceInviteStatus — required forms (VOLI-1702)', () => {
+  let app: INestApplication;
+  let db: Database;
+  let organizationId: string;
+  let organizationUnitId: string;
+  let shiftService: ShiftService;
+  let requiredFormService: RequiredFormService;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+    organizationId = context.organizationId;
+    organizationUnitId = context.organizationUnitId;
+    shiftService = app.get(ShiftService);
+    requiredFormService = app.get(RequiredFormService);
+  });
+
+  const setupInvitedWithRequiredForm = async (
+    visibility: ShiftVisibility = ShiftVisibility.ALL_MEMBERS,
+  ) => {
+    const user = await createUser(db);
+    await addMembership(db, user.id, organizationUnitId);
+
+    const { id: shiftId } = await createShift(db, {
+      organizationUnitId,
+      visibility,
+    });
+    const instance = await db.query.shiftInstances.findFirst({
+      where: { masterId: shiftId },
+    });
+    if (!instance) throw new Error('Failed to create test shift instance');
+
+    const { form } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId,
+      createdById: user.id,
+    });
+    await requiredFormService.setRequiredForms(
+      { targetType: RequiredFormTargetType.SHIFT, targetId: shiftId },
+      [form.id],
+    );
+
+    await createShiftInstanceInvite(db, {
+      instanceId: instance.id,
+      userId: user.id,
+      status: ShiftInviteStatus.ADMIN_INVITED,
+    });
+
+    return { user, shiftId, instance, form };
+  };
+
+  it('rejects volunteer accept when a required form is missing', async () => {
+    const { user, instance } = await setupInvitedWithRequiredForm();
+
+    await expect(
+      shiftService.updateShiftInstanceInviteStatus(
+        user.id,
+        instance.id,
+        ShiftInviteStatus.JOINED,
+      ),
+    ).rejects.toBeInstanceOf(ConflictGraphQLError);
+
+    const invite = await db.query.shiftInstanceInvites.findFirst({
+      where: { instanceId: instance.id, userId: user.id },
+    });
+    expect(invite?.status).toBe(ShiftInviteStatus.ADMIN_INVITED);
+  });
+
+  it('allows volunteer accept after the required form is submitted', async () => {
+    const { user, instance, form } = await setupInvitedWithRequiredForm();
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId,
+    });
+
+    const updated = await shiftService.updateShiftInstanceInviteStatus(
+      user.id,
+      instance.id,
+      ShiftInviteStatus.JOINED,
+    );
+
+    expect(updated.status).toBe(ShiftInviteStatus.JOINED);
+  });
+
+  it('requestJoin returns REQUIREMENTS_NEEDED for ADMIN_INVITED with missing forms', async () => {
+    const { user, instance, form } = await setupInvitedWithRequiredForm();
+
+    const result = await shiftService.requestJoinShiftInstance(
+      user.id,
+      instance.id,
+    );
+
+    expect(result.status).toBe(JoinStatus.REQUIREMENTS_NEEDED);
+    expect(result.requiredForms?.[0]?.form.id).toBe(form.id);
+
+    const invite = await db.query.shiftInstanceInvites.findFirst({
+      where: { instanceId: instance.id, userId: user.id },
+    });
+    expect(invite?.status).toBe(ShiftInviteStatus.ADMIN_INVITED);
+  });
+
+  it('allows ADMIN_INVITED accept on invite-only after forms via requestJoin', async () => {
+    const { user, instance, form } = await setupInvitedWithRequiredForm(
+      ShiftVisibility.INVITED_MEMBERS,
+    );
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: user.id,
+      organizationUnitId,
+    });
+
+    const result = await shiftService.requestJoinShiftInstance(
+      user.id,
+      instance.id,
+    );
+
+    expect(result.status).toBe(JoinStatus.JOINED);
+
+    const invite = await db.query.shiftInstanceInvites.findFirst({
+      where: { instanceId: instance.id, userId: user.id },
+    });
+    expect(invite?.status).toBe(ShiftInviteStatus.JOINED);
+  });
+
+  it('returns REQUIREMENTS_NEEDED for ADMIN_INVITED on invite-only with missing forms', async () => {
+    const { user, instance } = await setupInvitedWithRequiredForm(
+      ShiftVisibility.INVITED_MEMBERS,
+    );
+
+    const result = await shiftService.requestJoinShiftInstance(
+      user.id,
+      instance.id,
+    );
+
+    expect(result.status).toBe(JoinStatus.REQUIREMENTS_NEEDED);
+
+    const invite = await db.query.shiftInstanceInvites.findFirst({
+      where: { instanceId: instance.id, userId: user.id },
+    });
+    expect(invite?.status).toBe(ShiftInviteStatus.ADMIN_INVITED);
   });
 });
 
