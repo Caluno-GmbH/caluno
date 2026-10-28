@@ -24,6 +24,7 @@ import {
 import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification/notification.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
@@ -92,13 +93,15 @@ describe('RequiredFormService', () => {
     const targetRegistry = createRequiredFormTargetRegistry(db, postHogService);
     requiredFormService = new RequiredFormService(db, targetRegistry);
     const userService = new UserService(db, postHogService);
+    const organizationUnitDataService = new OrganizationUnitDataService(db);
     formSubmissionService = new FormSubmissionService(
       db,
       userService,
       requiredFormService,
       postHogService,
-      new OrganizationUnitDataService(db),
+      organizationUnitDataService,
       targetRegistry,
+      new TenantScopeService(db, organizationUnitDataService),
     );
 
     const authServiceMock = {
