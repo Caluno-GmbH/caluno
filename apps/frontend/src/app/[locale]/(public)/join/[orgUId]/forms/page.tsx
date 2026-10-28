@@ -10,6 +10,7 @@ import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
 import { redirect } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth-server';
 import { getDataClient } from '@/lib/data-client';
+import { requireFound } from '@/lib/require-found';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { JoinFormsClient } from './join-forms-client';
 
@@ -39,18 +40,15 @@ export default async function JoinFormsPage({
 
   const [orgUnit, userProfile, joinResult] = await Promise.all([
     // Public query — org display + requiredForms field resolvers are anonymous.
-    data.publicOrganizationUnit.findByIdWithRequiredForms(orgUId),
+    requireFound(() =>
+      data.publicOrganizationUnit.findByIdWithRequiredForms(orgUId),
+    ),
     data.user.getMe(),
     data.membershipRequest.join(orgUId).catch((error) => {
       unstable_rethrow(error);
       return null;
     }),
   ]);
-
-  if (!orgUnit) {
-    redirect({ href: '/', locale });
-    return;
-  }
 
   if (joinResult?.status === JoinStatus.Joined) {
     redirect({
