@@ -31,6 +31,7 @@ import {
 } from '../../lib/reimbursement-type-mapping';
 import {
   findReimbursementType,
+  isUnchangedTemplateCopy,
   slotRefFor,
   templateProvenance,
 } from '../../lib/template-slots';
@@ -195,11 +196,11 @@ export function TemplateBuilder({
 
   // Saving an inherited or org-wide template creates an override. Without an
   // edit that would only duplicate the original and freeze it for this unit.
-  const copyUnchanged =
-    !!provenance &&
-    provenance.kind !== 'own' &&
-    !!templateDoc &&
-    JSON.stringify(templateDoc) === baseline.current;
+  const copyUnchanged = isUnchangedTemplateCopy(
+    provenance?.kind,
+    templateDoc,
+    baseline.current,
+  );
 
   const effectiveRate = ratesQuery.data?.find(
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,

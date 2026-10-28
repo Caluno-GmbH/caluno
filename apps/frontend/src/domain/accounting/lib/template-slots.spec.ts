@@ -3,6 +3,7 @@ import { DocumentKind, ReimbursementTypeKey } from '@repo/data';
 import {
   asInvoiceNumberFormat,
   findReimbursementType,
+  isUnchangedTemplateCopy,
   slotRefFor,
   templateProvenance,
 } from './template-slots';
@@ -81,5 +82,45 @@ describe('slotRefFor', () => {
       kind: DocumentKind.Invoice,
       reimbursementTypeId: undefined,
     });
+  });
+});
+
+describe('isUnchangedTemplateCopy', () => {
+  const doc = { blocks: ['a', 'b'], title: 'T' };
+  const baseline = JSON.stringify(doc);
+
+  it('never blocks saving an own template', () => {
+    expect(isUnchangedTemplateCopy('own', doc, baseline)).toBe(false);
+  });
+
+  it('blocks an unchanged inherited template', () => {
+    expect(isUnchangedTemplateCopy('inherited', doc, baseline)).toBe(true);
+  });
+
+  it('does not block an inherited template with one edit', () => {
+    expect(
+      isUnchangedTemplateCopy('inherited', { ...doc, title: 'T2' }, baseline),
+    ).toBe(false);
+  });
+
+  it('blocks again when an edit is reverted', () => {
+    const edited = { ...doc, title: 'T2' };
+    expect(isUnchangedTemplateCopy('inherited', edited, baseline)).toBe(false);
+    expect(
+      isUnchangedTemplateCopy('inherited', { ...edited, title: 'T' }, baseline),
+    ).toBe(true);
+  });
+
+  it('blocks an unchanged org-wide template', () => {
+    expect(isUnchangedTemplateCopy('orgWide', doc, baseline)).toBe(true);
+  });
+
+  it('does not block a slot with no provenance', () => {
+    expect(isUnchangedTemplateCopy(null, doc, baseline)).toBe(false);
+    expect(isUnchangedTemplateCopy(undefined, doc, baseline)).toBe(false);
+  });
+
+  it('does not block before the document is loaded', () => {
+    expect(isUnchangedTemplateCopy('inherited', null, baseline)).toBe(false);
   });
 });

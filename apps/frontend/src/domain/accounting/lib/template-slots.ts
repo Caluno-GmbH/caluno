@@ -26,6 +26,24 @@ export function templateProvenance(
   return { kind: 'inherited', unitName: owner.name };
 }
 
+/**
+ * Saving an inherited or org-wide template creates an override. Without an edit
+ * that would only duplicate the original and freeze it for this unit, so the
+ * save is blocked until the document differs from its loaded baseline.
+ */
+export function isUnchangedTemplateCopy(
+  provenanceKind: TemplateProvenance['kind'] | null | undefined,
+  document: unknown,
+  baseline: string | null,
+): boolean {
+  return (
+    !!provenanceKind &&
+    provenanceKind !== 'own' &&
+    !!document &&
+    JSON.stringify(document) === baseline
+  );
+}
+
 const INVOICE_NUMBER_FORMATS: readonly InvoiceNumberFormat[] = [
   'date-number',
   'date-kostenstelle-number',
