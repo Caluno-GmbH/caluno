@@ -20,7 +20,7 @@
     "@repo/ui": "*",
     "@sentry/nextjs": "^11.9.0",
     "@tanstack/react-table": "^9.3.1",
-    "@teispace/next-themes": "^3.0.2",
+    "@teispace/next-themes": "^3.1.0",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "@zxcvbn-ts/core": "^4.2.0",
     "@zxcvbn-ts/language-common": "^4.1.3",
