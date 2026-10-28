@@ -23,7 +23,7 @@ import {
 } from '@repo/ui';
 import { CalendarIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { type KeyboardEvent, useMemo } from 'react';
 import { z } from 'zod';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { GENDER_OPTION_VALUES, hasFixedGenderOptions } from '../gender-options';
@@ -333,6 +333,8 @@ export function FieldRenderer({
   hideLabel = false,
   formOrg,
   onCancel,
+  autoFocus = false,
+  onKeyDown,
 }: {
   field: RenderableField;
   value: string;
@@ -346,6 +348,9 @@ export function FieldRenderer({
    *  the profile-prefilled card UX instead of a bare control. */
   formOrg?: string;
   onCancel?: () => void;
+  /** Focus the primary control on mount (profile-field edit mode). */
+  autoFocus?: boolean;
+  onKeyDown?: (e: KeyboardEvent<HTMLElement>) => void;
 }) {
   const t = useTranslations('RequirementForm.volunteerForm');
   const tGender = useTranslations('RequirementForm.genderOptions');
@@ -471,7 +476,12 @@ export function FieldRenderer({
           </FieldLabel>
         )}
         <Select value={value || undefined} onValueChange={onChange}>
-          <SelectTrigger className="w-full" aria-describedby={descriptionId}>
+          <SelectTrigger
+            className="w-full"
+            aria-describedby={descriptionId}
+            autoFocus={autoFocus}
+            onKeyDown={onKeyDown}
+          >
             <SelectValue placeholder={t('selectOption')} />
           </SelectTrigger>
           <SelectContent>
@@ -548,6 +558,8 @@ export function FieldRenderer({
             id={field.id}
             value={value}
             onChange={onChange}
+            autoFocus={autoFocus}
+            onKeyDown={onKeyDown}
             aria-invalid={!!error}
             aria-labelledby={hideLabel ? undefined : labelId}
             aria-describedby={descriptionId}
@@ -558,6 +570,8 @@ export function FieldRenderer({
               <Button
                 type="button"
                 variant="outline"
+                autoFocus={autoFocus}
+                onKeyDown={onKeyDown}
                 aria-describedby={descriptionId}
                 className="w-full justify-start text-left font-normal"
               >
@@ -601,6 +615,8 @@ export function FieldRenderer({
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder || ''}
           rows={4}
+          autoFocus={autoFocus}
+          onKeyDown={onKeyDown}
           aria-invalid={!!error}
           aria-describedby={descriptionId}
         />
@@ -640,7 +656,9 @@ export function FieldRenderer({
         type={inputType}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         placeholder={field.placeholder || ''}
+        autoFocus={autoFocus}
         aria-invalid={!!error}
         aria-describedby={descriptionId}
       />

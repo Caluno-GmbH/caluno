@@ -8,7 +8,7 @@ import {
   REGEXP_ONLY_DIGITS,
 } from '@repo/ui/base/input-otp';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import {
   formValueFromOtpDigits,
   otpDigitsFromStoredDate,
@@ -20,6 +20,8 @@ type BirthDateInputProps = {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  autoFocus?: boolean;
+  onKeyDown?: (e: KeyboardEvent<HTMLElement>) => void;
   'aria-invalid'?: boolean;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
@@ -30,6 +32,8 @@ export function BirthDateInput({
   value,
   onChange,
   disabled = false,
+  autoFocus = false,
+  onKeyDown,
   'aria-invalid': ariaInvalid,
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
@@ -65,6 +69,8 @@ export function BirthDateInput({
         pattern={REGEXP_ONLY_DIGITS}
         value={digits}
         disabled={disabled}
+        autoFocus={autoFocus}
+        onKeyDown={onKeyDown}
         aria-invalid={ariaInvalid}
         aria-labelledby={ariaLabelledBy}
         aria-describedby={describedBy || undefined}

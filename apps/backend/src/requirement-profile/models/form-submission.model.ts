@@ -31,11 +31,11 @@ export class FormSubmission {
   @Field(() => [FormSubmissionValue], { nullable: true })
   values?: FormSubmissionValue[] | null;
 
-  @Field(() => RequirementForm, { nullable: true })
-  form?: RequirementForm | null;
+  @Field(() => RequirementForm)
+  form!: RequirementForm;
 
-  @Field(() => User, { nullable: true })
-  user?: User | null;
+  @Field(() => User)
+  user!: User;
 }
 
 export const FormSubmissionPaginatedResponse =
