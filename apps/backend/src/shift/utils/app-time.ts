@@ -72,6 +72,14 @@ export function startOfTodayInAppTimeZone(now: Date = new Date()): Date {
   return startOfAppDay(year, month, day);
 }
 
+/**
+ * End of a calendar date (23:59:59.999) in the app timezone, as a UTC instant.
+ * Month and day overflow roll over like `Date.UTC`.
+ */
+export function endOfAppDay(year: number, month: number, day: number): Date {
+  return new Date(startOfAppDay(year, month, day + 1).getTime() - 1);
+}
+
 /** Hours from `now` until `target` (negative once `target` is in the past). Both are absolute instants, so no timezone handling is needed here. */
 export function hoursUntil(target: Date, now: Date = new Date()): number {
   return (target.getTime() - now.getTime()) / 3_600_000;

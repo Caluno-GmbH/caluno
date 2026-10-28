@@ -6,6 +6,7 @@ import * as drizzleOrm from 'drizzle-orm';
 import { ShiftInviteStatus, ShiftSortField, ShiftVisibility, SortOrder } from './enums';
 import { ShiftService } from './shift.service';
 import type { ShiftInstanceEntity } from './schemas/shift-instance.schema';
+import { endOfAppDay, startOfAppDay } from './utils/app-time';
 
 function makeSelectChain(rows: unknown[], captureWhere?: (arg: unknown) => void) {
   const where = jest.fn().mockImplementation((arg: unknown) => {
@@ -356,6 +357,20 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
     expect(ascOnStartsAt).toBeDefined();
 
     ascSpy.mockRestore();
+  });
+});
+
+describe('endOfAppDay', () => {
+  it('is exactly 1ms before start of next app day', () => {
+    const end = endOfAppDay(2026, 9, 28);         // Oct 28 (month 0-indexed)
+    const nextStart = startOfAppDay(2026, 9, 29); // Oct 29
+    expect(end.getTime()).toBe(nextStart.getTime() - 1);
+  });
+
+  it('handles day-overflow into next month', () => {
+    const end = endOfAppDay(2026, 9, 31);         // Oct 31 overflow
+    const nextStart = startOfAppDay(2026, 10, 1); // Nov 1
+    expect(end.getTime()).toBe(nextStart.getTime() - 1);
   });
 });
 

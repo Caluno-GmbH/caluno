@@ -92,6 +92,7 @@ import { propagateShiftInviteStatusToFutureInstances } from './shift-invite-prop
 import {
   appDateParts,
   appWeekday,
+  endOfAppDay,
   hoursUntil,
   startOfAppDay,
   startOfTodayInAppTimeZone,
@@ -1072,13 +1073,12 @@ export class ShiftService {
 
   private resolveWindow(dateFrom: Date | null, dateTo: Date | null): { from: Date; to: Date } {
     const from = dateFrom ?? startOfTodayInAppTimeZone();
-    const to = dateTo ?? (() => {
-      const d = startOfTodayInAppTimeZone();
-      d.setDate(d.getDate() + 31);
-      d.setHours(23, 59, 59, 999);
-      return d;
-    })();
-    return { from, to };
+    if (dateTo) {
+      const { year, month, day } = appDateParts(dateTo);
+      return { from, to: endOfAppDay(year, month, day) };
+    }
+    const { year, month, day } = appDateParts(startOfTodayInAppTimeZone());
+    return { from, to: endOfAppDay(year, month, day + 31) };
   }
 
   private async findAllForOrgUnit(
