@@ -38,9 +38,44 @@ describe('fromGraphQLError', () => {
     const original = new DataError('already translated', { code: 'NOT_FOUND' });
     expect(fromGraphQLError(original)).toBe(original);
   });
+
+  it('preserves a duck-typed DataError across dual-package copies', () => {
+    class OtherDataError extends Error {
+      name = 'DataError';
+      constructor(
+        message: string,
+        public readonly options?: { code?: string },
+      ) {
+        super(message);
+      }
+    }
+    const other = new OtherDataError('Unauthorized', {
+      code: 'UNAUTHENTICATED',
+    });
+    expect(other instanceof DataError).toBe(false);
+    expect(fromGraphQLError(other)).toBe(other);
+    expect(fromGraphQLError(other).options?.code).toBe('UNAUTHENTICATED');
+  });
 });
 
 describe('createSdkErrorWrapper', () => {
+  it('propagates onError throws instead of replacing with DataError', async () => {
+    const redirect = new Error('NEXT_REDIRECT:/login');
+    const wrapper = createSdkErrorWrapper(() => {
+      throw redirect;
+    });
+
+    await expect(
+      wrapper(
+        async () => {
+          throw clientError();
+        },
+        'GetActiveDocumentTemplate',
+        'query',
+      ),
+    ).rejects.toBe(redirect);
+  });
+
   it('rethrows a failed call as DataError, not the raw ClientError', async () => {
     const wrapper = createSdkErrorWrapper();
 

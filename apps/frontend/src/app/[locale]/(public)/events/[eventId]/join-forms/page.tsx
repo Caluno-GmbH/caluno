@@ -1,4 +1,5 @@
 import { JoinStatus, RequiredFormTargetType } from '@repo/data';
+import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { EventJoinFormsClient } from '@/app/[locale]/(public)/events/[eventId]/join-forms/event-join-forms-client';
 import {
@@ -42,7 +43,7 @@ export default async function EventJoinFormsPage({
   const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const searchParams = new URLSearchParams({
       signup: '1',
       redirectTo: redirectTo ?? `/events/${eventId}/join-forms`,
@@ -62,7 +63,10 @@ export default async function EventJoinFormsPage({
   const organizationUnitId = event.organizationUnit?.id ?? '';
   const submissionsResult = await data.requirementForm
     .findMyFormSubmissions(organizationUnitId)
-    .catch(() => []);
+    .catch((error) => {
+      unstable_rethrow(error);
+      return [];
+    });
 
   const submittedFormIds = getSubmittedFormIds(submissionsResult);
 
@@ -86,7 +90,8 @@ export default async function EventJoinFormsPage({
   try {
     const userProfile = await data.user.getMe();
     profileData = profileFieldValues(userProfile);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     // Ignore profile fetch errors; form will render without prefilled values.
   }
 

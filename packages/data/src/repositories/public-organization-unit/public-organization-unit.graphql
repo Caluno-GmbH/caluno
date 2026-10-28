@@ -51,9 +51,61 @@ fragment PublicOrgShiftFields on Shift {
   }
 }
 
+fragment PublicOrganizationUnitRequiredForms on OrganizationUnit {
+  requiredForms {
+    form {
+      id
+      name
+      description
+      blockRefs {
+        id
+        formId
+        blockId
+        fieldOrder
+        block {
+          id
+          organizationId
+          title
+          description
+          icon
+          isEditable
+          fields {
+            id
+            blockId
+            type
+            label
+            placeholder
+            description
+            required
+            lockType
+            profileKey
+            options
+            documents {
+              fileId
+              filename
+              downloadUrl
+            }
+            documentLabel
+            minAge
+            fieldOrder
+          }
+        }
+      }
+    }
+    order
+  }
+}
+
 query GetPublicOrganizationUnit($id: ID!) {
   publicOrganizationUnit(id: $id) {
     ...PublicOrganizationUnitFields
+  }
+}
+
+query GetPublicOrganizationUnitWithRequiredForms($id: ID!) {
+  publicOrganizationUnit(id: $id) {
+    ...PublicOrganizationUnitFields
+    ...PublicOrganizationUnitRequiredForms
   }
 }
 

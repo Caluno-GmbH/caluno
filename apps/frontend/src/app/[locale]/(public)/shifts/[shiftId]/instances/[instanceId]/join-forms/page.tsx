@@ -1,4 +1,5 @@
 import { JoinStatus, RequiredFormTargetType } from '@repo/data';
+import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { ShiftJoinFormsClient } from '@/app/[locale]/(public)/shifts/[shiftId]/instances/[instanceId]/join-forms/shift-join-forms-client';
 import {
@@ -44,7 +45,7 @@ export default async function ShiftJoinFormsPage({
   );
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const searchParams = new URLSearchParams({
       signup: '1',
       redirectTo:
@@ -64,7 +65,10 @@ export default async function ShiftJoinFormsPage({
 
   const submissionsResult = await data.requirementForm
     .findMyFormSubmissions(shift.organizationUnitId)
-    .catch(() => []);
+    .catch((error) => {
+      unstable_rethrow(error);
+      return [];
+    });
 
   const submittedFormIds = getSubmittedFormIds(submissionsResult);
 
@@ -93,7 +97,8 @@ export default async function ShiftJoinFormsPage({
   try {
     const userProfile = await data.user.getMe();
     profileData = profileFieldValues(userProfile);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     // Ignore profile fetch errors; form will render without prefilled values.
   }
 

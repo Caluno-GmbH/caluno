@@ -1,5 +1,6 @@
 import { JoinStatus } from '@repo/data';
 import type { Metadata } from 'next';
+import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { cache } from 'react';
 import { DetailHero } from '@/components/detail-hero';
@@ -48,7 +49,10 @@ export default async function ShiftPage({
   const authenticated = await isAuthenticated();
 
   const selectedInstance = instanceId
-    ? await data.shift.findPublicInstance(instanceId).catch(() => undefined)
+    ? await data.shift.findPublicInstance(instanceId).catch((error) => {
+        unstable_rethrow(error);
+        return undefined;
+      })
     : undefined;
 
   const showJoinForms = search.showJoinForms === 'true';
