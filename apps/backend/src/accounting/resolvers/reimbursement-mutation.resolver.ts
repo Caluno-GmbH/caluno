@@ -46,6 +46,9 @@ export class ReimbursementMutationResolver {
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<ReimbursementRate> {
+    if (organizationUnitId === '') {
+      throw new BadRequestGraphQLError('organizationUnitId must not be empty');
+    }
     const organizationId =
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,

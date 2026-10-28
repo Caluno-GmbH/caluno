@@ -437,6 +437,52 @@ describe('accounting writes are scoped to the header unit tree', () => {
       expect(row?.invoiceNumberFormat).toBeNull();
     });
 
+    it('rejects update and delete of an ancestor unit template and leaves it unchanged', async () => {
+      const template = await seedTemplate(rootId);
+      setAuthMockUserId(ownerOnAId);
+
+      const updated = await update(template.id, unitAId);
+      const deleted = await remove(template.id, unitAId);
+
+      expect(updated.errors?.[0]?.message).toBe('Document template not found');
+      expect(deleted.errors?.[0]?.message).toBe('Document template not found');
+      const row = await templateRow(template.id);
+      expect(row?.isDeleted).toBe(false);
+      expect(row?.invoiceNumberFormat).toBeNull();
+    });
+
+    it('returns the same error for a sibling template id and an unknown id', async () => {
+      const sibling = await seedTemplate(unitBId);
+      const unknownId = crypto.randomUUID();
+      setAuthMockUserId(ownerOnAId);
+
+      const siblingUpdate = await update(sibling.id, unitAId);
+      const unknownUpdate = await update(unknownId, unitAId);
+      const siblingDelete = await remove(sibling.id, unitAId);
+      const unknownDelete = await remove(unknownId, unitAId);
+      const siblingGet = await graphqlRequest(app, {
+        query: GET_TEMPLATE,
+        variables: { id: sibling.id },
+        headers: asHeader(unitAId),
+      });
+      const unknownGet = await graphqlRequest(app, {
+        query: GET_TEMPLATE,
+        variables: { id: unknownId },
+        headers: asHeader(unitAId),
+      });
+
+      expect(siblingUpdate.errors?.[0]?.message).toBe(
+        unknownUpdate.errors?.[0]?.message,
+      );
+      expect(siblingDelete.errors?.[0]?.message).toBe(
+        unknownDelete.errors?.[0]?.message,
+      );
+      expect(siblingGet.errors?.[0]?.message).toBe(
+        unknownGet.errors?.[0]?.message,
+      );
+      expect(unknownGet.errors?.[0]?.message).toBe('Document template not found');
+    });
+
     it('allows update and delete of the caller own unit template', async () => {
       const template = await seedTemplate(unitAId);
       setAuthMockUserId(ownerOnAId);
@@ -465,6 +511,37 @@ describe('accounting writes are scoped to the header unit tree', () => {
       const deleted = await remove(template.id, rootId);
       expect(deleted.errors).toBeUndefined();
       expect((await templateRow(template.id))?.isDeleted).toBe(true);
+    });
+  });
+
+  describe('empty-string unit ids', () => {
+    it('rejects an empty organizationUnitId on setReimbursementRate', async () => {
+      setAuthMockUserId(ownerOnRootId);
+
+      const response = await graphqlRequest(app, {
+        query: SET_RATE,
+        variables: { typeId, cents: 1_000, unitId: '' },
+        headers: asHeader(rootId),
+      });
+
+      expect(response.errors?.[0]?.message).toBe(
+        'organizationUnitId must not be empty',
+      );
+      expect(await rateRows(null)).toHaveLength(0);
+    });
+
+    it('rejects an empty organizationUnitId on activeDocumentTemplate', async () => {
+      setAuthMockUserId(ownerOnRootId);
+
+      const response = await graphqlRequest(app, {
+        query: ACTIVE_TEMPLATE,
+        variables: { typeId, kind: DocumentKind.CONTRACT, unitId: '' },
+        headers: asHeader(rootId),
+      });
+
+      expect(response.errors?.[0]?.message).toBe(
+        'organizationUnitId must not be empty',
+      );
     });
   });
 

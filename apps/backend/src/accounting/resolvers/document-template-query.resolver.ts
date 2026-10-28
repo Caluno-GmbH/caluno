@@ -1,6 +1,7 @@
 import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { BadRequestGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { DocumentKind } from '../enums';
 import { DocumentTemplateMapper } from '../mappers';
@@ -74,6 +75,9 @@ export class DocumentTemplateQueryResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
+    if (organizationUnitId === '') {
+      throw new BadRequestGraphQLError('organizationUnitId must not be empty');
+    }
     if (organizationUnitId) {
       await this.accountingScopeService.assertUnitReadable(
         context.organizationUnitId,

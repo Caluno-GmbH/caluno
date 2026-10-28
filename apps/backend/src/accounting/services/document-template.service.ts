@@ -53,9 +53,7 @@ export class DocumentTemplateService {
       with: { signees: true },
     });
     if (!template) {
-      throw new NotFoundGraphQLError(
-        `Document template with ID ${templateId} not found`,
-      );
+      throw new NotFoundGraphQLError('Document template not found');
     }
     return template;
   }
@@ -292,10 +290,10 @@ export class DocumentTemplateService {
       where: {
         organizationId,
         isDeleted: false,
-        ...(filter.reimbursementTypeId && {
+        ...(filter.reimbursementTypeId !== undefined && {
           reimbursementTypeId: filter.reimbursementTypeId,
         }),
-        ...(filter.kind && { kind: filter.kind }),
+        ...(filter.kind !== undefined && { kind: filter.kind }),
         ...(filter.onlyEdited && { lastEditedAt: { isNotNull: true } }),
         OR: [
           ...(chain.length > 0 ? [{ organizationUnitId: { in: chain } }] : []),
