@@ -2,7 +2,7 @@ import { JoinStatus, RequiredFormTargetType } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
 import { EventJoinFormsClient } from '@/app/[locale]/(public)/events/[eventId]/join-forms/event-join-forms-client';
 import {
-  buildSubmittedFormIds,
+  getSubmittedFormIds,
   resolveRequiredForms,
 } from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
@@ -64,7 +64,7 @@ export default async function EventJoinFormsPage({
     .findMyFormSubmissions(organizationUnitId)
     .catch(() => []);
 
-  const submittedFormIds = buildSubmittedFormIds(submissionsResult);
+  const submittedFormIds = getSubmittedFormIds(submissionsResult);
 
   const requiredForms = resolveRequiredForms(
     [

@@ -488,13 +488,13 @@ input FormFieldValueInput {
 
 type FormSubmission {
   createdAt: DateTime!
-  form: RequirementForm
+  form: RequirementForm!
   formId: String!
   id: ID!
   organizationUnitId: String!
   submittedAt: DateTime!
   updatedAt: DateTime!
-  user: User
+  user: User!
   userId: String!
   values: [FormSubmissionValue!]
 }
@@ -969,6 +969,7 @@ type Query {
   myFormSubmissions(organizationUnitId: ID!): [FormSubmission!]!
   myInvoices(filter: InvoiceFilterInput): [Invoice!]!
   myMembership(id: ID!): Membership
+  myMembershipRequest(id: ID!): MembershipRequest
   myMembershipRequests(limit: Int! = 10, offset: Int! = 0): MembershipRequestPaginatedResponse!
   myMembershipStatus(organizationUnitId: ID!): Boolean!
   myMemberships: [Membership!]!

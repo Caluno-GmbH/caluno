@@ -33,6 +33,7 @@ import { OrganizationMapper } from '../src/organization/mappers/organization.map
 import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { FileService } from '../src/storage/services/file.service';
 import { TimeEntryClosureKind } from '../src/time-tracking/enums/time-entry-closure-kind.enum';
@@ -85,9 +86,12 @@ describe('InvoiceService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const organizationUnitDataService = new OrganizationUnitDataService(db);
-    const authService = new AuthService(db, organizationUnitDataService, {
-      capture: () => {},
-    } as unknown as PostHogService);
+    const authService = new AuthService(
+      db,
+      organizationUnitDataService,
+      { capture: () => {} } as unknown as PostHogService,
+      new TenantScopeService(db, organizationUnitDataService),
+    );
     const organizationService = new OrganizationService(
       db,
       {} as OrganizationMapper,

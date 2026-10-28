@@ -24,9 +24,16 @@ export class RoleQueryResolver {
     return this.roleMapper.toArray(roles);
   }
 
+  @Permissions(PERMISSIONS.ORG_VIEW)
   @Query(() => Role)
-  async role(@Args('id') id: string): Promise<Role> {
-    const role = await this.authService.findRoleById(id);
+  async role(
+    @Args('id') id: string,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<Role> {
+    const role = await this.authService.findRoleById(
+      context.organizationUnitId,
+      id,
+    );
     return this.roleMapper.toModelOrThrow(role);
   }
 }
