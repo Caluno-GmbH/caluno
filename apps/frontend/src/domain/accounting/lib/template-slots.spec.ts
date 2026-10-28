@@ -1,67 +1,30 @@
 import { describe, expect, it } from 'bun:test';
-import {
-  DocumentKind,
-  type DocumentTemplateSummary,
-  ReimbursementTypeKey,
-} from '@repo/data';
-import { asInvoiceNumberFormat, findSlotTemplate } from './template-slots';
+import { asInvoiceNumberFormat, templateProvenance } from './template-slots';
 
-function template(
-  overrides: Partial<DocumentTemplateSummary> & { id: string },
-): DocumentTemplateSummary {
-  return {
-    kind: DocumentKind.Contract,
-    isDeleted: false,
-    reimbursementType: { id: 'rt-1', key: ReimbursementTypeKey.Ehrenamt },
-    organizationUnit: null,
-    signees: [],
-    ...overrides,
-  } as DocumentTemplateSummary;
-}
-
-const ARGS = {
-  pauschale: 'ehrenamt',
-  kind: 'contract',
-  organizationUnitId: 'unit-1',
-} as const;
-
-describe('findSlotTemplate', () => {
-  it('returns undefined for undefined/empty template lists', () => {
-    expect(findSlotTemplate(undefined, ARGS)).toBeUndefined();
-    expect(findSlotTemplate([], ARGS)).toBeUndefined();
+describe('templateProvenance', () => {
+  it('is own when the template belongs to the viewing unit', () => {
+    expect(
+      templateProvenance(
+        { organizationUnit: { id: 'unit-1', name: 'Unit 1' } },
+        'unit-1',
+      ),
+    ).toEqual({ kind: 'own' });
   });
 
-  it('matches an org-wide default template (organizationUnit null)', () => {
-    const orgLevel = template({ id: 't-org' });
-    expect(findSlotTemplate([orgLevel], ARGS)?.id).toBe('t-org');
+  it('is inherited, with the source unit name, when an ancestor owns it', () => {
+    expect(
+      templateProvenance(
+        { organizationUnit: { id: 'root', name: 'Verein' } },
+        'unit-1',
+      ),
+    ).toEqual({ kind: 'inherited', unitName: 'Verein' });
   });
 
-  it('prefers the unit-level override over the org-wide default', () => {
-    const orgLevel = template({ id: 't-org' });
-    const unitLevel = template({
-      id: 't-unit',
-      organizationUnit: { id: 'unit-1', name: 'Unit 1' },
+  it('is org-wide when no unit owns the template', () => {
+    expect(templateProvenance({ organizationUnit: null }, 'unit-1')).toEqual({
+      kind: 'orgWide',
     });
-    expect(findSlotTemplate([orgLevel, unitLevel], ARGS)?.id).toBe('t-unit');
-  });
-
-  it('ignores templates of other units, kinds, types, and deleted ones', () => {
-    const templates = [
-      template({
-        id: 'other-unit',
-        organizationUnit: { id: 'unit-2', name: 'Unit 2' },
-      }),
-      template({ id: 'other-kind', kind: DocumentKind.Invoice }),
-      template({
-        id: 'other-type',
-        reimbursementType: {
-          id: 'rt-2',
-          key: ReimbursementTypeKey.Uebungsleiter,
-        },
-      }),
-      template({ id: 'deleted', isDeleted: true }),
-    ];
-    expect(findSlotTemplate(templates, ARGS)).toBeUndefined();
+    expect(templateProvenance({}, 'unit-1')).toEqual({ kind: 'orgWide' });
   });
 });
 

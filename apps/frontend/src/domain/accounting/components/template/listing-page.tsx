@@ -2,19 +2,23 @@
 
 import {
   useAccountingSetupStatus,
-  useDocumentTemplates,
   useEffectiveRates,
+  useReimbursementTypes,
+  useResolvedDocumentTemplates,
 } from '@repo/data/react';
 import { Skeleton } from '@repo/ui';
 import { AlertCircleIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { centsToEuros, formatHourlyRate } from '../../lib/money';
-import { reimbursementTypeKeyFor } from '../../lib/reimbursement-type-mapping';
+import {
+  apiDocumentKindFor,
+  reimbursementTypeKeyFor,
+} from '../../lib/reimbursement-type-mapping';
 import { templateSetupBlocker } from '../../lib/setup-status';
 import {
   asInvoiceNumberFormat,
-  findSlotTemplate,
+  templateProvenance,
 } from '../../lib/template-slots';
 import { AccountingSetupAlert } from '../accounting-setup-alert';
 import type { PauschalenType } from '../doc-type-header';
@@ -25,6 +29,11 @@ import type { TemplateSectionData, TemplateSlot, TemplateSlug } from './types';
 import { SLUG_TO_SLOT } from './types';
 
 const PAUSCHALE_ORDER: PauschalenType[] = ['ehrenamt', 'uebungsleiter'];
+
+const SLOT_ENTRIES = Object.entries(SLUG_TO_SLOT) as [
+  TemplateSlug,
+  { pauschale: PauschalenType; kind: 'contract' | 'invoice' },
+][];
 
 function TemplateSlotCard({
   slot,
@@ -64,6 +73,7 @@ function TemplateSlotCard({
       pauschale={slot.pauschale}
       kind={slot.kind}
       summary={slot.summary}
+      provenance={slot.provenance}
       lastEditedAt={slot.lastEditedAt}
       lastEditedBy={slot.lastEditedBy}
       builderHref={disabled ? undefined : builderHref}
@@ -80,20 +90,36 @@ export function TemplateListingPage({
   orgUId,
   builderBasePath,
 }: TemplateListingPageProps) {
-  const templatesQuery = useDocumentTemplates();
+  const typesQuery = useReimbursementTypes();
   const ratesQuery = useEffectiveRates(orgUId);
   const setupStatusQuery = useAccountingSetupStatus();
+  // The backend resolves each slot (own unit, ancestors, org-wide); the
+  // listing only displays the result.
+  const slotQueries = useResolvedDocumentTemplates(
+    SLOT_ENTRIES.map(([, { pauschale, kind }]) => ({
+      kind: apiDocumentKindFor(kind),
+      reimbursementTypeId: typesQuery.data?.find(
+        (type) => type.key === reimbursementTypeKeyFor(pauschale),
+      )?.id,
+    })),
+    orgUId,
+  );
   const t = useTranslations('Accounting.templates');
 
   if (
-    templatesQuery.isLoading ||
+    typesQuery.isLoading ||
+    slotQueries.some((query) => query.isLoading) ||
     ratesQuery.isLoading ||
     setupStatusQuery.isLoading
   ) {
     return <TemplateListingPageSkeleton />;
   }
 
-  if (templatesQuery.isError || ratesQuery.isError) {
+  if (
+    typesQuery.isError ||
+    slotQueries.some((query) => query.isError) ||
+    ratesQuery.isError
+  ) {
     return <TemplateListingPageError />;
   }
 
@@ -104,11 +130,10 @@ export function TemplateListingPage({
     pauschale: PauschalenType,
     kind: 'contract' | 'invoice',
   ): TemplateSlot => {
-    const template = findSlotTemplate(templatesQuery.data, {
-      pauschale,
-      kind,
-      organizationUnitId: orgUId,
-    });
+    const slotIndex = SLOT_ENTRIES.findIndex(
+      ([entrySlug]) => entrySlug === slug,
+    );
+    const template = slotQueries[slotIndex]?.data;
 
     if (!template) {
       return { slug, pauschale, kind, configured: false };
@@ -125,6 +150,7 @@ export function TemplateListingPage({
       kind,
       configured: true,
       templateId: template.id,
+      provenance: templateProvenance(template, orgUId),
       summary:
         kind === 'contract'
           ? {
@@ -150,14 +176,9 @@ export function TemplateListingPage({
   };
 
   const sections: TemplateSectionData[] = PAUSCHALE_ORDER.map((pauschale) => {
-    const slots = (
-      Object.entries(SLUG_TO_SLOT) as [
-        TemplateSlug,
-        { pauschale: PauschalenType; kind: 'contract' | 'invoice' },
-      ][]
-    )
-      .filter(([, slotInfo]) => slotInfo.pauschale === pauschale)
-      .map(([slug, slotInfo]) => buildSlot(slug, pauschale, slotInfo.kind));
+    const slots = SLOT_ENTRIES.filter(
+      ([, slotInfo]) => slotInfo.pauschale === pauschale,
+    ).map(([slug, slotInfo]) => buildSlot(slug, pauschale, slotInfo.kind));
     return { pauschale, slots } as TemplateSectionData;
   });
 

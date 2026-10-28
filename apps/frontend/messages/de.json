@@ -2585,6 +2585,10 @@
         "saveButton": "Vorlage speichern",
         "saveSuccessToast": "Vorlage gespeichert",
         "saveErrorToast": "Die Vorlage ließ sich nicht speichern. Versuch es bitte erneut.",
+        "provenance": {
+          "inheritedHint": "Diese Vorlage wurde von {unit} übernommen. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert.",
+          "orgWideHint": "Das ist die organisationsweite Vorlage. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert."
+        },
         "signeesUnavailableToast": "Die Unterschriftenrollen konnten noch nicht geladen werden. Bitte warte einen Moment und versuch es erneut.",
         "orgProfile": {
           "blockedMessage": "In deinen Organisationsdaten fehlen Angaben, die diese Vorlage benötigt. Vervollständige die Organisationsdaten, bevor du speicherst.",
@@ -2756,6 +2760,11 @@
         },
         "editButton": "Vorlage bearbeiten",
         "lastEdited": "Zuletzt bearbeitet am {date} von {name}",
+        "provenance": {
+          "own": "Eigene Vorlage",
+          "inherited": "Übernommen von {unit}",
+          "orgWide": "Organisationsweite Vorlage"
+        },
         "badges": {
           "renewal": {
             "monthly": "Monatliche Erneuerung",

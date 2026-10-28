@@ -1,38 +1,23 @@
-import type { DocumentTemplateSummary, InvoiceNumberFormat } from '@repo/data';
-import type { PauschalenType } from '../components/doc-type-header';
-import {
-  apiDocumentKindFor,
-  reimbursementTypeKeyFor,
-} from './reimbursement-type-mapping';
+import type { InvoiceNumberFormat } from '@repo/data';
+
+export type TemplateProvenance =
+  | { kind: 'own' }
+  | { kind: 'inherited'; unitName: string }
+  | { kind: 'orgWide' };
 
 /**
- * The template a slot (kind × Pauschale type) resolves to at an org unit: the
- * unit-level override when one exists, else the org-wide default
- * (`organizationUnit: null`). Mirrors the backend's `findActiveTemplate`
- * resolution; soft-deleted templates never count.
+ * Where a slot's resolved template comes from, relative to the unit viewing it.
+ * Resolution itself happens on the backend (own unit, ancestors, org-wide); this
+ * only labels the answer. `organizationUnit: null` means the org-wide default.
  */
-export function findSlotTemplate(
-  templates: DocumentTemplateSummary[] | undefined,
-  args: {
-    pauschale: PauschalenType;
-    kind: 'contract' | 'invoice';
-    organizationUnitId: string;
-  },
-): DocumentTemplateSummary | undefined {
-  if (!templates) return undefined;
-  const kind = apiDocumentKindFor(args.kind);
-  const key = reimbursementTypeKeyFor(args.pauschale);
-  const candidates = templates.filter(
-    (template) =>
-      !template.isDeleted &&
-      template.kind === kind &&
-      template.reimbursementType.key === key,
-  );
-  return (
-    candidates.find(
-      (template) => template.organizationUnit?.id === args.organizationUnitId,
-    ) ?? candidates.find((template) => template.organizationUnit == null)
-  );
+export function templateProvenance(
+  template: { organizationUnit?: { id: string; name: string } | null },
+  organizationUnitId: string,
+): TemplateProvenance {
+  const owner = template.organizationUnit;
+  if (!owner) return { kind: 'orgWide' };
+  if (owner.id === organizationUnitId) return { kind: 'own' };
+  return { kind: 'inherited', unitName: owner.name };
 }
 
 const INVOICE_NUMBER_FORMATS: readonly InvoiceNumberFormat[] = [
