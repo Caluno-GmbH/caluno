@@ -1,6 +1,11 @@
 'use client';
 
-import { DataError, PermissionKey, parseTemplateBody } from '@repo/data';
+import {
+  DataError,
+  exceedsManualFieldLimit,
+  PermissionKey,
+  parseTemplateBody,
+} from '@repo/data';
 import {
   useAccountingSetupStatus,
   useActiveDocumentTemplate,
@@ -36,6 +41,7 @@ import {
   type DocumentCreationLoadStatus,
 } from './document-creation-dialog';
 import { InfoPanel } from './info-panel';
+import { ManualFieldCounter } from './manual-field-counter';
 import { getKnownOrgValues } from './template/builder-document-presets';
 import { TemplateBuilderPeriodPicker } from './template/builder-period-picker';
 import type { DataSourceKey } from './template/builder-types';
@@ -208,6 +214,16 @@ export function ContractCreationModal({
     setEditedValues((prev) => ({ ...prev, [fieldId]: value }));
   };
 
+  // A manual value past its field's character limit blocks sending.
+  const overLimit = (derivedFields ?? []).some(
+    (field) =>
+      field.kind === 'manual' &&
+      exceedsManualFieldLimit(
+        field.fieldId,
+        currentValue(field.fieldId, field.value) ?? '',
+      ),
+  );
+
   const handleSend = async () => {
     if (!reimbursementType || !templateDoc) return;
     const lifespan =
@@ -377,6 +393,7 @@ export function ContractCreationModal({
       sendingLabel={t('sending')}
       isSending={isSending}
       onSend={handleSend}
+      sendDisabled={overLimit}
       preview={
         templateDoc && (
           <GeneratedDocumentPreview
@@ -424,13 +441,19 @@ export function ContractCreationModal({
                 onChange={handleFieldChange(field.fieldId)}
               />
             ) : (
-              <Input
-                className="mt-2"
-                value={currentValue(field.fieldId, field.value) ?? ''}
-                onChange={(e) =>
-                  handleFieldChange(field.fieldId)(e.target.value)
-                }
-              />
+              <>
+                <Input
+                  className="mt-2"
+                  value={currentValue(field.fieldId, field.value) ?? ''}
+                  onChange={(e) =>
+                    handleFieldChange(field.fieldId)(e.target.value)
+                  }
+                />
+                <ManualFieldCounter
+                  fieldId={field.fieldId}
+                  value={currentValue(field.fieldId, field.value) ?? ''}
+                />
+              </>
             )}
           </InfoPanel>
         ),

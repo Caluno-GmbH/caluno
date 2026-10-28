@@ -2204,6 +2204,9 @@
     "yourShiftsThisWeek": "{n, plural, one {# assignment this week} other {# assignments this week}}"
   },
   "Accounting": {
+    "characterCounter": {
+      "tooLong": "Too long by {count, plural, one {# character} other {# characters}}"
+    },
     "settings": {
       "title": "Settings",
       "subtitle": "Set up rates and document templates for volunteering reimbursements.",
@@ -2638,6 +2641,7 @@
           },
           "alreadyReceivedHint": "Calculated automatically from the linked agreement period when a timesheet is generated.",
           "incompleteCount": "{count, plural, one {# field needs a value} other {# fields need a value}}",
+          "overLimitCount": "{count, plural, one {# field is too long} other {# fields are too long}}",
           "notSetYet": "not set yet",
           "sameAsAbove": "same value as set above",
           "scrollRegionLabel": "Template editor, scrollable",
@@ -2746,7 +2750,8 @@
         "pageFooter": {
           "title": "Page footer",
           "description": "Appears at the bottom of every page.",
-          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB",
+          "mayBeCutWarning": "The page footer may be cut: at most 3 lines fit at the bottom of the page. Check the preview."
         }
       },
       "card": {

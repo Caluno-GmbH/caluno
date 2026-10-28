@@ -180,6 +180,25 @@ export function pageFooterTextLines(
   return text.length === 0 ? [] : text.split('\n');
 }
 
+/** The PDF footer holds at most this many printed lines; the rest is cut. */
+export const PAGE_FOOTER_MAX_LINES = 3;
+/** Past this many characters the footer may not fit in its lines; deliberately cautious. */
+export const PAGE_FOOTER_WARN_LENGTH = 300;
+
+/**
+ * Rough check for the builder warning: the PDF wraps by width, which is not
+ * measured here, so long text may still fit.
+ */
+export function pageFooterMayBeCut(
+  footer: TemplatePageFooter | undefined,
+): boolean {
+  if (footer?.enabled !== true) return false;
+  return (
+    footer.text.trimEnd().length > PAGE_FOOTER_WARN_LENGTH ||
+    pageFooterTextLines(footer).length > PAGE_FOOTER_MAX_LINES
+  );
+}
+
 export function pageNumberLabel(
   page: number | string,
   total: number | string,

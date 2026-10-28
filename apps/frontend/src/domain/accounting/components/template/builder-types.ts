@@ -4,12 +4,13 @@
 // re-exported here so the builder's existing imports keep working. This file
 // adds only the builder-side constants and mutation helpers that operate on
 // those shapes (the shared package intentionally stays shape-only).
-import type {
-  DataSourceKey,
-  InvoiceNumberFormat,
-  TemplateDocument,
-  TemplateField,
-  TemplateLine,
+import {
+  type DataSourceKey,
+  exceedsManualFieldLimit,
+  type InvoiceNumberFormat,
+  type TemplateDocument,
+  type TemplateField,
+  type TemplateLine,
 } from '@repo/data';
 
 export type {
@@ -259,6 +260,22 @@ export function countIncompleteManualFields(doc: TemplateDocument): number {
   // enabled manual fields.
   if (doc.pageFooter?.enabled && !doc.pageFooter.text.trim()) {
     count++;
+  }
+  return count;
+}
+
+/** Manual-template fields on switched-on lines whose value is past its character limit — gates the Save button alongside `countIncompleteManualFields`. Counts each field id once even if it's quoted on multiple lines. */
+export function countOverLimitManualFields(doc: TemplateDocument): number {
+  const seen = new Set<string>();
+  let count = 0;
+  for (const line of allLines(doc)) {
+    if (!line.enabled) continue;
+    for (const field of line.fields) {
+      if (field.value.kind !== 'manual-template') continue;
+      if (seen.has(field.id)) continue;
+      seen.add(field.id);
+      if (exceedsManualFieldLimit(field.id, field.value.value)) count++;
+    }
   }
   return count;
 }
