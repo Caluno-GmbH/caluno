@@ -21,82 +21,30 @@ export function resolvePageFooter(body: {
 
 /** The PDF footer holds at most this many printed lines; the rest is cut. */
 export const PAGE_FOOTER_MAX_LINES = 3;
-/** A4 (595.28pt) minus 48pt margins on each side. */
-export const PAGE_FOOTER_COLUMN_WIDTH = 499.28;
-
-function typedLines(footer: PageFooter): string[] {
-  if (!footer.enabled) return [];
-  const text = footer.text.replace(/\r\n/g, '\n').trimEnd();
-  return text.length === 0 ? [] : text.split('\n');
-}
-
-// Duplicated in packages/data (template-body.types.ts) for the preview; keep in sync.
 /**
- * Greedy word wrap of one typed line into printed lines. A word wider than
- * `maxWidth` is broken between characters.
+ * One printed footer line as pdfkit steps it: Helvetica's line height at 8pt
+ * (9.248) plus the line gap, rounded up.
  */
-export function wrapText(
-  text: string,
-  maxWidth: number,
-  measure: (s: string) => number,
-): string[] {
-  const lines: string[] = [];
-  let current = '';
-  text.split(' ').forEach((token, index) => {
-    if (index > 0) {
-      const joined = `${current} ${token}`;
-      if (measure(joined) <= maxWidth) {
-        current = joined;
-        return;
-      }
-      lines.push(current);
-      current = '';
-    }
-    if (measure(token) <= maxWidth) {
-      current = token;
-      return;
-    }
-    let chunk = '';
-    for (const ch of token) {
-      if (chunk !== '' && measure(chunk + ch) > maxWidth) {
-        lines.push(chunk);
-        chunk = ch;
-      } else {
-        chunk += ch;
-      }
-    }
-    current = chunk;
-  });
-  lines.push(current);
-  return lines;
+export const PAGE_FOOTER_TEXT_LINE_HEIGHT = 10.25;
+export const PAGE_FOOTER_TEXT_HEIGHT =
+  PAGE_FOOTER_MAX_LINES * PAGE_FOOTER_TEXT_LINE_HEIGHT;
+
+/** The footer text as typed, or empty when off. Trailing blank lines are dropped. */
+export function pageFooterText(footer: PageFooter): string {
+  if (!footer.enabled) return '';
+  return footer.text.replace(/\r\n/g, '\n').trimEnd();
 }
 
-// Duplicated in packages/data (template-body.types.ts) for the preview; keep in sync.
 /**
- * The footer as printed: each typed line wrapped to the column, cut to
- * `PAGE_FOOTER_MAX_LINES` with an ellipsis on the last kept line.
+ * Never zero: the page number is always present. Any footer text gets the
+ * full three-line block, since its wrapped height is unknown up front.
  */
-export function clampPageFooterLines(
-  footer: PageFooter,
-  measure: (s: string) => number,
-): string[] {
-  const printed = typedLines(footer).flatMap((line) =>
-    wrapText(line, PAGE_FOOTER_COLUMN_WIDTH, measure),
-  );
-  if (printed.length <= PAGE_FOOTER_MAX_LINES) return printed;
-  const lines = printed.slice(0, PAGE_FOOTER_MAX_LINES);
-  let last = lines[PAGE_FOOTER_MAX_LINES - 1] ?? '';
-  while (last !== '' && measure(`${last}…`) > PAGE_FOOTER_COLUMN_WIDTH) {
-    last = last.slice(0, -1);
-  }
-  lines[PAGE_FOOTER_MAX_LINES - 1] = `${last.trimEnd()}…`;
-  return lines;
-}
-
-/** Never zero: the page number is always present. */
-export function pageFooterHeight(lineCount: number): number {
-  const textBlock = lineCount > 0 ? 1 + lineCount : 0;
-  return GAP_ABOVE + (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
+export function pageFooterHeight(footer: PageFooter): number {
+  const textBlock =
+    pageFooterText(footer) === ''
+      ? 0
+      : PAGE_FOOTER_LINE_HEIGHT + PAGE_FOOTER_TEXT_HEIGHT;
+  return GAP_ABOVE + PAGE_FOOTER_LINE_HEIGHT + textBlock;
 }
 
 export function pageNumberLabel(

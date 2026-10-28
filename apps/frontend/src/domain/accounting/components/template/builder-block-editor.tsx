@@ -1,6 +1,6 @@
 'use client';
 
-import { clampPageFooter, manualFieldMaxLength } from '@repo/data';
+import { manualFieldMaxLength, pageFooterMayBeCut } from '@repo/data';
 import {
   Badge,
   FieldDescription,
@@ -765,7 +765,7 @@ function PageFooterCard({
   const t = useTranslations('Accounting.templates.builder');
   const enabled = pageFooter?.enabled ?? false;
   const title = t('pageFooter.title');
-  const { clamped } = clampPageFooter(pageFooter);
+  const mayBeCut = pageFooterMayBeCut(pageFooter);
 
   return (
     <InfoPanel
@@ -794,13 +794,13 @@ function PageFooterCard({
             aria-required
             rows={4}
           />
-          {clamped && (
+          {mayBeCut && (
             <p className="flex items-start gap-1.5 text-sm text-alert">
               <TriangleAlertIcon
                 aria-hidden="true"
                 className="mt-0.5 size-4 shrink-0"
               />
-              {t('pageFooter.clampedWarning')}
+              {t('pageFooter.mayBeCutWarning')}
             </p>
           )}
         </div>

@@ -1,4 +1,3 @@
-import { clampPageFooter } from '@repo/data';
 import { Badge, cn, Separator } from '@repo/ui';
 import { Fragment, type ReactNode } from 'react';
 import { letterheadLines } from '../../lib/letterhead';
@@ -9,7 +8,7 @@ import type {
   TemplateDocument,
   TemplateLine,
 } from './builder-types';
-import { pageNumberLabel } from './builder-types';
+import { pageFooterTextLines, pageNumberLabel } from './builder-types';
 
 interface SignatureLineProps {
   label: string;
@@ -233,7 +232,7 @@ export function GeneratedDocumentPreview({
   className,
 }: GeneratedDocumentPreviewProps) {
   const letterhead = letterheadLines(values);
-  const pageFooterLines = clampPageFooter(templateDoc.pageFooter).lines;
+  const pageFooterLines = pageFooterTextLines(templateDoc.pageFooter);
   return (
     <div className={className}>
       {/*
@@ -482,14 +481,9 @@ export function GeneratedDocumentPreview({
             {pageNumberLabel('x', 'y')}
           </p>
           {pageFooterLines.length > 0 && (
-            <div className="mt-[1.803cqw]">
-              {pageFooterLines.map((line, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: lines are positional and may repeat
-                <p key={index} className="whitespace-pre">
-                  {line || ' '}
-                </p>
-              ))}
-            </div>
+            <p className="mt-[1.803cqw] line-clamp-3 whitespace-pre-line">
+              {pageFooterLines.join('\n')}
+            </p>
           )}
         </div>
       </div>
