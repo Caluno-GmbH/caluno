@@ -13,6 +13,7 @@ import { ReimbursementRateMapper } from '../src/accounting/mappers/reimbursement
 import { ReimbursementMutationResolver } from '../src/accounting/resolvers/reimbursement-mutation.resolver';
 import { ReimbursementQueryResolver } from '../src/accounting/resolvers/reimbursement-query.resolver';
 import { AccountingOrgAccessService } from '../src/accounting/services/accounting-org-access.service';
+import { AccountingScopeService } from '../src/accounting/services/accounting-scope.service';
 import { ReimbursementRateService } from '../src/accounting/services/reimbursement-rate.service';
 import type { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
@@ -125,6 +126,10 @@ describe('reimbursement-rate resolver unit scoping', () => {
       new ReimbursementTypeMapper(),
       userService,
       tenantScopeService,
+      new AccountingScopeService(
+        tenantScopeService,
+        organizationUnitDataService,
+      ),
     );
   });
 

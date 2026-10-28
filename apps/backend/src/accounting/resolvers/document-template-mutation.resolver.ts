@@ -9,6 +9,7 @@ import { DocumentTemplateMapper } from '../mappers';
 import { DocumentTemplate } from '../models/document-template.model';
 import {
   AccountingOrgAccessService,
+  AccountingScopeService,
   DocumentTemplateService,
 } from '../services';
 
@@ -18,6 +19,7 @@ export class DocumentTemplateMutationResolver {
     private readonly documentTemplateService: DocumentTemplateService,
     private readonly documentTemplateMapper: DocumentTemplateMapper,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
+    private readonly accountingScopeService: AccountingScopeService,
   ) {}
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -31,6 +33,11 @@ export class DocumentTemplateMutationResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
+    await this.accountingScopeService.assertCanWrite(
+      context.organizationUnitId,
+      input.organizationUnitId,
+      'Organization unit not found',
+    );
     const template = await this.documentTemplateService.createDocumentTemplate(
       organizationId,
       input,
@@ -51,6 +58,7 @@ export class DocumentTemplateMutationResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
+    await this.assertCanWriteTemplate(organizationId, id, context);
     const template = await this.documentTemplateService.updateDocumentTemplate(
       organizationId,
       id,
@@ -71,11 +79,28 @@ export class DocumentTemplateMutationResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
+    await this.assertCanWriteTemplate(organizationId, id, context);
     await this.documentTemplateService.deleteDocumentTemplate(
       organizationId,
       id,
       session.user.id,
     );
     return true;
+  }
+
+  private async assertCanWriteTemplate(
+    organizationId: string,
+    templateId: string,
+    context: AuthenticatedGraphQLContext,
+  ): Promise<void> {
+    const template = await this.documentTemplateService.findDocumentTemplate(
+      organizationId,
+      templateId,
+    );
+    await this.accountingScopeService.assertCanWrite(
+      context.organizationUnitId,
+      template.organizationUnitId,
+      'Document template not found',
+    );
   }
 }
