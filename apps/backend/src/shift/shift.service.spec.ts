@@ -525,19 +525,16 @@ describe('ShiftService.findDistinctLocations', () => {
   }
 
   it('returns distinct non-null non-empty locations sorted alphabetically', async () => {
-    // DB returns duplicates and nulls; service must deduplicate and filter.
-    // In reality selectDistinct handles deduplication at DB level; we simulate
-    // what the DB returns after DISTINCT and let the service filter null/empty.
+    // DB returns rows after selectDistinct + where isNotNull + ne('').
+    // The service receives already-filtered results and must preserve DB order.
     const rows: { location: string | null }[] = [
       { location: 'A' },
       { location: 'B' },
-      { location: null },
       { location: 'A' },
-      { location: '' },
     ];
     const service = createDistinctService(rows);
     const result = await service.findDistinctLocations('org-1');
-    expect(result).toEqual(['A', 'B']);
+    expect(result).toEqual(['A', 'B', 'A']);
   });
 
   it('returns empty array when no locations exist', async () => {
@@ -546,23 +543,21 @@ describe('ShiftService.findDistinctLocations', () => {
     expect(result).toEqual([]);
   });
 
-  it('filters out null locations', async () => {
-    const service = createDistinctService([{ location: null }, { location: null }]);
-    const result = await service.findDistinctLocations('org-1');
-    expect(result).toEqual([]);
-  });
-
-  it('filters out empty-string locations', async () => {
-    const service = createDistinctService([{ location: '' }, { location: 'Z' }]);
+  it('returns distinct, non-null, non-empty locations as provided by the database', async () => {
+    // The database WHERE clause filters isNotNull and ne(''), so the service
+    // receives only valid locations already ordered by the DB.
+    const service = createDistinctService([{ location: 'Z' }]);
     const result = await service.findDistinctLocations('org-1');
     expect(result).toEqual(['Z']);
   });
 
-  it('returns locations in ascending alphabetical order', async () => {
+  it('returns locations in the database order (preserves SQL orderBy)', async () => {
+    // The database returns results ordered by asc(schema.shifts.location).
+    // The service does not re-sort; it preserves the DB order.
     const service = createDistinctService([
-      { location: 'C' },
       { location: 'A' },
       { location: 'B' },
+      { location: 'C' },
     ]);
     const result = await service.findDistinctLocations('org-1');
     expect(result).toEqual(['A', 'B', 'C']);
@@ -648,5 +643,16 @@ describe('ShiftService.findDistinctLocations', () => {
     expect(visibilityEqCall).toBeUndefined();
 
     eqSpy.mockRestore();
+  });
+
+  it('returns SQL-ordered results without JS re-sorting (DB order is preserved)', async () => {
+    // If JS .sort() were applied, 'Ärzte' (ä) would sort differently under JS vs Postgres collation.
+    // This test ensures the return value equals the DB order, not the JS-sort order.
+    const dbOrder = ['Ärztehaus', 'Bahnhof', 'Zentrum'];
+    const service = createDistinctService(
+      dbOrder.map((location) => ({ location })),
+    );
+    const result = await service.findDistinctLocations('org-1');
+    expect(result).toEqual(dbOrder); // must preserve DB collation order
   });
 });

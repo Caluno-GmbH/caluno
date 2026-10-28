@@ -9,6 +9,7 @@ import {
   gte,
   ilike,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -448,20 +449,14 @@ export class ShiftService {
         and(
           eq(schema.shifts.organizationUnitId, organizationUnitId),
           eq(schema.shifts.isDeleted, false),
+          isNotNull(schema.shifts.location),
           ne(schema.shifts.location, ''),
-          sql`${schema.shifts.location} is not null`,
           ...(visibilityFilter ? [eq(schema.shifts.visibility, visibilityFilter)] : []),
         ),
       )
       .orderBy(asc(schema.shifts.location));
 
-    return [
-      ...new Set(
-        rows
-          .map((r) => r.location)
-          .filter((loc): loc is string => loc !== null && loc !== ''),
-      ),
-    ].sort();
+    return rows.map((r) => r.location as string);
   }
 
   /** A user's open time entries across many instances in one query (DataLoader batch). */
