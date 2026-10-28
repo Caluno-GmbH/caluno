@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import { asInvoiceNumberFormat, templateProvenance } from './template-slots';
+import { DocumentKind, ReimbursementTypeKey } from '@repo/data';
+import {
+  asInvoiceNumberFormat,
+  findReimbursementType,
+  slotRefFor,
+  templateProvenance,
+} from './template-slots';
 
 describe('templateProvenance', () => {
   it('is own when the template belongs to the viewing unit', () => {
@@ -40,5 +46,40 @@ describe('asInvoiceNumberFormat', () => {
     expect(asInvoiceNumberFormat('nope')).toBeUndefined();
     expect(asInvoiceNumberFormat(null)).toBeUndefined();
     expect(asInvoiceNumberFormat(undefined)).toBeUndefined();
+  });
+});
+
+const TYPES = [
+  { id: 'type-ehrenamt', key: ReimbursementTypeKey.Ehrenamt },
+  { id: 'type-ul', key: ReimbursementTypeKey.Uebungsleiter },
+];
+
+describe('findReimbursementType', () => {
+  it('finds the type behind a Pauschale', () => {
+    expect(findReimbursementType('uebungsleiter', TYPES)).toBe(TYPES[1]);
+  });
+
+  it('is undefined while the types are loading', () => {
+    expect(findReimbursementType('ehrenamt', undefined)).toBeUndefined();
+  });
+});
+
+describe('slotRefFor', () => {
+  it('maps the Pauschale and kind to the API slot', () => {
+    expect(slotRefFor('ehrenamt', 'contract', TYPES)).toEqual({
+      kind: DocumentKind.Contract,
+      reimbursementTypeId: 'type-ehrenamt',
+    });
+    expect(slotRefFor('uebungsleiter', 'invoice', TYPES)).toEqual({
+      kind: DocumentKind.Invoice,
+      reimbursementTypeId: 'type-ul',
+    });
+  });
+
+  it('leaves the type id undefined until the types have loaded', () => {
+    expect(slotRefFor('ehrenamt', 'invoice', undefined)).toEqual({
+      kind: DocumentKind.Invoice,
+      reimbursementTypeId: undefined,
+    });
   });
 });

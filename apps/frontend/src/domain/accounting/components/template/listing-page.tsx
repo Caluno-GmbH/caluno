@@ -11,13 +11,11 @@ import { AlertCircleIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { centsToEuros, formatHourlyRate } from '../../lib/money';
-import {
-  apiDocumentKindFor,
-  reimbursementTypeKeyFor,
-} from '../../lib/reimbursement-type-mapping';
+import { reimbursementTypeKeyFor } from '../../lib/reimbursement-type-mapping';
 import { templateSetupBlocker } from '../../lib/setup-status';
 import {
   asInvoiceNumberFormat,
+  slotRefFor,
   templateProvenance,
 } from '../../lib/template-slots';
 import { AccountingSetupAlert } from '../accounting-setup-alert';
@@ -96,12 +94,9 @@ export function TemplateListingPage({
   // The backend resolves each slot (own unit, ancestors, org-wide); the
   // listing only displays the result.
   const slotQueries = useResolvedDocumentTemplates(
-    SLOT_ENTRIES.map(([, { pauschale, kind }]) => ({
-      kind: apiDocumentKindFor(kind),
-      reimbursementTypeId: typesQuery.data?.find(
-        (type) => type.key === reimbursementTypeKeyFor(pauschale),
-      )?.id,
-    })),
+    SLOT_ENTRIES.map(([, { pauschale, kind }]) =>
+      slotRefFor(pauschale, kind, typesQuery.data),
+    ),
     orgUId,
   );
   const t = useTranslations('Accounting.templates');

@@ -29,7 +29,11 @@ import {
   apiDocumentKindFor,
   reimbursementTypeKeyFor,
 } from '../../lib/reimbursement-type-mapping';
-import { templateProvenance } from '../../lib/template-slots';
+import {
+  findReimbursementType,
+  slotRefFor,
+  templateProvenance,
+} from '../../lib/template-slots';
 import {
   type DocumentKind,
   getPauschaleKey,
@@ -44,6 +48,7 @@ import {
 import {
   defaultSignees,
   findAccountingManagePermissionId,
+  toSigneeInputs,
 } from './builder-signees';
 import {
   ALWAYS_AVAILABLE_SOURCES,
@@ -139,17 +144,12 @@ export function TemplateBuilder({
   const permissionsQuery = usePermissions();
 
   const reimbursementTypeKey = reimbursementTypeKeyFor(pauschale);
-  const reimbursementType = typesQuery.data?.find(
-    (type) => type.key === reimbursementTypeKey,
-  );
+  const reimbursementType = findReimbursementType(pauschale, typesQuery.data);
 
   // The template this unit actually uses, resolved by the backend (own unit,
   // ancestors, org-wide). null: the slot is not set up yet.
   const resolvedQuery = useResolvedDocumentTemplate(
-    {
-      kind: apiDocumentKindFor(slotKind),
-      reimbursementTypeId: reimbursementType?.id,
-    },
+    slotRefFor(pauschale, slotKind, typesQuery.data),
     orgUId,
   );
   const resolvedTemplate = resolvedQuery.data ?? undefined;
@@ -261,11 +261,7 @@ export function TemplateBuilder({
           input: {
             body,
             invoiceNumberFormat,
-            signees: ownTemplate.signees.map((signee) => ({
-              order: signee.order,
-              signeeType: signee.signeeType,
-              requiredPermissionId: signee.requiredPermission?.id ?? undefined,
-            })),
+            signees: toSigneeInputs(ownTemplate.signees),
           },
         });
       } else {
@@ -280,11 +276,7 @@ export function TemplateBuilder({
         // missing from every document that uses it (seen on ÜL contracts).
         let signees: CreateTemplateSigneeInput[];
         if (resolvedTemplate) {
-          signees = resolvedTemplate.signees.map((signee) => ({
-            order: signee.order,
-            signeeType: signee.signeeType,
-            requiredPermissionId: signee.requiredPermission?.id ?? undefined,
-          }));
+          signees = toSigneeInputs(resolvedTemplate.signees);
         } else {
           const accountingManagePermissionId = findAccountingManagePermissionId(
             permissionsQuery.data,
