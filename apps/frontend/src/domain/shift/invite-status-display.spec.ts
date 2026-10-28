@@ -152,15 +152,19 @@ describe('canRemindInvitee (VOLI-1236)', () => {
 });
 
 describe('preselectedInviteMemberIds', () => {
-  it('excludes ADMIN_REJECTED so invite sheets do not silently re-invite', () => {
+  it('keeps only active invites so sheets do not silently re-invite inactive ones', () => {
     expect(
       preselectedInviteMemberIds([
         { id: 'a', inviteStatus: EventInviteStatus.AdminInvited },
         { id: 'b', inviteStatus: EventInviteStatus.Joined },
         { id: 'c', inviteStatus: EventInviteStatus.AdminRejected },
         { id: 'd', inviteStatus: null },
+        { id: 'e', inviteStatus: ShiftInviteStatus.VolunteerCancelled },
+        { id: 'f', inviteStatus: ShiftInviteStatus.VolunteerRejected },
+        { id: 'g', inviteStatus: ShiftInviteStatus.AwaitingAdminApproval },
+        { id: 'h', inviteStatus: ShiftInviteStatus.WaitlistJoined },
       ]),
-    ).toEqual(['a', 'b', 'd']);
+    ).toEqual(['a', 'b', 'd', 'g', 'h']);
   });
 });
 

@@ -20,6 +20,7 @@ import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import type { VolunteerAllowanceState } from '../allowance-display';
 import type { RecurrenceDayValue } from '../constants';
+import { preselectedInviteMemberIds } from '../invite-status-display';
 import { type InviteShiftFormValues, inviteShiftFormSchema } from '../schemas';
 import { setSuccessDialogCreatedShift } from '../success-dialog';
 import { SendCallOutDialog } from './send-call-out-dialog';
@@ -108,7 +109,7 @@ export function InviteShiftForm({
   const form = useForm<InviteShiftFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      invitedMemberIds: invitedMembers.map((m) => m.id),
+      invitedMemberIds: preselectedInviteMemberIds(invitedMembers),
       inviteAllInstances: false,
     },
   });
