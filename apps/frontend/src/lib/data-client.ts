@@ -5,7 +5,9 @@ import {
   type Locale,
 } from '@repo/data';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { getLocale } from 'next-intl/server';
+import { redirect } from '@/i18n/navigation';
+import { resolveLocale } from '@/i18n/routing';
 import { GRAPHQL_API_URL } from './constants';
 import { handleServerDataClientError } from './data-client-errors';
 
@@ -39,6 +41,7 @@ export async function getDataClient(
   options?: GetDataClientOptions,
 ): Promise<DataClient> {
   const { orgUId, locale, redirectOnUnauthenticated = true } = options ?? {};
+  const redirectLocale = locale ?? resolveLocale(await getLocale());
   const headersList = await headers();
   const cookieHeader = headersList.get('cookie');
 
@@ -64,7 +67,7 @@ export async function getDataClient(
       handleServerDataClientError(
         error,
         { redirectOnUnauthenticated },
-        redirect,
+        (path) => redirect({ href: path, locale: redirectLocale }),
       );
     },
   });
