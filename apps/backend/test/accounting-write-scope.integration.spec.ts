@@ -480,7 +480,9 @@ describe('accounting writes are scoped to the header unit tree', () => {
       expect(siblingGet.errors?.[0]?.message).toBe(
         unknownGet.errors?.[0]?.message,
       );
-      expect(unknownGet.errors?.[0]?.message).toBe('Document template not found');
+      expect(unknownGet.errors?.[0]?.message).toBe(
+        'Document template not found',
+      );
     });
 
     it('allows update and delete of the caller own unit template', async () => {
