@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import {
   DataError,
   ForbiddenDataError,
@@ -10,22 +10,22 @@ import {
 type ErrorHandler = (error: DataError) => void;
 
 let onError: ErrorHandler | undefined;
-const createDataClientMock = mock(
-  (config: { onError?: ErrorHandler }) => {
-    onError = config.onError;
-    return {};
-  },
-);
+const createDataClientMock = mock((config: { onError?: ErrorHandler }) => {
+  onError = config.onError;
+  return {};
+});
 const redirectMock = mock((_args: { href: string; locale: string }) => {
   throw new Error('NEXT_REDIRECT');
 });
 
 mock.module('next/headers', () => ({
+  cookies: async () => ({ get: () => undefined }),
   headers: async () => new Headers(),
 }));
 
 mock.module('next-intl/server', () => ({
   getLocale: async () => 'de',
+  getTranslations: async () => (key: string) => key,
 }));
 
 mock.module('@/i18n/navigation', () => ({
@@ -48,6 +48,10 @@ mock.module('@repo/data', () => ({
 }));
 
 const { getDataClient } = await import('../data-client');
+
+afterAll(() => {
+  mock.restore();
+});
 
 async function expectErrorRedirect(
   error: DataError,
