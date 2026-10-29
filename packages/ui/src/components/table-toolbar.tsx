@@ -359,9 +359,70 @@ function DateRange({ value, onChange, placeholder }: DateRangeProps) {
   );
 }
 
+type FilterComboboxByIdProps = {
+  value: string | undefined;
+  onChange: (value: string | null) => void;
+  options: { label: string; value: string }[];
+  placeholder: string;
+  emptyText: string;
+  ariaLabel?: string;
+  icon?: ReactNode;
+};
+
+/**
+ * Like FilterCombobox but accepts label/value pairs. The URL param holds the
+ * ID (value); the input displays the label. Filtering happens against labels.
+ */
+function FilterComboboxById({
+  value,
+  onChange,
+  options,
+  placeholder,
+  emptyText,
+  ariaLabel,
+  icon,
+}: FilterComboboxByIdProps) {
+  const [focused, setFocused] = useState(false);
+  const labels = options.map((o) => o.label);
+  const currentLabel = options.find((o) => o.value === value)?.label;
+
+  return (
+    <Combobox
+      items={labels}
+      value={currentLabel ?? null}
+      onValueChange={(label: string | null) => {
+        const id = options.find((o) => o.label === label)?.value ?? null;
+        onChange(id);
+      }}
+    >
+      <ComboboxInput
+        placeholder={focused ? undefined : placeholder}
+        aria-label={ariaLabel ?? placeholder}
+        className="w-auto min-w-36"
+        showClear={Boolean(value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      >
+        {icon && <InputGroupAddon>{icon}</InputGroupAddon>}
+      </ComboboxInput>
+      <ComboboxContent>
+        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxList>
+          {(label: string) => (
+            <ComboboxItem key={label} value={label}>
+              {label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
+
 TableToolbar.Search = Search;
 TableToolbar.Select = FilterSelect;
 TableToolbar.Combobox = FilterCombobox;
+TableToolbar.ComboboxById = FilterComboboxById;
 TableToolbar.DateRange = DateRange;
 
 export type { TableToolbarActiveFilter } from './table-toolbar.utils';

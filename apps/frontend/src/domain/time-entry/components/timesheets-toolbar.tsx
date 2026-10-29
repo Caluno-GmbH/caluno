@@ -117,18 +117,20 @@ export function TimesheetsToolbar({
       sheetTitle={t('filter.sheetTitle')}
       actions={actions}
     >
-      <TableToolbar.Select
+      <TableToolbar.ComboboxById
         value={shiftId ?? undefined}
-        onChange={(v) => void setParams({ shiftId: v ?? null, page: 1 })}
+        onChange={(v) => void setParams({ shiftId: v, page: 1 })}
         options={shiftOptions}
         placeholder={t('filter.shiftPlaceholder')}
+        emptyText={t('filter.shiftEmpty')}
         ariaLabel={t('filter.shift')}
       />
-      <TableToolbar.Select
+      <TableToolbar.ComboboxById
         value={volunteerId ?? undefined}
-        onChange={(v) => void setParams({ volunteerId: v ?? null, page: 1 })}
+        onChange={(v) => void setParams({ volunteerId: v, page: 1 })}
         options={volunteerOptions}
         placeholder={t('filter.volunteerPlaceholder')}
+        emptyText={t('filter.volunteerEmpty')}
         ariaLabel={t('filter.volunteer')}
       />
       <TableToolbar.DateRange

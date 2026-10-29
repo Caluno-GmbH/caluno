@@ -2078,7 +2078,9 @@
       "group": "Group by",
       "groupNone": "None",
       "groupVolunteer": "Volunteer",
-      "groupAssignment": "Assignment"
+      "groupAssignment": "Assignment",
+      "shiftEmpty": "No shifts found",
+      "volunteerEmpty": "No volunteers found"
     },
     "status": {
       "autoClosed": "Auto checked out",
