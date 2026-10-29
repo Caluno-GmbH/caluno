@@ -593,5 +593,17 @@
     "minorBody": "This update does not require any action from you. You can keep using {brandName} as before.",
     "buttonLabel": "Review and accept the terms",
     "footerNote": "You're receiving this because you have a {brandName} account."
+  },
+  "timeEntryAutoClosed": {
+    "subject": "You were checked out automatically",
+    "previewText": "Your check-in was closed automatically. Please check the recorded times.",
+    "heading": "You were checked out automatically",
+    "intro": "Hi {firstName}, you checked in but nobody checked you out, so we closed your time entry automatically. Please have a look at the times we recorded.",
+    "detailShift": "Assignment",
+    "detailOrganization": "Organisation",
+    "detailCheckIn": "Checked in",
+    "detailRecordedEnd": "Recorded end",
+    "contactCoordinator": "If these times are wrong, please contact your coordinator.",
+    "footerNote": "You're receiving this because a time entry of yours on {brandName} was closed automatically."
   }
 }

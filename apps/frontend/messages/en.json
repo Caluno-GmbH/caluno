@@ -90,6 +90,19 @@
       "title": "Sign in",
       "description": "Welcome back to caluno. Sign in to join assignments and volunteer with your organisation."
     },
+    "passwordStrength": {
+      "checking": "Checking…",
+      "hint": "Use at least 12 characters with letters, numbers, and symbols. Avoid names, dates, and common words.",
+      "levels": {
+        "fair": "Fair",
+        "good": "Good",
+        "strong": "Strong",
+        "weak": "Weak"
+      },
+      "minimum": "Use at least 8 characters — longer is better.",
+      "unavailable": "Strength check unavailable. Use a long, mixed password.",
+      "weak": "Too easy to guess. Make it longer and mix letters, numbers, and symbols."
+    },
     "resetPassword": {
       "confirmPasswordLabel": "Confirm password",
       "description": "Enter a new password for your account.",
@@ -98,6 +111,8 @@
       "newPasswordLabel": "New password",
       "passwordMismatch": "Passwords do not match",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Use at least 8 characters.",
+      "passwordTooWeak": "That password is too easy to guess. Try a longer password with letters, numbers, and symbols.",
       "resetFailed": "Failed to reset password. Please request a new reset link.",
       "signInLink": "Back to sign in",
       "submit": "Reset password",
@@ -115,9 +130,10 @@
       "lastnameLabel": "Last name",
       "lastnamePlaceholder": "Doe",
       "namePartsRequired": "Please enter your first and last name.",
-      "passwordHint": "At least 6 characters",
       "passwordLabel": "Password",
       "passwordPlaceholder": "••••••••",
+      "passwordTooShort": "Use at least 8 characters.",
+      "passwordTooWeak": "That password is too easy to guess. Try a longer password with letters, numbers, and symbols.",
       "privacyAcknowledge": "I have read and acknowledge the <privacyLink>Privacy Policy</privacyLink>.",
       "privacyRequired": "Please acknowledge the Privacy Policy to create an account.",
       "signInLink": "Sign in",
@@ -342,7 +358,10 @@
         "addButton": "Create assignment",
         "emptyDescription": "Create an assignment for this event to get started.",
         "emptyTitle": "No assignments yet",
-        "title": "Assignments"
+        "nextWeekWithShifts": "Go to next week with assignments",
+        "previousWeekWithShifts": "Go to previous week with assignments",
+        "title": "Assignments",
+        "weekEmpty": "No assignments this week"
       },
       "volunteersCard": {
         "checkInAria": "Check in",
@@ -778,10 +797,6 @@
       "title": "No hours yet"
     },
     "generalTime": "General time",
-    "state": {
-      "completed": "Completed",
-      "inProgress": "In progress"
-    },
     "summary": {
       "total": "Total volunteered"
     },
@@ -1011,13 +1026,13 @@
     },
     "rescan": "Rescan"
   },
-  "QueryParamTabs": {
-    "empty": "No items yet."
-  },
   "RequiredFormRenderer": {
     "formProgress": "Form progress",
     "noForms": "No forms are required.",
+    "prefilledFromPreviousSubmissions": "Form was prefilled with values from previous submissions",
     "step": "Form {current} of {total}",
+    "submit": "Submit form",
+    "submitting": "Submiting form...",
     "submitAll": "Submit all forms",
     "submittingAll": "Submitting all forms..."
   },
@@ -1081,7 +1096,7 @@
       "saveBlock": "Save block",
       "saveChanges": "Save changes",
       "saving": "Saving...",
-      "systemField": "System field",
+      "profileField": "Profile field",
       "titlePlaceholder": "e.g. Personal information",
       "typeLabel": "Type",
       "typePlaceholder": "Select type"
@@ -1129,6 +1144,26 @@
       "unsavedChangesStay": "Keep editing",
       "unsavedChangesTitle": "Unsaved changes",
       "viewBlock": "View"
+    },
+    "deleteDialog": {
+      "acknowledge": "I understand that all answers for this form will be permanently deleted.",
+      "answersDeleted": "All submission answers for this form will be permanently deleted.",
+      "attachmentItem": "{type}: {name}",
+      "attachmentsDetach": "The form will be detached and deleted. The shifts, events, and units themselves are not deleted.",
+      "attachmentsIntro": "This form is currently required by:",
+      "deleting": "Deleting...",
+      "intro": "This cannot be undone.",
+      "loadError": "Could not load delete details. Try again.",
+      "loading": "Loading details…",
+      "noAttachments": "This form is not required by any unit, event, or shift.",
+      "submissionCount": "{count, plural, =0 {No submissions yet.} one {# submission will be deleted.} other {# submissions will be deleted.}}",
+      "targetType": {
+        "EVENT": "Event",
+        "ORGANIZATION_UNIT": "Organization unit",
+        "SHIFT": "Shift",
+        "SHIFT_INSTANCE": "Shift instance"
+      },
+      "title": "Delete “{name}”?"
     },
     "card": {
       "content": "Content",
@@ -1303,11 +1338,14 @@
       "validPostalCode": "{label} must be a valid postal code"
     },
     "volunteerForm": {
+      "completeRequiredFormsHint": "Please complete the required forms",
       "alreadySubmittedMessage": "Your form has been submitted.",
       "alreadySubmittedTitle": "Form submitted",
       "back": "Back",
       "birthDateFormat": "DD/MM/YYYY",
+      "cancelEditAria": "Discard edit",
       "checkboxYes": "Yes",
+      "confirmEditAria": "Confirm change",
       "documentAcknowledgement": "I acknowledge and accept",
       "documentOpenInNewTab": "Open in new tab",
       "failedToSubmit": "We couldn't submit the form. Please try again.",
@@ -1317,7 +1355,9 @@
       "noFields": "This block has no fields yet.",
       "paymentDataVisibilityHint": "Your bank details are visible only to the people who handle reimbursements.",
       "pickDate": "Pick a date",
+      "profileChangeWarning": "If you change this information, it will also be changed in your profile.",
       "selectOption": "Select an option",
+      "sharedWithOrg": "Shared with {orgName}.",
       "step": "Step {current} of {total}",
       "submit": "Submit",
       "submitting": "Submitting...",
@@ -1684,7 +1724,7 @@
       "rejected": "Your membership request for this organisation was rejected. Thank you for wanting to get involved. If you have questions, reach out to your volunteer coordinator.",
       "rejectedCta": "Request not approved",
       "requestSent": "Request sent",
-      "requirementsFallback": "Requirement profile ui (to be implemented)",
+      "requirementsFallback": "Requirements are needed or profile information is missing. Please try again.",
       "requirementsNeeded": "Requirements needed: {missing}{hasCompleted, select, yes { (already completed: {completed})} other {}}",
       "unexpected": "Something went wrong. Please try again.",
       "waitlistJoined": "You're on the waitlist. We'll email you if a spot opens up."
@@ -1698,6 +1738,7 @@
       "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
+      "paginationName": "assignments",
       "createButton": "Create assignment",
       "subtitle": "Assignment details and volunteers",
       "title": "Assignments"
@@ -1778,6 +1819,11 @@
       "requiredForms": "Forms",
       "time": "Time",
       "visibility": "Visibility"
+    },
+    "search": {
+      "placeholder": "Search by name",
+      "clearAria": "Clear search",
+      "noResults": "No assignments match this search"
     },
     "tabs": {
       "allShifts": "All assignments",
@@ -1884,8 +1930,10 @@
       "clear": "Remove",
       "dropHint": "Drag and drop a file here, or click to browse",
       "failed": "The upload didn't work. Please try again.",
+      "documentHint": "PDF, JPEG, PNG, WebP, or GIF, up to 10 MB",
       "imageHint": "Recommended: JPEG or PNG, up to 2 MB",
       "invalidFileType": "This file type is not allowed. Use JPEG, PNG, or HEIC.",
+      "invalidFileTypeDocument": "This file type is not allowed. Use PDF, JPEG, PNG, WebP, or GIF.",
       "label": "Upload file",
       "previewAlt": "Uploaded file preview",
       "replace": "Replace",
@@ -1894,6 +1942,7 @@
     }
   },
   "DataTable": {
+    "rowsPerPage": "Rows per page",
     "sortAscending": "Sort ascending",
     "sortDescending": "Sort descending",
     "sortedAscending": "Sorted ascending",
@@ -1906,12 +1955,13 @@
       "deleteError": "We couldn't delete the time entry. {error}",
       "deleteSuccess": "Time entry deleted",
       "deleteTitle": "Delete",
-      "editAria": "Edit"
+      "editAria": "Edit",
+      "confirm": "Confirm times",
+      "confirmError": "We couldn't confirm the times. {error}",
+      "confirmSuccess": "Times confirmed"
     },
     "detail": {
-      "closedStatus": "Closed",
       "createdLabel": "Created",
-      "openStatus": "Open",
       "shiftLabel": "Assignment",
       "statusLabel": "Status",
       "title": "Time entry",
@@ -1966,16 +2016,28 @@
       "recordedByUnknown": "Unknown",
       "date": "Date",
       "shift": "Assignment",
-      "volunteer": "Volunteer"
+      "volunteer": "Volunteer",
+      "status": "Status"
     },
     "validation": {
+      "endBeforeStart": "Check-out must be after check-in",
       "endedAtRequired": "Please enter an end time.",
       "organizationUnitRequired": "Please select an organisation unit.",
       "reimbursementTypeRequired": "Please select an allowance type.",
       "shiftInstanceRequired": "Please select an assignment date.",
+      "startAfterShiftEnd": "Check-in can't be later than the shift end ({end})",
       "startedAtRequired": "Please enter a start time.",
       "timeEntryIdRequired": "Time entry ID is required",
       "volunteerRequired": "Please select a volunteer."
+    },
+    "filter": {
+      "status": "Status"
+    },
+    "status": {
+      "autoClosed": "Auto checked out",
+      "autoClosedTooltip": "Auto checked out — needs review",
+      "closed": "Checked out",
+      "open": "Checked in"
     }
   },
   "Unauthorized": {
@@ -2001,6 +2063,7 @@
       "title": "No users yet"
     },
     "page": {
+      "paginationName": "users",
       "copyInviteLink": "Copy invite link",
       "inviteLinkCopied": "Invite link copied to clipboard",
       "subtitle": "Manage people and their roles in your organisation",
@@ -2474,7 +2537,10 @@
           "editHint": "To edit hours or assignment details, go to <link>Tracked times</link>.",
           "emptyOutsidePeriod": "{count, plural, one {# time entry} other {# time entries}} for this allowance fall outside the selected timesheet period. Change the timesheet period to include them.",
           "emptyOtherType": "Hours in this timesheet period were tracked under {types}, not this allowance. Create the timesheet for that allowance, or correct the assignment's allowance in Tracked times.",
-          "emptyNothingTracked": "There are no completed hours for this allowance that aren't already on a timesheet. Track time for this volunteer first, or check the other timesheets."
+          "emptyNothingTracked": "There are no completed hours for this allowance that aren't already on a timesheet. Track time for this volunteer first, or check the other timesheets.",
+          "awaitingReview": "Awaiting review",
+          "awaitingReviewHint": "These hours count once an admin confirms the times.",
+          "awaitingReviewRowLabel": "{shiftName} is awaiting review and not included in this timesheet"
         },
         "preview": {
           "disclaimerBadge": "Preview",

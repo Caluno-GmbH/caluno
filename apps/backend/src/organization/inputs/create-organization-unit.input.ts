@@ -1,4 +1,6 @@
 import { Field, InputType } from '@nestjs/graphql';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 @InputType()
 export class CreateOrganizationUnitInput {
@@ -12,6 +14,9 @@ export class CreateOrganizationUnitInput {
   typeId!: string;
 
   @Field(() => String)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @IsNotEmpty()
   name!: string;
 
   @Field(() => String, { nullable: true })

@@ -1,5 +1,5 @@
 import { BadRequestGraphQLError } from '../../graphql/errors';
-import { GENDER_SYSTEM_KEY } from '../constants';
+import { GENDER_PROFILE_KEY } from '../constants';
 import { FieldType } from '../enums';
 
 const CHOICE_TYPES: ReadonlySet<FieldType> = new Set([
@@ -34,25 +34,25 @@ export function assertValidFieldOptions(
 }
 
 /**
- * Gender is a fixed single-choice system field: rows carry empty options and
- * rendering/validation inject the fixed list by systemKey (VOLI-1267).
+ * Gender is a fixed single-choice profile field: rows carry empty options and
+ * rendering/validation inject the fixed list by profileKey (VOLI-1267).
  * Reject field configurations that break that contract.
  */
-export function assertValidSystemKeyBinding(
-  systemKey: string | null | undefined,
+export function assertValidProfileKeyBinding(
+  profileKey: string | null | undefined,
   type: FieldType,
   options: string[] | null | undefined,
 ): void {
-  if (systemKey !== GENDER_SYSTEM_KEY) return;
+  if (profileKey !== GENDER_PROFILE_KEY) return;
 
   if (type !== FieldType.SINGLE_CHOICE) {
     throw new BadRequestGraphQLError(
-      'The gender system field must be of type SINGLE_CHOICE',
+      'The gender profile field must be of type SINGLE_CHOICE',
     );
   }
   if (options && options.length > 0) {
     throw new BadRequestGraphQLError(
-      'The gender system field uses fixed options and cannot define custom options',
+      'The gender profile field uses fixed options and cannot define custom options',
     );
   }
 }

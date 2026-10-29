@@ -16,6 +16,7 @@ import {
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import { patch } from '../../shared/patch';
+import { RequiredFormTargetType } from '../enums';
 import { CreateRequirementFormInput } from '../inputs/create-requirement-form.input';
 import { UpdateRequirementFormInput } from '../inputs/update-requirement-form.input';
 import type {
@@ -147,7 +148,6 @@ export class RequirementFormService {
         slug,
         name: input.name,
         description: input.description,
-        settings: this.normalizeSettings(input.settings),
         shareToken: randomUUID(),
         createdBy: userId,
         updatedBy: userId,
@@ -164,7 +164,6 @@ export class RequirementFormService {
             formId: created.id,
             blockId: ref.blockId,
             fieldOrder: ref.order ?? index,
-            required: ref.required,
           })),
         );
       }
@@ -229,9 +228,9 @@ export class RequirementFormService {
     }
 
     const updated = await this.db.transaction(async (tx) => {
-      // Name/description stay editable after submissions; blockRefs and
-      // settings remain locked (spec: metadata-only unlock).
-      if (input.blockRefs !== undefined || input.settings !== undefined) {
+      // Name/description stay editable after submissions; blockRefs remain
+      // locked (spec: metadata-only unlock).
+      if (input.blockRefs !== undefined) {
         const hasSubmissions = await tx.query.formSubmissions.findFirst({
           where: { formId: id },
           columns: { id: true },
@@ -239,19 +238,16 @@ export class RequirementFormService {
 
         if (hasSubmissions) {
           throw new ConflictGraphQLError(
-            'Cannot edit form structure or settings because it already has submissions',
+            'Cannot edit form structure because it already has submissions',
           );
         }
       }
 
-      const { settings, blockRefs, ...rest } = input;
+      const { blockRefs, ...rest } = input;
       const [form] = await tx
         .update(schema.requirementForms)
         .set({
           ...patch(rest, { ignoreNull: ['name'] }),
-          ...(settings !== undefined && {
-            settings: this.normalizeSettings(settings),
-          }),
           updatedBy: userId,
           updatedAt: new Date(),
         })
@@ -273,7 +269,6 @@ export class RequirementFormService {
               formId: id,
               blockId: ref.blockId,
               fieldOrder: ref.order ?? index,
-              required: ref.required,
             })),
           );
         }
@@ -307,26 +302,12 @@ export class RequirementFormService {
 
     await isUnitInOrg(this.db, organizationUnitId, existing.organizationId);
 
-    const isRequired =
-      await this.requiredFormService.isFormRequiredByAnyTarget(id);
-
-    if (isRequired) {
-      throw new ConflictGraphQLError(
-        'Cannot delete form because it is required by an organization unit',
-      );
-    }
-
     const deleted = await this.db.transaction(async (tx) => {
-      const hasSubmissions = await tx.query.formSubmissions.findFirst({
-        where: { formId: id },
-        columns: { id: true },
-      });
+      await this.requiredFormService.detachFormFromAllTargets(id, tx);
 
-      if (hasSubmissions) {
-        throw new ConflictGraphQLError(
-          'Cannot delete form because it already has submissions',
-        );
-      }
+      await tx
+        .delete(schema.formSubmissions)
+        .where(eq(schema.formSubmissions.formId, id));
 
       const [form] = await tx
         .delete(schema.requirementForms)
@@ -351,6 +332,32 @@ export class RequirementFormService {
     });
 
     return deleted;
+  }
+
+  async getDeleteImpact(
+    id: string,
+    organizationUnitId: string,
+  ): Promise<{
+    submissionCount: number;
+    attachments: Array<{
+      targetType: RequiredFormTargetType;
+      targetId: string;
+      name: string;
+    }>;
+  }> {
+    const existing = await this.findById(id);
+    if (!existing) {
+      throw new NotFoundGraphQLError('Form not found');
+    }
+
+    await isUnitInOrg(this.db, organizationUnitId, existing.organizationId);
+
+    const [submissionCount, attachments] = await Promise.all([
+      this.countSubmissions(id),
+      this.requiredFormService.listFormAttachments(id),
+    ]);
+
+    return { submissionCount, attachments };
   }
 
   async regenerateShareToken(
@@ -399,39 +406,5 @@ export class RequirementFormService {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
     return base || `form-${Date.now()}`;
-  }
-
-  private normalizeSettings(
-    input:
-      | {
-          submitButtonLabel?: string | null;
-          successTitle?: string | null;
-          successMessage?: string | null;
-          allowEmbed?: boolean | null;
-        }
-      | null
-      | undefined,
-  ): {
-    submitButtonLabel?: string;
-    successTitle?: string;
-    successMessage?: string;
-    allowEmbed?: boolean;
-  } {
-    if (!input) return {};
-    return {
-      ...(input.submitButtonLabel !== null &&
-      input.submitButtonLabel !== undefined
-        ? { submitButtonLabel: input.submitButtonLabel }
-        : {}),
-      ...(input.successTitle !== null && input.successTitle !== undefined
-        ? { successTitle: input.successTitle }
-        : {}),
-      ...(input.successMessage !== null && input.successMessage !== undefined
-        ? { successMessage: input.successMessage }
-        : {}),
-      ...(input.allowEmbed !== null && input.allowEmbed !== undefined
-        ? { allowEmbed: input.allowEmbed }
-        : {}),
-    };
   }
 }

@@ -15,7 +15,7 @@ import {
   type RenderableField,
   useValidationMessages,
 } from '@/domain/requirement-form/components/field-renderer';
-import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import { PROFILE_FIELDS } from '@/domain/requirement-form/profile-fields';
 import type { ProfileShape } from '@/domain/user/lib/profile-field-values';
 import { useRouter } from '@/i18n/navigation';
 
@@ -23,15 +23,15 @@ type EditIdentityFormProps = {
   profile: ProfileShape | null | undefined;
 };
 
-const editableFields = SYSTEM_PROFILE_FIELDS.filter((f) => f.key !== 'email');
+const editableFields = PROFILE_FIELDS.filter((f) => f.key !== 'email');
 
 const fieldToRenderable = (
-  f: (typeof SYSTEM_PROFILE_FIELDS)[number],
+  f: (typeof PROFILE_FIELDS)[number],
   label: string,
   subtitle: string | undefined,
 ): RenderableField => ({
   id: f.key,
-  systemKey: f.key,
+  profileKey: f.key,
   type: f.type,
   label,
   required: f.key === 'firstname' || f.key === 'lastname',
@@ -126,7 +126,7 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
   return (
     <form onSubmit={handleSubmit(onSave)} className="space-y-6">
       <div className="space-y-4 rounded-lg border bg-card p-6">
-        {SYSTEM_PROFILE_FIELDS.map((f) => {
+        {PROFILE_FIELDS.map((f) => {
           if (f.key === 'email') {
             return (
               <Field key="email">

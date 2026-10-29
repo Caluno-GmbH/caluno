@@ -7,8 +7,8 @@ import {
   NotFoundGraphQLError,
 } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
-import { MembershipService } from '../../membership/membership.service';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
 import { ReimbursementRateMapper, ReimbursementTypeMapper } from '../mappers';
@@ -27,10 +27,10 @@ export class ReimbursementMutationResolver {
     private readonly reimbursementRateMapper: ReimbursementRateMapper,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
     private readonly organizationUnitService: OrganizationUnitService,
-    private readonly membershipService: MembershipService,
     private readonly userMapper: UserMapper,
     private readonly reimbursementTypeMapper: ReimbursementTypeMapper,
     private readonly userService: UserService,
+    private readonly tenantScopeService: TenantScopeService,
   ) {}
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -52,13 +52,11 @@ export class ReimbursementMutationResolver {
       organizationUnitId &&
       organizationUnitId !== context.organizationUnitId
     ) {
-      const ancestorIds =
-        await this.organizationUnitService.listInclusiveAncestorUnitIds(
-          organizationUnitId,
-        );
-      if (!ancestorIds.includes(context.organizationUnitId)) {
-        throw new NotFoundGraphQLError('Organization unit not found');
-      }
+      await this.tenantScopeService.assertResourceInScope(
+        context.organizationUnitId,
+        organizationUnitId,
+        'Organization unit not found',
+      );
     }
 
     const rate = await this.reimbursementRateService.setReimbursementRate(
@@ -85,23 +83,11 @@ export class ReimbursementMutationResolver {
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
       context.organizationUnitId,
     );
-    const memberships =
-      await this.membershipService.getMyMemberships(volunteerId);
-    let inScope = false;
-    for (const membership of memberships) {
-      if (!membership.organizationUnitId) continue;
-      const ancestorIds =
-        await this.organizationUnitService.listInclusiveAncestorUnitIds(
-          membership.organizationUnitId,
-        );
-      if (ancestorIds.includes(context.organizationUnitId)) {
-        inScope = true;
-        break;
-      }
-    }
-    if (!inScope) {
-      throw new NotFoundGraphQLError('Volunteer not found');
-    }
+    await this.tenantScopeService.assertUserInScope(
+      context.organizationUnitId,
+      volunteerId,
+      'Volunteer not found',
+    );
 
     const status = await this.reimbursementRateService.recordBundleDownload(
       volunteerId,
@@ -147,23 +133,11 @@ export class ReimbursementMutationResolver {
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
       context.organizationUnitId,
     );
-    const memberships =
-      await this.membershipService.getMyMemberships(volunteerId);
-    let inScope = false;
-    for (const membership of memberships) {
-      if (!membership.organizationUnitId) continue;
-      const ancestorIds =
-        await this.organizationUnitService.listInclusiveAncestorUnitIds(
-          membership.organizationUnitId,
-        );
-      if (ancestorIds.includes(context.organizationUnitId)) {
-        inScope = true;
-        break;
-      }
-    }
-    if (!inScope) {
-      throw new NotFoundGraphQLError('Volunteer not found');
-    }
+    await this.tenantScopeService.assertUserInScope(
+      context.organizationUnitId,
+      volunteerId,
+      'Volunteer not found',
+    );
 
     const organizationId =
       await this.organizationUnitService.findOrganizationIdByUnitId(

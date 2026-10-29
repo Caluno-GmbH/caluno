@@ -1,4 +1,5 @@
-import { Badge, Card, CardContent } from '@repo/ui';
+import { TimeEntryStatus } from '@repo/data';
+import { Card, CardContent } from '@repo/ui';
 import { parseISO } from 'date-fns';
 import {
   Calendar,
@@ -11,10 +12,14 @@ import {
 } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/time-entry/components/action-bar';
+import { TimeEntryStatusBadge } from '@/domain/time-entry/components/time-entry-status-badge';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { requireFound } from '@/lib/require-found';
+
+/** Shown instead of a duration for entries that are still running. */
+const NO_DURATION = '—';
 
 interface TimeEntryDetailPageProps {
   params: Promise<{ orgUId: string; timeEntryId: string }>;
@@ -31,7 +36,7 @@ export default async function TimeEntryDetailPage({
   const t = await getTranslations('TimeEntry');
   const { formatDateTime, formatRange, formatDuration } = await getFormatting();
 
-  const isOpen = !entry.endedAt;
+  const isOpen = entry.status === TimeEntryStatus.Open;
   const recorder = describeRecorder(entry);
 
   return (
@@ -40,7 +45,11 @@ export default async function TimeEntryDetailPage({
         <div>
           <h1 className="page-title">{t('detail.title')}</h1>
         </div>
-        <ActionBar id={timeEntryId} organizationUnitId={orgUId} />
+        <ActionBar
+          id={timeEntryId}
+          organizationUnitId={orgUId}
+          status={entry.status}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -58,7 +67,11 @@ export default async function TimeEntryDetailPage({
                 </li>
                 <li className="flex gap-2">
                   <Timer className="text-muted-foreground shrink-0" />
-                  <span>{formatDuration(entry.startedAt, entry.endedAt)}</span>
+                  <span>
+                    {isOpen
+                      ? NO_DURATION
+                      : formatDuration(entry.startedAt, entry.endedAt)}
+                  </span>
                 </li>
                 <li className="flex gap-2">
                   <Calendars className="text-muted-foreground shrink-0" />
@@ -104,13 +117,7 @@ export default async function TimeEntryDetailPage({
                     {t('detail.statusLabel')}
                   </dt>
                   <dd className="ml-6">
-                    {isOpen ? (
-                      <Badge variant="info">{t('detail.openStatus')}</Badge>
-                    ) : (
-                      <Badge variant="success">
-                        {t('detail.closedStatus')}
-                      </Badge>
-                    )}
+                    <TimeEntryStatusBadge status={entry.status} />
                   </dd>
                 </div>
 

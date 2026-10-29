@@ -1,7 +1,7 @@
 import type { DataSourceKey } from './template-body.types';
 
 /**
- * Maps a template field's bound `source` to the user profile systemKey it
+ * Maps a template field's bound `source` to the user profile profileKey it
  * reads from. Mirrors the backend's PROFILE_SOURCE_TO_PROFILE_KEY
  * (apps/backend/src/accounting/services/document-template.types.ts) — the two
  * must stay in sync. The document's `missingProfileFields` carries these
@@ -29,7 +29,7 @@ export function isProfileSourceKey(value: string): value is ProfileSourceKey {
 
 /**
  * Translates a document's `missingProfileFields` (template source keys) into
- * profile system keys. Unknown values are dropped — a backend key the
+ * profile keys. Unknown values are dropped — a backend key the
  * frontend doesn't know yet must not crash the sheet — and duplicates removed.
  */
 export function toMissingProfileKeys(

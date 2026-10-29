@@ -11,6 +11,11 @@ import { PostHogService } from '../shared/observability/posthog.service';
 import { ShiftInviteStatus, ShiftVisibility } from './enums';
 import { ShiftService } from './shift.service';
 
+/** Satisfied forms — these specs exercise PostHog capture, not the form gate. */
+const requiredFormServiceStub = {
+  getRequiredFormStatuses: jest.fn().mockResolvedValue([]),
+} as never;
+
 function createInviteService(options: {
   existingStatus?: ShiftInviteStatus;
   capture: jest.Mock;
@@ -68,8 +73,7 @@ function createInviteService(options: {
     } as never,
     {} as never,
     {} as never,
-    {} as never,
-    {} as never,
+    requiredFormServiceStub,
     { capture: options.capture } as unknown as PostHogService,
     {} as never,
     { resolve: async () => ({ enabled: false }) } as never,
@@ -216,8 +220,7 @@ function createWaitlistService(options: {
     } as never,
     {} as never,
     {} as never,
-    {} as never,
-    {} as never,
+    requiredFormServiceStub,
     { capture: options.capture } as unknown as PostHogService,
     {} as never,
     { resolve: async () => ({ enabled: false }) } as never,
@@ -484,8 +487,7 @@ function createSeriesClaimService(options: { capture: jest.Mock }) {
     {} as never,
     {} as never,
     {} as never,
-    {} as never,
-    {} as never,
+    requiredFormServiceStub,
     { capture: options.capture } as unknown as PostHogService,
     {} as never,
     { resolve: async () => ({ enabled: false }) } as never,

@@ -3,21 +3,6 @@ import { createPaginatedResponseType } from '../../graphql/paginated-response.mo
 import { RequirementFormBlockRef } from './requirement-form-block-ref.model';
 
 @ObjectType()
-export class FormSettings {
-  @Field(() => String, { nullable: true })
-  submitButtonLabel?: string | null;
-
-  @Field(() => String, { nullable: true })
-  successTitle?: string | null;
-
-  @Field(() => String, { nullable: true })
-  successMessage?: string | null;
-
-  @Field(() => Boolean, { nullable: true })
-  allowEmbed?: boolean | null;
-}
-
-@ObjectType()
 export class RequirementForm {
   @Field(() => ID)
   id!: string;
@@ -36,9 +21,6 @@ export class RequirementForm {
 
   @Field(() => String, { nullable: true })
   description?: string | null;
-
-  @Field(() => FormSettings)
-  settings!: FormSettings;
 
   @Field(() => String)
   shareToken!: string;

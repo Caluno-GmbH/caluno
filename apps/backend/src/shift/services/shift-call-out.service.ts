@@ -8,8 +8,9 @@ import * as schema from '../../database/schema';
 import { ConflictGraphQLError } from '../../graphql/errors';
 import { AppI18nService } from '../../i18n/app-i18n.service';
 import { MembershipService } from '../../membership/membership.service';
-import { EmailService } from '../../notification/email/email.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
+import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
+import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
 import { shiftInstanceCallOutTemplate } from '../../notification/email/templates/shift-instance-call-out.template';
 import { shiftInstanceCallOutNoRecipientsTemplate } from '../../notification/email/templates/shift-instance-call-out-no-recipients.template';
 import { NotificationService } from '../../notification/notification.service';
@@ -20,7 +21,6 @@ import {
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
 import {
-  ShiftCallOutDeliveryStatus,
   ShiftCallOutSource,
   ShiftInviteStatus,
   ShiftVisibility,
@@ -61,7 +61,7 @@ export class ShiftCallOutService {
     private readonly authService: AuthService,
     private readonly membershipService: MembershipService,
     private readonly notificationService: NotificationService,
-    private readonly emailService: EmailService,
+    private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
     private readonly postHogService: PostHogService,
   ) {}
@@ -311,7 +311,7 @@ export class ShiftCallOutService {
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
     const shiftLocation = instance.overrideLocation ?? instance.master.location;
 
-    const results = await Promise.all(
+    const enqueueResults = await Promise.all(
       recipients.map(async (recipient) => {
         try {
           const templateContext = createEmailTemplateContext(
@@ -331,41 +331,47 @@ export class ShiftCallOutService {
             },
             templateContext,
           );
-          await this.emailService.send({ to: recipient.email, subject, html });
-          return {
+          await this.emailOutbox.enqueue({
+            category: EmailCategory.CALL_OUT,
             userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.SENT,
-          };
-        } catch (error) {
+            to: recipient.email,
+            subject,
+            html,
+            organizationUnitId: organizationUnit.id,
+            expiresAt: instance.actualEndsAt,
+          });
+          return { userId: recipient.userId, enqueued: true };
+        } catch (enqueueError) {
           this.logger.error(
-            `Failed to send call-out email to user ${recipient.userId}: ${
-              error instanceof Error ? error.message : String(error)
+            `Failed to queue call-out email to user ${recipient.userId}: ${
+              enqueueError instanceof Error
+                ? enqueueError.message
+                : String(enqueueError)
             }`,
           );
-          return {
-            userId: recipient.userId,
-            status: ShiftCallOutDeliveryStatus.FAILED,
-          };
+          return { userId: recipient.userId, enqueued: false };
         }
       }),
     );
 
-    if (results.length === 0) {
+    const enqueuedRecipients = enqueueResults.filter(
+      (enqueueResult) => enqueueResult.enqueued,
+    );
+    if (enqueuedRecipients.length === 0) {
       return 0;
     }
 
     await this.db.insert(schema.shiftCallOutRecipients).values(
-      results.map((result) => ({
+      enqueuedRecipients.map((enqueueResult) => ({
         instanceId: instance.id,
-        recipientId: result.userId,
+        recipientId: enqueueResult.userId,
         sentById: actorUserId,
-        status: result.status,
         source,
         sentAt,
       })),
     );
 
-    return recipients.length;
+    return enqueuedRecipients.length;
   }
 
   private captureCallOutSend(input: {
@@ -420,7 +426,7 @@ export class ShiftCallOutService {
 
     const shiftTitle = instance.overrideTitle ?? instance.master.title;
 
-    const results = await Promise.all(
+    const enqueueResults = await Promise.all(
       recipients.map(async (recipient) => {
         try {
           const templateContext = createEmailTemplateContext(
@@ -439,11 +445,19 @@ export class ShiftCallOutService {
               },
               templateContext,
             );
-          await this.emailService.send({ to: recipient.email, subject, html });
+          await this.emailOutbox.enqueue({
+            category: EmailCategory.CALL_OUT_NO_RECIPIENTS,
+            userId: recipient.userId,
+            to: recipient.email,
+            subject,
+            html,
+            organizationUnitId: organizationUnit.id,
+            expiresAt: instance.actualEndsAt,
+          });
           return true;
         } catch (error) {
           this.logger.error(
-            `Failed to send "nobody left to ask" email to user ${recipient.userId}: ${
+            `Failed to queue "nobody left to ask" email to user ${recipient.userId}: ${
               error instanceof Error ? error.message : String(error)
             }`,
           );
@@ -452,6 +466,6 @@ export class ShiftCallOutService {
       }),
     );
 
-    return results.some(Boolean);
+    return enqueueResults.some(Boolean);
   }
 }

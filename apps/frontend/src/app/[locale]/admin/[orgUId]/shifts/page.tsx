@@ -1,10 +1,9 @@
 import {
-  type GetShiftsQuery,
   type GetWeeklyShiftsQuery,
   PermissionKey,
+  SortOrder,
 } from '@repo/data';
 import { getTranslations } from 'next-intl/server';
-import { Pagination } from '@/components/pagination';
 import { CreateShiftButton } from '@/domain/shift/components/create-shift-button';
 import { EmptyShifts } from '@/domain/shift/components/empty-shifts';
 import { ShiftCreatedDialog } from '@/domain/shift/components/shift-created-dialog';
@@ -13,6 +12,7 @@ import { ShiftsTable } from '@/domain/shift/components/shifts-table';
 import { WeeklyCalendar } from '@/domain/shift/components/weekly-calendar';
 import { WeeklyCalendarNav } from '@/domain/shift/components/weekly-calendar-nav';
 import { getWeekRange } from '@/domain/shift/lib/shift-instances';
+import { shiftsSearchParamsCache } from '@/domain/shift/shifts-search-params.server';
 import { orgHasShifts } from '@/domain/shift/weekplan';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
@@ -22,11 +22,7 @@ type ShiftViewType = 'weekplan' | 'shifts';
 
 interface ShiftsPageProps {
   params: Promise<{ orgUId: string }>;
-  searchParams: Promise<{
-    view?: ShiftViewType;
-    page?: string;
-    week?: string;
-  }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 function parseWeekStart(param: string | null | undefined): Date {
@@ -40,14 +36,18 @@ export default async function ShiftsPage({
   searchParams,
 }: ShiftsPageProps) {
   const { orgUId } = await params;
-  const { page, view = 'weekplan', week } = await searchParams;
+  const rawSearchParams = await searchParams;
 
   await requireOrgAccess(orgUId);
   const [canManage] = await checkPermission(orgUId, PermissionKey.ShiftEdit);
 
-  const currentPage = Number.parseInt(page ?? '1', 10) || 1;
-  const ITEMS_PER_PAGE = 10;
-  const offset = (currentPage - 1) * ITEMS_PER_PAGE;
+  const { sort, dir, page, pageSize, q } =
+    shiftsSearchParamsCache.parse(rawSearchParams);
+
+  const view =
+    (rawSearchParams.view as ShiftViewType | undefined) ?? 'weekplan';
+  const week =
+    typeof rawSearchParams.week === 'string' ? rawSearchParams.week : undefined;
 
   const isWeekplan = view !== 'shifts';
   const weekStart = parseWeekStart(week);
@@ -55,7 +55,6 @@ export default async function ShiftsPage({
   const t = await getTranslations('Shift');
 
   const data = await getDataClient({ orgUId });
-  let tableContent: GetShiftsQuery['shifts'] | null = null;
   let instances: GetWeeklyShiftsQuery['weeklyShifts'] | null = null;
   let orgShiftTotal = 0;
 
@@ -68,27 +67,58 @@ export default async function ShiftsPage({
       const shiftList = await data.shift.findAll({ limit: 1, offset: 0 });
       orgShiftTotal = shiftList.pagination.total;
     }
-  } else {
-    const result = await data.shift.findAll({ limit: ITEMS_PER_PAGE, offset });
-    tableContent = { items: result.items, pagination: result.pagination };
   }
 
   const showWeekplanCalendar = orgHasShifts(orgShiftTotal);
+
+  if (!isWeekplan) {
+    const limit = Number(pageSize);
+    const result = await data.shift.findAll({
+      limit,
+      offset: (page - 1) * limit,
+      sort,
+      order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
+      search: q || null,
+    });
+
+    const showTable = result.pagination.total > 0 || !!q;
+
+    return (
+      <div className="flex flex-col h-full gap-4">
+        <ShiftCreatedDialog />
+
+        <div>
+          <h1 className="page-title mb-2">{t('page.title')}</h1>
+          <div className="flex flex-col gap-2 lg:flex-row justify-between items-start">
+            <ShiftTabSwitcher orgUId={orgUId} activeTab="shifts" week={week} />
+            {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
+          </div>
+        </div>
+
+        {showTable ? (
+          <ShiftsTable
+            shifts={result.items}
+            pagination={result.pagination}
+            orgUId={orgUId}
+            page={page}
+          />
+        ) : (
+          <EmptyShifts>
+            {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
+          </EmptyShifts>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full gap-4">
       <ShiftCreatedDialog />
 
-      {/* Page header */}
       <div>
         <h1 className="page-title mb-2">{t('page.title')}</h1>
-
         <div className="flex flex-col gap-2 lg:flex-row justify-between items-start">
-          <ShiftTabSwitcher
-            orgUId={orgUId}
-            activeTab={isWeekplan ? 'weekplan' : 'shifts'}
-            week={week}
-          />
+          <ShiftTabSwitcher orgUId={orgUId} activeTab="weekplan" week={week} />
           {isWeekplan && showWeekplanCalendar && (
             <WeeklyCalendarNav
               weekStart={weekStart}
@@ -96,41 +126,17 @@ export default async function ShiftsPage({
               query={{ view: 'weekplan' }}
             />
           )}
-
           {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
         </div>
       </div>
 
-      {/* Content */}
-      {isWeekplan ? (
-        showWeekplanCalendar ? (
-          <WeeklyCalendar
-            instances={instances ?? []}
-            canManage={canManage}
-            weekStart={weekStart}
-            orgUId={orgUId}
-          />
-        ) : (
-          <EmptyShifts>
-            {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}
-          </EmptyShifts>
-        )
-      ) : tableContent?.pagination.total ? (
-        <>
-          <ShiftsTable
-            shifts={tableContent.items}
-            orgUId={orgUId}
-            page={currentPage}
-          />
-          {tableContent.pagination.total > ITEMS_PER_PAGE && (
-            <Pagination
-              pagination={tableContent.pagination}
-              url={`/admin/${orgUId}/shifts?view=shifts`}
-              currentPage={currentPage}
-              name="shifts"
-            />
-          )}
-        </>
+      {showWeekplanCalendar ? (
+        <WeeklyCalendar
+          instances={instances ?? []}
+          canManage={canManage}
+          weekStart={weekStart}
+          orgUId={orgUId}
+        />
       ) : (
         <EmptyShifts>
           {canManage ? <CreateShiftButton orgUId={orgUId} /> : null}

@@ -17,11 +17,14 @@ import { MembershipService } from '../src/membership/membership.service';
 import { NotificationService } from '../src/notification/notification.service';
 import { OrganizationService } from '../src/organization/organization.service';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
+import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { ACTIVE_SHIFT_INVITE_STATUSES } from '../src/shared/invite-status';
 import { POSTHOG_EVENT } from '../src/shared/observability/posthog.events';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { ShiftInviteStatus, ShiftVisibility } from '../src/shift/enums';
 import { ShiftService } from '../src/shift/shift.service';
+import type { FileService } from '../src/storage/services/file.service';
 import { UserService } from '../src/user/user.service';
 import { slugify } from '../src/utils/slug.util';
 import {
@@ -55,7 +58,11 @@ describe('ShiftService', () => {
   beforeAll(async () => {
     await ensureTestDatabase();
     moduleRef = await Test.createTestingModule({
-      imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        DatabaseModule,
+        OrganizationUnitDataModule,
+      ],
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
@@ -75,11 +82,18 @@ describe('ShiftService', () => {
 
     capture = mock(() => {});
 
+    // Reimbursement-type create/update paths call AccountingOrgAccessService →
+    // OrganizationUnitService.findOrganizationIdByUnitId, which needs a real
+    // OrganizationUnitDataService (not `{}`).
+    const organizationUnitDataService = moduleRef.get(
+      OrganizationUnitDataService,
+    );
     const organizationUnitService = new OrganizationUnitService(
       db,
+      {} as FileService,
+      organizationUnitDataService,
       {} as never,
-      {} as never,
-      {} as never,
+      { capture: () => {} } as unknown as PostHogService,
       {} as never,
       {} as never,
     );
@@ -106,7 +120,6 @@ describe('ShiftService', () => {
           'https://example.com/image.png',
       } as never,
       { getRequiredFormStatuses: async () => [] } as never,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture } as unknown as PostHogService,
       accountingOrgAccessService,
       { resolve: async () => ({ enabled: false }) } as never,
@@ -1004,6 +1017,63 @@ describe('ShiftService', () => {
         >
       ).mock.calls[0][0];
       expect(call.recipientUserIds).toEqual([otherUser.id]);
+    });
+
+    // VOLI-1704: invite-sheet save must not resurrect withdrawn volunteers
+    // when they are omitted from memberIds (frontend submit filters locked ids).
+    it('leaves VOLUNTEER_CANCELLED untouched when inviting someone else', async () => {
+      const shift = await createShift(db, {
+        organizationUnitId,
+        createdById: userId,
+      });
+      const instances = await db.query.shiftInstances.findMany({
+        where: { masterId: shift.id },
+      });
+      const instanceId = instances[0]?.id;
+      expect(instanceId).toBeDefined();
+
+      const withdrawn = await createUser(db);
+      const newInvitee = await createUser(db);
+
+      await db.insert(schema.shiftInstanceInvites).values({
+        instanceId,
+        userId: withdrawn.id,
+        status: ShiftInviteStatus.VOLUNTEER_CANCELLED,
+      });
+
+      (
+        notificationService.notifyShiftInstanceInvited as ReturnType<
+          typeof mock
+        >
+      ).mockClear();
+
+      await shiftService.updateMembersForShiftInstance(
+        instanceId,
+        [newInvitee.id],
+        organizationUnitId,
+      );
+
+      const withdrawnInvite = await db.query.shiftInstanceInvites.findFirst({
+        where: { instanceId, userId: withdrawn.id },
+      });
+      expect(withdrawnInvite?.status).toBe(
+        ShiftInviteStatus.VOLUNTEER_CANCELLED,
+      );
+
+      const newInvite = await db.query.shiftInstanceInvites.findFirst({
+        where: { instanceId, userId: newInvitee.id },
+      });
+      expect(newInvite?.status).toBe(ShiftInviteStatus.ADMIN_INVITED);
+
+      expect(
+        notificationService.notifyShiftInstanceInvited,
+      ).toHaveBeenCalledTimes(1);
+      const call = (
+        notificationService.notifyShiftInstanceInvited as ReturnType<
+          typeof mock
+        >
+      ).mock.calls[0][0];
+      expect(call.recipientUserIds).toEqual([newInvitee.id]);
     });
 
     it('does not double-count existing instance invites when inviting to all instances', async () => {

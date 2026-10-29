@@ -1,4 +1,4 @@
-import { GENDER_SYSTEM_KEY } from '../gender-options';
+import { GENDER_PROFILE_KEY } from '../gender-options';
 import { parseMultiChoiceValue } from '../option-values';
 
 export const RESTRICTED_PAYMENT_MASKS = {
@@ -14,7 +14,7 @@ export type SubmissionField = {
   id: string;
   label: string;
   type: string;
-  systemKey?: string | null;
+  profileKey?: string | null;
   options?: string[] | null;
 };
 
@@ -34,15 +34,15 @@ export function resolveFieldAnswer(
   { dash, accepted, formatDate, genderLabels }: ResolveFieldAnswerOptions,
 ): string {
   const raw =
-    field.systemKey && profileData[field.systemKey] !== undefined
-      ? String(profileData[field.systemKey])
+    field.profileKey && profileData[field.profileKey] !== undefined
+      ? String(profileData[field.profileKey])
       : (submissionValues.find((v) => v.fieldId === field.id)?.value ?? null);
 
   if (!raw) {
     return dash;
   }
 
-  if (field.systemKey === GENDER_SYSTEM_KEY) {
+  if (field.profileKey === GENDER_PROFILE_KEY) {
     return genderLabels[raw] ?? raw;
   }
 

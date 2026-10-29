@@ -11,7 +11,7 @@ jest.mock('better-auth', () => ({
   APIError: class APIError extends Error {
     constructor(
       public status: string,
-      public body: { message: string },
+      public body: { message: string; code?: string },
     ) {
       super(body.message);
       this.name = 'APIError';
@@ -31,6 +31,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { APIError } from 'better-auth';
+import { emailOTP } from 'better-auth/plugins';
 import { createAuthConfig } from './auth';
 
 const privacyPolicyDirectory = mkdtempSync(
@@ -126,6 +127,100 @@ describe('createAuthConfig', () => {
       const { result, findUserByEmail } = run('/sign-in/email', 'a@b.c', {
         user: { id: 'u1' },
       });
+      await expect(result).resolves.toBeUndefined();
+      expect(findUserByEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  it('enforces the configured password length bounds', () => {
+    expect(authConfig().emailAndPassword).toMatchObject({
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+    });
+  });
+
+  describe('password policy hook', () => {
+    const run = (path: string, body: Record<string, unknown>) => {
+      const findUserByEmail = jest.fn(async () => null);
+      const before = authConfig().hooks?.before as unknown as (
+        ctx: unknown,
+      ) => Promise<void>;
+      return {
+        findUserByEmail,
+        result: before({
+          path,
+          body,
+          context: { internalAdapter: { findUserByEmail } },
+        }),
+      };
+    };
+
+    it('rejects a weak password on sign up', async () => {
+      const { result } = run('/sign-up/email', {
+        email: 'new@example.com',
+        password: 'abcd1234',
+      });
+
+      await expect(result).rejects.toMatchObject({
+        status: 'BAD_REQUEST',
+        body: { code: 'PASSWORD_TOO_WEAK' },
+      });
+    });
+
+    it('rejects a password that is too short on reset', async () => {
+      const { result } = run('/reset-password', {
+        newPassword: 'Ab1!',
+        token: 'reset-token',
+      });
+
+      await expect(result).rejects.toMatchObject({
+        status: 'BAD_REQUEST',
+        body: { code: 'PASSWORD_TOO_SHORT' },
+      });
+    });
+
+    it('rejects a weak password on change-password', async () => {
+      const { result } = run('/change-password', {
+        currentPassword: 'old-password',
+        newPassword: 'qwertzui',
+      });
+
+      await expect(result).rejects.toMatchObject({
+        status: 'BAD_REQUEST',
+        body: { code: 'PASSWORD_TOO_WEAK' },
+      });
+    });
+
+    it('accepts a strong password and continues to the duplicate email check', async () => {
+      const { result } = run('/sign-up/email', {
+        email: 'new@example.com',
+        password: 'correct-horse-battery-staple',
+      });
+
+      await expect(result).resolves.toBeUndefined();
+    });
+
+    it('rejects a password derived from the sign-up details', async () => {
+      const { result } = run('/sign-up/email', {
+        email: 'max@example.com',
+        firstname: 'Max',
+        lastname: 'Mustermann',
+        name: 'Max Mustermann',
+        password: 'mustermann-2026',
+      });
+
+      await expect(result).rejects.toMatchObject({
+        status: 'BAD_REQUEST',
+        body: { code: 'PASSWORD_TOO_WEAK' },
+      });
+    });
+
+    it('does not enforce the policy on sign in', async () => {
+      const { result, findUserByEmail } = run('/sign-in/email', {
+        email: 'existing@example.com',
+        password: 'abcd1234',
+      });
+
       await expect(result).resolves.toBeUndefined();
       expect(findUserByEmail).not.toHaveBeenCalled();
     });
@@ -486,6 +581,68 @@ describe('createAuthConfig', () => {
     expect(sendResetPassword).toHaveBeenCalledWith({
       email: 'volunteer@example.com',
       token: 'reset-token-1',
+      userId: 'user-1',
+      headers: {
+        'x-locale': 'de',
+      },
+    });
+  });
+
+  it('delegates Better Auth verification OTP emails to the configured sender', async () => {
+    const sendVerificationOTP = jest.fn().mockResolvedValue(undefined);
+    createAuthConfig({
+      database: {},
+      trustedOrigins: [],
+      sendVerificationOTP,
+      sendResetPassword: jest.fn(),
+      termsService: createFakeTermsService(),
+    });
+
+    const emailOtpOptions = (emailOTP as jest.Mock).mock.calls.at(-1)?.[0] as {
+      sendVerificationOTP: (
+        data: { email: string; otp: string; type: string },
+        ctx?: {
+          request?: Request;
+          context: {
+            internalAdapter: {
+              findUserByEmail: (
+                email: string,
+              ) => Promise<{ user: { id: string } } | null>;
+            };
+          };
+        },
+      ) => Promise<void>;
+    };
+
+    const request = new Request(
+      'http://localhost:8080/api/auth/email-otp/send-verification-otp',
+      {
+        headers: {
+          'x-locale': 'de',
+        },
+      },
+    );
+
+    await emailOtpOptions.sendVerificationOTP(
+      {
+        email: 'volunteer@example.com',
+        otp: '123456',
+        type: 'email-verification',
+      },
+      {
+        request,
+        context: {
+          internalAdapter: {
+            findUserByEmail: async () => ({ user: { id: 'user-1' } }),
+          },
+        },
+      },
+    );
+
+    expect(sendVerificationOTP).toHaveBeenCalledWith({
+      email: 'volunteer@example.com',
+      otp: '123456',
+      type: 'email-verification',
       userId: 'user-1',
       headers: {
         'x-locale': 'de',

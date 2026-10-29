@@ -53,6 +53,12 @@ type TransferListProps = {
   available: Member[];
   invited: Member[];
   onInvitedChange: (ids: string[]) => void;
+  /**
+   * Inactive invitees (declined / withdrawn / admin-rejected): shown in
+   * Invited with status, not removable, and never offered in Available.
+   * Re-invite is roster-only (VOLI-1704).
+   */
+  lockedIds?: readonly string[];
   className?: string;
 };
 
@@ -60,6 +66,7 @@ export function TransferList({
   available,
   invited,
   onInvitedChange,
+  lockedIds = [],
   className,
 }: TransferListProps) {
   const [availableSearch, setAvailableSearch] = useState('');
@@ -72,10 +79,12 @@ export function TransferList({
   const tConfirm = useTranslations('Shift.transferList.confirmExceedAllowance');
 
   const invitedIds = new Set(invited.map((m) => m.id));
+  const lockedIdSet = new Set(lockedIds);
 
   const filteredAvailable = available.filter(
     (m) =>
       !invitedIds.has(m.id) &&
+      !lockedIdSet.has(m.id) &&
       (m.name.toLowerCase().includes(availableSearch.toLowerCase()) ||
         m.email.toLowerCase().includes(availableSearch.toLowerCase())),
   );
@@ -111,6 +120,9 @@ export function TransferList({
   };
 
   const removeMember = (memberId: string) => {
+    if (lockedIdSet.has(memberId)) {
+      return;
+    }
     onInvitedChange(invited.filter((m) => m.id !== memberId).map((m) => m.id));
   };
 
@@ -202,34 +214,39 @@ export function TransferList({
             />
           </div>
           <div className="overflow-y-auto flex-1 p-1">
-            {filteredInvited.map((member) => (
-              <VolunteeringMemberRow
-                key={member.id}
-                name={member.name}
-                email={member.email}
-                state={
-                  member.displayState ??
-                  (member.inviteStatus
-                    ? toInviteDisplayState(member.inviteStatus)
-                    : 'invited')
-                }
-                phase="before"
-                className="hover:bg-accent"
-                trailing={
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    tooltip={t('transferList.removeAria', {
-                      name: member.name,
-                    })}
-                    onClick={() => removeMember(member.id)}
-                  >
-                    <CircleX className="size-4" />
-                  </Button>
-                }
-              />
-            ))}
+            {filteredInvited.map((member) => {
+              const locked = lockedIdSet.has(member.id);
+              return (
+                <VolunteeringMemberRow
+                  key={member.id}
+                  name={member.name}
+                  email={member.email}
+                  state={
+                    member.displayState ??
+                    (member.inviteStatus
+                      ? toInviteDisplayState(member.inviteStatus)
+                      : 'invited')
+                  }
+                  phase="before"
+                  className="hover:bg-accent"
+                  trailing={
+                    locked ? undefined : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        tooltip={t('transferList.removeAria', {
+                          name: member.name,
+                        })}
+                        onClick={() => removeMember(member.id)}
+                      >
+                        <CircleX className="size-4" />
+                      </Button>
+                    )
+                  }
+                />
+              );
+            })}
           </div>
         </div>
       </div>

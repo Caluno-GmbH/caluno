@@ -232,26 +232,7 @@ export function JoinShiftButton({
             return;
           }
 
-          const missing = result.requirementStatuses?.filter(
-            (s) => s.status !== 'APPROVED',
-          );
-          const approved = result.requirementStatuses?.filter(
-            (s) => s.status === 'APPROVED',
-          );
-
-          if (missing && missing.length > 0) {
-            const missingNames = missing.map((s) => s.name).join(', ');
-            const approvedNames = approved?.map((s) => s.name).join(', ');
-            toast.info(
-              t('join.requirementsNeeded', {
-                missing: missingNames,
-                hasCompleted: approved && approved.length > 0 ? 'yes' : 'no',
-                completed: approvedNames ?? '',
-              }),
-            );
-          } else {
-            toast.info(t('join.requirementsFallback'));
-          }
+          toast.info(t('join.requirementsFallback'));
         } else {
           toast.error(t('join.unexpected'));
         }
@@ -277,13 +258,11 @@ export function JoinShiftButton({
     ],
   );
 
+  // Accept / re-enter / waitlist claim go through the join path (also for
+  // invite-only shifts) so missing forms surface as REQUIREMENTS_NEEDED.
   const handleReenter = useCallback(async () => {
-    if (visibility === ShiftVisibility.AllMembers) {
-      await handleJoin();
-    } else {
-      await handleRespond(ShiftInviteStatus.Joined, t('join.accepted'));
-    }
-  }, [visibility, handleJoin, handleRespond, t]);
+    await handleJoin();
+  }, [handleJoin]);
 
   useEffect(() => {
     if (
@@ -309,10 +288,12 @@ export function JoinShiftButton({
     return (
       <div className={cn('flex flex-col gap-2', className)}>
         <Button
-          onClick={() =>
-            handleRespond(ShiftInviteStatus.Joined, t('join.accepted'))
+          onClick={handleReenter}
+          disabled={
+            joinShiftInstance.isPending ||
+            respondToInvite.isPending ||
+            !instanceId
           }
-          disabled={respondToInvite.isPending || !instanceId}
           size="xl"
         >
           {t('join.accept')}
@@ -324,7 +305,11 @@ export function JoinShiftButton({
               t('join.declined'),
             )
           }
-          disabled={respondToInvite.isPending || !instanceId}
+          disabled={
+            joinShiftInstance.isPending ||
+            respondToInvite.isPending ||
+            !instanceId
+          }
           variant="outline"
           size="xl"
         >

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { TimeEntryStatus } from '@repo/data';
 import {
   acceptedRowActions,
   type CheckInTimeEntry,
@@ -15,18 +16,21 @@ describe('groupTimeEntriesByVolunteer', () => {
       {
         id: '1',
         startedAt: '2026-09-02T08:00:00.000Z',
+        status: TimeEntryStatus.Open,
         endedAt: null,
         volunteer: { id: 'user-1' },
       },
       {
         id: '2',
         startedAt: '2026-09-02T09:00:00.000Z',
+        status: TimeEntryStatus.Open,
         endedAt: null,
         volunteer: { id: 'user-2' },
       },
       {
         id: '3',
         startedAt: '2026-09-02T10:00:00.000Z',
+        status: TimeEntryStatus.Closed,
         endedAt: '2026-09-02T11:00:00.000Z',
         volunteer: { id: 'user-1' },
       },
@@ -51,12 +55,14 @@ describe('deriveAcceptedRowState', () => {
       {
         id: '1',
         startedAt: '2026-09-02T08:00:00.000Z',
+        status: TimeEntryStatus.Closed,
         endedAt: '2026-09-02T09:00:00.000Z',
         volunteer: { id: 'user-1' },
       },
       {
         id: '2',
         startedAt: '2026-09-02T10:00:00.000Z',
+        status: TimeEntryStatus.Open,
         endedAt: null,
         volunteer: { id: 'user-1' },
       },
@@ -70,6 +76,7 @@ describe('deriveAcceptedRowState', () => {
       {
         id: '1',
         startedAt: '2026-09-02T08:00:00.000Z',
+        status: TimeEntryStatus.Closed,
         endedAt: '2026-09-02T09:00:00.000Z',
         volunteer: { id: 'user-1' },
       },
@@ -79,18 +86,66 @@ describe('deriveAcceptedRowState', () => {
   });
 });
 
+describe('deriveAcceptedRowState with auto-closed entries', () => {
+  const closed: CheckInTimeEntry = {
+    id: '1',
+    status: TimeEntryStatus.Closed,
+    startedAt: '2026-09-02T08:00:00.000Z',
+    endedAt: '2026-09-02T09:00:00.000Z',
+    volunteer: { id: 'user-1' },
+  };
+  const autoClosed: CheckInTimeEntry = {
+    id: '2',
+    status: TimeEntryStatus.AutoClosed,
+    startedAt: '2026-09-02T10:00:00.000Z',
+    endedAt: '2026-09-02T23:59:00.000Z',
+    volunteer: { id: 'user-1' },
+  };
+  const open: CheckInTimeEntry = {
+    id: '3',
+    status: TimeEntryStatus.Open,
+    startedAt: '2026-09-02T11:00:00.000Z',
+    endedAt: null,
+    volunteer: { id: 'user-1' },
+  };
+
+  it('deriveAcceptedRowState is auto_checked_out when the latest closed entry is AUTO_CLOSED and none open', () => {
+    expect(deriveAcceptedRowState([closed, autoClosed])).toBe(
+      'auto_checked_out',
+    );
+    expect(deriveAcceptedRowState([autoClosed, closed])).toBe(
+      'auto_checked_out',
+    );
+  });
+
+  it('is checked_out when the latest closed entry was checked out by hand', () => {
+    expect(
+      deriveAcceptedRowState([
+        { ...autoClosed, startedAt: '2026-09-02T06:00:00.000Z' },
+        closed,
+      ]),
+    ).toBe('checked_out');
+  });
+
+  it('checked_in wins over auto-closed', () => {
+    expect(deriveAcceptedRowState([autoClosed, open])).toBe('checked_in');
+  });
+});
+
 describe('openTimeEntryId', () => {
   it('returns the id of the open entry', () => {
     const entries: CheckInTimeEntry[] = [
       {
         id: '1',
         startedAt: '2026-09-02T08:00:00.000Z',
+        status: TimeEntryStatus.Closed,
         endedAt: '2026-09-02T09:00:00.000Z',
         volunteer: { id: 'user-1' },
       },
       {
         id: '2',
         startedAt: '2026-09-02T10:00:00.000Z',
+        status: TimeEntryStatus.Open,
         endedAt: null,
         volunteer: { id: 'user-1' },
       },
@@ -106,6 +161,7 @@ describe('openTimeEntryId', () => {
         {
           id: '1',
           startedAt: '2026-09-02T08:00:00.000Z',
+          status: TimeEntryStatus.Closed,
           endedAt: '2026-09-02T09:00:00.000Z',
           volunteer: { id: 'user-1' },
         },
@@ -122,12 +178,14 @@ describe('formatCheckedOutWindows', () => {
       {
         id: '2',
         startedAt: '2026-09-02T13:00:00.000Z',
+        status: TimeEntryStatus.Closed,
         endedAt: '2026-09-02T15:30:00.000Z',
         volunteer: { id: 'user-1' },
       },
       {
         id: '1',
         startedAt: '2026-09-02T08:00:00.000Z',
+        status: TimeEntryStatus.Closed,
         endedAt: '2026-09-02T12:00:00.000Z',
         volunteer: { id: 'user-1' },
       },
@@ -144,6 +202,7 @@ describe('formatCheckedOutWindows', () => {
       {
         id: '1',
         startedAt: '2026-09-02T08:00:00.000Z',
+        status: TimeEntryStatus.Open,
         endedAt: null,
         volunteer: { id: 'user-1' },
       },
@@ -159,6 +218,7 @@ describe('formatCheckedOutWindows', () => {
     const entries: CheckInTimeEntry[] = Array.from({ length: 7 }, (_, i) => ({
       id: `${i}`,
       startedAt: `2026-09-0${i + 1}T08:00:00.000Z`,
+      status: TimeEntryStatus.Closed,
       endedAt: `2026-09-0${i + 1}T09:00:00.000Z`,
       volunteer: { id: 'user-1' },
     }));
@@ -183,6 +243,10 @@ describe('acceptedRowActions', () => {
     expect(acceptedRowActions('checked_out', true)).toEqual([]);
   });
 
+  it('offers no actions for an auto-checked-out row', () => {
+    expect(acceptedRowActions('auto_checked_out', true)).toEqual([]);
+  });
+
   it('offers nothing when the viewer lacks CHECK_IN_MANAGE, regardless of state', () => {
     expect(acceptedRowActions('accepted', false)).toEqual([]);
     expect(acceptedRowActions('checked_in', false)).toEqual([]);
@@ -201,6 +265,10 @@ describe('canRemoveAcceptedRow', () => {
 
   it('forbids removal after the volunteer has checked out', () => {
     expect(canRemoveAcceptedRow('checked_out')).toBe(false);
+  });
+
+  it('forbids removal after the volunteer was auto-checked out', () => {
+    expect(canRemoveAcceptedRow('auto_checked_out')).toBe(false);
   });
 
   it('allows removal when the row has no accepted check-in state at all', () => {

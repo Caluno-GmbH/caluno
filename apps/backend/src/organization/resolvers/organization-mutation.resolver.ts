@@ -1,8 +1,9 @@
-import { Args, ID, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Mutation, Resolver } from '@nestjs/graphql';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { Session } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { CreateOrganizationInput } from '../inputs/create-organization.input';
 import { UpdateOrganizationInput } from '../inputs/update-organization.input';
 import { Organization } from '../models/organization.model';
@@ -25,7 +26,12 @@ export class OrganizationMutationResolver {
   async updateOrganization(
     @Args('id', { type: () => ID }) id: string,
     @Args('input') input: UpdateOrganizationInput,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Organization> {
-    return this.organizationService.update(id, input);
+    return this.organizationService.update(
+      context.organizationUnitId,
+      id,
+      input,
+    );
   }
 }

@@ -15,7 +15,7 @@ export type RequiredFormField = {
   description?: string | null;
   required: boolean;
   lockType: boolean;
-  systemKey?: string | null;
+  profileKey?: string | null;
   documents: Array<{
     fileId: string;
     filename?: string | null;
@@ -35,7 +35,6 @@ export type RequiredFormBlock = {
   title: string;
   description?: string | null;
   icon?: string | null;
-  required: boolean;
   isEditable: boolean;
   fields?: Array<RequiredFormField> | null;
 };
@@ -45,19 +44,13 @@ export type RequiredFormBlockRef = {
   formId: string;
   blockId: string;
   fieldOrder: number;
-  required?: boolean | null;
-  block?: RequiredFormBlock | null;
+  block: RequiredFormBlock;
 };
 
 export type RequiredForm = {
   id: string;
   name: string;
   description?: string | null;
-  settings?: {
-    submitButtonLabel?: string | null;
-    successTitle?: string | null;
-    successMessage?: string | null;
-  } | null;
   blockRefs?: Array<RequiredFormBlockRef> | null;
 };
 

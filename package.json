@@ -23,12 +23,13 @@
     "db:seed": "bun run --cwd apps/backend db:seed",
     "codegen": "turbo run codegen",
     "setup:hooks": "bash .githooks/install-hooks.sh",
+    "security:audit": "bun run --cwd packages/security audit",
     "terms:publish": "bun run --cwd apps/backend terms:publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",
     "@svgr/webpack": "^8.1.0",
-    "turbo": "^2.11.8",
+    "turbo": "^2.11.10",
     "typescript": "6.0.3",
     "typescript-language-server": "^6.0.2",
     "vite-plugin-svgr": "^5.2.0"

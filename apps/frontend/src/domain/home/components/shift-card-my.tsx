@@ -10,14 +10,12 @@ import {
   MapPinIcon,
   PlayIcon,
   QrCodeIcon,
-  RepeatIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useMemo, useState } from 'react';
 import { shiftPublicPath } from '@/domain/shift/share';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { useRecurrenceLabel } from '../lib/recurrence-label';
 import { ShiftRosterStatusLine } from './shift-roster-status-line';
 
 type TimerKind = 'far' | 'soon' | 'overdue' | 'active';
@@ -33,7 +31,6 @@ export interface ShiftCardMyProps {
       id: string;
       title: string;
       location?: string | null;
-      rrule?: string | null;
       event?: { id: string; title: string } | null;
     };
   };
@@ -93,8 +90,6 @@ export function ShiftCardMy({
 }: ShiftCardMyProps) {
   const t = useTranslations('VolunteerHome');
   const { formatTimeRange } = useFormatting();
-  const getRecurrenceLabel = useRecurrenceLabel();
-  const recurrence = getRecurrenceLabel(shiftInstance.master.rrule);
   const timer = useTimer(
     shiftInstance.actualStartsAt,
     shiftInstance.isCheckedIn,
@@ -122,22 +117,14 @@ export function ShiftCardMy({
 
       <div className="flex gap-3 p-3">
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-          <div className="flex items-start justify-between gap-2">
-            {showTime && (
-              <p className="font-semibold text-foreground">
-                {formatTimeRange(
-                  shiftInstance.actualStartsAt,
-                  shiftInstance.actualEndsAt,
-                )}
-              </p>
-            )}
-            {recurrence && (
-              <span className="flex shrink-0 items-center gap-1 text-sm text-muted-foreground">
-                <RepeatIcon className="size-3.5" />
-                {recurrence}
-              </span>
-            )}
-          </div>
+          {showTime && (
+            <p className="font-semibold text-foreground">
+              {formatTimeRange(
+                shiftInstance.actualStartsAt,
+                shiftInstance.actualEndsAt,
+              )}
+            </p>
+          )}
           <ShiftRosterStatusLine
             isIntendingToJoin={isPending}
             myInviteStatus={shiftInstance.myInviteStatus}
@@ -182,6 +169,7 @@ export function ShiftCardMy({
         <Link
           href={`/events/${event.id}`}
           prefetch={false}
+          title={t('partOfEvent', { event: event.title })}
           className="relative z-10 flex items-center justify-between gap-2 border-t border-border px-3 py-2 text-[13px] font-medium text-muted-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
           <span className="flex min-w-0 items-center gap-2">

@@ -13,7 +13,7 @@ const makeField = (
   required: false,
   description: null,
   placeholder: null,
-  systemKey: null,
+  profileKey: null,
   options: null,
   documents: [],
   documentLabel: null,
@@ -45,7 +45,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         type: FieldType.Name,
         label: 'Name',
         required: true,
-        systemKey: 'firstname',
+        profileKey: 'firstname',
       }),
       true,
       msgs,
@@ -60,7 +60,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         type: FieldType.Name,
         label: 'Name',
         required: true,
-        systemKey: 'firstname',
+        profileKey: 'firstname',
       }),
       true,
       msgs,
@@ -74,7 +74,7 @@ describe('buildFieldSchema (existing behavior)', () => {
         id: 'city',
         type: FieldType.Text,
         label: 'City',
-        systemKey: 'city',
+        profileKey: 'city',
       }),
       false,
       msgs,
@@ -100,7 +100,7 @@ describe('buildFieldSchema IBAN', () => {
     id: 'iban',
     type: FieldType.Iban,
     label: 'IBAN',
-    systemKey: 'iban',
+    profileKey: 'iban',
   });
   it('rejects an invalid IBAN', () => {
     expect(
@@ -147,7 +147,7 @@ describe('buildFieldSchema BIC', () => {
     id: 'bic',
     type: FieldType.Text,
     label: 'BIC',
-    systemKey: 'bic',
+    profileKey: 'bic',
   });
   it('rejects an invalid BIC', () => {
     expect(
@@ -166,7 +166,7 @@ describe('buildFieldSchema birthdate', () => {
     id: 'dob',
     type: FieldType.Date,
     label: 'Birth date',
-    systemKey: 'birthdate',
+    profileKey: 'birthdate',
   });
   it('rejects a future birthdate', () => {
     const future = new Date(Date.now() + 86_400_000 * 365).toISOString();
@@ -236,7 +236,7 @@ describe('buildFieldSchema gender', () => {
     id: 'gender',
     type: FieldType.SingleChoice,
     label: 'Gender',
-    systemKey: 'gender',
+    profileKey: 'gender',
   });
 
   it('accepts each fixed option value when optional', () => {

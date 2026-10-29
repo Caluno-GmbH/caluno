@@ -1,0 +1,27 @@
+{
+  "name": "@repo/security",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "audit": "bash scripts/audit.sh",
+    "audit:surface": "mkdir -p out && bun src/enumerate-surface.ts > out/surface.json",
+    "audit:tenant": "bash scripts/audit.sh tenant",
+    "audit:coverage": "bun src/coverage-diff.ts out/surface.json",
+    "test": "bun test src",
+    "audit:sast": "bash scripts/audit.sh sast",
+    "audit:deps": "bash scripts/audit.sh deps",
+    "audit:secrets": "bash scripts/audit.sh secrets",
+    "audit:iac": "bash scripts/audit.sh iac",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ts-morph": "^28.0.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/bun": "^1.4.3",
+    "@types/node": "^24.19.2",
+    "typescript": "^6.0.3"
+  }
+}

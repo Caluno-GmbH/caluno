@@ -7,6 +7,7 @@ export enum ShiftVisibility {
 }
 
 export { SortOrder } from '../../graphql/enums/sort-order.enum';
+export { ShiftSortField } from './shift-sort-field.enum';
 
 export enum ShiftInviteStatus {
   ADMIN_INVITED = 'ADMIN_INVITED',
@@ -31,11 +32,6 @@ export const INVITE_STATUS_TO_JOIN_SHIFT_STATUS: Record<
   [ShiftInviteStatus.VOLUNTEER_CANCELLED]: JoinStatus.VOLUNTEER_REJECTED,
   [ShiftInviteStatus.ADMIN_REJECTED]: JoinStatus.REJECTED,
 };
-
-export enum ShiftCallOutDeliveryStatus {
-  SENT = 'SENT',
-  FAILED = 'FAILED',
-}
 
 export enum ShiftCallOutSource {
   MANUAL = 'MANUAL',

@@ -1,7 +1,9 @@
-import { Badge, Card, CardContent } from '@repo/ui';
+import { TimeEntryStatus } from '@repo/data';
+import { Card, CardContent } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { getEntryState, type TimeEntry } from '../my-time-grouping';
+import { TimeEntryStatusBadge } from './time-entry-status-badge';
 
 export const MyTimeEntryRow = ({ entry }: { entry: TimeEntry }) => {
   const t = useTranslations('MyTime');
@@ -10,10 +12,11 @@ export const MyTimeEntryRow = ({ entry }: { entry: TimeEntry }) => {
   const state = getEntryState(entry);
   const shift = entry.shiftInstance?.master;
   const organizationUnit = shift?.organizationUnit ?? entry.organizationUnit;
-  const inProgress = state === 'in-progress';
-  const duration = inProgress
-    ? ''
-    : formatDuration(entry.startedAt, entry.endedAt);
+  // Shown for auto-closed entries too, but never totalled (see groupMyTime).
+  const duration =
+    state === TimeEntryStatus.Open
+      ? ''
+      : formatDuration(entry.startedAt, entry.endedAt);
 
   return (
     <Card className="py-4">
@@ -28,9 +31,7 @@ export const MyTimeEntryRow = ({ entry }: { entry: TimeEntry }) => {
         </h3>
         <div className="mt-2 flex items-center justify-between">
           <span className="text-base">{duration}</span>
-          <Badge variant={inProgress ? 'outline' : 'success'}>
-            {t(inProgress ? 'state.inProgress' : 'state.completed')}
-          </Badge>
+          <TimeEntryStatusBadge status={state} />
         </div>
       </CardContent>
     </Card>

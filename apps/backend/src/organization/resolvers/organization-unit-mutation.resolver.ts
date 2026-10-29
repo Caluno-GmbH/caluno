@@ -5,7 +5,7 @@ import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { ForbiddenGraphQLError } from '../../graphql/errors';
-import type { GraphQLContext } from '../../graphql/graphql.context';
+import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
@@ -49,10 +49,12 @@ export class OrganizationUnitMutationResolver {
   async createOrganizationUnit(
     @Args('input') input: CreateOrganizationUnitInput,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<OrganizationUnit> {
     const organizationUnit = await this.organizationUnitService.create(
       session.user.id,
       input,
+      context.organizationUnitId,
     );
     return this.organizationUnitMapper.toModelOrThrow(organizationUnit);
   }
@@ -63,11 +65,13 @@ export class OrganizationUnitMutationResolver {
     @Args('id') id: string,
     @Args('input') input: UpdateOrganizationUnitInput,
     @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<OrganizationUnit> {
     const organizationUnit = await this.organizationUnitService.update(
       id,
       input,
       session.user.id,
+      context.organizationUnitId,
     );
     return this.organizationUnitMapper.toModelOrThrow(organizationUnit);
   }
@@ -79,13 +83,14 @@ export class OrganizationUnitMutationResolver {
     @Args('message', { type: () => String, nullable: true })
     message: string | undefined,
     @Session() session: UserSession,
-    @Context() context: GraphQLContext,
+    @Context() context: AuthenticatedGraphQLContext,
   ): Promise<OrganizationUnit> {
     const organizationUnit = await this.organizationUnitService.requestDeletion(
       id,
       { name: session.user.name, email: session.user.email },
       message ?? undefined,
       context.locale,
+      context.organizationUnitId,
     );
     return this.organizationUnitMapper.toModelOrThrow(organizationUnit);
   }

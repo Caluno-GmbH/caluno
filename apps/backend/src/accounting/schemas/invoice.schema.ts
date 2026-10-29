@@ -16,6 +16,7 @@ import { enumValues } from '../../database/typeutil';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
 import { files } from '../../storage/schemas/file.schema';
 import { InvoiceStatus } from '../enums';
+import type { DocumentRenderInputs } from './document-render-inputs';
 import { documentTemplates } from './document-template.schema';
 import { reimbursementTypes } from './reimbursement-type.schema';
 import { signeeTypeEnum } from './template-signee.schema';
@@ -73,6 +74,8 @@ export const invoices = snakeCase.table(
       .$type<Record<string, string>>()
       .notNull()
       .default({}),
+    // Null until the volunteer signs; see DocumentRenderInputs.
+    renderInputs: jsonb('render_inputs').$type<DocumentRenderInputs>(),
     declineReason: text('decline_reason'),
     declinedByUserId: text('declined_by_user_id').references(() => users.id, {
       onDelete: 'restrict',

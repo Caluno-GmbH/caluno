@@ -102,7 +102,7 @@ export const ActionBar = ({
         trigger={
           <Button
             size={buttonSize}
-            variant="destructive"
+            variant="outline"
             tooltip={t('action.deleteTitle')}
             disabled={isDeleting}
           >

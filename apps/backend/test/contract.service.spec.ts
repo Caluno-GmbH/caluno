@@ -40,6 +40,7 @@ import { OrganizationUnitDataService } from '../src/organization/organization-un
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { startOfAppDay } from '../src/shift/utils/app-time';
 import {
+  createDocumentFile,
   createReimbursementType,
   createTwoStepTemplate,
 } from './factories/accounting.factory';
@@ -65,6 +66,12 @@ describe('ContractService', () => {
   let db: Database;
   let service: ContractService;
   closeTestingModuleAfterAll(() => moduleRef);
+  /** Each resolution is numbered, so a test sees which one was stored. */
+  let renderInputsResolved = 0;
+  const resolveRenderInputs = () =>
+    Promise.resolve({
+      values: { resolution: String(++renderInputsResolved) },
+    });
   const declinedByVolunteerCalls: unknown[] = [];
 
   beforeAll(async () => {
@@ -106,6 +113,7 @@ describe('ContractService', () => {
       } as unknown as DocumentProfileRequirementService,
       {
         renderAndAttachPdf: () => Promise.resolve(null),
+        resolveRenderInputs: () => resolveRenderInputs(),
       } as unknown as DocumentRenderingService,
       { capture: () => {} } as unknown as PostHogService,
     );
@@ -570,7 +578,85 @@ describe('ContractService', () => {
     });
   });
 
+  describe('ensurePdf (VOLI-1637)', () => {
+    it('renders the PDF of a contract that has none, null when that fails', async () => {
+      const { organization, reimbursementType, volunteer, signer, root } =
+        await setup();
+      const contract = await service.createContract(
+        organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: reimbursementType.id,
+          periodStart: new Date(),
+          periodEnd: new Date(),
+        },
+        signer.id,
+      );
+      // The rendering stub fails, as rendering did when the contract was signed.
+      expect(await service.ensurePdf(contract.id, signer.id)).toBeNull();
+
+      const file = await createDocumentFile(db, {
+        organizationUnitId: root.id,
+        uploadedByUserId: signer.id,
+      });
+      await db
+        .update(schema.contracts)
+        .set({ fileId: file.id })
+        .where(eq(schema.contracts.id, contract.id));
+      expect(await service.ensurePdf(contract.id, signer.id)).toBe(file.id);
+    });
+  });
+
   describe('signContract', () => {
+    const issueForSigning = async () => {
+      const f = await setup();
+      const contract = await service.createContract(
+        f.organization.id,
+        {
+          organizationUnitId: null,
+          volunteerId: f.volunteer.id,
+          reimbursementTypeId: f.reimbursementType.id,
+          periodStart: new Date(),
+          periodEnd: new Date(),
+        },
+        f.signer.id,
+      );
+      return { ...f, contract };
+    };
+    const stored = (id: string) =>
+      db.query.contracts.findFirst({ where: { id } });
+
+    it('freezes the render inputs when the volunteer signs and keeps them through the countersignature (VOLI-1637)', async () => {
+      const { root, contract, volunteer, signer } = await issueForSigning();
+      expect((await stored(contract.id))?.renderInputs).toBeNull();
+
+      await service.signContract(contract.id, volunteer.id, root.id);
+      const frozen = (await stored(contract.id))?.renderInputs;
+      expect(frozen).toEqual({
+        values: { resolution: expect.any(String) },
+      });
+
+      await service.signContract(contract.id, signer.id, root.id);
+      expect((await stored(contract.id))?.renderInputs).toEqual(frozen);
+    });
+
+    it('drops the PDF of the previous step when a signature is added (VOLI-1637)', async () => {
+      const { contract, root, volunteer } = await issueForSigning();
+      const previous = await createDocumentFile(db, {
+        organizationUnitId: root.id,
+        uploadedByUserId: volunteer.id,
+      });
+      await db
+        .update(schema.contracts)
+        .set({ fileId: previous.id })
+        .where(eq(schema.contracts.id, contract.id));
+
+      await service.signContract(contract.id, volunteer.id, root.id);
+
+      expect((await stored(contract.id))?.fileId).toBeNull();
+    });
+
     it('walks the contract through the full signing chain to ACTIVE', async () => {
       const { root, organization, reimbursementType, volunteer, signer } =
         await setup();

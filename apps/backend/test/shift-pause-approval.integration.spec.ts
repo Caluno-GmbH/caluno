@@ -54,6 +54,7 @@ describe('ShiftService pause approval', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     shiftService = new ShiftService(
@@ -71,7 +72,6 @@ describe('ShiftService pause approval', () => {
       {} as OrganizationService,
       {} as never,
       { getRequiredFormStatuses: async () => [] } as never,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: mock(() => {}) } as unknown as PostHogService,
       new AccountingOrgAccessService(db, organizationUnitService),
       automationService,
@@ -296,6 +296,7 @@ describe('ShiftPauseApprovalSweepService', () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     notifyShiftInstanceWaitlistSpotOpened = mock(() => {});
@@ -320,7 +321,6 @@ describe('ShiftPauseApprovalSweepService', () => {
       {} as OrganizationService,
       {} as never,
       { getRequiredFormStatuses: async () => [] } as never,
-      { shareSubmissionsWithOrgUnit: async () => {} } as never,
       { capture: mock(() => {}) } as unknown as PostHogService,
       new AccountingOrgAccessService(db, organizationUnitService),
       automationService,

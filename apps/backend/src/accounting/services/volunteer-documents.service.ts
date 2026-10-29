@@ -106,7 +106,6 @@ export class VolunteerDocumentsService {
           {
             volunteerId: userId,
             organizationUnitId: orgUnitInfo.organizationUnitId,
-            issuedOnly: true,
           },
         ),
       ]);
@@ -152,7 +151,6 @@ export class VolunteerDocumentsService {
           {
             volunteerId: userId,
             organizationUnitId: orgUnitInfo.organizationUnitId,
-            issuedOnly: true,
           },
         ),
       ]);

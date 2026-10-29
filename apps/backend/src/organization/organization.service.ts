@@ -15,7 +15,10 @@ import {
   OrganizationUnitEntity,
   OrganizationUnitTypeEntity,
 } from '../database/schema';
-import { NotFoundGraphQLError } from '../graphql/errors';
+import {
+  BadRequestGraphQLError,
+  NotFoundGraphQLError,
+} from '../graphql/errors';
 import type { PaginationInput } from '../graphql/pagination.input';
 import { MembershipService } from '../membership/membership.service';
 import { NotificationService } from '../notification';
@@ -26,13 +29,14 @@ import {
 import { PostHogService } from '../shared/observability/posthog.service';
 import { FilePurpose } from '../storage/enums';
 import { FileService } from '../storage/services/file.service';
-import { slugify } from '../utils';
+import { isBlank, slugify, trimmed } from '../utils';
 import type { CreateOrganizationInput } from './inputs/create-organization.input';
 import type { UpdateOrganizationInput } from './inputs/update-organization.input';
 import { OrganizationMapper } from './mappers/organization.mapper';
 import { type Organization } from './models/organization.model';
 import { OrganizationTree } from './models/organization-tree.model';
 import { OrganizationUnitService } from './organization-unit.service';
+import { TenantScopeService } from './tenant-scope.service';
 import { OrganizationNode } from './types/organization-node';
 
 type OrganizationUnitWithType = OrganizationUnitEntity & {
@@ -54,6 +58,7 @@ export class OrganizationService {
     private readonly notificationService: NotificationService,
     private readonly fileService: FileService,
     private readonly postHogService: PostHogService,
+    private readonly tenantScope: TenantScopeService,
   ) {}
 
   async findById(id: string): Promise<OrganizationEntity | undefined> {
@@ -399,6 +404,11 @@ export class OrganizationService {
     userId: string,
     input: CreateOrganizationInput,
   ): Promise<Organization> {
+    const name = trimmed(input.name);
+    if (isBlank(name)) {
+      throw new BadRequestGraphQLError('Organization name is required');
+    }
+
     const { logoFileId, ...organizationInput } = input;
     const logoUrl = logoFileId
       ? await this.resolveLogoUrl(logoFileId)
@@ -414,8 +424,9 @@ export class OrganizationService {
         .insert(schema.organizations)
         .values({
           ...organizationInput,
+          name,
           logoUrl,
-          slug: slugify(organizationInput.name),
+          slug: slugify(name),
           accountingEnabled: process.env.APP_ENV !== 'production',
         })
         .returning();
@@ -549,9 +560,25 @@ export class OrganizationService {
   }
 
   async update(
+    headerUnitId: string,
     organizationId: string,
     input: UpdateOrganizationInput,
   ): Promise<Organization> {
+    // PermissionGuard only checks ORG_EDIT on the header unit. Org profile
+    // edits are root-only; assertOrganizationInScope rejects a foreign id.
+    const headerUnit =
+      await this.organizationUnitService.findById(headerUnitId);
+    if (!headerUnit || headerUnit.parentId !== null) {
+      throw new NotFoundGraphQLError(
+        `Organization with ID ${organizationId} not found`,
+      );
+    }
+    await this.tenantScope.assertOrganizationInScope(
+      headerUnitId,
+      organizationId,
+      `Organization with ID ${organizationId} not found`,
+    );
+
     const { logoFileId, ...profileInput } = input;
     const logoUrl = logoFileId
       ? await this.resolveLogoUrl(logoFileId)

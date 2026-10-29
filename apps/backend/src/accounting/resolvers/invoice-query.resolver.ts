@@ -105,7 +105,6 @@ export class InvoiceQueryResolver {
       {
         ...toInvoiceFilter(filter),
         volunteerId: session.user.id,
-        issuedOnly: true,
       },
     );
     return this.invoiceMapper.toArray(invoices);
@@ -144,6 +143,29 @@ export class InvoiceQueryResolver {
   ): Promise<TimeEntry[]> {
     await this.assertCanViewDocument(volunteerId, undefined, session, context);
     const entries = await this.invoiceService.findEligibleTimeEntries(
+      volunteerId,
+      reimbursementTypeId,
+      context.organizationUnitId,
+      periodStart ?? undefined,
+      periodEnd ?? undefined,
+    );
+    return this.timeEntryMapper.toArray(entries);
+  }
+
+  @Query(() => [TimeEntry])
+  async timeEntriesAwaitingReviewForInvoice(
+    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('reimbursementTypeId', { type: () => ID })
+    reimbursementTypeId: string,
+    @Args('periodStart', { type: () => Date, nullable: true })
+    periodStart: Date | null | undefined,
+    @Args('periodEnd', { type: () => Date, nullable: true })
+    periodEnd: Date | null | undefined,
+    @Session() session: UserSession,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<TimeEntry[]> {
+    await this.assertCanViewDocument(volunteerId, undefined, session, context);
+    const entries = await this.invoiceService.findTimeEntriesAwaitingReview(
       volunteerId,
       reimbursementTypeId,
       context.organizationUnitId,

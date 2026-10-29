@@ -246,8 +246,6 @@ export function invoiceStatusToDocStatus(status: InvoiceStatus): DocStatus {
       return 'timesheet-ready';
     case InvoiceStatus.Declined:
       return 'timesheet-declined';
-    default:
-      return 'timesheet-generate';
   }
 }
 

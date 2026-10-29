@@ -15,6 +15,10 @@ interface EligibleHoursCardProps {
   selectedIds: Set<string>;
   onToggle: (id: string) => void;
   timesheetsHref: string;
+  /** Auto-closed hours an admin hasn't confirmed yet: listed for context, never selectable or totalled. */
+  awaitingReviewLines?: EligibleHourLine[];
+  /** Where an awaiting-review entry can be confirmed. */
+  entryHref: (id: string) => string;
   /** Shown instead of the empty list, explaining why nothing is eligible. */
   emptyMessage?: string;
   className?: string;
@@ -30,6 +34,8 @@ export function EligibleHoursCard({
   selectedIds,
   onToggle,
   timesheetsHref,
+  awaitingReviewLines,
+  entryHref,
   emptyMessage,
   className,
 }: EligibleHoursCardProps) {
@@ -60,6 +66,44 @@ export function EligibleHoursCard({
           </li>
         ))}
       </ul>
+
+      {awaitingReviewLines && awaitingReviewLines.length > 0 && (
+        <>
+          <Separator className="my-3" />
+          <section>
+            <h4 className="text-sm font-medium">{t('awaitingReview')}</h4>
+            <p className="text-xs text-muted-foreground">
+              {t('awaitingReviewHint')}
+            </p>
+            <ul className="mt-2 space-y-3">
+              {awaitingReviewLines.map((line) => (
+                <li key={line.id} className="flex items-center gap-3">
+                  <Checkbox
+                    checked={false}
+                    disabled
+                    aria-label={t('awaitingReviewRowLabel', {
+                      shiftName: line.shiftName,
+                    })}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <Link
+                      href={entryHref(line.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block truncate text-sm font-medium underline underline-offset-2 hover:text-foreground"
+                    >
+                      {line.shiftName}
+                    </Link>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {line.dateTime}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
 
       <Separator className="my-3" />
 

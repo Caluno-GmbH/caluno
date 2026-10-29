@@ -9,6 +9,7 @@ function setCookie(value: string | undefined) {
   Object.defineProperty(globalThis, 'document', {
     value: value === undefined ? {} : { cookie: value },
     configurable: true,
+    writable: true,
   });
 }
 
@@ -16,10 +17,12 @@ afterEach(() => {
   Object.defineProperty(globalThis, 'document', {
     value: originalDocument,
     configurable: true,
+    writable: true,
   });
   Object.defineProperty(globalThis, 'window', {
     value: originalWindow,
     configurable: true,
+    writable: true,
   });
 });
 
@@ -45,6 +48,7 @@ describe('readRequestLocale', () => {
     Object.defineProperty(globalThis, 'window', {
       value: undefined,
       configurable: true,
+      writable: true,
     });
     expect(readRequestLocale()).toBe('de');
   });
@@ -54,6 +58,7 @@ describe('readRequestLocale', () => {
     Object.defineProperty(globalThis, 'window', {
       value: { location: { pathname: '/en/signup' } },
       configurable: true,
+      writable: true,
     });
     expect(readRequestLocale()).toBe('en');
   });
@@ -63,6 +68,7 @@ describe('readRequestLocale', () => {
     Object.defineProperty(globalThis, 'window', {
       value: { location: { pathname: '/en/signup' } },
       configurable: true,
+      writable: true,
     });
     expect(readRequestLocale()).toBe('de');
   });

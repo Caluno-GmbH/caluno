@@ -576,7 +576,7 @@
     "needsVolunteersHeading": "Einsätze, die noch Freiwillige brauchen",
     "needsVolunteersSeeAll": "Alle offenen Einsätze ansehen",
     "rowWhen": "{date} · {timeRange}",
-    "reasonNeedsMore": "{count, plural, one {Braucht noch # weitere Person} other {Braucht noch # weitere Freiwillige}}",
+    "reasonNeedsMore": "{count, plural, one {Braucht noch # weiteren Freiwilligen} other {Braucht noch # weitere Freiwillige}}",
     "reasonNoVolunteersYet": "Noch keine Freiwilligen",
     "reasonHasRoom": "Hat noch Platz für weitere Freiwillige",
     "subject": "Deine Woche im Überblick auf {brandName}",
@@ -593,5 +593,17 @@
     "minorBody": "Für dich ist nichts weiter zu tun. Du kannst {brandName} wie gewohnt weiter nutzen.",
     "buttonLabel": "Bedingungen ansehen und zustimmen",
     "footerNote": "Du erhältst diese E-Mail, weil du ein Konto bei {brandName} hast."
+  },
+  "timeEntryAutoClosed": {
+    "subject": "Du wurdest automatisch ausgecheckt",
+    "previewText": "Dein Check-in wurde automatisch beendet. Bitte prüfe die erfassten Zeiten.",
+    "heading": "Du wurdest automatisch ausgecheckt",
+    "intro": "Hallo {firstName}, du hast dich eingecheckt, aber niemand hat dich ausgecheckt. Deshalb haben wir deinen Zeiteintrag automatisch beendet. Bitte sieh dir die erfassten Zeiten an.",
+    "detailShift": "Einsatz",
+    "detailOrganization": "Organisation",
+    "detailCheckIn": "Eingecheckt",
+    "detailRecordedEnd": "Erfasstes Ende",
+    "contactCoordinator": "Falls diese Zeiten nicht stimmen, wende dich bitte an deine Koordination.",
+    "footerNote": "Du erhältst diese E-Mail, weil ein Zeiteintrag von dir auf {brandName} automatisch beendet wurde."
   }
 }

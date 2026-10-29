@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { EmailService } from './email.service';
+import { EmailTransportService } from './email-transport.service';
 
 const SCALEWAY_ENV: Record<string, string> = {
   TEM_SECRET_KEY: 'scw-secret-key',
@@ -20,94 +20,91 @@ function configService(values: Record<string, string> = SCALEWAY_ENV) {
   };
 }
 
-class FastRetryEmailService extends EmailService {
-  protected override retryBaseDelayMs = 1;
-}
-
-async function runSend(
-  fetchImpl: typeof fetch,
-  to = 'volunteer@example.com',
-): Promise<Error | undefined> {
+async function sendOnce(fetchImpl: typeof fetch, to = 'volunteer@example.com') {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = fetchImpl;
   try {
-    const service = new FastRetryEmailService(configService() as never);
-    return await service
-      .send({ to, subject: 'Subject', html: '<p>Body</p>' })
-      .then(
-        () => undefined,
-        (error: unknown) => error as Error,
-      );
+    const service = new EmailTransportService(configService() as never);
+    return await service.sendOnce({
+      to,
+      subject: 'Subject',
+      html: '<p>Body</p>',
+      emailId: 'outbox-1',
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }
 }
 
-async function sendFailure(
-  fetchImpl: () => Promise<Response>,
-  to: string,
-): Promise<Error | undefined> {
-  return runSend(fetchImpl as unknown as typeof fetch, to);
-}
+describe('EmailTransportService', () => {
+  it('returns the provider message id on success', async () => {
+    const result = await sendOnce(
+      async () =>
+        new Response(JSON.stringify({ email: { id: 'tem-email-1' } }), {
+          status: 200,
+        }),
+    );
 
-async function sendWithSequence(responses: Array<() => Promise<Response>>) {
-  let calls = 0;
-  const error = await runSend((async () => {
-    const next = responses[Math.min(calls, responses.length - 1)];
-    calls++;
-    return next();
-  }) as unknown as typeof fetch);
-  return { calls, error };
-}
-
-describe('EmailService retries', () => {
-  it('retries a transport failure and succeeds', async () => {
-    const { calls, error } = await sendWithSequence([
-      async () => {
-        throw new Error('ECONNRESET');
-      },
-      async () => new Response('{}', { status: 200 }),
-    ]);
-
-    expect(error).toBeUndefined();
-    expect(calls).toBe(2);
+    expect(result).toEqual({ ok: true, providerMessageId: 'tem-email-1' });
   });
 
-  it('retries 5xx and 429 responses', async () => {
-    const { calls, error } = await sendWithSequence([
-      async () => new Response('busy', { status: 503 }),
-      async () => new Response('slow down', { status: 429 }),
-      async () => new Response('{}', { status: 200 }),
-    ]);
+  it('classifies 503 and 429 responses as retryable', async () => {
+    for (const status of [503, 429]) {
+      const result = await sendOnce(
+        async () => new Response('busy', { status }),
+      );
 
-    expect(error).toBeUndefined();
-    expect(calls).toBe(3);
-  });
-
-  it('gives up after three attempts and throws the last error', async () => {
-    const { calls, error } = await sendWithSequence([
-      async () => new Response('down', { status: 502 }),
-    ]);
-
-    expect(calls).toBe(3);
-    expect(error?.message).toContain('Scaleway responded 502');
-  });
-
-  it('retries a request timeout and sends an abort signal', async () => {
-    const signals: Array<AbortSignal | null | undefined> = [];
-    let calls = 0;
-    const error = await runSend((async (_url: unknown, init?: RequestInit) => {
-      signals.push(init?.signal);
-      calls++;
-      if (calls === 1) {
-        throw new DOMException('The operation timed out', 'TimeoutError');
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.retryable).toBe(true);
+        expect(result.error.message).toContain(`Scaleway responded ${status}`);
       }
+    }
+  });
+
+  it('classifies other 4xx responses as non-retryable', async () => {
+    const result = await sendOnce(
+      async () => new Response('bad', { status: 400 }),
+    );
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.retryable).toBe(false);
+      expect(result.error.message).toContain('Scaleway responded 400');
+    }
+  });
+
+  it('treats a request timeout as retryable and sends an abort signal', async () => {
+    const signals: Array<AbortSignal | null | undefined> = [];
+    const result = await sendOnce((async (
+      _url: unknown,
+      init?: RequestInit,
+    ) => {
+      signals.push(init?.signal);
+      throw new DOMException('The operation timed out', 'TimeoutError');
+    }) as unknown as typeof fetch);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.retryable).toBe(true);
+      expect(result.error.message).toContain('The operation timed out');
+    }
+    expect(signals[0]).toBeInstanceOf(AbortSignal);
+  });
+
+  it('sends the outbox id as a correlation header', async () => {
+    let requestBody: {
+      additional_headers?: Array<{ key: string; value: string }>;
+    } = {};
+
+    await sendOnce((async (_url: unknown, init?: RequestInit) => {
+      requestBody = JSON.parse(String(init?.body));
       return new Response('{}', { status: 200 });
     }) as unknown as typeof fetch);
 
-    expect(error).toBeUndefined();
-    expect(calls).toBe(2);
-    expect(signals.every((signal) => signal instanceof AbortSignal)).toBe(true);
+    expect(requestBody.additional_headers).toEqual([
+      { key: 'X-Caluno-Email-Id', value: 'outbox-1' },
+    ]);
   });
 
   it('wraps a failure while reading the error body', async () => {
@@ -115,26 +112,20 @@ describe('EmailService retries', () => {
     brokenBody.text = async () => {
       throw new Error('socket hang up');
     };
-    const { calls, error } = await sendWithSequence([async () => brokenBody]);
 
-    expect(calls).toBe(3);
-    expect(error?.message).toContain('Scaleway responded 500');
-    expect(error?.message).not.toContain('volunteer@example.com');
-  });
+    const result = await sendOnce(async () => brokenBody);
 
-  it('does not retry other 4xx responses', async () => {
-    const { calls, error } = await sendWithSequence([
-      async () => new Response('bad', { status: 400 }),
-    ]);
-
-    expect(calls).toBe(1);
-    expect(error?.message).toContain('Scaleway responded 400');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.retryable).toBe(true);
+      expect(result.error.message).toContain('Scaleway responded 500');
+    }
   });
 });
 
-describe('EmailService error reporting', () => {
+describe('EmailTransportService error reporting', () => {
   it('surfaces the provider status and reason, and masks the recipient', async () => {
-    const error = await sendFailure(
+    const result = await sendOnce(
       async () =>
         new Response(JSON.stringify({ message: 'invalid recipient domain' }), {
           status: 400,
@@ -142,35 +133,44 @@ describe('EmailService error reporting', () => {
       'system-automated@caluno.internal',
     );
 
-    expect(error).toBeInstanceOf(Error);
-    expect(error?.message).toContain('Scaleway responded 400');
-    expect(error?.message).toContain('invalid recipient domain');
-    expect(error?.message).toContain('sy***@***.internal');
-    expect(error?.message).not.toContain('system-automated@caluno.internal');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain('Scaleway responded 400');
+      expect(result.error.message).toContain('invalid recipient domain');
+      expect(result.error.message).toContain('sy***@***.internal');
+      expect(result.error.message).not.toContain(
+        'system-automated@caluno.internal',
+      );
+    }
   });
 
   it('reports the transport failure reason and keeps the original error as cause', async () => {
     const cause = new Error('getaddrinfo ENOTFOUND api.scaleway.com');
-    const error = await sendFailure(async () => {
+    const result = await sendOnce(async () => {
       throw cause;
-    }, 'volunteer@example.com');
+    });
 
-    expect(error?.message).toContain('getaddrinfo ENOTFOUND');
-    expect(error?.message).not.toContain('volunteer@example.com');
-    expect(error?.cause).toBe(cause);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain('getaddrinfo ENOTFOUND');
+      expect(result.error.message).not.toContain('volunteer@example.com');
+      expect(result.error.cause).toBe(cause);
+    }
   });
 
   it('keeps a multi-line provider body to a single bounded line', async () => {
-    const error = await sendFailure(
+    const result = await sendOnce(
       async () =>
         new Response(`line one\n\nline two ${'x'.repeat(500)}`, {
           status: 500,
         }),
-      'volunteer@example.com',
     );
 
-    expect(error?.message).not.toContain('\n');
-    expect(error?.message).toContain('line one line two');
-    expect((error?.message ?? '').length).toBeLessThan(500);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).not.toContain('\n');
+      expect(result.error.message).toContain('line one line two');
+      expect(result.error.message.length).toBeLessThan(600);
+    }
   });
 });

@@ -13,6 +13,7 @@ import {
   type ColumnDef,
   flexRender,
   type OnChangeFn,
+  type PaginationState,
   type RowData,
   type SortingState,
   useTable,
@@ -20,8 +21,8 @@ import {
 import { type DataTableFeatures, dataTableFeatures } from './features';
 import { activeDir, ariaSort } from './table-sort';
 
-interface DataTableProps<TData extends RowData> {
-  // Table options fix cell TValue to unknown; column defs stay typed per-column.
+interface DataTableServerProps<TData extends RowData> {
+  mode?: 'server';
   columns: ColumnDef<DataTableFeatures, TData, unknown>[];
   data: TData[];
   pageCount: number;
@@ -31,42 +32,63 @@ interface DataTableProps<TData extends RowData> {
   getRowClassName?: (row: TData) => string | undefined;
 }
 
-export function DataTable<TData extends RowData>({
-  columns,
-  data,
-  pageCount,
-  sorting,
-  onSortingChange,
-  emptyMessage,
-  getRowClassName,
-}: DataTableProps<TData>) {
+interface DataTableClientProps<TData extends RowData> {
+  mode: 'client';
+  columns: ColumnDef<DataTableFeatures, TData, unknown>[];
+  data: TData[];
+  sorting?: SortingState;
+  onSortingChange?: OnChangeFn<SortingState>;
+  emptyMessage: string;
+  getRowClassName?: (row: TData) => string | undefined;
+  pagination?: PaginationState;
+  onPaginationChange?: OnChangeFn<PaginationState>;
+}
+
+type DataTableProps<TData extends RowData> =
+  | DataTableServerProps<TData>
+  | DataTableClientProps<TData>;
+
+export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
+  const { columns, data, emptyMessage, getRowClassName, onSortingChange } =
+    props;
+  const isClient = props.mode === 'client';
+  const client = props.mode === 'client' ? props : undefined;
+  const server = props.mode === 'client' ? undefined : props;
+
   const table = useTable({
     features: dataTableFeatures,
     data,
     columns,
-    state: { sorting },
-    onSortingChange,
-    manualSorting: true,
-    manualPagination: true,
-    // Keep a column always sorted: without this, clicking the active header
-    // cycles to "no sort" and the sort silently resets instead of reversing.
+    state: {
+      sorting: props.sorting ?? [],
+      ...(client?.pagination ? { pagination: client.pagination } : {}),
+    },
+    ...(onSortingChange ? { onSortingChange } : {}),
+    ...(client?.onPaginationChange
+      ? { onPaginationChange: client.onPaginationChange }
+      : {}),
+    manualSorting: !isClient,
+    manualPagination: !isClient,
     enableSortingRemoval: false,
-    pageCount,
+    ...(server ? { pageCount: server.pageCount } : {}),
   });
 
   return (
     <div className="overflow-hidden rounded-md border">
-      <Table className="table-fixed">
+      <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
+            <TableRow key={headerGroup.id} className="bg-muted hover:bg-muted">
+              {headerGroup.headers.map((header, index) => {
                 const dir = activeDir(header.column.getIsSorted());
+                const isLast = index === headerGroup.headers.length - 1;
                 return (
                   <TableHead
                     key={header.id}
                     aria-sort={ariaSort(dir)}
                     className={cn(
+                      'h-8 px-2 text-xs font-normal text-muted-foreground min-w-[120px]',
+                      !isLast && 'border-r border-border',
                       header.column.columnDef.meta?.headerClassName,
                     )}
                   >
@@ -93,27 +115,31 @@ export function DataTable<TData extends RowData>({
               </TableCell>
             </TableRow>
           ) : (
-            table.getRowModel().rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={getRowClassName?.(row.original)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    className={cn(
-                      // Cells wrap by default so a long value cannot force the
-                      // table wider than its container; a column can opt out via
-                      // meta.cellClassName (e.g. the actions column).
-                      'whitespace-normal',
-                      cell.column.columnDef.meta?.cellClassName,
-                    )}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            table.getRowModel().rows.map((row) => {
+              const cells = row.getVisibleCells();
+              return (
+                <TableRow
+                  key={row.id}
+                  className={getRowClassName?.(row.original)}
+                >
+                  {cells.map((cell, index) => (
+                    <TableCell
+                      key={cell.id}
+                      className={cn(
+                        'whitespace-normal py-2 px-3',
+                        index < cells.length - 1 && 'border-r border-border',
+                        cell.column.columnDef.meta?.cellClassName,
+                      )}
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

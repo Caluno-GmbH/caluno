@@ -1,6 +1,6 @@
 import { getTranslations } from 'next-intl/server';
 import { isGenderOptionValue } from '@/domain/requirement-form/gender-options';
-import { SYSTEM_PROFILE_FIELDS } from '@/domain/requirement-form/system-profile-fields';
+import { PROFILE_FIELDS } from '@/domain/requirement-form/profile-fields';
 import type { ProfileShape } from '@/domain/user/lib/profile-field-values';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { ProfileField } from './profile-field';
@@ -51,7 +51,7 @@ export const PersonalInformationSection = async ({
   const genderLabel = (value: string | null): string | null =>
     value && isGenderOptionValue(value) ? tGender(value) : value;
 
-  const fields: FieldItem[] = SYSTEM_PROFILE_FIELDS.map((field) => {
+  const fields: FieldItem[] = PROFILE_FIELDS.map((field) => {
     const key = field.key as keyof ProfileShape;
     let value: string | null;
     if (field.key === 'birthdate') {

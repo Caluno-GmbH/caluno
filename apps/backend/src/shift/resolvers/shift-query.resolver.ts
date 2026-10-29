@@ -15,7 +15,7 @@ import {
 import { MY_SHIFT_INVITE_STATUSES } from '../../shared/invite-status';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
-import { ShiftInviteStatus, SortOrder } from '../enums';
+import { ShiftInviteStatus, ShiftSortField, SortOrder } from '../enums';
 import { ShiftMapper } from '../mappers/shift.mapper';
 import { ShiftInstanceMapper } from '../mappers/shift-instance.mapper';
 import { Shift, ShiftPaginatedResponse } from '../models/shift.model';
@@ -88,6 +88,18 @@ export class ShiftQueryResolver {
   @Query(() => ShiftPaginatedResponse)
   async shifts(
     @Args() pagination: PaginationInput,
+    @Args('sort', {
+      type: () => ShiftSortField,
+      defaultValue: ShiftSortField.CREATED_AT,
+    })
+    sort: ShiftSortField,
+    @Args('order', {
+      type: () => SortOrder,
+      defaultValue: SortOrder.DESC,
+    })
+    order: SortOrder,
+    @Args('search', { type: () => String, nullable: true })
+    search: string | null | undefined,
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ShiftPaginatedResponse> {
@@ -95,6 +107,9 @@ export class ShiftQueryResolver {
       session.user.id,
       context.organizationUnitId,
       pagination,
+      sort,
+      order,
+      search ?? null,
     );
     return new ShiftPaginatedResponse({
       items: this.shiftMapper.toArray(shifts),
@@ -177,6 +192,18 @@ export class ShiftQueryResolver {
       eventId,
     );
     return this.shiftInstanceMapper.toArray(instances);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @Query(() => [Date])
+  async eventShiftInstanceStarts(
+    @Args('eventId', { type: () => ID }) eventId: string,
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<Date[]> {
+    return this.shiftService.findInstanceStartsForEvent(
+      context.organizationUnitId,
+      eventId,
+    );
   }
 
   // Check-in surface: `check-in:manage` is a separate permission from

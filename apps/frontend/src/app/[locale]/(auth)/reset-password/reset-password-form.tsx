@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { resetPassword } from '@/lib/auth';
+import { PasswordStrengthMeter } from '../password-strength-meter';
 
 interface ResetPasswordFormProps {
   token?: string;
@@ -23,6 +24,17 @@ export function ResetPasswordForm({
     tokenError ? t('invalidToken') : null,
   );
   const [isPending, setIsPending] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+
+  function handleFieldChange(event: React.ChangeEvent<HTMLFormElement>) {
+    if (!(event.target instanceof HTMLInputElement)) {
+      return;
+    }
+
+    if (event.target.name === 'newPassword') {
+      setNewPassword(event.target.value);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,7 +64,15 @@ export function ResetPasswordForm({
       });
 
       if (result.error) {
-        setError(result.error.message || t('resetFailed'));
+        const messages: Record<string, string> = {
+          PASSWORD_TOO_SHORT: t('passwordTooShort'),
+          PASSWORD_TOO_WEAK: t('passwordTooWeak'),
+        };
+        setError(
+          messages[result.error.code ?? ''] ||
+            result.error.message ||
+            t('resetFailed'),
+        );
         setIsPending(false);
         return;
       }
@@ -71,7 +91,11 @@ export function ResetPasswordForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      onChange={handleFieldChange}
+      className="space-y-6"
+    >
       {error && (
         <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
           {error}
@@ -88,11 +112,12 @@ export function ResetPasswordForm({
             name="newPassword"
             type="password"
             required
-            minLength={6}
+            minLength={8}
             className="mt-1"
             placeholder={t('passwordPlaceholder')}
             disabled={isPending || !token}
           />
+          <PasswordStrengthMeter className="mt-2" password={newPassword} />
         </div>
 
         <div>
@@ -107,7 +132,7 @@ export function ResetPasswordForm({
             name="confirmPassword"
             type="password"
             required
-            minLength={6}
+            minLength={8}
             className="mt-1"
             placeholder={t('passwordPlaceholder')}
             disabled={isPending || !token}

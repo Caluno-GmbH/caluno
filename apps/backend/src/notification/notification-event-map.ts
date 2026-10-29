@@ -37,6 +37,7 @@ import type { ShiftSeriesLeftPayload } from './payloads/shift-series-left.payloa
 import type { ShiftSeriesRemovedPayload } from './payloads/shift-series-removed.payload';
 import type { ShiftSeriesVolunteerLeftPayload } from './payloads/shift-series-volunteer-left.payload';
 import type { TermsUpdatedPayload } from './payloads/terms-updated.payload';
+import type { TimeEntryAutoClosedPayload } from './payloads/time-entry-auto-closed.payload';
 import type { VolunteerDigestSentPayload } from './payloads/volunteer-digest-sent.payload';
 
 export interface NotificationEventPayloadMap {
@@ -79,4 +80,5 @@ export interface NotificationEventPayloadMap {
   [NotificationEvent.DOCUMENT_DECLINED_BY_VOLUNTEER]: DocumentDeclinedByVolunteerPayload;
   [NotificationEvent.VOLUNTEER_DIGEST_SENT]: VolunteerDigestSentPayload;
   [NotificationEvent.TERMS_UPDATED]: TermsUpdatedPayload;
+  [NotificationEvent.TIME_ENTRY_AUTO_CLOSED]: TimeEntryAutoClosedPayload;
 }

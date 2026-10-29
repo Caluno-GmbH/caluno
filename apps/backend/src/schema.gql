@@ -191,8 +191,8 @@ input CreateFormBlockFieldInput {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean
-  systemKey: String
   type: FieldType!
 }
 
@@ -254,37 +254,6 @@ input CreateRequirementFormInput {
   description: String
   name: String!
   organizationId: String!
-  settings: FormSettingsInput
-}
-
-input CreateRequirementInput {
-  description: String
-  mandatory: Boolean! = false
-  name: String!
-  organizationId: String!
-  type: RequirementType!
-}
-
-input CreateRequirementProfileInput {
-  description: String
-  name: String!
-  organizationId: String!
-  requirementIds: [String!]
-}
-
-input CreateRequirementProfileSubmissionInput {
-  fulfillments: [CreateRequirementSubmissionFulfillmentInput!]
-  membershipId: String
-  membershipRequestId: String
-  profileId: String!
-}
-
-input CreateRequirementSubmissionFulfillmentInput {
-  checked: Boolean
-  date: DateTime
-  fileId: String
-  requirementId: String!
-  text: String
 }
 
 input CreateRoleInput {
@@ -471,7 +440,6 @@ type FormBlock {
   id: ID!
   isEditable: Boolean!
   organizationId: String!
-  required: Boolean!
   title: String!
   updatedAt: DateTime!
   updatedBy: String!
@@ -490,8 +458,8 @@ type FormBlockField {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean!
-  systemKey: String
   type: FieldType!
   updatedAt: DateTime!
 }
@@ -510,7 +478,6 @@ type FormBlockPaginatedResponse {
 input FormBlockRefInput {
   blockId: String!
   order: Float
-  required: Boolean
 }
 
 input FormFieldValueInput {
@@ -519,25 +486,12 @@ input FormFieldValueInput {
   value: String!
 }
 
-type FormSettings {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
-}
-
-input FormSettingsInput {
-  allowEmbed: Boolean
-  submitButtonLabel: String
-  successMessage: String
-  successTitle: String
-}
-
 type FormSubmission {
   createdAt: DateTime!
   form: RequirementForm
   formId: String!
   id: ID!
+  organizationUnitId: String!
   submittedAt: DateTime!
   updatedAt: DateTime!
   user: User
@@ -551,12 +505,16 @@ type FormSubmissionPaginatedResponse {
 }
 
 type FormSubmissionValue {
-  blockId: String!
   createdAt: DateTime!
   fieldId: String!
   id: ID!
   submissionId: String!
   updatedAt: DateTime!
+  value: String!
+}
+
+type FormSubmissionValuePrefill {
+  fieldId: ID!
   value: String!
 }
 
@@ -618,7 +576,6 @@ enum InvoiceStatus {
   AWAITING_SUPERVISOR_SIGNATURE
   AWAITING_VOLUNTEER_SIGNATURE
   DECLINED
-  DRAFT
   READY
 }
 
@@ -645,24 +602,18 @@ type JoinEventResult {
   event: Event!
   membershipRequestId: ID
   requiredForms: [RequiredFormWithStatus!]
-  requirementProfile: RequirementProfile
-  requirementStatuses: [UserRequirementStatus!]
   status: JoinStatus!
 }
 
 type JoinOrganizationResult {
   membershipRequestId: ID
   requiredForms: [RequiredFormWithStatus!]
-  requirementProfile: RequirementProfile
-  requirementStatuses: [UserRequirementStatus!]
   status: JoinStatus!
 }
 
 type JoinShiftInstanceResult {
   membershipRequestId: ID
   requiredForms: [RequiredFormWithStatus!]
-  requirementProfile: RequirementProfile
-  requirementStatuses: [UserRequirementStatus!]
   shiftInstance: ShiftInstance!
   status: JoinStatus!
 }
@@ -742,6 +693,7 @@ type Mutation {
   checkOut(shiftInstanceId: ID!): TimeEntry!
   checkOutVolunteer(timeEntryId: ID!): TimeEntry!
   closeTimeEntry(id: ID!, input: CloseTimeEntryInput!): TimeEntry!
+  confirmTimeEntry(id: ID!): TimeEntry!
   createContract(input: CreateContractInput!): Contract!
   createDocumentTemplate(input: CreateDocumentTemplateInput!): DocumentTemplate!
   createEvent(input: CreateEventInput!): Event!
@@ -750,10 +702,7 @@ type Mutation {
   createInvoice(input: CreateInvoiceInput!): Invoice!
   createOrganization(input: CreateOrganizationInput!): Organization!
   createOrganizationUnit(input: CreateOrganizationUnitInput!): OrganizationUnit!
-  createRequirement(input: CreateRequirementInput!): Requirement!
   createRequirementForm(input: CreateRequirementFormInput!): RequirementForm!
-  createRequirementProfile(input: CreateRequirementProfileInput!): RequirementProfile!
-  createRequirementProfileSubmission(input: CreateRequirementProfileSubmissionInput!): RequirementProfileSubmission!
   createRole(input: CreateRoleInput!): Role!
   createShift(input: CreateShiftInput!): Shift!
   declineContract(contractId: ID!, reason: String!): Contract!
@@ -762,11 +711,7 @@ type Mutation {
   deleteEvent(id: ID!): Event!
   deleteFormBlock(id: String!): FormBlock!
   deleteFormBlockField(fieldId: String!): FormBlock!
-  deleteRequirement(id: String!): Requirement!
   deleteRequirementForm(id: String!): RequirementForm!
-  deleteRequirementFulfillment(id: String!): RequirementFulfillment!
-  deleteRequirementProfile(id: String!): RequirementProfile!
-  deleteRequirementProfileSubmission(id: String!): RequirementProfileSubmission!
   deleteRole(id: ID!): Role!
   deleteShift(id: String!): Shift!
   deleteShiftInstance(applyToAllFuture: Boolean, id: String!): ShiftInstance!
@@ -811,11 +756,7 @@ type Mutation {
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
   updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
-  updateRequirement(id: String!, input: UpdateRequirementInput!): Requirement!
   updateRequirementForm(id: String!, input: UpdateRequirementFormInput!): RequirementForm!
-  updateRequirementFulfillment(id: String!, input: UpdateRequirementFulfillmentInput!): RequirementFulfillment!
-  updateRequirementProfile(id: String!, input: UpdateRequirementProfileInput!): RequirementProfile!
-  updateRequirementProfileSubmission(id: String!, input: UpdateRequirementProfileSubmissionInput!): RequirementProfileSubmission!
   updateRole(id: ID!, input: CreateRoleInput!): Role!
   updateShift(id: String!, input: UpdateShiftInput!): Shift!
   updateShiftInstance(applyToAllFuture: Boolean, input: UpdateShiftInstanceInput!, instanceId: String!): ShiftInstance!
@@ -890,7 +831,6 @@ type OrganizationUnit {
   parent: OrganizationUnit
   phone: String
   requiredForms: [RequiredFormRef!]!
-  requiredMembershipRequirementProfile: RequirementProfile
   slug: String!
   street: String
   type: OrganizationUnitType!
@@ -924,20 +864,6 @@ type OrganizationUnitType {
   icon: String!
   id: ID!
   name: String!
-}
-
-type OrganizationUserProfile {
-  id: ID!
-  note: String
-  status: OrganizationUserProfileStatus!
-  userProfileAccessApproved: Boolean!
-}
-
-enum OrganizationUserProfileStatus {
-  ACTIVE
-  BLACKLISTED
-  INACTIVE
-  PENDING
 }
 
 type PaginationInfo {
@@ -1013,6 +939,7 @@ type Query {
   eligibleTimeEntriesForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, volunteerId: ID!): [TimeEntry!]!
   event(id: ID!): Event!
   eventInvites(eventId: ID!): [EventInvite!]!
+  eventShiftInstanceStarts(eventId: ID!): [DateTime!]!
   eventShifts(eventId: ID!, limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
   events(limit: Int! = 10, offset: Int! = 0): EventPaginatedResponse!
   formBlock(id: String!): FormBlock
@@ -1038,7 +965,7 @@ type Query {
   myDocuments: [MyDocumentsGroup!]!
   myEvents(endsBefore: DateTime = null, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [EventInviteStatus!]): EventPaginatedResponse!
   myFormSubmission(id: ID!): FormSubmission
-  myFormSubmissionByToken(token: String!): FormSubmission
+  myFormSubmissionByToken(organizationUnitId: ID!, token: String!): FormSubmission
   myFormSubmissions(organizationUnitId: ID!): [FormSubmission!]!
   myInvoices(filter: InvoiceFilterInput): [Invoice!]!
   myMembership(id: ID!): Membership
@@ -1048,6 +975,7 @@ type Query {
   myOrganizationUnits: [OrganizationUnit!]!
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
+  myStoredFormFieldValues(organizationUnitId: ID!): [FormSubmissionValuePrefill!]!
   myTasks: [Task!]!
   myTime(limit: Int! = 10, offset: Int! = 0): TimeEntryPaginatedResponse!
   organization(id: String!): Organization
@@ -1071,17 +999,10 @@ type Query {
   publicShiftInstances(shiftId: ID!): [ShiftInstance!]!
   publicShiftsByOrganizationUnit(organizationUnitId: ID!): [Shift!]!
   reimbursementTypes: [ReimbursementType!]!
-  requirement(id: String!): Requirement
   requirementForm(id: String!): RequirementForm
   requirementFormByShareToken(token: String!): RequirementForm
+  requirementFormDeleteImpact(id: String!): RequirementFormDeleteImpact!
   requirementForms(limit: Int! = 10, offset: Int! = 0, organizationId: String!): RequirementFormPaginatedResponse!
-  requirementFulfillment(id: String!): RequirementFulfillment
-  requirementFulfillments(limit: Int! = 10, offset: Int! = 0): RequirementFulfillmentPaginatedResponse!
-  requirementProfile(id: String!): RequirementProfile
-  requirementProfileSubmission(id: String!): RequirementProfileSubmission
-  requirementProfileSubmissions(limit: Int! = 10, offset: Int! = 0): RequirementProfileSubmissionPaginatedResponse!
-  requirementProfiles(limit: Int! = 10, offset: Int! = 0): RequirementProfilePaginatedResponse!
-  requirements(limit: Int! = 10, offset: Int! = 0): RequirementPaginatedResponse!
   role(id: String!): Role!
   roles: [Role!]!
   rosterYearlyUsage(organizationUnitId: ID!, year: Int!): [VolunteerYearlyUsage!]!
@@ -1090,9 +1011,10 @@ type Query {
   shiftInstances(shiftId: ID!): [ShiftInstance!]!
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
-  shifts(limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
+  shifts(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT): ShiftPaginatedResponse!
   termsStatus: TermsStatus!
-  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT): TimeEntryPaginatedResponse!
+  timeEntries(limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, sort: TimeEntrySortField! = CREATED_AT, statuses: [TimeEntryStatus!]): TimeEntryPaginatedResponse!
+  timeEntriesAwaitingReviewForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, volunteerId: ID!): [TimeEntry!]!
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   todoFillAssignmentFilter: TodoFillAssignmentFilter!
@@ -1172,15 +1094,6 @@ type RequiredFormWithStatus {
   targetType: RequiredFormTargetType!
 }
 
-type Requirement {
-  description: String
-  id: ID!
-  mandatory: Boolean!
-  name: String!
-  organizationId: String!
-  type: RequirementType!
-}
-
 type RequirementForm {
   blockRefs: [RequirementFormBlockRef!]
   createdAt: DateTime!
@@ -1190,7 +1103,6 @@ type RequirementForm {
   name: String!
   organizationId: String!
   organizationUnitId: String
-  settings: FormSettings!
   shareToken: String!
   slug: String!
   submissionCount: Float!
@@ -1199,151 +1111,29 @@ type RequirementForm {
 }
 
 type RequirementFormBlockRef {
-  block: FormBlock
+  block: FormBlock!
   blockId: String!
   createdAt: DateTime!
   fieldOrder: Float!
   formId: String!
   id: ID!
-  required: Boolean
   updatedAt: DateTime!
+}
+
+type RequirementFormDeleteAttachment {
+  name: String!
+  targetId: String!
+  targetType: RequiredFormTargetType!
+}
+
+type RequirementFormDeleteImpact {
+  attachments: [RequirementFormDeleteAttachment!]!
+  submissionCount: Int!
 }
 
 type RequirementFormPaginatedResponse {
   items: [RequirementForm!]!
   pagination: PaginationInfo!
-}
-
-interface RequirementFulfillment {
-  id: ID!
-  organizationUserProfile: OrganizationUserProfile
-  requirement: Requirement!
-  reviewedAt: DateTime
-  reviewedBy: User
-  reviewer: User
-  status: RequirementFulfillmentStatus!
-  submission: RequirementProfileSubmission!
-  submittedAt: DateTime
-  type: RequirementType!
-}
-
-type RequirementFulfillmentCheck implements RequirementFulfillment {
-  checked: Boolean
-  id: ID!
-  organizationUserProfile: OrganizationUserProfile
-  requirement: Requirement!
-  reviewedAt: DateTime
-  reviewedBy: User
-  reviewer: User
-  status: RequirementFulfillmentStatus!
-  submission: RequirementProfileSubmission!
-  submittedAt: DateTime
-  type: RequirementType!
-}
-
-type RequirementFulfillmentDate implements RequirementFulfillment {
-  date: DateTime
-  id: ID!
-  organizationUserProfile: OrganizationUserProfile
-  requirement: Requirement!
-  reviewedAt: DateTime
-  reviewedBy: User
-  reviewer: User
-  status: RequirementFulfillmentStatus!
-  submission: RequirementProfileSubmission!
-  submittedAt: DateTime
-  type: RequirementType!
-}
-
-type RequirementFulfillmentPaginatedResponse {
-  items: [RequirementFulfillment!]!
-  pagination: PaginationInfo!
-}
-
-enum RequirementFulfillmentStatus {
-  APPROVED
-  DRAFT
-  REJECTED
-  SUBMITTED
-}
-
-type RequirementFulfillmentText implements RequirementFulfillment {
-  id: ID!
-  organizationUserProfile: OrganizationUserProfile
-  requirement: Requirement!
-  reviewedAt: DateTime
-  reviewedBy: User
-  reviewer: User
-  status: RequirementFulfillmentStatus!
-  submission: RequirementProfileSubmission!
-  submittedAt: DateTime
-  text: String
-  type: RequirementType!
-}
-
-type RequirementFulfillmentUpload implements RequirementFulfillment {
-  downloadUrl: String
-  fileId: String
-  id: ID!
-  organizationUserProfile: OrganizationUserProfile
-  requirement: Requirement!
-  reviewedAt: DateTime
-  reviewedBy: User
-  reviewer: User
-  status: RequirementFulfillmentStatus!
-  submission: RequirementProfileSubmission!
-  submittedAt: DateTime
-  type: RequirementType!
-}
-
-type RequirementPaginatedResponse {
-  items: [Requirement!]!
-  pagination: PaginationInfo!
-}
-
-type RequirementProfile {
-  description: String
-  id: ID!
-  name: String!
-  organizationId: String!
-  requirements: [Requirement!]
-}
-
-type RequirementProfilePaginatedResponse {
-  items: [RequirementProfile!]!
-  pagination: PaginationInfo!
-}
-
-type RequirementProfileSubmission {
-  fulfillments: [RequirementFulfillment!]
-  id: ID!
-  membership: Membership
-  membershipRequest: MembershipRequest
-  requirementProfile: RequirementProfile!
-  reviewedAt: DateTime
-  reviewedBy: User
-  reviewer: User
-  status: RequirementProfileSubmissionStatus!
-  submittedAt: DateTime
-}
-
-type RequirementProfileSubmissionPaginatedResponse {
-  items: [RequirementProfileSubmission!]!
-  pagination: PaginationInfo!
-}
-
-enum RequirementProfileSubmissionStatus {
-  APPROVED
-  DRAFT
-  REJECTED
-  SUBMITTED
-}
-
-enum RequirementType {
-  CHECK
-  DATE
-  DOCUMENT
-  TEXT
 }
 
 type Role {
@@ -1481,6 +1271,13 @@ type ShiftPaginatedResponse {
   pagination: PaginationInfo!
 }
 
+enum ShiftSortField {
+  CREATED_AT
+  FIRST_DATE
+  TITLE
+  VISIBILITY
+}
+
 enum ShiftVisibility {
   ALL_MEMBERS
   INVITED_MEMBERS
@@ -1549,6 +1346,7 @@ type TimeEntry {
   reimbursementType: ReimbursementType
   shiftInstance: ShiftInstance
   startedAt: DateTime!
+  status: TimeEntryStatus!
   volunteer: User!
 }
 
@@ -1563,6 +1361,12 @@ enum TimeEntrySortField {
   SHIFT
   STARTED_AT
   VOLUNTEER
+}
+
+enum TimeEntryStatus {
+  AUTO_CLOSED
+  CLOSED
+  OPEN
 }
 
 type TodoFillAssignmentFilter {
@@ -1605,8 +1409,8 @@ input UpdateFormBlockFieldInput {
   minAge: Float
   options: [String!]
   placeholder: String
+  profileKey: String
   required: Boolean
-  systemKey: String
   type: FieldType
 }
 
@@ -1674,7 +1478,6 @@ input UpdateOrganizationUnitInput {
   organizationId: String!
   parentId: String
   phone: String
-  requiredMembershipRequirementProfileId: String
   street: String
   typeId: String
   websiteUrl: String
@@ -1686,34 +1489,6 @@ input UpdateRequirementFormInput {
   blockRefs: [FormBlockRefInput!]
   description: String
   name: String
-  settings: FormSettingsInput
-}
-
-input UpdateRequirementFulfillmentInput {
-  checked: Boolean
-  date: DateTime
-  fileId: String
-  text: String
-}
-
-input UpdateRequirementInput {
-  description: String
-  mandatory: Boolean = false
-  name: String
-  type: RequirementType
-}
-
-input UpdateRequirementProfileInput {
-  description: String
-  name: String
-  requirementIds: [String!]
-}
-
-input UpdateRequirementProfileSubmissionInput {
-  fulfillments: [CreateRequirementSubmissionFulfillmentInput!]
-  membershipId: String
-  membershipRequestId: String
-  profileId: String
 }
 
 input UpdateShiftInput {
@@ -1784,12 +1559,6 @@ type User {
   name: String!
   permissions: [Permission!]
   preferredName: String
-}
-
-type UserRequirementStatus {
-  name: String!
-  requirementId: ID!
-  status: RequirementFulfillmentStatus!
 }
 
 type UserWithProfile {

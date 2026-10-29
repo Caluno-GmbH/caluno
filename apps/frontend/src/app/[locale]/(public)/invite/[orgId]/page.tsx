@@ -10,8 +10,6 @@ import { getSafeRedirect } from '@/lib/safe-redirect';
 import { JoinError } from './components/join-error';
 import { RequestPending } from './components/request-pending';
 import { RequestRejected } from './components/request-rejected';
-import { RequirementDocumentSubmission } from './components/requirement-document-submission';
-import { OrgRequirementsNeeded } from './components/requirements-needed';
 
 interface InvitePageProps {
   params: Promise<{ locale: string; orgId: string }>;
@@ -56,33 +54,7 @@ export default async function InvitePage({ params }: InvitePageProps) {
   }
 
   if (result.status === JoinStatus.RequirementsNeeded) {
-    const hasMissingForms = (result.requiredForms ?? []).some(
-      (f) => !f.submitted,
-    );
-    if (hasMissingForms) {
-      redirect(`/join/${organizationUnitId}/forms`);
-    }
-
-    return (
-      <OrgRequirementsNeeded
-        orgName={orgUnit.name}
-        profileName={result.requirementProfile?.name}
-        profileDescription={result.requirementProfile?.description}
-        requirements={result.requirementProfile?.requirements ?? []}
-        requirementStatuses={result.requirementStatuses ?? []}
-        documentSubmission={
-          result.requirementProfile ? (
-            <RequirementDocumentSubmission
-              organizationUnitId={organizationUnitId}
-              profileId={result.requirementProfile.id}
-              membershipRequestId={result.membershipRequestId}
-              requirements={result.requirementProfile.requirements ?? []}
-              requirementStatuses={result.requirementStatuses ?? []}
-            />
-          ) : null
-        }
-      />
-    );
+    redirect(`/join/${organizationUnitId}/forms`);
   }
 
   return <JoinError message={t('invite.unexpectedError')} />;
