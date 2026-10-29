@@ -2059,7 +2059,22 @@
       "volunteerRequired": "Please select a volunteer."
     },
     "filter": {
-      "status": "Status"
+      "status": "Status",
+      "statusPlaceholder": "All statuses",
+      "shift": "Shift",
+      "shiftPlaceholder": "All shifts",
+      "volunteer": "Volunteer",
+      "volunteerPlaceholder": "All volunteers",
+      "date": "Date",
+      "datePlaceholder": "All dates",
+      "location": "Location",
+      "locationPlaceholder": "All locations",
+      "locationEmpty": "No locations found",
+      "sheetTitle": "Filters",
+      "group": "Group by",
+      "groupNone": "None",
+      "groupVolunteer": "Volunteer",
+      "groupAssignment": "Assignment"
     },
     "status": {
       "autoClosed": "Auto checked out",

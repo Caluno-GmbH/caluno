@@ -28,6 +28,7 @@ import { readSort, toSorting } from '@/components/data-table/table-sort';
 import { resolveTimeEntryLocation } from '@/domain/time-entry/location';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
+import { TimesheetsToolbar } from './timesheets-toolbar';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
@@ -240,6 +241,10 @@ export const TimesheetsTable = ({
 
   return (
     <div className="space-y-4">
+      <TimesheetsToolbar
+        orgUnitId={organizationUnitId}
+        locationOptions={[]}
+      />
       <DataTable
         columns={columns}
         data={entries}

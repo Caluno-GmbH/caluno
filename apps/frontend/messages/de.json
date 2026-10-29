@@ -2059,7 +2059,22 @@
       "volunteerRequired": "Bitte wähle eine Person aus."
     },
     "filter": {
-      "status": "Status"
+      "status": "Status",
+      "statusPlaceholder": "Alle Status",
+      "shift": "Einsatz",
+      "shiftPlaceholder": "Alle Einsätze",
+      "volunteer": "Ehrenamtliche",
+      "volunteerPlaceholder": "Alle Ehrenamtlichen",
+      "date": "Datum",
+      "datePlaceholder": "Alle Daten",
+      "location": "Standort",
+      "locationPlaceholder": "Alle Standorte",
+      "locationEmpty": "Keine Standorte gefunden",
+      "sheetTitle": "Filter",
+      "group": "Gruppieren",
+      "groupNone": "Keine",
+      "groupVolunteer": "Ehrenamtliche",
+      "groupAssignment": "Einsatz"
     },
     "status": {
       "autoClosed": "Automatisch ausgecheckt",
