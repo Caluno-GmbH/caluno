@@ -611,12 +611,13 @@ function expectedMyJoinStatus(
 
   switch (membership) {
     case 'none':
+    case 'cancelled':
+      // Volunteer withdrew — no active request; join CTA stays available.
       return JoinStatus.NONE;
     case 'pending':
     case 'pending-intended':
       return JoinStatus.PENDING_MEMBERSHIP;
     case 'rejected':
-    case 'cancelled':
       return JoinStatus.REJECTED;
     case 'member':
       switch (inviteStatus) {
@@ -643,6 +644,8 @@ function expectedJoinEventStatusWithoutInvite(
 ): JoinStatus {
   switch (membership) {
     case 'none':
+    case 'cancelled':
+      // CANCELLED resurrects to a new PENDING request on join.
       return JoinStatus.PENDING_MEMBERSHIP;
     case 'member':
       return joinRequiresApproval
@@ -652,7 +655,6 @@ function expectedJoinEventStatusWithoutInvite(
     case 'pending-intended':
       return JoinStatus.PENDING_MEMBERSHIP;
     case 'rejected':
-    case 'cancelled':
       return JoinStatus.REJECTED;
   }
 }
