@@ -32,10 +32,11 @@ import {
   resolveTimeEntryLocation,
   sumDurationMinutes,
 } from '@/domain/time-entry/location';
-import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
-import { serializeTimesheetsToCsv } from '@/domain/time-entry/timesheets-csv';
 import { describeRecorder } from '@/domain/time-entry/recorder';
+import { serializeTimesheetsToCsv } from '@/domain/time-entry/timesheets-csv';
+import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { Link } from '@/i18n/navigation';
+import { triggerDownload } from '@/lib/download/trigger-download';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
 import { DownloadCsvButton } from './download-csv-button';
@@ -69,14 +70,27 @@ export const TimesheetsTable = ({
   organizationUnitId,
 }: TimesheetsTableProps) => {
   const t = useTranslations('TimeEntry');
-  const { formatWorkedPeriod, formatDurationShort, formatDurationByMinutesShort, formatDateTime } =
-    useFormatting();
+  const {
+    formatWorkedPeriod,
+    formatDurationShort,
+    formatDurationByMinutesShort,
+    formatDateTime,
+  } = useFormatting();
 
   const [params, setParams] = useQueryStates(timesheetsSearchParams, {
     shallow: false,
   });
 
-  const { sort, dir, location, status, shiftId, volunteerId, dateFrom, dateTo } = params;
+  const {
+    sort,
+    dir,
+    location,
+    status,
+    shiftId,
+    volunteerId,
+    dateFrom,
+    dateTo,
+  } = params;
 
   const sorting = useMemo(() => toSorting(sort, dir), [sort, dir]);
 
@@ -101,27 +115,35 @@ export const TimesheetsTable = ({
     true,
   );
 
+  const fullEntryLocations = useMemo(() => {
+    if (!fullEntries) return undefined;
+    const map = new Map<TimeEntry, string | null>();
+    for (const entry of fullEntries) {
+      map.set(entry, resolveTimeEntryLocation(entry));
+    }
+    return map;
+  }, [fullEntries]);
+
   // Derive location options from full dataset
   const locationOptions = useMemo(() => {
-    if (!fullEntries) return [];
+    if (!fullEntryLocations) return [];
     const seen = new Set<string>();
     const options: string[] = [];
-    for (const entry of fullEntries) {
-      const loc = resolveTimeEntryLocation(entry);
+    for (const loc of fullEntryLocations.values()) {
       if (loc && !seen.has(loc)) {
         seen.add(loc);
         options.push(loc);
       }
     }
     return options.sort();
-  }, [fullEntries]);
+  }, [fullEntryLocations]);
 
   // Apply client-side location filter to the full dataset (for CSV)
   const filteredFull = useMemo(() => {
-    if (!fullEntries) return undefined;
+    if (!fullEntries || !fullEntryLocations) return undefined;
     if (!location) return fullEntries;
-    return fullEntries.filter((e) => resolveTimeEntryLocation(e) === location);
-  }, [fullEntries, location]);
+    return fullEntries.filter((e) => fullEntryLocations.get(e) === location);
+  }, [fullEntries, fullEntryLocations, location]);
 
   // Apply client-side location filter to the current page for display
   const displayEntries = useMemo(() => {
@@ -133,15 +155,11 @@ export const TimesheetsTable = ({
   useEffect(() => {
     if (!downloadRequested || !filteredFull) return;
     setDownloadRequested(false);
-    const csv = serializeTimesheetsToCsv(filteredFull);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
     const today = new Date().toISOString().slice(0, 10);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `timesheets-${organizationUnitId}-${today}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(
+      `timesheets-${organizationUnitId}-${today}.csv`,
+      serializeTimesheetsToCsv(filteredFull),
+    );
   }, [downloadRequested, filteredFull, organizationUnitId]);
 
   const columns = useMemo<ColumnDef<DataTableFeatures, TimeEntry>[]>(
@@ -185,7 +203,7 @@ export const TimesheetsTable = ({
       {
         id: 'VOLUNTEER',
         accessorFn: (row) => row.volunteer?.name ?? row.volunteer?.email,
-        meta: { headerClassName: 'w-1/4', cellClassName: 'w-1/4' },
+        meta: { headerClassName: 'w-1/6', cellClassName: 'w-1/6' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
         ),
@@ -298,7 +316,13 @@ export const TimesheetsTable = ({
         ),
       },
     ],
-    [t, formatWorkedPeriod, formatDurationShort, formatDurationByMinutesShort, formatDateTime, organizationUnitId],
+    [
+      t,
+      formatWorkedPeriod,
+      formatDurationShort,
+      formatDateTime,
+      organizationUnitId,
+    ],
   );
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
@@ -325,12 +349,10 @@ export const TimesheetsTable = ({
       <TimesheetsToolbar
         orgUnitId={organizationUnitId}
         locationOptions={locationOptions}
-        isLoadingLocations={isLoadingFull}
         actions={[
           <DownloadCsvButton
             key="csv"
             orgUnitId={organizationUnitId}
-            locationFilter={location}
             isLoadingFull={isLoadingFull && downloadRequested}
             fullEntries={filteredFull}
             onTriggerLoad={() => setDownloadRequested(true)}
