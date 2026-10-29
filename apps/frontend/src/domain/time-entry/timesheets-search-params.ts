@@ -21,5 +21,4 @@ export const timesheetsSearchParams = {
   location: parseAsString,
   dateFrom: parseAsIsoDate,
   dateTo: parseAsIsoDate,
-  group: parseAsStringEnum(['volunteer', 'assignment'] as const),
 };

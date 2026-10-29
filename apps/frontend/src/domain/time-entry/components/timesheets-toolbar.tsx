@@ -4,11 +4,8 @@ import {
   useOrganizationVolunteers,
   useShiftsForFilter,
 } from '@repo/data/react';
-import {
-  TableToolbar,
-  ToggleGroup,
-  ToggleGroupItem,
-} from '@repo/ui';
+import { TableToolbar } from '@repo/ui';
+import { CalendarDays, MapPin, Tag, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useMemo } from 'react';
 import { useQueryStates } from 'nuqs';
@@ -36,8 +33,7 @@ export function TimesheetsToolbar({
     shallow: false,
   });
 
-  const { shiftId, volunteerId, dateFrom, dateTo, location, group, status } =
-    params;
+  const { shiftId, volunteerId, dateFrom, dateTo, location, status } = params;
 
   const { data: volunteers } = useOrganizationVolunteers(orgUnitId);
   const { data: shiftsData } = useShiftsForFilter(orgUnitId);
@@ -66,14 +62,7 @@ export function TimesheetsToolbar({
     volunteerOptions.find((v) => v.value === volunteerId)?.label ?? null;
 
   const activeFilters = buildTimesheetsActiveFilters({
-    values: {
-      statuses: status,
-      shiftId,
-      volunteerId,
-      dateFrom,
-      dateTo,
-      location,
-    },
+    values: { statuses: status, shiftId, volunteerId, dateFrom, dateTo, location },
     labels: {
       status: t('filter.status'),
       shift: t('filter.shift'),
@@ -91,10 +80,8 @@ export function TimesheetsToolbar({
       const reset: Record<string, unknown> = { page: 1 };
       if (field === 'shift') reset.shiftId = null;
       else if (field === 'volunteer') reset.volunteerId = null;
-      else if (field === 'date') {
-        reset.dateFrom = null;
-        reset.dateTo = null;
-      } else if (field === 'location') reset.location = null;
+      else if (field === 'date') { reset.dateFrom = null; reset.dateTo = null; }
+      else if (field === 'location') reset.location = null;
       void setParams(reset);
     },
   });
@@ -124,6 +111,7 @@ export function TimesheetsToolbar({
         placeholder={t('filter.shiftPlaceholder')}
         emptyText={t('filter.shiftEmpty')}
         ariaLabel={t('filter.shift')}
+        icon={<CalendarDays className="size-4" />}
       />
       <TableToolbar.ComboboxById
         value={volunteerId ?? undefined}
@@ -132,15 +120,12 @@ export function TimesheetsToolbar({
         placeholder={t('filter.volunteerPlaceholder')}
         emptyText={t('filter.volunteerEmpty')}
         ariaLabel={t('filter.volunteer')}
+        icon={<Users className="size-4" />}
       />
       <TableToolbar.DateRange
         value={{ from: dateFrom ?? undefined, to: dateTo ?? undefined }}
         onChange={(v) =>
-          void setParams({
-            dateFrom: v.from ?? null,
-            dateTo: v.to ?? null,
-            page: 1,
-          })
+          void setParams({ dateFrom: v.from ?? null, dateTo: v.to ?? null, page: 1 })
         }
         placeholder={t('filter.datePlaceholder')}
       />
@@ -151,12 +136,11 @@ export function TimesheetsToolbar({
         placeholder={t('filter.locationPlaceholder')}
         emptyText={t('filter.locationEmpty')}
         ariaLabel={t('filter.location')}
+        icon={<MapPin className="size-4" />}
       />
       <TableToolbar.Select
         value={status.length === 1 ? status[0] : undefined}
-        onChange={(v) =>
-          void setParams({ status: v ? [v as never] : [], page: 1 })
-        }
+        onChange={(v) => void setParams({ status: v ? [v as never] : [], page: 1 })}
         options={[
           { label: t('status.open'), value: 'Open' },
           { label: t('status.closed'), value: 'Closed' },
@@ -164,31 +148,8 @@ export function TimesheetsToolbar({
         ]}
         placeholder={t('filter.statusPlaceholder')}
         ariaLabel={t('filter.status')}
+        icon={<Tag className="size-4" />}
       />
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="lg"
-        spacing={0}
-        value={group ?? 'none'}
-        onValueChange={(v) => {
-          if (!v) return;
-          void setParams({
-            group:
-              v === 'none' ? null : (v as 'volunteer' | 'assignment'),
-            page: 1,
-          });
-        }}
-        aria-label={t('filter.group')}
-      >
-        <ToggleGroupItem value="none">{t('filter.groupNone')}</ToggleGroupItem>
-        <ToggleGroupItem value="volunteer">
-          {t('filter.groupVolunteer')}
-        </ToggleGroupItem>
-        <ToggleGroupItem value="assignment">
-          {t('filter.groupAssignment')}
-        </ToggleGroupItem>
-      </ToggleGroup>
     </TableToolbar>
   );
 }

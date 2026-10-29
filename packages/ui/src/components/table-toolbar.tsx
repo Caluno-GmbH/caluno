@@ -257,6 +257,7 @@ type FilterSelectProps = {
   options: TableToolbarSelectOption[];
   placeholder: string;
   ariaLabel?: string;
+  icon?: ReactNode;
 };
 
 function FilterSelect({
@@ -265,6 +266,7 @@ function FilterSelect({
   options,
   placeholder,
   ariaLabel,
+  icon,
 }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
@@ -272,6 +274,7 @@ function FilterSelect({
         aria-label={ariaLabel ?? placeholder}
         className="w-auto min-w-36"
       >
+        {icon && <span className="mr-1 shrink-0 text-muted-foreground">{icon}</span>}
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

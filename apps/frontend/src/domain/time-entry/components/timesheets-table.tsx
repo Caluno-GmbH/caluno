@@ -19,7 +19,7 @@ import type {
   SortingState,
 } from '@tanstack/react-table';
 import { parseISO } from 'date-fns';
-import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
@@ -32,16 +32,9 @@ import {
   resolveTimeEntryLocation,
   sumDurationMinutes,
 } from '@/domain/time-entry/location';
-import {
-  groupByAssignment,
-  groupByVolunteer,
-  type TimesheetAssignmentGroup,
-  type TimesheetGroupRow,
-  type TimesheetVolunteerGroup,
-} from '@/domain/time-entry/timesheets-grouping';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
-import { describeRecorder } from '@/domain/time-entry/recorder';
 import { serializeTimesheetsToCsv } from '@/domain/time-entry/timesheets-csv';
+import { describeRecorder } from '@/domain/time-entry/recorder';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
@@ -50,7 +43,6 @@ import { TimeEntryStatusBadge } from './time-entry-status-badge';
 import { TimesheetsToolbar } from './timesheets-toolbar';
 
 type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
-export type TimesheetRow = TimeEntry | TimesheetGroupRow;
 
 interface TimesheetsTableProps {
   entries: TimeEntry[];
@@ -60,16 +52,8 @@ interface TimesheetsTableProps {
 
 const NO_DURATION = '—';
 
-const isGroupRow = (row: TimesheetRow): row is TimesheetGroupRow =>
-  'kind' in row;
-const isVolunteerGroup = (row: TimesheetRow): row is TimesheetVolunteerGroup =>
-  'kind' in row && (row as TimesheetGroupRow).kind === 'volunteer';
-const isAssignmentGroup = (row: TimesheetRow): row is TimesheetAssignmentGroup =>
-  'kind' in row && (row as TimesheetGroupRow).kind === 'assignment';
-
-const getEntryRowClassName = (row: TimesheetRow): string | undefined => {
-  if (isGroupRow(row)) return undefined;
-  switch (row.status) {
+const getRowClassName = (entry: TimeEntry): string | undefined => {
+  switch (entry.status) {
     case TimeEntryStatus.Open:
       return 'bg-muted/80';
     case TimeEntryStatus.AutoClosed:
@@ -85,19 +69,14 @@ export const TimesheetsTable = ({
   organizationUnitId,
 }: TimesheetsTableProps) => {
   const t = useTranslations('TimeEntry');
-  const {
-    formatWorkedPeriod,
-    formatDuration,
-    formatDurationByMinutes,
-    formatDateTime,
-  } = useFormatting();
+  const { formatWorkedPeriod, formatDuration, formatDurationByMinutes, formatDateTime } =
+    useFormatting();
 
   const [params, setParams] = useQueryStates(timesheetsSearchParams, {
     shallow: false,
   });
 
-  const { sort, dir, location, group, status, shiftId, volunteerId, dateFrom, dateTo } =
-    params;
+  const { sort, dir, location, status, shiftId, volunteerId, dateFrom, dateTo } = params;
 
   const sorting = useMemo(() => toSorting(sort, dir), [sort, dir]);
 
@@ -107,11 +86,10 @@ export const TimesheetsTable = ({
     void setParams({ ...resolved, page: 1 });
   };
 
-  // State to trigger a CSV download once the full dataset is loaded
+  // Full dataset: needed when location filter is active or CSV is triggered
   const [downloadRequested, setDownloadRequested] = useState(false);
+  const needsFullDataset = !!(location || downloadRequested);
 
-  // Full dataset: needed when location filter is active or grouping is enabled or CSV triggered
-  const needsFullDataset = !!(location || group || downloadRequested);
   const { data: fullEntries, isLoading: isLoadingFull } = useTimeEntriesAll(
     organizationUnitId,
     {
@@ -139,16 +117,20 @@ export const TimesheetsTable = ({
     return options.sort();
   }, [fullEntries]);
 
-  // Apply client-side location filter to the full dataset
+  // Apply client-side location filter to the full dataset (for CSV)
   const filteredFull = useMemo(() => {
     if (!fullEntries) return undefined;
     if (!location) return fullEntries;
-    return fullEntries.filter(
-      (e) => resolveTimeEntryLocation(e) === location,
-    );
+    return fullEntries.filter((e) => resolveTimeEntryLocation(e) === location);
   }, [fullEntries, location]);
 
-  // Auto-download CSV once full data arrives when triggered by the button
+  // Apply client-side location filter to the current page for display
+  const displayEntries = useMemo(() => {
+    if (!location) return entries;
+    return entries.filter((e) => resolveTimeEntryLocation(e) === location);
+  }, [entries, location]);
+
+  // Auto-download CSV once full data arrives
   useEffect(() => {
     if (!downloadRequested || !filteredFull) return;
     setDownloadRequested(false);
@@ -163,63 +145,25 @@ export const TimesheetsTable = ({
     URL.revokeObjectURL(url);
   }, [downloadRequested, filteredFull, organizationUnitId]);
 
-  // When grouped, also apply location filter to paginated entries for the table
-  const displayEntries = useMemo(() => {
-    if (location && !group) {
-      // Client-side filter on current page
-      return entries.filter((e) => resolveTimeEntryLocation(e) === location);
-    }
-    return entries;
-  }, [entries, location, group]);
-
-  // Grouped data uses the full filtered dataset
-  const groupedRows = useMemo<TimesheetGroupRow[] | undefined>(() => {
-    if (!group || !filteredFull) return undefined;
-    return group === 'volunteer'
-      ? groupByVolunteer(filteredFull)
-      : groupByAssignment(filteredFull);
-  }, [group, filteredFull]);
-
-  const tableData: TimesheetRow[] = groupedRows ?? displayEntries;
-
-  const columns = useMemo<ColumnDef<DataTableFeatures, TimesheetRow>[]>(
+  const columns = useMemo<ColumnDef<DataTableFeatures, TimeEntry>[]>(
     () => [
       {
         id: 'SHIFT',
-        enableSorting: !group,
+        accessorFn: (row) =>
+          row.shiftInstance?.master?.title ?? row.organizationUnit?.name,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.shift')} />
         ),
         cell: ({ row }) => {
-          const original = row.original;
-          if (isAssignmentGroup(original)) {
-            return (
-              <div className="flex items-center gap-1 font-medium">
-                <button
-                  type="button"
-                  aria-label={row.getIsExpanded() ? t('table.collapse') : t('table.expand')}
-                  onClick={row.getToggleExpandedHandler()}
-                  className="shrink-0"
-                >
-                  {row.getIsExpanded() ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                </button>
-                <TextCell>{original.title}</TextCell>
-              </div>
-            );
-          }
-          if (isGroupRow(original)) return null;
+          const entry = row.original;
           return (
             <Link
               className="block hover:underline"
-              href={`/admin/${organizationUnitId}/timesheets/${original.id}`}
+              href={`/admin/${organizationUnitId}/timesheets/${entry.id}`}
             >
               <TextCell>
-                {original.shiftInstance?.master?.title ??
-                  original.organizationUnit?.name ??
+                {entry.shiftInstance?.master?.title ??
+                  entry.organizationUnit?.name ??
                   t('table.notAvailable')}
               </TextCell>
             </Link>
@@ -232,62 +176,33 @@ export const TimesheetsTable = ({
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.location')} />
         ),
-        cell: ({ row }) => {
-          if (isGroupRow(row.original)) return null;
-          return (
-            <TextCell>
-              {resolveTimeEntryLocation(row.original) ?? t('table.notAvailable')}
-            </TextCell>
-          );
-        },
+        cell: ({ row }) => (
+          <TextCell>
+            {resolveTimeEntryLocation(row.original) ?? t('table.notAvailable')}
+          </TextCell>
+        ),
       },
       {
         id: 'VOLUNTEER',
-        enableSorting: !group,
+        accessorFn: (row) => row.volunteer?.name ?? row.volunteer?.email,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
         ),
-        cell: ({ row }) => {
-          const original = row.original;
-          if (isVolunteerGroup(original)) {
-            return (
-              <div className="flex items-center gap-1 font-medium">
-                <button
-                  type="button"
-                  aria-label={row.getIsExpanded() ? t('table.collapse') : t('table.expand')}
-                  onClick={row.getToggleExpandedHandler()}
-                  className="shrink-0"
-                >
-                  {row.getIsExpanded() ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                </button>
-                <TextCell>
-                  {original.volunteer.name ?? original.volunteer.email}
-                </TextCell>
-              </div>
-            );
-          }
-          if (isGroupRow(original)) return null;
-          return (
-            <TextCell>
-              {original.volunteer?.name ??
-                original.volunteer?.email ??
-                t('table.notAvailable')}
-            </TextCell>
-          );
-        },
+        cell: ({ row }) => (
+          <TextCell>
+            {row.original.volunteer?.name ??
+              row.original.volunteer?.email ??
+              t('table.notAvailable')}
+          </TextCell>
+        ),
       },
       {
         id: 'STARTED_AT',
-        enableSorting: !group,
+        accessorFn: (row) => row.startedAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.date')} />
         ),
         cell: ({ row }) => {
-          if (isGroupRow(row.original)) return null;
           const { date, time } = formatWorkedPeriod(
             row.original.startedAt,
             row.original.endedAt,
@@ -302,32 +217,24 @@ export const TimesheetsTable = ({
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.status')} />
         ),
-        cell: ({ row }) => {
-          if (isGroupRow(row.original)) return null;
-          return <TimeEntryStatusBadge status={row.original.status} />;
-        },
+        cell: ({ row }) => (
+          <TimeEntryStatusBadge status={row.original.status} />
+        ),
       },
       {
         id: 'DURATION',
-        enableSorting: !group,
+        accessorFn: (row) => row.endedAt,
         meta: { headerClassName: 'text-right' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
         ),
         cell: ({ row }) => {
-          const original = row.original;
-          if (isGroupRow(original)) {
-            return (
-              <NumberCell>
-                {formatDurationByMinutes(original.totalDurationMinutes)}
-              </NumberCell>
-            );
-          }
-          if (original.status === TimeEntryStatus.Open) {
+          const entry = row.original;
+          if (entry.status === TimeEntryStatus.Open) {
             return <NumberCell>{NO_DURATION}</NumberCell>;
           }
-          const duration = formatDuration(original.startedAt, original.endedAt);
-          if (original.status === TimeEntryStatus.AutoClosed) {
+          const duration = formatDuration(entry.startedAt, entry.endedAt);
+          if (entry.status === TimeEntryStatus.AutoClosed) {
             const tooltip = t('status.autoClosedTooltip');
             return (
               <div className="flex justify-end">
@@ -356,12 +263,11 @@ export const TimesheetsTable = ({
       },
       {
         id: 'CREATED_AT',
-        enableSorting: !group,
+        accessorFn: (row) => row.createdAt,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.recorded')} />
         ),
         cell: ({ row }) => {
-          if (isGroupRow(row.original)) return null;
           const entry = row.original;
           const recorder = describeRecorder(entry);
           return (
@@ -381,40 +287,24 @@ export const TimesheetsTable = ({
         enableSorting: false,
         meta: { cellClassName: 'whitespace-nowrap' },
         header: () => null,
-        cell: ({ row }) => {
-          if (isGroupRow(row.original)) return null;
-          return (
-            <ActionBar
-              id={row.original.id}
-              organizationUnitId={organizationUnitId}
-              status={row.original.status}
-              size="sm"
-            />
-          );
-        },
+        cell: ({ row }) => (
+          <ActionBar
+            id={row.original.id}
+            organizationUnitId={organizationUnitId}
+            status={row.original.status}
+            size="sm"
+          />
+        ),
       },
     ],
-    [
-      t,
-      group,
-      formatWorkedPeriod,
-      formatDuration,
-      formatDurationByMinutes,
-      formatDateTime,
-      organizationUnitId,
-    ],
+    [t, formatWorkedPeriod, formatDuration, formatDurationByMinutes, formatDateTime, organizationUnitId],
   );
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
 
-  // Sum of visible leaf entries for footer
-  const leafEntries = groupedRows
-    ? groupedRows.flatMap((g) => g.subRows)
-    : displayEntries;
-
   const totalDurationMinutes = useMemo(
-    () => sumDurationMinutes(leafEntries),
-    [leafEntries],
+    () => sumDurationMinutes(displayEntries),
+    [displayEntries],
   );
 
   const footerContent = (
@@ -428,8 +318,6 @@ export const TimesheetsTable = ({
       <TableCell colSpan={2} />
     </TableRow>
   );
-
-  const showPagination = !group && pagination.total > 0;
 
   return (
     <div className="space-y-4">
@@ -450,24 +338,15 @@ export const TimesheetsTable = ({
       />
       <DataTable
         columns={columns}
-        data={tableData}
-        pageCount={group ? 1 : pageCount}
+        data={displayEntries}
+        pageCount={pageCount}
         sorting={sorting}
         onSortingChange={onSortingChange}
         emptyMessage={t('empty.title')}
-        getRowClassName={getEntryRowClassName}
-        footerContent={tableData.length > 0 ? footerContent : undefined}
-        {...(group
-          ? {
-              expansion: {
-                getSubRows: (row: TimesheetRow) =>
-                  isGroupRow(row) ? row.subRows : undefined,
-                defaultAllExpanded: true,
-              },
-            }
-          : {})}
+        getRowClassName={getRowClassName}
+        footerContent={displayEntries.length > 0 ? footerContent : undefined}
       />
-      {showPagination && (
+      {pagination.total > 0 && (
         <DataTablePagination
           total={pagination.total}
           name={t('page.paginationName')}
