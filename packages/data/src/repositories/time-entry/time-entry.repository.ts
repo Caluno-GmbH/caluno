@@ -20,6 +20,8 @@ import {
   type PaginationOptions,
 } from '../base/base.repository';
 
+const MAX_EXPORT_ROWS = 50_000;
+
 export type TimeEntryDetail = GetTimeEntryQuery['timeEntry'];
 
 export interface TimeEntryListOptions extends PaginationOptions {
@@ -92,7 +94,7 @@ export class TimeEntryRepository extends BaseRepository {
     options: Omit<TimeEntryListOptions, 'limit' | 'offset'> = {},
   ) {
     const data = await this.sdk.GetTimeEntries({
-      limit: 10_000,
+      limit: MAX_EXPORT_ROWS,
       offset: 0,
       sort: options.sort ?? TimeEntrySortField.CreatedAt,
       order: options.order ?? SortOrder.Desc,
@@ -102,6 +104,11 @@ export class TimeEntryRepository extends BaseRepository {
       dateFrom: options.dateFrom,
       dateTo: options.dateTo,
     });
+    if (data.timeEntries.pagination.total > data.timeEntries.items.length) {
+      throw new DataError(
+        `Export exceeds the maximum of ${MAX_EXPORT_ROWS} rows`,
+      );
+    }
     return data.timeEntries.items;
   }
 

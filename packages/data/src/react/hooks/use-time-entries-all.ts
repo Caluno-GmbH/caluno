@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import type { TimeEntryStatus } from '../../generated/base-types';
 import { TimeEntryRepository } from '../../repositories/time-entry/time-entry.repository';
 import { useSdk } from './use-graphql-client';
@@ -19,7 +20,7 @@ export function useTimeEntriesAll(
   enabled: boolean,
 ) {
   const sdk = useSdk();
-  const repository = new TimeEntryRepository(sdk);
+  const repository = useMemo(() => new TimeEntryRepository(sdk), [sdk]);
 
   return useQuery({
     queryKey: ['time-entries-all', orgUnitId, filters],
