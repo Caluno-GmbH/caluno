@@ -1390,6 +1390,10 @@ export type GetTimeEntriesQueryVariables = Exact<{
   sort?: Types.TimeEntrySortField | null | undefined;
   order?: Types.SortOrder | null | undefined;
   statuses?: Array<Types.TimeEntryStatus> | Types.TimeEntryStatus | null | undefined;
+  volunteerId?: string | null | undefined;
+  shiftId?: string | null | undefined;
+  dateFrom?: string | null | undefined;
+  dateTo?: string | null | undefined;
 }>;
 
 
@@ -4872,13 +4876,17 @@ export const UpdateTimeEntryDocument = gql`
 }
     `;
 export const GetTimeEntriesDocument = gql`
-    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder, $statuses: [TimeEntryStatus!]) {
+    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder, $statuses: [TimeEntryStatus!], $volunteerId: ID, $shiftId: ID, $dateFrom: DateTime, $dateTo: DateTime) {
   timeEntries(
     limit: $limit
     offset: $offset
     sort: $sort
     order: $order
     statuses: $statuses
+    volunteerId: $volunteerId
+    shiftId: $shiftId
+    dateFrom: $dateFrom
+    dateTo: $dateTo
   ) {
     items {
       id
