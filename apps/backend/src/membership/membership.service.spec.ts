@@ -159,6 +159,17 @@ describe('MembershipService.removeMembership PostHog', () => {
 
 function createRequestOrgJoinService(existingStatus: string) {
   const capture = jest.fn();
+  const returning = jest.fn().mockResolvedValue([
+    {
+      id: 'req-1',
+      status: 'PENDING',
+      userId: 'user-1',
+      organizationUnitId: 'ou-1',
+      metadata: {},
+    },
+  ]);
+  const where = jest.fn().mockReturnValue({ returning });
+  const set = jest.fn().mockReturnValue({ where });
   const db = {
     query: {
       memberships: { findFirst: jest.fn().mockResolvedValue(null) },
@@ -166,25 +177,31 @@ function createRequestOrgJoinService(existingStatus: string) {
         findFirst: jest.fn().mockResolvedValue({
           id: 'ou-1',
           organizationId: 'org-1',
+          name: 'Org',
         }),
       },
       membershipRequests: {
         findFirst: jest.fn().mockResolvedValue({
           id: 'req-1',
           status: existingStatus,
+          metadata: {},
         }),
       },
     },
+    update: jest.fn().mockReturnValue({ set }),
+  };
+  const authService = {
+    findUsersWithPermission: jest.fn().mockResolvedValue([]),
   };
   const service = new MembershipService(
     db as never,
-    {} as never,
+    authService as never,
     {} as never,
     { getRequiredFormStatuses: jest.fn().mockResolvedValue([]) } as never,
     { capture } as unknown as PostHogService,
     {} as never,
   );
-  return { service, capture };
+  return { service, capture, db };
 }
 
 describe('MembershipService.requestOrgJoin PostHog', () => {
@@ -206,13 +223,60 @@ describe('MembershipService.requestOrgJoin PostHog', () => {
     });
   });
 
-  it('does not capture membership_request_reject when a cancelled user retries join', async () => {
-    const { service, capture } = createRequestOrgJoinService('CANCELLED');
+  it('resurrects a cancelled request to PENDING and captures submit', async () => {
+    const { service, capture, db } = createRequestOrgJoinService('CANCELLED');
 
     const result = await service.requestOrgJoin('user-1', 'ou-1');
 
-    expect(result.status).toBe('REJECTED');
-    expect(capture).not.toHaveBeenCalled();
+    expect(result.status).toBe('PENDING_MEMBERSHIP');
+    expect(db.update).toHaveBeenCalled();
+    expect(capture).toHaveBeenCalledWith({
+      event: POSTHOG_EVENT.MEMBERSHIP_REQUEST_SUBMIT,
+      userId: 'user-1',
+      properties: {
+        surface: POSTHOG_SURFACE.VOLUNTEERING,
+        organization_id: 'org-1',
+        organization_unit_id: 'ou-1',
+        membership_request_id: 'req-1',
+      },
+    });
+  });
+});
+
+describe('MembershipService.getMembershipState', () => {
+  function createGetMembershipStateService(
+    existing: { status: string } | null,
+  ) {
+    const db = {
+      query: {
+        memberships: { findFirst: jest.fn().mockResolvedValue(null) },
+        membershipRequests: {
+          findFirst: jest.fn().mockResolvedValue(existing),
+        },
+      },
+    };
+    return new MembershipService(
+      db as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+  }
+
+  it('returns NONE when the only request is CANCELLED', async () => {
+    const service = createGetMembershipStateService({ status: 'CANCELLED' });
+    await expect(service.getMembershipState('user-1', 'ou-1')).resolves.toBe(
+      'NONE',
+    );
+  });
+
+  it('returns REJECTED when the request is REJECTED', async () => {
+    const service = createGetMembershipStateService({ status: 'REJECTED' });
+    await expect(service.getMembershipState('user-1', 'ou-1')).resolves.toBe(
+      'REJECTED',
+    );
   });
 });
 
