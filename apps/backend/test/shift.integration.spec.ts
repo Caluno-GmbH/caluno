@@ -5552,7 +5552,7 @@ describe('ShiftService.updateShiftInstance applyToAllFuture — non-UTC host tim
       organizationUnitId,
       startsAt,
       endsAt,
-      rrule: 'FREQ=WEEKLY;BYDAY=WE;UNTIL=20261101T000000Z',
+      rrule: 'FREQ=WEEKLY;BYDAY=WE',
     });
 
     const instances = await db.query.shiftInstances.findMany({
