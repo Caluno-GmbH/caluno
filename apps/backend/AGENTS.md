@@ -3,6 +3,7 @@
 The backend api for securely managing volunteers and shifts in multi-tiered organizations.
 
 ## Commands
+
 - `bun run dev` - Start NestJS development server
 - `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load the demo fixtures, then start all dev servers
 - `bun run db:fixtures:demo` - Load the demo dataset (the app's data; run after migrate + seed)
@@ -20,6 +21,7 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 ## Testing
 
 ### Test runners
+
 The backend has two test suites:
 
 1. **Unit tests** — `bun:test` (Jest-compatible API), files under `src/**/*.spec.ts`.
@@ -38,7 +40,14 @@ The backend has two test suites:
 Use the shared test context and factories. Do not duplicate setup boilerplate.
 
 ```typescript
-import { beforeAll, describe, expect, it, mock, setDefaultTimeout } from 'bun:test';
+import {
+  beforeAll,
+  describe,
+  expect,
+  it,
+  mock,
+  setDefaultTimeout,
+} from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
 import type { Database } from '../src/database/database.module';
 import { applyBunAuthMocks } from './helpers/auth-mocks';
@@ -112,10 +121,10 @@ Integration tests connect to the `postgres` maintenance database to create/drop 
 
 Two fixture datasets exist. Accounts share the `demo@caluno.org` group but Testing uses a `+testing_` discriminator so the sets do not collide when both are present:
 
-| Dataset | Script | Who loads it |
-|---|---|---|
+| Dataset                                 | Script                                                           | Who loads it                                                                           |
+| --------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | **Altonaer Lesepaten** (the app's data) | [`src/database/demo-fixtures.ts`](src/database/demo-fixtures.ts) | `bun bootstrap` locally; **every deployed container** — the entrypoint always seeds it |
-| **Testing** (e2e) | [`src/database/fixtures.ts`](src/database/fixtures.ts) | `bun run db:fixtures:e2e` locally; **staging + release entrypoint** (`APP_ENV=staging|release`) after the demo seed — never production |
+| **Testing** (e2e)                       | [`src/database/fixtures.ts`](src/database/fixtures.ts)           | `bun run db:fixtures:e2e` locally; **staging + release entrypoint** (`APP_ENV=staging  | release`) after the demo seed — never production |
 
 `bun bootstrap` resets the **development** database (not `_test`) via `docker compose down -v`, then migrates, seeds permissions, and loads the **demo** dataset only. It refuses to run unless `DB_HOST` is `localhost`, `127.0.0.1`, or `postgres`. Locally, load Testing yourself with `db:fixtures:e2e` when you need it — do not treat both as the default bootstrap.
 
@@ -124,36 +133,37 @@ Two fixture datasets exist. Accounts share the `demo@caluno.org` group but Testi
 The backend entrypoint seeds the demo dataset on **every** boot, staging and production alike, so the seed is written to be safe against a live, populated database. Staging and release additionally run `db:fixtures:e2e` so Playwright keeps today-relative overlap fixtures fresh:
 
 - **Non-destructive.** No `DROP`, `TRUNCATE` or `DELETE` anywhere in `demo-fixtures.ts` / `fixtures.ts`; every write is an upsert scoped to the fixture organization and its own accounts.
-- **Identity is the pinned id, not the name.** `fixtureId()` in `fixture-helpers.ts` derives a deterministic UUID for each fixture account (from its address) and organization (from its slug), so ownership is proven by id — names are not unique and a real person can share one. `assertFixtureIdentitiesAvailable` verifies the whole planned set *before* the seed's first insert: any row holding a fixture id, email or slug that the fixtures did not create (a legacy random-id row, a real customer org, a real user) aborts the run with the full list of clashes and writes nothing. The per-call guards in `createAuthUser` / the org resolvers remain as defence in depth.
+- **Identity is the pinned id, not the name.** `fixtureId()` in `fixture-helpers.ts` derives a deterministic UUID for each fixture account (from its address) and organization (from its slug), so ownership is proven by id — names are not unique and a real person can share one. `assertFixtureIdentitiesAvailable` verifies the whole planned set _before_ the seed's first insert: any row holding a fixture id, email or slug that the fixtures did not create (a legacy random-id row, a real customer org, a real user) aborts the run with the full list of clashes and writes nothing. The per-call guards in `createAuthUser` / the org resolvers remain as defence in depth.
 - The only volume wipe (`docker compose down -v`) lives in `scripts/bootstrap-db.ts`, which refuses to run against a non-local `DB_HOST` — it is unreachable from the deploy path.
 
 **Never load Testing into production.** Staging and release run `db:fixtures:e2e` on boot; production stays demo-only. The Testing seed carries the Playwright contract — stable UUIDs, `Overlap Test Pair/Pile` shifts, exact account names — none of which is app content.
 
 **Demo dataset** — password `abcd1234` (override with `DEMO_FIXTURE_PASSWORD`), organization **Altonaer Lesepaten** (slug `demo-altonaer-lesepaten`; units Nord/Süd/West):
 
-| Account | Role / status |
-|---|---|
-| `demo+owner@caluno.org` | Owner |
-| `demo+supervisor@caluno.org` | Supervisor |
-| `demo@caluno.org` | Member (demo account) |
-| `demo+member01@` … `demo+member29@caluno.org` | Member |
-| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
-| `demo+rejected01@caluno.org` | Rejected membership request |
+| Account                                        | Role / status               |
+| ---------------------------------------------- | --------------------------- |
+| `demo+owner@caluno.org`                        | Owner                       |
+| `demo+supervisor@caluno.org`                   | Supervisor                  |
+| `demo@caluno.org`                              | Member (demo account)       |
+| `demo+member01@` … `demo+member29@caluno.org`  | Member                      |
+| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request  |
+| `demo+rejected01@caluno.org`                   | Rejected membership request |
 
 **Testing seed (e2e only)** — password `abcd1234` (override with `FIXTURE_PASSWORD`), organization **Testing**. Its accounts carry an `+testing_` discriminator precisely so they cannot collide with the demo dataset. Generated member/applicant names use number words (`Testing Member One`, `Testing Pending Applicant Two`) because the requirement-form name fields reject digits (`NAME_RE` in `apps/frontend/src/domain/requirement-form/components/field-renderer.tsx`):
 
-| Account | Role / status |
-|---|---|
-| `demo+testing_admin@caluno.org` | Owner |
-| `demo+testing_supervisor@caluno.org` | Supervisor |
-| `demo+testing_demo@caluno.org` | Member (demo account) |
-| `demo+testing_member01@` … `demo+testing_member10@caluno.org` | Member |
-| `demo+testing_pending01@`, `demo+testing_pending02@caluno.org` | Pending membership request |
-| `demo+testing_rejected01@caluno.org` | Rejected membership request |
+| Account                                                        | Role / status               |
+| -------------------------------------------------------------- | --------------------------- |
+| `demo+testing_admin@caluno.org`                                | Owner                       |
+| `demo+testing_supervisor@caluno.org`                           | Supervisor                  |
+| `demo+testing_demo@caluno.org`                                 | Member (demo account)       |
+| `demo+testing_member01@` … `demo+testing_member10@caluno.org`  | Member                      |
+| `demo+testing_pending01@`, `demo+testing_pending02@caluno.org` | Pending membership request  |
+| `demo+testing_rejected01@caluno.org`                           | Rejected membership request |
 
 Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Distribution (Wed 12:00–16:00), Event Assistance (Fri 16:00–20:00). Requirement form: Personal Information — block with required First name and Last name fields.
 
 ## Tech Stack
+
 - **NestJS 11** primary web framework
 - **TypeScript** with strict mode
 - **GraphQL** Apollo Server using Code-First approach
@@ -162,6 +172,7 @@ Shifts (weekly, Europe/Berlin): Community Support (Mon 08:00–12:00), Food Dist
 - **Biome** for linting and formatting (not ESLint/Prettier)
 
 ## Multi-Tenancy — CRITICAL
+
 1. **NEVER** accept `orgId` / `organizationUnitId` from GraphQL arguments for auth decisions — always from `ctx.organizationUnitId` (derived from the `x-organization-unit-id` header, validated by the guard)
 2. **ALL** DB queries must be scoped by `organizationId` or `organizationUnitId`
 3. **NEVER** return cross-org data, including from field resolvers
@@ -178,6 +189,7 @@ decision, and the row being rendered is already scoped. This does **not** licens
 unscoped reads of org-owned data — do not extend it beyond the identity lookup.
 
 ## Project Structure
+
 ```
 src/
 ├── auth        # Authorization - role based permissions
@@ -201,6 +213,7 @@ domain/
 ```
 
 ## Patterns
+
 - GraphQL schema is code-first via decorators. `src/schema.gql` is auto-generated — never edit it manually.
 - GraphQL context shape: `{ req, locale, user?, organizationUnitId?, loaders? }` (`graphql/graphql.context.ts`). `locale` is request metadata, not a GraphQL arg. For authenticated users it is read from `users.locale`; when that is absent it is detected from `x-locale` → `Accept-Language` → `de` and persisted to `users.locale`. For anonymous users it is resolved from `x-locale` → `Accept-Language` → `de` without persistence. In resolvers: `@Session() session`, `@Context() ctx`.
 - Resolvers: `@Permissions(PERMISSIONS.X)` guard on the method; queries/mutations/field-resolvers in separate files per domain.
@@ -213,22 +226,25 @@ domain/
 - **Observability (PostHog)**: app code never imports `posthog-node` directly — inject `PostHogService` (`src/shared/observability/`) and call `capture()` **once after a successful domain write** (not GraphQL resolvers, not `@OnEvent` email listeners). Event names come only from `POSTHOG_EVENT` in `posthog.events.ts` (runtime source of truth). `capture()` injects `event_description` from that registry. Envelope is snake_case: `surface`, optional `organization_id` / `organization_unit_id` / `source`; no PII (email, person name, form answers, tokens, IP). Callers send org/unit **ids**; `PostHogService` attaches `organization_name` / `organization_unit_name`. `distinctId` is the daily HMAC of the **subject** user (usually the volunteer). Org-scoped events set PostHog group `organization` from `organization_id`. Missing `POSTHOG_API_KEY` or an unloaded daily HMAC secret keeps capture a no-op. The HMAC secret is generated by the backend, stored in Postgres (`posthog_distinct_secrets`), held in memory, and rotated when the Europe/Berlin calendar date changes. Convention: `EVENT_TAXONOMY.md`. The client and `PostHogInterceptor` live in `ObservabilityModule`; `main.ts` must not construct either.
 
 ## Storage (REST)
+
 Authenticated file uploads use presigned PUT to Scaleway Object Storage (RustFS locally). Module: `src/storage/`.
 
-| Endpoint | Auth | Purpose |
-|---|---|---|
-| `POST /storage/uploads/presign` | Session + purpose-specific `@Permissions()` | Mint presigned PUT URL; creates `files` row (`pending`) |
-| `POST /storage/uploads/:fileId/complete` | Session (owner) | HEAD-verify object; set `uploaded` |
-| `POST /storage/objects/:fileId/presign-download` | Session + owner or `requirement-profile:view` | Presigned GET for private files |
+| Endpoint                                         | Auth                                          | Purpose                                                 |
+| ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------- |
+| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()`   | Mint presigned PUT URL; creates `files` row (`pending`) |
+| `POST /storage/uploads/:fileId/complete`         | Session (owner)                               | HEAD-verify object; set `uploaded`                      |
+| `POST /storage/objects/:fileId/presign-download` | Session + owner or `requirement-profile:view` | Presigned GET for private files                         |
 
 Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`. Local dev: RustFS via root `docker-compose` (`:9000` API).
 
 `StorageModule` applies `express.json()` middleware scoped to `/storage/*` because `main.ts` disables the global body parser for Better Auth.
 
 ## i18n
+
 `AppI18nModule` wraps `nestjs-i18n` with catalogs at `src/i18n/locales/{locale}/*.json`. `AppI18nService.translate(locale, key)` and `createTranslator(locale, namespace)` are namespace-agnostic. `UserLocaleService` resolves locale via `UserService.resolveLocale` (stored user locale, request headers, fallback `de`). Transactional emails use namespace `email` via `createEmailTemplateContext()` in `notification/email/`; pure template functions take `{ t, formatDateTime, formatDate, formatTime, formatList }`. Date/time formatting uses `Europe/Berlin` and ICU regional tags `en-DE` / `de-DE` so English copy still follows German date order and 24h time. Auth callbacks forward Better Auth `request` headers; the frontend auth client sends `x-locale` from the `caluno.locale` cookie.
 
 ## Drizzle
+
 Database schema in `src/database/schema.ts` (re-exports domain schemas; relations in `database/schema.relations.ts`).
 - Use the shared column helpers: `...idColumn`, `...timestampColumns` from `database/database-columns`
 - DB is `snake_case`; Drizzle auto-converts to `camelCase` (`casing: 'snake_case'`)
@@ -238,6 +254,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 - Schema fields with notNull() are marked with `optional: false` in relations
 
 ### Querying: Relational Query v2 by default
+
 For fetching entities and their relations, use Relational Query v2:
 ```typescript
 const users = await db.query.users.findMany({ where: { id: 1 } });
@@ -252,6 +269,7 @@ only base-table columns, so those sorts use `select().leftJoin()` with an explic
 `orderBy` — see `time-tracking.service.ts` `buildTimeEntryOrderBy`.
 
 ## Known constraints (decision-log extracts — architectural, must stay)
+
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
 - **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `profileKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / profileKey-column-align)
 - **`FormSubmissionStatus` is `SUBMITTED` / `REJECTED` only** (no DRAFT/APPROVED). Gating logic keys off these two. (form-submission-status-simplification)

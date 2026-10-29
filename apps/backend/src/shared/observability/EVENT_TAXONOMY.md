@@ -46,35 +46,35 @@ GLOSSARY **Event** (one-off happening) keeps the object name `event`. `event_joi
 
 Add a noun here before inventing an event.
 
-| Object | Notes |
-|---|---|
-| `user` | User (auth only) |
-| `user_profile` | User Profile |
-| `organization` | Organization |
-| `organization_unit` | Organization Unit |
-| `membership` | Membership |
-| `membership_request` | Membership Request |
-| `role` | Role |
-| `shift` | Shift |
-| `shift_instance` | Shift Instance |
-| `shift_invite` | Shift Invite |
-| `shift_instance_invite` | Shift Instance Invite |
-| `shift_call_out` | Shift instance call-out email |
-| `event` | Event |
-| `event_invite` | Event Invite |
-| `time_entry` | Time Entry |
-| `requirement_form` | Requirement Form |
-| `form_block` | Form Block |
-| `form_block_field` | Form Block Field |
-| `form_submission` | Form Submission |
-| `required_form` | Required form assignment |
-| `contract` | Accounting |
-| `invoice` | Accounting |
-| `document_template` | Accounting |
-| `reimbursement_rate` | Accounting |
-| `file` | Storage |
-| `otp` | Auth OTP |
-| `password_reset` | Auth password-reset email |
+| Object                  | Notes                         |
+| ----------------------- | ----------------------------- |
+| `user`                  | User (auth only)              |
+| `user_profile`          | User Profile                  |
+| `organization`          | Organization                  |
+| `organization_unit`     | Organization Unit             |
+| `membership`            | Membership                    |
+| `membership_request`    | Membership Request            |
+| `role`                  | Role                          |
+| `shift`                 | Shift                         |
+| `shift_instance`        | Shift Instance                |
+| `shift_invite`          | Shift Invite                  |
+| `shift_instance_invite` | Shift Instance Invite         |
+| `shift_call_out`        | Shift instance call-out email |
+| `event`                 | Event                         |
+| `event_invite`          | Event Invite                  |
+| `time_entry`            | Time Entry                    |
+| `requirement_form`      | Requirement Form              |
+| `form_block`            | Form Block                    |
+| `form_block_field`      | Form Block Field              |
+| `form_submission`       | Form Submission               |
+| `required_form`         | Required form assignment      |
+| `contract`              | Accounting                    |
+| `invoice`               | Accounting                    |
+| `document_template`     | Accounting                    |
+| `reimbursement_rate`    | Accounting                    |
+| `file`                  | Storage                       |
+| `otp`                   | Auth OTP                      |
+| `password_reset`        | Auth password-reset email     |
 
 Compound objects stay compound: `shift_instance_invite` ≠ `shift_invite`.
 
@@ -82,29 +82,29 @@ Compound objects stay compound: `shift_instance_invite` ≠ `shift_invite`.
 
 Present tense. Add a verb here before using it in a name.
 
-| Action | Use for |
-|---|---|
-| `sign_up` | account created |
-| `log_in` | session created |
-| `log_out` | session deleted |
-| `create` | new entity persisted |
-| `update` | existing entity changed |
-| `delete` | entity removed / soft-deleted |
-| `join` | volunteer becomes a participant |
-| `leave` | volunteer stops being a participant |
-| `invite` | admin sends an invite |
-| `reject` | invite/request rejected |
-| `cancel` | invite, request, or instance cancelled |
-| `submit` | form / request submitted |
-| `approve` | admin approves a request |
-| `start` | request blocked on requirements, or time entry opened |
-| `end` | time entry closed (manual) |
-| `check_in` | QR/admin check-in |
-| `check_out` | QR/admin check-out |
-| `sign` | contract/invoice signed |
-| `decline` | contract/invoice declined |
-| `send` | OTP, password-reset, or call-out email dispatched |
-| `upload` | file bytes confirmed on object storage |
+| Action      | Use for                                               |
+| ----------- | ----------------------------------------------------- |
+| `sign_up`   | account created                                       |
+| `log_in`    | session created                                       |
+| `log_out`   | session deleted                                       |
+| `create`    | new entity persisted                                  |
+| `update`    | existing entity changed                               |
+| `delete`    | entity removed / soft-deleted                         |
+| `join`      | volunteer becomes a participant                       |
+| `leave`     | volunteer stops being a participant                   |
+| `invite`    | admin sends an invite                                 |
+| `reject`    | invite/request rejected                               |
+| `cancel`    | invite, request, or instance cancelled                |
+| `submit`    | form / request submitted                              |
+| `approve`   | admin approves a request                              |
+| `start`     | request blocked on requirements, or time entry opened |
+| `end`       | time entry closed (manual)                            |
+| `check_in`  | QR/admin check-in                                     |
+| `check_out` | QR/admin check-out                                    |
+| `sign`      | contract/invoice signed                               |
+| `decline`   | contract/invoice declined                             |
+| `send`      | OTP, password-reset, or call-out email dispatched     |
+| `upload`    | file bytes confirmed on object storage                |
 
 Do not use `click` or `view`.
 

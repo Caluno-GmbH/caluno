@@ -31,7 +31,7 @@ e2e/
 
 Most specs here are **not** self-contained: `admin-redirect`, `my-shifts`, the
 two public-detail specs, `terms`, `documents-flow` and `setup-gating` log in as
-seeded accounts. That seed is e2e-only and is *not* loaded by `bun bootstrap` or
+seeded accounts. That seed is e2e-only and is _not_ loaded by `bun bootstrap` or
 by deployed environments. Load it yourself (after migrate + seed):
 
 ```bash
@@ -111,4 +111,5 @@ gate) stay skipped via `IS_LOCAL`.
   `Testing Member One` style (see `apps/backend/src/database/fixtures.ts`).
 - Each run **provisions data on staging** (one user, org, and shift).
 - `test-results/` and `playwright-report/` are git-ignored.
+```
 ```

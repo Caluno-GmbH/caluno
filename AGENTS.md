@@ -3,6 +3,7 @@
 A multi-tenant project for managing volunteers and shifts in organizations.
 
 ## Monorepo structure
+
 Mono-repo powered by TurboRepo.
 ```
 ├── apps                    # Entrypoints, each exposes an app or service
@@ -20,6 +21,7 @@ Mono-repo powered by TurboRepo.
 Primary flow of data: frontend → @repo/data → backend → database. There is no separate backoffice app — the backoffice lives in the frontend under `(dashboard)/[orgUId]` (`/admin` routes).
 
 ## Root Commands
+
 Use `bun` - never npm or yarn.
 - `bun run dev` - Starts backend, frontend and storybook dev servers
 - `bun run lint` - Lints all packages

@@ -23,41 +23,41 @@ Open a Next.js parallel-route sheet on `/profile/documents`, the same pattern th
 
 ## Decisions
 
-| Question | Decision |
-|---|---|
-| Which fields does the sheet show | Only the missing fields of the one document whose card was clicked |
-| How the sheet learns the fields | URL carries the document kind and id; the sheet loads the document and reads its `missingProfileFields` |
-| Document query | Reuse `useContract(id)` / `useInvoice(id)` (includes `resolvedBody`; accepted overhead, often already cached) |
-| URL shape | `/profile/documents/complete-profile?kind=contract\|invoice&id=<id>` |
-| Source → profile key mapping | Explicit 9-entry map in `@repo/data`, next to `DataSourceKey`; not a prefix strip |
-| Slot location | `profile/documents/layout.tsx` with an `@sheet` slot |
-| Direct load / reload | A main-slot fallback page renders the documents list, so the sheet opens over it instead of a 404 |
-| Sign while details missing | Sign disabled on the card; "Complete details" becomes the primary action |
-| Save | New `useUpdateMyProfile` TanStack mutation hook in `@repo/data` |
-| After save | Toast, invalidate document and user queries, `router.replace('/profile/documents')` |
-| Requiredness | Every rendered field is required |
-| Validation | `buildFieldSchema`, the same rules as the profile edit form and the backend |
-| Account-holder prefill | Prefill with "Firstname Lastname" when the names are known |
-| Old `/profile` link | Removed from the card. The preview's link points to the sheet URL instead |
-| Missing org data (`missingOrgProfileFields`) | Out of scope; the volunteer cannot fix it |
-| Sheets on preview / membership pages | Out of scope; those pages link to the My-documents sheet |
+| Question                                     | Decision                                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Which fields does the sheet show             | Only the missing fields of the one document whose card was clicked                                            |
+| How the sheet learns the fields              | URL carries the document kind and id; the sheet loads the document and reads its `missingProfileFields`       |
+| Document query                               | Reuse `useContract(id)` / `useInvoice(id)` (includes `resolvedBody`; accepted overhead, often already cached) |
+| URL shape                                    | `/profile/documents/complete-profile?kind=contract\|invoice&id=<id>`                                          |
+| Source → profile key mapping                 | Explicit 9-entry map in `@repo/data`, next to `DataSourceKey`; not a prefix strip                             |
+| Slot location                                | `profile/documents/layout.tsx` with an `@sheet` slot                                                          |
+| Direct load / reload                         | A main-slot fallback page renders the documents list, so the sheet opens over it instead of a 404             |
+| Sign while details missing                   | Sign disabled on the card; "Complete details" becomes the primary action                                      |
+| Save                                         | New `useUpdateMyProfile` TanStack mutation hook in `@repo/data`                                               |
+| After save                                   | Toast, invalidate document and user queries, `router.replace('/profile/documents')`                           |
+| Requiredness                                 | Every rendered field is required                                                                              |
+| Validation                                   | `buildFieldSchema`, the same rules as the profile edit form and the backend                                   |
+| Account-holder prefill                       | Prefill with "Firstname Lastname" when the names are known                                                    |
+| Old `/profile` link                          | Removed from the card. The preview's link points to the sheet URL instead                                     |
+| Missing org data (`missingOrgProfileFields`) | Out of scope; the volunteer cannot fix it                                                                     |
+| Sheets on preview / membership pages         | Out of scope; those pages link to the My-documents sheet                                                      |
 
 ## Background facts
 
 - **The profile is global.** The fields are columns on the `users` table, and `updateMyProfile(input: UpdateMyProfileInput!)` takes no org. Filling a field once fixes it for every document in every org.
 - **`missingProfileFields` holds template source keys.** The backend translates them with `PROFILE_SOURCE_TO_PROFILE_KEY` (`apps/backend/src/accounting/services/document-template.types.ts`). The possible values are:
 
-  | Source key | Profile system key | `UpdateMyProfileInput` field |
-  |---|---|---|
-  | `volunteer_first_name` | `firstname` | `firstname` |
-  | `volunteer_last_name` | `lastname` | `lastname` |
-  | `volunteer_street` | `street` | `street` |
-  | `volunteer_zip` | `zip` | `zip` |
-  | `volunteer_city` | `city` | `city` |
-  | `volunteer_dob` | `birthdate` | `birthdate` |
-  | `volunteer_iban` | `iban` | `iban` |
-  | `volunteer_account_holder` | `account-holder` | `accountHolder` |
-  | `volunteer_bic` | `bic` | `bic` |
+  | Source key                 | Profile system key | `UpdateMyProfileInput` field |
+  | -------------------------- | ------------------ | ---------------------------- |
+  | `volunteer_first_name`     | `firstname`        | `firstname`                  |
+  | `volunteer_last_name`      | `lastname`         | `lastname`                   |
+  | `volunteer_street`         | `street`           | `street`                     |
+  | `volunteer_zip`            | `zip`              | `zip`                        |
+  | `volunteer_city`           | `city`             | `city`                       |
+  | `volunteer_dob`            | `birthdate`        | `birthdate`                  |
+  | `volunteer_iban`           | `iban`             | `iban`                       |
+  | `volunteer_account_holder` | `account-holder`   | `accountHolder`              |
+  | `volunteer_bic`            | `bic`              | `bic`                        |
 
   `preferred-name`, `gender` and `phone` (the rest of `WRITABLE_PROFILE_SYSTEM_KEYS`) never appear.
 - **"My documents" loads on the client** through `useMyDocuments()` (query key `['accounting', 'my-documents']`). `router.refresh()` alone does not update it, so the cache has to be invalidated.
@@ -84,10 +84,13 @@ export const PROFILE_SOURCE_TO_PROFILE_KEY = {
 } as const satisfies Partial<Record<DataSourceKey, string>>;
 
 export type ProfileSourceKey = keyof typeof PROFILE_SOURCE_TO_PROFILE_KEY;
-export type MissingProfileKey = (typeof PROFILE_SOURCE_TO_PROFILE_KEY)[ProfileSourceKey];
+export type MissingProfileKey =
+  (typeof PROFILE_SOURCE_TO_PROFILE_KEY)[ProfileSourceKey];
 
 export function isProfileSourceKey(value: string): value is ProfileSourceKey;
-export function toMissingProfileKeys(sources: readonly string[]): MissingProfileKey[];
+export function toMissingProfileKeys(
+  sources: readonly string[],
+): MissingProfileKey[];
 ```
 
 `toMissingProfileKeys` drops unknown values, so a backend key the frontend doesn't know yet can't crash the sheet, and it removes duplicates. `apps/frontend/src/domain/accounting/lib/creation-fields.ts` replaces its local partial map with this one, keeping its separate first/last-name handling.
@@ -133,16 +136,16 @@ A client component built on `FormSheet` / `useFormSheet`.
 
 **States:**
 
-| State | Content |
-|---|---|
-| Loading | Skeleton inside the sheet |
-| Fields missing | Dynamic form, Cancel + Save |
+| State                                              | Content                                    |
+| -------------------------------------------------- | ------------------------------------------ |
+| Loading                                            | Skeleton inside the sheet                  |
+| Fields missing                                     | Dynamic form, Cancel + Save                |
 | Nothing missing (stale link, saved in another tab) | "All details are complete" message + Close |
-| Bad `kind`/`id`, not found, forbidden | Generic error message + Close |
+| Bad `kind`/`id`, not found, forbidden              | Generic error message + Close              |
 
 **Copy** (title and description):
 - Title: "Complete your details"
-- Description: names the document and the org (e.g. "Required for *Volunteer agreement* at *Org name*") and says the details are saved to the volunteer's profile and used for all their documents.
+- Description: names the document and the org (e.g. "Required for _Volunteer agreement_ at _Org name_") and says the details are saved to the volunteer's profile and used for all their documents.
 
 ### Document card (`volunteer-document-card.tsx`)
 

@@ -2,17 +2,17 @@
 
 Everything runs on GitHub-hosted runners (`ubuntu-latest`).
 
-| File                       | Trigger                          | What it does                                               |
-| -------------------------- | -------------------------------- | ---------------------------------------------------------- |
-| `ci.yml`                   | `pull_request` → main/release/prod | Full gate, plus the pre-merge-only checks.                |
-| `cd-staging.yml`           | `push` → `main`                  | Gate alongside build/push, then deploy to staging.          |
-| `cd-release.yml`           | `push` → `release`               | Same, to the release environment, applied unattended.       |
-| `cd-production.yml`        | `push` → `production`            | Same, to production, with approval on the apply.            |
-| `e2e-staging-nightly.yml`  | nightly 00:00 UTC + `workflow_dispatch` | Full Playwright suite against staging.               |
-| `reusable-e2e.yml`         | `workflow_call`                          | Shared Playwright job (staging nightly + release CD). |
-| `mirror-images.yml`        | weekly + `workflow_dispatch`     | Refreshes the GHCR base-image mirror.                       |
-| `reusable-verify.yml`      | `workflow_call`                  | Lint, type-check, migration drift, tests.                   |
-| `reusable-deploy.yml`      | `workflow_call`                  | Build + push images, Terraform plan/apply, Sentry release; optional post-apply e2e; Slack on apply for release/production. |
+| File                      | Trigger                                 | What it does                                                                                                               |
+| ------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `ci.yml`                  | `pull_request` → main/release/prod      | Full gate, plus the pre-merge-only checks.                                                                                 |
+| `cd-staging.yml`          | `push` → `main`                         | Gate alongside build/push, then deploy to staging.                                                                         |
+| `cd-release.yml`          | `push` → `release`                      | Same, to the release environment, applied unattended.                                                                      |
+| `cd-production.yml`       | `push` → `production`                   | Same, to production, with approval on the apply.                                                                           |
+| `e2e-staging-nightly.yml` | nightly 00:00 UTC + `workflow_dispatch` | Full Playwright suite against staging.                                                                                     |
+| `reusable-e2e.yml`        | `workflow_call`                         | Shared Playwright job (staging nightly + release CD).                                                                      |
+| `mirror-images.yml`       | weekly + `workflow_dispatch`            | Refreshes the GHCR base-image mirror.                                                                                      |
+| `reusable-verify.yml`     | `workflow_call`                         | Lint, type-check, migration drift, tests.                                                                                  |
+| `reusable-deploy.yml`     | `workflow_call`                         | Build + push images, Terraform plan/apply, Sentry release; optional post-apply e2e; Slack on apply for release/production. |
 
 The three CD workflows differ mainly in the inputs they pass to
 `reusable-deploy.yml`: the environment name (which is also the Terraform state
@@ -63,7 +63,7 @@ GitHub evicts least-recently-used entries once it is full. Three things use it:
 - Turborepo's `.turbo/cache`, on the jobs that run `turbo` tasks.
 
 **Cache scope is the thing to remember.** An Actions cache written on a
-`refs/pull/N/merge` ref is readable *only by that pull request*; only caches
+`refs/pull/N/merge` ref is readable _only by that pull request_; only caches
 written on a long-lived branch warm everybody. So the Turborepo cache is restored
 everywhere but saved only on `push` events, and `prune-turbo-cache.sh` trims it
 to a 512 MB budget first — Turborepo never garbage-collects its own filesystem
@@ -86,7 +86,7 @@ therefore cannot serve several environments without moving those to runtime
 config. A deploy pays ~3 minutes to rebuild, and what it ships differs from what
 the previous environment exercised only by those baked origins.
 
-Both Dockerfiles copy `package.json` files, install, and *then* copy source, so a
+Both Dockerfiles copy `package.json` files, install, and _then_ copy source, so a
 source-only commit reuses the install layer. Keep that order — a `COPY` of source
 above the install costs ~2.5 minutes per image build. The `--mount=type=cache`
 mounts only help repeat local builds: cache mounts are builder-local, are not

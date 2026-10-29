@@ -1,4 +1,5 @@
 ---
+
 target: invitations-on-home.pen
 total_score: 30
 p0_count: 0
@@ -6,6 +7,7 @@ p1_count: 0
 timestamp: 2026-07-08T09-06-08Z
 slug: ai-design-design-files-invitations-on-home-pen
 ---
+
 # Design Critique: invitations-on-home.pen (2nd pass)
 
 **Target:** `.ai/design/design_files/invitations-on-home.pen`  
@@ -18,19 +20,19 @@ slug: ai-design-design-files-invitations-on-home-pen
 
 ## Design Health Score
 
-| # | Heuristic | Score | Key Issue |
-|---|-----------|-------|-----------|
-| 1 | Visibility of System Status | 4 | Deadline at action point; invite status on cards; no competing hero badge |
-| 2 | Match System / Real World | 3 | Plain language throughout; placeholders and one capacity math error remain |
-| 3 | User Control and Freedom | 3 | Accept/Decline + reassurance on detail; preview→detail flow is intentional |
-| 4 | Consistency and Standards | 3 | Home invite styling now aligns with system; two detail artboard variants need consolidation |
-| 5 | Error Prevention | 3 | Respond-before deadline + capacity before commit |
-| 6 | Recognition Rather Than Recall | 3 | Mail banner + "Invited · date" distinguishes pending from committed shifts |
-| 7 | Flexibility and Efficiency | 3 | Two-tap respond flow is acceptable given preview-only home decision |
-| 8 | Aesthetic and Minimalist Design | 3 | Green budget restored; only count badge + Accept CTA carry Field Green |
-| 9 | Error Recovery | 3 | "Change your mind" copy; no designed post-accept undo |
-| 10 | Help and Documentation | 2 | "What you'll do" on detail; preview cards could hint tap-to-respond |
-| **Total** | | **30/40** | **Good** |
+| #         | Heuristic                       | Score     | Key Issue                                                                                   |
+| --------- | ------------------------------- | --------- | ------------------------------------------------------------------------------------------- |
+| 1         | Visibility of System Status     | 4         | Deadline at action point; invite status on cards; no competing hero badge                   |
+| 2         | Match System / Real World       | 3         | Plain language throughout; placeholders and one capacity math error remain                  |
+| 3         | User Control and Freedom        | 3         | Accept/Decline + reassurance on detail; preview→detail flow is intentional                  |
+| 4         | Consistency and Standards       | 3         | Home invite styling now aligns with system; two detail artboard variants need consolidation |
+| 5         | Error Prevention                | 3         | Respond-before deadline + capacity before commit                                            |
+| 6         | Recognition Rather Than Recall  | 3         | Mail banner + "Invited · date" distinguishes pending from committed shifts                  |
+| 7         | Flexibility and Efficiency      | 3         | Two-tap respond flow is acceptable given preview-only home decision                         |
+| 8         | Aesthetic and Minimalist Design | 3         | Green budget restored; only count badge + Accept CTA carry Field Green                      |
+| 9         | Error Recovery                  | 3         | "Change your mind" copy; no designed post-accept undo                                       |
+| 10        | Help and Documentation          | 2         | "What you'll do" on detail; preview cards could hint tap-to-respond                         |
+| **Total** |                                 | **30/40** | **Good**                                                                                    |
 
 ---
 
@@ -63,26 +65,31 @@ This is in much better shape. The three biggest blockers from the first review a
 ## Priority Issues
 
 ### [P2] Two detail artboard variants without a canonical pick
+
 - **Why it matters:** `AixD5` shows a fixed date row (Mon., 17 Juni); `fRr3C` adds a full week day-picker. Implementers will not know which to build.
 - **Fix:** Mark one as canonical (likely `fRr3C` for recurring invites, or `AixD5` for single-instance). Disable or delete the other, or label one "recurring" and one "single instance" explicitly.
 - **Suggested command:** `impeccable distill`
 
 ### [P2] Capacity copy math error on day-picker detail
+
 - **Why it matters:** `fRr3C` shows "6 of 12 spots taken · 4 free" (should be 6 free). Breaks trust on a high-stakes decision screen.
 - **Fix:** Align to "8 of 12 spots taken · 4 free" across both detail artboards, or use dynamic placeholder `{taken}` / `{free}` consistently.
 - **Suggested command:** `impeccable clarify`
 
 ### [P2] Day strip still clips on home
+
 - **Why it matters:** Layout snapshot: day strip 416px in 361px container (`partially clipped`). Fourth day pill crops without scroll cue.
 - **Fix:** Horizontal scroll container or reduce visible pills; add partial peek on trailing edge.
 - **Suggested command:** `impeccable adapt`
 
 ### [P2] Redundant invitation count on home
+
 - **Why it matters:** Green "2" badge + subtitle "2 invitations waiting for you" repeat the same fact.
 - **Fix:** Drop subtitle when badge is present.
 - **Suggested command:** `impeccable distill`
 
 ### [P3] Placeholders and locale mix before handoff
+
 - **Why it matters:** `{x} shifts this week`, `{Address}`, `{hh:mm}` remain; home copy is English, detail body German.
 - **Fix:** Resolve placeholders; align locale per pilot org (German-first).
 - **Suggested command:** `impeccable harden`
