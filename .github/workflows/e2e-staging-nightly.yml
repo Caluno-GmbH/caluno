@@ -13,7 +13,7 @@ name: Nightly e2e (staging)
 on:
   schedule:
     # 00:00 UTC ≈ 02:00 Europe/Berlin in CEST (01:00 in CET).
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch: {}
 
 permissions:

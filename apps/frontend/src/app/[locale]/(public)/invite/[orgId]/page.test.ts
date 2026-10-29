@@ -51,14 +51,24 @@ mock.module('@/lib/data-client', () => ({
   }),
 }));
 
+function JoinError() {
+  return null;
+}
+function RequestPending() {
+  return null;
+}
+function RequestRejected() {
+  return null;
+}
+
 mock.module('./components/join-error', () => ({
-  JoinError: () => null,
+  JoinError,
 }));
 mock.module('./components/request-pending', () => ({
-  RequestPending: () => null,
+  RequestPending,
 }));
 mock.module('./components/request-rejected', () => ({
-  RequestRejected: () => null,
+  RequestRejected,
 }));
 
 const { default: InvitePage } = await import('./page');

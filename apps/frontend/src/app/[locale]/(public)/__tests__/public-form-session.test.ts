@@ -54,31 +54,53 @@ mock.module('@/lib/data-client', () => ({
   }),
 }));
 
+function EventFormsClient() {
+  return null;
+}
+function EventPageHeader() {
+  return null;
+}
+function EventJoinFormsClient() {
+  return null;
+}
+function ShiftFormsClient() {
+  return null;
+}
+function ShiftPageHeader() {
+  return null;
+}
+function ShiftJoinFormsClient() {
+  return null;
+}
+function ShareFormClient() {
+  return null;
+}
+
 mock.module(
   '@/app/[locale]/(public)/events/[eventId]/forms/event-forms-client',
-  () => ({ EventFormsClient: () => null }),
+  () => ({ EventFormsClient }),
 );
 mock.module('@/domain/event/components/event-page-header', () => ({
-  EventPageHeader: () => null,
+  EventPageHeader,
 }));
 mock.module(
   '@/app/[locale]/(public)/events/[eventId]/join-forms/event-join-forms-client',
-  () => ({ EventJoinFormsClient: () => null }),
+  () => ({ EventJoinFormsClient }),
 );
 mock.module(
   '@/app/[locale]/(public)/shifts/[shiftId]/instances/[instanceId]/forms/shift-forms-client',
-  () => ({ ShiftFormsClient: () => null }),
+  () => ({ ShiftFormsClient }),
 );
 mock.module('@/domain/shift/components/shift-page-header', () => ({
-  ShiftPageHeader: () => null,
+  ShiftPageHeader,
 }));
 mock.module(
   '@/app/[locale]/(public)/shifts/[shiftId]/instances/[instanceId]/join-forms/shift-join-forms-client',
-  () => ({ ShiftJoinFormsClient: () => null }),
+  () => ({ ShiftJoinFormsClient }),
 );
 mock.module(
   '@/app/[locale]/(public)/orgs/[orgUId]/forms/[token]/share-form-client',
-  () => ({ ShareFormClient: () => null }),
+  () => ({ ShareFormClient }),
 );
 
 const { default: EventFormsPage } = await import(

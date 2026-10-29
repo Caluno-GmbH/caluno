@@ -5,6 +5,7 @@ document templates, rates, and the per-volunteer board. Rendered under
 `/admin/[orgUId]/accounting/*`.
 
 ## Layout
+
 - `components/` — board, document sheet, creation modals, template builder.
   Components export UI only; shared board types/status/filters live in `lib/`.
 - `lib/` — pure logic (board filtering, setup gating, period maths, money,
@@ -31,8 +32,8 @@ Rules:
 - Branch on `error instanceof DataError && error.options?.code === '...'`,
   never on message text.
 - **Never render `error.message` to the user.** For an unexpected failure the
-  raw `graphql-request` `ClientError.message` is the *entire serialized
-  response*, and backend messages can carry internal ids (e.g. a
+  raw `graphql-request` `ClientError.message` is the _entire serialized
+  response_, and backend messages can carry internal ids (e.g. a
   reimbursement-type UUID). Map known states to copy in
   `messages/{en,de}.json`; otherwise show a generic "try again".
 - Both the server `DataClient` (`packages/data/src/client/data-client.ts`) and
@@ -58,7 +59,7 @@ An org that only uses one Pauschale will have no template for the other, so
 ### Gate the action before the click
 
 `accountingSetupStatus.canCreateDocuments` is org-wide
-(`slots.some(slot => slot.ready)`), so it is `true` as soon as *any* Pauschale is
+(`slots.some(slot => slot.ready)`), so it is `true` as soon as _any_ Pauschale is
 configured. It does not protect the other Pauschale's rows. Use the per-type
 helpers in `lib/setup-status.ts`:
 
@@ -73,12 +74,14 @@ board, table and document sheet; the create action is disabled and the
 a new create entry point, thread `templateReadiness` through it too.
 
 ## Vocabulary
+
 - The board UI says **timesheet**; the API enum and the modals say **invoice**
   (`DocumentKind.INVOICE`). They are the same document.
 - Pauschale ids (`ehrenamt`, `uebungsleiter`) ↔ `ReimbursementTypeKey` live in
   `lib/reimbursement-type-mapping.ts`. Never hard-code the enum strings.
 
 ## Conventions
+
 - Multi-tenancy: take the org from `useOrgUId()` / the route, never from
   arbitrary arguments.
 - All user-facing strings live in `apps/frontend/messages/{en,de}.json`; add to
