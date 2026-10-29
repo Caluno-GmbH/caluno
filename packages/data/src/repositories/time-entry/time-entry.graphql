@@ -102,19 +102,25 @@ query GetTimeEntries(
         name
         email
       }
+      notes
       shiftInstance {
         id
         actualStartsAt
         actualEndsAt
         overrideTitle
+        overrideLocation
         master {
           id
           title
+          location
         }
       }
       organizationUnit {
         id
         name
+        street
+        zipCode
+        city
         organization {
           id
           name

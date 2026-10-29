@@ -25,6 +25,7 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
+import { resolveTimeEntryLocation } from '@/domain/time-entry/location';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { Link } from '@/i18n/navigation';
@@ -99,6 +100,18 @@ export const TimesheetsTable = ({
             </Link>
           );
         },
+      },
+      {
+        id: 'LOCATION',
+        enableSorting: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.location')} />
+        ),
+        cell: ({ row }) => (
+          <TextCell>
+            {resolveTimeEntryLocation(row.original) ?? t('table.notAvailable')}
+          </TextCell>
+        ),
       },
       {
         id: 'VOLUNTEER',

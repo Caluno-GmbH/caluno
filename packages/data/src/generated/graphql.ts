@@ -1393,7 +1393,7 @@ export type GetTimeEntriesQueryVariables = Exact<{
 }>;
 
 
-export type GetTimeEntriesQuery = { timeEntries: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, createdAt: string, createdBy: { id: string, name: string, email: string } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetTimeEntriesQuery = { timeEntries: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, createdAt: string, notes: string | null, createdBy: { id: string, name: string, email: string } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideLocation: string | null, master: { id: string, title: string, location: string | null } } | null, organizationUnit: { id: string, name: string, street: string | null, zipCode: string | null, city: string | null, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type GetTimeEntriesByUserQueryVariables = Exact<{
   userId: string;
@@ -4896,19 +4896,25 @@ export const GetTimeEntriesDocument = gql`
         name
         email
       }
+      notes
       shiftInstance {
         id
         actualStartsAt
         actualEndsAt
         overrideTitle
+        overrideLocation
         master {
           id
           title
+          location
         }
       }
       organizationUnit {
         id
         name
+        street
+        zipCode
+        city
         organization {
           id
           name

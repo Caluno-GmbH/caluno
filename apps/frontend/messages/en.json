@@ -2044,7 +2044,8 @@
       "date": "Date",
       "shift": "Assignment",
       "volunteer": "Volunteer",
-      "status": "Status"
+      "status": "Status",
+      "location": "Location"
     },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",
