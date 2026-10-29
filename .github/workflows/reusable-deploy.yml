@@ -25,7 +25,7 @@ on:
         type: string
         required: true
       notify-slack:
-        description: Post to Slack after Terraform apply succeeds or fails (release/production).
+        description: Post to Slack after Terraform apply and (when run-e2e) after Playwright (release/production).
         type: boolean
         required: false
         default: false
@@ -385,3 +385,31 @@ jobs:
       report-name: playwright-report-${{ inputs.environment }}
     secrets:
       MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}
+
+  # Release/production only (`notify-slack` + `run-e2e`). Same webhook as the
+  # apply notify → #caluno-release-management. continue-on-error: a dead
+  # webhook must not mask the e2e outcome already reflected in needs.e2e.
+  notify-e2e-slack:
+    name: Notify Slack (e2e)
+    needs: [e2e]
+    if: >-
+      always()
+      && inputs.run-e2e
+      && inputs.notify-slack
+      && needs.e2e.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    continue-on-error: true
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "${{ needs.e2e.result == 'success' && format(':white_check_mark: {0} e2e passed', inputs.environment) || format(':x: {0} e2e failed', inputs.environment) }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "${{ needs.e2e.result == 'success' && format(':white_check_mark: *{0}* e2e passed', inputs.environment) || format(':x: *{0}* e2e failed', inputs.environment) }}\n`${{ github.sha }}` · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> · ${{ github.actor }}"

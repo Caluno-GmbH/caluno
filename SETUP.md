@@ -12,7 +12,7 @@ Everything runs on GitHub-hosted runners (`ubuntu-latest`).
 | `reusable-e2e.yml`        | `workflow_call`                         | Shared Playwright job (staging nightly + release CD).                                                                      |
 | `mirror-images.yml`       | weekly + `workflow_dispatch`            | Refreshes the GHCR base-image mirror.                                                                                      |
 | `reusable-verify.yml`     | `workflow_call`                         | Lint, type-check, migration drift, tests.                                                                                  |
-| `reusable-deploy.yml`     | `workflow_call`                         | Build + push images, Terraform plan/apply, Sentry release; optional post-apply e2e; Slack on apply for release/production. |
+| `reusable-deploy.yml`     | `workflow_call`                         | Build + push images, Terraform plan/apply, Sentry release; optional post-apply e2e; Slack on apply + e2e for release/production. |
 
 The three CD workflows differ mainly in the inputs they pass to
 `reusable-deploy.yml`: the environment name (which is also the Terraform state
@@ -108,9 +108,10 @@ exported by `cache-to`, and CI runners are ephemeral.
      `e2e-staging-nightly.yml`), `RELEASE_MAILBOX_PASSWORD` (release Mailpit
      basic auth for post-deploy Playwright in `cd-release.yml` — value from
      Scaleway Secret Manager `caluno-release-mailpit-ui-auth`, password after
-     `mailpit:`), `SLACK_WEBHOOK_URL` (Incoming Webhook for
+     `mailpit:`),      `SLACK_WEBHOOK_URL` (Incoming Webhook for
      `#caluno-release-management` — release/production Terraform apply result
-     only; create via Slack → Apps → Incoming Webhooks, then paste the URL).
+     and post-deploy Playwright result; create via Slack → Apps → Incoming
+     Webhooks, then paste the URL).
      The Scaleway keys are reused as `AWS_ACCESS_KEY_ID` /
      `AWS_SECRET_ACCESS_KEY` for the S3-compatible Terraform state backend,
      which authenticates through the AWS SDK credential chain and so needs real
