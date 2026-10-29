@@ -57,6 +57,7 @@ query GetShifts(
   $dateTo: DateTime
   $location: String
   $visibility: ShiftVisibility
+  $fill: ShiftFillFilter
 ) {
   shifts(
     limit: $limit
@@ -68,6 +69,7 @@ query GetShifts(
     dateTo: $dateTo
     location: $location
     visibility: $visibility
+    fill: $fill
   ) {
     items {
       id

@@ -34,6 +34,11 @@ export type ShiftListQuery = {
   sort?: string;
   dir?: string;
   q?: string;
+  location?: string;
+  visibility?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  fill?: string;
 };
 
 const SHIFT_LIST_QUERY_KEYS = [
@@ -44,6 +49,11 @@ const SHIFT_LIST_QUERY_KEYS = [
   'sort',
   'dir',
   'q',
+  'location',
+  'visibility',
+  'dateFrom',
+  'dateTo',
+  'fill',
 ] as const satisfies readonly (keyof ShiftListQuery)[];
 
 function parseQuery(query?: ShiftListQuery) {
@@ -142,5 +152,10 @@ export function parseShiftListQuery(
     sort: str('sort'),
     dir: str('dir'),
     q: str('q'),
+    location: str('location'),
+    visibility: str('visibility'),
+    dateFrom: str('dateFrom'),
+    dateTo: str('dateTo'),
+    fill: str('fill'),
   };
 }

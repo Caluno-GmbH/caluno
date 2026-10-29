@@ -6,6 +6,7 @@ import {
 import {
   type CreateShiftInput,
   type DuplicateShiftInput,
+  type ShiftFillFilter,
   type ShiftInviteStatus,
   type ShiftSortField,
   type ShiftVisibility,
@@ -47,6 +48,7 @@ export interface ShiftListOptions extends PaginationOptions {
   dateTo?: string | null;
   location?: string | null;
   visibility?: ShiftVisibility | null;
+  fill?: ShiftFillFilter | null;
 }
 
 export type ActiveShiftInstance =
@@ -125,6 +127,7 @@ export class ShiftRepository extends BaseRepository {
       dateTo: options.dateTo ?? null,
       location: options.location ?? null,
       visibility: options.visibility ?? null,
+      fill: options.fill ?? null,
     });
     return data.shifts;
   }

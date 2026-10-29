@@ -153,7 +153,7 @@ export class ShiftInstanceFieldResolver {
     return loader.filledCountByInstanceId.load(instance.id);
   }
 
-  @ResolveField(() => Number)
+  @ResolveField(() => Int)
   async pendingCount(
     @Parent() instance: ShiftInstanceEntity,
     @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,

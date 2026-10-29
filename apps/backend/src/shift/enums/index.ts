@@ -6,6 +6,15 @@ export enum ShiftVisibility {
   ALL_MEMBERS = 'ALL_MEMBERS',
 }
 
+export enum ShiftFillFilter {
+  BELOW = 'BELOW',
+  FULL = 'FULL',
+}
+
+registerEnumType(ShiftFillFilter, {
+  name: 'ShiftFillFilter',
+});
+
 export { SortOrder } from '../../graphql/enums/sort-order.enum';
 export { ShiftSortField } from './shift-sort-field.enum';
 

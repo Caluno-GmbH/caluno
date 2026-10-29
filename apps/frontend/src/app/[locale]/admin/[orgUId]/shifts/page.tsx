@@ -1,8 +1,10 @@
 import {
   type GetWeeklyShiftsQuery,
   PermissionKey,
+  ShiftFillFilter,
   SortOrder,
 } from '@repo/data';
+import { parseISO } from 'date-fns';
 import { getTranslations } from 'next-intl/server';
 import { CreateShiftButton } from '@/domain/shift/components/create-shift-button';
 import { EmptyShifts } from '@/domain/shift/components/empty-shifts';
@@ -26,7 +28,7 @@ interface ShiftsPageProps {
 }
 
 function parseWeekStart(param: string | null | undefined): Date {
-  const base = param ? new Date(param) : new Date();
+  const base = param ? parseISO(param) : new Date();
   const d = Number.isNaN(base.getTime()) ? new Date() : base;
   return new Date(getWeekRange(d).weekStart.getTime());
 }
@@ -51,6 +53,7 @@ export default async function ShiftsPage({
     dateTo,
     location,
     visibility,
+    fill,
   } = shiftsSearchParamsCache.parse(rawSearchParams);
 
   const view =
@@ -93,12 +96,18 @@ export default async function ShiftsPage({
         dateTo: dateTo ? dateTo.toISOString().slice(0, 10) : undefined,
         location: location || undefined,
         visibility: visibility ?? undefined,
+        fill:
+          fill === 'below'
+            ? ShiftFillFilter.Below
+            : fill === 'full'
+              ? ShiftFillFilter.Full
+              : undefined,
       }),
       data.shift.findLocations(),
     ]);
 
     const hasActiveFilters = Boolean(
-      q || dateFrom || dateTo || location || visibility,
+      q || dateFrom || dateTo || location || visibility || fill,
     );
     const showTable = result.pagination.total > 0 || hasActiveFilters;
 

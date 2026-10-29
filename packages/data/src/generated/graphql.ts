@@ -1014,6 +1014,7 @@ export type GetShiftsQueryVariables = Exact<{
   dateTo?: string | null | undefined;
   location?: string | null | undefined;
   visibility?: Types.ShiftVisibility | null | undefined;
+  fill?: Types.ShiftFillFilter | null | undefined;
 }>;
 
 
@@ -4155,7 +4156,7 @@ export const GetShiftDocument = gql`
 }
     ${RequiredFormRefFieldsFragmentDoc}`;
 export const GetShiftsDocument = gql`
-    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String, $dateFrom: DateTime, $dateTo: DateTime, $location: String, $visibility: ShiftVisibility) {
+    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String, $dateFrom: DateTime, $dateTo: DateTime, $location: String, $visibility: ShiftVisibility, $fill: ShiftFillFilter) {
   shifts(
     limit: $limit
     offset: $offset
@@ -4166,6 +4167,7 @@ export const GetShiftsDocument = gql`
     dateTo: $dateTo
     location: $location
     visibility: $visibility
+    fill: $fill
   ) {
     items {
       id

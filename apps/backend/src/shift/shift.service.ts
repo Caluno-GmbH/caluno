@@ -77,6 +77,7 @@ import { slugify } from '../utils/slug.util';
 import { containsPattern } from '../utils/string.util';
 import {
   INVITE_STATUS_TO_JOIN_SHIFT_STATUS,
+  ShiftFillFilter,
   ShiftInviteStatus,
   ShiftSortField,
   ShiftVisibility,
@@ -1044,6 +1045,7 @@ export class ShiftService {
     dateTo: Date | null = null,
     location: string | null = null,
     visibility: ShiftVisibility | null = null,
+    fill: ShiftFillFilter | null = null,
   ): Promise<{
     shifts: (ShiftEntity & { windowedInstances?: ShiftInstanceEntity[] })[];
     total: number;
@@ -1065,6 +1067,7 @@ export class ShiftService {
         dateTo,
         location,
         visibility,
+        fill,
       );
     }
 
@@ -1092,6 +1095,32 @@ export class ShiftService {
     return { from, to: endOfAppDay(year, month, day + 31) };
   }
 
+  private buildFillCondition(fill: ShiftFillFilter | null) {
+    if (!fill) return null;
+
+    const filledCountSubquery = this.db
+      .select({ total: count() })
+      .from(schema.shiftInstanceInvites)
+      .where(
+        and(
+          eq(schema.shiftInstanceInvites.instanceId, schema.shiftInstances.id),
+          inArray(schema.shiftInstanceInvites.status, [
+            ...PARTICIPATING_SHIFT_INVITE_STATUSES,
+          ]),
+        ),
+      );
+    const filledCount = sql`(${filledCountSubquery})`;
+    const masterMin = sql`(select ${schema.shifts.minVolunteers} from ${schema.shifts} where ${schema.shifts.id} = ${schema.shiftInstances.masterId})`;
+    const masterMax = sql`(select ${schema.shifts.maxVolunteers} from ${schema.shifts} where ${schema.shifts.id} = ${schema.shiftInstances.masterId})`;
+    const effectiveMin = sql`coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${masterMin})`;
+    const effectiveMax = sql`coalesce(${schema.shiftInstances.overrideMaxVolunteers}, ${masterMax})`;
+    const fullCondition = sql`${effectiveMax} is not null and ${filledCount} >= ${effectiveMax}`;
+
+    if (fill === ShiftFillFilter.FULL) return fullCondition;
+
+    return sql`not (${fullCondition}) and (${filledCount} = 0 or (${effectiveMin} is not null and ${filledCount} < ${effectiveMin}))`;
+  }
+
   private async findAllForOrgUnit(
     organizationUnitId: string,
     pagination: PaginationInput,
@@ -1102,6 +1131,7 @@ export class ShiftService {
     dateTo: Date | null = null,
     locationFilter: string | null = null,
     visibilityFilter: ShiftVisibility | null = null,
+    fillFilter: ShiftFillFilter | null = null,
   ): Promise<{
     shifts: (ShiftEntity & { windowedInstances: ShiftInstanceEntity[] })[];
     total: number;
@@ -1111,6 +1141,7 @@ export class ShiftService {
       dateFrom,
       dateTo,
     );
+    const fillCondition = this.buildFillCondition(fillFilter);
 
     // EXISTS subquery: master has at least one non-cancelled instance overlapping [windowFrom, windowTo].
     // Overlap condition: actualStartsAt <= windowTo AND actualEndsAt >= windowFrom.
@@ -1123,6 +1154,7 @@ export class ShiftService {
           lte(schema.shiftInstances.actualStartsAt, windowTo),
           gte(schema.shiftInstances.actualEndsAt, windowFrom),
           eq(schema.shiftInstances.isCancelled, false),
+          ...(fillCondition ? [fillCondition] : []),
         ),
       );
 
@@ -1135,7 +1167,7 @@ export class ShiftService {
             or(
               ilike(schema.shifts.title, containsPattern(term)),
               ilike(schema.shifts.location, containsPattern(term)),
-            )!,
+            ),
           ]
         : []),
       ...(locationFilter ? [eq(schema.shifts.location, locationFilter)] : []),
@@ -1144,7 +1176,7 @@ export class ShiftService {
         : []),
     ];
 
-    const whereClause = and(...conditions)!;
+    const whereClause = and(...conditions);
 
     const orderByClause = this.buildShiftOrderBySQL(sort, order);
 
@@ -1179,6 +1211,7 @@ export class ShiftService {
           lte(schema.shiftInstances.actualStartsAt, windowTo),
           gte(schema.shiftInstances.actualEndsAt, windowFrom),
           eq(schema.shiftInstances.isCancelled, false),
+          ...(fillCondition ? [fillCondition] : []),
         ),
       )
       .orderBy(
