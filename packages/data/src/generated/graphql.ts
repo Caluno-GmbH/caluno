@@ -1025,6 +1025,11 @@ export type GetShiftLocationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetShiftLocationsQuery = { shiftLocations: Array<string> };
 
+export type GetShiftCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetShiftCountQuery = { shiftCount: number };
+
 export type GetEventShiftsQueryVariables = Exact<{
   eventId: string;
   limit: number;
@@ -4211,6 +4216,11 @@ export const GetShiftLocationsDocument = gql`
   shiftLocations
 }
     `;
+export const GetShiftCountDocument = gql`
+    query GetShiftCount {
+  shiftCount
+}
+    `;
 export const GetEventShiftsDocument = gql`
     query GetEventShifts($eventId: ID!, $limit: Int!, $offset: Int!) {
   eventShifts(eventId: $eventId, limit: $limit, offset: $offset) {
@@ -5591,6 +5601,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetShiftLocations(variables?: GetShiftLocationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetShiftLocationsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetShiftLocationsQuery>({ document: GetShiftLocationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetShiftLocations', 'query', variables);
+    },
+    GetShiftCount(variables?: GetShiftCountQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetShiftCountQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetShiftCountQuery>({ document: GetShiftCountDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetShiftCount', 'query', variables);
     },
     GetEventShifts(variables: GetEventShiftsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetEventShiftsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetEventShiftsQuery>({ document: GetEventShiftsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetEventShifts', 'query', variables);

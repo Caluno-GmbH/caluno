@@ -1,4 +1,4 @@
-import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Int, Query, Resolver } from '@nestjs/graphql';
 import {
   AllowAnonymous,
   Session,
@@ -138,6 +138,14 @@ export class ShiftQueryResolver {
       limit: pagination.limit,
       offset: pagination.offset,
     });
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @Query(() => Int)
+  async shiftCount(
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<number> {
+    return this.shiftService.countAll(context.organizationUnitId);
   }
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)

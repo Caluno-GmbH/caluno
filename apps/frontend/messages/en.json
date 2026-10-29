@@ -1825,7 +1825,9 @@
       "visibility": "Visibility",
       "location": "Location",
       "staffing": "Staffing",
-      "recurrenceSince": "Since {date}"
+      "recurrenceSince": "Since {date}",
+      "expandOccurrences": "Expand occurrences",
+      "collapseOccurrences": "Collapse occurrences"
     },
     "filter": {
       "location": "Location",

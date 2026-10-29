@@ -1082,17 +1082,45 @@ export class ShiftService {
     };
   }
 
+  /**
+   * Number of shifts in the unit, ignoring the list's date window — drives the
+   * "no shifts yet" empty state, which must not trigger just because nothing
+   * falls within the next 31 days.
+   */
+  async countAll(organizationUnitId: string): Promise<number> {
+    const [result] = await this.db
+      .select({ total: count() })
+      .from(schema.shifts)
+      .where(
+        and(
+          eq(schema.shifts.organizationUnitId, organizationUnitId),
+          eq(schema.shifts.isDeleted, false),
+        ),
+      );
+    return result?.total ?? 0;
+  }
+
   private resolveWindow(
     dateFrom: Date | null,
     dateTo: Date | null,
   ): { from: Date; to: Date } {
-    const from = dateFrom ?? startOfTodayInAppTimeZone();
-    if (dateTo) {
-      const { year, month, day } = appDateParts(dateTo);
-      return { from, to: endOfAppDay(year, month, day) };
+    // Both bounds snap to whole app-timezone days: the frontend sends calendar
+    // dates, which arrive as UTC midnight (01:00/02:00 in Berlin). Without an
+    // end date the window runs 31 days from the start date.
+    const fromDay = appDateParts(dateFrom ?? new Date());
+    const toDay = dateTo
+      ? appDateParts(dateTo)
+      : { ...fromDay, day: fromDay.day + 31 };
+    const from = startOfAppDay(fromDay.year, fromDay.month, fromDay.day);
+    const to = endOfAppDay(toDay.year, toDay.month, toDay.day);
+    // A hand-edited URL can reverse the range; treat it as the same span.
+    if (to < from) {
+      return {
+        from: startOfAppDay(toDay.year, toDay.month, toDay.day),
+        to: endOfAppDay(fromDay.year, fromDay.month, fromDay.day),
+      };
     }
-    const { year, month, day } = appDateParts(startOfTodayInAppTimeZone());
-    return { from, to: endOfAppDay(year, month, day + 31) };
+    return { from, to };
   }
 
   private buildFillCondition(fill: ShiftFillFilter | null) {

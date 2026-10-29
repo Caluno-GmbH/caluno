@@ -14,6 +14,7 @@ import { ShiftsTable } from '@/domain/shift/components/shifts-table';
 import { WeeklyCalendar } from '@/domain/shift/components/weekly-calendar';
 import { WeeklyCalendarNav } from '@/domain/shift/components/weekly-calendar-nav';
 import { getWeekRange } from '@/domain/shift/lib/shift-instances';
+import { parseAsLocalDate } from '@/domain/shift/shifts-search-params';
 import { shiftsSearchParamsCache } from '@/domain/shift/shifts-search-params.server';
 import { orgHasShifts } from '@/domain/shift/weekplan';
 import { getDataClient } from '@/lib/data-client';
@@ -76,8 +77,7 @@ export default async function ShiftsPage({
     if (instances.length > 0) {
       orgShiftTotal = instances.length;
     } else {
-      const shiftList = await data.shift.findAll({ limit: 1, offset: 0 });
-      orgShiftTotal = shiftList.pagination.total;
+      orgShiftTotal = await data.shift.count();
     }
   }
 
@@ -92,8 +92,8 @@ export default async function ShiftsPage({
         sort,
         order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
         search: q || null,
-        dateFrom: dateFrom ? dateFrom.toISOString().slice(0, 10) : undefined,
-        dateTo: dateTo ? dateTo.toISOString().slice(0, 10) : undefined,
+        dateFrom: dateFrom ? parseAsLocalDate.serialize(dateFrom) : undefined,
+        dateTo: dateTo ? parseAsLocalDate.serialize(dateTo) : undefined,
         location: location || undefined,
         visibility: visibility ?? undefined,
         fill:
@@ -109,7 +109,12 @@ export default async function ShiftsPage({
     const hasActiveFilters = Boolean(
       q || dateFrom || dateTo || location || visibility || fill,
     );
-    const showTable = result.pagination.total > 0 || hasActiveFilters;
+    // The list is limited to a date window, so an empty result doesn't mean
+    // the org has no shifts — keep the toolbar so the window can be widened.
+    const showTable =
+      result.pagination.total > 0 ||
+      hasActiveFilters ||
+      orgHasShifts(await data.shift.count());
 
     return (
       <div className="flex flex-col h-full gap-4">

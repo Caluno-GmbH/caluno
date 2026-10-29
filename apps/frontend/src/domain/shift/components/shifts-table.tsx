@@ -59,7 +59,7 @@ import {
   shiftEditPath,
   shiftInstanceDetailPath,
 } from '../routes';
-import { shiftsSearchParams } from '../shifts-search-params';
+import { parseAsLocalDate, shiftsSearchParams } from '../shifts-search-params';
 import { getStaffingState, staffingBadgeText } from '../staffing';
 import { ActionBar } from './action-bar';
 
@@ -197,8 +197,8 @@ export function ShiftsTable({
       ...(q.trim() ? { q } : {}),
       ...(location ? { location } : {}),
       ...(visibility ? { visibility } : {}),
-      ...(dateFrom ? { dateFrom: dateFrom.toISOString() } : {}),
-      ...(dateTo ? { dateTo: dateTo.toISOString() } : {}),
+      ...(dateFrom ? { dateFrom: parseAsLocalDate.serialize(dateFrom) } : {}),
+      ...(dateTo ? { dateTo: parseAsLocalDate.serialize(dateTo) } : {}),
       ...(fill ? { fill } : {}),
     };
   }, [
@@ -330,6 +330,12 @@ export function ShiftsTable({
                     variant="ghost"
                     onClick={row.getToggleExpandedHandler()}
                     className="shrink-0"
+                    aria-expanded={row.getIsExpanded()}
+                    aria-label={
+                      row.getIsExpanded()
+                        ? t('table.collapseOccurrences')
+                        : t('table.expandOccurrences')
+                    }
                   >
                     {row.getIsExpanded() ? (
                       <ChevronDown className="size-4" />

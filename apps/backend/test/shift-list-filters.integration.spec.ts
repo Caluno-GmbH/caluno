@@ -248,6 +248,41 @@ describe('shifts query list filters', () => {
     expect(data.shifts.pagination.total).toBe(1);
   });
 
+  it('includes the early hours of the selected app-timezone start day', async () => {
+    const day = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+    const date = day.toISOString().slice(0, 10);
+    const previous = new Date(day.getTime() - 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    // 23:30 UTC the evening before is 00:30/01:30 on `date` in Berlin.
+    const early = await createShift(db, {
+      organizationUnitId,
+      title: 'Early in selected day',
+      startsAt: new Date(`${previous}T23:30:00.000Z`),
+      endsAt: new Date(`${previous}T23:45:00.000Z`),
+    });
+
+    const data = await queryShifts({
+      dateFrom: `${date}T00:00:00.000Z`,
+      dateTo: `${date}T00:00:00.000Z`,
+    });
+    expect(data.shifts.items.map((shift) => shift.id)).toEqual([early.id]);
+  });
+
+  it('runs the default window from a start date beyond the next 31 days', async () => {
+    const day = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
+    const date = day.toISOString().slice(0, 10);
+    const later = await createShift(db, {
+      organizationUnitId,
+      title: 'Far out',
+      startsAt: new Date(`${date}T10:00:00.000Z`),
+      endsAt: new Date(`${date}T11:00:00.000Z`),
+    });
+
+    const data = await queryShifts({ dateFrom: `${date}T00:00:00.000Z` });
+    expect(data.shifts.items.map((shift) => shift.id)).toEqual([later.id]);
+  });
+
   it('filters by location and visibility without returning another unit', async () => {
     const data = await queryShifts({
       location: 'Invited room',
@@ -271,5 +306,31 @@ describe('shifts query list filters', () => {
     );
 
     expect(data.shiftLocations).toEqual(['Invited room', 'Open room']);
+  });
+
+  it('counts every shift in the unit regardless of the list date window', async () => {
+    const past = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000);
+    await createShift(db, {
+      organizationUnitId,
+      title: 'Long past',
+      startsAt: past,
+      endsAt: new Date(past.getTime() + 60 * 60 * 1000),
+    });
+    const unitShifts = await db.query.shifts.findMany({
+      where: { organizationUnitId, isDeleted: false },
+    });
+
+    const data = await graphqlRequestRequiringData<{ shiftCount: number }>(
+      app,
+      {
+        query: 'query { shiftCount }',
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'shiftCount',
+    );
+    const windowed = await queryShifts();
+
+    expect(data.shiftCount).toBe(unitShifts.length);
+    expect(data.shiftCount).toBeGreaterThan(windowed.shifts.pagination.total);
   });
 });

@@ -112,6 +112,10 @@ query GetShiftLocations {
   shiftLocations
 }
 
+query GetShiftCount {
+  shiftCount
+}
+
 query GetEventShifts($eventId: ID!, $limit: Int!, $offset: Int!) {
   eventShifts(eventId: $eventId, limit: $limit, offset: $offset) {
     items {

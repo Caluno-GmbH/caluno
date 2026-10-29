@@ -1825,7 +1825,9 @@
       "visibility": "Sichtbarkeit",
       "location": "Ort",
       "staffing": "Besetzung",
-      "recurrenceSince": "Seit {date}"
+      "recurrenceSince": "Seit {date}",
+      "expandOccurrences": "Termine ausklappen",
+      "collapseOccurrences": "Termine einklappen"
     },
     "filter": {
       "location": "Ort",

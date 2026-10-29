@@ -137,6 +137,11 @@ export class ShiftRepository extends BaseRepository {
     return data.shiftLocations;
   }
 
+  async count(): Promise<number> {
+    const data = await this.sdk.GetShiftCount();
+    return data.shiftCount;
+  }
+
   async findAllForEvent(eventId: string, options: PaginationOptions = {}) {
     const data = await this.sdk.GetEventShifts({
       eventId,
