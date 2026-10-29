@@ -10,7 +10,10 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { FormSheet, useFormSheet } from '@/components/form-sheet';
 import { TransferList } from '@/domain/shift/components/transfer-list';
-import { preselectedInviteMemberIds } from '@/domain/shift/invite-status-display';
+import {
+  lockedInviteMemberIds,
+  submittableInviteMemberIds,
+} from '@/domain/shift/invite-status-display';
 import { useRouter } from '@/i18n/navigation';
 import { copyToClipboard } from '@/lib/clipboard';
 import { toEventInviteDisplayState } from '../invite-status-display';
@@ -51,10 +54,13 @@ export const EventInviteForm = ({
 
   const { open, setOpen } = useFormSheet();
 
+  const lockedIds = lockedInviteMemberIds(invitedMembers);
+
   const { handleSubmit, watch, setValue } = useForm<{ memberIds: string[] }>({
     resolver: zodResolver(serverEventInviteFormSchema),
     defaultValues: {
-      memberIds: preselectedInviteMemberIds(invitedMembers),
+      // Show every invite (including inactive) in Invited; save filters them out.
+      memberIds: invitedMembers.map((m) => m.id),
     },
   });
 
@@ -93,7 +99,14 @@ export const EventInviteForm = ({
     setServerError(undefined);
 
     startTransition(async () => {
-      const result = await mutate(formData);
+      const result = await mutate({
+        memberIds: submittableInviteMemberIds(
+          formData.memberIds.map((id) => ({
+            id,
+            inviteStatus: statusById.get(id) ?? null,
+          })),
+        ),
+      });
       if (result.serverError) {
         setServerError(result.serverError);
       } else {
@@ -119,6 +132,7 @@ export const EventInviteForm = ({
         <TransferList
           available={availableMembers}
           invited={invitedForList}
+          lockedIds={lockedIds}
           onInvitedChange={(ids) => setValue('memberIds', ids)}
         />
         <p className="shrink-0 text-sm text-muted-foreground">
