@@ -69,7 +69,7 @@ export const TimesheetsTable = ({
   organizationUnitId,
 }: TimesheetsTableProps) => {
   const t = useTranslations('TimeEntry');
-  const { formatWorkedPeriod, formatDuration, formatDurationByMinutes, formatDateTime } =
+  const { formatWorkedPeriod, formatDurationShort, formatDurationByMinutesShort, formatDateTime } =
     useFormatting();
 
   const [params, setParams] = useQueryStates(timesheetsSearchParams, {
@@ -173,6 +173,7 @@ export const TimesheetsTable = ({
       {
         id: 'LOCATION',
         enableSorting: false,
+        meta: { headerClassName: 'w-1/4', cellClassName: 'w-1/4' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.location')} />
         ),
@@ -185,6 +186,7 @@ export const TimesheetsTable = ({
       {
         id: 'VOLUNTEER',
         accessorFn: (row) => row.volunteer?.name ?? row.volunteer?.email,
+        meta: { headerClassName: 'w-1/4', cellClassName: 'w-1/4' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
         ),
@@ -233,7 +235,7 @@ export const TimesheetsTable = ({
           if (entry.status === TimeEntryStatus.Open) {
             return <NumberCell>{NO_DURATION}</NumberCell>;
           }
-          const duration = formatDuration(entry.startedAt, entry.endedAt);
+          const duration = formatDurationShort(entry.startedAt, entry.endedAt);
           if (entry.status === TimeEntryStatus.AutoClosed) {
             const tooltip = t('status.autoClosedTooltip');
             return (
@@ -297,7 +299,7 @@ export const TimesheetsTable = ({
         ),
       },
     ],
-    [t, formatWorkedPeriod, formatDuration, formatDurationByMinutes, formatDateTime, organizationUnitId],
+    [t, formatWorkedPeriod, formatDurationShort, formatDurationByMinutesShort, formatDateTime, organizationUnitId],
   );
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
@@ -313,7 +315,7 @@ export const TimesheetsTable = ({
         {t('table.total')}
       </TableCell>
       <TableCell className="text-right text-sm">
-        {formatDurationByMinutes(totalDurationMinutes)}
+        {formatDurationByMinutesShort(totalDurationMinutes)}
       </TableCell>
       <TableCell colSpan={2} />
     </TableRow>

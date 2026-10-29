@@ -147,6 +147,25 @@ export const formats = (locale: string) => {
     });
   };
 
+  const formatDurationShort = (from: Date | string, to?: Date | string | null): string => {
+    const start = new Date(from);
+    const end = to ? new Date(to) : new Date();
+    const totalMinutes = Math.round((end.getTime() - start.getTime()) / 60_000);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
+  const formatDurationByMinutesShort = (minutes: number): string => {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h > 0 && m > 0) return `${h}h ${m}m`;
+    if (h > 0) return `${h}h`;
+    return `${m}m`;
+  };
+
   return {
     formatDate,
     formatDateTime,
@@ -158,5 +177,7 @@ export const formats = (locale: string) => {
     formatWorkedPeriod,
     formatDuration,
     formatDurationByMinutes,
+    formatDurationShort,
+    formatDurationByMinutesShort,
   };
 };
