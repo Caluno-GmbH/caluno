@@ -53,6 +53,11 @@ query GetShifts(
   $sort: ShiftSortField
   $order: SortOrder
   $search: String
+  $dateFrom: DateTime
+  $dateTo: DateTime
+  $location: String
+  $visibility: ShiftVisibility
+  $fill: ShiftFillFilter
 ) {
   shifts(
     limit: $limit
@@ -60,6 +65,11 @@ query GetShifts(
     sort: $sort
     order: $order
     search: $search
+    dateFrom: $dateFrom
+    dateTo: $dateTo
+    location: $location
+    visibility: $visibility
+    fill: $fill
   ) {
     items {
       id
@@ -68,10 +78,21 @@ query GetShifts(
       originalStartsAt
       durationMinutes
       visibility
+      location
       maxVolunteers
       minVolunteers
       reimbursementTypeId
-      requiredFormsCount
+      instances {
+        id
+        actualStartsAt
+        actualEndsAt
+        isCancelled
+        overrideLocation
+        overrideMinVolunteers
+        overrideMaxVolunteers
+        filledCount
+        pendingCount
+      }
       createdBy {
         id
         name
@@ -85,6 +106,14 @@ query GetShifts(
       hasMore
     }
   }
+}
+
+query GetShiftLocations {
+  shiftLocations
+}
+
+query GetShiftCount {
+  shiftCount
 }
 
 query GetEventShifts($eventId: ID!, $limit: Int!, $offset: Int!) {

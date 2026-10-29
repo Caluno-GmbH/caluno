@@ -1,8 +1,10 @@
 import {
   type GetWeeklyShiftsQuery,
   PermissionKey,
+  ShiftFillFilter,
   SortOrder,
 } from '@repo/data';
+import { parseISO } from 'date-fns';
 import { getTranslations } from 'next-intl/server';
 import { CreateShiftButton } from '@/domain/shift/components/create-shift-button';
 import { EmptyShifts } from '@/domain/shift/components/empty-shifts';
@@ -12,6 +14,7 @@ import { ShiftsTable } from '@/domain/shift/components/shifts-table';
 import { WeeklyCalendar } from '@/domain/shift/components/weekly-calendar';
 import { WeeklyCalendarNav } from '@/domain/shift/components/weekly-calendar-nav';
 import { getWeekRange } from '@/domain/shift/lib/shift-instances';
+import { parseAsLocalDate } from '@/domain/shift/shifts-search-params';
 import { shiftsSearchParamsCache } from '@/domain/shift/shifts-search-params.server';
 import { orgHasShifts } from '@/domain/shift/weekplan';
 import { getDataClient } from '@/lib/data-client';
@@ -26,7 +29,7 @@ interface ShiftsPageProps {
 }
 
 function parseWeekStart(param: string | null | undefined): Date {
-  const base = param ? new Date(param) : new Date();
+  const base = param ? parseISO(param) : new Date();
   const d = Number.isNaN(base.getTime()) ? new Date() : base;
   return new Date(getWeekRange(d).weekStart.getTime());
 }
@@ -41,8 +44,18 @@ export default async function ShiftsPage({
   await requireOrgAccess(orgUId);
   const [canManage] = await checkPermission(orgUId, PermissionKey.ShiftEdit);
 
-  const { sort, dir, page, pageSize, q } =
-    shiftsSearchParamsCache.parse(rawSearchParams);
+  const {
+    sort,
+    dir,
+    page,
+    pageSize,
+    q,
+    dateFrom,
+    dateTo,
+    location,
+    visibility,
+    fill,
+  } = shiftsSearchParamsCache.parse(rawSearchParams);
 
   const view =
     (rawSearchParams.view as ShiftViewType | undefined) ?? 'weekplan';
@@ -64,8 +77,7 @@ export default async function ShiftsPage({
     if (instances.length > 0) {
       orgShiftTotal = instances.length;
     } else {
-      const shiftList = await data.shift.findAll({ limit: 1, offset: 0 });
-      orgShiftTotal = shiftList.pagination.total;
+      orgShiftTotal = await data.shift.count();
     }
   }
 
@@ -73,15 +85,36 @@ export default async function ShiftsPage({
 
   if (!isWeekplan) {
     const limit = Number(pageSize);
-    const result = await data.shift.findAll({
-      limit,
-      offset: (page - 1) * limit,
-      sort,
-      order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
-      search: q || null,
-    });
+    const [result, locationOptions] = await Promise.all([
+      data.shift.findAll({
+        limit,
+        offset: (page - 1) * limit,
+        sort,
+        order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
+        search: q || null,
+        dateFrom: dateFrom ? parseAsLocalDate.serialize(dateFrom) : undefined,
+        dateTo: dateTo ? parseAsLocalDate.serialize(dateTo) : undefined,
+        location: location || undefined,
+        visibility: visibility ?? undefined,
+        fill:
+          fill === 'below'
+            ? ShiftFillFilter.Below
+            : fill === 'full'
+              ? ShiftFillFilter.Full
+              : undefined,
+      }),
+      data.shift.findLocations(),
+    ]);
 
-    const showTable = result.pagination.total > 0 || !!q;
+    const hasActiveFilters = Boolean(
+      q || dateFrom || dateTo || location || visibility || fill,
+    );
+    // The list is limited to a date window, so an empty result doesn't mean
+    // the org has no shifts — keep the toolbar so the window can be widened.
+    const showTable =
+      result.pagination.total > 0 ||
+      hasActiveFilters ||
+      orgHasShifts(await data.shift.count());
 
     return (
       <div className="flex flex-col h-full gap-4">
@@ -101,6 +134,7 @@ export default async function ShiftsPage({
             pagination={result.pagination}
             orgUId={orgUId}
             page={page}
+            locationOptions={locationOptions}
           />
         ) : (
           <EmptyShifts>

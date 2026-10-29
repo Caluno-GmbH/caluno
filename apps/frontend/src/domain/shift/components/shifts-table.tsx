@@ -1,52 +1,173 @@
 'use client';
 
+import { tz } from '@date-fns/tz';
 import type { GetShiftsQuery, PaginationInfo } from '@repo/data';
-import { formatRrulePattern } from '@repo/data';
 import {
-  ActionsCell,
+  formatRrulePattern,
+  isSingleOccurrenceRrule,
+  parseRruleEndDate,
+  ShiftVisibility,
+} from '@repo/data';
+import { useReimbursementTypes } from '@repo/data/react';
+import {
+  ActionTooltip,
   Badge,
   Button,
-  Input,
+  EntityCell,
   StatusCell,
+  TableToolbar,
   TextCell,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@repo/ui';
 import type {
   ColumnDef,
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
-import { Search, X } from 'lucide-react';
+import { addDays, parseISO, startOfDay } from 'date-fns';
+import {
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  HeartHandshake,
+  MapPin,
+  TriangleAlert,
+  UsersRound,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { debounce, useQueryStates } from 'nuqs';
-import { useMemo } from 'react';
+import { type ElementType, useCallback, useMemo } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { SEARCH_DEBOUNCE_MS } from '@/components/data-table/table-params';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
-import {
-  eventShiftEditPath,
-  eventShiftInvitePath,
-} from '@/domain/event/routes';
+import { TYPE_COLOR } from '@/domain/accounting/components/doc-type-header';
+import { eventShiftEditPath } from '@/domain/event/routes';
+import type { ShiftFilterField } from '@/domain/shift/lib/shift-active-filters';
+import { buildShiftActiveFilters } from '@/domain/shift/lib/shift-active-filters';
 import { getVisibilityConfig } from '@/domain/shift/lib/shift-badge-config';
 import { Link } from '@/i18n/navigation';
+import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import { shiftDetailPath, shiftEditPath } from '../routes';
-import { shiftsSearchParams } from '../shifts-search-params';
+import { resolvePauschaleMarker } from '../pauschale-marker';
+import {
+  shiftDetailPath,
+  shiftEditPath,
+  shiftInstanceDetailPath,
+} from '../routes';
+import { parseAsLocalDate, shiftsSearchParams } from '../shifts-search-params';
+import { getStaffingState, staffingBadgeText } from '../staffing';
 import { ActionBar } from './action-bar';
-import { PauschaleMarker } from './pauschale-marker';
 
-type ShiftListItem = GetShiftsQuery['shifts']['items'][number] & {
-  instance?: { id: string } | null;
-};
+type ApiShiftItem = GetShiftsQuery['shifts']['items'][number];
+type ApiInstanceItem = ApiShiftItem['instances'][number];
+
+export interface ShiftInstanceRow {
+  kind: 'instance';
+  id: string;
+  masterId: string;
+  actualStartsAt: string;
+  actualEndsAt: string;
+  isCancelled: boolean;
+  resolvedLocation: string | null;
+  resolvedMin: number | null;
+  resolvedMax: number | null;
+  filledCount: number;
+  pendingCount: number;
+  /** Whether location is inherited (no override) */
+  locationInherited: boolean;
+}
+
+export interface ShiftMasterRow {
+  kind: 'master';
+  id: string;
+  title: string;
+  rrule: string | null;
+  originalStartsAt: string;
+  durationMinutes: number;
+  visibility: ApiShiftItem['visibility'];
+  location: string | null;
+  minVolunteers: number | null;
+  maxVolunteers: number | null;
+  reimbursementTypeId: string | null;
+  /** True for single-occurrence shifts: rendered as one row with no sub-rows. */
+  isOneOff: boolean;
+  /** The sole instance of a one-off shift, surfaced on the master row itself. */
+  singleInstance: ShiftInstanceRow | null;
+  subRows: ShiftInstanceRow[];
+}
+
+export type ShiftRow = ShiftMasterRow | ShiftInstanceRow;
+
+function toInstanceRow(
+  inst: ApiInstanceItem,
+  master: ApiShiftItem,
+): ShiftInstanceRow {
+  return {
+    kind: 'instance',
+    id: inst.id,
+    masterId: master.id,
+    actualStartsAt: inst.actualStartsAt,
+    actualEndsAt: inst.actualEndsAt,
+    isCancelled: inst.isCancelled,
+    resolvedLocation: inst.overrideLocation ?? master.location,
+    resolvedMin: inst.overrideMinVolunteers ?? master.minVolunteers,
+    resolvedMax: inst.overrideMaxVolunteers ?? master.maxVolunteers,
+    filledCount: inst.filledCount,
+    pendingCount: inst.pendingCount,
+    locationInherited: inst.overrideLocation == null,
+  };
+}
+
+function toMasterRow(item: ApiShiftItem): ShiftMasterRow {
+  const instances = item.instances.map((inst) => toInstanceRow(inst, item));
+  const isOneOff = isSingleOccurrenceRrule(item.rrule);
+  return {
+    kind: 'master',
+    id: item.id,
+    title: item.title,
+    rrule: item.rrule,
+    originalStartsAt: item.originalStartsAt,
+    durationMinutes: item.durationMinutes,
+    visibility: item.visibility,
+    location: item.location,
+    minVolunteers: item.minVolunteers,
+    maxVolunteers: item.maxVolunteers,
+    reimbursementTypeId: item.reimbursementTypeId,
+    isOneOff,
+    singleInstance: isOneOff ? (instances[0] ?? null) : null,
+    // A one-off shift is one row: no instance sub-rows underneath.
+    subRows: isOneOff ? [] : instances,
+  };
+}
+
+/** Tints the whole row when its (resolved) staffing is understaffed. */
+function getRowClassName(row: ShiftRow): string | undefined {
+  const instance = row.kind === 'instance' ? row : row.singleInstance;
+  if (
+    instance &&
+    getStaffingState(
+      instance.filledCount,
+      instance.resolvedMin,
+      instance.resolvedMax,
+    ) === 'alert'
+  ) {
+    return 'bg-alert/5';
+  }
+  return undefined;
+}
 
 interface ShiftsTableProps {
-  shifts: ShiftListItem[];
+  shifts: ApiShiftItem[];
   pagination: PaginationInfo;
   orgUId: string;
   page?: number;
   eventId?: string;
+  locationOptions: string[];
 }
 
 export function ShiftsTable({
@@ -55,16 +176,16 @@ export function ShiftsTable({
   orgUId,
   page,
   eventId,
+  locationOptions,
 }: ShiftsTableProps) {
   const t = useTranslations('Shift');
-  const { formatDate, formatTimeRange } = useFormatting();
+  const { formatDate, formatTimeRange, formatDateRange } = useFormatting();
 
-  const [{ sort, dir, q, pageSize }, setParams] = useQueryStates(
-    shiftsSearchParams,
-    { shallow: false },
-  );
+  const [
+    { sort, dir, q, pageSize, location, visibility, dateFrom, dateTo, fill },
+    setParams,
+  ] = useQueryStates(shiftsSearchParams, { shallow: false });
 
-  // Only non-default table state goes on the detail link, keeping URLs short.
   const returnQuery = useMemo(() => {
     const defaults = shiftsSearchParams;
     return {
@@ -74,8 +195,24 @@ export function ShiftsTable({
       ...(sort !== defaults.sort.defaultValue ? { sort } : {}),
       ...(dir !== defaults.dir.defaultValue ? { dir } : {}),
       ...(q.trim() ? { q } : {}),
+      ...(location ? { location } : {}),
+      ...(visibility ? { visibility } : {}),
+      ...(dateFrom ? { dateFrom: parseAsLocalDate.serialize(dateFrom) } : {}),
+      ...(dateTo ? { dateTo: parseAsLocalDate.serialize(dateTo) } : {}),
+      ...(fill ? { fill } : {}),
     };
-  }, [page, pageSize, sort, dir, q]);
+  }, [
+    page,
+    pageSize,
+    sort,
+    dir,
+    q,
+    location,
+    visibility,
+    dateFrom,
+    dateTo,
+    fill,
+  ]);
 
   const sorting = useMemo(() => toSorting(sort, dir), [sort, dir]);
 
@@ -87,73 +224,286 @@ export function ShiftsTable({
 
   const visibilityConfig = useMemo(() => getVisibilityConfig(t), [t]);
 
-  const columns = useMemo<ColumnDef<DataTableFeatures, ShiftListItem>[]>(
+  const { data: reimbursementTypes } = useReimbursementTypes();
+
+  // Trailing Pauschale marker for the Name cell: the paid type's coloured icon
+  // with an explanatory tooltip. Unpaid shifts show no icon.
+  const pauschaleTrailing = useMemo(() => {
+    const make = (Icon: ElementType, label: string, color: string) => (
+      <ActionTooltip label={label}>
+        <Icon
+          role="img"
+          aria-label={label}
+          className="size-8"
+          style={{ color }}
+        />
+      </ActionTooltip>
+    );
+    return {
+      ehrenamt: make(
+        HeartHandshake,
+        t('paidMarker.ehrenamt'),
+        TYPE_COLOR.ehrenamt,
+      ),
+      uebungsleiter: make(
+        GraduationCap,
+        t('paidMarker.uebungsleiter'),
+        TYPE_COLOR.uebungsleiter,
+      ),
+    };
+  }, [t]);
+
+  const masterRows = useMemo(() => shifts.map(toMasterRow), [shifts]);
+
+  // The backend windows the list to today → +31 days when no date filter is set.
+  // Surface that default in the picker so it isn't a silent filter.
+  const defaultWindow = useMemo(() => {
+    const appTz = { in: tz(DEFAULT_TIMEZONE) };
+    const from = startOfDay(new Date(), appTz);
+    return { from, to: addDays(from, 31, appTz) };
+  }, []);
+
+  // Instance rows and one-off masters link to the assignment (instance) detail;
+  // a recurring master's header row links to the full shift detail.
+  const getRowHref = useCallback(
+    (row: ShiftRow): string => {
+      if (row.kind === 'instance') {
+        return shiftInstanceDetailPath(
+          orgUId,
+          row.masterId,
+          row.id,
+          returnQuery,
+        );
+      }
+      if (row.singleInstance) {
+        return shiftInstanceDetailPath(
+          orgUId,
+          row.id,
+          row.singleInstance.id,
+          returnQuery,
+        );
+      }
+      return shiftDetailPath(orgUId, row.id, returnQuery);
+    },
+    [orgUId, returnQuery],
+  );
+
+  const columns = useMemo<ColumnDef<DataTableFeatures, ShiftRow>[]>(
     () => [
       {
         id: 'TITLE',
-        accessorFn: (row) => row.title,
+        accessorFn: (row) =>
+          row.kind === 'master' ? row.title : row.actualStartsAt,
+        meta: {
+          headerClassName: 'w-[30%]',
+          cellClassName: 'w-[30%]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.name')} />
         ),
         cell: ({ row }) => {
-          const shift = row.original;
+          const item = row.original;
+          if (item.kind === 'master') {
+            const marker = resolvePauschaleMarker(
+              item.reimbursementTypeId,
+              reimbursementTypes,
+            );
+            let subtitle: string;
+            if (item.singleInstance) {
+              // One-off: the single occurrence's date.
+              subtitle = formatDate(
+                parseISO(item.singleInstance.actualStartsAt),
+              );
+            } else {
+              // Recurring: the start→end span, or "Since <start>" when open-ended.
+              const start = parseISO(item.originalStartsAt);
+              const end = parseRruleEndDate(item.rrule);
+              subtitle = end
+                ? formatDateRange(start, end)
+                : t('table.recurrenceSince', { date: formatDate(start) });
+            }
+            return (
+              <div className="flex min-w-0 items-center gap-1">
+                {row.getCanExpand() && (
+                  <Button
+                    size="icon-xs"
+                    variant="ghost"
+                    onClick={row.getToggleExpandedHandler()}
+                    className="shrink-0"
+                    aria-expanded={row.getIsExpanded()}
+                    aria-label={
+                      row.getIsExpanded()
+                        ? t('table.collapseOccurrences')
+                        : t('table.expandOccurrences')
+                    }
+                  >
+                    {row.getIsExpanded() ? (
+                      <ChevronDown className="size-4" />
+                    ) : (
+                      <ChevronRight className="size-4" />
+                    )}
+                  </Button>
+                )}
+                <EntityCell
+                  className="flex-1 justify-between"
+                  title={
+                    <Link className="hover:underline" href={getRowHref(item)}>
+                      {item.title}
+                    </Link>
+                  }
+                  subtitle={subtitle}
+                  trailing={marker ? pauschaleTrailing[marker] : undefined}
+                />
+              </div>
+            );
+          }
           return (
-            <div className="flex min-w-0 items-center gap-1.5">
-              <Link
-                className="max-w-80 truncate hover:underline"
-                href={shiftDetailPath(orgUId, shift.id, returnQuery)}
-              >
-                {shift.title}
-              </Link>
-              <PauschaleMarker
-                reimbursementTypeId={shift.reimbursementTypeId}
-              />
-            </div>
+            <Link className="block hover:underline" href={getRowHref(item)}>
+              <TextCell className="pl-6 text-muted-foreground">
+                {formatDate(parseISO(item.actualStartsAt))}
+              </TextCell>
+            </Link>
           );
         },
       },
       {
         id: 'FIRST_DATE',
-        accessorFn: (row) => row.originalStartsAt,
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('table.firstDate')} />
-        ),
-        cell: ({ row }) => {
-          const startDate = new Date(row.original.originalStartsAt);
-          return <TextCell>{formatDate(startDate)}</TextCell>;
+        enableSorting: false,
+        meta: {
+          headerClassName: 'w-[12%]',
+          cellClassName: 'w-[12%]',
         },
-      },
-      {
-        id: 'pattern',
-        enableSorting: false,
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title={t('table.pattern')} />
-        ),
-        cell: ({ row }) => (
-          <StatusCell>
-            <Badge variant="outline">
-              {formatRrulePattern(row.original.rrule)}
-            </Badge>
-          </StatusCell>
-        ),
-      },
-      {
-        id: 'time',
-        enableSorting: false,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.time')} />
         ),
         cell: ({ row }) => {
-          const startDate = new Date(row.original.originalStartsAt);
-          const endDate = new Date(
-            startDate.getTime() + row.original.durationMinutes * 60000,
+          const item = row.original;
+          const instance =
+            item.kind === 'instance' ? item : item.singleInstance;
+          if (item.kind === 'master' && !instance) {
+            return (
+              <StatusCell>
+                <Badge variant="outline">
+                  {formatRrulePattern(item.rrule)}
+                </Badge>
+              </StatusCell>
+            );
+          }
+          if (!instance) {
+            return null;
+          }
+          const start = parseISO(instance.actualStartsAt);
+          const end = parseISO(instance.actualEndsAt);
+          return <TextCell>{formatTimeRange(start, end)}</TextCell>;
+        },
+      },
+      {
+        id: 'location',
+        enableSorting: false,
+        meta: {
+          headerClassName: 'w-[28%]',
+          cellClassName: 'w-[28%]',
+        },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.location')} />
+        ),
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.kind === 'master') {
+            // A one-off surfaces its instance's resolved (possibly overridden)
+            // location; a recurring master shows its own base location.
+            if (item.singleInstance) {
+              return (
+                <TextCell
+                  className={
+                    item.singleInstance.locationInherited
+                      ? 'text-muted-foreground'
+                      : undefined
+                  }
+                >
+                  {item.singleInstance.resolvedLocation ?? ''}
+                </TextCell>
+              );
+            }
+            return <TextCell>{item.location ?? ''}</TextCell>;
+          }
+          return (
+            <TextCell
+              className={
+                item.locationInherited ? 'text-muted-foreground' : undefined
+              }
+            >
+              {item.resolvedLocation ?? ''}
+            </TextCell>
           );
-          return <TextCell>{formatTimeRange(startDate, endDate)}</TextCell>;
+        },
+      },
+      {
+        id: 'staffing',
+        enableSorting: false,
+        meta: {
+          headerClassName: 'w-[10%]',
+          cellClassName: 'w-[10%]',
+        },
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.staffing')} />
+        ),
+        cell: ({ row }) => {
+          const item = row.original;
+          const instance =
+            item.kind === 'instance' ? item : item.singleInstance;
+          if (!instance) {
+            return null;
+          }
+          const {
+            resolvedMin: min,
+            resolvedMax: max,
+            filledCount: count,
+          } = instance;
+          const state = getStaffingState(count, min, max);
+          const variant =
+            state === 'full'
+              ? 'success'
+              : state === 'alert'
+                ? 'alert'
+                : 'outline';
+          const belowMin =
+            state === 'alert' && min != null && count > 0 && count < min;
+          const Icon = belowMin ? TriangleAlert : UsersRound;
+          return (
+            <StatusCell>
+              <Badge variant={variant} className="gap-1">
+                <Icon className="size-3.5" />
+                {staffingBadgeText(count, min, max, state)}
+              </Badge>
+              {instance.pendingCount > 0 && (
+                <Badge
+                  variant="neutral"
+                  className="gap-1"
+                  title={t('table.pendingCount', {
+                    count: instance.pendingCount,
+                  })}
+                  aria-label={t('table.pendingCount', {
+                    count: instance.pendingCount,
+                  })}
+                >
+                  <Clock className="size-3.5" aria-hidden="true" />
+                  {instance.pendingCount}
+                </Badge>
+              )}
+            </StatusCell>
+          );
         },
       },
       {
         id: 'VISIBILITY',
-        accessorFn: (row) => row.visibility,
+        enableSorting: false,
+        accessorFn: (row) =>
+          row.kind === 'master' ? row.visibility : undefined,
+        meta: {
+          headerClassName: 'w-[10%]',
+          cellClassName: 'w-[10%]',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader
             column={column}
@@ -161,7 +511,11 @@ export function ShiftsTable({
           />
         ),
         cell: ({ row }) => {
-          const cfg = visibilityConfig[row.original.visibility];
+          const item = row.original;
+          if (item.kind !== 'master') {
+            return null;
+          }
+          const cfg = visibilityConfig[item.visibility];
           return (
             <StatusCell>
               <Badge variant={cfg.variant}>{cfg.label}</Badge>
@@ -170,49 +524,30 @@ export function ShiftsTable({
         },
       },
       {
-        id: 'forms',
-        enableSorting: false,
-        header: ({ column }) => (
-          <DataTableColumnHeader
-            column={column}
-            title={t('table.requiredForms')}
-          />
-        ),
-        cell: ({ row }) => (
-          <StatusCell>
-            <Badge variant="outline">{row.original.requiredFormsCount}</Badge>
-          </StatusCell>
-        ),
-      },
-      {
         id: 'actions',
         enableSorting: false,
+        meta: {
+          headerClassName: 'w-[10%]',
+          cellClassName: 'w-[10%]',
+        },
         header: () => null,
         cell: ({ row }) => {
-          const shift = row.original;
+          const item = row.original;
+          if (item.kind !== 'master') {
+            return null;
+          }
           return (
-            <ActionsCell>
-              <ActionBar
-                organizationUnitId={orgUId}
-                id={shift.id}
-                size="sm"
-                editHref={
-                  eventId
-                    ? eventShiftEditPath(orgUId, eventId, shift.id)
-                    : shiftEditPath(orgUId, shift.id)
-                }
-                inviteHref={
-                  eventId && shift.instance
-                    ? eventShiftInvitePath(
-                        orgUId,
-                        eventId,
-                        shift.id,
-                        shift.instance.id,
-                      )
-                    : undefined
-                }
-              />
-            </ActionsCell>
+            <ActionBar
+              organizationUnitId={orgUId}
+              id={item.id}
+              size="sm"
+              editHref={
+                eventId
+                  ? eventShiftEditPath(orgUId, eventId, item.id)
+                  : shiftEditPath(orgUId, item.id)
+              }
+              inviteHref={undefined}
+            />
           );
         },
       },
@@ -220,52 +555,204 @@ export function ShiftsTable({
     [
       t,
       orgUId,
-      returnQuery,
       eventId,
+      getRowHref,
       formatDate,
       formatTimeRange,
+      formatDateRange,
       visibilityConfig,
+      reimbursementTypes,
+      pauschaleTrailing,
     ],
+  );
+
+  const filterLabels = useMemo(
+    () => ({
+      q: t('search.placeholder'),
+      location: t('filter.location'),
+      visibility: t('filter.visibility'),
+      date: t('filter.date'),
+      fill: t('filter.fill'),
+    }),
+    [t],
+  );
+
+  const formatActiveDateRange = (
+    from: Date | null,
+    to: Date | null,
+  ): string => {
+    if (from && to) return formatDateRange(from, to);
+    if (from) return formatDate(from);
+    if (to) return formatDate(to);
+    return '';
+  };
+
+  const displayVisibility = (v: ShiftVisibility) => visibilityConfig[v].label;
+
+  const displayFill = (f: 'below' | 'full') =>
+    ({
+      below: t('filter.fillUnderstaffed'),
+      full: t('filter.fillFull'),
+    })[f];
+
+  const onClearField = (field: ShiftFilterField) => {
+    if (field === 'fill') {
+      void setParams({ fill: '', page: 1 });
+    } else if (field === 'q') {
+      void setParams({ q: '', page: 1 });
+    } else if (field === 'location') {
+      void setParams({ location: '', page: 1 });
+    } else if (field === 'visibility') {
+      void setParams({ visibility: null, page: 1 });
+    } else if (field === 'date') {
+      void setParams({ dateFrom: null, dateTo: null, page: 1 });
+    }
+  };
+
+  const activeFilters = buildShiftActiveFilters({
+    values: { q, location, visibility, dateFrom, dateTo, fill },
+    labels: filterLabels,
+    formatDateRange: formatActiveDateRange,
+    displayVisibility,
+    displayFill,
+    onClear: onClearField,
+  });
+
+  const onClearAll = () => {
+    void setParams({
+      q: '',
+      location: '',
+      visibility: null,
+      dateFrom: null,
+      dateTo: null,
+      fill: '',
+      page: 1,
+    });
+  };
+
+  const filtersActive = activeFilters.length > 0;
+
+  const emptyState = filtersActive ? (
+    <div className="flex flex-col items-center gap-3 py-4">
+      <div className="space-y-1 text-center">
+        <p className="font-medium text-foreground">{t('empty.noMatchTitle')}</p>
+        <p className="text-muted-foreground text-sm">
+          {t('empty.noMatchDescription')}
+        </p>
+      </div>
+      <Button variant="outline" size="sm" onClick={onClearAll}>
+        {t('empty.clearFilters')}
+      </Button>
+    </div>
+  ) : (
+    t('empty.title')
   );
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
 
   return (
     <div className="space-y-4">
-      <div className="relative w-full sm:max-w-md">
-        <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-        <Input
+      <TableToolbar
+        activeFilters={activeFilters}
+        onClearAll={onClearAll}
+        resultCount={pagination.total}
+        sheetTitle={t('filter.sheetTitle')}
+      >
+        <TableToolbar.Search
           value={q}
-          onChange={(e) => {
+          onChange={(v) => {
             void setParams(
-              { q: e.target.value, page: 1 },
+              { q: v, page: 1 },
               { limitUrlUpdates: debounce(SEARCH_DEBOUNCE_MS) },
             );
           }}
           placeholder={t('search.placeholder')}
-          className="pl-9 pr-10"
         />
-        {q && (
-          <Button
-            size="icon-xs"
-            variant="ghost"
-            onClick={() => void setParams({ q: '', page: 1 })}
-            tooltip={t('search.clearAria')}
-            className="absolute top-2 right-2"
-          >
-            <X />
-          </Button>
-        )}
-      </div>
+        <TableToolbar.DateRange
+          value={{
+            from: dateFrom ?? defaultWindow.from,
+            to: dateTo ?? defaultWindow.to,
+          }}
+          onChange={(v) => {
+            void setParams({
+              dateFrom: v.from ?? null,
+              dateTo: v.to ?? null,
+              page: 1,
+            });
+          }}
+          placeholder={t('filter.datePlaceholder')}
+        />
+        <TableToolbar.Combobox
+          value={location || undefined}
+          onChange={(v) => void setParams({ location: v, page: 1 })}
+          options={locationOptions}
+          placeholder={t('filter.locationPlaceholder')}
+          emptyText={t('filter.locationEmpty')}
+          ariaLabel={t('filter.location')}
+          icon={<MapPin />}
+        />
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="lg"
+          spacing={0}
+          value={visibility ?? 'all'}
+          onValueChange={(v) => {
+            if (!v) return;
+            void setParams({
+              visibility: v === 'all' ? null : (v as ShiftVisibility),
+              page: 1,
+            });
+          }}
+          aria-label={t('filter.visibility')}
+        >
+          <ToggleGroupItem value="all">
+            {t('filter.visibilityAll')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value={ShiftVisibility.InvitedMembers}>
+            {t('filter.visibilityInviteOnly')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value={ShiftVisibility.AllMembers}>
+            {t('filter.visibilityOpen')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="lg"
+          spacing={0}
+          value={fill === 'below' || fill === 'full' ? fill : 'all'}
+          onValueChange={(v) => {
+            if (!v) return;
+            void setParams({
+              fill: v === 'all' ? '' : (v as 'below' | 'full'),
+              page: 1,
+            });
+          }}
+          aria-label={t('filter.fill')}
+        >
+          <ToggleGroupItem value="all">{t('filter.fillAll')}</ToggleGroupItem>
+          <ToggleGroupItem value="below">
+            {t('filter.fillUnderstaffed')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="full">{t('filter.fillFull')}</ToggleGroupItem>
+        </ToggleGroup>
+      </TableToolbar>
       <DataTable
         columns={columns}
-        data={shifts}
+        data={masterRows}
         pageCount={pageCount}
         sorting={sorting}
         onSortingChange={onSortingChange}
-        emptyMessage={q.trim() ? t('search.noResults') : t('empty.title')}
+        emptyMessage={emptyState}
+        getRowClassName={getRowClassName}
+        getRowHref={getRowHref}
+        expansion={{
+          getSubRows: (r) => (r.kind === 'master' ? r.subRows : undefined),
+          defaultAllExpanded: true,
+        }}
       />
-      {pagination.total > 0 && (
+      {pagination.total > 0 && masterRows.length > 0 && (
         <DataTablePagination
           total={pagination.total}
           name={t('page.paginationName')}

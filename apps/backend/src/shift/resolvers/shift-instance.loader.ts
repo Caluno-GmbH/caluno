@@ -25,6 +25,32 @@ export class ShiftInstanceLoader {
     },
   );
 
+  /** Keyed by `${organizationUnitId}:${instanceId}`. */
+  public readonly pendingCountByKey = new DataLoader<string, number>(
+    async (keys) => {
+      const instanceIdsByOrgUnit = new Map<string, string[]>();
+      for (const key of keys) {
+        const [organizationUnitId, instanceId] = key.split(':');
+        const list = instanceIdsByOrgUnit.get(organizationUnitId) ?? [];
+        list.push(instanceId);
+        instanceIdsByOrgUnit.set(organizationUnitId, list);
+      }
+
+      const countsByKey = new Map<string, number>();
+      for (const [organizationUnitId, instanceIds] of instanceIdsByOrgUnit) {
+        const counts = await this.shiftService.getPendingCounts(
+          instanceIds,
+          organizationUnitId,
+        );
+        for (const [instanceId, total] of counts) {
+          countsByKey.set(`${organizationUnitId}:${instanceId}`, total);
+        }
+      }
+
+      return keys.map((key) => countsByKey.get(key) ?? 0);
+    },
+  );
+
   public readonly lastCallOutByInstanceId = new DataLoader<
     string,
     ShiftCallOutSummary | null

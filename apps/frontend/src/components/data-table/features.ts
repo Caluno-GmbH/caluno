@@ -1,8 +1,10 @@
 import {
   columnVisibilityFeature,
+  createExpandedRowModel,
   createPaginatedRowModel,
   createSortedRowModel,
   metaHelper,
+  rowExpandingFeature,
   rowPaginationFeature,
   rowSortingFeature,
   tableFeatures,
@@ -19,8 +21,10 @@ export const dataTableFeatures = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
   columnVisibilityFeature,
+  rowExpandingFeature,
   sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
+  expandedRowModel: createExpandedRowModel(),
   columnMeta: metaHelper<{
     headerClassName?: string;
     cellClassName?: string;

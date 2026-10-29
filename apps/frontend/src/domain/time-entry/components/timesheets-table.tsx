@@ -3,7 +3,6 @@
 import type { GetTimeEntriesQuery, PaginationInfo } from '@repo/data';
 import { TimeEntryStatus } from '@repo/data';
 import {
-  ActionsCell,
   EntityCell,
   NumberCell,
   TextCell,
@@ -212,14 +211,12 @@ export const TimesheetsTable = ({
         },
         header: () => null,
         cell: ({ row }) => (
-          <ActionsCell>
-            <ActionBar
-              id={row.original.id}
-              organizationUnitId={organizationUnitId}
-              status={row.original.status}
-              size="sm"
-            />
-          </ActionsCell>
+          <ActionBar
+            id={row.original.id}
+            organizationUnitId={organizationUnitId}
+            status={row.original.status}
+            size="sm"
+          />
         ),
       },
     ],
