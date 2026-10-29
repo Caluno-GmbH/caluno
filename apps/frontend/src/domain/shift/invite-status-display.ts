@@ -87,9 +87,10 @@ export function canRemindInvitee(
 }
 
 /**
- * Invite-sheet defaults: keep ADMIN_REJECTED off the Invited column so saving
- * the sheet (e.g. to add someone else) does not silently re-invite them.
- * Admins re-add them explicitly from Available.
+ * Invite-sheet defaults: only keep currently active invites preselected so
+ * saving the sheet (e.g. to add someone else) does not silently re-invite
+ * withdrawn, declined, or admin-rejected volunteers (VOLI-1704). Admins
+ * re-add them explicitly from Available.
  */
 export function preselectedInviteMemberIds(
   members: ReadonlyArray<{ id: string; inviteStatus?: InviteStatus | null }>,
@@ -97,7 +98,7 @@ export function preselectedInviteMemberIds(
   return members
     .filter(
       (member) =>
-        member.inviteStatus == null || !canAdminReinvite(member.inviteStatus),
+        member.inviteStatus == null || canAdminUninvite(member.inviteStatus),
     )
     .map((member) => member.id);
 }

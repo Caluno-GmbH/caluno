@@ -3,9 +3,13 @@
 import {
   EventInviteStatus,
   fromGraphQLError,
+  JoinStatus,
+  RequiredFormTargetType,
   ShiftInviteStatus,
 } from '@repo/data';
 import {
+  useJoinEvent,
+  useJoinShiftInstance,
   useUpdateEventInviteStatus,
   useUpdateShiftInstanceInviteStatus,
 } from '@repo/data/react';
@@ -22,7 +26,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { CompensationNotice } from '@/domain/shift/components/compensation-notice';
-import { Link, useRouter } from '@/i18n/navigation';
+import { Link, usePathname, useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { getInitials } from '@/lib/get-initials';
 import type { MergedInvitation } from '../lib/merge-invitations';
@@ -32,35 +36,107 @@ import { useRecurrenceLabel } from '../lib/recurrence-label';
 export function InviteCardMyInvited({ invite }: { invite: MergedInvitation }) {
   const t = useTranslations('VolunteerHome');
   const router = useRouter();
+  const pathname = usePathname();
   const { formatDate, formatTimeRange, formatDateRange } = useFormatting();
   const getRecurrenceLabel = useRecurrenceLabel();
   const respondToShiftInvite = useUpdateShiftInstanceInviteStatus();
   const respondToEventInvite = useUpdateEventInviteStatus();
+  const joinShiftInstance = useJoinShiftInstance();
+  const joinEvent = useJoinEvent();
 
   const n = normalizeInvitation(invite);
 
   const isPending =
-    respondToShiftInvite.isPending || respondToEventInvite.isPending;
+    respondToShiftInvite.isPending ||
+    respondToEventInvite.isPending ||
+    joinShiftInstance.isPending ||
+    joinEvent.isPending;
 
   const respond = async (accept: boolean) => {
     try {
-      if (n.kind === 'shift') {
-        await respondToShiftInvite.mutateAsync({
-          instanceId: n.id,
-          status: accept
-            ? ShiftInviteStatus.Joined
-            : ShiftInviteStatus.VolunteerRejected,
-        });
-      } else {
-        await respondToEventInvite.mutateAsync({
-          eventId: n.id,
-          status: accept
-            ? EventInviteStatus.Joined
-            : EventInviteStatus.VolunteerRejected,
-        });
+      if (!accept) {
+        if (n.kind === 'shift') {
+          await respondToShiftInvite.mutateAsync({
+            instanceId: n.id,
+            status: ShiftInviteStatus.VolunteerRejected,
+          });
+        } else {
+          await respondToEventInvite.mutateAsync({
+            eventId: n.id,
+            status: EventInviteStatus.VolunteerRejected,
+          });
+        }
+        toast.success(t('inviteDeclined'));
+        router.refresh();
+        return;
       }
-      toast.success(accept ? t('inviteAccepted') : t('inviteDeclined'));
-      router.refresh();
+
+      // Accept goes through join so required forms are gated like the join CTA.
+      if (invite.kind === 'shift') {
+        const shiftId = invite.shift.master.id;
+        const organizationUnitId = invite.shift.master.organizationUnit.id;
+        const result = await joinShiftInstance.mutateAsync(n.id);
+
+        if (
+          result.status === JoinStatus.Joined ||
+          result.status === JoinStatus.WaitlistJoined ||
+          result.status === JoinStatus.PendingApproval
+        ) {
+          toast.success(t('inviteAccepted'));
+          router.refresh();
+          return;
+        }
+
+        if (result.status === JoinStatus.RequirementsNeeded) {
+          const missingForms = (result.requiredForms ?? []).filter(
+            (f) => !f.submitted,
+          );
+          if (missingForms.length > 0) {
+            const redirectTo = encodeURIComponent(pathname);
+            const first = missingForms[0];
+            if (
+              first?.targetType === RequiredFormTargetType.Shift ||
+              first?.targetType === RequiredFormTargetType.ShiftInstance
+            ) {
+              router.push(
+                `/shifts/${shiftId}/instances/${n.id}/forms?redirectTo=${redirectTo}`,
+              );
+            } else {
+              router.push(
+                `/join/${organizationUnitId}/forms?redirectTo=${redirectTo}`,
+              );
+            }
+            return;
+          }
+        }
+
+        toast.error(t('inviteActionFailed'));
+        return;
+      }
+
+      const result = await joinEvent.mutateAsync(n.id);
+
+      if (
+        result.status === JoinStatus.Joined ||
+        result.status === JoinStatus.PendingApproval
+      ) {
+        toast.success(t('inviteAccepted'));
+        router.refresh();
+        return;
+      }
+
+      if (result.status === JoinStatus.RequirementsNeeded) {
+        const missingForms = (result.requiredForms ?? []).filter(
+          (f) => !f.submitted,
+        );
+        if (missingForms.length > 0) {
+          const redirectTo = encodeURIComponent(pathname);
+          router.push(`/events/${n.id}/forms?redirectTo=${redirectTo}`);
+          return;
+        }
+      }
+
+      toast.error(t('inviteActionFailed'));
     } catch (error) {
       toast.error(fromGraphQLError(error).message ?? t('inviteActionFailed'));
     }

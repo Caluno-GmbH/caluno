@@ -4184,7 +4184,11 @@ export class ShiftService {
     const db = tx ?? this.db;
 
     const instance = await db.query.shiftInstances.findFirst({
-      where: { id: instanceId, isCancelled: false },
+      where: {
+        id: instanceId,
+        isCancelled: false,
+        master: { isDeleted: false },
+      },
       with: { master: true },
     });
 
@@ -4194,7 +4198,17 @@ export class ShiftService {
 
     const shift = instance.master;
 
-    if (shift.isDeleted || shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
+    const existingInvite = await db.query.shiftInstanceInvites.findFirst({
+      where: {
+        instanceId,
+        userId,
+      },
+    });
+
+    if (
+      shift.visibility !== ShiftVisibility.ALL_MEMBERS &&
+      !this.canJoinInviteOnlyShift(existingInvite?.status)
+    ) {
       throw new NotFoundGraphQLError('Shift not found');
     }
 
@@ -4224,13 +4238,6 @@ export class ShiftService {
 
     const maxVolunteers = instance.overrideMaxVolunteers ?? shift.maxVolunteers;
     const hasSeat = await this.hasAvailableSeat(instanceId, maxVolunteers, db);
-
-    const existingInvite = await db.query.shiftInstanceInvites.findFirst({
-      where: {
-        instanceId,
-        userId,
-      },
-    });
 
     if (existingInvite) {
       if (existingInvite.status === ShiftInviteStatus.WAITLIST_JOINED) {
@@ -4552,7 +4559,11 @@ export class ShiftService {
     requiredForms?: RequiredFormStatus[];
   }> {
     const instance = await this.db.query.shiftInstances.findFirst({
-      where: { id: instanceId, isCancelled: false },
+      where: {
+        id: instanceId,
+        isCancelled: false,
+        master: { isDeleted: false },
+      },
       with: { master: true },
     });
 
@@ -4561,16 +4572,6 @@ export class ShiftService {
     }
 
     const shift = instance.master;
-
-    if (shift.isDeleted) {
-      throw new NotFoundGraphQLError('Shift not found');
-    }
-
-    if (shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
-      throw new ForbiddenGraphQLError(
-        'This shift is invite-only and cannot be joined directly',
-      );
-    }
 
     const orgUnit = await this.db.query.organizationUnits.findFirst({
       where: { id: shift.organizationUnitId },
@@ -4581,6 +4582,15 @@ export class ShiftService {
     }
 
     const existingInvite = await this.findInstanceInvite(instanceId, userId);
+
+    if (
+      shift.visibility !== ShiftVisibility.ALL_MEMBERS &&
+      !this.canJoinInviteOnlyShift(existingInvite?.status)
+    ) {
+      throw new ForbiddenGraphQLError(
+        'This shift is invite-only and cannot be joined directly',
+      );
+    }
 
     if (
       existingInvite &&
@@ -4790,6 +4800,24 @@ export class ShiftService {
 
     if (invite.status === targetStatus) {
       return invite;
+    }
+
+    if (
+      this.volunteerSelfJoinRequiresForms(
+        isSelfAction,
+        invite.status,
+        targetStatus,
+      )
+    ) {
+      if (nextInstance) {
+        await this.assertShiftAndInstanceRequiredFormsSatisfied(
+          userId,
+          shiftId,
+          nextInstance.id,
+        );
+      } else {
+        await this.assertShiftRequiredFormsSatisfied(userId, shiftId);
+      }
     }
 
     // Direct JOINED without waitlist fallback still needs capacity on future instances
@@ -5077,6 +5105,20 @@ export class ShiftService {
 
     if (invite.status === targetStatus) {
       return invite;
+    }
+
+    if (
+      this.volunteerSelfJoinRequiresForms(
+        isSelfAction,
+        invite.status,
+        targetStatus,
+      )
+    ) {
+      await this.assertShiftAndInstanceRequiredFormsSatisfied(
+        userId,
+        instance.master.id,
+        instanceId,
+      );
     }
 
     const freedSeat = invite.status === ShiftInviteStatus.JOINED;
@@ -5455,6 +5497,68 @@ export class ShiftService {
     const requiredForms = [...shiftForms, ...instanceForms];
     const missingForms = requiredForms.filter((s) => !s.submitted);
     return { satisfied: missingForms.length === 0, requiredForms };
+  }
+
+  /** Invite-only shifts may still be joined by volunteers who already hold an invite. */
+  private canJoinInviteOnlyShift(
+    inviteStatus: ShiftInviteStatus | null | undefined,
+  ): boolean {
+    if (!inviteStatus) {
+      return false;
+    }
+    return (
+      isVolunteerJoinResolveSource(inviteStatus) ||
+      inviteStatus === ShiftInviteStatus.WAITLIST_JOINED ||
+      inviteStatus === ShiftInviteStatus.JOINED ||
+      inviteStatus === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL
+    );
+  }
+
+  private volunteerSelfJoinRequiresForms(
+    isSelfAction: boolean,
+    from: ShiftInviteStatus,
+    target: ShiftInviteStatus,
+  ): boolean {
+    if (!isSelfAction || from === target) {
+      return false;
+    }
+    return (
+      target === ShiftInviteStatus.JOINED ||
+      target === ShiftInviteStatus.WAITLIST_JOINED ||
+      target === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL
+    );
+  }
+
+  private async assertShiftRequiredFormsSatisfied(
+    userId: string,
+    shiftId: string,
+  ): Promise<void> {
+    const requiredForms = await this.getShiftRequiredFormStatuses(
+      userId,
+      shiftId,
+    );
+    if (requiredForms.some((s) => !s.submitted)) {
+      throw new ConflictGraphQLError(
+        'You must complete the required forms before joining this shift.',
+      );
+    }
+  }
+
+  private async assertShiftAndInstanceRequiredFormsSatisfied(
+    userId: string,
+    shiftId: string,
+    shiftInstanceId: string,
+  ): Promise<void> {
+    const formsCheck = await this.checkShiftAndInstanceRequiredForms(
+      userId,
+      shiftId,
+      shiftInstanceId,
+    );
+    if (!formsCheck.satisfied) {
+      throw new ConflictGraphQLError(
+        'You must complete the required forms before joining this shift.',
+      );
+    }
   }
 
   private async resolveOrganizationId(
