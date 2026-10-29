@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { formatAddress, resolveTimeEntryLocation } from './location';
+import { formatAddress, resolveTimeEntryLocation, sumDurationMinutes } from './location';
 
 describe('formatAddress', () => {
   it('joins all present parts', () => {
@@ -71,5 +71,29 @@ describe('resolveTimeEntryLocation', () => {
       organizationUnit: baseOrgUnit,
     } as any;
     expect(resolveTimeEntryLocation(entry)).toBeNull();
+  });
+});
+
+describe('sumDurationMinutes', () => {
+  it('sums duration of closed entries', () => {
+    const entries = [
+      { startedAt: '2024-01-01T08:00:00Z', endedAt: '2024-01-01T10:00:00Z' }, // 120 min
+      { startedAt: '2024-01-01T12:00:00Z', endedAt: '2024-01-01T13:30:00Z' }, // 90 min
+    ];
+    expect(sumDurationMinutes(entries)).toBe(210);
+  });
+
+  it('contributes 0 for open entries', () => {
+    const entries = [{ startedAt: '2024-01-01T08:00:00Z', endedAt: null }];
+    expect(sumDurationMinutes(entries)).toBe(0);
+  });
+
+  it('returns 0 for empty array', () => {
+    expect(sumDurationMinutes([])).toBe(0);
+  });
+
+  it('contributes 0 for undefined endedAt', () => {
+    const entries = [{ startedAt: '2024-01-01T08:00:00Z', endedAt: undefined }];
+    expect(sumDurationMinutes(entries)).toBe(0);
   });
 });

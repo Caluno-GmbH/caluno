@@ -11,6 +11,18 @@ export function formatAddress(orgUnit: {
   return parts.length > 0 ? parts.join(', ') : null;
 }
 
+export function sumDurationMinutes(
+  entries: { startedAt: string; endedAt?: string | null }[],
+): number {
+  return entries.reduce((total, entry) => {
+    if (!entry.endedAt) return total;
+    const minutes =
+      (new Date(entry.endedAt).getTime() - new Date(entry.startedAt).getTime()) /
+      60_000;
+    return total + Math.round(minutes);
+  }, 0);
+}
+
 export function resolveTimeEntryLocation(entry: {
   shiftInstance?: {
     overrideLocation?: string | null;

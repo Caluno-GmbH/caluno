@@ -5,6 +5,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -45,6 +46,7 @@ interface DataTableServerProps<TData extends RowData> {
   /** When set, the whole row navigates to this href on click. */
   getRowHref?: (row: TData) => string | null | undefined;
   expansion?: DataTableExpansionProps<TData>;
+  footerContent?: ReactNode;
 }
 
 interface DataTableClientProps<TData extends RowData> {
@@ -74,6 +76,8 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
     getRowHref,
     onSortingChange,
   } = props;
+  const footerContent =
+    'footerContent' in props ? props.footerContent : undefined;
   const router = useRouter();
   const isClient = props.mode === 'client';
   const client = props.mode === 'client' ? props : undefined;
@@ -199,6 +203,9 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
             })
           )}
         </TableBody>
+        {footerContent && (
+          <TableFooter>{footerContent}</TableFooter>
+        )}
       </Table>
     </div>
   );

@@ -2045,7 +2045,8 @@
       "shift": "Einsatz",
       "volunteer": "Freiwillige:r",
       "status": "Status",
-      "location": "Standort"
+      "location": "Standort",
+      "total": "Gesamt"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",

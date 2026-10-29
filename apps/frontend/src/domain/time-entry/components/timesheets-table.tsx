@@ -20,12 +20,13 @@ import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
+import { TableCell, TableRow } from '@repo/ui';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
-import { resolveTimeEntryLocation } from '@/domain/time-entry/location';
+import { resolveTimeEntryLocation, sumDurationMinutes } from '@/domain/time-entry/location';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { TimesheetsToolbar } from './timesheets-toolbar';
@@ -62,7 +63,7 @@ export const TimesheetsTable = ({
   organizationUnitId,
 }: TimesheetsTableProps) => {
   const t = useTranslations('TimeEntry');
-  const { formatWorkedPeriod, formatDuration, formatDateTime } =
+  const { formatWorkedPeriod, formatDuration, formatDurationByMinutes, formatDateTime } =
     useFormatting();
 
   const [{ sort, dir }, setParams] = useQueryStates(timesheetsSearchParams, {
@@ -239,6 +240,26 @@ export const TimesheetsTable = ({
 
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
 
+  const totalDurationMinutes = useMemo(
+    () => sumDurationMinutes(entries),
+    [entries],
+  );
+
+  const footerContent = (
+    <TableRow className="bg-muted hover:bg-muted font-medium">
+      {/* Span SHIFT + LOCATION + VOLUNTEER + STARTED_AT + STATUS = 5 cols */}
+      <TableCell colSpan={5} className="text-muted-foreground text-sm">
+        {t('table.total')}
+      </TableCell>
+      {/* DURATION column */}
+      <TableCell className="text-right text-sm">
+        {formatDurationByMinutes(totalDurationMinutes)}
+      </TableCell>
+      {/* CREATED_AT + actions = 2 cols */}
+      <TableCell colSpan={2} />
+    </TableRow>
+  );
+
   return (
     <div className="space-y-4">
       <TimesheetsToolbar
@@ -253,6 +274,7 @@ export const TimesheetsTable = ({
         onSortingChange={onSortingChange}
         emptyMessage={t('empty.title')}
         getRowClassName={getRowClassName}
+        footerContent={entries.length > 0 ? footerContent : undefined}
       />
       {pagination.total > 0 && (
         <DataTablePagination
