@@ -88,6 +88,23 @@ export class TimeEntryRepository extends BaseRepository {
     return data.timeEntries;
   }
 
+  async findAllUnpaginated(
+    options: Omit<TimeEntryListOptions, 'limit' | 'offset'> = {},
+  ) {
+    const data = await this.sdk.GetTimeEntries({
+      limit: 10_000,
+      offset: 0,
+      sort: options.sort ?? TimeEntrySortField.CreatedAt,
+      order: options.order ?? SortOrder.Desc,
+      statuses: options.statuses,
+      volunteerId: options.volunteerId,
+      shiftId: options.shiftId,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
+    });
+    return data.timeEntries.items;
+  }
+
   async findByUser(userId: string, options: PaginationOptions = {}) {
     const data = await this.sdk.GetTimeEntriesByUser({
       userId,
