@@ -44,12 +44,19 @@ mock.module('@/lib/data-client', () => ({
   }),
 }));
 
+function OrgPageHeader() {
+  return null;
+}
+function JoinFormsClient() {
+  return null;
+}
+
 mock.module('@/domain/org-unit/components/org-page-header', () => ({
-  OrgPageHeader: () => null,
+  OrgPageHeader,
 }));
 
 mock.module('./join-forms-client', () => ({
-  JoinFormsClient: () => null,
+  JoinFormsClient,
 }));
 
 const { default: JoinFormsPage } = await import('./page');
