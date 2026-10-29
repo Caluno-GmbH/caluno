@@ -243,13 +243,12 @@ export class MembershipService {
       return JoinStatus.PENDING_MEMBERSHIP;
     }
 
-    if (
-      existing?.status === MembershipRequestStatus.REJECTED ||
-      existing?.status === MembershipRequestStatus.CANCELLED
-    ) {
+    if (existing?.status === MembershipRequestStatus.REJECTED) {
       return JoinStatus.REJECTED;
     }
 
+    // CANCELLED (volunteer withdrew) is treated as no active request so they
+    // can re-submit; ACCEPTED without a membership row is also joinable.
     return JoinStatus.NONE;
   }
 
@@ -1298,7 +1297,42 @@ export class MembershipService {
       }
 
       if (existing.status === MembershipRequestStatus.CANCELLED) {
-        return { status: JoinStatus.REJECTED, membershipRequest: existing };
+        // Unique (userId, organizationUnitId) — resurrect in place.
+        const metadata = this.appendIntendedIdsToMetadata(
+          (existing.metadata ?? {}) as MembershipRequestMetadata,
+          intendedShiftInstanceId,
+          intendedEventId,
+          intendedShiftId,
+        );
+
+        const [resurrected] = await this.db
+          .update(schema.membershipRequests)
+          .set({
+            status: MembershipRequestStatus.PENDING,
+            reviewedById: null,
+            reviewedAt: null,
+            rejectionReason: null,
+            metadata,
+          })
+          .where(eq(schema.membershipRequests.id, existing.id))
+          .returning();
+
+        void this.notifyMembershipRequested(userId, organizationUnitId);
+        this.postHogService.capture({
+          event: POSTHOG_EVENT.MEMBERSHIP_REQUEST_SUBMIT,
+          userId,
+          properties: {
+            surface: POSTHOG_SURFACE.VOLUNTEERING,
+            organization_id: orgUnit.organizationId ?? undefined,
+            organization_unit_id: organizationUnitId,
+            membership_request_id: resurrected.id,
+          },
+        });
+
+        return {
+          status: JoinStatus.PENDING_MEMBERSHIP,
+          membershipRequest: resurrected,
+        };
       }
 
       return { status: JoinStatus.JOINED };
