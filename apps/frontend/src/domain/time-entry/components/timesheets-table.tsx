@@ -86,9 +86,8 @@ export const TimesheetsTable = ({
     void setParams({ ...resolved, page: 1 });
   };
 
-  // Full dataset: needed when location filter is active or CSV is triggered
+  // Full dataset: always fetched for location options; also used for CSV
   const [downloadRequested, setDownloadRequested] = useState(false);
-  const needsFullDataset = !!(location || downloadRequested);
 
   const { data: fullEntries, isLoading: isLoadingFull } = useTimeEntriesAll(
     organizationUnitId,
@@ -99,7 +98,7 @@ export const TimesheetsTable = ({
       dateFrom: dateFrom ? dateFrom.toISOString() : null,
       dateTo: dateTo ? dateTo.toISOString() : null,
     },
-    needsFullDataset,
+    true,
   );
 
   // Derive location options from full dataset
@@ -326,7 +325,7 @@ export const TimesheetsTable = ({
       <TimesheetsToolbar
         orgUnitId={organizationUnitId}
         locationOptions={locationOptions}
-        isLoadingLocations={needsFullDataset && isLoadingFull}
+        isLoadingLocations={isLoadingFull}
         actions={[
           <DownloadCsvButton
             key="csv"
