@@ -57,7 +57,7 @@ const getRowClassName = (entry: TimeEntry): string | undefined => {
     case TimeEntryStatus.Open:
       return 'bg-muted/80';
     case TimeEntryStatus.AutoClosed:
-      return 'bg-alert/30';
+      return 'bg-alert/10';
     default:
       return undefined;
   }
