@@ -132,6 +132,25 @@ export class ShiftRepository extends BaseRepository {
     return data.shifts;
   }
 
+  async findAllForOrgUnit(organizationUnitId: string, options: ShiftListOptions = {}) {
+    const data = await this.sdk.GetShifts(
+      {
+        limit: options.limit ?? 500,
+        offset: 0,
+        sort: options.sort,
+        order: options.order,
+        search: options.search ?? null,
+        dateFrom: options.dateFrom ?? null,
+        dateTo: options.dateTo ?? null,
+        location: options.location ?? null,
+        visibility: options.visibility ?? null,
+        fill: options.fill ?? null,
+      },
+      { 'x-organization-unit-id': organizationUnitId },
+    );
+    return data.shifts;
+  }
+
   async findLocations(): Promise<ShiftLocations> {
     const data = await this.sdk.GetShiftLocations();
     return data.shiftLocations;

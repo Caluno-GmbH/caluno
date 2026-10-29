@@ -10,7 +10,7 @@ export function useShiftsForFilter(organizationUnitId: string) {
 
   return useQuery({
     queryKey: ['shifts-for-filter', organizationUnitId],
-    queryFn: () => repository.findAll({ limit: 500, offset: 0 }),
+    queryFn: () => repository.findAllForOrgUnit(organizationUnitId),
     enabled: !!organizationUnitId,
     staleTime: 5 * 60 * 1000,
   });
