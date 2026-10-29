@@ -41,5 +41,9 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ]
+  ],
+  "overrides": {
+    "//": "needed to align @aws-sdk/client-s3 and @aws-sdk/s3-request-presigner",
+    "@smithy/core": "^3.36.1"
+  }
 }
