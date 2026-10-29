@@ -153,12 +153,16 @@ export class ShiftInstanceFieldResolver {
     return loader.filledCountByInstanceId.load(instance.id);
   }
 
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
   @ResolveField(() => Int)
   async pendingCount(
     @Parent() instance: ShiftInstanceEntity,
+    @Context() context: AuthenticatedGraphQLContext,
     @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
   ): Promise<number> {
-    return loader.pendingCountByInstanceId.load(instance.id);
+    return loader.pendingCountByKey.load(
+      `${context.organizationUnitId}:${instance.id}`,
+    );
   }
 
   @AllowAnonymous()

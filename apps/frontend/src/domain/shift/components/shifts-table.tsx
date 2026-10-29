@@ -477,7 +477,16 @@ export function ShiftsTable({
                 {staffingBadgeText(count, min, max, state)}
               </Badge>
               {instance.pendingCount > 0 && (
-                <Badge variant="neutral" className="gap-1">
+                <Badge
+                  variant="neutral"
+                  className="gap-1"
+                  title={t('table.pendingCount', {
+                    count: instance.pendingCount,
+                  })}
+                  aria-label={t('table.pendingCount', {
+                    count: instance.pendingCount,
+                  })}
+                >
                   <Clock className="size-3.5" aria-hidden="true" />
                   {instance.pendingCount}
                 </Badge>

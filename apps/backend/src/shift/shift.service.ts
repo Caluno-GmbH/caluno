@@ -215,8 +215,14 @@ export class ShiftService {
     return new Map(rows.map((row) => [row.instanceId, Number(row.total)]));
   }
 
-  /** Pending-invite counts (not yet joined) for many instances in one query. */
-  async getPendingCounts(instanceIds: string[]): Promise<Map<string, number>> {
+  /**
+   * Pending-invite counts (not yet joined) for many instances in one query,
+   * limited to instances whose shift belongs to `organizationUnitId`.
+   */
+  async getPendingCounts(
+    instanceIds: string[],
+    organizationUnitId: string,
+  ): Promise<Map<string, number>> {
     if (instanceIds.length === 0) return new Map();
     const rows = await this.db
       .select({
@@ -224,9 +230,18 @@ export class ShiftService {
         total: count(),
       })
       .from(schema.shiftInstanceInvites)
+      .innerJoin(
+        schema.shiftInstances,
+        eq(schema.shiftInstances.id, schema.shiftInstanceInvites.instanceId),
+      )
+      .innerJoin(
+        schema.shifts,
+        eq(schema.shifts.id, schema.shiftInstances.masterId),
+      )
       .where(
         and(
           inArray(schema.shiftInstanceInvites.instanceId, instanceIds),
+          eq(schema.shifts.organizationUnitId, organizationUnitId),
           inArray(schema.shiftInstanceInvites.status, [
             ...PENDING_SHIFT_INVITE_STATUSES,
           ]),
@@ -439,27 +454,28 @@ export class ShiftService {
   }
 
   /** Distinct non-null, non-empty location values for the org unit, ordered alphabetically. */
-  async findDistinctLocations(
-    organizationUnitId: string,
-    visibilityFilter: ShiftVisibility | null = null,
-  ): Promise<string[]> {
+  async findDistinctLocations(organizationUnitId: string): Promise<string[]> {
+    // An instance's override location is offered too, so it can be filtered on.
+    const effectiveLocation = sql<string>`coalesce(${schema.shiftInstances.overrideLocation}, ${schema.shifts.location})`;
     const rows = await this.db
-      .selectDistinct({ location: schema.shifts.location })
+      .selectDistinct({ location: effectiveLocation })
       .from(schema.shifts)
+      .innerJoin(
+        schema.shiftInstances,
+        eq(schema.shiftInstances.masterId, schema.shifts.id),
+      )
       .where(
         and(
           eq(schema.shifts.organizationUnitId, organizationUnitId),
           eq(schema.shifts.isDeleted, false),
-          isNotNull(schema.shifts.location),
-          ne(schema.shifts.location, ''),
-          ...(visibilityFilter
-            ? [eq(schema.shifts.visibility, visibilityFilter)]
-            : []),
+          eq(schema.shiftInstances.isCancelled, false),
+          isNotNull(effectiveLocation),
+          ne(effectiveLocation, ''),
         ),
       )
-      .orderBy(asc(schema.shifts.location));
+      .orderBy(asc(effectiveLocation));
 
-    return rows.map((r) => r.location as string);
+    return rows.map((r) => r.location);
   }
 
   /** A user's open time entries across many instances in one query (DataLoader batch). */
@@ -1071,15 +1087,9 @@ export class ShiftService {
       );
     }
 
-    const result = await this.findAllVisibleToMember(
-      userId,
-      organizationUnitId,
-      pagination,
-    );
-    return {
-      shifts: result.shifts,
-      total: result.total,
-    };
+    // Members see the shifts they're invited to or eligible for; the list
+    // filters are an admin feature and don't apply here.
+    return this.findAllVisibleToMember(userId, organizationUnitId, pagination);
   }
 
   /**
@@ -1121,6 +1131,13 @@ export class ShiftService {
       };
     }
     return { from, to };
+  }
+
+  /** Instance-level location match: an instance's override wins over its shift's location. */
+  private buildLocationCondition(location: string | null) {
+    if (!location) return null;
+    const masterLocation = sql`(select ${schema.shifts.location} from ${schema.shifts} where ${schema.shifts.id} = ${schema.shiftInstances.masterId})`;
+    return sql`coalesce(${schema.shiftInstances.overrideLocation}, ${masterLocation}) = ${location}`;
   }
 
   private buildFillCondition(fill: ShiftFillFilter | null) {
@@ -1170,6 +1187,7 @@ export class ShiftService {
       dateTo,
     );
     const fillCondition = this.buildFillCondition(fillFilter);
+    const locationCondition = this.buildLocationCondition(locationFilter);
 
     // EXISTS subquery: master has at least one non-cancelled instance overlapping [windowFrom, windowTo].
     // Overlap condition: actualStartsAt <= windowTo AND actualEndsAt >= windowFrom.
@@ -1183,6 +1201,7 @@ export class ShiftService {
           gte(schema.shiftInstances.actualEndsAt, windowFrom),
           eq(schema.shiftInstances.isCancelled, false),
           ...(fillCondition ? [fillCondition] : []),
+          ...(locationCondition ? [locationCondition] : []),
         ),
       );
 
@@ -1198,7 +1217,6 @@ export class ShiftService {
             ),
           ]
         : []),
-      ...(locationFilter ? [eq(schema.shifts.location, locationFilter)] : []),
       ...(visibilityFilter
         ? [eq(schema.shifts.visibility, visibilityFilter)]
         : []),
@@ -1215,12 +1233,8 @@ export class ShiftService {
         .where(whereClause)
         .orderBy(...orderByClause)
         .limit(pagination.limit)
-        .offset(pagination.offset) as Promise<ShiftEntity[]>,
-      this.db
-        .select({ total: count() })
-        .from(schema.shifts)
-        .where(whereClause)
-        .orderBy() as Promise<{ total: number }[]>,
+        .offset(pagination.offset),
+      this.db.select({ total: count() }).from(schema.shifts).where(whereClause),
     ]);
 
     const total = countResult[0]?.total ?? 0;
@@ -1240,6 +1254,7 @@ export class ShiftService {
           gte(schema.shiftInstances.actualEndsAt, windowFrom),
           eq(schema.shiftInstances.isCancelled, false),
           ...(fillCondition ? [fillCondition] : []),
+          ...(locationCondition ? [locationCondition] : []),
         ),
       )
       .orderBy(

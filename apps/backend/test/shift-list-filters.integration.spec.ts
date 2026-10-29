@@ -9,8 +9,10 @@ import {
   setDefaultTimeout,
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import { PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
+import * as schema from '../src/database/schema';
 import { ShiftInviteStatus, ShiftVisibility } from '../src/shift/enums';
 import {
   createShift,
@@ -306,6 +308,43 @@ describe('shifts query list filters', () => {
     );
 
     expect(data.shiftLocations).toEqual(['Invited room', 'Open room']);
+  });
+
+  it('filters and offers locations by an instance override', async () => {
+    const recurringInstances = await db.query.shiftInstances.findMany({
+      where: { masterId: recurring.id },
+    });
+    const overridden = recurringInstances.find(
+      (instance) => instance.id === recurringFullInstanceId,
+    );
+    if (!overridden) throw new Error('Expected the recurring full instance');
+    await db
+      .update(schema.shiftInstances)
+      .set({ overrideLocation: 'Annex' })
+      .where(eq(schema.shiftInstances.id, overridden.id));
+
+    const data = await queryShifts({ location: 'Annex' });
+    expect(data.shifts.items.map((shift) => shift.id)).toEqual([recurring.id]);
+    expect(data.shifts.items[0]?.instances).toEqual([
+      { id: recurringFullInstanceId },
+    ]);
+
+    const locations = await graphqlRequestRequiringData<{
+      shiftLocations: string[];
+    }>(
+      app,
+      {
+        query: 'query { shiftLocations }',
+        headers: { 'x-organization-unit-id': organizationUnitId },
+      },
+      'shiftLocations',
+    );
+    expect(locations.shiftLocations).toContain('Annex');
+
+    await db
+      .update(schema.shiftInstances)
+      .set({ overrideLocation: null })
+      .where(eq(schema.shiftInstances.id, overridden.id));
   });
 
   it('counts every shift in the unit regardless of the list date window', async () => {
