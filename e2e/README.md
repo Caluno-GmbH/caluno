@@ -82,7 +82,9 @@ committed default.
 ## CI against deployed environments
 
 - **Staging nightly** — `.github/workflows/e2e-staging-nightly.yml` (cron
-  `0 0 * * *` UTC ≈ 02:00 CEST, plus `workflow_dispatch`).
+  `0 0 * * *` UTC ≈ 02:00 CEST, plus `workflow_dispatch`). On failure, posts
+  to `#alerts-staging` via the staging environment secret
+  `SLACK_ALERT_WEBHOOK_URL`.
 - **Release post-deploy** — `cd-release.yml` runs the same suite via
   `reusable-e2e.yml` after a successful Terraform apply.
 
@@ -94,7 +96,8 @@ accounts and today-relative overlap fixtures stay fresh without a manual
 step. Password defaults to `abcd1234` (override with `FIXTURE_PASSWORD`).
 
 Repo secrets: `MAILBOX_PASSWORD` (staging Mailpit), `RELEASE_MAILBOX_PASSWORD`
-(release Mailpit). Specs that require a local DB (e.g. the terms acceptance
+(release Mailpit). Staging environment secret: `SLACK_ALERT_WEBHOOK_URL`
+(`#alerts-staging`). Specs that require a local DB (e.g. the terms acceptance
 gate) stay skipped via `IS_LOCAL`.
 
 ## Conventions

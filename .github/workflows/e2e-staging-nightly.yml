@@ -7,6 +7,9 @@
 # does not re-seed. Repo secret `MAILBOX_PASSWORD` is required for staging
 # Mailpit basic auth.
 #
+# On failure, posts to #alerts-staging via the staging environment secret
+# `SLACK_ALERT_WEBHOOK_URL` (same webhook as a failed staging deploy health check).
+#
 # Local-only specs (e.g. terms acceptance gate) stay skipped via IS_LOCAL.
 name: Nightly e2e (staging)
 
@@ -34,3 +37,27 @@ jobs:
       report-name: playwright-report-staging
     secrets:
       MAILBOX_PASSWORD: ${{ secrets.MAILBOX_PASSWORD }}
+
+  # Failure only → #alerts-staging via staging's SLACK_ALERT_WEBHOOK_URL.
+  # continue-on-error: a dead webhook must not mask the e2e outcome.
+  notify-slack:
+    name: Notify Slack (failure)
+    needs: [e2e]
+    if: always() && needs.e2e.result == 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    continue-on-error: true
+    environment: staging
+    steps:
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_ALERT_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: ":x: staging nightly e2e failed"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: ":x: *staging* nightly e2e failed\n`${{ github.sha }}` · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run>"
