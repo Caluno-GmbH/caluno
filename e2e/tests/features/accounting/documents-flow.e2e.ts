@@ -53,7 +53,8 @@ test.describe('accounting documents flow — admin + volunteer', () => {
 
     // Templates are no longer seeded, so configure the Ehrenamt pair the
     // document flow needs before the assertions run. Idempotent: when the slot
-    // is already configured the builder re-saves the existing template.
+    // is already configured the builder re-saves its own template, or leaves an
+    // inherited one as is.
     const adminContext = await browser.newContext({
       storageState: adminAuthFile,
     });

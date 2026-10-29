@@ -68,9 +68,14 @@ describe('TimeEntryClosedListener', () => {
       postHog,
       new TenantScopeService(db, organizationUnitDataService),
     );
-    const documentTemplateService = new DocumentTemplateService(db, postHog, {
-      missingOrgProfileSources: () => Promise.resolve([]),
-    } as unknown as DocumentProfileRequirementService);
+    const documentTemplateService = new DocumentTemplateService(
+      db,
+      postHog,
+      {
+        missingOrgProfileSources: () => Promise.resolve([]),
+      } as unknown as DocumentProfileRequirementService,
+      organizationUnitDataService,
+    );
     contractService = new ContractService(
       db,
       documentTemplateService,

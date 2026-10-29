@@ -16,6 +16,7 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../src/graphql/errors';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { createReimbursementType } from './factories/accounting.factory';
 import {
@@ -48,6 +49,7 @@ describe('DocumentTemplateService', () => {
       {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
+      new OrganizationUnitDataService(db),
     );
   });
 
@@ -258,6 +260,7 @@ describe('DocumentTemplateService', () => {
           capture: () => {},
         } as unknown as PostHogService,
         new DocumentProfileRequirementService(db, {} as never),
+        new OrganizationUnitDataService(db),
       );
 
       await expect(
@@ -302,6 +305,7 @@ describe('DocumentTemplateService', () => {
           capture: () => {},
         } as unknown as PostHogService,
         new DocumentProfileRequirementService(db, {} as never),
+        new OrganizationUnitDataService(db),
       );
 
       const body = {

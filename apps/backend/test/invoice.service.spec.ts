@@ -110,6 +110,7 @@ describe('InvoiceService', () => {
       {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
+      organizationUnitDataService,
     );
     const documentSigningService = new DocumentSigningService(db, authService);
     const reimbursementRateService = new ReimbursementRateService(

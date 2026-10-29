@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  type CreateTemplateSigneeInput,
   PermissionKey,
   parseTemplateBody,
   serializeTemplateBody,
@@ -9,12 +10,11 @@ import {
   useAccountingSetupStatus,
   useCreateDocumentTemplate,
   useCurrentOrg,
-  useDocumentTemplate,
-  useDocumentTemplates,
   useEffectiveRates,
   useOrgUId,
   usePermissions,
   useReimbursementTypes,
+  useResolvedDocumentTemplate,
   useUpdateDocumentTemplate,
 } from '@repo/data/react';
 import { Button, Skeleton } from '@repo/ui';
@@ -29,7 +29,12 @@ import {
   apiDocumentKindFor,
   reimbursementTypeKeyFor,
 } from '../../lib/reimbursement-type-mapping';
-import { findSlotTemplate } from '../../lib/template-slots';
+import {
+  findReimbursementType,
+  isUnchangedTemplateCopy,
+  slotRefFor,
+  templateProvenance,
+} from '../../lib/template-slots';
 import {
   type DocumentKind,
   getPauschaleKey,
@@ -44,6 +49,7 @@ import {
 import {
   defaultSignees,
   findAccountingManagePermissionId,
+  toSigneeInputs,
 } from './builder-signees';
 import {
   ALWAYS_AVAILABLE_SOURCES,
@@ -135,17 +141,26 @@ export function TemplateBuilder({
   const orgProfile = useAccountingSetupStatus().data?.orgProfile;
   const slotKind = kind === 'contract' ? 'contract' : 'invoice';
 
-  const templatesQuery = useDocumentTemplates();
   const typesQuery = useReimbursementTypes();
   const ratesQuery = useEffectiveRates(orgUId);
   const permissionsQuery = usePermissions();
 
-  const existingTemplate = findSlotTemplate(templatesQuery.data, {
-    pauschale,
-    kind: slotKind,
-    organizationUnitId: orgUId,
-  });
-  const detailQuery = useDocumentTemplate(existingTemplate?.id);
+  const reimbursementTypeKey = reimbursementTypeKeyFor(pauschale);
+  const reimbursementType = findReimbursementType(pauschale, typesQuery.data);
+
+  // The template this unit actually uses, resolved by the backend (own unit,
+  // ancestors, org-wide). null: the slot is not set up yet.
+  const resolvedQuery = useResolvedDocumentTemplate(
+    slotRefFor(pauschale, slotKind, typesQuery.data),
+    orgUId,
+  );
+  const resolvedTemplate = resolvedQuery.data ?? undefined;
+  const provenance = resolvedTemplate
+    ? templateProvenance(resolvedTemplate, orgUId)
+    : undefined;
+  // Only this unit's own template may be updated. An inherited or org-wide one
+  // belongs to another unit, so saving creates this unit's own copy instead.
+  const ownTemplate = provenance?.kind === 'own' ? resolvedTemplate : undefined;
 
   const createTemplate = useCreateDocumentTemplate();
   const updateTemplate = useUpdateDocumentTemplate();
@@ -155,37 +170,39 @@ export function TemplateBuilder({
   const [templateDoc, setTemplateDoc] = useState<TemplateDocument | null>(null);
   const [orgProfileBlocked, setOrgProfileBlocked] = useState(false);
   const initialized = useRef(false);
+  // The document as first shown. For an inherited or org-wide template this is
+  // the pre-filled content, so an untouched editor is not worth an override.
+  const baseline = useRef<string | null>(null);
   useEffect(() => {
     if (initialized.current) return;
-    if (detailQuery.data) {
+    if (resolvedTemplate) {
       initialized.current = true;
       // A stored template may predate the rule that a Kostenstelle number format
       // must collect one, so normalise on the way in as well as on every change.
-      setTemplateDoc(
-        withKostenstelleForNumberFormat(
-          parseTemplateBody(detailQuery.data.body),
-        ),
+      const initial = withKostenstelleForNumberFormat(
+        parseTemplateBody(resolvedTemplate.body),
       );
-    } else if (templatesQuery.isSuccess && !existingTemplate) {
+      baseline.current = JSON.stringify(initial);
+      setTemplateDoc(initial);
+    } else if (resolvedQuery.isSuccess) {
       initialized.current = true;
-      setTemplateDoc(
+      const initial =
         slotKind === 'contract'
           ? getContractDocument(pauschale)
-          : withKostenstelleForNumberFormat(getInvoiceDocument(pauschale)),
-      );
+          : withKostenstelleForNumberFormat(getInvoiceDocument(pauschale));
+      baseline.current = JSON.stringify(initial);
+      setTemplateDoc(initial);
     }
-  }, [
-    detailQuery.data,
-    templatesQuery.isSuccess,
-    existingTemplate,
-    slotKind,
-    pauschale,
-  ]);
+  }, [resolvedTemplate, resolvedQuery.isSuccess, slotKind, pauschale]);
 
-  const reimbursementTypeKey = reimbursementTypeKeyFor(pauschale);
-  const reimbursementType = typesQuery.data?.find(
-    (type) => type.key === reimbursementTypeKey,
+  // Saving an inherited or org-wide template creates an override. Without an
+  // edit that would only duplicate the original and freeze it for this unit.
+  const copyUnchanged = isUnchangedTemplateCopy(
+    provenance?.kind,
+    templateDoc,
+    baseline.current,
   );
+
   const effectiveRate = ratesQuery.data?.find(
     (rate) => rate.reimbursementType.key === reimbursementTypeKey,
   );
@@ -229,7 +246,7 @@ export function TemplateBuilder({
   const signerRightLabel = t('preview.signatureCoordinator');
 
   async function handleSave() {
-    if (!templateDoc) return;
+    if (!templateDoc || copyUnchanged) return;
     if (missingOrgSources.length > 0) {
       setOrgProfileBlocked(true);
       return;
@@ -238,19 +255,15 @@ export function TemplateBuilder({
     const body = serializeTemplateBody(templateDoc);
     const invoiceNumberFormat = templateDoc.invoiceNumberFormat ?? null;
     try {
-      if (detailQuery.data) {
-        // Editing an existing template: keep its configured signee chain
+      if (ownTemplate) {
+        // Editing this unit's own template: keep its configured signee chain
         // (the update replaces signees wholesale when provided).
         await updateTemplate.mutateAsync({
-          id: detailQuery.data.id,
+          id: ownTemplate.id,
           input: {
             body,
             invoiceNumberFormat,
-            signees: detailQuery.data.signees.map((signee) => ({
-              order: signee.order,
-              signeeType: signee.signeeType,
-              requiredPermissionId: signee.requiredPermission?.id ?? undefined,
-            })),
+            signees: toSigneeInputs(ownTemplate.signees),
           },
         });
       } else {
@@ -259,15 +272,22 @@ export function TemplateBuilder({
             `No reimbursement type found for key ${reimbursementTypeKey}`,
           );
         }
-        // Never create a volunteer-only chain: without ACCOUNTING_MANAGE the
-        // coordinator countersign step is missing from every document that
-        // uses this template (seen on ÜL contracts).
-        const accountingManagePermissionId = findAccountingManagePermissionId(
-          permissionsQuery.data,
-        );
-        if (!accountingManagePermissionId) {
-          toast.error(t('signeesUnavailableToast'));
-          return;
+        // A copy of an inherited template keeps the signing chain it was
+        // pre-filled from. A brand-new template never gets a volunteer-only
+        // chain: without ACCOUNTING_MANAGE the coordinator countersign step is
+        // missing from every document that uses it (seen on ÜL contracts).
+        let signees: CreateTemplateSigneeInput[];
+        if (resolvedTemplate) {
+          signees = toSigneeInputs(resolvedTemplate.signees);
+        } else {
+          const accountingManagePermissionId = findAccountingManagePermissionId(
+            permissionsQuery.data,
+          );
+          if (!accountingManagePermissionId) {
+            toast.error(t('signeesUnavailableToast'));
+            return;
+          }
+          signees = defaultSignees(accountingManagePermissionId);
         }
         await createTemplate.mutateAsync({
           kind: apiDocumentKindFor(slotKind),
@@ -275,7 +295,8 @@ export function TemplateBuilder({
           organizationUnitId: orgUId,
           body,
           invoiceNumberFormat,
-          signees: defaultSignees(accountingManagePermissionId),
+          renewalCadence: resolvedTemplate?.renewalCadence ?? undefined,
+          signees,
         });
       }
       toast.success(t('saveSuccessToast'));
@@ -338,7 +359,10 @@ export function TemplateBuilder({
     };
   }, []);
 
-  if (templatesQuery.isError || detailQuery.isError) {
+  // Types loaded but none matches this route: nothing to build, and waiting
+  // would leave the skeleton up forever.
+  const typeMissing = typesQuery.isSuccess && !reimbursementType;
+  if (typesQuery.isError || resolvedQuery.isError || typeMissing) {
     return <TemplateListingPageError />;
   }
 
@@ -361,9 +385,10 @@ export function TemplateBuilder({
   const accountingManagePermissionId = findAccountingManagePermissionId(
     permissionsQuery.data,
   );
-  // Creates need the permission id up front; edits keep the stored chain.
+  // A brand-new template needs the permission id up front; edits and copies of
+  // an inherited template keep a stored chain.
   const createBlockedBySignees =
-    !detailQuery.data &&
+    !resolvedTemplate &&
     (permissionsQuery.isLoading ||
       permissionsQuery.isError ||
       !accountingManagePermissionId);
@@ -385,6 +410,7 @@ export function TemplateBuilder({
           missingOrgSources.length > 0 ||
           orgProfileBlocked ||
           createBlockedBySignees ||
+          copyUnchanged ||
           saving
         }
         {...(backHref
@@ -392,6 +418,17 @@ export function TemplateBuilder({
           : {})}
         notice={
           <>
+            {provenance && provenance.kind !== 'own' && (
+              <span className="text-sm text-muted-foreground">
+                {provenance.kind === 'inherited'
+                  ? t('provenance.inheritedHint', {
+                      unit: provenance.unitName,
+                    })
+                  : org.isRoot
+                    ? t('provenance.orgWideRootHint')
+                    : t('provenance.orgWideHint')}
+              </span>
+            )}
             {incompleteCount > 0 && (
               <span className="text-sm text-muted-foreground">
                 {t('blockEditor.incompleteCount', {
