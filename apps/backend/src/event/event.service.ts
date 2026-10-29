@@ -974,6 +974,20 @@ export class EventService {
 
     if (
       isSelfAction &&
+      (targetStatus === EventInviteStatus.JOINED ||
+        targetStatus === EventInviteStatus.WAITLIST_JOINED ||
+        targetStatus === EventInviteStatus.AWAITING_ADMIN_APPROVAL)
+    ) {
+      const formsCheck = await this.checkEventRequiredForms(userId, eventId);
+      if (!formsCheck.satisfied) {
+        throw new ConflictGraphQLError(
+          'You must complete the required forms before joining this event.',
+        );
+      }
+    }
+
+    if (
+      isSelfAction &&
       isVolunteerEventParticipationWithdrawal(invite.status, targetStatus) &&
       Date.now() > event.startsAt.getTime()
     ) {
