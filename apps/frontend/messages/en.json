@@ -1738,8 +1738,7 @@
       "ehrenamt": "Ehrenamtspauschale",
       "ehrenamtShort": "Ehrenamt",
       "uebungsleiter": "Übungsleiterpauschale",
-      "uebungsleiterShort": "Übungsleiter",
-      "unpaid": "No reimbursement"
+      "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
       "paginationName": "assignments",
@@ -1825,7 +1824,10 @@
       "visibility": "Visibility",
       "location": "Location",
       "staffing": "Staffing",
-      "recurrenceSince": "Since {date}"
+      "recurrenceSince": "Since {date}",
+      "expandOccurrences": "Expand occurrences",
+      "pendingCount": "{count, plural, one {# pending invite} other {# pending invites}}",
+      "collapseOccurrences": "Collapse occurrences"
     },
     "filter": {
       "location": "Location",
@@ -1837,13 +1839,9 @@
       "visibilityAll": "All",
       "visibilityInviteOnly": "Invite-only",
       "visibilityOpen": "Open",
-      "visibilityPlaceholder": "All visibilities",
-      "fillPlaceholder": "Any staffing",
       "datePlaceholder": "Date range",
       "fillAll": "All",
       "fillUnderstaffed": "Understaffed",
-      "fillBelow": "Below min",
-      "fillOk": "OK",
       "fillFull": "Full",
       "sheetTitle": "Filters"
     },

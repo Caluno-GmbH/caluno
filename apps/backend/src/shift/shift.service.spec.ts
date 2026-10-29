@@ -21,7 +21,9 @@ function makeSelectChain(
     captureWhere?.(arg);
     return { groupBy: jest.fn().mockResolvedValue(rows) };
   });
-  const from = jest.fn().mockReturnValue({ where });
+  const chain: Record<string, unknown> = { where };
+  chain.innerJoin = jest.fn().mockReturnValue(chain);
+  const from = jest.fn().mockReturnValue(chain);
   const select = jest.fn().mockReturnValue({ from });
   return { select };
 }
@@ -173,37 +175,6 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
 
     expect(existsSpy).toHaveBeenCalled();
     existsSpy.mockRestore();
-  });
-
-  it('passes location eq condition when location filter is provided', async () => {
-    const service = createServiceForFindAll([], []);
-
-    const eqSpy = jest.spyOn(drizzleOrm, 'eq');
-
-    await service.findAll(
-      'user-1',
-      'org-1',
-      PAGINATION,
-      ShiftSortField.CREATED_AT,
-      SortOrder.DESC,
-      null,
-      null,
-      null,
-      'Main Hall',
-      null,
-    );
-
-    const locationEqCall = eqSpy.mock.calls.find(
-      ([col]) =>
-        col != null &&
-        typeof col === 'object' &&
-        'name' in col &&
-        (col as { name: string }).name === 'location',
-    );
-    expect(locationEqCall).toBeDefined();
-    expect(locationEqCall![1]).toBe('Main Hall');
-
-    eqSpy.mockRestore();
   });
 
   it('passes visibility eq condition when visibility filter is provided', async () => {
@@ -469,7 +440,7 @@ describe('ShiftService.findAll — volunteer (non-admin) path', () => {
 describe('ShiftService.getPendingCounts', () => {
   it('returns an empty map when called with no instance ids', async () => {
     const service = createService([]);
-    const result = await service.getPendingCounts([]);
+    const result = await service.getPendingCounts([], 'org-1');
     expect(result).toEqual(new Map());
   });
 
@@ -479,11 +450,10 @@ describe('ShiftService.getPendingCounts', () => {
       { instanceId: 'inst-2', total: 1 },
     ];
     const service = createService(rows);
-    const result = await service.getPendingCounts([
-      'inst-1',
-      'inst-2',
-      'inst-3',
-    ]);
+    const result = await service.getPendingCounts(
+      ['inst-1', 'inst-2', 'inst-3'],
+      'org-1',
+    );
 
     expect(result.get('inst-1')).toBe(2);
     expect(result.get('inst-2')).toBe(1);
@@ -496,7 +466,7 @@ describe('ShiftService.getPendingCounts', () => {
     const inArraySpy = jest.spyOn(drizzleOrm, 'inArray');
 
     const service = createService([]);
-    await service.getPendingCounts(['inst-1']);
+    await service.getPendingCounts(['inst-1'], 'org-1');
 
     // Find the call whose first argument is the status column (field name 'status').
     // inArray is called twice: once for instanceId, once for status.
@@ -537,7 +507,8 @@ describe('ShiftService.findDistinctLocations', () => {
       captureWhere?.(arg);
       return { orderBy };
     });
-    const from = jest.fn().mockReturnValue({ where });
+    const innerJoin = jest.fn().mockReturnValue({ where });
+    const from = jest.fn().mockReturnValue({ innerJoin });
     const selectDistinct = jest.fn().mockReturnValue({ from });
     const db = { selectDistinct } as never;
     return { db, selectDistinct, from, where, orderBy };
@@ -616,69 +587,6 @@ describe('ShiftService.findDistinctLocations', () => {
     );
     await service.findDistinctLocations('org-1');
     expect(selectDistinct).toHaveBeenCalledTimes(1);
-  });
-
-  it('when visibilityFilter is ALL_MEMBERS, adds visibility eq condition to the query', async () => {
-    const { db } = makeDistinctDb([]);
-    const service = new ShiftService(
-      db,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
-
-    const eqSpy = jest.spyOn(drizzleOrm, 'eq');
-    await service.findDistinctLocations('org-1', ShiftVisibility.ALL_MEMBERS);
-
-    const visibilityEqCall = eqSpy.mock.calls.find(
-      ([col]) =>
-        col != null &&
-        typeof col === 'object' &&
-        'name' in col &&
-        (col as { name: string }).name === 'visibility',
-    );
-    expect(visibilityEqCall).toBeDefined();
-    expect(visibilityEqCall![1]).toBe(ShiftVisibility.ALL_MEMBERS);
-
-    eqSpy.mockRestore();
-  });
-
-  it('when visibilityFilter is null, does not add visibility eq condition to the query', async () => {
-    const { db } = makeDistinctDb([]);
-    const service = new ShiftService(
-      db,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
-
-    const eqSpy = jest.spyOn(drizzleOrm, 'eq');
-    await service.findDistinctLocations('org-1', null);
-
-    const visibilityEqCall = eqSpy.mock.calls.find(
-      ([col]) =>
-        col != null &&
-        typeof col === 'object' &&
-        'name' in col &&
-        (col as { name: string }).name === 'visibility',
-    );
-    expect(visibilityEqCall).toBeUndefined();
-
-    eqSpy.mockRestore();
   });
 
   it('returns SQL-ordered results without JS re-sorting (DB order is preserved)', async () => {

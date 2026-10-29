@@ -20,6 +20,10 @@ import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import type { VolunteerAllowanceState } from '../allowance-display';
 import type { RecurrenceDayValue } from '../constants';
+import {
+  lockedInviteMemberIds,
+  submittableInviteMemberIds,
+} from '../invite-status-display';
 import { type InviteShiftFormValues, inviteShiftFormSchema } from '../schemas';
 import { setSuccessDialogCreatedShift } from '../success-dialog';
 import { SendCallOutDialog } from './send-call-out-dialog';
@@ -105,9 +109,12 @@ export function InviteShiftForm({
 
   const schema = inviteShiftFormSchema();
 
+  const lockedIds = lockedInviteMemberIds(invitedMembers);
+
   const form = useForm<InviteShiftFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
+      // Show every invite (including inactive) in Invited; save filters them out.
       invitedMemberIds: invitedMembers.map((m) => m.id),
       inviteAllInstances: false,
     },
@@ -152,7 +159,12 @@ export function InviteShiftForm({
 
     startTransition(async () => {
       const volunteersResult = await mutateVolunteers({
-        memberIds: data.invitedMemberIds,
+        memberIds: submittableInviteMemberIds(
+          data.invitedMemberIds.map((id) => ({
+            id,
+            inviteStatus: statusById.get(id) ?? null,
+          })),
+        ),
         inviteToAllInstances: data.inviteAllInstances,
       });
       if (volunteersResult?.serverError) {
@@ -252,6 +264,7 @@ export function InviteShiftForm({
           <TransferList
             available={availableMembersWithAllowance}
             invited={invitedForList}
+            lockedIds={lockedIds}
             onInvitedChange={(ids) => form.setValue('invitedMemberIds', ids)}
           />
           {isOpenShift && (

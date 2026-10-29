@@ -1,10 +1,9 @@
-import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Int, Query, Resolver } from '@nestjs/graphql';
 import {
   AllowAnonymous,
   Session,
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
-import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
@@ -17,6 +16,7 @@ import { MY_SHIFT_INVITE_STATUSES } from '../../shared/invite-status';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
 import {
+  ShiftFillFilter,
   ShiftInviteStatus,
   ShiftSortField,
   ShiftVisibility,
@@ -40,7 +40,6 @@ export class ShiftQueryResolver {
     private readonly shiftMapper: ShiftMapper,
     private readonly shiftInstanceMapper: ShiftInstanceMapper,
     private readonly userMapper: UserMapper,
-    private readonly authService: AuthService,
   ) {}
 
   @AllowAnonymous()
@@ -115,6 +114,8 @@ export class ShiftQueryResolver {
     location: string | null | undefined,
     @Args('visibility', { type: () => ShiftVisibility, nullable: true })
     visibility: ShiftVisibility | null | undefined,
+    @Args('fill', { type: () => ShiftFillFilter, nullable: true })
+    fill: ShiftFillFilter | null | undefined,
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ShiftPaginatedResponse> {
@@ -129,6 +130,7 @@ export class ShiftQueryResolver {
       dateTo ?? null,
       location ?? null,
       visibility ?? null,
+      fill ?? null,
     );
     return new ShiftPaginatedResponse({
       items: this.shiftMapper.toArray(shifts),
@@ -139,20 +141,19 @@ export class ShiftQueryResolver {
   }
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)
+  @Query(() => Int)
+  async shiftCount(
+    @Context() context: AuthenticatedGraphQLContext,
+  ): Promise<number> {
+    return this.shiftService.countAll(context.organizationUnitId);
+  }
+
+  @Permissions(PERMISSIONS.SHIFT_VIEW)
   @Query(() => [String])
   async shiftLocations(
-    @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<string[]> {
-    const canManage = await this.authService.hasRequiredPermissions(
-      session.user.id,
-      context.organizationUnitId,
-      [PERMISSIONS.SHIFT_EDIT],
-    );
-    return this.shiftService.findDistinctLocations(
-      context.organizationUnitId,
-      canManage ? null : ShiftVisibility.ALL_MEMBERS,
-    );
+    return this.shiftService.findDistinctLocations(context.organizationUnitId);
   }
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)

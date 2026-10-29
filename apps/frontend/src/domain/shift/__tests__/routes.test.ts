@@ -3,6 +3,8 @@ import {
   checkInPath,
   checkOutPath,
   extractCheckInPath,
+  parseShiftListQuery,
+  shiftDetailPath,
   shiftInvitePath,
 } from '../routes';
 
@@ -71,6 +73,49 @@ describe('extractCheckInPath', () => {
     expect(
       extractCheckInPath('https://app.caluno.com/admin/check-in/short'),
     ).toBeNull();
+  });
+});
+
+describe('shift list return query', () => {
+  it('preserves all table filters in detail links', () => {
+    const filters = {
+      view: 'shifts' as const,
+      location: 'Main Hall',
+      visibility: 'INVITED_MEMBERS',
+      dateFrom: '2026-10-29T00:00:00.000Z',
+      dateTo: '2026-11-05T00:00:00.000Z',
+      fill: 'below',
+    };
+
+    expect(shiftDetailPath('org-1', 'shift-1', filters)).toBe(
+      '/admin/org-1/shifts/shift-1?view=shifts&location=Main+Hall&visibility=INVITED_MEMBERS&dateFrom=2026-10-29T00%3A00%3A00.000Z&dateTo=2026-11-05T00%3A00%3A00.000Z&fill=below',
+    );
+  });
+
+  it('parses all table filters from detail search params', () => {
+    expect(
+      parseShiftListQuery({
+        view: 'shifts',
+        location: 'Main Hall',
+        visibility: 'INVITED_MEMBERS',
+        dateFrom: '2026-10-29T00:00:00.000Z',
+        dateTo: '2026-11-05T00:00:00.000Z',
+        fill: 'below',
+      }),
+    ).toEqual({
+      view: 'shifts',
+      week: undefined,
+      page: undefined,
+      pageSize: undefined,
+      sort: undefined,
+      dir: undefined,
+      q: undefined,
+      location: 'Main Hall',
+      visibility: 'INVITED_MEMBERS',
+      dateFrom: '2026-10-29T00:00:00.000Z',
+      dateTo: '2026-11-05T00:00:00.000Z',
+      fill: 'below',
+    });
   });
 });
 

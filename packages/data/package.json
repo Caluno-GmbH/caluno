@@ -13,7 +13,7 @@
     "postinstall": "bun run codegen"
   },
   "dependencies": {
-    "better-auth": "1.7.12",
+    "better-auth": "1.7.14",
     "date-fns": "^4.4.0",
     "graphql": "^16.14.2",
     "graphql-request": "^7.4.0",
@@ -23,11 +23,11 @@
     "@graphql-codegen/cli": "^7.4.6",
     "@graphql-codegen/typescript": "^6.1.2",
     "@graphql-codegen/typescript-graphql-request": "^7.1.0",
-    "@graphql-codegen/typescript-operations": "^6.1.10",
+    "@graphql-codegen/typescript-operations": "^6.2.0",
     "@repo/typescript-config": "*",
     "@tanstack/react-query": "^5.104.5",
     "@tanstack/react-query-devtools": "^5.104.5",
-    "@types/bun": "^1.4.3",
+    "@types/bun": "^1.4.4",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",

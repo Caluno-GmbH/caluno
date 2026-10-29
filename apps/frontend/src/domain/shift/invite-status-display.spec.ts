@@ -9,8 +9,10 @@ import {
   canAdminUninvite,
   canRemindInvitee,
   groupInvitesByRosterGroup,
+  isInviteSheetLockedStatus,
+  lockedInviteMemberIds,
   partitionInvitesByWaitlist,
-  preselectedInviteMemberIds,
+  submittableInviteMemberIds,
   toInviteDisplayState,
   toRosterGroup,
 } from './invite-status-display';
@@ -151,16 +153,43 @@ describe('canRemindInvitee (VOLI-1236)', () => {
   });
 });
 
-describe('preselectedInviteMemberIds', () => {
-  it('excludes ADMIN_REJECTED so invite sheets do not silently re-invite', () => {
+describe('invite sheet locked / submittable ids (VOLI-1704)', () => {
+  const members = [
+    { id: 'a', inviteStatus: EventInviteStatus.AdminInvited },
+    { id: 'b', inviteStatus: EventInviteStatus.Joined },
+    { id: 'c', inviteStatus: EventInviteStatus.AdminRejected },
+    { id: 'd', inviteStatus: null },
+    { id: 'e', inviteStatus: ShiftInviteStatus.VolunteerCancelled },
+    { id: 'f', inviteStatus: ShiftInviteStatus.VolunteerRejected },
+    { id: 'g', inviteStatus: ShiftInviteStatus.AwaitingAdminApproval },
+    { id: 'h', inviteStatus: ShiftInviteStatus.WaitlistJoined },
+  ] as const;
+
+  it('locks declined, withdrawn, and admin-rejected', () => {
+    expect(isInviteSheetLockedStatus(ShiftInviteStatus.AdminRejected)).toBe(
+      true,
+    );
+    expect(isInviteSheetLockedStatus(ShiftInviteStatus.VolunteerRejected)).toBe(
+      true,
+    );
     expect(
-      preselectedInviteMemberIds([
-        { id: 'a', inviteStatus: EventInviteStatus.AdminInvited },
-        { id: 'b', inviteStatus: EventInviteStatus.Joined },
-        { id: 'c', inviteStatus: EventInviteStatus.AdminRejected },
-        { id: 'd', inviteStatus: null },
-      ]),
-    ).toEqual(['a', 'b', 'd']);
+      isInviteSheetLockedStatus(ShiftInviteStatus.VolunteerCancelled),
+    ).toBe(true);
+    expect(isInviteSheetLockedStatus(ShiftInviteStatus.AdminInvited)).toBe(
+      false,
+    );
+    expect(isInviteSheetLockedStatus(null)).toBe(false);
+    expect(lockedInviteMemberIds(members)).toEqual(['c', 'e', 'f']);
+  });
+
+  it('submits only active invites and new members so save cannot resurrect', () => {
+    expect(submittableInviteMemberIds(members)).toEqual([
+      'a',
+      'b',
+      'd',
+      'g',
+      'h',
+    ]);
   });
 });
 

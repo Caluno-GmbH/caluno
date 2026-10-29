@@ -5,6 +5,11 @@ jest.mock('nanoid', () => ({
 import { ShiftInviteStatus, ShiftVisibility } from './enums';
 import { ShiftService } from './shift.service';
 
+/** Satisfied forms — these specs exercise email paths, not the form gate. */
+const requiredFormServiceStub = {
+  getRequiredFormStatuses: jest.fn().mockResolvedValue([]),
+} as never;
+
 function createShiftService(options: {
   inviteStatus: ShiftInviteStatus;
   maxVolunteers?: number | null;
@@ -91,7 +96,7 @@ function createShiftService(options: {
     } as never,
     {} as never,
     {} as never,
-    {} as never,
+    requiredFormServiceStub,
     { capture: jest.fn() } as never,
     {} as never,
     { resolve: async () => ({ enabled: false }) } as never,
@@ -342,7 +347,7 @@ function createJoinRequestService(options: {
     } as never,
     {} as never,
     {} as never,
-    {} as never,
+    requiredFormServiceStub,
     { capture: jest.fn() } as never,
     {} as never,
     { resolve: async () => ({ enabled: false }) } as never,

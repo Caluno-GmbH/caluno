@@ -1016,6 +1016,7 @@ export type GetShiftsQueryVariables = Exact<{
   dateTo?: string | null | undefined;
   location?: string | null | undefined;
   visibility?: Types.ShiftVisibility | null | undefined;
+  fill?: Types.ShiftFillFilter | null | undefined;
 }>;
 
 
@@ -1025,6 +1026,11 @@ export type GetShiftLocationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type GetShiftLocationsQuery = { shiftLocations: Array<string> };
+
+export type GetShiftCountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetShiftCountQuery = { shiftCount: number };
 
 export type GetEventShiftsQueryVariables = Exact<{
   eventId: string;
@@ -4203,7 +4209,7 @@ export const GetShiftDocument = gql`
 }
     ${RequiredFormRefFieldsFragmentDoc}`;
 export const GetShiftsDocument = gql`
-    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String, $dateFrom: DateTime, $dateTo: DateTime, $location: String, $visibility: ShiftVisibility) {
+    query GetShifts($limit: Int!, $offset: Int!, $sort: ShiftSortField, $order: SortOrder, $search: String, $dateFrom: DateTime, $dateTo: DateTime, $location: String, $visibility: ShiftVisibility, $fill: ShiftFillFilter) {
   shifts(
     limit: $limit
     offset: $offset
@@ -4214,6 +4220,7 @@ export const GetShiftsDocument = gql`
     dateTo: $dateTo
     location: $location
     visibility: $visibility
+    fill: $fill
   ) {
     items {
       id
@@ -4255,6 +4262,11 @@ export const GetShiftsDocument = gql`
 export const GetShiftLocationsDocument = gql`
     query GetShiftLocations {
   shiftLocations
+}
+    `;
+export const GetShiftCountDocument = gql`
+    query GetShiftCount {
+  shiftCount
 }
     `;
 export const GetEventShiftsDocument = gql`
@@ -5647,6 +5659,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetShiftLocations(variables?: GetShiftLocationsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetShiftLocationsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetShiftLocationsQuery>({ document: GetShiftLocationsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetShiftLocations', 'query', variables);
+    },
+    GetShiftCount(variables?: GetShiftCountQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetShiftCountQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetShiftCountQuery>({ document: GetShiftCountDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetShiftCount', 'query', variables);
     },
     GetEventShifts(variables: GetEventShiftsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetEventShiftsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetEventShiftsQuery>({ document: GetEventShiftsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetEventShifts', 'query', variables);

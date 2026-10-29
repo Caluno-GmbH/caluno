@@ -170,6 +170,13 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
                   onClick={
                     href
                       ? (event) => {
+                          // Clicks inside portals (e.g. a row's delete dialog)
+                          // bubble through the React tree but aren't in the row.
+                          if (
+                            !event.currentTarget.contains(event.target as Node)
+                          ) {
+                            return;
+                          }
                           // Let inner links/buttons handle their own clicks.
                           if (
                             (event.target as HTMLElement).closest(

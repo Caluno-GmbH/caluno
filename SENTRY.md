@@ -51,20 +51,20 @@ To test end-to-end:
 
 ## Environment variables
 
-| Variable | Where set | Public vs secret |
-|---|---|---|
-| `NEXT_PUBLIC_SENTRY_DSN` | GitHub Actions variable (build arg); local `.env.local` for testing | **Public by design** — ships in the client bundle |
-| `NEXT_PUBLIC_SENTRY_ENVIRONMENT` | GitHub Actions build arg (staging/production) | Public |
-| `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Optional, local `.env.local` / CI | Public |
-| `NEXT_PUBLIC_SENTRY_REPLAY_ENABLED` | Optional, local `.env.local` / runtime env | Public |
-| `SENTRY_DSN` | Runtime env (backend; frontend server runtime, falls back to `NEXT_PUBLIC_SENTRY_DSN`) | Server-side only (not secret, but never exposed to the client) |
-| `SENTRY_ENVIRONMENT` | Runtime env | Server-side only |
-| `SENTRY_RELEASE` | CI build arg + runtime env | Not secret |
-| `SENTRY_TRACES_SAMPLE_RATE` | Optional, runtime env | Server-side only |
-| `SENTRY_ORG` | GitHub Actions variable | Not secret |
-| `SENTRY_PROJECT_FRONTEND` | GitHub Actions variable | Not secret |
-| `SENTRY_PROJECT_BACKEND` | GitHub Actions variable | Not secret |
-| `SENTRY_AUTH_TOKEN` | GitHub Actions **secret** — the only place it exists | **Secret** — never commit, never set locally |
+| Variable                                | Where set                                                                              | Public vs secret                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_SENTRY_DSN`                | GitHub Actions variable (build arg); local `.env.local` for testing                    | **Public by design** — ships in the client bundle              |
+| `NEXT_PUBLIC_SENTRY_ENVIRONMENT`        | GitHub Actions build arg (staging/production)                                          | Public                                                         |
+| `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Optional, local `.env.local` / CI                                                      | Public                                                         |
+| `NEXT_PUBLIC_SENTRY_REPLAY_ENABLED`     | Optional, local `.env.local` / runtime env                                             | Public                                                         |
+| `SENTRY_DSN`                            | Runtime env (backend; frontend server runtime, falls back to `NEXT_PUBLIC_SENTRY_DSN`) | Server-side only (not secret, but never exposed to the client) |
+| `SENTRY_ENVIRONMENT`                    | Runtime env                                                                            | Server-side only                                               |
+| `SENTRY_RELEASE`                        | CI build arg + runtime env                                                             | Not secret                                                     |
+| `SENTRY_TRACES_SAMPLE_RATE`             | Optional, runtime env                                                                  | Server-side only                                               |
+| `SENTRY_ORG`                            | GitHub Actions variable                                                                | Not secret                                                     |
+| `SENTRY_PROJECT_FRONTEND`               | GitHub Actions variable                                                                | Not secret                                                     |
+| `SENTRY_PROJECT_BACKEND`                | GitHub Actions variable                                                                | Not secret                                                     |
+| `SENTRY_AUTH_TOKEN`                     | GitHub Actions **secret** — the only place it exists                                   | **Secret** — never commit, never set locally                   |
 
 ## Sampling knobs
 
@@ -109,20 +109,20 @@ Not config-as-code — done once in the Sentry UI:
 
 - [ ] Create the Sentry organization with **EU data residency**.
 - [ ] Create the two projects: `caluno-frontend` (Next.js), `caluno-backend`
-      (NestJS/Node).
+  (NestJS/Node).
 - [ ] Alert rules: new issue in `production`; error-rate spike.
 - [ ] Per-app dashboards: error rate, p95, throughput, crash-free rate; plus a
-      shared release-health view.
+  shared release-health view.
 - [ ] Issue ownership rules (path-based code owners).
 - [ ] Link the **GitHub repository integration** — required for
-      `set-commits --auto` to resolve commits.
+  `set-commits --auto` to resolve commits.
 - [ ] Create the GitHub Actions **secret** `SENTRY_AUTH_TOKEN` (GitHub masks
-      secrets automatically in logs; if the org uses environment protection,
-      also create it as an environment secret scoped to the `staging` and
-      `production` environments).
+  secrets automatically in logs; if the org uses environment protection,
+  also create it as an environment secret scoped to the `staging` and
+  `production` environments).
 - [ ] Create the GitHub Actions **variables** `SENTRY_ORG`,
-      `SENTRY_PROJECT_FRONTEND`, `SENTRY_PROJECT_BACKEND`,
-      `NEXT_PUBLIC_SENTRY_DSN`.
+  `SENTRY_PROJECT_FRONTEND`, `SENTRY_PROJECT_BACKEND`,
+  `NEXT_PUBLIC_SENTRY_DSN`.
 
 ## Session Replay
 

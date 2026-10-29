@@ -3,6 +3,7 @@
 The frontend web app for securely managing volunteers and shifts in multi-tiered organizations. Includes the backoffice (`/admin/[orgUId]` routes) — there is no separate backoffice app.
 
 ## Commands
+
 - `bun run dev` - Start NextJS development server
 - `bun run build` - Build a production bundle
 - `bun run lint` - Lint with Biome
@@ -11,12 +12,14 @@ The frontend web app for securely managing volunteers and shifts in multi-tiered
 - `bun test` - Run tests
 
 ## Tech Stack
+
 - **Next.js 16** with App Router (React 19)
 - **TypeScript** with strict mode
 - **Tailwind CSS 4** for styling
 - **Biome** for linting and formatting (not ESLint/Prettier)
 
 ## Project Structure
+
 ```
 src/
 ├── app           # NextJS App Router
@@ -30,11 +33,13 @@ tests are placed in __tests__ subdirectories
 Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-scoped, `(public)` invites/shifts/forms, `api/` auth routes, `unauthorized/` 403 fallback.
 
 ## Server-side auth & org context — use these, never roll your own
+
 - `lib/auth-server.ts`: `getSession()`, `requireAuth()`, `getCurrentUser()`, `isAuthenticated()` — server components, layouts, and server actions only
 - `lib/org-context-server.ts`: `requireOrgAccess(orgUId)`, `getMyAdministrableOrgUnits()` (cached), `getMyAccessibleOrganizationUnits()`, `resolveOrgFromId(orgUId)`
 - Data access: `const data = await getDataClient(orgUId)` (`lib/data-client.ts`) — auto-adds the `x-organization-unit-id` header and auth cookies; a 403 throws `ForbiddenDataError` → server-side `redirect('/unauthorized')` in `data-client.ts` / server components. This is the org-safety mechanism: never construct GraphQL calls that bypass it.
 
 ## Patterns
+
 - Prefer React Server Components and Server Actions when possible.
 - For Forms and validation use react-hook-form with zod.
 - For Server Actions input use next-safe-action with zod (`actionClient` from `lib/safe-action.ts`).
@@ -49,6 +54,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - **Observability (Sentry)**: SDK init lives in `src/instrumentation-client.ts`, `src/sentry.server.config.ts`, `src/sentry.edge.config.ts` (shared options from `@repo/observability`) — never add another init. Route/segment error boundaries render `ErrorFallback` (`@/components/error-fallback`) which reports via `reportError` (`@/lib/report-error`); `global-error.tsx` reports via `reportError` too. New client-reachable Sentry env vars must use the `NEXT_PUBLIC_` prefix; only `NEXT_PUBLIC_SENTRY_DSN` is public-by-design. The `/sentry-tunnel` route is reserved for the Sentry tunnel — never create an app route with that prefix.
 
 ## Testing — `bun:test` only
+
 - The test runner is **`bun:test`** (`import { describe, it, expect, mock } from 'bun:test'`). **Do NOT add Jest, Vitest, `@testing-library`, jsdom, or happy-dom** — they are intentionally absent. Run with `bun test <path>`.
 - **No DOM / no rendered-component tests.** There is no DOM environment. Test logic, not React output: keep components thin and push side-effects into small, injectable helpers you can unit-test directly (see `lib/save-locale-preference.ts`, `lib/locale-seed.ts`, `proxy.ts`'s `localePreferenceRedirect`). Do not render a component and simulate clicks.
 - Isolate dependencies with `mock.module('path', () => ({ ... }))`; stub globals (e.g. `document`, `window`) via `Object.defineProperty(globalThis, ...)`.
@@ -56,6 +62,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - `bun:test` types come from the local ambient shim `src/bun-test.d.ts` (packages that prefer it use `@types/bun` + `"types": ["...","bun"]` instead — do not mix Jest types in).
 
 ## Dates — always use active-locale formatters
+
 - **Client components**: `const { formatDate, formatDateTime, formatTime, formatRange } = useFormatting()` from `@/hooks/use-formatting`.
 - **Server components**: `const { formatDate, formatDateTime, formatTime, formatRange } = await getFormatting()` from `@/lib/formatting-server`.
 - **Shared options**: `lib/date-time-options.ts` owns the `Intl.DateTimeFormatOptions` objects so client/server/legacy formatters stay consistent.
@@ -65,23 +72,27 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - Never call `toLocaleDateString()` directly.
 
 ## Localisation (i18n) — next-intl
+
 Localised with **next-intl** (App Router/RSC). Supported locales `['en','de']`, default/fallback `de`; routing is **URL-prefixed** (`/[locale]/…`). Config in `src/i18n/`: `routing.ts` (locales), `request.ts` (per-request messages), `navigation.ts` (locale-aware nav). Message catalogs are ICU-syntax JSON at `apps/frontend/messages/{en,de}.json`, nested by domain namespace; read copy via `useTranslations('Namespace')` (client) / `getTranslations('Namespace')` (server).
 - **Client-side routing — always use `@/i18n/navigation`, never `next/link` or `next/navigation` directly.** It re-exports locale-aware `Link`, `usePathname`, `useRouter`, `getPathname` from `createNavigation(routing)`; these preserve the active locale prefix automatically. Using the raw Next equivalents drops the locale and breaks prefixed routing.
 - **Server-side `redirect`** — import from `@/i18n/navigation` and call it with the locale: `redirect({ href: '/path', locale })`. The locale-aware helper prefixes the path automatically; raw `next/navigation` `redirect` does not.
 - **`notFound`, `useSearchParams`, `useParams`** — keep importing from `next/navigation`; they are not locale-dependent.
 
 ### Server i18n access
+
 - **RSC pages/layouts**: import `{ setRequestLocale, getTranslations, getFormatter }` from `next-intl/server`. Call `setRequestLocale(locale)` before any other next-intl function to keep static rendering.
 - **Server actions**: `getTranslations` can be called directly to localize user-facing messages returned to the client.
 - **Metadata**: export `async function generateMetadata({ params })`, await `params`, then call `getTranslations({ locale, namespace })`.
 
 ### Strings and translations
+
 All user-facing strings must come from `messages/{en,de}.json` via `useTranslations`
 (client) or `getTranslations` (server). Do not hardcode labels, buttons, headings,
 error messages, or empty-state text in components. Add new keys to both locales and
 keep namespaces/key shapes in sync.
 
 ### Locale switching
+
 The `caluno.locale` cookie is the single frontend locale-preference source, and
 **for authenticated users the preference always wins over the URL** (a `/de/…`
 link is redirected to the user's locale — this is a private dashboard, shareable
@@ -118,6 +129,7 @@ not set them, so seeding must not happen in a layout/page render directly. No
 page-level locale redirects.
 
 ## New Admin features
+
 Always study UI/UX patterns in existing similar features before starting a new one — consistent experience across features.
 - List pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/page.tsx`
 - Detail pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/[timeEntryId]/page.tsx`

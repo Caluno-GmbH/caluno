@@ -1019,6 +1019,63 @@ describe('ShiftService', () => {
       expect(call.recipientUserIds).toEqual([otherUser.id]);
     });
 
+    // VOLI-1704: invite-sheet save must not resurrect withdrawn volunteers
+    // when they are omitted from memberIds (frontend submit filters locked ids).
+    it('leaves VOLUNTEER_CANCELLED untouched when inviting someone else', async () => {
+      const shift = await createShift(db, {
+        organizationUnitId,
+        createdById: userId,
+      });
+      const instances = await db.query.shiftInstances.findMany({
+        where: { masterId: shift.id },
+      });
+      const instanceId = instances[0]?.id;
+      expect(instanceId).toBeDefined();
+
+      const withdrawn = await createUser(db);
+      const newInvitee = await createUser(db);
+
+      await db.insert(schema.shiftInstanceInvites).values({
+        instanceId,
+        userId: withdrawn.id,
+        status: ShiftInviteStatus.VOLUNTEER_CANCELLED,
+      });
+
+      (
+        notificationService.notifyShiftInstanceInvited as ReturnType<
+          typeof mock
+        >
+      ).mockClear();
+
+      await shiftService.updateMembersForShiftInstance(
+        instanceId,
+        [newInvitee.id],
+        organizationUnitId,
+      );
+
+      const withdrawnInvite = await db.query.shiftInstanceInvites.findFirst({
+        where: { instanceId, userId: withdrawn.id },
+      });
+      expect(withdrawnInvite?.status).toBe(
+        ShiftInviteStatus.VOLUNTEER_CANCELLED,
+      );
+
+      const newInvite = await db.query.shiftInstanceInvites.findFirst({
+        where: { instanceId, userId: newInvitee.id },
+      });
+      expect(newInvite?.status).toBe(ShiftInviteStatus.ADMIN_INVITED);
+
+      expect(
+        notificationService.notifyShiftInstanceInvited,
+      ).toHaveBeenCalledTimes(1);
+      const call = (
+        notificationService.notifyShiftInstanceInvited as ReturnType<
+          typeof mock
+        >
+      ).mock.calls[0][0];
+      expect(call.recipientUserIds).toEqual([newInvitee.id]);
+    });
+
     it('does not double-count existing instance invites when inviting to all instances', async () => {
       const shift = await createShift(db, {
         organizationUnitId,

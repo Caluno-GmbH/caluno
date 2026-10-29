@@ -31,7 +31,7 @@ we only migrate and verify these three.
 ## 1. Goal & guiding principles
 
 - **One component, many data shapes.** Features never hand-build `<table>`/`<tr>`
-  markup again. They declare *columns* and hand over *rows*; the unified component
+  markup again. They declare _columns_ and hand over _rows_; the unified component
   draws everything.
 - **The UI is fixed, the data is pluggable.** The Pencil design (`unified tables.pen`,
   node `bGlPt`) is the absolute visual contract. Code adapts to it, never the reverse.
@@ -52,6 +52,7 @@ These numbers come straight from the design file and are **absolute**. The primi
 built to them; no feature may override them.
 
 ### Column header (the `th`)
+
 - Height **32px**, padding **0 vertical / 8px horizontal**.
 - Background **`--muted`**; label **14px**, color **`--muted-foreground`**.
 - **Border-right 1px `--border`** on every column **except the last**.
@@ -62,6 +63,7 @@ built to them; no feature may override them.
   (the existing `DataTableColumnHeader` button covers this behaviour).
 
 ### Data row
+
 - A row is a vertical stack: the **cells strip** (vertically centered) followed by a
   **1px divider in `--border`**.
 - **Cell padding: 8px vertical / 12px horizontal.**
@@ -71,11 +73,12 @@ built to them; no feature may override them.
 - Columns **hug their content**; the **actions cell right-aligns** its buttons.
 
 ### Cell anatomy — the four cell types (this is the heart of the unification)
+
 Every column renders through exactly one of these. Nothing else is allowed.
 
 1. **Full cell** — `[avatar OR icon, 32×32]` + a content block
    `{ title 18px (--foreground), subtitle 16px (--muted-foreground) }`
-   + an **optional trailing status/alert icon 16×16**. Horizontal gap 8, centered.
+   - an **optional trailing status/alert icon 16×16**. Horizontal gap 8, centered.
 2. **Average cell** — exactly **one data element** (a single value, 18px).
 3. **Status cell** — a **Badge only**. It may coexist with **nothing except a trailing
    icon**. (Reuse the Badge primitive from VOLI-1635; its padding `[2,8]` / radius 8
@@ -83,6 +86,7 @@ Every column renders through exactly one of these. Nothing else is allowed.
 4. **Number cell** — numeric value, **always right-aligned**.
 
 ### Footer (pagination)
+
 - Left: “Showing 1–25 of N …” — 16px, `--muted-foreground`.
 - Right: a **rows-per-page selector** (default **25**, options **25 / 50 / 100**),
   “Page 1 of M” (16px), and **Previous / Next** buttons (18px label, chevron icons).
@@ -111,24 +115,24 @@ Every column renders through exactly one of these. Nothing else is allowed.
 
 **Nine tables exist; only Timesheets uses the engine fully. Three are in scope.**
 
-| # | Table | File (domain/*) | Engine today | Sort | Page | Search | Actions | In scope |
-|---|-------|-----------------|--------------|------|------|--------|---------|----------|
-| 1 | Timesheets | `time-entry/components/timesheets-table.tsx` | TanStack + wrapper | ✓ | ✓ | – | ✓ | **Yes** |
-| 2 | Shifts / Assignments | `shift/components/shifts-table.tsx` | shadcn Table | – | ✓ | – | ✓ | **Yes** |
-| 3 | Users / Volunteers (Approved) | `app/.../volunteers/manage-volunteers-client.tsx` | shadcn Table | – | – | ✓ | ✓ | **Yes** |
-| 4 | Roles | `role/components/roles-table.tsx` | shadcn Table | – | – | – | ✓ | No |
-| 5 | Forms | `requirement-form/components/forms-table.tsx` | shadcn Table | – | – | – | ✓ | No |
-| 6 | Form Blocks | `requirement-form/components/blocks-table.tsx` | shadcn Table | – | – | – | ✓ | No |
-| 7 | Form Submissions | `requirement-form/components/form-submissions-client.tsx` | shadcn Table | – | – | ✓ | ✓ | No |
-| 8 | Submission view | `requirement-form/components/submission-view.tsx` | shadcn Table | – | – | – | – | No |
-| 9 | Reimbursements board | `accounting/components/reimbursements-volunteer-group.tsx` | shadcn Table (hierarchical) | ✓ | – | ✓ | ✓ | No |
+| #   | Table                         | File (domain/*)                                            | Engine today                | Sort | Page | Search | Actions | In scope |
+| --- | ----------------------------- | ---------------------------------------------------------- | --------------------------- | ---- | ---- | ------ | ------- | -------- |
+| 1   | Timesheets                    | `time-entry/components/timesheets-table.tsx`               | TanStack + wrapper          | ✓    | ✓    | –      | ✓       | **Yes**  |
+| 2   | Shifts / Assignments          | `shift/components/shifts-table.tsx`                        | shadcn Table                | –    | ✓    | –      | ✓       | **Yes**  |
+| 3   | Users / Volunteers (Approved) | `app/.../volunteers/manage-volunteers-client.tsx`          | shadcn Table                | –    | –    | ✓      | ✓       | **Yes**  |
+| 4   | Roles                         | `role/components/roles-table.tsx`                          | shadcn Table                | –    | –    | –      | ✓       | No       |
+| 5   | Forms                         | `requirement-form/components/forms-table.tsx`              | shadcn Table                | –    | –    | –      | ✓       | No       |
+| 6   | Form Blocks                   | `requirement-form/components/blocks-table.tsx`             | shadcn Table                | –    | –    | –      | ✓       | No       |
+| 7   | Form Submissions              | `requirement-form/components/form-submissions-client.tsx`  | shadcn Table                | –    | –    | ✓      | ✓       | No       |
+| 8   | Submission view               | `requirement-form/components/submission-view.tsx`          | shadcn Table                | –    | –    | –      | –       | No       |
+| 9   | Reimbursements board          | `accounting/components/reimbursements-volunteer-group.tsx` | shadcn Table (hierarchical) | ✓    | –    | ✓      | ✓       | No       |
 
 **Reality check for the three in scope:** all use the `@repo/ui` `<Table>` primitives
 already, so the markup migration is mechanical. The real work is (a) the cell-type system
-+ header/footer styling from Pencil, (b) a reusable **filter/search** param layer the
-engine lacks, and (c) one backend change — `sort`/`order`/`search` args on the `shifts`
-resolver (Timesheets already has sort; Users filters in-browser, see section 5). None of
-the three is hierarchical, so the flat row model fits all of them cleanly.
+- header/footer styling from Pencil, (b) a reusable **filter/search** param layer the
+  engine lacks, and (c) one backend change — `sort`/`order`/`search` args on the `shifts`
+  resolver (Timesheets already has sort; Users filters in-browser, see section 5). None of
+  the three is hierarchical, so the flat row model fits all of them cleanly.
 
 ---
 
@@ -137,6 +141,7 @@ the three is hierarchical, so the flat row model fits all of them cleanly.
 Keep Timesheets’ shape; make it the product-wide default by adding the missing pieces.
 
 ### 4.1 Cell-type primitives (new — the visual contract in code)
+
 A tiny set of presentational components in `components/data-table/cells/`, built exactly
 to section 2. Columns compose these instead of raw JSX, so the look can never drift:
 
@@ -152,6 +157,7 @@ The header truncation+tooltip and the border-right/last-column rule live in the
 `DataTable` header render + `TableHead`, not in each column.
 
 ### 4.2 Engine (extend `DataTable`, don’t replace)
+
 - Keep TanStack `useTable` and `enableSortingRemoval:false`.
 - Fold the Pencil styling into the wrapper: muted 32px header, 8/12 cell padding, divider
   rows, min-width/truncation, right-alignment via `meta`.
@@ -166,7 +172,7 @@ way; only the data plumbing differs. This is a single explicit prop (e.g. `mode:
 - **Server mode** (Timesheets, Shifts): `manualPagination` + `manualSorting`. The
   server-component page fetches the current page via `@repo/data` using
   `limit/offset/sort/order` (+ `search`), and passes `data`, `pageCount`, `sorting` in.
-  The URL params *are* the query inputs.
+  The URL params _are_ the query inputs.
 - **Client mode** (Users): the component receives the **full** list and turns on TanStack’s
   own `getPaginationRowModel` / `getSortedRowModel` / `getFilteredRowModel`. The same
   `page/pageSize/sort/search` URL params drive TanStack state instead of a server fetch, so
@@ -181,6 +187,7 @@ search box are mode-agnostic; only how `data`/`pageCount` are produced differs.
 > fetch reads it as `limit`; the rows-per-page selector writes it and resets `page`.
 
 ### 4.3 Filtering / search layer (new, mirrors `createTableParsers`)
+
 Add a sibling param factory (e.g. `createFilterParsers`) so search/filter state lives in
 the URL exactly like sort/page does (nuqs, `shallow:false`, server-readable via the params
 cache). A single shared, debounced search box replaces today’s ad-hoc `useState`. **Where
@@ -190,6 +197,7 @@ the resolver consumes `search` just as `findAll` consumes `sort/order`; in clien
 Either way the search box, its URL param, and its behaviour are identical to the user.
 
 ### 4.4 Column contract
+
 A feature supplies a typed `ColumnDef[]` where each column declares:
 - `header` via `DataTableColumnHeader` (title + optional sort field),
 - `meta` for width / alignment / `cellClassName`,
@@ -204,12 +212,11 @@ That is the entire surface a feature touches. Everything else is the engine.
 What each in-scope table does — chosen to keep the unbounded tables scalable while sparing
 the bounded one any backend work:
 
-| Table | Mode | Pagination | Sort | Search | Backend work this ticket |
-|-------|------|-----------|------|--------|--------------------------|
-| **Timesheets** | server | ✅ already | ✅ already | — (none today; out of scope) | none |
-| **Shifts** | server | ✅ already | **add** | **add** | add `sort`/`order`/`search` to `shifts` resolver + `GetShifts` + codegen |
-| **Users** | client | in-browser | in-browser | in-browser | none |
-
+| Table          | Mode   | Pagination | Sort       | Search                       | Backend work this ticket                                                 |
+| -------------- | ------ | ---------- | ---------- | ---------------------------- | ------------------------------------------------------------------------ |
+| **Timesheets** | server | ✅ already | ✅ already | — (none today; out of scope) | none                                                                     |
+| **Shifts**     | server | ✅ already | **add**    | **add**                      | add `sort`/`order`/`search` to `shifts` resolver + `GetShifts` + codegen |
+| **Users**      | client | in-browser | in-browser | in-browser                   | none                                                                     |
 - **Server mode** (Timesheets, Shifts): the server component fetches through
   `getDataClient`/`@repo/data` with `limit/offset/sort/order` (+ `search` for Shifts) and
   passes `data`, `pageCount`, `sorting` in. Sort fields come from the generated GraphQL
@@ -334,7 +341,7 @@ agents running one table each, with you reviewing every diff.
   the backend arg pattern from Shifts is worth copying consistently).
 - **Shifts backend change.** → Adding `sort`/`order`/`search` to the `shifts` resolver
   must preserve existing org/permission scoping and pagination semantics; `search` is a
-  filter *before* the count, not after. Review the resolver and regenerated types; don’t
+  filter _before_ the count, not after. Review the resolver and regenerated types; don’t
   touch unrelated resolvers.
 - **Scope creep back into the 6 out-of-scope tables.** → The primitive is built to serve
   them eventually, but this ticket migrates and verifies only Timesheets, Shifts, and
@@ -345,6 +352,7 @@ agents running one table each, with you reviewing every diff.
 - **Search layer scope creep.** → Keep it to URL-param + debounced input mirroring
   `createTableParsers`; the mode decides where filtering executes (server for Shifts,
   in-browser for Users) — no client-side massaging of server-paginated data.
-- **Agent drift from the design.** → The cell primitives *are* the design; agents compose
+- **Agent drift from the design.** → The cell primitives _are_ the design; agents compose
   them and cannot restyle. Anything that needs restyling is a step-1 change, reviewed once.
+```
 ```

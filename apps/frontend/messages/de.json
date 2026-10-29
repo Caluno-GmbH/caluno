@@ -1738,8 +1738,7 @@
       "ehrenamt": "Ehrenamtspauschale",
       "ehrenamtShort": "Ehrenamt",
       "uebungsleiter": "Übungsleiterpauschale",
-      "uebungsleiterShort": "Übungsleiter",
-      "unpaid": "Keine Vergütung"
+      "uebungsleiterShort": "Übungsleiter"
     },
     "page": {
       "paginationName": "Einsätze",
@@ -1825,7 +1824,10 @@
       "visibility": "Sichtbarkeit",
       "location": "Ort",
       "staffing": "Besetzung",
-      "recurrenceSince": "Seit {date}"
+      "recurrenceSince": "Seit {date}",
+      "expandOccurrences": "Termine ausklappen",
+      "pendingCount": "{count, plural, one {# offene Einladung} other {# offene Einladungen}}",
+      "collapseOccurrences": "Termine einklappen"
     },
     "filter": {
       "location": "Ort",
@@ -1837,13 +1839,9 @@
       "visibilityAll": "Alle",
       "visibilityInviteOnly": "Nur auf Einladung",
       "visibilityOpen": "Offen",
-      "visibilityPlaceholder": "Alle Sichtbarkeiten",
-      "fillPlaceholder": "Beliebige Besetzung",
       "datePlaceholder": "Zeitraum",
       "fillAll": "Alle",
       "fillUnderstaffed": "Unterbesetzt",
-      "fillBelow": "Unter Minimum",
-      "fillOk": "OK",
       "fillFull": "Voll",
       "sheetTitle": "Filter"
     },

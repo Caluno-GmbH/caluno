@@ -25,7 +25,7 @@ import type {
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
-import { addDays, startOfDay } from 'date-fns';
+import { addDays, parseISO, startOfDay } from 'date-fns';
 import {
   ChevronDown,
   ChevronRight,
@@ -50,7 +50,6 @@ import { eventShiftEditPath } from '@/domain/event/routes';
 import type { ShiftFilterField } from '@/domain/shift/lib/shift-active-filters';
 import { buildShiftActiveFilters } from '@/domain/shift/lib/shift-active-filters';
 import { getVisibilityConfig } from '@/domain/shift/lib/shift-badge-config';
-import { applyFillFilter } from '@/domain/shift/lib/shift-fill-filter';
 import { Link } from '@/i18n/navigation';
 import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -60,7 +59,7 @@ import {
   shiftEditPath,
   shiftInstanceDetailPath,
 } from '../routes';
-import { shiftsSearchParams } from '../shifts-search-params';
+import { parseAsLocalDate, shiftsSearchParams } from '../shifts-search-params';
 import { getStaffingState, staffingBadgeText } from '../staffing';
 import { ActionBar } from './action-bar';
 
@@ -196,8 +195,24 @@ export function ShiftsTable({
       ...(sort !== defaults.sort.defaultValue ? { sort } : {}),
       ...(dir !== defaults.dir.defaultValue ? { dir } : {}),
       ...(q.trim() ? { q } : {}),
+      ...(location ? { location } : {}),
+      ...(visibility ? { visibility } : {}),
+      ...(dateFrom ? { dateFrom: parseAsLocalDate.serialize(dateFrom) } : {}),
+      ...(dateTo ? { dateTo: parseAsLocalDate.serialize(dateTo) } : {}),
+      ...(fill ? { fill } : {}),
     };
-  }, [page, pageSize, sort, dir, q]);
+  }, [
+    page,
+    pageSize,
+    sort,
+    dir,
+    q,
+    location,
+    visibility,
+    dateFrom,
+    dateTo,
+    fill,
+  ]);
 
   const sorting = useMemo(() => toSorting(sort, dir), [sort, dir]);
 
@@ -248,11 +263,6 @@ export function ShiftsTable({
     return { from, to: addDays(from, 31, appTz) };
   }, []);
 
-  const visibleRows = useMemo(
-    () => applyFillFilter(masterRows, fill),
-    [masterRows, fill],
-  );
-
   // Instance rows and one-off masters link to the assignment (instance) detail;
   // a recurring master's header row links to the full shift detail.
   const getRowHref = useCallback(
@@ -302,11 +312,11 @@ export function ShiftsTable({
             if (item.singleInstance) {
               // One-off: the single occurrence's date.
               subtitle = formatDate(
-                new Date(item.singleInstance.actualStartsAt),
+                parseISO(item.singleInstance.actualStartsAt),
               );
             } else {
               // Recurring: the start→end span, or "Since <start>" when open-ended.
-              const start = new Date(item.originalStartsAt);
+              const start = parseISO(item.originalStartsAt);
               const end = parseRruleEndDate(item.rrule);
               subtitle = end
                 ? formatDateRange(start, end)
@@ -320,6 +330,12 @@ export function ShiftsTable({
                     variant="ghost"
                     onClick={row.getToggleExpandedHandler()}
                     className="shrink-0"
+                    aria-expanded={row.getIsExpanded()}
+                    aria-label={
+                      row.getIsExpanded()
+                        ? t('table.collapseOccurrences')
+                        : t('table.expandOccurrences')
+                    }
                   >
                     {row.getIsExpanded() ? (
                       <ChevronDown className="size-4" />
@@ -344,7 +360,7 @@ export function ShiftsTable({
           return (
             <Link className="block hover:underline" href={getRowHref(item)}>
               <TextCell className="pl-6 text-muted-foreground">
-                {formatDate(new Date(item.actualStartsAt))}
+                {formatDate(parseISO(item.actualStartsAt))}
               </TextCell>
             </Link>
           );
@@ -376,8 +392,8 @@ export function ShiftsTable({
           if (!instance) {
             return null;
           }
-          const start = new Date(instance.actualStartsAt);
-          const end = new Date(instance.actualEndsAt);
+          const start = parseISO(instance.actualStartsAt);
+          const end = parseISO(instance.actualEndsAt);
           return <TextCell>{formatTimeRange(start, end)}</TextCell>;
         },
       },
@@ -461,7 +477,16 @@ export function ShiftsTable({
                 {staffingBadgeText(count, min, max, state)}
               </Badge>
               {instance.pendingCount > 0 && (
-                <Badge variant="neutral" className="gap-1">
+                <Badge
+                  variant="neutral"
+                  className="gap-1"
+                  title={t('table.pendingCount', {
+                    count: instance.pendingCount,
+                  })}
+                  aria-label={t('table.pendingCount', {
+                    count: instance.pendingCount,
+                  })}
+                >
                   <Clock className="size-3.5" aria-hidden="true" />
                   {instance.pendingCount}
                 </Badge>
@@ -572,7 +597,7 @@ export function ShiftsTable({
 
   const onClearField = (field: ShiftFilterField) => {
     if (field === 'fill') {
-      void setParams({ fill: '' }, { shallow: true });
+      void setParams({ fill: '', page: 1 });
     } else if (field === 'q') {
       void setParams({ q: '', page: 1 });
     } else if (field === 'location') {
@@ -699,10 +724,10 @@ export function ShiftsTable({
           value={fill === 'below' || fill === 'full' ? fill : 'all'}
           onValueChange={(v) => {
             if (!v) return;
-            void setParams(
-              { fill: v === 'all' ? '' : (v as 'below' | 'full') },
-              { shallow: true },
-            );
+            void setParams({
+              fill: v === 'all' ? '' : (v as 'below' | 'full'),
+              page: 1,
+            });
           }}
           aria-label={t('filter.fill')}
         >
@@ -715,7 +740,7 @@ export function ShiftsTable({
       </TableToolbar>
       <DataTable
         columns={columns}
-        data={visibleRows}
+        data={masterRows}
         pageCount={pageCount}
         sorting={sorting}
         onSortingChange={onSortingChange}
@@ -727,7 +752,7 @@ export function ShiftsTable({
           defaultAllExpanded: true,
         }}
       />
-      {pagination.total > 0 && visibleRows.length > 0 && (
+      {pagination.total > 0 && masterRows.length > 0 && (
         <DataTablePagination
           total={pagination.total}
           name={t('page.paginationName')}

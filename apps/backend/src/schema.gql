@@ -1008,12 +1008,13 @@ type Query {
   roles: [Role!]!
   rosterYearlyUsage(organizationUnitId: ID!, year: Int!): [VolunteerYearlyUsage!]!
   shift(id: String!): Shift!
+  shiftCount: Int!
   shiftInstance(id: ID!): ShiftInstance!
   shiftInstances(shiftId: ID!): [ShiftInstance!]!
   shiftInstancesByMasterIds(masterIds: [ID!]!): [ShiftInstancesByMaster!]!
   shiftLocations: [String!]!
   shiftVolunteers(instanceId: ID!, statuses: [ShiftInviteStatus!]): [User!]!
-  shifts(dateFrom: DateTime, dateTo: DateTime, limit: Int! = 10, location: String, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT, visibility: ShiftVisibility): ShiftPaginatedResponse!
+  shifts(dateFrom: DateTime, dateTo: DateTime, fill: ShiftFillFilter, limit: Int! = 10, location: String, offset: Int! = 0, order: SortOrder! = DESC, search: String, sort: ShiftSortField! = CREATED_AT, visibility: ShiftVisibility): ShiftPaginatedResponse!
   termsStatus: TermsStatus!
   timeEntries(dateFrom: DateTime, dateTo: DateTime, limit: Int! = 10, offset: Int! = 0, order: SortOrder! = DESC, shiftId: ID, sort: TimeEntrySortField! = CREATED_AT, statuses: [TimeEntryStatus!], volunteerId: ID): TimeEntryPaginatedResponse!
   timeEntriesAwaitingReviewForInvoice(periodEnd: DateTime, periodStart: DateTime, reimbursementTypeId: ID!, volunteerId: ID!): [TimeEntry!]!
@@ -1178,6 +1179,11 @@ type Shift {
 enum ShiftCallOutSource {
   AUTOMATIC
   MANUAL
+}
+
+enum ShiftFillFilter {
+  BELOW
+  FULL
 }
 
 type ShiftInstance {

@@ -77,6 +77,7 @@ import { slugify } from '../utils/slug.util';
 import { containsPattern } from '../utils/string.util';
 import {
   INVITE_STATUS_TO_JOIN_SHIFT_STATUS,
+  ShiftFillFilter,
   ShiftInviteStatus,
   ShiftSortField,
   ShiftVisibility,
@@ -214,8 +215,14 @@ export class ShiftService {
     return new Map(rows.map((row) => [row.instanceId, Number(row.total)]));
   }
 
-  /** Pending-invite counts (not yet joined) for many instances in one query. */
-  async getPendingCounts(instanceIds: string[]): Promise<Map<string, number>> {
+  /**
+   * Pending-invite counts (not yet joined) for many instances in one query,
+   * limited to instances whose shift belongs to `organizationUnitId`.
+   */
+  async getPendingCounts(
+    instanceIds: string[],
+    organizationUnitId: string,
+  ): Promise<Map<string, number>> {
     if (instanceIds.length === 0) return new Map();
     const rows = await this.db
       .select({
@@ -223,9 +230,18 @@ export class ShiftService {
         total: count(),
       })
       .from(schema.shiftInstanceInvites)
+      .innerJoin(
+        schema.shiftInstances,
+        eq(schema.shiftInstances.id, schema.shiftInstanceInvites.instanceId),
+      )
+      .innerJoin(
+        schema.shifts,
+        eq(schema.shifts.id, schema.shiftInstances.masterId),
+      )
       .where(
         and(
           inArray(schema.shiftInstanceInvites.instanceId, instanceIds),
+          eq(schema.shifts.organizationUnitId, organizationUnitId),
           inArray(schema.shiftInstanceInvites.status, [
             ...PENDING_SHIFT_INVITE_STATUSES,
           ]),
@@ -438,27 +454,28 @@ export class ShiftService {
   }
 
   /** Distinct non-null, non-empty location values for the org unit, ordered alphabetically. */
-  async findDistinctLocations(
-    organizationUnitId: string,
-    visibilityFilter: ShiftVisibility | null = null,
-  ): Promise<string[]> {
+  async findDistinctLocations(organizationUnitId: string): Promise<string[]> {
+    // An instance's override location is offered too, so it can be filtered on.
+    const effectiveLocation = sql<string>`coalesce(${schema.shiftInstances.overrideLocation}, ${schema.shifts.location})`;
     const rows = await this.db
-      .selectDistinct({ location: schema.shifts.location })
+      .selectDistinct({ location: effectiveLocation })
       .from(schema.shifts)
+      .innerJoin(
+        schema.shiftInstances,
+        eq(schema.shiftInstances.masterId, schema.shifts.id),
+      )
       .where(
         and(
           eq(schema.shifts.organizationUnitId, organizationUnitId),
           eq(schema.shifts.isDeleted, false),
-          isNotNull(schema.shifts.location),
-          ne(schema.shifts.location, ''),
-          ...(visibilityFilter
-            ? [eq(schema.shifts.visibility, visibilityFilter)]
-            : []),
+          eq(schema.shiftInstances.isCancelled, false),
+          isNotNull(effectiveLocation),
+          ne(effectiveLocation, ''),
         ),
       )
-      .orderBy(asc(schema.shifts.location));
+      .orderBy(asc(effectiveLocation));
 
-    return rows.map((r) => r.location as string);
+    return rows.map((r) => r.location);
   }
 
   /** A user's open time entries across many instances in one query (DataLoader batch). */
@@ -1044,6 +1061,7 @@ export class ShiftService {
     dateTo: Date | null = null,
     location: string | null = null,
     visibility: ShiftVisibility | null = null,
+    fill: ShiftFillFilter | null = null,
   ): Promise<{
     shifts: (ShiftEntity & { windowedInstances?: ShiftInstanceEntity[] })[];
     total: number;
@@ -1065,31 +1083,87 @@ export class ShiftService {
         dateTo,
         location,
         visibility,
+        fill,
       );
     }
 
-    const result = await this.findAllVisibleToMember(
-      userId,
-      organizationUnitId,
-      pagination,
-    );
-    return {
-      shifts: result.shifts,
-      total: result.total,
-    };
+    // Members see the shifts they're invited to or eligible for; the list
+    // filters are an admin feature and don't apply here.
+    return this.findAllVisibleToMember(userId, organizationUnitId, pagination);
+  }
+
+  /**
+   * Number of shifts in the unit, ignoring the list's date window — drives the
+   * "no shifts yet" empty state, which must not trigger just because nothing
+   * falls within the next 31 days.
+   */
+  async countAll(organizationUnitId: string): Promise<number> {
+    const [result] = await this.db
+      .select({ total: count() })
+      .from(schema.shifts)
+      .where(
+        and(
+          eq(schema.shifts.organizationUnitId, organizationUnitId),
+          eq(schema.shifts.isDeleted, false),
+        ),
+      );
+    return result?.total ?? 0;
   }
 
   private resolveWindow(
     dateFrom: Date | null,
     dateTo: Date | null,
   ): { from: Date; to: Date } {
-    const from = dateFrom ?? startOfTodayInAppTimeZone();
-    if (dateTo) {
-      const { year, month, day } = appDateParts(dateTo);
-      return { from, to: endOfAppDay(year, month, day) };
+    // Both bounds snap to whole app-timezone days: the frontend sends calendar
+    // dates, which arrive as UTC midnight (01:00/02:00 in Berlin). Without an
+    // end date the window runs 31 days from the start date.
+    const fromDay = appDateParts(dateFrom ?? new Date());
+    const toDay = dateTo
+      ? appDateParts(dateTo)
+      : { ...fromDay, day: fromDay.day + 31 };
+    const from = startOfAppDay(fromDay.year, fromDay.month, fromDay.day);
+    const to = endOfAppDay(toDay.year, toDay.month, toDay.day);
+    // A hand-edited URL can reverse the range; treat it as the same span.
+    if (to < from) {
+      return {
+        from: startOfAppDay(toDay.year, toDay.month, toDay.day),
+        to: endOfAppDay(fromDay.year, fromDay.month, fromDay.day),
+      };
     }
-    const { year, month, day } = appDateParts(startOfTodayInAppTimeZone());
-    return { from, to: endOfAppDay(year, month, day + 31) };
+    return { from, to };
+  }
+
+  /** Instance-level location match: an instance's override wins over its shift's location. */
+  private buildLocationCondition(location: string | null) {
+    if (!location) return null;
+    const masterLocation = sql`(select ${schema.shifts.location} from ${schema.shifts} where ${schema.shifts.id} = ${schema.shiftInstances.masterId})`;
+    return sql`coalesce(${schema.shiftInstances.overrideLocation}, ${masterLocation}) = ${location}`;
+  }
+
+  private buildFillCondition(fill: ShiftFillFilter | null) {
+    if (!fill) return null;
+
+    const filledCountSubquery = this.db
+      .select({ total: count() })
+      .from(schema.shiftInstanceInvites)
+      .where(
+        and(
+          eq(schema.shiftInstanceInvites.instanceId, schema.shiftInstances.id),
+          inArray(schema.shiftInstanceInvites.status, [
+            ...PARTICIPATING_SHIFT_INVITE_STATUSES,
+          ]),
+        ),
+      );
+    const filledCount = sql`(${filledCountSubquery})`;
+    const masterMin = sql`(select ${schema.shifts.minVolunteers} from ${schema.shifts} where ${schema.shifts.id} = ${schema.shiftInstances.masterId})`;
+    const masterMax = sql`(select ${schema.shifts.maxVolunteers} from ${schema.shifts} where ${schema.shifts.id} = ${schema.shiftInstances.masterId})`;
+    const effectiveMin = sql`coalesce(${schema.shiftInstances.overrideMinVolunteers}, ${masterMin})`;
+    const effectiveMax = sql`coalesce(${schema.shiftInstances.overrideMaxVolunteers}, ${masterMax})`;
+    const fullCondition = sql`${effectiveMax} is not null and ${filledCount} >= ${effectiveMax}`;
+
+    if (fill === ShiftFillFilter.FULL) return fullCondition;
+
+    return sql`not (${fullCondition}) and (${filledCount} = 0 or (${effectiveMin} is not null and ${filledCount} < ${effectiveMin}))`;
   }
 
   private async findAllForOrgUnit(
@@ -1102,6 +1176,7 @@ export class ShiftService {
     dateTo: Date | null = null,
     locationFilter: string | null = null,
     visibilityFilter: ShiftVisibility | null = null,
+    fillFilter: ShiftFillFilter | null = null,
   ): Promise<{
     shifts: (ShiftEntity & { windowedInstances: ShiftInstanceEntity[] })[];
     total: number;
@@ -1111,6 +1186,8 @@ export class ShiftService {
       dateFrom,
       dateTo,
     );
+    const fillCondition = this.buildFillCondition(fillFilter);
+    const locationCondition = this.buildLocationCondition(locationFilter);
 
     // EXISTS subquery: master has at least one non-cancelled instance overlapping [windowFrom, windowTo].
     // Overlap condition: actualStartsAt <= windowTo AND actualEndsAt >= windowFrom.
@@ -1123,6 +1200,8 @@ export class ShiftService {
           lte(schema.shiftInstances.actualStartsAt, windowTo),
           gte(schema.shiftInstances.actualEndsAt, windowFrom),
           eq(schema.shiftInstances.isCancelled, false),
+          ...(fillCondition ? [fillCondition] : []),
+          ...(locationCondition ? [locationCondition] : []),
         ),
       );
 
@@ -1135,16 +1214,15 @@ export class ShiftService {
             or(
               ilike(schema.shifts.title, containsPattern(term)),
               ilike(schema.shifts.location, containsPattern(term)),
-            )!,
+            ),
           ]
         : []),
-      ...(locationFilter ? [eq(schema.shifts.location, locationFilter)] : []),
       ...(visibilityFilter
         ? [eq(schema.shifts.visibility, visibilityFilter)]
         : []),
     ];
 
-    const whereClause = and(...conditions)!;
+    const whereClause = and(...conditions);
 
     const orderByClause = this.buildShiftOrderBySQL(sort, order);
 
@@ -1155,12 +1233,8 @@ export class ShiftService {
         .where(whereClause)
         .orderBy(...orderByClause)
         .limit(pagination.limit)
-        .offset(pagination.offset) as Promise<ShiftEntity[]>,
-      this.db
-        .select({ total: count() })
-        .from(schema.shifts)
-        .where(whereClause)
-        .orderBy() as Promise<{ total: number }[]>,
+        .offset(pagination.offset),
+      this.db.select({ total: count() }).from(schema.shifts).where(whereClause),
     ]);
 
     const total = countResult[0]?.total ?? 0;
@@ -1179,6 +1253,8 @@ export class ShiftService {
           lte(schema.shiftInstances.actualStartsAt, windowTo),
           gte(schema.shiftInstances.actualEndsAt, windowFrom),
           eq(schema.shiftInstances.isCancelled, false),
+          ...(fillCondition ? [fillCondition] : []),
+          ...(locationCondition ? [locationCondition] : []),
         ),
       )
       .orderBy(
@@ -4345,7 +4421,11 @@ export class ShiftService {
     const db = tx ?? this.db;
 
     const instance = await db.query.shiftInstances.findFirst({
-      where: { id: instanceId, isCancelled: false },
+      where: {
+        id: instanceId,
+        isCancelled: false,
+        master: { isDeleted: false },
+      },
       with: { master: true },
     });
 
@@ -4355,7 +4435,17 @@ export class ShiftService {
 
     const shift = instance.master;
 
-    if (shift.isDeleted || shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
+    const existingInvite = await db.query.shiftInstanceInvites.findFirst({
+      where: {
+        instanceId,
+        userId,
+      },
+    });
+
+    if (
+      shift.visibility !== ShiftVisibility.ALL_MEMBERS &&
+      !this.canJoinInviteOnlyShift(existingInvite?.status)
+    ) {
       throw new NotFoundGraphQLError('Shift not found');
     }
 
@@ -4385,13 +4475,6 @@ export class ShiftService {
 
     const maxVolunteers = instance.overrideMaxVolunteers ?? shift.maxVolunteers;
     const hasSeat = await this.hasAvailableSeat(instanceId, maxVolunteers, db);
-
-    const existingInvite = await db.query.shiftInstanceInvites.findFirst({
-      where: {
-        instanceId,
-        userId,
-      },
-    });
 
     if (existingInvite) {
       if (existingInvite.status === ShiftInviteStatus.WAITLIST_JOINED) {
@@ -4713,7 +4796,11 @@ export class ShiftService {
     requiredForms?: RequiredFormStatus[];
   }> {
     const instance = await this.db.query.shiftInstances.findFirst({
-      where: { id: instanceId, isCancelled: false },
+      where: {
+        id: instanceId,
+        isCancelled: false,
+        master: { isDeleted: false },
+      },
       with: { master: true },
     });
 
@@ -4722,16 +4809,6 @@ export class ShiftService {
     }
 
     const shift = instance.master;
-
-    if (shift.isDeleted) {
-      throw new NotFoundGraphQLError('Shift not found');
-    }
-
-    if (shift.visibility !== ShiftVisibility.ALL_MEMBERS) {
-      throw new ForbiddenGraphQLError(
-        'This shift is invite-only and cannot be joined directly',
-      );
-    }
 
     const orgUnit = await this.db.query.organizationUnits.findFirst({
       where: { id: shift.organizationUnitId },
@@ -4742,6 +4819,15 @@ export class ShiftService {
     }
 
     const existingInvite = await this.findInstanceInvite(instanceId, userId);
+
+    if (
+      shift.visibility !== ShiftVisibility.ALL_MEMBERS &&
+      !this.canJoinInviteOnlyShift(existingInvite?.status)
+    ) {
+      throw new ForbiddenGraphQLError(
+        'This shift is invite-only and cannot be joined directly',
+      );
+    }
 
     if (
       existingInvite &&
@@ -4951,6 +5037,24 @@ export class ShiftService {
 
     if (invite.status === targetStatus) {
       return invite;
+    }
+
+    if (
+      this.volunteerSelfJoinRequiresForms(
+        isSelfAction,
+        invite.status,
+        targetStatus,
+      )
+    ) {
+      if (nextInstance) {
+        await this.assertShiftAndInstanceRequiredFormsSatisfied(
+          userId,
+          shiftId,
+          nextInstance.id,
+        );
+      } else {
+        await this.assertShiftRequiredFormsSatisfied(userId, shiftId);
+      }
     }
 
     // Direct JOINED without waitlist fallback still needs capacity on future instances
@@ -5238,6 +5342,20 @@ export class ShiftService {
 
     if (invite.status === targetStatus) {
       return invite;
+    }
+
+    if (
+      this.volunteerSelfJoinRequiresForms(
+        isSelfAction,
+        invite.status,
+        targetStatus,
+      )
+    ) {
+      await this.assertShiftAndInstanceRequiredFormsSatisfied(
+        userId,
+        instance.master.id,
+        instanceId,
+      );
     }
 
     const freedSeat = invite.status === ShiftInviteStatus.JOINED;
@@ -5616,6 +5734,68 @@ export class ShiftService {
     const requiredForms = [...shiftForms, ...instanceForms];
     const missingForms = requiredForms.filter((s) => !s.submitted);
     return { satisfied: missingForms.length === 0, requiredForms };
+  }
+
+  /** Invite-only shifts may still be joined by volunteers who already hold an invite. */
+  private canJoinInviteOnlyShift(
+    inviteStatus: ShiftInviteStatus | null | undefined,
+  ): boolean {
+    if (!inviteStatus) {
+      return false;
+    }
+    return (
+      isVolunteerJoinResolveSource(inviteStatus) ||
+      inviteStatus === ShiftInviteStatus.WAITLIST_JOINED ||
+      inviteStatus === ShiftInviteStatus.JOINED ||
+      inviteStatus === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL
+    );
+  }
+
+  private volunteerSelfJoinRequiresForms(
+    isSelfAction: boolean,
+    from: ShiftInviteStatus,
+    target: ShiftInviteStatus,
+  ): boolean {
+    if (!isSelfAction || from === target) {
+      return false;
+    }
+    return (
+      target === ShiftInviteStatus.JOINED ||
+      target === ShiftInviteStatus.WAITLIST_JOINED ||
+      target === ShiftInviteStatus.AWAITING_ADMIN_APPROVAL
+    );
+  }
+
+  private async assertShiftRequiredFormsSatisfied(
+    userId: string,
+    shiftId: string,
+  ): Promise<void> {
+    const requiredForms = await this.getShiftRequiredFormStatuses(
+      userId,
+      shiftId,
+    );
+    if (requiredForms.some((s) => !s.submitted)) {
+      throw new ConflictGraphQLError(
+        'You must complete the required forms before joining this shift.',
+      );
+    }
+  }
+
+  private async assertShiftAndInstanceRequiredFormsSatisfied(
+    userId: string,
+    shiftId: string,
+    shiftInstanceId: string,
+  ): Promise<void> {
+    const formsCheck = await this.checkShiftAndInstanceRequiredForms(
+      userId,
+      shiftId,
+      shiftInstanceId,
+    );
+    if (!formsCheck.satisfied) {
+      throw new ConflictGraphQLError(
+        'You must complete the required forms before joining this shift.',
+      );
+    }
   }
 
   private async resolveOrganizationId(
