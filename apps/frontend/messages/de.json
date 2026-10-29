@@ -2048,7 +2048,8 @@
       "location": "Standort",
       "total": "Gesamt",
       "expand": "Ausklappen",
-      "collapse": "Einklappen"
+      "collapse": "Einklappen",
+      "downloadCsv": ".csv herunterladen"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",

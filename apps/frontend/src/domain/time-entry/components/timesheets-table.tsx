@@ -22,7 +22,7 @@ import { parseISO } from 'date-fns';
 import { AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
@@ -41,9 +41,11 @@ import {
 } from '@/domain/time-entry/timesheets-grouping';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { describeRecorder } from '@/domain/time-entry/recorder';
+import { serializeTimesheetsToCsv } from '@/domain/time-entry/timesheets-csv';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
+import { DownloadCsvButton } from './download-csv-button';
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
 import { TimesheetsToolbar } from './timesheets-toolbar';
 
@@ -105,8 +107,11 @@ export const TimesheetsTable = ({
     void setParams({ ...resolved, page: 1 });
   };
 
-  // Full dataset: needed when location filter is active or grouping is enabled
-  const needsFullDataset = !!(location || group);
+  // State to trigger a CSV download once the full dataset is loaded
+  const [downloadRequested, setDownloadRequested] = useState(false);
+
+  // Full dataset: needed when location filter is active or grouping is enabled or CSV triggered
+  const needsFullDataset = !!(location || group || downloadRequested);
   const { data: fullEntries, isLoading: isLoadingFull } = useTimeEntriesAll(
     organizationUnitId,
     {
@@ -142,6 +147,21 @@ export const TimesheetsTable = ({
       (e) => resolveTimeEntryLocation(e) === location,
     );
   }, [fullEntries, location]);
+
+  // Auto-download CSV once full data arrives when triggered by the button
+  useEffect(() => {
+    if (!downloadRequested || !filteredFull) return;
+    setDownloadRequested(false);
+    const csv = serializeTimesheetsToCsv(filteredFull);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const today = new Date().toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `timesheets-${organizationUnitId}-${today}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [downloadRequested, filteredFull, organizationUnitId]);
 
   // When grouped, also apply location filter to paginated entries for the table
   const displayEntries = useMemo(() => {
@@ -417,6 +437,16 @@ export const TimesheetsTable = ({
         orgUnitId={organizationUnitId}
         locationOptions={locationOptions}
         isLoadingLocations={needsFullDataset && isLoadingFull}
+        actions={[
+          <DownloadCsvButton
+            key="csv"
+            orgUnitId={organizationUnitId}
+            locationFilter={location}
+            isLoadingFull={isLoadingFull && downloadRequested}
+            fullEntries={filteredFull}
+            onTriggerLoad={() => setDownloadRequested(true)}
+          />,
+        ]}
       />
       <DataTable
         columns={columns}
