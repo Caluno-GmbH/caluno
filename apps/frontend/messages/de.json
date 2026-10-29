@@ -2046,7 +2046,9 @@
       "volunteer": "Freiwillige:r",
       "status": "Status",
       "location": "Standort",
-      "total": "Gesamt"
+      "total": "Gesamt",
+      "expand": "Ausklappen",
+      "collapse": "Einklappen"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",

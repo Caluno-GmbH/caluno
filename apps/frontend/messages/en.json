@@ -2046,7 +2046,9 @@
       "volunteer": "Volunteer",
       "status": "Status",
       "location": "Location",
-      "total": "Total"
+      "total": "Total",
+      "expand": "Expand",
+      "collapse": "Collapse"
     },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",

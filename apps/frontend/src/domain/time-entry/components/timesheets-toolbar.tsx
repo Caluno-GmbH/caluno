@@ -19,12 +19,14 @@ import { useFormatting } from '@/lib/formatting/use-formatting';
 interface TimesheetsToolbarProps {
   orgUnitId: string;
   locationOptions: string[];
+  isLoadingLocations?: boolean;
   actions?: ReactNode[];
 }
 
 export function TimesheetsToolbar({
   orgUnitId,
   locationOptions,
+  isLoadingLocations,
   actions,
 }: TimesheetsToolbarProps) {
   const t = useTranslations('TimeEntry');
