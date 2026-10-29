@@ -64,6 +64,14 @@ export class TimeTrackingQueryResolver {
     order: SortOrder,
     @Args('statuses', { type: () => [TimeEntryStatus], nullable: true })
     statuses: TimeEntryStatus[] | null,
+    @Args('volunteerId', { type: () => ID, nullable: true })
+    volunteerId: string | null,
+    @Args('shiftId', { type: () => ID, nullable: true })
+    shiftId: string | null,
+    @Args('dateFrom', { type: () => Date, nullable: true })
+    dateFrom: Date | null,
+    @Args('dateTo', { type: () => Date, nullable: true })
+    dateTo: Date | null,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntryPaginatedResponse> {
     const { entries, total } = await this.timeTrackingService.findAll(
@@ -72,6 +80,7 @@ export class TimeTrackingQueryResolver {
       sort,
       order,
       statuses ?? [],
+      { volunteerId, shiftId, dateFrom, dateTo },
     );
     return new TimeEntryPaginatedResponse({
       items: this.timeEntryMapper.toArray(entries),

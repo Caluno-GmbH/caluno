@@ -26,6 +26,10 @@ export interface TimeEntryListOptions extends PaginationOptions {
   sort?: TimeEntrySortField;
   order?: SortOrder;
   statuses?: TimeEntryStatus[];
+  volunteerId?: string | null;
+  shiftId?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
 }
 
 export class TimeEntryRepository extends BaseRepository {
@@ -76,6 +80,10 @@ export class TimeEntryRepository extends BaseRepository {
       sort: options.sort ?? TimeEntrySortField.CreatedAt,
       order: options.order ?? SortOrder.Desc,
       statuses: options.statuses,
+      volunteerId: options.volunteerId,
+      shiftId: options.shiftId,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
     });
     return data.timeEntries;
   }

@@ -4,9 +4,12 @@ import {
   and,
   count,
   eq,
+  gte,
+  inArray,
   isNotNull,
   isNull,
   lt,
+  lte,
   or,
   type SQL,
   sql,
@@ -506,11 +509,43 @@ export class TimeTrackingService {
     sort: TimeEntrySortField = TimeEntrySortField.CREATED_AT,
     order: SortOrder = SortOrder.DESC,
     statuses: TimeEntryStatus[] = [],
+    filters: {
+      volunteerId?: string | null;
+      shiftId?: string | null;
+      dateFrom?: Date | null;
+      dateTo?: Date | null;
+    } = {},
   ): Promise<{ entries: TimeEntryEntity[]; total: number }> {
+    let shiftInstanceIds: string[] | undefined;
+    if (filters.shiftId) {
+      const instances = await this.db
+        .select({ id: schema.shiftInstances.id })
+        .from(schema.shiftInstances)
+        .where(eq(schema.shiftInstances.masterId, filters.shiftId));
+      shiftInstanceIds = instances.map((r) => r.id);
+    }
+
     const where = and(
       eq(schema.timeEntries.organizationUnitId, organizationUnitId),
       statuses.length > 0
         ? or(...statuses.map(timeEntryStatusCondition))
+        : undefined,
+      filters.volunteerId
+        ? eq(schema.timeEntries.volunteerId, filters.volunteerId)
+        : undefined,
+      shiftInstanceIds !== undefined
+        ? shiftInstanceIds.length > 0
+          ? inArray(schema.timeEntries.shiftInstanceId, shiftInstanceIds)
+          : sql`false`
+        : undefined,
+      filters.dateFrom
+        ? gte(schema.timeEntries.startedAt, filters.dateFrom)
+        : undefined,
+      filters.dateTo
+        ? lte(
+            schema.timeEntries.startedAt,
+            new Date(filters.dateTo.getTime() + 86_400_000),
+          )
         : undefined,
     );
 

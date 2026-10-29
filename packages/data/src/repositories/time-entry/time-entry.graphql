@@ -78,6 +78,10 @@ query GetTimeEntries(
   $sort: TimeEntrySortField
   $order: SortOrder
   $statuses: [TimeEntryStatus!]
+  $volunteerId: ID
+  $shiftId: ID
+  $dateFrom: DateTime
+  $dateTo: DateTime
 ) {
   timeEntries(
     limit: $limit
@@ -85,6 +89,10 @@ query GetTimeEntries(
     sort: $sort
     order: $order
     statuses: $statuses
+    volunteerId: $volunteerId
+    shiftId: $shiftId
+    dateFrom: $dateFrom
+    dateTo: $dateTo
   ) {
     items {
       id
