@@ -87,19 +87,34 @@ export function canRemindInvitee(
 }
 
 /**
- * Invite-sheet defaults: only keep currently active invites preselected so
- * saving the sheet (e.g. to add someone else) does not silently re-invite
- * withdrawn, declined, or admin-rejected volunteers (VOLI-1704). Admins
- * re-add them explicitly from Available.
+ * Inactive invite statuses shown on the invite sheet but not editable there
+ * (VOLI-1704). Re-invite is roster-only — the sheet must not put these people
+ * in Available or include them in the save payload.
  */
-export function preselectedInviteMemberIds(
+export function isInviteSheetLockedStatus(
+  status: InviteStatus | null | undefined,
+): boolean {
+  return status != null && !canAdminUninvite(status);
+}
+
+/** Member ids locked on the invite sheet (declined / withdrawn / admin-rejected). */
+export function lockedInviteMemberIds(
   members: ReadonlyArray<{ id: string; inviteStatus?: InviteStatus | null }>,
 ): string[] {
   return members
-    .filter(
-      (member) =>
-        member.inviteStatus == null || canAdminUninvite(member.inviteStatus),
-    )
+    .filter((member) => isInviteSheetLockedStatus(member.inviteStatus))
+    .map((member) => member.id);
+}
+
+/**
+ * Invite-sheet save payload: active invites + newly added members only.
+ * Omitting locked (inactive) ids prevents silent resurrection (VOLI-1704).
+ */
+export function submittableInviteMemberIds(
+  members: ReadonlyArray<{ id: string; inviteStatus?: InviteStatus | null }>,
+): string[] {
+  return members
+    .filter((member) => !isInviteSheetLockedStatus(member.inviteStatus))
     .map((member) => member.id);
 }
 

@@ -1020,7 +1020,7 @@ describe('ShiftService', () => {
     });
 
     // VOLI-1704: invite-sheet save must not resurrect withdrawn volunteers
-    // when they are omitted from memberIds (frontend preselection excludes them).
+    // when they are omitted from memberIds (frontend submit filters locked ids).
     it('leaves VOLUNTEER_CANCELLED untouched when inviting someone else', async () => {
       const shift = await createShift(db, {
         organizationUnitId,
