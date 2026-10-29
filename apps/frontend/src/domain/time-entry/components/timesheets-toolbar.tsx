@@ -1,5 +1,6 @@
 'use client';
 
+import type { TimeEntryStatus } from '@repo/data';
 import {
   useOrganizationVolunteers,
   useShiftsForFilter,
@@ -7,8 +8,8 @@ import {
 import { TableToolbar } from '@repo/ui';
 import { CalendarDays, MapPin, Tag, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useMemo } from 'react';
 import { useQueryStates } from 'nuqs';
+import { type ReactNode, useMemo } from 'react';
 import { buildTimesheetsActiveFilters } from '@/domain/time-entry/timesheets-active-filters';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -16,14 +17,12 @@ import { useFormatting } from '@/lib/formatting/use-formatting';
 interface TimesheetsToolbarProps {
   orgUnitId: string;
   locationOptions: string[];
-  isLoadingLocations?: boolean;
   actions?: ReactNode[];
 }
 
 export function TimesheetsToolbar({
   orgUnitId,
   locationOptions,
-  isLoadingLocations,
   actions,
 }: TimesheetsToolbarProps) {
   const t = useTranslations('TimeEntry');
@@ -62,7 +61,14 @@ export function TimesheetsToolbar({
     volunteerOptions.find((v) => v.value === volunteerId)?.label ?? null;
 
   const activeFilters = buildTimesheetsActiveFilters({
-    values: { statuses: status, shiftId, volunteerId, dateFrom, dateTo, location },
+    values: {
+      statuses: status,
+      shiftId,
+      volunteerId,
+      dateFrom,
+      dateTo,
+      location,
+    },
     labels: {
       status: t('filter.status'),
       shift: t('filter.shift'),
@@ -80,8 +86,10 @@ export function TimesheetsToolbar({
       const reset: Record<string, unknown> = { page: 1 };
       if (field === 'shift') reset.shiftId = null;
       else if (field === 'volunteer') reset.volunteerId = null;
-      else if (field === 'date') { reset.dateFrom = null; reset.dateTo = null; }
-      else if (field === 'location') reset.location = null;
+      else if (field === 'date') {
+        reset.dateFrom = null;
+        reset.dateTo = null;
+      } else if (field === 'location') reset.location = null;
       void setParams(reset);
     },
   });
@@ -125,7 +133,11 @@ export function TimesheetsToolbar({
       <TableToolbar.DateRange
         value={{ from: dateFrom ?? undefined, to: dateTo ?? undefined }}
         onChange={(v) =>
-          void setParams({ dateFrom: v.from ?? null, dateTo: v.to ?? null, page: 1 })
+          void setParams({
+            dateFrom: v.from ?? null,
+            dateTo: v.to ?? null,
+            page: 1,
+          })
         }
         placeholder={t('filter.datePlaceholder')}
       />
@@ -138,9 +150,11 @@ export function TimesheetsToolbar({
         ariaLabel={t('filter.location')}
         icon={<MapPin className="size-4" />}
       />
-      <TableToolbar.Select
-        value={status.length === 1 ? status[0] : undefined}
-        onChange={(v) => void setParams({ status: v ? [v as never] : [], page: 1 })}
+      <TableToolbar.MultiSelect
+        value={status as string[]}
+        onChange={(v) =>
+          void setParams({ status: v as TimeEntryStatus[], page: 1 })
+        }
         options={[
           { label: t('status.open'), value: 'Open' },
           { label: t('status.closed'), value: 'Closed' },
