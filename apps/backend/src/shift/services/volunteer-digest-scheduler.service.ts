@@ -2,6 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { AdvisoryLockService } from '../../database/advisory-lock.service';
 import { ADVISORY_LOCK_KEYS } from '../../database/advisory-lock-keys';
+import {
+  BERLIN_CRON_OPTIONS,
+  HOURLY_BERLIN_CRON,
+  runLockedSchedulerTick,
+} from '../../shared/run-locked-scheduler-tick';
 import { VolunteerDigestService } from './volunteer-digest.service';
 
 /**
@@ -18,47 +23,14 @@ export class VolunteerDigestSchedulerService {
     private readonly advisoryLock: AdvisoryLockService,
   ) {}
 
-  @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
+  @Cron(HOURLY_BERLIN_CRON, BERLIN_CRON_OPTIONS)
   async handleDigestTick(): Promise<void> {
-    const startedAt = Date.now();
-    this.logger.log(
-      { event: 'volunteer_digest.started' },
-      'VolunteerDigest tick started',
-    );
-
-    try {
-      const summary = await this.advisoryLock.tryWithLock(
-        ADVISORY_LOCK_KEYS.volunteerDigestTick,
-        () => this.volunteerDigestService.sendDigests(),
-      );
-      if (summary === null) {
-        this.logger.log(
-          {
-            event: 'volunteer_digest.skipped_locked',
-            duration_ms: Date.now() - startedAt,
-          },
-          'Another instance is running VolunteerDigest tick; skipping',
-        );
-        return;
-      }
-
-      this.logger.log(
-        {
-          event: 'volunteer_digest.finished',
-          duration_ms: Date.now() - startedAt,
-          ...summary,
-        },
-        'VolunteerDigest tick finished',
-      );
-    } catch (error) {
-      this.logger.error(
-        {
-          event: 'volunteer_digest.failed',
-          duration_ms: Date.now() - startedAt,
-          err: error,
-        },
-        'VolunteerDigest tick failed',
-      );
-    }
+    await runLockedSchedulerTick({
+      logger: this.logger,
+      advisoryLock: this.advisoryLock,
+      lockKey: ADVISORY_LOCK_KEYS.volunteerDigestTick,
+      event: 'volunteer_digest_tick',
+      run: () => this.volunteerDigestService.sendDigests(),
+    });
   }
 }
