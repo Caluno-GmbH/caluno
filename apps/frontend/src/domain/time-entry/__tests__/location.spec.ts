@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { entryDurationMinutes, sumDurationMinutes } from '../location';
+import {
+  compareEntriesByDuration,
+  entryDurationMinutes,
+  sumDurationMinutes,
+} from '../location';
 
 describe('entryDurationMinutes', () => {
   it('returns rounded whole minutes for a closed entry', () => {
@@ -38,5 +42,24 @@ describe('sumDurationMinutes', () => {
         },
       ]),
     ).toBe(90);
+  });
+});
+
+describe('compareEntriesByDuration (ascending)', () => {
+  const open = { startedAt: '2026-10-01T09:00:00.000Z', endedAt: null };
+  const short = {
+    startedAt: '2026-10-01T09:00:00.000Z',
+    endedAt: '2026-10-01T09:30:00.000Z',
+  };
+  const long = {
+    startedAt: '2026-10-01T09:00:00.000Z',
+    endedAt: '2026-10-01T11:00:00.000Z',
+  };
+  it('orders by duration and pushes open entries last regardless of direction', () => {
+    expect([long, open, short].sort(compareEntriesByDuration)).toEqual([
+      short,
+      long,
+      open,
+    ]);
   });
 });

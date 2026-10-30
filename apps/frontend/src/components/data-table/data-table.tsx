@@ -61,6 +61,7 @@ interface DataTableClientProps<TData extends RowData> {
   getRowHref?: (row: TData) => string | null | undefined;
   pagination?: PaginationState;
   onPaginationChange?: OnChangeFn<PaginationState>;
+  footerContent?: ReactNode;
 }
 
 type DataTableProps<TData extends RowData> =

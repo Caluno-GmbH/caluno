@@ -2051,7 +2051,9 @@
       "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
       "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
       "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
-      "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}"
+      "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
+      "loading": "Zeiterfassungen werden geladen…",
+      "tooLargeToDisplay": "Dieses Ergebnis ist zu groß für die Anzeige. Bitte Filter einschränken und erneut versuchen."
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",

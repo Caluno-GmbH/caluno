@@ -27,6 +27,15 @@ export function sumDurationMinutes(
   }, 0);
 }
 
+export function compareEntriesByDuration(
+  a: { startedAt: string; endedAt?: string | null },
+  b: { startedAt: string; endedAt?: string | null },
+): number {
+  const aMin = entryDurationMinutes(a) ?? Infinity;
+  const bMin = entryDurationMinutes(b) ?? Infinity;
+  return aMin - bMin;
+}
+
 export function resolveTimeEntryLocation(entry: {
   shiftInstance?: {
     overrideLocation?: string | null;

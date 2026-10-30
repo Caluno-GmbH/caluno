@@ -53,11 +53,7 @@ export default async function TimesheetsPage({
       </div>
 
       {showTable ? (
-        <TimesheetsTable
-          entries={timeEntries.items}
-          pagination={timeEntries.pagination}
-          organizationUnitId={orgUId}
-        />
+        <TimesheetsTable organizationUnitId={orgUId} />
       ) : (
         <EmptyTimeEntries>
           <CreateTimeEntryButton orgUId={orgUId} />

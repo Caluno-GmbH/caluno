@@ -1,6 +1,6 @@
 'use client';
 
-import type { GetTimeEntriesQuery, PaginationInfo } from '@repo/data';
+import type { GetTimeEntriesQuery } from '@repo/data';
 import { TimeEntryStatus } from '@repo/data';
 import { useTimeEntriesAll } from '@repo/data/react';
 import {
@@ -16,6 +16,7 @@ import {
 import type {
   ColumnDef,
   OnChangeFn,
+  Row,
   SortingState,
 } from '@tanstack/react-table';
 import { parseISO } from 'date-fns';
@@ -29,6 +30,7 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
 import {
+  compareEntriesByDuration,
   resolveTimeEntryLocation,
   sumDurationMinutes,
 } from '@/domain/time-entry/location';
@@ -48,8 +50,6 @@ import { TimesheetsToolbar } from './timesheets-toolbar';
 type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
 
 interface TimesheetsTableProps {
-  entries: TimeEntry[];
-  pagination: PaginationInfo;
   organizationUnitId: string;
 }
 
@@ -67,8 +67,6 @@ const getRowClassName = (entry: TimeEntry): string | undefined => {
 };
 
 export const TimesheetsTable = ({
-  entries,
-  pagination,
   organizationUnitId,
 }: TimesheetsTableProps) => {
   const t = useTranslations('TimeEntry');
@@ -79,8 +77,11 @@ export const TimesheetsTable = ({
     formatDateTime,
   } = useFormatting();
 
+  // All rows are client-side; page/sort writes stay shallow (no server round trip).
+  // Filter params (status, shiftId, etc.) still drive the query key, so changing
+  // a filter still refetches the full set.
   const [params, setParams] = useQueryStates(timesheetsSearchParams, {
-    shallow: false,
+    shallow: true,
   });
 
   const {
@@ -102,10 +103,14 @@ export const TimesheetsTable = ({
     void setParams({ ...resolved, page: 1 });
   };
 
-  // Full dataset: always fetched for location options; also used for CSV
   const [downloadRequested, setDownloadRequested] = useState(false);
 
-  const { data: fullEntries, isLoading: isLoadingFull } = useTimeEntriesAll(
+  const {
+    data: fullEntries,
+    isLoading: isLoadingFull,
+    isError,
+    error,
+  } = useTimeEntriesAll(
     organizationUnitId,
     {
       statuses: status.length > 0 ? status : undefined,
@@ -140,7 +145,6 @@ export const TimesheetsTable = ({
     return map;
   }, [fullEntries]);
 
-  // Derive location options from full dataset
   const locationOptions = useMemo(() => {
     if (!fullEntryLocations) return [];
     const seen = new Set<string>();
@@ -154,8 +158,6 @@ export const TimesheetsTable = ({
     return options.sort();
   }, [fullEntryLocations]);
 
-  // Sourced from entries, not the shifts query, which is windowed to upcoming
-  // instances and so omits the historical shifts timesheets reference.
   const shiftOptions = useMemo(() => {
     if (!shiftFilterEntries) return [];
     const seen = new Set<string>();
@@ -170,20 +172,13 @@ export const TimesheetsTable = ({
     return options.sort((a, b) => a.label.localeCompare(b.label));
   }, [shiftFilterEntries]);
 
-  // Apply client-side location filter to the full dataset (for CSV)
+  // Full filtered set: the single source of truth for table data, pagination, and totals.
   const filteredFull = useMemo(() => {
     if (!fullEntries || !fullEntryLocations) return undefined;
     if (!location) return fullEntries;
     return fullEntries.filter((e) => fullEntryLocations.get(e) === location);
   }, [fullEntries, fullEntryLocations, location]);
 
-  // Apply client-side location filter to the current page for display
-  const displayEntries = useMemo(() => {
-    if (!location) return entries;
-    return entries.filter((e) => resolveTimeEntryLocation(e) === location);
-  }, [entries, location]);
-
-  // Unique volunteer emails across everything matching the active filters.
   const filteredEmails = useMemo(() => {
     const seen = new Set<string>();
     for (const entry of filteredFull ?? []) {
@@ -195,7 +190,6 @@ export const TimesheetsTable = ({
   const canCopyEmails =
     Boolean(location || shiftId || volunteerId) && filteredEmails.length > 0;
 
-  // Auto-download CSV once full data arrives
   useEffect(() => {
     if (!downloadRequested || !filteredFull) return;
     setDownloadRequested(false);
@@ -299,7 +293,10 @@ export const TimesheetsTable = ({
       },
       {
         id: 'DURATION',
-        accessorFn: (row) => row.endedAt,
+        sortingFn: (
+          rowA: Row<DataTableFeatures, TimeEntry>,
+          rowB: Row<DataTableFeatures, TimeEntry>,
+        ) => compareEntriesByDuration(rowA.original, rowB.original),
         meta: { headerClassName: 'text-right' },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.duration')} />
@@ -382,10 +379,16 @@ export const TimesheetsTable = ({
     ],
   );
 
-  const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
+  const size = Number(params.pageSize);
+  const lastPage = Math.max(1, Math.ceil((filteredFull?.length ?? 0) / size));
+  const pagination = {
+    pageIndex: Math.min(params.page, lastPage) - 1,
+    pageSize: size,
+  };
 
   const totalDurationMinutes = useMemo(
-    () => (filteredFull !== undefined ? sumDurationMinutes(filteredFull) : undefined),
+    () =>
+      filteredFull !== undefined ? sumDurationMinutes(filteredFull) : undefined,
     [filteredFull],
   );
 
@@ -393,7 +396,10 @@ export const TimesheetsTable = ({
 
   const footerContent = (
     <TableRow className="bg-muted hover:bg-muted font-medium">
-      <TableCell colSpan={durationIndex} className="text-muted-foreground text-sm">
+      <TableCell
+        colSpan={durationIndex}
+        className="text-muted-foreground text-sm"
+      >
         {t('table.total')}
       </TableCell>
       <TableCell className="text-right text-sm">
@@ -404,6 +410,12 @@ export const TimesheetsTable = ({
       <TableCell colSpan={columns.length - durationIndex - 1} />
     </TableRow>
   );
+
+  const emptyMessage = isError
+    ? t('table.tooLargeToDisplay')
+    : isLoadingFull
+      ? t('table.loading')
+      : t('empty.title');
 
   return (
     <div className="space-y-4">
@@ -425,19 +437,31 @@ export const TimesheetsTable = ({
         ]}
       />
       <DataTable
+        mode="client"
         columns={columns}
-        data={displayEntries}
-        pageCount={pageCount}
+        data={filteredFull ?? []}
         sorting={sorting}
         onSortingChange={onSortingChange}
-        emptyMessage={t('empty.title')}
+        pagination={pagination}
+        onPaginationChange={(updater) => {
+          const next =
+            typeof updater === 'function' ? updater(pagination) : updater;
+          void setParams({
+            page: next.pageIndex + 1,
+            pageSize: String(next.pageSize) as '15' | '25' | '50' | '100',
+          });
+        }}
+        emptyMessage={emptyMessage}
         getRowClassName={getRowClassName}
-        footerContent={filteredFull && filteredFull.length > 0 ? footerContent : undefined}
+        footerContent={
+          filteredFull && filteredFull.length > 0 ? footerContent : undefined
+        }
       />
-      {pagination.total > 0 && (
+      {(filteredFull?.length ?? 0) > 0 && (
         <DataTablePagination
-          total={pagination.total}
+          total={filteredFull?.length ?? 0}
           name={t('page.paginationName')}
+          shallow
         />
       )}
     </div>
