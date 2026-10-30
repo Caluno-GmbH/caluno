@@ -194,11 +194,24 @@ export const TimesheetsTable = ({
     if (!downloadRequested || !filteredFull) return;
     setDownloadRequested(false);
     const today = new Date().toISOString().slice(0, 10);
+    const csvHeaders = [
+      t('csv.volunteerName'),
+      t('csv.volunteerEmail'),
+      t('csv.shift'),
+      t('csv.assignment'),
+      t('csv.location'),
+      t('csv.startedAt'),
+      t('csv.endedAt'),
+      t('csv.durationMinutes'),
+      t('csv.status'),
+      t('csv.createdBy'),
+      t('csv.notes'),
+    ];
     triggerDownload(
       `timesheets-${organizationUnitId}-${today}.csv`,
-      serializeTimesheetsToCsv(filteredFull),
+      serializeTimesheetsToCsv(filteredFull, csvHeaders),
     );
-  }, [downloadRequested, filteredFull, organizationUnitId]);
+  }, [downloadRequested, filteredFull, organizationUnitId, t]);
 
   const columns = useMemo<ColumnDef<DataTableFeatures, TimeEntry>[]>(
     () => [

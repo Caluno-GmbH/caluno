@@ -2055,6 +2055,19 @@
       "loading": "Loading timesheets…",
       "tooLargeToDisplay": "This result set is too large to display. Narrow the filters and try again."
     },
+    "csv": {
+      "volunteerName": "Volunteer Name",
+      "volunteerEmail": "Volunteer Email",
+      "shift": "Shift",
+      "assignment": "Assignment",
+      "location": "Location",
+      "startedAt": "Started At",
+      "endedAt": "Ended At",
+      "durationMinutes": "Duration (min)",
+      "status": "Status",
+      "createdBy": "Created By",
+      "notes": "Notes"
+    },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",
       "endedAtRequired": "Please enter an end time.",

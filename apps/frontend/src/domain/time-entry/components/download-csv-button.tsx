@@ -30,10 +30,23 @@ export function DownloadCsvButton({
       return;
     }
 
+    const csvHeaders = [
+      t('csv.volunteerName'),
+      t('csv.volunteerEmail'),
+      t('csv.shift'),
+      t('csv.assignment'),
+      t('csv.location'),
+      t('csv.startedAt'),
+      t('csv.endedAt'),
+      t('csv.durationMinutes'),
+      t('csv.status'),
+      t('csv.createdBy'),
+      t('csv.notes'),
+    ];
     const today = new Date().toISOString().slice(0, 10);
     triggerDownload(
       `timesheets-${orgUnitId}-${today}.csv`,
-      serializeTimesheetsToCsv(fullEntries),
+      serializeTimesheetsToCsv(fullEntries, csvHeaders),
     );
   };
 

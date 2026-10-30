@@ -2055,6 +2055,19 @@
       "loading": "Zeiterfassungen werden geladen…",
       "tooLargeToDisplay": "Dieses Ergebnis ist zu groß für die Anzeige. Bitte Filter einschränken und erneut versuchen."
     },
+    "csv": {
+      "volunteerName": "Name",
+      "volunteerEmail": "E-Mail",
+      "shift": "Schicht",
+      "assignment": "Einsatz",
+      "location": "Ort",
+      "startedAt": "Beginn",
+      "endedAt": "Ende",
+      "durationMinutes": "Dauer (Min.)",
+      "status": "Status",
+      "createdBy": "Erfasst von",
+      "notes": "Notizen"
+    },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",
       "endedAtRequired": "Bitte gib eine Endzeit an.",
