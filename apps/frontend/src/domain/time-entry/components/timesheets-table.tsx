@@ -39,6 +39,7 @@ import { Link } from '@/i18n/navigation';
 import { triggerDownload } from '@/lib/download/trigger-download';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
+import { CopyableEmail } from './copyable-email';
 import { DownloadCsvButton } from './download-csv-button';
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
 import { TimesheetsToolbar } from './timesheets-toolbar';
@@ -237,13 +238,22 @@ export const TimesheetsTable = ({
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.volunteer')} />
         ),
-        cell: ({ row }) => (
-          <TextCell>
-            {row.original.volunteer?.name ??
-              row.original.volunteer?.email ??
-              t('table.notAvailable')}
-          </TextCell>
-        ),
+        cell: ({ row }) => {
+          const volunteer = row.original.volunteer;
+          const email = volunteer?.email;
+          const copyableEmail = email ? (
+            <CopyableEmail email={email} name={volunteer?.name ?? email} />
+          ) : undefined;
+          return (
+            <EntityCell
+              title={
+                volunteer?.name ?? copyableEmail ?? t('table.notAvailable')
+              }
+              subtitle={volunteer?.name ? copyableEmail : undefined}
+              clamp={false}
+            />
+          );
+        },
       },
       {
         id: 'STARTED_AT',

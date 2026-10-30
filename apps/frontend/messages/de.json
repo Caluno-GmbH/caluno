@@ -2047,7 +2047,9 @@
       "total": "Gesamt",
       "expand": "Ausklappen",
       "collapse": "Einklappen",
-      "downloadCsv": ".csv herunterladen"
+      "downloadCsv": ".csv herunterladen",
+      "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
+      "copyEmailAria": "E-Mail-Adresse von {name} kopieren"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",
