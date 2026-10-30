@@ -218,6 +218,10 @@ export const TimesheetsTable = ({
       {
         id: 'STARTED_AT',
         accessorFn: (row) => row.startedAt,
+        meta: {
+          headerClassName: 'w-0 whitespace-nowrap',
+          cellClassName: 'w-0 whitespace-nowrap',
+        },
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.date')} />
         ),
@@ -227,7 +231,7 @@ export const TimesheetsTable = ({
             row.original.endedAt,
             t('format.open'),
           );
-          return <EntityCell title={date} subtitle={time} />;
+          return <EntityCell title={date} subtitle={time} clamp={false} />;
         },
       },
       {
