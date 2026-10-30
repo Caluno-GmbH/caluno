@@ -22,7 +22,10 @@ export class ShiftUnderstaffedSchedulerService {
   @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
   async handleTick(): Promise<void> {
     const startedAt = Date.now();
-    this.logger.log({ event: 'understaffed_tick.started' }, 'Tick started');
+    this.logger.log(
+      { event: 'understaffed_tick.started' },
+      'ShiftUnderstaffed tick started',
+    );
 
     try {
       const summary = await this.advisoryLock.tryWithLock(
@@ -35,7 +38,7 @@ export class ShiftUnderstaffedSchedulerService {
             event: 'understaffed_tick.skipped_locked',
             duration_ms: Date.now() - startedAt,
           },
-          'Another instance is running the tick; skipping',
+          'Another instance is running ShiftUnderstaffed tick; skipping',
         );
         return;
       }
@@ -46,7 +49,7 @@ export class ShiftUnderstaffedSchedulerService {
           duration_ms: Date.now() - startedAt,
           ...summary,
         },
-        'Tick finished',
+        'ShiftUnderstaffed tick finished',
       );
     } catch (error) {
       this.logger.error(
@@ -55,7 +58,7 @@ export class ShiftUnderstaffedSchedulerService {
           duration_ms: Date.now() - startedAt,
           err: error,
         },
-        'Tick failed',
+        'ShiftUnderstaffed tick failed',
       );
     }
   }

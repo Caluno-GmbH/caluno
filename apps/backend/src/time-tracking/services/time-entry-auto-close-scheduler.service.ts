@@ -24,7 +24,7 @@ export class TimeEntryAutoCloseSchedulerService {
     const startedAt = Date.now();
     this.logger.log(
       { event: 'time_entry_auto_close_tick.started' },
-      'Tick started',
+      'TimeEntryAutoClose tick started',
     );
 
     try {
@@ -38,7 +38,7 @@ export class TimeEntryAutoCloseSchedulerService {
             event: 'time_entry_auto_close_tick.skipped_locked',
             duration_ms: Date.now() - startedAt,
           },
-          'Another instance is running the tick; skipping',
+          'Another instance is running TimeEntryAutoClose tick; skipping',
         );
         return;
       }
@@ -49,7 +49,7 @@ export class TimeEntryAutoCloseSchedulerService {
           duration_ms: Date.now() - startedAt,
           ...summary,
         },
-        'Tick finished',
+        'TimeEntryAutoClose tick finished',
       );
     } catch (error) {
       this.logger.error(
@@ -58,7 +58,7 @@ export class TimeEntryAutoCloseSchedulerService {
           duration_ms: Date.now() - startedAt,
           err: error,
         },
-        'Tick failed',
+        'TimeEntryAutoClose tick failed',
       );
     }
   }

@@ -1,13 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { AdvisoryLockService } from '../../database/advisory-lock.service';
+import { ADVISORY_LOCK_KEYS } from '../../database/advisory-lock-keys';
 import { VolunteerDigestService } from './volunteer-digest.service';
 
+/**
+ * Thin scheduler trigger, kept separate from VolunteerDigestService so the
+ * digest send stays testable without Nest's scheduler. One hourly tick,
+ * Europe/Berlin, under an advisory lock so only one instance sends digests.
+ */
 @Injectable()
 export class VolunteerDigestSchedulerService {
   private readonly logger = new Logger(VolunteerDigestSchedulerService.name);
 
   constructor(
     private readonly volunteerDigestService: VolunteerDigestService,
+    private readonly advisoryLock: AdvisoryLockService,
   ) {}
 
   @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
@@ -15,18 +23,32 @@ export class VolunteerDigestSchedulerService {
     const startedAt = Date.now();
     this.logger.log(
       { event: 'volunteer_digest.started' },
-      'Digest run started',
+      'VolunteerDigest tick started',
     );
 
     try {
-      const summary = await this.volunteerDigestService.sendDigests();
+      const summary = await this.advisoryLock.tryWithLock(
+        ADVISORY_LOCK_KEYS.volunteerDigestTick,
+        () => this.volunteerDigestService.sendDigests(),
+      );
+      if (summary === null) {
+        this.logger.log(
+          {
+            event: 'volunteer_digest.skipped_locked',
+            duration_ms: Date.now() - startedAt,
+          },
+          'Another instance is running VolunteerDigest tick; skipping',
+        );
+        return;
+      }
+
       this.logger.log(
         {
           event: 'volunteer_digest.finished',
           duration_ms: Date.now() - startedAt,
           ...summary,
         },
-        'Digest run finished',
+        'VolunteerDigest tick finished',
       );
     } catch (error) {
       this.logger.error(
@@ -35,7 +57,7 @@ export class VolunteerDigestSchedulerService {
           duration_ms: Date.now() - startedAt,
           err: error,
         },
-        'Digest run failed',
+        'VolunteerDigest tick failed',
       );
     }
   }
