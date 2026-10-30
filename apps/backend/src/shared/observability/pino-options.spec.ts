@@ -129,8 +129,12 @@ describe('buildPinoHttpOptions', () => {
     const customLogLevel = opts.customLogLevel;
     expect(customLogLevel).toBeDefined();
 
+    // Successful access logs are silent so GraphQL 200s do not flood Loki.
     expect(customLogLevel?.(asReq({}), asRes({ statusCode: 200 }))).toBe(
-      'info',
+      'silent',
+    );
+    expect(customLogLevel?.(asReq({}), asRes({ statusCode: 304 }))).toBe(
+      'silent',
     );
     expect(customLogLevel?.(asReq({}), asRes({ statusCode: 401 }))).toBe(
       'warn',
