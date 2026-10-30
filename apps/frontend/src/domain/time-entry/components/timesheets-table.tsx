@@ -109,7 +109,6 @@ export const TimesheetsTable = ({
     data: fullEntries,
     isLoading: isLoadingFull,
     isError,
-    error,
   } = useTimeEntriesAll(
     organizationUnitId,
     {
