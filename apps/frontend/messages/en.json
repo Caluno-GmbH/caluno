@@ -2049,7 +2049,9 @@
       "collapse": "Collapse",
       "downloadCsv": "Download .csv",
       "emailCopied": "Email address copied to clipboard",
-      "copyEmailAria": "Copy {name}'s email address"
+      "copyEmailAria": "Copy {name}'s email address",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
+      "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}"
     },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",

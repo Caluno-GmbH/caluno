@@ -39,6 +39,7 @@ import { Link } from '@/i18n/navigation';
 import { triggerDownload } from '@/lib/download/trigger-download';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
+import { CopyEmailsButton } from './copy-emails-button';
 import { CopyableEmail } from './copyable-email';
 import { DownloadCsvButton } from './download-csv-button';
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
@@ -181,6 +182,18 @@ export const TimesheetsTable = ({
     if (!location) return entries;
     return entries.filter((e) => resolveTimeEntryLocation(e) === location);
   }, [entries, location]);
+
+  // Unique volunteer emails across everything matching the active filters.
+  const filteredEmails = useMemo(() => {
+    const seen = new Set<string>();
+    for (const entry of filteredFull ?? []) {
+      if (entry.volunteer?.email) seen.add(entry.volunteer.email);
+    }
+    return [...seen];
+  }, [filteredFull]);
+
+  const canCopyEmails =
+    Boolean(location || shiftId || volunteerId) && filteredEmails.length > 0;
 
   // Auto-download CSV once full data arrives
   useEffect(() => {
@@ -395,6 +408,9 @@ export const TimesheetsTable = ({
         shiftOptions={shiftOptions}
         locationOptions={locationOptions}
         actions={[
+          ...(canCopyEmails
+            ? [<CopyEmailsButton key="copy-emails" emails={filteredEmails} />]
+            : []),
           <DownloadCsvButton
             key="csv"
             orgUnitId={organizationUnitId}
