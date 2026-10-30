@@ -66,7 +66,6 @@ export * from './react/hooks/use-roles';
 export * from './react/hooks/use-shift';
 export * from './react/hooks/use-shift-instances';
 export * from './react/hooks/use-shift-volunteers';
-export * from './react/hooks/use-shifts-for-filter';
 export * from './react/hooks/use-terms';
 export * from './react/hooks/use-time-entries-all';
 export * from './react/hooks/use-time-entry-shift-instances';

@@ -1,10 +1,7 @@
 'use client';
 
 import type { TimeEntryStatus } from '@repo/data';
-import {
-  useOrganizationVolunteers,
-  useShiftsForFilter,
-} from '@repo/data/react';
+import { useOrganizationVolunteers } from '@repo/data/react';
 import { TableToolbar } from '@repo/ui';
 import { CalendarDays, MapPin, Tag, Users } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -16,12 +13,14 @@ import { useFormatting } from '@/lib/formatting/use-formatting';
 
 interface TimesheetsToolbarProps {
   orgUnitId: string;
+  shiftOptions: { label: string; value: string }[];
   locationOptions: string[];
   actions?: ReactNode[];
 }
 
 export function TimesheetsToolbar({
   orgUnitId,
+  shiftOptions,
   locationOptions,
   actions,
 }: TimesheetsToolbarProps) {
@@ -35,7 +34,6 @@ export function TimesheetsToolbar({
   const { shiftId, volunteerId, dateFrom, dateTo, location, status } = params;
 
   const { data: volunteers } = useOrganizationVolunteers(orgUnitId);
-  const { data: shiftsData } = useShiftsForFilter(orgUnitId);
 
   const volunteerOptions = useMemo(
     () =>
@@ -44,15 +42,6 @@ export function TimesheetsToolbar({
         value: v.id,
       })),
     [volunteers],
-  );
-
-  const shiftOptions = useMemo(
-    () =>
-      (shiftsData?.items ?? []).map((s) => ({
-        label: s.title,
-        value: s.id,
-      })),
-    [shiftsData],
   );
 
   const selectedShiftLabel =

@@ -115,6 +115,20 @@ export const TimesheetsTable = ({
     true,
   );
 
+  // Omits the shift constraint so every shift stays selectable while one is
+  // active; deduped with the dataset above when no shift is selected.
+  const { data: shiftFilterEntries } = useTimeEntriesAll(
+    organizationUnitId,
+    {
+      statuses: status.length > 0 ? status : undefined,
+      volunteerId,
+      shiftId: null,
+      dateFrom: dateFrom ? dateFrom.toISOString() : null,
+      dateTo: dateTo ? dateTo.toISOString() : null,
+    },
+    true,
+  );
+
   const fullEntryLocations = useMemo(() => {
     if (!fullEntries) return undefined;
     const map = new Map<TimeEntry, string | null>();
@@ -137,6 +151,22 @@ export const TimesheetsTable = ({
     }
     return options.sort();
   }, [fullEntryLocations]);
+
+  // Sourced from entries, not the shifts query, which is windowed to upcoming
+  // instances and so omits the historical shifts timesheets reference.
+  const shiftOptions = useMemo(() => {
+    if (!shiftFilterEntries) return [];
+    const seen = new Set<string>();
+    const options: { label: string; value: string }[] = [];
+    for (const entry of shiftFilterEntries) {
+      const master = entry.shiftInstance?.master;
+      if (master && !seen.has(master.id)) {
+        seen.add(master.id);
+        options.push({ label: master.title, value: master.id });
+      }
+    }
+    return options.sort((a, b) => a.label.localeCompare(b.label));
+  }, [shiftFilterEntries]);
 
   // Apply client-side location filter to the full dataset (for CSV)
   const filteredFull = useMemo(() => {
@@ -352,6 +382,7 @@ export const TimesheetsTable = ({
     <div className="space-y-4">
       <TimesheetsToolbar
         orgUnitId={organizationUnitId}
+        shiftOptions={shiftOptions}
         locationOptions={locationOptions}
         actions={[
           <DownloadCsvButton
