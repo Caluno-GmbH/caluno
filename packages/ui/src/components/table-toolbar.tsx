@@ -192,7 +192,7 @@ function TableToolbar({
             <div aria-hidden className="w-px self-stretch bg-border" />
             <div
               data-slot="table-toolbar-actions"
-              className="flex flex-col items-stretch gap-2"
+              className="flex flex-col items-stretch gap-2 [&_[data-slot=button]]:h-10"
             >
               {clampedActions}
             </div>
