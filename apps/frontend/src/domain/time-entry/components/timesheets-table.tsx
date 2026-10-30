@@ -385,19 +385,23 @@ export const TimesheetsTable = ({
   const pageCount = Math.max(1, Math.ceil(pagination.total / pagination.limit));
 
   const totalDurationMinutes = useMemo(
-    () => sumDurationMinutes(displayEntries),
-    [displayEntries],
+    () => (filteredFull !== undefined ? sumDurationMinutes(filteredFull) : undefined),
+    [filteredFull],
   );
+
+  const durationIndex = columns.findIndex((c) => c.id === 'DURATION');
 
   const footerContent = (
     <TableRow className="bg-muted hover:bg-muted font-medium">
-      <TableCell colSpan={5} className="text-muted-foreground text-sm">
+      <TableCell colSpan={durationIndex} className="text-muted-foreground text-sm">
         {t('table.total')}
       </TableCell>
       <TableCell className="text-right text-sm">
-        {formatDurationByMinutesShort(totalDurationMinutes)}
+        {totalDurationMinutes !== undefined
+          ? formatDurationByMinutesShort(totalDurationMinutes)
+          : NO_DURATION}
       </TableCell>
-      <TableCell colSpan={2} />
+      <TableCell colSpan={columns.length - durationIndex - 1} />
     </TableRow>
   );
 
@@ -428,7 +432,7 @@ export const TimesheetsTable = ({
         onSortingChange={onSortingChange}
         emptyMessage={t('empty.title')}
         getRowClassName={getRowClassName}
-        footerContent={displayEntries.length > 0 ? footerContent : undefined}
+        footerContent={filteredFull && filteredFull.length > 0 ? footerContent : undefined}
       />
       {pagination.total > 0 && (
         <DataTablePagination
