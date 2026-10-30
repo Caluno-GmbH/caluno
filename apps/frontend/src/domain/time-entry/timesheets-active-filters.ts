@@ -25,8 +25,14 @@ export function buildTimesheetsActiveFilters(args: {
   formatDateRange: (from: Date | null, to: Date | null) => string;
   onClear: (field: TimesheetFilterField) => void;
 }): TableToolbarActiveFilter[] {
-  const { values, labels, shiftLabel, volunteerLabel, formatDateRange, onClear } =
-    args;
+  const {
+    values,
+    labels,
+    shiftLabel,
+    volunteerLabel,
+    formatDateRange,
+    onClear,
+  } = args;
   const filters: TableToolbarActiveFilter[] = [];
 
   if (values.shiftId && shiftLabel) {

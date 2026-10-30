@@ -56,7 +56,10 @@ describe('serializeTimesheetsToCsv', () => {
   });
 
   it('escapes commas in volunteer name', () => {
-    const e = { ...baseEntry(), volunteer: { id: 'v1', name: 'Doe, Jane', email: 'jane@test.com' } };
+    const e = {
+      ...baseEntry(),
+      volunteer: { id: 'v1', name: 'Doe, Jane', email: 'jane@test.com' },
+    };
     const csv = serializeTimesheetsToCsv([e] as any, HEADERS);
     expect(csv).toContain('"Doe, Jane"');
   });

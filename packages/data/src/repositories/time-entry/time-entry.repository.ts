@@ -106,7 +106,8 @@ export class TimeEntryRepository extends BaseRepository {
     });
     return {
       items: data.timeEntries.items,
-      truncated: data.timeEntries.pagination.total > data.timeEntries.items.length,
+      truncated:
+        data.timeEntries.pagination.total > data.timeEntries.items.length,
     };
   }
 

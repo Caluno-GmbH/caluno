@@ -211,9 +211,7 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
             })
           )}
         </TableBody>
-        {footerContent && (
-          <TableFooter>{footerContent}</TableFooter>
-        )}
+        {footerContent && <TableFooter>{footerContent}</TableFooter>}
       </Table>
     </div>
   );

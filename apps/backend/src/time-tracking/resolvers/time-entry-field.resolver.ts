@@ -1,8 +1,8 @@
 import { Context, Parent, ResolveField, Resolver } from '@nestjs/graphql';
 import { ReimbursementType } from '../../accounting/models/reimbursement-type.model';
 import { Loader } from '../../graphql/decorators/loader.decorator';
-import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { NotFoundGraphQLError } from '../../graphql/errors';
+import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { ShiftInstanceMapper } from '../../shift/mappers/shift-instance.mapper';
 import { ShiftInstance } from '../../shift/models/shift-instance.model';

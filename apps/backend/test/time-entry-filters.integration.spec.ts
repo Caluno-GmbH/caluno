@@ -9,8 +9,16 @@ import {
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
 import type { Database } from '../src/database/database.module';
-import { createShift, createShiftInstance, createTimeEntry, createUser } from './factories';
-import { createOrganizationWithType, createUnit } from './factories/org.factory';
+import {
+  createShift,
+  createShiftInstance,
+  createTimeEntry,
+  createUser,
+} from './factories';
+import {
+  createOrganizationWithType,
+  createUnit,
+} from './factories/org.factory';
 import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
 import { graphqlRequestRequiringData } from './helpers/graphql-request';
 import { getGraphqlTestContext } from './helpers/graphql-test-context';
@@ -80,13 +88,21 @@ describe('TimeEntry filters', () => {
       endedAt: new Date(base + 3_600_000),
     });
 
-    const data = await queryEntries({ limit: 10, offset: 0, volunteerId: volA.id });
+    const data = await queryEntries({
+      limit: 10,
+      offset: 0,
+      volunteerId: volA.id,
+    });
 
     const ids = data.timeEntries.items.map((r) => r.id);
     expect(ids).toContain(entryA.id);
-    expect(ids.every((id) => id === entryA.id || !id.startsWith('te-'))).toBe(true);
+    expect(ids.every((id) => id === entryA.id || !id.startsWith('te-'))).toBe(
+      true,
+    );
     // volunteerId filter must not return volB's entry
-    expect(data.timeEntries.items.every((r) => r.id !== 'impossible')).toBe(true);
+    expect(data.timeEntries.items.every((r) => r.id !== 'impossible')).toBe(
+      true,
+    );
   });
 
   it('filters by shiftId — returns only entries for instances of that shift', async () => {
@@ -112,7 +128,11 @@ describe('TimeEntry filters', () => {
       endedAt: new Date(base + 3_600_000),
     });
 
-    const data = await queryEntries({ limit: 10, offset: 0, shiftId: shiftA.id });
+    const data = await queryEntries({
+      limit: 10,
+      offset: 0,
+      shiftId: shiftA.id,
+    });
 
     const ids = data.timeEntries.items.map((r) => r.id);
     expect(ids).toContain(entryA.id);

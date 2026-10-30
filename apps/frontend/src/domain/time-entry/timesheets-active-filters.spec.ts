@@ -106,7 +106,8 @@ describe('buildTimesheetsActiveFilters', () => {
       labels,
       shiftLabel: null,
       volunteerLabel: null,
-      formatDateRange: (from, to) => `${from?.toISOString() ?? ''} – ${to?.toISOString() ?? ''}`,
+      formatDateRange: (from, to) =>
+        `${from?.toISOString() ?? ''} – ${to?.toISOString() ?? ''}`,
       onClear: noop,
     });
     expect(result).toHaveLength(1);
