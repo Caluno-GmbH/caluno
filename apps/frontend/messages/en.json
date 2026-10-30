@@ -2042,7 +2042,32 @@
       "date": "Date",
       "shift": "Assignment",
       "volunteer": "Volunteer",
-      "status": "Status"
+      "status": "Status",
+      "location": "Location",
+      "total": "Total",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "downloadCsv": "Download .csv",
+      "emailCopied": "Email address copied to clipboard",
+      "copyEmailAria": "Copy {name}'s email address",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
+      "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
+      "loading": "Loading timesheets…",
+      "truncatedNotice": "Showing the first 50,000 entries. Narrow the filters to see the full set.",
+      "loadError": "Could not load time entries. Please try again."
+    },
+    "csv": {
+      "volunteerName": "Volunteer Name",
+      "volunteerEmail": "Volunteer Email",
+      "shift": "Shift",
+      "assignment": "Assignment",
+      "location": "Location",
+      "startedAt": "Started At",
+      "endedAt": "Ended At",
+      "durationMinutes": "Duration (min)",
+      "status": "Status",
+      "createdBy": "Created By",
+      "notes": "Notes"
     },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",
@@ -2056,7 +2081,22 @@
       "volunteerRequired": "Please select a volunteer."
     },
     "filter": {
-      "status": "Status"
+      "status": "Status",
+      "statusPlaceholder": "All statuses",
+      "shift": "Shift",
+      "shiftPlaceholder": "All shifts",
+      "volunteer": "Volunteer",
+      "volunteerPlaceholder": "All volunteers",
+      "date": "Date",
+      "datePlaceholder": "All dates",
+      "location": "Location",
+      "locationPlaceholder": "All locations",
+      "locationEmpty": "No locations found",
+      "sheetTitle": "Filters",
+      "shiftEmpty": "No shifts found",
+      "volunteerEmpty": "No volunteers found",
+      "dateFromOnly": "from {date}",
+      "dateToOnly": "until {date}"
     },
     "status": {
       "autoClosed": "Auto checked out",

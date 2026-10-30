@@ -10,6 +10,12 @@ import { intlLocaleTag, localeDateFns } from '@/i18n/locales';
 
 export const DEFAULT_TIMEZONE = 'Europe/Berlin';
 
+const DURATION_UNITS_DE = { hour: 'Std.', minute: 'Min.', sep: ' ' };
+const DURATION_UNITS: Record<string, typeof DURATION_UNITS_DE> = {
+  'en-GB': { hour: 'h', minute: 'm', sep: '' },
+  'de-DE': DURATION_UNITS_DE,
+};
+
 export function formatEuro(amount: number): string {
   return new Intl.NumberFormat('de-DE', {
     style: 'currency',
@@ -147,6 +153,32 @@ export const formats = (locale: string) => {
     });
   };
 
+  // Pinned, not Intl units: the test runtime's reduced ICU renders German as "h/min".
+  const durationUnits =
+    DURATION_UNITS[intlLocaleTag(locale)] ?? DURATION_UNITS_DE;
+
+  const formatHoursMinutesShort = (totalMinutes: number): string => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const { hour, minute, sep } = durationUnits;
+    if (h > 0 && m > 0) return `${h}${sep}${hour} ${m}${sep}${minute}`;
+    if (h > 0) return `${h}${sep}${hour}`;
+    return `${m}${sep}${minute}`;
+  };
+
+  const formatDurationShort = (
+    from: Date | string,
+    to?: Date | string | null,
+  ): string => {
+    const start = new Date(from);
+    const end = to ? new Date(to) : new Date();
+    const totalMinutes = Math.round((end.getTime() - start.getTime()) / 60_000);
+    return formatHoursMinutesShort(totalMinutes);
+  };
+
+  const formatDurationByMinutesShort = (minutes: number): string =>
+    formatHoursMinutesShort(minutes);
+
   return {
     formatDate,
     formatDateTime,
@@ -158,5 +190,7 @@ export const formats = (locale: string) => {
     formatWorkedPeriod,
     formatDuration,
     formatDurationByMinutes,
+    formatDurationShort,
+    formatDurationByMinutesShort,
   };
 };

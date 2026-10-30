@@ -6,6 +6,7 @@ import { useIsMobile } from '../hooks/use-mobile';
 import { cn } from '../lib/utils';
 import { Badge } from './base/badge';
 import { Button } from './base/button';
+import { Checkbox } from './base/checkbox';
 import {
   Combobox,
   ComboboxContent,
@@ -20,6 +21,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from './base/input-group';
+import { Popover, PopoverContent, PopoverTrigger } from './base/popover';
 import {
   Select,
   SelectContent,
@@ -190,7 +192,7 @@ function TableToolbar({
             <div aria-hidden className="w-px self-stretch bg-border" />
             <div
               data-slot="table-toolbar-actions"
-              className="flex flex-col items-stretch gap-2"
+              className="flex flex-col items-stretch gap-2 [&_[data-slot=button]]:h-10"
             >
               {clampedActions}
             </div>
@@ -257,6 +259,7 @@ type FilterSelectProps = {
   options: TableToolbarSelectOption[];
   placeholder: string;
   ariaLabel?: string;
+  icon?: ReactNode;
 };
 
 function FilterSelect({
@@ -265,6 +268,7 @@ function FilterSelect({
   options,
   placeholder,
   ariaLabel,
+  icon,
 }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
@@ -272,6 +276,9 @@ function FilterSelect({
         aria-label={ariaLabel ?? placeholder}
         className="w-auto min-w-36"
       >
+        {icon && (
+          <span className="mr-1 shrink-0 text-muted-foreground">{icon}</span>
+        )}
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
@@ -359,10 +366,161 @@ function DateRange({ value, onChange, placeholder }: DateRangeProps) {
   );
 }
 
+type FilterComboboxByIdProps = {
+  value: string | undefined;
+  onChange: (value: string | null) => void;
+  options: { label: string; value: string }[];
+  placeholder: string;
+  emptyText: string;
+  ariaLabel?: string;
+  icon?: ReactNode;
+};
+
+/**
+ * Like FilterCombobox but accepts label/value pairs. The URL param holds the
+ * ID (value); the input displays the label. Filtering happens against labels.
+ */
+function FilterComboboxById({
+  value,
+  onChange,
+  options,
+  placeholder,
+  emptyText,
+  ariaLabel,
+  icon,
+}: FilterComboboxByIdProps) {
+  const [focused, setFocused] = useState(false);
+  const labels = options.map((o) => o.label);
+  const currentLabel = options.find((o) => o.value === value)?.label;
+
+  return (
+    <Combobox
+      items={labels}
+      value={currentLabel ?? null}
+      onValueChange={(label: string | null) => {
+        const id = options.find((o) => o.label === label)?.value ?? null;
+        onChange(id);
+      }}
+    >
+      <ComboboxInput
+        placeholder={focused ? undefined : placeholder}
+        aria-label={ariaLabel ?? placeholder}
+        className="w-auto min-w-36"
+        showClear={Boolean(value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+      >
+        {icon && <InputGroupAddon>{icon}</InputGroupAddon>}
+      </ComboboxInput>
+      <ComboboxContent>
+        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxList>
+          {(label: string) => (
+            <ComboboxItem key={label} value={label}>
+              {label}
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  );
+}
+
+type FilterMultiSelectProps = {
+  value: string[];
+  onChange: (value: string[]) => void;
+  options: TableToolbarSelectOption[];
+  placeholder: string;
+  ariaLabel?: string;
+  icon?: ReactNode;
+};
+
+function FilterMultiSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  ariaLabel,
+  icon,
+}: FilterMultiSelectProps) {
+  const triggerLabel =
+    value.length === 0
+      ? placeholder
+      : value.length === 1
+        ? (options.find((o) => o.value === value[0])?.label ?? placeholder)
+        : `${value.length} selected`;
+
+  function toggle(optionValue: string) {
+    if (value.includes(optionValue)) {
+      onChange(value.filter((v) => v !== optionValue));
+    } else {
+      onChange([...value, optionValue]);
+    }
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        data-slot="select-trigger"
+        aria-label={ariaLabel ?? placeholder}
+        className={cn(
+          'flex w-auto min-w-36 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] whitespace-nowrap',
+          'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          value.length === 0 && 'text-muted-foreground',
+        )}
+      >
+        <span className="flex items-center gap-2 truncate">
+          {icon && (
+            <span className="shrink-0 text-muted-foreground">{icon}</span>
+          )}
+          <span className="truncate">{triggerLabel}</span>
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="shrink-0 opacity-50"
+          aria-hidden
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-48 p-1">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="option"
+            aria-selected={value.includes(option.value)}
+            onClick={() => toggle(option.value)}
+            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+          >
+            <Checkbox
+              checked={value.includes(option.value)}
+              aria-hidden
+              tabIndex={-1}
+            />
+            {option.label}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 TableToolbar.Search = Search;
 TableToolbar.Select = FilterSelect;
 TableToolbar.Combobox = FilterCombobox;
+TableToolbar.ComboboxById = FilterComboboxById;
 TableToolbar.DateRange = DateRange;
+TableToolbar.MultiSelect = FilterMultiSelect;
 
 export type { TableToolbarActiveFilter } from './table-toolbar.utils';
 export { TableToolbar };

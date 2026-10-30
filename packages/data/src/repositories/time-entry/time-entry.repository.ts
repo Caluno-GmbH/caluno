@@ -20,12 +20,18 @@ import {
   type PaginationOptions,
 } from '../base/base.repository';
 
+const MAX_EXPORT_ROWS = 50_000;
+
 export type TimeEntryDetail = GetTimeEntryQuery['timeEntry'];
 
 export interface TimeEntryListOptions extends PaginationOptions {
   sort?: TimeEntrySortField;
   order?: SortOrder;
   statuses?: TimeEntryStatus[];
+  volunteerId?: string | null;
+  shiftId?: string | null;
+  dateFrom?: string | null;
+  dateTo?: string | null;
 }
 
 export class TimeEntryRepository extends BaseRepository {
@@ -76,8 +82,33 @@ export class TimeEntryRepository extends BaseRepository {
       sort: options.sort ?? TimeEntrySortField.CreatedAt,
       order: options.order ?? SortOrder.Desc,
       statuses: options.statuses,
+      volunteerId: options.volunteerId,
+      shiftId: options.shiftId,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
     });
     return data.timeEntries;
+  }
+
+  async findAllUnpaginated(
+    options: Omit<TimeEntryListOptions, 'limit' | 'offset'> = {},
+  ) {
+    const data = await this.sdk.GetTimeEntries({
+      limit: MAX_EXPORT_ROWS,
+      offset: 0,
+      sort: options.sort ?? TimeEntrySortField.CreatedAt,
+      order: options.order ?? SortOrder.Desc,
+      statuses: options.statuses,
+      volunteerId: options.volunteerId,
+      shiftId: options.shiftId,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
+    });
+    return {
+      items: data.timeEntries.items,
+      truncated:
+        data.timeEntries.pagination.total > data.timeEntries.items.length,
+    };
   }
 
   async findByUser(userId: string, options: PaginationOptions = {}) {
