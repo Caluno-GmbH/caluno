@@ -1,42 +1,36 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { AdvisoryLockService } from '../../database/advisory-lock.service';
+import { ADVISORY_LOCK_KEYS } from '../../database/advisory-lock-keys';
+import {
+  BERLIN_CRON_OPTIONS,
+  HOURLY_BERLIN_CRON,
+  runLockedSchedulerTick,
+} from '../../shared/run-locked-scheduler-tick';
 import { VolunteerDigestService } from './volunteer-digest.service';
 
+/**
+ * Thin scheduler trigger, kept separate from VolunteerDigestService so the
+ * digest send stays testable without Nest's scheduler. One hourly tick,
+ * Europe/Berlin, under an advisory lock so only one instance sends digests.
+ */
 @Injectable()
 export class VolunteerDigestSchedulerService {
   private readonly logger = new Logger(VolunteerDigestSchedulerService.name);
 
   constructor(
     private readonly volunteerDigestService: VolunteerDigestService,
+    private readonly advisoryLock: AdvisoryLockService,
   ) {}
 
-  @Cron('0 * * * *', { timeZone: 'Europe/Berlin' })
+  @Cron(HOURLY_BERLIN_CRON, BERLIN_CRON_OPTIONS)
   async handleDigestTick(): Promise<void> {
-    const startedAt = Date.now();
-    this.logger.log(
-      { event: 'volunteer_digest.started' },
-      'Digest run started',
-    );
-
-    try {
-      const summary = await this.volunteerDigestService.sendDigests();
-      this.logger.log(
-        {
-          event: 'volunteer_digest.finished',
-          duration_ms: Date.now() - startedAt,
-          ...summary,
-        },
-        'Digest run finished',
-      );
-    } catch (error) {
-      this.logger.error(
-        {
-          event: 'volunteer_digest.failed',
-          duration_ms: Date.now() - startedAt,
-          err: error,
-        },
-        'Digest run failed',
-      );
-    }
+    await runLockedSchedulerTick({
+      logger: this.logger,
+      advisoryLock: this.advisoryLock,
+      lockKey: ADVISORY_LOCK_KEYS.volunteerDigestTick,
+      event: 'volunteer_digest_tick',
+      run: () => this.volunteerDigestService.sendDigests(),
+    });
   }
 }
