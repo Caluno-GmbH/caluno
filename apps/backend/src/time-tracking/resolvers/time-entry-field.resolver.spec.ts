@@ -7,9 +7,6 @@ import { ShiftVisibility } from '../../shift/enums';
 import { ShiftInstanceMapper } from '../../shift/mappers/shift-instance.mapper';
 import type { ShiftEntity } from '../../shift/schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../../shift/schemas/shift-instance.schema';
-import { ShiftService } from '../../shift/shift.service';
-import { UserMapper } from '../../user/mappers/user.mapper';
-import { UserService } from '../../user/user.service';
 import { TimeEntryClosureKind } from '../enums/time-entry-closure-kind.enum';
 import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 import type { TimeEntryEntity } from '../schemas/time-entry.schema';
@@ -79,45 +76,43 @@ const timeEntry = {
 } satisfies TimeEntryEntity;
 
 describe('TimeEntryFieldResolver', () => {
-  let shiftService: { findInstanceById: jest.Mock };
+  let loader: { shiftInstanceById: { load: jest.Mock } };
   let resolver: TimeEntryFieldResolver;
 
   beforeEach(() => {
-    shiftService = {
-      findInstanceById: jest.fn(),
+    loader = {
+      shiftInstanceById: { load: jest.fn() },
     };
-    resolver = new TimeEntryFieldResolver(
-      shiftService as unknown as ShiftService,
-      {} as unknown as UserService,
-      {} as unknown as UserMapper,
-      new ShiftInstanceMapper(),
-    );
+    resolver = new TimeEntryFieldResolver(new ShiftInstanceMapper());
   });
 
   it('uses a preloaded shift instance when the TimeEntry parent already has one', async () => {
     const result = await resolver.shiftInstance(
       { ...timeEntry, shiftInstance },
       {} as AuthenticatedGraphQLContext,
+      loader as unknown as TimeEntryLoader,
     );
 
     expect(result).not.toBeNull();
     expect(result?.id).toBe(shiftInstance.id);
     expect(result?.master.id).toBe(shift.id);
-    expect(shiftService.findInstanceById).not.toHaveBeenCalled();
+    expect(loader.shiftInstanceById.load).not.toHaveBeenCalled();
   });
 
-  it('falls back to org-scoped lookup when the relation is not preloaded', async () => {
-    shiftService.findInstanceById.mockResolvedValue(shiftInstance);
+  it('falls back to org-scoped DataLoader when the relation is not preloaded', async () => {
+    const mapped = { id: shiftInstance.id };
+    loader.shiftInstanceById.load.mockResolvedValue(mapped);
 
-    const result = await resolver.shiftInstance(timeEntry, {
-      organizationUnitId: 'unit-1',
-    } as AuthenticatedGraphQLContext);
+    const result = await resolver.shiftInstance(
+      timeEntry,
+      { organizationUnitId: 'unit-1' } as AuthenticatedGraphQLContext,
+      loader as unknown as TimeEntryLoader,
+    );
 
     expect(result).not.toBeNull();
     expect(result?.id).toBe(shiftInstance.id);
-    expect(shiftService.findInstanceById).toHaveBeenCalledWith(
-      shiftInstance.id,
-      'unit-1',
+    expect(loader.shiftInstanceById.load).toHaveBeenCalledWith(
+      'unit-1:shift-instance-1',
     );
   });
 
@@ -125,10 +120,11 @@ describe('TimeEntryFieldResolver', () => {
     const result = await resolver.shiftInstance(
       { ...timeEntry, shiftInstanceId: null, shiftInstance: null },
       {} as AuthenticatedGraphQLContext,
+      loader as unknown as TimeEntryLoader,
     );
 
     expect(result).toBeNull();
-    expect(shiftService.findInstanceById).not.toHaveBeenCalled();
+    expect(loader.shiftInstanceById.load).not.toHaveBeenCalled();
   });
 
   it('resolves organizationUnit through the TimeEntryLoader', async () => {

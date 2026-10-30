@@ -104,12 +104,10 @@ export class TimeEntryRepository extends BaseRepository {
       dateFrom: options.dateFrom,
       dateTo: options.dateTo,
     });
-    if (data.timeEntries.pagination.total > data.timeEntries.items.length) {
-      throw new DataError(
-        `Export exceeds the maximum of ${MAX_EXPORT_ROWS} rows`,
-      );
-    }
-    return data.timeEntries.items;
+    return {
+      items: data.timeEntries.items,
+      truncated: data.timeEntries.pagination.total > data.timeEntries.items.length,
+    };
   }
 
   async findByUser(userId: string, options: PaginationOptions = {}) {

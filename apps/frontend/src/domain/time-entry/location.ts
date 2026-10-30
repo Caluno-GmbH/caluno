@@ -1,11 +1,4 @@
-export function formatAddress(orgUnit: {
-  street?: string | null;
-  zipCode?: string | null;
-  city?: string | null;
-}): string | null {
-  const parts = [orgUnit.street, orgUnit.zipCode, orgUnit.city].filter(Boolean);
-  return parts.length > 0 ? parts.join(', ') : null;
-}
+import { formatAddress as formatAddressShared } from '@/domain/org-unit/format-address';
 
 export function entryDurationMinutes(entry: {
   startedAt: string;
@@ -54,5 +47,5 @@ export function resolveTimeEntryLocation(entry: {
       null
     );
   }
-  return formatAddress(entry.organizationUnit);
+  return formatAddressShared(entry.organizationUnit) || null;
 }

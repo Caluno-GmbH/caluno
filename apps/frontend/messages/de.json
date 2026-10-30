@@ -2053,7 +2053,8 @@
       "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
       "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
       "loading": "Zeiterfassungen werden geladen…",
-      "tooLargeToDisplay": "Dieses Ergebnis ist zu groß für die Anzeige. Bitte Filter einschränken und erneut versuchen."
+      "truncatedNotice": "Es werden die ersten 50.000 Einträge angezeigt. Bitte Filter einschränken, um alle Einträge zu sehen.",
+      "loadError": "Zeiteinträge konnten nicht geladen werden. Bitte versuche es erneut."
     },
     "csv": {
       "volunteerName": "Name",
@@ -2092,12 +2093,10 @@
       "locationPlaceholder": "Alle Standorte",
       "locationEmpty": "Keine Standorte gefunden",
       "sheetTitle": "Filter",
-      "group": "Gruppieren",
-      "groupNone": "Keine",
-      "groupVolunteer": "Ehrenamtliche",
-      "groupAssignment": "Einsatz",
       "shiftEmpty": "Keine Einsätze gefunden",
-      "volunteerEmpty": "Keine Ehrenamtlichen gefunden"
+      "volunteerEmpty": "Keine Ehrenamtlichen gefunden",
+      "dateFromOnly": "ab {date}",
+      "dateToOnly": "bis {date}"
     },
     "status": {
       "autoClosed": "Automatisch ausgecheckt",

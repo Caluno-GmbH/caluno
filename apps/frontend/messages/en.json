@@ -2053,7 +2053,8 @@
       "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
       "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "loading": "Loading timesheets…",
-      "tooLargeToDisplay": "This result set is too large to display. Narrow the filters and try again."
+      "truncatedNotice": "Showing the first 50,000 entries. Narrow the filters to see the full set.",
+      "loadError": "Could not load time entries. Please try again."
     },
     "csv": {
       "volunteerName": "Volunteer Name",
@@ -2092,12 +2093,10 @@
       "locationPlaceholder": "All locations",
       "locationEmpty": "No locations found",
       "sheetTitle": "Filters",
-      "group": "Group by",
-      "groupNone": "None",
-      "groupVolunteer": "Volunteer",
-      "groupAssignment": "Assignment",
       "shiftEmpty": "No shifts found",
-      "volunteerEmpty": "No volunteers found"
+      "volunteerEmpty": "No volunteers found",
+      "dateFromOnly": "from {date}",
+      "dateToOnly": "until {date}"
     },
     "status": {
       "autoClosed": "Auto checked out",

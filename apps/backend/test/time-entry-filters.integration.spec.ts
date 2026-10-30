@@ -118,61 +118,69 @@ describe('TimeEntry filters', () => {
     expect(ids).toContain(entryA.id);
   });
 
-  it('filters by dateFrom — excludes entries starting before the date', async () => {
+  it('filters by dateFrom — includes entry at 00:30 Berlin on the selected day, excludes earlier', async () => {
     const volunteer = await createUser(db);
-    const cutoff = new Date('2020-06-01T00:00:00Z');
-    const before = new Date('2020-05-31T10:00:00Z');
-    const after = new Date('2020-06-02T10:00:00Z');
+    // Frontend sends: dateFrom = start of 2020-06-01 in Berlin (UTC+2 in summer) = 2020-05-31T22:00:00Z
+    const dateFrom = new Date('2020-05-31T22:00:00Z');
+    // 00:30 Berlin on 2020-06-01 = 2020-05-31T22:30:00Z — must be INCLUDED (>= dateFrom)
+    const atBerlinMidnightPlus30 = new Date('2020-05-31T22:30:00Z');
+    // 23:30 UTC the day before (well before Berlin midnight) — must be EXCLUDED
+    const beforeBerlinMidnight = new Date('2020-05-31T21:30:00Z');
 
-    const entryAfter = await createTimeEntry(db, {
+    const entryIncluded = await createTimeEntry(db, {
       organizationUnitId,
       volunteerId: volunteer.id,
-      startedAt: after,
-      endedAt: new Date(after.getTime() + 3_600_000),
+      startedAt: atBerlinMidnightPlus30,
+      endedAt: new Date(atBerlinMidnightPlus30.getTime() + 3_600_000),
     });
-    await createTimeEntry(db, {
+    const entryExcluded = await createTimeEntry(db, {
       organizationUnitId,
       volunteerId: (await createUser(db)).id,
-      startedAt: before,
-      endedAt: new Date(before.getTime() + 3_600_000),
+      startedAt: beforeBerlinMidnight,
+      endedAt: new Date(beforeBerlinMidnight.getTime() + 3_600_000),
     });
 
     const data = await queryEntries({
-      limit: 10,
+      limit: 100,
       offset: 0,
-      dateFrom: cutoff.toISOString(),
+      dateFrom: dateFrom.toISOString(),
     });
 
     const ids = data.timeEntries.items.map((r) => r.id);
-    expect(ids).toContain(entryAfter.id);
+    expect(ids).toContain(entryIncluded.id);
+    expect(ids).not.toContain(entryExcluded.id);
   });
 
-  it('filters by dateTo — excludes entries starting after the date', async () => {
+  it('filters by dateTo — includes entry at 23:30 Berlin on selected day, excludes 00:30 Berlin on next day', async () => {
     const volunteer = await createUser(db);
-    const cutoff = new Date('2019-12-31T00:00:00Z');
-    const before = new Date('2019-12-30T10:00:00Z');
-    const after = new Date('2020-01-02T10:00:00Z');
+    // Frontend sends: dateTo = start of day AFTER 2024-01-15 in Berlin (UTC+1 in winter) = 2024-01-15T23:00:00Z
+    const dateTo = new Date('2024-01-15T23:00:00Z');
+    // 23:30 Berlin on 2024-01-15 = 2024-01-15T22:30:00Z — must be INCLUDED (< dateTo)
+    const at2330Berlin = new Date('2024-01-15T22:30:00Z');
+    // 00:30 Berlin on 2024-01-16 = 2024-01-15T23:30:00Z — must be EXCLUDED (>= dateTo)
+    const at0030BerlinNextDay = new Date('2024-01-15T23:30:00Z');
 
-    const entryBefore = await createTimeEntry(db, {
+    const entryIncluded = await createTimeEntry(db, {
       organizationUnitId,
       volunteerId: volunteer.id,
-      startedAt: before,
-      endedAt: new Date(before.getTime() + 3_600_000),
+      startedAt: at2330Berlin,
+      endedAt: new Date(at2330Berlin.getTime() + 3_600_000),
     });
-    await createTimeEntry(db, {
+    const entryExcluded = await createTimeEntry(db, {
       organizationUnitId,
       volunteerId: (await createUser(db)).id,
-      startedAt: after,
-      endedAt: new Date(after.getTime() + 3_600_000),
+      startedAt: at0030BerlinNextDay,
+      endedAt: new Date(at0030BerlinNextDay.getTime() + 3_600_000),
     });
 
     const data = await queryEntries({
-      limit: 10,
+      limit: 100,
       offset: 0,
-      dateTo: cutoff.toISOString(),
+      dateTo: dateTo.toISOString(),
     });
 
     const ids = data.timeEntries.items.map((r) => r.id);
-    expect(ids).toContain(entryBefore.id);
+    expect(ids).toContain(entryIncluded.id);
+    expect(ids).not.toContain(entryExcluded.id);
   });
 });

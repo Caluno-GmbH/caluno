@@ -4,6 +4,8 @@ import type { GetTimeEntriesQuery } from '@repo/data';
 import { TimeEntryStatus } from '@repo/data';
 import { useTimeEntriesAll } from '@repo/data/react';
 import {
+  Alert,
+  AlertDescription,
   EntityCell,
   NumberCell,
   TableCell,
@@ -36,6 +38,7 @@ import {
 } from '@/domain/time-entry/location';
 import { describeRecorder } from '@/domain/time-entry/recorder';
 import { serializeTimesheetsToCsv } from '@/domain/time-entry/timesheets-csv';
+import { toTimesheetDateRange } from '@/domain/time-entry/timesheets-date-range';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { Link } from '@/i18n/navigation';
 import { triggerDownload } from '@/lib/download/trigger-download';
@@ -105,8 +108,10 @@ export const TimesheetsTable = ({
 
   const [downloadRequested, setDownloadRequested] = useState(false);
 
+  const dateRange = toTimesheetDateRange(dateFrom, dateTo);
+
   const {
-    data: fullEntries,
+    data: fullData,
     isLoading: isLoadingFull,
     isError,
   } = useTimeEntriesAll(
@@ -115,24 +120,28 @@ export const TimesheetsTable = ({
       statuses: status.length > 0 ? status : undefined,
       volunteerId,
       shiftId,
-      dateFrom: dateFrom ? dateFrom.toISOString() : null,
-      dateTo: dateTo ? dateTo.toISOString() : null,
+      dateFrom: dateRange.dateFrom ?? null,
+      dateTo: dateRange.dateTo ?? null,
     },
     true,
   );
 
+  const fullEntries = fullData?.items;
+  const truncated = fullData?.truncated ?? false;
+
   // Omits the shift constraint so every shift stays selectable while one is
-  // active; deduped with the dataset above when no shift is selected.
-  const { data: shiftFilterEntries } = useTimeEntriesAll(
+  // active; only fetched when a shift filter is in use — otherwise shiftOptions
+  // derives from the main dataset to avoid a duplicate full-set request.
+  const { data: shiftFilterData } = useTimeEntriesAll(
     organizationUnitId,
     {
       statuses: status.length > 0 ? status : undefined,
       volunteerId,
       shiftId: null,
-      dateFrom: dateFrom ? dateFrom.toISOString() : null,
-      dateTo: dateTo ? dateTo.toISOString() : null,
+      dateFrom: dateRange.dateFrom ?? null,
+      dateTo: dateRange.dateTo ?? null,
     },
-    true,
+    Boolean(shiftId),
   );
 
   const fullEntryLocations = useMemo(() => {
@@ -158,10 +167,11 @@ export const TimesheetsTable = ({
   }, [fullEntryLocations]);
 
   const shiftOptions = useMemo(() => {
-    if (!shiftFilterEntries) return [];
+    const sourceEntries = shiftId ? shiftFilterData?.items : fullEntries;
+    if (!sourceEntries) return [];
     const seen = new Set<string>();
     const options: { label: string; value: string }[] = [];
-    for (const entry of shiftFilterEntries) {
+    for (const entry of sourceEntries) {
       const master = entry.shiftInstance?.master;
       if (master && !seen.has(master.id)) {
         seen.add(master.id);
@@ -169,7 +179,7 @@ export const TimesheetsTable = ({
       }
     }
     return options.sort((a, b) => a.label.localeCompare(b.label));
-  }, [shiftFilterEntries]);
+  }, [shiftId, shiftFilterData, fullEntries]);
 
   // Full filtered set: the single source of truth for table data, pagination, and totals.
   const filteredFull = useMemo(() => {
@@ -186,8 +196,15 @@ export const TimesheetsTable = ({
     return [...seen];
   }, [filteredFull]);
 
-  const canCopyEmails =
-    Boolean(location || shiftId || volunteerId) && filteredEmails.length > 0;
+  const hasActiveFilter =
+    status.length > 0 ||
+    Boolean(shiftId) ||
+    Boolean(volunteerId) ||
+    Boolean(dateFrom) ||
+    Boolean(dateTo) ||
+    Boolean(location);
+
+  const canCopyEmails = hasActiveFilter && filteredEmails.length > 0;
 
   useEffect(() => {
     if (!downloadRequested || !filteredFull) return;
@@ -305,9 +322,10 @@ export const TimesheetsTable = ({
       },
       {
         id: 'DURATION',
-        sortingFn: (
+        sortFn: (
           rowA: Row<DataTableFeatures, TimeEntry>,
           rowB: Row<DataTableFeatures, TimeEntry>,
+          _columnId: string,
         ) => compareEntriesByDuration(rowA.original, rowB.original),
         meta: { headerClassName: 'text-right' },
         header: ({ column }) => (
@@ -424,7 +442,7 @@ export const TimesheetsTable = ({
   );
 
   const emptyMessage = isError
-    ? t('table.tooLargeToDisplay')
+    ? t('table.loadError')
     : isLoadingFull
       ? t('table.loading')
       : t('empty.title');
@@ -448,6 +466,12 @@ export const TimesheetsTable = ({
           />,
         ]}
       />
+      {truncated && (
+        <Alert>
+          <AlertTriangle className="size-4" />
+          <AlertDescription>{t('table.truncatedNotice')}</AlertDescription>
+        </Alert>
+      )}
       <DataTable
         mode="client"
         columns={columns}

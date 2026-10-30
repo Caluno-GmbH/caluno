@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { CreateTimeEntryButton } from '@/domain/time-entry/components/create-time-entry-button';
 import { EmptyTimeEntries } from '@/domain/time-entry/components/empty-time-entries';
 import { TimesheetsTable } from '@/domain/time-entry/components/timesheets-table';
+import { toTimesheetDateRange } from '@/domain/time-entry/timesheets-date-range';
 import { timesheetsSearchParamsCache } from '@/domain/time-entry/timesheets-search-params.server';
 import { getDataClient } from '@/lib/data-client';
 
@@ -18,30 +19,27 @@ export default async function TimesheetsPage({
   const { orgUId } = await params;
   const t = await getTranslations('TimeEntry');
 
-  const { sort, dir, page, pageSize, status, shiftId, volunteerId, dateFrom, dateTo } =
+  const { sort, dir, status, shiftId, volunteerId, dateFrom, dateTo } =
     timesheetsSearchParamsCache.parse(await searchParams);
 
-  const limit = Number(pageSize);
   const data = await getDataClient({ orgUId });
 
+  const dateRange = toTimesheetDateRange(dateFrom, dateTo);
+
   const timeEntries = await data.timeEntry.findAll({
-    limit,
-    offset: (page - 1) * limit,
+    limit: 1,
+    offset: 0,
     sort,
     order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
     statuses: status.length > 0 ? status : undefined,
     volunteerId,
     shiftId,
-    dateFrom: dateFrom ? dateFrom.toISOString() : null,
-    dateTo: dateTo ? dateTo.toISOString() : null,
+    dateFrom: dateRange.dateFrom ?? null,
+    dateTo: dateRange.dateTo ?? null,
   });
 
   const isFiltered =
-    status.length > 0 ||
-    !!shiftId ||
-    !!volunteerId ||
-    !!dateFrom ||
-    !!dateTo;
+    status.length > 0 || !!shiftId || !!volunteerId || !!dateFrom || !!dateTo;
 
   const showTable = timeEntries.pagination.total > 0 || isFiltered;
 

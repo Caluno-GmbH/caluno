@@ -2,6 +2,8 @@ import type { ReimbursementTypeMapper } from '../../accounting/mappers/reimburse
 import type { Database } from '../../database/database.module';
 import type { OrganizationUnitMapper } from '../../organization/mappers/organization-unit.mapper';
 import type { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import type { ShiftInstanceMapper } from '../../shift/mappers/shift-instance.mapper';
+import type { ShiftService } from '../../shift/shift.service';
 import type { UserMapper } from '../../user/mappers/user.mapper';
 import { TimeEntryLoader } from './time-entry.loader';
 
@@ -23,6 +25,8 @@ describe('TimeEntryLoader', () => {
         {} as unknown as ReimbursementTypeMapper,
         {} as unknown as UserMapper,
         { query: {} } as unknown as Database,
+        {} as unknown as ShiftService,
+        {} as unknown as ShiftInstanceMapper,
       );
 
       const [a, b] = await Promise.all([
@@ -47,6 +51,8 @@ describe('TimeEntryLoader', () => {
         {} as unknown as ReimbursementTypeMapper,
         {} as unknown as UserMapper,
         { query: {} } as unknown as Database,
+        {} as unknown as ShiftService,
+        {} as unknown as ShiftInstanceMapper,
       );
 
       const [a, missing] = await Promise.allSettled([

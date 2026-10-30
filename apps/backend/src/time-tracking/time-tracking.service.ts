@@ -542,10 +542,7 @@ export class TimeTrackingService {
         ? gte(schema.timeEntries.startedAt, filters.dateFrom)
         : undefined,
       filters.dateTo
-        ? lte(
-            schema.timeEntries.startedAt,
-            new Date(filters.dateTo.getTime() + 86_400_000),
-          )
+        ? lt(schema.timeEntries.startedAt, filters.dateTo)
         : undefined,
     );
 

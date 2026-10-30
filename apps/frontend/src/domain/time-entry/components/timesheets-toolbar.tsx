@@ -25,7 +25,7 @@ export function TimesheetsToolbar({
   actions,
 }: TimesheetsToolbarProps) {
   const t = useTranslations('TimeEntry');
-  const { formatDateRange } = useFormatting();
+  const { formatDate, formatDateRange } = useFormatting();
 
   const [params, setParams] = useQueryStates(timesheetsSearchParams, {
     shallow: false,
@@ -69,7 +69,9 @@ export function TimesheetsToolbar({
     volunteerLabel: selectedVolunteerLabel,
     formatDateRange: (from, to) => {
       if (!from && !to) return '';
-      return formatDateRange(from ?? new Date(0), to ?? new Date());
+      if (from && to) return formatDateRange(from, to);
+      if (from) return t('filter.dateFromOnly', { date: formatDate(from) });
+      return t('filter.dateToOnly', { date: formatDate(to!) });
     },
     onClear: (field) => {
       const reset: Record<string, unknown> = { page: 1 };

@@ -2,13 +2,11 @@ import { Context, Parent, ResolveField, Resolver } from '@nestjs/graphql';
 import { ReimbursementType } from '../../accounting/models/reimbursement-type.model';
 import { Loader } from '../../graphql/decorators/loader.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { NotFoundGraphQLError } from '../../graphql/errors';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { ShiftInstanceMapper } from '../../shift/mappers/shift-instance.mapper';
 import { ShiftInstance } from '../../shift/models/shift-instance.model';
-import { ShiftService } from '../../shift/shift.service';
-import { UserMapper } from '../../user/mappers/user.mapper';
 import { User } from '../../user/models/user.model';
-import { UserService } from '../../user/user.service';
 import { TimeEntryStatus } from '../enums/time-entry-status.enum';
 import { TimeEntry } from '../models/time-entry.model';
 import type {
@@ -20,12 +18,7 @@ import { TimeEntryLoader } from './time-entry.loader';
 
 @Resolver(() => TimeEntry)
 export class TimeEntryFieldResolver {
-  constructor(
-    private readonly shiftService: ShiftService,
-    private readonly userService: UserService,
-    private readonly userMapper: UserMapper,
-    private readonly shiftInstanceMapper: ShiftInstanceMapper,
-  ) {}
+  constructor(private readonly shiftInstanceMapper: ShiftInstanceMapper) {}
 
   /**
    * Derived from the parent entity so every path is covered, including
@@ -37,9 +30,17 @@ export class TimeEntryFieldResolver {
   }
 
   @ResolveField(() => User)
-  async volunteer(@Parent() timeEntry: TimeEntryEntity): Promise<User> {
-    const creator = await this.userService.findById(timeEntry.volunteerId);
-    return this.userMapper.toModelOrThrow(creator);
+  async volunteer(
+    @Parent() timeEntry: TimeEntryEntity,
+    @Loader(TimeEntryLoader) loader: TimeEntryLoader,
+  ): Promise<User> {
+    const user = await loader.userById.load(timeEntry.volunteerId);
+    if (!user) {
+      throw new NotFoundGraphQLError(
+        `User with ID ${timeEntry.volunteerId} not found`,
+      );
+    }
+    return user;
   }
 
   @ResolveField(() => User, { nullable: true })
@@ -57,6 +58,7 @@ export class TimeEntryFieldResolver {
   async shiftInstance(
     @Parent() timeEntry: TimeEntryEntityWithRelations,
     @Context() context: AuthenticatedGraphQLContext,
+    @Loader(TimeEntryLoader) loader: TimeEntryLoader,
   ): Promise<ShiftInstance | null> {
     if (!timeEntry.shiftInstanceId) {
       return null;
@@ -66,11 +68,9 @@ export class TimeEntryFieldResolver {
       return this.shiftInstanceMapper.toModelOrThrow(timeEntry.shiftInstance);
     }
 
-    const instance = await this.shiftService.findInstanceById(
-      timeEntry.shiftInstanceId,
-      context.organizationUnitId,
+    return loader.shiftInstanceById.load(
+      `${context.organizationUnitId}:${timeEntry.shiftInstanceId}`,
     );
-    return this.shiftInstanceMapper.toModelOrThrow(instance);
   }
 
   @ResolveField(() => OrganizationUnit)
