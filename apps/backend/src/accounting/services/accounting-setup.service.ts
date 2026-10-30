@@ -4,6 +4,7 @@ import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { DocumentKind, type ReimbursementTypeKey } from '../enums';
 import type { ResolvedOrgProfile } from '../utils/org-profile';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
+import { DocumentTemplateService } from './document-template.service';
 
 export interface AccountingTemplateSlotStatus {
   reimbursementTypeId: string;
@@ -39,6 +40,7 @@ export class AccountingSetupService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
     private readonly documentProfileRequirementService: DocumentProfileRequirementService,
+    private readonly documentTemplateService: DocumentTemplateService,
   ) {}
 
   async getSetupStatus(
@@ -62,25 +64,15 @@ export class AccountingSetupService {
     // reimbursementTypes is a global table (exactly EHRENAMT/UEBUNGSLEITER in
     // a migrated database) — no org filter here.
     const types = await this.db.query.reimbursementTypes.findMany();
-    // Only the templates this unit actually resolves count: its own override
-    // when present, else the org-wide default — the same precedence
-    // findActiveTemplate enforces at creation. Soft-deleted rows and seeded
-    // stubs (never stamped with lastEditedAt) never count.
-    const templates = await this.db.query.documentTemplates.findMany({
-      where: {
-        organizationId,
-        isDeleted: false,
-        lastEditedAt: { isNotNull: true },
-        ...(organizationUnitId
-          ? {
-              OR: [
-                { organizationUnitId },
-                { organizationUnitId: { isNull: true } },
-              ],
-            }
-          : { organizationUnitId: { isNull: true } }),
-      },
-    });
+    // Only the templates this unit actually resolves count: its own, else the
+    // nearest ancestor's, else the org-wide default — the same chain
+    // findActiveTemplate walks at creation. Soft-deleted rows and seeded stubs
+    // (never stamped with lastEditedAt) never count.
+    const templates = await this.documentTemplateService.findResolvedTemplates(
+      organizationId,
+      organizationUnitId,
+      { onlyEdited: true },
+    );
 
     const slots = types.map((type) => {
       const forType = templates.filter(

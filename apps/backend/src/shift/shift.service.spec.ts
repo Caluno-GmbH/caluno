@@ -203,7 +203,7 @@ describe('ShiftService.findAll — window / filter behaviour', () => {
         (col as { name: string }).name === 'visibility',
     );
     expect(visibilityEqCall).toBeDefined();
-    expect(visibilityEqCall![1]).toBe(ShiftVisibility.INVITED_MEMBERS);
+    expect(visibilityEqCall?.[1]).toBe(ShiftVisibility.INVITED_MEMBERS);
 
     eqSpy.mockRestore();
   });
@@ -480,7 +480,7 @@ describe('ShiftService.getPendingCounts', () => {
     );
 
     expect(statusCall).toBeDefined();
-    const statusValues = statusCall![1] as ShiftInviteStatus[];
+    const statusValues = statusCall?.[1] as ShiftInviteStatus[];
 
     expect(statusValues).toContain(ShiftInviteStatus.ADMIN_INVITED);
     expect(statusValues).toContain(ShiftInviteStatus.AWAITING_ADMIN_APPROVAL);

@@ -2639,6 +2639,11 @@
         "saveButton": "Save template",
         "saveSuccessToast": "Template saved",
         "saveErrorToast": "We couldn't save the template. Please try again.",
+        "provenance": {
+          "inheritedHint": "This template is inherited from {unit}. Saving creates a copy for this unit and leaves the original unchanged.",
+          "orgWideHint": "This is the organisation-wide template. Saving creates a copy for this unit and leaves the original unchanged.",
+          "orgWideRootHint": "Saving creates this organisation's own version. It applies to all units that have no template of their own."
+        },
         "signeesUnavailableToast": "We couldn't load the signing roles yet. Please wait a moment and try again.",
         "orgProfile": {
           "blockedMessage": "Your organisation info is missing details this template needs. Complete the organisation info before saving.",
@@ -2812,6 +2817,11 @@
         },
         "editButton": "Edit template",
         "lastEdited": "Last edited {date} by {name}",
+        "provenance": {
+          "own": "Own template",
+          "inherited": "Inherited from {unit}",
+          "orgWide": "Organisation-wide template"
+        },
         "badges": {
           "renewal": {
             "monthly": "Renews monthly",

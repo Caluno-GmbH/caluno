@@ -50,8 +50,11 @@ describe('MembershipService', () => {
       {
         notifyMembershipLeft: mock(() => undefined),
         notifyMembershipRemoved: mock(() => undefined),
+        notifyMembershipRequested: mock(() => undefined),
       } as unknown as NotificationService,
-      {} as RequiredFormService,
+      {
+        getRequiredFormStatuses: mock(async () => []),
+      } as unknown as RequiredFormService,
       { capture: () => {} } as unknown as PostHogService,
       {} as never,
     );
@@ -634,6 +637,68 @@ describe('MembershipService', () => {
         .from(schema.membershipRequests)
         .where(eq(schema.membershipRequests.id, request.id));
       expect(stillThere.length).toBe(1);
+    });
+  });
+
+  describe('withdraw then re-submit', () => {
+    it('getMembershipState is NONE after CANCELLED so the join CTA stays available', async () => {
+      const user = await createUser(db);
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Cancel State Org ${crypto.randomUUID()}`,
+      );
+      const unit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'unit',
+      });
+      await db.insert(schema.membershipRequests).values({
+        userId: user.id,
+        organizationUnitId: unit.id,
+        status: MembershipRequestStatus.CANCELLED,
+        metadata: {},
+      });
+
+      await expect(service.getMembershipState(user.id, unit.id)).resolves.toBe(
+        'NONE',
+      );
+    });
+
+    it('requestOrgJoin resurrects a CANCELLED request to PENDING', async () => {
+      const user = await createUser(db);
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Cancel Resubmit Org ${crypto.randomUUID()}`,
+      );
+      const unit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'unit',
+      });
+      const [cancelled] = await db
+        .insert(schema.membershipRequests)
+        .values({
+          userId: user.id,
+          organizationUnitId: unit.id,
+          status: MembershipRequestStatus.CANCELLED,
+          metadata: {},
+        })
+        .returning();
+
+      const result = await service.requestOrgJoin(user.id, unit.id);
+
+      expect(result.status).toBe('PENDING_MEMBERSHIP');
+      expect(
+        'membershipRequest' in result && result.membershipRequest?.id,
+      ).toBe(cancelled.id);
+      expect(
+        'membershipRequest' in result && result.membershipRequest?.status,
+      ).toBe(MembershipRequestStatus.PENDING);
+
+      const stored = await db.query.membershipRequests.findFirst({
+        where: { id: cancelled.id },
+      });
+      expect(stored?.status).toBe(MembershipRequestStatus.PENDING);
     });
   });
 

@@ -1,4 +1,5 @@
 import type { InvoiceNumberFormat, RenewalCadence } from '@repo/data';
+import type { TemplateProvenance } from '../../lib/template-slots';
 import type { DocumentKind, PauschalenType } from '../doc-type-header';
 
 export type SigneeRole = 'volunteer' | 'coordinator';
@@ -75,6 +76,7 @@ export type TemplateSlot =
       kind: DocumentKind;
       configured: true;
       templateId: string;
+      provenance: TemplateProvenance;
       summary: TemplateCardSummary;
       lastEditedAt: string | null;
       lastEditedBy: string | null;
