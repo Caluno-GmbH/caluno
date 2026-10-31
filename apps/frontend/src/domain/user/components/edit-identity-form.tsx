@@ -186,7 +186,9 @@ const EditIdentityForm = ({ profile }: EditIdentityFormProps) => {
         </Button>
         <Button type="submit" disabled={!isDirty || !isValid || isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-          {isSubmitting ? tCommon('saving') : tCommon('save')}
+          {/* Wrapped in a span so browser translation (which replaces bare text
+              nodes with <font> elements) can't break React inserting the spinner. */}
+          <span>{isSubmitting ? tCommon('saving') : tCommon('save')}</span>
         </Button>
       </div>
     </form>
