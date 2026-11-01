@@ -55,7 +55,11 @@ function reportMismatch(
 }
 
 export function installTranslationDomGuard() {
-  if (installed || typeof window === 'undefined' || typeof Node === 'undefined') {
+  if (
+    installed ||
+    typeof window === 'undefined' ||
+    typeof Node === 'undefined'
+  ) {
     return;
   }
   installed = true;
@@ -83,7 +87,12 @@ export function installTranslationDomGuard() {
     referenceNode: Node | null,
   ): T {
     if (referenceNode && referenceNode.parentNode !== this) {
-      reportMismatch('insertBefore', this, referenceNode, referenceNode.parentNode);
+      reportMismatch(
+        'insertBefore',
+        this,
+        referenceNode,
+        referenceNode.parentNode,
+      );
       return this.appendChild(newNode);
     }
     return originalInsertBefore.call(this, newNode, referenceNode) as T;
