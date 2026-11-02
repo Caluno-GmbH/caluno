@@ -2042,7 +2042,32 @@
       "date": "Datum",
       "shift": "Einsatz",
       "volunteer": "Freiwillige:r",
-      "status": "Status"
+      "status": "Status",
+      "location": "Standort",
+      "total": "Gesamt",
+      "expand": "Ausklappen",
+      "collapse": "Einklappen",
+      "downloadCsv": ".csv herunterladen",
+      "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
+      "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
+      "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
+      "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
+      "loading": "Zeiterfassungen werden geladen…",
+      "truncatedNotice": "Es werden die ersten 50.000 Einträge angezeigt. Bitte Filter einschränken, um alle Einträge zu sehen.",
+      "loadError": "Zeiteinträge konnten nicht geladen werden. Bitte versuche es erneut."
+    },
+    "csv": {
+      "volunteerName": "Name",
+      "volunteerEmail": "E-Mail",
+      "shift": "Schicht",
+      "assignment": "Einsatz",
+      "location": "Ort",
+      "startedAt": "Beginn",
+      "endedAt": "Ende",
+      "durationMinutes": "Dauer (Min.)",
+      "status": "Status",
+      "createdBy": "Erfasst von",
+      "notes": "Notizen"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",
@@ -2056,7 +2081,22 @@
       "volunteerRequired": "Bitte wähle eine Person aus."
     },
     "filter": {
-      "status": "Status"
+      "status": "Status",
+      "statusPlaceholder": "Alle Status",
+      "shift": "Einsatz",
+      "shiftPlaceholder": "Alle Einsätze",
+      "volunteer": "Ehrenamtliche",
+      "volunteerPlaceholder": "Alle Ehrenamtlichen",
+      "date": "Datum",
+      "datePlaceholder": "Alle Daten",
+      "location": "Standort",
+      "locationPlaceholder": "Alle Standorte",
+      "locationEmpty": "Keine Standorte gefunden",
+      "sheetTitle": "Filter",
+      "shiftEmpty": "Keine Einsätze gefunden",
+      "volunteerEmpty": "Keine Ehrenamtlichen gefunden",
+      "dateFromOnly": "ab {date}",
+      "dateToOnly": "bis {date}"
     },
     "status": {
       "autoClosed": "Automatisch ausgecheckt",

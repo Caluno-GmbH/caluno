@@ -9,6 +9,9 @@ import { RegisterLoader } from '../../graphql/interceptors';
 import { OrganizationUnitMapper } from '../../organization/mappers/organization-unit.mapper';
 import type { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import { ShiftInstanceMapper } from '../../shift/mappers/shift-instance.mapper';
+import type { ShiftInstance } from '../../shift/models/shift-instance.model';
+import { ShiftService } from '../../shift/shift.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import type { User } from '../../user/models/user.model';
 
@@ -21,6 +24,8 @@ export class TimeEntryLoader {
     private readonly reimbursementTypeMapper: ReimbursementTypeMapper,
     private readonly userMapper: UserMapper,
     @Inject(DATABASE_CONNECTION) private readonly db: Database,
+    private readonly shiftService: ShiftService,
+    private readonly shiftInstanceMapper: ShiftInstanceMapper,
   ) {}
 
   public readonly organizationUnitById = new DataLoader<
@@ -78,4 +83,38 @@ export class TimeEntryLoader {
       });
     },
   );
+
+  // Org-scoped: keys are `${organizationUnitId}:${shiftInstanceId}` so the
+  // batch never leaks instances across org units within the same request.
+  public readonly shiftInstanceById = new DataLoader<
+    string,
+    ShiftInstance | null
+  >(async (compositeKeys) => {
+    const grouped = new Map<string, string[]>();
+    for (const key of compositeKeys) {
+      const colonIdx = key.indexOf(':');
+      const orgUnitId = key.slice(0, colonIdx);
+      const instanceId = key.slice(colonIdx + 1);
+      const ids = grouped.get(orgUnitId) ?? [];
+      ids.push(instanceId);
+      grouped.set(orgUnitId, ids);
+    }
+
+    const resultMap = new Map<string, ShiftInstance | null>();
+    for (const [orgUnitId, ids] of grouped) {
+      const instances = await this.shiftService.findInstancesByIds(
+        ids,
+        orgUnitId,
+      );
+      for (let i = 0; i < ids.length; i++) {
+        const entity = instances[i];
+        resultMap.set(
+          `${orgUnitId}:${ids[i]}`,
+          entity ? this.shiftInstanceMapper.toModelOrThrow(entity) : null,
+        );
+      }
+    }
+
+    return compositeKeys.map((key) => resultMap.get(key) ?? null);
+  });
 }
