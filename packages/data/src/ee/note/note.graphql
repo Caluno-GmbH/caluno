@@ -1,0 +1,15 @@
+query MyNote {
+  myNote {
+    id
+    body
+    updatedAt
+  }
+}
+
+mutation UpdateMyNote($input: UpdateMyNoteInput!) {
+  updateMyNote(input: $input) {
+    id
+    body
+    updatedAt
+  }
+}

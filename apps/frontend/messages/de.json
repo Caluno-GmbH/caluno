@@ -830,7 +830,19 @@
     "accountingSettings": "Einstellungen",
     "myDocuments": "Meine Dokumente",
     "myDocumentsBadge": "{count, plural, one {# Dokument wartet auf deine Unterschrift} other {# Dokumente warten auf deine Unterschrift}}",
+    "myNote": "Meine Notiz",
     "shiftSettings": "Einsätze und Check-in"
+  },
+  "EeNote": {
+    "title": "Meine Notiz",
+    "adminTitle": "Meine Notiz",
+    "adminDescription": "Eine private Notiz, die nur du sehen und bearbeiten kannst.",
+    "placeholder": "Schreib dir etwas auf…",
+    "loading": "Notiz wird geladen…",
+    "loadFailed": "Notiz konnte nicht geladen werden.",
+    "saving": "Wird gespeichert…",
+    "saved": "Notiz gespeichert.",
+    "saveFailed": "Notiz konnte nicht gespeichert werden."
   },
   "OrgDetail": {
     "aboutHeading": "Über uns",

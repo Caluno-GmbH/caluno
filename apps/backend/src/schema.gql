@@ -752,6 +752,7 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
+  updateMyNote(input: UpdateMyNoteInput!): UserNote!
   updateMyProfile(input: UpdateMyProfileInput!): UserWithProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
@@ -973,6 +974,7 @@ type Query {
   myMembershipRequests(limit: Int! = 10, offset: Int! = 0): MembershipRequestPaginatedResponse!
   myMembershipStatus(organizationUnitId: ID!): Boolean!
   myMemberships: [Membership!]!
+  myNote: UserNote!
   myOrganizationUnits: [OrganizationUnit!]!
   myRequiredOrgUnitForms(organizationUnitId: ID!): [RequirementForm!]!
   myShiftInstances(endsBefore: DateTime = null, includeIntended: Boolean = false, includePast: Boolean! = false, limit: Int! = 15, offset: Int! = 0, order: SortOrder! = ASC, startsAfter: DateTime = null, statuses: [ShiftInviteStatus!]): ShiftInstancePaginatedResponse!
@@ -1441,6 +1443,10 @@ input UpdateMyImageInput {
   imageFileId: String
 }
 
+input UpdateMyNoteInput {
+  body: String!
+}
+
 input UpdateMyProfileInput {
   accountHolder: String
   bic: String
@@ -1568,6 +1574,12 @@ type User {
   name: String!
   permissions: [Permission!]
   preferredName: String
+}
+
+type UserNote {
+  body: String!
+  id: String!
+  updatedAt: DateTime!
 }
 
 type UserWithProfile {

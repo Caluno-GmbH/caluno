@@ -7,6 +7,7 @@ import { AccountSection } from '@/domain/user/components/account-section';
 import { HeaderAvatar } from '@/domain/user/components/header-avatar';
 import { PersonalInformationSection } from '@/domain/user/components/personal-information-section';
 import { ProfilePageHeader } from '@/domain/user/components/profile-page-header';
+import { ProfileNoteSlot } from '@/edition/profile-note-slot';
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
@@ -84,6 +85,8 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           emailUrgentCallsEnabled={me.emailUrgentCallsEnabled}
           emailPlatformEnabled={me.emailPlatformEnabled}
         />
+
+        <ProfileNoteSlot />
       </div>
     </div>
   );

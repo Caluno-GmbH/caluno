@@ -32,6 +32,7 @@ import {
   ListTodo,
   LogOutIcon,
   NetworkIcon,
+  NotebookPen,
   ScanQrCode,
   ShieldIcon,
   TicketIcon,
@@ -42,6 +43,7 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
 import { visibleOverviewTasks } from '@/domain/overview/visible-tasks';
+import { hasEeEdition } from '@/edition/has-ee-edition';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
 
@@ -110,6 +112,15 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
         href: `/admin/${orgUId}/requirement-forms`,
         icon: ClipboardListIcon,
       },
+      ...(hasEeEdition()
+        ? [
+            {
+              titleKey: 'myNote',
+              href: `/admin/${orgUId}/my-note`,
+              icon: NotebookPen,
+            },
+          ]
+        : []),
     ];
   }, [orgUId, pendingCount, waitingCount]);
   const accountingItems = useMemo(() => {
