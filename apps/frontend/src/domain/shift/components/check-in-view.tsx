@@ -4,7 +4,12 @@ import { Button, Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui';
 import { Hash, ScanQrCode, User } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { QRCodeSVG } from 'qrcode.react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  type CheckInTab,
+  getCheckInTabPreference,
+  setCheckInTabPreference,
+} from '../check-in-tab-preference';
 import { CheckInQrScanner } from './check-in-qr-scanner';
 import { ManualCheckInDialog } from './manual-check-in-dialog';
 
@@ -15,18 +20,31 @@ interface CheckInViewProps {
   canCheckIn: boolean;
 }
 
-type CheckInType = 'qr' | 'scanner';
-
 export function CheckInView({
   checkInId,
   qrValue,
   name,
   canCheckIn,
 }: CheckInViewProps) {
-  const [tab, setTab] = useState<CheckInType>('qr');
+  const [tab, setTab] = useState<CheckInTab>('qr');
   const [manualCheckinOpen, setManualCheckinOpen] = useState(false);
   const t = useTranslations('Navigation');
   const tCheckIn = useTranslations('CheckIn');
+
+  // The scanner/QR choice is a sticky preference, not route state: staff
+  // return to this page repeatedly while scanning one volunteer after
+  // another, and the tab should stay on "QR-Scanner" until they manually
+  // switch back. Read once after mount (server-rendered markup has no
+  // access to sessionStorage, so the default "qr" stays correct for SSR).
+  useEffect(() => {
+    const stored = getCheckInTabPreference();
+    if (stored) setTab(stored);
+  }, []);
+
+  const handleTabChange = (value: CheckInTab) => {
+    setTab(value);
+    setCheckInTabPreference(value);
+  };
 
   const easyReadCheckinId = checkInId.match(/.{1,4}/g)?.join('-') ?? checkInId;
 
@@ -59,7 +77,10 @@ export function CheckInView({
 
   return (
     <div className="max-w-2xl">
-      <Tabs value={tab} onValueChange={(value) => setTab(value as CheckInType)}>
+      <Tabs
+        value={tab}
+        onValueChange={(value) => handleTabChange(value as CheckInTab)}
+      >
         <TabsList>
           <TabsTrigger value="qr">{tCheckIn('myQrCodeTab')}</TabsTrigger>
           <TabsTrigger value="scanner">{tCheckIn('qrScannerTab')}</TabsTrigger>
@@ -70,7 +91,7 @@ export function CheckInView({
           <Button
             type="button"
             className="w-full"
-            onClick={() => setTab('scanner')}
+            onClick={() => handleTabChange('scanner')}
           >
             <ScanQrCode /> {tCheckIn('scanACode')}
           </Button>
