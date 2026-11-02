@@ -391,10 +391,6 @@
       "description": "Get started by creating your first event.",
       "title": "No events yet"
     },
-    "error": {
-      "title": "We couldn't load the events.",
-      "tryAgain": "Try again"
-    },
     "form": {
       "coverUrlLabel": "Cover URL",
       "endsAtLabel": "End",
