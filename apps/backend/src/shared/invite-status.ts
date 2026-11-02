@@ -120,6 +120,13 @@ export const MY_SHIFT_INVITE_STATUSES: readonly ShiftInviteStatus[] = [
   ShiftInviteStatus.WAITLIST_JOINED,
 ] as const;
 
+/** On the roster but not yet occupying a confirmed seat. */
+export const PENDING_SHIFT_INVITE_STATUSES: readonly ShiftInviteStatus[] = [
+  ShiftInviteStatus.ADMIN_INVITED,
+  ShiftInviteStatus.AWAITING_ADMIN_APPROVAL,
+  ShiftInviteStatus.WAITLIST_JOINED,
+] as const;
+
 /** Pending or participating — currently "on" the shift/event roster. */
 export const ACTIVE_SHIFT_INVITE_STATUSES: readonly ShiftInviteStatus[] = [
   ShiftInviteStatus.ADMIN_INVITED,

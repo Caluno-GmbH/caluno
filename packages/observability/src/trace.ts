@@ -5,5 +5,6 @@
 export const TRACE_PROPAGATION_TARGETS: (string | RegExp)[] = [
   'localhost:8080',
   /^https:\/\/staging\.api\.caluno\.org/,
+  /^https:\/\/release\.api\.caluno\.org/,
   /^https:\/\/api\.caluno\.org/,
 ];

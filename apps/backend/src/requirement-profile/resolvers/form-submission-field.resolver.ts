@@ -31,21 +31,19 @@ export class FormSubmissionFieldResolver {
     return this.formSubmissionValueMapper.toArray(values);
   }
 
-  @ResolveField(() => RequirementForm, { nullable: true })
+  @ResolveField(() => RequirementForm)
   async form(
     @Parent() submission: FormSubmissionEntity,
-  ): Promise<RequirementForm | null> {
+  ): Promise<RequirementForm> {
     const entity = await this.requirementFormService.findById(
       submission.formId,
     );
-    return this.requirementFormMapper.toModel(entity);
+    return this.requirementFormMapper.toModelOrThrow(entity);
   }
 
-  @ResolveField(() => User, { nullable: true })
-  async user(@Parent() submission: FormSubmissionEntity): Promise<User | null> {
-    if (!submission.userId) return null;
+  @ResolveField(() => User)
+  async user(@Parent() submission: FormSubmissionEntity): Promise<User> {
     const entity = await this.userService.findById(submission.userId);
-    if (!entity) return null;
     return this.userMapper.toModelOrThrow(entity);
   }
 }

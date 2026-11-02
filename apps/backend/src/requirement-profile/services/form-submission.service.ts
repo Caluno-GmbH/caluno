@@ -10,6 +10,7 @@ import {
 } from '../../graphql/errors';
 import type { PaginationInput } from '../../graphql/pagination.input';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -40,21 +41,36 @@ export class FormSubmissionService {
     private readonly postHogService: PostHogService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly targetRegistry: RequiredFormTargetRegistry,
+    private readonly tenantScope: TenantScopeService,
   ) {}
 
-  async findById(id: string): Promise<FormSubmissionEntity | undefined> {
-    return this.db.query.formSubmissions.findFirst({
-      where: { id },
-      with: { values: true },
+  /**
+   * Loads a submission by id and proves its form belongs to the header
+   * unit's organization. A foreign id looks like a missing one.
+   */
+  async findById(
+    organizationUnitId: string,
+    id: string,
+  ): Promise<FormSubmissionEntity | undefined> {
+    const submission = await this.db.query.formSubmissions.findFirst({
+      where: { id, organizationUnitId },
+      with: {
+        values: true,
+      },
     });
+    if (!submission) {
+      return undefined;
+    }
+    return submission;
   }
 
   async findByFormId(
+    organizationUnitId: string,
     formId: string,
     pagination: PaginationInput,
   ): Promise<{ items: FormSubmissionEntity[]; total: number }> {
     const items = await this.db.query.formSubmissions.findMany({
-      where: { formId },
+      where: { formId, organizationUnitId },
       limit: pagination.limit,
       offset: pagination.offset,
       orderBy: { submittedAt: 'desc' },
@@ -155,6 +171,11 @@ export class FormSubmissionService {
     userId: string,
     orgUnitId: string,
   ): Promise<FormSubmissionEntity[]> {
+    await this.tenantScope.assertUserInScope(
+      orgUnitId,
+      userId,
+      'User not found',
+    );
     return this.findByUserAndOrgUnit(userId, orgUnitId);
   }
 

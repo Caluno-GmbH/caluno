@@ -1,12 +1,14 @@
 import { Args, Context, ID, Query, Resolver } from '@nestjs/graphql';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { BadRequestGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { DocumentKind } from '../enums';
 import { DocumentTemplateMapper } from '../mappers';
 import { DocumentTemplate } from '../models/document-template.model';
 import {
   AccountingOrgAccessService,
+  AccountingScopeService,
   DocumentTemplateService,
 } from '../services';
 
@@ -16,6 +18,7 @@ export class DocumentTemplateQueryResolver {
     private readonly documentTemplateService: DocumentTemplateService,
     private readonly documentTemplateMapper: DocumentTemplateMapper,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
+    private readonly accountingScopeService: AccountingScopeService,
   ) {}
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -29,7 +32,11 @@ export class DocumentTemplateQueryResolver {
       );
     const templates =
       await this.documentTemplateService.findDocumentTemplates(organizationId);
-    return this.documentTemplateMapper.toArray(templates);
+    const readable = await this.accountingScopeService.filterReadable(
+      context.organizationUnitId,
+      templates,
+    );
+    return this.documentTemplateMapper.toArray(readable);
   }
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -45,6 +52,11 @@ export class DocumentTemplateQueryResolver {
     const template = await this.documentTemplateService.findDocumentTemplate(
       organizationId,
       id,
+    );
+    await this.accountingScopeService.assertCanRead(
+      context.organizationUnitId,
+      template,
+      'Document template not found',
     );
     return this.documentTemplateMapper.toModelOrThrow(template);
   }
@@ -63,6 +75,16 @@ export class DocumentTemplateQueryResolver {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
+    if (organizationUnitId === '') {
+      throw new BadRequestGraphQLError('organizationUnitId must not be empty');
+    }
+    if (organizationUnitId) {
+      await this.accountingScopeService.assertUnitReadable(
+        context.organizationUnitId,
+        organizationUnitId,
+        'Organization unit not found',
+      );
+    }
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
       reimbursementTypeId,

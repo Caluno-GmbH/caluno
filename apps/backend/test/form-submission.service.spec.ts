@@ -8,6 +8,7 @@ import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
 import { ForbiddenGraphQLError } from '../src/graphql/errors';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
 import { FormSubmissionService } from '../src/requirement-profile/services/form-submission.service';
 import { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
@@ -48,13 +49,15 @@ describe('FormSubmissionService per-org-unit submissions', () => {
     const postHogService = { capture: () => {} } as unknown as PostHogService;
     const targetRegistry = createRequiredFormTargetRegistry(db, postHogService);
     const requiredFormService = new RequiredFormService(db, targetRegistry);
+    const organizationUnitDataService = new OrganizationUnitDataService(db);
     formSubmissionService = new FormSubmissionService(
       db,
       new UserService(db, postHogService),
       requiredFormService,
       postHogService,
-      new OrganizationUnitDataService(db),
+      organizationUnitDataService,
       targetRegistry,
+      new TenantScopeService(db, organizationUnitDataService),
     );
   });
 

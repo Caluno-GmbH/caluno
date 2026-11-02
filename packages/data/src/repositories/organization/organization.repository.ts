@@ -8,11 +8,6 @@ import { BaseRepository } from '../base/base.repository';
 export type MyOrganizationUnit =
   GetMyOrganizationUnitsQuery['myOrganizationUnits'][number];
 
-export interface FindOrganizationsOptions {
-  limit?: number;
-  offset?: number;
-}
-
 export class OrganizationRepository extends BaseRepository {
   async findById(id: string) {
     const data = await this.sdk.GetOrganization({ id });
@@ -37,19 +32,6 @@ export class OrganizationRepository extends BaseRepository {
     return data.members ?? [];
   }
 
-  async findUnitWithOrg(organizationUnitId: string) {
-    const data = await this.sdk.GetOrganizationUnitPublicInfo({
-      id: organizationUnitId,
-    });
-    return data.organizationUnit ?? null;
-  }
-
-  async findAllWithRoot(options: FindOrganizationsOptions = {}) {
-    const { limit = 100, offset = 0 } = options;
-    const data = await this.sdk.GetOrganizationsWithRoot({ limit, offset });
-    return data.organizations.items;
-  }
-
   async findMyOrganizationUnits() {
     const data = await this.sdk.GetMyOrganizationUnits();
     return data.myOrganizationUnits;
@@ -63,12 +45,6 @@ export class OrganizationRepository extends BaseRepository {
   async findMyCheckInAdministrableOrganizationUnits() {
     const data = await this.sdk.GetMyCheckInAdministrableOrganizationUnits();
     return data.myCheckInAdministrableOrganizationUnits;
-  }
-
-  async findAll(options: FindOrganizationsOptions = {}) {
-    const { limit = 10, offset = 0 } = options;
-    const data = await this.sdk.GetOrganizations({ limit, offset });
-    return data.organizations;
   }
 
   async create(input: CreateOrganizationInput) {

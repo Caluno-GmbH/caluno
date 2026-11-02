@@ -15,6 +15,7 @@ To add a component use the shadcn client to add the component and to add it's re
 3. Export component by adding to src/index.ts file
 
 ### Manual follow-up steps for the Story
+
 1. Modify the Story, change `import type { Meta, StoryObj }` from `"@storybook/react-vite";` to `"@storybook/react-vite";`
 2. Move story file to src/components/base. So it's next to the component.
 

@@ -5,7 +5,7 @@ import {
 } from '@repo/data';
 import type { OrgUnitContextData } from '@repo/data/react';
 import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, redirect, unstable_rethrow } from 'next/navigation';
 import { getDataClient } from './data-client';
 import { getOrgUnitDisplayName } from './org-display-name';
 
@@ -68,6 +68,7 @@ export async function isAnAdminstrator() {
     const units = await data.organization.findMyAdminstrableOrganizationUnits();
     return normalizeUnits(units).length > 0;
   } catch (error) {
+    unstable_rethrow(error);
     if (isUnauthenticatedDataError(error)) {
       return false;
     }

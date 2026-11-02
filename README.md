@@ -72,21 +72,21 @@ This monorepo includes the following packages/apps:
 
 After `bun bootstrap`, the database contains the **Altonaer Lesepaten** demo organization (slug `demo-altonaer-lesepaten`) — three sub-units (Nord/Süd/West) with realistic sample volunteers, recurring shifts, events, time entries, and requirement forms. All fixture accounts use password `abcd1234` (override with `DEMO_FIXTURE_PASSWORD`).
 
-| Account | Role / status |
-|---|---|
-| `demo+owner@caluno.org` | Owner |
-| `demo+supervisor@caluno.org` | Supervisor |
-| `demo@caluno.org` | Member (demo account — use this one) |
-| `demo+member01@` … `demo+member29@caluno.org` | Member |
-| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request |
-| `demo+rejected01@caluno.org` | Rejected membership request |
+| Account                                        | Role / status                        |
+| ---------------------------------------------- | ------------------------------------ |
+| `demo+owner@caluno.org`                        | Owner                                |
+| `demo+supervisor@caluno.org`                   | Supervisor                           |
+| `demo@caluno.org`                              | Member (demo account — use this one) |
+| `demo+member01@` … `demo+member29@caluno.org`  | Member                               |
+| `demo+pending01@`, `demo+pending02@caluno.org` | Pending membership request           |
+| `demo+rejected01@caluno.org`                   | Rejected membership request          |
 
 The **Testing** seed — weekly Community Support / Food Distribution / Event Assistance shifts, a requirement form, and the stable IDs and Overlap Test shifts the Testing suite asserts on — is for e2e. It is not loaded by `bun bootstrap`; staging/release backend entrypoints load it when `APP_ENV` is `staging` or `release` (never production). Locally: `bun run --cwd apps/backend db:fixtures:e2e`.
 
 The demo dataset is also seeded on **every deploy**: the backend entrypoint runs `bun run db:fixtures:demo` on boot, in staging **and production**. That is safe against a live, populated database:
 
 - **Non-destructive** — no `DROP`, `TRUNCATE` or `DELETE`; every write is an upsert scoped to the fixture organization and its own accounts.
-- **Verify-or-abort, before any write** — the seed first checks every identity it is about to claim (each account's pinned id *and* address, plus the org id and slug). Fixture rows get deterministic ids, so ownership is proven by id rather than by name. If anything is held by a row the fixtures did not create, it aborts listing all clashes and writes **nothing at all**. Accounts an older run seeded with random ids are reported as clashes and need removing once.
+- **Verify-or-abort, before any write** — the seed first checks every identity it is about to claim (each account's pinned id _and_ address, plus the org id and slug). Fixture rows get deterministic ids, so ownership is proven by id rather than by name. If anything is held by a row the fixtures did not create, it aborts listing all clashes and writes **nothing at all**. Accounts an older run seeded with random ids are reported as clashes and need removing once.
 
 `bun bootstrap` only runs against local databases (`DB_HOST` must be `localhost`, `127.0.0.1`, or `postgres`).
 
@@ -225,12 +225,14 @@ caluno/
 Environment variables are scoped per project:
 
 ### Root `.env` (Docker configuration)
+
 - `POSTGRES_USER` - PostgreSQL username (default: postgres)
 - `POSTGRES_PASSWORD` - PostgreSQL password (default: postgres)
 - `POSTGRES_DB` - PostgreSQL database name (default: caluno)
 - `POSTGRES_PORT` - PostgreSQL port (default: 5432)
 
 ### `apps/backend/.env` (Backend configuration)
+
 - `PORT` - Backend server port (default: 8080)
 - `DATABASE_URL` - PostgreSQL connection string
 - `BETTER_AUTH_SECRET` - Secret key for authentication

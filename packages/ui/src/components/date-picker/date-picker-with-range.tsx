@@ -1,13 +1,14 @@
 'use client';
 
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { useState } from 'react';
+import { CalendarIcon, XIcon } from 'lucide-react';
+import { type MouseEvent, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { FieldError, FieldLabel } from '../base/field';
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupInput,
 } from '../base/input-group';
 import { Popover, PopoverContent, PopoverTrigger } from '../base/popover';
@@ -22,6 +23,8 @@ type Props = {
   onChange: (start: Date | null, end: Date | null) => void;
   placeholder?: string;
   includeTime?: boolean;
+  /** Show a clear (×) control when a range is selected. */
+  showClear?: boolean;
 };
 
 const addTimePart = (date: Date, timePart: string): Date => {
@@ -42,6 +45,7 @@ export function DatePickerWithRange({
   includeTime = false,
   disabled = false,
   errors = [],
+  showClear = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [times, setTimes] = useState<{ start: string; end: string }>({
@@ -49,6 +53,7 @@ export function DatePickerWithRange({
     end: value.end ? format(value.end, 'HH:mm') : '23:59',
   });
   const formatString = includeTime ? 'dd.MM.yyyy HH:mm' : 'dd.MM.yyyy';
+  const hasValue = Boolean(value.start || value.end);
 
   const dateRange: DateRange | undefined =
     value.start || value.end
@@ -60,6 +65,15 @@ export function DatePickerWithRange({
       range?.from ? addTimePart(range.from, times.start) : null,
       range?.to ? addTimePart(range.to, times.end) : null,
     );
+  };
+
+  const handleClear = (event: MouseEvent) => {
+    // Keep the popover trigger from opening when clearing.
+    event.preventDefault();
+    event.stopPropagation();
+    setTimes({ start: '00:00', end: '23:59' });
+    onChange(null, null);
+    setOpen(false);
   };
 
   const handleFromTimeChange = (fromTime: string) => {
@@ -100,6 +114,22 @@ export function DatePickerWithRange({
             <InputGroupAddon align="inline-start">
               <CalendarIcon />
             </InputGroupAddon>
+            {showClear && hasValue && (
+              <InputGroupAddon align="inline-end">
+                <InputGroupButton
+                  aria-label="Clear date range"
+                  variant="ghost"
+                  size="icon-xs"
+                  disabled={disabled}
+                  // Radix PopoverTrigger: preventDefault on pointerdown so the
+                  // clear control does not toggle the popover open.
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={handleClear}
+                >
+                  <XIcon />
+                </InputGroupButton>
+              </InputGroupAddon>
+            )}
           </InputGroup>
         </PopoverTrigger>
 

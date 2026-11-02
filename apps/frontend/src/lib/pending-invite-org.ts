@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { unstable_rethrow } from 'next/navigation';
 import { getDataClient } from './data-client';
 
 export interface PendingInviteOrg {
@@ -28,7 +29,8 @@ export async function resolvePendingInviteOrg(
       name: unit.name,
       logoUrl: unit.logoUrl ?? null,
     };
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     return null;
   }
 }

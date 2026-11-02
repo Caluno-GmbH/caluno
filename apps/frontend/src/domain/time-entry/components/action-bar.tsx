@@ -2,7 +2,7 @@
 
 import { TimeEntryStatus } from '@repo/data';
 import { useQueryClient } from '@repo/data/react';
-import { Button } from '@repo/ui';
+import { ActionsCell, Button } from '@repo/ui';
 import { CheckCheck, Edit, Loader2, Trash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useTransition } from 'react';
@@ -60,7 +60,7 @@ export const ActionBar = ({
   };
 
   return (
-    <aside className="space-x-2">
+    <ActionsCell>
       {status === TimeEntryStatus.AutoClosed && (
         <Button
           size={buttonSize}
@@ -96,6 +96,6 @@ export const ActionBar = ({
           </Button>
         }
       />
-    </aside>
+    </ActionsCell>
   );
 };

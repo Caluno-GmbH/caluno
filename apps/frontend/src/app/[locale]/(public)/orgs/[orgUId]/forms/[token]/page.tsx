@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 import type { RequiredFormItem } from '@/domain/requirement-form/components/required-form-renderer';
 import {
   buildStoredFieldValues,
-  buildSubmittedFormIds,
+  getSubmittedFormIds,
   mergeShareFormWithRequiredForms,
 } from '@/domain/requirement-form/resolve-required-forms';
 import { profileFieldValues } from '@/domain/user/lib/profile-field-values';
@@ -28,7 +28,7 @@ export default async function PublicFormPage({ params }: Props) {
   );
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const inviteParams = new URLSearchParams({
       redirectTo: `/orgs/${orgUId}/forms/${token}`,
       orgUId,
@@ -82,7 +82,7 @@ export default async function PublicFormPage({ params }: Props) {
       data.requirementForm.findMyFormSubmissions(orgUId),
     ]);
 
-    initialSubmittedFormIds = buildSubmittedFormIds(mySubmissions);
+    initialSubmittedFormIds = getSubmittedFormIds(mySubmissions);
     const requiredForms: RequiredFormItem[] = (
       orgUnit?.requiredForms ?? []
     ).map((ref) => ({

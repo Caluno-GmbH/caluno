@@ -4,6 +4,7 @@
  -->
 
 ## AI pipeline (mandatory for agent sessions)
+
 The development pipeline lives in `.ai/`. **Humans start at [`.ai/README.md`](.ai/README.md)** (operator's guide: flow, commands, how to drive it). Agents read `.ai/PIPELINE.md` at the start of every session — it defines the phases (plan/write/read-only), the `>>` commands, the gates, and the verification agents. Bootstrap a session with `.ai/scripts/bootstrap.sh` (phase, current task, skills index).
 
 **Any request that creates or changes files outside `.ai/` is pipeline work — including a casual, plainly-worded one-off ("create this file", "just add X") with no `>>` command.** A bare request is not approval to enter `write`: check the phase first, and get explicit write-phase approval before editing. Never self-promote to `write` because the user asked for output.

@@ -17,6 +17,7 @@ import { ManualBaseline } from '../models/manual-baseline.model';
 import { ReimbursementRate } from '../models/reimbursement-rate.model';
 import {
   AccountingOrgAccessService,
+  AccountingScopeService,
   ReimbursementRateService,
 } from '../services';
 
@@ -31,6 +32,7 @@ export class ReimbursementMutationResolver {
     private readonly reimbursementTypeMapper: ReimbursementTypeMapper,
     private readonly userService: UserService,
     private readonly tenantScopeService: TenantScopeService,
+    private readonly accountingScopeService: AccountingScopeService,
   ) {}
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -44,20 +46,18 @@ export class ReimbursementMutationResolver {
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<ReimbursementRate> {
+    if (organizationUnitId === '') {
+      throw new BadRequestGraphQLError('organizationUnitId must not be empty');
+    }
     const organizationId =
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
       );
-    if (
-      organizationUnitId &&
-      organizationUnitId !== context.organizationUnitId
-    ) {
-      await this.tenantScopeService.assertResourceInScope(
-        context.organizationUnitId,
-        organizationUnitId,
-        'Organization unit not found',
-      );
-    }
+    await this.accountingScopeService.assertCanWrite(
+      context.organizationUnitId,
+      organizationUnitId,
+      'Organization unit not found',
+    );
 
     const rate = await this.reimbursementRateService.setReimbursementRate(
       organizationId,

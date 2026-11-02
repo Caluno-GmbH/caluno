@@ -16,6 +16,7 @@ import { ShiftInstanceMapper } from '../mappers/shift-instance.mapper';
 import { Shift } from '../models/shift.model';
 import { ShiftInstance } from '../models/shift-instance.model';
 import type { ShiftEntity } from '../schemas/shift.schema';
+import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import { ShiftService } from '../shift.service';
 import { ShiftLoader } from './shift.loader';
 import { ShiftInstanceLoader } from './shift-instance.loader';
@@ -65,9 +66,14 @@ export class ShiftFieldResolver {
   @AllowAnonymous()
   @ResolveField(() => [ShiftInstance])
   async instances(
-    @Parent() shift: ShiftEntity,
+    @Parent() shift: ShiftEntity & {
+      windowedInstances?: ShiftInstanceEntity[];
+    },
     @Loader(ShiftInstanceLoader) loader: ShiftInstanceLoader,
   ): Promise<ShiftInstance[]> {
+    if (shift.windowedInstances !== undefined) {
+      return this.shiftInstanceMapper.toArray(shift.windowedInstances);
+    }
     const rows = await loader.instancesByShiftId.load(shift.id);
     return this.shiftInstanceMapper.toArray(rows);
   }

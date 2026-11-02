@@ -30,3 +30,21 @@ export function findAccountingManagePermissionId(
 ): string | undefined {
   return permissions?.find((p) => p.key === PermissionKey.AccountingManage)?.id;
 }
+
+/**
+ * The signee chain of a stored template, as create/update input: the permission
+ * id is flattened from the permission relation.
+ */
+export function toSigneeInputs(
+  signees: ReadonlyArray<{
+    order: number;
+    signeeType: SigneeType;
+    requiredPermission?: { id: string } | null;
+  }>,
+): CreateTemplateSigneeInput[] {
+  return signees.map((signee) => ({
+    order: signee.order,
+    signeeType: signee.signeeType,
+    requiredPermissionId: signee.requiredPermission?.id ?? undefined,
+  }));
+}

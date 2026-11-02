@@ -14,15 +14,15 @@ Make gender a select field with a fixed set of options, localised in German and 
 
 ## Decisions
 
-| Question | Decision |
-|---|---|
-| Option list | `female`, `male`, `diverse`, `other`, `prefer-not-to-say` |
-| "Other" | A plain option, with no free-text companion |
-| Prefer not to say | An explicit option (and the field can also stay optional) |
-| List control | Fixed system-wide; admins cannot edit the options |
-| Requiredness | Admins can mark gender required on their requirement forms |
-| Existing free-text data | Best-effort mapping to options; anything unrecognised becomes `other` |
-| Implementation | Reuse `FieldType.SINGLE_CHOICE`; inject fixed options for the gender system key |
+| Question                | Decision                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| Option list             | `female`, `male`, `diverse`, `other`, `prefer-not-to-say`                       |
+| "Other"                 | A plain option, with no free-text companion                                     |
+| Prefer not to say       | An explicit option (and the field can also stay optional)                       |
+| List control            | Fixed system-wide; admins cannot edit the options                               |
+| Requiredness            | Admins can mark gender required on their requirement forms                      |
+| Existing free-text data | Best-effort mapping to options; anything unrecognised becomes `other`           |
+| Implementation          | Reuse `FieldType.SINGLE_CHOICE`; inject fixed options for the gender system key |
 
 ## Option catalog
 
@@ -45,12 +45,12 @@ export const isGenderOptionValue = (v: string): v is GenderOptionValue =>
 
 Labels live in both message catalogs under a new `RequirementForm.genderOptions` namespace. The stored value doubles as the message key:
 
-| Value | en | de |
-|---|---|---|
-| `female` | Female | Weiblich |
-| `male` | Male | Männlich |
-| `diverse` | Diverse | Divers |
-| `other` | Other | Andere |
+| Value               | en                | de           |
+| ------------------- | ----------------- | ------------ |
+| `female`            | Female            | Weiblich     |
+| `male`              | Male              | Männlich     |
+| `diverse`           | Diverse           | Divers       |
+| `other`             | Other             | Andere       |
 | `prefer-not-to-say` | Prefer not to say | Keine Angabe |
 
 The stored value is always the stable key; only the label is localised. A `useGenderOptions()` hook (client components) and a server-side equivalent built on `getTranslations()` convert the constant plus catalog into render-ready `{value, label}` pairs.
@@ -96,14 +96,14 @@ Two SQL migrations, following the drizzle expand-and-contract practice:
 1. `form_block_fields`: set `type = 'SINGLE_CHOICE'` where `system_key = 'gender'`. Existing gender fields in live forms become select fields.
 2. `user_profiles.data.gender` backfill. Compare `lower(trim(value))` against known lists:
 
-   | Target | Recognised legacy values |
-   |---|---|
-   | `female` | weiblich, w, f, female, frau, woman |
-   | `male` | männlich, m, male, mann, man |
-   | `diverse` | divers, diverse, inter, intergeschlechtlich, non-binary, nonbinary, genderqueer |
-   | `prefer-not-to-say` | keine angabe, no answer, prefer not to say, n/a, - |
-   | (unchanged) | empty or missing value |
-   | `other` | anything else |
+   | Target              | Recognised legacy values                                                        |
+   | ------------------- | ------------------------------------------------------------------------------- |
+   | `female`            | weiblich, w, f, female, frau, woman                                             |
+   | `male`              | männlich, m, male, mann, man                                                    |
+   | `diverse`           | divers, diverse, inter, intergeschlechtlich, non-binary, nonbinary, genderqueer |
+   | `prefer-not-to-say` | keine angabe, no answer, prefer not to say, n/a, -                              |
+   | (unchanged)         | empty or missing value                                                          |
+   | `other`             | anything else                                                                   |
 
    Nothing is nulled and nobody is excluded: every value lands on a valid option or stays empty.
 

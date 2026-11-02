@@ -39,6 +39,13 @@ const MONTHS = [
   'December',
 ];
 
+// The builder's provenance hint for a template that is not the unit's own
+// (messages `Accounting.templates.builder.provenance.*`): inherited from an
+// ancestor unit, the org-wide template, or the org-wide template seen from the
+// root unit.
+const INHERITED_HINT =
+  /inherited from|is the organisation-wide template|creates this organisation's own version/;
+
 function ordinalSuffix(day: number): string {
   const mod100 = day % 100;
   if (mod100 >= 11 && mod100 <= 13) return 'th';
@@ -162,10 +169,13 @@ export class AccountingTemplatesPage {
   }
 
   /**
-   * Opens a slot's builder and saves its preset. The contract builder's Save
-   * stays disabled until its manual fields (task description, period, hours)
-   * are filled; the invoice builder is saveable as-is. Returns once the app
-   * has navigated back to the templates list.
+   * Makes sure a slot is set up for the unit, then returns once the app is
+   * back on the templates list. A fresh slot is saved from its preset: the
+   * contract builder's Save stays disabled until its manual fields (task
+   * description, period, hours) are filled; the invoice builder is saveable
+   * as-is. A slot that resolves to an inherited or org-wide template (the
+   * Testing seed has org-wide ones) is already set up: its Save stays disabled
+   * until the document differs, so the helper leaves without saving.
    */
   async configureTemplate(pauschale: PauschalenType, kind: TemplateKind) {
     await this.page.goto(this.builderUrl(pauschale, kind), {
@@ -217,8 +227,21 @@ export class AccountingTemplatesPage {
       await this.page.getByRole('spinbutton', { name: 'Hours' }).fill('10');
     }
 
-    await expect(save).toBeEnabled();
-    await save.click();
+    // An unchanged inherited or org-wide template cannot be saved (it would
+    // only duplicate the original), so Save stays disabled. The provenance
+    // hint says why; wait for it so a still-loading builder is not mistaken
+    // for a fresh slot.
+    const inheritedHint = this.page.getByText(INHERITED_HINT);
+    const inherited = await inheritedHint
+      .waitFor({ state: 'visible', timeout: 3_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (inherited && (await save.isDisabled())) {
+      await this.page.getByRole('link', { name: 'Cancel' }).click();
+    } else {
+      await expect(save).toBeEnabled();
+      await save.click();
+    }
 
     await this.page.waitForURL(/accounting\/settings\?tab=templates/, {
       timeout: 20_000,

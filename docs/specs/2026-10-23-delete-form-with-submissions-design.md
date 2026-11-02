@@ -13,15 +13,15 @@ An organisation admin can delete a form even when it has submissions. Before del
 
 ## Decisions
 
-| Question | Decision |
-|---|---|
-| Org-unit required forms | Same as shifts/events: warn, then detach |
-| Profile values on form delete | Do **not** wipe; only wipe when the `FormBlockField` is deleted |
-| Profile storage | New table independent of submissions; copy latest submitted value there |
-| Confirmation | Informative warning + acknowledgement checkbox before confirm enabled |
-| Approach | Hard delete + `requirementFormDeleteImpact` query + profile field-values table |
-| Submission FK | Keep `form_submissions.form_id` `onDelete: 'restrict'`; service must delete submissions explicitly before the form |
-| Editing / versioning | Out of scope |
+| Question                      | Decision                                                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Org-unit required forms       | Same as shifts/events: warn, then detach                                                                           |
+| Profile values on form delete | Do **not** wipe; only wipe when the `FormBlockField` is deleted                                                    |
+| Profile storage               | New table independent of submissions; copy latest submitted value there                                            |
+| Confirmation                  | Informative warning + acknowledgement checkbox before confirm enabled                                              |
+| Approach                      | Hard delete + `requirementFormDeleteImpact` query + profile field-values table                                     |
+| Submission FK                 | Keep `form_submissions.form_id` `onDelete: 'restrict'`; service must delete submissions explicitly before the form |
+| Editing / versioning          | Out of scope                                                                                                       |
 
 ## Data model
 
@@ -29,13 +29,13 @@ An organisation admin can delete a form even when it has submissions. Before del
 
 Domain / GraphQL name: `OrganizationUserProfileFieldValue`.
 
-| Column | Notes |
-|---|---|
-| `id` | Standard id |
-| `organization_user_profile_id` | FK → `organization_user_profiles`, `onDelete: cascade` |
-| `field_id` | FK → `form_block_fields`, `onDelete: cascade` (sole wipe path for profile field values) |
-| `value` | `jsonb`, same shape as `form_submission_values.value` |
-| timestamps | As elsewhere |
+| Column                         | Notes                                                                                   |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| `id`                           | Standard id                                                                             |
+| `organization_user_profile_id` | FK → `organization_user_profiles`, `onDelete: cascade`                                  |
+| `field_id`                     | FK → `form_block_fields`, `onDelete: cascade` (sole wipe path for profile field values) |
+| `value`                        | `jsonb`, same shape as `form_submission_values.value`                                   |
+| timestamps                     | As elsewhere                                                                            |
 
 Unique on `(organization_user_profile_id, field_id)`.
 
@@ -106,14 +106,14 @@ i18n: new strings under `RequirementForm` (en + de).
 
 ## Errors & edge cases
 
-| Case | Behavior |
-|---|---|
-| Form not found / wrong org | Existing not-found / auth errors |
+| Case                                                | Behavior                                                                    |
+| --------------------------------------------------- | --------------------------------------------------------------------------- |
+| Form not found / wrong org                          | Existing not-found / auth errors                                            |
 | Submissions still present at form delete (bug/race) | `restrict` FK fails; surface as conflict/failure — no silent partial delete |
-| Impact query on missing form | Not found |
-| Confirm without checkbox | UI only; API does not require a confirm token |
-| Concurrent submit during delete | Transaction + `restrict`; one side errors; no intentional half-state |
-| Migration duplicates `(profile, field)` | Keep latest by `updated_at` |
+| Impact query on missing form                        | Not found                                                                   |
+| Confirm without checkbox                            | UI only; API does not require a confirm token                               |
+| Concurrent submit during delete                     | Transaction + `restrict`; one side errors; no intentional half-state        |
+| Migration duplicates `(profile, field)`             | Keep latest by `updated_at`                                                 |
 
 ## Testing
 

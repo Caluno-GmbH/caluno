@@ -2873,9 +2873,10 @@ describe('documents flow — admin + volunteer', () => {
       expect(after.accountingSetupStatus.canCreateDocuments).toBe(true);
     });
 
-    it('resolves readiness per unit: a unit-scoped template does not make a sibling unit ready', async () => {
-      // One org, two units — but templates are configured for the root unit
-      // only. The sibling unit must not inherit readiness from them.
+    it('resolves readiness per unit: a unit-scoped template does not make a sibling or parent unit ready', async () => {
+      // One org: a root with two child units. Templates are configured for
+      // one child only, so neither its sibling nor the root above it may
+      // report ready (inheritance only flows downwards).
       const multiUnitOrg = await setupFlowOrgWithoutTemplates(db);
       const rootUnitId = multiUnitOrg.organizationUnitId;
       const typeId =
@@ -2884,6 +2885,12 @@ describe('documents flow — admin + volunteer', () => {
             where: { organizationId: multiUnitOrg.organizationId },
           })
         )?.id ?? '';
+      const configuredUnit = await createUnit(db, {
+        organizationId: multiUnitOrg.organizationId,
+        typeId,
+        name: 'Configured Unit',
+        parentId: rootUnitId,
+      });
       const siblingUnit = await createUnit(db, {
         organizationId: multiUnitOrg.organizationId,
         typeId,
@@ -2891,11 +2898,11 @@ describe('documents flow — admin + volunteer', () => {
         parentId: rootUnitId,
       });
 
-      // Both slots configured for the root unit only — no org-wide default.
+      // Both slots configured for one child only — no org-wide default.
       for (const kind of [DocumentKind.CONTRACT, DocumentKind.INVOICE]) {
         await createDocumentTemplate(db, {
           organizationId: multiUnitOrg.organizationId,
-          organizationUnitId: rootUnitId,
+          organizationUnitId: configuredUnit.id,
           reimbursementTypeId: multiUnitOrg.reimbursementTypeId,
           kind,
           signees: [
@@ -2911,45 +2918,38 @@ describe('documents flow — admin + volunteer', () => {
 
       setAuthMockUserId(multiUnitOrg.adminId);
 
-      // Unit A (the root, where the templates live) is ready.
-      const unitA = await graphqlRequestRequiringData<{
-        accountingSetupStatus: {
-          canCreateDocuments: boolean;
-          slots: Array<{ reimbursementTypeKey: string; ready: boolean }>;
-        };
-      }>(
-        app,
-        {
-          query: ACCOUNTING_SETUP_STATUS,
-          headers: { 'x-organization-unit-id': rootUnitId },
-        },
-        'accountingSetupStatus',
-      );
-      expect(unitA.accountingSetupStatus.canCreateDocuments).toBe(true);
+      const setupStatusFor = (unitId: string) =>
+        graphqlRequestRequiringData<{
+          accountingSetupStatus: {
+            canCreateDocuments: boolean;
+            slots: Array<{ reimbursementTypeKey: string; ready: boolean }>;
+          };
+        }>(
+          app,
+          {
+            query: ACCOUNTING_SETUP_STATUS,
+            headers: { 'x-organization-unit-id': unitId },
+          },
+          'accountingSetupStatus',
+        );
+
+      // The configured unit is ready.
+      const configured = await setupStatusFor(configuredUnit.id);
+      expect(configured.accountingSetupStatus.canCreateDocuments).toBe(true);
       expect(
-        unitA.accountingSetupStatus.slots.find(
+        configured.accountingSetupStatus.slots.find(
           (slot) => slot.reimbursementTypeKey === 'EHRENAMT',
         )?.ready,
       ).toBe(true);
 
-      // Unit B (the sibling, no override and no org-wide default) is not.
-      const unitB = await graphqlRequestRequiringData<{
-        accountingSetupStatus: {
-          canCreateDocuments: boolean;
-          slots: Array<{ reimbursementTypeKey: string; ready: boolean }>;
-        };
-      }>(
-        app,
-        {
-          query: ACCOUNTING_SETUP_STATUS,
-          headers: { 'x-organization-unit-id': siblingUnit.id },
-        },
-        'accountingSetupStatus',
-      );
-      expect(unitB.accountingSetupStatus.canCreateDocuments).toBe(false);
-      expect(
-        unitB.accountingSetupStatus.slots.every((slot) => !slot.ready),
-      ).toBe(true);
+      // Neither its sibling nor its parent is.
+      for (const unitId of [siblingUnit.id, rootUnitId]) {
+        const status = await setupStatusFor(unitId);
+        expect(status.accountingSetupStatus.canCreateDocuments).toBe(false);
+        expect(
+          status.accountingSetupStatus.slots.every((slot) => !slot.ready),
+        ).toBe(true);
+      }
     });
 
     it('inherits the parent unit’s org details for a sub-unit that has none of its own', async () => {

@@ -1,5 +1,6 @@
 import { JoinStatus } from '@repo/data';
-import { LayersIcon, MapPinIcon } from 'lucide-react';
+import { parseISO } from 'date-fns';
+import { CalendarIcon, LayersIcon, MapPinIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { DetailHero } from '@/components/detail-hero';
 import { EventFollowButton } from '@/domain/event/components/event-follow-button';
@@ -35,8 +36,9 @@ export default async function EventPage({
   const { eventId, locale } = await params;
   const search = await searchParams;
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  const { formatDateRange } = await getFormatting();
+  const { formatDateTime } = await getFormatting();
   const t = await getTranslations('EventDetail');
+  const tForm = await getTranslations('Event.form');
 
   const event = await requireFound(() => data.publicEvent.findById(eventId));
 
@@ -105,9 +107,26 @@ export default async function EventPage({
 
           <aside className="order-1 min-w-0 lg:order-2 lg:w-[392px] lg:shrink-0">
             <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-sm">
-              <p className="text-2xl font-bold text-foreground">
-                {formatDateRange(event.startsAt, event.endsAt)}
-              </p>
+              <div className="space-y-4 text-base">
+                <p className="flex gap-2">
+                  <CalendarIcon className="shrink-0 text-muted-foreground" />
+                  <span>
+                    <span className="text-muted-foreground">
+                      {tForm('startsAtLabel')}:{' '}
+                    </span>
+                    {formatDateTime(parseISO(event.startsAt))}
+                  </span>
+                </p>
+                <p className="flex gap-2">
+                  <CalendarIcon className="shrink-0 text-muted-foreground" />
+                  <span>
+                    <span className="text-muted-foreground">
+                      {tForm('endsAtLabel')}:{' '}
+                    </span>
+                    {formatDateTime(parseISO(event.endsAt))}
+                  </span>
+                </p>
+              </div>
               {event.location ? (
                 <p className="flex items-center gap-2 whitespace-pre-line text-base text-muted-foreground">
                   <MapPinIcon className="size-4 shrink-0" />

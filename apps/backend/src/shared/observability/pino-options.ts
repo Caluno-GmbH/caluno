@@ -17,6 +17,9 @@ import type { Options as PinoHttpOptions } from 'pino-http';
  * - Every line carries `service: "caluno-backend"` and `env` so Loki can
  *   filter by service/environment, plus `level` as a string ("info"), and
  *   `reqId` / `trace_id` / `user_id` for correlation and alerting.
+ * - Successful HTTP access logs (status < 400, no error) are silent —
+ *   GraphQL 200s and health probes must not flood Loki. 4xx → warn, 5xx /
+ *   request errors → error. Application `logger.info` still emits normally.
  *
  * PII policy — the request serializers are the *primary* control:
  * - Request bodies are never logged. In particular, GraphQL `variables`
@@ -169,7 +172,7 @@ export function buildPinoHttpOptions(
         ? 'error'
         : res.statusCode >= 400
           ? 'warn'
-          : 'info',
+          : 'silent',
     redact: {
       paths: [...HTTP_REDACT_PATHS, ...PINO_REDACT_PATHS],
       censor: '[Redacted]',
