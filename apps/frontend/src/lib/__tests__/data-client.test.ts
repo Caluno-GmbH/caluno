@@ -74,4 +74,31 @@ describe('handleServerDataClientError', () => {
     ).toThrow('NEXT_REDIRECT:/unauthorized?message=No%20access');
     expect(navigate).toHaveBeenCalledWith('/unauthorized?message=No%20access');
   });
+
+  it('surfaces a loud contract-violation error if navigate returns instead of throwing (UNAUTHENTICATED)', () => {
+    // `navigate` is typed `never` — Next's `redirect()` always throws. If it
+    // doesn't (bug, or a misbehaving stub), the original DataError must not
+    // be the thing that surfaces: that looks identical in the logs to "no
+    // redirect was warranted", hiding a real failed-redirect bug.
+    const navigate = mock((_path: string) => undefined as never);
+    const error = new DataError('Unauthorized', { code: 'UNAUTHENTICATED' });
+
+    expect(() => handleServerDataClientError(error, {}, navigate)).toThrow(
+      /navigate\('\/login'\) returned instead of throwing/,
+    );
+  });
+
+  it('surfaces a loud contract-violation error if navigate returns instead of throwing (FORBIDDEN)', () => {
+    const navigate = mock((_path: string) => undefined as never);
+
+    expect(() =>
+      handleServerDataClientError(
+        new ForbiddenDataError('No access'),
+        {},
+        navigate,
+      ),
+    ).toThrow(
+      /navigate\('\/unauthorized\?message=No%20access'\) returned instead of throwing/,
+    );
+  });
 });

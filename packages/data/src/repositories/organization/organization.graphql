@@ -138,6 +138,33 @@ query GetOrganizationUnitWithOrg($id: String!) {
   }
 }
 
+# Combines the membership check and the org-unit lookup used by
+# `requireOrgAccess`'s non-admin fallback into a single HTTP round trip —
+# two sequential requests left a window where the session could be
+# invalidated between them (session expiry / concurrent logout), losing the
+# redirect-to-login (see org-context-server.ts).
+query GetMyOrganizationUnitAccess($id: String!, $organizationUnitId: ID!) {
+  isMember: myMembershipStatus(organizationUnitId: $organizationUnitId)
+  organizationUnit(id: $id) {
+    id
+    slug
+    name
+    description
+    logoUrl
+    street
+    zipCode
+    city
+    legalRep
+    organizationId
+    organization {
+      name
+    }
+    parent {
+      id
+    }
+  }
+}
+
 query GetOrganizationsWithRoot($limit: Int!, $offset: Int!) {
   organizations(limit: $limit, offset: $offset) {
     items {

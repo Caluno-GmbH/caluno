@@ -592,6 +592,14 @@ export type GetOrganizationUnitWithOrgQueryVariables = Exact<{
 
 export type GetOrganizationUnitWithOrgQuery = { organizationUnit: { id: string, name: string, organization: { name: string } } | null };
 
+export type GetMyOrganizationUnitAccessQueryVariables = Exact<{
+  id: string;
+  organizationUnitId: string;
+}>;
+
+
+export type GetMyOrganizationUnitAccessQuery = { isMember: boolean, organizationUnit: { id: string, slug: string, name: string, description: string | null, logoUrl: string | null, street: string | null, zipCode: string | null, city: string | null, legalRep: string | null, organizationId: string, organization: { name: string }, parent: { id: string } | null } | null };
+
 export type GetOrganizationsWithRootQueryVariables = Exact<{
   limit: number;
   offset: number;
@@ -3099,6 +3107,29 @@ export const GetOrganizationUnitWithOrgDocument = gql`
   }
 }
     `;
+export const GetMyOrganizationUnitAccessDocument = gql`
+    query GetMyOrganizationUnitAccess($id: String!, $organizationUnitId: ID!) {
+  isMember: myMembershipStatus(organizationUnitId: $organizationUnitId)
+  organizationUnit(id: $id) {
+    id
+    slug
+    name
+    description
+    logoUrl
+    street
+    zipCode
+    city
+    legalRep
+    organizationId
+    organization {
+      name
+    }
+    parent {
+      id
+    }
+  }
+}
+    `;
 export const GetOrganizationsWithRootDocument = gql`
     query GetOrganizationsWithRoot($limit: Int!, $offset: Int!) {
   organizations(limit: $limit, offset: $offset) {
@@ -5485,6 +5516,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetOrganizationUnitWithOrg(variables: GetOrganizationUnitWithOrgQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationUnitWithOrgQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationUnitWithOrgQuery>({ document: GetOrganizationUnitWithOrgDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationUnitWithOrg', 'query', variables);
+    },
+    GetMyOrganizationUnitAccess(variables: GetMyOrganizationUnitAccessQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyOrganizationUnitAccessQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetMyOrganizationUnitAccessQuery>({ document: GetMyOrganizationUnitAccessDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyOrganizationUnitAccess', 'query', variables);
     },
     GetOrganizationsWithRoot(variables: GetOrganizationsWithRootQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationsWithRootQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationsWithRootQuery>({ document: GetOrganizationsWithRootDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationsWithRoot', 'query', variables);

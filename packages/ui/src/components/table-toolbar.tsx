@@ -111,16 +111,18 @@ function TableToolbar({
   const showFilters = hasActiveFilters(activeFilters);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const filtersRef = useRef<HTMLDivElement>(null);
-  const stackedAtWidthRef = useRef<number | null>(null);
-  const stackActionsRef = useRef(false);
+  // Read inside the ResizeObserver callback below; `stackedAtWidth` is the
+  // width hysteresis band that avoids flicker right at the wrap threshold.
+  const hysteresisRef = useRef<{
+    stacked: boolean;
+    stackedAtWidth: number | null;
+  }>({ stacked: false, stackedAtWidth: null });
   const [stackActions, setStackActions] = useState(false);
-
-  stackActionsRef.current = stackActions;
 
   useLayoutEffect(() => {
     if (isMobile || clampedActions.length < 2) {
-      stackedAtWidthRef.current = null;
-      if (stackActionsRef.current) setStackActions(false);
+      hysteresisRef.current = { stacked: false, stackedAtWidth: null };
+      setStackActions(false);
       return;
     }
 
@@ -130,15 +132,13 @@ function TableToolbar({
 
     const update = () => {
       const next = nextActionsStackState({
-        stacked: stackActionsRef.current,
+        ...hysteresisRef.current,
         filterRows: countFlexWrapRows(filters),
         toolbarWidth: toolbar.clientWidth,
-        stackedAtWidth: stackedAtWidthRef.current,
       });
-      stackedAtWidthRef.current = next.stackedAtWidth;
-      if (next.stacked !== stackActionsRef.current) {
-        setStackActions(next.stacked);
-      }
+      const stackedChanged = next.stacked !== hysteresisRef.current.stacked;
+      hysteresisRef.current = next;
+      if (stackedChanged) setStackActions(next.stacked);
     };
 
     update();
