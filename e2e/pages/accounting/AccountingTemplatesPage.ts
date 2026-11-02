@@ -11,34 +11,6 @@ const PAUSCHALE_SLUG: Record<PauschalenType, string> = {
   uebungsleiter: 'uebungsleiterpauschale',
 };
 
-// react-day-picker's day buttons carry an English accessible name like
-// "Tuesday, September 1st, 2026" — weekday, month, ordinal day, year — with a
-// "Today, " prefix on the current day. Spelled out rather than derived from
-// Intl so the label is deterministic across the test runner's ICU data.
-const WEEKDAYS = [
-  'Sunday',
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-];
-const MONTHS = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
 // The builder's provenance hint for a template that is not the unit's own
 // (messages `Accounting.templates.builder.provenance.*`): inherited from an
 // ancestor unit, the org-wide template, or the org-wide template seen from the
@@ -46,28 +18,38 @@ const MONTHS = [
 const INHERITED_HINT =
   /inherited from|is the organisation-wide template|creates this organisation's own version/;
 
-function ordinalSuffix(day: number): string {
-  const mod100 = day % 100;
-  if (mod100 >= 11 && mod100 <= 13) return 'th';
-  switch (day % 10) {
-    case 1:
-      return 'st';
-    case 2:
-      return 'nd';
-    case 3:
-      return 'rd';
-    default:
-      return 'th';
-  }
-}
-
-/** Matches the day button's accessible name, with an optional "Today, " prefix. */
-function dayButtonName(date: Date): RegExp {
-  const label = `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}${ordinalSuffix(date.getDate())}, ${date.getFullYear()}`;
-  return new RegExp(
-    `^(Today, )?${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
-  );
-}
+// The period picker always prints in German regardless of locale (see
+// `MONTH_NAMES_DE`/`MONTH_NAMES_FULL_DE` in builder-period-picker.tsx): the
+// Month tab's own buttons carry the abbreviation, the trigger's displayed
+// value once set carries the full name.
+const MONTH_ABBR_DE = [
+  'Jan',
+  'Feb',
+  'Mär',
+  'Apr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Okt',
+  'Nov',
+  'Dez',
+];
+const MONTH_FULL_DE = [
+  'Januar',
+  'Februar',
+  'März',
+  'April',
+  'Mai',
+  'Juni',
+  'Juli',
+  'August',
+  'September',
+  'Oktober',
+  'November',
+  'Dezember',
+];
 
 /**
  * The accounting settings → templates tab and the per-slot builder
@@ -187,43 +169,14 @@ export class AccountingTemplatesPage {
 
     // A slot that is already configured loads its saved body, so its manual
     // fields are filled and Save is enabled — filling them again would fail
-    // (the period trigger then reads the saved range, not "Select period").
-    // Only fill the contract's required manual fields on a fresh slot.
-    //
-    // The contract must cover the day the suite runs: VOLI-1370 reads an
-    // ACTIVE contract whose period has already ended as Expired, so a
-    // short window (e.g. the 1st–10th) turns the countersigned document
-    // "Expired" instead of "Active" on days 11+. Span the whole current
-    // month; it always contains today and needs no calendar navigation.
+    // (the period trigger then reads the saved range, not the placeholder).
+    // Only fill the contract's required non-period manual fields on a fresh
+    // slot; the period itself is handled below regardless of freshness.
     if (kind === 'contract' && (await save.isDisabled())) {
       await this.page
         .getByRole('textbox', { name: 'Task description' })
         .fill('Support community events');
-
-      await this.page.getByRole('button', { name: 'Select period' }).click();
-      await this.page.getByRole('tab', { name: 'Period' }).click();
-
-      const today = new Date();
-      const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const lastOfMonth = new Date(
-        today.getFullYear(),
-        today.getMonth() + 1,
-        0,
-      );
-      // The picker renders the current and the next month side by side, and
-      // the month's last day doubles as an outside day in the next grid —
-      // scope the clicks to the current month's grid.
-      const currentMonthGrid = this.page.getByRole('grid', {
-        name: MONTHS[today.getMonth()],
-      });
-      await currentMonthGrid
-        .getByRole('button', { name: dayButtonName(firstOfMonth) })
-        .click();
-      await currentMonthGrid
-        .getByRole('button', { name: dayButtonName(lastOfMonth) })
-        .click();
-
-      await this.page.getByRole('button', { name: 'Apply' }).click();
+      await this.setContractPeriodToCurrentMonth();
       await this.page.getByRole('spinbutton', { name: 'Hours' }).fill('10');
     }
 
@@ -239,6 +192,19 @@ export class AccountingTemplatesPage {
     if (inherited && (await save.isDisabled())) {
       await this.page.getByRole('link', { name: 'Cancel' }).click();
     } else {
+      // The contract must cover the day the suite runs: VOLI-1370 reads an
+      // ACTIVE contract whose period has already ended as Expired. A slot
+      // saved on an earlier day (stateful dev DB, or staging across runs)
+      // loads already-configured and enabled — the fresh-slot branch above
+      // never ran — so its saved period can still be stale here. Refresh it
+      // to the current month whenever it doesn't already cover today; a
+      // freshly-filled slot already does, so this is then a cheap no-op.
+      if (
+        kind === 'contract' &&
+        !(await this.contractPeriodCoversCurrentMonth())
+      ) {
+        await this.setContractPeriodToCurrentMonth();
+      }
       await expect(save).toBeEnabled();
       await save.click();
     }
@@ -246,5 +212,46 @@ export class AccountingTemplatesPage {
     await this.page.waitForURL(/accounting\/settings\?tab=templates/, {
       timeout: 20_000,
     });
+  }
+
+  /**
+   * The contract builder's "Agreement period" field trigger. It is the only
+   * `button` manual-field control on this page (the others are text/number
+   * inputs), and `aria-required` on it is stable whether the field is still
+   * showing its placeholder or already reads a saved value — unlike its
+   * accessible name, which becomes the formatted period once set.
+   */
+  private contractPeriodTrigger() {
+    return this.page.locator('button[aria-required="true"]');
+  }
+
+  /** Whether the saved/displayed period already spans the whole current month. */
+  private async contractPeriodCoversCurrentMonth(): Promise<boolean> {
+    const today = new Date();
+    const expected = `${MONTH_FULL_DE[today.getMonth()]} ${today.getFullYear()}`;
+    const text = (await this.contractPeriodTrigger().textContent()) ?? '';
+    return text.includes(expected);
+  }
+
+  /**
+   * Opens the period picker and sets it to the whole current month via the
+   * Month tab — a single click on the month's own button, applied
+   * immediately. The Period (range) tab's day-grid can need a 6th calendar
+   * row depending on which weekday the 1st falls on, which this suite's
+   * 1280×720 viewport does not always have room for; the Month tab has no
+   * such overflow risk and a whole month is exactly what's wanted here.
+   */
+  private async setContractPeriodToCurrentMonth() {
+    await this.contractPeriodTrigger().click();
+    const popover = this.page.locator('[data-slot="popover-content"]');
+    await popover.getByRole('tab', { name: 'Month' }).click();
+
+    const today = new Date();
+    await popover
+      .getByRole('button', {
+        name: MONTH_ABBR_DE[today.getMonth()],
+        exact: true,
+      })
+      .click();
   }
 }
