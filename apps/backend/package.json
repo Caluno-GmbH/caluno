@@ -39,7 +39,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "@better-auth/drizzle-adapter": "1.7.14",
     "@messageformat/core": "^3.4.1",
-    "@nestjs/apollo": "^14.0.3",
+    "@nestjs/apollo": "^14.1.1",
     "@nestjs/common": "^12.2.0",
     "@nestjs/config": "^12.0.1",
     "@nestjs/core": "^12.3.2",
