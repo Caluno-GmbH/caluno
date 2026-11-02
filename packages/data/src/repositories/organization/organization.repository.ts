@@ -37,7 +37,7 @@ export class OrganizationRepository extends BaseRepository {
     return data.myOrganizationUnits;
   }
 
-  async findMyAdminstrableOrganizationUnits() {
+  async findMyAdministrableOrganizationUnits() {
     const data = await this.sdk.GetMyAdminstableOrganizationUnits();
     return data.myAdminstableOrganizationUnits;
   }

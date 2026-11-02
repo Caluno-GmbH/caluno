@@ -5,7 +5,7 @@ const cookieValues = new Map<string, string>();
 const accessibleUnits: MyOrganizationUnit[] = [];
 let lastVisitedOrgId: string | null = null;
 
-const findMyAdminstrableOrganizationUnits = mock(async () => accessibleUnits);
+const findMyAdministrableOrganizationUnits = mock(async () => accessibleUnits);
 
 mock.module('next/headers', () => ({
   cookies: async () => ({
@@ -21,7 +21,7 @@ mock.module('next/headers', () => ({
 
 mock.module('../data-client', () => ({
   getDataClient: async () => ({
-    organization: { findMyAdminstrableOrganizationUnits },
+    organization: { findMyAdministrableOrganizationUnits },
   }),
 }));
 
@@ -60,7 +60,7 @@ describe('resolveAuthPageRedirects', () => {
     cookieValues.clear();
     accessibleUnits.length = 0;
     lastVisitedOrgId = null;
-    findMyAdminstrableOrganizationUnits.mockClear();
+    findMyAdministrableOrganizationUnits.mockClear();
   });
 
   describe('authenticatedRedirect', () => {

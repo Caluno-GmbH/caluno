@@ -4,7 +4,7 @@ import { LAST_ORG_COOKIE, type MyOrganizationUnit } from '@repo/data';
 const administrableUnits: MyOrganizationUnit[] = [];
 let lastVisitedOrgId: string | null = null;
 
-const findMyAdminstrableOrganizationUnits = mock(
+const findMyAdministrableOrganizationUnits = mock(
   async () => administrableUnits,
 );
 
@@ -21,7 +21,7 @@ mock.module('next/headers', () => ({
 
 mock.module('../data-client', () => ({
   getDataClient: async () => ({
-    organization: { findMyAdminstrableOrganizationUnits },
+    organization: { findMyAdministrableOrganizationUnits },
   }),
 }));
 
@@ -63,7 +63,7 @@ describe('routing', () => {
     beforeEach(() => {
       administrableUnits.length = 0;
       lastVisitedOrgId = null;
-      findMyAdminstrableOrganizationUnits.mockClear();
+      findMyAdministrableOrganizationUnits.mockClear();
     });
 
     it('returns / when the user has no accessible organization units', async () => {
@@ -95,7 +95,7 @@ describe('routing', () => {
     beforeEach(() => {
       administrableUnits.length = 0;
       lastVisitedOrgId = null;
-      findMyAdminstrableOrganizationUnits.mockClear();
+      findMyAdministrableOrganizationUnits.mockClear();
     });
 
     it('Resolves to nowhere, when the user has no accessible organization units', async () => {
