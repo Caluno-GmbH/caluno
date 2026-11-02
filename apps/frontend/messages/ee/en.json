@@ -1,0 +1,16 @@
+{
+  "Navigation": {
+    "myNote": "My Note"
+  },
+  "EeNote": {
+    "title": "My note",
+    "adminTitle": "My Note",
+    "adminDescription": "A private note that only you can see and edit.",
+    "placeholder": "Write something for yourself…",
+    "loading": "Loading note…",
+    "loadFailed": "Could not load your note.",
+    "saving": "Saving…",
+    "saved": "Note saved.",
+    "saveFailed": "Could not save your note."
+  }
+}

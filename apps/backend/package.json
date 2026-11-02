@@ -25,7 +25,7 @@
     "test:integration": "bun test test/",
     "db:generate": "drizzle-kit generate",
     "db:generate:ee": "drizzle-kit generate --config=src/ee/drizzle.config.ts",
-    "db:migrate": "bun run src/database/migrate.ts",
+    "db:migrate": "bun run src/database/migrate.mts",
     "db:migrate:oss": "drizzle-kit migrate",
     "db:migrate:ee": "drizzle-kit migrate --config=src/ee/drizzle.config.ts",
     "db:seed": "node dist/src/database/seed.js",

@@ -91,6 +91,16 @@ All user-facing strings must come from `messages/{en,de}.json` via `useTranslati
 error messages, or empty-state text in components. Add new keys to both locales and
 keep namespaces/key shapes in sync.
 
+**EE-only copy goes in `messages/ee/{en,de}.json`, never in the shared catalogs.**
+One file per locale for all EE features (mirrors `src/ee/` being one shared tree
+for all EE code) — the OSS mirror strips any directory literally named `ee`, so
+keys left in `messages/{en,de}.json` ship to OSS even if the feature code doesn't.
+This can be a whole new namespace (e.g. `EeNote`) or EE-only keys nested inside an
+otherwise-OSS namespace (e.g. `Navigation.myNote`); `src/i18n/request.ts` merges
+the ee catalog into the base one via `mergeEeMessages` only when `hasEeEdition()`,
+behind a `webpackIgnore` dynamic import (same pattern as the `src/ee/*` component
+imports) since that file does not exist in an OSS checkout.
+
 ### Locale switching
 
 The `caluno.locale` cookie is the single frontend locale-preference source, and

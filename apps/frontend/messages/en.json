@@ -826,19 +826,7 @@
     "accountingSettings": "Settings",
     "myDocuments": "My documents",
     "myDocumentsBadge": "{count, plural, one {# document needs your signature} other {# documents need your signature}}",
-    "myNote": "My Note",
     "shiftSettings": "Assignments and check-in"
-  },
-  "EeNote": {
-    "title": "My note",
-    "adminTitle": "My Note",
-    "adminDescription": "A private note that only you can see and edit.",
-    "placeholder": "Write something for yourself…",
-    "loading": "Loading note…",
-    "loadFailed": "Could not load your note.",
-    "saving": "Saving…",
-    "saved": "Note saved.",
-    "saveFailed": "Could not save your note."
   },
   "OrgDetail": {
     "aboutHeading": "About us",

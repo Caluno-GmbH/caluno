@@ -104,7 +104,7 @@ export const dropTestDatabase = async (testDbName: string): Promise<void> => {
 export const runMigrationsAndSeed = (testDbName: string): void => {
   const backendRoot = getBackendRoot();
 
-  const migrateResult = spawnSync('bun', ['run', 'src/database/migrate.ts'], {
+  const migrateResult = spawnSync('bun', ['run', 'src/database/migrate.mts'], {
     cwd: backendRoot,
     stdio: 'inherit',
     env: {
