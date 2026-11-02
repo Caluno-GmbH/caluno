@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'bun:test';
+import { type GetTimeEntriesQuery, TimeEntryStatus } from '@repo/data';
 import { serializeTimesheetsToCsv } from './timesheets-csv';
+
+type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
 
 const HEADERS = [
   'Volunteer Name',
@@ -15,9 +18,9 @@ const HEADERS = [
   'Notes',
 ];
 
-const baseEntry = () => ({
+const baseEntry = (): TimeEntry => ({
   id: 'e1',
-  status: 'Closed' as const,
+  status: TimeEntryStatus.Closed,
   startedAt: '2024-01-01T08:00:00Z',
   endedAt: '2024-01-01T10:00:00Z',
   notes: null,
@@ -45,49 +48,46 @@ const baseEntry = () => ({
 describe('serializeTimesheetsToCsv', () => {
   it('produces a header row with Volunteer Name as first column', () => {
     const csv = serializeTimesheetsToCsv([], HEADERS);
-    const header = csv.split('\n')[0]!;
-    expect(header).toContain('Volunteer Name');
+    expect(csv.split('\n')[0]).toContain('Volunteer Name');
   });
 
   it('produces one data row per entry', () => {
-    const csv = serializeTimesheetsToCsv([baseEntry()] as any, HEADERS);
+    const csv = serializeTimesheetsToCsv([baseEntry()], HEADERS);
     const lines = csv.trim().split('\n');
     expect(lines).toHaveLength(2);
   });
 
   it('escapes commas in volunteer name', () => {
-    const e = {
+    const e: TimeEntry = {
       ...baseEntry(),
       volunteer: { id: 'v1', name: 'Doe, Jane', email: 'jane@test.com' },
     };
-    const csv = serializeTimesheetsToCsv([e] as any, HEADERS);
+    const csv = serializeTimesheetsToCsv([e], HEADERS);
     expect(csv).toContain('"Doe, Jane"');
   });
 
   it('escapes double-quotes in a field', () => {
-    const e = { ...baseEntry(), notes: 'She said "hello"' };
-    const csv = serializeTimesheetsToCsv([e] as any, HEADERS);
+    const e: TimeEntry = { ...baseEntry(), notes: 'She said "hello"' };
+    const csv = serializeTimesheetsToCsv([e], HEADERS);
     expect(csv).toContain('"She said ""hello"""');
   });
 
   it('computes duration in minutes', () => {
-    const csv = serializeTimesheetsToCsv([baseEntry()] as any, HEADERS);
-    const dataLine = csv.trim().split('\n')[1]!;
-    expect(dataLine).toContain('120');
+    const csv = serializeTimesheetsToCsv([baseEntry()], HEADERS);
+    expect(csv.trim().split('\n')[1]).toContain('120');
   });
 
   it('leaves duration empty for open entries (no endedAt)', () => {
-    const e = { ...baseEntry(), endedAt: null };
-    const csv = serializeTimesheetsToCsv([e] as any, HEADERS);
-    const dataLine = csv.trim().split('\n')[1]!;
+    const e: TimeEntry = { ...baseEntry(), endedAt: null };
+    const csv = serializeTimesheetsToCsv([e], HEADERS);
+    const dataLine = csv.trim().split('\n')[1] ?? '';
     // Duration (min) column — 8th column (0-indexed: 7)
     const cells = dataLine.split('","');
-    // Duration cell should be empty string
     expect(cells[7]).toBe('');
   });
 
   it('includes shift title', () => {
-    const csv = serializeTimesheetsToCsv([baseEntry()] as any, HEADERS);
+    const csv = serializeTimesheetsToCsv([baseEntry()], HEADERS);
     expect(csv).toContain('Shift A');
   });
 

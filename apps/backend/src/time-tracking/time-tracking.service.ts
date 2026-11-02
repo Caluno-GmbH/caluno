@@ -9,7 +9,6 @@ import {
   isNotNull,
   isNull,
   lt,
-  lte,
   or,
   type SQL,
   sql,

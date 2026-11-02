@@ -199,14 +199,10 @@ export class ShiftService {
   ): Promise<Array<(ShiftInstanceEntity & { master: ShiftEntity }) | null>> {
     if (ids.length === 0) return [];
     const instances = await this.db.query.shiftInstances.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, master: { organizationUnitId } },
       with: { master: true },
     });
-    const byId = new Map(
-      instances
-        .filter((i) => i.master.organizationUnitId === organizationUnitId)
-        .map((i) => [i.id, i]),
-    );
+    const byId = new Map(instances.map((i) => [i.id, i]));
     return ids.map((id) => byId.get(id) ?? null);
   }
 

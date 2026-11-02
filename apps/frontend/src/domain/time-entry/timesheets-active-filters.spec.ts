@@ -47,8 +47,8 @@ describe('buildTimesheetsActiveFilters', () => {
       onClear: noop,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]!.key).toBe('location');
-    expect(result[0]!.display).toBe('Hall A');
+    expect(result[0]?.key).toBe('location');
+    expect(result[0]?.display).toBe('Hall A');
   });
 
   it('returns a chip for shift filter with label', () => {
@@ -68,8 +68,8 @@ describe('buildTimesheetsActiveFilters', () => {
       onClear: noop,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]!.key).toBe('shift');
-    expect(result[0]!.display).toBe('Morning Shift');
+    expect(result[0]?.key).toBe('shift');
+    expect(result[0]?.display).toBe('Morning Shift');
   });
 
   it('returns a chip for volunteer filter with label', () => {
@@ -89,8 +89,8 @@ describe('buildTimesheetsActiveFilters', () => {
       onClear: noop,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]!.key).toBe('volunteer');
-    expect(result[0]!.display).toBe('Alice');
+    expect(result[0]?.key).toBe('volunteer');
+    expect(result[0]?.display).toBe('Alice');
   });
 
   it('returns a date chip when dateFrom is set', () => {
@@ -111,7 +111,7 @@ describe('buildTimesheetsActiveFilters', () => {
       onClear: noop,
     });
     expect(result).toHaveLength(1);
-    expect(result[0]!.key).toBe('date');
+    expect(result[0]?.key).toBe('date');
   });
 
   it('returns a chip per active filter', () => {

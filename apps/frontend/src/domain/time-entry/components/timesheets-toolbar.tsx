@@ -68,10 +68,10 @@ export function TimesheetsToolbar({
     shiftLabel: selectedShiftLabel,
     volunteerLabel: selectedVolunteerLabel,
     formatDateRange: (from, to) => {
-      if (!from && !to) return '';
       if (from && to) return formatDateRange(from, to);
       if (from) return t('filter.dateFromOnly', { date: formatDate(from) });
-      return t('filter.dateToOnly', { date: formatDate(to!) });
+      if (to) return t('filter.dateToOnly', { date: formatDate(to) });
+      return '';
     },
     onClear: (field) => {
       const reset: Record<string, unknown> = { page: 1 };

@@ -63,7 +63,8 @@ describe('toTimesheetDateRange', () => {
       utcMidnight('2024-01-01'),
       utcMidnight('2024-01-31'),
     );
-    const dateTo = new Date(result.dateTo!);
+    expect(result.dateTo).toBeDefined();
+    const dateTo = new Date(result.dateTo ?? '');
     const entryAt = new Date('2024-01-31T22:30:00Z'); // 23:30 Berlin
     expect(entryAt < dateTo).toBe(true);
   });
@@ -74,7 +75,8 @@ describe('toTimesheetDateRange', () => {
     // An entry at 2024-07-11T00:30 Berlin = 2024-07-10T22:30:00Z should be excluded.
     // 22:30Z > 22:00Z => excluded (backend: startedAt >= dateTo).
     const result = toTimesheetDateRange(null, utcMidnight('2024-07-10'));
-    const dateTo = new Date(result.dateTo!);
+    expect(result.dateTo).toBeDefined();
+    const dateTo = new Date(result.dateTo ?? '');
     const entryAt = new Date('2024-07-10T22:30:00Z'); // 00:30 Berlin on July 11
     expect(entryAt < dateTo).toBe(false);
   });

@@ -18,7 +18,7 @@ describe('resolveTimeEntryLocation', () => {
         master: { location: 'Hall B' },
       },
       organizationUnit: baseOrgUnit,
-    } as any;
+    };
     expect(resolveTimeEntryLocation(entry)).toBe('Hall A');
   });
 
@@ -26,7 +26,7 @@ describe('resolveTimeEntryLocation', () => {
     const entry = {
       shiftInstance: { overrideLocation: null, master: { location: 'Hall B' } },
       organizationUnit: baseOrgUnit,
-    } as any;
+    };
     expect(resolveTimeEntryLocation(entry)).toBe('Hall B');
   });
 
@@ -34,7 +34,7 @@ describe('resolveTimeEntryLocation', () => {
     const entry = {
       shiftInstance: null,
       organizationUnit: baseOrgUnit,
-    } as any;
+    };
     expect(resolveTimeEntryLocation(entry)).toBe('Str 1, 20095 HH');
   });
 
@@ -47,7 +47,7 @@ describe('resolveTimeEntryLocation', () => {
         zipCode: null,
         city: null,
       },
-    } as any;
+    };
     expect(resolveTimeEntryLocation(entry)).toBeNull();
   });
 
@@ -55,7 +55,7 @@ describe('resolveTimeEntryLocation', () => {
     const entry = {
       shiftInstance: { overrideLocation: null, master: { location: null } },
       organizationUnit: baseOrgUnit,
-    } as any;
+    };
     expect(resolveTimeEntryLocation(entry)).toBeNull();
   });
 });
