@@ -33,7 +33,7 @@ export function ErrorFallback({
 
   return (
     <div className="flex items-center justify-center p-4">
-      <Card className="max-w-md w-full text-center">
+      <Card className="max-w-md w-full text-center px-2">
         <CardHeader>
           <CardTitle>{t('title')}</CardTitle>
         </CardHeader>

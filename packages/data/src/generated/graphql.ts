@@ -604,6 +604,14 @@ export type GetOrganizationUnitWithOrgQueryVariables = Exact<{
 
 export type GetOrganizationUnitWithOrgQuery = { organizationUnit: { id: string, name: string, organization: { name: string } } | null };
 
+export type GetMyOrganizationUnitAccessQueryVariables = Exact<{
+  id: string;
+  organizationUnitId: string;
+}>;
+
+
+export type GetMyOrganizationUnitAccessQuery = { isMember: boolean, organizationUnit: { id: string, slug: string, name: string, description: string | null, logoUrl: string | null, street: string | null, zipCode: string | null, city: string | null, legalRep: string | null, organizationId: string, organization: { name: string }, parent: { id: string } | null } | null };
+
 export type GetOrganizationsWithRootQueryVariables = Exact<{
   limit: number;
   offset: number;
@@ -1408,10 +1416,14 @@ export type GetTimeEntriesQueryVariables = Exact<{
   sort?: Types.TimeEntrySortField | null | undefined;
   order?: Types.SortOrder | null | undefined;
   statuses?: Array<Types.TimeEntryStatus> | Types.TimeEntryStatus | null | undefined;
+  volunteerId?: string | null | undefined;
+  shiftId?: string | null | undefined;
+  dateFrom?: string | null | undefined;
+  dateTo?: string | null | undefined;
 }>;
 
 
-export type GetTimeEntriesQuery = { timeEntries: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, createdAt: string, createdBy: { id: string, name: string, email: string } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, master: { id: string, title: string } } | null, organizationUnit: { id: string, name: string, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
+export type GetTimeEntriesQuery = { timeEntries: { items: Array<{ id: string, status: Types.TimeEntryStatus, startedAt: string, endedAt: string | null, createdAt: string, notes: string | null, createdBy: { id: string, name: string, email: string } | null, volunteer: { id: string, name: string, email: string }, shiftInstance: { id: string, actualStartsAt: string, actualEndsAt: string, overrideTitle: string | null, overrideLocation: string | null, master: { id: string, title: string, location: string | null } } | null, organizationUnit: { id: string, name: string, street: string | null, zipCode: string | null, city: string | null, organization: { id: string, name: string } } }>, pagination: { total: number, limit: number, offset: number, hasMore: boolean } } };
 
 export type GetTimeEntriesByUserQueryVariables = Exact<{
   userId: string;
@@ -3121,6 +3133,29 @@ export const GetOrganizationUnitWithOrgDocument = gql`
     name
     organization {
       name
+    }
+  }
+}
+    `;
+export const GetMyOrganizationUnitAccessDocument = gql`
+    query GetMyOrganizationUnitAccess($id: String!, $organizationUnitId: ID!) {
+  isMember: myMembershipStatus(organizationUnitId: $organizationUnitId)
+  organizationUnit(id: $id) {
+    id
+    slug
+    name
+    description
+    logoUrl
+    street
+    zipCode
+    city
+    legalRep
+    organizationId
+    organization {
+      name
+    }
+    parent {
+      id
     }
   }
 }
@@ -4914,13 +4949,17 @@ export const UpdateTimeEntryDocument = gql`
 }
     `;
 export const GetTimeEntriesDocument = gql`
-    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder, $statuses: [TimeEntryStatus!]) {
+    query GetTimeEntries($limit: Int!, $offset: Int!, $sort: TimeEntrySortField, $order: SortOrder, $statuses: [TimeEntryStatus!], $volunteerId: ID, $shiftId: ID, $dateFrom: DateTime, $dateTo: DateTime) {
   timeEntries(
     limit: $limit
     offset: $offset
     sort: $sort
     order: $order
     statuses: $statuses
+    volunteerId: $volunteerId
+    shiftId: $shiftId
+    dateFrom: $dateFrom
+    dateTo: $dateTo
   ) {
     items {
       id
@@ -4938,19 +4977,25 @@ export const GetTimeEntriesDocument = gql`
         name
         email
       }
+      notes
       shiftInstance {
         id
         actualStartsAt
         actualEndsAt
         overrideTitle
+        overrideLocation
         master {
           id
           title
+          location
         }
       }
       organizationUnit {
         id
         name
+        street
+        zipCode
+        city
         organization {
           id
           name
@@ -5507,6 +5552,9 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     GetOrganizationUnitWithOrg(variables: GetOrganizationUnitWithOrgQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationUnitWithOrgQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationUnitWithOrgQuery>({ document: GetOrganizationUnitWithOrgDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationUnitWithOrg', 'query', variables);
+    },
+    GetMyOrganizationUnitAccess(variables: GetMyOrganizationUnitAccessQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetMyOrganizationUnitAccessQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<GetMyOrganizationUnitAccessQuery>({ document: GetMyOrganizationUnitAccessDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetMyOrganizationUnitAccess', 'query', variables);
     },
     GetOrganizationsWithRoot(variables: GetOrganizationsWithRootQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationsWithRootQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationsWithRootQuery>({ document: GetOrganizationsWithRootDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationsWithRoot', 'query', variables);

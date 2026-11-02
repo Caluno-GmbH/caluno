@@ -42,6 +42,20 @@ export class OrganizationUnitRepository extends BaseRepository {
     return data.organizationUnit;
   }
 
+  /**
+   * Membership status + org-unit lookup in a single HTTP round trip, for
+   * `requireOrgAccess`'s non-admin fallback. Two sequential requests here
+   * previously left a window where the session could be invalidated
+   * between them (expiry / concurrent logout), losing the redirect-to-login.
+   */
+  async findAccessInfo(id: string) {
+    const data = await this.sdk.GetMyOrganizationUnitAccess({
+      id,
+      organizationUnitId: id,
+    });
+    return { isMember: data.isMember, unit: data.organizationUnit };
+  }
+
   async findOrganizationTree(): Promise<OrgUnitTreeNode | null> {
     const data = await this.sdk.GetOrganizationTree();
     return (data.organizationTree?.root as unknown as OrgUnitTreeNode) ?? null;

@@ -135,3 +135,13 @@ Always study UI/UX patterns in existing similar features before starting a new o
 - Detail pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/[timeEntryId]/page.tsx`
 - Create pages: use `<FormSheet />`, follow `src/app/[locale]/admin/[orgUId]/@sheet/timesheets/new/page.tsx`
 - Edit pages: use `<FormSheet />`, follow `src/app/[locale]/admin/[orgUId]/@sheet/timesheets/[timeEntryId]/edit/page.tsx`
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -188,7 +188,13 @@ test.describe('my-shifts conflict clustering + day strip', () => {
     // Not `login.expectLoggedIn()` — that also asserts a "Home" heading which
     // doesn't exist on the real volunteer home page (only fresh org-less
     // signups land on a page with that heading), just the redirect off /login.
-    await page.waitForURL(/\/en\/?$/, { timeout: 15000 });
+    // `waitUntil: 'commit'` + 30s (matching expectLoggedIn's budget), not the
+    // default 'load' + 15s: the post-login redirect lands on the home page,
+    // which fires 8 parallel GraphQL calls server-side plus a redundant
+    // router.refresh() double-fetch — the slowest page to reach after login,
+    // and staging's `load` event is already known to spike (see
+    // navigationTimeout in playwright.config.ts).
+    await page.waitForURL(/\/en\/?$/, { timeout: 30_000, waitUntil: 'commit' });
 
     await page.goto(`${BASE_URL}/en/my-shifts`, { waitUntil: 'load' });
     // DetailPageHeader's title renders as a styled <span>, not a heading role.

@@ -12,6 +12,9 @@ type EntityCellProps = {
   subtitle?: React.ReactNode;
   trailing?: React.ReactNode;
   className?: string;
+  // Defaults to clamping (title to 3 lines, subtitle to 1). Set false for
+  // short, atomic values like timestamps that should never wrap or be cut off.
+  clamp?: boolean;
 };
 
 function EntityCell({
@@ -21,6 +24,7 @@ function EntityCell({
   subtitle,
   trailing,
   className,
+  clamp = true,
 }: EntityCellProps) {
   return (
     <div
@@ -38,11 +42,21 @@ function EntityCell({
         </div>
       ) : null}
       <div className="flex flex-col min-w-0">
-        <span className="text-base text-foreground line-clamp-3 break-words">
+        <span
+          className={cn(
+            'text-base text-foreground',
+            clamp && 'line-clamp-3 break-words',
+          )}
+        >
           {title}
         </span>
         {subtitle && (
-          <span className="text-sm text-muted-foreground line-clamp-1 break-words">
+          <span
+            className={cn(
+              'text-sm text-muted-foreground',
+              clamp && 'line-clamp-1 break-words',
+            )}
+          >
             {subtitle}
           </span>
         )}

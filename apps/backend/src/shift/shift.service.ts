@@ -192,6 +192,20 @@ export class ShiftService {
     return instance;
   }
 
+  /** Batch load shift instances by ids, org-scoped via master shift. */
+  async findInstancesByIds(
+    ids: string[],
+    organizationUnitId: string,
+  ): Promise<Array<(ShiftInstanceEntity & { master: ShiftEntity }) | null>> {
+    if (ids.length === 0) return [];
+    const instances = await this.db.query.shiftInstances.findMany({
+      where: { id: { in: ids }, master: { organizationUnitId } },
+      with: { master: true },
+    });
+    const byId = new Map(instances.map((i) => [i.id, i]));
+    return ids.map((id) => byId.get(id) ?? null);
+  }
+
   /** Participating-invite counts for many instances in one query (DataLoader batch). */
   async getFilledCounts(instanceIds: string[]): Promise<Map<string, number>> {
     if (instanceIds.length === 0) return new Map();
