@@ -1,6 +1,6 @@
 'use client';
 
-import type { TimeEntryStatus } from '@repo/data';
+import { TimeEntryStatus } from '@repo/data';
 import { useOrganizationVolunteers } from '@repo/data/react';
 import { TableToolbar } from '@repo/ui';
 import { CalendarDays, MapPin, Tag, Users } from 'lucide-react';
@@ -49,6 +49,12 @@ export function TimesheetsToolbar({
   const selectedVolunteerLabel =
     volunteerOptions.find((v) => v.value === volunteerId)?.label ?? null;
 
+  const statusOptions = [
+    { label: t('status.open'), value: TimeEntryStatus.Open },
+    { label: t('status.closed'), value: TimeEntryStatus.Closed },
+    { label: t('status.autoClosed'), value: TimeEntryStatus.AutoClosed },
+  ];
+
   const activeFilters = buildTimesheetsActiveFilters({
     values: {
       statuses: status,
@@ -65,6 +71,9 @@ export function TimesheetsToolbar({
       date: t('filter.date'),
       location: t('filter.location'),
     },
+    statusLabels: Object.fromEntries(
+      statusOptions.map((o) => [o.value, o.label]),
+    ),
     shiftLabel: selectedShiftLabel,
     volunteerLabel: selectedVolunteerLabel,
     formatDateRange: (from, to) => {
@@ -73,7 +82,7 @@ export function TimesheetsToolbar({
       if (to) return t('filter.dateToOnly', { date: formatDate(to) });
       return '';
     },
-    onClear: (field) => {
+    onClear: (field, value) => {
       const reset: Record<string, unknown> = { page: 1 };
       if (field === 'shift') reset.shiftId = null;
       else if (field === 'volunteer') reset.volunteerId = null;
@@ -81,6 +90,9 @@ export function TimesheetsToolbar({
         reset.dateFrom = null;
         reset.dateTo = null;
       } else if (field === 'location') reset.location = null;
+      else if (field === 'status') {
+        reset.status = value ? status.filter((s) => s !== value) : [];
+      }
       void setParams(reset);
     },
   });
@@ -146,11 +158,7 @@ export function TimesheetsToolbar({
         onChange={(v) =>
           void setParams({ status: v as TimeEntryStatus[], page: 1 })
         }
-        options={[
-          { label: t('status.open'), value: 'Open' },
-          { label: t('status.closed'), value: 'Closed' },
-          { label: t('status.autoClosed'), value: 'AutoClosed' },
-        ]}
+        options={statusOptions}
         placeholder={t('filter.statusPlaceholder')}
         ariaLabel={t('filter.status')}
         icon={<Tag className="size-4" />}

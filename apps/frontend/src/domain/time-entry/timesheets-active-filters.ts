@@ -20,14 +20,17 @@ export interface TimesheetFilterValues {
 export function buildTimesheetsActiveFilters(args: {
   values: TimesheetFilterValues;
   labels: Record<TimesheetFilterField, string>;
+  /** Localized label for each selected status value (chip display). */
+  statusLabels: Partial<Record<TimeEntryStatus, string>>;
   shiftLabel: string | null;
   volunteerLabel: string | null;
   formatDateRange: (from: Date | null, to: Date | null) => string;
-  onClear: (field: TimesheetFilterField) => void;
+  onClear: (field: TimesheetFilterField, value?: string) => void;
 }): TableToolbarActiveFilter[] {
   const {
     values,
     labels,
+    statusLabels,
     shiftLabel,
     volunteerLabel,
     formatDateRange,
@@ -68,6 +71,17 @@ export function buildTimesheetsActiveFilters(args: {
       label: labels.location,
       display: values.location,
       onClear: () => onClear('location'),
+    });
+  }
+
+  for (const status of values.statuses) {
+    const display = statusLabels[status];
+    if (!display) continue;
+    filters.push({
+      key: `status:${status}`,
+      label: labels.status,
+      display,
+      onClear: () => onClear('status', status),
     });
   }
 

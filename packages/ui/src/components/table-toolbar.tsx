@@ -1,12 +1,16 @@
 'use client';
 
-import { SearchIcon, SlidersHorizontalIcon, XIcon } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import {
+  CheckIcon,
+  SearchIcon,
+  SlidersHorizontalIcon,
+  XIcon,
+} from 'lucide-react';
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../hooks/use-mobile';
 import { cn } from '../lib/utils';
 import { Badge } from './base/badge';
 import { Button } from './base/button';
-import { Checkbox } from './base/checkbox';
 import {
   Combobox,
   ComboboxContent,
@@ -39,14 +43,20 @@ import {
 } from './sheet';
 import {
   clampActions,
+  countFlexWrapRows,
   formatResultsLabel,
   hasActiveFilters,
+  nextActionsStackState,
   type TableToolbarActiveFilter,
 } from './table-toolbar.utils';
 
 export type TableToolbarProps = {
   children: ReactNode;
-  /** Up to two action buttons, stacked top-to-bottom; pass the primary action first. */
+  /**
+   * Up to two action buttons. On desktop they sit side-by-side while filters
+   * fit in two rows, then stack to free width; always stacked on mobile.
+   * Pass the primary action first.
+   */
   actions?: ReactNode[];
   activeFilters?: TableToolbarActiveFilter[];
   onClearAll?: () => void;
@@ -99,6 +109,44 @@ function TableToolbar({
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const clampedActions = clampActions(actions);
   const showFilters = hasActiveFilters(activeFilters);
+  const toolbarRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
+  const stackedAtWidthRef = useRef<number | null>(null);
+  const stackActionsRef = useRef(false);
+  const [stackActions, setStackActions] = useState(false);
+
+  stackActionsRef.current = stackActions;
+
+  useLayoutEffect(() => {
+    if (isMobile || clampedActions.length < 2) {
+      stackedAtWidthRef.current = null;
+      if (stackActionsRef.current) setStackActions(false);
+      return;
+    }
+
+    const toolbar = toolbarRef.current;
+    const filters = filtersRef.current;
+    if (!toolbar || !filters) return;
+
+    const update = () => {
+      const next = nextActionsStackState({
+        stacked: stackActionsRef.current,
+        filterRows: countFlexWrapRows(filters),
+        toolbarWidth: toolbar.clientWidth,
+        stackedAtWidth: stackedAtWidthRef.current,
+      });
+      stackedAtWidthRef.current = next.stackedAtWidth;
+      if (next.stacked !== stackActionsRef.current) {
+        setStackActions(next.stacked);
+      }
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(toolbar);
+    observer.observe(filters);
+    return () => observer.disconnect();
+  }, [isMobile, clampedActions.length]);
 
   if (isMobile) {
     const activeCount = activeFilters?.length ?? 0;
@@ -180,11 +228,15 @@ function TableToolbar({
 
   return (
     <div
+      ref={toolbarRef}
       data-slot="table-toolbar"
       className={cn('flex flex-col gap-2', ISLAND_CLASSNAME, className)}
     >
       <div className="flex flex-wrap items-start gap-2">
-        <div className="flex flex-1 flex-wrap items-center gap-2 [&_[data-slot=select-trigger]]:h-10">
+        <div
+          ref={filtersRef}
+          className="flex flex-1 flex-wrap items-center gap-2 **:data-[slot=select-trigger]:h-10"
+        >
           {children}
         </div>
         {clampedActions.length > 0 && (
@@ -192,7 +244,12 @@ function TableToolbar({
             <div aria-hidden className="w-px self-stretch bg-border" />
             <div
               data-slot="table-toolbar-actions"
-              className="flex flex-col items-stretch gap-2 [&_[data-slot=button]]:h-10"
+              className={cn(
+                'flex gap-2 **:data-[slot=button]:h-10',
+                stackActions
+                  ? 'flex-col items-stretch'
+                  : 'flex-row items-center',
+              )}
             >
               {clampedActions}
             </div>
@@ -362,6 +419,7 @@ function DateRange({ value, onChange, placeholder }: DateRangeProps) {
         onChange({ from: start ?? undefined, to: end ?? undefined })
       }
       placeholder={placeholder}
+      showClear={Boolean(value.from || value.to)}
     />
   );
 }
@@ -464,17 +522,17 @@ function FilterMultiSelect({
         data-slot="select-trigger"
         aria-label={ariaLabel ?? placeholder}
         className={cn(
-          'flex w-auto min-w-36 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] whitespace-nowrap',
+          'flex w-fit shrink-0 min-w-36 items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-xs outline-none transition-[color,box-shadow] whitespace-nowrap',
           'focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
           'disabled:cursor-not-allowed disabled:opacity-50',
           value.length === 0 && 'text-muted-foreground',
         )}
       >
-        <span className="flex items-center gap-2 truncate">
+        <span className="flex items-center gap-2">
           {icon && (
             <span className="shrink-0 text-muted-foreground">{icon}</span>
           )}
-          <span className="truncate">{triggerLabel}</span>
+          <span>{triggerLabel}</span>
         </span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -492,24 +550,37 @@ function FilterMultiSelect({
           <path d="m6 9 6 6 6-6" />
         </svg>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-48 p-1">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="option"
-            aria-selected={value.includes(option.value)}
-            onClick={() => toggle(option.value)}
-            className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-          >
-            <Checkbox
-              checked={value.includes(option.value)}
-              aria-hidden
-              tabIndex={-1}
-            />
-            {option.label}
-          </button>
-        ))}
+      <PopoverContent
+        align="start"
+        className="w-auto min-w-48 p-1"
+        role="listbox"
+      >
+        {options.map((option) => {
+          const selected = value.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={selected}
+              onClick={() => toggle(option.value)}
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm whitespace-nowrap hover:bg-accent hover:text-accent-foreground"
+            >
+              {/* Visual-only; outer button is the interactive control (no nested <button>). */}
+              <span
+                aria-hidden
+                className={cn(
+                  'flex size-4.5 shrink-0 items-center justify-center rounded-[4px] border border-input shadow-xs',
+                  selected &&
+                    'border-primary bg-primary text-primary-foreground',
+                )}
+              >
+                {selected && <CheckIcon className="size-3.5" />}
+              </span>
+              {option.label}
+            </button>
+          );
+        })}
       </PopoverContent>
     </Popover>
   );
