@@ -7,7 +7,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { createGraphQLClient } from '../../client/graphql-client';
 import type { Locale } from '../../constants';
 import type { DataError } from '../../errors/data-error';
-import { shouldRetryQuery } from '../../errors/next-redirect';
+import {
+  shouldRetryQuery,
+  shouldThrowRedirectError,
+} from '../../errors/next-redirect';
 import {
   GraphQLClientProvider,
   SdkOnErrorProvider,
@@ -22,8 +25,9 @@ export interface DataProviderProps {
   locale?: Locale;
   /**
    * Called with the translated DataError before it is rethrown. Throw
-   * Next's `redirect()` here for UNAUTHENTICATED / FORBIDDEN so a suspense
-   * query becomes a navigation instead of the segment error screen.
+   * Next's `redirect()` here for UNAUTHENTICATED / FORBIDDEN. Queries and
+   * mutations rethrow that `NEXT_REDIRECT` during render, so it becomes a
+   * navigation instead of a stored error.
    */
   onError?: (error: DataError) => void;
 }
@@ -40,9 +44,11 @@ function createQueryClient(): QueryClient {
         // `onError` is terminal — retrying it would issue another unauthorized
         // request and can drop the NEXT_REDIRECT before render rethrows it.
         retry: shouldRetryQuery,
+        throwOnError: shouldThrowRedirectError,
       },
       mutations: {
-        retry: 1,
+        retry: shouldRetryQuery,
+        throwOnError: shouldThrowRedirectError,
       },
     },
   });

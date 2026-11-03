@@ -1,7 +1,9 @@
 /**
  * Next.js `redirect()` throws an Error whose `digest` starts with this.
- * React Query stores that error and rethrows it during render; recognizing
- * it here keeps the redirect from being retried or left in query state.
+ * React Query stores that error. `shouldThrowRedirectError` is the
+ * `throwOnError` predicate that rethrows it during render (queries and
+ * mutations, not only suspense), and `shouldRetryQuery` keeps it from
+ * being retried.
  */
 const NEXT_REDIRECT_DIGEST_PREFIX = 'NEXT_REDIRECT';
 
@@ -21,4 +23,13 @@ export function shouldRetryQuery(
   error: unknown,
 ): boolean {
   return !isNextRedirectError(error) && failureCount < 1;
+}
+
+/**
+ * `useQuery` / `useMutation` only surface an error to Next's redirect
+ * boundary when `throwOnError` returns true. A stored `NEXT_REDIRECT`
+ * never navigates.
+ */
+export function shouldThrowRedirectError(error: unknown): boolean {
+  return isNextRedirectError(error);
 }

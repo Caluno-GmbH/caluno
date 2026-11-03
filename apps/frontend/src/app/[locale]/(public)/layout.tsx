@@ -43,7 +43,11 @@ export default async function PublicLayout({
   const isAdmin = authenticated && !pending ? await isAnAdminstrator() : false;
 
   return (
-    <AppDataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
+    <AppDataProvider
+      apiUrl={GRAPHQL_API_URL}
+      locale={locale}
+      redirectOnUnauthenticated={authenticated}
+    >
       <div className="flex min-h-screen flex-col">
         <main className="grow pb-24">{children}</main>
         {authenticated && <VolunteerNav isAdmin={isAdmin} />}

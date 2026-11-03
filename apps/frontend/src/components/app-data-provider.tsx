@@ -9,32 +9,45 @@ import { resolveLocale } from '@/i18n/routing';
 import { handleServerDataClientError } from '@/lib/data-client-errors';
 import { resolveDataErrorRedirect } from '@/lib/data-error-redirect';
 
+type AppDataProviderProps = DataProviderProps & {
+  /**
+   * When false, UNAUTHENTICATED stays a DataError. The public layout passes
+   * the server auth flag so an anonymous visitor is not sent to `/login`.
+   */
+  redirectOnUnauthenticated?: boolean;
+};
+
 /**
- * DataProvider for app routes. React Query hooks that run during SSR share
- * this error path with `getDataClient`: UNAUTHENTICATED redirects to login,
- * FORBIDDEN redirects to `/unauthorized`. A bare DataError must not become
- * the segment error screen.
+ * DataProvider for app routes. React Query hooks share this error path with
+ * `getDataClient`: UNAUTHENTICATED redirects to login, FORBIDDEN redirects
+ * to `/unauthorized`. `DataProvider` rethrows that redirect during render.
+ * A bare DataError on that path means the redirect did not throw.
  */
 export function AppDataProvider({
   children,
   locale: localeProp,
+  redirectOnUnauthenticated = true,
   ...props
-}: DataProviderProps) {
+}: AppDataProviderProps) {
   const pathname = usePathname();
   const hookLocale = useLocale();
   const locale = resolveLocale(localeProp ?? hookLocale);
 
   const onError = useCallback(
     (error: DataError) => {
-      handleServerDataClientError(error, {}, (path): never => {
-        const href = resolveDataErrorRedirect(path, pathname);
-        redirect({ href, locale });
-        throw new Error(
-          `redirect('${href}') returned instead of throwing — redirect did not fire`,
-        );
-      });
+      handleServerDataClientError(
+        error,
+        { redirectOnUnauthenticated },
+        (path): never => {
+          const href = resolveDataErrorRedirect(path, pathname);
+          redirect({ href, locale });
+          throw new Error(
+            `redirect('${href}') returned instead of throwing — redirect did not fire`,
+          );
+        },
+      );
     },
-    [locale, pathname],
+    [locale, pathname, redirectOnUnauthenticated],
   );
 
   return (

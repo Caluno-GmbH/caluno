@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { isNextRedirectError, shouldRetryQuery } from './next-redirect';
+import {
+  isNextRedirectError,
+  shouldRetryQuery,
+  shouldThrowRedirectError,
+} from './next-redirect';
 
 describe('isNextRedirectError', () => {
   it('matches a Next redirect digest', () => {
@@ -26,5 +30,20 @@ describe('shouldRetryQuery', () => {
   it('does not retry a redirect', () => {
     const redirect = { digest: 'NEXT_REDIRECT;replace;/en/login;307;' };
     expect(shouldRetryQuery(0, redirect)).toBe(false);
+  });
+});
+
+describe('shouldThrowRedirectError', () => {
+  it('rethrows a redirect so useQuery and useMutation navigate', () => {
+    expect(
+      shouldThrowRedirectError({
+        digest: 'NEXT_REDIRECT;replace;/en/login;307;',
+      }),
+    ).toBe(true);
+  });
+
+  it('leaves a DataError in query state', () => {
+    expect(shouldThrowRedirectError(new Error('Unauthorized'))).toBe(false);
+    expect(shouldThrowRedirectError(null)).toBe(false);
   });
 });

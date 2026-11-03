@@ -22,4 +22,5 @@ src/
 - Repositories 'wrap' the GraphQL queries and mutations (*.graphql)
 - GraphQL queries and mutations (*.graphql) are co-located with the repositories that use them
 - Locale is request metadata: pass `locale` to `createDataClient` / `DataProvider`; `@repo/data` maps it to the `x-locale` header. The Better Auth client also sends `x-locale` from the `caluno.locale` cookie (with a pathname fallback) on every auth request.
+- `DataProvider` retries a failed query or mutation once, except a Next `NEXT_REDIRECT` (`shouldRetryQuery`). `throwOnError` rethrows that error during render so a `redirect()` from `onError` navigates from `useQuery` and `useMutation`, not only suspense. Other errors stay in hook state.
 - Adding a query/mutation: see skill `.agents/skills/add-data-query`
