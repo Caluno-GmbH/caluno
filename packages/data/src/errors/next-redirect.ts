@@ -33,3 +33,14 @@ export function shouldRetryQuery(
 export function shouldThrowRedirectError(error: unknown): boolean {
   return isNextRedirectError(error);
 }
+
+/**
+ * `.catch` handler for an imperative call (`mutateAsync`) whose redirect is
+ * already being rethrown during render. Returns a promise that never settles
+ * for a redirect, so the caller's error handling does not run; any other
+ * error is rethrown.
+ */
+export function swallowNextRedirect(error: unknown): Promise<never> {
+  if (isNextRedirectError(error)) return new Promise<never>(() => {});
+  throw error;
+}

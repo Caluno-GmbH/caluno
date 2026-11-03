@@ -3,12 +3,12 @@
 import { MembershipRequestRepository } from '@repo/data';
 import {
   keepPreviousData,
-  useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import type { MembershipRequestStatus } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useMembershipRequests(
   organizationUnitId: string,

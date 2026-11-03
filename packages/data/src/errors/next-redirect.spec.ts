@@ -3,6 +3,7 @@ import {
   isNextRedirectError,
   shouldRetryQuery,
   shouldThrowRedirectError,
+  swallowNextRedirect,
 } from './next-redirect';
 
 describe('isNextRedirectError', () => {
@@ -45,5 +46,21 @@ describe('shouldThrowRedirectError', () => {
   it('leaves a DataError in query state', () => {
     expect(shouldThrowRedirectError(new Error('Unauthorized'))).toBe(false);
     expect(shouldThrowRedirectError(null)).toBe(false);
+  });
+});
+
+describe('swallowNextRedirect', () => {
+  it('never settles for a redirect', async () => {
+    const pending = Symbol('pending');
+    const result = await Promise.race([
+      swallowNextRedirect({ digest: 'NEXT_REDIRECT;replace;/en/login;307;' }),
+      new Promise((resolve) => setTimeout(() => resolve(pending), 10)),
+    ]);
+    expect(result).toBe(pending);
+  });
+
+  it('rethrows any other error', () => {
+    const error = new Error('Forbidden');
+    expect(() => swallowNextRedirect(error)).toThrow(error);
   });
 });
