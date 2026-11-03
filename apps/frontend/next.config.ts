@@ -59,6 +59,13 @@ const storageImagePatterns = (): ImageRemotePattern[] => {
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  // `messages/ee/*.json` is read at runtime via `fs` (see `src/i18n/request.ts`)
+  // rather than a bundler-resolved import, so the standalone trace wouldn't
+  // otherwise pick it up. Matches nothing (no error) on the OSS mirror, which
+  // strips the `messages/ee/` directory.
+  outputFileTracingIncludes: {
+    '/*': ['messages/ee/**/*.json'],
+  },
   images: {
     // Next.js 16 blocks localhost/private IPs in the image optimizer (SSRF protection).
     dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',

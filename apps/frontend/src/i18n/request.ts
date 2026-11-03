@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { hasLocale } from 'next-intl';
 import { getRequestConfig } from 'next-intl/server';
 import { hasEeEdition } from '@/edition/has-ee-edition';
@@ -20,12 +22,22 @@ export default getRequestConfig(async ({ requestLocale }) => {
   }
 
   // EE-only copy lives in its own `messages/ee/` tree so the OSS mirror
-  // (which strips any directory literally named `ee`) never ships it.
-  // `webpackIgnore` defers resolution to runtime, since that file does not
-  // exist in an OSS checkout.
-  const eeMessages = (
-    await import(/* webpackIgnore: true */ `../../messages/ee/${locale}.json`)
-  ).default;
+  // (which strips any directory literally named `ee`) never ships it. A
+  // bundler-resolved import/require of this path would force Turbopack and
+  // webpack to statically resolve it at build time, breaking the OSS build
+  // where the directory doesn't exist — so this is a plain runtime `fs`
+  // read instead (bundlers never touch string arguments to `fs` calls).
+  // `process.cwd()` is the app root both under `next dev` and in the
+  // standalone production server (which `chdir`s there on boot), so this
+  // resolves correctly in both. See `outputFileTracingIncludes` in
+  // `next.config.ts`, which ships this directory in the standalone build.
+  const eeMessagesPath = path.join(
+    process.cwd(),
+    'messages',
+    'ee',
+    `${locale}.json`,
+  );
+  const eeMessages = JSON.parse(await readFile(eeMessagesPath, 'utf8'));
 
   return {
     locale,

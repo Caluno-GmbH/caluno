@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
-import { hasEeEdition } from '@/edition/has-ee-edition';
+import { resolveEeSlotComponent } from '@/edition/ee-slot';
 import { resolveLocale } from '@/i18n/routing';
 
 type MyNotePageProps = {
@@ -12,12 +12,9 @@ export default async function MyNotePage({ params }: MyNotePageProps) {
   const locale = resolveLocale(rawLocale);
   setRequestLocale(locale);
 
-  if (!hasEeEdition()) {
+  const AdminMyNotePage = await resolveEeSlotComponent('my-note-page');
+  if (!AdminMyNotePage) {
     notFound();
   }
-
-  const { AdminMyNotePage } = await import(
-    /* webpackIgnore: true */ '@/ee/note/admin-my-note-page'
-  );
   return <AdminMyNotePage />;
 }

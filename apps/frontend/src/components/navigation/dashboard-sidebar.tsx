@@ -32,7 +32,6 @@ import {
   ListTodo,
   LogOutIcon,
   NetworkIcon,
-  NotebookPen,
   ScanQrCode,
   ShieldIcon,
   TicketIcon,
@@ -43,15 +42,21 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
 import { visibleOverviewTasks } from '@/domain/overview/visible-tasks';
-import { hasEeEdition } from '@/edition/has-ee-edition';
+import type { EeNavItem } from '@/edition/ee-extensions';
+import { EE_ICONS } from '@/edition/ee-icons';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
 
 interface DashboardSidebarProps {
   permissions: PermissionKey[];
+  /** Resolved server-side via `loadEeExtensions()`; empty/undefined in OSS. */
+  eeNavItems?: EeNavItem[];
 }
 
-export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  permissions,
+  eeNavItems,
+}: DashboardSidebarProps) {
   const params = useParams();
   const router = useRouter();
   const orgUId = params.orgUId as string | undefined;
@@ -112,17 +117,13 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
         href: `/admin/${orgUId}/requirement-forms`,
         icon: ClipboardListIcon,
       },
-      ...(hasEeEdition()
-        ? [
-            {
-              titleKey: 'myNote',
-              href: `/admin/${orgUId}/my-note`,
-              icon: NotebookPen,
-            },
-          ]
-        : []),
+      ...(eeNavItems ?? []).map((item) => ({
+        titleKey: item.titleKey,
+        href: `/admin/${orgUId}${item.href}`,
+        icon: EE_ICONS[item.icon],
+      })),
     ];
-  }, [orgUId, pendingCount, waitingCount]);
+  }, [orgUId, pendingCount, waitingCount, eeNavItems]);
   const accountingItems = useMemo(() => {
     if (!orgUId || !accountingEnabled) return [];
 

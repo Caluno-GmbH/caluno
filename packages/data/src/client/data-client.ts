@@ -1,7 +1,6 @@
 import type { DataError } from '../errors/data-error';
 import { createSdkErrorWrapper } from '../errors/translate';
 import { getSdk } from '../generated/graphql';
-import type { NoteApi } from '../note-api';
 import { EventRepository } from '../repositories/event/event.repository';
 import { MembershipRepository } from '../repositories/membership/membership.repository';
 import { MembershipRequestRepository } from '../repositories/membershipRequest/membershipRequest.repository';
@@ -22,22 +21,6 @@ import {
   type GraphQLClientConfig,
 } from './graphql-client';
 import type { OrganizationContext } from './organization-context';
-
-function tryCreateNoteRepository(
-  sdk: ReturnType<typeof getSdk>,
-): NoteApi | undefined {
-  try {
-    // EE-only; directory is stripped from OSS mirrors.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { NoteRepository: NoteRepo } =
-      require('../ee/note/note.repository') as {
-        NoteRepository: new (sdk: ReturnType<typeof getSdk>) => NoteApi;
-      };
-    return new NoteRepo(sdk);
-  } catch {
-    return undefined;
-  }
-}
 
 export interface DataClientConfig extends GraphQLClientConfig {
   onError?: (error: DataError) => void;
@@ -63,8 +46,6 @@ export class DataClient {
   public readonly publicOrganizationUnit: PublicOrganizationUnitRepository;
   public readonly task: TaskRepository;
   public readonly terms: TermsRepository;
-  /** EE-only; undefined when the EE note package is absent. */
-  public readonly note?: NoteApi;
 
   public readonly organizationContext?: OrganizationContext;
 
@@ -92,7 +73,6 @@ export class DataClient {
     this.publicOrganizationUnit = new PublicOrganizationUnitRepository(sdk);
     this.task = new TaskRepository(sdk);
     this.terms = new TermsRepository(sdk);
-    this.note = tryCreateNoteRepository(sdk);
   }
 
   async getCurrentOrganizationId(): Promise<string | null> {
