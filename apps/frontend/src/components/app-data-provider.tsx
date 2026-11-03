@@ -1,12 +1,11 @@
 'use client';
 
-import type { DataError } from '@repo/data';
+import { type DataError, isUnauthenticatedDataError } from '@repo/data';
 import { DataProvider, type DataProviderProps } from '@repo/data/react';
 import { useLocale } from 'next-intl';
 import { useCallback } from 'react';
 import { redirect, usePathname } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
-import { handleServerDataClientError } from '@/lib/data-client-errors';
 import { resolveDataErrorRedirect } from '@/lib/data-error-redirect';
 
 type AppDataProviderProps = DataProviderProps & {
@@ -18,10 +17,10 @@ type AppDataProviderProps = DataProviderProps & {
 };
 
 /**
- * DataProvider for app routes. React Query hooks share this error path with
- * `getDataClient`: UNAUTHENTICATED redirects to login, FORBIDDEN redirects
- * to `/unauthorized`. `DataProvider` rethrows that redirect during render.
- * A bare DataError on that path means the redirect did not throw.
+ * DataProvider for app routes. UNAUTHENTICATED from a React Query hook
+ * redirects to login; `DataProvider` rethrows that redirect during render.
+ * Every other DataError (FORBIDDEN included) stays with the caller, so a
+ * missing permission is a toast, not a lost page.
  */
 export function AppDataProvider({
   children,
@@ -35,17 +34,12 @@ export function AppDataProvider({
 
   const onError = useCallback(
     (error: DataError) => {
-      handleServerDataClientError(
-        error,
-        { redirectOnUnauthenticated },
-        (path): never => {
-          const href = resolveDataErrorRedirect(path, pathname);
-          redirect({ href, locale });
-          throw new Error(
-            `redirect('${href}') returned instead of throwing — redirect did not fire`,
-          );
-        },
-      );
+      if (redirectOnUnauthenticated && isUnauthenticatedDataError(error)) {
+        redirect({
+          href: resolveDataErrorRedirect('/login', pathname),
+          locale,
+        });
+      }
     },
     [locale, pathname, redirectOnUnauthenticated],
   );
