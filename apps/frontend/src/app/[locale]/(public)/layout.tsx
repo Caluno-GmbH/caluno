@@ -1,6 +1,6 @@
-import { DataProvider } from '@repo/data/react';
 import { headers } from 'next/headers';
 import type { PropsWithChildren } from 'react';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { VolunteerNav } from '@/components/navigation/volunteer-nav';
 import { resolveLocale } from '@/i18n/routing';
 import { isAuthenticated } from '@/lib/auth-server';
@@ -43,11 +43,15 @@ export default async function PublicLayout({
   const isAdmin = authenticated && !pending ? await isAnAdminstrator() : false;
 
   return (
-    <DataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
+    <AppDataProvider
+      apiUrl={GRAPHQL_API_URL}
+      locale={locale}
+      redirectOnUnauthenticated={authenticated}
+    >
       <div className="flex min-h-screen flex-col">
         <main className="grow pb-24">{children}</main>
         {authenticated && <VolunteerNav isAdmin={isAdmin} />}
       </div>
-    </DataProvider>
+    </AppDataProvider>
   );
 }

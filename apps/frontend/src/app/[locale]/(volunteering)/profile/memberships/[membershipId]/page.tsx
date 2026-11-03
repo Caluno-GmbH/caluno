@@ -1,5 +1,5 @@
-import { DataProvider } from '@repo/data/react';
 import { getTranslations } from 'next-intl/server';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { VolunteerDocumentsSection } from '@/domain/accounting/components/volunteer-documents-section';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
 import { MembershipFormCard } from '@/domain/memberships/components/membership-form-card';
@@ -89,7 +89,7 @@ export default async function MembershipDetailPage({ params }: Props) {
 
         {/* Scoped to the membership's org unit so each organisation's page
             lists only its own documents (see accounting-volunteer-documents). */}
-        <DataProvider
+        <AppDataProvider
           apiUrl={GRAPHQL_API_URL}
           organizationUnitId={organizationUnitId}
           locale={locale}
@@ -98,7 +98,7 @@ export default async function MembershipDetailPage({ params }: Props) {
             membershipId={membershipId}
             organizationUnitId={organizationUnitId}
           />
-        </DataProvider>
+        </AppDataProvider>
       </div>
     </div>
   );

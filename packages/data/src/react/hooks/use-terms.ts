@@ -1,9 +1,10 @@
 'use client';
 
 import { TermsRepository } from '@repo/data';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AcceptTermsInput } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useTermsStatus() {
   const sdk = useSdk();

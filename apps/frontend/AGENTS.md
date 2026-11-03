@@ -37,6 +37,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - `lib/auth-server.ts`: `getSession()`, `requireAuth()`, `getCurrentUser()`, `isAuthenticated()` — server components, layouts, and server actions only
 - `lib/org-context-server.ts`: `requireOrgAccess(orgUId)`, `getMyAdministrableOrgUnits()` (cached), `getMyAccessibleOrganizationUnits()`, `resolveOrgFromId(orgUId)`
 - Data access: `const data = await getDataClient(orgUId)` (`lib/data-client.ts`) — auto-adds the `x-organization-unit-id` header and auth cookies; a 403 throws `ForbiddenDataError` → server-side `redirect('/unauthorized')` in `data-client.ts` / server components. This is the org-safety mechanism: never construct GraphQL calls that bypass it.
+- React Query (`AppDataProvider`, not a raw `DataProvider`) is the client-hook boundary. SSR fetches to the GraphQL URL get the incoming request `Cookie` header (`installSsrGraphqlCookieForwarding` in `instrumentation.ts` — Node `credentials: 'include'` does not). Only `UNAUTHENTICATED` from those hooks redirects — to `/login?redirectTo=…&reason=session-expired` (`resolveSessionExpiredRedirect`); the reason stops the login page bouncing a still-valid frontend session back (redirect loop). `FORBIDDEN` stays a `DataError` for the caller. `DataProvider` rethrows that `NEXT_REDIRECT` from `useQuery` and `useMutation` during render. The public layout passes `redirectOnUnauthenticated={authenticated}` so an anonymous visitor is not sent to `/login`.
 
 ## Patterns
 

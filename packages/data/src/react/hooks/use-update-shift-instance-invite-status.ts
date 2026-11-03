@@ -1,9 +1,10 @@
 'use client';
 
 import { ShiftRepository } from '@repo/data';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ShiftInviteStatus } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useUpdateShiftInstanceInviteStatus() {
   const sdk = useSdk();
