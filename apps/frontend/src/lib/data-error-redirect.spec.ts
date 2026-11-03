@@ -1,21 +1,20 @@
 import { describe, expect, it } from 'bun:test';
-import { resolveDataErrorRedirect } from './data-error-redirect';
+import { resolveSessionExpiredRedirect } from './data-error-redirect';
 
-describe('resolveDataErrorRedirect', () => {
-  it('sends UNAUTHENTICATED to login with the current page', () => {
+describe('resolveSessionExpiredRedirect', () => {
+  it('sends UNAUTHENTICATED to login with the current page and reason', () => {
     expect(
-      resolveDataErrorRedirect(
-        '/login',
+      resolveSessionExpiredRedirect(
         '/admin/org-1/shifts/shift-1/instances/instance-1',
       ),
     ).toBe(
-      '/login?redirectTo=%2Fadmin%2Forg-1%2Fshifts%2Fshift-1%2Finstances%2Finstance-1',
+      '/login?redirectTo=%2Fadmin%2Forg-1%2Fshifts%2Fshift-1%2Finstances%2Finstance-1&reason=session-expired',
     );
   });
 
-  it('leaves the forbidden target unchanged', () => {
-    expect(
-      resolveDataErrorRedirect('/unauthorized?message=No%20access', '/admin'),
-    ).toBe('/unauthorized?message=No%20access');
+  it('adds the reason when there is no page to return to', () => {
+    expect(resolveSessionExpiredRedirect('/')).toBe(
+      '/login?reason=session-expired',
+    );
   });
 });

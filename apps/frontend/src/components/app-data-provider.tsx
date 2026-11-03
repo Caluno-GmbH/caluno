@@ -6,7 +6,7 @@ import { useLocale } from 'next-intl';
 import { useCallback } from 'react';
 import { redirect, usePathname } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
-import { resolveDataErrorRedirect } from '@/lib/data-error-redirect';
+import { resolveSessionExpiredRedirect } from '@/lib/data-error-redirect';
 
 type AppDataProviderProps = DataProviderProps & {
   /**
@@ -35,10 +35,7 @@ export function AppDataProvider({
   const onError = useCallback(
     (error: DataError) => {
       if (redirectOnUnauthenticated && isUnauthenticatedDataError(error)) {
-        redirect({
-          href: resolveDataErrorRedirect('/login', pathname),
-          locale,
-        });
+        redirect({ href: resolveSessionExpiredRedirect(pathname), locale });
       }
     },
     [locale, pathname, redirectOnUnauthenticated],
