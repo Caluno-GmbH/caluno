@@ -9,6 +9,16 @@ import * as Sentry from '@sentry/nextjs';
  * We support only a few locales, so we keep translation enabled and instead
  * make removeChild/insertBefore tolerant of nodes that were moved away from
  * their expected parent. Every mismatch is still reported to Sentry.
+ *
+ * Known limitations (accepted: the goal is to avoid a crash, not visual drift):
+ * - Chrome Translate usually *detaches* the original text node rather than
+ *   reparenting it. Removal is then a no-op and the <font> wrapper stays, so
+ *   later React text updates land on the detached node and translated text
+ *   can go stale until the page re-renders that subtree.
+ * - When the insertBefore reference was moved, the new node is appended to
+ *   the parent, so sibling order can differ from what React intended.
+ * - The guard does not distinguish translation from other causes (extensions,
+ *   genuine double removals); the `translated` tag separates them in Sentry.
  */
 
 type Operation = 'removeChild' | 'insertBefore';
@@ -60,10 +70,12 @@ export function createMismatchReporter(
     // Report once per page load to keep visibility without flooding.
     if (!reportedThisPage) {
       reportedThisPage = true;
-      sentry.captureMessage(
-        `DOM mismatch recovered in ${operation} (likely browser translation)`,
-        { level: 'warning', tags: { dom_mismatch: operation }, extra: data },
-      );
+      const cause = data.translated ? ' (browser translation)' : '';
+      sentry.captureMessage(`DOM mismatch recovered in ${operation}${cause}`, {
+        level: 'warning',
+        tags: { dom_mismatch: operation, translated: String(data.translated) },
+        contexts: { dom_mismatch: data },
+      });
     }
   };
 }
@@ -73,6 +85,15 @@ export function patchNodePrototype(proto: Node, report: MismatchReporter) {
   if (marked[PATCHED]) return;
   marked[PATCHED] = true;
 
+  // Reporting must never turn a recovered operation back into a crash.
+  const safeReport: MismatchReporter = (...args) => {
+    try {
+      report(...args);
+    } catch {
+      // Ignore: the DOM recovery matters more than the report.
+    }
+  };
+
   const originalRemoveChild = proto.removeChild;
   proto.removeChild = function removeChild<T extends Node>(
     this: Node,
@@ -80,7 +101,7 @@ export function patchNodePrototype(proto: Node, report: MismatchReporter) {
   ): T {
     if (child.parentNode !== this) {
       const actualParent = child.parentNode;
-      report('removeChild', this, child, actualParent);
+      safeReport('removeChild', this, child, actualParent);
       if (actualParent) {
         originalRemoveChild.call(actualParent, child);
       }
@@ -96,7 +117,7 @@ export function patchNodePrototype(proto: Node, report: MismatchReporter) {
     referenceNode: Node | null,
   ): T {
     if (referenceNode && referenceNode.parentNode !== this) {
-      report('insertBefore', this, referenceNode, referenceNode.parentNode);
+      safeReport('insertBefore', this, referenceNode, referenceNode.parentNode);
       return this.appendChild(newNode);
     }
     return originalInsertBefore.call(this, newNode, referenceNode) as T;

@@ -135,6 +135,19 @@ describe('patchNodePrototype', () => {
     });
   });
 
+  it('still recovers when reporting throws', () => {
+    patchNodePrototype(FakeNode.prototype as unknown as Node, () => {
+      throw new Error('reporting failed');
+    });
+    const font = new FakeNode('font');
+    font.appendChild(child);
+
+    expect(parent.removeChild(child)).toBe(child);
+    expect(font.childNodes).toEqual([]);
+    expect(parent.insertBefore(child, new FakeNode('span'))).toBe(child);
+    expect(parent.childNodes).toEqual([child]);
+  });
+
   it('patches a prototype only once', () => {
     const report = patch(FakeNode);
     patchNodePrototype(FakeNode.prototype as unknown as Node, report);
@@ -173,17 +186,33 @@ describe('createMismatchReporter', () => {
     expect(addBreadcrumb).toHaveBeenCalledTimes(2);
     expect(captureMessage).toHaveBeenCalledTimes(1);
     expect(captureMessage).toHaveBeenCalledWith(
-      'DOM mismatch recovered in removeChild (likely browser translation)',
-      expect.objectContaining({
+      'DOM mismatch recovered in removeChild (browser translation)',
+      {
         level: 'warning',
-        extra: {
-          operation: 'removeChild',
-          parent: 'div',
-          node: '#text',
-          actualParent: 'font',
-          htmlLang: 'en',
-          translated: true,
+        tags: { dom_mismatch: 'removeChild', translated: 'true' },
+        contexts: {
+          dom_mismatch: {
+            operation: 'removeChild',
+            parent: 'div',
+            node: '#text',
+            actualParent: 'font',
+            htmlLang: 'en',
+            translated: true,
+          },
         },
+      },
+    );
+  });
+
+  it('does not blame translation when the page is not translated', () => {
+    const report = createMismatchReporter(fakeDocument(), sentry);
+
+    report('insertBefore', node('DIV'), node('SPAN'), null);
+
+    expect(captureMessage).toHaveBeenCalledWith(
+      'DOM mismatch recovered in insertBefore',
+      expect.objectContaining({
+        tags: { dom_mismatch: 'insertBefore', translated: 'false' },
       }),
     );
   });
