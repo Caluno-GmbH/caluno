@@ -11,67 +11,76 @@ import * as Sentry from '@sentry/nextjs';
  * their expected parent. Every mismatch is still reported to Sentry.
  */
 
-let installed = false;
-let reportedThisPage = false;
+type Operation = 'removeChild' | 'insertBefore';
 
-function describeNode(node: Node | null | undefined): string {
-  if (!node) return String(node);
-  if (node instanceof Element) return node.tagName.toLowerCase();
-  return node.nodeName;
-}
-
-function reportMismatch(
-  operation: 'removeChild' | 'insertBefore',
+export type MismatchReporter = (
+  operation: Operation,
   parent: Node,
   node: Node | null,
   actualParent: Node | null,
-) {
-  const data = {
-    operation,
-    parent: describeNode(parent),
-    node: describeNode(node),
-    actualParent: describeNode(actualParent),
-    htmlLang: document.documentElement.lang,
-    translated:
-      document.documentElement.classList.contains('translated-ltr') ||
-      document.documentElement.classList.contains('translated-rtl'),
-  };
+) => void;
 
-  Sentry.addBreadcrumb({
-    category: 'dom.mismatch',
-    level: 'warning',
-    message: `${operation}: node is not a child of this node (recovered)`,
-    data,
-  });
+const PATCHED = Symbol.for('caluno.translationDomGuard');
 
-  // Report once per page load to keep visibility without flooding.
-  if (!reportedThisPage) {
-    reportedThisPage = true;
-    Sentry.captureMessage(
-      `DOM mismatch recovered in ${operation} (likely browser translation)`,
-      { level: 'warning', tags: { dom_mismatch: operation }, extra: data },
-    );
-  }
+function describeNode(node: Node | null | undefined): string {
+  if (!node) return String(node);
+  return node.nodeName.toLowerCase();
 }
 
-export function installTranslationDomGuard() {
-  if (
-    installed ||
-    typeof window === 'undefined' ||
-    typeof Node === 'undefined'
-  ) {
-    return;
-  }
-  installed = true;
+export type SentrySink = Pick<
+  typeof Sentry,
+  'addBreadcrumb' | 'captureMessage'
+>;
 
-  const originalRemoveChild = Node.prototype.removeChild;
-  Node.prototype.removeChild = function removeChild<T extends Node>(
+export function createMismatchReporter(
+  doc: Document,
+  sentry: SentrySink = Sentry,
+): MismatchReporter {
+  let reportedThisPage = false;
+
+  return (operation, parent, node, actualParent) => {
+    const data = {
+      operation,
+      parent: describeNode(parent),
+      node: describeNode(node),
+      actualParent: describeNode(actualParent),
+      htmlLang: doc.documentElement.lang,
+      translated:
+        doc.documentElement.classList.contains('translated-ltr') ||
+        doc.documentElement.classList.contains('translated-rtl'),
+    };
+
+    sentry.addBreadcrumb({
+      category: 'dom.mismatch',
+      level: 'warning',
+      message: `${operation}: node is not a child of this node (recovered)`,
+      data,
+    });
+
+    // Report once per page load to keep visibility without flooding.
+    if (!reportedThisPage) {
+      reportedThisPage = true;
+      sentry.captureMessage(
+        `DOM mismatch recovered in ${operation} (likely browser translation)`,
+        { level: 'warning', tags: { dom_mismatch: operation }, extra: data },
+      );
+    }
+  };
+}
+
+export function patchNodePrototype(proto: Node, report: MismatchReporter) {
+  const marked = proto as Node & { [PATCHED]?: true };
+  if (marked[PATCHED]) return;
+  marked[PATCHED] = true;
+
+  const originalRemoveChild = proto.removeChild;
+  proto.removeChild = function removeChild<T extends Node>(
     this: Node,
     child: T,
   ): T {
     if (child.parentNode !== this) {
       const actualParent = child.parentNode;
-      reportMismatch('removeChild', this, child, actualParent);
+      report('removeChild', this, child, actualParent);
       if (actualParent) {
         originalRemoveChild.call(actualParent, child);
       }
@@ -80,21 +89,21 @@ export function installTranslationDomGuard() {
     return originalRemoveChild.call(this, child) as T;
   };
 
-  const originalInsertBefore = Node.prototype.insertBefore;
-  Node.prototype.insertBefore = function insertBefore<T extends Node>(
+  const originalInsertBefore = proto.insertBefore;
+  proto.insertBefore = function insertBefore<T extends Node>(
     this: Node,
     newNode: T,
     referenceNode: Node | null,
   ): T {
     if (referenceNode && referenceNode.parentNode !== this) {
-      reportMismatch(
-        'insertBefore',
-        this,
-        referenceNode,
-        referenceNode.parentNode,
-      );
+      report('insertBefore', this, referenceNode, referenceNode.parentNode);
       return this.appendChild(newNode);
     }
     return originalInsertBefore.call(this, newNode, referenceNode) as T;
   };
+}
+
+export function installTranslationDomGuard() {
+  if (typeof window === 'undefined' || typeof Node === 'undefined') return;
+  patchNodePrototype(Node.prototype, createMismatchReporter(document));
 }
