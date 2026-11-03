@@ -17,8 +17,25 @@ export function graphqlRequestUrl(input: FetchInput): string {
   return input.url;
 }
 
+function parseUrl(url: string): URL | undefined {
+  try {
+    return new URL(url);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Compares parsed origin + path, not raw strings: graphql-request hands fetch
+ * a normalised `URL`, so `:443`, host case or a trailing slash in the
+ * configured URL must not silently skip the cookie.
+ */
 export function isGraphqlRequestUrl(url: string, graphqlUrl: string): boolean {
-  return url === graphqlUrl || url.startsWith(`${graphqlUrl}?`);
+  const request = parseUrl(url);
+  const endpoint = parseUrl(graphqlUrl);
+  if (!request || !endpoint) return false;
+  const path = (u: URL) => u.pathname.replace(/\/+$/, '');
+  return request.origin === endpoint.origin && path(request) === path(endpoint);
 }
 
 export function applyCookieHeader(
