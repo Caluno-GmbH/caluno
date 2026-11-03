@@ -1,4 +1,4 @@
-import { Args, Context, Int, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, ID, Int, Query, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
@@ -66,5 +66,17 @@ export class MembershipRequestQueryResolver {
       limit: pagination.limit,
       offset: pagination.offset,
     });
+  }
+
+  @Query(() => MembershipRequest, { nullable: true })
+  async myMembershipRequest(
+    @Args('id', { type: () => ID }) id: string,
+    @Session() session: UserSession,
+  ): Promise<MembershipRequest | null> {
+    const request = await this.membershipRequestService.getMyMembershipRequest(
+      session.user.id,
+      id,
+    );
+    return this.membershipRequestMapper.toModel(request);
   }
 }

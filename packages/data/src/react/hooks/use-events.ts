@@ -1,12 +1,13 @@
 'use client';
 
 import { EventRepository, PublicEventRepository } from '@repo/data';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateEventInput,
   UpdateEventInput,
 } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useEvents() {
   const sdk = useSdk();

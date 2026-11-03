@@ -15,15 +15,21 @@ function makeService(args: {
   const db = {
     query: {
       reimbursementTypes: { findMany: async () => types },
-      documentTemplates: { findMany: async () => args.templates ?? [] },
     },
+  };
+  const templateService = {
+    findResolvedTemplates: async () => args.templates ?? [],
   };
   const requirements = {
     missingBaselineOrgProfileSourcesForProfile: () =>
       args.missingOrgFields ?? [],
     resolveOrgProfile: async () => args.orgProfile,
   };
-  return new AccountingSetupService(db as never, requirements as never);
+  return new AccountingSetupService(
+    db as never,
+    requirements as never,
+    templateService as never,
+  );
 }
 
 describe('AccountingSetupService.getSetupStatus', () => {
@@ -122,6 +128,7 @@ describe('AccountingSetupService.getSetupStatus', () => {
     const service = new AccountingSetupService(
       db as never,
       requirements as never,
+      { findResolvedTemplates: async () => [] } as never,
     );
 
     await service.getSetupStatus('org-1', 'unit-1');

@@ -200,7 +200,9 @@ export function OrganizationProfileForm({
       <div className="flex items-center justify-end gap-2">
         <Button type="submit" disabled={isPending}>
           {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-          {isPending ? tCommon('saving') : tCommon('save')}
+          {/* Wrapped in a span so browser translation (which replaces bare text
+              nodes with <font> elements) can't break React inserting the spinner. */}
+          <span>{isPending ? tCommon('saving') : tCommon('save')}</span>
         </Button>
       </div>
     </form>

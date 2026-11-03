@@ -1,10 +1,11 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { MembershipRequestRepository } from '../../repositories/membershipRequest/membershipRequest.repository';
 import { ShiftRepository } from '../../repositories/shift/shift.repository';
 import { TimeEntryRepository } from '../../repositories/time-entry/time-entry.repository';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 /**
  * Deliberately no query invalidation: per the spec, invite mutations leave

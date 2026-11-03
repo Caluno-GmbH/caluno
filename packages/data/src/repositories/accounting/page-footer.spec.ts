@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { pageFooterTextLines, pageNumberLabel } from './template-body.types';
+import {
+  PAGE_FOOTER_WARN_LENGTH,
+  pageFooterMayBeCut,
+  pageFooterTextLines,
+  pageNumberLabel,
+} from './template-body.types';
 
 describe('page footer helpers (preview side)', () => {
   it('returns nothing when disabled or absent', () => {
@@ -27,5 +32,45 @@ describe('page footer helpers (preview side)', () => {
 
   it('fills the same format with placeholders for the unpaginated preview', () => {
     expect(pageNumberLabel('x', 'y')).toBe('Seite x von y');
+  });
+});
+
+describe('pageFooterMayBeCut', () => {
+  const on = (text: string) => ({ enabled: true, text });
+
+  it('warns past 300 characters', () => {
+    expect(PAGE_FOOTER_WARN_LENGTH).toBe(300);
+  });
+
+  it('accepts three typed lines within the length', () => {
+    expect(pageFooterMayBeCut(on('A\nB\nC'))).toBe(false);
+    expect(pageFooterMayBeCut(on('x'.repeat(PAGE_FOOTER_WARN_LENGTH)))).toBe(
+      false,
+    );
+  });
+
+  it('warns past three typed lines, counting blank lines between them', () => {
+    expect(pageFooterMayBeCut(on('A\nB\nC\nD'))).toBe(true);
+    expect(pageFooterMayBeCut(on('A\n\nB\nC'))).toBe(true);
+  });
+
+  it('warns past the length', () => {
+    expect(
+      pageFooterMayBeCut(on('x'.repeat(PAGE_FOOTER_WARN_LENGTH + 1))),
+    ).toBe(true);
+  });
+
+  it('ignores trailing whitespace and blank lines', () => {
+    expect(pageFooterMayBeCut(on('A\nB\nC\n\n\n'))).toBe(false);
+    expect(
+      pageFooterMayBeCut(on(`${'x'.repeat(PAGE_FOOTER_WARN_LENGTH)}   \n`)),
+    ).toBe(false);
+  });
+
+  it('never warns when the footer is off', () => {
+    expect(pageFooterMayBeCut(undefined)).toBe(false);
+    expect(pageFooterMayBeCut({ enabled: false, text: 'A\nB\nC\nD' })).toBe(
+      false,
+    );
   });
 });

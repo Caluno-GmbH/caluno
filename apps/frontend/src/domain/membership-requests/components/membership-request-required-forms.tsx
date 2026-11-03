@@ -44,11 +44,8 @@ export function MembershipRequestRequiredForms({
           const submission = (submissions ?? []).find(
             (s) => s.form?.id === ref.form.id,
           );
-          return (
-            <div
-              key={ref.form.id}
-              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-            >
+          const content = (
+            <>
               <div className="flex items-center gap-2">
                 {isSubmitted ? (
                   <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -58,15 +55,31 @@ export function MembershipRequestRequiredForms({
                 <span>{ref.form.name}</span>
               </div>
               {isSubmitted && submission && (
-                <Link
-                  href={`/admin/${orgUId}/volunteers/form-submission/${submission.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               )}
+            </>
+          );
+
+          if (isSubmitted && submission) {
+            return (
+              <Link
+                key={ref.form.id}
+                href={`/admin/${orgUId}/volunteers/form-submission/${submission.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent transition-colors"
+              >
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <div
+              key={ref.form.id}
+              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+            >
+              {content}
             </div>
           );
         })}

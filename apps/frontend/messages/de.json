@@ -1576,7 +1576,10 @@
       "applyToAllLabel": "Auf alle zukünftigen Termine anwenden"
     },
     "empty": {
+      "clearFilters": "Alle Filter zurücksetzen",
       "description": "Erstelle deinen ersten Einsatz und lade Freiwillige ein, um loszulegen.",
+      "noMatchDescription": "Passe deine Filter an oder setze sie zurück, um mehr Ergebnisse zu sehen.",
+      "noMatchTitle": "Keine Einsätze entsprechen deinen Filtern",
       "title": "Noch keine Einsätze"
     },
     "eventBadge": "Veranstaltung",
@@ -1818,7 +1821,29 @@
       "pattern": "Muster",
       "requiredForms": "Formulare",
       "time": "Zeit",
-      "visibility": "Sichtbarkeit"
+      "visibility": "Sichtbarkeit",
+      "location": "Ort",
+      "staffing": "Besetzung",
+      "recurrenceSince": "Seit {date}",
+      "expandOccurrences": "Termine ausklappen",
+      "pendingCount": "{count, plural, one {# offene Einladung} other {# offene Einladungen}}",
+      "collapseOccurrences": "Termine einklappen"
+    },
+    "filter": {
+      "location": "Ort",
+      "visibility": "Sichtbarkeit",
+      "date": "Zeitraum",
+      "fill": "Besetzung",
+      "locationPlaceholder": "Alle Orte",
+      "locationEmpty": "Keine Orte gefunden",
+      "visibilityAll": "Alle",
+      "visibilityInviteOnly": "Nur auf Einladung",
+      "visibilityOpen": "Offen",
+      "datePlaceholder": "Zeitraum",
+      "fillAll": "Alle",
+      "fillUnderstaffed": "Unterbesetzt",
+      "fillFull": "Voll",
+      "sheetTitle": "Filter"
     },
     "search": {
       "placeholder": "Nach Name suchen",
@@ -2017,7 +2042,32 @@
       "date": "Datum",
       "shift": "Einsatz",
       "volunteer": "Freiwillige:r",
-      "status": "Status"
+      "status": "Status",
+      "location": "Standort",
+      "total": "Gesamt",
+      "expand": "Ausklappen",
+      "collapse": "Einklappen",
+      "downloadCsv": ".csv herunterladen",
+      "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
+      "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
+      "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
+      "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
+      "loading": "Zeiterfassungen werden geladen…",
+      "truncatedNotice": "Es werden die ersten 50.000 Einträge angezeigt. Bitte Filter einschränken, um alle Einträge zu sehen.",
+      "loadError": "Zeiteinträge konnten nicht geladen werden. Bitte versuche es erneut."
+    },
+    "csv": {
+      "volunteerName": "Name",
+      "volunteerEmail": "E-Mail",
+      "shift": "Einsatz",
+      "assignment": "Einsatz",
+      "location": "Ort",
+      "startedAt": "Beginn",
+      "endedAt": "Ende",
+      "durationMinutes": "Dauer (Min.)",
+      "status": "Status",
+      "createdBy": "Erfasst von",
+      "notes": "Notizen"
     },
     "validation": {
       "endBeforeStart": "Check-out muss nach dem Check-in liegen",
@@ -2025,13 +2075,28 @@
       "organizationUnitRequired": "Bitte wähle eine Organisationseinheit.",
       "reimbursementTypeRequired": "Bitte wähle einen Pauschalentyp.",
       "shiftInstanceRequired": "Bitte wähle einen Einsatztermin.",
-      "startAfterShiftEnd": "Check-in darf nicht nach dem Schichtende liegen ({end})",
+      "startAfterShiftEnd": "Check-in darf nicht nach dem Einsatzende liegen ({end})",
       "startedAtRequired": "Bitte gib eine Startzeit an.",
       "timeEntryIdRequired": "Zeiteintrags-ID ist erforderlich",
       "volunteerRequired": "Bitte wähle eine Person aus."
     },
     "filter": {
-      "status": "Status"
+      "status": "Status",
+      "statusPlaceholder": "Alle Status",
+      "shift": "Einsatz",
+      "shiftPlaceholder": "Alle Einsätze",
+      "volunteer": "Ehrenamtliche",
+      "volunteerPlaceholder": "Alle Ehrenamtlichen",
+      "date": "Datum",
+      "datePlaceholder": "Alle Daten",
+      "location": "Standort",
+      "locationPlaceholder": "Alle Standorte",
+      "locationEmpty": "Keine Standorte gefunden",
+      "sheetTitle": "Filter",
+      "shiftEmpty": "Keine Einsätze gefunden",
+      "volunteerEmpty": "Keine Ehrenamtlichen gefunden",
+      "dateFromOnly": "ab {date}",
+      "dateToOnly": "bis {date}"
     },
     "status": {
       "autoClosed": "Automatisch ausgecheckt",
@@ -2204,6 +2269,9 @@
     "yourShiftsThisWeek": "{n, plural, one {# Einsatz diese Woche} other {# Einsätze diese Woche}}"
   },
   "Accounting": {
+    "characterCounter": {
+      "tooLong": "{count, plural, one {# Zeichen} other {# Zeichen}} zu lang"
+    },
     "settings": {
       "title": "Einstellungen",
       "subtitle": "Richte Vergütung und Dokumentvorlagen ein.",
@@ -2585,6 +2653,11 @@
         "saveButton": "Vorlage speichern",
         "saveSuccessToast": "Vorlage gespeichert",
         "saveErrorToast": "Die Vorlage ließ sich nicht speichern. Versuch es bitte erneut.",
+        "provenance": {
+          "inheritedHint": "Diese Vorlage wurde von {unit} übernommen. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert.",
+          "orgWideHint": "Das ist die organisationsweite Vorlage. Beim Speichern entsteht eine Kopie für diese Einheit, das Original bleibt unverändert.",
+          "orgWideRootHint": "Beim Speichern entsteht eine eigene Version für die Organisation. Sie gilt für alle Einheiten ohne eigene Vorlage."
+        },
         "signeesUnavailableToast": "Die Unterschriftenrollen konnten noch nicht geladen werden. Bitte warte einen Moment und versuch es erneut.",
         "orgProfile": {
           "blockedMessage": "In deinen Organisationsdaten fehlen Angaben, die diese Vorlage benötigt. Vervollständige die Organisationsdaten, bevor du speicherst.",
@@ -2638,6 +2711,7 @@
           },
           "alreadyReceivedHint": "Wird beim Erstellen eines Stundennachweises automatisch aus dem verknüpften Vereinbarungszeitraum berechnet.",
           "incompleteCount": "{count, plural, one {Hier fehlt noch eine Angabe} other {Hier fehlen noch {count} Angaben}}",
+          "overLimitCount": "{count, plural, one {# Feld ist zu lang} other {# Felder sind zu lang}}",
           "notSetYet": "noch nicht festgelegt",
           "sameAsAbove": "gleicher Wert wie oben festgelegt",
           "scrollRegionLabel": "Vorlagen-Editor, scrollbar",
@@ -2746,7 +2820,8 @@
         "pageFooter": {
           "title": "Fußzeile",
           "description": "Erscheint unten auf jeder Seite.",
-          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB"
+          "placeholder": "z. B. Trägername · Straße\nPLZ Ort\nAmtsgericht, HRB",
+          "mayBeCutWarning": "Die Fußzeile wird eventuell abgeschnitten: Unten auf der Seite ist Platz für höchstens 3 Zeilen. Bitte die Vorschau prüfen."
         }
       },
       "card": {
@@ -2756,6 +2831,11 @@
         },
         "editButton": "Vorlage bearbeiten",
         "lastEdited": "Zuletzt bearbeitet am {date} von {name}",
+        "provenance": {
+          "own": "Eigene Vorlage",
+          "inherited": "Übernommen von {unit}",
+          "orgWide": "Organisationsweite Vorlage"
+        },
         "badges": {
           "renewal": {
             "monthly": "Monatliche Erneuerung",

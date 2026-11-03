@@ -104,12 +104,22 @@ export function MembershipCard({ entry }: Props) {
         )}
 
         {entry.state === 'requested' && (
-          <div className="flex justify-start">
-            <WithdrawMembershipButton
-              id={entry.id}
-              organizationUnitId={orgUnit.id}
-              orgName={orgUnit.name}
-            />
+          <div className="flex justify-between items-center">
+            <div>
+              <WithdrawMembershipButton
+                id={entry.id}
+                organizationUnitId={orgUnit.id}
+                orgName={orgUnit.name}
+              />
+            </div>
+            <div className="flex justify-end">
+              <Link
+                href={`/profile/membership-requests/${entry.id}`}
+                className="flex items-center gap-1"
+              >
+                {t('actions.open')} <ChevronRight className="size-4" />
+              </Link>
+            </div>
           </div>
         )}
       </CardContent>

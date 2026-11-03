@@ -45,6 +45,52 @@ export class TenantScopeService {
   }
 
   /**
+   * Builds a check for whether a unit sits on the header unit's branch: the
+   * header unit itself, one of its ancestors, or one of its descendants.
+   * Siblings and other organizations are off the branch. The header chain is
+   * loaded once and each unit's verdict is memoised for the life of the
+   * returned function, so scope one request's rows with one matcher.
+   */
+  createBranchMatcher(
+    headerUnitId: string,
+  ): (unitId: string) => Promise<boolean> {
+    let headerChain: Promise<string[]> | undefined;
+    const verdicts = new Map<string, boolean>();
+    return async (unitId) => {
+      headerChain ??=
+        this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+          headerUnitId,
+        );
+      if ((await headerChain).includes(unitId)) return true;
+      let isDescendant = verdicts.get(unitId);
+      if (isDescendant === undefined) {
+        const chain =
+          await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+            unitId,
+          );
+        isDescendant = chain.includes(headerUnitId);
+        verdicts.set(unitId, isDescendant);
+      }
+      return isDescendant;
+    };
+  }
+
+  /**
+   * The header unit must be its organization's top unit (no parent). For
+   * organization-wide resources that only the top unit may change.
+   */
+  async assertHeaderUnitIsTopUnit(
+    headerUnitId: string,
+    notFoundMessage = 'Resource not found',
+  ): Promise<void> {
+    const headerUnit =
+      await this.organizationUnitDataService.findById(headerUnitId);
+    if (!headerUnit || headerUnit.parentId !== null) {
+      throw new NotFoundGraphQLError(notFoundMessage);
+    }
+  }
+
+  /**
    * The user has a membership in the header unit or one of its descendants,
    * e.g. a volunteer whose accounting data the caller manages.
    */

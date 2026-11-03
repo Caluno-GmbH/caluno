@@ -8,11 +8,11 @@ inputs:
   install:
     description: Run `bun install --frozen-lockfile`.
     required: false
-    default: 'true'
+    default: "true"
   turbo-cache:
     description: Restore the Turborepo filesystem cache (.turbo/cache).
     required: false
-    default: 'false'
+    default: "false"
 
 runs:
   using: composite

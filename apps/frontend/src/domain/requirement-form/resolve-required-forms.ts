@@ -3,18 +3,14 @@ import type { RequiredForm } from '@repo/data/react';
 import type { RequiredFormItem } from './components/required-form-renderer';
 
 type FormSubmission = {
-  form?: { id?: string | null } | null;
+  form: { id: string };
 };
 
 /** Form ids the user has already submitted, derived from their submission history. */
-export function buildSubmittedFormIds(
+export function getSubmittedFormIds(
   submissions: FormSubmission[],
 ): Set<string> {
-  return new Set(
-    submissions
-      .map((s) => s.form?.id)
-      .filter((id): id is string => Boolean(id)),
-  );
+  return new Set(submissions.map((s) => s.form.id));
 }
 
 /** Map OrganizationUserProfile-anchored form values to fieldId → string for prefills. */

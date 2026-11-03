@@ -4,6 +4,7 @@ import { Button } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import type { TemplateProvenance } from '../../lib/template-slots';
 import type { DocumentKind, PauschalenType } from '../doc-type-header';
 import { getPauschaleKey } from '../doc-type-header';
 import { TemplateCardBadges } from './card-badges';
@@ -14,6 +15,7 @@ interface TemplateCardFilledProps {
   pauschale: PauschalenType;
   kind: DocumentKind;
   summary: TemplateCardSummary;
+  provenance: TemplateProvenance;
   lastEditedAt: string | null;
   lastEditedBy: string | null;
   builderHref?: string;
@@ -23,6 +25,7 @@ export function TemplateCardFilled({
   pauschale,
   kind,
   summary,
+  provenance,
   lastEditedAt,
   lastEditedBy,
   builderHref,
@@ -55,6 +58,12 @@ export function TemplateCardFilled({
       }
     >
       <TemplateCardBadges summary={summary} />
+
+      <p className="text-sm text-muted-foreground">
+        {provenance.kind === 'inherited'
+          ? t('card.provenance.inherited', { unit: provenance.unitName })
+          : t(`card.provenance.${provenance.kind}`)}
+      </p>
 
       {lastEditedAt && lastEditedBy && (
         <p className="text-sm text-muted-foreground">

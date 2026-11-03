@@ -3,10 +3,12 @@
 A data wrapper around the GraphQL api. All queries and mutations in the frontend go via this package. The frontend does NOT use the GraphQL api directly.
 
 ## Commands
+
 - `bun run check-types` - Check for any typescript compile errors
 - `bun run codegen` - Generates Typescript interfacing code for *.graphql queries and mutations
 
 ## Project Structure
+
 ```
 src/
 ├── repositories  # Domain based repositories to query and mutate data in RSC and Server Actions
@@ -16,7 +18,9 @@ src/
 ```
 
 ## Patterns
+
 - Repositories 'wrap' the GraphQL queries and mutations (*.graphql)
 - GraphQL queries and mutations (*.graphql) are co-located with the repositories that use them
 - Locale is request metadata: pass `locale` to `createDataClient` / `DataProvider`; `@repo/data` maps it to the `x-locale` header. The Better Auth client also sends `x-locale` from the `caluno.locale` cookie (with a pathname fallback) on every auth request.
+- `DataProvider` retries a failed query or mutation once, except a Next `NEXT_REDIRECT` or an UNAUTHENTICATED / FORBIDDEN `DataError` (`shouldRetryQuery`). `throwOnError` rethrows that error during render so a `redirect()` from `onError` navigates from `useQuery` and `useMutation`, not only suspense. Other errors stay in hook state. Hooks import `useMutation` from `react/hooks/use-mutation.ts`, never `@tanstack/react-query`: on a redirect its `mutateAsync` never settles and per-call `onError` / `onSettled` (passed to `mutate` / `mutateAsync`) are skipped, so callers do not toast `NEXT_REDIRECT` or a failure while the page navigates.
 - Adding a query/mutation: see skill `.agents/skills/add-data-query`

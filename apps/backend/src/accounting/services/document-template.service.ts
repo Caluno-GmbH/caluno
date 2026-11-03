@@ -8,6 +8,7 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
+import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -22,6 +23,7 @@ import type {
   DocumentTemplateEntity,
 } from '../schemas/document-template.schema';
 import type { TemplateSigneeEntity } from '../schemas/template-signee.schema';
+import { assertManualFieldLengthsInBody } from '../utils/text-limits';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 
 @Injectable()
@@ -31,6 +33,7 @@ export class DocumentTemplateService {
     private readonly db: Database,
     private readonly postHogService: PostHogService,
     private readonly documentProfileRequirementService: DocumentProfileRequirementService,
+    private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
 
   async findDocumentTemplates(
@@ -51,9 +54,7 @@ export class DocumentTemplateService {
       with: { signees: true },
     });
     if (!template) {
-      throw new NotFoundGraphQLError(
-        `Document template with ID ${templateId} not found`,
-      );
+      throw new NotFoundGraphQLError('Document template not found');
     }
     return template;
   }
@@ -64,6 +65,7 @@ export class DocumentTemplateService {
     editedByUserId: string,
   ): Promise<DocumentTemplateEntity> {
     this.assertValidSignees(input.signees);
+    assertManualFieldLengthsInBody(input.body);
 
     if (input.organizationUnitId) {
       const unit = await this.db.query.organizationUnits.findFirst({
@@ -160,6 +162,7 @@ export class DocumentTemplateService {
     // unit (or org root unit, for an org-wide template) the template is
     // scoped to before overwriting its body.
     if (input.body !== undefined) {
+      assertManualFieldLengthsInBody(input.body);
       await this.assertOrgProfileComplete(
         organizationId,
         existingTemplate.organizationUnitId,
@@ -240,9 +243,10 @@ export class DocumentTemplateService {
   }
 
   /**
-   * Resolves the template a unit actually uses: its own override if one
-   * exists, else the organization-wide default. Pass `organizationUnitId:
-   * null` (or omit it) to resolve the org-wide default directly.
+   * Resolves the template a unit actually uses, the same way rates resolve:
+   * its own template first, then each ancestor up to the root, then the
+   * organization-wide default. Pass `organizationUnitId: null` (or omit it)
+   * to resolve the org-wide default directly.
    */
   async findActiveTemplate(
     organizationId: string,
@@ -250,36 +254,72 @@ export class DocumentTemplateService {
     kind: DocumentKind,
     organizationUnitId?: string | null,
   ): Promise<DocumentTemplateEntity> {
-    if (organizationUnitId) {
-      const override = await this.db.query.documentTemplates.findFirst({
-        where: {
-          organizationId,
-          organizationUnitId,
-          reimbursementTypeId,
-          kind,
-          isDeleted: false,
-        },
-      });
-      if (override) {
-        return override;
-      }
-    }
-
-    const template = await this.db.query.documentTemplates.findFirst({
-      where: {
-        organizationId,
-        organizationUnitId: { isNull: true },
-        reimbursementTypeId,
-        kind,
-        isDeleted: false,
-      },
-    });
+    const [template] = await this.findResolvedTemplates(
+      organizationId,
+      organizationUnitId,
+      { reimbursementTypeId, kind, onlyEdited: true },
+    );
     if (!template) {
       throw new NotFoundGraphQLError(
         `No ${kind.toLowerCase()} template configured for reimbursement type ${reimbursementTypeId}`,
       );
     }
     return template;
+  }
+
+  /**
+   * The template each (reimbursement type, kind) slot resolves to for a unit,
+   * one entry per slot that has any. Walks own unit -> parent -> ... -> root ->
+   * org-wide. All candidates for the whole chain come from a single query and
+   * are ranked in memory by chain position. Soft-deleted rows never count;
+   * `onlyEdited` also drops seeded stubs that were never saved.
+   */
+  async findResolvedTemplates(
+    organizationId: string,
+    organizationUnitId: string | null | undefined,
+    filter: {
+      reimbursementTypeId?: string;
+      kind?: DocumentKind;
+      onlyEdited?: boolean;
+    } = {},
+  ): Promise<DocumentTemplateEntity[]> {
+    const chain = organizationUnitId
+      ? await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+          organizationUnitId,
+        )
+      : [];
+
+    const candidates = await this.db.query.documentTemplates.findMany({
+      where: {
+        organizationId,
+        isDeleted: false,
+        ...(filter.reimbursementTypeId !== undefined && {
+          reimbursementTypeId: filter.reimbursementTypeId,
+        }),
+        ...(filter.kind !== undefined && { kind: filter.kind }),
+        ...(filter.onlyEdited && { lastEditedAt: { isNotNull: true } }),
+        OR: [
+          ...(chain.length > 0 ? [{ organizationUnitId: { in: chain } }] : []),
+          { organizationUnitId: { isNull: true } },
+        ],
+      },
+    });
+
+    // Position in the chain; the org-wide row (no unit) ranks last.
+    const rankOf = (template: DocumentTemplateEntity): number =>
+      template.organizationUnitId
+        ? chain.indexOf(template.organizationUnitId)
+        : chain.length;
+
+    const bySlot = new Map<string, DocumentTemplateEntity>();
+    for (const template of candidates) {
+      const slot = `${template.reimbursementTypeId}:${template.kind}`;
+      const current = bySlot.get(slot);
+      if (!current || rankOf(template) < rankOf(current)) {
+        bySlot.set(slot, template);
+      }
+    }
+    return [...bySlot.values()];
   }
 
   async findOrderedTemplateSignees(

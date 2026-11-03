@@ -1,13 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import { DataError } from '@repo/data';
 
-const findMyAdminstrableOrganizationUnits = mock(async () => []);
-const getMyMembershipStatus = mock(async () => false);
-const findOrgUnitById = mock(async () => null);
+const findMyAdministrableOrganizationUnits = mock(async () => []);
+const findAccessInfo = mock(async () => ({ isMember: false, unit: null }));
 const getDataClient = mock(async () => ({
-  organization: { findMyAdminstrableOrganizationUnits },
-  membership: { getMyMembershipStatus },
-  organizationUnit: { findById: findOrgUnitById },
+  organization: { findMyAdministrableOrganizationUnits },
+  organizationUnit: { findAccessInfo },
 }));
 
 mock.module('next/headers', () => ({
@@ -20,6 +18,14 @@ mock.module('next/navigation', () => ({
   },
   redirect: () => {
     throw new Error('REDIRECT');
+  },
+  unstable_rethrow: (error: unknown) => {
+    if (
+      error instanceof Error &&
+      (error.message === 'NOT_FOUND' || error.message === 'REDIRECT')
+    ) {
+      throw error;
+    }
   },
 }));
 
@@ -73,20 +79,18 @@ function nestedUnit(id: string, name: string, orgName: string): RawUnitFixture {
 }
 
 function resetMocks() {
-  findMyAdminstrableOrganizationUnits.mockClear();
-  getMyMembershipStatus.mockClear();
-  findOrgUnitById.mockClear();
+  findMyAdministrableOrganizationUnits.mockClear();
+  findAccessInfo.mockClear();
   getDataClient.mockClear();
-  findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
-  getMyMembershipStatus.mockResolvedValue(false);
-  findOrgUnitById.mockResolvedValue(null);
+  findMyAdministrableOrganizationUnits.mockResolvedValue([]);
+  findAccessInfo.mockResolvedValue({ isMember: false, unit: null });
 }
 
 describe('isAnAdminstrator', () => {
   beforeEach(resetMocks);
 
   it('returns false when administrable org lookup is unauthenticated', async () => {
-    findMyAdminstrableOrganizationUnits.mockRejectedValue(
+    findMyAdministrableOrganizationUnits.mockRejectedValue(
       new DataError('Unauthorized', { code: 'UNAUTHENTICATED' }),
     );
 
@@ -97,7 +101,7 @@ describe('isAnAdminstrator', () => {
   });
 
   it('returns true when the user has administrable org units', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([
+    findMyAdministrableOrganizationUnits.mockResolvedValue([
       rootUnit('unit-1', 'Playground'),
     ]);
 
@@ -109,7 +113,7 @@ describe('getMyAdministrableOrgUnits', () => {
   beforeEach(resetMocks);
 
   it('marks root units and keeps the raw unit name', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([
+    findMyAdministrableOrganizationUnits.mockResolvedValue([
       rootUnit('unit-root', 'Playground'),
     ]);
 
@@ -126,7 +130,7 @@ describe('getMyAdministrableOrgUnits', () => {
   });
 
   it('marks nested units with the root organization name', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([
+    findMyAdministrableOrganizationUnits.mockResolvedValue([
       nestedUnit('unit-sales', 'Sales', 'Playground'),
     ]);
 
@@ -145,7 +149,7 @@ describe('getMyAdministrableOrgUnits', () => {
   it('sorts by display label, not raw unit name', async () => {
     // Raw names sort "Alpha" before "Beta", but display labels sort
     // "Beta" before "Zoo › Alpha".
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([
+    findMyAdministrableOrganizationUnits.mockResolvedValue([
       nestedUnit('unit-alpha', 'Alpha', 'Zoo'),
       rootUnit('unit-beta', 'Beta'),
     ]);
@@ -169,11 +173,11 @@ describe('requireOrgAccess', () => {
     await expect(requireOrgAccess('requirement-forms')).rejects.toThrow(
       'NOT_FOUND',
     );
-    expect(findMyAdminstrableOrganizationUnits).not.toHaveBeenCalled();
+    expect(findMyAdministrableOrganizationUnits).not.toHaveBeenCalled();
   });
 
   it('returns the administrable unit when it is in the user list', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([
+    findMyAdministrableOrganizationUnits.mockResolvedValue([
       nestedUnit(UUID_SALES, 'Sales', 'Playground'),
     ]);
 
@@ -188,11 +192,11 @@ describe('requireOrgAccess', () => {
       }),
     );
     expect(organizations).toHaveLength(1);
-    expect(getMyMembershipStatus).not.toHaveBeenCalled();
+    expect(findAccessInfo).not.toHaveBeenCalled();
   });
 
   it('redirects legacy organization ids to their root unit', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([
+    findMyAdministrableOrganizationUnits.mockResolvedValue([
       rootUnit(UUID_ROOT, 'Playground'),
     ]);
 
@@ -200,21 +204,23 @@ describe('requireOrgAccess', () => {
   });
 
   it('builds the org from the unit lookup for non-admin members', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
-    getMyMembershipStatus.mockResolvedValue(true);
-    findOrgUnitById.mockResolvedValue({
-      id: UUID_SALES,
-      slug: 'sales',
-      name: 'Sales',
-      parent: { id: UUID_ROOT, name: 'Playground' },
-      description: null,
-      logoUrl: null,
-      street: null,
-      zipCode: null,
-      city: null,
-      legalRep: null,
-      organizationId: UUID_ORG,
-      organization: { id: UUID_ORG, name: 'Playground' },
+    findMyAdministrableOrganizationUnits.mockResolvedValue([]);
+    findAccessInfo.mockResolvedValue({
+      isMember: true,
+      unit: {
+        id: UUID_SALES,
+        slug: 'sales',
+        name: 'Sales',
+        parent: { id: UUID_ROOT, name: 'Playground' },
+        description: null,
+        logoUrl: null,
+        street: null,
+        zipCode: null,
+        city: null,
+        legalRep: null,
+        organizationId: UUID_ORG,
+        organization: { id: UUID_ORG, name: 'Playground' },
+      },
     });
 
     const { org } = await requireOrgAccess(UUID_SALES);
@@ -232,21 +238,23 @@ describe('requireOrgAccess', () => {
   });
 
   it('marks fallback units without a parent as root', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
-    getMyMembershipStatus.mockResolvedValue(true);
-    findOrgUnitById.mockResolvedValue({
-      id: UUID_ROOT,
-      slug: 'playground',
-      name: 'Playground',
-      parent: null,
-      description: null,
-      logoUrl: null,
-      street: null,
-      zipCode: null,
-      city: null,
-      legalRep: null,
-      organizationId: UUID_ORG,
-      organization: { id: UUID_ORG, name: 'Playground' },
+    findMyAdministrableOrganizationUnits.mockResolvedValue([]);
+    findAccessInfo.mockResolvedValue({
+      isMember: true,
+      unit: {
+        id: UUID_ROOT,
+        slug: 'playground',
+        name: 'Playground',
+        parent: null,
+        description: null,
+        logoUrl: null,
+        street: null,
+        zipCode: null,
+        city: null,
+        legalRep: null,
+        organizationId: UUID_ORG,
+        organization: { id: UUID_ORG, name: 'Playground' },
+      },
     });
 
     const { org } = await requireOrgAccess(UUID_ROOT);
@@ -262,10 +270,19 @@ describe('requireOrgAccess', () => {
   });
 
   it('redirects to unauthorized when the user is not a member', async () => {
-    findMyAdminstrableOrganizationUnits.mockResolvedValue([]);
-    getMyMembershipStatus.mockResolvedValue(false);
+    findMyAdministrableOrganizationUnits.mockResolvedValue([]);
+    findAccessInfo.mockResolvedValue({ isMember: false, unit: null });
 
     await expect(requireOrgAccess(UUID_UNKNOWN)).rejects.toThrow('REDIRECT');
-    expect(findOrgUnitById).not.toHaveBeenCalled();
+    expect(findAccessInfo).toHaveBeenCalledTimes(1);
+  });
+
+  it('redirects to unauthorized when membership is true but the unit lookup is null', async () => {
+    // Defensive: isMember true with a null unit should still redirect, not
+    // throw a TypeError on `unit.id`.
+    findMyAdministrableOrganizationUnits.mockResolvedValue([]);
+    findAccessInfo.mockResolvedValue({ isMember: true, unit: null });
+
+    await expect(requireOrgAccess(UUID_UNKNOWN)).rejects.toThrow('REDIRECT');
   });
 });

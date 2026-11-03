@@ -4,8 +4,9 @@ import {
   type ShiftInstanceDetail,
   ShiftRepository,
 } from '@repo/data';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useShift(id?: string) {
   const sdk = useSdk();

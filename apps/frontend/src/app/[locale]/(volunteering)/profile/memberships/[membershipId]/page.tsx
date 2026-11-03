@@ -1,56 +1,16 @@
-import type {
-  GetMyFormSubmissionsQuery,
-  MyRequiredOrgUnitFormsQuery,
-} from '@repo/data';
-import { DataProvider } from '@repo/data/react';
 import { getTranslations } from 'next-intl/server';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { VolunteerDocumentsSection } from '@/domain/accounting/components/volunteer-documents-section';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
-import {
-  type FormSubmission,
-  MembershipFormCard,
-} from '@/domain/memberships/components/membership-form-card';
+import { MembershipFormCard } from '@/domain/memberships/components/membership-form-card';
 import { MembershipStatusBadge } from '@/domain/memberships/components/membership-status-badge';
+import { mergeOrgUnitFormsWithSubmissions } from '@/domain/memberships/lib/merge-org-unit-forms';
 import { internalRoleKey } from '@/domain/role/lib/role-label';
 import { resolveLocale } from '@/i18n/routing';
 import { GRAPHQL_API_URL } from '@/lib/constants';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
 import { requireFound } from '@/lib/require-found';
-
-type OrgUnitForm =
-  MyRequiredOrgUnitFormsQuery['myRequiredOrgUnitForms'][number];
-type MyFormSubmissionItem =
-  GetMyFormSubmissionsQuery['myFormSubmissions'][number];
-
-const mergeOrgUnitFormsWithSubmissions = (
-  forms: OrgUnitForm[],
-  submissions: MyFormSubmissionItem[],
-  organizationUnitId: string,
-): FormSubmission[] => {
-  const mergedByFormId = new Map<string, FormSubmission>();
-  for (const form of forms) {
-    mergedByFormId.set(form.id, {
-      form,
-      organizationUnitId,
-      completed: false,
-    });
-  }
-
-  for (const submission of submissions) {
-    if (submission.form) {
-      mergedByFormId.set(submission.form.id, {
-        form: submission.form,
-        organizationUnitId,
-        completed: true,
-        submissionId: submission.id,
-        submittedAt: submission.submittedAt,
-      });
-    }
-  }
-
-  return [...mergedByFormId.values()];
-};
 
 type Props = {
   params: Promise<{ locale: string; membershipId: string }>;
@@ -129,7 +89,7 @@ export default async function MembershipDetailPage({ params }: Props) {
 
         {/* Scoped to the membership's org unit so each organisation's page
             lists only its own documents (see accounting-volunteer-documents). */}
-        <DataProvider
+        <AppDataProvider
           apiUrl={GRAPHQL_API_URL}
           organizationUnitId={organizationUnitId}
           locale={locale}
@@ -138,7 +98,7 @@ export default async function MembershipDetailPage({ params }: Props) {
             membershipId={membershipId}
             organizationUnitId={organizationUnitId}
           />
-        </DataProvider>
+        </AppDataProvider>
       </div>
     </div>
   );

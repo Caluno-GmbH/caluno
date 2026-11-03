@@ -1,4 +1,5 @@
 import { JoinStatus } from '@repo/data';
+import { unstable_rethrow } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { EventFormsClient } from '@/app/[locale]/(public)/events/[eventId]/forms/event-forms-client';
 import { EventPageHeader } from '@/domain/event/components/event-page-header';
@@ -38,7 +39,7 @@ export default async function EventFormsPage({
   const event = await requireFound(() => data.publicEvent.findById(eventId));
 
   const session = await getSession();
-  if (!session) {
+  if (!session?.user) {
     const inviteParams = new URLSearchParams({
       redirectTo: redirectTo ?? `/events/${eventId}/forms`,
     });
@@ -48,7 +49,10 @@ export default async function EventFormsPage({
     redirect({ href: `/api/invite?${inviteParams}`, locale });
   }
 
-  const joinResult = await data.publicEvent.join(eventId).catch(() => null);
+  const joinResult = await data.publicEvent.join(eventId).catch((error) => {
+    unstable_rethrow(error);
+    return null;
+  });
 
   if (joinResult?.status === JoinStatus.Joined) {
     redirect({
@@ -73,7 +77,8 @@ export default async function EventFormsPage({
   try {
     const userProfile = await data.user.getMe();
     profileData = profileFieldValues(userProfile);
-  } catch {
+  } catch (error) {
+    unstable_rethrow(error);
     // Ignore profile fetch errors; form will render without prefilled values.
   }
 

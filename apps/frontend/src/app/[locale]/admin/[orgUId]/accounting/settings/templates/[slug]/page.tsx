@@ -19,7 +19,7 @@ export default async function TemplateBuilderPage({
 
   return (
     <TemplateBuilder
-      key={orgUId}
+      key={`${orgUId}:${slug}`}
       pauschale={slot.pauschale}
       kind={slot.kind}
       backHref={`/admin/${orgUId}/accounting/settings?tab=templates`}

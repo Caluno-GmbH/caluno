@@ -5,6 +5,7 @@ needs to prove its coverage. Tools produce evidence and coverage; agents only
 triage and reason about authorization logic. Nothing here modifies source.
 
 ## Commands
+
 Run from `packages/security` (or `bun run security:audit` from the root).
 - `bun run audit` - All steps below; results in `out/` (gitignored). Exit 3 if a tool was missing or wrote no report: a skipped or failed step is not a pass.
 - `bun run audit:surface` - Every resolver/controller endpoint via AST -> `out/surface.json`, with the tenant-context flags
@@ -18,6 +19,7 @@ Run from `packages/security` (or `bun run security:audit` from the root).
 - `bun run check-types`
 
 ## Project Structure
+
 ```
 src/
 ├── config.ts                # Calibration: paths, decorators, tenant context, tenant-query rule. Update when conventions change
@@ -32,6 +34,7 @@ out/                         # Generated reports, never committed
 ```
 
 ## Tenant model these checks rely on
+
 Verified in code; if any of this changes, update `src/config.ts` and this section.
 - The active tenant is chosen by the client: header `x-organization-unit-id`, copied into the GraphQL context (`apps/backend/src/app.module.ts`) and read by `PermissionGuard` for REST.
 - `PermissionGuard` checks membership and permissions only when the handler has `@Permissions(...)`. Without it the guard returns `true` and `organizationUnitId` is unverified input.
@@ -39,10 +42,12 @@ Verified in code; if any of this changes, update `src/config.ts` and this sectio
 - `fieldResolverEnhancers: ['guards']` is on, so guards also run on `@ResolveField`.
 
 ## Invariants
+
 - **A, tenant context verified**: a handler that reads `context.organizationUnitId` or the header must have `@Permissions`. Checked on 100% of endpoints by `audit:surface` (flag `UNVERIFIED-TENANT-CONTEXT`).
 - **B, tenant-scoped queries**: every Drizzle read/write on a tenant table must be constrained to the caller's unit, not only by `id`. Tenant tables are those with an `organizationUnitId`/`organizationId` column plus the tenant root (`organizations`). `audit:tenant` writes `out/tenant-queries.json`. It is a report, not a gate: findings do not fail the run.
 
 ### What `audit:tenant` flags
+
 - `db.query.<table>.findFirst|findMany({ where: { id } })`, also written as a condition (`where: eq(t.id, v)`) or a callback (`where: (t, { eq }) => eq(t.id, v)`)
 - `.where(<condition>)` on select, update and delete
 - A condition is `eq(t.id, v)`, `inArray(t.id, vs)`, or `and(...)` holding one of those with no arm on a tenant column
@@ -52,6 +57,7 @@ Not flagged: a `where` that also has a tenant column, a tenant relation, `AND`/`
 Each finding lists `reachedFrom` (the resolver/controller handlers that call the enclosing method, one level up) and `readsTenantContext` (one of them reads the header unit). `readsTenantContext: false` on a handler-reached finding usually means the handler never compares anything with the tenant: start there.
 
 ### Closing a finding
+
 Pass the loaded resource to a `TenantScopeService` helper (`apps/backend/src/organization/tenant-scope.service.ts`) before returning or writing it:
 - `assertResourceInScope(headerUnitId, resource.organizationUnitId)`: the resource's unit is the header unit or a descendant of it.
 - `assertUserInScope(headerUnitId, userId)`: the user has a membership in scope (e.g. a volunteer).
@@ -65,6 +71,7 @@ All throw NotFound, so a foreign id looks like a missing one. A helper call clos
 A helper call about a different resource, or on a client-supplied unit, closes nothing. When the id provably cannot cross tenants (e.g. it comes from the caller's own session), exempt the statement instead: `// tenant-scope-ok: <reason>`. The reason is required; an empty marker does not exempt.
 
 ### Limits
+
 - Whether a helper call actually runs is not analysed: a call inside a branch or after an early return counts. That needs control flow, not an AST rule.
 - Callers are matched by method name, one level up. A name shared by unrelated classes (`update`) lists extra handlers in `reachedFrom` and makes closing harder, never easier.
 - Tables scoped only through a parent (shift -> event -> unit) are not detected.
@@ -73,12 +80,14 @@ A helper call about a different resource, or on a client-supplied unit, closes n
 The `security-audit` skill still reviews what these limits leave out.
 
 ## Flags in `out/surface.json`
+
 - `UNVERIFIED-TENANT-CONTEXT` - Highest priority. Confirm the service does not trust the unit id, or add `@Permissions`.
 - `ANONYMOUS` - `@AllowAnonymous`/`@OptionalAuth`. Every object loaded by id must be safe to show to anyone.
 - `AUTHENTICATED-NO-PERMISSION` - Any logged-in user can call it. Fine for "my own data" endpoints scoped by `session.user.id`; a bug otherwise.
 - `CLASS-LEVEL-PERMISSIONS-IGNORED` - Move the decorator to each method.
 
 ## Patterns
+
 - Adding a check: prefer an AST/semgrep rule that covers every call site over a prompt instruction. Agents sample; rules don't.
 - Changing a guard, decorator or the tenant header: update `src/config.ts` in the same PR.
 - Running an AI audit: see skill `.agents/skills/security-audit`.

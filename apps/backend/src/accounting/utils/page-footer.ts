@@ -19,18 +19,32 @@ export function resolvePageFooter(body: {
   };
 }
 
-// Duplicated in packages/data for the preview; the backend cannot import it.
-export function pageFooterLines(footer: PageFooter): string[] {
-  if (!footer.enabled) return [];
-  const text = footer.text.replace(/\r\n/g, '\n').trimEnd();
-  return text.length === 0 ? [] : text.split('\n');
+/** The PDF footer holds at most this many printed lines; the rest is dropped. */
+export const PAGE_FOOTER_MAX_LINES = 3;
+/**
+ * One printed footer line as pdfkit steps it: Helvetica's line height at 8pt
+ * (9.248) plus the line gap, rounded up.
+ */
+export const PAGE_FOOTER_TEXT_LINE_HEIGHT = 10.25;
+export const PAGE_FOOTER_TEXT_HEIGHT =
+  PAGE_FOOTER_MAX_LINES * PAGE_FOOTER_TEXT_LINE_HEIGHT;
+
+/** The footer text as typed, or empty when off. Trailing blank lines are dropped. */
+export function pageFooterText(footer: PageFooter): string {
+  if (!footer.enabled) return '';
+  return footer.text.replace(/\r\n/g, '\n').trimEnd();
 }
 
-/** Never zero: the page number is always present. */
+/**
+ * Never zero: the page number is always present. Any footer text gets the
+ * full three-line block, since its wrapped height is unknown up front.
+ */
 export function pageFooterHeight(footer: PageFooter): number {
-  const lines = pageFooterLines(footer);
-  const textBlock = lines.length > 0 ? 1 + lines.length : 0;
-  return GAP_ABOVE + (1 + textBlock) * PAGE_FOOTER_LINE_HEIGHT;
+  const textBlock =
+    pageFooterText(footer) === ''
+      ? 0
+      : PAGE_FOOTER_LINE_HEIGHT + PAGE_FOOTER_TEXT_HEIGHT;
+  return GAP_ABOVE + PAGE_FOOTER_LINE_HEIGHT + textBlock;
 }
 
 export function pageNumberLabel(

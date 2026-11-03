@@ -41,6 +41,7 @@ import {
   draftPeriodForAnchor,
   formatLifespanForPeriod,
 } from '../utils/contract-lifespan';
+import { assertFieldOverrideLengths } from '../utils/text-limits';
 import { DocumentNotificationService } from './document-notification.service';
 import { DocumentProfileRequirementService } from './document-profile-requirement.service';
 import { DocumentRenderingService } from './document-rendering.service';
@@ -308,6 +309,7 @@ export class ContractService {
     input: CreateContractInput,
     actorUserId: string,
   ): Promise<ContractEntity> {
+    assertFieldOverrideLengths(input.fieldOverrides);
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
       input.reimbursementTypeId,

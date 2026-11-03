@@ -1,4 +1,5 @@
 # @repo/data
+
 Platform-agnostic data layer using repository pattern + codegen for graphql integration
 
 ## Overview
@@ -101,9 +102,7 @@ export default function RootLayout({ children }) {
 import { createAuthClient } from '@repo/data/react';
 
 // Create auth client (in your app, not the package)
-export const authClient = createAuthClient(
-  process.env.NEXT_PUBLIC_API_URL!
-);
+export const authClient = createAuthClient(process.env.NEXT_PUBLIC_API_URL!);
 
 const { data: session } = authClient.useSession();
 ```
@@ -188,6 +187,7 @@ Types are generated in `src/generated/graphql.ts` from:
 ```
 
 ## Benefits
+
 - **Platform Agnostic** - Core repositories work in any JavaScript environment
 - **Type Safe** - Full TypeScript from GraphQL schema to UI
 - **SSR Compatible** - Direct repository usage in server components

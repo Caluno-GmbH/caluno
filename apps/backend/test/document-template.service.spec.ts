@@ -16,6 +16,7 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../src/graphql/errors';
+import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { createReimbursementType } from './factories/accounting.factory';
 import {
@@ -48,6 +49,7 @@ describe('DocumentTemplateService', () => {
       {
         missingOrgProfileSources: () => Promise.resolve([]),
       } as unknown as DocumentProfileRequirementService,
+      new OrganizationUnitDataService(db),
     );
   });
 
@@ -258,6 +260,7 @@ describe('DocumentTemplateService', () => {
           capture: () => {},
         } as unknown as PostHogService,
         new DocumentProfileRequirementService(db, {} as never),
+        new OrganizationUnitDataService(db),
       );
 
       await expect(
@@ -302,6 +305,7 @@ describe('DocumentTemplateService', () => {
           capture: () => {},
         } as unknown as PostHogService,
         new DocumentProfileRequirementService(db, {} as never),
+        new OrganizationUnitDataService(db),
       );
 
       const body = {
@@ -372,6 +376,59 @@ describe('DocumentTemplateService', () => {
 
       const signees = await service.findOrderedTemplateSignees(template.id);
       expect(signees).toHaveLength(2);
+    });
+
+    it('rejects a template body with an over-limit task description', async () => {
+      const reimbursementType = await createReimbursementType(db);
+      const { organization } = await createOrganizationWithType(
+        db,
+        `Update Template Org ${crypto.randomUUID()}`,
+      );
+      const editor = await createUser(db);
+      const template = await service.createDocumentTemplate(
+        organization.id,
+        {
+          reimbursementTypeId: reimbursementType.id,
+          kind: DocumentKind.CONTRACT,
+          body: { header: {}, blocks: [], footer: {} },
+          signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
+        },
+        editor.id,
+      );
+
+      await expect(
+        service.updateDocumentTemplate(
+          organization.id,
+          template.id,
+          {
+            body: {
+              header: {},
+              blocks: [
+                {
+                  id: 'engagement',
+                  lines: [
+                    {
+                      id: 'line',
+                      text: '{tasks}',
+                      fields: [
+                        {
+                          id: 'tasks',
+                          value: {
+                            kind: 'manual-template',
+                            value: 'x'.repeat(301),
+                          },
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+              footer: {},
+            },
+          },
+          editor.id,
+        ),
+      ).rejects.toThrow('Task description must be at most 300 characters');
     });
 
     it('does not retroactively change a contract already issued from the template', async () => {

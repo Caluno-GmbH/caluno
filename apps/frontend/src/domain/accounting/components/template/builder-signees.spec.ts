@@ -3,6 +3,7 @@ import { PermissionKey, SigneeType } from '@repo/data';
 import {
   defaultSignees,
   findAccountingManagePermissionId,
+  toSigneeInputs,
 } from './builder-signees';
 
 describe('defaultSignees', () => {
@@ -38,5 +39,35 @@ describe('findAccountingManagePermissionId', () => {
         { id: 'p-acc', key: PermissionKey.AccountingManage },
       ]),
     ).toBe('p-acc');
+  });
+});
+
+describe('toSigneeInputs', () => {
+  it('flattens the permission relation to its id', () => {
+    expect(
+      toSigneeInputs([
+        {
+          order: 0,
+          signeeType: SigneeType.Volunteer,
+          requiredPermission: null,
+        },
+        {
+          order: 1,
+          signeeType: SigneeType.PermissionHolder,
+          requiredPermission: { id: 'perm-1' },
+        },
+      ]),
+    ).toEqual([
+      {
+        order: 0,
+        signeeType: SigneeType.Volunteer,
+        requiredPermissionId: undefined,
+      },
+      {
+        order: 1,
+        signeeType: SigneeType.PermissionHolder,
+        requiredPermissionId: 'perm-1',
+      },
+    ]);
   });
 });

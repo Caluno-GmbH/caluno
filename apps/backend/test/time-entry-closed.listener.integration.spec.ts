@@ -18,6 +18,7 @@ import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import { NotFoundGraphQLError } from '../src/graphql/errors';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import type { ObservabilityService } from '../src/shared/observability/observability.service';
 import type { PostHogService } from '../src/shared/observability/posthog.service';
 import {
@@ -65,10 +66,16 @@ describe('TimeEntryClosedListener', () => {
       db,
       organizationUnitDataService,
       postHog,
+      new TenantScopeService(db, organizationUnitDataService),
     );
-    const documentTemplateService = new DocumentTemplateService(db, postHog, {
-      missingOrgProfileSources: () => Promise.resolve([]),
-    } as unknown as DocumentProfileRequirementService);
+    const documentTemplateService = new DocumentTemplateService(
+      db,
+      postHog,
+      {
+        missingOrgProfileSources: () => Promise.resolve([]),
+      } as unknown as DocumentProfileRequirementService,
+      organizationUnitDataService,
+    );
     contractService = new ContractService(
       db,
       documentTemplateService,

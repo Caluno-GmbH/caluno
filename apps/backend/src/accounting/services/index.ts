@@ -1,4 +1,5 @@
 export { AccountingOrgAccessService } from './accounting-org-access.service';
+export { AccountingScopeService } from './accounting-scope.service';
 export {
   AccountingSetupService,
   type AccountingSetupStatusResult,

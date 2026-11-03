@@ -184,16 +184,16 @@ An email that keeps throwing before the transport is capped at the next claim.
 
 ## Expiry and duplicate protection
 
-| Caller | Category | Expiry |
-|---|---|---|
-| Call-out | `CALL_OUT` | `actualEndsAt` |
-| No recipients | `CALL_OUT_NO_RECIPIENTS` | `actualEndsAt` |
-| Manager notification | `MANAGER_NOTIFICATION` | `actualEndsAt` |
-| Digest | `DIGEST` | Next day |
-| Invite reminder | `INVITE_REMINDER` | `actualEndsAt` |
-| Notifications | `NOTIFICATION` | None |
-| Support | `SUPPORT` | None |
-| Auth | `AUTH` | OTP 5 min / reset 1 h |
+| Caller               | Category                 | Expiry                |
+| -------------------- | ------------------------ | --------------------- |
+| Call-out             | `CALL_OUT`               | `actualEndsAt`        |
+| No recipients        | `CALL_OUT_NO_RECIPIENTS` | `actualEndsAt`        |
+| Manager notification | `MANAGER_NOTIFICATION`   | `actualEndsAt`        |
+| Digest               | `DIGEST`                 | Next day              |
+| Invite reminder      | `INVITE_REMINDER`        | `actualEndsAt`        |
+| Notifications        | `NOTIFICATION`           | None                  |
+| Support              | `SUPPORT`                | None                  |
+| Auth                 | `AUTH`                   | OTP 5 min / reset 1 h |
 
 The outbox has no dedupe key; callers prevent duplicate sends themselves:
 
@@ -210,17 +210,17 @@ together with its own writes.
 
 ## Operational constants
 
-| Setting | Value |
-|---|---|
-| Worker tick | 10 s |
-| Claim batch | 20 emails |
-| Send concurrency | 3 |
-| Max emails per drain | 200 |
-| Drain time budget | 60 s |
-| Max attempts | 8 |
-| Stale `SENDING` reclaim | 10 min |
-| Provider timeout | 20 s |
-| Final email retention | 30 days |
+| Setting                 | Value     |
+| ----------------------- | --------- |
+| Worker tick             | 10 s      |
+| Claim batch             | 20 emails |
+| Send concurrency        | 3         |
+| Max emails per drain    | 200       |
+| Drain time budget       | 60 s      |
+| Max attempts            | 8         |
+| Stale `SENDING` reclaim | 10 min    |
+| Provider timeout        | 20 s      |
+| Final email retention   | 30 days   |
 
 ## Local verification
 

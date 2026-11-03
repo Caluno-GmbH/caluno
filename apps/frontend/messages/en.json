@@ -4,7 +4,7 @@
     "loadFailed": "Waiting actions could not be loaded.",
     "seeAll": "See all",
     "groups": {
-      "volunteersAndShifts": "Volunteers and shifts",
+      "volunteersAndShifts": "Volunteers and appointments",
       "accounting": "Accounting"
     },
     "types": {
@@ -228,18 +228,18 @@
     "unavailableTitle": "Can't check in this person",
     "agreementNoTemplateTitle": "No agreement template set up",
     "agreementNoTemplateManageBody": "Set up the template first to create contracts with volunteers.",
-    "agreementNoTemplateNoRightsBody": "There's no agreement template for {reimbursementType} shifts yet. Ask {admins} to set one up.",
+    "agreementNoTemplateNoRightsBody": "There's no agreement template for {reimbursementType} appointments yet. Ask {admins} to set one up.",
     "agreementSetUpTemplateButton": "Set up template",
     "agreementNoContractTitle": "No active agreement",
-    "agreementNoContractManageBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts.",
-    "agreementNoContractNoRightsBody": "This volunteer doesn't have an active agreement for {reimbursementType} shifts. Ask {admins} to create one.",
+    "agreementNoContractManageBody": "This volunteer doesn't have an active agreement for {reimbursementType} appointments.",
+    "agreementNoContractNoRightsBody": "This volunteer doesn't have an active agreement for {reimbursementType} appointments. Ask {admins} to create one.",
     "agreementCreateButton": "Create agreement",
     "agreementAwaitingCountersignTitle": "Agreement needs a countersignature",
-    "agreementAwaitingCountersignManageBody": "The agreement for {reimbursementType} shifts is waiting for your organisation to countersign.",
-    "agreementAwaitingCountersignNoRightsBody": "The agreement for {reimbursementType} shifts is waiting to be countersigned. Ask {admins} to complete it.",
+    "agreementAwaitingCountersignManageBody": "The agreement for {reimbursementType} appointments is waiting for your organisation to countersign.",
+    "agreementAwaitingCountersignNoRightsBody": "The agreement for {reimbursementType} appointments is waiting to be countersigned. Ask {admins} to complete it.",
     "agreementCountersignButton": "Countersign",
     "agreementAwaitingVolunteerTitle": "Agreement not signed yet",
-    "agreementAwaitingVolunteerBody": "This volunteer hasn't signed their agreement for {reimbursementType} shifts. Ask them to open their app and sign it before they start.",
+    "agreementAwaitingVolunteerBody": "This volunteer hasn't signed their agreement for {reimbursementType} appointments. Ask them to open their app and sign it before they start.",
     "agreementColleagues": "{name} or any other colleague with reimbursement access",
     "unverifiedCheckInButton": "Unverified checkin",
     "unverifiedCheckInConfirmTitle": "Check in without a valid agreement?",
@@ -1149,19 +1149,19 @@
       "acknowledge": "I understand that all answers for this form will be permanently deleted.",
       "answersDeleted": "All submission answers for this form will be permanently deleted.",
       "attachmentItem": "{type}: {name}",
-      "attachmentsDetach": "The form will be detached and deleted. The shifts, events, and units themselves are not deleted.",
+      "attachmentsDetach": "The form will be detached and deleted. The appointments, events, and units themselves are not deleted.",
       "attachmentsIntro": "This form is currently required by:",
       "deleting": "Deleting...",
       "intro": "This cannot be undone.",
       "loadError": "Could not load delete details. Try again.",
       "loading": "Loading details…",
-      "noAttachments": "This form is not required by any unit, event, or shift.",
+      "noAttachments": "This form is not required by any unit, event, or appointment.",
       "submissionCount": "{count, plural, =0 {No submissions yet.} one {# submission will be deleted.} other {# submissions will be deleted.}}",
       "targetType": {
         "EVENT": "Event",
         "ORGANIZATION_UNIT": "Organization unit",
-        "SHIFT": "Shift",
-        "SHIFT_INSTANCE": "Shift instance"
+        "SHIFT": "Appointment",
+        "SHIFT_INSTANCE": "Appointment instance"
       },
       "title": "Delete “{name}”?"
     },
@@ -1518,7 +1518,7 @@
       "waitlistInviteSuccess": "Volunteer invited to the assignment"
     },
     "checkIn": {
-      "checkInForAnotherShift": "Check in for another shift instead",
+      "checkInForAnotherShift": "Check in for another appointment instead",
       "checkOut": "Check-out",
       "checkOutError": "Could not check out volunteer",
       "checkOutLoading": "Checking out {name}…",
@@ -1576,7 +1576,10 @@
       "applyToAllLabel": "Apply to all future occurrences"
     },
     "empty": {
+      "clearFilters": "Clear all filters",
       "description": "Get started by creating your first assignment and inviting volunteers.",
+      "noMatchDescription": "Try adjusting or clearing your filters to see more results.",
+      "noMatchTitle": "No appointments match your filters",
       "title": "No assignments yet"
     },
     "eventBadge": "Event",
@@ -1818,7 +1821,29 @@
       "pattern": "Pattern",
       "requiredForms": "Forms",
       "time": "Time",
-      "visibility": "Visibility"
+      "visibility": "Visibility",
+      "location": "Location",
+      "staffing": "Staffing",
+      "recurrenceSince": "Since {date}",
+      "expandOccurrences": "Expand occurrences",
+      "pendingCount": "{count, plural, one {# pending invite} other {# pending invites}}",
+      "collapseOccurrences": "Collapse occurrences"
+    },
+    "filter": {
+      "location": "Location",
+      "visibility": "Visibility",
+      "date": "Date range",
+      "fill": "Staffing",
+      "locationPlaceholder": "All locations",
+      "locationEmpty": "No locations found",
+      "visibilityAll": "All",
+      "visibilityInviteOnly": "Invite-only",
+      "visibilityOpen": "Open",
+      "datePlaceholder": "Date range",
+      "fillAll": "All",
+      "fillUnderstaffed": "Understaffed",
+      "fillFull": "Full",
+      "sheetTitle": "Filters"
     },
     "search": {
       "placeholder": "Search by name",
@@ -2017,7 +2042,32 @@
       "date": "Date",
       "shift": "Assignment",
       "volunteer": "Volunteer",
-      "status": "Status"
+      "status": "Status",
+      "location": "Location",
+      "total": "Total",
+      "expand": "Expand",
+      "collapse": "Collapse",
+      "downloadCsv": "Download .csv",
+      "emailCopied": "Email address copied to clipboard",
+      "copyEmailAria": "Copy {name}'s email address",
+      "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
+      "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
+      "loading": "Loading timesheets…",
+      "truncatedNotice": "Showing the first 50,000 entries. Narrow the filters to see the full set.",
+      "loadError": "Could not load time entries. Please try again."
+    },
+    "csv": {
+      "volunteerName": "Volunteer Name",
+      "volunteerEmail": "Volunteer Email",
+      "shift": "Appointment",
+      "assignment": "Assignment",
+      "location": "Location",
+      "startedAt": "Started At",
+      "endedAt": "Ended At",
+      "durationMinutes": "Duration (min)",
+      "status": "Status",
+      "createdBy": "Created By",
+      "notes": "Notes"
     },
     "validation": {
       "endBeforeStart": "Check-out must be after check-in",
@@ -2025,13 +2075,28 @@
       "organizationUnitRequired": "Please select an organisation unit.",
       "reimbursementTypeRequired": "Please select an allowance type.",
       "shiftInstanceRequired": "Please select an assignment date.",
-      "startAfterShiftEnd": "Check-in can't be later than the shift end ({end})",
+      "startAfterShiftEnd": "Check-in can't be later than the appointment end ({end})",
       "startedAtRequired": "Please enter a start time.",
       "timeEntryIdRequired": "Time entry ID is required",
       "volunteerRequired": "Please select a volunteer."
     },
     "filter": {
-      "status": "Status"
+      "status": "Status",
+      "statusPlaceholder": "All statuses",
+      "shift": "Shift",
+      "shiftPlaceholder": "All appointments",
+      "volunteer": "Volunteer",
+      "volunteerPlaceholder": "All volunteers",
+      "date": "Date",
+      "datePlaceholder": "All dates",
+      "location": "Location",
+      "locationPlaceholder": "All locations",
+      "locationEmpty": "No locations found",
+      "sheetTitle": "Filters",
+      "shiftEmpty": "No appointments found",
+      "volunteerEmpty": "No volunteers found",
+      "dateFromOnly": "from {date}",
+      "dateToOnly": "until {date}"
     },
     "status": {
       "autoClosed": "Auto checked out",
@@ -2204,6 +2269,9 @@
     "yourShiftsThisWeek": "{n, plural, one {# assignment this week} other {# assignments this week}}"
   },
   "Accounting": {
+    "characterCounter": {
+      "tooLong": "Too long by {count, plural, one {# character} other {# characters}}"
+    },
     "settings": {
       "title": "Settings",
       "subtitle": "Set up rates and document templates for volunteering reimbursements.",
@@ -2585,6 +2653,11 @@
         "saveButton": "Save template",
         "saveSuccessToast": "Template saved",
         "saveErrorToast": "We couldn't save the template. Please try again.",
+        "provenance": {
+          "inheritedHint": "This template is inherited from {unit}. Saving creates a copy for this unit and leaves the original unchanged.",
+          "orgWideHint": "This is the organisation-wide template. Saving creates a copy for this unit and leaves the original unchanged.",
+          "orgWideRootHint": "Saving creates this organisation's own version. It applies to all units that have no template of their own."
+        },
         "signeesUnavailableToast": "We couldn't load the signing roles yet. Please wait a moment and try again.",
         "orgProfile": {
           "blockedMessage": "Your organisation info is missing details this template needs. Complete the organisation info before saving.",
@@ -2638,6 +2711,7 @@
           },
           "alreadyReceivedHint": "Calculated automatically from the linked agreement period when a timesheet is generated.",
           "incompleteCount": "{count, plural, one {# field needs a value} other {# fields need a value}}",
+          "overLimitCount": "{count, plural, one {# field is too long} other {# fields are too long}}",
           "notSetYet": "not set yet",
           "sameAsAbove": "same value as set above",
           "scrollRegionLabel": "Template editor, scrollable",
@@ -2746,7 +2820,8 @@
         "pageFooter": {
           "title": "Page footer",
           "description": "Appears at the bottom of every page.",
-          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB"
+          "placeholder": "e.g. Organisation · Street\nPostcode City\nCourt of registration, HRB",
+          "mayBeCutWarning": "The page footer may be cut: at most 3 lines fit at the bottom of the page. Check the preview."
         }
       },
       "card": {
@@ -2756,6 +2831,11 @@
         },
         "editButton": "Edit template",
         "lastEdited": "Last edited {date} by {name}",
+        "provenance": {
+          "own": "Own template",
+          "inherited": "Inherited from {unit}",
+          "orgWide": "Organisation-wide template"
+        },
         "badges": {
           "renewal": {
             "monthly": "Renews monthly",

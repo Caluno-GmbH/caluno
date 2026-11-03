@@ -145,29 +145,29 @@ git commit -m "feat(frontend): fixed gender option catalog with DE/EN labels"
 Append inside the existing `describe('validateProfileKeyValue', ...)` in `apps/backend/src/requirement-profile/profile-validation.spec.ts`:
 
 ```ts
-  describe('gender', () => {
-    it('accepts all five fixed option values', () => {
-      for (const v of [
-        'female',
-        'male',
-        'diverse',
-        'other',
-        'prefer-not-to-say',
-      ]) {
-        expectOk(v, 'gender');
-      }
-    });
-
-    it('accepts an empty value (no answer is not an invalid value)', () => {
-      expectOk('', 'gender');
-    });
-
-    it('rejects values outside the fixed list, including legacy free text', () => {
-      expectBad('Weiblich', 'gender');
-      expectBad('non-binary', 'gender');
-      expectBad('anything', 'gender');
-    });
+describe('gender', () => {
+  it('accepts all five fixed option values', () => {
+    for (const v of [
+      'female',
+      'male',
+      'diverse',
+      'other',
+      'prefer-not-to-say',
+    ]) {
+      expectOk(v, 'gender');
+    }
   });
+
+  it('accepts an empty value (no answer is not an invalid value)', () => {
+    expectOk('', 'gender');
+  });
+
+  it('rejects values outside the fixed list, including legacy free text', () => {
+    expectBad('Weiblich', 'gender');
+    expectBad('non-binary', 'gender');
+    expectBad('anything', 'gender');
+  });
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -341,36 +341,40 @@ with:
 In the same file, inside `FieldRenderer` (starts ~line 298), add after the existing `const t = useTranslations('RequirementForm.volunteerForm');`:
 
 ```ts
-  const tGender = useTranslations('RequirementForm.genderOptions');
+const tGender = useTranslations('RequirementForm.genderOptions');
 ```
 
 In the `SINGLE_CHOICE` render branch (starts ~line 400), replace the options source. Before the `return (` insert:
 
 ```ts
-    const opts =
-      field.profileKey === 'gender'
-        ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
-        : (field.options ?? []);
+const opts =
+  field.profileKey === 'gender'
+    ? GENDER_OPTION_VALUES.map((v) => ({ value: v, label: tGender(v) }))
+    : (field.options ?? []);
 ```
 
 and replace inside the JSX:
 
 ```tsx
-            {field.options?.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
+{
+  field.options?.map((opt) => (
+    <SelectItem key={opt.value} value={opt.value}>
+      {opt.label}
+    </SelectItem>
+  ));
+}
 ```
 
 with:
 
 ```tsx
-            {opts.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
+{
+  opts.map((opt) => (
+    <SelectItem key={opt.value} value={opt.value}>
+      {opt.label}
+    </SelectItem>
+  ));
+}
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -421,25 +425,25 @@ const opts = {
 Append two tests:
 
 ```ts
-  it('maps gender system values to localized labels', () => {
-    const result = resolveFieldAnswer(
-      field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
-      [{ fieldId: 'f1', value: 'female' }],
-      {},
-      opts,
-    );
-    expect(result).toBe('Female');
-  });
+it('maps gender system values to localized labels', () => {
+  const result = resolveFieldAnswer(
+    field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
+    [{ fieldId: 'f1', value: 'female' }],
+    {},
+    opts,
+  );
+  expect(result).toBe('Female');
+});
 
-  it('passes unknown gender values through unchanged', () => {
-    const result = resolveFieldAnswer(
-      field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
-      [{ fieldId: 'f1', value: 'legacy-free-text' }],
-      {},
-      opts,
-    );
-    expect(result).toBe('legacy-free-text');
-  });
+it('passes unknown gender values through unchanged', () => {
+  const result = resolveFieldAnswer(
+    field({ type: 'SINGLE_CHOICE', profileKey: 'gender' }),
+    [{ fieldId: 'f1', value: 'legacy-free-text' }],
+    {},
+    opts,
+  );
+  expect(result).toBe('legacy-free-text');
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -473,7 +477,7 @@ Add the gender branch directly after `if (!raw) { return dash; }` (line 30-32):
 In `apps/frontend/src/domain/requirement-form/components/submission-view.tsx`, add after the existing `const t = await getTranslations('RequirementForm.submission');`:
 
 ```ts
-  const tGender = await getTranslations('RequirementForm.genderOptions');
+const tGender = await getTranslations('RequirementForm.genderOptions');
 ```
 
 and the import at the top:
@@ -485,14 +489,16 @@ import { GENDER_OPTION_VALUES } from '../gender-options';
 Extend the `resolveFieldAnswer` call (line 56-60):
 
 ```tsx
-                  {resolveFieldAnswer(field, submissionValues, profileData, {
-                    dash: tCommon('dash'),
-                    accepted: t('accepted'),
-                    formatDate,
-                    genderLabels: Object.fromEntries(
-                      GENDER_OPTION_VALUES.map((v) => [v, tGender(v)]),
-                    ),
-                  })}
+{
+  resolveFieldAnswer(field, submissionValues, profileData, {
+    dash: tCommon('dash'),
+    accepted: t('accepted'),
+    formatDate,
+    genderLabels: Object.fromEntries(
+      GENDER_OPTION_VALUES.map((v) => [v, tGender(v)]),
+    ),
+  });
+}
 ```
 
 - [ ] **Step 5: Write the implementation — profile page**
@@ -506,14 +512,14 @@ import { isGenderOptionValue } from '@/domain/requirement-form/gender-options';
 Add after `const tSubtitles = ...`:
 
 ```ts
-  const tGender = await getTranslations('RequirementForm.genderOptions');
+const tGender = await getTranslations('RequirementForm.genderOptions');
 ```
 
 and before the `fields` map (after `subtitleByKey`, line 45):
 
 ```ts
-  const genderLabel = (value: string | null): string | null =>
-    value && isGenderOptionValue(value) ? tGender(value) : value;
+const genderLabel = (value: string | null): string | null =>
+  value && isGenderOptionValue(value) ? tGender(value) : value;
 ```
 
 In the `fields` map, add a branch (insert between the `birth-date` branch and the final `else`):
@@ -628,24 +634,24 @@ and in the props type:
 3. Replace `showOptions` (lines 513-514):
 
 ```ts
-  const showOptions =
-    fieldType === FieldType.SingleChoice || fieldType === FieldType.MultiChoice;
+const showOptions =
+  fieldType === FieldType.SingleChoice || fieldType === FieldType.MultiChoice;
 ```
 
 with:
 
 ```ts
-  const hasFixedOptions = profileKey === 'gender';
-  const showOptions =
-    (fieldType === FieldType.SingleChoice ||
-      fieldType === FieldType.MultiChoice) &&
-    !hasFixedOptions;
+const hasFixedOptions = profileKey === 'gender';
+const showOptions =
+  (fieldType === FieldType.SingleChoice ||
+    fieldType === FieldType.MultiChoice) &&
+  !hasFixedOptions;
 ```
 
 4. Replace the required Switch `disabled` prop (line 550):
 
 ```tsx
-                disabled={isSystemField}
+disabled = { isSystemField };
 ```
 
 with:
@@ -659,21 +665,26 @@ with:
 In `apps/frontend/src/domain/requirement-form/components/field-form.tsx`, replace the auto-system-key hint (lines 246-250):
 
 ```tsx
-          {autoProfileKey && (
-            <p className="text-muted-foreground text-xs">
-              {t('profileField', { key: autoProfileKey })}
-            </p>
-          )}
+{
+  autoProfileKey && (
+    <p className="text-muted-foreground text-xs">
+      {t('profileField', { key: autoProfileKey })}
+    </p>
+  );
+}
 ```
 
 with:
 
 ```tsx
-          {(autoProfileKey || (isLocked && manualProfileKey && !showProfileKeyPicker)) && (
-            <p className="text-muted-foreground text-xs">
-              {t('profileField', { key: autoProfileKey || manualProfileKey })}
-            </p>
-          )}
+{
+  (autoProfileKey ||
+    (isLocked && manualProfileKey && !showProfileKeyPicker)) && (
+    <p className="text-muted-foreground text-xs">
+      {t('profileField', { key: autoProfileKey || manualProfileKey })}
+    </p>
+  );
+}
 ```
 
 This keeps an existing gender binding visible (read-only) in the per-field editor, where the system-key picker no longer appears because gender is no longer a text-like type.
@@ -809,94 +820,93 @@ git commit -m "feat(backend): migrate gender fields to single-choice and backfil
 Append to `apps/backend/test/form-submission.service.spec.ts` (inside the top-level describe, after the `submit by share token` describe). Add `import { eq } from 'drizzle-orm';` to the imports at the top (the file already imports `* as schema` and `RequiredFormTargetType`).
 
 ```ts
-  describe('gender system field', () => {
-    const setupGenderForm = async (required: boolean) => {
-      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
-      const { form, block } = await createRequirementForm(db, {
-        organizationId: rootUnit.organizationId,
-        organizationUnitId: rootUnit.id,
-        createdById: admin.id,
+describe('gender system field', () => {
+  const setupGenderForm = async (required: boolean) => {
+    const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
+    const { form, block } = await createRequirementForm(db, {
+      organizationId: rootUnit.organizationId,
+      organizationUnitId: rootUnit.id,
+      createdById: admin.id,
+      required,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: unitA.id,
+      formIds: [form.id],
+    });
+    // The factory block ships a generic required text field; neutralise
+    // it so only the gender field is enforced.
+    await db
+      .update(schema.formBlockFields)
+      .set({ required: false })
+      .where(eq(schema.formBlockFields.blockId, block.id));
+    const [genderField] = await db
+      .insert(schema.formBlockFields)
+      .values({
+        blockId: block.id,
+        type: 'SINGLE_CHOICE',
+        label: 'Gender',
         required,
-      });
-      await setRequiredForms(db, {
-        organizationUnitId: unitA.id,
-        formIds: [form.id],
-      });
-      // The factory block ships a generic required text field; neutralise
-      // it so only the gender field is enforced.
-      await db
-        .update(schema.formBlockFields)
-        .set({ required: false })
-        .where(eq(schema.formBlockFields.blockId, block.id));
-      const [genderField] = await db
-        .insert(schema.formBlockFields)
-        .values({
-          blockId: block.id,
-          type: 'SINGLE_CHOICE',
-          label: 'Gender',
-          required,
-          profileKey: 'gender',
-          options: [],
-          fieldOrder: 1,
-        })
-        .returning();
-      if (!genderField) throw new Error('Failed to create gender field');
-      return { form, unitA, volunteer, genderField };
-    };
+        profileKey: 'gender',
+        options: [],
+        fieldOrder: 1,
+      })
+      .returning();
+    if (!genderField) throw new Error('Failed to create gender field');
+    return { form, unitA, volunteer, genderField };
+  };
 
-    const submit = (
-      formId: string,
-      unitId: string,
-      userId: string,
-      values: { fieldId: string; value: string }[],
-    ) =>
-      formSubmissionService.submitRequiredForm(
-        {
-          targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-          targetId: unitId,
-        },
-        formId,
-        { values },
-        userId,
-      );
+  const submit = (
+    formId: string,
+    unitId: string,
+    userId: string,
+    values: { fieldId: string; value: string }[],
+  ) =>
+    formSubmissionService.submitRequiredForm(
+      {
+        targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+        targetId: unitId,
+      },
+      formId,
+      { values },
+      userId,
+    );
 
-    it('accepts a fixed option value and writes it to the user profile', async () => {
-      const { form, unitA, volunteer, genderField } =
-        await setupGenderForm(false);
-      await submit(form.id, unitA.id, volunteer.id, [
-        { fieldId: genderField.id, value: 'female' },
-      ]);
-      const profile = await db.query.userProfiles.findFirst({
-        where: eq(schema.userProfiles.userId, volunteer.id),
-      });
-      expect(profile?.data.gender).toBe('female');
+  it('accepts a fixed option value and writes it to the user profile', async () => {
+    const { form, unitA, volunteer, genderField } =
+      await setupGenderForm(false);
+    await submit(form.id, unitA.id, volunteer.id, [
+      { fieldId: genderField.id, value: 'female' },
+    ]);
+    const profile = await db.query.userProfiles.findFirst({
+      where: eq(schema.userProfiles.userId, volunteer.id),
     });
-
-    it('rejects a value outside the fixed list', async () => {
-      const { form, unitA, volunteer, genderField } =
-        await setupGenderForm(false);
-      await expect(
-        submit(form.id, unitA.id, volunteer.id, [
-          { fieldId: genderField.id, value: 'Weiblich' },
-        ]),
-      ).rejects.toThrow('must be one of the available options');
-    });
-
-    it('enforces a required gender but accepts prefer-not-to-say', async () => {
-      const { form, unitA, volunteer, genderField } =
-        await setupGenderForm(true);
-      await expect(
-        submit(form.id, unitA.id, volunteer.id, []),
-      ).rejects.toThrow('is required');
-      await submit(form.id, unitA.id, volunteer.id, [
-        { fieldId: genderField.id, value: 'prefer-not-to-say' },
-      ]);
-      const profile = await db.query.userProfiles.findFirst({
-        where: eq(schema.userProfiles.userId, volunteer.id),
-      });
-      expect(profile?.data.gender).toBe('prefer-not-to-say');
-    });
+    expect(profile?.data.gender).toBe('female');
   });
+
+  it('rejects a value outside the fixed list', async () => {
+    const { form, unitA, volunteer, genderField } =
+      await setupGenderForm(false);
+    await expect(
+      submit(form.id, unitA.id, volunteer.id, [
+        { fieldId: genderField.id, value: 'Weiblich' },
+      ]),
+    ).rejects.toThrow('must be one of the available options');
+  });
+
+  it('enforces a required gender but accepts prefer-not-to-say', async () => {
+    const { form, unitA, volunteer, genderField } = await setupGenderForm(true);
+    await expect(submit(form.id, unitA.id, volunteer.id, [])).rejects.toThrow(
+      'is required',
+    );
+    await submit(form.id, unitA.id, volunteer.id, [
+      { fieldId: genderField.id, value: 'prefer-not-to-say' },
+    ]);
+    const profile = await db.query.userProfiles.findFirst({
+      where: eq(schema.userProfiles.userId, volunteer.id),
+    });
+    expect(profile?.data.gender).toBe('prefer-not-to-say');
+  });
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**

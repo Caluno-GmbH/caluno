@@ -67,6 +67,9 @@ export class ShiftInstance {
   @Field(() => Int)
   filledCount!: number;
 
+  @Field(() => Int)
+  pendingCount!: number;
+
   @Field(() => [User], { nullable: true })
   volunteers?: User[] | null;
 

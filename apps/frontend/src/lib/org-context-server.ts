@@ -5,7 +5,7 @@ import {
 } from '@repo/data';
 import type { OrgUnitContextData } from '@repo/data/react';
 import { cookies } from 'next/headers';
-import { notFound, redirect } from 'next/navigation';
+import { notFound, redirect, unstable_rethrow } from 'next/navigation';
 import { getDataClient } from './data-client';
 import { getOrgUnitDisplayName } from './org-display-name';
 
@@ -49,7 +49,7 @@ export async function getMyAdministrableOrgUnits(): Promise<
   OrgUnitContextData[]
 > {
   const data = await getDataClient();
-  const units = await data.organization.findMyAdminstrableOrganizationUnits();
+  const units = await data.organization.findMyAdministrableOrganizationUnits();
 
   return normalizeUnits(units);
 }
@@ -65,9 +65,11 @@ export async function getMyCheckInOrgUnits(): Promise<OrgUnitContextData[]> {
 export async function isAnAdminstrator() {
   try {
     const data = await getDataClient({ redirectOnUnauthenticated: false });
-    const units = await data.organization.findMyAdminstrableOrganizationUnits();
+    const units =
+      await data.organization.findMyAdministrableOrganizationUnits();
     return normalizeUnits(units).length > 0;
   } catch (error) {
+    unstable_rethrow(error);
     if (isUnauthenticatedDataError(error)) {
       return false;
     }
@@ -129,13 +131,11 @@ export async function requireOrgAccess(
   }
 
   const data = await getDataClient();
-  const isMember = await data.membership.getMyMembershipStatus(orgUId);
-  if (!isMember) {
-    redirect('/unauthorized');
-  }
-
-  const unit = await data.organizationUnit.findById(orgUId);
-  if (!unit) {
+  // Single round trip: checking membership and fetching the unit as two
+  // sequential requests left a window where the session could be
+  // invalidated between them, losing the redirect-to-login.
+  const { isMember, unit } = await data.organizationUnit.findAccessInfo(orgUId);
+  if (!isMember || !unit) {
     redirect('/unauthorized');
   }
 

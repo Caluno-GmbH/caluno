@@ -55,7 +55,9 @@ import {
 
 describe('toMissingProfileKeys', () => {
   it('maps all 9 template source keys to profile system keys', () => {
-    expect(toMissingProfileKeys(Object.keys(PROFILE_SOURCE_TO_PROFILE_KEY))).toEqual([
+    expect(
+      toMissingProfileKeys(Object.keys(PROFILE_SOURCE_TO_PROFILE_KEY)),
+    ).toEqual([
       'firstname',
       'lastname',
       'street',
@@ -195,15 +197,15 @@ function isEditableSource(source: DataSourceKey): boolean {
 In `resolveBoundValue` (lines 45-56), replace the map lookup:
 
 ```ts
-  const profileKey = PROFILE_SOURCE_TO_PROFILE_KEY[source];
+const profileKey = PROFILE_SOURCE_TO_PROFILE_KEY[source];
 ```
 
 with:
 
 ```ts
-  const profileKey = isProfileSourceKey(source)
-    ? PROFILE_SOURCE_TO_PROFILE_KEY[source]
-    : undefined;
+const profileKey = isProfileSourceKey(source)
+  ? PROFILE_SOURCE_TO_PROFILE_KEY[source]
+  : undefined;
 ```
 
 The first/last-name special-casing at the top of `resolveBoundValue` stays as-is.
@@ -432,57 +434,59 @@ git commit -m "feat(i18n): complete-profile sheet copy (VOLI-1547)"
 In `volunteer-document-card.tsx`, delete the debug log (lines 94-98):
 
 ```tsx
-  console.log(
-    'missingProfileFields',
-    missingProfileFields,
-    document.missingProfileFields,
-  );
+console.log(
+  'missingProfileFields',
+  missingProfileFields,
+  document.missingProfileFields,
+);
 ```
 
 Then replace the whole `{awaitingSignature && (...)}` block (lines 181-218) with:
 
 ```tsx
-        {awaitingSignature && (
-          <>
-            {missingProfileFields && (
-              <div className="flex flex-col gap-1 px-1">
-                <p className="text-xs text-muted-foreground">
-                  {t('missingProfileWarning')}
-                </p>
-                <Button asChild className="w-full">
-                  <Link
-                    href={`/profile/documents/complete-profile?kind=${document.kind}&id=${document.id}`}
-                  >
-                    <FileUserIcon />
-                    {t('completeDetailsCta')}
-                  </Link>
-                </Button>
-              </div>
-            )}
-            <Button
-              className="w-full"
-              disabled={missingProfileFields}
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen(document);
-              }}
+{
+  awaitingSignature && (
+    <>
+      {missingProfileFields && (
+        <div className="flex flex-col gap-1 px-1">
+          <p className="text-xs text-muted-foreground">
+            {t('missingProfileWarning')}
+          </p>
+          <Button asChild className="w-full">
+            <Link
+              href={`/profile/documents/complete-profile?kind=${document.kind}&id=${document.id}`}
             >
-              <SignatureIcon />
-              {t('actions.sign')}
-            </Button>
-            <Button
-              variant="destructive"
-              className="w-full"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDecline(document);
-              }}
-            >
-              <OctagonXIcon />
-              {t('actions.decline')}
-            </Button>
-          </>
-        )}
+              <FileUserIcon />
+              {t('completeDetailsCta')}
+            </Link>
+          </Button>
+        </div>
+      )}
+      <Button
+        className="w-full"
+        disabled={missingProfileFields}
+        onClick={(e) => {
+          e.stopPropagation();
+          onOpen(document);
+        }}
+      >
+        <SignatureIcon />
+        {t('actions.sign')}
+      </Button>
+      <Button
+        variant="destructive"
+        className="w-full"
+        onClick={(e) => {
+          e.stopPropagation();
+          onDecline(document);
+        }}
+      >
+        <OctagonXIcon />
+        {t('actions.decline')}
+      </Button>
+    </>
+  );
+}
 ```
 
 `Link`, `FileUserIcon`, `SignatureIcon`, `OctagonXIcon` are all already imported in this file — no import changes needed.
@@ -492,11 +496,11 @@ Then replace the whole `{awaitingSignature && (...)}` block (lines 181-218) with
 In `volunteer-my-documents.tsx`, delete (lines 49-53):
 
 ```tsx
-  console.log(
-    'myDocumentsQuery',
-    myDocumentsQuery.data,
-    myDocumentsQuery.isLoading,
-  );
+console.log(
+  'myDocumentsQuery',
+  myDocumentsQuery.data,
+  myDocumentsQuery.isLoading,
+);
 ```
 
 - [ ] **Step 3: Preview — point the missing-details link at the sheet**
@@ -504,37 +508,41 @@ In `volunteer-my-documents.tsx`, delete (lines 49-53):
 In `volunteer-document-preview.tsx`, replace the missing-profile block (lines 217-229):
 
 ```tsx
-                {canDecide && missingProfileFields.length > 0 && (
-                  <div className="flex flex-col gap-1 px-1">
-                    <p className="text-xs text-muted-foreground">
-                      {t('missingProfileWarning')}
-                    </p>
-                    <Link
-                      href="/profile"
-                      className="text-xs font-medium text-primary underline underline-offset-2"
-                    >
-                      {t('missingProfileCta')}
-                    </Link>
-                  </div>
-                )}
+{
+  canDecide && missingProfileFields.length > 0 && (
+    <div className="flex flex-col gap-1 px-1">
+      <p className="text-xs text-muted-foreground">
+        {t('missingProfileWarning')}
+      </p>
+      <Link
+        href="/profile"
+        className="text-xs font-medium text-primary underline underline-offset-2"
+      >
+        {t('missingProfileCta')}
+      </Link>
+    </div>
+  );
+}
 ```
 
 with:
 
 ```tsx
-                {canDecide && missingProfileFields.length > 0 && (
-                  <div className="flex flex-col gap-1 px-1">
-                    <p className="text-xs text-muted-foreground">
-                      {t('missingProfileWarning')}
-                    </p>
-                    <Link
-                      href={`/profile/documents/complete-profile?kind=${kind}&id=${documentId}`}
-                      className="text-xs font-medium text-primary underline underline-offset-2"
-                    >
-                      {t('completeDetailsCta')}
-                    </Link>
-                  </div>
-                )}
+{
+  canDecide && missingProfileFields.length > 0 && (
+    <div className="flex flex-col gap-1 px-1">
+      <p className="text-xs text-muted-foreground">
+        {t('missingProfileWarning')}
+      </p>
+      <Link
+        href={`/profile/documents/complete-profile?kind=${kind}&id=${documentId}`}
+        className="text-xs font-medium text-primary underline underline-offset-2"
+      >
+        {t('completeDetailsCta')}
+      </Link>
+    </div>
+  );
+}
 ```
 
 - [ ] **Step 4: Verify no stale references and type-check**
@@ -598,7 +606,10 @@ const msgs = {
 
 describe('missingFieldsToRenderable', () => {
   it('renders exactly the missing fields, in PROFILE_FIELDS order, all required', () => {
-    const fields = missingFieldsToRenderable(['iban', 'street', 'zip'], labelFor);
+    const fields = missingFieldsToRenderable(
+      ['iban', 'street', 'zip'],
+      labelFor,
+    );
     expect(fields.map((f) => f.id)).toEqual(['street', 'zip', 'iban']);
     expect(fields.every((f) => f.required)).toBe(true);
     expect(fields.map((f) => f.label)).toEqual([
@@ -791,7 +802,8 @@ export function CompleteProfileSheet({
   const { open, setOpen } = useFormSheet();
 
   // Always return to the list — a hard load of the sheet URL has no back entry.
-  const close = () => setOpen(false, () => router.replace('/profile/documents'));
+  const close = () =>
+    setOpen(false, () => router.replace('/profile/documents'));
 
   const contractQuery = useContract(
     kind === 'contract' ? (documentId ?? undefined) : undefined,
@@ -1211,112 +1223,112 @@ git commit -m "feat(accounting): @sheet routes for complete-profile on My docume
 In `e2e/tests/features/accounting/documents-flow.e2e.ts`, add as the first `test(...)` inside the describe block (before the `'admin creates → volunteer signs → ...'` test):
 
 ```ts
-  test('volunteer completes missing profile details in a sheet from "My documents", then the card becomes signable', async ({
-    browser,
-  }) => {
-    // ── Admin side: a fresh contract awaits the volunteer's signature ──────
-    const adminContext = await browser.newContext({
-      storageState: adminAuthFile,
-    });
-    const adminPage = await adminContext.newPage();
-    await adminPage.goto(`${BASE_URL}/en/admin`, { waitUntil: 'load' });
-    await adminPage.waitForURL(/\/en\/admin\/[^/]+/, { timeout: 20_000 });
-    const orgUnitId = new URL(adminPage.url()).pathname.split('/')[3];
-    const board = new AdminReimbursementsPage(adminPage);
-    await board.goto(orgUnitId);
-    await board.createContractFor(VOLUNTEER_NAME);
-    await adminContext.close();
-
-    const volunteerContext = await browser.newContext({
-      storageState: volunteerAuthFile,
-    });
-    const volunteerPage = await volunteerContext.newPage();
-
-    // The fixtures seed no zip/city; clear them anyway so the test is
-    // re-runnable against a stateful dev DB where an earlier run filled them.
-    // Saving with untouched (already empty) fields is a no-op — the form's
-    // Save stays disabled — so only save when there is something to clear.
-    await volunteerPage.goto(`${BASE_URL}/en/profile/edit`, {
-      waitUntil: 'load',
-    });
-    const zipInput = volunteerPage.getByLabel('Postal code');
-    const cityInput = volunteerPage.getByLabel('City', { exact: true });
-    if (
-      (await zipInput.inputValue()) !== '' ||
-      (await cityInput.inputValue()) !== ''
-    ) {
-      await zipInput.fill('');
-      await cityInput.fill('');
-      await volunteerPage
-        .getByRole('button', { name: 'Save', exact: true })
-        .click();
-      await volunteerPage.waitForURL(/\/en\/profile$/, { timeout: 15_000 });
-    }
-
-    // ── My documents: Sign is disabled, "Complete details" opens the sheet ──
-    await volunteerPage.goto(`${BASE_URL}/en/profile/documents`, {
-      waitUntil: 'load',
-    });
-    const card = volunteerPage
-      .locator(
-        '[data-testid="volunteer-document-card"][data-state="awaiting-signature"]',
-      )
-      .first();
-    await expect(card).toBeVisible();
-    await expect(card).toContainText(
-      'Your profile is missing details this document needs.',
-    );
-    await expect(
-      card.getByRole('button', { name: 'Sign', exact: true }),
-    ).toBeDisabled();
-
-    await card.getByRole('link', { name: 'Complete details' }).click();
-    await volunteerPage.waitForURL(
-      /\/en\/profile\/documents\/complete-profile\?kind=contract&id=[^&]+/,
-      { timeout: 15_000 },
-    );
-
-    const sheet = volunteerPage.getByRole('dialog');
-    await expect(sheet.getByText('Complete your details')).toBeVisible();
-
-    // Only the missing fields render: postal code and city, no IBAN.
-    await expect(sheet.getByLabel('Postal code')).toBeVisible();
-    await expect(sheet.getByLabel('City', { exact: true })).toBeVisible();
-    await expect(sheet.getByLabel('IBAN')).toHaveCount(0);
-
-    await sheet.getByLabel('Postal code').fill('10115');
-    await sheet.getByLabel('City', { exact: true }).fill('Berlin');
-    const save = sheet.getByRole('button', { name: 'Save changes' });
-    await expect(save).toBeEnabled();
-    const [saveResponse] = await Promise.all([
-      volunteerPage.waitForResponse(
-        (response) =>
-          response.url().includes('/graphql') &&
-          (response.request().postData() ?? '').includes('UpdateMyProfile'),
-        { timeout: 20_000 },
-      ),
-      save.click(),
-    ]);
-    expect(saveResponse.ok()).toBeTruthy();
-
-    // ── Back on My documents: the refreshed card is signable ───────────────
-    await volunteerPage.waitForURL(/\/en\/profile\/documents$/, {
-      timeout: 15_000,
-    });
-    const refreshed = volunteerPage
-      .locator(
-        '[data-testid="volunteer-document-card"][data-state="awaiting-signature"]',
-      )
-      .first();
-    await expect(
-      refreshed.getByRole('button', { name: 'Sign', exact: true }),
-    ).toBeEnabled();
-    await expect(
-      refreshed.getByRole('link', { name: 'Complete details' }),
-    ).toHaveCount(0);
-
-    await volunteerContext.close();
+test('volunteer completes missing profile details in a sheet from "My documents", then the card becomes signable', async ({
+  browser,
+}) => {
+  // ── Admin side: a fresh contract awaits the volunteer's signature ──────
+  const adminContext = await browser.newContext({
+    storageState: adminAuthFile,
   });
+  const adminPage = await adminContext.newPage();
+  await adminPage.goto(`${BASE_URL}/en/admin`, { waitUntil: 'load' });
+  await adminPage.waitForURL(/\/en\/admin\/[^/]+/, { timeout: 20_000 });
+  const orgUnitId = new URL(adminPage.url()).pathname.split('/')[3];
+  const board = new AdminReimbursementsPage(adminPage);
+  await board.goto(orgUnitId);
+  await board.createContractFor(VOLUNTEER_NAME);
+  await adminContext.close();
+
+  const volunteerContext = await browser.newContext({
+    storageState: volunteerAuthFile,
+  });
+  const volunteerPage = await volunteerContext.newPage();
+
+  // The fixtures seed no zip/city; clear them anyway so the test is
+  // re-runnable against a stateful dev DB where an earlier run filled them.
+  // Saving with untouched (already empty) fields is a no-op — the form's
+  // Save stays disabled — so only save when there is something to clear.
+  await volunteerPage.goto(`${BASE_URL}/en/profile/edit`, {
+    waitUntil: 'load',
+  });
+  const zipInput = volunteerPage.getByLabel('Postal code');
+  const cityInput = volunteerPage.getByLabel('City', { exact: true });
+  if (
+    (await zipInput.inputValue()) !== '' ||
+    (await cityInput.inputValue()) !== ''
+  ) {
+    await zipInput.fill('');
+    await cityInput.fill('');
+    await volunteerPage
+      .getByRole('button', { name: 'Save', exact: true })
+      .click();
+    await volunteerPage.waitForURL(/\/en\/profile$/, { timeout: 15_000 });
+  }
+
+  // ── My documents: Sign is disabled, "Complete details" opens the sheet ──
+  await volunteerPage.goto(`${BASE_URL}/en/profile/documents`, {
+    waitUntil: 'load',
+  });
+  const card = volunteerPage
+    .locator(
+      '[data-testid="volunteer-document-card"][data-state="awaiting-signature"]',
+    )
+    .first();
+  await expect(card).toBeVisible();
+  await expect(card).toContainText(
+    'Your profile is missing details this document needs.',
+  );
+  await expect(
+    card.getByRole('button', { name: 'Sign', exact: true }),
+  ).toBeDisabled();
+
+  await card.getByRole('link', { name: 'Complete details' }).click();
+  await volunteerPage.waitForURL(
+    /\/en\/profile\/documents\/complete-profile\?kind=contract&id=[^&]+/,
+    { timeout: 15_000 },
+  );
+
+  const sheet = volunteerPage.getByRole('dialog');
+  await expect(sheet.getByText('Complete your details')).toBeVisible();
+
+  // Only the missing fields render: postal code and city, no IBAN.
+  await expect(sheet.getByLabel('Postal code')).toBeVisible();
+  await expect(sheet.getByLabel('City', { exact: true })).toBeVisible();
+  await expect(sheet.getByLabel('IBAN')).toHaveCount(0);
+
+  await sheet.getByLabel('Postal code').fill('10115');
+  await sheet.getByLabel('City', { exact: true }).fill('Berlin');
+  const save = sheet.getByRole('button', { name: 'Save changes' });
+  await expect(save).toBeEnabled();
+  const [saveResponse] = await Promise.all([
+    volunteerPage.waitForResponse(
+      (response) =>
+        response.url().includes('/graphql') &&
+        (response.request().postData() ?? '').includes('UpdateMyProfile'),
+      { timeout: 20_000 },
+    ),
+    save.click(),
+  ]);
+  expect(saveResponse.ok()).toBeTruthy();
+
+  // ── Back on My documents: the refreshed card is signable ───────────────
+  await volunteerPage.waitForURL(/\/en\/profile\/documents$/, {
+    timeout: 15_000,
+  });
+  const refreshed = volunteerPage
+    .locator(
+      '[data-testid="volunteer-document-card"][data-state="awaiting-signature"]',
+    )
+    .first();
+  await expect(
+    refreshed.getByRole('button', { name: 'Sign', exact: true }),
+  ).toBeEnabled();
+  await expect(
+    refreshed.getByRole('link', { name: 'Complete details' }),
+  ).toHaveCount(0);
+
+  await volunteerContext.close();
+});
 ```
 
 - [ ] **Step 2: Run the e2e suite**
