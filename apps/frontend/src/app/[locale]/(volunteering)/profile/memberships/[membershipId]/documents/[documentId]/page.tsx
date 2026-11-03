@@ -1,6 +1,6 @@
-import { DataProvider } from '@repo/data/react';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { VolunteerDocumentPreview } from '@/domain/accounting/components/volunteer-document-preview';
 import { MembershipDetailHeader } from '@/domain/memberships/components/membership-detail-header';
 import { resolveLocale } from '@/i18n/routing';
@@ -46,7 +46,7 @@ export default async function DocumentPreviewPage({
         />
       </div>
 
-      <DataProvider
+      <AppDataProvider
         apiUrl={GRAPHQL_API_URL}
         organizationUnitId={membership.organizationUnit.id}
         locale={locale}
@@ -58,7 +58,7 @@ export default async function DocumentPreviewPage({
             membershipId={membershipId}
           />
         </div>
-      </DataProvider>
+      </AppDataProvider>
     </div>
   );
 }

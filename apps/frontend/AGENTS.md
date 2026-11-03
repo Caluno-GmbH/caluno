@@ -37,6 +37,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - `lib/auth-server.ts`: `getSession()`, `requireAuth()`, `getCurrentUser()`, `isAuthenticated()` — server components, layouts, and server actions only
 - `lib/org-context-server.ts`: `requireOrgAccess(orgUId)`, `getMyAdministrableOrgUnits()` (cached), `getMyAccessibleOrganizationUnits()`, `resolveOrgFromId(orgUId)`
 - Data access: `const data = await getDataClient(orgUId)` (`lib/data-client.ts`) — auto-adds the `x-organization-unit-id` header and auth cookies; a 403 throws `ForbiddenDataError` → server-side `redirect('/unauthorized')` in `data-client.ts` / server components. This is the org-safety mechanism: never construct GraphQL calls that bypass it.
+- React Query (`AppDataProvider`, not a raw `DataProvider`) is the client-hook boundary. SSR fetches to the GraphQL URL get the incoming request `Cookie` header (`installSsrGraphqlCookieForwarding` in `instrumentation.ts` — Node `credentials: 'include'` does not). `UNAUTHENTICATED` / `FORBIDDEN` from those hooks call the same redirect as `getDataClient` (`resolveDataErrorRedirect`); a bare `DataError` on that path means the redirect did not throw.
 
 ## Patterns
 

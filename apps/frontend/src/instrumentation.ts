@@ -9,6 +9,24 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     await import('./sentry.server.config');
     const { logger } = await import('./lib/logger');
+    const { GRAPHQL_API_URL } = await import('./lib/constants');
+    const { installSsrGraphqlCookieForwarding } = await import(
+      './lib/ssr-graphql-cookies'
+    );
+    const { headers } = await import('next/headers');
+    installSsrGraphqlCookieForwarding({
+      graphqlUrl: GRAPHQL_API_URL,
+      readCookieHeader: async () => {
+        try {
+          const cookie = (await headers()).get('cookie') ?? undefined;
+          return cookie && cookie.length > 0 ? cookie : undefined;
+        } catch {
+          // Prerender / no request store. The call proceeds without a
+          // session; a real UNAUTHENTICATED still redirects.
+          return undefined;
+        }
+      },
+    });
     logger.info('caluno-frontend server started with structured logging');
   }
 
