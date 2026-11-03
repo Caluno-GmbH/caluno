@@ -391,10 +391,6 @@
       "description": "Erstelle deine erste Veranstaltung.",
       "title": "Noch keine Veranstaltungen"
     },
-    "error": {
-      "title": "Die Veranstaltungen ließen sich nicht laden.",
-      "tryAgain": "Erneut versuchen"
-    },
     "form": {
       "coverUrlLabel": "Cover-URL",
       "endsAtLabel": "Ende",
