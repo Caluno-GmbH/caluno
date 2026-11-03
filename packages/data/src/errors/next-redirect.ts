@@ -1,3 +1,5 @@
+import { isForbiddenDataError, isUnauthenticatedDataError } from './data-error';
+
 /**
  * Next.js `redirect()` throws an Error whose `digest` starts with this.
  * React Query stores that error. `shouldThrowRedirectError` is the
@@ -17,12 +19,22 @@ export function isNextRedirectError(error: unknown): boolean {
   );
 }
 
-/** Mirrors `retry: 1`, but a login/forbidden redirect is terminal. */
+/**
+ * Mirrors `retry: 1`, but a redirect and an auth rejection are terminal —
+ * the same session gets the same UNAUTHENTICATED / FORBIDDEN on retry.
+ */
 export function shouldRetryQuery(
   failureCount: number,
   error: unknown,
 ): boolean {
-  return !isNextRedirectError(error) && failureCount < 1;
+  if (
+    isNextRedirectError(error) ||
+    isUnauthenticatedDataError(error) ||
+    isForbiddenDataError(error)
+  ) {
+    return false;
+  }
+  return failureCount < 1;
 }
 
 /**

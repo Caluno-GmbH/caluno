@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'bun:test';
+import { DataError } from './data-error';
+import { ForbiddenDataError } from './forbidden-data-error';
 import {
   isNextRedirectError,
   shouldRetryQuery,
@@ -31,6 +33,30 @@ describe('shouldRetryQuery', () => {
   it('does not retry a redirect', () => {
     const redirect = { digest: 'NEXT_REDIRECT;replace;/en/login;307;' };
     expect(shouldRetryQuery(0, redirect)).toBe(false);
+  });
+
+  it('does not retry an auth rejection', () => {
+    expect(
+      shouldRetryQuery(
+        0,
+        new DataError('No session', { code: 'UNAUTHENTICATED' }),
+      ),
+    ).toBe(false);
+    expect(
+      shouldRetryQuery(0, new DataError('Expired', { statusCode: 401 })),
+    ).toBe(false);
+    expect(shouldRetryQuery(0, new ForbiddenDataError('No access'))).toBe(
+      false,
+    );
+  });
+
+  it('retries other DataErrors once', () => {
+    expect(
+      shouldRetryQuery(
+        0,
+        new DataError('Boom', { code: 'INTERNAL_SERVER_ERROR' }),
+      ),
+    ).toBe(true);
   });
 });
 
