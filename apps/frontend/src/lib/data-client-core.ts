@@ -7,6 +7,7 @@ import {
 import { resolveLocale } from '@/i18n/routing';
 import { GRAPHQL_API_URL } from './constants';
 import { handleServerDataClientError } from './data-client-errors';
+import { resolveSessionExpiredRedirect } from './data-error-redirect';
 
 export interface GetDataClientOptions {
   orgUId?: string;
@@ -67,7 +68,16 @@ export function createGetDataClient({
         handleServerDataClientError(
           error,
           { redirectOnUnauthenticated },
-          (path) => redirect({ href: path, locale: redirectLocale }),
+          (path) =>
+            redirect({
+              // Same target as client hooks: keep the page, and mark the
+              // session expired so the login page cannot bounce back (loop).
+              href:
+                path === '/login'
+                  ? resolveSessionExpiredRedirect(headersList.get('x-pathname'))
+                  : path,
+              locale: redirectLocale,
+            }),
         );
       },
     });
