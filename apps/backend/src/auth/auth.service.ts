@@ -388,18 +388,18 @@ export class AuthService {
       }
 
       if (input.permissionIds !== undefined) {
-        // Only newly added permissions must be held by the caller, so an
-        // editor can still rename a role or remove permissions from it.
+        // Added and removed permissions must be held by the caller. Unchanged
+        // ones are not checked, so an editor can still rename a role.
         const current = await tx.query.rolePermissions.findMany({
           where: { roleId: roleToUpdate.id },
           columns: { permissionId: true },
         });
         const currentIds = new Set(current.map((rp) => rp.permissionId));
-        await this.assertCanGrantPermissions(
-          userId,
-          organizationUnitId,
-          input.permissionIds.filter((id) => !currentIds.has(id)),
-        );
+        const nextIds = new Set(input.permissionIds);
+        await this.assertCanGrantPermissions(userId, organizationUnitId, [
+          ...input.permissionIds.filter((id) => !currentIds.has(id)),
+          ...[...currentIds].filter((id) => !nextIds.has(id)),
+        ]);
       }
 
       const updateData: Partial<typeof schema.roles.$inferInsert> = {};
@@ -483,6 +483,18 @@ export class AuthService {
       if (roleToDelete.isInternal) {
         throw new ForbiddenGraphQLError('Cannot delete internal roles');
       }
+
+      // Deleting cascades to every membership holding the role, so it removes
+      // all of its permissions from them. The caller must hold each of them.
+      const granted = await tx.query.rolePermissions.findMany({
+        where: { roleId: roleToDelete.id },
+        columns: { permissionId: true },
+      });
+      await this.assertCanGrantPermissions(
+        userId,
+        organizationUnitId,
+        granted.map((rp) => rp.permissionId),
+      );
 
       const [role] = await tx
         .delete(schema.roles)

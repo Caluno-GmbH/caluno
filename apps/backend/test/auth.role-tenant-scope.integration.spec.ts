@@ -281,7 +281,7 @@ describe('role queries and mutations tenant scope', () => {
       expect(response.data?.updateRole?.name).toBe(newName);
     });
 
-    it('allows removing a permission the caller lacks from a role', async () => {
+    it('rejects removing a permission the caller lacks from a role', async () => {
       setAuthMockUserId(limitedUserId);
       const treasurer = await createRole(db, { organizationId: orgBId });
       await grantPermissionToRole(db, {
@@ -301,11 +301,11 @@ describe('role queries and mutations tenant scope', () => {
         },
       );
 
-      expect(response.errors).toBeUndefined();
+      expect(response.errors?.[0]?.message).toMatch(/do not hold/i);
       const grants = await db.query.rolePermissions.findMany({
         where: { roleId: treasurer.id },
       });
-      expect(grants).toHaveLength(0);
+      expect(grants).toHaveLength(1);
     });
   });
 });

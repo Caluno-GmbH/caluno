@@ -239,6 +239,166 @@ describe('role:manage permission', () => {
     });
   });
 
+  describe('removing and deleting within own permissions', () => {
+    const createRoleWith = async (keys: PermissionKey[]) => {
+      const role = await createRole(db, { organizationId });
+      for (const key of keys) {
+        await grantPermissionToRole(db, {
+          roleId: role.id,
+          permissionId: await permissionId(key),
+        });
+      }
+      return role;
+    };
+
+    const roleKeys = async (roleId: string): Promise<string[]> => {
+      const grants = await db.query.rolePermissions.findMany({
+        where: { roleId },
+        with: { permission: true },
+      });
+      return grants.map((g) => g.permission?.key ?? '').sort();
+    };
+
+    it('rejects deleting a role holding a permission the caller lacks', async () => {
+      setAuthMockUserId(roleManagerId);
+      const role = await createRoleWith([
+        PermissionKey.SHIFT_VIEW,
+        PermissionKey.ACCOUNTING_MANAGE,
+      ]);
+      const holder = await createUser(db);
+      const membership = await addMembership(db, holder.id, topUnitId);
+      await assignRoleToMembership(db, {
+        membershipId: membership.id,
+        roleId: role.id,
+      });
+
+      const response = await graphqlRequest<{ deleteRole?: { id: string } }>(
+        app,
+        {
+          query: DELETE_ROLE,
+          variables: { id: role.id },
+          headers: headers(topUnitId),
+        },
+      );
+
+      expect(response.errors?.[0]?.message).toMatch(/do not hold/i);
+      const persisted = await db.query.roles.findFirst({
+        where: { id: role.id },
+      });
+      expect(persisted).toBeTruthy();
+      const assignments = await db.query.membershipRoles.findMany({
+        where: { roleId: role.id },
+      });
+      expect(assignments).toHaveLength(1);
+    });
+
+    it('allows deleting a role whose permissions the caller all holds', async () => {
+      setAuthMockUserId(roleManagerId);
+      const role = await createRoleWith([
+        PermissionKey.ORG_VIEW,
+        PermissionKey.SHIFT_VIEW,
+      ]);
+
+      const response = await graphqlRequest<{ deleteRole?: { id: string } }>(
+        app,
+        {
+          query: DELETE_ROLE,
+          variables: { id: role.id },
+          headers: headers(topUnitId),
+        },
+      );
+
+      expect(response.errors).toBeUndefined();
+      const persisted = await db.query.roles.findFirst({
+        where: { id: role.id },
+      });
+      expect(persisted).toBeUndefined();
+    });
+
+    it('rejects removing a permission the caller lacks via updateRole', async () => {
+      setAuthMockUserId(roleManagerId);
+      const role = await createRoleWith([
+        PermissionKey.SHIFT_VIEW,
+        PermissionKey.ACCOUNTING_MANAGE,
+      ]);
+
+      const response = await graphqlRequest<{ updateRole?: { id: string } }>(
+        app,
+        {
+          query: UPDATE_ROLE,
+          variables: {
+            id: role.id,
+            input: {
+              name: role.name,
+              permissionIds: [await permissionId(PermissionKey.SHIFT_VIEW)],
+            },
+          },
+          headers: headers(topUnitId),
+        },
+      );
+
+      expect(response.errors?.[0]?.message).toMatch(/do not hold/i);
+      expect(await roleKeys(role.id)).toEqual(
+        [PermissionKey.ACCOUNTING_MANAGE, PermissionKey.SHIFT_VIEW].sort(),
+      );
+    });
+
+    it('allows removing a permission the caller holds via updateRole', async () => {
+      setAuthMockUserId(roleManagerId);
+      const role = await createRoleWith([
+        PermissionKey.SHIFT_VIEW,
+        PermissionKey.ORG_VIEW,
+      ]);
+
+      const response = await graphqlRequest<{ updateRole?: { id: string } }>(
+        app,
+        {
+          query: UPDATE_ROLE,
+          variables: {
+            id: role.id,
+            input: {
+              name: role.name,
+              permissionIds: [await permissionId(PermissionKey.ORG_VIEW)],
+            },
+          },
+          headers: headers(topUnitId),
+        },
+      );
+
+      expect(response.errors).toBeUndefined();
+      expect(await roleKeys(role.id)).toEqual([PermissionKey.ORG_VIEW]);
+    });
+
+    it('allows renaming a role without changing its permissions', async () => {
+      setAuthMockUserId(roleManagerId);
+      const role = await createRoleWith([
+        PermissionKey.SHIFT_VIEW,
+        PermissionKey.ACCOUNTING_MANAGE,
+      ]);
+      const newName = `renamed ${crypto.randomUUID()}`;
+
+      const response = await graphqlRequest<{
+        updateRole?: { id: string; name: string };
+      }>(app, {
+        query: UPDATE_ROLE,
+        variables: {
+          id: role.id,
+          input: {
+            name: newName,
+            permissionIds: [
+              await permissionId(PermissionKey.SHIFT_VIEW),
+              await permissionId(PermissionKey.ACCOUNTING_MANAGE),
+            ],
+          },
+        },
+        headers: headers(topUnitId),
+      });
+
+      expect(response.errors).toBeUndefined();
+      expect(response.data?.updateRole?.name).toBe(newName);
+    });
+  });
+
   describe('top unit only', () => {
     it('rejects createRole with a child unit header', async () => {
       const name = `child ${crypto.randomUUID()}`;
