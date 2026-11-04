@@ -159,7 +159,7 @@ describe('role queries and mutations tenant scope', () => {
     expect(response.data?.role?.id).toBe(roleB.id);
   });
 
-  describe('caller with only org:view and org:edit', () => {
+  describe('caller with only org:view and role:manage', () => {
     let limitedUserId: string;
     let editorRoleId: string;
 
@@ -174,7 +174,7 @@ describe('role queries and mutations tenant scope', () => {
       });
       await grantPermissionToRole(db, {
         roleId: editorRole.id,
-        permissionId: await permissionId(PermissionKey.ORG_EDIT),
+        permissionId: await permissionId(PermissionKey.ROLE_MANAGE),
       });
       const membership = await addMembership(db, user.id, unitBId);
       await assignRoleToMembership(db, {
@@ -219,7 +219,7 @@ describe('role queries and mutations tenant scope', () => {
               name: 'editor',
               permissionIds: [
                 await permissionId(PermissionKey.ORG_VIEW),
-                await permissionId(PermissionKey.ORG_EDIT),
+                await permissionId(PermissionKey.ROLE_MANAGE),
                 await permissionId(PermissionKey.ACCOUNTING_MANAGE),
               ],
             },
