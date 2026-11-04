@@ -61,6 +61,16 @@ describe('formatLastChanged', () => {
     expect(formatLastChanged('2026-09-28', 'de')).toBe('28. Sept. 2026');
   });
 
+  it('keeps the calendar day on a server east of Berlin', () => {
+    const originalTz = process.env.TZ;
+    process.env.TZ = 'Asia/Bangkok';
+    try {
+      expect(formatLastChanged('2026-09-08', 'de')).toBe('8. Sept. 2026');
+    } finally {
+      process.env.TZ = originalTz ?? 'Etc/UTC';
+    }
+  });
+
   it('formats an English date', () => {
     expect(formatLastChanged('2026-09-28', 'en')).toBe('28 Sep 2026');
   });

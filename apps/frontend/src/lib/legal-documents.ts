@@ -57,10 +57,13 @@ export function buildLegalDocumentCards(
   ];
 }
 
+// `date` is a calendar day (YYYY-MM-DD), not an instant: pin it to UTC on both
+// ends so the server's time zone can never shift it to a neighbouring day.
 export function formatLastChanged(date: string, locale: Locale): string {
-  return formats(locale).formatDate(parseISO(date), {
+  return formats(locale).formatDate(parseISO(`${date}T00:00:00Z`), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 }
