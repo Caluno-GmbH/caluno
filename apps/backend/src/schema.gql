@@ -646,7 +646,7 @@ type Membership {
   idVerifiedBy: User
   organizationUnit: OrganizationUnit!
   roles: [Role!]!
-  user: User!
+  user: MembershipUser!
 }
 
 type MembershipRequest {
@@ -678,6 +678,36 @@ enum MembershipRequestStatus {
   CANCELLED
   PENDING
   REJECTED
+}
+
+type MembershipUser {
+  birthdate: String
+  checkInId: ID!
+  city: String
+  email: String!
+
+  """
+  Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership).
+  """
+  emailPlatformEnabled: Boolean!
+
+  """Whether the volunteer receives urgent call-out emails."""
+  emailUrgentCallsEnabled: Boolean!
+
+  """Whether the volunteer receives the weekly plan email."""
+  emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
+  gender: String
+  id: ID!
+  image: String
+  lastname: String!
+  locale: String
+  name: String!
+  permissions: [Permission!]
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
 }
 
 type Mutation {

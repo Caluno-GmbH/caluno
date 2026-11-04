@@ -2,6 +2,7 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Role } from '../../auth/models/role.model';
 import { createPaginatedResponseType } from '../../graphql/paginated-response.model';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
+import { MembershipUser } from '../../user/models/membership-user.model';
 import { User } from '../../user/models/user.model';
 
 @ObjectType()
@@ -9,8 +10,8 @@ export class Membership {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => User)
-  user!: User;
+  @Field(() => MembershipUser)
+  user!: MembershipUser;
 
   @Field(() => OrganizationUnit)
   organizationUnit!: OrganizationUnit;
