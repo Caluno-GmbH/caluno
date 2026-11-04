@@ -92,6 +92,7 @@ error messages, or empty-state text in components. Add new keys to both locales 
 keep namespaces/key shapes in sync.
 
 **EE-only copy goes in `messages/ee/{en,de}.json`, never in the shared catalogs.**
+Edition strategy and agent rules: root `AGENTS.md` → **OSS / Enterprise Edition**.
 One file per locale for all EE features (mirrors `src/ee/` being one shared tree
 for all EE code) — the OSS mirror strips any directory literally named `ee`, so
 keys left in `messages/{en,de}.json` ship to OSS even if the feature code doesn't.
@@ -102,7 +103,9 @@ via a runtime `fs` read of `messages/ee/` (bundler imports would fail OSS
 builds where that directory is stripped). `hasEeEdition()` is true when `src/ee`
 exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
 checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
-so Turbopack still compiles `'use client'` modules when present.
+so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
+only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
+business logic under `src/ee/`, not in OSS route stubs.
 
 ### Locale switching
 

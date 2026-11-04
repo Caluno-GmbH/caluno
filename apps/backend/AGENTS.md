@@ -19,6 +19,8 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 - `bun run db:generate:ee` - Generate EE migrations (`src/ee/migrations`; only when `src/ee` is present)
 - `bun run db:migrate` - Run OSS migrations, then EE migrations when `src/ee` exists
 
+OSS/EE edition boundary (where EE modules, schemas, and migration streams live; what core may import): root `AGENTS.md` → **OSS / Enterprise Edition**. Backend EE code is only under `src/ee/`; it is loaded via `loadEeModules()` from `src/edition/` — never a static import of `ee` from core modules.
+
 ## Testing
 
 ### Test runners
