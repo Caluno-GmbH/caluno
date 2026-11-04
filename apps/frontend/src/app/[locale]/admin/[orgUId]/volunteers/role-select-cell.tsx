@@ -2,6 +2,7 @@
 
 import { PermissionKey } from '@repo/data';
 import {
+  useCurrentOrg,
   useHasPermission,
   useRoles,
   useUpdateMembershipRoles,
@@ -52,6 +53,10 @@ export function RoleSelectCell({
   const [pendingRole, setPendingRole] = useState<{ id: string } | null>(null);
   const router = useRouter();
   const canEdit = useHasPermission(PermissionKey.VolunteerEdit);
+  // Roles are org-wide; the backend only accepts role creation from the top unit.
+  const hasRoleManage = useHasPermission(PermissionKey.RoleManage);
+  const { isRoot } = useCurrentOrg();
+  const canCreateRole = hasRoleManage && isRoot;
   const {
     data: availableRoles,
     isPending: rolesLoading,
@@ -137,19 +142,23 @@ export function RoleSelectCell({
                   );
                 })}
               </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup>
-                <CommandItem
-                  className="cursor-pointer"
-                  onSelect={() => {
-                    setOpen(false);
-                    router.push(`/admin/${orgUId}/settings/roles/new`);
-                  }}
-                >
-                  <PlusIcon className="mr-2 size-4" />
-                  {t('select.addCustom')}
-                </CommandItem>
-              </CommandGroup>
+              {canCreateRole && (
+                <>
+                  <CommandSeparator />
+                  <CommandGroup>
+                    <CommandItem
+                      className="cursor-pointer"
+                      onSelect={() => {
+                        setOpen(false);
+                        router.push(`/admin/${orgUId}/settings/roles/new`);
+                      }}
+                    >
+                      <PlusIcon className="mr-2 size-4" />
+                      {t('select.addCustom')}
+                    </CommandItem>
+                  </CommandGroup>
+                </>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>

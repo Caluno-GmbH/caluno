@@ -15,9 +15,14 @@ interface RolesPageProps {
 
 export default async function RolesPage({ params }: RolesPageProps) {
   const { orgUId, locale } = await params;
-  await requireOrgAccess(orgUId);
+  const { org } = await requireOrgAccess(orgUId);
   await requirePermission(orgUId, PermissionKey.OrgView);
-  const [canEdit] = await checkPermission(orgUId, PermissionKey.OrgEdit);
+  const [hasRoleManage] = await checkPermission(
+    orgUId,
+    PermissionKey.RoleManage,
+  );
+  // Roles are org-wide; the backend only accepts role mutations from the top unit.
+  const canEdit = hasRoleManage && org.isRoot;
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Role' });
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { PermissionKey } from '@repo/data';
+import { useCurrentOrg } from '@repo/data/react';
 import { ActionsCell, Button } from '@repo/ui';
 import { Edit, Loader2, Trash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -24,6 +25,7 @@ export const ActionBar = ({
   isInternal,
   size = 'sm',
 }: ActionBarProps) => {
+  const { isRoot } = useCurrentOrg();
   const router = useRouter();
   const pathname = usePathname();
   const [isDeleting, startTransition] = useTransition();
@@ -48,8 +50,9 @@ export const ActionBar = ({
 
   return (
     <ActionsCell>
-      {!isInternal && (
-        <RequirePermission permission={PermissionKey.OrgEdit}>
+      {/* Roles are org-wide; the backend only accepts role mutations from the top unit. */}
+      {!isInternal && isRoot && (
+        <RequirePermission permission={PermissionKey.RoleManage}>
           <Button
             variant="outline"
             size={buttonSize}
