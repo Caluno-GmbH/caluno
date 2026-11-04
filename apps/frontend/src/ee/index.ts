@@ -3,8 +3,9 @@ import type { EeExtensions } from '@/edition/ee-extensions';
 /**
  * EE frontend extensions manifest. `loadEeExtensions()`
  * (`@/edition/load-ee-extensions`) dynamically imports this module when the
- * edition flag is set. A new EE nav item or UI slot is added here only —
- * `dashboard-sidebar.tsx` and page/slot call sites never change.
+ * edition flag is set. A new EE nav item, inline slot, or page is added here
+ * only — `dashboard-sidebar.tsx` and `<EeSlot />` / `<EePage />` call sites
+ * never change.
  */
 export const eeExtensions: EeExtensions = {
   navItems: [

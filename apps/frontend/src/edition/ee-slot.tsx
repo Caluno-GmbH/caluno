@@ -18,6 +18,7 @@ export async function resolveEeSlotComponent(
  * Replaces one-off slot components (e.g. the former `ProfileNoteSlot`) —
  * a new EE slot needs only an entry in `src/ee/index.ts`'s `slots` map
  * plus `<EeSlot name="..." />` at the call site, no new OSS file.
+ * For full App Router pages that should 404 without EE, use `<EePage />`.
  */
 export async function EeSlot({ name }: { name: string }) {
   const Component = await resolveEeSlotComponent(name);
