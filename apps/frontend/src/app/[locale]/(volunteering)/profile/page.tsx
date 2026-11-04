@@ -5,12 +5,17 @@ import { MembershipCard } from '@/domain/memberships/components/membership-card'
 import { buildMembershipEntries } from '@/domain/memberships/lib/entries';
 import { AccountSection } from '@/domain/user/components/account-section';
 import { HeaderAvatar } from '@/domain/user/components/header-avatar';
+import { LegalDocumentsSection } from '@/domain/user/components/legal-documents-section';
 import { PersonalInformationSection } from '@/domain/user/components/personal-information-section';
 import { ProfilePageHeader } from '@/domain/user/components/profile-page-header';
 import { EeSlot } from '@/edition/ee-slot';
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
+import {
+  buildLegalDocumentCards,
+  fetchLegalDocuments,
+} from '@/lib/legal-documents';
 
 type ProfilePageProps = {
   params: Promise<{ locale: string }>;
@@ -25,10 +30,11 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
   const tCommon = await getTranslations('Common');
 
   const data = await getDataClient();
-  const [me, requestPage, memberships] = await Promise.all([
+  const [me, requestPage, memberships, legalDocuments] = await Promise.all([
     data.user.getMe(),
     data.membershipRequest.findMine(),
     data.membership.findMine(),
+    fetchLegalDocuments(),
   ]);
   const membershipEntries = buildMembershipEntries(
     requestPage.items,
@@ -84,6 +90,16 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           emailWeeklyUpdateEnabled={me.emailWeeklyUpdateEnabled}
           emailUrgentCallsEnabled={me.emailUrgentCallsEnabled}
           emailPlatformEnabled={me.emailPlatformEnabled}
+        />
+
+        <hr className="border-t border-border my-6" />
+
+        <LegalDocumentsSection
+          cards={buildLegalDocumentCards(
+            legalDocuments,
+            resolveLocale(me.locale ?? locale),
+          )}
+          locale={locale}
         />
 
         <EeSlot name="profile-note" />
