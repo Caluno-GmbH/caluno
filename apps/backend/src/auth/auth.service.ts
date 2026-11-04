@@ -322,7 +322,7 @@ export class AuthService {
     const missing = requested.filter((p) => !callerKeys.has(p.key));
     if (missing.length > 0) {
       throw new ForbiddenGraphQLError(
-        `You cannot grant permissions you do not hold: ${missing.map((p) => p.key).join(', ')}`,
+        `You cannot grant or remove permissions you do not hold: ${missing.map((p) => p.key).join(', ')}`,
       );
     }
   }
