@@ -29,7 +29,8 @@
     "oss:filter:list": "bun run scripts/oss-mirror/cli.ts list",
     "oss:filter:prefixes": "bun run scripts/oss-mirror/cli.ts prefixes",
     "oss:filter:find": "bun run scripts/oss-mirror/cli.ts find",
-    "oss:clone": "bun run scripts/oss-mirror/clone-filter.ts"
+    "oss:clone": "bun run scripts/oss-mirror/clone-filter.ts",
+    "oss:copy": "bun run scripts/oss-mirror/oss-copy.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",

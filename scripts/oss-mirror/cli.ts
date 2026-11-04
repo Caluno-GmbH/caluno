@@ -43,9 +43,16 @@ switch (cmd) {
     process.exit(result.exitCode ?? 0);
     break;
   }
+  case 'copy': {
+    const { $ } = await import('bun');
+    const script = join(import.meta.dir, 'oss-copy.ts');
+    const result = await $`bun run ${script} ${args}`.nothrow();
+    process.exit(result.exitCode ?? 0);
+    break;
+  }
   default: {
     console.error(
-      `usage: bun run scripts/oss-mirror/cli.ts <list|prefixes|find|check|clone>`,
+      `usage: bun run scripts/oss-mirror/cli.ts <list|prefixes|find|check|clone|copy>`,
     );
     process.exit(2);
   }
