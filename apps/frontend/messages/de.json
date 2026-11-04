@@ -1447,7 +1447,8 @@
         "title": "Rolle ändern?"
       },
       "empty": "Keine Rollen gefunden.",
-      "searchPlaceholder": "Rollen suchen..."
+      "searchPlaceholder": "Rollen suchen...",
+      "updateFailed": "Die Rolle konnte nicht geändert werden. Du kannst nur Rollen im Rahmen deiner eigenen Berechtigungen vergeben oder entziehen, und jede Organisation braucht mindestens eine Leitung."
     },
     "sheet": {
       "createDescription": "Definiere eine neue Rolle mit spezifischen Berechtigungen.",
