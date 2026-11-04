@@ -67,12 +67,15 @@ describe('formatLastChanged', () => {
     try {
       expect(formatLastChanged('2026-09-08', 'de')).toBe('8. Sept. 2026');
     } finally {
-      process.env.TZ = originalTz ?? 'Etc/UTC';
+      if (originalTz === undefined) delete process.env.TZ;
+      else process.env.TZ = originalTz;
     }
   });
 
   it('formats an English date', () => {
-    expect(formatLastChanged('2026-09-28', 'en')).toBe('28 Sep 2026');
+    // en-GB abbreviates September as "Sep" or "Sept" depending on the ICU
+    // version bundled with the runtime.
+    expect(formatLastChanged('2026-09-28', 'en')).toMatch(/^28 Sept? 2026$/);
   });
 });
 
