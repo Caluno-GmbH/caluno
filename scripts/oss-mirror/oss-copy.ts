@@ -161,6 +161,23 @@ const { copied, skipped } = await copyTrackedTree({
   pathPrefix: '',
 });
 
+const UNTRACKED_FILES_TO_COPY = [
+  '.env',
+  'apps/frontend/.env',
+  'apps/backend/.env',
+] as const;
+for (const rel of UNTRACKED_FILES_TO_COPY) {
+  const from = join(repoRoot, rel);
+  const to = join(targetAbs, rel);
+  if (!existsSync(from)) {
+    console.log(`skip missing: ${rel}`);
+    continue;
+  }
+  mkdirSync(dirname(to), { recursive: true });
+  copyFileSync(from, to);
+  console.log(`copied ${rel}`);
+}
+
 console.log(
   `copied ${copied} tracked file${copied === 1 ? '' : 's'}, skipped ${skipped} denied/missing`,
 );
