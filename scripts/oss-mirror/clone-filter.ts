@@ -1,9 +1,17 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync, rmSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { $ } from 'bun';
 import { findDeniedDirs } from './find-denied-dirs.ts';
+
+const ENV_FILES = ['.env', 'apps/frontend/.env', 'apps/backend/.env'] as const;
 
 function usage(): never {
   console.error(
@@ -37,6 +45,13 @@ function parseArgs(argv: string[]) {
   return { source, ref, out, dryRun };
 }
 
+/** Remove all entries inside `dir`, leaving `dir` itself. */
+function emptyDir(dir: string) {
+  for (const name of readdirSync(dir)) {
+    rmSync(join(dir, name), { recursive: true, force: true });
+  }
+}
+
 const repoRoot = resolve(import.meta.dir, '../..');
 const args = parseArgs(process.argv.slice(2));
 const source = args.source ?? repoRoot;
@@ -49,11 +64,11 @@ const out =
 const outAbs = resolve(out);
 
 if (existsSync(outAbs)) {
-  console.error(`output already exists: ${outAbs}`);
-  process.exit(1);
+  console.log(`emptying existing output: ${outAbs}`);
+  emptyDir(outAbs);
+} else {
+  mkdirSync(outAbs, { recursive: true });
 }
-
-mkdirSync(resolve(outAbs, '..'), { recursive: true });
 console.log(`cloning ${source} → ${outAbs}`);
 const isRemote = /^(https?:|git@|ssh:)/.test(source);
 const result = isRemote
@@ -84,6 +99,21 @@ if (denied.length === 0) {
     console.log(`  ${rel}/`);
     if (!dryRun) rmSync(join(outAbs, rel), { recursive: true, force: true });
   }
+}
+
+const envSrcRoot = isRemote ? repoRoot : resolve(source);
+for (const rel of ENV_FILES) {
+  const from = join(envSrcRoot, rel);
+  const to = join(outAbs, rel);
+  if (!existsSync(from)) {
+    console.log(`skip missing env: ${rel}`);
+    continue;
+  }
+  if (!dryRun) {
+    mkdirSync(dirname(to), { recursive: true });
+    copyFileSync(from, to);
+  }
+  console.log(`${dryRun ? 'would copy' : 'copied'} ${rel}`);
 }
 
 await $`git -C ${outAbs} remote remove origin`.nothrow();
