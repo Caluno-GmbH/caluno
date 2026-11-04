@@ -31,6 +31,7 @@ import {
 import { CheckIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   internalRoleKey,
   type TranslatableRole,
@@ -182,10 +183,10 @@ export function RoleSelectCell({
             <AlertDialogAction
               onClick={() => {
                 if (pendingRole) {
-                  updateRoles({
-                    membershipId,
-                    roleIds: [pendingRole.id],
-                  });
+                  updateRoles(
+                    { membershipId, roleIds: [pendingRole.id] },
+                    { onError: () => toast.error(t('select.updateFailed')) },
+                  );
                 }
                 setPendingRole(null);
               }}

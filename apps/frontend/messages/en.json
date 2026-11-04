@@ -996,13 +996,18 @@
     },
     "language": "Language",
     "languageDescription": "App display language",
+    "lastChanged": "Last changed {date}",
+    "legalDocuments": "Legal",
     "moreSettingsPrompt": "For more settings, visit your <link>volunteering profile</link>.",
     "organizations": "Your organisations",
     "pageTitle": "Profile",
     "personalInformation": "Personal information",
     "pictureLabel": "Profile picture",
+    "privacyNotice": "Privacy notice",
+    "readDocument": "Read",
     "saveFailed": "We couldn't update your profile. Please try again.",
     "saved": "Profile updated",
+    "termsAndConditions": "Terms and conditions",
     "title": "Edit profile"
   },
   "QRScanner": {
@@ -1445,7 +1450,8 @@
         "title": "Change role?"
       },
       "empty": "No roles found.",
-      "searchPlaceholder": "Search roles..."
+      "searchPlaceholder": "Search roles...",
+      "updateFailed": "The role couldn't be changed. You can only assign or remove roles within your own permissions, and every organization needs at least one owner."
     },
     "sheet": {
       "createDescription": "Define a new role with specific permissions.",
