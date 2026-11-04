@@ -1442,7 +1442,8 @@
         "title": "Change role?"
       },
       "empty": "No roles found.",
-      "searchPlaceholder": "Search roles..."
+      "searchPlaceholder": "Search roles...",
+      "updateFailed": "The role couldn't be changed. You can only assign or remove roles within your own permissions, and every organization needs at least one owner."
     },
     "sheet": {
       "createDescription": "Define a new role with specific permissions.",
