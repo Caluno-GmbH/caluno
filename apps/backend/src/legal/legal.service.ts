@@ -11,6 +11,10 @@ export class LegalService {
     private readonly directory: string,
   ) {}
 
+  getCurrentPrivacyNoticeDate(): string {
+    return resolvePrivacyPolicyDocument(this.directory).version;
+  }
+
   streamCurrentPrivacyPolicy(): StreamableFile {
     const document = resolvePrivacyPolicyDocument(this.directory);
 

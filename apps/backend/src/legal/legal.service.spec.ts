@@ -18,6 +18,16 @@ describe('LegalService', () => {
     expect(headers.disposition).toContain('datenschutzhinweise-2026-08-25.pdf');
   });
 
+  it('returns the date of the newest privacy notice', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'legal-service-date-'));
+    writeFileSync(join(dir, 'datenschutzhinweise-2026-08-17.pdf'), 'old');
+    writeFileSync(join(dir, 'datenschutzhinweise-2026-08-25.pdf'), 'new');
+
+    expect(new LegalService(dir).getCurrentPrivacyNoticeDate()).toBe(
+      '2026-08-25',
+    );
+  });
+
   it('throws when the legal directory has no privacy policy PDF', () => {
     const dir = mkdtempSync(join(tmpdir(), 'legal-service-empty-'));
     mkdirSync(join(dir, 'nested'));
