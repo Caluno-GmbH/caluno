@@ -23,10 +23,11 @@ export default getRequestConfig(async ({ requestLocale }) => {
 
   // EE-only copy lives in its own `messages/ee/` tree so the OSS mirror
   // (which strips any directory literally named `ee`) never ships it. A
-  // bundler-resolved import/require of this path would force Turbopack and
-  // webpack to statically resolve it at build time, breaking the OSS build
-  // where the directory doesn't exist — so this is a plain runtime `fs`
-  // read instead (bundlers never touch string arguments to `fs` calls).
+  // bundler-resolved import/require of this path would force Turbopack to
+  // statically resolve it at build time, breaking the OSS build where the
+  // directory doesn't exist — so this is a plain runtime `fs` read instead
+  // (bundlers never touch string arguments to `fs` calls). JSON catalogs
+  // cannot use `turbopackOptional` the way `src/ee` UI slots do.
   // `process.cwd()` is the app root both under `next dev` and in the
   // standalone production server (which `chdir`s there on boot), so this
   // resolves correctly in both. See `outputFileTracingIncludes` in

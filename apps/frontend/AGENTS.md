@@ -98,8 +98,10 @@ keys left in `messages/{en,de}.json` ship to OSS even if the feature code doesn'
 This can be a whole new namespace (e.g. `EeNote`) or EE-only keys nested inside an
 otherwise-OSS namespace (e.g. `Navigation.myNote`); `src/i18n/request.ts` merges
 the ee catalog into the base one via `mergeEeMessages` only when `hasEeEdition()`,
-behind a `webpackIgnore` dynamic import (same pattern as the `src/ee/*` component
-imports) since that file does not exist in an OSS checkout.
+via a runtime `fs` read of `messages/ee/` (bundler imports would fail OSS
+builds where that directory is stripped). EE UI slots load through
+`loadEeExtensions()` with `turbopackOptional` so Turbopack still compiles
+`'use client'` modules when present.
 
 ### Locale switching
 
