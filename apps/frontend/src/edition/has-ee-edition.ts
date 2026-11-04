@@ -1,7 +1,21 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
+let cached: boolean | undefined;
+
 /**
- * Hosted / private builds set NEXT_PUBLIC_CALUNO_EDITION=ee.
- * OSS mirrors leave it unset — EE UI stays hidden.
+ * True when the EE tree is present (`src/ee`). The OSS mirror strips any
+ * directory named `ee`, so this is false there without an env flag.
+ * Set `CALUNO_EDITION=oss` to force OSS mode from a private checkout.
  */
 export function hasEeEdition(): boolean {
-  return process.env.NEXT_PUBLIC_CALUNO_EDITION === 'ee';
+  if (cached !== undefined) {
+    return cached;
+  }
+  if (process.env.CALUNO_EDITION === 'oss') {
+    cached = false;
+    return cached;
+  }
+  cached = existsSync(path.join(process.cwd(), 'src', 'ee'));
+  return cached;
 }

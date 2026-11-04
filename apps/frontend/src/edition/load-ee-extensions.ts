@@ -4,9 +4,9 @@ import { hasEeEdition } from './has-ee-edition';
 let cached: Promise<EeExtensions | null> | null = null;
 
 /**
- * Loads the single EE extensions manifest (`@/ee`) when the edition flag is
- * set; OSS mirrors have no `src/ee`, so this resolves to `null` and the
- * import never runs. One generic loader instead of a bespoke
+ * Loads the single EE extensions manifest (`@/ee`) when `hasEeEdition()`
+ * (presence of `src/ee`); OSS mirrors have no `src/ee`, so this resolves to
+ * `null` and the import never runs. One generic loader instead of a bespoke
  * `hasEeEdition()` + dynamic import per feature.
  *
  * `turbopackOptional` keeps the module in the Turbopack graph when present

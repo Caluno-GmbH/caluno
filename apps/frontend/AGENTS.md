@@ -99,9 +99,10 @@ This can be a whole new namespace (e.g. `EeNote`) or EE-only keys nested inside 
 otherwise-OSS namespace (e.g. `Navigation.myNote`); `src/i18n/request.ts` merges
 the ee catalog into the base one via `mergeEeMessages` only when `hasEeEdition()`,
 via a runtime `fs` read of `messages/ee/` (bundler imports would fail OSS
-builds where that directory is stripped). EE UI slots load through
-`loadEeExtensions()` with `turbopackOptional` so Turbopack still compiles
-`'use client'` modules when present.
+builds where that directory is stripped). `hasEeEdition()` is true when `src/ee`
+exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
+checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
+so Turbopack still compiles `'use client'` modules when present.
 
 ### Locale switching
 

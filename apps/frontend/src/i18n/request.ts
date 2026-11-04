@@ -7,6 +7,17 @@ import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 import { mergeEeMessages } from './merge-ee-messages';
 import { routing } from './routing';
 
+let warnedMissingEeMessages = false;
+
+function isEnoent(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    error.code === 'ENOENT'
+  );
+}
+
 export default getRequestConfig(async ({ requestLocale }) => {
   // `requestLocale` comes from the `[locale]` segment (added in a later subtask).
   // Until then it is undefined and we fall back to the default locale.
@@ -38,11 +49,23 @@ export default getRequestConfig(async ({ requestLocale }) => {
     'ee',
     `${locale}.json`,
   );
-  const eeMessages = JSON.parse(await readFile(eeMessagesPath, 'utf8'));
-
-  return {
-    locale,
-    timeZone: DEFAULT_TIMEZONE,
-    messages: mergeEeMessages(messages, eeMessages),
-  };
+  try {
+    const eeMessages = JSON.parse(await readFile(eeMessagesPath, 'utf8'));
+    return {
+      locale,
+      timeZone: DEFAULT_TIMEZONE,
+      messages: mergeEeMessages(messages, eeMessages),
+    };
+  } catch (error) {
+    if (!isEnoent(error)) {
+      throw error;
+    }
+    if (!warnedMissingEeMessages) {
+      warnedMissingEeMessages = true;
+      console.warn(
+        `[i18n] EE edition detected but missing ${eeMessagesPath}; using base messages`,
+      );
+    }
+    return { locale, timeZone: DEFAULT_TIMEZONE, messages };
+  }
 });
