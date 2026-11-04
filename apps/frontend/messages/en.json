@@ -287,10 +287,10 @@
     "digestLabel": "ID: {digest}",
     "generic": "Something went wrong",
     "goHome": "Go home",
-    "orgNotFound": {
-      "description": "The organisation you're looking for doesn't exist.",
+    "pageNotFound": {
+      "description": "The page you're looking for doesn't exist.",
       "homeLink": "Go to your organisations",
-      "title": "Organisation not found"
+      "title": "Page not found"
     },
     "reloadPage": "Reload page",
     "title": "Something went wrong",

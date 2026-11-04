@@ -287,10 +287,10 @@
     "digestLabel": "ID: {digest}",
     "generic": "Etwas ist schiefgelaufen",
     "goHome": "Zur Startseite",
-    "orgNotFound": {
-      "description": "Die gesuchte Organisation existiert nicht.",
+    "pageNotFound": {
+      "description": "Die gesuchte Seite existiert nicht.",
       "homeLink": "Zu deinen Organisationen",
-      "title": "Organisation nicht gefunden"
+      "title": "Seite nicht gefunden"
     },
     "reloadPage": "Seite neu laden",
     "title": "Etwas ist schiefgelaufen",
