@@ -1,5 +1,4 @@
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
 
 /**
  * Catches every `notFound()` under `/admin/[orgUId]` — missing resources,
