@@ -289,7 +289,6 @@
     "goHome": "Zur Startseite",
     "pageNotFound": {
       "description": "Die gesuchte Seite existiert nicht.",
-      "homeLink": "Zu deinen Organisationen",
       "title": "Seite nicht gefunden"
     },
     "reloadPage": "Seite neu laden",
@@ -2111,7 +2110,7 @@
     }
   },
   "Unauthorized": {
-    "homeLink": "Zu deinen Organisationen",
+    "homeLink": "Zu deinem Homescreen",
     "message": "Du hast keine Berechtigung, auf diese Ressource zuzugreifen.",
     "title": "Zugriff verweigert"
   },

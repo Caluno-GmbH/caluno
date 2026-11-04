@@ -8,16 +8,13 @@ import { Link } from '@/i18n/navigation';
  * this boundary must stay a generic page 404 (not "organisation not found").
  */
 export default async function AdminSegmentNotFound() {
-  const t = await getTranslations('Error');
+  const t = await getTranslations('Error.pageNotFound');
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center space-y-4">
-        <h1 className="text-2xl font-bold">{t('pageNotFound.title')}</h1>
-        <p>{t('pageNotFound.description')}</p>
-        <Link href="/" className="text-primary hover:underline">
-          {t('pageNotFound.homeLink')}
-        </Link>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <p>{t('description')}</p>
       </div>
     </div>
   );

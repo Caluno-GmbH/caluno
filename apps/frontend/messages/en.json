@@ -289,7 +289,6 @@
     "goHome": "Go home",
     "pageNotFound": {
       "description": "The page you're looking for doesn't exist.",
-      "homeLink": "Go to your organisations",
       "title": "Page not found"
     },
     "reloadPage": "Reload page",
@@ -2111,7 +2110,7 @@
     }
   },
   "Unauthorized": {
-    "homeLink": "Go to your organisations",
+    "homeLink": "Go to your homescreen",
     "message": "You don't have permission to access this resource.",
     "title": "Access denied"
   },
