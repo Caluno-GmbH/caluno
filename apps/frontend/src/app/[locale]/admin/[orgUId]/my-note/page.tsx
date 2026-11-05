@@ -1,4 +1,4 @@
-import { EePage } from '@/edition/ee-page';
+import { EePage } from '@/edition/enterprise-page';
 
 export default function MyNotePage({
   params,

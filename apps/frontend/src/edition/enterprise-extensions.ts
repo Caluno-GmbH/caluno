@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import type { EeIconName } from './ee-icons';
+import type { EeIconName } from './enterprise-icons';
 
 export interface EeNavItem {
   titleKey: string;

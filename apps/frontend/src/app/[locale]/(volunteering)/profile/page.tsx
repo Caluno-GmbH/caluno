@@ -8,7 +8,7 @@ import { HeaderAvatar } from '@/domain/user/components/header-avatar';
 import { LegalDocumentsSection } from '@/domain/user/components/legal-documents-section';
 import { PersonalInformationSection } from '@/domain/user/components/personal-information-section';
 import { ProfilePageHeader } from '@/domain/user/components/profile-page-header';
-import { EeSlot } from '@/edition/ee-slot';
+import { EeSlot } from '@/edition/enterprise-slot';
 import { Link } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';

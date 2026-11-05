@@ -1,4 +1,4 @@
-import type { EeExtensions } from './ee-extensions';
+import type { EeExtensions } from './enterprise-extensions';
 import { hasEeEdition } from './has-ee-edition';
 
 let cached: Promise<EeExtensions | null> | null = null;

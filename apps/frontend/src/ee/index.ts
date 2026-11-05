@@ -1,4 +1,4 @@
-import type { EeExtensions } from '@/edition/ee-extensions';
+import type { EeExtensions } from '@/edition/enterprise-extensions';
 
 /**
  * EE frontend extensions manifest. `loadEeExtensions()`

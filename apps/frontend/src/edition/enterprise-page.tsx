@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { resolveLocale } from '@/i18n/routing';
-import { resolveEeSlotComponent } from './ee-slot';
+import { resolveEeSlotComponent } from './enterprise-slot';
 
 /**
  * App Router stub for an EE-only page. Resolves a named slot from

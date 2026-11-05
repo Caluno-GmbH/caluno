@@ -2,4 +2,8 @@
 # Blank lines and # comments are ignored.
 # EE dirs (named ee or ee-*) are filtered automatically and need not be listed.
 packages/infra
+packages/security
 .ai
+.impeccable
+docs
+scripts/oss-mirror

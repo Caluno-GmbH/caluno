@@ -42,8 +42,8 @@ import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
 import { visibleOverviewTasks } from '@/domain/overview/visible-tasks';
-import type { EeNavItem } from '@/edition/ee-extensions';
-import { EE_ICONS } from '@/edition/ee-icons';
+import type { EeNavItem } from '@/edition/enterprise-extensions';
+import { EE_ICONS } from '@/edition/enterprise-icons';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
 
