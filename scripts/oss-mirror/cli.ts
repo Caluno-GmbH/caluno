@@ -4,8 +4,8 @@ import {
   isDeniedOssPath,
   STATIC_DENIED_DIRS,
   staticDeniedPathPrefixes,
-} from './denylist.ts';
-import { findDeniedDirs } from './find-denied-dirs.ts';
+} from './denylisting';
+import { findDeniedDirs } from './find-denied-dirs';
 
 const root = join(import.meta.dir, '../..');
 const [cmd, ...args] = process.argv.slice(2);

@@ -4,7 +4,7 @@ import {
   isEeDirName,
   normalizeRepoPath,
   STATIC_DENIED_DIRS,
-} from './denylist.ts';
+} from './denylisting';
 
 const SKIP_DIR_NAMES = new Set([
   '.git',

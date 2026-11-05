@@ -9,7 +9,7 @@ import {
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { $ } from 'bun';
-import { findDeniedDirs } from './find-denied-dirs.ts';
+import { findDeniedDirs } from './find-denied-dirs';
 
 const ENV_FILES = ['.env', 'apps/frontend/.env', 'apps/backend/.env'] as const;
 

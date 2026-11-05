@@ -19,7 +19,7 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { $ } from 'bun';
-import { isDeniedOssPath, normalizeRepoPath } from './denylist.ts';
+import { isDeniedOssPath, normalizeRepoPath } from './denylisting';
 
 const MODE_SYMLINK = '120000';
 const MODE_GITLINK = '160000';
