@@ -7,18 +7,6 @@ import type * as Types from './base-types';
 import { GraphQLClient, type RequestOptions } from 'graphql-request';
 import { gql } from 'graphql-request';
 type GraphQLClientRequestHeaders = RequestOptions['requestHeaders'];
-export type MyNoteQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type MyNoteQuery = { myNote: { id: string, body: string, updatedAt: string } };
-
-export type UpdateMyNoteMutationVariables = Exact<{
-  input: Types.UpdateMyNoteInput;
-}>;
-
-
-export type UpdateMyNoteMutation = { updateMyNote: { id: string, body: string, updatedAt: string } };
-
 export type GetReimbursementTypesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2043,24 +2031,6 @@ export const VolunteerHomeShiftInstanceFragmentDoc = gql`
       title
       coverImageUrl
     }
-  }
-}
-    `;
-export const MyNoteDocument = gql`
-    query MyNote {
-  myNote {
-    id
-    body
-    updatedAt
-  }
-}
-    `;
-export const UpdateMyNoteDocument = gql`
-    mutation UpdateMyNote($input: UpdateMyNoteInput!) {
-  updateMyNote(input: $input) {
-    id
-    body
-    updatedAt
   }
 }
     `;
@@ -5325,12 +5295,6 @@ const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationTy
 
 export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
   return {
-    MyNote(variables?: MyNoteQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<MyNoteQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<MyNoteQuery>({ document: MyNoteDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'MyNote', 'query', variables);
-    },
-    UpdateMyNote(variables: UpdateMyNoteMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<UpdateMyNoteMutation> {
-      return withWrapper((wrappedRequestHeaders) => client.request<UpdateMyNoteMutation>({ document: UpdateMyNoteDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'UpdateMyNote', 'mutation', variables);
-    },
     GetReimbursementTypes(variables?: GetReimbursementTypesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetReimbursementTypesQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetReimbursementTypesQuery>({ document: GetReimbursementTypesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetReimbursementTypes', 'query', variables);
     },

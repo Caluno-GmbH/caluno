@@ -11,39 +11,41 @@ import type { EeExtensions } from '@/edition/enterprise-extensions';
  * added here only — `dashboard-sidebar.tsx` and `<EeSlot />` / `<EePage />`
  * call sites never change.
  *
- * Nav placement is `before`-only (omit → append as last in the target list).
- * `href` is the full app path (no `/admin/{orgUId}` prefix is applied).
+ * Nav placement with `before` (omit → append as last in the target section).
+ * `href` is the full app path.
+ *
+ * Example nav
+ * [
+ * {
+ *   kind: 'section',
+ *   id: 'private',
+ *   labelKey: 'private',
+ *   before: ADMIN_NAV_SECTION.accounting,
+ *   items: [
+ *     {
+ *       id: 'my-note',
+ *       titleKey: 'myNote',
+ *       href: `/admin/${orgUId}/my-note`,
+ *       icon: 'notebook-pen',
+ *     },
+ *   ],
+ * },
+ * {
+ *   kind: 'item',
+ *   id: 'my-note',
+ *   section: ADMIN_NAV_SECTION.menu,
+ *   before: ADMIN_NAV_ITEM.shifts,
+ *   titleKey: 'myNote',
+ *   href: `/admin/${orgUId}/my-note`,
+ *   icon: 'notebook-pen',
+ * },
+ * ]
+ *
+ * slots map from string to component used in EeSlot or EePage. e.g.
+ *     'profile-note': () =>
+ *       import('./note/profile-note-section').then((m) => m.ProfileNoteSection),
  */
 export const eeExtensions: EeExtensions = {
-  nav: ({ orgUId }) => [
-    {
-      kind: 'section',
-      id: 'private',
-      labelKey: 'private',
-      before: ADMIN_NAV_SECTION.accounting,
-      items: [
-        {
-          id: 'my-note',
-          titleKey: 'myNote',
-          href: `/admin/${orgUId}/my-note`,
-          icon: 'notebook-pen',
-        },
-      ],
-    },
-    {
-      kind: 'item',
-      id: 'my-note',
-      section: ADMIN_NAV_SECTION.menu,
-      before: ADMIN_NAV_ITEM.shifts,
-      titleKey: 'myNote',
-      href: `/admin/${orgUId}/my-note`,
-      icon: 'notebook-pen',
-    },
-  ],
-  slots: {
-    'profile-note': () =>
-      import('./note/profile-note-section').then((m) => m.ProfileNoteSection),
-    'my-note-page': () =>
-      import('./note/admin-my-note-page').then((m) => m.AdminMyNotePage),
-  },
+  nav: ({ orgUId }) => [],
+  slots: {},
 };
