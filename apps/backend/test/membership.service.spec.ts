@@ -46,6 +46,8 @@ describe('MembershipService', () => {
       db,
       {
         findUsersWithPermission: mock(async () => []),
+        assertCanAssignRoles: mock(async () => undefined),
+        assertOwnerRemains: mock(async () => undefined),
       } as unknown as AuthService,
       {
         notifyMembershipLeft: mock(() => undefined),
@@ -124,7 +126,7 @@ describe('MembershipService', () => {
       });
       const membership = await addMembership(db, user.id, unit.id);
 
-      await service.removeMembership(membership.id, unit.id);
+      await service.removeMembership(membership.id, unit.id, 'test-caller');
 
       const after = await db
         .select({ id: schema.memberships.id })
@@ -153,7 +155,11 @@ describe('MembershipService', () => {
       const rootMembership = await addMembership(db, user.id, root.id);
       const childMembership = await addMembership(db, user.id, child.id);
 
-      await service.removeMembership(childMembership.id, child.id);
+      await service.removeMembership(
+        childMembership.id,
+        child.id,
+        'test-caller',
+      );
 
       const remaining = await db
         .select({ id: schema.memberships.id })
@@ -182,7 +188,7 @@ describe('MembershipService', () => {
       const membership = await addMembership(db, user.id, child.id);
 
       await expect(
-        service.removeMembership(membership.id, root.id),
+        service.removeMembership(membership.id, root.id, 'test-caller'),
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
 
       const stillThere = await db
@@ -367,7 +373,11 @@ describe('MembershipService', () => {
     it('removeMembership hard-deletes this user invites on that org unit the same way', async () => {
       const seeded = await seedInvites();
 
-      await service.removeMembership(seeded.membership.id, seeded.root.id);
+      await service.removeMembership(
+        seeded.membership.id,
+        seeded.root.id,
+        'test-caller',
+      );
 
       const remaining = await remainingInviteIds(seeded.user.id);
       expect(remaining.eventIds).toEqual(
@@ -390,6 +400,7 @@ describe('MembershipService', () => {
       await service.removeMembership(
         seeded.childMembership.id,
         seeded.child.id,
+        'test-caller',
       );
 
       const remaining = await remainingInviteIds(seeded.user.id);

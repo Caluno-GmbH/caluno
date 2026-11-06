@@ -1,17 +1,19 @@
 import { getTranslations } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
 
-export default async function OrgNotFound() {
-  const t = await getTranslations('Error');
+/**
+ * Catches every `notFound()` under `/admin/[orgUId]` — missing resources,
+ * invalid UUID segments, and EE-only page stubs when the EE tree is absent.
+ * Real unknown-org access goes to `/unauthorized` via `requireOrgAccess`, so
+ * this boundary must stay a generic page 404 (not "organisation not found").
+ */
+export default async function AdminSegmentNotFound() {
+  const t = await getTranslations('Error.pageNotFound');
 
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center space-y-4">
-        <h1 className="text-2xl font-bold">{t('orgNotFound.title')}</h1>
-        <p>{t('orgNotFound.description')}</p>
-        <Link href="/" className="text-primary hover:underline">
-          {t('orgNotFound.homeLink')}
-        </Link>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
+        <p>{t('description')}</p>
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ import { VolunteerSheet } from '@/components/sheets/volunteer-sheet';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { OrgSyncProvider } from '@/domain/organization/components/org-sync-provider';
 import { BlockSheet } from '@/domain/requirement-form/components/block-sheet';
+import { loadEeExtensions } from '@/edition/load-ee-extensions';
 import { resolveLocale } from '@/i18n/routing';
 import { requireAuth } from '@/lib/auth-server';
 import { GRAPHQL_API_URL } from '@/lib/constants';
@@ -49,6 +50,7 @@ export default async function OrgLayout({
   ]);
   const permissionKeys = userPermissions.map((p) => p.key);
   const localeSeed = await resolveLocaleSeed(orgUId);
+  const eeExtensions = await loadEeExtensions();
 
   return (
     <OrgProvider org={org} organizations={organizations}>
@@ -60,7 +62,10 @@ export default async function OrgLayout({
         {localeSeed && <LocaleCookieSeeder value={localeSeed} />}
         <OrgSyncProvider orgUId={orgUId}>
           <SidebarProvider>
-            <DashboardSidebar permissions={permissionKeys} />
+            <DashboardSidebar
+              permissions={permissionKeys}
+              eeNav={eeExtensions?.nav?.({ orgUId })}
+            />
             <SidebarInset>
               <PageHeaderProvider>
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">

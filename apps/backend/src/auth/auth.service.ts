@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, inArray } from 'drizzle-orm';
-import type { Database } from '../database/database.module';
+import type { Database, DbTransaction } from '../database/database.module';
 import { DATABASE_CONNECTION } from '../database/database-connection';
 import * as schema from '../database/schema';
 import {
@@ -22,6 +22,7 @@ import {
 } from '../shared/observability/posthog.events';
 import { PostHogService } from '../shared/observability/posthog.service';
 import { isUniqueConstraintViolation } from '../utils/constraint-violation.util';
+import { DEFAULT_OWNER_ROLE_NAME } from './constants';
 import { PERMISSION_GROUPS } from './constants/permission-groups';
 import { CreateRoleInput } from './inputs/create-role.input';
 import { UpdateRoleInput } from './inputs/update-role.input';
@@ -295,6 +296,26 @@ export class AuthService {
   }
 
   /**
+   * Throws Forbidden with `message` when the caller lacks any of `keys` in
+   * this unit. Shared by role editing and role assignment.
+   */
+  private async assertHoldsPermissionKeys(
+    userId: string,
+    organizationUnitId: string,
+    keys: Iterable<string>,
+    message: string,
+  ): Promise<void> {
+    const callerKeys = await this.findUserPermissionKeys(
+      userId,
+      organizationUnitId,
+    );
+    const missing = [...new Set(keys)].filter((key) => !callerKeys.has(key));
+    if (missing.length > 0) {
+      throw new ForbiddenGraphQLError(`${message}: ${missing.join(', ')}`);
+    }
+  }
+
+  /**
    * Rejects permission ids the caller does not hold in this unit, so a role
    * editor cannot escalate a role beyond their own permissions.
    */
@@ -315,16 +336,12 @@ export class AuthService {
       throw new NotFoundGraphQLError('Permission not found');
     }
 
-    const callerKeys = await this.findUserPermissionKeys(
+    await this.assertHoldsPermissionKeys(
       userId,
       organizationUnitId,
+      requested.map((p) => p.key),
+      'You cannot grant or remove permissions you do not hold',
     );
-    const missing = requested.filter((p) => !callerKeys.has(p.key));
-    if (missing.length > 0) {
-      throw new ForbiddenGraphQLError(
-        `You cannot grant permissions you do not hold: ${missing.map((p) => p.key).join(', ')}`,
-      );
-    }
   }
 
   /**
@@ -348,6 +365,66 @@ export class AuthService {
       'Role not found',
     );
     return role;
+  }
+
+  /**
+   * Rejects roles that hold any permission the caller lacks in this unit, so
+   * a volunteer editor cannot assign or take away roles above their own.
+   */
+  async assertCanAssignRoles(
+    userId: string,
+    organizationUnitId: string,
+    roleIds: string[],
+    executor: DbExecutor = this.db,
+  ): Promise<void> {
+    if (roleIds.length === 0) {
+      return;
+    }
+
+    const rolePermissions = await executor.query.rolePermissions.findMany({
+      where: { roleId: { in: roleIds } },
+      with: { permission: true },
+    });
+    await this.assertHoldsPermissionKeys(
+      userId,
+      organizationUnitId,
+      rolePermissions.flatMap((rp) =>
+        rp.permission ? [rp.permission.key] : [],
+      ),
+      'You cannot assign or remove roles with permissions you do not hold',
+    );
+  }
+
+  private isOwnerRole(role: Pick<RoleEntity, 'isInternal' | 'name'>): boolean {
+    return role.isInternal && role.name === DEFAULT_OWNER_ROLE_NAME;
+  }
+
+  /**
+   * Rejects taking the Owner role away from `membershipId` (role change,
+   * removal or leaving) when no other membership holds it. Locks the Owner
+   * rows so two owners demoting each other at once cannot both pass.
+   */
+  async assertOwnerRemains(
+    tx: DbTransaction,
+    membershipId: string,
+    removedRoles: RoleEntity[],
+  ): Promise<void> {
+    const ownerRole = removedRoles.find((role) => this.isOwnerRole(role));
+    if (!ownerRole) {
+      return;
+    }
+
+    const holders = await tx
+      .select({ membershipId: schema.membershipRoles.membershipId })
+      .from(schema.membershipRoles)
+      .where(eq(schema.membershipRoles.roleId, ownerRole.id))
+      .orderBy(schema.membershipRoles.id)
+      .for('update');
+    if (!holders.some((holder) => holder.membershipId !== membershipId)) {
+      throw new ConflictGraphQLError(
+        'An organization must keep at least one owner.',
+      );
+    }
   }
 
   async findRoleById(
@@ -388,18 +465,18 @@ export class AuthService {
       }
 
       if (input.permissionIds !== undefined) {
-        // Only newly added permissions must be held by the caller, so an
-        // editor can still rename a role or remove permissions from it.
+        // Added and removed permissions must be held by the caller. Unchanged
+        // ones are not checked, so an editor can still rename a role.
         const current = await tx.query.rolePermissions.findMany({
           where: { roleId: roleToUpdate.id },
           columns: { permissionId: true },
         });
         const currentIds = new Set(current.map((rp) => rp.permissionId));
-        await this.assertCanGrantPermissions(
-          userId,
-          organizationUnitId,
-          input.permissionIds.filter((id) => !currentIds.has(id)),
-        );
+        const nextIds = new Set(input.permissionIds);
+        await this.assertCanGrantPermissions(userId, organizationUnitId, [
+          ...input.permissionIds.filter((id) => !currentIds.has(id)),
+          ...[...currentIds].filter((id) => !nextIds.has(id)),
+        ]);
       }
 
       const updateData: Partial<typeof schema.roles.$inferInsert> = {};
@@ -483,6 +560,18 @@ export class AuthService {
       if (roleToDelete.isInternal) {
         throw new ForbiddenGraphQLError('Cannot delete internal roles');
       }
+
+      // Deleting cascades to every membership holding the role, so it removes
+      // all of its permissions from them. The caller must hold each of them.
+      const granted = await tx.query.rolePermissions.findMany({
+        where: { roleId: roleToDelete.id },
+        columns: { permissionId: true },
+      });
+      await this.assertCanGrantPermissions(
+        userId,
+        organizationUnitId,
+        granted.map((rp) => rp.permissionId),
+      );
 
       const [role] = await tx
         .delete(schema.roles)
