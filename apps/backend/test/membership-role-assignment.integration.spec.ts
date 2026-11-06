@@ -201,12 +201,20 @@ describe('role assignment and membership removal escalation rules', () => {
   });
 
   it('rejects a volunteer editor removing Owner from an owner', async () => {
+    // Target is a non-last owner so assertOwnerRemains passes and escalation fails.
+    const target = await createMember(ownerRoleId);
     setAuthMockUserId(editorUserId);
 
-    const response = await updateRoles(ownerMembershipId, [memberRoleId]);
+    const response = await updateRoles(target.membershipId, [memberRoleId]);
 
     expect(response.errors?.[0]?.message).toMatch(/do not hold/i);
-    expect(await roleIdsOf(ownerMembershipId)).toEqual([ownerRoleId]);
+    expect(await roleIdsOf(target.membershipId)).toEqual([ownerRoleId]);
+
+    // Drop the extra owner so later last-owner tests stay valid.
+    setAuthMockUserId(ownerUserId);
+    expect(
+      (await updateRoles(target.membershipId, [memberRoleId])).errors,
+    ).toBeUndefined();
   });
 
   it('allows a volunteer editor to assign a role within their permissions', async () => {
@@ -265,12 +273,20 @@ describe('role assignment and membership removal escalation rules', () => {
   });
 
   it('rejects a volunteer editor removing an owner from the org', async () => {
+    // Target is a non-last owner so assertOwnerRemains passes and escalation fails.
+    const target = await createMember(ownerRoleId);
     setAuthMockUserId(editorUserId);
 
-    const response = await removeMembership(ownerMembershipId);
+    const response = await removeMembership(target.membershipId);
 
     expect(response.errors?.[0]?.message).toMatch(/do not hold/i);
-    expect(await membershipExists(ownerMembershipId)).toBe(true);
+    expect(await membershipExists(target.membershipId)).toBe(true);
+
+    // Drop the extra owner so later last-owner tests stay valid.
+    setAuthMockUserId(ownerUserId);
+    expect(
+      (await updateRoles(target.membershipId, [memberRoleId])).errors,
+    ).toBeUndefined();
   });
 
   it('allows a volunteer editor to remove a member within their permissions', async () => {

@@ -1010,13 +1010,13 @@ export class MembershipService {
       });
       // Removing someone takes all their roles away, so the same rule applies.
       const roles = this.rolesOf(current);
+      await this.authService.assertOwnerRemains(tx, removing.id, roles);
       await this.authService.assertCanAssignRoles(
         callerId,
         organizationUnitId,
         roles.map((role) => role.id),
         tx,
       );
-      await this.authService.assertOwnerRemains(tx, removing.id, roles);
 
       await tx
         .delete(schema.memberships)
@@ -1455,17 +1455,17 @@ export class MembershipService {
       const addedIds = roleIds.filter((id) => !currentIds.has(id));
       const removed = current.filter((mr) => !nextIds.has(mr.roleId));
 
+      await this.authService.assertOwnerRemains(
+        tx,
+        membership.id,
+        this.rolesOf(removed),
+      );
       // Both directions count: taking a role away is as sensitive as giving it.
       await this.authService.assertCanAssignRoles(
         callerId,
         organizationUnitId,
         [...addedIds, ...removed.map((mr) => mr.roleId)],
         tx,
-      );
-      await this.authService.assertOwnerRemains(
-        tx,
-        membership.id,
-        this.rolesOf(removed),
       );
 
       await tx
