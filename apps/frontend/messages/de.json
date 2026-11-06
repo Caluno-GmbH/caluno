@@ -2183,7 +2183,8 @@
       "zipLabel": "PLZ"
     },
     "configureView": {
-      "label": "Ansicht konfigurieren"
+      "label": "Ansicht konfigurieren",
+      "note": "Zum Schutz personenbezogener Daten standardmäßig ausgeblendet – bitte sei beim Bildschirmteilen achtsam."
     },
     "filter": {
       "rolePlaceholder": "Rolle",

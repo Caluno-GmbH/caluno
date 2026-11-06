@@ -41,7 +41,10 @@ export const ConfigureViewButton = ({
           {t('configureView.label')}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-auto space-y-2 p-3">
+      <PopoverContent
+        align="start"
+        className="w-(--radix-popover-trigger-width) space-y-2 p-3"
+      >
         {OPTIONAL_COLUMN_IDS.map((id) => {
           const checkboxId = `configure-view-${id}`;
           return (
@@ -57,6 +60,9 @@ export const ConfigureViewButton = ({
             </div>
           );
         })}
+        <p className="text-muted-foreground text-xs">
+          {t('configureView.note')}
+        </p>
       </PopoverContent>
     </Popover>
   );

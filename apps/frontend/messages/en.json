@@ -2183,7 +2183,8 @@
       "zipLabel": "Postal code"
     },
     "configureView": {
-      "label": "Configure view"
+      "label": "Configure view",
+      "note": "Hidden by default to protect personal data — please stay mindful when sharing your screen."
     },
     "filter": {
       "rolePlaceholder": "Role",

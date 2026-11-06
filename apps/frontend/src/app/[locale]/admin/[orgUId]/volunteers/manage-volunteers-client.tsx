@@ -493,6 +493,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
             )
           }
           placeholder={t('search.placeholder')}
+          className="sm:w-80"
         />
         <TableToolbar.MultiSelect
           value={roles}
@@ -527,6 +528,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           emptyText={t('filter.cityEmpty')}
           ariaLabel={t('filter.activeCity')}
           icon={<MapPin className="size-4" />}
+          className="min-w-28"
         />
         <ToggleGroup
           type="single"
