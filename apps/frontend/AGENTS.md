@@ -91,6 +91,24 @@ All user-facing strings must come from `messages/{en,de}.json` via `useTranslati
 error messages, or empty-state text in components. Add new keys to both locales and
 keep namespaces/key shapes in sync.
 
+**EE-only copy goes in `messages/ee/{en,de}.json`, never in the shared catalogs.**
+Edition strategy and agent rules: root `AGENTS.md` → **OSS / Enterprise Edition**.
+One file per locale for all EE features (mirrors `src/ee/` being one shared tree
+for all EE code) — the OSS mirror strips any directory literally named `ee`, so
+keys left in `messages/{en,de}.json` ship to OSS even if the feature code doesn't.
+This can be a whole new namespace (e.g. `EeNote`) or EE-only keys nested inside an
+otherwise-OSS namespace (e.g. `Navigation.myNote`); `src/i18n/request.ts` merges
+the ee catalog into the base one via `mergeEeMessages` only when `hasEeEdition()`,
+via a runtime `fs` read of `messages/ee/` (bundler imports would fail OSS
+builds where that directory is stripped). `hasEeEdition()` is true when `src/ee`
+exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
+checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
+so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
+only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
+business logic under `src/ee/`, not in OSS route stubs. Admin nav: contribute
+via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
+(omit → append); merge happens in `components/navigation/admin-nav.ts`.
+
 ### Locale switching
 
 The `caluno.locale` cookie is the single frontend locale-preference source, and
