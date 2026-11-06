@@ -87,7 +87,7 @@ describe('serializeVolunteersToCsv', () => {
     const lines = csv.split('\n');
     // age: born 1990-06-15, now 2026-11-04 → 36
     expect(lines[1]).toBe(
-      '"Anna Schmidt","anna@example.org","Mitglied, Stage Crew","1990-06-15 · 36","female","+49 123 456","Hauptstraße 1, 20099 Hamburg"',
+      `"Anna Schmidt","anna@example.org","Mitglied, Stage Crew","1990-06-15 · 36","female","'+49 123 456","Hauptstraße 1, 20099 Hamburg"`,
     );
   });
 
@@ -182,6 +182,59 @@ describe('serializeVolunteersToCsv', () => {
     );
     const lines = csv.split('\n');
     expect(lines[1]).toBe('"O""Brien","obrien@example.org"');
+  });
+
+  describe('formula-injection guard', () => {
+    const makeNameRow = (name: string) => ({
+      user: {
+        name,
+        email: 'x@example.org',
+        preferredName: null,
+        birthdate: null,
+        gender: null,
+        phone: null,
+        street: null,
+        zip: null,
+        city: null,
+      },
+      roles: [],
+    });
+
+    it('prefixes = with a single quote to block formula injection', () => {
+      const csv = serializeVolunteersToCsv(
+        [makeNameRow('=HYPERLINK("http://x")')],
+        ['name'],
+        HEADERS,
+        roleLabel,
+        formatDate,
+        NOW,
+      );
+      expect(csv.split('\n')[1]).toBe(`"'=HYPERLINK(""http://x"")"`);
+    });
+
+    it('prefixes + with a single quote', () => {
+      const csv = serializeVolunteersToCsv(
+        [makeNameRow('+1234')],
+        ['name'],
+        HEADERS,
+        roleLabel,
+        formatDate,
+        NOW,
+      );
+      expect(csv.split('\n')[1]).toBe(`"'+1234"`);
+    });
+
+    it('does NOT prefix safe values', () => {
+      const csv = serializeVolunteersToCsv(
+        [makeNameRow('Hamburg')],
+        ['name'],
+        HEADERS,
+        roleLabel,
+        formatDate,
+        NOW,
+      );
+      expect(csv.split('\n')[1]).toBe('"Hamburg"');
+    });
   });
 
   it('address joins only present parts', () => {

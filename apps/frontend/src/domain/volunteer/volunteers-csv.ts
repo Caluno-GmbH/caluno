@@ -1,4 +1,7 @@
-import { formatDateOfBirthWithAge } from './volunteer-profile-format';
+import {
+  formatDateOfBirthWithAge,
+  formatVolunteerAddress,
+} from './volunteer-profile-format';
 
 export type VolunteerCsvColumnId =
   | 'name'
@@ -25,15 +28,8 @@ type CsvMembership = {
 };
 
 function escapeCell(value: string): string {
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
-function resolveAddress(user: CsvMembership['user']): string {
-  const parts: string[] = [];
-  if (user.street) parts.push(user.street);
-  const zipCity = [user.zip, user.city].filter(Boolean).join(' ');
-  if (zipCity) parts.push(zipCity);
-  return parts.join(', ');
+  const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${guarded.replace(/"/g, '""')}"`;
 }
 
 function membershipToRow(
@@ -62,7 +58,7 @@ function membershipToRow(
       case 'phone':
         return membership.user.phone ?? '';
       case 'address':
-        return resolveAddress(membership.user);
+        return formatVolunteerAddress(membership.user);
       default:
         return '';
     }

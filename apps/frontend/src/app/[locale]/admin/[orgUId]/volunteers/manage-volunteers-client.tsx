@@ -62,7 +62,10 @@ import {
   matchesVolunteerFilters,
   UNSET,
 } from '@/domain/volunteer/volunteer-filters';
-import { formatDateOfBirthWithAge } from '@/domain/volunteer/volunteer-profile-format';
+import {
+  formatDateOfBirthWithAge,
+  formatVolunteerAddress,
+} from '@/domain/volunteer/volunteer-profile-format';
 import { matchesVolunteerQuery } from '@/domain/volunteer/volunteer-search';
 import { useQueryParamTab } from '@/hooks/use-query-param-tab';
 import { useSheetTrigger } from '@/hooks/use-sheet';
@@ -261,25 +264,13 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         id: 'address',
         enableSorting: false,
         enableHiding: true,
-        accessorFn: (row) => {
-          const u = row.user;
-          const parts: string[] = [];
-          if (u.street) parts.push(u.street);
-          const zipCity = [u.zip, u.city].filter(Boolean).join(' ');
-          if (zipCity) parts.push(zipCity);
-          return parts.join(', ');
-        },
+        accessorFn: (row) => formatVolunteerAddress(row.user),
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.address')} />
         ),
-        cell: ({ row }) => {
-          const u = row.original.user;
-          const parts: string[] = [];
-          if (u.street) parts.push(u.street);
-          const zipCity = [u.zip, u.city].filter(Boolean).join(' ');
-          if (zipCity) parts.push(zipCity);
-          return <TextCell>{parts.join(', ')}</TextCell>;
-        },
+        cell: ({ row }) => (
+          <TextCell>{formatVolunteerAddress(row.original.user)}</TextCell>
+        ),
       },
       {
         id: 'actions',
