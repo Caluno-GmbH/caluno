@@ -26,12 +26,12 @@ Caluno is one private monorepo that produces two editions. Agents must keep the 
 
 | Edition        | What it is                                                                      | How it exists                                                                    |
 | -------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **OSS (core)** | The open-source product (volunteer/shift management without proprietary extras) | Filtered tree from this repo via `scripts/oss-mirror/`                           |
+| **OSS (core)** | The open-source product (volunteer/shift management without proprietary extras) | Filtered tree from this repo via `scripts/ee-oss-mirror`                         |
 | **EE**         | Proprietary features on top of core (e.g. personal notes)                       | Only under directories named `ee` or `ee-*`; present in private/hosted checkouts |
 
-**Standing invariant:** after every directory named `ee` or `ee-*` is removed (plus the static denylist in `scripts/oss-mirror/denylist`, currently `packages/infra`), the remaining tree must still install, typecheck, build, migrate, and boot. Core must never hard-depend on an EE module.
+**Standing invariant:** after every directory named `ee` or `ee-*` is removed (plus the static denylist in `scripts/ee-oss-mirror/denylist`), the remaining tree must still install, typecheck, build, migrate, and boot. Core must never hard-depend on an EE module.
 
-Detection is presence-based: `hasEeEdition()` / `loadEeModules()` look for `src/ee`. Set `CALUNO_EDITION=oss` to force OSS mode from a private checkout. Mirror tooling: `bun run oss:filter:*`, `bun run oss:clone`.
+Detection is presence-based: `hasEeEdition()` / `loadEeModules()` look for `src/ee`. Set `CALUNO_EDITION=oss` to force OSS mode from a private checkout. Mirror tooling: `bun run oss:copy <target-dir>`.
 
 ### Where code goes
 
@@ -43,7 +43,7 @@ Detection is presence-based: `hasEeEdition()` / `loadEeModules()` look for `src/
 | EE i18n copy                | `apps/frontend/messages/ee/{en,de}.json`                             | Never in shared `messages/{en,de}.json` (those ship to OSS)                                             |
 | EE data client              | `packages/data/src/ee/`                                              | Consumed as `@repo/data/ee` — only from EE UI (`apps/frontend/src/ee/**`)                               |
 | Edition bridges (OSS-safe)  | `apps/*/src/edition/`                                                | `hasEeEdition`, `EeSlot` / `EePage`, `loadEeModules` — these stay in the OSS tree                       |
-| Also private (not EE-named) | `scripts/oss-mirror/denylist`                                        | Paths stripped from the public mirror (e.g. `packages/infra`)                                           |
+| Also private (not EE-named) | `scripts/ee-oss-mirror/denylist`                                     | Paths stripped from the public mirror (e.g. `packages/infra`)                                           |
 
 Thin App Router stubs that only render `<EePage />` / `<EeSlot />` may live in OSS route trees — they 404 or render nothing when EE is absent. Put no EE business logic in those stubs.
 

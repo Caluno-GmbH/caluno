@@ -3,8 +3,7 @@
  * Copy the current git-tracked tree into an existing target directory,
  * stripping EE / denylisted paths. Preserves target `.git`.
  *
- * Unlike clone-filter.ts (fresh clone + delete denied dirs), this syncs
- * tracked files only — no ignored/untracked files, no source `.git`.
+ * Syncs tracked files only — no ignored/untracked files, no source `.git`.
  */
 import {
   copyFileSync,
@@ -25,7 +24,9 @@ const MODE_SYMLINK = '120000';
 const MODE_GITLINK = '160000';
 
 function usage(): never {
-  console.error(`usage: bun run scripts/oss-mirror/oss-copy.ts <target-dir>`);
+  console.error(
+    `usage: bun run scripts/ee-oss-mirror/oss-copy.ts <target-dir>`,
+  );
   process.exit(2);
 }
 

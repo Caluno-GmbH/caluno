@@ -20,7 +20,7 @@ export function loadEeExtensions(): Promise<EeExtensions | null> {
     return Promise.resolve(null);
   }
   cached ??= import(/* turbopackOptional: true */ '@/ee').then(
-    (mod) => (mod as { eeExtensions: EeExtensions }).eeExtensions,
+    (mod) => mod.eeExtensions,
   );
   return cached;
 }

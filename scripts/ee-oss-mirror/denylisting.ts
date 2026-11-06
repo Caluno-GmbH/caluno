@@ -61,13 +61,3 @@ export function isDeniedOssPath(repoRelativePath: string): boolean {
   if (segments.some(isEeDirName)) return true;
   return isUnderStaticDeniedDir(normalized);
 }
-
-export function staticDeniedPathPrefixes(
-  deniedDirs: readonly string[] = STATIC_DENIED_DIRS,
-): string[] {
-  return [...deniedDirs]
-    .map((d) => normalizeRepoPath(d))
-    .filter(Boolean)
-    .sort()
-    .map((d) => `${d}/`);
-}
