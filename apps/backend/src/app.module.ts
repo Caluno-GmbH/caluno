@@ -12,10 +12,11 @@ import {
   AuthModule as BetterAuthModule,
 } from '@thallesp/nestjs-better-auth';
 import { betterAuth } from 'better-auth';
-import { Logger } from 'nestjs-pino';
+import { PinoLogger } from 'nestjs-pino';
 import { AccountingModule } from './accounting/accounting.module';
-import { type BetterAuthLogger, createAuthConfig } from './auth/auth';
+import { createAuthConfig } from './auth/auth';
 import { AuthModule } from './auth/auth.module';
+import { createBetterAuthPinoLogger } from './auth/better-auth-logger';
 import { createSessionCachingAuthGuard } from './auth/guards/auth.guard';
 import { PermissionGuard } from './auth/guards/permission.guard';
 import { CheckInAgreementModule } from './check-in-agreement/check-in-agreement.module';
@@ -120,43 +121,16 @@ const autoSchemaFile =
         userLocaleService: UserLocaleService,
         appI18n: AppI18nService,
         postHogService: PostHogService,
-        pinoLogger: Logger,
+        pinoLogger: PinoLogger,
         termsService: TermsService,
       ) => {
         const webUrl = configService.getOrThrow<string>('WEB_URL');
         const shouldVerifyEmail = process.env.NODE_ENV === 'production';
 
-        /**
-         * Route Better Auth's internal logging (rate-limit warnings, plugin
-         * messages, etc.) through the nestjs-pino Logger so it is emitted as
-         * structured JSON on stdout instead of a bare console.warn. pino's
-         * method names differ from Better Auth's level strings, so map them.
-         */
-        const betterAuthLogger: BetterAuthLogger = {
-          disabled: false,
-          // Better Auth writes log level + timestamp + colored labels itself
-          // when left to the default logger; we own both today.
-          disableColors: true,
-          log: (level, message, ...args) => {
-            // Bind `context` as a pino field by passing it as the first
-            // object argument; trailing args are pino interpolation values.
-            const ctx = { context: 'BetterAuth' };
-            switch (level) {
-              case 'debug':
-                pinoLogger.debug(ctx, message, ...args);
-                break;
-              case 'info':
-                pinoLogger.log(ctx, message, ...args);
-                break;
-              case 'warn':
-                pinoLogger.warn(ctx, message, ...args);
-                break;
-              case 'error':
-                pinoLogger.error(ctx, message, ...args);
-                break;
-            }
-          },
-        };
+        // Use nestjs-pino's PinoLogger (native pino API), not Nest Logger —
+        // Nest Logger would treat Better Auth's message as a context name and
+        // drop it from the JSON record.
+        const betterAuthLogger = createBetterAuthPinoLogger(pinoLogger);
 
         const captureAuth = (
           event: PostHogEventName,
@@ -283,7 +257,7 @@ const autoSchemaFile =
         UserLocaleService,
         AppI18nService,
         PostHogService,
-        Logger,
+        PinoLogger,
         TermsService,
       ],
     }),
