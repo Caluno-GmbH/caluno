@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { resolveLocale } from '@/i18n/routing';
+import type { EeSlotProps } from './enterprise-extensions';
 import { resolveEeSlotComponent } from './enterprise-slot';
 
 /**
@@ -8,22 +9,25 @@ import { resolveEeSlotComponent } from './enterprise-slot';
  * `src/ee/index.ts` and 404s when EE/the slot is absent — same registry as
  * `<EeSlot />`, different empty behaviour (`notFound` vs render nothing).
  * A new EE page needs a `slots` entry plus a thin `page.tsx` that renders
- * `<EePage name="..." params={params} />`.
+ * `<EePage ee="..." params={params} />`.
+ * Extra props (anything except `ee` / `params`) are spread onto the loaded
+ * component.
  */
 export async function EePage({
-  name,
+  ee,
   params,
+  ...props
 }: {
-  name: string;
+  ee: string;
   params: Promise<{ locale: string }>;
-}) {
+} & EeSlotProps) {
   const { locale: rawLocale } = await params;
   const locale = resolveLocale(rawLocale);
   setRequestLocale(locale);
 
-  const Component = await resolveEeSlotComponent(name);
+  const Component = await resolveEeSlotComponent(ee);
   if (!Component) {
     notFound();
   }
-  return <Component />;
+  return <Component {...props} />;
 }

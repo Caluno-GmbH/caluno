@@ -102,7 +102,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
           locale={locale}
         />
 
-        <EeSlot name="profile-note" />
+        <EeSlot ee="profile-note" />
       </div>
     </div>
   );

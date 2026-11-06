@@ -3,12 +3,15 @@ import type { EeIconName } from './enterprise-icons';
 
 export interface EeNavItem {
   titleKey: string;
-  /** Appended to `/admin/{orgUId}`, e.g. `/my-note`. */
+  /** Appended to `/admin/{orgUId}`, e.g. `/some-page`. */
   href: string;
   icon: EeIconName;
 }
 
-export type EeSlotLoader = () => Promise<ComponentType>;
+/** Extra props forwarded from `<EeSlot ee="…" … />` / `<EePage ee="…" … />`. */
+export type EeSlotProps = Record<string, unknown>;
+
+export type EeSlotLoader = () => Promise<ComponentType<EeSlotProps>>;
 
 /**
  * Contract for optional EE-only frontend additions.
@@ -23,7 +26,7 @@ export interface EeExtensions {
   /**
    * Keyed by a call-site-chosen name. Used by both `<EeSlot />` (inline, null
    * when absent) and `<EePage />` (App Router stub, `notFound` when absent),
-   * e.g. `'profile-note'`, `'my-note-page'`.
+   * e.g. `'some-page'`.
    */
   slots?: Record<string, EeSlotLoader>;
 }

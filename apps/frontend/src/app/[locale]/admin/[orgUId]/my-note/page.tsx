@@ -5,5 +5,5 @@ export default function MyNotePage({
 }: {
   params: Promise<{ locale: string; orgUId: string }>;
 }) {
-  return <EePage name="my-note-page" params={params} />;
+  return <EePage ee="my-note-page" params={params} />;
 }
