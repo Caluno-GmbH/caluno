@@ -7,6 +7,13 @@ query GetOrganizationUnitMemberships {
       email
       image
       checkInId
+      preferredName
+      birthdate
+      gender
+      phone
+      street
+      zip
+      city
     }
     organizationUnit {
       id

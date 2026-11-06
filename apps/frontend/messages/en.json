@@ -2190,15 +2190,39 @@
       "userInfo": "Personal information",
       "zipLabel": "Postal code"
     },
+    "configureView": {
+      "label": "Configure view",
+      "note": "Hidden by default to protect personal data — please stay mindful when sharing your screen."
+    },
+    "filter": {
+      "rolePlaceholder": "Role",
+      "genderPlaceholder": "Gender",
+      "cityPlaceholder": "City",
+      "cityEmpty": "No cities found",
+      "verifiedAll": "All",
+      "verifiedVerified": "Verified",
+      "verifiedUnverified": "Unverified",
+      "notSet": "Not set",
+      "activeRole": "Role",
+      "activeGender": "Gender",
+      "activeCity": "City",
+      "activeVerified": "ID verified",
+      "sheetTitle": "Filters"
+    },
     "table": {
       "copyEmailAria": "Copy {name}'s email address",
       "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
+      "downloadCsv": "Download CSV",
       "email": "Email",
       "emailCopied": "Email address copied to clipboard",
       "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "name": "Name",
       "openProfileAria": "Open {name}'s profile",
-      "roles": "Role"
+      "roles": "Role",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "phone": "Phone",
+      "address": "Address"
     }
   },
   "VolunteerHome": {

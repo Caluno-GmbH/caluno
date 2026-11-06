@@ -1,6 +1,6 @@
 import { Resolver } from '@nestjs/graphql';
-import { UserWithProfile } from '../models/user-with-profile.model';
+import { UserWithPaymentProfile } from '../models/user-with-payment-profile.model';
 import { UserFieldResolver } from './user-field.resolver';
 
-@Resolver(() => UserWithProfile)
+@Resolver(() => UserWithPaymentProfile)
 export class UserWithProfileFieldResolver extends UserFieldResolver {}
