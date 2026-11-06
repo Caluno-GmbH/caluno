@@ -2,16 +2,16 @@ import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Role } from '../../auth/models/role.model';
 import { createPaginatedResponseType } from '../../graphql/paginated-response.model';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
-import { MembershipUser } from '../../user/models/membership-user.model';
 import { User } from '../../user/models/user.model';
+import { UserWithProfile } from '../../user/models/user-with-profile.model';
 
 @ObjectType()
 export class Membership {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => MembershipUser)
-  user!: MembershipUser;
+  @Field(() => UserWithProfile)
+  user!: UserWithProfile;
 
   @Field(() => OrganizationUnit)
   organizationUnit!: OrganizationUnit;

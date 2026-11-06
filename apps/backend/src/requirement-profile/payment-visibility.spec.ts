@@ -1,30 +1,34 @@
 import { describe, expect, it } from 'bun:test';
-import { maskRestrictedPaymentData } from './payment-visibility';
+import { maskRestrictedPaymentUserFields } from './payment-visibility';
 
-describe('maskRestrictedPaymentData', () => {
-  it('masks each payment key with its own format in one profile', () => {
-    const masked = maskRestrictedPaymentData({
+describe('maskRestrictedPaymentUserFields', () => {
+  it('masks each payment field with its own format', () => {
+    const masked = maskRestrictedPaymentUserFields({
       iban: 'DE89 3704 0044 0532 0130 00',
       bic: 'COBADEFFXXX',
-      street: 'Musterstraße 1',
+      accountHolder: 'Ada Lovelace',
+      firstname: 'Ada',
     });
     expect(masked).toEqual({
       iban: 'XXXX XXXX XXXX XXXX XXXX XX',
       bic: 'XXXXXXXXXXX',
-      street: 'Musterstraße 1',
+      accountHolder: 'XXXXXX XXXXXX',
+      firstname: 'Ada',
     });
   });
 
   it('leaves empty or absent payment values untouched', () => {
-    const masked = maskRestrictedPaymentData({
+    const masked = maskRestrictedPaymentUserFields({
       iban: '',
       bic: '   ',
-      street: 'Musterstraße 1',
+      accountHolder: null,
+      firstname: 'Ada',
     });
     expect(masked).toEqual({
       iban: '',
       bic: '   ',
-      street: 'Musterstraße 1',
+      accountHolder: null,
+      firstname: 'Ada',
     });
   });
 });

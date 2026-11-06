@@ -12,19 +12,6 @@ export const PAYMENT_USER_FIELD_MASKS = {
   accountHolder: PAYMENT_DATA_MASKS.accountHolder,
 } as const;
 
-export function maskRestrictedPaymentData(
-  data: Record<string, unknown>,
-): Record<string, unknown> {
-  const masked = { ...data };
-  for (const [key, mask] of Object.entries(PAYMENT_DATA_MASKS)) {
-    const value = masked[key];
-    if (!isBlank(value)) {
-      masked[key] = mask;
-    }
-  }
-  return masked;
-}
-
 export function maskRestrictedPaymentUserFields<
   T extends {
     iban?: string | null;
