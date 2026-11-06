@@ -149,7 +149,8 @@ export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
       id: ADMIN_NAV_SECTION.accounting,
       labelNamespace: 'Navigation',
       labelKey: 'accounting',
-      show: () => accountingEnabled,
+      show: () =>
+        accountingEnabled && permissionSet.has(PermissionKey.AccountingManage),
       items: [
         {
           id: ADMIN_NAV_ITEM.reimbursements,
