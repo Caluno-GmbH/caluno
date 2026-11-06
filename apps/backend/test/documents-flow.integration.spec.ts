@@ -1517,7 +1517,9 @@ describe('documents flow — admin + volunteer', () => {
 
       // Org B's accounting manager must not read org A's document by id.
       setAuthMockUserId(orgB.adminId);
-      const foreignContract = await graphqlRequest(app, {
+      const foreignContract = await graphqlRequest<{
+        contract?: { id: string } | null;
+      }>(app, {
         query: CONTRACT_DETAIL,
         variables: { id: contractA.createContract.id },
         headers: orgBHeader,
@@ -1525,7 +1527,9 @@ describe('documents flow — admin + volunteer', () => {
       expect(foreignContract.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
       expect(foreignContract.data?.contract).toBeFalsy();
 
-      const foreignInvoice = await graphqlRequest(app, {
+      const foreignInvoice = await graphqlRequest<{
+        invoice?: { id: string } | null;
+      }>(app, {
         query: INVOICE_DETAIL,
         variables: { id: invoiceA.createInvoice.id },
         headers: orgBHeader,
@@ -1602,7 +1606,9 @@ describe('documents flow — admin + volunteer', () => {
         .where(eq(schema.contracts.id, contract.createContract.id));
 
       setAuthMockUserId(managerB.id);
-      const siblingRead = await graphqlRequest(app, {
+      const siblingRead = await graphqlRequest<{
+        contract?: { id: string } | null;
+      }>(app, {
         query: CONTRACT_DETAIL,
         variables: { id: contract.createContract.id },
         headers: { 'x-organization-unit-id': childB.id },
