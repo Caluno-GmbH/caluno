@@ -1,5 +1,5 @@
-import { DataProvider } from '@repo/data/react';
 import { Suspense } from 'react';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { redirect } from '@/i18n/navigation';
 import { resolveLocale } from '@/i18n/routing';
 import { getSession } from '@/lib/auth-server';
@@ -28,20 +28,20 @@ export default async function AcceptTermsPage({
 
   if (!status) {
     return (
-      <DataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
+      <AppDataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
         <TermsStatusError />
-      </DataProvider>
+      </AppDataProvider>
     );
   }
 
   return (
-    <DataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
+    <AppDataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
       <Suspense>
         <TermsAcceptance
           locale={locale}
           currentVersion={status?.currentVersion ?? null}
         />
       </Suspense>
-    </DataProvider>
+    </AppDataProvider>
   );
 }

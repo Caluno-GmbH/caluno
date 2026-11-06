@@ -3,11 +3,11 @@
 import { MembershipRepository } from '@repo/data';
 import {
   keepPreviousData,
-  useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useMemberships(orgUId: string) {
   const sdk = useSdk();

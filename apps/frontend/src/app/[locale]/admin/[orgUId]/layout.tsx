@@ -1,4 +1,4 @@
-import { DataProvider, OrgProvider } from '@repo/data/react';
+import { OrgProvider } from '@repo/data/react';
 import {
   Separator,
   SidebarInset,
@@ -7,6 +7,7 @@ import {
 } from '@repo/ui';
 import { Loader2 } from 'lucide-react';
 import { type ReactNode, Suspense } from 'react';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { LocaleCookieSeeder } from '@/components/locale-cookie-seeder';
 import { AdminHeaderOrgIdentity } from '@/components/navigation/admin-header-org-identity';
 import { DashboardSidebar } from '@/components/navigation/dashboard-sidebar';
@@ -54,7 +55,7 @@ export default async function OrgLayout({
 
   return (
     <OrgProvider org={org} organizations={organizations}>
-      <DataProvider
+      <AppDataProvider
         apiUrl={GRAPHQL_API_URL}
         organizationUnitId={orgUId}
         locale={locale}
@@ -100,7 +101,7 @@ export default async function OrgLayout({
           <BlockSheet />
           <VolunteerSheet />
         </OrgSyncProvider>
-      </DataProvider>
+      </AppDataProvider>
     </OrgProvider>
   );
 }
