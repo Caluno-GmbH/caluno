@@ -3,12 +3,10 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import {
-  ForbiddenGraphQLError,
-  NotFoundGraphQLError,
-} from '../../graphql/errors';
+import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { TimeEntryMapper } from '../../time-tracking/mappers/time-entry.mapper';
 import { TimeEntry } from '../../time-tracking/models/time-entry.model';
 import { UserMapper } from '../../user/mappers/user.mapper';
@@ -49,6 +47,7 @@ export class InvoiceQueryResolver {
     private readonly authService: AuthService,
     private readonly organizationUnitService: OrganizationUnitService,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
+    private readonly tenantScopeService: TenantScopeService,
     private readonly userMapper: UserMapper,
     private readonly userService: UserService,
     private readonly reimbursementTypeMapper: ReimbursementTypeMapper,
@@ -65,6 +64,7 @@ export class InvoiceQueryResolver {
     await this.assertCanViewDocument(
       invoice.volunteerId,
       invoice.invoiceStatus,
+      invoice.organizationUnitId,
       session,
       context,
     );
@@ -120,12 +120,18 @@ export class InvoiceQueryResolver {
     await this.assertCanViewDocument(
       invoice.volunteerId,
       invoice.invoiceStatus,
+      invoice.organizationUnitId,
       session,
       context,
     );
+    // Eligibility is always for the document's unit — never the client header
+    // (owners can omit/spoof x-organization-unit-id on My documents).
+    if (!invoice.organizationUnitId) {
+      throw new NotFoundGraphQLError('Invoice not found');
+    }
     return this.invoiceService.findPendingInvoiceSignee(
       invoiceId,
-      context.organizationUnitId,
+      invoice.organizationUnitId,
     );
   }
 
@@ -141,7 +147,7 @@ export class InvoiceQueryResolver {
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntry[]> {
-    await this.assertCanViewDocument(volunteerId, undefined, session, context);
+    await this.assertCanAccessVolunteer(volunteerId, session, context);
     const entries = await this.invoiceService.findEligibleTimeEntries(
       volunteerId,
       reimbursementTypeId,
@@ -164,7 +170,7 @@ export class InvoiceQueryResolver {
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<TimeEntry[]> {
-    await this.assertCanViewDocument(volunteerId, undefined, session, context);
+    await this.assertCanAccessVolunteer(volunteerId, session, context);
     const entries = await this.invoiceService.findTimeEntriesAwaitingReview(
       volunteerId,
       reimbursementTypeId,
@@ -301,6 +307,7 @@ export class InvoiceQueryResolver {
   private async assertCanViewDocument(
     volunteerId: string,
     status: InvoiceStatus | undefined,
+    documentOrganizationUnitId: string | null | undefined,
     session: UserSession,
     context: AuthenticatedGraphQLContext,
   ): Promise<void> {
@@ -310,10 +317,9 @@ export class InvoiceQueryResolver {
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
+    // Same shape as missing — never Forbidden — so foreign ids stay opaque.
     if (!isOwner && !hasPermission) {
-      throw new ForbiddenGraphQLError(
-        'You do not have permission to view this document',
-      );
+      throw new NotFoundGraphQLError('Invoice not found');
     }
     if (
       isOwner &&
@@ -322,6 +328,41 @@ export class InvoiceQueryResolver {
       !isIssuedDocument(DocumentKind.INVOICE, status)
     ) {
       throw new NotFoundGraphQLError('Invoice not found');
+    }
+    // Managers: permission is on the header unit only — prove the document
+    // belongs to that unit (or a descendant) before returning anything.
+    // Owners keep the cross-org "My documents" path without a unit match.
+    if (!isOwner) {
+      await this.tenantScopeService.assertResourceInScope(
+        context.organizationUnitId,
+        documentOrganizationUnitId,
+        'Invoice not found',
+      );
+    }
+  }
+
+  /** Volunteer self or accounting manager for a volunteer in the header branch. */
+  private async assertCanAccessVolunteer(
+    volunteerId: string,
+    session: UserSession,
+    context: AuthenticatedGraphQLContext,
+  ): Promise<void> {
+    const isOwner = session.user.id === volunteerId;
+    const hasPermission = await this.authService.hasRequiredPermissions(
+      session.user.id,
+      context.organizationUnitId,
+      [PERMISSIONS.ACCOUNTING_MANAGE],
+    );
+    // Same shape as missing — never Forbidden — so foreign ids stay opaque.
+    if (!isOwner && !hasPermission) {
+      throw new NotFoundGraphQLError('Volunteer not found');
+    }
+    if (!isOwner) {
+      await this.tenantScopeService.assertUserInScope(
+        context.organizationUnitId,
+        volunteerId,
+        'Volunteer not found',
+      );
     }
   }
 

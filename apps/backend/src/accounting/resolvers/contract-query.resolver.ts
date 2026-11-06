@@ -3,12 +3,10 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import {
-  ForbiddenGraphQLError,
-  NotFoundGraphQLError,
-} from '../../graphql/errors';
+import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import type { ContractFilter } from '../accounting.types';
 import { isIssuedDocument } from '../document-visibility';
 import { ContractStatus, DocumentKind } from '../enums';
@@ -38,6 +36,7 @@ export class ContractQueryResolver {
     private readonly authService: AuthService,
     private readonly organizationUnitService: OrganizationUnitService,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
+    private readonly tenantScopeService: TenantScopeService,
   ) {}
 
   @Query(() => Contract)
@@ -50,6 +49,7 @@ export class ContractQueryResolver {
     await this.assertCanViewDocument(
       contract.volunteerId,
       contract.contractStatus,
+      contract.organizationUnitId,
       session,
       context,
     );
@@ -106,18 +106,25 @@ export class ContractQueryResolver {
     await this.assertCanViewDocument(
       contract.volunteerId,
       contract.contractStatus,
+      contract.organizationUnitId,
       session,
       context,
     );
+    // Eligibility is always for the document's unit — never the client header
+    // (owners can omit/spoof x-organization-unit-id on My documents).
+    if (!contract.organizationUnitId) {
+      throw new NotFoundGraphQLError('Contract not found');
+    }
     return this.contractService.findPendingContractSignee(
       contractId,
-      context.organizationUnitId,
+      contract.organizationUnitId,
     );
   }
 
   private async assertCanViewDocument(
     volunteerId: string,
     status: ContractStatus | undefined,
+    documentOrganizationUnitId: string | null | undefined,
     session: UserSession,
     context: AuthenticatedGraphQLContext,
   ): Promise<void> {
@@ -127,10 +134,9 @@ export class ContractQueryResolver {
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
+    // Same shape as missing — never Forbidden — so foreign ids stay opaque.
     if (!isOwner && !hasPermission) {
-      throw new ForbiddenGraphQLError(
-        'You do not have permission to view this document',
-      );
+      throw new NotFoundGraphQLError('Contract not found');
     }
     if (
       isOwner &&
@@ -139,6 +145,16 @@ export class ContractQueryResolver {
       !isIssuedDocument(DocumentKind.CONTRACT, status)
     ) {
       throw new NotFoundGraphQLError('Contract not found');
+    }
+    // Managers: permission is on the header unit only — prove the document
+    // belongs to that unit (or a descendant) before returning anything.
+    // Owners keep the cross-org "My documents" path without a unit match.
+    if (!isOwner) {
+      await this.tenantScopeService.assertResourceInScope(
+        context.organizationUnitId,
+        documentOrganizationUnitId,
+        'Contract not found',
+      );
     }
   }
 
