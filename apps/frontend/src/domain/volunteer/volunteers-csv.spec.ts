@@ -6,7 +6,7 @@ import {
 
 const NOW = new Date('2026-11-04T00:00:00Z');
 const formatDate = (d: Date) =>
-  `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const roleLabel = (role: { name: string }) =>
   role.name === 'Member' ? 'Mitglied' : role.name;
