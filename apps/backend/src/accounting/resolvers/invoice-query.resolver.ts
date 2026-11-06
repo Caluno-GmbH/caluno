@@ -3,10 +3,7 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import {
-  ForbiddenGraphQLError,
-  NotFoundGraphQLError,
-} from '../../graphql/errors';
+import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
 import { TenantScopeService } from '../../organization/tenant-scope.service';
@@ -127,9 +124,14 @@ export class InvoiceQueryResolver {
       session,
       context,
     );
+    // Eligibility is always for the document's unit — never the client header
+    // (owners can omit/spoof x-organization-unit-id on My documents).
+    if (!invoice.organizationUnitId) {
+      throw new NotFoundGraphQLError('Invoice not found');
+    }
     return this.invoiceService.findPendingInvoiceSignee(
       invoiceId,
-      context.organizationUnitId,
+      invoice.organizationUnitId,
     );
   }
 
@@ -315,10 +317,9 @@ export class InvoiceQueryResolver {
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
+    // Same shape as missing — never Forbidden — so foreign ids stay opaque.
     if (!isOwner && !hasPermission) {
-      throw new ForbiddenGraphQLError(
-        'You do not have permission to view this document',
-      );
+      throw new NotFoundGraphQLError('Invoice not found');
     }
     if (
       isOwner &&
@@ -352,10 +353,9 @@ export class InvoiceQueryResolver {
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
+    // Same shape as missing — never Forbidden — so foreign ids stay opaque.
     if (!isOwner && !hasPermission) {
-      throw new ForbiddenGraphQLError(
-        'You do not have permission to view this document',
-      );
+      throw new NotFoundGraphQLError('Volunteer not found');
     }
     if (!isOwner) {
       await this.tenantScopeService.assertUserInScope(

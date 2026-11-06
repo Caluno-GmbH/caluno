@@ -209,6 +209,17 @@ const CONTRACT_DETAIL = `
   }
 `;
 
+const PENDING_CONTRACT_SIGNEE = `
+  query PendingContractSignee($contractId: ID!) {
+    pendingContractSignee(contractId: $contractId) {
+      signeeType
+      userId
+      permissionKey
+      eligibleUserIds
+    }
+  }
+`;
+
 const INVOICE_DETAIL = `
   query InvoiceDetail($id: ID!) {
     invoice(id: $id) {
@@ -1615,6 +1626,110 @@ describe('documents flow — admin + volunteer', () => {
       });
       expect(siblingRead.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
       expect(siblingRead.data?.contract).toBeFalsy();
+    });
+
+    it('returns NOT_FOUND (not FORBIDDEN) when a stranger probes contract(id)', async () => {
+      const orgA = await setupFlowOrg(db);
+      const orgAHeader = { 'x-organization-unit-id': orgA.organizationUnitId };
+
+      setAuthMockUserId(orgA.adminId);
+      const contractA = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: orgA.organizationUnitId,
+              reimbursementTypeId: orgA.reimbursementTypeId,
+              volunteerId: orgA.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: orgAHeader,
+        },
+        'createContract',
+      );
+
+      const stranger = await createUser(db);
+      setAuthMockUserId(stranger.id);
+      const probe = await graphqlRequest<{
+        contract?: { id: string } | null;
+      }>(app, {
+        query: CONTRACT_DETAIL,
+        variables: { id: contractA.createContract.id },
+        headers: orgAHeader,
+      });
+      expect(probe.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+      expect(probe.data?.contract).toBeFalsy();
+    });
+
+    it('pendingContractSignee resolves eligibleUserIds on the document unit, not a foreign header', async () => {
+      const orgA = await setupFlowOrg(db);
+      const orgB = await setupFlowOrg(db);
+      const orgAHeader = { 'x-organization-unit-id': orgA.organizationUnitId };
+      const orgBHeader = { 'x-organization-unit-id': orgB.organizationUnitId };
+
+      setAuthMockUserId(orgA.adminId);
+      const created = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: orgA.organizationUnitId,
+              reimbursementTypeId: orgA.reimbursementTypeId,
+              volunteerId: orgA.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: orgAHeader,
+        },
+        'createContract',
+      );
+
+      // Advance to the permission-holder step so eligibleUserIds is populated.
+      setAuthMockUserId(orgA.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: created.createContract.id },
+          headers: orgAHeader,
+        },
+        'signContract',
+      );
+
+      // Owner + foreign org header must not leak org B's managers.
+      const pending = await graphqlRequestRequiringData<{
+        pendingContractSignee: {
+          signeeType: string;
+          eligibleUserIds: string[] | null;
+        } | null;
+      }>(
+        app,
+        {
+          query: PENDING_CONTRACT_SIGNEE,
+          variables: { contractId: created.createContract.id },
+          headers: orgBHeader,
+        },
+        'pendingContractSignee',
+      );
+
+      expect(pending.pendingContractSignee?.signeeType).toBe(
+        SigneeType.PERMISSION_HOLDER,
+      );
+      expect(pending.pendingContractSignee?.eligibleUserIds).toContain(
+        orgA.adminId,
+      );
+      expect(pending.pendingContractSignee?.eligibleUserIds).not.toContain(
+        orgB.adminId,
+      );
     });
   });
 

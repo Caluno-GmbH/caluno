@@ -3,10 +3,7 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import {
-  ForbiddenGraphQLError,
-  NotFoundGraphQLError,
-} from '../../graphql/errors';
+import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { OrganizationUnitService } from '../../organization/organization-unit.service';
 import { TenantScopeService } from '../../organization/tenant-scope.service';
@@ -113,9 +110,14 @@ export class ContractQueryResolver {
       session,
       context,
     );
+    // Eligibility is always for the document's unit — never the client header
+    // (owners can omit/spoof x-organization-unit-id on My documents).
+    if (!contract.organizationUnitId) {
+      throw new NotFoundGraphQLError('Contract not found');
+    }
     return this.contractService.findPendingContractSignee(
       contractId,
-      context.organizationUnitId,
+      contract.organizationUnitId,
     );
   }
 
@@ -132,10 +134,9 @@ export class ContractQueryResolver {
       context.organizationUnitId,
       [PERMISSIONS.ACCOUNTING_MANAGE],
     );
+    // Same shape as missing — never Forbidden — so foreign ids stay opaque.
     if (!isOwner && !hasPermission) {
-      throw new ForbiddenGraphQLError(
-        'You do not have permission to view this document',
-      );
+      throw new NotFoundGraphQLError('Contract not found');
     }
     if (
       isOwner &&
