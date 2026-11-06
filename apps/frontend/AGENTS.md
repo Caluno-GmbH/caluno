@@ -105,7 +105,9 @@ exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
 checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
 so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
 only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
-business logic under `src/ee/`, not in OSS route stubs.
+business logic under `src/ee/`, not in OSS route stubs. Admin nav: contribute
+via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
+(omit → append); merge happens in `components/navigation/admin-nav.ts`.
 
 ### Locale switching
 
