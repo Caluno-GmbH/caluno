@@ -18,6 +18,14 @@ const DOCUMENT_PURPOSES = [
   FilePurpose.FORM_DOCUMENT,
 ] as const;
 
+describe('purpose-validation DOCUMENT visibility', () => {
+  it('stores generated contract/timesheet PDFs as private', () => {
+    expect(PURPOSE_VALIDATION_RULES[FilePurpose.DOCUMENT].visibility).toBe(
+      'private',
+    );
+  });
+});
+
 describe('purpose-validation document MIME restrictions', () => {
   it.each(DOCUMENT_PURPOSES)(
     'allows previewable MIME types for %s',
