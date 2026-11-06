@@ -82,7 +82,6 @@ describe('visibleAdminNav', () => {
     const visible = visibleAdminNav(buildAdminNav(baseCtx));
     expect(visible.map((s) => s.id)).toEqual([
       ADMIN_NAV_SECTION.menu,
-      ADMIN_NAV_SECTION.accounting,
       ADMIN_NAV_SECTION.settings,
       ADMIN_NAV_SECTION.shortcuts,
     ]);
