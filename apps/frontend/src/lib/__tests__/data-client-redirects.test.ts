@@ -15,10 +15,11 @@ const createDataClientMock = mock((config: DataClientConfig) => {
 const redirectMock = mock((_args: { href: string; locale: string }) => {
   throw new Error('NEXT_REDIRECT');
 });
+let requestHeaders = new Headers();
 const getDataClient = createGetDataClient({
   createDataClient: createDataClientMock,
   getLocale: async () => 'de',
-  getHeaders: async () => new Headers(),
+  getHeaders: async () => requestHeaders,
   redirect: redirectMock,
 });
 
@@ -36,13 +37,14 @@ async function expectErrorRedirect(
 describe('getDataClient authentication redirects', () => {
   beforeEach(() => {
     onError = undefined;
+    requestHeaders = new Headers();
     redirectMock.mockClear();
   });
 
   it('prefers an explicit locale for unauthenticated redirects', async () => {
     await expectErrorRedirect(
       new DataError('Unauthorized', { code: 'UNAUTHENTICATED' }),
-      { href: '/login', locale: 'en' },
+      { href: '/login?reason=session-expired', locale: 'en' },
       { locale: 'en' },
     );
   });
@@ -50,7 +52,18 @@ describe('getDataClient authentication redirects', () => {
   it('uses the request locale for unauthenticated redirects', async () => {
     await expectErrorRedirect(
       new DataError('Unauthorized', { code: 'UNAUTHENTICATED' }),
-      { href: '/login', locale: 'de' },
+      { href: '/login?reason=session-expired', locale: 'de' },
+    );
+  });
+
+  it('returns to the requested page after login', async () => {
+    requestHeaders = new Headers({ 'x-pathname': '/de/admin/org-1/shifts' });
+    await expectErrorRedirect(
+      new DataError('Unauthorized', { code: 'UNAUTHENTICATED' }),
+      {
+        href: '/login?redirectTo=%2Fadmin%2Forg-1%2Fshifts&reason=session-expired',
+        locale: 'de',
+      },
     );
   });
 

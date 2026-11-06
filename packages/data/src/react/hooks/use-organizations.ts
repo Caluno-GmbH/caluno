@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  useMutation,
   useQuery,
   useQueryClient,
   useSuspenseQuery,
@@ -14,6 +13,7 @@ import type {
 import { OrganizationRepository } from '../../repositories/organization/organization.repository';
 import { OrganizationUnitRepository } from '../../repositories/organization/organization-unit.repository';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 export function useOrganizationUnitWithSuspense(id: string) {
   const sdk = useSdk();

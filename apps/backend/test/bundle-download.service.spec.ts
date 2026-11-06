@@ -1,12 +1,4 @@
-import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  spyOn,
-} from 'bun:test';
+import { beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import {
   BadRequestException,
   InternalServerErrorException,
@@ -56,7 +48,7 @@ describe('BundleDownloadService', () => {
   let moduleRef: TestingModule;
   let db: Database;
   let service: BundleDownloadService;
-  let fetchSpy: ReturnType<typeof spyOn>;
+  let getBytesCalls = 0;
   let failUrlResolution = false;
   /** Stands in for rendering a timesheet's missing PDF: the new file id, or null. */
   let renderMissingPdf: (
@@ -73,15 +65,16 @@ describe('BundleDownloadService', () => {
    */
   const pageWidthByFileId = new Map<string, number>();
   const pageCountByFileId = new Map<string, number>();
-  const servePdfs = async (url: unknown): Promise<Response> => {
-    const fileId = String(url).split('/').pop() ?? '';
+  let getUploadedFileBytesImpl: (fileId: string) => Promise<Buffer>;
+  const servePdfBytes = async (fileId: string): Promise<Buffer> => {
+    getBytesCalls += 1;
     const doc = await PDFDocument.create();
     for (let i = 0; i < (pageCountByFileId.get(fileId) ?? 1); i++) {
       doc.addPage([pageWidthByFileId.get(fileId) ?? 1, 100]);
     }
-    return new Response((await doc.save()) as Uint8Array<ArrayBuffer>);
+    return Buffer.from(await doc.save());
   };
-  const notAPdf = () => new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]));
+  const notAPdf = () => Buffer.from([0x25, 0x50, 0x44, 0x46]);
 
   closeTestingModuleAfterAll(() => moduleRef);
   beforeAll(async () => {
@@ -107,10 +100,11 @@ describe('BundleDownloadService', () => {
       {} as MembershipService,
       { capture: () => {} } as unknown as PostHogService,
     );
+    getUploadedFileBytesImpl = servePdfBytes;
     const fileService = {
-      resolvePublicUrlForUploadedFile: async (fileId: string) => {
+      getUploadedFileBytes: async (fileId: string) => {
         if (failUrlResolution) throw new Error('file is not uploaded');
-        return `https://files.test/${fileId}`;
+        return getUploadedFileBytesImpl(fileId);
       },
     } as unknown as FileService;
     contractService.ensurePdf = (contractId: string) =>
@@ -132,18 +126,13 @@ describe('BundleDownloadService', () => {
 
   beforeEach(() => {
     failUrlResolution = false;
+    getBytesCalls = 0;
+    getUploadedFileBytesImpl = servePdfBytes;
     renderCalls.length = 0;
     renderMissingContractPdf = async () => null;
     renderMissingPdf = async () => {
       throw new Error('no timesheet should need rendering');
     };
-    fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
-      servePdfs as unknown as typeof fetch,
-    );
-  });
-
-  afterEach(() => {
-    fetchSpy.mockRestore();
   });
 
   const setup = async () => {
@@ -196,9 +185,9 @@ describe('BundleDownloadService', () => {
     const [file] = await db
       .insert(schema.files)
       .values({
-        storageKey: `bundle-test/${crypto.randomUUID()}.pdf`,
+        storageKey: `private/${s.root.id}/${s.volunteer.id}/${crypto.randomUUID()}.pdf`,
         bucket: 'test',
-        visibility: FileVisibility.PUBLIC,
+        visibility: FileVisibility.PRIVATE,
         purpose: FilePurpose.DOCUMENT,
         mimeType: 'application/pdf',
         filename: 'document.pdf',
@@ -416,10 +405,12 @@ describe('BundleDownloadService', () => {
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       await insertContract(s, JULY);
       const invoice = await readyTimesheet(s, [entry]);
-      fetchSpy.mockImplementation((async (url: unknown) =>
-        String(url).endsWith(String(invoice.fileId))
-          ? new Response('missing', { status: 404 })
-          : servePdfs(url)) as unknown as typeof fetch);
+      getUploadedFileBytesImpl = async (fileId: string) => {
+        if (fileId === invoice.fileId) {
+          throw new Error('HTTP 404');
+        }
+        return servePdfBytes(fileId);
+      };
 
       await expect(download(s)).rejects.toThrow('could not be fetched');
 
@@ -438,10 +429,12 @@ describe('BundleDownloadService', () => {
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       const contract = await insertContract(s, JULY);
       const invoice = await readyTimesheet(s, [entry]);
-      fetchSpy.mockImplementation((async (url: unknown) =>
-        String(url).endsWith(String(contract.fileId))
-          ? new Response('missing', { status: 404 })
-          : servePdfs(url)) as unknown as typeof fetch);
+      getUploadedFileBytesImpl = async (fileId: string) => {
+        if (fileId === contract.fileId) {
+          throw new Error('HTTP 404');
+        }
+        return servePdfBytes(fileId);
+      };
 
       const { buffer } = await download(s);
 
@@ -833,7 +826,7 @@ describe('BundleDownloadService', () => {
       ]);
       // Two timesheets and two contracts: a contract both timesheets need is
       // fetched once and appended to each.
-      expect(fetchSpy).toHaveBeenCalledTimes(4);
+      expect(getBytesCalls).toBe(4);
     });
 
     it('leaves out an old ACTIVE contract that covers none of the hours', async () => {
@@ -1063,10 +1056,12 @@ describe('BundleDownloadService', () => {
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       const contract = await insertContract(s, JULY);
       const invoice = await readyTimesheet(s, [entry]);
-      fetchSpy.mockImplementation((async (url: unknown) =>
-        String(url).endsWith(String(contract.fileId))
-          ? notAPdf()
-          : servePdfs(url)) as unknown as typeof fetch);
+      getUploadedFileBytesImpl = async (fileId: string) => {
+        if (fileId === contract.fileId) {
+          return notAPdf();
+        }
+        return servePdfBytes(fileId);
+      };
 
       const { buffer } = await download(s);
 
@@ -1082,10 +1077,12 @@ describe('BundleDownloadService', () => {
       const entry = await entryAt(s, '2026-07-10T09:00:00.000Z');
       await insertContract(s, JULY);
       const invoice = await readyTimesheet(s, [entry]);
-      fetchSpy.mockImplementation((async (url: unknown) =>
-        String(url).endsWith(String(invoice.fileId))
-          ? notAPdf()
-          : servePdfs(url)) as unknown as typeof fetch);
+      getUploadedFileBytesImpl = async (fileId: string) => {
+        if (fileId === invoice.fileId) {
+          return notAPdf();
+        }
+        return servePdfBytes(fileId);
+      };
 
       await expect(download(s)).rejects.toThrow('could not be read');
 

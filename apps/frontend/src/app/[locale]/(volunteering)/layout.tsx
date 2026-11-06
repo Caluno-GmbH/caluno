@@ -1,5 +1,5 @@
-import { DataProvider } from '@repo/data/react';
 import type { ReactNode } from 'react';
+import { AppDataProvider } from '@/components/app-data-provider';
 import { LocaleCookieSeeder } from '@/components/locale-cookie-seeder';
 import { VolunteerNav } from '@/components/navigation/volunteer-nav';
 import { resolveLocale } from '@/i18n/routing';
@@ -28,13 +28,13 @@ export default async function VolunteeringOrgLayout({
   const isAdmin = await isAnAdminstrator();
 
   return (
-    <DataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
+    <AppDataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
       {localeSeed && <LocaleCookieSeeder value={localeSeed} />}
       <div className="flex min-h-screen flex-col">
         <main className="grow pb-24">{children}</main>
 
         <VolunteerNav isAdmin={isAdmin} />
       </div>
-    </DataProvider>
+    </AppDataProvider>
   );
 }

@@ -232,11 +232,13 @@ domain/
 
 Authenticated file uploads use presigned PUT to Scaleway Object Storage (RustFS locally). Module: `src/storage/`.
 
-| Endpoint                                         | Auth                                          | Purpose                                                 |
-| ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------- |
-| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()`   | Mint presigned PUT URL; creates `files` row (`pending`) |
-| `POST /storage/uploads/:fileId/complete`         | Session (owner)                               | HEAD-verify object; set `uploaded`                      |
-| `POST /storage/objects/:fileId/presign-download` | Session + owner or `requirement-profile:view` | Presigned GET for private files                         |
+| Endpoint                                         | Auth                                        | Purpose                                                 |
+| ------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------- |
+| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()` | Mint presigned PUT URL; creates `files` row (`pending`) |
+| `POST /storage/uploads/:fileId/complete`         | Session (owner)                             | HEAD-verify object; set `uploaded`                      |
+| `POST /storage/objects/:fileId/presign-download` | Session + purpose-specific download authz   | Presigned GET for private files                         |
+
+`FilePurpose.DOCUMENT` (server-rendered contract/timesheet PDFs) is **private** — never under `public/` / permanent `publicUrl`. GraphQL `Contract`/`Invoice.downloadUrl` and REST presign-download mint a short-lived GET after volunteer-or-`accounting:manage` authz (not uploader / `requirement-profile:view`). Other private purposes keep owner or `requirement-profile:view`. `DocumentFileMigrationService` (boot, delete once every env has run) migrates any legacy public DOCUMENT rows.
 
 Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`. Local dev: RustFS via root `docker-compose` (`:9000` API).
 

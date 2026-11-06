@@ -6,7 +6,15 @@ import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { createGraphQLClient } from '../../client/graphql-client';
 import type { Locale } from '../../constants';
-import { GraphQLClientProvider } from '../hooks/use-graphql-client';
+import type { DataError } from '../../errors/data-error';
+import {
+  shouldRetryQuery,
+  shouldThrowRedirectError,
+} from '../../errors/next-redirect';
+import {
+  GraphQLClientProvider,
+  SdkOnErrorProvider,
+} from '../hooks/use-graphql-client';
 
 export interface DataProviderProps {
   children: ReactNode;
@@ -15,6 +23,13 @@ export interface DataProviderProps {
   showDevTools?: boolean;
   organizationUnitId?: string;
   locale?: Locale;
+  /**
+   * Called with the translated DataError before it is rethrown. Throw
+   * Next's `redirect()` here for UNAUTHENTICATED / FORBIDDEN. Queries and
+   * mutations rethrow that `NEXT_REDIRECT` during render, so it becomes a
+   * navigation instead of a stored error.
+   */
+  onError?: (error: DataError) => void;
 }
 
 function createQueryClient(): QueryClient {
@@ -25,10 +40,15 @@ function createQueryClient(): QueryClient {
         gcTime: 10 * 60 * 1000,
         refetchOnWindowFocus: true,
         refetchOnReconnect: true,
-        retry: 1,
+        // One retry, matching the previous `retry: 1`. A redirect thrown from
+        // `onError` is terminal — retrying it would issue another unauthorized
+        // request and can drop the NEXT_REDIRECT before render rethrows it.
+        retry: shouldRetryQuery,
+        throwOnError: shouldThrowRedirectError,
       },
       mutations: {
-        retry: 1,
+        retry: shouldRetryQuery,
+        throwOnError: shouldThrowRedirectError,
       },
     },
   });
@@ -41,6 +61,7 @@ export function DataProvider({
   showDevTools = process.env.NODE_ENV === 'development',
   organizationUnitId,
   locale,
+  onError,
 }: DataProviderProps) {
   const [ownQueryClient] = useState(createQueryClient);
   const queryClient = customQueryClient ?? ownQueryClient;
@@ -74,8 +95,10 @@ export function DataProvider({
   return (
     <QueryClientProvider client={queryClient}>
       <GraphQLClientProvider value={graphqlClient}>
-        {children}
-        {showDevTools && <ReactQueryDevtools />}
+        <SdkOnErrorProvider onError={onError}>
+          {children}
+          {showDevTools && <ReactQueryDevtools />}
+        </SdkOnErrorProvider>
       </GraphQLClientProvider>
     </QueryClientProvider>
   );

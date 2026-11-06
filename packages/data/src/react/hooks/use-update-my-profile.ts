@@ -1,8 +1,9 @@
 'use client';
 
 import { type UpdateMyProfileInput, UserRepository } from '@repo/data';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
+import { useMutation } from './use-mutation';
 
 /**
  * Saves the volunteer's own profile fields (the global `users` columns). The
