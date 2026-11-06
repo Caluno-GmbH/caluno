@@ -106,7 +106,7 @@ export function RoleSelectCell({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-40 p-0"
+          className="w-max min-w-[var(--radix-popover-trigger-width)] max-w-80 p-0"
           align="start"
           side="bottom"
           sideOffset={4}
