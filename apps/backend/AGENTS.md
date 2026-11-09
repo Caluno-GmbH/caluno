@@ -97,6 +97,7 @@ the tests actually exercise:
 - **`cancelShiftInstance(db, instanceId)`** — helper to set `isCancelled = true`.
 
 Guidelines:
+
 - Always pass `organizationUnitId` from the test context; never hard-code one.
 - Use `crypto.randomUUID()` in names/emails to avoid collisions when tests run against the same test DB.
 
@@ -203,6 +204,7 @@ src/
 test/
 ```
 Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`, `task`) are self-contained NestJS modules:
+
 ```
 domain/
 ├── domain.module.ts
@@ -251,6 +253,7 @@ Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY
 ## Drizzle
 
 Database schema in `src/database/schema.ts` (re-exports domain schemas; relations in `database/schema.relations.ts`).
+
 - Use the shared column helpers: `...idColumn`, `...timestampColumns` from `database/database-columns`
 - DB is `snake_case`; Drizzle auto-converts to `camelCase` (`casing: 'snake_case'`)
 - Soft deletes via `deletedAt` timestamp — no hard deletes on important records
@@ -261,6 +264,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 ### Querying: Relational Query v2 by default
 
 For fetching entities and their relations, use Relational Query v2:
+
 ```typescript
 const users = await db.query.users.findMany({ where: { id: 1 } });
 ```
@@ -276,6 +280,7 @@ only base-table columns, so those sorts use `select().leftJoin()` with an explic
 ## Known constraints (decision-log extracts — architectural, must stay)
 
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
+
 - **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `profileKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithPaymentProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / profileKey-column-align)
 - **`FormSubmissionStatus` is `SUBMITTED` / `REJECTED` only** (no DRAFT/APPROVED). Gating logic keys off these two. (form-submission-status-simplification)
 - **`RequiredFormTargetType` behavior lives in per-target strategies** under `requirement-profile/targets/` (`RequiredFormTargetRegistry`). Do not add `switch (targetType)` for get/set/resolveOrgUnit — implement a new strategy and register it on the registry. `RequiredFormService.applyEvent/Shift/ShiftInstanceRequiredForms` stay as thin facades for tx callers. (required-form-target-strategies)

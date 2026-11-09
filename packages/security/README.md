@@ -22,6 +22,7 @@ brew install semgrep osv-scanner gitleaks kics trivy
 ```
 
 Also needed:
+
 - **The `packages/infra` submodule** for `audit:iac`: `git submodule update --init packages/infra`. Without it the IaC step is skipped (exit 3).
 - **Network access** the first time: semgrep downloads its registry rule packs (`rules/semgrep-packs.txt`), osv-scanner queries osv.dev, and trivy downloads its checks.
 

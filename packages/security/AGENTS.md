@@ -7,6 +7,7 @@ triage and reason about authorization logic. Nothing here modifies source.
 ## Commands
 
 Run from `packages/security` (or `bun run security:audit` from the root).
+
 - `bun run audit` - All steps below; results in `out/` (gitignored). Exit 3 if a tool was missing or wrote no report: a skipped or failed step is not a pass.
 - `bun run audit:surface` - Every resolver/controller endpoint via AST -> `out/surface.json`, with the tenant-context flags
 - `bun run audit:tenant` - Invariant B rule: id-only queries on tenant tables -> `out/tenant-queries.json`
@@ -36,6 +37,7 @@ out/                         # Generated reports, never committed
 ## Tenant model these checks rely on
 
 Verified in code; if any of this changes, update `src/config.ts` and this section.
+
 - The active tenant is chosen by the client: header `x-organization-unit-id`, copied into the GraphQL context (`apps/backend/src/app.module.ts`) and read by `PermissionGuard` for REST.
 - `PermissionGuard` checks membership and permissions only when the handler has `@Permissions(...)`. Without it the guard returns `true` and `organizationUnitId` is unverified input.
 - The guard reads metadata from the handler only: a class-level `@Permissions` is ignored.
@@ -59,11 +61,13 @@ Each finding lists `reachedFrom` (the resolver/controller handlers that call the
 ### Closing a finding
 
 Pass the loaded resource to a `TenantScopeService` helper (`apps/backend/src/organization/tenant-scope.service.ts`) before returning or writing it:
+
 - `assertResourceInScope(headerUnitId, resource.organizationUnitId)`: the resource's unit is the header unit or a descendant of it.
 - `assertUserInScope(headerUnitId, userId)`: the user has a membership in scope (e.g. a volunteer).
 - `assertOrganizationInScope(headerUnitId, resource.organizationId)`: for resources scoped to an organization (e.g. roles).
 
 All throw NotFound, so a foreign id looks like a missing one. A helper call closes the finding when:
+
 - its first argument is the header unit: `ctx.organizationUnitId` on a `@Context()` or `*Context`-typed parameter, or a parameter handed down that is not decorated as client input (`@Args`, `@Body`, ...);
 - for a read, another argument references the variable holding the query result; for an update/delete, it runs before the write;
 - it sits in the same function, or in every caller of the enclosing method (the service loads, the resolver checks).

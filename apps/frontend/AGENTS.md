@@ -75,6 +75,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 ## Localisation (i18n) — next-intl
 
 Localised with **next-intl** (App Router/RSC). Supported locales `['en','de']`, default/fallback `de`; routing is **URL-prefixed** (`/[locale]/…`). Config in `src/i18n/`: `routing.ts` (locales), `request.ts` (per-request messages), `navigation.ts` (locale-aware nav). Message catalogs are ICU-syntax JSON at `apps/frontend/messages/{en,de}.json`, nested by domain namespace; read copy via `useTranslations('Namespace')` (client) / `getTranslations('Namespace')` (server).
+
 - **Client-side routing — always use `@/i18n/navigation`, never `next/link` or `next/navigation` directly.** It re-exports locale-aware `Link`, `usePathname`, `useRouter`, `getPathname` from `createNavigation(routing)`; these preserve the active locale prefix automatically. Using the raw Next equivalents drops the locale and breaks prefixed routing.
 - **Server-side `redirect`** — import from `@/i18n/navigation` and call it with the locale: `redirect({ href: '/path', locale })`. The locale-aware helper prefixes the path automatically; raw `next/navigation` `redirect` does not.
 - **`notFound`, `useSearchParams`, `useParams`** — keep importing from `next/navigation`; they are not locale-dependent.
@@ -150,6 +151,7 @@ page-level locale redirects.
 ## New Admin features
 
 Always study UI/UX patterns in existing similar features before starting a new one — consistent experience across features.
+
 - List pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/page.tsx`
 - Detail pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/[timeEntryId]/page.tsx`
 - Create pages: use `<FormSheet />`, follow `src/app/[locale]/admin/[orgUId]/@sheet/timesheets/new/page.tsx`

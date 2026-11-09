@@ -28,12 +28,14 @@ Spec: `docs/specs/2026-10-13-complete-profile-sheet-design.md`
 ### Task 1: Shared source→profile-key mapping in `@repo/data`
 
 **Files:**
+
 - Create: `packages/data/src/repositories/accounting/profile-source-keys.ts`
 - Test: `packages/data/src/repositories/accounting/profile-source-keys.spec.ts`
 - Modify: `packages/data/src/index.ts` (add one export line after the `template-body.types` export)
 - Modify: `apps/frontend/src/domain/accounting/lib/creation-fields.ts:1-56` (drop local map, use shared one)
 
 **Interfaces:**
+
 - Consumes: `DataSourceKey` from `./template-body.types` (already exported from `@repo/data`).
 - Produces (used by Tasks 5–6 and the `creation-fields.ts` refactor):
   - `PROFILE_SOURCE_TO_PROFILE_KEY` — `as const` map of the 9 profile-bound `DataSourceKey`s to profile system keys.
@@ -235,10 +237,12 @@ git commit -m "feat(data): share the template-source to profile-key map (VOLI-15
 ### Task 2: `useUpdateMyProfile` mutation hook
 
 **Files:**
+
 - Create: `packages/data/src/react/hooks/use-update-my-profile.ts`
 - Modify: `packages/data/src/react.ts` (add one export line, alphabetically after `use-update-my-image`)
 
 **Interfaces:**
+
 - Consumes: `UserRepository.updateMyProfile(input: UpdateMyProfileInput)` (exists), `useSdk()` from `./use-graphql-client`.
 - Produces: `useUpdateMyProfile(): UseMutationResult<..., Error, UpdateMyProfileInput>` — used by the sheet in Task 5.
 
@@ -313,10 +317,12 @@ git commit -m "feat(data): add useUpdateMyProfile mutation hook (VOLI-1547)"
 ### Task 3: Translations
 
 **Files:**
+
 - Modify: `apps/frontend/messages/en.json`
 - Modify: `apps/frontend/messages/de.json`
 
 **Interfaces:**
+
 - Produces (consumed by Tasks 4 and 6):
   - `MembershipDetail.documents.completeDetailsCta`
   - `MyDocuments.completeProfile.{title,description,descriptionWithoutOrg,savedToProfile,success,allComplete,error,saveError,close}`
@@ -422,11 +428,13 @@ git commit -m "feat(i18n): complete-profile sheet copy (VOLI-1547)"
 ### Task 4: Document card + preview point at the sheet
 
 **Files:**
+
 - Modify: `apps/frontend/src/domain/accounting/components/volunteer-document-card.tsx` (lines 92-98 console.log, lines 181-218 actions block)
 - Modify: `apps/frontend/src/domain/accounting/components/volunteer-document-preview.tsx` (lines 217-229 link)
 - Modify: `apps/frontend/src/domain/accounting/components/volunteer-my-documents.tsx` (lines 49-53 console.log)
 
 **Interfaces:**
+
 - Consumes: `MembershipDetail.documents.completeDetailsCta` (Task 3). `VolunteerDocument.kind` / `.id` / `.missingProfileFields` (existing).
 
 - [ ] **Step 1: Card — remove the debug log and rework the awaiting-signature actions**
@@ -565,11 +573,13 @@ git commit -m "feat(accounting): gate card sign on missing profile details, link
 ### Task 5: Complete-profile sheet component + field helpers
 
 **Files:**
+
 - Create: `apps/frontend/src/domain/accounting/lib/complete-profile-fields.ts`
 - Test: `apps/frontend/src/domain/accounting/lib/complete-profile-fields.spec.ts`
 - Create: `apps/frontend/src/domain/accounting/components/complete-profile-sheet.tsx`
 
 **Interfaces:**
+
 - Consumes: `toMissingProfileKeys`, `MissingProfileKey` (Task 1); `useUpdateMyProfile` (Task 2); `MyDocuments.completeProfile.*`, `MembershipDetail.documents.names`, `RequirementForm.fieldForm.*` (Task 3); `buildFieldSchema`/`FieldRenderer`/`useValidationMessages`/`RenderableField` from `@/domain/requirement-form/components/field-renderer`; `PROFILE_FIELDS` from `@/domain/requirement-form/system-profile-fields`; `profileDataToUpdateInput` from `@/domain/user/lib/profile-data-map`; `FormSheet`/`useFormSheet` from `@/components/form-sheet`.
 - Produces: `CompleteProfileSheet` (consumed by Task 6's sheet page) and pure helpers `missingFieldsToRenderable(missingKeys, labelFor): RenderableField[]`, `completeProfileDefaultValues(missingKeys, names): Record<string, string>`.
 
@@ -1051,6 +1061,7 @@ git commit -m "feat(accounting): complete-profile sheet over My documents (VOLI-
 ### Task 6: Sheet routes on `/profile/documents`
 
 **Files:**
+
 - Create: `apps/frontend/src/app/[locale]/(volunteering)/profile/documents/my-documents-content.tsx`
 - Modify: `apps/frontend/src/app/[locale]/(volunteering)/profile/documents/page.tsx`
 - Create: `apps/frontend/src/app/[locale]/(volunteering)/profile/documents/layout.tsx`
@@ -1059,6 +1070,7 @@ git commit -m "feat(accounting): complete-profile sheet over My documents (VOLI-
 - Create: `apps/frontend/src/app/[locale]/(volunteering)/profile/documents/@sheet/complete-profile/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `CompleteProfileSheet` from Task 5 (`@/domain/accounting/components/complete-profile-sheet`) with props `{ kind: 'contract' | 'invoice' | null; documentId: string | null; userNames: { firstname: string | null; lastname: string | null } }`.
 - Produces: the route `/profile/documents/complete-profile?kind&id` rendering the sheet over the documents list.
 
@@ -1212,9 +1224,11 @@ git commit -m "feat(accounting): @sheet routes for complete-profile on My docume
 ### Task 7: E2E — complete details from the card, then sign
 
 **Files:**
+
 - Modify: `e2e/tests/features/accounting/documents-flow.e2e.ts` (add one test, first in the describe)
 
 **Interfaces:**
+
 - Consumes: the card's `Complete details` link (Task 4), the sheet (Tasks 5-6), existing page objects `AdminReimbursementsPage` / `LoginPage`.
 - Note: the e2e fixture members (`demo+e2e_member02@caluno.org`) are seeded with street/IBAN/birthdate but **no zip/city**, and the default contract preset binds `volunteer_zip`/`volunteer_city` — so the missing-details state arises naturally. The new test runs **first** in the file and leaves zip/city filled, which the existing sign flow needs (the card's Sign button is now disabled while details are missing). The test clears zip/city via the profile edit page at the start so it is re-runnable against a stateful dev DB.
 
