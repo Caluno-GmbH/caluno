@@ -35,6 +35,7 @@ export default async function VolunteeringCheckInPage({
   const initialOrgUnitId = resolveInitialCheckInOrgUnit({
     orgUnitIds: checkInOrgUnits.map((unit) => unit.id),
     memberOrgUnitIds: context.eligibleOrganizationUnits.map((unit) => unit.id),
+    pendingOrgUnitIds: [],
     orgUIdParam: orgUId,
   });
 

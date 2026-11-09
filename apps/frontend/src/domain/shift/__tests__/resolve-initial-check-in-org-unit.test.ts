@@ -9,6 +9,7 @@ describe('resolveInitialCheckInOrgUnit', () => {
       resolveInitialCheckInOrgUnit({
         orgUnitIds,
         memberOrgUnitIds: ['ou-c'],
+        pendingOrgUnitIds: [],
         orgUIdParam: 'ou-b',
       }),
     ).toBe('ou-b');
@@ -19,7 +20,39 @@ describe('resolveInitialCheckInOrgUnit', () => {
       resolveInitialCheckInOrgUnit({
         orgUnitIds,
         memberOrgUnitIds: ['ou-c'],
+        pendingOrgUnitIds: [],
         orgUIdParam: 'ou-zzz',
+      }),
+    ).toBe('ou-c');
+  });
+
+  it('prefers a unit with a pending request over a unit the volunteer belongs to', () => {
+    expect(
+      resolveInitialCheckInOrgUnit({
+        orgUnitIds,
+        memberOrgUnitIds: ['ou-c'],
+        pendingOrgUnitIds: ['ou-b'],
+      }),
+    ).toBe('ou-b');
+  });
+
+  it('ignores a pending unit the admin cannot check into', () => {
+    expect(
+      resolveInitialCheckInOrgUnit({
+        orgUnitIds,
+        memberOrgUnitIds: ['ou-c'],
+        pendingOrgUnitIds: ['ou-zzz'],
+      }),
+    ).toBe('ou-c');
+  });
+
+  it('prefers the query param over a pending unit', () => {
+    expect(
+      resolveInitialCheckInOrgUnit({
+        orgUnitIds,
+        memberOrgUnitIds: [],
+        pendingOrgUnitIds: ['ou-b'],
+        orgUIdParam: 'ou-c',
       }),
     ).toBe('ou-c');
   });
@@ -29,13 +62,18 @@ describe('resolveInitialCheckInOrgUnit', () => {
       resolveInitialCheckInOrgUnit({
         orgUnitIds,
         memberOrgUnitIds: ['ou-c', 'ou-b'],
+        pendingOrgUnitIds: [],
       }),
     ).toBe('ou-b');
   });
 
   it('falls back to the first selectable unit when the volunteer belongs to none', () => {
     expect(
-      resolveInitialCheckInOrgUnit({ orgUnitIds, memberOrgUnitIds: [] }),
+      resolveInitialCheckInOrgUnit({
+        orgUnitIds,
+        memberOrgUnitIds: [],
+        pendingOrgUnitIds: [],
+      }),
     ).toBe('ou-a');
   });
 
@@ -44,6 +82,7 @@ describe('resolveInitialCheckInOrgUnit', () => {
       resolveInitialCheckInOrgUnit({
         orgUnitIds: [],
         memberOrgUnitIds: ['ou-a'],
+        pendingOrgUnitIds: ['ou-a'],
         orgUIdParam: 'ou-a',
       }),
     ).toBeNull();

@@ -25,6 +25,10 @@ export function checkOutPath(
   return `/check-in/${checkInId}/check-out?entryId=${encodeURIComponent(entryId)}${query ? `&${query}` : ''}`;
 }
 
+export function volunteerProfileHref(orgUId: string, userId: string): string {
+  return `/admin/${encodeURIComponent(orgUId)}/volunteers?status=PENDING&sheet=volunteer-profile&userId=${encodeURIComponent(userId)}`;
+}
+
 export type ShiftListQuery = {
   view?: ShiftListView;
   week?: string;
