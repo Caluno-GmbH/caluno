@@ -8,10 +8,7 @@ import { useId, useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { signIn, signUp } from '@/lib/auth';
 import { setLocaleCookieIfSupported } from '@/lib/locale-cookie';
-import {
-  buildSignupPayload,
-  PRIVACY_POLICY_PDF_URL,
-} from '@/lib/privacy-policy';
+import { buildSignupPayload, privacyPolicyPdfUrl } from '@/lib/privacy-policy';
 import { termsPdfUrl } from '@/lib/terms';
 import { getVerifyEmailPath } from '@/lib/verify-email-url';
 import { PasswordStrengthMeter } from '../password-strength-meter';
@@ -242,7 +239,7 @@ export function SignupForm({ redirectTo = '/', orgUId }: SignupFormProps) {
             {t.rich('privacyAcknowledge', {
               privacyLink: (chunks) => (
                 <a
-                  href={PRIVACY_POLICY_PDF_URL}
+                  href={privacyPolicyPdfUrl(currentLocale as Locale)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-primary hover:underline"
