@@ -5,6 +5,7 @@ A multi-tenant project for managing volunteers and shifts in organizations.
 ## Monorepo structure
 
 Mono-repo powered by TurboRepo.
+
 ```
 ├── apps                    # Entrypoints, each exposes an app or service
 │   ├── backend             # Backend graphQL api service - NestJS, Postgres
@@ -60,6 +61,7 @@ Package-specific mechanics live in the child AGENTS files (frontend i18n/slots, 
 ## Root Commands
 
 Use `bun` - never npm or yarn.
+
 - `bun run dev` - Starts backend, frontend and storybook dev servers
 - `bun run lint` - Lints all packages
 - `bun run format` - Formats all packages

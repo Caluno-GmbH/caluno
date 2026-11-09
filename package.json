@@ -28,7 +28,7 @@
     "oss:copy": "bun run scripts/ee-oss-mirror/oss-copy.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.4",
+    "@biomejs/biome": "^2.6.6",
     "@svgr/webpack": "^8.1.0",
     "turbo": "^2.11.10",
     "typescript": "6.0.3",
