@@ -66,12 +66,6 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/*': ['messages/ee/**/*.json'],
   },
-  // Browsers request `/favicon.ico` automatically. The middleware skips dotted
-  // paths and there is no `.ico` asset, so without this the request falls
-  // through to the dynamic `[locale]` route (locale = "favicon.ico").
-  async rewrites() {
-    return [{ source: '/favicon.ico', destination: '/favicon.png' }];
-  },
   images: {
     // Next.js 16 blocks localhost/private IPs in the image optimizer (SSRF protection).
     dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
