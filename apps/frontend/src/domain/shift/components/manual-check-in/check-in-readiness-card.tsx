@@ -13,25 +13,29 @@ import { ReadyBanner } from './ready-banner';
 type CheckInReadinessCardProps = {
   state: CheckInReadinessState;
   checkInId: string;
+  unitName: string;
+  missingFormCount: number;
+  profileHref: string | null;
   onInviteToOrg: () => void;
-  onOpenAcceptMembership: () => void;
-  onInviteToShift: () => void;
   isInviteToOrgPending: boolean;
   isInviteToOrgSent: boolean;
-  isInviteToShiftPending: boolean;
-  isInviteToShiftSent: boolean;
+  onOpenAcceptMembership: () => void;
+  onAddToShift: () => void;
+  isAddToShiftPending: boolean;
 };
 
 export function CheckInReadinessCard({
   state,
   checkInId,
+  unitName,
+  missingFormCount,
+  profileHref,
   onInviteToOrg,
-  onOpenAcceptMembership,
-  onInviteToShift,
   isInviteToOrgPending,
   isInviteToOrgSent,
-  isInviteToShiftPending,
-  isInviteToShiftSent,
+  onOpenAcceptMembership,
+  onAddToShift,
+  isAddToShiftPending,
 }: CheckInReadinessCardProps) {
   const t = useTranslations('CheckIn');
   const router = useRouter();
@@ -57,23 +61,54 @@ export function CheckInReadinessCard({
     return (
       <BlockerCard
         icon={<Building2 className="size-5" />}
-        title={t('notMemberTitle')}
-        description={t('notMemberDescription')}
-        buttonLabel={t('notMemberButton')}
+        title={t('notMemberTitle', { unit: unitName })}
+        description={t('notMemberDescription', { unit: unitName })}
+        buttonLabel={t('notMemberButton', { unit: unitName })}
         onAction={onInviteToOrg}
         isActionPending={isInviteToOrgPending}
         isActionDone={isInviteToOrgSent}
-        doneLabel={t('inviteSentConfirmation')}
+        doneLabel={t('inviteSentWaiting')}
+        truncateButtonLabel
         className="border-destructive"
       />
     );
   }
 
   if (state === 'pendingMembership') {
+    // Open required forms block the accept, and only the volunteer can fill
+    // them: point the admin at the profile (when they may see it) instead of
+    // offering a button that cannot succeed.
+    if (missingFormCount > 0) {
+      return (
+        <BlockerCard
+          icon={<Clock className="size-5" />}
+          title={t('pendingMembershipTitle', { unit: unitName })}
+          description={
+            <>
+              <p>{t('requiredFormsOpen', { count: missingFormCount })}</p>
+              {profileHref ? (
+                <a
+                  href={profileHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-foreground underline underline-offset-4"
+                >
+                  {t('openVolunteerProfile')}
+                </a>
+              ) : (
+                <p>{t('askVolunteerToCompleteForms')}</p>
+              )}
+            </>
+          }
+          className="border-destructive"
+        />
+      );
+    }
+
     return (
       <BlockerCard
         icon={<Clock className="size-5" />}
-        title={t('pendingMembershipTitle')}
+        title={t('pendingMembershipTitle', { unit: unitName })}
         description={t('pendingMembershipDescription')}
         buttonLabel={t('acceptMembershipButton')}
         onAction={onOpenAcceptMembership}
@@ -87,11 +122,9 @@ export function CheckInReadinessCard({
       icon={<UserX className="size-5" />}
       title={t('notInShiftTitle')}
       description={t('notInShiftDescription')}
-      buttonLabel={t('notInShiftButton')}
-      onAction={onInviteToShift}
-      isActionPending={isInviteToShiftPending}
-      isActionDone={isInviteToShiftSent}
-      doneLabel={t('inviteSentConfirmation')}
+      buttonLabel={t('addToShiftButton')}
+      onAction={onAddToShift}
+      isActionPending={isAddToShiftPending}
       className="border-destructive"
     />
   );

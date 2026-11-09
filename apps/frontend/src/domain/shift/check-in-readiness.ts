@@ -72,3 +72,24 @@ export function shouldShowIdVerification(facts: {
     facts.membershipId !== null
   );
 }
+
+/**
+ * Readiness loads as soon as the page opens (a null shift returns only the
+ * membership facts), so the membership blockers show before any shift is
+ * chosen: a freshly scanned volunteer can be invited right away. Everything
+ * shift-scoped — not in shift, already checked in, ready and the check-in
+ * button behind it — waits until an instance or "without assignment" is
+ * chosen; before that the null-shift facts would read as "not in shift".
+ */
+export function resolveVisibleCheckInReadiness(
+  state: CheckInReadinessState | null,
+  selection: { withoutShift: boolean; shiftInstanceId: string | null },
+): CheckInReadinessState | null {
+  if (state === 'notMember' || state === 'pendingMembership') {
+    return state;
+  }
+  if (!selection.withoutShift && !selection.shiftInstanceId) {
+    return null;
+  }
+  return state;
+}

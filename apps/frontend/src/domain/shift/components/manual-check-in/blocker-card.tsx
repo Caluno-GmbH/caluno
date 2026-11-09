@@ -7,7 +7,7 @@ import { Link } from '@/i18n/navigation';
 type BlockerCardProps = {
   icon: ReactNode;
   title: string;
-  description: string;
+  description: ReactNode;
   buttonLabel?: string | undefined;
   onAction?: (() => void) | undefined;
   isActionPending?: boolean | undefined;
@@ -16,6 +16,11 @@ type BlockerCardProps = {
   actionHref?: string | undefined;
   actionExternal?: boolean | undefined;
   className?: string | undefined;
+  /**
+   * For labels that carry a user-supplied name (e.g. an org unit): the label
+   * truncates to the card width and the full text moves to title/aria-label.
+   */
+  truncateButtonLabel?: boolean | undefined;
 };
 
 /**
@@ -35,7 +40,9 @@ export function BlockerCard({
   actionHref,
   actionExternal,
   className,
+  truncateButtonLabel,
 }: BlockerCardProps) {
+  const label = isActionDone && doneLabel ? doneLabel : buttonLabel;
   return (
     <Card className={className}>
       <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
@@ -44,7 +51,7 @@ export function BlockerCard({
         </div>
         <div className="space-y-1">
           <p className="font-semibold">{title}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <div className="text-sm text-muted-foreground">{description}</div>
         </div>
         {actionHref && buttonLabel ? (
           <Button type="button" variant="default" asChild>
@@ -62,8 +69,15 @@ export function BlockerCard({
             variant="default"
             disabled={isActionPending || isActionDone}
             onClick={onAction}
+            className={truncateButtonLabel ? 'max-w-full' : undefined}
+            title={truncateButtonLabel ? label : undefined}
+            aria-label={truncateButtonLabel ? label : undefined}
           >
-            {isActionDone && doneLabel ? doneLabel : buttonLabel}
+            {truncateButtonLabel ? (
+              <span className="truncate">{label}</span>
+            ) : (
+              label
+            )}
           </Button>
         ) : null}
       </CardContent>

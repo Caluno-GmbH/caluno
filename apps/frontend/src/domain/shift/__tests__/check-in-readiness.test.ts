@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   alreadyCheckedInDecideHref,
   resolveCheckInReadiness,
+  resolveVisibleCheckInReadiness,
   shouldShowIdVerification,
 } from '../check-in-readiness';
 
@@ -204,5 +205,47 @@ describe('shouldShowIdVerification', () => {
     expect(shouldShowIdVerification({ ...base, membershipId: null })).toBe(
       false,
     );
+  });
+});
+
+describe('resolveVisibleCheckInReadiness', () => {
+  const noChoice = { withoutShift: false, shiftInstanceId: null };
+
+  it('shows the membership blockers before any shift is chosen', () => {
+    expect(resolveVisibleCheckInReadiness('notMember', noChoice)).toBe(
+      'notMember',
+    );
+    expect(resolveVisibleCheckInReadiness('pendingMembership', noChoice)).toBe(
+      'pendingMembership',
+    );
+  });
+
+  it('hides shift-scoped states until a shift or without-assignment is chosen', () => {
+    expect(resolveVisibleCheckInReadiness('notInShift', noChoice)).toBeNull();
+    expect(resolveVisibleCheckInReadiness('ready', noChoice)).toBeNull();
+    expect(
+      resolveVisibleCheckInReadiness('alreadyCheckedIn', noChoice),
+    ).toBeNull();
+  });
+
+  it('passes every state through once an instance is chosen', () => {
+    const chosen = { withoutShift: false, shiftInstanceId: 'inst-1' };
+    expect(resolveVisibleCheckInReadiness('notInShift', chosen)).toBe(
+      'notInShift',
+    );
+    expect(resolveVisibleCheckInReadiness('ready', chosen)).toBe('ready');
+  });
+
+  it('passes ready through when checking in without assignment', () => {
+    expect(
+      resolveVisibleCheckInReadiness('ready', {
+        withoutShift: true,
+        shiftInstanceId: null,
+      }),
+    ).toBe('ready');
+  });
+
+  it('keeps an unloaded readiness null', () => {
+    expect(resolveVisibleCheckInReadiness(null, noChoice)).toBeNull();
   });
 });

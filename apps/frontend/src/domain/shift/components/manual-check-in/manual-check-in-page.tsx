@@ -24,6 +24,7 @@ import { resolveAgreementTrigger } from '../../check-in-agreement';
 import { isCheckInAwaitingVolunteer } from '../../check-in-polling';
 import {
   resolveCheckInReadiness,
+  resolveVisibleCheckInReadiness,
   shouldShowIdVerification,
 } from '../../check-in-readiness';
 import {
@@ -36,7 +37,9 @@ import {
   toCheckInInstance,
 } from '../../check-in-selection';
 import { setCheckInSuccessPayload } from '../../check-in-success-dialog';
+import { volunteerProfileHref } from '../../routes';
 import { AcceptMembershipSheet } from './accept-membership-sheet';
+import { AddToShiftOverCapacityDialog } from './add-to-shift-over-capacity-dialog';
 import { CheckInAgreementCard } from './check-in-agreement-card';
 import { CheckInReadinessCard } from './check-in-readiness-card';
 import { CheckInWithoutShiftWarningCard } from './check-in-without-shift-warning-card';
@@ -126,29 +129,31 @@ export function ManualCheckInPage({
   const context = liveContext ?? initialContext;
   const volunteer = context.volunteer;
 
-  // Readiness: enabled once a shift instance is chosen, or as soon as
-  // without-assignment is chosen, where a null instance is the point and only
-  // the membership facts come back. Every mutator in check-in-selection.ts
+  // Readiness always runs: with no instance chosen (or without-assignment)
+  // the null instance returns only the membership facts, so a freshly
+  // scanned volunteer can be invited before any shift is picked. The
+  // shift-scoped states stay hidden until a choice is made (see
+  // resolveVisibleCheckInReadiness). Every mutator in check-in-selection.ts
   // writes shiftInstanceId and selectedInstance together, so they never
   // disagree about which instance is current.
   const { data: readiness } = useCheckInReadiness(
     selection.orgUnitId,
     checkInId,
     selection.shiftInstanceId,
-    {
-      enabled: withoutShift || !!selection.shiftInstanceId,
-      refetchInterval,
-    },
+    { enabled: true, refetchInterval },
   );
-  const readinessState = readiness
-    ? resolveCheckInReadiness(
-        {
-          ...readiness,
-          openMembershipRequestId: readiness.openMembershipRequestId ?? null,
-        },
-        { requiresShift: !withoutShift },
-      )
-    : null;
+  const readinessState = resolveVisibleCheckInReadiness(
+    readiness
+      ? resolveCheckInReadiness(
+          {
+            ...readiness,
+            openMembershipRequestId: readiness.openMembershipRequestId ?? null,
+          },
+          { requiresShift: !withoutShift },
+        )
+      : null,
+    { withoutShift, shiftInstanceId: selection.shiftInstanceId },
+  );
 
   // Without a shift there is nothing to be ready *for*, so the card earns its
   // place only while it is blocking: not a member, or a membership request
@@ -181,6 +186,7 @@ export function ManualCheckInPage({
       state: readinessState,
     }),
     JSON.stringify([
+      selection.orgUnitId,
       volunteer?.id ?? null,
       context.pendingOrganizationUnits.map((unit) => unit.id),
       readiness
@@ -216,13 +222,11 @@ export function ManualCheckInPage({
         })
       : false;
 
-  // "Sent" is per (org unit) / (shift instance) — tracked as the id it was
-  // sent for, so switching to a different unit or instance re-arms the
-  // button instead of carrying a stale confirmation forward.
+  // "Sent" is per org unit — tracked as the id it was sent for, so switching
+  // to a different unit re-arms the button instead of carrying a stale
+  // confirmation forward.
   const [orgInviteSentFor, setOrgInviteSentFor] = useState<string | null>(null);
-  const [shiftInviteSentFor, setShiftInviteSentFor] = useState<string | null>(
-    null,
-  );
+  const [showOverCapacityConfirm, setShowOverCapacityConfirm] = useState(false);
   const inviteToOrgMutation = useCheckInInviteToOrganization(
     selection.orgUnitId,
   );
@@ -237,19 +241,35 @@ export function ManualCheckInPage({
     }
   };
 
-  const handleAddToShift = async () => {
+  const addToShift = async (allowOverCapacity: boolean) => {
     if (!selection.shiftInstanceId) return;
     try {
       await addToShiftMutation.mutateAsync({
         checkInId,
         shiftInstanceId: selection.shiftInstanceId,
-        allowOverCapacity: false,
+        allowOverCapacity,
       });
-      setShiftInviteSentFor(selection.shiftInstanceId);
     } catch {
-      toast.error(t('notInShiftError'));
+      toast.error(t('addToShiftError'));
     }
   };
+
+  // A full assignment needs an explicit "add anyway" before going over
+  // capacity; with a free seat the volunteer is added straight away.
+  const handleAddToShift = () => {
+    if (readiness?.shiftHasAvailableSeat) {
+      void addToShift(false);
+    } else {
+      setShowOverCapacityConfirm(true);
+    }
+  };
+
+  const unitName =
+    orgUnits.find((unit) => unit.id === selection.orgUnitId)?.name ?? '';
+  const profileHref =
+    readiness?.canViewVolunteerProfile && volunteer
+      ? volunteerProfileHref(selection.orgUnitId, volunteer.id)
+      : null;
 
   const [showUnverifiedConfirm, setShowUnverifiedConfirm] = useState(false);
 
@@ -382,15 +402,15 @@ export function ManualCheckInPage({
             <CheckInReadinessCard
               state={readinessState}
               checkInId={checkInId}
+              unitName={unitName}
+              missingFormCount={missingFormCount}
+              profileHref={profileHref}
               onInviteToOrg={handleInviteToOrg}
-              onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
-              onInviteToShift={handleAddToShift}
               isInviteToOrgPending={inviteToOrgMutation.isPending}
               isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
-              isInviteToShiftPending={addToShiftMutation.isPending}
-              isInviteToShiftSent={
-                shiftInviteSentFor === selection.shiftInstanceId
-              }
+              onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
+              onAddToShift={handleAddToShift}
+              isAddToShiftPending={addToShiftMutation.isPending}
             />
           )}
 
@@ -478,6 +498,19 @@ export function ManualCheckInPage({
           }}
           isPending={isSubmitPending}
         />
+
+        {volunteer && (
+          <AddToShiftOverCapacityDialog
+            open={showOverCapacityConfirm}
+            onOpenChange={setShowOverCapacityConfirm}
+            volunteerName={volunteer.name}
+            onConfirm={() => {
+              setShowOverCapacityConfirm(false);
+              void addToShift(true);
+            }}
+            isPending={addToShiftMutation.isPending}
+          />
+        )}
 
         <OrgUnitSheet
           open={openSheet === 'orgUnit'}
