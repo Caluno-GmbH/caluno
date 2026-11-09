@@ -74,6 +74,7 @@ type CheckInContext {
 
 type CheckInReadiness {
   agreement: CheckInAgreement!
+  canViewVolunteerProfile: Boolean!
   hasOpenTimeEntry: Boolean!
   idVerificationEnabled: Boolean!
   idVerified: Boolean!
@@ -81,6 +82,7 @@ type CheckInReadiness {
   isParticipating: Boolean!
   membershipId: ID
   openMembershipRequestId: ID
+  shiftHasAvailableSeat: Boolean!
   shiftInviteStatus: ShiftInviteStatus
 }
 
@@ -929,10 +931,10 @@ type Query {
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
   bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
   checkInContext(checkInId: String!): CheckInContext
-  checkInReadiness(shiftInstanceId: ID, volunteerId: ID!): CheckInReadiness!
+  checkInReadiness(checkInId: String!, shiftInstanceId: ID): CheckInReadiness!
   checkInShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
   checkInShifts(search: String): [Shift!]!
-  checkInVolunteerRequiredForms(volunteerId: ID!): [RequiredFormWithStatus!]!
+  checkInVolunteerRequiredForms(checkInId: String!): [RequiredFormWithStatus!]!
   contract(id: ID!): Contract!
   contracts(filter: ContractFilterInput): [Contract!]!
   documentTemplate(id: ID!): DocumentTemplate!

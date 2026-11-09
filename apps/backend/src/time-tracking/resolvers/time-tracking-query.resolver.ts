@@ -93,12 +93,16 @@ export class TimeTrackingQueryResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Query(() => CheckInReadiness)
   async checkInReadiness(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Args('shiftInstanceId', { type: () => ID, nullable: true })
     shiftInstanceId: string | null,
     @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
   ): Promise<CheckInReadiness> {
+    const volunteerId =
+      await this.timeTrackingService.resolveCheckInVolunteerId(checkInId);
     return this.timeTrackingService.getCheckInReadiness(
+      session.user.id,
       volunteerId,
       shiftInstanceId,
       context.organizationUnitId,
@@ -108,14 +112,24 @@ export class TimeTrackingQueryResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Query(() => [RequiredFormWithStatus])
   async checkInVolunteerRequiredForms(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<RequiredFormWithStatus[]> {
-    const isMember = await this.membershipService.isMemberOfUnitOrAncestor(
-      volunteerId,
-      context.organizationUnitId,
-    );
-    if (!isMember) {
+    const volunteerId =
+      await this.timeTrackingService.resolveCheckInVolunteerId(checkInId);
+
+    // A pending applicant sees the unit's forms too, so they can be filled in
+    // at the desk before the request is approved.
+    const isRelated =
+      (await this.membershipService.isMemberOfUnitOrAncestor(
+        volunteerId,
+        context.organizationUnitId,
+      )) ||
+      (await this.membershipService.findPendingMembershipRequest(
+        volunteerId,
+        context.organizationUnitId,
+      )) !== undefined;
+    if (!isRelated) {
       throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
     }
 

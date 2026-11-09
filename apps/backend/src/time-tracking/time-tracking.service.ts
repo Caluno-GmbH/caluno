@@ -759,6 +759,19 @@ export class TimeTrackingService {
   }
 
   /**
+   * Resolves a volunteer's check-in ID (the QR code payload) to their user ID,
+   * so the readiness queries can be keyed on the ID the manager scanned
+   * instead of a user ID that is only revealed for related volunteers.
+   */
+  async resolveCheckInVolunteerId(checkInId: string): Promise<string> {
+    const volunteer = await this.userService.findByCheckInId(checkInId);
+    if (!volunteer) {
+      throw new NotFoundGraphQLError('Volunteer not found');
+    }
+    return volunteer.id;
+  }
+
+  /**
    * Returns readiness facts for the check-in gate. When `shiftInstanceId` is
    * null (without-shift mode) only the membership facts are meaningful; the
    * shift-scoped ones are reported as absent.
@@ -768,6 +781,7 @@ export class TimeTrackingService {
    * so TimeTrackingModule stays independent of AccountingModule.
    */
   async getCheckInReadiness(
+    callerUserId: string,
     volunteerId: string,
     shiftInstanceId: string | null,
     organizationUnitId: string,
@@ -780,16 +794,18 @@ export class TimeTrackingService {
     idVerificationEnabled: boolean;
     idVerified: boolean;
     membershipId: string | null;
+    canViewVolunteerProfile: boolean;
+    shiftHasAvailableSeat: boolean;
     volunteerId: string;
     organizationUnitId: string;
     shiftInstanceId: string | null;
   }> {
-    if (shiftInstanceId) {
-      await this.shiftService.findInstanceById(
-        shiftInstanceId,
-        organizationUnitId,
-      );
-    }
+    const instance = shiftInstanceId
+      ? await this.shiftService.findInstanceById(
+          shiftInstanceId,
+          organizationUnitId,
+        )
+      : null;
 
     const unitIds =
       await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
@@ -803,6 +819,8 @@ export class TimeTrackingService {
       hasOpenTimeEntry,
       unit,
       membership,
+      viewableUnits,
+      shiftHasAvailableSeat,
     ] = await Promise.all([
       this._membershipService.isMemberOfUnitOrAncestor(
         volunteerId,
@@ -822,6 +840,16 @@ export class TimeTrackingService {
         : false,
       this.organizationUnitDataService.findById(organizationUnitId),
       this._membershipService.findMembershipInUnits(volunteerId, unitIds),
+      this.organizationService.findUnitsWithPermission(
+        callerUserId,
+        PERMISSIONS.VOLUNTEER_VIEW,
+      ),
+      instance
+        ? this.shiftService.hasAvailableSeat(
+            instance.id,
+            instance.overrideMaxVolunteers ?? instance.master.maxVolunteers,
+          )
+        : true,
     ]);
 
     const shiftInviteStatus = inviteStatuses[0]?.status ?? null;
@@ -837,6 +865,10 @@ export class TimeTrackingService {
       idVerificationEnabled: unit?.idVerificationEnabled ?? false,
       idVerified: membership?.idVerifiedAt != null,
       membershipId: membership?.id ?? null,
+      canViewVolunteerProfile: viewableUnits.some(
+        (viewable) => viewable.id === organizationUnitId,
+      ),
+      shiftHasAvailableSeat,
       volunteerId,
       organizationUnitId,
       shiftInstanceId,

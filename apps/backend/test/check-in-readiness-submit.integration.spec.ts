@@ -57,8 +57,8 @@ const RUNNING_SHIFT_WINDOW = () => ({
 });
 
 const CHECK_IN_READINESS = `
-  query CheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID!) {
-    checkInReadiness(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
+  query CheckInReadiness($checkInId: String!, $shiftInstanceId: ID!) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
       openMembershipRequestId
       shiftInviteStatus
@@ -68,12 +68,21 @@ const CHECK_IN_READINESS = `
 `;
 
 const CHECK_IN_READINESS_WITHOUT_SHIFT = `
-  query CheckInReadinessWithoutShift($volunteerId: ID!, $shiftInstanceId: ID) {
-    checkInReadiness(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
+  query CheckInReadinessWithoutShift($checkInId: String!, $shiftInstanceId: ID) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
       openMembershipRequestId
       shiftInviteStatus
       isParticipating
+    }
+  }
+`;
+
+const CHECK_IN_READINESS_PROFILE = `
+  query CheckInReadinessProfile($checkInId: String!, $shiftInstanceId: ID) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
+      canViewVolunteerProfile
+      shiftHasAvailableSeat
     }
   }
 `;
@@ -83,6 +92,8 @@ describe('checkInReadiness query', () => {
   let db: Database;
   let callerUserId: string;
   let unitId: string;
+  let organizationId: string;
+  let typeId: string;
   let instanceId: string;
 
   beforeAll(async () => {
@@ -95,6 +106,8 @@ describe('checkInReadiness query', () => {
       db,
       `Readiness ${crypto.randomUUID()}`,
     );
+    organizationId = org.organization.id;
+    typeId = org.type.id;
     const unit = await createUnit(db, {
       organizationId: org.organization.id,
       typeId: org.type.id,
@@ -141,7 +154,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -168,7 +184,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -196,7 +215,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -228,7 +250,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -257,7 +282,7 @@ describe('checkInReadiness query', () => {
     const response = await graphqlRequest(app, {
       query: CHECK_IN_READINESS,
       variables: {
-        volunteerId: volunteer.id,
+        checkInId: volunteer.checkInId,
         shiftInstanceId: foreignInstance.id,
       },
       // Caller's header names their OWN unit, not the foreign one.
@@ -282,7 +307,7 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS_WITHOUT_SHIFT,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: null },
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -309,7 +334,7 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS_WITHOUT_SHIFT,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: null },
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -317,12 +342,197 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness.openMembershipRequestId).toBe(request.id);
   });
+
+  it('reports an unrelated volunteer as a non-member with no request', async () => {
+    const volunteer = await createUser(db);
+
+    const data = await graphqlRequestRequiringData<{
+      checkInReadiness: {
+        isMember: boolean;
+        openMembershipRequestId: string | null;
+      };
+    }>(
+      app,
+      {
+        query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
+        headers: { 'x-organization-unit-id': unitId },
+      },
+      'checkInReadiness',
+    );
+
+    expect(data.checkInReadiness).toEqual({
+      isMember: false,
+      openMembershipRequestId: null,
+      shiftInviteStatus: null,
+      isParticipating: false,
+    });
+  });
+
+  it('returns NOT_FOUND for an unknown check-in id', async () => {
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+      variables: { checkInId: 'doesnotexist', shiftInstanceId: null },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+  });
+
+  it('matches a pending request on the parent unit while the child is selected', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Readiness child',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const parentRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInReadiness: { openMembershipRequestId: string | null };
+    }>(
+      app,
+      {
+        query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInReadiness',
+    );
+
+    expect(data.checkInReadiness.openMembershipRequestId).toBe(
+      parentRequest.id,
+    );
+  });
+
+  it('ignores a pending request on a sibling unit', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Readiness child A',
+      parentId: unitId,
+    });
+    const siblingUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Readiness child B',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: siblingUnit.id,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInReadiness: { openMembershipRequestId: string | null };
+    }>(
+      app,
+      {
+        query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInReadiness',
+    );
+
+    expect(data.checkInReadiness.openMembershipRequestId).toBeNull();
+  });
+
+  it('reports canViewVolunteerProfile only for a caller holding volunteer:view', async () => {
+    const volunteer = await createUser(db);
+    const readCanView = async () =>
+      (
+        await graphqlRequestRequiringData<{
+          checkInReadiness: { canViewVolunteerProfile: boolean };
+        }>(
+          app,
+          {
+            query: CHECK_IN_READINESS_PROFILE,
+            variables: {
+              checkInId: volunteer.checkInId,
+              shiftInstanceId: null,
+            },
+            headers: { 'x-organization-unit-id': unitId },
+          },
+          'checkInReadiness',
+        )
+      ).checkInReadiness.canViewVolunteerProfile;
+
+    // The caller only holds check-in:manage.
+    expect(await readCanView()).toBe(false);
+
+    const viewer = await createUser(db);
+    const viewPermission = await db.query.permissions.findFirst({
+      where: { key: PERMISSIONS.VOLUNTEER_VIEW },
+    });
+    const managePermission = await db.query.permissions.findFirst({
+      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
+    });
+    if (!viewPermission || !managePermission) {
+      throw new Error('permissions not seeded');
+    }
+    const role = await createRole(db, { organizationId });
+    for (const permission of [viewPermission, managePermission]) {
+      await grantPermissionToRole(db, {
+        roleId: role.id,
+        permissionId: permission.id,
+      });
+    }
+    const membership = await addMembership(db, viewer.id, unitId);
+    await assignRoleToMembership(db, {
+      membershipId: membership.id,
+      roleId: role.id,
+    });
+    setAuthMockUserId(viewer.id);
+
+    expect(await readCanView()).toBe(true);
+  });
+
+  it('reports shiftHasAvailableSeat false when the instance is full', async () => {
+    const fullShift = await createShift(db, {
+      organizationUnitId: unitId,
+      maxVolunteers: 1,
+    });
+    const fullInstance = await createShiftInstance(db, fullShift.id);
+    const joined = await createUser(db);
+    await createShiftInstanceInvite(db, {
+      instanceId: fullInstance.id,
+      userId: joined.id,
+      status: ShiftInviteStatus.JOINED,
+    });
+    const volunteer = await createUser(db);
+
+    const readSeat = async (shiftInstanceId: string | null) =>
+      (
+        await graphqlRequestRequiringData<{
+          checkInReadiness: { shiftHasAvailableSeat: boolean };
+        }>(
+          app,
+          {
+            query: CHECK_IN_READINESS_PROFILE,
+            variables: { checkInId: volunteer.checkInId, shiftInstanceId },
+            headers: { 'x-organization-unit-id': unitId },
+          },
+          'checkInReadiness',
+        )
+      ).checkInReadiness.shiftHasAvailableSeat;
+
+    expect(await readSeat(fullInstance.id)).toBe(false);
+    // An instance without a seat limit, and no shift at all, never block.
+    expect(await readSeat(instanceId)).toBe(true);
+    expect(await readSeat(null)).toBe(true);
+  });
 });
 
 describe('checkInVolunteerRequiredForms query', () => {
   const CHECK_IN_REQUIRED_FORMS = `
-    query CheckInVolunteerRequiredForms($volunteerId: ID!) {
-      checkInVolunteerRequiredForms(volunteerId: $volunteerId) {
+    query CheckInVolunteerRequiredForms($checkInId: String!) {
+      checkInVolunteerRequiredForms(checkInId: $checkInId) {
         form { id name }
         order
         submitted
@@ -386,7 +596,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       app,
       {
         query: CHECK_IN_REQUIRED_FORMS,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInVolunteerRequiredForms',
@@ -421,7 +631,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       app,
       {
         query: CHECK_IN_REQUIRED_FORMS,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInVolunteerRequiredForms',
@@ -451,7 +661,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       app,
       {
         query: CHECK_IN_REQUIRED_FORMS,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInVolunteerRequiredForms',
@@ -463,12 +673,67 @@ describe('checkInVolunteerRequiredForms query', () => {
     );
   });
 
+  it('returns the forms with submitted false for a volunteer with a pending request', async () => {
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+    const { form } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: unitId,
+      createdById: callerUserId,
+      name: 'Pending volunteer form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: unitId,
+      formIds: [form.id],
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInVolunteerRequiredForms: Array<{
+        form: { id: string; name: string };
+        order: number;
+        submitted: boolean;
+        submissionId: string | null;
+      }>;
+    }>(
+      app,
+      {
+        query: CHECK_IN_REQUIRED_FORMS,
+        variables: { checkInId: volunteer.checkInId },
+        headers: { 'x-organization-unit-id': unitId },
+      },
+      'checkInVolunteerRequiredForms',
+    );
+
+    expect(data.checkInVolunteerRequiredForms).toEqual([
+      {
+        form: { id: form.id, name: 'Pending volunteer form' },
+        order: 0,
+        submitted: false,
+        submissionId: null,
+      },
+    ]);
+  });
+
+  it('returns NOT_FOUND for an unknown check-in id', async () => {
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_REQUIRED_FORMS,
+      variables: { checkInId: 'doesnotexist' },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+  });
+
   it('rejects a volunteer who is not a member of the unit', async () => {
     const volunteer = await createUser(db); // no membership anywhere
 
     const response = await graphqlRequest(app, {
       query: CHECK_IN_REQUIRED_FORMS,
-      variables: { volunteerId: volunteer.id },
+      variables: { checkInId: volunteer.checkInId },
       headers: { 'x-organization-unit-id': unitId },
     });
 

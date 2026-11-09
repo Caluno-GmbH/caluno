@@ -5545,7 +5545,7 @@ export class ShiftService {
     return participants?.current ?? 0;
   }
 
-  private async hasAvailableSeat(
+  async hasAvailableSeat(
     instanceId: string,
     maxVolunteers: number | null | undefined,
     db: Database = this.db,

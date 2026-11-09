@@ -329,6 +329,12 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     }),
     findInviteStatusesForUser: jest.fn(),
     hasOpenTimeEntry: jest.fn(),
+    hasAvailableSeat: jest.fn().mockResolvedValue(true),
+  });
+  const organizationService = (viewableUnitIds: string[] = []) => ({
+    findUnitsWithPermission: jest
+      .fn()
+      .mockResolvedValue(viewableUnitIds.map((id) => ({ id }))),
   });
   const organizationUnitDataService = () => ({
     listInclusiveAncestorUnitIds: jest.fn().mockResolvedValue(['ou-1']),
@@ -344,7 +350,7 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       membershipService() as never,
       shift as never,
       {} as never,
-      {} as never,
+      organizationService() as never,
       {} as never,
       {} as never,
       organizationUnitDataService() as never,
@@ -352,6 +358,7 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     );
 
     const readiness = await service.getCheckInReadiness(
+      'caller-1',
       'volunteer-1',
       null,
       'ou-1',
@@ -366,8 +373,11 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       idVerificationEnabled: false,
       idVerified: false,
       membershipId: null,
+      canViewVolunteerProfile: false,
+      shiftHasAvailableSeat: true,
     });
     expect(shift.findInstanceById).not.toHaveBeenCalled();
+    expect(shift.hasAvailableSeat).not.toHaveBeenCalled();
     expect(shift.findInviteStatusesForUser).not.toHaveBeenCalled();
     expect(shift.hasOpenTimeEntry).not.toHaveBeenCalled();
   });
@@ -382,14 +392,19 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       membershipService() as never,
       shift as never,
       {} as never,
-      {} as never,
+      organizationService(['ou-1']) as never,
       {} as never,
       {} as never,
       organizationUnitDataService() as never,
       { emit: jest.fn() } as never,
     );
 
-    await service.getCheckInReadiness('volunteer-1', 'si-1', 'ou-1');
+    const readiness = await service.getCheckInReadiness(
+      'caller-1',
+      'volunteer-1',
+      'si-1',
+      'ou-1',
+    );
 
     expect(shift.findInstanceById).toHaveBeenCalledWith('si-1', 'ou-1');
     expect(shift.findInviteStatusesForUser).toHaveBeenCalledWith(
@@ -397,6 +412,40 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       ['si-1'],
     );
     expect(shift.hasOpenTimeEntry).toHaveBeenCalledWith('si-1', 'volunteer-1');
+    expect(readiness.canViewVolunteerProfile).toBe(true);
+  });
+
+  it('reports no available seat using the instance override over the shift limit', async () => {
+    const shift = shiftService();
+    shift.findInstanceById.mockResolvedValue({
+      id: 'si-1',
+      overrideMaxVolunteers: 2,
+      master: { maxVolunteers: 5, organizationUnitId: 'ou-1' },
+    });
+    shift.findInviteStatusesForUser.mockResolvedValue([]);
+    shift.hasOpenTimeEntry.mockResolvedValue(false);
+    shift.hasAvailableSeat.mockResolvedValue(false);
+    const service = new TimeTrackingService(
+      { query: {} } as never,
+      membershipService() as never,
+      shift as never,
+      {} as never,
+      organizationService() as never,
+      {} as never,
+      {} as never,
+      organizationUnitDataService() as never,
+      { emit: jest.fn() } as never,
+    );
+
+    const readiness = await service.getCheckInReadiness(
+      'caller-1',
+      'volunteer-1',
+      'si-1',
+      'ou-1',
+    );
+
+    expect(shift.hasAvailableSeat).toHaveBeenCalledWith('si-1', 2);
+    expect(readiness.shiftHasAvailableSeat).toBe(false);
   });
 });
 

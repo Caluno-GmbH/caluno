@@ -253,23 +253,38 @@ export class MembershipService {
   }
 
   /**
-   * The volunteer's open (PENDING) membership request against this exact
-   * unit, if any — used by the check-in readiness gate, which needs the
-   * request's own id rather than the derived `getMembershipState` enum.
+   * The volunteer's open (PENDING) membership request to the unit or, failing
+   * that, its nearest ancestor that has one — a pending request to a parent
+   * relates the volunteer to its whole subtree. Used by the check-in readiness
+   * gate, which needs the request's own id rather than the derived
+   * `getMembershipState` enum. Sibling and descendant requests never match.
    */
   async findPendingMembershipRequest(
     userId: string,
     organizationUnitId: string,
-  ): Promise<{ id: string } | null> {
-    const request = await this.db.query.membershipRequests.findFirst({
+  ): Promise<{ id: string } | undefined> {
+    // Ordered self-first, so the nearest unit with a request wins.
+    const unitIds =
+      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+        organizationUnitId,
+      );
+    if (unitIds.length === 0) return undefined;
+
+    const requests = await this.db.query.membershipRequests.findMany({
       where: {
         userId,
-        organizationUnitId,
+        organizationUnitId: { in: unitIds },
         status: MembershipRequestStatus.PENDING,
       },
-      columns: { id: true },
+      columns: { id: true, organizationUnitId: true },
     });
-    return request ?? null;
+    for (const unitId of unitIds) {
+      const match = requests.find(
+        (request) => request.organizationUnitId === unitId,
+      );
+      if (match) return { id: match.id };
+    }
+    return undefined;
   }
 
   async getPendingOrganizationUnitIds(userId: string): Promise<string[]> {

@@ -27,6 +27,15 @@ export class CheckInReadiness {
   @Field(() => ID, { nullable: true })
   membershipId?: string | null;
 
+  // Whether the caller may open the volunteer's profile (volunteer:view on the
+  // unit) — check-in:manage alone does not grant it.
+  @Field(() => Boolean)
+  canViewVolunteerProfile!: boolean;
+
+  // True without a shift or when the instance has no seat limit.
+  @Field(() => Boolean)
+  shiftHasAvailableSeat!: boolean;
+
   // Not in GraphQL schema — context for the CheckInAgreementModule field resolver
   // so TimeTrackingModule stays independent of AccountingModule.
   volunteerId!: string;
