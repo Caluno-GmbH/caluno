@@ -115,7 +115,7 @@ describe('ContractMutationResolver.createContract tenancy', () => {
     expect(createContract).not.toHaveBeenCalled();
   });
 
-  it('accepts a descendant organizationUnitId and scopes the volunteer to that unit', async () => {
+  it('accepts a descendant organizationUnitId and scopes the volunteer to the header', async () => {
     const { resolver, createContract, assertUserInScope, assertUnitReadable } =
       createResolver();
 
@@ -131,7 +131,7 @@ describe('ContractMutationResolver.createContract tenancy', () => {
       'Organization unit not found',
     );
     expect(assertUserInScope).toHaveBeenCalledWith(
-      descendantUnitId,
+      headerUnitId,
       memberVolunteerId,
       'Volunteer not found',
     );

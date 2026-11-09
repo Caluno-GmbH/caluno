@@ -34,10 +34,12 @@ export class ContractMutationResolver {
       input.organizationUnitId ?? context.organizationUnitId;
 
     // PermissionGuard only proves ACCOUNTING_MANAGE on the header unit. A
-    // unit named in the input must still sit under that header, and the
-    // volunteer must hold an active membership in that target unit's
-    // subtree — otherwise a manager in org B can mint a PDF of any user's
-    // IBAN / birth date by passing a foreign volunteerId.
+    // unit named in the input must still sit under that header
+    // (assertUnitReadable). The volunteer must hold an active membership
+    // somewhere under the *header* subtree — not the target unit — so a
+    // root-member can still get a contract on a child/grandchild (nested
+    // rates / unit address), while a manager in org B cannot mint a PDF of
+    // a foreign volunteer's IBAN / birth date.
     if (
       input.organizationUnitId &&
       input.organizationUnitId !== context.organizationUnitId
@@ -49,7 +51,7 @@ export class ContractMutationResolver {
       );
     }
     await this.tenantScopeService.assertUserInScope(
-      organizationUnitId,
+      context.organizationUnitId,
       input.volunteerId,
       'Volunteer not found',
     );

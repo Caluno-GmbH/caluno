@@ -1,28 +1,35 @@
-import { describe, expect, it } from 'bun:test';
-import { requireSupportedLocale } from '../require-locale';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
-function notFoundDigest(fn: () => unknown): string | undefined {
-  try {
-    fn();
-  } catch (error) {
-    return (error as { digest?: string }).digest;
-  }
-  return undefined;
-}
+const notFoundMock = mock(() => {
+  throw new Error('NEXT_NOT_FOUND');
+});
+
+mock.module('next/navigation', () => ({
+  notFound: notFoundMock,
+}));
+
+const { requireSupportedLocale } = await import('../require-locale');
 
 describe('requireSupportedLocale', () => {
+  beforeEach(() => {
+    notFoundMock.mockClear();
+  });
+
   it('returns supported locales unchanged', () => {
     expect(requireSupportedLocale('en')).toBe('en');
     expect(requireSupportedLocale('de')).toBe('de');
+    expect(notFoundMock).not.toHaveBeenCalled();
   });
 
   it('triggers notFound for asset-like segments such as favicon.ico', () => {
-    expect(
-      notFoundDigest(() => requireSupportedLocale('favicon.ico')),
-    ).toContain('404');
+    expect(() => requireSupportedLocale('favicon.ico')).toThrow(
+      'NEXT_NOT_FOUND',
+    );
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
   });
 
   it('triggers notFound for unknown locales', () => {
-    expect(notFoundDigest(() => requireSupportedLocale('fr'))).toContain('404');
+    expect(() => requireSupportedLocale('fr')).toThrow('NEXT_NOT_FOUND');
+    expect(notFoundMock).toHaveBeenCalledTimes(1);
   });
 });
