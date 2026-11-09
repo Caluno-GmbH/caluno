@@ -68,7 +68,8 @@ type CheckInAgreement {
 type CheckInContext {
   eligibleOrganizationUnits: [OrganizationUnit!]!
   openTimeEntries: [TimeEntry!]!
-  volunteer: User!
+  pendingOrganizationUnits: [OrganizationUnit!]!
+  volunteer: User
 }
 
 type CheckInReadiness {

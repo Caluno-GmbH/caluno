@@ -5,11 +5,15 @@ import { TimeEntry } from './time-entry.model';
 
 @ObjectType()
 export class CheckInContext {
-  @Field(() => User)
-  volunteer!: User;
+  // Null when the volunteer is unrelated to every unit the caller manages.
+  @Field(() => User, { nullable: true })
+  volunteer!: User | null;
 
   @Field(() => [OrganizationUnit])
   eligibleOrganizationUnits!: OrganizationUnit[];
+
+  @Field(() => [OrganizationUnit])
+  pendingOrganizationUnits!: OrganizationUnit[];
 
   @Field(() => [TimeEntry])
   openTimeEntries!: TimeEntry[];

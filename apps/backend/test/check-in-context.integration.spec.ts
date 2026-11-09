@@ -12,9 +12,10 @@ import type { INestApplication } from '@nestjs/common';
 import { PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
+import { MembershipRequestStatus } from '../src/membership/enums';
 import { MembershipService } from '../src/membership/membership.service';
 import { TimeTrackingService } from '../src/time-tracking/time-tracking.service';
-import { createShift, createUser } from './factories';
+import { createMembershipRequest, createShift, createUser } from './factories';
 import {
   addMembership,
   createOrganizationWithType,
@@ -99,7 +100,7 @@ describe('TimeTrackingService.getCheckInContext', () => {
       volunteer.checkInId,
     );
 
-    expect(result?.volunteer.id).toBe(volunteer.id);
+    expect(result?.volunteer?.id).toBe(volunteer.id);
     expect(result?.openTimeEntries.map((e) => e.id)).toEqual([visibleEntry.id]);
     // toContain, not toEqual: other specs share this context org and may add
     // child units, which are eligible too via the ancestor walk.
@@ -111,7 +112,7 @@ describe('TimeTrackingService.getCheckInContext', () => {
     );
   });
 
-  it('returns null when the volunteer is not a member of any caller-manageable unit', async () => {
+  it('returns a context with volunteer null when the volunteer is unrelated to every caller-manageable unit', async () => {
     // Second org where the CALLER has check-in:manage but the volunteer is
     // NOT a member.
     const other = await createOrganizationWithType(
@@ -151,8 +152,25 @@ describe('TimeTrackingService.getCheckInContext', () => {
       volunteer.checkInId,
     );
 
-    // No overlap between the caller's check-in:manage units and the
-    // volunteer's memberships: null, not empty lists.
+    // The caller manages units, so the QR code resolves to a context, but
+    // nothing relates the volunteer to them: no identity, no entries (ADR 0001).
+    expect(result).toEqual({
+      volunteer: null,
+      eligibleOrganizationUnits: [],
+      pendingOrganizationUnits: [],
+      openTimeEntries: [],
+    });
+  });
+
+  it('returns null for a caller without any check-in:manage unit', async () => {
+    const volunteer = await createUser(db);
+    const plainCaller = await createUser(db); // no memberships anywhere
+
+    const result = await service.getCheckInContext(
+      plainCaller.id,
+      volunteer.checkInId,
+    );
+
     expect(result).toBeNull();
   });
 
@@ -293,6 +311,75 @@ describe('TimeTrackingService.getCheckInContext', () => {
       await membershipService.filterUnitsWhereMemberOrAncestor(user.id, []),
     ).toEqual(new Set());
   });
+
+  it('reveals the volunteer when they have a pending request to a managed unit', async () => {
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId,
+    });
+
+    const result = await service.getCheckInContext(
+      testUserId,
+      volunteer.checkInId,
+    );
+
+    expect(result?.volunteer?.id).toBe(volunteer.id);
+    expect(result?.pendingOrganizationUnits.map((u) => u.id)).toContain(
+      organizationUnitId,
+    );
+    expect(result?.eligibleOrganizationUnits).toEqual([]);
+  });
+
+  it('filterUnitsWithPendingRequest matches pending requests on the unit or an ancestor only', async () => {
+    const membershipService = app.get(MembershipService);
+    const org = await createOrganizationWithType(
+      db,
+      `Pending ${crypto.randomUUID()}`,
+    );
+    const parentUnit = await createUnit(db, {
+      organizationId: org.organization.id,
+      typeId: org.type.id,
+      name: 'Pending Parent',
+    });
+    const childUnit = await createUnit(db, {
+      organizationId: org.organization.id,
+      typeId: org.type.id,
+      name: 'Pending Child',
+      parentId: parentUnit.id,
+    });
+    const otherOrg = await createOrganizationWithType(
+      db,
+      `PendingOther ${crypto.randomUUID()}`,
+    );
+    const otherUnit = await createUnit(db, {
+      organizationId: otherOrg.organization.id,
+      typeId: otherOrg.type.id,
+      name: 'Pending Other',
+    });
+
+    const user = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: user.id,
+      organizationUnitId: parentUnit.id,
+    });
+    // Non-pending requests must not count.
+    await createMembershipRequest(db, {
+      userId: user.id,
+      organizationUnitId: otherUnit.id,
+      status: MembershipRequestStatus.REJECTED,
+    });
+
+    const result = await membershipService.filterUnitsWithPendingRequest(
+      user.id,
+      [parentUnit.id, childUnit.id, otherUnit.id, 'does-not-exist'],
+    );
+
+    expect([...result].sort()).toEqual([childUnit.id, parentUnit.id].sort());
+    expect(
+      await membershipService.filterUnitsWithPendingRequest(user.id, []),
+    ).toEqual(new Set());
+  });
 });
 
 describe('checkInContext query', () => {
@@ -312,6 +399,39 @@ describe('checkInContext query', () => {
   afterEach(() => {
     setAuthMockUserId(testUserId);
   });
+
+  const insertOpenEntryFor = async (volunteerId: string, unitId: string) => {
+    await db.insert(schema.timeEntries).values({
+      volunteerId,
+      organizationUnitId: unitId,
+      startedAt: new Date(),
+      endedAt: null,
+    });
+  };
+
+  // Gives `userId` check-in:manage on `unitId` via a role in `organizationId`.
+  const grantCheckInManage = async (
+    organizationId: string,
+    unitId: string,
+    userId: string,
+  ) => {
+    const permission = await db.query.permissions.findFirst({
+      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
+    });
+    if (!permission) {
+      throw new Error('CHECK_IN_MANAGE permission not seeded');
+    }
+    const role = await createRole(db, { organizationId });
+    await grantPermissionToRole(db, {
+      roleId: role.id,
+      permissionId: permission.id,
+    });
+    const membership = await addMembership(db, userId, unitId);
+    await assignRoleToMembership(db, {
+      membershipId: membership.id,
+      roleId: role.id,
+    });
+  };
 
   it('returns volunteer, eligible units and open entries', async () => {
     const volunteer = await createUser(db);
@@ -445,30 +565,127 @@ describe('checkInContext query', () => {
     expect(data.checkInContext).toBeNull();
   });
 
-  it('returns null for a caller with no check-in:manage overlap', async () => {
+  const unrelatedQuery = `
+    query CheckInContext($checkInId: String!) {
+      checkInContext(checkInId: $checkInId) {
+        volunteer { id name }
+        eligibleOrganizationUnits { id }
+        pendingOrganizationUnits { id }
+        openTimeEntries { id }
+      }
+    }
+  `;
+
+  it('returns null when the caller has no check-in:manage unit', async () => {
     const volunteer = await createUser(db);
     await addMembership(db, volunteer.id, organizationUnitId);
 
-    const outsider = await createUser(db); // no memberships anywhere
-    setAuthMockUserId(outsider.id);
+    const plainCaller = await createUser(db); // no memberships anywhere
+    setAuthMockUserId(plainCaller.id);
 
     const data = await graphqlRequestRequiringData<{
       checkInContext: null;
     }>(
       app,
-      {
-        query: `
-          query CheckInContext($checkInId: String!) {
-            checkInContext(checkInId: $checkInId) {
-              volunteer { id }
-            }
-          }
-        `,
-        variables: { checkInId: volunteer.checkInId },
-      },
+      { query: unrelatedQuery, variables: { checkInId: volunteer.checkInId } },
       'checkInContext',
     );
 
     expect(data.checkInContext).toBeNull();
+  });
+
+  it('returns a context with volunteer null for an unrelated volunteer', async () => {
+    // Caller (the context test user) manages unit A; the volunteer has no
+    // membership or request anywhere.
+    const volunteer = await createUser(db);
+    await insertOpenEntryFor(volunteer.id, organizationUnitId);
+
+    const data = await graphqlRequestRequiringData<{
+      checkInContext: {
+        volunteer: null;
+        eligibleOrganizationUnits: unknown[];
+        pendingOrganizationUnits: unknown[];
+        openTimeEntries: unknown[];
+      };
+    }>(
+      app,
+      { query: unrelatedQuery, variables: { checkInId: volunteer.checkInId } },
+      'checkInContext',
+    );
+
+    expect(data.checkInContext).toEqual({
+      volunteer: null,
+      eligibleOrganizationUnits: [],
+      pendingOrganizationUnits: [],
+      openTimeEntries: [],
+    });
+  });
+
+  it('reveals the volunteer when they have a pending request to a managed unit', async () => {
+    const volunteer = await createUser(db);
+    const org = await createOrganizationWithType(
+      db,
+      `PendingGql ${crypto.randomUUID()}`,
+    );
+    const unitA = await createUnit(db, {
+      organizationId: org.organization.id,
+      typeId: org.type.id,
+      name: 'Pending Unit A',
+    });
+    await grantCheckInManage(org.organization.id, unitA.id, testUserId);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitA.id,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInContext: {
+        volunteer: { id: string };
+        eligibleOrganizationUnits: unknown[];
+        pendingOrganizationUnits: Array<{ id: string }>;
+      };
+    }>(
+      app,
+      { query: unrelatedQuery, variables: { checkInId: volunteer.checkInId } },
+      'checkInContext',
+    );
+
+    expect(data.checkInContext.volunteer.id).toBe(volunteer.id);
+    expect(data.checkInContext.eligibleOrganizationUnits).toEqual([]);
+    expect(data.checkInContext.pendingOrganizationUnits).toEqual([
+      { id: unitA.id },
+    ]);
+  });
+
+  it('does not reveal the volunteer for a pending request to an unmanaged unit', async () => {
+    const volunteer = await createUser(db);
+    // Caller manages the context unit but has no permission in this org.
+    const foreign = await createOrganizationWithType(
+      db,
+      `ForeignPending ${crypto.randomUUID()}`,
+    );
+    const foreignUnit = await createUnit(db, {
+      organizationId: foreign.organization.id,
+      typeId: foreign.type.id,
+      name: 'Foreign Pending Unit',
+    });
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: foreignUnit.id,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInContext: {
+        volunteer: null;
+        pendingOrganizationUnits: unknown[];
+      };
+    }>(
+      app,
+      { query: unrelatedQuery, variables: { checkInId: volunteer.checkInId } },
+      'checkInContext',
+    );
+
+    expect(data.checkInContext.volunteer).toBeNull();
+    expect(data.checkInContext.pendingOrganizationUnits).toEqual([]);
   });
 });

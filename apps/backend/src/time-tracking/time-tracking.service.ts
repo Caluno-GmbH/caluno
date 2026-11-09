@@ -633,18 +633,24 @@ export class TimeTrackingService {
 
   /**
    * Cross-org-unit check-in context for the volunteering-side decide page.
-   * Intentionally not scoped by ctx.organizationUnitId: eligibility is the
-   * intersection of the caller's check-in:manage units and the volunteer's
-   * memberships, enforced here (mirrors the ungated checkIn/checkOut mutations).
-   * Returns null when that intersection is empty, so the query never leaks
-   * the volunteer's identity to callers with no legitimate relationship.
+   * Intentionally not scoped by ctx.organizationUnitId: it is derived from the
+   * caller's check-in:manage units, enforced here (mirrors the ungated
+   * checkIn/checkOut mutations).
+   *
+   * Returns null when the caller manages no unit or the check-in ID is
+   * unknown. Otherwise, per ADR 0001, any volunteer's QR code resolves: the
+   * volunteer's identity is only revealed when they are related to a managed
+   * unit (membership, or a pending request, on the unit or an ancestor).
+   * For an unrelated volunteer `volunteer` is null and every list is empty, so
+   * the response carries no name, avatar, email or ID.
    */
   async getCheckInContext(
     callerUserId: string,
     checkInId: string,
   ): Promise<{
-    volunteer: UserEntity;
+    volunteer: UserEntity | null;
     eligibleOrganizationUnits: schema.OrganizationUnitEntity[];
+    pendingOrganizationUnits: schema.OrganizationUnitEntity[];
     openTimeEntries: TimeEntryEntityWithRelations[];
   } | null> {
     const volunteer = await this.userService.findByCheckInId(checkInId);
@@ -657,42 +663,57 @@ export class TimeTrackingService {
         callerUserId,
         PERMISSIONS.CHECK_IN_MANAGE,
       );
-
-    // Batched: one round of queries for all units, not two per unit.
-    const eligibleUnitIds =
-      await this._membershipService.filterUnitsWhereMemberOrAncestor(
-        volunteer.id,
-        manageableUnits.map((unit) => unit.id),
-      );
-    const eligibleUnits = manageableUnits.filter((unit) =>
-      eligibleUnitIds.has(unit.id),
-    );
-    eligibleUnits.sort((a, b) => a.name.localeCompare(b.name));
-
-    // No overlap between the caller's check-in:manage units and the
-    // volunteer's memberships: the caller has no legitimate relationship to
-    // this QR code, so don't leak the volunteer's identity.
-    if (eligibleUnits.length === 0) {
+    if (manageableUnits.length === 0) {
       return null;
     }
 
-    const openTimeEntries = await this.db.query.timeEntries.findMany({
-      where: {
-        volunteerId: volunteer.id,
-        organizationUnitId: { in: eligibleUnits.map((unit) => unit.id) },
-        endedAt: { isNull: true },
-      },
-      // Eager-load shiftInstance: the TimeEntry.shiftInstance field
-      // resolver falls back to ShiftService.findInstanceById, which is
-      // scoped to ctx.organizationUnitId — unavailable/wrong for this
-      // cross-unit (and often headerless) query.
-      with: { shiftInstance: true },
-      orderBy: { startedAt: 'asc' },
-    });
+    // Batched: one round of queries for all units, not two per unit.
+    const manageableUnitIds = manageableUnits.map((unit) => unit.id);
+    const [eligibleUnitIds, pendingUnitIds] = await Promise.all([
+      this._membershipService.filterUnitsWhereMemberOrAncestor(
+        volunteer.id,
+        manageableUnitIds,
+      ),
+      this._membershipService.filterUnitsWithPendingRequest(
+        volunteer.id,
+        manageableUnitIds,
+      ),
+    ]);
+    const byName = (
+      a: schema.OrganizationUnitEntity,
+      b: schema.OrganizationUnitEntity,
+    ) => a.name.localeCompare(b.name);
+    const eligibleUnits = manageableUnits
+      .filter((unit) => eligibleUnitIds.has(unit.id))
+      .sort(byName);
+    const pendingUnits = manageableUnits
+      .filter((unit) => pendingUnitIds.has(unit.id))
+      .sort(byName);
+
+    const openTimeEntries =
+      eligibleUnits.length === 0
+        ? []
+        : await this.db.query.timeEntries.findMany({
+            where: {
+              volunteerId: volunteer.id,
+              organizationUnitId: { in: eligibleUnits.map((unit) => unit.id) },
+              endedAt: { isNull: true },
+            },
+            // Eager-load shiftInstance: the TimeEntry.shiftInstance field
+            // resolver falls back to ShiftService.findInstanceById, which is
+            // scoped to ctx.organizationUnitId — unavailable/wrong for this
+            // cross-unit (and often headerless) query.
+            with: { shiftInstance: true },
+            orderBy: { startedAt: 'asc' },
+          });
+
+    // No relationship to any managed unit: don't leak the volunteer's identity.
+    const isRelated = eligibleUnits.length > 0 || pendingUnits.length > 0;
 
     return {
-      volunteer,
+      volunteer: isRelated ? volunteer : null,
       eligibleOrganizationUnits: eligibleUnits,
+      pendingOrganizationUnits: pendingUnits,
       openTimeEntries,
     };
   }

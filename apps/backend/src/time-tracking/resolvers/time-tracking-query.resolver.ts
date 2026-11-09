@@ -158,9 +158,9 @@ export class TimeTrackingQueryResolver {
   }
 
   // Cross-org-unit check-in context: intentionally NOT @Permissions()-gated
-  // (like checkIn/checkOut); the service intersects the caller's
-  // check-in:manage units with the volunteer's memberships and returns null
-  // when that intersection is empty.
+  // (like checkIn/checkOut); the service derives it from the caller's
+  // check-in:manage units, returns null when there are none, and only reveals
+  // the volunteer when related to a managed unit (ADR 0001).
   @Query(() => CheckInContext, { nullable: true })
   async checkInContext(
     @Args('checkInId') checkInId: string,
@@ -175,9 +175,12 @@ export class TimeTrackingQueryResolver {
     }
 
     return {
-      volunteer: this.userMapper.toModelOrThrow(context.volunteer),
+      volunteer: this.userMapper.toModel(context.volunteer),
       eligibleOrganizationUnits: this.organizationUnitMapper.toArray(
         context.eligibleOrganizationUnits,
+      ),
+      pendingOrganizationUnits: this.organizationUnitMapper.toArray(
+        context.pendingOrganizationUnits,
       ),
       openTimeEntries: this.timeEntryMapper.toArray(context.openTimeEntries),
     };
