@@ -297,7 +297,7 @@ export class MembershipService {
   async findPendingMembershipRequest(
     userId: string,
     organizationUnitId: string,
-  ): Promise<{ id: string } | undefined> {
+  ): Promise<{ id: string; organizationUnitId: string } | undefined> {
     // Ordered self-first, so the nearest unit with a request wins.
     const unitIds =
       await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
@@ -317,9 +317,43 @@ export class MembershipService {
       const match = requests.find(
         (request) => request.organizationUnitId === unitId,
       );
-      if (match) return { id: match.id };
+      if (match) return { id: match.id, organizationUnitId: unitId };
     }
     return undefined;
+  }
+
+  /**
+   * Resolves a PENDING request that the check-in desk of `contextUnitId` may
+   * approve: it must belong to a volunteer and target the context unit or one
+   * of its ancestors (a pending request to an ancestor counts for the selected
+   * unit). Anything else is reported as not found, so request ids of other
+   * units are not confirmed to exist.
+   */
+  async findCheckInApprovableRequest(
+    requestId: string,
+    contextUnitId: string,
+  ): Promise<{ id: string; userId: string; organizationUnitId: string }> {
+    const request = await this.db.query.membershipRequests.findFirst({
+      where: { id: requestId, status: MembershipRequestStatus.PENDING },
+      columns: { id: true, userId: true, organizationUnitId: true },
+    });
+    if (!request?.userId || !request.organizationUnitId) {
+      throw new NotFoundGraphQLError('Membership request not found');
+    }
+
+    const unitIds =
+      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+        contextUnitId,
+      );
+    if (!unitIds.includes(request.organizationUnitId)) {
+      throw new NotFoundGraphQLError('Membership request not found');
+    }
+
+    return {
+      id: request.id,
+      userId: request.userId,
+      organizationUnitId: request.organizationUnitId,
+    };
   }
 
   async getPendingOrganizationUnitIds(userId: string): Promise<string[]> {

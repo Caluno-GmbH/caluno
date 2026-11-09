@@ -545,6 +545,7 @@ describe('checkInVolunteerRequiredForms query', () => {
   let callerUserId: string;
   let unitId: string;
   let organizationId: string;
+  let typeId: string;
 
   beforeAll(async () => {
     const context = await getGraphqlTestContext();
@@ -557,6 +558,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       `RequiredForms ${crypto.randomUUID()}`,
     );
     organizationId = org.organization.id;
+    typeId = org.type.id;
     const unit = await createUnit(db, {
       organizationId: org.organization.id,
       typeId: org.type.id,
@@ -717,6 +719,61 @@ describe('checkInVolunteerRequiredForms query', () => {
     ]);
   });
 
+  it("returns the parent unit's forms for a pending request on the parent while the child is selected", async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Required forms child',
+      parentId: unitId,
+    });
+    const { form: childForm } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: childUnit.id,
+      createdById: callerUserId,
+      name: 'Child-only form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: childUnit.id,
+      formIds: [childForm.id],
+    });
+    const { form: parentForm } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: unitId,
+      createdById: callerUserId,
+      name: 'Parent request form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: unitId,
+      formIds: [parentForm.id],
+    });
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInVolunteerRequiredForms: Array<{
+        form: { id: string; name: string };
+        submitted: boolean;
+      }>;
+    }>(
+      app,
+      {
+        query: CHECK_IN_REQUIRED_FORMS,
+        variables: { checkInId: volunteer.checkInId },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInVolunteerRequiredForms',
+    );
+
+    expect(
+      data.checkInVolunteerRequiredForms.map((status) => status.form.id),
+    ).toEqual([parentForm.id]);
+  });
+
   it('returns NOT_FOUND for an unknown check-in id', async () => {
     const response = await graphqlRequest(app, {
       query: CHECK_IN_REQUIRED_FORMS,
@@ -737,7 +794,7 @@ describe('checkInVolunteerRequiredForms query', () => {
     });
 
     expect(response.errors?.[0]?.message).toBe(
-      'Volunteer is not a member of this unit',
+      'Volunteer is not a member of and has no pending request to this unit',
     );
   });
 });
@@ -1090,6 +1147,8 @@ describe('checkInApproveMembershipRequest mutation', () => {
   let db: Database;
   let callerUserId: string;
   let unitId: string;
+  let organizationId: string;
+  let typeId: string;
 
   beforeAll(async () => {
     const context = await getGraphqlTestContext();
@@ -1101,6 +1160,8 @@ describe('checkInApproveMembershipRequest mutation', () => {
       db,
       `ApproveRequest ${crypto.randomUUID()}`,
     );
+    organizationId = org.organization.id;
+    typeId = org.type.id;
     const unit = await createUnit(db, {
       organizationId: org.organization.id,
       typeId: org.type.id,
@@ -1168,6 +1229,159 @@ describe('checkInApproveMembershipRequest mutation', () => {
       where: { userId: volunteer.id, organizationUnitId: unitId },
     });
     expect(membership).toBeTruthy();
+  });
+
+  it('approves a parent-unit request from the child-unit context, granting membership in the parent', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const parentRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInApproveMembershipRequest: { id: string; status: string };
+    }>(
+      app,
+      {
+        query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+        variables: { requestId: parentRequest.id },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInApproveMembershipRequest',
+    );
+
+    expect(data.checkInApproveMembershipRequest.status).toBe('ACCEPTED');
+    const parentMembership = await db.query.memberships.findFirst({
+      where: { userId: volunteer.id, organizationUnitId: unitId },
+    });
+    expect(parentMembership).toBeTruthy();
+    const childMembership = await db.query.memberships.findFirst({
+      where: { userId: volunteer.id, organizationUnitId: childUnit.id },
+    });
+    expect(childMembership).toBeUndefined();
+  });
+
+  it('returns NOT_FOUND for a request on a sibling unit of the context unit', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child A',
+      parentId: unitId,
+    });
+    const siblingUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child B',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const siblingRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: siblingUnit.id,
+    });
+
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: siblingRequest.id },
+      headers: { 'x-organization-unit-id': childUnit.id },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+    const stillPending = await db.query.membershipRequests.findFirst({
+      where: { id: siblingRequest.id },
+    });
+    expect(stillPending?.status).toBe('PENDING');
+  });
+
+  it('returns NOT_FOUND for a request on a child unit while the parent is the context', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve descendant',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const childRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: childUnit.id,
+    });
+
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: childRequest.id },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+  });
+
+  it('returns CONFLICT while a required form of the request unit is missing, and approves once submitted', async () => {
+    // The parent's request is approved from the child context, so the
+    // parent's required forms gate it.
+    const formsParent = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve forms parent',
+      parentId: unitId,
+    });
+    const formsChild = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve forms grandchild',
+      parentId: formsParent.id,
+    });
+    const { form } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: formsParent.id,
+      createdById: callerUserId,
+      name: 'Approve gate form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: formsParent.id,
+      formIds: [form.id],
+    });
+    const volunteer = await createUser(db);
+    const request = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: formsParent.id,
+    });
+
+    const blocked = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: request.id },
+      headers: { 'x-organization-unit-id': formsChild.id },
+    });
+    expect(blocked.errors?.[0]?.extensions?.code).toBe('CONFLICT');
+    const stillPending = await db.query.membershipRequests.findFirst({
+      where: { id: request.id },
+    });
+    expect(stillPending?.status).toBe('PENDING');
+
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: volunteer.id,
+      organizationUnitId: formsParent.id,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInApproveMembershipRequest: { id: string; status: string };
+    }>(
+      app,
+      {
+        query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+        variables: { requestId: request.id },
+        headers: { 'x-organization-unit-id': formsChild.id },
+      },
+      'checkInApproveMembershipRequest',
+    );
+    expect(data.checkInApproveMembershipRequest.status).toBe('ACCEPTED');
   });
 });
 

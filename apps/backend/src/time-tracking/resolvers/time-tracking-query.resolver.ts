@@ -118,26 +118,33 @@ export class TimeTrackingQueryResolver {
     const volunteerId =
       await this.timeTrackingService.resolveCheckInVolunteerId(checkInId);
 
-    // A pending applicant sees the unit's forms too, so they can be filled in
-    // at the desk before the request is approved.
-    const isRelated =
-      (await this.membershipService.isMemberOfUnitOrAncestor(
-        volunteerId,
-        context.organizationUnitId,
-      )) ||
-      (await this.membershipService.findPendingMembershipRequest(
-        volunteerId,
-        context.organizationUnitId,
-      )) !== undefined;
-    if (!isRelated) {
-      throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
+    // A member sees the selected unit's forms. A pending applicant sees the
+    // forms of the unit their request targets (possibly an ancestor), since
+    // those gate approval, so they can be filled in at the desk.
+    let targetUnitId = context.organizationUnitId;
+    const isMember = await this.membershipService.isMemberOfUnitOrAncestor(
+      volunteerId,
+      context.organizationUnitId,
+    );
+    if (!isMember) {
+      const pendingRequest =
+        await this.membershipService.findPendingMembershipRequest(
+          volunteerId,
+          context.organizationUnitId,
+        );
+      if (!pendingRequest) {
+        throw new ForbiddenGraphQLError(
+          'Volunteer is not a member of and has no pending request to this unit',
+        );
+      }
+      targetUnitId = pendingRequest.organizationUnitId;
     }
 
     const statuses = await this.requiredFormService.getRequiredFormStatuses(
       volunteerId,
       {
         targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-        targetId: context.organizationUnitId,
+        targetId: targetUnitId,
       },
     );
 

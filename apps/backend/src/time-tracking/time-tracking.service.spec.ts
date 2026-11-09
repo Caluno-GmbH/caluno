@@ -353,7 +353,9 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
 describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
   const membershipService = () => ({
     isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
-    findPendingMembershipRequest: jest.fn().mockResolvedValue({ id: 'mr-1' }),
+    findPendingMembershipRequest: jest
+      .fn()
+      .mockResolvedValue({ id: 'mr-1', organizationUnitId: 'ou-1' }),
     findMembershipInUnits: jest.fn().mockResolvedValue(null),
   });
   const shiftService = () => ({

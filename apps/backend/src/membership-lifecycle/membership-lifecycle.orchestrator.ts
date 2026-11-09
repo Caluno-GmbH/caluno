@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventService } from '../event/event.service';
+import { ConflictGraphQLError } from '../graphql/errors';
 import { MembershipService } from '../membership/membership.service';
 import type {
   MembershipRequestEntity,
@@ -50,6 +51,40 @@ export class MembershipLifecycleOrchestrator {
     );
 
     return membershipRequest;
+  }
+
+  /**
+   * Check-in desk approval: the request may target the context unit or an
+   * ancestor of it, and membership is granted in the request's own unit.
+   * Required forms of that unit are a hard gate.
+   */
+  async checkInApproveMembershipRequest(
+    requestId: string,
+    contextUnitId: string,
+    reviewerId: string,
+  ): Promise<MembershipRequestEntity> {
+    const request = await this.membershipService.findCheckInApprovableRequest(
+      requestId,
+      contextUnitId,
+    );
+
+    const requiredFormsSatisfied =
+      await this.requiredFormService.areRequiredFormsSatisfied(request.userId, {
+        targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+        targetId: request.organizationUnitId,
+      });
+    if (!requiredFormsSatisfied) {
+      throw new ConflictGraphQLError(
+        'Cannot approve: required forms are not submitted.',
+      );
+    }
+
+    return this.approveMembershipRequest(
+      request.id,
+      request.organizationUnitId,
+      reviewerId,
+      'check_in',
+    );
   }
 
   async rejectMembershipRequest(
