@@ -4,13 +4,17 @@ import { plainToInstance } from 'class-transformer';
 import { AuthService } from '../../auth/auth.service';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
-import { ForbiddenGraphQLError } from '../../graphql/errors';
+import {
+  ForbiddenGraphQLError,
+  NotFoundGraphQLError,
+} from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { RequiredFormRef } from '../../organization/models/organization-unit-required-form.model';
 import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequiredFormRefMapper } from '../../requirement-profile/mappers/required-form-ref.mapper';
 import { RequirementForm } from '../../requirement-profile/models/requirement-form.model';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
+import { UserService } from '../../user/user.service';
 import { ShiftInviteStatus } from '../enums';
 import { CreateShiftInput } from '../inputs/create-shift.input';
 import { DuplicateShiftInput } from '../inputs/duplicate-shift.input';
@@ -43,6 +47,7 @@ export class ShiftMutationResolver {
     private readonly authService: AuthService,
     private readonly requiredFormService: RequiredFormService,
     private readonly requiredFormRefMapper: RequiredFormRefMapper,
+    private readonly userService: UserService,
   ) {}
 
   private async assertCanManageInviteForUser(
@@ -397,16 +402,25 @@ export class ShiftMutationResolver {
 
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Mutation(() => ShiftInstance)
-  async checkInInviteToShiftInstance(
+  async checkInAddToShiftInstance(
+    @Args('checkInId') checkInId: string,
     @Args('shiftInstanceId', { type: () => ID }) shiftInstanceId: string,
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('allowOverCapacity', { defaultValue: false })
+    allowOverCapacity: boolean,
     @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
   ): Promise<ShiftInstance> {
-    const instance = await this.shiftService.inviteVolunteerToShiftInstance(
-      shiftInstanceId,
-      volunteerId,
-      context.organizationUnitId,
-    );
+    const volunteer = await this.userService.findByCheckInId(checkInId);
+    if (!volunteer) {
+      throw new NotFoundGraphQLError('Volunteer not found');
+    }
+    const instance =
+      await this.shiftService.addVolunteerToShiftInstanceAtCheckIn(
+        shiftInstanceId,
+        volunteer.id,
+        context.organizationUnitId,
+        { allowOverCapacity, actorUserId: session.user.id },
+      );
     return this.shiftInstanceMapper.toModelOrThrow(instance);
   }
 }
