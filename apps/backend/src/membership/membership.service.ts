@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { AuthService } from '../auth/auth.service';
 import { DEFAULT_MEMBER_ROLE_NAME, PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
@@ -32,6 +32,9 @@ import {
   type MembershipRequestMetadata,
 } from './schemas/membership-request.schema';
 
+/** Minimum gap between two org unit invitation emails to the same volunteer. */
+export const ORGANIZATION_UNIT_INVITATION_COOLDOWN_MS = 10 * 60_000;
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,6 +51,38 @@ export class MembershipService {
     private readonly postHogService: PostHogService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
+
+  /**
+   * Atomically claims the right to send an org unit invitation email: a single
+   * upsert that only takes effect when no invitation went out within the
+   * cooldown, so concurrent callers cannot both send. Returns true when the
+   * send is allowed.
+   */
+  async claimOrganizationUnitInvitation(
+    userId: string,
+    organizationUnitId: string,
+    now: Date = new Date(),
+  ): Promise<boolean> {
+    const cooldownStart = new Date(
+      now.getTime() - ORGANIZATION_UNIT_INVITATION_COOLDOWN_MS,
+    );
+    const claimed = await this.db
+      .insert(schema.organizationUnitInvitations)
+      .values({ userId, organizationUnitId, lastSentAt: now })
+      .onConflictDoUpdate({
+        target: [
+          schema.organizationUnitInvitations.userId,
+          schema.organizationUnitInvitations.organizationUnitId,
+        ],
+        set: { lastSentAt: now },
+        setWhere: lte(
+          schema.organizationUnitInvitations.lastSentAt,
+          cooldownStart,
+        ),
+      })
+      .returning({ userId: schema.organizationUnitInvitations.userId });
+    return claimed.length > 0;
+  }
 
   private appendIntendedIdsToMetadata(
     metadata: MembershipRequestMetadata,

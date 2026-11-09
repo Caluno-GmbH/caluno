@@ -1190,8 +1190,8 @@ describe('checkInInviteToShiftInstance mutation', () => {
 
 describe('checkInInviteToOrganization mutation', () => {
   const CHECK_IN_INVITE_TO_ORGANIZATION = `
-    mutation CheckInInviteToOrganization($volunteerId: ID!) {
-      checkInInviteToOrganization(volunteerId: $volunteerId)
+    mutation CheckInInviteToOrganization($checkInId: String!) {
+      checkInInviteToOrganization(checkInId: $checkInId)
     }
   `;
 
@@ -1247,7 +1247,7 @@ describe('checkInInviteToOrganization mutation', () => {
       app,
       {
         query: CHECK_IN_INVITE_TO_ORGANIZATION,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInInviteToOrganization',
@@ -1265,14 +1265,14 @@ describe('checkInInviteToOrganization mutation', () => {
     expect(request).toBeUndefined();
   });
 
-  it('rejects an unknown volunteer id', async () => {
+  it('rejects an unknown check-in id', async () => {
     const response = await graphqlRequest(app, {
       query: CHECK_IN_INVITE_TO_ORGANIZATION,
-      variables: { volunteerId: crypto.randomUUID() },
+      variables: { checkInId: crypto.randomUUID() },
       headers: { 'x-organization-unit-id': unitId },
     });
 
-    expect(response.errors?.[0]?.message).toBe('User not found');
+    expect(response.errors?.[0]?.message).toBe('Volunteer not found');
   });
 });
 

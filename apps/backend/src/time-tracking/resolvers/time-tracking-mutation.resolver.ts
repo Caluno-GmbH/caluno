@@ -163,9 +163,11 @@ export class TimeTrackingMutationResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Mutation(() => Boolean)
   async checkInInviteToOrganization(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<boolean> {
+    const volunteerId =
+      await this.timeTrackingService.resolveCheckInVolunteerId(checkInId);
     await this.timeTrackingService.inviteVolunteerToOrganization(
       context.organizationUnitId,
       volunteerId,

@@ -83,6 +83,7 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
   it('captures organization_unit_invite for the volunteer after the email is queued', async () => {
     const capture = jest.fn();
     const notifyOrganizationUnitInvited = jest.fn();
+    const claimOrganizationUnitInvitation = jest.fn().mockResolvedValue(true);
     const db = {
       query: {
         organizationUnits: {
@@ -96,7 +97,7 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
     };
     const service = new TimeTrackingService(
       db as never,
-      {} as never,
+      { claimOrganizationUnitInvitation } as never,
       {} as never,
       { capture } as unknown as PostHogService,
       {} as never,
@@ -119,6 +120,40 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
         source: 'check_in',
       },
     });
+  });
+
+  it('skips the email and PostHog event while the invitation cooldown is active', async () => {
+    const capture = jest.fn();
+    const notifyOrganizationUnitInvited = jest.fn();
+    const db = {
+      query: {
+        organizationUnits: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'ou-1',
+            name: 'Unit',
+            organizationId: 'org-1',
+          }),
+        },
+      },
+    };
+    const service = new TimeTrackingService(
+      db as never,
+      {
+        claimOrganizationUnitInvitation: jest.fn().mockResolvedValue(false),
+      } as never,
+      {} as never,
+      { capture } as unknown as PostHogService,
+      {} as never,
+      { findById: jest.fn().mockResolvedValue({ id: 'volunteer-1' }) } as never,
+      { notifyOrganizationUnitInvited } as never,
+      {} as never,
+      { emit: jest.fn() } as never,
+    );
+
+    await service.inviteVolunteerToOrganization('ou-1', 'volunteer-1');
+
+    expect(notifyOrganizationUnitInvited).not.toHaveBeenCalled();
+    expect(capture).not.toHaveBeenCalled();
   });
 });
 

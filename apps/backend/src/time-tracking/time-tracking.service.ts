@@ -740,6 +740,14 @@ export class TimeTrackingService {
       throw new NotFoundGraphQLError('User not found');
     }
 
+    // Cooldown: a skipped send is indistinguishable to the caller.
+    const claimed =
+      await this._membershipService.claimOrganizationUnitInvitation(
+        volunteerId,
+        organizationUnitId,
+      );
+    if (!claimed) return;
+
     this.notificationService.notifyOrganizationUnitInvited({
       organizationUnitId,
       organizationUnitName: organizationUnit.name,
