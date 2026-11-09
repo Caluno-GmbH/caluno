@@ -5,6 +5,7 @@ Platform-agnostic data layer using repository pattern + codegen for graphql inte
 ## Overview
 
 This package provides a clean separation between:
+
 - **Core repositories** (pure TypeScript): callable from server components, api routes, node.js scripts
 - **React hooks** (TanStack Query wrappers): for client components and mobile app
 
@@ -114,6 +115,7 @@ const { data: session } = authClient.useSession();
 ### Automatic Generation
 
 Code generation happens automatically:
+
 - ✅ On `bun install` (via postinstall script)
 - ✅ Before `bun run dev` (via turbo dependencies)
 - ✅ Before `bun run build` (via turbo dependencies)
@@ -155,6 +157,7 @@ turbo run codegen:watch --filter=@repo/data
 ### Generated Files
 
 Types are generated in `src/generated/graphql.ts` from:
+
 - **Schema**: `apps/backend/src/schema.gql`
 - **Operations**: `src/**/*.graphql` (query/mutation definitions)
 
