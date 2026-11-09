@@ -422,7 +422,7 @@ export type SetEventRequiredFormsMutation = { setEventRequiredForms: Array<{ ord
 export type GetOrganizationUnitMembershipsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetOrganizationUnitMembershipsQuery = { memberships: Array<{ id: string, idVerifiedAt: string | null, user: { id: string, name: string, email: string, image: string | null, checkInId: string }, organizationUnit: { id: string, name: string }, roles: Array<{ id: string, name: string, description: string | null, isInternal: boolean }>, idVerifiedBy: { id: string, name: string } | null }> };
+export type GetOrganizationUnitMembershipsQuery = { memberships: Array<{ id: string, idVerifiedAt: string | null, user: { id: string, name: string, email: string, image: string | null, checkInId: string, preferredName: string | null, birthdate: string | null, gender: string | null, phone: string | null, street: string | null, zip: string | null, city: string | null }, organizationUnit: { id: string, name: string }, roles: Array<{ id: string, name: string, description: string | null, isInternal: boolean }>, idVerifiedBy: { id: string, name: string } | null }> };
 
 export type GetMyMembershipStatusQueryVariables = Exact<{
   organizationUnitId: string;
@@ -2673,6 +2673,13 @@ export const GetOrganizationUnitMembershipsDocument = gql`
       email
       image
       checkInId
+      preferredName
+      birthdate
+      gender
+      phone
+      street
+      zip
+      city
     }
     organizationUnit {
       id

@@ -215,9 +215,9 @@ export const createDocumentFile = async (
   const [file] = await db
     .insert(schema.files)
     .values({
-      storageKey: `test/${crypto.randomUUID()}.pdf`,
+      storageKey: `private/${input.organizationUnitId}/${input.uploadedByUserId}/${crypto.randomUUID()}.pdf`,
       bucket: 'test',
-      visibility: FileVisibility.PUBLIC,
+      visibility: FileVisibility.PRIVATE,
       purpose: FilePurpose.DOCUMENT,
       mimeType: 'application/pdf',
       filename: 'document.pdf',

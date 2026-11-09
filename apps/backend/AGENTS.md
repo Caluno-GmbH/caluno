@@ -15,8 +15,11 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 - `bun run test` - Unit tests (`bun test src`; `src/**/*.spec.ts`). Target a single file with `bun test src/notification/notification.spec.ts` — appending a path to `bun run test` runs the whole suite (bun ORs it with the script's `src` filter).
 - `bun test apps/backend/test/` - Bun integration tests; creates an isolated `${POSTGRES_DB}_test_<pid>_<id>` database per run, migrates/seeds, then drops it when the process exits
 - `bun run --cwd apps/backend test:integration` - Same as `bun test test/` from `apps/backend`
-- `bun run db:generate` - Generate database migrations based on schema changes
-- `bun run db:migrate` - Run drizzle database migrations
+- `bun run db:generate` - Generate OSS/core database migrations (`src/database/migrations`)
+- `bun run db:generate:ee` - Generate EE migrations (`src/ee/migrations`; only when `src/ee` is present)
+- `bun run db:migrate` - Run OSS migrations, then EE migrations when `src/ee` exists
+
+OSS/EE edition boundary (where EE modules, schemas, and migration streams live; what core may import): root `AGENTS.md` → **OSS / Enterprise Edition**. Backend EE code is only under `src/ee/`; it is loaded via `loadEeModules()` from `src/edition/` — never a static import of `ee` from core modules.
 
 ## Testing
 
@@ -94,6 +97,7 @@ the tests actually exercise:
 - **`cancelShiftInstance(db, instanceId)`** — helper to set `isCancelled = true`.
 
 Guidelines:
+
 - Always pass `organizationUnitId` from the test context; never hard-code one.
 - Use `crypto.randomUUID()` in names/emails to avoid collisions when tests run against the same test DB.
 
@@ -200,6 +204,7 @@ src/
 test/
 ```
 Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`, `task`) are self-contained NestJS modules:
+
 ```
 domain/
 ├── domain.module.ts
@@ -229,11 +234,13 @@ domain/
 
 Authenticated file uploads use presigned PUT to Scaleway Object Storage (RustFS locally). Module: `src/storage/`.
 
-| Endpoint                                         | Auth                                          | Purpose                                                 |
-| ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------- |
-| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()`   | Mint presigned PUT URL; creates `files` row (`pending`) |
-| `POST /storage/uploads/:fileId/complete`         | Session (owner)                               | HEAD-verify object; set `uploaded`                      |
-| `POST /storage/objects/:fileId/presign-download` | Session + owner or `requirement-profile:view` | Presigned GET for private files                         |
+| Endpoint                                         | Auth                                        | Purpose                                                 |
+| ------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------- |
+| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()` | Mint presigned PUT URL; creates `files` row (`pending`) |
+| `POST /storage/uploads/:fileId/complete`         | Session (owner)                             | HEAD-verify object; set `uploaded`                      |
+| `POST /storage/objects/:fileId/presign-download` | Session + purpose-specific download authz   | Presigned GET for private files                         |
+
+`FilePurpose.DOCUMENT` (server-rendered contract/timesheet PDFs) is **private** — never under `public/` / permanent `publicUrl`. GraphQL `Contract`/`Invoice.downloadUrl` and REST presign-download mint a short-lived GET after volunteer-or-`accounting:manage` authz (not uploader / `requirement-profile:view`). Other private purposes keep owner or `requirement-profile:view`. `DocumentFileMigrationService` (boot, delete once every env has run) migrates any legacy public DOCUMENT rows.
 
 Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`. Local dev: RustFS via root `docker-compose` (`:9000` API).
 
@@ -246,6 +253,7 @@ Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY
 ## Drizzle
 
 Database schema in `src/database/schema.ts` (re-exports domain schemas; relations in `database/schema.relations.ts`).
+
 - Use the shared column helpers: `...idColumn`, `...timestampColumns` from `database/database-columns`
 - DB is `snake_case`; Drizzle auto-converts to `camelCase` (`casing: 'snake_case'`)
 - Soft deletes via `deletedAt` timestamp — no hard deletes on important records
@@ -256,6 +264,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 ### Querying: Relational Query v2 by default
 
 For fetching entities and their relations, use Relational Query v2:
+
 ```typescript
 const users = await db.query.users.findMany({ where: { id: 1 } });
 ```
@@ -271,7 +280,8 @@ only base-table columns, so those sorts use `select().leftJoin()` with an explic
 ## Known constraints (decision-log extracts — architectural, must stay)
 
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
-- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `profileKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / profileKey-column-align)
+
+- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `profileKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithPaymentProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / profileKey-column-align)
 - **`FormSubmissionStatus` is `SUBMITTED` / `REJECTED` only** (no DRAFT/APPROVED). Gating logic keys off these two. (form-submission-status-simplification)
 - **`RequiredFormTargetType` behavior lives in per-target strategies** under `requirement-profile/targets/` (`RequiredFormTargetRegistry`). Do not add `switch (targetType)` for get/set/resolveOrgUnit — implement a new strategy and register it on the registry. `RequiredFormService.applyEvent/Shift/ShiftInstanceRequiredForms` stay as thin facades for tx callers. (required-form-target-strategies)
 - **No `forwardRef` in `apps/backend`**. Module dependencies must form a DAG. Cycles are broken by extracting lower-level data modules (`OrganizationUnitDataModule`) or by moving cross-domain GraphQL field resolution into the higher-level module (`EventModule` owns the `Shift.event` field).

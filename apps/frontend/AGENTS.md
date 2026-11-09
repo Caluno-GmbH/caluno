@@ -75,6 +75,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 ## Localisation (i18n) — next-intl
 
 Localised with **next-intl** (App Router/RSC). Supported locales `['en','de']`, default/fallback `de`; routing is **URL-prefixed** (`/[locale]/…`). Config in `src/i18n/`: `routing.ts` (locales), `request.ts` (per-request messages), `navigation.ts` (locale-aware nav). Message catalogs are ICU-syntax JSON at `apps/frontend/messages/{en,de}.json`, nested by domain namespace; read copy via `useTranslations('Namespace')` (client) / `getTranslations('Namespace')` (server).
+
 - **Client-side routing — always use `@/i18n/navigation`, never `next/link` or `next/navigation` directly.** It re-exports locale-aware `Link`, `usePathname`, `useRouter`, `getPathname` from `createNavigation(routing)`; these preserve the active locale prefix automatically. Using the raw Next equivalents drops the locale and breaks prefixed routing.
 - **Server-side `redirect`** — import from `@/i18n/navigation` and call it with the locale: `redirect({ href: '/path', locale })`. The locale-aware helper prefixes the path automatically; raw `next/navigation` `redirect` does not.
 - **`notFound`, `useSearchParams`, `useParams`** — keep importing from `next/navigation`; they are not locale-dependent.
@@ -91,6 +92,24 @@ All user-facing strings must come from `messages/{en,de}.json` via `useTranslati
 (client) or `getTranslations` (server). Do not hardcode labels, buttons, headings,
 error messages, or empty-state text in components. Add new keys to both locales and
 keep namespaces/key shapes in sync.
+
+**EE-only copy goes in `messages/ee/{en,de}.json`, never in the shared catalogs.**
+Edition strategy and agent rules: root `AGENTS.md` → **OSS / Enterprise Edition**.
+One file per locale for all EE features (mirrors `src/ee/` being one shared tree
+for all EE code) — the OSS mirror strips any directory literally named `ee`, so
+keys left in `messages/{en,de}.json` ship to OSS even if the feature code doesn't.
+This can be a whole new namespace (e.g. `EeNote`) or EE-only keys nested inside an
+otherwise-OSS namespace (e.g. `Navigation.myNote`); `src/i18n/request.ts` merges
+the ee catalog into the base one via `mergeEeMessages` only when `hasEeEdition()`,
+via a runtime `fs` read of `messages/ee/` (bundler imports would fail OSS
+builds where that directory is stripped). `hasEeEdition()` is true when `src/ee`
+exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
+checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
+so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
+only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
+business logic under `src/ee/`, not in OSS route stubs. Admin nav: contribute
+via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
+(omit → append); merge happens in `components/navigation/admin-nav.ts`.
 
 ### Locale switching
 
@@ -132,6 +151,7 @@ page-level locale redirects.
 ## New Admin features
 
 Always study UI/UX patterns in existing similar features before starting a new one — consistent experience across features.
+
 - List pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/page.tsx`
 - Detail pages: follow `src/app/[locale]/admin/[orgUId]/timesheets/[timeEntryId]/page.tsx`
 - Create pages: use `<FormSheet />`, follow `src/app/[locale]/admin/[orgUId]/@sheet/timesheets/new/page.tsx`

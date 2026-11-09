@@ -12,20 +12,26 @@ export class VolunteerMembershipPage {
     // button stays disabled. Serve the preview iframe a tiny HTML document
     // instead; the real signing mutation still runs against the API. Only the
     // iframe navigation is stubbed, so downloads of the real PDF still work.
-    page.route(/\/document\/[^/]+\.pdf/, (route) => {
-      const request = route.request();
-      if (
-        request.resourceType() === 'document' &&
-        request.frame() !== page.mainFrame()
-      ) {
-        return route.fulfill({
-          status: 200,
-          contentType: 'text/html',
-          body: '<!doctype html><p>preview</p>',
-        });
-      }
-      return route.continue();
-    });
+    //
+    // downloadUrl are now private and resolve to short-lived S3/RustFS presigned GETs
+    // (`…/private/…/*.pdf?X-Amz-…`).
+    page.route(
+      (url) => /\/private\/.+\.pdf$/.test(url.pathname),
+      (route) => {
+        const request = route.request();
+        if (
+          request.resourceType() === 'document' &&
+          request.frame() !== page.mainFrame()
+        ) {
+          return route.fulfill({
+            status: 200,
+            contentType: 'text/html',
+            body: '<!doctype html><p>preview</p>',
+          });
+        }
+        return route.continue();
+      },
+    );
   }
 
   async goto(url: string) {

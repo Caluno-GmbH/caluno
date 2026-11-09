@@ -1,4 +1,5 @@
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { Loader } from '../../graphql/decorators/loader.decorator';
 import { NotFoundGraphQLError } from '../../graphql/errors';
 import { FileService } from '../../storage/services/file.service';
@@ -115,9 +116,14 @@ export class InvoiceFieldResolver {
   @ResolveField(() => String, { nullable: true })
   async downloadUrl(
     @Parent() invoice: MaybeWithRelations,
+    @Session() session: UserSession,
   ): Promise<string | null> {
     if (!invoice.fileId) return null;
-    return this.fileService.resolvePublicUrlForUploadedFile(invoice.fileId);
+    return this.fileService.resolveDocumentDownloadUrl(session.user.id, {
+      fileId: invoice.fileId,
+      volunteerId: invoice.volunteerId,
+      organizationUnitId: invoice.organizationUnitId,
+    });
   }
 
   @ResolveField(() => Boolean, {

@@ -2,6 +2,7 @@
 
 import { PermissionKey } from '@repo/data';
 import {
+  useCurrentOrg,
   useHasPermission,
   useRoles,
   useUpdateMembershipRoles,
@@ -30,6 +31,7 @@ import {
 import { CheckIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   internalRoleKey,
   type TranslatableRole,
@@ -51,6 +53,10 @@ export function RoleSelectCell({
   const [pendingRole, setPendingRole] = useState<{ id: string } | null>(null);
   const router = useRouter();
   const canEdit = useHasPermission(PermissionKey.VolunteerEdit);
+  // Roles are org-wide; the backend only accepts role creation from the top unit.
+  const hasRoleManage = useHasPermission(PermissionKey.RoleManage);
+  const { isRoot } = useCurrentOrg();
+  const canCreateRole = hasRoleManage && isRoot;
   const {
     data: availableRoles,
     isPending: rolesLoading,
@@ -100,7 +106,7 @@ export function RoleSelectCell({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="w-40 p-0"
+          className="w-max min-w-[var(--radix-popover-trigger-width)] max-w-80 p-0"
           align="start"
           side="bottom"
           sideOffset={4}
@@ -136,19 +142,23 @@ export function RoleSelectCell({
                   );
                 })}
               </CommandGroup>
-              <CommandSeparator />
-              <CommandGroup>
-                <CommandItem
-                  className="cursor-pointer"
-                  onSelect={() => {
-                    setOpen(false);
-                    router.push(`/admin/${orgUId}/settings/roles/new`);
-                  }}
-                >
-                  <PlusIcon className="mr-2 size-4" />
-                  {t('select.addCustom')}
-                </CommandItem>
-              </CommandGroup>
+              {canCreateRole && (
+                <>
+                  <CommandSeparator />
+                  <CommandGroup>
+                    <CommandItem
+                      className="cursor-pointer"
+                      onSelect={() => {
+                        setOpen(false);
+                        router.push(`/admin/${orgUId}/settings/roles/new`);
+                      }}
+                    >
+                      <PlusIcon className="mr-2 size-4" />
+                      {t('select.addCustom')}
+                    </CommandItem>
+                  </CommandGroup>
+                </>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
@@ -173,10 +183,10 @@ export function RoleSelectCell({
             <AlertDialogAction
               onClick={() => {
                 if (pendingRole) {
-                  updateRoles({
-                    membershipId,
-                    roleIds: [pendingRole.id],
-                  });
+                  updateRoles(
+                    { membershipId, roleIds: [pendingRole.id] },
+                    { onError: () => toast.error(t('select.updateFailed')) },
+                  );
                 }
                 setPendingRole(null);
               }}

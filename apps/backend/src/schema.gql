@@ -646,7 +646,7 @@ type Membership {
   idVerifiedBy: User
   organizationUnit: OrganizationUnit!
   roles: [Role!]!
-  user: User!
+  user: UserWithProfile!
 }
 
 type MembershipRequest {
@@ -752,7 +752,7 @@ type Mutation {
   updateMyAccountSettings(input: UpdateMyAccountSettingsInput!): User!
   updateMyImage(input: UpdateMyImageInput!): User!
   updateMyLocale(locale: String!): User!
-  updateMyProfile(input: UpdateMyProfileInput!): UserWithProfile!
+  updateMyProfile(input: UpdateMyProfileInput!): UserWithPaymentProfile!
   updateOrganization(id: ID!, input: UpdateOrganizationInput!): Organization!
   updateOrganizationUnit(id: String!, input: UpdateOrganizationUnitInput!): OrganizationUnit!
   updateOrganizationUnitAutomation(input: UpdateOrganizationUnitAutomationInput!, kind: OrganizationUnitAutomationKind!, organizationUnitId: ID!): OrganizationUnitAutomation!
@@ -911,6 +911,7 @@ enum PermissionKey {
   ORG_VIEW
   REQUIREMENT_PROFILE_EDIT
   REQUIREMENT_PROFILE_VIEW
+  ROLE_MANAGE
   SHIFT_EDIT
   SHIFT_VIEW
   VOLUNTEER_EDIT
@@ -952,7 +953,7 @@ type Query {
   invoices(filter: InvoiceFilterInput): [Invoice!]!
   isMemberOfUnitOrAncestor(organizationUnitId: ID!, userId: String!): Boolean!
   manualBaseline(reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline
-  me: UserWithProfile!
+  me: UserWithPaymentProfile!
   members(organizationUnitId: ID!): [User!]!
   membership(organizationUnitId: ID!): Membership
   membershipRequestCount(status: MembershipRequestStatus): Int!
@@ -1021,7 +1022,7 @@ type Query {
   timeEntriesByUser(limit: Int! = 10, offset: Int! = 0, userId: String!): TimeEntryPaginatedResponse!
   timeEntry(id: String!): TimeEntry!
   todoFillAssignmentFilter: TodoFillAssignmentFilter!
-  user(id: String!): UserWithProfile
+  user(id: String!): UserWithPaymentProfile
   volunteerAllowanceStates(shiftInstanceId: ID, volunteerIds: [ID!]!): [VolunteerAllowance!]!
   volunteersNeedingTimesheets(periodEnd: DateTime, periodStart: DateTime): [VolunteerNeedsTimesheet!]!
   weeklyShifts(endsBefore: DateTime = null, eventId: ID, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
@@ -1570,7 +1571,7 @@ type User {
   preferredName: String
 }
 
-type UserWithProfile {
+type UserWithPaymentProfile {
   accountHolder: String
   bic: String
   birthdate: String
@@ -1591,6 +1592,36 @@ type UserWithProfile {
   firstname: String!
   gender: String
   iban: String
+  id: ID!
+  image: String
+  lastname: String!
+  locale: String
+  name: String!
+  permissions: [Permission!]
+  phone: String
+  preferredName: String
+  street: String
+  zip: String
+}
+
+type UserWithProfile {
+  birthdate: String
+  checkInId: ID!
+  city: String
+  email: String!
+
+  """
+  Whether the volunteer receives platform emails (invitations, joining, cancellations, shift changes, membership).
+  """
+  emailPlatformEnabled: Boolean!
+
+  """Whether the volunteer receives urgent call-out emails."""
+  emailUrgentCallsEnabled: Boolean!
+
+  """Whether the volunteer receives the weekly plan email."""
+  emailWeeklyUpdateEnabled: Boolean!
+  firstname: String!
+  gender: String
   id: ID!
   image: String
   lastname: String!

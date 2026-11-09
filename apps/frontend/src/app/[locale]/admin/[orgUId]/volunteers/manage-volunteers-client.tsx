@@ -11,33 +11,40 @@ import {
   Badge,
   Button,
   EntityCell,
-  Input,
   Skeleton,
+  TableToolbar,
+  type TableToolbarActiveFilter,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  TextCell,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@repo/ui';
 import type {
   ColumnDef,
+  ColumnVisibilityState,
   OnChangeFn,
   SortingState,
 } from '@tanstack/react-table';
-import { Copy, ScanQrCode, Search, UserRound, X } from 'lucide-react';
+import {
+  Copy,
+  MapPin,
+  ScanQrCode,
+  Shield,
+  UserRound,
+  VenusAndMars,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { debounce, parseAsStringLiteral, useQueryStates } from 'nuqs';
+import { debounce, useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
 import { ButtonClipboard } from '@/components/button-clipboard';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
-import {
-  createFilterParsers,
-  pageParser,
-  pageSizeParser,
-  SEARCH_DEBOUNCE_MS,
-} from '@/components/data-table/table-params';
+import { SEARCH_DEBOUNCE_MS } from '@/components/data-table/table-params';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
 import MembershipRequestCard from '@/domain/membership-requests/components/membership-request-card';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
@@ -48,14 +55,33 @@ import {
 } from '@/domain/role/lib/role-label';
 import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
+import {
+  collectVolunteerEmails,
+  deriveCityOptions,
+  deriveGenderOptions,
+  matchesVolunteerFilters,
+  UNSET,
+} from '@/domain/volunteer/volunteer-filters';
+import {
+  formatDateOfBirthWithAge,
+  formatVolunteerAddress,
+} from '@/domain/volunteer/volunteer-profile-format';
 import { matchesVolunteerQuery } from '@/domain/volunteer/volunteer-search';
 import { useQueryParamTab } from '@/hooks/use-query-param-tab';
 import { useSheetTrigger } from '@/hooks/use-sheet';
 import { Link } from '@/i18n/navigation';
 import { copyToClipboard } from '@/lib/clipboard';
+import { useFormatting } from '@/lib/formatting/use-formatting';
+import { ConfigureViewButton } from './configure-view-button';
 import { CopyableEmailCell } from './copyable-email-cell';
+import { DownloadVolunteersCsvButton } from './download-volunteers-csv-button';
 import { VolunteerRequiredFormsPopover } from './required-forms-popover';
 import { RoleSelectCell } from './role-select-cell';
+import {
+  columnVisibilityFromParam,
+  OPTIONAL_COLUMN_IDS,
+  volunteersSearchParams,
+} from './volunteers-search-params';
 
 const TAB_APPROVED = 'APPROVED';
 const TAB_PENDING = MembershipRequestStatus.Pending;
@@ -70,21 +96,10 @@ type Membership = NonNullable<
   ReturnType<typeof useMemberships>['data']
 >[number];
 
-const VOLUNTEER_SORT_FIELDS = ['name', 'email'] as const;
-
 // All rows are loaded client-side, so URL writes stay shallow (no server
 // round trip). `sort` has no default: unset keeps the API's natural order.
 function useApprovedTableParams() {
-  return useQueryStates(
-    {
-      ...createFilterParsers(),
-      sort: parseAsStringLiteral(VOLUNTEER_SORT_FIELDS),
-      dir: parseAsStringLiteral(['asc', 'desc'] as const).withDefault('asc'),
-      page: pageParser,
-      pageSize: pageSizeParser,
-    },
-    { shallow: true },
-  );
+  return useQueryStates(volunteersSearchParams, { shallow: true });
 }
 
 function ApprovedTab({ orgUId }: { orgUId: string }) {
@@ -93,8 +108,12 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
 
-  const [{ q, sort, dir, page, pageSize }, setParams] =
-    useApprovedTableParams();
+  const [
+    { q, sort, dir, page, pageSize, roles, gender, city, verified, cols },
+    setParams,
+  ] = useApprovedTableParams();
+
+  const { formatDate } = useFormatting();
 
   const sorting = useMemo(
     () => (sort ? toSorting(sort, dir) : []),
@@ -105,6 +124,20 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     const next = typeof updater === 'function' ? updater(sorting) : updater;
     const resolved = readSort(next, { sort: sort ?? 'name', dir });
     void setParams({ ...resolved, page: 1 });
+  };
+
+  const columnVisibility = useMemo(
+    () => columnVisibilityFromParam(cols),
+    [cols],
+  );
+
+  const onColumnVisibilityChange: OnChangeFn<ColumnVisibilityState> = (
+    updater,
+  ) => {
+    const next =
+      typeof updater === 'function' ? updater(columnVisibility) : updater;
+    const enabledIds = OPTIONAL_COLUMN_IDS.filter((id) => next[id] !== false);
+    void setParams({ cols: enabledIds });
   };
 
   const roleLabel = (role: TranslatableRole) => {
@@ -118,6 +151,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         id: 'name',
         accessorFn: (row) => row.user.name,
         enableSorting: true,
+        enableHiding: false,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.name')} />
         ),
@@ -148,6 +182,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
                   fallback: <UserRound className="size-3" />,
                 }}
                 title={membership.user.name}
+                subtitle={membership.user.preferredName ?? undefined}
               />
             </button>
           );
@@ -157,6 +192,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         id: 'email',
         accessorFn: (row) => row.user.email,
         enableSorting: true,
+        enableHiding: false,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.email')} />
         ),
@@ -170,6 +206,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
       {
         id: 'roles',
         enableSorting: false,
+        enableHiding: false,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('table.roles')} />
         ),
@@ -182,8 +219,63 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         ),
       },
       {
+        id: 'dateOfBirth',
+        enableSorting: true,
+        enableHiding: true,
+        accessorFn: (row) => row.user.birthdate ?? '',
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title={t('table.dateOfBirth')}
+          />
+        ),
+        cell: ({ row }) => {
+          const value = formatDateOfBirthWithAge(
+            row.original.user.birthdate,
+            new Date(),
+            formatDate,
+          );
+          return <TextCell>{value}</TextCell>;
+        },
+      },
+      {
+        id: 'gender',
+        enableSorting: false,
+        enableHiding: true,
+        accessorFn: (row) => row.user.gender ?? '',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.gender')} />
+        ),
+        cell: ({ row }) => (
+          <TextCell>{row.original.user.gender ?? ''}</TextCell>
+        ),
+      },
+      {
+        id: 'phone',
+        enableSorting: false,
+        enableHiding: true,
+        accessorFn: (row) => row.user.phone ?? '',
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.phone')} />
+        ),
+        cell: ({ row }) => <TextCell>{row.original.user.phone ?? ''}</TextCell>,
+      },
+      {
+        id: 'address',
+        enableSorting: false,
+        enableHiding: true,
+        accessorFn: (row) => formatVolunteerAddress(row.user),
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} title={t('table.address')} />
+        ),
+        cell: ({ row }) => (
+          <TextCell>{formatVolunteerAddress(row.original.user)}</TextCell>
+        ),
+      },
+      {
         id: 'actions',
         enableSorting: false,
+        enableHiding: false,
         header: () => null,
         cell: ({ row }) => {
           const membership = row.original;
@@ -210,7 +302,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         },
       },
     ],
-    [t, orgUId, openVolunteerSheet],
+    [t, orgUId, openVolunteerSheet, formatDate],
   );
 
   if (isPending) {
@@ -237,14 +329,102 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     );
   }
 
-  const visible = memberships.filter((membership) =>
-    matchesVolunteerQuery(membership, q, roleLabel),
+  // Derive filter options from full membership list
+  const genderOptions = deriveGenderOptions(memberships).map((opt) => ({
+    label: opt.value === UNSET ? t('filter.notSet') : opt.label,
+    value: opt.value,
+  }));
+  const cityOptions = deriveCityOptions(memberships).map((val) =>
+    val === UNSET ? t('filter.notSet') : val,
   );
 
-  const query = q.trim();
+  // Build role options from unique roles across all memberships
+  const roleMap = new Map<string, { id: string; label: string }>();
+  for (const m of memberships) {
+    for (const role of m.roles) {
+      if (!roleMap.has(role.id)) {
+        roleMap.set(role.id, { id: role.id, label: roleLabel(role) });
+      }
+    }
+  }
+  const roleOptions = [...roleMap.values()].map((r) => ({
+    value: r.id,
+    label: r.label,
+  }));
+
+  const visible = memberships.filter(
+    (membership) =>
+      matchesVolunteerQuery(membership, q, roleLabel) &&
+      matchesVolunteerFilters(membership, {
+        roleIds: roles,
+        gender: gender ?? null,
+        city: city ?? null,
+        verified,
+      }),
+  );
+
+  // Build active filter chips
+  const activeFilters: TableToolbarActiveFilter[] = [];
+
+  if (roles.length > 0) {
+    const roleNames = roles
+      .map((id) => roleMap.get(id)?.label ?? id)
+      .join(', ');
+    activeFilters.push({
+      key: 'roles',
+      label: t('filter.activeRole'),
+      display: roleNames,
+      onClear: () => void setParams({ roles: [], page: 1 }),
+    });
+  }
+
+  if (gender !== null && gender !== undefined) {
+    const genderDisplay =
+      gender === UNSET
+        ? t('filter.notSet')
+        : (genderOptions.find((o) => o.value === gender)?.label ?? gender);
+    activeFilters.push({
+      key: 'gender',
+      label: t('filter.activeGender'),
+      display: genderDisplay,
+      onClear: () => void setParams({ gender: null, page: 1 }),
+    });
+  }
+
+  if (city !== null && city !== undefined) {
+    const cityDisplay = city === UNSET ? t('filter.notSet') : city;
+    activeFilters.push({
+      key: 'city',
+      label: t('filter.activeCity'),
+      display: cityDisplay,
+      onClear: () => void setParams({ city: null, page: 1 }),
+    });
+  }
+
+  if (verified !== 'all') {
+    const verifiedDisplay =
+      verified === 'verified'
+        ? t('filter.verifiedVerified')
+        : t('filter.verifiedUnverified');
+    activeFilters.push({
+      key: 'verified',
+      label: t('filter.activeVerified'),
+      display: verifiedDisplay,
+      onClear: () => void setParams({ verified: 'all', page: 1 }),
+    });
+  }
+
+  const onClearAll = () =>
+    void setParams({
+      roles: [],
+      gender: null,
+      city: null,
+      verified: 'all',
+      page: 1,
+    });
 
   const handleCopyEmails = () => {
-    const emails = visible.map((membership) => membership.user.email);
+    const emails = collectVolunteerEmails(visible);
     copyToClipboard(
       emails.join(', '),
       t('table.emailsCopied', { count: emails.length }),
@@ -260,57 +440,114 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
     pageSize: size,
   };
 
+  const columnLabels: Record<string, string> = {
+    dateOfBirth: t('table.dateOfBirth'),
+    gender: t('table.gender'),
+    phone: t('table.phone'),
+    address: t('table.address'),
+  };
+
   return (
     <div className="space-y-2">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative w-full sm:max-w-md">
-          <Search className="text-muted-foreground absolute top-2.5 left-3 size-4" />
-          <Input
-            value={q}
-            onChange={(e) => {
-              void setParams(
-                { q: e.target.value, page: 1 },
-                { limitUrlUpdates: debounce(SEARCH_DEBOUNCE_MS) },
-              );
-            }}
-            placeholder={t('search.placeholder')}
-            className="pl-9 pr-10"
-          />
-          {q && (
-            <Button
-              size="icon-xs"
-              variant="ghost"
-              onClick={() => void setParams({ q: '', page: 1 })}
-              tooltip={t('search.clearAria')}
-              className="absolute top-2 right-2"
-            >
-              <X />
-            </Button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 sm:flex-1">
-          {query && (
-            <p className="text-sm text-muted-foreground tabular-nums">
-              {t('search.countFiltered', {
-                count: visible.length,
-                total: memberships.length,
-              })}
-            </p>
-          )}
-          {visible.length > 0 && (
-            <Button
-              size="md"
-              variant={query ? 'secondary' : 'outline'}
-              onClick={handleCopyEmails}
-              className="ml-auto"
-            >
-              {t('table.copyEmails', { count: visible.length })}
-              <Copy />
-            </Button>
-          )}
-        </div>
-      </div>
+      <TableToolbar
+        activeFilters={activeFilters}
+        onClearAll={onClearAll}
+        sheetTitle={t('filter.sheetTitle')}
+        resultCount={visible.length}
+        actions={[
+          <Button
+            key="copy-emails"
+            variant="outline"
+            size="sm"
+            onClick={handleCopyEmails}
+            disabled={visible.length === 0}
+          >
+            {t('table.copyEmails', { count: visible.length })}
+            <Copy className="size-4" />
+          </Button>,
+          <DownloadVolunteersCsvButton
+            key="download-csv"
+            orgUId={orgUId}
+            rows={visible}
+            visibleColumnIds={cols}
+          />,
+        ]}
+      >
+        <TableToolbar.Search
+          value={q}
+          onChange={(value) =>
+            void setParams(
+              { q: value, page: 1 },
+              value === ''
+                ? undefined
+                : { limitUrlUpdates: debounce(SEARCH_DEBOUNCE_MS) },
+            )
+          }
+          placeholder={t('search.placeholder')}
+          className="sm:w-80"
+        />
+        <TableToolbar.MultiSelect
+          value={roles}
+          onChange={(v) => void setParams({ roles: v, page: 1 })}
+          options={roleOptions}
+          placeholder={t('filter.rolePlaceholder')}
+          ariaLabel={t('filter.activeRole')}
+          icon={<Shield className="size-4" />}
+        />
+        <TableToolbar.Select
+          value={gender ?? undefined}
+          onChange={(v) => void setParams({ gender: v, page: 1 })}
+          options={genderOptions}
+          placeholder={t('filter.genderPlaceholder')}
+          ariaLabel={t('filter.activeGender')}
+          icon={<VenusAndMars className="size-4" />}
+        />
+        <TableToolbar.Combobox
+          value={
+            city !== null && city !== undefined
+              ? city === UNSET
+                ? t('filter.notSet')
+                : city
+              : undefined
+          }
+          onChange={(v) => {
+            const raw = v === t('filter.notSet') ? UNSET : v;
+            void setParams({ city: raw || null, page: 1 });
+          }}
+          options={cityOptions}
+          placeholder={t('filter.cityPlaceholder')}
+          emptyText={t('filter.cityEmpty')}
+          ariaLabel={t('filter.activeCity')}
+          icon={<MapPin className="size-4" />}
+          className="min-w-28"
+        />
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="lg"
+          value={verified}
+          onValueChange={(v) => {
+            if (v === 'all' || v === 'verified' || v === 'unverified') {
+              void setParams({ verified: v, page: 1 });
+            }
+          }}
+        >
+          <ToggleGroupItem value="all">
+            {t('filter.verifiedAll')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="verified">
+            {t('filter.verifiedVerified')}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="unverified">
+            {t('filter.verifiedUnverified')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <ConfigureViewButton
+          enabled={cols}
+          onChange={(ids) => void setParams({ cols: ids, page: 1 })}
+          labels={columnLabels}
+        />
+      </TableToolbar>
 
       {visible.length === 0 ? (
         <EmptyVolunteerMatches />
@@ -323,6 +560,8 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
             emptyMessage={t('search.emptyTitle')}
             sorting={sorting}
             onSortingChange={onSortingChange}
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={onColumnVisibilityChange}
             pagination={pagination}
             onPaginationChange={(updater) => {
               const next =

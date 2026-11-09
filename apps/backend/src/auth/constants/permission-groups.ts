@@ -52,4 +52,9 @@ export const PERMISSION_GROUPS: readonly PermissionGroupDefinition[] = [
     label: 'Managing check-in',
     permissions: [{ key: PermissionKey.CHECK_IN_MANAGE, label: 'Manage' }],
   },
+  {
+    key: 'role',
+    label: 'Managing roles',
+    permissions: [{ key: PermissionKey.ROLE_MANAGE, label: 'Manage' }],
+  },
 ] as const;
