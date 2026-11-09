@@ -1,10 +1,13 @@
 'use client';
 
 import {
+  type CheckInContextData,
+  useCheckInAddToShiftInstance,
+  useCheckInContext,
   useCheckInInviteToOrganization,
-  useCheckInInviteToShiftInstance,
   useCheckInReadiness,
   useCheckInShiftInstances,
+  useCheckInVolunteerRequiredForms,
   useQueryClient,
 } from '@repo/data/react';
 import { applyTimeToDate, Button, Card, CardContent } from '@repo/ui';
@@ -18,6 +21,7 @@ import { checkInVolunteer } from '@/domain/time-entry/actions';
 import { useRouter } from '@/i18n/navigation';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { resolveAgreementTrigger } from '../../check-in-agreement';
+import { isCheckInAwaitingVolunteer } from '../../check-in-polling';
 import {
   resolveCheckInReadiness,
   shouldShowIdVerification,
@@ -42,25 +46,22 @@ import { OrgUnitSheet } from './org-unit-sheet';
 import { ShiftInstanceStepper } from './shift-instance-stepper';
 import { ShiftSheet } from './shift-sheet';
 import { shouldShowShiftlessCheckInWarning } from './shiftless-check-in-warning';
+import { UnrelatedVolunteerCard } from './unrelated-volunteer-card';
 import { UnverifiedCheckInDialog } from './unverified-check-in-dialog';
+import { useCheckInPollWindow } from './use-check-in-poll-window';
 
 type ManualCheckInPageProps = {
-  volunteer: {
-    id: string;
-    name: string;
-    email: string;
-    image?: string | null;
-  };
+  checkInId: string;
+  initialContext: CheckInContextData;
   orgUnits: Array<{ id: string; name: string }>;
   initialOrgUnitId: string;
-  checkInId: string;
 };
 
 export function ManualCheckInPage({
-  volunteer,
+  checkInId,
+  initialContext,
   orgUnits,
   initialOrgUnitId,
-  checkInId,
 }: ManualCheckInPageProps) {
   const t = useTranslations('CheckIn');
   const tValidation = useTranslations('TimeEntry.validation');
@@ -110,6 +111,21 @@ export function ManualCheckInPage({
     }
   }
 
+  // Context, readiness and required forms poll on one shared interval. The
+  // poll window that decides it reads the query results, so its output is
+  // mirrored into this state (adjusted during render, below) and read here.
+  const [refetchInterval, setRefetchInterval] = useState<number | false>(false);
+
+  // The context is seeded by the server render and re-fetched while polling,
+  // so a volunteer who becomes related (sends a request) is revealed live.
+  // `volunteer` stays null while unrelated: no identity reaches the DOM.
+  const { data: liveContext } = useCheckInContext(checkInId, {
+    initialData: initialContext,
+    refetchInterval,
+  });
+  const context = liveContext ?? initialContext;
+  const volunteer = context.volunteer;
+
   // Readiness: enabled once a shift instance is chosen, or as soon as
   // without-assignment is chosen, where a null instance is the point and only
   // the membership facts come back. Every mutator in check-in-selection.ts
@@ -117,9 +133,12 @@ export function ManualCheckInPage({
   // disagree about which instance is current.
   const { data: readiness } = useCheckInReadiness(
     selection.orgUnitId,
-    volunteer.id,
+    checkInId,
     selection.shiftInstanceId,
-    { enabled: withoutShift || !!selection.shiftInstanceId },
+    {
+      enabled: withoutShift || !!selection.shiftInstanceId,
+      refetchInterval,
+    },
   );
   const readinessState = readiness
     ? resolveCheckInReadiness(
@@ -134,9 +153,52 @@ export function ManualCheckInPage({
   // Without a shift there is nothing to be ready *for*, so the card earns its
   // place only while it is blocking: not a member, or a membership request
   // still waiting on an admin. The green ready banner stays hidden there.
-  const showReadinessCard = withoutShift
-    ? readinessState === 'notMember' || readinessState === 'pendingMembership'
-    : !!selection.shiftInstanceId;
+  // With a shift, the membership blockers show as well as the shift-scoped
+  // states once an instance is chosen.
+  const showReadinessCard =
+    readinessState === 'notMember' ||
+    readinessState === 'pendingMembership' ||
+    (!withoutShift && !!selection.shiftInstanceId);
+
+  // Fetched while a request is pending, so a volunteer completing the
+  // required forms on their device is noticed (and shares the accept sheet's
+  // cache entry).
+  const { data: requiredForms } = useCheckInVolunteerRequiredForms(
+    selection.orgUnitId,
+    checkInId,
+    readinessState === 'pendingMembership',
+    { refetchInterval },
+  );
+  const missingFormCount = (requiredForms ?? []).filter(
+    (form) => !form.submitted,
+  ).length;
+
+  // Polling runs while the admin waits on the volunteer, and the window
+  // restarts whenever anything the page shows changes.
+  const pollWindow = useCheckInPollWindow(
+    isCheckInAwaitingVolunteer({
+      isRelated: !!volunteer,
+      state: readinessState,
+    }),
+    JSON.stringify([
+      volunteer?.id ?? null,
+      context.pendingOrganizationUnits.map((unit) => unit.id),
+      readiness
+        ? [
+            readiness.isMember,
+            readiness.isParticipating,
+            readiness.hasOpenTimeEntry,
+            readiness.shiftHasAvailableSeat,
+            readiness.idVerified,
+          ]
+        : null,
+      readiness?.openMembershipRequestId ?? null,
+      missingFormCount,
+    ]),
+  );
+  if (pollWindow.refetchInterval !== refetchInterval) {
+    setRefetchInterval(pollWindow.refetchInterval);
+  }
 
   // Informational only: never gates the check-in button, unlike the
   // readiness card, which only earns its place while it blocks.
@@ -164,25 +226,24 @@ export function ManualCheckInPage({
   const inviteToOrgMutation = useCheckInInviteToOrganization(
     selection.orgUnitId,
   );
-  const inviteToShiftMutation = useCheckInInviteToShiftInstance(
-    selection.orgUnitId,
-  );
+  const addToShiftMutation = useCheckInAddToShiftInstance(selection.orgUnitId);
 
   const handleInviteToOrg = async () => {
     try {
-      await inviteToOrgMutation.mutateAsync(volunteer.id);
+      await inviteToOrgMutation.mutateAsync(checkInId);
       setOrgInviteSentFor(selection.orgUnitId);
     } catch {
       toast.error(t('notMemberError'));
     }
   };
 
-  const handleInviteToShift = async () => {
+  const handleAddToShift = async () => {
     if (!selection.shiftInstanceId) return;
     try {
-      await inviteToShiftMutation.mutateAsync({
+      await addToShiftMutation.mutateAsync({
+        checkInId,
         shiftInstanceId: selection.shiftInstanceId,
-        volunteerId: volunteer.id,
+        allowOverCapacity: false,
       });
       setShiftInviteSentFor(selection.shiftInstanceId);
     } catch {
@@ -203,6 +264,9 @@ export function ManualCheckInPage({
   const [isSubmitPending, startSubmitTransition] = useTransition();
 
   const handleSubmit = () => {
+    // `ready` implies membership, so the volunteer is related and known; the
+    // guard covers the poll gap before the context catches up.
+    if (!volunteer) return;
     const startedAt = startTime
       ? applyTimeToDate(selection.date ?? new Date(), startTime)
       : null;
@@ -304,7 +368,11 @@ export function ManualCheckInPage({
           startTimeError={startTimeError}
         />
 
-        <UserCard user={volunteer} size="lg" />
+        {volunteer ? (
+          <UserCard user={volunteer} size="lg" hideEmail />
+        ) : (
+          <UnrelatedVolunteerCard />
+        )}
 
         {showShiftlessWarning && <CheckInWithoutShiftWarningCard />}
 
@@ -316,15 +384,45 @@ export function ManualCheckInPage({
               checkInId={checkInId}
               onInviteToOrg={handleInviteToOrg}
               onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
-              onInviteToShift={handleInviteToShift}
+              onInviteToShift={handleAddToShift}
               isInviteToOrgPending={inviteToOrgMutation.isPending}
               isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
-              isInviteToShiftPending={inviteToShiftMutation.isPending}
+              isInviteToShiftPending={addToShiftMutation.isPending}
               isInviteToShiftSent={
                 shiftInviteSentFor === selection.shiftInstanceId
               }
             />
           )}
+
+        {pollWindow.expired && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              pollWindow.restart();
+              // Refresh now rather than one interval after the restart.
+              void queryClient.invalidateQueries({
+                queryKey: ['check-in-context', checkInId],
+              });
+              void queryClient.invalidateQueries({
+                queryKey: [
+                  'check-in-readiness',
+                  selection.orgUnitId,
+                  checkInId,
+                ],
+              });
+              void queryClient.invalidateQueries({
+                queryKey: [
+                  'check-in-required-forms',
+                  selection.orgUnitId,
+                  checkInId,
+                ],
+              });
+            }}
+          >
+            {t('pollExpiredButton')}
+          </Button>
+        )}
 
         {showIdVerification && readiness?.membershipId && (
           <IdVerificationCard
@@ -349,7 +447,7 @@ export function ManualCheckInPage({
               size="lg"
               variant="outline"
               className="w-full"
-              disabled={isSubmitPending}
+              disabled={isSubmitPending || !volunteer}
               onClick={() => setShowUnverifiedConfirm(true)}
             >
               {t('unverifiedCheckInButton')}
@@ -364,7 +462,7 @@ export function ManualCheckInPage({
                   : 'default'
               }
               className="w-full"
-              disabled={isSubmitPending}
+              disabled={isSubmitPending || !volunteer}
               onClick={handleSubmit}
             >
               {t('checkInButton')}
@@ -446,7 +544,7 @@ export function ManualCheckInPage({
             setOpenSheet(open ? 'acceptMembership' : null)
           }
           organizationUnitId={selection.orgUnitId}
-          volunteerId={volunteer.id}
+          checkInId={checkInId}
           membershipRequestId={readiness?.openMembershipRequestId ?? null}
           onAccepted={() => setOpenSheet(null)}
         />

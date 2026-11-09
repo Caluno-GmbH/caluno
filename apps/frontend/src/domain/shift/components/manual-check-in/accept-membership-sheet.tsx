@@ -14,7 +14,7 @@ type AcceptMembershipSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationUnitId: string;
-  volunteerId: string;
+  checkInId: string;
   membershipRequestId: string | null;
   onAccepted: () => void;
 };
@@ -23,14 +23,14 @@ export function AcceptMembershipSheet({
   open,
   onOpenChange,
   organizationUnitId,
-  volunteerId,
+  checkInId,
   membershipRequestId,
   onAccepted,
 }: AcceptMembershipSheetProps) {
   const t = useTranslations('CheckIn');
   const { data: requiredForms } = useCheckInVolunteerRequiredForms(
     organizationUnitId,
-    volunteerId,
+    checkInId,
     open,
   );
   const approveMutation =

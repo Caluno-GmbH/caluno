@@ -245,7 +245,10 @@
     "unverifiedCheckInConfirmTitle": "Check in without a valid agreement?",
     "unverifiedCheckInConfirmBody": "You can check them in, but they won't be able to get reimbursed without the contract.",
     "unverifiedCheckInConfirmAction": "Check in anyway",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "unrelatedVolunteerTitle": "Volunteer not yet in your org units",
+    "unrelatedVolunteerDescription": "Invite them to the selected org unit to continue.",
+    "pollExpiredButton": "Still waiting? Refresh status"
   },
   "Common": {
     "avatarAlt": "Avatar of {name}",

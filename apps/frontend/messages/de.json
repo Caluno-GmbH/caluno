@@ -245,7 +245,10 @@
     "unverifiedCheckInConfirmTitle": "Ohne gültigen Vertrag einchecken?",
     "unverifiedCheckInConfirmBody": "Du kannst die Person einchecken, sie kann jedoch ohne Vertrag keine Vergütung erhalten.",
     "unverifiedCheckInConfirmAction": "Trotzdem einchecken",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "unrelatedVolunteerTitle": "Person noch nicht in deinen Organisationseinheiten",
+    "unrelatedVolunteerDescription": "Lade sie in die ausgewählte Organisationseinheit ein, um fortzufahren.",
+    "pollExpiredButton": "Noch am Warten? Status aktualisieren"
   },
   "Common": {
     "avatarAlt": "Avatar von {name}",
