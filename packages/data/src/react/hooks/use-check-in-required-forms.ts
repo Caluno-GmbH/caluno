@@ -10,19 +10,21 @@ import { useSdk } from './use-graphql-client';
  */
 export function useCheckInVolunteerRequiredForms(
   organizationUnitId: string,
-  volunteerId: string,
+  checkInId: string,
   enabled: boolean,
+  options?: { refetchInterval?: number | false },
 ) {
   const sdk = useSdk();
   const repository = new TimeEntryRepository(sdk);
 
   return useQuery({
-    queryKey: ['check-in-required-forms', organizationUnitId, volunteerId],
+    queryKey: ['check-in-required-forms', organizationUnitId, checkInId],
     queryFn: () =>
       repository.getCheckInVolunteerRequiredForms(
         organizationUnitId,
-        volunteerId,
+        checkInId,
       ),
-    enabled: !!organizationUnitId && !!volunteerId && enabled,
+    enabled: !!organizationUnitId && !!checkInId && enabled,
+    refetchInterval: options?.refetchInterval,
   });
 }

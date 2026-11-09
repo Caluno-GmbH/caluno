@@ -32,6 +32,7 @@ export * from './react/hooks/use-block';
 export * from './react/hooks/use-bundle-download';
 export * from './react/hooks/use-check-in';
 export * from './react/hooks/use-check-in-actions';
+export * from './react/hooks/use-check-in-context';
 export * from './react/hooks/use-check-in-readiness';
 export * from './react/hooks/use-check-in-required-forms';
 export * from './react/hooks/use-check-in-shift-instances';
