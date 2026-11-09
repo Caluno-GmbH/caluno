@@ -2,7 +2,7 @@ import type { Locale } from '@repo/data';
 import { parseISO } from 'date-fns';
 import { API_URL } from '@/lib/constants';
 import { formats } from '@/lib/formatting/formats';
-import { PRIVACY_POLICY_PDF_URL } from '@/lib/privacy-policy';
+import { privacyPolicyPdfUrl } from '@/lib/privacy-policy';
 import { termsPdfUrl } from '@/lib/terms';
 
 export type LegalDocumentsSummary = {
@@ -46,7 +46,7 @@ export function buildLegalDocumentCards(
   return [
     {
       kind: 'privacyNotice',
-      href: PRIVACY_POLICY_PDF_URL,
+      href: privacyPolicyPdfUrl(locale),
       lastChangedOn: summary?.privacyNotice.lastChangedOn ?? null,
     },
     {
