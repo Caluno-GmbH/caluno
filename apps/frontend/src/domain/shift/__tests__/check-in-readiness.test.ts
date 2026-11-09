@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   alreadyCheckedInDecideHref,
+  countMissingRequiredForms,
   resolveCheckInReadiness,
   resolveVisibleCheckInReadiness,
   shouldShowIdVerification,
@@ -247,5 +248,48 @@ describe('resolveVisibleCheckInReadiness', () => {
 
   it('keeps an unloaded readiness null', () => {
     expect(resolveVisibleCheckInReadiness(null, noChoice)).toBeNull();
+  });
+});
+
+describe('countMissingRequiredForms', () => {
+  it('returns null while the forms are not loaded yet', () => {
+    expect(
+      countMissingRequiredForms({ forms: undefined, isError: false }),
+    ).toBeNull();
+  });
+
+  it('returns null when the forms query errored, even with stale data', () => {
+    expect(
+      countMissingRequiredForms({
+        forms: [{ submitted: true }],
+        isError: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('returns 0 when every required form is submitted', () => {
+    expect(
+      countMissingRequiredForms({
+        forms: [{ submitted: true }, { submitted: true }],
+        isError: false,
+      }),
+    ).toBe(0);
+  });
+
+  it('returns 0 when the unit has no required forms', () => {
+    expect(countMissingRequiredForms({ forms: [], isError: false })).toBe(0);
+  });
+
+  it('counts the forms still open', () => {
+    expect(
+      countMissingRequiredForms({
+        forms: [
+          { submitted: false },
+          { submitted: true },
+          { submitted: false },
+        ],
+        isError: false,
+      }),
+    ).toBe(2);
   });
 });

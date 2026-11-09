@@ -212,6 +212,7 @@
     "requiredFormsOpen": "{count, plural, one {# Pflichtformular noch offen} other {# Pflichtformulare noch offen}}",
     "openVolunteerProfile": "Profil öffnen",
     "askVolunteerToCompleteForms": "Bitte die Person, die Formulare in der App auszufüllen.",
+    "requiredFormsChecking": "Pflichtformulare werden geprüft …",
     "pendingMembershipTitle": "Möchte {unit} beitreten",
     "qrScannerTab": "QR-Scanner",
     "readyBannerTitle": "Bereit zum Check-in",

@@ -8,6 +8,7 @@ import { Button } from '@repo/ui';
 import { Check, Circle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { countMissingRequiredForms } from '../../check-in-readiness';
 import { CheckInSheet } from './check-in-sheet';
 
 type AcceptMembershipSheetProps = {
@@ -28,15 +29,17 @@ export function AcceptMembershipSheet({
   onAccepted,
 }: AcceptMembershipSheetProps) {
   const t = useTranslations('CheckIn');
-  const { data: requiredForms } = useCheckInVolunteerRequiredForms(
-    organizationUnitId,
-    checkInId,
-    open,
-  );
+  const { data: requiredForms, isError: isRequiredFormsError } =
+    useCheckInVolunteerRequiredForms(organizationUnitId, checkInId, open);
   const approveMutation =
     useCheckInApproveMembershipRequest(organizationUnitId);
 
-  const hasMissingForm = (requiredForms ?? []).some((f) => !f.submitted);
+  // Fails closed: forms not loaded yet or errored block the accept too.
+  const missingFormCount = countMissingRequiredForms({
+    forms: requiredForms,
+    isError: isRequiredFormsError,
+  });
+  const canAccept = missingFormCount === 0;
 
   const handleAccept = async () => {
     if (!membershipRequestId) return;
@@ -60,7 +63,7 @@ export function AcceptMembershipSheet({
           type="button"
           className="w-full"
           disabled={
-            !membershipRequestId || hasMissingForm || approveMutation.isPending
+            !membershipRequestId || !canAccept || approveMutation.isPending
           }
           onClick={handleAccept}
         >

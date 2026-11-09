@@ -212,6 +212,7 @@
     "requiredFormsOpen": "{count, plural, one {# required form still open} other {# required forms still open}}",
     "openVolunteerProfile": "Open volunteer profile",
     "askVolunteerToCompleteForms": "Ask the volunteer to complete the forms in the app.",
+    "requiredFormsChecking": "Checking the required forms…",
     "pendingMembershipTitle": "Wants to join {unit}",
     "qrScannerTab": "QR Scanner",
     "readyBannerTitle": "Good to go",

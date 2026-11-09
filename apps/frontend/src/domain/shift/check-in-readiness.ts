@@ -54,6 +54,22 @@ export function alreadyCheckedInDecideHref(checkInId: string): string {
 }
 
 /**
+ * Required forms are a hard gate on accepting a membership request, so the
+ * gate fails closed: `null` (unknown — not loaded yet, or the query errored)
+ * must block the accept just like a positive count.
+ */
+export function countMissingRequiredForms({
+  forms,
+  isError,
+}: {
+  forms: ReadonlyArray<{ submitted: boolean }> | undefined;
+  isError: boolean;
+}): number | null {
+  if (!forms || isError) return null;
+  return forms.filter((form) => !form.submitted).length;
+}
+
+/**
  * The ID verification card is a read-only side output of the readiness
  * facts, not a readiness state: verification is optional and never blocks
  * check-in. It appears only once every real blocker is cleared (ready),

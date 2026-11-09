@@ -14,7 +14,8 @@ type CheckInReadinessCardProps = {
   state: CheckInReadinessState;
   checkInId: string;
   unitName: string;
-  missingFormCount: number;
+  /** `null` while the required forms are unknown (loading or errored). */
+  missingFormCount: number | null;
   profileHref: string | null;
   onInviteToOrg: () => void;
   isInviteToOrgPending: boolean;
@@ -75,6 +76,18 @@ export function CheckInReadinessCard({
   }
 
   if (state === 'pendingMembership') {
+    // The forms gate fails closed: until they are known, offer no accept.
+    if (missingFormCount === null) {
+      return (
+        <BlockerCard
+          icon={<Clock className="size-5" />}
+          title={t('pendingMembershipTitle', { unit: unitName })}
+          description={t('requiredFormsChecking')}
+          className="border-destructive"
+        />
+      );
+    }
+
     // Open required forms block the accept, and only the volunteer can fill
     // them: point the admin at the profile (when they may see it) instead of
     // offering a button that cannot succeed.

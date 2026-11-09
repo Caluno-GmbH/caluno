@@ -23,6 +23,7 @@ import { useFormatting } from '@/lib/formatting/use-formatting';
 import { resolveAgreementTrigger } from '../../check-in-agreement';
 import { isCheckInAwaitingVolunteer } from '../../check-in-polling';
 import {
+  countMissingRequiredForms,
   resolveCheckInReadiness,
   resolveVisibleCheckInReadiness,
   shouldShowIdVerification,
@@ -168,15 +169,18 @@ export function ManualCheckInPage({
   // Fetched while a request is pending, so a volunteer completing the
   // required forms on their device is noticed (and shares the accept sheet's
   // cache entry).
-  const { data: requiredForms } = useCheckInVolunteerRequiredForms(
-    selection.orgUnitId,
-    checkInId,
-    readinessState === 'pendingMembership',
-    { refetchInterval },
-  );
-  const missingFormCount = (requiredForms ?? []).filter(
-    (form) => !form.submitted,
-  ).length;
+  // `null` while unknown (loading or errored) so the accept stays blocked.
+  const { data: requiredForms, isError: isRequiredFormsError } =
+    useCheckInVolunteerRequiredForms(
+      selection.orgUnitId,
+      checkInId,
+      readinessState === 'pendingMembership',
+      { refetchInterval },
+    );
+  const missingFormCount = countMissingRequiredForms({
+    forms: requiredForms,
+    isError: isRequiredFormsError,
+  });
 
   // Polling runs while the admin waits on the volunteer, and the window
   // restarts whenever anything the page shows changes.
