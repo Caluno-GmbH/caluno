@@ -1,5 +1,3 @@
-'use client';
-
 import type { GetPermissionGroupsQuery } from '@repo/data';
 import {
   PermissionDescription,
