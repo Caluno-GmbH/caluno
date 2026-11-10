@@ -139,6 +139,32 @@ describe('role assignment and membership removal escalation rules', () => {
       .where(eq(schema.memberships.id, membershipId));
   };
 
+  /**
+   * The buggy base lets the negative cases succeed (the root owner is demoted
+   * or removed), which would make every later test fail for the wrong reason.
+   * Restore the root owner even when the assertion fails so the red run stays
+   * attributable.
+   */
+  const restoreRootOwner = async () => {
+    const membership = await db.query.memberships.findFirst({
+      where: { id: ownerMembershipId },
+    });
+    if (!membership) {
+      await db.insert(schema.memberships).values({
+        id: ownerMembershipId,
+        userId: ownerUserId,
+        organizationUnitId: unitId,
+      });
+    }
+    await db
+      .delete(schema.membershipRoles)
+      .where(eq(schema.membershipRoles.membershipId, ownerMembershipId));
+    await assignRoleToMembership(db, {
+      membershipId: ownerMembershipId,
+      roleId: ownerRoleId,
+    });
+  };
+
   const roleIdsOf = async (membershipId: string): Promise<string[]> => {
     const rows = await db.query.membershipRoles.findMany({
       where: { membershipId },
@@ -287,49 +313,65 @@ describe('role assignment and membership removal escalation rules', () => {
     const childOwner = await createChildOwner();
     setAuthMockUserId(ownerUserId);
 
-    const response = await updateRoles(ownerMembershipId, [memberRoleId]);
+    try {
+      const response = await updateRoles(ownerMembershipId, [memberRoleId]);
 
-    expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
-    expect(await roleIdsOf(ownerMembershipId)).toEqual([ownerRoleId]);
-    await deleteMembershipRow(childOwner.membershipId);
+      expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
+      expect(await roleIdsOf(ownerMembershipId)).toEqual([ownerRoleId]);
+    } finally {
+      await deleteMembershipRow(childOwner.membershipId);
+      await restoreRootOwner();
+    }
   });
 
   it('does not count a child-unit owner as the root last owner (remove)', async () => {
     const childOwner = await createChildOwner();
     setAuthMockUserId(ownerUserId);
 
-    const response = await removeMembership(ownerMembershipId);
+    try {
+      const response = await removeMembership(ownerMembershipId);
 
-    expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
-    expect(await membershipExists(ownerMembershipId)).toBe(true);
-    await deleteMembershipRow(childOwner.membershipId);
+      expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
+      expect(await membershipExists(ownerMembershipId)).toBe(true);
+    } finally {
+      await deleteMembershipRow(childOwner.membershipId);
+      await restoreRootOwner();
+    }
   });
 
   it('does not count a child-unit owner as the root last owner (leave)', async () => {
     const childOwner = await createChildOwner();
     setAuthMockUserId(ownerUserId);
 
-    const response = await leaveMembership(ownerMembershipId);
+    try {
+      const response = await leaveMembership(ownerMembershipId);
 
-    expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
-    expect(await membershipExists(ownerMembershipId)).toBe(true);
-    await deleteMembershipRow(childOwner.membershipId);
+      expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
+      expect(await membershipExists(ownerMembershipId)).toBe(true);
+    } finally {
+      await deleteMembershipRow(childOwner.membershipId);
+      await restoreRootOwner();
+    }
   });
 
   it('allows a root owner to remove a child-unit owner', async () => {
     const childOwner = await createChildOwner();
     setAuthMockUserId(ownerUserId);
 
-    const response = await graphqlRequest<{
-      removeMembership?: { id: string };
-    }>(app, {
-      query: REMOVE_MEMBERSHIP,
-      variables: { id: childOwner.membershipId },
-      headers: { 'x-organization-unit-id': childOwner.organizationUnitId },
-    });
+    try {
+      const response = await graphqlRequest<{
+        removeMembership?: { id: string };
+      }>(app, {
+        query: REMOVE_MEMBERSHIP,
+        variables: { id: childOwner.membershipId },
+        headers: { 'x-organization-unit-id': childOwner.organizationUnitId },
+      });
 
-    expect(response.errors).toBeUndefined();
-    expect(await membershipExists(childOwner.membershipId)).toBe(false);
+      expect(response.errors).toBeUndefined();
+      expect(await membershipExists(childOwner.membershipId)).toBe(false);
+    } finally {
+      await deleteMembershipRow(childOwner.membershipId);
+    }
   });
 
   it('still lets a volunteer editor approve membership requests', async () => {
