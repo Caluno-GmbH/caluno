@@ -1,8 +1,4 @@
-import type { ComponentType } from 'react';
-import type {
-  EeExtensions,
-  EeSlotProps,
-} from '@/edition/enterprise-extensions';
+import type { EeExtensions } from '@/edition/enterprise-extensions';
 import { eeNav } from './nav';
 
 /**
@@ -16,17 +12,14 @@ import { eeNav } from './nav';
  * Nav placement with `before` (omit → append as last in the target section).
  * `href` is the full app path. `CountBadge` is supported — merge happens
  * client-side in the sidebar so components are not RSC-serialized.
+ *
+ * Slot loaders should prefer `() => import('./…')` so optional
+ * `generateMetadata` on the module is available to `eePageMetadata`.
  */
 export const eeExtensions: EeExtensions = {
   nav: eeNav,
   slots: {
-    'todo-page': () =>
-      import('./todo/todo-page').then(
-        (m) => m.default as ComponentType<EeSlotProps>,
-      ),
-    'todo-section-page': () =>
-      import('./todo/todo-section-page').then(
-        (m) => m.default as ComponentType<EeSlotProps>,
-      ),
+    'todo-page': () => import('./todo/todo-page'),
+    'todo-section-page': () => import('./todo/todo-section-page'),
   },
 };

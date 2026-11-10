@@ -1,10 +1,32 @@
+import type { Metadata } from 'next';
 import type { ComponentType } from 'react';
 import type { EeIconName } from './enterprise-icons';
 
 /** Extra props forwarded from `<EeSlot ee="…" … />` / `<EePage ee="…" … />`. */
 export type EeSlotProps = Record<string, unknown>;
 
-export type EeSlotLoader = () => Promise<ComponentType<EeSlotProps>>;
+/** Props Next passes to `generateMetadata` / page modules. */
+export type EditionPageMetaProps = {
+  params: Promise<Record<string, string>>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+/**
+ * Page/slot module shape for EE slots and OSS fallback pages.
+ * Loaders may still return a bare component (legacy / inline slots);
+ * resolvers normalize to this shape.
+ */
+export type EditionPageModule = {
+  /**
+   * Page components take route-specific `params`. Loaders are dynamic imports;
+   * use a wide props type so concrete pages assign without casts.
+   */
+  // biome-ignore lint/suspicious/noExplicitAny: dynamic edition page modules
+  default: ComponentType<any>;
+  generateMetadata?: (props: EditionPageMetaProps) => Promise<Metadata>;
+};
+
+export type EeSlotLoader = () => Promise<EditionPageModule>;
 
 /**
  * Insert an item into an existing admin-nav section.
@@ -80,8 +102,9 @@ export interface EeExtensions {
   nav?: (ctx: EeNavContext) => EeNavContribution[];
   /**
    * Keyed by a call-site-chosen name. Used by both `<EeSlot />` (inline, null
-   * when absent) and `<EePage />` (App Router stub, `notFound` when absent),
-   * e.g. `'some-page'`.
+   * when absent) and `<EePage />` (App Router stub: optional named OSS
+   * `fallback`, else `notFound` when absent), e.g. `'todo-page'`.
+   * Prefer `() => import('./…')` so `generateMetadata` travels with the module.
    */
   slots?: Record<string, EeSlotLoader>;
 }

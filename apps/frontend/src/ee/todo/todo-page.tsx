@@ -1,14 +1,23 @@
+import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import type { EditionPageMetaProps } from '@/edition/enterprise-extensions';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
 import { OverviewBoard } from './components/overview-board';
 
-export default async function TodoPage({
+type TodoPageParams = Promise<{ orgUId: string; locale: string }>;
+
+export async function generateMetadata({
   params,
-}: {
-  params: Promise<{ orgUId: string; locale: string }>;
-}) {
+}: EditionPageMetaProps): Promise<Metadata> {
+  const { locale: rawLocale = '' } = await params;
+  const locale = resolveLocale(rawLocale);
+  const t = await getTranslations({ locale, namespace: 'Navigation' });
+  return { title: `${t('todo')} — Caluno` };
+}
+
+export default async function TodoPage({ params }: { params: TodoPageParams }) {
   const { orgUId, locale: rawLocale } = await params;
   const locale = resolveLocale(rawLocale);
   await requireOrgAccess(orgUId);
