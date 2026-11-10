@@ -1,7 +1,7 @@
 'use client';
 
 import type { ComponentType } from 'react';
-import type { EeCountBadgeName } from '@/edition/enterprise-count-badges';
+import type { EeCountBadgeName } from '@/edition/enterprise-menu-extensions';
 import { TodoNavCountBadge } from './todo/todo-nav-count-badge';
 
 /**

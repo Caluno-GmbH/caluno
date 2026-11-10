@@ -16,9 +16,11 @@ import {
   UsersIcon,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
-import type { EeCountBadgeName } from '@/edition/enterprise-count-badges';
 import type { EeNavContribution } from '@/edition/enterprise-extensions';
-import { EE_ICONS } from '@/edition/enterprise-icons';
+import {
+  EE_ICONS,
+  type EeCountBadgeName,
+} from '@/edition/enterprise-menu-extensions';
 import { VolunteersNavCountBadge } from './volunteers-nav-count-badge';
 
 /** Stable section ids EE (and tests) can target. */

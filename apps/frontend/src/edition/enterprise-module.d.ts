@@ -10,13 +10,8 @@ declare module '@/ee' {
   export const eeExtensions: EeExtensions;
 }
 
-declare module '@/ee/nav' {
-  import type { EeExtensions } from './enterprise-extensions';
-  export const eeNav: NonNullable<EeExtensions['nav']>;
-}
-
 declare module '@/ee/count-badges' {
   import type { ComponentType } from 'react';
-  import type { EeCountBadgeName } from './enterprise-count-badges';
+  import type { EeCountBadgeName } from './enterprise-menu-extensions';
   export const eeCountBadges: Record<EeCountBadgeName, ComponentType>;
 }

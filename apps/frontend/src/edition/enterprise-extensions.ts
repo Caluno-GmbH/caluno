@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import type { ComponentType } from 'react';
-import type { EeCountBadgeName } from './enterprise-count-badges';
-import type { EeIconName } from './enterprise-icons';
+import type {
+  EeCountBadgeName,
+  EeIconName,
+} from './enterprise-menu-extensions';
 
 /** Extra props forwarded from `<EeSlot ee="…" … />` / `<EePage ee="…" … />`. */
 export type EeSlotProps = Record<string, unknown>;
