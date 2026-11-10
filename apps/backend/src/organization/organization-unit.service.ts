@@ -269,38 +269,16 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
+    // Moving a unit changes the ancestor chain that authorization and data
+    // scoping depend on. The UI never exposes it, so reject the field outright
+    // instead of re-parenting a branch (or creating a cycle) from the API.
+    if (input.parentId !== undefined) {
+      throw new BadRequestGraphQLError('Organization units cannot be moved');
+    }
+
     const name = input.name === undefined ? undefined : trimmed(input.name);
     if (name !== undefined && isBlank(name)) {
       throw new BadRequestGraphQLError('Organization unit name is required');
-    }
-
-    if (input.parentId === null) {
-      throw new BadRequestGraphQLError(
-        'parentId cannot be null for non-root organization units',
-      );
-    }
-
-    if (input.parentId === id) {
-      throw new BadRequestGraphQLError(
-        'Organization unit cannot be its own parent',
-      );
-    }
-
-    if (input.parentId) {
-      await this.tenantScopeService.assertResourceInScope(
-        headerUnitId,
-        input.parentId,
-        'Parent organization unit not found',
-      );
-      const parent = await this.findParent(input.parentId);
-      if (!parent) {
-        throw new NotFoundGraphQLError('Parent organization unit not found');
-      }
-      if (parent.organizationId !== unit.organizationId) {
-        throw new BadRequestGraphQLError(
-          'Parent organization unit must be in the same organization',
-        );
-      }
     }
 
     if (input.typeId) {

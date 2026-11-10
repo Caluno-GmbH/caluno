@@ -103,6 +103,45 @@ describe('updateOrganizationUnit / requestOrganizationUnitDeletion tenant scope'
     expect(after?.idVerificationEnabled).toBe(nextEnabled);
   });
 
+  it('rejects moving a unit to another parent', async () => {
+    const type = await db.query.organizationUnitTypes.findFirst({
+      where: { organizationId: orgBId },
+    });
+    if (!type) throw new Error('Missing unit type');
+
+    const child = await createUnit(db, {
+      organizationId: orgBId,
+      typeId: type.id,
+      name: `Move child ${crypto.randomUUID()}`,
+      parentId: unitBId,
+    });
+    const sibling = await createUnit(db, {
+      organizationId: orgBId,
+      typeId: type.id,
+      name: `Move sibling ${crypto.randomUUID()}`,
+      parentId: unitBId,
+    });
+
+    const response = await graphqlRequest<{
+      updateOrganizationUnit?: { id: string };
+    }>(app, {
+      query: UPDATE_ORGANIZATION_UNIT,
+      variables: {
+        id: child.id,
+        input: { organizationId: orgBId, parentId: sibling.id },
+      },
+      headers: { 'x-organization-unit-id': unitBId },
+    });
+
+    expect(response.errors?.[0]?.message).toMatch(/cannot be moved/i);
+    expect(response.data?.updateOrganizationUnit).toBeFalsy();
+
+    const still = await db.query.organizationUnits.findFirst({
+      where: { id: child.id },
+    });
+    expect(still?.parentId).toBe(unitBId);
+  });
+
   it('rejects updateOrganizationUnit on another org when header is B', async () => {
     const orgA = await createOrganizationWithType(
       db,
