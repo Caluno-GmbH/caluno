@@ -1,4 +1,8 @@
-import { EePage } from '@/edition/enterprise-page';
+import { EePage, eePageMetadata } from '@/edition/enterprise-page';
+
+export const generateMetadata = eePageMetadata({
+  ee: 'todo-section-page',
+});
 
 export default function OverviewSectionPage({
   params,
