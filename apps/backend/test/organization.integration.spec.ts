@@ -10,10 +10,7 @@ import {
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import {
-  DEFAULT_OWNER_ROLE_NAME,
-  PERMISSIONS,
-} from '../src/auth/constants';
+import { DEFAULT_OWNER_ROLE_NAME, PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { OrganizationService } from '../src/organization/organization.service';
