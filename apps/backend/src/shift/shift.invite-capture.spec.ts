@@ -20,7 +20,23 @@ function createInviteService(options: {
   existingStatus?: ShiftInviteStatus;
   capture: jest.Mock;
 }) {
+  // Rows for any `select().from().where()`: the instance lock (`.for`) and
+  // the volunteer's current invite, read inside the add-at-check-in tx.
+  const inviteRows = options.existingStatus
+    ? [{ status: options.existingStatus }]
+    : [];
+  const select = jest.fn().mockReturnValue({
+    from: jest.fn().mockReturnValue({
+      where: jest.fn().mockImplementation(() =>
+        Object.assign(Promise.resolve(inviteRows), {
+          for: jest.fn().mockResolvedValue([{ id: 'si-1' }]),
+        }),
+      ),
+    }),
+  });
   const db = {
+    select,
+    transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(db),
     query: {
       shiftInstances: {
         findFirst: jest.fn().mockResolvedValue({

@@ -1818,36 +1818,57 @@ export class ShiftService {
       throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
     }
 
-    const existingStatus = instance.invites.find(
-      (invite) => invite.userId === volunteerId,
-    )?.status as ShiftInviteStatus | undefined;
-    if (isParticipatingShiftInviteStatus(existingStatus)) {
-      // Already holds a seat; nothing to change, nothing to announce.
-      return instance;
-    }
+    // Capacity check and seat write run under a row lock on the instance, so
+    // concurrent adds cannot both take the last seat.
+    const { joined, existingStatus } = await this.db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.shiftInstances.id })
+        .from(schema.shiftInstances)
+        .where(eq(schema.shiftInstances.id, instanceId))
+        .for('update');
 
-    if (!options.allowOverCapacity) {
-      const maxVolunteers =
-        instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
-      if (!(await this.hasAvailableSeat(instanceId, maxVolunteers))) {
-        throw new ConflictGraphQLError('Shift instance is at full capacity');
+      const [existingInvite] = await tx
+        .select({ status: schema.shiftInstanceInvites.status })
+        .from(schema.shiftInstanceInvites)
+        .where(
+          and(
+            eq(schema.shiftInstanceInvites.instanceId, instanceId),
+            eq(schema.shiftInstanceInvites.userId, volunteerId),
+          ),
+        );
+      const existingStatus = existingInvite?.status as
+        | ShiftInviteStatus
+        | undefined;
+      if (isParticipatingShiftInviteStatus(existingStatus)) {
+        // Already holds a seat; nothing to change, nothing to announce.
+        return { joined: false, existingStatus };
       }
-    }
 
-    await this.db
-      .insert(schema.shiftInstanceInvites)
-      .values({
-        instanceId,
-        userId: volunteerId,
-        status: ShiftInviteStatus.JOINED,
-      })
-      .onConflictDoUpdate({
-        target: [
-          schema.shiftInstanceInvites.instanceId,
-          schema.shiftInstanceInvites.userId,
-        ],
-        set: { status: ShiftInviteStatus.JOINED, remindedAt: null },
-      });
+      if (!options.allowOverCapacity) {
+        const maxVolunteers =
+          instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
+        if (!(await this.hasAvailableSeat(instanceId, maxVolunteers, tx))) {
+          throw new ConflictGraphQLError('Shift instance is at full capacity');
+        }
+      }
+
+      await tx
+        .insert(schema.shiftInstanceInvites)
+        .values({
+          instanceId,
+          userId: volunteerId,
+          status: ShiftInviteStatus.JOINED,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.shiftInstanceInvites.instanceId,
+            schema.shiftInstanceInvites.userId,
+          ],
+          set: { status: ShiftInviteStatus.JOINED, remindedAt: null },
+        });
+      return { joined: true, existingStatus };
+    });
+    if (!joined) return instance;
 
     void this.notifyShiftInstanceJoined(volunteerId, instance.master, instance);
     await this.captureShiftInstanceInviteUpdate({

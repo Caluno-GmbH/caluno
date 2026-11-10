@@ -498,6 +498,27 @@ describe('checkInAddToShiftInstance mutation', () => {
       expect(await inviteStatus(instance.id, volunteer.id)).toBeUndefined();
     });
 
+    it('fills the last seat only once under concurrent adds', async () => {
+      const shift = await createShift(db, {
+        organizationUnitId: unitId,
+        maxVolunteers: 1,
+      });
+      const instance = await createShiftInstance(db, shift.id);
+      const first = await addMember();
+      const second = await addMember();
+
+      const responses = await Promise.all([
+        addToShift(first.checkInId, instance.id),
+        addToShift(second.checkInId, instance.id),
+      ]);
+
+      const codes = responses
+        .map((response) => response.errors?.[0]?.extensions?.code ?? 'OK')
+        .sort();
+      expect(codes).toEqual(['CONFLICT', 'OK']);
+      expect(await participantCount(instance.id)).toBe(1);
+    });
+
     it('joins past the cap with allowOverCapacity', async () => {
       const instance = await setupFullInstance();
       const volunteer = await addMember();
