@@ -147,14 +147,10 @@ describe('updateOrganizationUnit / requestOrganizationUnitDeletion tenant scope'
         headers: { 'x-organization-unit-id': unitBId },
       });
 
-      expect(
-        response.errors?.[0]?.message,
-        testCase.label,
-      ).toMatch(/cannot be moved/i);
-      expect(
-        response.data?.updateOrganizationUnit,
-        testCase.label,
-      ).toBeFalsy();
+      expect(response.errors?.[0]?.message, testCase.label).toMatch(
+        /cannot be moved/i,
+      );
+      expect(response.data?.updateOrganizationUnit, testCase.label).toBeFalsy();
 
       const still = await db.query.organizationUnits.findFirst({
         where: { id: child.id },
