@@ -417,6 +417,7 @@ export function ManualCheckInPage({
               checkInId={checkInId}
               unitName={unitName}
               requestUnitName={requestUnitName}
+              volunteerName={volunteer?.name ?? null}
               canAcceptMembershipRequest={canAcceptMembershipRequest}
               missingFormCount={missingFormCount}
               profileHref={profileHref}

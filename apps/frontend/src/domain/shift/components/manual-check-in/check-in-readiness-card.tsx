@@ -16,6 +16,11 @@ type CheckInReadinessCardProps = {
   checkInId: string;
   unitName: string;
   /**
+   * The volunteer's full name, or `null` while they are unrelated to the
+   * caller (no identity reaches the DOM until they send a request).
+   */
+  volunteerName: string | null;
+  /**
    * The unit an open membership request targets — the selected unit or an
    * ancestor of it. Names the pending-membership card.
    */
@@ -37,6 +42,7 @@ export function CheckInReadinessCard({
   state,
   checkInId,
   unitName,
+  volunteerName,
   requestUnitName,
   canAcceptMembershipRequest,
   missingFormCount,
@@ -78,7 +84,8 @@ export function CheckInReadinessCard({
         onAction={onInviteToOrg}
         isActionPending={isInviteToOrgPending}
         isActionDone={isInviteToOrgSent}
-        doneLabel={t('inviteSentWaiting')}
+        doneLabel={t('inviteSent')}
+        doneDescription={t('inviteSentDescription')}
         actionAriaLabel={t('notMemberButtonAria', { unit: unitName })}
         className="border-destructive"
       />
@@ -86,7 +93,12 @@ export function CheckInReadinessCard({
   }
 
   if (state === 'pendingMembership') {
-    const title = t('pendingMembershipTitle', { unit: requestUnitName });
+    const title = volunteerName
+      ? t('pendingMembershipTitleNamed', {
+          name: volunteerName,
+          unit: requestUnitName,
+        })
+      : t('pendingMembershipTitle', { unit: requestUnitName });
     const view = resolvePendingMembershipView({
       canAcceptMembershipRequest,
       missingFormCount,

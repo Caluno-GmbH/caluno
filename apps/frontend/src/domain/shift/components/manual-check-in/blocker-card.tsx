@@ -13,6 +13,11 @@ type BlockerCardProps = {
   isActionPending?: boolean | undefined;
   isActionDone?: boolean | undefined;
   doneLabel?: string | undefined;
+  /**
+   * Copy shown instead of `description` once the action is done, when the
+   * outcome needs its own explanation (what happens next, what to wait for).
+   */
+  doneDescription?: ReactNode;
   actionHref?: string | undefined;
   actionExternal?: boolean | undefined;
   className?: string | undefined;
@@ -37,6 +42,7 @@ export function BlockerCard({
   isActionPending,
   isActionDone,
   doneLabel,
+  doneDescription,
   actionHref,
   actionExternal,
   className,
@@ -46,6 +52,8 @@ export function BlockerCard({
   // Once the action is done the label announces the new state, so the
   // original action name stops applying.
   const ariaLabel = isActionDone ? undefined : actionAriaLabel;
+  const shownDescription =
+    isActionDone && doneDescription ? doneDescription : description;
   return (
     <Card className={className}>
       <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
@@ -54,7 +62,9 @@ export function BlockerCard({
         </div>
         <div className="space-y-1">
           <p className="font-semibold">{title}</p>
-          <div className="text-sm text-muted-foreground">{description}</div>
+          <div className="text-sm text-muted-foreground">
+            {shownDescription}
+          </div>
         </div>
         {actionHref && buttonLabel ? (
           <Button type="button" variant="default" asChild>
