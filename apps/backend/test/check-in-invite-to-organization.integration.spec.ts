@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import {
+  afterAll,
   afterEach,
   beforeAll,
   describe,
@@ -15,6 +16,7 @@ import { PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { NotificationService } from '../src/notification';
+import { EmailService } from '../src/notification/email/email.service';
 import { createMembershipRequest, createUser } from './factories';
 import {
   addMembership,
@@ -95,12 +97,16 @@ describe('checkInInviteToOrganization cooldown', () => {
     notifySpy = spyOn(
       app.get(NotificationService),
       'notifyOrganizationUnitInvited',
-    ).mockImplementation(() => {});
+    ).mockImplementation(async () => {});
   });
 
   afterEach(() => {
     notifySpy.mockClear();
     setAuthMockUserId(callerUserId);
+  });
+
+  afterAll(() => {
+    notifySpy.mockRestore();
   });
 
   const invite = async (checkInId: string, organizationUnitId = unitId) => {
@@ -169,6 +175,23 @@ describe('checkInInviteToOrganization cooldown', () => {
     await invite(volunteer.checkInId, unitId);
     await invite(volunteer.checkInId, otherUnitId);
 
+    expect(notifySpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('releases the claim and reports an error when dispatch fails, so an immediate retry sends', async () => {
+    const volunteer = await createUser(db);
+    notifySpy.mockImplementationOnce(async () => {
+      throw new Error('dispatch failed');
+    });
+
+    const failed = await graphqlRequest(app, {
+      query: CHECK_IN_INVITE_TO_ORGANIZATION,
+      variables: { checkInId: volunteer.checkInId },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+    expect(failed.errors?.[0]).toBeDefined();
+
+    expect(await invite(volunteer.checkInId)).toBe(true);
     expect(notifySpy).toHaveBeenCalledTimes(2);
   });
 
@@ -241,5 +264,77 @@ describe('checkInInviteToOrganization cooldown', () => {
 
     expect(response.errors?.[0]?.message).toBe('Volunteer not found');
     expect(notifySpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('checkInInviteToOrganization email dispatch', () => {
+  let app: INestApplication;
+  let db: Database;
+  let unitId: string;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+
+    const org = await createOrganizationWithType(
+      db,
+      `OrgInviteDispatch ${crypto.randomUUID()}`,
+    );
+    const unit = await createUnit(db, {
+      organizationId: org.organization.id,
+      typeId: org.type.id,
+      name: 'Invite dispatch unit',
+    });
+    unitId = unit.id;
+
+    const permission = await db.query.permissions.findFirst({
+      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
+    });
+    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
+    const role = await createRole(db, { organizationId: org.organization.id });
+    await grantPermissionToRole(db, {
+      roleId: role.id,
+      permissionId: permission.id,
+    });
+    const membership = await addMembership(db, context.testUserId, unit.id);
+    await assignRoleToMembership(db, {
+      membershipId: membership.id,
+      roleId: role.id,
+    });
+  });
+
+  it('surfaces a failed email enqueue to the caller and lets an immediate retry send', async () => {
+    const volunteer = await createUser(db);
+    const sendSpy = spyOn(app.get(EmailService), 'send');
+    sendSpy.mockImplementationOnce(async () => {
+      throw new Error('outbox unavailable');
+    });
+    sendSpy.mockImplementationOnce(async () => {});
+
+    try {
+      const failed = await graphqlRequest(app, {
+        query: CHECK_IN_INVITE_TO_ORGANIZATION,
+        variables: { checkInId: volunteer.checkInId },
+        headers: { 'x-organization-unit-id': unitId },
+      });
+      expect(failed.errors?.[0]).toBeDefined();
+
+      const retried = await graphqlRequestRequiringData<{
+        checkInInviteToOrganization: boolean;
+      }>(
+        app,
+        {
+          query: CHECK_IN_INVITE_TO_ORGANIZATION,
+          variables: { checkInId: volunteer.checkInId },
+          headers: { 'x-organization-unit-id': unitId },
+        },
+        'checkInInviteToOrganization',
+      );
+      expect(retried.checkInInviteToOrganization).toBe(true);
+      expect(sendSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      sendSpy.mockRestore();
+    }
   });
 });

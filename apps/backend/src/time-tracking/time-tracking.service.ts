@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   and,
@@ -25,6 +25,7 @@ import {
   ForbiddenGraphQLError,
   NotFoundGraphQLError,
 } from '../graphql/errors';
+import { InternalServerGraphQLError } from '../graphql/errors/internal-server.error';
 import { PaginationInput } from '../graphql/pagination.input';
 import { MembershipService } from '../membership/membership.service';
 import { NotificationService } from '../notification';
@@ -64,6 +65,8 @@ import {
 
 @Injectable()
 export class TimeTrackingService {
+  private readonly logger = new Logger(TimeTrackingService.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
@@ -757,18 +760,36 @@ export class TimeTrackingService {
     if (isMember || pendingRequest) return;
 
     // Cooldown: a skipped send is indistinguishable to the caller.
+    const claimedAt = new Date();
     const claimed =
       await this._membershipService.claimOrganizationUnitInvitation(
         volunteerId,
         organizationUnitId,
+        claimedAt,
       );
     if (!claimed) return;
 
-    this.notificationService.notifyOrganizationUnitInvited({
-      organizationUnitId,
-      organizationUnitName: organizationUnit.name,
-      userId: volunteerId,
-    });
+    // The claim is taken before dispatch so concurrent callers cannot both
+    // send; a failed dispatch releases it, so a retry can send immediately.
+    try {
+      await this.notificationService.notifyOrganizationUnitInvited({
+        organizationUnitId,
+        organizationUnitName: organizationUnit.name,
+        userId: volunteerId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Organization unit invitation dispatch failed for ${volunteerId} in ${organizationUnitId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      await this._membershipService.releaseOrganizationUnitInvitation(
+        volunteerId,
+        organizationUnitId,
+        claimedAt,
+      );
+      throw new InternalServerGraphQLError(
+        'The invitation could not be sent. Please try again.',
+      );
+    }
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_INVITE,

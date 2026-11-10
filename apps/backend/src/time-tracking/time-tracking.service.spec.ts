@@ -163,6 +163,59 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
   });
 });
 
+describe('TimeTrackingService.inviteVolunteerToOrganization dispatch failure', () => {
+  it('releases the cooldown claim, skips PostHog and throws when the email cannot be dispatched', async () => {
+    const capture = jest.fn();
+    const claimOrganizationUnitInvitation = jest.fn().mockResolvedValue(true);
+    const releaseOrganizationUnitInvitation = jest
+      .fn()
+      .mockResolvedValue(undefined);
+    const service = new TimeTrackingService(
+      {
+        query: {
+          organizationUnits: {
+            findFirst: jest.fn().mockResolvedValue({
+              id: 'ou-1',
+              name: 'Unit',
+              organizationId: 'org-1',
+            }),
+          },
+        },
+      } as never,
+      {
+        claimOrganizationUnitInvitation,
+        releaseOrganizationUnitInvitation,
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(false),
+        findPendingMembershipRequest: jest.fn().mockResolvedValue(undefined),
+      } as never,
+      {} as never,
+      { capture } as unknown as PostHogService,
+      {} as never,
+      { findById: jest.fn().mockResolvedValue({ id: 'volunteer-1' }) } as never,
+      {
+        notifyOrganizationUnitInvited: jest
+          .fn()
+          .mockRejectedValue(new Error('outbox unavailable')),
+      } as never,
+      {} as never,
+      { emit: jest.fn() } as never,
+    );
+
+    await expect(
+      service.inviteVolunteerToOrganization('ou-1', 'volunteer-1'),
+    ).rejects.toThrow('The invitation could not be sent. Please try again.');
+
+    const claimedAt = claimOrganizationUnitInvitation.mock.calls[0]?.[2];
+    expect(claimedAt).toBeInstanceOf(Date);
+    expect(releaseOrganizationUnitInvitation).toHaveBeenCalledWith(
+      'volunteer-1',
+      'ou-1',
+      claimedAt,
+    );
+    expect(capture).not.toHaveBeenCalled();
+  });
+});
+
 describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
   it('inherits the instance override over the master shift type', async () => {
     const insertValues = jest.fn().mockReturnValue({

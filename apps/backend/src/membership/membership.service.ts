@@ -84,6 +84,30 @@ export class MembershipService {
     return claimed.length > 0;
   }
 
+  /**
+   * Undoes a claim from {@link claimOrganizationUnitInvitation} whose email
+   * could not be dispatched, so a retry can send right away. Matches the
+   * claim's own timestamp, so a newer claim is never released.
+   */
+  async releaseOrganizationUnitInvitation(
+    userId: string,
+    organizationUnitId: string,
+    claimedAt: Date,
+  ): Promise<void> {
+    await this.db
+      .delete(schema.organizationUnitInvitations)
+      .where(
+        and(
+          eq(schema.organizationUnitInvitations.userId, userId),
+          eq(
+            schema.organizationUnitInvitations.organizationUnitId,
+            organizationUnitId,
+          ),
+          eq(schema.organizationUnitInvitations.lastSentAt, claimedAt),
+        ),
+      );
+  }
+
   private appendIntendedIdsToMetadata(
     metadata: MembershipRequestMetadata,
     intendedShiftInstanceId?: string,

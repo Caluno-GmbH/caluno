@@ -41,13 +41,20 @@ export class OrganizationListener {
     );
   }
 
-  @OnEvent(NotificationEvent.ORGANIZATION_UNIT_INVITED)
+  // Errors propagate to the awaiting emitter (notifyOrganizationUnitInvited),
+  // so a failed send releases the check-in invitation cooldown.
+  @OnEvent(NotificationEvent.ORGANIZATION_UNIT_INVITED, {
+    suppressErrors: false,
+  })
   async handleOrganizationUnitInvited(
     payload: NotificationEventPayloadMap[typeof NotificationEvent.ORGANIZATION_UNIT_INVITED],
   ): Promise<void> {
     await this.notificationService.sendNotification(
       payload.userId,
-      { event: NotificationEvent.ORGANIZATION_UNIT_INVITED },
+      {
+        event: NotificationEvent.ORGANIZATION_UNIT_INVITED,
+        throwOnSendFailure: true,
+      },
       async (recipient) => {
         const templateContext = createEmailTemplateContext(
           this.appI18n,
