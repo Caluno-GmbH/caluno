@@ -15,9 +15,10 @@ export type EditionPageMetaProps = {
 };
 
 /**
- * Page/slot module shape for EE slots and OSS fallback pages.
+ * Page/slot module shape for EE slots (dynamic import).
  * Loaders may still return a bare component (legacy / inline slots);
- * resolvers normalize to this shape.
+ * resolvers normalize to this shape. OSS `<EePage />` fallbacks pass the
+ * component / `generateMetadata` directly — not this module object.
  */
 export type EditionPageModule = {
   /**
@@ -105,9 +106,10 @@ export interface EeExtensions {
   nav?: (ctx: EeNavContext) => EeNavContribution[];
   /**
    * Keyed by a call-site-chosen name. Used by both `<EeSlot />` (inline, null
-   * when absent) and `<EePage />` (App Router stub: optional named OSS
-   * `fallback`, else `notFound` when absent), e.g. `'some-page'`.
-   * Prefer `() => import('./…')` so `generateMetadata` travels with the module.
+   * when absent) and `<EePage />` (App Router stub: optional static OSS
+   * `fallback` component / metadata, else `notFound` when absent),
+   * e.g. `'some-page'`. Prefer `() => import('./…')` so `generateMetadata`
+   * travels with the module.
    */
   slots?: Record<string, EeSlotLoader>;
 }

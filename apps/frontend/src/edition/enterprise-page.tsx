@@ -1,44 +1,50 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
+import type { ComponentType } from 'react';
 import { resolveLocale } from '@/i18n/routing';
 import type {
   EditionPageMetaProps,
   EeSlotProps,
 } from './enterprise-extensions';
-import { resolveEditionPageModule } from './enterprise-slot';
+import { resolveEeSlotComponent, resolveEeSlotModule } from './enterprise-slot';
 
-type EePageOptions = {
+type EditionPageGenerateMetadata = (
+  props: EditionPageMetaProps,
+) => Promise<Metadata>;
+
+type EePageMetadataOptions = {
   ee: string;
-  /** Named OSS page key from `ossPages` (e.g. `'oss-welcome-page'`). */
-  fallback?: string;
+  /** OSS `generateMetadata` when the EE slot is absent. */
+  fallback?: EditionPageGenerateMetadata;
 };
 
 /**
  * App Router `generateMetadata` for an `<EePage />` stub. Resolves the EE
- * slot module (or named OSS fallback) and delegates to its `generateMetadata`
+ * slot module (or static OSS fallback) and delegates to its `generateMetadata`
  * when present. Next only honors this export on the route file — keep the
  * stub as `export const generateMetadata = eePageMetadata({ … })`.
  */
-export function eePageMetadata({ ee, fallback }: EePageOptions) {
+export function eePageMetadata({ ee, fallback }: EePageMetadataOptions) {
   return async function generateMetadata(
     props: EditionPageMetaProps,
   ): Promise<Metadata> {
-    const mod = await resolveEditionPageModule(ee, fallback);
-    if (!mod?.generateMetadata) {
+    const mod = await resolveEeSlotModule(ee);
+    const generate = mod?.generateMetadata ?? fallback;
+    if (!generate) {
       return {};
     }
-    return mod.generateMetadata(props);
+    return generate(props);
   };
 }
 
 /**
  * App Router stub for an EE page slot. Resolves a named slot from
- * `src/ee/index.ts`. When EE/the slot is absent: render the named OSS
- * `fallback` from `ossPages` if provided, otherwise `notFound()`.
+ * `src/ee/index.ts`. When EE/the slot is absent: render the static OSS
+ * `fallback` component if provided, otherwise `notFound()`.
  * A new EE page needs a `slots` entry plus a thin `page.tsx`:
  * `<EePage ee="…" params={params} />` or with
- * `fallback="oss-…"` when OSS ships a core page at the same URL.
+ * `fallback={OssPage}` when OSS ships a core page at the same URL.
  * `params`, `searchParams` (when provided), and any extra props (anything
  * except `ee` / `fallback`) are spread onto the loaded component.
  */
@@ -52,8 +58,9 @@ export async function EePage<TParams extends { locale: string }>({
   ee: string;
   params: Promise<TParams>;
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-  /** Named OSS page key from `ossPages`. */
-  fallback?: string;
+  /** OSS page component when the EE slot is absent. */
+  // biome-ignore lint/suspicious/noExplicitAny: matches EditionPageModule.default
+  fallback?: ComponentType<any>;
 } & EeSlotProps) {
   const { locale: rawLocale } = await params;
   const locale = resolveLocale(rawLocale);
@@ -65,10 +72,9 @@ export async function EePage<TParams extends { locale: string }>({
     ...(searchParams !== undefined ? { searchParams } : {}),
   };
 
-  const mod = await resolveEditionPageModule(ee, fallback);
-  if (!mod) {
+  const Component = (await resolveEeSlotComponent(ee)) ?? fallback;
+  if (!Component) {
     notFound();
   }
-  const Component = mod.default;
   return <Component {...slotProps} />;
 }

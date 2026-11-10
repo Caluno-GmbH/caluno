@@ -1,3 +1,7 @@
+import {
+  AdminWelcomePage,
+  generateMetadata as adminWelcomeGenerateMetadata,
+} from '@/domain/admin-welcome/admin-welcome-page';
 import { EePage, eePageMetadata } from '@/edition/enterprise-page';
 
 interface AdminHomePageProps {
@@ -6,9 +10,9 @@ interface AdminHomePageProps {
 
 export const generateMetadata = eePageMetadata({
   ee: 'todo-page',
-  fallback: 'oss-welcome-page',
+  fallback: adminWelcomeGenerateMetadata,
 });
 
 export default function AdminHomePage({ params }: AdminHomePageProps) {
-  return <EePage ee="todo-page" fallback="oss-welcome-page" params={params} />;
+  return <EePage ee="todo-page" fallback={AdminWelcomePage} params={params} />;
 }

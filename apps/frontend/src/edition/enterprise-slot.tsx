@@ -1,7 +1,6 @@
 import type { ComponentType } from 'react';
 import type { EditionPageModule, EeSlotProps } from './enterprise-extensions';
 import { loadEeExtensions } from './load-ee-extensions';
-import { ossPages } from './oss-pages';
 
 function isPageModule(
   mod: ComponentType<EeSlotProps> | EditionPageModule,
@@ -36,28 +35,6 @@ export async function resolveEeSlotComponent(
 ): Promise<ComponentType<EeSlotProps> | undefined> {
   const mod = await resolveEeSlotModule(name);
   return mod?.default;
-}
-
-/**
- * EE slot first; optional named OSS fallback from `ossPages` when absent.
- * Used by `<EePage />` / `eePageMetadata`.
- */
-export async function resolveEditionPageModule(
-  ee: string,
-  fallback?: string,
-): Promise<EditionPageModule | undefined> {
-  const eeMod = await resolveEeSlotModule(ee);
-  if (eeMod) {
-    return eeMod;
-  }
-  if (!fallback) {
-    return undefined;
-  }
-  const loader = ossPages[fallback];
-  if (!loader) {
-    return undefined;
-  }
-  return loader();
 }
 
 /**

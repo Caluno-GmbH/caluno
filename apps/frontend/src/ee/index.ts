@@ -1,5 +1,11 @@
-import type { EeExtensions } from '@/edition/enterprise-extensions';
-import { eeNav } from './nav';
+import {
+  ADMIN_NAV_ITEM,
+  ADMIN_NAV_SECTION,
+} from '@/components/navigation/admin-nav';
+import type {
+  EeExtensions,
+  EeNavContext,
+} from '@/edition/enterprise-extensions';
 
 /**
  * EE frontend extensions manifest. `loadEeExtensions()`
@@ -18,7 +24,18 @@ import { eeNav } from './nav';
  * `generateMetadata` on the module is available to `eePageMetadata`.
  */
 export const eeExtensions: EeExtensions = {
-  nav: eeNav,
+  nav: ({ orgUId }: EeNavContext) => [
+    {
+      kind: 'item',
+      id: ADMIN_NAV_ITEM.todo,
+      section: ADMIN_NAV_SECTION.menu,
+      before: ADMIN_NAV_ITEM.events,
+      titleKey: 'todo',
+      href: `/admin/${orgUId}`,
+      icon: 'list-todo',
+      countBadge: 'todo',
+    },
+  ],
   slots: {
     'todo-page': () => import('./todo/todo-page'),
     'todo-section-page': () => import('./todo/todo-section-page'),

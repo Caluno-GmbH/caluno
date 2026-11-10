@@ -109,10 +109,10 @@ checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
 so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
 only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
 business logic under `src/ee/`, not in OSS route stubs. Same-URL EE override:
-`<EePage ee="…" fallback="oss-…" />` plus
-`export const generateMetadata = eePageMetadata({ ee, fallback })` — named OSS
-fallbacks live in `src/edition/oss-pages.ts` (no EE imports in the route).
-No fallback → `notFound`. Admin nav: contribute
+`<EePage ee="…" fallback={OssPage} />` plus
+`export const generateMetadata = eePageMetadata({ ee, fallback })` — pass the
+OSS page component to `<EePage />` and its `generateMetadata` to
+`eePageMetadata` (no EE imports in the stub). No fallback → `notFound`. Admin nav: contribute
 via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
 (omit → append); merge happens in `components/navigation/admin-nav.ts`.
 Optional badge counts use `CountBadge?: ComponentType` on OSS items; EE
