@@ -272,7 +272,7 @@ export class OrganizationUnitService {
     const db = tx ?? this.db;
 
     const role = await db.query.roles.findFirst({
-      where: { organizationId, name: roleName },
+      where: { organizationId, name: roleName, isInternal: true },
     });
 
     if (!role) throw new NotFoundGraphQLError(`${roleName} role not found`);
