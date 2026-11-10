@@ -346,7 +346,10 @@ describe('NotificationModule', () => {
 
     notificationService.notifyMembershipApproved(payload);
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Rendering the QR PDF + PNG is slow under suite load; poll instead of a fixed sleep.
+    for (let i = 0; i < 80 && emailService.send.mock.calls.length === 0; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
 
     expect(userService.findById).toHaveBeenCalledWith(user.id);
     expect(expected.html).toContain('cid:check-in-qr-code');
