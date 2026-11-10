@@ -65,7 +65,7 @@ export default async function OrgLayout({
           <SidebarProvider>
             <DashboardSidebar
               permissions={permissionKeys}
-              eeNav={eeExtensions?.nav?.({ orgUId })}
+              eeEnabled={!!eeExtensions}
             />
             <SidebarInset>
               <PageHeaderProvider>

@@ -9,15 +9,16 @@ import {
   CoinsIcon,
   HeartHandshake,
   LayoutListIcon,
-  ListTodo,
   NetworkIcon,
   ScanQrCode,
   ShieldIcon,
   TicketIcon,
   UsersIcon,
 } from 'lucide-react';
+import type { ComponentType } from 'react';
 import type { EeNavContribution } from '@/edition/enterprise-extensions';
 import { EE_ICONS } from '@/edition/enterprise-icons';
+import { VolunteersNavCountBadge } from './volunteers-nav-count-badge';
 
 /** Stable section ids EE (and tests) can target. */
 export const ADMIN_NAV_SECTION = {
@@ -51,7 +52,10 @@ export interface AdminNavItem {
   titleKey: string;
   href: string;
   icon: LucideIcon;
-  count?: number;
+  /**
+   * Optional badge component. Fetches its own data — sidebar passes nothing.
+   */
+  CountBadge?: ComponentType;
   trailingIcon?: LucideIcon;
   /** When set, item is shown only if this returns true. Missing → shown. */
   show?: () => boolean;
@@ -68,8 +72,6 @@ export interface AdminNavSection {
 
 export interface BuildAdminNavContext {
   orgUId: string;
-  waitingCount: number;
-  pendingCount: number | undefined;
   accountingEnabled: boolean;
   permissionSet: ReadonlySet<PermissionKey>;
 }
@@ -91,13 +93,7 @@ export function insertBefore<T extends { id: string }>(
 
 /** OSS admin sidebar sections (always emitted; visibility via `show`). */
 export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
-  const {
-    orgUId,
-    waitingCount,
-    pendingCount,
-    accountingEnabled,
-    permissionSet,
-  } = ctx;
+  const { orgUId, accountingEnabled, permissionSet } = ctx;
 
   return [
     {
@@ -105,13 +101,6 @@ export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
       labelNamespace: 'Common',
       labelKey: 'menu',
       items: [
-        {
-          id: ADMIN_NAV_ITEM.todo,
-          titleKey: 'todo',
-          href: `/admin/${orgUId}`,
-          icon: ListTodo,
-          count: waitingCount,
-        },
         {
           id: ADMIN_NAV_ITEM.events,
           titleKey: 'events',
@@ -135,7 +124,7 @@ export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
           titleKey: 'volunteers',
           href: `/admin/${orgUId}/volunteers`,
           icon: UsersIcon,
-          count: pendingCount,
+          CountBadge: VolunteersNavCountBadge,
         },
         {
           id: ADMIN_NAV_ITEM.requirementForms,
@@ -237,12 +226,14 @@ function toAdminItem(item: {
   titleKey: string;
   href: string;
   icon: keyof typeof EE_ICONS;
+  CountBadge?: ComponentType;
 }): AdminNavItem {
   return {
     id: item.id,
     titleKey: item.titleKey,
     href: item.href,
     icon: EE_ICONS[item.icon],
+    CountBadge: item.CountBadge,
   };
 }
 

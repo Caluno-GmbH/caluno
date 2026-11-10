@@ -5,7 +5,7 @@ import { UserRepository } from '@repo/data';
 import { useQuery } from '@tanstack/react-query';
 import { useSdk } from './use-graphql-client';
 
-function useMyPermissions() {
+export function useMyPermissions() {
   const sdk = useSdk();
   const repository = new UserRepository(sdk);
 

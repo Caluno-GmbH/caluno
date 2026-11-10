@@ -21,6 +21,11 @@ export interface EeNavItemContribution {
   section: string;
   /** Item id to insert before; omit → last in section. */
   before?: string;
+  /**
+   * Optional badge component. Must fetch its own data — the sidebar passes
+   * nothing (no shared count/task context). Client-only.
+   */
+  CountBadge?: ComponentType;
 }
 
 export interface EeNavSectionItem {
@@ -30,6 +35,7 @@ export interface EeNavSectionItem {
   icon: EeIconName;
   /** Item id within this new section; omit → last. */
   before?: string;
+  CountBadge?: ComponentType;
 }
 
 /**
@@ -55,9 +61,9 @@ export type EeNavContribution =
  * `src/ee/index.ts` implements this when present (hosted / private builds);
  * OSS mirrors have no `ee/` directory, so `loadEeExtensions()` resolves to
  * `null` and every OSS call site renders/behaves as if EE did not exist.
- * Add a new EE nav contribution, inline slot, or page by extending
- * `src/ee/index.ts` — `dashboard-sidebar.tsx` and `<EeSlot />` / `<EePage />`
- * call sites never change.
+ * Add a new EE nav contribution in `src/ee/nav.ts` and slots/pages in
+ * `src/ee/index.ts` — `dashboard-sidebar.tsx` (imports `@/ee/nav` only) and
+ * `<EeSlot />` / `<EePage />` call sites never change.
  */
 export interface EeNavContext {
   orgUId: string;
@@ -68,6 +74,8 @@ export interface EeExtensions {
    * Admin sidebar contributions: insert items into existing sections or add
    * new sections. Placement is `before`-only (omit → append).
    * Factory receives `orgUId` so hrefs can be absolute app paths (no auto-prefix).
+   * May include `CountBadge` components — merge happens in the client sidebar
+   * so components are not RSC-serialized.
    */
   nav?: (ctx: EeNavContext) => EeNavContribution[];
   /**

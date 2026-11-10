@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
-import type { Database } from '../../database/database.module';
-import { DATABASE_CONNECTION } from '../../database/database-connection';
-import * as schema from '../../database/schema';
-import { BadRequestGraphQLError } from '../../graphql/errors/bad-request.error';
+import type { Database } from '../../../database/database.module';
+import { DATABASE_CONNECTION } from '../../../database/database-connection';
+import * as schema from '../../../database/schema';
+import { BadRequestGraphQLError } from '../../../graphql/errors/bad-request.error';
 import { TodoFillThreshold } from '../enums/todo-fill-threshold.enum';
 import type { TodoFillAssignmentFilter } from '../models/todo-fill-filter.model';
 import {

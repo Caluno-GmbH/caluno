@@ -1,51 +1,32 @@
-import {
-  ADMIN_NAV_ITEM,
-  ADMIN_NAV_SECTION,
-} from '@/components/navigation/admin-nav';
-import type { EeExtensions } from '@/edition/enterprise-extensions';
+import type { ComponentType } from 'react';
+import type {
+  EeExtensions,
+  EeSlotProps,
+} from '@/edition/enterprise-extensions';
+import { eeNav } from './nav';
 
 /**
  * EE frontend extensions manifest. `loadEeExtensions()`
  * (`@/edition/load-ee-extensions`) dynamically imports this module when the
- * edition flag is set. A new EE nav contribution, inline slot, or page is
- * added here only — `dashboard-sidebar.tsx` and `<EeSlot />` / `<EePage />`
- * call sites never change.
+ * edition flag is set. Server-only: do not import from Client Components —
+ * the sidebar loads nav via `@/ee/nav` so server page slots here never enter
+ * the client graph. A new EE nav contribution, inline slot, or page is added
+ * here (nav via `./nav`) — `<EeSlot />` / `<EePage />` call sites never change.
  *
  * Nav placement with `before` (omit → append as last in the target section).
- * `href` is the full app path.
- *
- * Example nav
- * [
- * {
- *   kind: 'section',
- *   id: 'private',
- *   labelKey: 'private',
- *   before: ADMIN_NAV_SECTION.accounting,
- *   items: [
- *     {
- *       id: 'my-note',
- *       titleKey: 'myNote',
- *       href: `/admin/${orgUId}/my-note`,
- *       icon: 'notebook-pen',
- *     },
- *   ],
- * },
- * {
- *   kind: 'item',
- *   id: 'my-note',
- *   section: ADMIN_NAV_SECTION.menu,
- *   before: ADMIN_NAV_ITEM.shifts,
- *   titleKey: 'myNote',
- *   href: `/admin/${orgUId}/my-note`,
- *   icon: 'notebook-pen',
- * },
- * ]
- *
- * slots map from string to component used in EeSlot or EePage. e.g.
- *     'profile-note': () =>
- *       import('./note/profile-note-section').then((m) => m.ProfileNoteSection),
+ * `href` is the full app path. `CountBadge` is supported — merge happens
+ * client-side in the sidebar so components are not RSC-serialized.
  */
 export const eeExtensions: EeExtensions = {
-  nav: ({ orgUId }) => [],
-  slots: {},
+  nav: eeNav,
+  slots: {
+    'todo-page': () =>
+      import('./todo/todo-page').then(
+        (m) => m.default as ComponentType<EeSlotProps>,
+      ),
+    'todo-section-page': () =>
+      import('./todo/todo-section-page').then(
+        (m) => m.default as ComponentType<EeSlotProps>,
+      ),
+  },
 };

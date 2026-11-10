@@ -1,13 +1,13 @@
 'use client';
 
 import {
-  TaskRepository,
   TodoFillThreshold,
   type UpdateTodoFillAssignmentFilterMutationVariables,
 } from '@repo/data';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
-import { useSdk } from './use-graphql-client';
+import { useSdk } from '../../react/hooks/use-graphql-client';
+import { TaskRepository } from '../task/task.repository';
 
 export const DEFAULT_TODO_FILL_FILTER = {
   threshold: TodoFillThreshold.BelowMinimum,

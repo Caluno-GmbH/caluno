@@ -1,5 +1,5 @@
-import { DocumentKind } from '../../accounting/enums';
-import { PermissionKey } from '../../auth/enums';
+import { DocumentKind } from '../../../accounting/enums';
+import { PermissionKey } from '../../../auth/enums';
 import { TaskType } from '../enums/task-type.enum';
 import type { Task } from '../models/task.model';
 

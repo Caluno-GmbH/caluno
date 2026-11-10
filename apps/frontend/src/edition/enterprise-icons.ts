@@ -1,4 +1,4 @@
-import { NotebookPen } from 'lucide-react';
+import { ListTodo } from 'lucide-react';
 
 /**
  * Icon registry for EE nav contributions (`EeExtensions.nav`). Nav
@@ -8,7 +8,7 @@ import { NotebookPen } from 'lucide-react';
  * A new EE nav item reusing an existing icon needs no change here.
  */
 export const EE_ICONS = {
-  'notebook-pen': NotebookPen,
+  'list-todo': ListTodo,
 } as const;
 
 export type EeIconName = keyof typeof EE_ICONS;

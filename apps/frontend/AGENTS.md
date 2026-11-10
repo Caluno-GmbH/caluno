@@ -111,6 +111,12 @@ only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
 business logic under `src/ee/`, not in OSS route stubs. Admin nav: contribute
 via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
 (omit → append); merge happens in `components/navigation/admin-nav.ts`.
+Optional badge counts use `CountBadge?: ComponentType` on OSS items and EE
+contributions — each badge fetches its own data (no shared nav count/task
+context; `MyTasksQuery` stays EE-only). The sidebar loads EE nav **client-side**
+from `@/ee/nav` (layout passes `eeEnabled`, not a serialized `eeNav`) so
+`CountBadge` components are not RSC-serialized and server page slots in
+`@/ee` never enter the client graph.
 
 ### Locale switching
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { DocumentKind } from '../../accounting/enums';
-import { billingYearBounds } from '../../accounting/utils/billing-period';
+import { DocumentKind } from '../../../accounting/enums';
+import { billingYearBounds } from '../../../accounting/utils/billing-period';
 import { TaskType } from '../enums/task-type.enum';
 import {
   type ContractTaskRow,
