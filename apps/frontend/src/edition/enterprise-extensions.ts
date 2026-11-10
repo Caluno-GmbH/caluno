@@ -104,7 +104,7 @@ export interface EeExtensions {
   /**
    * Keyed by a call-site-chosen name. Used by both `<EeSlot />` (inline, null
    * when absent) and `<EePage />` (App Router stub: optional named OSS
-   * `fallback`, else `notFound` when absent), e.g. `'todo-page'`.
+   * `fallback`, else `notFound` when absent), e.g. `'some-page'`.
    * Prefer `() => import('./…')` so `generateMetadata` travels with the module.
    */
   slots?: Record<string, EeSlotLoader>;

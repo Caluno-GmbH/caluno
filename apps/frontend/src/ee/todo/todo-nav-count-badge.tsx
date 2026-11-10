@@ -5,7 +5,7 @@ import { useMyPermissions, useOrgUId } from '@repo/data/react';
 import { Badge } from '@repo/ui';
 import { visibleOverviewTasks } from './visible-tasks';
 
-/** The Todo nav badge — loads EE tasks itself; never fed via OSS nav context. */
+/** TodoNavCountBadge — loads EE tasks itself; never fed via OSS nav context. */
 export function TodoNavCountBadge() {
   const orgUId = useOrgUId();
   const { data: tasks } = useMyTasks(orgUId);
