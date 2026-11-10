@@ -436,7 +436,10 @@ export class AuthService {
         ),
       )
       .orderBy(schema.membershipRoles.id)
-      .for('update');
+      // Lock only the role assignments; locking the joined membership rows too
+      // would deadlock two owners demoting each other (each already holds its
+      // own membership row from the caller's SELECT ... FOR UPDATE).
+      .for('update', { of: [schema.membershipRoles] });
     if (!holders.some((holder) => holder.membershipId !== membershipId)) {
       throw new ConflictGraphQLError(
         'An organization must keep at least one owner.',
