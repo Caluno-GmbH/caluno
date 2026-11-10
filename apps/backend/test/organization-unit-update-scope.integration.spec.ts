@@ -103,7 +103,7 @@ describe('updateOrganizationUnit / requestOrganizationUnitDeletion tenant scope'
     expect(after?.idVerificationEnabled).toBe(nextEnabled);
   });
 
-  it('rejects moving a unit to another parent', async () => {
+  it('rejects every parentId change (sibling, null, self, descendant)', async () => {
     const type = await db.query.organizationUnitTypes.findFirst({
       where: { organizationId: orgBId },
     });
@@ -121,25 +121,46 @@ describe('updateOrganizationUnit / requestOrganizationUnitDeletion tenant scope'
       name: `Move sibling ${crypto.randomUUID()}`,
       parentId: unitBId,
     });
-
-    const response = await graphqlRequest<{
-      updateOrganizationUnit?: { id: string };
-    }>(app, {
-      query: UPDATE_ORGANIZATION_UNIT,
-      variables: {
-        id: child.id,
-        input: { organizationId: orgBId, parentId: sibling.id },
-      },
-      headers: { 'x-organization-unit-id': unitBId },
+    const grandchild = await createUnit(db, {
+      organizationId: orgBId,
+      typeId: type.id,
+      name: `Move grandchild ${crypto.randomUUID()}`,
+      parentId: child.id,
     });
 
-    expect(response.errors?.[0]?.message).toMatch(/cannot be moved/i);
-    expect(response.data?.updateOrganizationUnit).toBeFalsy();
+    const cases = [
+      { label: 'sibling', parentId: sibling.id },
+      { label: 'null', parentId: null },
+      { label: 'self', parentId: child.id },
+      { label: 'descendant', parentId: grandchild.id },
+    ];
 
-    const still = await db.query.organizationUnits.findFirst({
-      where: { id: child.id },
-    });
-    expect(still?.parentId).toBe(unitBId);
+    for (const testCase of cases) {
+      const response = await graphqlRequest<{
+        updateOrganizationUnit?: { id: string };
+      }>(app, {
+        query: UPDATE_ORGANIZATION_UNIT,
+        variables: {
+          id: child.id,
+          input: { organizationId: orgBId, parentId: testCase.parentId },
+        },
+        headers: { 'x-organization-unit-id': unitBId },
+      });
+
+      expect(
+        response.errors?.[0]?.message,
+        testCase.label,
+      ).toMatch(/cannot be moved/i);
+      expect(
+        response.data?.updateOrganizationUnit,
+        testCase.label,
+      ).toBeFalsy();
+
+      const still = await db.query.organizationUnits.findFirst({
+        where: { id: child.id },
+      });
+      expect(still?.parentId, testCase.label).toBe(unitBId);
+    }
   });
 
   it('rejects updateOrganizationUnit on another org when header is B', async () => {
