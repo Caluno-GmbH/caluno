@@ -12,8 +12,6 @@ import {
 
 const baseCtx = {
   orgUId: 'org-1',
-  waitingCount: 2,
-  pendingCount: 3,
   accountingEnabled: true,
   permissionSet: new Set([PermissionKey.OrgView]),
 };
@@ -44,7 +42,7 @@ describe('insertBefore', () => {
 });
 
 describe('buildAdminNav', () => {
-  it('emits stable section and item ids', () => {
+  it('emits stable section and item ids without todo', () => {
     const sections = buildAdminNav(baseCtx);
     expect(sections.map((s) => s.id)).toEqual([
       ADMIN_NAV_SECTION.menu,
@@ -53,7 +51,6 @@ describe('buildAdminNav', () => {
       ADMIN_NAV_SECTION.shortcuts,
     ]);
     expect(sections[0]?.items.map((i) => i.id)).toEqual([
-      ADMIN_NAV_ITEM.todo,
       ADMIN_NAV_ITEM.events,
       ADMIN_NAV_ITEM.shifts,
       ADMIN_NAV_ITEM.timesheets,
@@ -135,7 +132,7 @@ describe('mergeAdminNav', () => {
         section: ADMIN_NAV_SECTION.menu,
         titleKey: 'myNote',
         href: '/admin/org-1/my-note',
-        icon: 'notebook-pen',
+        icon: 'list-todo',
       },
     ];
     const merged = mergeAdminNav(base, contributions);
@@ -153,7 +150,7 @@ describe('mergeAdminNav', () => {
         before: ADMIN_NAV_ITEM.volunteers,
         titleKey: 'myNote',
         href: '/admin/org-1/my-note',
-        icon: 'notebook-pen',
+        icon: 'list-todo',
       },
     ];
     const menu = mergeAdminNav(base, contributions).find(
@@ -165,6 +162,37 @@ describe('mergeAdminNav', () => {
     );
   });
 
+  it('resolves countBadge via the client registry when provided', () => {
+    // biome-ignore lint/correctness/noComponentHookFactories: ok in a test
+    const CountBadge = () => null;
+    const contributions: EeNavContribution[] = [
+      {
+        kind: 'item',
+        id: ADMIN_NAV_ITEM.todo,
+        section: ADMIN_NAV_SECTION.menu,
+        before: ADMIN_NAV_ITEM.events,
+        titleKey: 'todo',
+        href: '/admin/org-1',
+        icon: 'list-todo',
+        countBadge: 'todo',
+      },
+    ];
+    const withoutRegistry = mergeAdminNav(base, contributions).find(
+      (s) => s.id === ADMIN_NAV_SECTION.menu,
+    );
+    expect(
+      withoutRegistry?.items.find((i) => i.id === ADMIN_NAV_ITEM.todo)
+        ?.CountBadge,
+    ).toBeUndefined();
+
+    const withRegistry = mergeAdminNav(base, contributions, {
+      todo: CountBadge,
+    }).find((s) => s.id === ADMIN_NAV_SECTION.menu);
+    expect(
+      withRegistry?.items.find((i) => i.id === ADMIN_NAV_ITEM.todo)?.CountBadge,
+    ).toBe(CountBadge);
+  });
+
   it('appends an item when before anchor is unknown', () => {
     const contributions: EeNavContribution[] = [
       {
@@ -174,7 +202,7 @@ describe('mergeAdminNav', () => {
         before: 'does-not-exist',
         titleKey: 'myNote',
         href: '/admin/org-1/my-note',
-        icon: 'notebook-pen',
+        icon: 'list-todo',
       },
     ];
     const menu = mergeAdminNav(base, contributions).find(
@@ -195,7 +223,7 @@ describe('mergeAdminNav', () => {
             id: 'reports-overview',
             titleKey: 'reportsOverview',
             href: '/reports',
-            icon: 'notebook-pen',
+            icon: 'list-todo',
           },
         ],
       },
@@ -217,5 +245,15 @@ describe('mergeAdminNav', () => {
     ];
     const ids = mergeAdminNav(base, contributions).map((s) => s.id);
     expect(ids.at(-1)).toBe('reports');
+  });
+});
+
+describe('volunteers CountBadge', () => {
+  it('attaches VolunteersNavCountBadge on the volunteers item', () => {
+    const volunteers = buildAdminNav(baseCtx)[0]?.items.find(
+      (i) => i.id === ADMIN_NAV_ITEM.volunteers,
+    );
+    if (!volunteers) throw new Error('volunteers missing');
+    expect(volunteers.CountBadge).toBeTruthy();
   });
 });

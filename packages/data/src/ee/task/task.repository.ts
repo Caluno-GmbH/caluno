@@ -4,7 +4,7 @@ import type {
   UpdateTodoFillAssignmentFilterMutation,
   UpdateTodoFillAssignmentFilterMutationVariables,
 } from '../../generated/graphql';
-import { BaseRepository } from '../base/base.repository';
+import { BaseRepository } from '../../repositories/base/base.repository';
 
 export class TaskRepository extends BaseRepository {
   async myTasks(): Promise<MyTasksQuery['myTasks']> {

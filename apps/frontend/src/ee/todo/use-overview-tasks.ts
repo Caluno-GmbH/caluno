@@ -1,7 +1,7 @@
 'use client';
 
 import { PermissionKey } from '@repo/data';
-import { useMyTasks } from '@repo/data/react';
+import { useMyTasks } from '@repo/data/ee';
 import { useLocale, useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { mapOverviewTask } from './map-task';

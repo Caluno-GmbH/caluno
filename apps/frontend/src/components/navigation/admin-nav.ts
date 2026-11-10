@@ -9,15 +9,19 @@ import {
   CoinsIcon,
   HeartHandshake,
   LayoutListIcon,
-  ListTodo,
   NetworkIcon,
   ScanQrCode,
   ShieldIcon,
   TicketIcon,
   UsersIcon,
 } from 'lucide-react';
+import type { ComponentType } from 'react';
 import type { EeNavContribution } from '@/edition/enterprise-extensions';
-import { EE_ICONS } from '@/edition/enterprise-icons';
+import {
+  EE_ICONS,
+  type EeCountBadgeName,
+} from '@/edition/enterprise-menu-extensions';
+import { VolunteersNavCountBadge } from './volunteers-nav-count-badge';
 
 /** Stable section ids EE (and tests) can target. */
 export const ADMIN_NAV_SECTION = {
@@ -51,7 +55,10 @@ export interface AdminNavItem {
   titleKey: string;
   href: string;
   icon: LucideIcon;
-  count?: number;
+  /**
+   * Optional badge component. Fetches its own data — sidebar passes nothing.
+   */
+  CountBadge?: ComponentType;
   trailingIcon?: LucideIcon;
   /** When set, item is shown only if this returns true. Missing → shown. */
   show?: () => boolean;
@@ -68,8 +75,6 @@ export interface AdminNavSection {
 
 export interface BuildAdminNavContext {
   orgUId: string;
-  waitingCount: number;
-  pendingCount: number | undefined;
   accountingEnabled: boolean;
   permissionSet: ReadonlySet<PermissionKey>;
 }
@@ -91,13 +96,7 @@ export function insertBefore<T extends { id: string }>(
 
 /** OSS admin sidebar sections (always emitted; visibility via `show`). */
 export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
-  const {
-    orgUId,
-    waitingCount,
-    pendingCount,
-    accountingEnabled,
-    permissionSet,
-  } = ctx;
+  const { orgUId, accountingEnabled, permissionSet } = ctx;
 
   return [
     {
@@ -105,13 +104,6 @@ export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
       labelNamespace: 'Common',
       labelKey: 'menu',
       items: [
-        {
-          id: ADMIN_NAV_ITEM.todo,
-          titleKey: 'todo',
-          href: `/admin/${orgUId}`,
-          icon: ListTodo,
-          count: waitingCount,
-        },
         {
           id: ADMIN_NAV_ITEM.events,
           titleKey: 'events',
@@ -135,7 +127,7 @@ export function buildAdminNav(ctx: BuildAdminNavContext): AdminNavSection[] {
           titleKey: 'volunteers',
           href: `/admin/${orgUId}/volunteers`,
           icon: UsersIcon,
-          count: pendingCount,
+          CountBadge: VolunteersNavCountBadge,
         },
         {
           id: ADMIN_NAV_ITEM.requirementForms,
@@ -232,27 +224,35 @@ export function visibleAdminNav(
     .filter((section) => section.items.length > 0);
 }
 
-function toAdminItem(item: {
-  id: string;
-  titleKey: string;
-  href: string;
-  icon: keyof typeof EE_ICONS;
-}): AdminNavItem {
+function toAdminItem(
+  item: {
+    id: string;
+    titleKey: string;
+    href: string;
+    icon: keyof typeof EE_ICONS;
+    countBadge?: EeCountBadgeName;
+  },
+  countBadges?: Partial<Record<EeCountBadgeName, ComponentType>>,
+): AdminNavItem {
   return {
     id: item.id,
     titleKey: item.titleKey,
     href: item.href,
     icon: EE_ICONS[item.icon],
+    CountBadge: item.countBadge ? countBadges?.[item.countBadge] : undefined,
   };
 }
 
 /**
  * Apply EE nav contributions onto an OSS base menu.
  * Unknown `before` anchors append. Empty/undefined contributions are a no-op.
+ * `countBadges` resolves serializable `countBadge` keys; omit until the
+ * client loads `@/ee/count-badges` (link still renders without a badge).
  */
 export function mergeAdminNav(
   base: readonly AdminNavSection[],
   contributions: readonly EeNavContribution[] | undefined,
+  countBadges?: Partial<Record<EeCountBadgeName, ComponentType>>,
 ): AdminNavSection[] {
   if (!contributions?.length) return [...base];
 
@@ -275,7 +275,7 @@ export function mergeAdminNav(
         ...section,
         items: insertBefore(
           section.items,
-          toAdminItem(contribution),
+          toAdminItem(contribution, countBadges),
           contribution.before,
         ),
       };
@@ -284,7 +284,7 @@ export function mergeAdminNav(
 
     let items: AdminNavItem[] = [];
     for (const item of contribution.items) {
-      items = insertBefore(items, toAdminItem(item), item.before);
+      items = insertBefore(items, toAdminItem(item, countBadges), item.before);
     }
 
     sections = insertBefore(

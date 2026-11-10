@@ -1,12 +1,7 @@
 'use client';
-import { MembershipRequestStatus, PermissionKey } from '@repo/data';
+import type { PermissionKey } from '@repo/data';
+import { useCurrentOrg } from '@repo/data/react';
 import {
-  useCurrentOrg,
-  useMembershipRequestCount,
-  useMyTasks,
-} from '@repo/data/react';
-import {
-  Badge,
   Button,
   Logo,
   Sidebar,
@@ -23,17 +18,17 @@ import {
 import { LogOutIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { type ComponentType, useEffect, useMemo, useState } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
-import { visibleOverviewTasks } from '@/domain/overview/visible-tasks';
 import type { EeNavContribution } from '@/edition/enterprise-extensions';
+import type { EeCountBadgeName } from '@/edition/enterprise-menu-extensions';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
 import { buildAdminNav, mergeAdminNav, visibleAdminNav } from './admin-nav';
 
 interface DashboardSidebarProps {
   permissions: PermissionKey[];
-  /** Resolved server-side via `loadEeExtensions()`; empty/undefined in OSS. */
+  /** Serializable EE nav from the org layout (SSR with the menu). */
   eeNav?: EeNavContribution[];
 }
 
@@ -47,42 +42,38 @@ export function DashboardSidebar({
   const t = useTranslations('Navigation');
   const tCommon = useTranslations('Common');
   const permissionSet = useMemo(() => new Set(permissions), [permissions]);
-  const canViewVolunteers = permissionSet.has(PermissionKey.VolunteerView);
   const { accountingEnabled } = useCurrentOrg();
   const signOut = useSignOut();
 
-  const { data: pendingCount } = useMembershipRequestCount(
-    orgUId ?? '',
-    MembershipRequestStatus.Pending,
-    canViewVolunteers,
-  );
-  const { data: myTasks } = useMyTasks(orgUId ?? '');
-  const waitingCount = useMemo(() => {
-    if (!orgUId || !myTasks) return 0;
-    return visibleOverviewTasks(myTasks, {
-      organizationUnitId: orgUId,
-      permissions: permissionSet,
-    }).length;
-  }, [myTasks, orgUId, permissionSet]);
+  const [countBadges, setCountBadges] = useState<
+    Partial<Record<EeCountBadgeName, ComponentType>> | undefined
+  >();
+
+  useEffect(() => {
+    if (!eeNav?.length) {
+      setCountBadges(undefined);
+      return;
+    }
+    let cancelled = false;
+    void import(/* turbopackOptional: true */ '@/ee/count-badges').then(
+      (mod) => {
+        if (!cancelled) setCountBadges(mod.eeCountBadges);
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [eeNav]);
 
   const sections = useMemo(() => {
     if (!orgUId) return [];
     const base = buildAdminNav({
       orgUId,
-      waitingCount,
-      pendingCount,
       accountingEnabled,
       permissionSet,
     });
-    return visibleAdminNav(mergeAdminNav(base, eeNav));
-  }, [
-    orgUId,
-    waitingCount,
-    pendingCount,
-    accountingEnabled,
-    permissionSet,
-    eeNav,
-  ]);
+    return visibleAdminNav(mergeAdminNav(base, eeNav, countBadges));
+  }, [orgUId, accountingEnabled, permissionSet, eeNav, countBadges]);
 
   async function handleSignOut() {
     await signOut();
@@ -122,10 +113,8 @@ export function DashboardSidebar({
                             {t(item.titleKey as Parameters<typeof t>[0])}
                           </span>
                         </span>
-                        {item.count ? (
-                          <Badge variant="neutral" size="count">
-                            {item.count}
-                          </Badge>
+                        {item.CountBadge ? (
+                          <item.CountBadge />
                         ) : item.trailingIcon ? (
                           <item.trailingIcon className="h-4 w-4 text-muted-foreground" />
                         ) : null}

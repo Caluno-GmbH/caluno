@@ -108,9 +108,20 @@ exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
 checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
 so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
 only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
-business logic under `src/ee/`, not in OSS route stubs. Admin nav: contribute
+business logic under `src/ee/`, not in OSS route stubs. Same-URL EE override:
+`<EePage ee="…" fallback={OssPage} />` plus
+`export const generateMetadata = eePageMetadata({ ee, fallback })` — pass the
+OSS page component to `<EePage />` and its `generateMetadata` to
+`eePageMetadata` (no EE imports in the stub). No fallback → `notFound`. Admin nav: contribute
 via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
 (omit → append); merge happens in `components/navigation/admin-nav.ts`.
+Optional badge counts use `CountBadge?: ComponentType` on OSS items; EE
+contributions use serializable `countBadge?: EeCountBadgeName` — each badge
+fetches its own data (no shared nav count/task context; `MyTasksQuery` stays
+EE-only). The org layout passes serializable `eeNav` from `eeExtensions.nav`
+into the sidebar so EE items SSR with the menu; the sidebar resolves badges
+client-side from `@/ee/count-badges` so EE badge components and server page
+slots in `@/ee` never enter the client graph via RSC props.
 
 ### Locale switching
 

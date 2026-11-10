@@ -1,6 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-scalars';
-import { PermissionKey } from '../../auth/enums';
+import { PermissionKey } from '../../../auth/enums';
 import { TaskType } from '../enums/task-type.enum';
 
 @ObjectType()

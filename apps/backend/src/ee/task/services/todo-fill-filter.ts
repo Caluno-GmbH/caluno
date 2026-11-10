@@ -1,4 +1,4 @@
-import { appDateParts, startOfAppDay } from '../../shift/utils/app-time';
+import { appDateParts, startOfAppDay } from '../../../shift/utils/app-time';
 import { TodoFillThreshold } from '../enums/todo-fill-threshold.enum';
 
 export const FILL_ASSIGNMENT_DAYS = [7, 14, 30] as const;

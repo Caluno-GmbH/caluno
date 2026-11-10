@@ -14,35 +14,35 @@ import {
   DocumentKind,
   InvoiceStatus,
   SigneeType,
-} from '../src/accounting/enums';
-import { PermissionKey } from '../src/auth/enums';
-import type { Database } from '../src/database/database.module';
-import * as schema from '../src/database/schema';
-import { EventInviteStatus } from '../src/event/enums';
-import { MembershipRequestStatus } from '../src/membership/enums';
-import { ShiftInviteStatus } from '../src/shift/enums';
-import { TaskType } from '../src/task/enums/task-type.enum';
-import { TaskService } from '../src/task/services/task.service';
+} from '../../src/accounting/enums';
+import { PermissionKey } from '../../src/auth/enums';
+import type { Database } from '../../src/database/database.module';
+import * as schema from '../../src/database/schema';
+import { TaskType } from '../../src/ee/task/enums/task-type.enum';
+import { TaskService } from '../../src/ee/task/services/task.service';
+import { EventInviteStatus } from '../../src/event/enums';
+import { MembershipRequestStatus } from '../../src/membership/enums';
+import { ShiftInviteStatus } from '../../src/shift/enums';
 import {
   createEvent,
   createMembershipRequest,
   createShift,
   createShiftInstanceInvite,
   createUser,
-} from './factories';
+} from '../factories';
 import {
   createDocumentTemplate,
   createReimbursementType,
   stubInvoiceDocumentNumber,
-} from './factories/accounting.factory';
-import { createUnit } from './factories/org.factory';
+} from '../factories/accounting.factory';
+import { createUnit } from '../factories/org.factory';
 import {
   assignRoleToMembership,
   createRole,
   grantPermissionToRole,
-} from './factories/role.factory';
-import { applyBunAuthMocks } from './helpers/auth-mocks';
-import { getGraphqlTestContext } from './helpers/graphql-test-context';
+} from '../factories/role.factory';
+import { applyBunAuthMocks } from '../helpers/auth-mocks';
+import { getGraphqlTestContext } from '../helpers/graphql-test-context';
 
 applyBunAuthMocks(mock.module);
 setDefaultTimeout(30_000);

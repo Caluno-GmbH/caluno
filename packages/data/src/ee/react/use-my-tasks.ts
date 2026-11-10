@@ -1,8 +1,8 @@
 'use client';
 
-import { TaskRepository } from '@repo/data';
 import { useQuery } from '@tanstack/react-query';
-import { useSdk } from './use-graphql-client';
+import { useSdk } from '../../react/hooks/use-graphql-client';
+import { TaskRepository } from '../task/task.repository';
 
 /** Overview refreshes on its own while the admin is looking at it. */
 const MY_TASKS_POLL_MS = 30_000;

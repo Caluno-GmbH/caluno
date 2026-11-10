@@ -1,8 +1,8 @@
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
-import { PERMISSIONS } from '../../auth/constants';
-import { Permissions } from '../../auth/decorators/permissions.decorator';
-import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { PERMISSIONS } from '../../../auth/constants';
+import { Permissions } from '../../../auth/decorators/permissions.decorator';
+import type { AuthenticatedGraphQLContext } from '../../../graphql/graphql.context';
 import {
   TodoFillAssignmentFilter,
   UpdateTodoFillAssignmentFilterInput,
