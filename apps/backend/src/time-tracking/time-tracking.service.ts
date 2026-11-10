@@ -783,6 +783,8 @@ export class TimeTrackingService {
   ): Promise<{
     isMember: boolean;
     openMembershipRequestId: string | null;
+    canAcceptMembershipRequest: boolean;
+    membershipRequestOrganizationUnitName: string | null;
     shiftInviteStatus: ShiftInviteStatus | null;
     isParticipating: boolean;
     hasOpenTimeEntry: boolean;
@@ -848,10 +850,18 @@ export class TimeTrackingService {
     ]);
 
     const shiftInviteStatus = inviteStatuses[0]?.status ?? null;
+    const requestAuthority = pendingRequest
+      ? await this.resolveMembershipRequestAuthority(
+          callerUserId,
+          pendingRequest.organizationUnitId,
+        )
+      : null;
 
     return {
       isMember,
       openMembershipRequestId: pendingRequest?.id ?? null,
+      canAcceptMembershipRequest: requestAuthority?.canAccept ?? false,
+      membershipRequestOrganizationUnitName: requestAuthority?.unitName ?? null,
       shiftInviteStatus,
       isParticipating: isParticipatingShiftInviteStatus(
         shiftInviteStatus ?? undefined,
@@ -867,6 +877,28 @@ export class TimeTrackingService {
       volunteerId,
       organizationUnitId,
       shiftInstanceId,
+    };
+  }
+
+  /**
+   * For an open membership request: the name of the unit it targets (the
+   * selected unit or an ancestor) and whether the caller may accept it — a
+   * check-in desk may only grant membership in units it manages.
+   */
+  private async resolveMembershipRequestAuthority(
+    callerUserId: string,
+    requestUnitId: string,
+  ): Promise<{ canAccept: boolean; unitName: string | null }> {
+    const [requestUnit, manageableUnits] = await Promise.all([
+      this.organizationUnitDataService.findById(requestUnitId),
+      this.organizationService.findUnitsWithPermission(
+        callerUserId,
+        PERMISSIONS.CHECK_IN_MANAGE,
+      ),
+    ]);
+    return {
+      canAccept: manageableUnits.some((unit) => unit.id === requestUnitId),
+      unitName: requestUnit?.name ?? null,
     };
   }
 

@@ -214,6 +214,7 @@
     "askVolunteerToCompleteForms": "Bitte die Person, die Formulare in der App auszufüllen.",
     "requiredFormsChecking": "Pflichtformulare werden geprüft …",
     "pendingMembershipTitle": "Möchte {unit} beitreten",
+    "acceptRequiresUnitManager": "Nur jemand, der {unit} verwaltet, kann diese Anfrage annehmen.",
     "qrScannerTab": "QR-Scanner",
     "readyBannerTitle": "Bereit zum Check-in",
     "requiredFormMissing": "Noch offen",

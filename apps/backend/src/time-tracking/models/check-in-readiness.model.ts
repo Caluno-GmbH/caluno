@@ -9,6 +9,17 @@ export class CheckInReadiness {
   @Field(() => ID, { nullable: true })
   openMembershipRequestId?: string | null;
 
+  // Whether the caller may accept the open request: a check-in desk may only
+  // grant membership in units it manages, and the request may target an
+  // ancestor of the selected unit. False when there is no open request.
+  @Field(() => Boolean)
+  canAcceptMembershipRequest!: boolean;
+
+  // Name of the unit the open request targets (the selected unit or an
+  // ancestor); null when there is no open request.
+  @Field(() => String, { nullable: true })
+  membershipRequestOrganizationUnitName?: string | null;
+
   @Field(() => ShiftInviteStatus, { nullable: true })
   shiftInviteStatus?: ShiftInviteStatus | null;
 

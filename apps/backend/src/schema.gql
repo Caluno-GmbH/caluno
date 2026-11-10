@@ -74,6 +74,7 @@ type CheckInContext {
 
 type CheckInReadiness {
   agreement: CheckInAgreement!
+  canAcceptMembershipRequest: Boolean!
   canViewVolunteerProfile: Boolean!
   hasOpenTimeEntry: Boolean!
   idVerificationEnabled: Boolean!
@@ -81,6 +82,7 @@ type CheckInReadiness {
   isMember: Boolean!
   isParticipating: Boolean!
   membershipId: ID
+  membershipRequestOrganizationUnitName: String
   openMembershipRequestId: ID
   shiftHasAvailableSeat: Boolean!
   shiftInviteStatus: ShiftInviteStatus

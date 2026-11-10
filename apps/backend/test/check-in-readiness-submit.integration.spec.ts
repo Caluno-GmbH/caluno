@@ -86,6 +86,40 @@ const CHECK_IN_READINESS_PROFILE = `
   }
 `;
 
+const CHECK_IN_READINESS_REQUEST_UNIT = `
+  query CheckInReadinessRequestUnit($checkInId: String!, $shiftInstanceId: ID) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
+      openMembershipRequestId
+      canAcceptMembershipRequest
+      membershipRequestOrganizationUnitName
+    }
+  }
+`;
+
+/** A new user holding only check-in:manage, on `managedUnitId` alone. */
+async function createCheckInManager(
+  db: Database,
+  organizationId: string,
+  managedUnitId: string,
+): Promise<string> {
+  const manager = await createUser(db);
+  const permission = await db.query.permissions.findFirst({
+    where: { key: PERMISSIONS.CHECK_IN_MANAGE },
+  });
+  if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
+  const role = await createRole(db, { organizationId });
+  await grantPermissionToRole(db, {
+    roleId: role.id,
+    permissionId: permission.id,
+  });
+  const membership = await addMembership(db, manager.id, managedUnitId);
+  await assignRoleToMembership(db, {
+    membershipId: membership.id,
+    roleId: role.id,
+  });
+  return manager.id;
+}
+
 describe('checkInReadiness query', () => {
   let app: INestApplication;
   let db: Database;
@@ -440,6 +474,80 @@ describe('checkInReadiness query', () => {
     );
 
     expect(data.checkInReadiness.openMembershipRequestId).toBeNull();
+  });
+
+  describe('membership request authority', () => {
+    const readRequestUnit = async (checkInId: string, contextUnitId: string) =>
+      (
+        await graphqlRequestRequiringData<{
+          checkInReadiness: {
+            openMembershipRequestId: string | null;
+            canAcceptMembershipRequest: boolean;
+            membershipRequestOrganizationUnitName: string | null;
+          };
+        }>(
+          app,
+          {
+            query: CHECK_IN_READINESS_REQUEST_UNIT,
+            variables: { checkInId, shiftInstanceId: null },
+            headers: { 'x-organization-unit-id': contextUnitId },
+          },
+          'checkInReadiness',
+        )
+      ).checkInReadiness;
+
+    it('reports no request unit and no accept for a volunteer without a request', async () => {
+      const volunteer = await createUser(db);
+
+      expect(await readRequestUnit(volunteer.checkInId, unitId)).toEqual({
+        openMembershipRequestId: null,
+        canAcceptMembershipRequest: false,
+        membershipRequestOrganizationUnitName: null,
+      });
+    });
+
+    it('lets a caller managing the parent accept a parent request from the child', async () => {
+      const childUnit = await createUnit(db, {
+        organizationId,
+        typeId,
+        name: 'Readiness authority child',
+        parentId: unitId,
+      });
+      const volunteer = await createUser(db);
+      const parentRequest = await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitId,
+      });
+
+      expect(await readRequestUnit(volunteer.checkInId, childUnit.id)).toEqual({
+        openMembershipRequestId: parentRequest.id,
+        canAcceptMembershipRequest: true,
+        membershipRequestOrganizationUnitName: 'Readiness unit',
+      });
+    });
+
+    it('denies the accept to a caller managing only the child, still naming the parent', async () => {
+      const childUnit = await createUnit(db, {
+        organizationId,
+        typeId,
+        name: 'Readiness authority child only',
+        parentId: unitId,
+      });
+      const volunteer = await createUser(db);
+      const parentRequest = await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitId,
+      });
+      setAuthMockUserId(
+        await createCheckInManager(db, organizationId, childUnit.id),
+      );
+
+      expect(await readRequestUnit(volunteer.checkInId, childUnit.id)).toEqual({
+        openMembershipRequestId: parentRequest.id,
+        canAcceptMembershipRequest: false,
+        membershipRequestOrganizationUnitName: 'Readiness unit',
+      });
+    });
   });
 
   it('reports canViewVolunteerProfile only for a caller holding volunteer:view', async () => {
@@ -1231,7 +1339,7 @@ describe('checkInApproveMembershipRequest mutation', () => {
     expect(membership).toBeTruthy();
   });
 
-  it('approves a parent-unit request from the child-unit context, granting membership in the parent', async () => {
+  it('approves a parent-unit request from the child-unit context for a caller managing both, granting membership in the parent', async () => {
     const childUnit = await createUnit(db, {
       organizationId,
       typeId,
@@ -1265,6 +1373,39 @@ describe('checkInApproveMembershipRequest mutation', () => {
       where: { userId: volunteer.id, organizationUnitId: childUnit.id },
     });
     expect(childMembership).toBeUndefined();
+  });
+
+  it('returns FORBIDDEN for a parent-unit request when the caller manages only the child', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child only',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const parentRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+    setAuthMockUserId(
+      await createCheckInManager(db, organizationId, childUnit.id),
+    );
+
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: parentRequest.id },
+      headers: { 'x-organization-unit-id': childUnit.id },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+    const stillPending = await db.query.membershipRequests.findFirst({
+      where: { id: parentRequest.id },
+    });
+    expect(stillPending?.status).toBe('PENDING');
+    const parentMembership = await db.query.memberships.findFirst({
+      where: { userId: volunteer.id, organizationUnitId: unitId },
+    });
+    expect(parentMembership).toBeUndefined();
   });
 
   it('returns NOT_FOUND for a request on a sibling unit of the context unit', async () => {

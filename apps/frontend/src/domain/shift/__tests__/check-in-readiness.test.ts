@@ -3,6 +3,7 @@ import {
   alreadyCheckedInDecideHref,
   countMissingRequiredForms,
   resolveCheckInReadiness,
+  resolvePendingMembershipView,
   resolveVisibleCheckInReadiness,
   shouldShowIdVerification,
 } from '../check-in-readiness';
@@ -291,5 +292,45 @@ describe('countMissingRequiredForms', () => {
         isError: false,
       }),
     ).toBe(2);
+  });
+});
+
+describe('resolvePendingMembershipView', () => {
+  it('requires a unit manager when the caller cannot accept, whatever the forms', () => {
+    for (const missingFormCount of [null, 0, 2]) {
+      expect(
+        resolvePendingMembershipView({
+          canAcceptMembershipRequest: false,
+          missingFormCount,
+        }),
+      ).toBe('requiresUnitManager');
+    }
+  });
+
+  it('checks the forms while they are unknown', () => {
+    expect(
+      resolvePendingMembershipView({
+        canAcceptMembershipRequest: true,
+        missingFormCount: null,
+      }),
+    ).toBe('checkingForms');
+  });
+
+  it('reports open forms', () => {
+    expect(
+      resolvePendingMembershipView({
+        canAcceptMembershipRequest: true,
+        missingFormCount: 1,
+      }),
+    ).toBe('formsOpen');
+  });
+
+  it('offers the accept once every form is submitted', () => {
+    expect(
+      resolvePendingMembershipView({
+        canAcceptMembershipRequest: true,
+        missingFormCount: 0,
+      }),
+    ).toBe('acceptable');
   });
 });

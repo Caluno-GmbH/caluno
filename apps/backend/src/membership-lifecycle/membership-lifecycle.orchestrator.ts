@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PERMISSIONS } from '../auth/constants';
 import { EventService } from '../event/event.service';
-import { ConflictGraphQLError } from '../graphql/errors';
+import { ConflictGraphQLError, ForbiddenGraphQLError } from '../graphql/errors';
 import { MembershipService } from '../membership/membership.service';
 import type {
   MembershipRequestEntity,
   MembershipRequestMetadata,
 } from '../membership/schemas/membership-request.schema';
+import { OrganizationService } from '../organization/organization.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
 import { SubmitFormInput } from '../requirement-profile/inputs/submit-form.input';
 import type { FormSubmissionEntity } from '../requirement-profile/schemas/form-submission.schema';
@@ -27,6 +29,7 @@ export class MembershipLifecycleOrchestrator {
     private readonly eventService: EventService,
     private readonly formSubmissionService: FormSubmissionService,
     private readonly requiredFormService: RequiredFormService,
+    private readonly organizationService: OrganizationService,
   ) {}
 
   async approveMembershipRequest(
@@ -56,6 +59,9 @@ export class MembershipLifecycleOrchestrator {
   /**
    * Check-in desk approval: the request may target the context unit or an
    * ancestor of it, and membership is granted in the request's own unit.
+   * Authority model: a check-in desk may only grant membership in units it
+   * manages, so the caller needs check-in:manage on the request's unit itself
+   * — managing the selected child unit does not cover a parent's request.
    * Required forms of that unit are a hard gate.
    */
   async checkInApproveMembershipRequest(
@@ -67,6 +73,19 @@ export class MembershipLifecycleOrchestrator {
       requestId,
       contextUnitId,
     );
+
+    const manageableUnits =
+      await this.organizationService.findUnitsWithPermission(
+        reviewerId,
+        PERMISSIONS.CHECK_IN_MANAGE,
+      );
+    if (
+      !manageableUnits.some((unit) => unit.id === request.organizationUnitId)
+    ) {
+      throw new ForbiddenGraphQLError(
+        'Only a check-in manager of the requested unit can accept this request',
+      );
+    }
 
     const requiredFormsSatisfied =
       await this.requiredFormService.areRequiredFormsSatisfied(request.userId, {

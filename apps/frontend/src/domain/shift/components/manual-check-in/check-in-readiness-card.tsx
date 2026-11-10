@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/navigation';
 import {
   alreadyCheckedInDecideHref,
   type CheckInReadinessState,
+  resolvePendingMembershipView,
 } from '../../check-in-readiness';
 import { BlockerCard } from './blocker-card';
 import { ReadyBanner } from './ready-banner';
@@ -14,6 +15,13 @@ type CheckInReadinessCardProps = {
   state: CheckInReadinessState;
   checkInId: string;
   unitName: string;
+  /**
+   * The unit an open membership request targets — the selected unit or an
+   * ancestor of it. Names the pending-membership card.
+   */
+  requestUnitName: string;
+  /** Whether the caller manages the request's unit and may accept it. */
+  canAcceptMembershipRequest: boolean;
   /** `null` while the required forms are unknown (loading or errored). */
   missingFormCount: number | null;
   profileHref: string | null;
@@ -29,6 +37,8 @@ export function CheckInReadinessCard({
   state,
   checkInId,
   unitName,
+  requestUnitName,
+  canAcceptMembershipRequest,
   missingFormCount,
   profileHref,
   onInviteToOrg,
@@ -76,12 +86,33 @@ export function CheckInReadinessCard({
   }
 
   if (state === 'pendingMembership') {
-    // The forms gate fails closed: until they are known, offer no accept.
-    if (missingFormCount === null) {
+    const title = t('pendingMembershipTitle', { unit: requestUnitName });
+    const view = resolvePendingMembershipView({
+      canAcceptMembershipRequest,
+      missingFormCount,
+    });
+
+    // A check-in desk may only grant membership in units it manages: a
+    // request to an unmanaged ancestor gets no accept and no forms UX.
+    if (view === 'requiresUnitManager') {
       return (
         <BlockerCard
           icon={<Clock className="size-5" />}
-          title={t('pendingMembershipTitle', { unit: unitName })}
+          title={title}
+          description={t('acceptRequiresUnitManager', {
+            unit: requestUnitName,
+          })}
+          className="border-destructive"
+        />
+      );
+    }
+
+    // The forms gate fails closed: until they are known, offer no accept.
+    if (view === 'checkingForms') {
+      return (
+        <BlockerCard
+          icon={<Clock className="size-5" />}
+          title={title}
           description={t('requiredFormsChecking')}
           className="border-destructive"
         />
@@ -91,14 +122,14 @@ export function CheckInReadinessCard({
     // Open required forms block the accept, and only the volunteer can fill
     // them: point the admin at the profile (when they may see it) instead of
     // offering a button that cannot succeed.
-    if (missingFormCount > 0) {
+    if (view === 'formsOpen') {
       return (
         <BlockerCard
           icon={<Clock className="size-5" />}
-          title={t('pendingMembershipTitle', { unit: unitName })}
+          title={title}
           description={
             <>
-              <p>{t('requiredFormsOpen', { count: missingFormCount })}</p>
+              <p>{t('requiredFormsOpen', { count: missingFormCount ?? 0 })}</p>
               {profileHref ? (
                 <a
                   href={profileHref}
@@ -121,7 +152,7 @@ export function CheckInReadinessCard({
     return (
       <BlockerCard
         icon={<Clock className="size-5" />}
-        title={t('pendingMembershipTitle', { unit: unitName })}
+        title={title}
         description={t('pendingMembershipDescription')}
         buttonLabel={t('acceptMembershipButton')}
         onAction={onOpenAcceptMembership}

@@ -1444,7 +1444,7 @@ export type GetCheckInReadinessQueryVariables = Exact<{
 }>;
 
 
-export type GetCheckInReadinessQuery = { checkInReadiness: { isMember: boolean, openMembershipRequestId: string | null, shiftInviteStatus: Types.ShiftInviteStatus | null, isParticipating: boolean, hasOpenTimeEntry: boolean, idVerificationEnabled: boolean, idVerified: boolean, membershipId: string | null, canViewVolunteerProfile: boolean, shiftHasAvailableSeat: boolean, agreement: { status: Types.AgreementStatus, reimbursementTypeName: string | null, contractId: string | null, canManageAgreements: boolean, managerNames: Array<string> } } };
+export type GetCheckInReadinessQuery = { checkInReadiness: { isMember: boolean, openMembershipRequestId: string | null, canAcceptMembershipRequest: boolean, membershipRequestOrganizationUnitName: string | null, shiftInviteStatus: Types.ShiftInviteStatus | null, isParticipating: boolean, hasOpenTimeEntry: boolean, idVerificationEnabled: boolean, idVerified: boolean, membershipId: string | null, canViewVolunteerProfile: boolean, shiftHasAvailableSeat: boolean, agreement: { status: Types.AgreementStatus, reimbursementTypeName: string | null, contractId: string | null, canManageAgreements: boolean, managerNames: Array<string> } } };
 
 export type GetCheckInVolunteerRequiredFormsQueryVariables = Exact<{
   checkInId: string;
@@ -5114,6 +5114,8 @@ export const GetCheckInReadinessDocument = gql`
   checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
     isMember
     openMembershipRequestId
+    canAcceptMembershipRequest
+    membershipRequestOrganizationUnitName
     shiftInviteStatus
     isParticipating
     hasOpenTimeEntry

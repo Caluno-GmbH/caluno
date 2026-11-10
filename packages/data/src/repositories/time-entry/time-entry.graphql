@@ -264,6 +264,8 @@ query GetCheckInReadiness($checkInId: String!, $shiftInstanceId: ID) {
   checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
     isMember
     openMembershipRequestId
+    canAcceptMembershipRequest
+    membershipRequestOrganizationUnitName
     shiftInviteStatus
     isParticipating
     hasOpenTimeEntry

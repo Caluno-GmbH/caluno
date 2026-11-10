@@ -166,15 +166,20 @@ export function ManualCheckInPage({
     readinessState === 'pendingMembership' ||
     (!withoutShift && !!selection.shiftInstanceId);
 
-  // Fetched while a request is pending, so a volunteer completing the
-  // required forms on their device is noticed (and shares the accept sheet's
-  // cache entry).
+  // A check-in desk may only accept requests to units it manages; a request
+  // to an unmanaged ancestor shows no accept and no forms.
+  const canAcceptMembershipRequest =
+    readiness?.canAcceptMembershipRequest ?? false;
+
+  // Fetched while an acceptable request is pending, so a volunteer completing
+  // the required forms on their device is noticed (and shares the accept
+  // sheet's cache entry).
   // `null` while unknown (loading or errored) so the accept stays blocked.
   const { data: requiredForms, isError: isRequiredFormsError } =
     useCheckInVolunteerRequiredForms(
       selection.orgUnitId,
       checkInId,
-      readinessState === 'pendingMembership',
+      readinessState === 'pendingMembership' && canAcceptMembershipRequest,
       { refetchInterval },
     );
   const missingFormCount = countMissingRequiredForms({
@@ -203,6 +208,7 @@ export function ManualCheckInPage({
           ]
         : null,
       readiness?.openMembershipRequestId ?? null,
+      canAcceptMembershipRequest,
       missingFormCount,
     ]),
   );
@@ -270,6 +276,9 @@ export function ManualCheckInPage({
 
   const unitName =
     orgUnits.find((unit) => unit.id === selection.orgUnitId)?.name ?? '';
+  // A pending request may target an ancestor of the selected unit.
+  const requestUnitName =
+    readiness?.membershipRequestOrganizationUnitName ?? unitName;
   const profileHref =
     readiness?.canViewVolunteerProfile && volunteer
       ? volunteerProfileHref(selection.orgUnitId, volunteer.id)
@@ -407,6 +416,8 @@ export function ManualCheckInPage({
               state={readinessState}
               checkInId={checkInId}
               unitName={unitName}
+              requestUnitName={requestUnitName}
+              canAcceptMembershipRequest={canAcceptMembershipRequest}
               missingFormCount={missingFormCount}
               profileHref={profileHref}
               onInviteToOrg={handleInviteToOrg}

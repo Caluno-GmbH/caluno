@@ -214,6 +214,7 @@
     "askVolunteerToCompleteForms": "Ask the volunteer to complete the forms in the app.",
     "requiredFormsChecking": "Checking the required forms…",
     "pendingMembershipTitle": "Wants to join {unit}",
+    "acceptRequiresUnitManager": "Only someone who manages {unit} can accept this request.",
     "qrScannerTab": "QR Scanner",
     "readyBannerTitle": "Good to go",
     "requiredFormMissing": "Still open",

@@ -69,6 +69,31 @@ export function countMissingRequiredForms({
   return forms.filter((form) => !form.submitted).length;
 }
 
+export type PendingMembershipView =
+  | 'requiresUnitManager'
+  | 'checkingForms'
+  | 'formsOpen'
+  | 'acceptable';
+
+/**
+ * What the pending-membership card offers. A check-in desk may only grant
+ * membership in units it manages, so a request to an ancestor the caller
+ * does not manage gets no accept and no forms UX at all. Otherwise the
+ * required forms gate the accept and fail closed while unknown.
+ */
+export function resolvePendingMembershipView({
+  canAcceptMembershipRequest,
+  missingFormCount,
+}: {
+  canAcceptMembershipRequest: boolean;
+  missingFormCount: number | null;
+}): PendingMembershipView {
+  if (!canAcceptMembershipRequest) return 'requiresUnitManager';
+  if (missingFormCount === null) return 'checkingForms';
+  if (missingFormCount > 0) return 'formsOpen';
+  return 'acceptable';
+}
+
 /**
  * The ID verification card is a read-only side output of the readiness
  * facts, not a readiness state: verification is optional and never blocks
