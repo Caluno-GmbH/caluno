@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, countDistinct, eq, gte, isNull } from 'drizzle-orm';
-import { DEFAULT_OWNER_ROLE_NAME } from '../auth/constants';
+import {
+  DEFAULT_MEMBER_ROLE_NAME,
+  DEFAULT_OWNER_ROLE_NAME,
+} from '../auth/constants';
 import type { Database } from '../database/database.module';
 import { DATABASE_CONNECTION } from '../database/database-connection';
 import * as schema from '../database/schema';
@@ -206,7 +209,7 @@ export class OrganizationUnitService {
         })
         .returning();
 
-      await this.addOwnerMembership(userId, unit.id, organizationId, tx);
+      await this.addMemberMembership(userId, unit.id, organizationId, tx);
 
       return [unit];
     });
@@ -230,13 +233,49 @@ export class OrganizationUnitService {
     organizationId: string,
     tx?: Database,
   ): Promise<void> {
+    await this.addMembershipWithRole(
+      userId,
+      organizationUnitId,
+      organizationId,
+      DEFAULT_OWNER_ROLE_NAME,
+      tx,
+    );
+  }
+
+  /**
+   * Sub-org creators keep only the permissions they already inherit from the
+   * parent unit. The local membership exists so an admin can later assign a
+   * role to it; the internal Member role grants nothing.
+   */
+  async addMemberMembership(
+    userId: string,
+    organizationUnitId: string,
+    organizationId: string,
+    tx?: Database,
+  ): Promise<void> {
+    await this.addMembershipWithRole(
+      userId,
+      organizationUnitId,
+      organizationId,
+      DEFAULT_MEMBER_ROLE_NAME,
+      tx,
+    );
+  }
+
+  private async addMembershipWithRole(
+    userId: string,
+    organizationUnitId: string,
+    organizationId: string,
+    roleName: string,
+    tx?: Database,
+  ): Promise<void> {
     const db = tx ?? this.db;
 
-    const ownerRole = await db.query.roles.findFirst({
-      where: { organizationId, name: DEFAULT_OWNER_ROLE_NAME },
+    const role = await db.query.roles.findFirst({
+      where: { organizationId, name: roleName },
     });
 
-    if (!ownerRole) throw new NotFoundGraphQLError('Owner role not found');
+    if (!role) throw new NotFoundGraphQLError(`${roleName} role not found`);
 
     const [membership] = await db
       .insert(schema.memberships)
@@ -245,7 +284,7 @@ export class OrganizationUnitService {
 
     await db.insert(schema.membershipRoles).values({
       membershipId: membership.id,
-      roleId: ownerRole.id,
+      roleId: role.id,
     });
   }
 
