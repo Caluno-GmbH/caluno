@@ -7,7 +7,6 @@ type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
 const HEADERS = [
   'Volunteer Name',
   'Volunteer Email',
-  'Shift',
   'Assignment',
   'Location',
   'Started At',
@@ -77,13 +76,23 @@ describe('serializeTimesheetsToCsv', () => {
     expect(csv.trim().split('\n')[1]).toContain('120');
   });
 
-  it('leaves duration empty for open entries (no endedAt)', () => {
+  it('formats startedAt and endedAt in Europe/Berlin as yyyy-MM-dd HH:mm:ss', () => {
+    // 08:00Z / 10:00Z → 09:00 / 11:00 CET
+    const csv = serializeTimesheetsToCsv([baseEntry()], HEADERS);
+    const dataLine = csv.trim().split('\n')[1] ?? '';
+    // split('","') keeps a leading " on cell 0; indices: 4=startedAt, 5=endedAt
+    const cells = dataLine.split('","');
+    expect(cells[4]).toBe('2024-01-01 09:00:00');
+    expect(cells[5]).toBe('2024-01-01 11:00:00');
+  });
+
+  it('leaves duration and endedAt empty for open entries (no endedAt)', () => {
     const e: TimeEntry = { ...baseEntry(), endedAt: null };
     const csv = serializeTimesheetsToCsv([e], HEADERS);
     const dataLine = csv.trim().split('\n')[1] ?? '';
-    // Duration (min) column — 8th column (0-indexed: 7)
     const cells = dataLine.split('","');
-    expect(cells[7]).toBe('');
+    expect(cells[5]).toBe(''); // endedAt
+    expect(cells[6]).toBe(''); // duration
   });
 
   it('includes shift title', () => {

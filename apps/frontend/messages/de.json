@@ -2063,7 +2063,6 @@
     "csv": {
       "volunteerName": "Name",
       "volunteerEmail": "E-Mail",
-      "shift": "Einsatz",
       "assignment": "Einsatz",
       "location": "Ort",
       "startedAt": "Beginn",
