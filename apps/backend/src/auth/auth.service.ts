@@ -401,12 +401,16 @@ export class AuthService {
 
   /**
    * Rejects taking the Owner role away from `membershipId` (role change,
-   * removal or leaving) when no other membership holds it. Locks the Owner
-   * rows so two owners demoting each other at once cannot both pass.
+   * removal or leaving) when no other membership holds it in the same unit or
+   * an ancestor unit. An Owner in a child unit cannot administer the parent,
+   * so it must not satisfy the invariant for the parent — otherwise a sub-org
+   * owner would let the root lose its last owner. Locks the holder rows so two
+   * owners demoting each other at once cannot both pass.
    */
   async assertOwnerRemains(
     tx: DbTransaction,
     membershipId: string,
+    organizationUnitId: string,
     removedRoles: RoleEntity[],
   ): Promise<void> {
     const ownerRole = removedRoles.find((role) => this.isOwnerRole(role));
@@ -414,12 +418,28 @@ export class AuthService {
       return;
     }
 
+    const unitIds =
+      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+        organizationUnitId,
+      );
     const holders = await tx
       .select({ membershipId: schema.membershipRoles.membershipId })
       .from(schema.membershipRoles)
-      .where(eq(schema.membershipRoles.roleId, ownerRole.id))
+      .innerJoin(
+        schema.memberships,
+        eq(schema.memberships.id, schema.membershipRoles.membershipId),
+      )
+      .where(
+        and(
+          eq(schema.membershipRoles.roleId, ownerRole.id),
+          inArray(schema.memberships.organizationUnitId, unitIds),
+        ),
+      )
       .orderBy(schema.membershipRoles.id)
-      .for('update');
+      // Lock only the role assignments; locking the joined membership rows too
+      // would deadlock two owners demoting each other (each already holds its
+      // own membership row from the caller's SELECT ... FOR UPDATE).
+      .for('update', { of: [schema.membershipRoles] });
     if (!holders.some((holder) => holder.membershipId !== membershipId)) {
       throw new ConflictGraphQLError(
         'An organization must keep at least one owner.',
