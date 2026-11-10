@@ -9,12 +9,14 @@ import {
   setDefaultTimeout,
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
 import {
   DEFAULT_MEMBER_ROLE_NAME,
   DEFAULT_OWNER_ROLE_NAME,
 } from '../src/auth/constants';
 import { PermissionKey } from '../src/auth/enums';
 import type { Database } from '../src/database/database.module';
+import * as schema from '../src/database/schema';
 import { createMembershipRequest } from './factories/membership-request.factory';
 import {
   addMembership,
@@ -102,6 +104,39 @@ describe('role assignment and membership removal escalation rules', () => {
     const membership = await addMembership(db, user.id, unitId);
     await assignRoleToMembership(db, { membershipId: membership.id, roleId });
     return { userId: user.id, membershipId: membership.id };
+  };
+
+  const createChildOwner = async () => {
+    const type = await db.query.organizationUnitTypes.findFirst({
+      where: { organizationId },
+    });
+    if (!type) throw new Error('Missing unit type');
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId: type.id,
+      name: `Child owner unit ${crypto.randomUUID()}`,
+      parentId: unitId,
+    });
+    const user = await createUser(db);
+    const membership = await addMembership(db, user.id, childUnit.id);
+    await assignRoleToMembership(db, {
+      membershipId: membership.id,
+      roleId: ownerRoleId,
+    });
+    return {
+      userId: user.id,
+      membershipId: membership.id,
+      organizationUnitId: childUnit.id,
+    };
+  };
+
+  const deleteMembershipRow = async (membershipId: string) => {
+    await db
+      .delete(schema.membershipRoles)
+      .where(eq(schema.membershipRoles.membershipId, membershipId));
+    await db
+      .delete(schema.memberships)
+      .where(eq(schema.memberships.id, membershipId));
   };
 
   const roleIdsOf = async (membershipId: string): Promise<string[]> => {
@@ -246,6 +281,55 @@ describe('role assignment and membership removal escalation rules', () => {
 
     expect(response.errors).toBeUndefined();
     expect(await roleIdsOf(secondOwner.membershipId)).toEqual([memberRoleId]);
+  });
+
+  it('does not count a child-unit owner as the root last owner (demote)', async () => {
+    const childOwner = await createChildOwner();
+    setAuthMockUserId(ownerUserId);
+
+    const response = await updateRoles(ownerMembershipId, [memberRoleId]);
+
+    expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
+    expect(await roleIdsOf(ownerMembershipId)).toEqual([ownerRoleId]);
+    await deleteMembershipRow(childOwner.membershipId);
+  });
+
+  it('does not count a child-unit owner as the root last owner (remove)', async () => {
+    const childOwner = await createChildOwner();
+    setAuthMockUserId(ownerUserId);
+
+    const response = await removeMembership(ownerMembershipId);
+
+    expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
+    expect(await membershipExists(ownerMembershipId)).toBe(true);
+    await deleteMembershipRow(childOwner.membershipId);
+  });
+
+  it('does not count a child-unit owner as the root last owner (leave)', async () => {
+    const childOwner = await createChildOwner();
+    setAuthMockUserId(ownerUserId);
+
+    const response = await leaveMembership(ownerMembershipId);
+
+    expect(response.errors?.[0]?.message).toMatch(/at least one owner/i);
+    expect(await membershipExists(ownerMembershipId)).toBe(true);
+    await deleteMembershipRow(childOwner.membershipId);
+  });
+
+  it('allows a root owner to remove a child-unit owner', async () => {
+    const childOwner = await createChildOwner();
+    setAuthMockUserId(ownerUserId);
+
+    const response = await graphqlRequest<{
+      removeMembership?: { id: string };
+    }>(app, {
+      query: REMOVE_MEMBERSHIP,
+      variables: { id: childOwner.membershipId },
+      headers: { 'x-organization-unit-id': childOwner.organizationUnitId },
+    });
+
+    expect(response.errors).toBeUndefined();
+    expect(await membershipExists(childOwner.membershipId)).toBe(false);
   });
 
   it('still lets a volunteer editor approve membership requests', async () => {
