@@ -109,7 +109,10 @@ describe('ShiftService', () => {
 
     shiftService = new ShiftService(
       db,
-      {} as AuthService,
+      {
+        hasRequiredPermissions: async () => true,
+        findUsersWithPermission: async () => [],
+      } as unknown as AuthService,
       {} as UserService,
       membershipService,
       notificationService,
