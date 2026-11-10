@@ -1,10 +1,19 @@
+import { tz } from '@date-fns/tz';
 import type { GetTimeEntriesQuery } from '@repo/data';
+import { format, parseISO } from 'date-fns';
+import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 import { entryDurationMinutes, resolveTimeEntryLocation } from './location';
 
 type TimeEntry = GetTimeEntriesQuery['timeEntries']['items'][number];
 
+const appTz = { in: tz(DEFAULT_TIMEZONE) };
+
 function escapeCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
+}
+
+function formatLocalDateTime(iso: string): string {
+  return format(parseISO(iso), 'yyyy-MM-dd HH:mm:ss', appTz);
 }
 
 function entryToRow(entry: TimeEntry): string {
@@ -12,13 +21,12 @@ function entryToRow(entry: TimeEntry): string {
   const cells = [
     entry.volunteer?.name ?? entry.volunteer?.email ?? '',
     entry.volunteer?.email ?? '',
-    entry.shiftInstance?.master?.title ?? '',
     entry.shiftInstance?.overrideTitle ??
       entry.shiftInstance?.master?.title ??
       '',
     resolveTimeEntryLocation(entry) ?? '',
-    entry.startedAt,
-    entry.endedAt ?? '',
+    formatLocalDateTime(entry.startedAt),
+    entry.endedAt ? formatLocalDateTime(entry.endedAt) : '',
     duration !== null ? String(duration) : '',
     entry.status,
     entry.createdBy?.name ?? entry.createdBy?.email ?? '',

@@ -2022,7 +2022,6 @@
     "csv": {
       "volunteerName": "Volunteer Name",
       "volunteerEmail": "Volunteer Email",
-      "shift": "Appointment",
       "assignment": "Assignment",
       "location": "Location",
       "startedAt": "Started At",
