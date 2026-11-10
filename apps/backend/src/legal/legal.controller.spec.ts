@@ -11,8 +11,9 @@ const controllerWith = (
   current: Awaited<ReturnType<TermsService['getCurrentVersion']>>,
 ) => {
   const dir = mkdtempSync(join(tmpdir(), 'legal-controller-'));
-  writeFileSync(join(dir, 'datenschutzhinweise-2026-08-17.pdf'), 'old');
-  writeFileSync(join(dir, 'datenschutzhinweise-2026-08-25.pdf'), 'new');
+  writeFileSync(join(dir, 'privacy-policy_2026-08-17_de.pdf'), 'old');
+  writeFileSync(join(dir, 'privacy-policy_2026-08-25_de.pdf'), 'new');
+  writeFileSync(join(dir, 'privacy-policy_2026-08-25_en.pdf'), 'new-en');
 
   return new LegalController(new LegalService(dir), {
     getCurrentVersion: async () => current,

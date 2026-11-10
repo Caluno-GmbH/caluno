@@ -4976,7 +4976,6 @@ export class ShiftService {
     shiftId: string,
     status: ShiftInviteStatus,
     actorUserId: string = userId,
-    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<ShiftInviteEntity> {
     const shift = await this.db.query.shifts.findFirst({
       where: { id: shiftId, isDeleted: false },
@@ -5009,7 +5008,11 @@ export class ShiftService {
         )
       : true;
     const isSelfAction = actorUserId === userId;
-    const isPrivilegedActor = actorHasElevatedPermission;
+    const isPrivilegedActor = await this.authService.hasRequiredPermissions(
+      actorUserId,
+      shift.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
 
     if (
       !isPrivilegedActor &&
@@ -5290,7 +5293,6 @@ export class ShiftService {
     instanceId: string,
     status: ShiftInviteStatus,
     actorUserId: string = userId,
-    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<ShiftInstanceInviteEntity> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: instanceId, isCancelled: false },
@@ -5313,7 +5315,11 @@ export class ShiftService {
       instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
     const hasSeat = await this.hasAvailableSeat(instanceId, maxVolunteers);
     const isSelfAction = actorUserId === userId;
-    const isPrivilegedActor = actorHasElevatedPermission;
+    const isPrivilegedActor = await this.authService.hasRequiredPermissions(
+      actorUserId,
+      instance.master.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
 
     if (
       !isPrivilegedActor &&
