@@ -17,10 +17,10 @@ type BlockerCardProps = {
   actionExternal?: boolean | undefined;
   className?: string | undefined;
   /**
-   * For labels that carry a user-supplied name (e.g. an org unit): the label
-   * truncates to the card width and the full text moves to title/aria-label.
+   * Accessible name for the action button when its visible label is too terse
+   * to stand on its own (e.g. "Invite" on the not-a-member card).
    */
-  truncateButtonLabel?: boolean | undefined;
+  actionAriaLabel?: string | undefined;
 };
 
 /**
@@ -40,9 +40,12 @@ export function BlockerCard({
   actionHref,
   actionExternal,
   className,
-  truncateButtonLabel,
+  actionAriaLabel,
 }: BlockerCardProps) {
   const label = isActionDone && doneLabel ? doneLabel : buttonLabel;
+  // Once the action is done the label announces the new state, so the
+  // original action name stops applying.
+  const ariaLabel = isActionDone ? undefined : actionAriaLabel;
   return (
     <Card className={className}>
       <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
@@ -69,15 +72,10 @@ export function BlockerCard({
             variant="default"
             disabled={isActionPending || isActionDone}
             onClick={onAction}
-            className={truncateButtonLabel ? 'max-w-full' : undefined}
-            title={truncateButtonLabel ? label : undefined}
-            aria-label={truncateButtonLabel ? label : undefined}
+            title={ariaLabel}
+            aria-label={ariaLabel}
           >
-            {truncateButtonLabel ? (
-              <span className="truncate">{label}</span>
-            ) : (
-              label
-            )}
+            {label}
           </Button>
         ) : null}
       </CardContent>

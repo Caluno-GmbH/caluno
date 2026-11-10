@@ -74,12 +74,12 @@ export function CheckInReadinessCard({
         icon={<Building2 className="size-5" />}
         title={t('notMemberTitle', { unit: unitName })}
         description={t('notMemberDescription', { unit: unitName })}
-        buttonLabel={t('notMemberButton', { unit: unitName })}
+        buttonLabel={t('notMemberButton')}
         onAction={onInviteToOrg}
         isActionPending={isInviteToOrgPending}
         isActionDone={isInviteToOrgSent}
         doneLabel={t('inviteSentWaiting')}
-        truncateButtonLabel
+        actionAriaLabel={t('notMemberButtonAria', { unit: unitName })}
         className="border-destructive"
       />
     );
