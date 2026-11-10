@@ -89,8 +89,8 @@ describe('createOrganizationUnit tenant scope', () => {
       db,
       `Org A ${crypto.randomUUID()}`,
     );
-    // Real orgs always have an Owner role; without it the attack fails for
-    // the wrong reason (addOwnerMembership) and the regression is silent.
+    // Real orgs always have their internal roles; insert them so a scope
+    // rejection cannot fail for the wrong reason (missing role).
     await db.insert(schema.roles).values([
       {
         name: DEFAULT_OWNER_ROLE_NAME,
