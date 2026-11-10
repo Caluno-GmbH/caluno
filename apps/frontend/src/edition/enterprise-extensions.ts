@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ComponentType } from 'react';
+import type { EeCountBadgeName } from './enterprise-count-badges';
 import type { EeIconName } from './enterprise-icons';
 
 /** Extra props forwarded from `<EeSlot ee="…" … />` / `<EePage ee="…" … />`. */
@@ -44,10 +45,10 @@ export interface EeNavItemContribution {
   /** Item id to insert before; omit → last in section. */
   before?: string;
   /**
-   * Optional badge component. Must fetch its own data — the sidebar passes
-   * nothing (no shared count/task context). Client-only.
+   * Optional badge key. Serializable across RSC → client; the sidebar
+   * resolves it via `@/ee/count-badges`. Badge fetches its own data.
    */
-  CountBadge?: ComponentType;
+  countBadge?: EeCountBadgeName;
 }
 
 export interface EeNavSectionItem {
@@ -57,7 +58,7 @@ export interface EeNavSectionItem {
   icon: EeIconName;
   /** Item id within this new section; omit → last. */
   before?: string;
-  CountBadge?: ComponentType;
+  countBadge?: EeCountBadgeName;
 }
 
 /**
@@ -84,8 +85,8 @@ export type EeNavContribution =
  * OSS mirrors have no `ee/` directory, so `loadEeExtensions()` resolves to
  * `null` and every OSS call site renders/behaves as if EE did not exist.
  * Add a new EE nav contribution in `src/ee/nav.ts` and slots/pages in
- * `src/ee/index.ts` — `dashboard-sidebar.tsx` (imports `@/ee/nav` only) and
- * `<EeSlot />` / `<EePage />` call sites never change.
+ * `src/ee/index.ts` — org layout passes serializable `eeNav` into the
+ * sidebar; `<EeSlot />` / `<EePage />` call sites never change.
  */
 export interface EeNavContext {
   orgUId: string;
@@ -96,8 +97,8 @@ export interface EeExtensions {
    * Admin sidebar contributions: insert items into existing sections or add
    * new sections. Placement is `before`-only (omit → append).
    * Factory receives `orgUId` so hrefs can be absolute app paths (no auto-prefix).
-   * May include `CountBadge` components — merge happens in the client sidebar
-   * so components are not RSC-serialized.
+   * Descriptors are serializable (`countBadge` is a string key) — the org
+   * layout passes them into the client sidebar so EE items SSR with the menu.
    */
   nav?: (ctx: EeNavContext) => EeNavContribution[];
   /**

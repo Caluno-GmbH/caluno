@@ -115,12 +115,13 @@ fallbacks live in `src/edition/oss-pages.ts` (no EE imports in the route).
 No fallback → `notFound`. Admin nav: contribute
 via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
 (omit → append); merge happens in `components/navigation/admin-nav.ts`.
-Optional badge counts use `CountBadge?: ComponentType` on OSS items and EE
-contributions — each badge fetches its own data (no shared nav count/task
-context; `MyTasksQuery` stays EE-only). The sidebar loads EE nav **client-side**
-from `@/ee/nav` (layout passes `eeEnabled`, not a serialized `eeNav`) so
-`CountBadge` components are not RSC-serialized and server page slots in
-`@/ee` never enter the client graph.
+Optional badge counts use `CountBadge?: ComponentType` on OSS items; EE
+contributions use serializable `countBadge?: EeCountBadgeName` — each badge
+fetches its own data (no shared nav count/task context; `MyTasksQuery` stays
+EE-only). The org layout passes serializable `eeNav` from `eeExtensions.nav`
+into the sidebar so EE items SSR with the menu; the sidebar resolves badges
+client-side from `@/ee/count-badges` so EE badge components and server page
+slots in `@/ee` never enter the client graph via RSC props.
 
 ### Locale switching
 

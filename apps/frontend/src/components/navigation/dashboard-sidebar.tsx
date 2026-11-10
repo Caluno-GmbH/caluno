@@ -18,8 +18,9 @@ import {
 import { LogOutIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useMemo, useState } from 'react';
+import { type ComponentType, useEffect, useMemo, useState } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
+import type { EeCountBadgeName } from '@/edition/enterprise-count-badges';
 import type { EeNavContribution } from '@/edition/enterprise-extensions';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
@@ -27,13 +28,13 @@ import { buildAdminNav, mergeAdminNav, visibleAdminNav } from './admin-nav';
 
 interface DashboardSidebarProps {
   permissions: PermissionKey[];
-  /** True when `src/ee` is present; sidebar loads EE nav client-side. */
-  eeEnabled?: boolean;
+  /** Serializable EE nav from the org layout (SSR with the menu). */
+  eeNav?: EeNavContribution[];
 }
 
 export function DashboardSidebar({
   permissions,
-  eeEnabled = false,
+  eeNav,
 }: DashboardSidebarProps) {
   const params = useParams();
   const router = useRouter();
@@ -44,21 +45,25 @@ export function DashboardSidebar({
   const { accountingEnabled } = useCurrentOrg();
   const signOut = useSignOut();
 
-  const [eeNav, setEeNav] = useState<EeNavContribution[] | undefined>();
+  const [countBadges, setCountBadges] = useState<
+    Partial<Record<EeCountBadgeName, ComponentType>> | undefined
+  >();
 
   useEffect(() => {
-    if (!eeEnabled || !orgUId) {
-      setEeNav(undefined);
+    if (!eeNav?.length) {
+      setCountBadges(undefined);
       return;
     }
     let cancelled = false;
-    void import(/* turbopackOptional: true */ '@/ee/nav').then((mod) => {
-      if (!cancelled) setEeNav(mod.eeNav({ orgUId }));
-    });
+    void import(/* turbopackOptional: true */ '@/ee/count-badges').then(
+      (mod) => {
+        if (!cancelled) setCountBadges(mod.eeCountBadges);
+      },
+    );
     return () => {
       cancelled = true;
     };
-  }, [eeEnabled, orgUId]);
+  }, [eeNav]);
 
   const sections = useMemo(() => {
     if (!orgUId) return [];
@@ -67,8 +72,8 @@ export function DashboardSidebar({
       accountingEnabled,
       permissionSet,
     });
-    return visibleAdminNav(mergeAdminNav(base, eeNav));
-  }, [orgUId, accountingEnabled, permissionSet, eeNav]);
+    return visibleAdminNav(mergeAdminNav(base, eeNav, countBadges));
+  }, [orgUId, accountingEnabled, permissionSet, eeNav, countBadges]);
 
   async function handleSignOut() {
     await signOut();

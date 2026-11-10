@@ -5,9 +5,11 @@ import type {
 import { todoNavContributions } from './todo/todo-nav';
 
 /**
- * Client-safe EE nav entry. The sidebar dynamically imports this module —
- * keep it free of Server Component / `next/headers` dependencies. Full
- * `eeExtensions` (including server page slots) lives in `./index`.
+ * Serializable EE nav entry. The org layout calls this via `eeExtensions.nav`
+ * and passes the result into the client sidebar. Keep free of Client Component
+ * imports and `next/headers` — badges are string keys resolved client-side
+ * from `@/ee/count-badges`. Full `eeExtensions` (including server page slots)
+ * lives in `./index`.
  */
 export const eeNav: NonNullable<EeExtensions['nav']> = ({
   orgUId,

@@ -162,7 +162,7 @@ describe('mergeAdminNav', () => {
     );
   });
 
-  it('preserves CountBadge from EE contributions', () => {
+  it('resolves countBadge via the client registry when provided', () => {
     // biome-ignore lint/correctness/noComponentHookFactories: ok in a test
     const CountBadge = () => null;
     const contributions: EeNavContribution[] = [
@@ -174,14 +174,23 @@ describe('mergeAdminNav', () => {
         titleKey: 'todo',
         href: '/admin/org-1',
         icon: 'list-todo',
-        CountBadge,
+        countBadge: 'todo',
       },
     ];
-    const menu = mergeAdminNav(base, contributions).find(
+    const withoutRegistry = mergeAdminNav(base, contributions).find(
       (s) => s.id === ADMIN_NAV_SECTION.menu,
     );
-    const todo = menu?.items.find((i) => i.id === ADMIN_NAV_ITEM.todo);
-    expect(todo?.CountBadge).toBe(CountBadge);
+    expect(
+      withoutRegistry?.items.find((i) => i.id === ADMIN_NAV_ITEM.todo)
+        ?.CountBadge,
+    ).toBeUndefined();
+
+    const withRegistry = mergeAdminNav(base, contributions, {
+      todo: CountBadge,
+    }).find((s) => s.id === ADMIN_NAV_SECTION.menu);
+    expect(
+      withRegistry?.items.find((i) => i.id === ADMIN_NAV_ITEM.todo)?.CountBadge,
+    ).toBe(CountBadge);
   });
 
   it('appends an item when before anchor is unknown', () => {

@@ -3,7 +3,6 @@ import {
   ADMIN_NAV_SECTION,
 } from '@/components/navigation/admin-nav';
 import type { EeNavContribution } from '@/edition/enterprise-extensions';
-import { TodoNavCountBadge } from './todo-nav-count-badge';
 
 export function todoNavContributions(orgUId: string): EeNavContribution[] {
   return [
@@ -15,7 +14,7 @@ export function todoNavContributions(orgUId: string): EeNavContribution[] {
       titleKey: 'todo',
       href: `/admin/${orgUId}`,
       icon: 'list-todo',
-      CountBadge: TodoNavCountBadge,
+      countBadge: 'todo',
     },
   ];
 }
