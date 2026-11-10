@@ -720,7 +720,8 @@ export class TimeTrackingService {
 
   /**
    * Emails a public join link — creates no membership and no request itself
-   * (spec decision 5). The recipient's own join is what later unblocks
+   * (spec decision 5). A volunteer who is already a member or has a pending
+   * request (on the unit or an ancestor) is skipped. The recipient's own join is what later unblocks
    * check-in, via `checkInReadiness`'s `pendingMembership` state.
    */
   async inviteVolunteerToOrganization(
@@ -739,6 +740,21 @@ export class TimeTrackingService {
     if (!volunteer) {
       throw new NotFoundGraphQLError('User not found');
     }
+
+    // Already a member, or already asked to join (this unit or an ancestor):
+    // nothing to invite to. Like a cooldown skip, indistinguishable to the
+    // caller, and it consumes no cooldown slot.
+    const [isMember, pendingRequest] = await Promise.all([
+      this._membershipService.isMemberOfUnitOrAncestor(
+        volunteerId,
+        organizationUnitId,
+      ),
+      this._membershipService.findPendingMembershipRequest(
+        volunteerId,
+        organizationUnitId,
+      ),
+    ]);
+    if (isMember || pendingRequest) return;
 
     // Cooldown: a skipped send is indistinguishable to the caller.
     const claimed =

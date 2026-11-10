@@ -15,7 +15,7 @@ import { PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { NotificationService } from '../src/notification';
-import { createUser } from './factories';
+import { createMembershipRequest, createUser } from './factories';
 import {
   addMembership,
   createOrganizationWithType,
@@ -170,6 +170,66 @@ describe('checkInInviteToOrganization cooldown', () => {
     await invite(volunteer.checkInId, otherUnitId);
 
     expect(notifySpy).toHaveBeenCalledTimes(2);
+  });
+
+  describe('a volunteer who is already related', () => {
+    const invitationRow = async (userId: string, organizationUnitId: string) =>
+      (
+        await db
+          .select()
+          .from(schema.organizationUnitInvitations)
+          .where(
+            and(
+              eq(schema.organizationUnitInvitations.userId, userId),
+              eq(
+                schema.organizationUnitInvitations.organizationUnitId,
+                organizationUnitId,
+              ),
+            ),
+          )
+      )[0];
+
+    it('skips a member of the unit without claiming the cooldown', async () => {
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, unitId);
+
+      expect(await invite(volunteer.checkInId)).toBe(true);
+      expect(notifySpy).not.toHaveBeenCalled();
+      expect(await invitationRow(volunteer.id, unitId)).toBeUndefined();
+    });
+
+    it('skips a member of an ancestor unit', async () => {
+      const volunteer = await createUser(db);
+      await addMembership(db, volunteer.id, unitId);
+
+      expect(await invite(volunteer.checkInId, otherUnitId)).toBe(true);
+      expect(notifySpy).not.toHaveBeenCalled();
+      expect(await invitationRow(volunteer.id, otherUnitId)).toBeUndefined();
+    });
+
+    it('skips a volunteer with a pending request to the unit', async () => {
+      const volunteer = await createUser(db);
+      await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitId,
+      });
+
+      expect(await invite(volunteer.checkInId)).toBe(true);
+      expect(notifySpy).not.toHaveBeenCalled();
+      expect(await invitationRow(volunteer.id, unitId)).toBeUndefined();
+    });
+
+    it('skips a volunteer with a pending request to an ancestor unit', async () => {
+      const volunteer = await createUser(db);
+      await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitId,
+      });
+
+      expect(await invite(volunteer.checkInId, otherUnitId)).toBe(true);
+      expect(notifySpy).not.toHaveBeenCalled();
+      expect(await invitationRow(volunteer.id, otherUnitId)).toBeUndefined();
+    });
   });
 
   it('rejects an unknown check-in id', async () => {

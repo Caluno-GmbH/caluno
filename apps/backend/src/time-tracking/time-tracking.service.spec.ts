@@ -97,7 +97,11 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
     };
     const service = new TimeTrackingService(
       db as never,
-      { claimOrganizationUnitInvitation } as never,
+      {
+        claimOrganizationUnitInvitation,
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(false),
+        findPendingMembershipRequest: jest.fn().mockResolvedValue(undefined),
+      } as never,
       {} as never,
       { capture } as unknown as PostHogService,
       {} as never,
@@ -140,6 +144,8 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
       db as never,
       {
         claimOrganizationUnitInvitation: jest.fn().mockResolvedValue(false),
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(false),
+        findPendingMembershipRequest: jest.fn().mockResolvedValue(undefined),
       } as never,
       {} as never,
       { capture } as unknown as PostHogService,
