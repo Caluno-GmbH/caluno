@@ -14,6 +14,7 @@ import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequirementForm } from '../../requirement-profile/models/requirement-form.model';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
+import { UserService } from '../../user/user.service';
 import { TimeEntrySortField, TimeEntryStatus } from '../enums';
 import { TimeEntryMapper } from '../mappers/time-entry.mapper';
 import { CheckInContext } from '../models/check-in-context.model';
@@ -33,6 +34,7 @@ export class TimeTrackingQueryResolver {
     private readonly organizationUnitMapper: OrganizationUnitMapper,
     private readonly requiredFormService: RequiredFormService,
     private readonly membershipService: MembershipService,
+    private readonly userService: UserService,
   ) {}
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)
@@ -100,7 +102,7 @@ export class TimeTrackingQueryResolver {
     @Session() session: UserSession,
   ): Promise<CheckInReadiness> {
     const volunteerId =
-      await this.timeTrackingService.resolveCheckInVolunteerId(checkInId);
+      await this.userService.resolveVolunteerIdByCheckInId(checkInId);
     return this.timeTrackingService.getCheckInReadiness(
       session.user.id,
       volunteerId,
@@ -116,7 +118,7 @@ export class TimeTrackingQueryResolver {
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<RequiredFormWithStatus[]> {
     const volunteerId =
-      await this.timeTrackingService.resolveCheckInVolunteerId(checkInId);
+      await this.userService.resolveVolunteerIdByCheckInId(checkInId);
 
     // A member sees the selected unit's forms. A pending applicant sees the
     // forms of the unit their request targets (possibly an ancestor), since

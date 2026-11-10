@@ -79,6 +79,20 @@ export class UserService {
     });
   }
 
+  /**
+   * Resolves a volunteer's check-in ID (the QR code payload) to their user
+   * ID for the check-in desk, which keys its queries and mutations on the
+   * scanned ID rather than a user ID that is only revealed for related
+   * volunteers. The one place that owns the lookup and its error.
+   */
+  async resolveVolunteerIdByCheckInId(checkInId: string): Promise<string> {
+    const volunteer = await this.findByCheckInId(checkInId);
+    if (!volunteer) {
+      throw new NotFoundGraphQLError('Volunteer not found');
+    }
+    return volunteer.id;
+  }
+
   async findByIds(ids: string[]): Promise<UserEntity[]> {
     if (ids.length === 0) {
       return [];

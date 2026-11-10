@@ -767,19 +767,6 @@ export class TimeTrackingService {
   }
 
   /**
-   * Resolves a volunteer's check-in ID (the QR code payload) to their user ID,
-   * so the readiness queries can be keyed on the ID the manager scanned
-   * instead of a user ID that is only revealed for related volunteers.
-   */
-  async resolveCheckInVolunteerId(checkInId: string): Promise<string> {
-    const volunteer = await this.userService.findByCheckInId(checkInId);
-    if (!volunteer) {
-      throw new NotFoundGraphQLError('Volunteer not found');
-    }
-    return volunteer.id;
-  }
-
-  /**
    * Returns readiness facts for the check-in gate. When `shiftInstanceId` is
    * null (without-shift mode) only the membership facts are meaningful; the
    * shift-scoped ones are reported as absent.
