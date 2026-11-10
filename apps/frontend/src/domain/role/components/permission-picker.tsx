@@ -4,10 +4,10 @@ import type { GetPermissionGroupsQuery } from '@repo/data';
 import { Card, Label, Separator, Switch } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import {
-  permissionDescriptionKey,
-  permissionLabelKey,
-  permissionTitleKey,
-} from '../lib/role-label';
+  PermissionDescription,
+  PermissionGroupTitle,
+  PermissionLabel,
+} from './permission-text';
 
 type PermissionGroup = GetPermissionGroupsQuery['permissionGroups'][number];
 
@@ -57,7 +57,7 @@ export function PermissionPicker({
           <Card key={group.key} className="p-4">
             <div className="flex items-center justify-between mb-3">
               <Label className="text-lg font-semibold">
-                {t(permissionTitleKey(group.key))}
+                <PermissionGroupTitle groupKey={group.key} />
               </Label>
               <div className="flex items-center gap-2">
                 <Label className="text-xs text-muted-foreground">
@@ -88,7 +88,7 @@ export function PermissionPicker({
                 >
                   <div className="flex items-center justify-between">
                     <Label className="text-base font-bold cursor-pointer">
-                      {t(permissionLabelKey(item.permission.key))}
+                      <PermissionLabel permissionKey={item.permission.key} />
                     </Label>
                     <Switch
                       size="sm"
@@ -100,7 +100,9 @@ export function PermissionPicker({
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {t(permissionDescriptionKey(item.permission.key))}
+                    <PermissionDescription
+                      permissionKey={item.permission.key}
+                    />
                   </p>
                 </div>
               ))}

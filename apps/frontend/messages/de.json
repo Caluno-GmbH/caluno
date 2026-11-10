@@ -1399,6 +1399,8 @@
     "page": {
       "createButton": "Rolle erstellen",
       "empty": "Noch keine Rollen. Erstelle deine erste Rolle, um loszulegen.",
+      "readOnlyDescription": "Nur Personen mit der Berechtigung zur Rollenverwaltung in der obersten Einheit der Organisation können Rollen erstellen oder ändern. Du kannst weiterhin bestehende Rollen an Mitglieder deiner Einheit vergeben.",
+      "readOnlyTitle": "Rollen werden von der obersten Einheit verwaltet",
       "subtitle": "Verwalte Rollen und Berechtigungen für die gesamte Organisation {orgName}",
       "title": "Rollen"
     },

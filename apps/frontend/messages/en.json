@@ -1399,6 +1399,8 @@
     "page": {
       "createButton": "Create role",
       "empty": "No roles yet. Create your first role to get started.",
+      "readOnlyDescription": "Only people with role management permission in the organisation's top unit can create or change roles. You can still assign existing roles to members of your unit.",
+      "readOnlyTitle": "Roles are managed by the top unit",
       "subtitle": "Manage roles and permissions for the whole organisation {orgName}",
       "title": "Roles"
     },
