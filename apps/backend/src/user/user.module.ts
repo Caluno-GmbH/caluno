@@ -8,6 +8,8 @@ import { UserFieldResolver } from './resolvers/user-field.resolver';
 import { UserMutationResolver } from './resolvers/user-mutation.resolver';
 import { UserQueryResolver } from './resolvers/user-query.resolver';
 import { UserWithProfileFieldResolver } from './resolvers/user-with-profile-field.resolver';
+import { VerifiedUserSlackReportService } from './services/verified-user-slack-report.service';
+import { VerifiedUserSlackSchedulerService } from './services/verified-user-slack-scheduler.service';
 import { UserService } from './user.service';
 
 @Module({
@@ -20,6 +22,8 @@ import { UserService } from './user.service';
     UserWithProfileFieldResolver,
     UserMapper,
     UserWithProfileMapper,
+    VerifiedUserSlackReportService,
+    VerifiedUserSlackSchedulerService,
   ],
   exports: [UserService, UserMapper],
 })
