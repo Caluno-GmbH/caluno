@@ -81,6 +81,10 @@ export function ExportButton({
     try {
       setResolvingIds(true);
       const ids = getRowIds ? await getRowIds() : (rowIds ?? []);
+      if (ids.length === 0) {
+        toast(t('nothingToExport'));
+        return;
+      }
       const result = await mutation.mutateAsync({
         tableKind,
         rowIds: ids,

@@ -711,6 +711,10 @@ export function ShiftsTable({
             columns={exportColumns}
             permission={PermissionKey.ShiftEdit}
             getRowIds={resolveAllFilteredShiftIds}
+            // Export mirrors the org-scoped shifts query; it does not honor
+            // eventId, so disable it in an event-scoped view to avoid
+            // exporting the whole org's shifts.
+            disabled={Boolean(eventId)}
           />,
         ]}
       >

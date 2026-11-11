@@ -2839,6 +2839,7 @@
     "exportAction": "Export",
     "cancel": "Cancel",
     "exportFailed": "Export failed. Please try again.",
+    "nothingToExport": "Nothing to export for the current filters.",
     "columns": {
       "timesheets": {
         "volunteerName": "Volunteer Name",
