@@ -2837,7 +2837,9 @@
     "dialogTitle": "Export columns",
     "dialogDescription": "Select the columns to include in the CSV export.",
     "includeTechnicalIds": "Include technical IDs",
-    "exportAction": "Export"
+    "exportAction": "Export",
+    "cancel": "Cancel",
+    "exportFailed": "Export failed. Please try again."
   },
   "MyDocuments": {
     "title": "My documents",
