@@ -52,7 +52,7 @@ describe('DocumentSigningService', () => {
       { capture: () => {} } as unknown as PostHogService,
       tenantScope,
     );
-    service = new DocumentSigningService(db, authService, tenantScope);
+    service = new DocumentSigningService(db, authService);
   });
 
   describe('orderSignatures', () => {

@@ -244,12 +244,11 @@ describe('matchCoveringContracts', () => {
     ).toEqual([awaiting.id, draft.id]);
   });
 
-  it('ignores contracts for another volunteer, type or unit, and contracts without a unit', () => {
+  it('ignores contracts for another volunteer, type or unit', () => {
     const others = [
       contract({ volunteerId: 'volunteer-2' }),
       contract({ reimbursementTypeId: 'type-2' }),
       contract({ organizationUnitId: 'unit-2' }),
-      contract({ organizationUnitId: null }),
     ];
     const result = matchCoveringContracts(
       others,

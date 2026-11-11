@@ -8,7 +8,6 @@ import {
   ForbiddenGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
-import { TenantScopeService } from '../../organization/tenant-scope.service';
 import type { PendingSignee } from '../accounting.types';
 import { SigneeType } from '../enums';
 import type { ContractSignatureEntity } from '../schemas/contract-signature.schema';
@@ -26,31 +25,7 @@ export class DocumentSigningService {
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
     private readonly authService: AuthService,
-    private readonly tenantScope: TenantScopeService,
   ) {}
-
-  /**
-   * Unit to authorize a signing step against. A unit-scoped document always
-   * uses its own unit. A legacy document with no unit may fall back to the
-   * caller's header, but only when that header belongs to the document's
-   * organization.
-   */
-  async signingAuthorizationUnitId(
-    documentUnitId: string | null,
-    headerUnitId: string,
-    templateOrganizationId: string,
-    notFoundMessage: string,
-  ): Promise<string> {
-    if (documentUnitId) {
-      return documentUnitId;
-    }
-    await this.tenantScope.assertOrganizationInScope(
-      headerUnitId,
-      templateOrganizationId,
-      notFoundMessage,
-    );
-    return headerUnitId;
-  }
 
   orderSignatures<T extends { order: number; signedAt: Date | null }>(
     signatures: T[],

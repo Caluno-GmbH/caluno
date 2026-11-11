@@ -100,11 +100,7 @@ describe('ContractService', () => {
       } as unknown as DocumentProfileRequirementService,
       organizationUnitDataService,
     );
-    const documentSigningService = new DocumentSigningService(
-      db,
-      authService,
-      tenantScope,
-    );
+    const documentSigningService = new DocumentSigningService(db, authService);
     service = new ContractService(
       db,
       documentTemplateService,
@@ -188,7 +184,7 @@ describe('ContractService', () => {
     templateId: string;
     volunteerId: string;
     reimbursementTypeId: string;
-    organizationUnitId: string | null;
+    organizationUnitId: string;
     status: ContractStatus;
     periodStart: Date;
     periodEnd: Date;
@@ -249,12 +245,12 @@ describe('ContractService', () => {
 
   describe('findContract', () => {
     it('returns signatures in signing order regardless of insertion order', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -291,13 +287,13 @@ describe('ContractService', () => {
 
   describe('createContract', () => {
     it('starts at the first signee step and records a CREATED event', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
 
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -318,13 +314,13 @@ describe('ContractService', () => {
     });
 
     it('snapshots the template body onto the contract', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
 
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -341,13 +337,13 @@ describe('ContractService', () => {
     });
 
     it('persists per-document field overrides', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
 
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -368,14 +364,14 @@ describe('ContractService', () => {
     });
 
     it('rejects an over-limit task description override', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
 
       await expect(
         service.createContract(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -389,7 +385,7 @@ describe('ContractService', () => {
 
     it('accepts a template value over the limit when not overridden', async () => {
       const longTasks = 'x'.repeat(400);
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, root, reimbursementType, volunteer, signer } =
         await setup({
           contractBody: {
             header: {},
@@ -417,7 +413,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -515,7 +511,7 @@ describe('ContractService', () => {
           requiredPermissionId: permission.id,
           signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
         });
-        return { organization, signer };
+        return { organization, root, signer };
       };
 
       const orgA = await buildOrg();
@@ -525,7 +521,7 @@ describe('ContractService', () => {
       const draftInOrgB = await service.ensureDraftContract(
         orgB.organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: orgB.root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           anchorDate: new Date('2026-06-15T12:00:00.000Z'),
@@ -537,7 +533,7 @@ describe('ContractService', () => {
       await service.createContract(
         orgA.organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: orgA.root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -553,12 +549,12 @@ describe('ContractService', () => {
     });
 
     it('keeps a draft queued for a different year', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
       const draft = await service.ensureDraftContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           anchorDate: new Date('2027-06-15T12:00:00.000Z'),
@@ -569,7 +565,7 @@ describe('ContractService', () => {
       await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -657,7 +653,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -686,7 +682,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         f.organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: f.root.id,
           volunteerId: f.volunteer.id,
           reimbursementTypeId: f.reimbursementType.id,
           periodStart: new Date(),
@@ -735,7 +731,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -777,7 +773,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -797,7 +793,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -821,7 +817,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -841,7 +837,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -874,7 +870,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(),
@@ -909,7 +905,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2020-01-01T00:00:00.000Z'),
@@ -933,7 +929,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date(Date.now() - 86_400_000),
@@ -958,7 +954,7 @@ describe('ContractService', () => {
       const contract = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           // August 2026 as Berlin bounds.
@@ -1086,7 +1082,7 @@ describe('ContractService', () => {
       }
     });
 
-    it('ignores contracts of a sibling unit, of another organization and without a unit', async () => {
+    it('ignores contracts of a sibling unit and of another organization', async () => {
       const {
         organization,
         type,
@@ -1114,11 +1110,6 @@ describe('ContractService', () => {
         ...shared,
         templateId: template.id,
         organizationUnitId: sibling.id,
-      });
-      await insertContract({
-        ...shared,
-        templateId: template.id,
-        organizationUnitId: null,
       });
       await insertContract({
         ...shared,
@@ -1382,7 +1373,6 @@ describe('ContractService', () => {
       const draft = await service.ensureDraftContract(
         s.organization.id,
         {
-          organizationUnitId: null,
           volunteerId: s.volunteer.id,
           reimbursementTypeId: s.reimbursementType.id,
           anchorDate: new Date('2026-06-15T10:00:00.000Z'),
@@ -1784,7 +1774,7 @@ describe('ContractService', () => {
       const firstContract = await service.createContract(
         first.organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: first.root.id,
           volunteerId: first.volunteer.id,
           reimbursementTypeId: first.reimbursementType.id,
           periodStart: new Date(),
@@ -1795,7 +1785,7 @@ describe('ContractService', () => {
       await service.createContract(
         second.organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: second.root.id,
           volunteerId: second.volunteer.id,
           reimbursementTypeId: second.reimbursementType.id,
           periodStart: new Date(),
@@ -1853,14 +1843,14 @@ describe('ContractService', () => {
     });
 
     it('excludes contracts whose period does not overlap the requested range', async () => {
-      const { organization, reimbursementType, volunteer, signer } =
+      const { organization, reimbursementType, volunteer, signer, root } =
         await setup();
       const secondVolunteer = await createUser(db);
 
       const inRange = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-03-01'),
@@ -1871,7 +1861,7 @@ describe('ContractService', () => {
       const outOfRange = await service.createContract(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: secondVolunteer.id,
           reimbursementTypeId: reimbursementType.id,
           periodStart: new Date('2026-06-01'),

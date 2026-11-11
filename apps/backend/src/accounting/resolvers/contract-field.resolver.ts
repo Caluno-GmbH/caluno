@@ -132,24 +132,18 @@ export class ContractFieldResolver {
     orgLoader: AccountingOrganizationLoader,
   ): Promise<string[]> {
     let templateBody: unknown = contract.documentTemplate?.body;
-    let organizationId = contract.documentTemplate?.organizationId;
-    let organizationUnitId: string | undefined =
-      contract.organizationUnitId ?? undefined;
-    if (!templateBody || !organizationId) {
+    let organizationUnitId = contract.organizationUnitId;
+    if (!templateBody || !organizationUnitId) {
       const full = await contractLoader.contractWithRelationsById.load(
         contract.id,
       );
       templateBody = full.documentTemplate.body;
-      organizationId = full.documentTemplate.organizationId;
-      organizationUnitId = full.organizationUnitId ?? undefined;
+      organizationUnitId = full.organizationUnitId;
     }
-    if (!organizationId) return [];
     // Batched (one query per ancestor depth for the whole list) and the same
     // resolution as the create gate and the PDF, so a sub-org inherits the org
     // details its parents have filled in.
-    const profile = organizationUnitId
-      ? await orgLoader.orgProfileByUnitId.load(organizationUnitId)
-      : await orgLoader.orgProfileByOrganizationId.load(organizationId);
+    const profile = await orgLoader.orgProfileByUnitId.load(organizationUnitId);
     return this.documentProfileRequirementService.missingOrgProfileSourcesForUnit(
       (profile ?? undefined) as Record<string, unknown> | undefined,
       templateBody,

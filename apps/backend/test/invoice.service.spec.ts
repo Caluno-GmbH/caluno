@@ -112,11 +112,7 @@ describe('InvoiceService', () => {
       } as unknown as DocumentProfileRequirementService,
       organizationUnitDataService,
     );
-    const documentSigningService = new DocumentSigningService(
-      db,
-      authService,
-      new TenantScopeService(db, organizationUnitDataService),
-    );
+    const documentSigningService = new DocumentSigningService(db, authService);
     const reimbursementRateService = new ReimbursementRateService(
       db,
       organizationUnitDataService,
@@ -270,14 +266,13 @@ describe('InvoiceService', () => {
   const insertContract = (
     s: Fixture,
     period: { start: string; end: string },
-    options: { status?: ContractStatus; unitId?: string | null } = {},
+    options: { status?: ContractStatus; unitId?: string } = {},
   ) =>
     db.insert(schema.contracts).values({
       documentTemplateId: s.contractTemplate.id,
       volunteerId: s.volunteer.id,
       reimbursementTypeId: s.reimbursementType.id,
-      organizationUnitId:
-        options.unitId === undefined ? s.root.id : options.unitId,
+      organizationUnitId: options.unitId ?? s.root.id,
       contractStatus: options.status ?? ContractStatus.ACTIVE,
       periodStart: new Date(period.start),
       periodEnd: new Date(period.end),
@@ -297,7 +292,7 @@ describe('InvoiceService', () => {
     s: Fixture,
     timeEntryIds: string[],
     period: { start: string; end: string },
-    unitId: string | null = null,
+    unitId: string = s.root.id,
   ) =>
     service.createInvoice(
       s.organization.id,
@@ -369,7 +364,7 @@ describe('InvoiceService', () => {
       const inRange = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [marchTimeEntry.id],
@@ -381,7 +376,7 @@ describe('InvoiceService', () => {
       const outOfRange = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [outOfRangeTimeEntry.id],
@@ -607,7 +602,7 @@ describe('InvoiceService', () => {
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -638,7 +633,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -675,7 +670,7 @@ describe('InvoiceService', () => {
       const declinedInvoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -694,7 +689,7 @@ describe('InvoiceService', () => {
       const replacement = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -797,7 +792,7 @@ describe('InvoiceService', () => {
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -947,7 +942,7 @@ describe('InvoiceService', () => {
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1266,14 +1261,14 @@ describe('InvoiceService', () => {
 
   describe('createInvoice', () => {
     it('rejects an empty selection of time entries', async () => {
-      const { organization, reimbursementType, volunteer, supervisor } =
+      const { organization, reimbursementType, volunteer, supervisor, root } =
         await setup();
 
       await expect(
         service.createInvoice(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             timeEntryIds: [],
@@ -1286,14 +1281,14 @@ describe('InvoiceService', () => {
     });
 
     it('rejects a time entry id that is not eligible', async () => {
-      const { organization, reimbursementType, volunteer, supervisor } =
+      const { organization, reimbursementType, volunteer, supervisor, root } =
         await setup();
 
       await expect(
         service.createInvoice(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             timeEntryIds: [crypto.randomUUID()],
@@ -1320,7 +1315,7 @@ describe('InvoiceService', () => {
         service.createInvoice(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             timeEntryIds: [autoClosed.id],
@@ -1341,12 +1336,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1374,12 +1370,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1406,13 +1403,14 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       await expect(
         service.createInvoice(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             timeEntryIds: [timeEntry.id],
@@ -1432,12 +1430,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup({ rateCents: 1_500 });
 
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1458,6 +1457,7 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup({ rateCents: 1_500 });
       const reimbursementRateService = new ReimbursementRateService(
         db,
@@ -1475,7 +1475,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1495,12 +1495,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1520,12 +1521,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup({ rateCents: 1_500 });
 
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1545,12 +1547,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup({ rateCents: 1_500 });
 
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1581,13 +1584,14 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       await expect(
         service.createInvoice(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             timeEntryIds: [timeEntry.id],
@@ -1613,7 +1617,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1649,7 +1653,7 @@ describe('InvoiceService', () => {
       const july = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1661,7 +1665,7 @@ describe('InvoiceService', () => {
       const august = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [augustEntry.id],
@@ -1696,7 +1700,7 @@ describe('InvoiceService', () => {
       const july = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1708,7 +1712,7 @@ describe('InvoiceService', () => {
       const january = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [januaryEntry.id],
@@ -1754,7 +1758,7 @@ describe('InvoiceService', () => {
       const atRoot = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1807,7 +1811,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -1847,7 +1851,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -2004,19 +2008,6 @@ describe('InvoiceService', () => {
           periodEnd: new Date(JULY_TIMESHEET.end),
           resolvedBody: { header: {}, blocks: [], footer: {} },
         });
-
-        const invoice = await issueTimesheet(
-          s,
-          [s.timeEntry.id],
-          JULY_TIMESHEET,
-        );
-
-        expect(invoice.isNonCompliant).toBe(true);
-      });
-
-      it('does not count an active contract that has no unit', async () => {
-        const s = await setup();
-        await insertContract(s, JULY_TIMESHEET, { unitId: null });
 
         const invoice = await issueTimesheet(
           s,
@@ -2402,25 +2393,6 @@ describe('InvoiceService', () => {
         }
       });
 
-      it('judges an org-wide invoice, which stores no unit, in the unit of its claimed entries', async () => {
-        const s = await setup();
-        const invoice = await issueTimesheet(
-          s,
-          [s.timeEntry.id],
-          JULY_TIMESHEET,
-        );
-        const stored = await db.query.invoices.findFirst({
-          where: { id: invoice.id },
-        });
-        expect(stored?.organizationUnitId).toBeNull();
-
-        await insertContract(s, JULY_TIMESHEET, { unitId: s.root.id });
-
-        expect(
-          await service.findInvoiceIdsWithoutActiveCover([invoice.id]),
-        ).toEqual(new Set());
-      });
-
       it('judges a unit-scoped invoice in its own unit, not in the root unit', async () => {
         const s = await setup();
         const sub = await createUnit(db, {
@@ -2509,12 +2481,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -2743,6 +2716,7 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
       const secondEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: timeEntry.organizationUnitId,
@@ -2756,7 +2730,7 @@ describe('InvoiceService', () => {
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -2768,7 +2742,7 @@ describe('InvoiceService', () => {
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [secondEntry.id],
@@ -2828,7 +2802,7 @@ describe('InvoiceService', () => {
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -2858,12 +2832,13 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
 
       await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -2877,7 +2852,7 @@ describe('InvoiceService', () => {
         service.createInvoice(
           organization.id,
           {
-            organizationUnitId: null,
+            organizationUnitId: root.id,
             volunteerId: volunteer.id,
             reimbursementTypeId: reimbursementType.id,
             timeEntryIds: [timeEntry.id],
@@ -2898,11 +2873,12 @@ describe('InvoiceService', () => {
         volunteer,
         supervisor,
         timeEntry,
+        root,
       } = await setup();
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -2941,7 +2917,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         f.organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: f.root.id,
           volunteerId: f.volunteer.id,
           reimbursementTypeId: f.reimbursementType.id,
           timeEntryIds: [f.timeEntry.id],
@@ -2999,7 +2975,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -3058,7 +3034,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -3092,7 +3068,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -3134,7 +3110,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],
@@ -3166,7 +3142,7 @@ describe('InvoiceService', () => {
       const invoice = await service.createInvoice(
         organization.id,
         {
-          organizationUnitId: null,
+          organizationUnitId: root.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
           timeEntryIds: [timeEntry.id],

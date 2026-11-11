@@ -321,6 +321,9 @@ export class ContractService {
         template.id,
       );
 
+    const organizationUnitId =
+      input.organizationUnitId ?? (await this.rootUnitIdOf(organizationId));
+
     // The unit must have the profile fields its documents render (e.g. city /
     // address) before one is created — otherwise the PDF comes out with gaps
     // the org can't fix inline. The account manager is told to complete the
@@ -328,7 +331,7 @@ export class ContractService {
     const missingOrg =
       await this.documentProfileRequirementService.missingOrgProfileSources(
         organizationId,
-        input.organizationUnitId,
+        organizationUnitId,
         template.body,
       );
     if (missingOrg.length > 0) {
@@ -338,9 +341,6 @@ export class ContractService {
           '. Please complete your organization profile before creating documents.',
       );
     }
-
-    const draftUnitId =
-      input.organizationUnitId ?? (await this.rootUnitIdOf(organizationId));
 
     const contract = await this.db.transaction(async (tx) => {
       // The draft queued by ensureDraftContract stands in for this contract
@@ -366,14 +366,14 @@ export class ContractService {
             eq(schema.contracts.contractStatus, ContractStatus.DRAFT),
             or(
               and(
-                eq(schema.contracts.organizationUnitId, draftUnitId),
+                eq(schema.contracts.organizationUnitId, organizationUnitId),
                 gte(schema.contracts.periodStart, input.periodStart),
                 lte(schema.contracts.periodEnd, input.periodEnd),
               ),
               input.sourceDraftId
                 ? and(
                     eq(schema.contracts.id, input.sourceDraftId),
-                    eq(schema.contracts.organizationUnitId, draftUnitId),
+                    eq(schema.contracts.organizationUnitId, organizationUnitId),
                     lt(schema.contracts.periodStart, input.periodEnd),
                     gt(schema.contracts.periodEnd, input.periodStart),
                   )
@@ -397,7 +397,7 @@ export class ContractService {
           documentTemplateId: template.id,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          organizationUnitId: input.organizationUnitId,
+          organizationUnitId,
           contractStatus: this.nextContractStatus(orderedSignees[0].signeeType),
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
@@ -451,7 +451,7 @@ export class ContractService {
       properties: {
         surface: POSTHOG_SURFACE.BACKOFFICE,
         organization_id: organizationId,
-        organization_unit_id: input.organizationUnitId ?? undefined,
+        organization_unit_id: organizationUnitId,
       },
     });
 
@@ -499,7 +499,7 @@ export class ContractService {
   async ensureDraftContract(
     organizationId: string,
     input: {
-      organizationUnitId?: string | null;
+      organizationUnitId?: string;
       volunteerId: string;
       reimbursementTypeId: string;
       /** Instant that must be covered by an existing contract. */
@@ -673,7 +673,7 @@ export class ContractService {
   async signContract(
     contractId: string,
     userId: string,
-    organizationUnitId: string,
+    _organizationUnitId: string,
   ): Promise<ContractEntity> {
     const contract = await this.findContract(contractId);
     this.documentSigningService.assertAwaitingSignature(
@@ -693,20 +693,12 @@ export class ContractService {
       orderedSignatures,
     );
 
-    const authorizationUnitId =
-      await this.documentSigningService.signingAuthorizationUnitId(
-        contract.organizationUnitId,
-        organizationUnitId,
-        contract.documentTemplate.organizationId,
-        `Contract with ID ${contractId} not found`,
-      );
-
     await this.documentSigningService.assertSigneeAuthorized(
       userId,
       contract.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      authorizationUnitId,
+      contract.organizationUnitId,
     );
 
     // The volunteer's own signature is the first step of the chain. Require
@@ -802,7 +794,7 @@ export class ContractService {
     contractId: string,
     userId: string,
     reason: string,
-    organizationUnitId: string,
+    _organizationUnitId: string,
   ): Promise<ContractEntity> {
     this.documentSigningService.assertReason(reason);
     const contract = await this.findContract(contractId);
@@ -823,20 +815,12 @@ export class ContractService {
       );
     }
 
-    const authorizationUnitId =
-      await this.documentSigningService.signingAuthorizationUnitId(
-        contract.organizationUnitId,
-        organizationUnitId,
-        contract.documentTemplate.organizationId,
-        `Contract with ID ${contractId} not found`,
-      );
-
     await this.documentSigningService.assertSigneeAuthorized(
       userId,
       contract.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      authorizationUnitId,
+      contract.organizationUnitId,
     );
 
     const updated = await this.db.transaction(async (tx) => {

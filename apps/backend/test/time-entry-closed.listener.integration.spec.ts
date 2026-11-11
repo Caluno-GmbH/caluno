@@ -80,7 +80,7 @@ describe('TimeEntryClosedListener', () => {
     contractService = new ContractService(
       db,
       documentTemplateService,
-      new DocumentSigningService(db, authService, tenantScope),
+      new DocumentSigningService(db, authService),
       {
         notifyAwaitingVolunteerSignature: () => Promise.resolve(),
       } as unknown as DocumentNotificationService,
