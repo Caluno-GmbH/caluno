@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { ExportTable, PermissionKey } from "@repo/data";
-import { useExportTableCsv, useHasPermission } from "@repo/data/react";
+import type { ExportTable, PermissionKey } from '@repo/data';
+import { useExportTableCsv, useHasPermission } from '@repo/data/react';
 import {
   Button,
   Checkbox,
@@ -14,15 +14,15 @@ import {
   DialogTrigger,
   Label,
   Switch,
-} from "@repo/ui";
-import { useTranslations } from "next-intl";
-import { useState } from "react";
-import { toast } from "sonner";
-import { triggerDownload } from "@/lib/download/trigger-download";
+} from '@repo/ui';
+import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { triggerDownload } from '@/lib/download/trigger-download';
 import {
   type ExportColumnOption,
   resolveSelectedColumns,
-} from "./export-column-option";
+} from './export-column-option';
 
 interface ExportButtonProps {
   tableKind: ExportTable;
@@ -39,7 +39,7 @@ export function ExportButton({
   permission,
   disabled,
 }: ExportButtonProps) {
-  const t = useTranslations("Export");
+  const t = useTranslations('Export');
   const hasPermission = useHasPermission(permission);
   const mutation = useExportTableCsv();
 
@@ -83,7 +83,7 @@ export function ExportButton({
       triggerDownload(result.filename, result.content);
       setOpen(false);
     } catch {
-      toast.error(t("exportFailed"));
+      toast.error(t('exportFailed'));
     }
   };
 
@@ -91,13 +91,13 @@ export function ExportButton({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" disabled={disabled}>
-          {t("button")}
+          {t('button')}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("dialogTitle")}</DialogTitle>
-          <DialogDescription>{t("dialogDescription")}</DialogDescription>
+          <DialogTitle>{t('dialogTitle')}</DialogTitle>
+          <DialogDescription>{t('dialogDescription')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
@@ -128,17 +128,17 @@ export function ExportButton({
               onCheckedChange={setIncludeTechnicalIds}
             />
             <Label htmlFor="export-include-ids" className="text-sm font-normal">
-              {t("includeTechnicalIds")}
+              {t('includeTechnicalIds')}
             </Label>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
-            {t("cancel")}
+            {t('cancel')}
           </Button>
           <Button onClick={handleExport} disabled={mutation.isPending}>
-            {t("exportAction")}
+            {t('exportAction')}
           </Button>
         </DialogFooter>
       </DialogContent>
