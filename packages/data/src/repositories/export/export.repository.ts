@@ -9,9 +9,7 @@ export type RawExportLogEntry = ExportLogsQuery['exportLogs'][number];
 export type ExportFileResult = ExportTableCsvMutation['exportTableCsv'];
 
 export class ExportRepository extends BaseRepository {
-  async exportTableCsv(
-    input: ExportTableInput,
-  ): Promise<ExportFileResult> {
+  async exportTableCsv(input: ExportTableInput): Promise<ExportFileResult> {
     const data = await this.sdk.ExportTableCsv({ input });
     return data.exportTableCsv;
   }
