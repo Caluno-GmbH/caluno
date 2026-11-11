@@ -2840,6 +2840,21 @@
     "exportAction": "Exportieren",
     "cancel": "Abbrechen",
     "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut.",
+    "columns": {
+      "timesheets": {
+        "volunteerName": "Name",
+        "volunteerEmail": "E-Mail",
+        "shift": "Einsatz",
+        "assignment": "Einsatz",
+        "location": "Ort",
+        "startedAt": "Beginn",
+        "endedAt": "Ende",
+        "duration": "Dauer (Min.)",
+        "status": "Status",
+        "createdBy": "Erfasst von",
+        "notes": "Notizen"
+      }
+    },
     "log": {
       "downloadButton": "Exportprotokoll herunterladen",
       "downloadFailed": "Das Exportprotokoll konnte nicht geladen werden. Bitte versuche es erneut.",

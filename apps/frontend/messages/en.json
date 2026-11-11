@@ -2840,6 +2840,21 @@
     "exportAction": "Export",
     "cancel": "Cancel",
     "exportFailed": "Export failed. Please try again.",
+    "columns": {
+      "timesheets": {
+        "volunteerName": "Volunteer Name",
+        "volunteerEmail": "Volunteer Email",
+        "shift": "Appointment",
+        "assignment": "Assignment",
+        "location": "Location",
+        "startedAt": "Started At",
+        "endedAt": "Ended At",
+        "duration": "Duration (min)",
+        "status": "Status",
+        "createdBy": "Created By",
+        "notes": "Notes"
+      }
+    },
     "log": {
       "downloadButton": "Download export log",
       "downloadFailed": "Could not load the export log. Please try again.",
