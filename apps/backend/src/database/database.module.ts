@@ -7,6 +7,9 @@ import { DatabasePoolService } from './database-pool.service';
 import { relations } from './relations';
 
 export type Database = NodePgDatabase<typeof relations>;
+export type DbTransaction = Parameters<
+  Parameters<Database['transaction']>[0]
+>[0];
 
 export { DatabasePoolService } from './database-pool.service';
 

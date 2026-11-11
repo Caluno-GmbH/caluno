@@ -14,4 +14,6 @@ export enum PermissionKey {
   ACCOUNTING_MANAGE = 'accounting:manage',
 
   CHECK_IN_MANAGE = 'check-in:manage',
+
+  ROLE_MANAGE = 'role:manage',
 }

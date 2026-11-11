@@ -3,14 +3,15 @@ import { Role } from '../../auth/models/role.model';
 import { createPaginatedResponseType } from '../../graphql/paginated-response.model';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { User } from '../../user/models/user.model';
+import { UserWithProfile } from '../../user/models/user-with-profile.model';
 
 @ObjectType()
 export class Membership {
   @Field(() => ID)
   id!: string;
 
-  @Field(() => User)
-  user!: User;
+  @Field(() => UserWithProfile)
+  user!: UserWithProfile;
 
   @Field(() => OrganizationUnit)
   organizationUnit!: OrganizationUnit;

@@ -134,10 +134,12 @@ export class MembershipLifecycleMutationResolver {
   async removeMembership(
     @Args('id', { type: () => ID }) id: string,
     @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
   ): Promise<Membership> {
     const membership = await this.membershipService.removeMembership(
       id,
       context.organizationUnitId,
+      session.user.id,
     );
     return this.membershipMapper.toModelOrThrow(membership);
   }

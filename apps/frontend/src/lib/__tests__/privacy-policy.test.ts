@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import { API_URL } from '../constants';
-import { buildSignupPayload, PRIVACY_POLICY_PDF_URL } from '../privacy-policy';
+import { buildSignupPayload, privacyPolicyPdfUrl } from '../privacy-policy';
 
 describe('privacy policy signup payload', () => {
-  it('links the stable backend privacy policy PDF', () => {
-    expect(PRIVACY_POLICY_PDF_URL).toBe(`${API_URL}/legal/privacy-policy.pdf`);
+  it('links the locale-specific backend privacy policy PDF', () => {
+    expect(privacyPolicyPdfUrl('en')).toBe(
+      `${API_URL}/legal/privacy-policy/en`,
+    );
+    expect(privacyPolicyPdfUrl('de')).toBe(
+      `${API_URL}/legal/privacy-policy/de`,
+    );
   });
 
   it('includes name parts and synced name when accepted', () => {

@@ -38,8 +38,10 @@ export const PURPOSE_VALIDATION_RULES: Record<
   },
   // Server-generated documents (rendered contract/invoice PDFs) — uploaded
   // via FileService.saveGeneratedFile, never through the presigned path.
+  // Private: PDFs carry IBAN/BIC/DOB/address; download only via short-lived
+  // presigned GET after volunteer-or-accounting:manage authz.
   [FilePurpose.DOCUMENT]: {
-    visibility: 'public',
+    visibility: 'private',
     maxByteSize: 25 * 1024 * 1024,
     allowedMimeTypes: ['application/pdf'],
     requiredPermission: 'org:view',

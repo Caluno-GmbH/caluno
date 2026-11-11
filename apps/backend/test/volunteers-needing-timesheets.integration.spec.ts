@@ -18,6 +18,7 @@ import type { NotificationService } from '../src/notification';
 import { OrganizationUnitService } from '../src/organization/organization-unit.service';
 import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import type { RequiredFormService } from '../src/requirement-profile/services/required-form.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import type { FileService } from '../src/storage/services/file.service';
@@ -96,6 +97,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     const invoiceService = {
       findVolunteersNeedingTimesheets: async () => timesheetRows,
     } as unknown as InvoiceService;
+    const tenantScopeService = moduleRef.get(TenantScopeService);
     resolver = new InvoiceQueryResolver(
       invoiceService,
       {} as never,
@@ -103,6 +105,7 @@ describe('volunteersNeedingTimesheets projection', () => {
       {} as AuthService,
       organizationUnitService,
       accountingOrgAccessService,
+      tenantScopeService,
       new UserMapper(),
       userService,
       new ReimbursementTypeMapper(),

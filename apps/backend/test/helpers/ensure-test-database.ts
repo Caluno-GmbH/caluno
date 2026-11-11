@@ -104,18 +104,14 @@ export const dropTestDatabase = async (testDbName: string): Promise<void> => {
 export const runMigrationsAndSeed = (testDbName: string): void => {
   const backendRoot = getBackendRoot();
 
-  const migrateResult = spawnSync(
-    'node_modules/.bin/drizzle-kit',
-    ['migrate'],
-    {
-      cwd: backendRoot,
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        DB_NAME: testDbName,
-      },
+  const migrateResult = spawnSync('bun', ['run', 'src/database/migrate.mts'], {
+    cwd: backendRoot,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      DB_NAME: testDbName,
     },
-  );
+  });
 
   if (migrateResult.status !== 0) {
     throw new Error('Failed to migrate test database.');

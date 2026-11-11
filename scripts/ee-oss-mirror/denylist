@@ -1,0 +1,8 @@
+# OSS mirror static denylist — one repo-relative directory path per line.
+# Blank lines and # comments are ignored.
+# EE dirs (named ee or ee-*) are filtered automatically and need not be listed.
+packages/infra
+packages/security
+.ai
+.impeccable
+docs

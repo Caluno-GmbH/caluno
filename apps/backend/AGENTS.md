@@ -15,8 +15,11 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 - `bun run test` - Unit tests (`bun test src`; `src/**/*.spec.ts`). Target a single file with `bun test src/notification/notification.spec.ts` — appending a path to `bun run test` runs the whole suite (bun ORs it with the script's `src` filter).
 - `bun test apps/backend/test/` - Bun integration tests; creates an isolated `${POSTGRES_DB}_test_<pid>_<id>` database per run, migrates/seeds, then drops it when the process exits
 - `bun run --cwd apps/backend test:integration` - Same as `bun test test/` from `apps/backend`
-- `bun run db:generate` - Generate database migrations based on schema changes
-- `bun run db:migrate` - Run drizzle database migrations
+- `bun run db:generate` - Generate OSS/core database migrations (`src/database/migrations`)
+- `bun run db:generate:ee` - Generate EE migrations (`src/ee/migrations`; only when `src/ee` is present)
+- `bun run db:migrate` - Run OSS migrations, then EE migrations when `src/ee` exists
+
+OSS/EE edition boundary (where EE modules, schemas, and migration streams live; what core may import): root `AGENTS.md` → **OSS / Enterprise Edition**. Backend EE code is only under `src/ee/`; it is loaded via `loadEeModules()` from `src/edition/` — never a static import of `ee` from core modules.
 
 ## Testing
 
@@ -94,6 +97,7 @@ the tests actually exercise:
 - **`cancelShiftInstance(db, instanceId)`** — helper to set `isCancelled = true`.
 
 Guidelines:
+
 - Always pass `organizationUnitId` from the test context; never hard-code one.
 - Use `crypto.randomUUID()` in names/emails to avoid collisions when tests run against the same test DB.
 
@@ -200,6 +204,7 @@ src/
 test/
 ```
 Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`, `task`) are self-contained NestJS modules:
+
 ```
 domain/
 ├── domain.module.ts
@@ -229,11 +234,13 @@ domain/
 
 Authenticated file uploads use presigned PUT to Scaleway Object Storage (RustFS locally). Module: `src/storage/`.
 
-| Endpoint                                         | Auth                                          | Purpose                                                 |
-| ------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------- |
-| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()`   | Mint presigned PUT URL; creates `files` row (`pending`) |
-| `POST /storage/uploads/:fileId/complete`         | Session (owner)                               | HEAD-verify object; set `uploaded`                      |
-| `POST /storage/objects/:fileId/presign-download` | Session + owner or `requirement-profile:view` | Presigned GET for private files                         |
+| Endpoint                                         | Auth                                        | Purpose                                                 |
+| ------------------------------------------------ | ------------------------------------------- | ------------------------------------------------------- |
+| `POST /storage/uploads/presign`                  | Session + purpose-specific `@Permissions()` | Mint presigned PUT URL; creates `files` row (`pending`) |
+| `POST /storage/uploads/:fileId/complete`         | Session (owner)                             | HEAD-verify object; set `uploaded`                      |
+| `POST /storage/objects/:fileId/presign-download` | Session + purpose-specific download authz   | Presigned GET for private files                         |
+
+`FilePurpose.DOCUMENT` (server-rendered contract/timesheet PDFs) is **private** — never under `public/` / permanent `publicUrl`. GraphQL `Contract`/`Invoice.downloadUrl` and REST presign-download mint a short-lived GET after volunteer-or-`accounting:manage` authz (not uploader / `requirement-profile:view`). Other private purposes keep owner or `requirement-profile:view`. `DocumentFileMigrationService` (boot, delete once every env has run) migrates any legacy public DOCUMENT rows.
 
 Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`. Local dev: RustFS via root `docker-compose` (`:9000` API).
 
@@ -246,6 +253,7 @@ Env: `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_REGION`, `STORAGE_ACCESS_KEY
 ## Drizzle
 
 Database schema in `src/database/schema.ts` (re-exports domain schemas; relations in `database/schema.relations.ts`).
+
 - Use the shared column helpers: `...idColumn`, `...timestampColumns` from `database/database-columns`
 - DB is `snake_case`; Drizzle auto-converts to `camelCase` (`casing: 'snake_case'`)
 - Soft deletes via `deletedAt` timestamp — no hard deletes on important records
@@ -256,6 +264,7 @@ Database schema in `src/database/schema.ts` (re-exports domain schemas; relation
 ### Querying: Relational Query v2 by default
 
 For fetching entities and their relations, use Relational Query v2:
+
 ```typescript
 const users = await db.query.users.findMany({ where: { id: 1 } });
 ```
@@ -271,7 +280,8 @@ only base-table columns, so those sorts use `select().leftJoin()` with an explic
 ## Known constraints (decision-log extracts — architectural, must stay)
 
 Update this section when a decision changes one of these (pipeline Decision routing). Each carries the decision that set it:
-- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `profileKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / profileKey-column-align)
+
+- **Profile attributes live on `users` columns**, not a separate `user_profiles` table. Requirement-form `profileKey`s are the same camelCase names as the columns / GraphQL fields (`preferredName`, `accountHolder`, …) — no kebab remapping. GraphQL: base `User` is identity + account settings (`firstname`/`lastname`/`preferredName` included for display); `UserWithPaymentProfile` adds remaining profile/payment fields for `me` / `user(id)` / `updateMyProfile` only — so members/volunteers/field resolvers cannot select payment PII. `user(id)` membership/request gate in the header org unit; payment fields `iban`/`bic`/`accountHolder` masked unless self or `accounting:manage`. When payment fields are visible, `accountHolder` is the **effective** value (stored, else `firstname + " " + lastname`); unauthorized viewers still see raw null when unset — do not resolve-then-mask. Writes normalize blank or equal-to-name to null. GraphQL `userByCheckInId` removed; check-in uses `UserService.findByCheckInId` via time-tracking. (VOLI-1524 / account-holder-defaults-to-name / profileKey-column-align)
 - **`FormSubmissionStatus` is `SUBMITTED` / `REJECTED` only** (no DRAFT/APPROVED). Gating logic keys off these two. (form-submission-status-simplification)
 - **`RequiredFormTargetType` behavior lives in per-target strategies** under `requirement-profile/targets/` (`RequiredFormTargetRegistry`). Do not add `switch (targetType)` for get/set/resolveOrgUnit — implement a new strategy and register it on the registry. `RequiredFormService.applyEvent/Shift/ShiftInstanceRequiredForms` stay as thin facades for tx callers. (required-form-target-strategies)
 - **No `forwardRef` in `apps/backend`**. Module dependencies must form a DAG. Cycles are broken by extracting lower-level data modules (`OrganizationUnitDataModule`) or by moving cross-domain GraphQL field resolution into the higher-level module (`EventModule` owns the `Shift.event` field).
@@ -284,7 +294,7 @@ Update this section when a decision changes one of these (pipeline Decision rout
 - **`availableShiftInstances` excludes the same `MY_SHIFT_INVITE_STATUSES` roster** so waitlisted / pending-approval shifts do not reappear in Discover; `ADMIN_INVITED` still shows (coordinator invite, not self-roster). (VOLI-1316)
 - **Admin event uninvite/re-invite cascades to event-linked shifts.** Setting an event invite to `ADMIN_REJECTED` also sets active shift + shift-instance invites for that user on shifts with the same `eventId` to `ADMIN_REJECTED` (via `ShiftService.adminRejectInvitesForEventUser`). No notification is sent. Admin re-invite (`ADMIN_REJECTED` → `ADMIN_INVITED`) reverses this: `ShiftService.adminReinviteInvitesForEventUser` restores this user's `ADMIN_REJECTED` shift + shift-instance invites on the event's shifts back to `ADMIN_INVITED`; shift invites in other states (e.g. `VOLUNTEER_REJECTED`) are left untouched. Admin event volunteer lists include `ADMIN_REJECTED` so re-invite stays available. Invite sheets (shift + event) show inactive statuses (`ADMIN_REJECTED`, `VOLUNTEER_REJECTED`, `VOLUNTEER_CANCELLED`) in Invited as locked rows (not removable, never in Available); save sends only `submittableInviteMemberIds` / `canAdminUninvite` so the sheet cannot silent-resurrect or re-invite — re-invite is roster-only. Backends only resurrect when those ids are explicitly in `memberIds` (VOLI-997 / VOLI-1704). `Event.myJoinStatus` / `requestJoinEvent` map event-invite `ADMIN_REJECTED` to `JoinStatus.REJECTED` so the public Follow CTA stays disabled (membership `REJECTED` remains the org-level path). Admin-only invite targets (`ADMIN_REJECTED`, `ADMIN_INVITED` via `updateEventInviteStatus`) always require `SHIFT_EDIT`, including self. (VOLI-997)
 - **Ending a membership hard-deletes org-unit invites and the membership request.** `leaveMembership` and `removeMembership` share one path: after deleting the membership row, hard-delete that user's membership request for that unit, all `shift_invites` on that unit (past or future — they seed instance expansion), `shift_instance_invites` for instances that have not ended, and `event_invites` for events that have not ended. Past events/instances keep their invites. Sibling/child units, other organizations, and other users are untouched. This is complete removal, not `ADMIN_REJECTED`. Time entries, form submissions, and remaining memberships in other units of the same org are not part of this path yet. (VOLI-1109)
-- **Privacy policy PDFs live in `apps/backend/legal/`** as `datenschutzhinweise-YYYY-MM-DD.pdf`. The current version is the newest matching filename. `GET /legal/privacy-policy.pdf` (`@AllowAnonymous()`) serves that file. Signup sends `privacyPolicyAccepted: true` on the request body only — it is not a Better Auth `additionalField` (those must exist on the Drizzle `users` table, and create hooks merge rather than replace). A non-null `privacyPolicyAcceptedAt` is the stored proof of acceptance; the server also stamps `privacyPolicyVersion`. The client does not send a version. (privacy-policy-backend-source)
+- **Privacy policy PDFs live in `apps/backend/legal/`** as `privacy-policy_YYYY-MM-DD_<locale>.pdf` (locale `en`|`de`). The current version is the newest matching date across locales. `GET /legal/privacy-policy/:locale` (`@AllowAnonymous()`) serves the current file for that locale. Signup sends `privacyPolicyAccepted: true` on the request body only — it is not a Better Auth `additionalField` (those must exist on the Drizzle `users` table, and create hooks merge rather than replace). A non-null `privacyPolicyAcceptedAt` is the stored proof of acceptance; the server also stamps `privacyPolicyVersion`. The client does not send a version. (privacy-policy-backend-source)
 - **Terms & conditions documents live in `apps/backend/legal/`** as `terms_<version>_<YYYY-MM-DD>_<locale>.pdf` (locale `en`|`de`), e.g. `terms_1.0_2026-10-06_en.pdf` and `terms_1.0_2026-10-06_de.pdf`. A version requires BOTH locales. To ship a new version: add the two files with exact, immutable names (never edit or delete a published version — they are the evidence for `terms_acceptances.document_hash`) and merge. The **deployed backend publishes automatically** shortly after boot (`TERMS_AUTO_PUBLISH=true` on staging/release/production) and emails every user — nobody runs the command against production, because no one holds production DB credentials. `bun run terms:publish` is only for local development against the local DB (auto-publish is off there); it runs the identical idempotent path. If a released version was never published or emailed (e.g. an interrupted run), restart/redeploy the backend to retry — a version with no ledger row or `notification_sent_at IS NULL` is picked up on the next boot. Publishing writes the `terms_versions` ledger row (class from the version shape — `X.0` = MAJOR, `X.Y` = MINOR, frozen at publish), emails every user, and for a MAJOR gates them until they re-accept. A Postgres advisory lock around the publish pass makes it single-publisher per DB, so concurrent boots (e.g. a rolling deploy) cannot double-send; the lock releases if the process dies, so a crashed run retries on the next boot. The guard is inert until the first publish. Acceptance is append-only in `terms_acceptances` (version, language, timestamp, sha256 of the exact file) and denormalised to `users.termsVersion`/`termsAcceptedAt`; it is deliberately separate from the privacy acknowledgement. The committed `terms_1.0_2026-10-06_*` files are placeholders containing `%CALUNO-TERMS-PLACEHOLDER%` — `terms:publish` refuses them unless `TERMS_ALLOW_PLACEHOLDER=1`; replace them with the real documents from VOLI-982. (terms-conditions-acceptance / VOLI-1319)
 - **Gender is a fixed single-choice system field.** Four option values (`female`/`male`/`diverse`/`prefer-not-to-say`) are defined in code and mirrored frontend (`src/domain/requirement-form/gender-options.ts`) and backend (`GENDER_OPTION_VALUES` in `src/requirement-profile/constants.ts`); labels are localised client-side from `RequirementForm.genderOptions`. Gender field rows carry empty DB options — rendering and validation inject the fixed list by `profileKey`. (VOLI-1267)
 - **`email` system profile key is backed by `users.email`.** Identity edit shows it locked from the account. Do not treat a missing profile firstname as "volunteer has no email".

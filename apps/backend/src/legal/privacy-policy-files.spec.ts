@@ -7,13 +7,14 @@ import {
 } from './privacy-policy-files';
 
 describe('latestPrivacyPolicyVersionFromFilenames', () => {
-  it('picks the newest datenschutzhinweise-YYYY-MM-DD.pdf', () => {
+  it('picks the newest privacy-policy_YYYY-MM-DD_<locale>.pdf', () => {
     expect(
       latestPrivacyPolicyVersionFromFilenames([
-        'datenschutzhinweise-2026-08-17.pdf',
+        'privacy-policy_2026-08-17_de.pdf',
         'readme.txt',
-        'datenschutzhinweise-2026-08-25.pdf',
-        'datenschutzhinweise-not-a-date.pdf',
+        'privacy-policy_2026-08-25_en.pdf',
+        'privacy-policy_not-a-date_de.pdf',
+        'privacy-policy_2026-08-25_de.pdf',
       ]),
     ).toBe('2026-08-25');
   });
@@ -26,16 +27,25 @@ describe('latestPrivacyPolicyVersionFromFilenames', () => {
 });
 
 describe('resolvePrivacyPolicyDocument', () => {
-  it('resolves version and path from the newest file in a directory', () => {
+  it('resolves version and path for the requested locale', () => {
     const dir = mkdtempSync(join(tmpdir(), 'privacy-policy-'));
-    writeFileSync(join(dir, 'datenschutzhinweise-2026-08-17.pdf'), 'old');
-    writeFileSync(join(dir, 'datenschutzhinweise-2026-08-25.pdf'), 'new');
+    writeFileSync(join(dir, 'privacy-policy_2026-08-17_de.pdf'), 'old');
+    writeFileSync(join(dir, 'privacy-policy_2026-08-25_de.pdf'), 'new-de');
+    writeFileSync(join(dir, 'privacy-policy_2026-08-25_en.pdf'), 'new-en');
     mkdirSync(join(dir, 'nested'));
 
-    const document = resolvePrivacyPolicyDocument(dir);
+    const document = resolvePrivacyPolicyDocument(dir, 'en');
 
     expect(document.version).toBe('2026-08-25');
-    expect(document.filename).toBe('datenschutzhinweise-2026-08-25.pdf');
-    expect(document.path).toBe(join(dir, 'datenschutzhinweise-2026-08-25.pdf'));
+    expect(document.locale).toBe('en');
+    expect(document.filename).toBe('privacy-policy_2026-08-25_en.pdf');
+    expect(document.path).toBe(join(dir, 'privacy-policy_2026-08-25_en.pdf'));
+  });
+
+  it('throws when the current version has no file for the locale', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'privacy-policy-missing-'));
+    writeFileSync(join(dir, 'privacy-policy_2026-08-25_de.pdf'), 'de-only');
+
+    expect(() => resolvePrivacyPolicyDocument(dir, 'en')).toThrow(/locale en/i);
   });
 });

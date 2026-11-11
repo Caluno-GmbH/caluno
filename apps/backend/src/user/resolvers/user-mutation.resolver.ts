@@ -11,7 +11,7 @@ import { UpdateMyProfileInput } from '../inputs/update-my-profile.input';
 import { UserMapper } from '../mappers/user.mapper';
 import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
-import { UserWithProfile } from '../models/user-with-profile.model';
+import { UserWithPaymentProfile } from '../models/user-with-payment-profile.model';
 import { UserService } from '../user.service';
 import { withEffectiveAccountHolder } from '../user-name';
 
@@ -68,11 +68,11 @@ export class UserMutationResolver {
     return true;
   }
 
-  @Mutation(() => UserWithProfile)
+  @Mutation(() => UserWithPaymentProfile)
   async updateMyProfile(
     @Args('input') input: UpdateMyProfileInput,
     @Session() session: UserSession,
-  ): Promise<UserWithProfile> {
+  ): Promise<UserWithPaymentProfile> {
     const user = await this.userService.updateMyProfile(session.user.id, input);
     return this.userWithProfileMapper.toModelOrThrow(
       withEffectiveAccountHolder(user),

@@ -26,6 +26,11 @@ import { FilePurpose, FileStatus, FileVisibility } from '../enums';
 import type { FileEntity } from '../schemas/file.schema';
 import { S3StorageService } from './s3-storage.service';
 
+export type DocumentFileAccess = {
+  volunteerId: string;
+  organizationUnitId: string | null;
+};
+
 export interface PresignUploadInput {
   purpose: FilePurpose;
   filename: string;
@@ -292,7 +297,13 @@ export class FileService {
   ): Promise<{ downloadUrl: string }> {
     const file = await this.findByIdOrThrow(fileId);
 
-    if (file.visibility === FileVisibility.PUBLIC && file.publicUrl) {
+    // DOCUMENT always requires authz + short-lived presign — never the
+    // permanent public URL, even for not-yet-migrated legacy rows.
+    if (
+      file.purpose !== FilePurpose.DOCUMENT &&
+      file.visibility === FileVisibility.PUBLIC &&
+      file.publicUrl
+    ) {
       return { downloadUrl: file.publicUrl };
     }
 
@@ -316,6 +327,48 @@ export class FileService {
     );
 
     return { downloadUrl };
+  }
+
+  /**
+   * GraphQL `Contract` / `Invoice.downloadUrl`: mint a short-lived presigned
+   * GET when the caller is the volunteer or holds `accounting:manage` on the
+   * document's unit; otherwise null (do not break the parent query).
+   */
+  async resolveDocumentDownloadUrl(
+    userId: string,
+    input: {
+      fileId: string;
+      volunteerId: string;
+      organizationUnitId?: string | null;
+    },
+  ): Promise<string | null> {
+    const file = await this.findById(input.fileId);
+    if (!file || file.status !== FileStatus.UPLOADED) {
+      return null;
+    }
+
+    const allowed = await this.canAccessDocument(
+      userId,
+      {
+        volunteerId: input.volunteerId,
+        organizationUnitId: input.organizationUnitId ?? file.organizationUnitId,
+      },
+      file.organizationUnitId,
+    );
+    if (!allowed) {
+      return null;
+    }
+
+    return this.s3StorageService.createPresignedDownloadUrl(file.storageKey);
+  }
+
+  /** Server-side PDF bytes for ZIP assembly — no public URL. */
+  async getUploadedFileBytes(fileId: string): Promise<Buffer> {
+    const file = await this.findByIdOrThrow(fileId);
+    if (file.status !== FileStatus.UPLOADED) {
+      throw new BadRequestException('File upload is not complete');
+    }
+    return this.s3StorageService.getObjectBytes(file.storageKey);
   }
 
   async resolvePublicUrlForUploadedFile(fileId: string): Promise<string> {
@@ -401,6 +454,14 @@ export class FileService {
     file: FileEntity,
     organizationUnitId?: string | null,
   ): Promise<boolean> {
+    if (file.purpose === FilePurpose.DOCUMENT) {
+      const access = await this.findDocumentAccessByFileId(file.id);
+      if (!access) {
+        return false;
+      }
+      return this.canAccessDocument(userId, access, file.organizationUnitId);
+    }
+
     if (file.uploadedByUserId === userId) {
       return true;
     }
@@ -423,6 +484,58 @@ export class FileService {
       scopedOrganizationUnitId,
       [PERMISSIONS.REQUIREMENT_PROFILE_VIEW],
     );
+  }
+
+  /**
+   * Volunteer of the contract/invoice, or `accounting:manage` on the
+   * document's unit. Uploader alone is not enough (a manager who triggered
+   * render must still hold accounting:manage).
+   */
+  async canAccessDocument(
+    userId: string,
+    access: DocumentFileAccess,
+    fileOrganizationUnitId?: string | null,
+  ): Promise<boolean> {
+    if (access.volunteerId === userId) {
+      return true;
+    }
+
+    const unitId = access.organizationUnitId ?? fileOrganizationUnitId ?? null;
+    if (!unitId) {
+      return false;
+    }
+
+    return this.authService.hasRequiredPermissions(userId, unitId, [
+      PERMISSIONS.ACCOUNTING_MANAGE,
+    ]);
+  }
+
+  async findDocumentAccessByFileId(
+    fileId: string,
+  ): Promise<DocumentFileAccess | null> {
+    const contract = await this.db.query.contracts.findFirst({
+      where: { fileId },
+      columns: { volunteerId: true, organizationUnitId: true },
+    });
+    if (contract) {
+      return {
+        volunteerId: contract.volunteerId,
+        organizationUnitId: contract.organizationUnitId,
+      };
+    }
+
+    const invoice = await this.db.query.invoices.findFirst({
+      where: { fileId },
+      columns: { volunteerId: true, organizationUnitId: true },
+    });
+    if (invoice) {
+      return {
+        volunteerId: invoice.volunteerId,
+        organizationUnitId: invoice.organizationUnitId,
+      };
+    }
+
+    return null;
   }
 
   private buildStorageKey(input: {

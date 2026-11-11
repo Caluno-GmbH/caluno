@@ -26,7 +26,6 @@ e2e/
 └── playwright.config.ts
 ```
 
-
 ## Fixture data
 
 Most specs here are **not** self-contained: `admin-redirect`, `my-shifts`, the

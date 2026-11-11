@@ -144,6 +144,7 @@ A client component built on `FormSheet` / `useFormSheet`.
 | Bad `kind`/`id`, not found, forbidden              | Generic error message + Close              |
 
 **Copy** (title and description):
+
 - Title: "Complete your details"
 - Description: names the document and the org (e.g. "Required for _Volunteer agreement_ at _Org name_") and says the details are saved to the volunteer's profile and used for all their documents.
 

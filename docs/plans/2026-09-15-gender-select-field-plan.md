@@ -26,12 +26,14 @@
 ### Task 1: Frontend option catalog + message catalogs
 
 **Files:**
+
 - Create: `apps/frontend/src/domain/requirement-form/gender-options.ts`
 - Test: `apps/frontend/src/domain/requirement-form/gender-options.spec.ts`
 - Modify: `apps/frontend/messages/en.json` (insert after the `"form"` object, ~line 1044)
 - Modify: `apps/frontend/messages/de.json` (insert after the `"form"` object, ~line 1044)
 
 **Interfaces:**
+
 - Produces: `GENDER_OPTION_VALUES` (`readonly ['female','male','diverse','other','prefer-not-to-say']`), `GenderOptionValue`, `isGenderOptionValue(v: string): v is GenderOptionValue` — consumed by Tasks 3, 4, 5. Message namespace `RequirementForm.genderOptions` with keys `female`, `male`, `diverse`, `other`, `prefer-not-to-say` — consumed by Tasks 3, 4.
 
 - [ ] **Step 1: Write the failing test**
@@ -133,11 +135,13 @@ git commit -m "feat(frontend): fixed gender option catalog with DE/EN labels"
 ### Task 2: Backend validation against the fixed list
 
 **Files:**
+
 - Modify: `apps/backend/src/requirement-profile/constants.ts`
 - Modify: `apps/backend/src/requirement-profile/profile-validation.ts:78-83`
 - Test: `apps/backend/src/requirement-profile/profile-validation.spec.ts`
 
 **Interfaces:**
+
 - Produces: `GENDER_OPTION_VALUES` from `apps/backend/src/requirement-profile/constants.ts` — same five strings as Task 1. Consumed by Task 2 only (the form-submission service picks the rule up through the existing `validateProfileKeyValue` call).
 
 - [ ] **Step 1: Write the failing test**
@@ -235,10 +239,12 @@ git commit -m "feat(backend): validate gender against fixed option list"
 ### Task 3: Frontend select rendering + zod schema
 
 **Files:**
+
 - Modify: `apps/frontend/src/domain/requirement-form/components/field-renderer.tsx` (SINGLE_CHOICE branch ~line 185-196, 400-430; gender rule ~line 256-258)
 - Test: `apps/frontend/src/domain/requirement-form/components/field-renderer.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `GENDER_OPTION_VALUES` from `../gender-options` (Task 1); message namespace `RequirementForm.genderOptions` (Task 1).
 - Produces: no new exports — behavior change inside `buildFieldSchema` and `FieldRenderer`. Both are consumed by `edit-identity-form.tsx`, `volunteer-form.tsx`, and `form-block-section.tsx` automatically.
 
@@ -394,12 +400,14 @@ git commit -m "feat(frontend): render gender as select with fixed localized opti
 ### Task 4: Localized gender display (submission review + profile page)
 
 **Files:**
+
 - Modify: `apps/frontend/src/domain/requirement-form/lib/resolve-field-answer.ts`
 - Modify: `apps/frontend/src/domain/requirement-form/components/submission-view.tsx`
 - Modify: `apps/frontend/src/domain/user/components/personal-information-section.tsx`
 - Test: `apps/frontend/src/domain/requirement-form/lib/resolve-field-answer.spec.ts`
 
 **Interfaces:**
+
 - Consumes: `GENDER_OPTION_VALUES` and `isGenderOptionValue` from `../gender-options` (Task 1); `RequirementForm.genderOptions` messages (Task 1).
 - Produces: `resolveFieldAnswer` gains a required `genderLabels: Record<string, string>` entry in `ResolveFieldAnswerOptions`; every caller must pass it.
 
@@ -546,12 +554,14 @@ git commit -m "feat(frontend): show localized gender labels in review and profil
 ### Task 5: Form builder — preset, required toggle, locked options
 
 **Files:**
+
 - Modify: `apps/frontend/src/domain/requirement-form/system-profile-fields.ts:24`
 - Test: `apps/frontend/src/domain/requirement-form/system-profile-fields.spec.ts`
 - Modify: `apps/frontend/src/domain/requirement-form/components/block-form.tsx` (FieldCard call ~line 328-351, props ~line 470-508, required Switch ~line 545-551, showOptions ~line 513-514)
 - Modify: `apps/frontend/src/domain/requirement-form/components/field-form.tsx:246-250`
 
 **Interfaces:**
+
 - Consumes: `FieldType.SingleChoice` preset behavior defined here.
 - Produces: no new exports. `BlockForm` gender fields are appended with `type: SINGLE_CHOICE`, empty options, `lockType: true`; admins can toggle their `required`; the options editor is hidden for them.
 
@@ -706,10 +716,12 @@ git commit -m "feat(frontend): gender preset as dropdown, required toggle, locke
 ### Task 6: Migrations — field type conversion + user data backfill
 
 **Files:**
+
 - Create: `apps/backend/src/database/migrations/<timestamp>_gender_field_single_choice/migration.sql`
 - Create: `apps/backend/src/database/migrations/<timestamp>_gender_values_backfill/migration.sql`
 
 **Interfaces:**
+
 - Produces: no code interfaces. DB effect: `form_block_fields.type = 'SINGLE_CHOICE'` for `system_key = 'gender'`; every non-empty `user_profiles.data.gender` becomes one of the five option values.
 
 - [ ] **Step 1: Scaffold the first custom migration**
@@ -809,9 +821,11 @@ git commit -m "feat(backend): migrate gender fields to single-choice and backfil
 ### Task 7: Backend integration test — gender submission flow
 
 **Files:**
+
 - Modify: `apps/backend/test/form-submission.service.spec.ts`
 
 **Interfaces:**
+
 - Consumes: backend `GENDER_OPTION_VALUES` rule from Task 2 (through `validateProfileKeyValue`).
 - Produces: no new exports — regression coverage for the submission → `user_profiles.data` path.
 
@@ -931,9 +945,11 @@ git commit -m "test(backend): gender submission accepts options, rejects free te
 ### Task 8: Docs + full verification
 
 **Files:**
+
 - Modify: `apps/backend/AGENTS.md` (Known constraints section, after the last bullet ~line 221)
 
 **Interfaces:**
+
 - Consumes: everything — this is the verification gate.
 
 - [ ] **Step 1: Add the decision-log entry**

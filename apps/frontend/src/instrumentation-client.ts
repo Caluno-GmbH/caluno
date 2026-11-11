@@ -3,6 +3,7 @@ import {
   TRACE_PROPAGATION_TARGETS,
 } from '@repo/observability';
 import * as Sentry from '@sentry/nextjs';
+import { installTranslationDomGuard } from '@/lib/translation-dom-guard';
 
 const replayEnabled = process.env.NEXT_PUBLIC_SENTRY_REPLAY_ENABLED === 'true';
 
@@ -28,5 +29,9 @@ Sentry.init({
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
 });
+
+// Must run before React hydrates: keeps browser translation (e.g. Chrome
+// Translate) from crashing React DOM commits with NotFoundError.
+installTranslationDomGuard();
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

@@ -115,7 +115,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           turbo-cache: "true"
-      - run: bun run build # db:seed runs the compiled seed script
+      - run: bun run build
       - run: bun run --cwd apps/backend db:migrate
       - run: bun run --cwd apps/backend db:seed
       - run: bun test

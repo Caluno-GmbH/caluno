@@ -7,6 +7,7 @@ import {
 import { json } from 'express';
 import { AuthModule } from '../auth/auth.module';
 import { DatabaseModule } from '../database/database.module';
+import { DocumentFileMigrationService } from './services/document-file-migration.service';
 import { FileService } from './services/file.service';
 import { S3StorageService } from './services/s3-storage.service';
 import { StorageController } from './storage.controller';
@@ -14,7 +15,7 @@ import { StorageController } from './storage.controller';
 @Module({
   imports: [DatabaseModule, AuthModule],
   controllers: [StorageController],
-  providers: [S3StorageService, FileService],
+  providers: [S3StorageService, FileService, DocumentFileMigrationService],
   exports: [FileService, S3StorageService],
 })
 export class StorageModule implements NestModule {

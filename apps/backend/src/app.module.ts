@@ -22,6 +22,7 @@ import { PermissionGuard } from './auth/guards/permission.guard';
 import { CheckInAgreementModule } from './check-in-agreement/check-in-agreement.module';
 import { type Database, DatabaseModule } from './database/database.module';
 import { DATABASE_CONNECTION } from './database/database-connection';
+import { loadEeModules } from './edition/load-ee-modules';
 import { EventModule } from './event/event.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { LoaderInterceptor } from './graphql/interceptors';
@@ -280,6 +281,7 @@ const autoSchemaFile =
     BetterAuthModule,
     AuthModule,
     AccountingModule,
+    ...loadEeModules(),
   ],
   controllers: [],
   providers: [

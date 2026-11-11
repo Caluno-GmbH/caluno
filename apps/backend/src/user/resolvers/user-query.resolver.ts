@@ -7,7 +7,7 @@ import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context'
 import { maskRestrictedPaymentUserFields } from '../../requirement-profile/payment-visibility';
 import { UserWithProfileMapper } from '../mappers/user-with-profile.mapper';
 import { User } from '../models/user.model';
-import { UserWithProfile } from '../models/user-with-profile.model';
+import { UserWithPaymentProfile } from '../models/user-with-payment-profile.model';
 import { UserService } from '../user.service';
 import { withEffectiveAccountHolder } from '../user-name';
 
@@ -19,8 +19,8 @@ export class UserQueryResolver {
     private readonly authService: AuthService,
   ) {}
 
-  @Query(() => UserWithProfile)
-  async me(@Session() session: UserSession): Promise<UserWithProfile> {
+  @Query(() => UserWithPaymentProfile)
+  async me(@Session() session: UserSession): Promise<UserWithPaymentProfile> {
     const me = await this.userService.findByIdOrThrow(session.user.id);
     return this.userWithProfileMapper.toModelOrThrow(
       withEffectiveAccountHolder(me),
@@ -28,12 +28,12 @@ export class UserQueryResolver {
   }
 
   @Permissions(PERMISSIONS.VOLUNTEER_VIEW)
-  @Query(() => UserWithProfile, { nullable: true })
+  @Query(() => UserWithPaymentProfile, { nullable: true })
   async user(
     @Args('id') id: string,
     @Session() session: UserSession,
     @Context() ctx: AuthenticatedGraphQLContext,
-  ): Promise<UserWithProfile | null> {
+  ): Promise<UserWithPaymentProfile | null> {
     const item = await this.userService.findByIdInOrgUnit(
       id,
       ctx.organizationUnitId,

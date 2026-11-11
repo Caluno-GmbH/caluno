@@ -915,30 +915,50 @@ export class MembershipService {
     return request;
   }
 
+  private rolesOf(
+    membershipRoles: Array<{ role: RoleEntity | null }>,
+  ): RoleEntity[] {
+    return membershipRoles.flatMap((mr) => (mr.role ? [mr.role] : []));
+  }
+
   async leaveMembership(id: string, userId: string): Promise<MembershipEntity> {
     const { row, identity } = await this.db.transaction(async (tx) => {
-      const [deleted] = await tx
-        .delete(schema.memberships)
+      // Lock the row first so concurrent edits of this membership serialize.
+      const [leaving] = await tx
+        .select()
+        .from(schema.memberships)
         .where(
           and(
             eq(schema.memberships.id, id),
             eq(schema.memberships.userId, userId),
           ),
         )
-        .returning();
-
-      if (!deleted) {
+        .for('update');
+      if (!leaving) {
         throw new NotFoundGraphQLError('Membership not found');
       }
+      const current = await tx.query.membershipRoles.findMany({
+        where: { membershipId: leaving.id },
+        with: { role: true },
+      });
+      await this.authService.assertOwnerRemains(
+        tx,
+        leaving.id,
+        this.rolesOf(current),
+      );
 
-      const identity = this.membershipIdentity(deleted);
+      await tx
+        .delete(schema.memberships)
+        .where(eq(schema.memberships.id, leaving.id));
+
+      const identity = this.membershipIdentity(leaving);
       await this.purgeOrganizationUnitInvites(
         tx,
         identity.userId,
         identity.organizationUnitId,
       );
 
-      return { row: deleted, identity };
+      return { row: leaving, identity };
     });
 
     const orgUnit = await this.db.query.organizationUnits.findFirst({
@@ -967,29 +987,48 @@ export class MembershipService {
   async removeMembership(
     id: string,
     organizationUnitId: string,
+    callerId: string,
   ): Promise<MembershipEntity> {
     const { row, identity } = await this.db.transaction(async (tx) => {
-      const [deleted] = await tx
-        .delete(schema.memberships)
+      // Lock the row first so concurrent edits of this membership serialize.
+      const [removing] = await tx
+        .select()
+        .from(schema.memberships)
         .where(
           and(
             eq(schema.memberships.id, id),
             eq(schema.memberships.organizationUnitId, organizationUnitId),
           ),
         )
-        .returning();
-
-      if (!deleted) {
+        .for('update');
+      if (!removing) {
         throw new NotFoundGraphQLError('Membership not found');
       }
+      const current = await tx.query.membershipRoles.findMany({
+        where: { membershipId: removing.id },
+        with: { role: true },
+      });
+      // Removing someone takes all their roles away, so the same rule applies.
+      const roles = this.rolesOf(current);
+      await this.authService.assertOwnerRemains(tx, removing.id, roles);
+      await this.authService.assertCanAssignRoles(
+        callerId,
+        organizationUnitId,
+        roles.map((role) => role.id),
+        tx,
+      );
 
-      const identity = this.membershipIdentity(deleted);
+      await tx
+        .delete(schema.memberships)
+        .where(eq(schema.memberships.id, removing.id));
+
+      const identity = this.membershipIdentity(removing);
       await this.purgeOrganizationUnitInvites(
         tx,
         identity.userId,
         identity.organizationUnitId,
       );
-      return { row: deleted, identity };
+      return { row: removing, identity };
     });
 
     const orgUnit = await this.db.query.organizationUnits.findFirst({
@@ -1351,70 +1390,14 @@ export class MembershipService {
     };
   }
 
-  async assignRoleToMembership(
-    membershipId: string,
-    roleId: string,
-  ): Promise<boolean> {
-    const membership = await this.db.query.memberships.findFirst({
-      where: { id: membershipId },
-      with: {
-        organizationUnit: true,
-      },
-    });
-
-    if (!membership) {
-      throw new NotFoundGraphQLError('Membership not found');
-    }
-
-    if (!membership.organizationUnit?.organizationId) {
-      throw new ConflictGraphQLError(
-        'Membership organization unit is not linked to an organization.',
-      );
-    }
-
-    const role = await this.db.query.roles.findFirst({
-      where: { id: roleId },
-    });
-
-    if (!role) {
-      throw new NotFoundGraphQLError('Role not found');
-    }
-
-    if (role.organizationId !== membership.organizationUnit.organizationId) {
-      throw new ConflictGraphQLError(
-        'Role does not belong to the membership organization.',
-      );
-    }
-
-    const existingRole = await this.db.query.membershipRoles.findFirst({
-      where: {
-        membershipId,
-        roleId,
-      },
-    });
-
-    if (existingRole) {
-      return true;
-    }
-
-    const [membershipRole] = await this.db
-      .insert(schema.membershipRoles)
-      .values({
-        membershipId,
-        roleId,
-      })
-      .returning();
-
-    return membershipRole !== undefined;
-  }
-
   async updateMembershipRoles(
     membershipId: string,
     roleIds: string[],
-    organizationUnitId?: string,
+    organizationUnitId: string,
+    callerId: string,
   ): Promise<MembershipEntity> {
     const membership = await this.db.query.memberships.findFirst({
-      where: { id: membershipId },
+      where: { id: membershipId, organizationUnitId },
       with: {
         organizationUnit: true,
       },
@@ -1422,15 +1405,6 @@ export class MembershipService {
 
     if (!membership) {
       throw new NotFoundGraphQLError('Membership not found');
-    }
-
-    if (
-      organizationUnitId &&
-      membership.organizationUnitId !== organizationUnitId
-    ) {
-      throw new ConflictGraphQLError(
-        'Membership does not belong to the current organization unit.',
-      );
     }
 
     if (!membership.organizationUnit?.organizationId) {
@@ -1447,34 +1421,61 @@ export class MembershipService {
       );
     }
 
-    const roles = await this.db
-      .select()
-      .from(schema.roles)
-      .where(inArray(schema.roles.id, roleIds));
+    const roles = await this.db.query.roles.findMany({
+      where: { id: { in: roleIds }, organizationId },
+      columns: { id: true },
+    });
 
     if (roles.length !== roleIds.length) {
       throw new NotFoundGraphQLError('One or more roles not found');
     }
 
-    const allBelongToOrg = roles.every(
-      (role) => role.organizationId === organizationId,
-    );
-
-    if (!allBelongToOrg) {
-      throw new ConflictGraphQLError(
-        'One or more roles do not belong to the membership organization.',
-      );
-    }
-
     await this.db.transaction(async (tx) => {
+      // Lock the row first so concurrent edits of this membership serialize.
+      const [locked] = await tx
+        .select({ id: schema.memberships.id })
+        .from(schema.memberships)
+        .where(
+          and(
+            eq(schema.memberships.id, membership.id),
+            eq(schema.memberships.organizationUnitId, organizationUnitId),
+          ),
+        )
+        .for('update');
+      if (!locked) {
+        throw new NotFoundGraphQLError('Membership not found');
+      }
+
+      const current = await tx.query.membershipRoles.findMany({
+        where: { membershipId: membership.id },
+        with: { role: true },
+      });
+      const currentIds = new Set(current.map((mr) => mr.roleId));
+      const nextIds = new Set(roleIds);
+      const addedIds = roleIds.filter((id) => !currentIds.has(id));
+      const removed = current.filter((mr) => !nextIds.has(mr.roleId));
+
+      await this.authService.assertOwnerRemains(
+        tx,
+        membership.id,
+        this.rolesOf(removed),
+      );
+      // Both directions count: taking a role away is as sensitive as giving it.
+      await this.authService.assertCanAssignRoles(
+        callerId,
+        organizationUnitId,
+        [...addedIds, ...removed.map((mr) => mr.roleId)],
+        tx,
+      );
+
       await tx
         .delete(schema.membershipRoles)
-        .where(eq(schema.membershipRoles.membershipId, membershipId));
+        .where(eq(schema.membershipRoles.membershipId, membership.id));
 
       if (roleIds.length > 0) {
         await tx.insert(schema.membershipRoles).values(
           roleIds.map((roleId) => ({
-            membershipId,
+            membershipId: membership.id,
             roleId,
           })),
         );
@@ -1482,7 +1483,7 @@ export class MembershipService {
     });
 
     const updatedMembership = await this.db.query.memberships.findFirst({
-      where: { id: membershipId },
+      where: { id: membership.id },
       with: {
         user: true,
         organizationUnit: true,

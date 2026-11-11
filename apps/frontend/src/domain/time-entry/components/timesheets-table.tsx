@@ -213,7 +213,6 @@ export const TimesheetsTable = ({
     const csvHeaders = [
       t('csv.volunteerName'),
       t('csv.volunteerEmail'),
-      t('csv.shift'),
       t('csv.assignment'),
       t('csv.location'),
       t('csv.startedAt'),

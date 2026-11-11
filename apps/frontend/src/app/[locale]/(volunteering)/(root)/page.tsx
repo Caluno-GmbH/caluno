@@ -7,6 +7,7 @@ import { VolunteerHomeContent } from '@/domain/home/components/volunteer-home-co
 import { getDiscoverWindow } from '@/domain/home/lib/date-helpers';
 import { PARTICIPATING_EVENT_STATUSES } from '@/domain/home/lib/my-events';
 import { getDataClient } from '@/lib/data-client';
+import { requireSupportedLocale } from '@/lib/require-locale';
 
 interface VolunteeringHomePageProps {
   params: Promise<{ locale: string }>;
@@ -15,7 +16,9 @@ interface VolunteeringHomePageProps {
 export default async function VolunteeringHomePage({
   params,
 }: VolunteeringHomePageProps) {
-  await params;
+  // Guard before any GraphQL call: `/favicon.ico` and other dotted paths
+  // bypass the middleware and land here with an invalid locale.
+  requireSupportedLocale((await params).locale);
   const client = await getDataClient();
 
   const [

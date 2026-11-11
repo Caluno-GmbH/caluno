@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, gt, gte, inArray, lt, lte, ne, or, sql } from 'drizzle-orm';
-import type { Database } from '../../database/database.module';
+import type { Database, DbTransaction } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import * as schema from '../../database/schema';
 import {
@@ -617,7 +617,7 @@ export class ContractService {
    * `periodStart`/`periodEnd` (VOLI-1370).
    */
   private async insertDraft(
-    tx: Parameters<Parameters<Database['transaction']>[0]>[0],
+    tx: DbTransaction,
     template: DocumentTemplateEntity,
     orderedSignees: TemplateSigneeEntity[],
     draft: {

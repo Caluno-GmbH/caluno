@@ -75,11 +75,13 @@ export class MembershipMutationResolver {
     @Args('membershipId', { type: () => ID }) membershipId: string,
     @Args('roleIds', { type: () => [ID] }) roleIds: string[],
     @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
   ): Promise<Membership> {
     const entity = await this.membershipService.updateMembershipRoles(
       membershipId,
       roleIds,
       context.organizationUnitId,
+      session.user.id,
     );
     return this.membershipMapper.toModelOrThrow(entity);
   }

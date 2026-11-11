@@ -278,11 +278,12 @@ type SearchProps = {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  className?: string;
 };
 
-function Search({ value, onChange, placeholder }: SearchProps) {
+function Search({ value, onChange, placeholder, className }: SearchProps) {
   return (
-    <InputGroup className="w-full sm:w-64">
+    <InputGroup className={cn('w-full sm:w-64', className)}>
       <InputGroupAddon align="inline-start">
         <SearchIcon />
       </InputGroupAddon>
@@ -328,7 +329,7 @@ function FilterSelect({
   icon,
 }: FilterSelectProps) {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value ?? ''} onValueChange={onChange}>
       <SelectTrigger
         aria-label={ariaLabel ?? placeholder}
         className="w-auto min-w-36"
@@ -359,6 +360,7 @@ type FilterComboboxProps = {
   ariaLabel?: string;
   /** Optional leading icon rendered at the start of the input. */
   icon?: ReactNode;
+  className?: string;
 };
 
 /** A searchable single-select filter: the input doubles as the search field. */
@@ -370,6 +372,7 @@ function FilterCombobox({
   emptyText,
   ariaLabel,
   icon,
+  className,
 }: FilterComboboxProps) {
   const [focused, setFocused] = useState(false);
   return (
@@ -382,7 +385,7 @@ function FilterCombobox({
         // Drop the placeholder on focus so it doesn't compete with typing.
         placeholder={focused ? undefined : placeholder}
         aria-label={ariaLabel ?? placeholder}
-        className="w-auto min-w-36"
+        className={cn('w-auto min-w-36', className)}
         showClear={Boolean(value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}

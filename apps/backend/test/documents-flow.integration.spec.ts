@@ -209,6 +209,17 @@ const CONTRACT_DETAIL = `
   }
 `;
 
+const PENDING_CONTRACT_SIGNEE = `
+  query PendingContractSignee($contractId: ID!) {
+    pendingContractSignee(contractId: $contractId) {
+      signeeType
+      userId
+      permissionKey
+      eligibleUserIds
+    }
+  }
+`;
+
 const INVOICE_DETAIL = `
   query InvoiceDetail($id: ID!) {
     invoice(id: $id) {
@@ -1458,6 +1469,267 @@ describe('documents flow — admin + volunteer', () => {
       expect(adminB.contracts.map((c) => c.id)).toEqual([
         contractB.createContract.id,
       ]);
+    });
+
+    it('rejects contract(id) / invoice(id) when the accounting manager is in another org', async () => {
+      const orgA = await setupFlowOrg(db);
+      const orgB = await setupFlowOrg(db);
+      const orgAHeader = { 'x-organization-unit-id': orgA.organizationUnitId };
+      const orgBHeader = { 'x-organization-unit-id': orgB.organizationUnitId };
+
+      setAuthMockUserId(orgA.adminId);
+      const contractA = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: orgA.organizationUnitId,
+              reimbursementTypeId: orgA.reimbursementTypeId,
+              volunteerId: orgA.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: orgAHeader,
+        },
+        'createContract',
+      );
+
+      const timeEntry = await createCompletedTimeEntry(db, {
+        organizationUnitId: orgA.organizationUnitId,
+        volunteerId: orgA.volunteerId,
+        reimbursementTypeId: orgA.reimbursementTypeId,
+        startedAt: new Date('2026-09-01T09:00:00.000Z'),
+        endedAt: new Date('2026-09-01T13:00:00.000Z'),
+      });
+      const invoiceA = await graphqlRequestRequiringData<{
+        createInvoice: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_INVOICE,
+          variables: {
+            input: {
+              organizationUnitId: orgA.organizationUnitId,
+              reimbursementTypeId: orgA.reimbursementTypeId,
+              volunteerId: orgA.volunteerId,
+              timeEntryIds: [timeEntry.id],
+              periodStart: '2026-08-31T22:00:00.000Z',
+              periodEnd: '2026-09-30T22:00:00.000Z',
+            },
+          },
+          headers: orgAHeader,
+        },
+        'createInvoice',
+      );
+
+      // Org B's accounting manager must not read org A's document by id.
+      setAuthMockUserId(orgB.adminId);
+      const foreignContract = await graphqlRequest<{
+        contract?: { id: string } | null;
+      }>(app, {
+        query: CONTRACT_DETAIL,
+        variables: { id: contractA.createContract.id },
+        headers: orgBHeader,
+      });
+      expect(foreignContract.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+      expect(foreignContract.data?.contract).toBeFalsy();
+
+      const foreignInvoice = await graphqlRequest<{
+        invoice?: { id: string } | null;
+      }>(app, {
+        query: INVOICE_DETAIL,
+        variables: { id: invoiceA.createInvoice.id },
+        headers: orgBHeader,
+      });
+      expect(foreignInvoice.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+      expect(foreignInvoice.data?.invoice).toBeFalsy();
+    });
+
+    it('rejects contract(id) when the accounting manager is on a sibling branch', async () => {
+      const scoped = await setupFlowOrg(db);
+      const typeId =
+        (
+          await db.query.organizationUnitTypes.findFirst({
+            where: { organizationId: scoped.organizationId },
+          })
+        )?.id ?? '';
+      const childA = await createUnit(db, {
+        organizationId: scoped.organizationId,
+        typeId,
+        name: `Child A ${crypto.randomUUID()}`,
+        parentId: scoped.organizationUnitId,
+      });
+      const childB = await createUnit(db, {
+        organizationId: scoped.organizationId,
+        typeId,
+        name: `Child B ${crypto.randomUUID()}`,
+        parentId: scoped.organizationUnitId,
+      });
+
+      const permission =
+        (await db.query.permissions.findFirst({
+          where: { key: 'accounting:manage' },
+        })) ?? (await createPermission(db, { key: 'accounting:manage' }));
+      const role = await createRole(db, {
+        organizationId: scoped.organizationId,
+        name: `acct-sib-${crypto.randomUUID()}`,
+      });
+      await grantPermissionToRole(db, {
+        roleId: role.id,
+        permissionId: permission.id,
+      });
+      const managerB = await createUser(db);
+      const membershipB = await addMembership(db, managerB.id, childB.id);
+      await assignRoleToMembership(db, {
+        membershipId: membershipB.id,
+        roleId: role.id,
+      });
+
+      // Create on root (unit profile is complete there), then place the row on
+      // child A so a child-B manager is out of scope.
+      setAuthMockUserId(scoped.adminId);
+      const contract = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: scoped.organizationUnitId,
+              reimbursementTypeId: scoped.reimbursementTypeId,
+              volunteerId: scoped.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: { 'x-organization-unit-id': scoped.organizationUnitId },
+        },
+        'createContract',
+      );
+      await db
+        .update(schema.contracts)
+        .set({ organizationUnitId: childA.id })
+        .where(eq(schema.contracts.id, contract.createContract.id));
+
+      setAuthMockUserId(managerB.id);
+      const siblingRead = await graphqlRequest<{
+        contract?: { id: string } | null;
+      }>(app, {
+        query: CONTRACT_DETAIL,
+        variables: { id: contract.createContract.id },
+        headers: { 'x-organization-unit-id': childB.id },
+      });
+      expect(siblingRead.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+      expect(siblingRead.data?.contract).toBeFalsy();
+    });
+
+    it('returns NOT_FOUND (not FORBIDDEN) when a stranger probes contract(id)', async () => {
+      const orgA = await setupFlowOrg(db);
+      const orgAHeader = { 'x-organization-unit-id': orgA.organizationUnitId };
+
+      setAuthMockUserId(orgA.adminId);
+      const contractA = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: orgA.organizationUnitId,
+              reimbursementTypeId: orgA.reimbursementTypeId,
+              volunteerId: orgA.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: orgAHeader,
+        },
+        'createContract',
+      );
+
+      const stranger = await createUser(db);
+      setAuthMockUserId(stranger.id);
+      const probe = await graphqlRequest<{
+        contract?: { id: string } | null;
+      }>(app, {
+        query: CONTRACT_DETAIL,
+        variables: { id: contractA.createContract.id },
+        headers: orgAHeader,
+      });
+      expect(probe.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+      expect(probe.data?.contract).toBeFalsy();
+    });
+
+    it('pendingContractSignee resolves eligibleUserIds on the document unit, not a foreign header', async () => {
+      const orgA = await setupFlowOrg(db);
+      const orgB = await setupFlowOrg(db);
+      const orgAHeader = { 'x-organization-unit-id': orgA.organizationUnitId };
+      const orgBHeader = { 'x-organization-unit-id': orgB.organizationUnitId };
+
+      setAuthMockUserId(orgA.adminId);
+      const created = await graphqlRequestRequiringData<{
+        createContract: { id: string };
+      }>(
+        app,
+        {
+          query: CREATE_CONTRACT,
+          variables: {
+            input: {
+              organizationUnitId: orgA.organizationUnitId,
+              reimbursementTypeId: orgA.reimbursementTypeId,
+              volunteerId: orgA.volunteerId,
+              periodStart: '2025-12-31T23:00:00.000Z',
+              periodEnd: '2026-12-31T23:00:00.000Z',
+            },
+          },
+          headers: orgAHeader,
+        },
+        'createContract',
+      );
+
+      // Advance to the permission-holder step so eligibleUserIds is populated.
+      setAuthMockUserId(orgA.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: created.createContract.id },
+          headers: orgAHeader,
+        },
+        'signContract',
+      );
+
+      // Owner + foreign org header must not leak org B's managers.
+      const pending = await graphqlRequestRequiringData<{
+        pendingContractSignee: {
+          signeeType: string;
+          eligibleUserIds: string[] | null;
+        } | null;
+      }>(
+        app,
+        {
+          query: PENDING_CONTRACT_SIGNEE,
+          variables: { contractId: created.createContract.id },
+          headers: orgBHeader,
+        },
+        'pendingContractSignee',
+      );
+
+      expect(pending.pendingContractSignee?.signeeType).toBe(
+        SigneeType.PERMISSION_HOLDER,
+      );
+      expect(pending.pendingContractSignee?.eligibleUserIds).toContain(
+        orgA.adminId,
+      );
+      expect(pending.pendingContractSignee?.eligibleUserIds).not.toContain(
+        orgB.adminId,
+      );
     });
   });
 

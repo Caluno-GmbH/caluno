@@ -1,2 +1,2 @@
 [test]
-preload = ["./apps/backend/test/preload.ts"]
+preload = ["./apps/backend/test/preload.ts", "./apps/frontend/test/preload.ts"]

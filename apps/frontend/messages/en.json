@@ -287,10 +287,9 @@
     "digestLabel": "ID: {digest}",
     "generic": "Something went wrong",
     "goHome": "Go home",
-    "orgNotFound": {
-      "description": "The organisation you're looking for doesn't exist.",
-      "homeLink": "Go to your organisations",
-      "title": "Organisation not found"
+    "pageNotFound": {
+      "description": "The page you're looking for doesn't exist.",
+      "title": "Page not found"
     },
     "reloadPage": "Reload page",
     "title": "Something went wrong",
@@ -390,10 +389,6 @@
     "empty": {
       "description": "Get started by creating your first event.",
       "title": "No events yet"
-    },
-    "error": {
-      "title": "We couldn't load the events.",
-      "tryAgain": "Try again"
     },
     "form": {
       "coverUrlLabel": "Cover URL",
@@ -1000,13 +995,18 @@
     },
     "language": "Language",
     "languageDescription": "App display language",
+    "lastChanged": "Last changed {date}",
+    "legalDocuments": "Legal",
     "moreSettingsPrompt": "For more settings, visit your <link>volunteering profile</link>.",
     "organizations": "Your organisations",
     "pageTitle": "Profile",
     "personalInformation": "Personal information",
     "pictureLabel": "Profile picture",
+    "privacyNotice": "Privacy notice",
+    "readDocument": "Read",
     "saveFailed": "We couldn't update your profile. Please try again.",
     "saved": "Profile updated",
+    "termsAndConditions": "Terms and conditions",
     "title": "Edit profile"
   },
   "QRScanner": {
@@ -1407,10 +1407,11 @@
       "descriptions": {
         "accountingManage": "Create and sign reimbursement contracts and timesheets; edit document templates and hourly rates; see payment-related volunteer data (eg. IBAN).",
         "checkInManage": "Look up volunteers; see which assignments are available for check-in; check volunteers in or out; add people to assignments; invite people to the organisation and approve join requests from this screen.",
-        "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; create and change role types; turn ID verification on or off per unit; add requirement forms to the organisation.",
+        "orgEdit": "Change the organisation profile; create, rename, or delete units they belong to; turn ID verification on or off per unit; add requirement forms to the organisation.",
         "orgView": "View the organisation's overview, unit tree, roles list, and ID-verification setting, for organisations they belong to.",
         "requirementProfileEdit": "Create and change forms and blocks.",
         "requirementProfileView": "See forms, form blocks, and whether a volunteer has submitted a form.",
+        "roleManage": "Create, rename, and delete role types and change which permissions they grant; only from the organisation's top unit, and only permissions you hold yourself can be added, removed or deleted with a role.",
         "shiftEdit": "Create, change, and delete assignments and events; invite people; send call-outs and reminders; set which forms an assignment or event requires; add, close, change, and delete timesheet entries.",
         "shiftView": "See assignments and their occurrences, events, who is invited or signed up, and timesheet entries.",
         "volunteerEdit": "Approve or reject join requests, remove a membership, assign roles and permissions to users.",
@@ -1423,6 +1424,7 @@
         "orgView": "View",
         "requirementProfileEdit": "Edit",
         "requirementProfileView": "View",
+        "roleManage": "Manage",
         "shiftEdit": "Edit",
         "shiftView": "View",
         "volunteerEdit": "Edit",
@@ -1435,6 +1437,7 @@
         "checkIn": "Check-in",
         "organization": "Organisation wide settings",
         "requirementProfile": "Requirement forms and blocks",
+        "role": "Roles",
         "shift": "Assignments, events, timesheets",
         "volunteer": "Volunteer information and membership"
       }
@@ -1446,7 +1449,8 @@
         "title": "Change role?"
       },
       "empty": "No roles found.",
-      "searchPlaceholder": "Search roles..."
+      "searchPlaceholder": "Search roles...",
+      "updateFailed": "The role couldn't be changed. You can only assign or remove roles within your own permissions, and every organization needs at least one owner."
     },
     "sheet": {
       "createDescription": "Define a new role with specific permissions.",
@@ -2059,7 +2063,6 @@
     "csv": {
       "volunteerName": "Volunteer Name",
       "volunteerEmail": "Volunteer Email",
-      "shift": "Appointment",
       "assignment": "Assignment",
       "location": "Location",
       "startedAt": "Started At",
@@ -2106,7 +2109,7 @@
     }
   },
   "Unauthorized": {
-    "homeLink": "Go to your organisations",
+    "homeLink": "Go to your homescreen",
     "message": "You don't have permission to access this resource.",
     "title": "Access denied"
   },
@@ -2186,15 +2189,39 @@
       "userInfo": "Personal information",
       "zipLabel": "Postal code"
     },
+    "configureView": {
+      "label": "Configure view",
+      "note": "Hidden by default to protect personal data — please stay mindful when sharing your screen."
+    },
+    "filter": {
+      "rolePlaceholder": "Role",
+      "genderPlaceholder": "Gender",
+      "cityPlaceholder": "City",
+      "cityEmpty": "No cities found",
+      "verifiedAll": "All",
+      "verifiedVerified": "Verified",
+      "verifiedUnverified": "Unverified",
+      "notSet": "Not set",
+      "activeRole": "Role",
+      "activeGender": "Gender",
+      "activeCity": "City",
+      "activeVerified": "ID verified",
+      "sheetTitle": "Filters"
+    },
     "table": {
       "copyEmailAria": "Copy {name}'s email address",
       "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
+      "downloadCsv": "Download CSV",
       "email": "Email",
       "emailCopied": "Email address copied to clipboard",
       "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
       "name": "Name",
       "openProfileAria": "Open {name}'s profile",
-      "roles": "Role"
+      "roles": "Role",
+      "dateOfBirth": "Date of birth",
+      "gender": "Gender",
+      "phone": "Phone",
+      "address": "Address"
     }
   },
   "VolunteerHome": {

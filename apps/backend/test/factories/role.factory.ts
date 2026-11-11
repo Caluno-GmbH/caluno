@@ -6,13 +6,14 @@ type PermissionEntity = typeof schema.permissions.$inferSelect;
 
 export const createRole = async (
   db: Database,
-  args: { organizationId: string; name?: string },
+  args: { organizationId: string; name?: string; isInternal?: boolean },
 ): Promise<RoleEntity> => {
   const [role] = await db
     .insert(schema.roles)
     .values({
       organizationId: args.organizationId,
       name: args.name ?? `role-${crypto.randomUUID()}`,
+      isInternal: args.isInternal ?? false,
     })
     .returning();
   if (!role) throw new Error('Failed to create role');

@@ -12,6 +12,7 @@ import {
 } from '@repo/ui';
 import {
   type ColumnDef,
+  type ColumnVisibilityState,
   flexRender,
   type OnChangeFn,
   type PaginationState,
@@ -61,6 +62,8 @@ interface DataTableClientProps<TData extends RowData> {
   getRowHref?: (row: TData) => string | null | undefined;
   pagination?: PaginationState;
   onPaginationChange?: OnChangeFn<PaginationState>;
+  columnVisibility?: ColumnVisibilityState;
+  onColumnVisibilityChange?: OnChangeFn<ColumnVisibilityState>;
   footerContent?: ReactNode;
 }
 
@@ -91,6 +94,9 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
     state: {
       sorting: props.sorting ?? [],
       ...(client?.pagination ? { pagination: client.pagination } : {}),
+      ...(client?.columnVisibility
+        ? { columnVisibility: client.columnVisibility }
+        : {}),
     },
     ...(server?.expansion?.defaultAllExpanded
       ? { initialState: { expanded: true } }
@@ -98,6 +104,9 @@ export function DataTable<TData extends RowData>(props: DataTableProps<TData>) {
     ...(onSortingChange ? { onSortingChange } : {}),
     ...(client?.onPaginationChange
       ? { onPaginationChange: client.onPaginationChange }
+      : {}),
+    ...(client?.onColumnVisibilityChange
+      ? { onColumnVisibilityChange: client.onColumnVisibilityChange }
       : {}),
     manualSorting: !isClient,
     manualPagination: !isClient,

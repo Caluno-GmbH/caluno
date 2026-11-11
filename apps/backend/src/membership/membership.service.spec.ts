@@ -141,7 +141,7 @@ describe('MembershipService.removeMembership PostHog', () => {
       {} as never,
     );
 
-    await service.removeMembership('mem-1', 'ou-1');
+    await service.removeMembership('mem-1', 'ou-1', 'caller-1');
 
     expect(capture).toHaveBeenCalledWith({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_LEAVE,

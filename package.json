@@ -25,18 +25,14 @@
     "setup:hooks": "bash .githooks/install-hooks.sh",
     "security:audit": "bun run --cwd packages/security audit",
     "terms:publish": "bun run --cwd apps/backend terms:publish",
-    "oss:filter": "bun run scripts/oss-mirror/cli.ts",
-    "oss:filter:list": "bun run scripts/oss-mirror/cli.ts list",
-    "oss:filter:prefixes": "bun run scripts/oss-mirror/cli.ts prefixes",
-    "oss:filter:find": "bun run scripts/oss-mirror/cli.ts find",
-    "oss:clone": "bun run scripts/oss-mirror/clone-filter.ts"
+    "oss:copy": "bun run scripts/ee-oss-mirror/oss-copy.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.3",
+    "@biomejs/biome": "^2.6.6",
     "@svgr/webpack": "^8.1.0",
     "turbo": "^2.11.10",
     "typescript": "6.0.3",
-    "typescript-language-server": "^6.0.2",
+    "typescript-language-server": "^6.0.3",
     "vite-plugin-svgr": "^5.2.0"
   },
   "engines": {

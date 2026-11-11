@@ -3,7 +3,7 @@ import { API_URL, BASE_URL } from '../../../pages/AuthPage';
 import { SignupPage } from '../../../pages/SignupPage';
 import { TEST_PASSWORD, uniqueEmail } from '../../../utils/test-data';
 
-const PRIVACY_PDF_URL = `${API_URL}/legal/privacy-policy.pdf`;
+const PRIVACY_PDF_URL = `${API_URL}/legal/privacy-policy/en`;
 
 const signupHeaders = {
   Origin: BASE_URL,

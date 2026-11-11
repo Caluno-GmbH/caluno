@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -121,6 +122,42 @@ export class S3StorageService {
     return getSignedUrl(this.client, command, {
       expiresIn: PRESIGN_DOWNLOAD_TTL_SECONDS,
     });
+  }
+
+  /** Server-side download of object bytes (e.g. accounting ZIP assembly). */
+  async getObjectBytes(storageKey: string): Promise<Buffer> {
+    if (!this.client) {
+      throw new Error('Object storage is not configured');
+    }
+
+    const response = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.getBucket(),
+        Key: storageKey,
+      }),
+    );
+
+    if (!response.Body) {
+      throw new Error(`Object ${storageKey} has no body`);
+    }
+
+    const bytes = await response.Body.transformToByteArray();
+    return Buffer.from(bytes);
+  }
+
+  async copyObject(sourceKey: string, destinationKey: string): Promise<void> {
+    if (!this.client) {
+      throw new Error('Object storage is not configured');
+    }
+
+    const bucket = this.getBucket();
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: bucket,
+        CopySource: `${bucket}/${sourceKey}`,
+        Key: destinationKey,
+      }),
+    );
   }
 
   async headObject(storageKey: string): Promise<{

@@ -129,6 +129,7 @@ Every column renders through exactly one of these. Nothing else is allowed.
 
 **Reality check for the three in scope:** all use the `@repo/ui` `<Table>` primitives
 already, so the markup migration is mechanical. The real work is (a) the cell-type system
+
 - header/footer styling from Pencil, (b) a reusable **filter/search** param layer the
   engine lacks, and (c) one backend change — `sort`/`order`/`search` args on the `shifts`
   resolver (Timesheets already has sort; Users filters in-browser, see section 5). None of
@@ -199,6 +200,7 @@ Either way the search box, its URL param, and its behaviour are identical to the
 ### 4.4 Column contract
 
 A feature supplies a typed `ColumnDef[]` where each column declares:
+
 - `header` via `DataTableColumnHeader` (title + optional sort field),
 - `meta` for width / alignment / `cellClassName`,
 - `cell` returning **one** of the section-4.1 cell primitives.
@@ -306,6 +308,7 @@ agents running one table each, with you reviewing every diff.
   `Co-Authored-By` trailer on commits.
 
 **Per-agent checklist (same for every migration agent):**
+
 1. Replace bespoke markup with `DataTable` + the four cell primitives.
 2. Match Pencil exactly (header 32px/muted, 8/12 padding, divider, min-width+tooltip,
    right-aligned numbers, badge-only status cells).

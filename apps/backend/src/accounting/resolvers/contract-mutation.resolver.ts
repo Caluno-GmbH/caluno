@@ -3,10 +3,15 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { CreateContractInput } from '../inputs/create-contract.input';
 import { ContractMapper } from '../mappers';
 import { Contract } from '../models/contract.model';
-import { AccountingOrgAccessService, ContractService } from '../services';
+import {
+  AccountingOrgAccessService,
+  AccountingScopeService,
+  ContractService,
+} from '../services';
 
 @Resolver(() => Contract)
 export class ContractMutationResolver {
@@ -14,6 +19,8 @@ export class ContractMutationResolver {
     private readonly contractService: ContractService,
     private readonly contractMapper: ContractMapper,
     private readonly accountingOrgAccessService: AccountingOrgAccessService,
+    private readonly tenantScopeService: TenantScopeService,
+    private readonly accountingScopeService: AccountingScopeService,
   ) {}
 
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
@@ -23,6 +30,32 @@ export class ContractMutationResolver {
     @Session() session: UserSession,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<Contract> {
+    const organizationUnitId =
+      input.organizationUnitId ?? context.organizationUnitId;
+
+    // PermissionGuard only proves ACCOUNTING_MANAGE on the header unit. A
+    // unit named in the input must still sit under that header
+    // (assertUnitReadable). The volunteer must hold an active membership
+    // somewhere under the *header* subtree — not the target unit — so a
+    // root-member can still get a contract on a child/grandchild (nested
+    // rates / unit address), while a manager in org B cannot mint a PDF of
+    // a foreign volunteer's IBAN / birth date.
+    if (
+      input.organizationUnitId &&
+      input.organizationUnitId !== context.organizationUnitId
+    ) {
+      await this.accountingScopeService.assertUnitReadable(
+        context.organizationUnitId,
+        input.organizationUnitId,
+        'Organization unit not found',
+      );
+    }
+    await this.tenantScopeService.assertUserInScope(
+      context.organizationUnitId,
+      input.volunteerId,
+      'Volunteer not found',
+    );
+
     const organizationId =
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         context.organizationUnitId,
@@ -32,8 +65,7 @@ export class ContractMutationResolver {
       organizationId,
       {
         ...input,
-        organizationUnitId:
-          input.organizationUnitId ?? context.organizationUnitId,
+        organizationUnitId,
       },
       session.user.id,
     );

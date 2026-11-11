@@ -20,36 +20,27 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@repo/ui';
-import {
-  ArrowUpRight,
-  CalendarCog,
-  CalendarIcon,
-  ClipboardListIcon,
-  ClockIcon,
-  CoinsIcon,
-  HeartHandshake,
-  LayoutListIcon,
-  ListTodo,
-  LogOutIcon,
-  NetworkIcon,
-  ScanQrCode,
-  ShieldIcon,
-  TicketIcon,
-  UsersIcon,
-} from 'lucide-react';
+import { LogOutIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useMemo } from 'react';
 import { OrgSwitcher } from '@/domain/organization/components/org-switcher';
 import { visibleOverviewTasks } from '@/domain/overview/visible-tasks';
+import type { EeNavContribution } from '@/edition/enterprise-extensions';
 import { useSignOut } from '@/hooks/use-sign-out';
 import { Link, useRouter } from '@/i18n/navigation';
+import { buildAdminNav, mergeAdminNav, visibleAdminNav } from './admin-nav';
 
 interface DashboardSidebarProps {
   permissions: PermissionKey[];
+  /** Resolved server-side via `loadEeExtensions()`; empty/undefined in OSS. */
+  eeNav?: EeNavContribution[];
 }
 
-export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
+export function DashboardSidebar({
+  permissions,
+  eeNav,
+}: DashboardSidebarProps) {
   const params = useParams();
   const router = useRouter();
   const orgUId = params.orgUId as string | undefined;
@@ -74,104 +65,24 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
     }).length;
   }, [myTasks, orgUId, permissionSet]);
 
-  const menuItems = useMemo(() => {
+  const sections = useMemo(() => {
     if (!orgUId) return [];
-
-    return [
-      {
-        titleKey: 'todo',
-        href: `/admin/${orgUId}`,
-        icon: ListTodo,
-        count: waitingCount,
-      },
-      {
-        titleKey: 'events',
-        href: `/admin/${orgUId}/events`,
-        icon: TicketIcon,
-      },
-      {
-        titleKey: 'shifts',
-        href: `/admin/${orgUId}/shifts`,
-        icon: CalendarIcon,
-      },
-      {
-        titleKey: 'timesheets',
-        href: `/admin/${orgUId}/timesheets`,
-        icon: ClockIcon,
-      },
-      {
-        titleKey: 'volunteers',
-        href: `/admin/${orgUId}/volunteers`,
-        icon: UsersIcon,
-        count: pendingCount,
-      },
-      {
-        titleKey: 'requirementForms',
-        href: `/admin/${orgUId}/requirement-forms`,
-        icon: ClipboardListIcon,
-      },
-    ];
-  }, [orgUId, pendingCount, waitingCount]);
-  const accountingItems = useMemo(() => {
-    if (!orgUId || !accountingEnabled) return [];
-
-    return [
-      {
-        titleKey: 'reimbursements',
-        href: `/admin/${orgUId}/accounting/reimbursements`,
-        icon: LayoutListIcon,
-      },
-      {
-        titleKey: 'accountingSettings',
-        href: `/admin/${orgUId}/accounting/settings`,
-        icon: CoinsIcon,
-      },
-    ];
-  }, [orgUId, accountingEnabled]);
-
-  const settingsItems = useMemo(() => {
-    if (!orgUId) return [];
-
-    return [
-      {
-        titleKey: 'roles',
-        href: `/admin/${orgUId}/settings/roles`,
-        icon: ShieldIcon,
-        permission: PermissionKey.OrgView,
-      },
-      {
-        titleKey: 'orgUnits',
-        href: `/admin/${orgUId}/settings/org-units`,
-        icon: NetworkIcon,
-        permission: PermissionKey.OrgView,
-      },
-      {
-        titleKey: 'shiftSettings',
-        href: `/admin/${orgUId}/settings/shifts`,
-        icon: CalendarCog,
-        permission: PermissionKey.OrgView,
-      },
-    ].filter((item) => !item.permission || permissionSet.has(item.permission));
-  }, [orgUId, permissionSet]);
-
-  const shortcutItems = useMemo(() => {
-    if (!orgUId) return [];
-
-    return [
-      {
-        titleKey: 'checkVolunteersIn',
-        href: '/check-in',
-        icon: ScanQrCode,
-        trailingIcon: ArrowUpRight,
-      },
-      {
-        titleKey: 'volunteeringApp',
-        href: `/`,
-        icon: HeartHandshake,
-        trailingIcon: ArrowUpRight,
-      },
-    ];
-  }, [orgUId]);
+    const base = buildAdminNav({
+      orgUId,
+      waitingCount,
+      pendingCount,
+      accountingEnabled,
+      permissionSet,
+    });
+    return visibleAdminNav(mergeAdminNav(base, eeNav));
+  }, [
+    orgUId,
+    waitingCount,
+    pendingCount,
+    accountingEnabled,
+    permissionSet,
+    eeNav,
+  ]);
 
   async function handleSignOut() {
     await signOut();
@@ -189,12 +100,16 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        {menuItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{tCommon('menu')}</SidebarGroupLabel>
+        {sections.map((section) => (
+          <SidebarGroup key={section.id}>
+            <SidebarGroupLabel>
+              {section.labelNamespace === 'Common'
+                ? tCommon(section.labelKey as Parameters<typeof tCommon>[0])
+                : t(section.labelKey as Parameters<typeof t>[0])}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {menuItems.map((item) => (
+                {section.items.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild>
                       <Link
@@ -207,10 +122,12 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
                             {t(item.titleKey as Parameters<typeof t>[0])}
                           </span>
                         </span>
-                        {'count' in item && item.count ? (
+                        {item.count ? (
                           <Badge variant="neutral" size="count">
                             {item.count}
                           </Badge>
+                        ) : item.trailingIcon ? (
+                          <item.trailingIcon className="h-4 w-4 text-muted-foreground" />
                         ) : null}
                       </Link>
                     </SidebarMenuButton>
@@ -219,79 +136,7 @@ export function DashboardSidebar({ permissions }: DashboardSidebarProps) {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        )}
-
-        {accountingItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('accounting')}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {accountingItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild>
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>
-                          {t(item.titleKey as Parameters<typeof t>[0])}
-                        </span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {settingsItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('organizationSettings')}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {settingsItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild>
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>
-                          {t(item.titleKey as Parameters<typeof t>[0])}
-                        </span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {shortcutItems.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>{t('shortcuts')}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {shortcutItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild>
-                      <Link
-                        href={item.href}
-                        className="flex items-center justify-between w-full"
-                      >
-                        <span className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
-                          <span>
-                            {t(item.titleKey as Parameters<typeof t>[0])}
-                          </span>
-                        </span>
-                        <item.trailingIcon className="h-4 w-4 text-muted-foreground" />
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t p-4">

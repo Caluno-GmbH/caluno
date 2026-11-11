@@ -32,8 +32,9 @@ interface BuiltBundle {
  * pages of the signed agreements (ACTIVE contracts) that cover its hours, the
  * newest covering contract per time entry, each once, oldest period first
  * (VOLI-1586, VOLI-1551). Documents are resolved to their stored PDF bytes
- * (public object storage), merged and zipped on the fly — nothing is
- * persisted, so repeated downloads don't accumulate artifacts (VOLI-1216).
+ * via server-side GetObject (private object storage), merged and zipped on
+ * the fly — nothing is persisted, so repeated downloads don't accumulate
+ * artifacts (VOLI-1216).
  */
 @Injectable()
 export class BundleDownloadService {
@@ -229,12 +230,9 @@ export class BundleDownloadService {
     name: string,
     invoice: { fileId: string },
   ): Promise<PDFDocument> {
-    const url = await this.fileService.resolvePublicUrlForUploadedFile(
-      invoice.fileId,
-    );
-    let bytes: ArrayBuffer;
+    let bytes: Buffer;
     try {
-      bytes = await fetchBytes(url);
+      bytes = await this.fileService.getUploadedFileBytes(invoice.fileId);
     } catch (error) {
       throw new InternalServerErrorException(
         `The document ${name} could not be fetched, so the bundle was not built and nothing was marked as paid. Please try again. (${reasonOf(error)})`,
@@ -274,9 +272,9 @@ export class BundleDownloadService {
       );
       return null;
     }
-    const url = await this.fileService.resolvePublicUrlForUploadedFile(fileId);
     try {
-      return await PDFDocument.load(await fetchBytes(url));
+      const bytes = await this.fileService.getUploadedFileBytes(fileId);
+      return await PDFDocument.load(bytes);
     } catch (error) {
       this.logger.warn(
         `Bundle download: leaving out contract ${contract.id} (${fileId}): ${reasonOf(error)}`,
@@ -284,12 +282,6 @@ export class BundleDownloadService {
       return null;
     }
   }
-}
-
-async function fetchBytes(url: string): Promise<ArrayBuffer> {
-  const response = await fetch(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.arrayBuffer();
 }
 
 function reasonOf(error: unknown): string {

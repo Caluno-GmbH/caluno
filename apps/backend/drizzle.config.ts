@@ -1,5 +1,9 @@
 import { defineConfig } from 'drizzle-kit';
 
+/**
+ * OSS / core migration stream.
+ * EE schemas live under `src/ee/**` and use `src/ee/drizzle.config.ts`.
+ */
 export default defineConfig({
   schema: './src/database/schema.ts',
   out: './src/database/migrations',
@@ -14,5 +18,6 @@ export default defineConfig({
   },
   migrations: {
     schema: 'public',
+    table: '__drizzle_migrations',
   },
 });

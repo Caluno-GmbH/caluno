@@ -29,6 +29,7 @@ with a `DataError` whose `.message` is the backend's message and whose
 `.options.code` is the GraphQL error code (`NOT_FOUND`, `FORBIDDEN`, …).
 
 Rules:
+
 - Branch on `error instanceof DataError && error.options?.code === '...'`,
   never on message text.
 - **Never render `error.message` to the user.** For an unexpected failure the

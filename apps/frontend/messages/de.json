@@ -287,10 +287,9 @@
     "digestLabel": "ID: {digest}",
     "generic": "Etwas ist schiefgelaufen",
     "goHome": "Zur Startseite",
-    "orgNotFound": {
-      "description": "Die gesuchte Organisation existiert nicht.",
-      "homeLink": "Zu deinen Organisationen",
-      "title": "Organisation nicht gefunden"
+    "pageNotFound": {
+      "description": "Die gesuchte Seite existiert nicht.",
+      "title": "Seite nicht gefunden"
     },
     "reloadPage": "Seite neu laden",
     "title": "Etwas ist schiefgelaufen",
@@ -390,10 +389,6 @@
     "empty": {
       "description": "Erstelle deine erste Veranstaltung.",
       "title": "Noch keine Veranstaltungen"
-    },
-    "error": {
-      "title": "Die Veranstaltungen ließen sich nicht laden.",
-      "tryAgain": "Erneut versuchen"
     },
     "form": {
       "coverUrlLabel": "Cover-URL",
@@ -1000,13 +995,18 @@
     },
     "language": "Sprache",
     "languageDescription": "Anzeigesprache der App",
+    "lastChanged": "Zuletzt geändert am {date}",
+    "legalDocuments": "Rechtliches",
     "moreSettingsPrompt": "Weitere Einstellungen findest du in deinem <link>Freiwilligenprofil</link>.",
     "organizations": "Deine Organisationen",
     "pageTitle": "Profil",
     "personalInformation": "Persönliche Informationen",
     "pictureLabel": "Profilbild",
+    "privacyNotice": "Datenschutzhinweise",
+    "readDocument": "Lesen",
     "saveFailed": "Dein Profil ließ sich nicht aktualisieren. Versuch es bitte erneut.",
     "saved": "Profil aktualisiert",
+    "termsAndConditions": "Nutzungsbedingungen",
     "title": "Profil bearbeiten"
   },
   "QRScanner": {
@@ -1407,10 +1407,11 @@
       "descriptions": {
         "accountingManage": "Vereinbarungen und Stundenzettel erstellen und unterschreiben; Dokumentvorlagen und Stundensätze bearbeiten; zahlungsbezogene Daten von Freiwilligen einsehen (z. B. IBAN).",
         "checkInManage": "Freiwillige suchen; sehen, für welche Einsätze ein Check-in möglich ist; Freiwillige ein- und auschecken; Personen zu Einsätzen hinzufügen; direkt aus dieser Ansicht Personen in die Organisation einladen und Beitrittsanfragen annehmen.",
-        "orgEdit": "Organisationsprofil ändern; Einheiten, denen sie angehören, erstellen, umbenennen oder löschen; Rollentypen erstellen und ändern; ID-Verifizierung pro Einheit ein- oder ausschalten; Anforderungsformulare zur Organisation hinzufügen.",
+        "orgEdit": "Organisationsprofil ändern; Einheiten, denen sie angehören, erstellen, umbenennen oder löschen; ID-Verifizierung pro Einheit ein- oder ausschalten; Anforderungsformulare zur Organisation hinzufügen.",
         "orgView": "Übersicht der Organisation, Einheitenstruktur, Rollenliste und Einstellung zur ID-Verifizierung, für Organisationen, denen sie angehören.",
         "requirementProfileEdit": "Formulare und Blocks erstellen und ändern.",
         "requirementProfileView": "Formulare, Formular-Blocks und ob Freiwillige ein Formular eingereicht haben.",
+        "roleManage": "Rollentypen erstellen, umbenennen und löschen sowie deren Berechtigungen ändern; nur in der obersten Einheit der Organisation, und nur eigene Berechtigungen können hinzugefügt, entfernt oder mit einer Rolle gelöscht werden.",
         "shiftEdit": "Einsätze und Events erstellen, ändern und löschen; Personen einladen; Aufrufe und Erinnerungen senden; festlegen, welche Formulare ein Einsatz oder Event erfordert; Einträge in Stundenzetteln hinzufügen, abschließen, ändern und löschen.",
         "shiftView": "Einsätze, Events, wer eingeladen oder angemeldet ist, sowie Einträge in Stundenzetteln.",
         "volunteerEdit": "Beitrittsanfragen annehmen oder ablehnen, Mitgliedschaften entfernen, Nutzer*innen Rollen und Berechtigungen zuweisen.",
@@ -1423,6 +1424,7 @@
         "orgView": "Ansehen",
         "requirementProfileEdit": "Bearbeiten",
         "requirementProfileView": "Ansehen",
+        "roleManage": "Verwalten",
         "shiftEdit": "Bearbeiten",
         "shiftView": "Ansehen",
         "volunteerEdit": "Bearbeiten",
@@ -1435,6 +1437,7 @@
         "checkIn": "Check-in",
         "organization": "Organisationsweite Einstellungen",
         "requirementProfile": "Anforderungsformulare und Blocks",
+        "role": "Rollen",
         "shift": "Einsätze, Events und Stundenzettel",
         "volunteer": "Informationen zu Freiwilligen und Mitgliedschaft"
       }
@@ -1446,7 +1449,8 @@
         "title": "Rolle ändern?"
       },
       "empty": "Keine Rollen gefunden.",
-      "searchPlaceholder": "Rollen suchen..."
+      "searchPlaceholder": "Rollen suchen...",
+      "updateFailed": "Die Rolle konnte nicht geändert werden. Du kannst nur Rollen im Rahmen deiner eigenen Berechtigungen vergeben oder entziehen, und jede Organisation braucht mindestens eine Leitung."
     },
     "sheet": {
       "createDescription": "Definiere eine neue Rolle mit spezifischen Berechtigungen.",
@@ -2059,7 +2063,6 @@
     "csv": {
       "volunteerName": "Name",
       "volunteerEmail": "E-Mail",
-      "shift": "Einsatz",
       "assignment": "Einsatz",
       "location": "Ort",
       "startedAt": "Beginn",
@@ -2106,7 +2109,7 @@
     }
   },
   "Unauthorized": {
-    "homeLink": "Zu deinen Organisationen",
+    "homeLink": "Zu deinem Homescreen",
     "message": "Du hast keine Berechtigung, auf diese Ressource zuzugreifen.",
     "title": "Zugriff verweigert"
   },
@@ -2186,15 +2189,39 @@
       "userInfo": "Persönliche Informationen",
       "zipLabel": "PLZ"
     },
+    "configureView": {
+      "label": "Ansicht konfigurieren",
+      "note": "Zum Schutz personenbezogener Daten standardmäßig ausgeblendet – bitte sei beim Bildschirmteilen achtsam."
+    },
+    "filter": {
+      "rolePlaceholder": "Rolle",
+      "genderPlaceholder": "Geschlecht",
+      "cityPlaceholder": "Stadt",
+      "cityEmpty": "Keine Städte gefunden",
+      "verifiedAll": "Alle",
+      "verifiedVerified": "Geprüft",
+      "verifiedUnverified": "Ungeprüft",
+      "notSet": "Nicht angegeben",
+      "activeRole": "Rolle",
+      "activeGender": "Geschlecht",
+      "activeCity": "Stadt",
+      "activeVerified": "Ausweis geprüft",
+      "sheetTitle": "Filter"
+    },
     "table": {
       "copyEmailAria": "E-Mail-Adresse von {name} kopieren",
       "copyEmails": "{count, plural, one {1 E-Mail kopieren} other {# E-Mails kopieren}}",
+      "downloadCsv": "CSV herunterladen",
       "email": "E-Mail",
       "emailCopied": "E-Mail-Adresse in die Zwischenablage kopiert",
       "emailsCopied": "{count, plural, one {1 E-Mail-Adresse kopiert} other {# E-Mail-Adressen kopiert}}",
       "name": "Name",
       "openProfileAria": "Profil von {name} öffnen",
-      "roles": "Rolle"
+      "roles": "Rolle",
+      "dateOfBirth": "Geburtsdatum",
+      "gender": "Geschlecht",
+      "phone": "Telefon",
+      "address": "Adresse"
     }
   },
   "VolunteerHome": {

@@ -1,6 +1,10 @@
 import { createReadStream } from 'node:fs';
 import { Inject, Injectable, StreamableFile } from '@nestjs/common';
-import { resolvePrivacyPolicyDocument } from './privacy-policy-files';
+import {
+  currentPrivacyPolicyVersion,
+  type PrivacyPolicyLocale,
+  resolvePrivacyPolicyDocument,
+} from './privacy-policy-files';
 
 export const PRIVACY_POLICY_DIRECTORY = 'PRIVACY_POLICY_DIRECTORY';
 
@@ -11,8 +15,12 @@ export class LegalService {
     private readonly directory: string,
   ) {}
 
-  streamCurrentPrivacyPolicy(): StreamableFile {
-    const document = resolvePrivacyPolicyDocument(this.directory);
+  getCurrentPrivacyNoticeDate(): string {
+    return currentPrivacyPolicyVersion(this.directory);
+  }
+
+  streamCurrentPrivacyPolicy(locale: PrivacyPolicyLocale): StreamableFile {
+    const document = resolvePrivacyPolicyDocument(this.directory, locale);
 
     return new StreamableFile(createReadStream(document.path), {
       type: 'application/pdf',
