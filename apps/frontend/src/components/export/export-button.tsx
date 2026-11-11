@@ -26,7 +26,10 @@ import {
 
 interface ExportButtonProps {
   tableKind: ExportTable;
-  rowIds: string[];
+  /** Static row ids. Required unless `getRowIds` is provided (server-paginated tables). */
+  rowIds?: string[];
+  /** Lazily resolves the full filtered row id set, e.g. for server-paginated tables. */
+  getRowIds?: () => Promise<string[]>;
   columns: ExportColumnOption[];
   permission: PermissionKey;
   disabled?: boolean;
@@ -35,6 +38,7 @@ interface ExportButtonProps {
 export function ExportButton({
   tableKind,
   rowIds,
+  getRowIds,
   columns,
   permission,
   disabled,
@@ -42,6 +46,7 @@ export function ExportButton({
   const t = useTranslations('Export');
   const hasPermission = useHasPermission(permission);
   const mutation = useExportTableCsv();
+  const [resolvingIds, setResolvingIds] = useState(false);
 
   const defaultChecked = columns
     .filter((c) => c.optional && c.defaultOn)
@@ -74,9 +79,11 @@ export function ExportButton({
       ...checkedOptional,
     ]);
     try {
+      setResolvingIds(true);
+      const ids = getRowIds ? await getRowIds() : (rowIds ?? []);
       const result = await mutation.mutateAsync({
         tableKind,
-        rowIds,
+        rowIds: ids,
         columns: resolvedColumns,
         includeTechnicalIds,
       });
@@ -84,6 +91,8 @@ export function ExportButton({
       setOpen(false);
     } catch {
       toast.error(t('exportFailed'));
+    } finally {
+      setResolvingIds(false);
     }
   };
 
@@ -137,7 +146,10 @@ export function ExportButton({
           <Button variant="outline" onClick={() => setOpen(false)}>
             {t('cancel')}
           </Button>
-          <Button onClick={handleExport} disabled={mutation.isPending}>
+          <Button
+            onClick={handleExport}
+            disabled={mutation.isPending || resolvingIds}
+          >
             {t('exportAction')}
           </Button>
         </DialogFooter>

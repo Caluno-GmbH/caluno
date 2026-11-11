@@ -2903,6 +2903,13 @@
         "gender": "Gender",
         "phone": "Phone",
         "address": "Address"
+      },
+      "shifts": {
+        "title": "Title",
+        "date": "Date",
+        "location": "Location",
+        "visibility": "Visibility",
+        "staffing": "Staffing"
       }
     },
     "log": {
