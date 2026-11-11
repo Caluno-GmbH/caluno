@@ -2879,7 +2879,9 @@
     "dialogTitle": "Spalten exportieren",
     "dialogDescription": "Wähle die Spalten aus, die in den CSV-Export aufgenommen werden sollen.",
     "includeTechnicalIds": "Technische IDs einbeziehen",
-    "exportAction": "Exportieren"
+    "exportAction": "Exportieren",
+    "cancel": "Abbrechen",
+    "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut."
   },
   "MyDocuments": {
     "title": "Meine Dokumente",
