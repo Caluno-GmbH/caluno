@@ -419,6 +419,20 @@ export type SetEventRequiredFormsMutationVariables = Exact<{
 
 export type SetEventRequiredFormsMutation = { setEventRequiredForms: Array<{ order: number, form: { id: string, name: string, description: string | null, blockRefs: Array<{ id: string, formId: string, blockId: string, fieldOrder: number, block: { id: string, organizationId: string, title: string, description: string | null, icon: string | null, isEditable: boolean, fields: Array<{ id: string, blockId: string, type: Types.FieldType, label: string, placeholder: string | null, description: string | null, required: boolean, lockType: boolean, profileKey: string | null, options: Array<string> | null, documentLabel: string | null, minAge: number | null, fieldOrder: number, documents: Array<{ fileId: string, filename: string | null, downloadUrl: string | null }> }> | null } }> | null } }> };
 
+export type ExportTableCsvMutationVariables = Exact<{
+  input: Types.ExportTableInput;
+}>;
+
+
+export type ExportTableCsvMutation = { exportTableCsv: { filename: string, content: string } };
+
+export type ExportLogsQueryVariables = Exact<{
+  tableKind?: Types.ExportTable | null | undefined;
+}>;
+
+
+export type ExportLogsQuery = { exportLogs: Array<{ id: string, actorName: string, tableKind: Types.ExportTable, columns: Array<string>, includedTechnicalIds: boolean, rowCount: number, subjectUserIds: Array<string>, occurredAt: string }> };
+
 export type GetOrganizationUnitMembershipsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2663,6 +2677,28 @@ export const SetEventRequiredFormsDocument = gql`
   }
 }
     ${RequiredFormRefFieldsFragmentDoc}`;
+export const ExportTableCsvDocument = gql`
+    mutation ExportTableCsv($input: ExportTableInput!) {
+  exportTableCsv(input: $input) {
+    filename
+    content
+  }
+}
+    `;
+export const ExportLogsDocument = gql`
+    query ExportLogs($tableKind: ExportTable) {
+  exportLogs(tableKind: $tableKind) {
+    id
+    actorName
+    tableKind
+    columns
+    includedTechnicalIds
+    rowCount
+    subjectUserIds
+    occurredAt
+  }
+}
+    `;
 export const GetOrganizationUnitMembershipsDocument = gql`
     query GetOrganizationUnitMemberships {
   memberships {
@@ -5451,6 +5487,12 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
     },
     SetEventRequiredForms(variables: SetEventRequiredFormsMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<SetEventRequiredFormsMutation> {
       return withWrapper((wrappedRequestHeaders) => client.request<SetEventRequiredFormsMutation>({ document: SetEventRequiredFormsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'SetEventRequiredForms', 'mutation', variables);
+    },
+    ExportTableCsv(variables: ExportTableCsvMutationVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ExportTableCsvMutation> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ExportTableCsvMutation>({ document: ExportTableCsvDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ExportTableCsv', 'mutation', variables);
+    },
+    ExportLogs(variables?: ExportLogsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<ExportLogsQuery> {
+      return withWrapper((wrappedRequestHeaders) => client.request<ExportLogsQuery>({ document: ExportLogsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'ExportLogs', 'query', variables);
     },
     GetOrganizationUnitMemberships(variables?: GetOrganizationUnitMembershipsQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<GetOrganizationUnitMembershipsQuery> {
       return withWrapper((wrappedRequestHeaders) => client.request<GetOrganizationUnitMembershipsQuery>({ document: GetOrganizationUnitMembershipsDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'GetOrganizationUnitMemberships', 'query', variables);

@@ -42,6 +42,7 @@ export * from './react/hooks/use-contracts';
 export * from './react/hooks/use-document-templates';
 export * from './react/hooks/use-effective-rates';
 export * from './react/hooks/use-events';
+export * from './react/hooks/use-export';
 export * from './react/hooks/use-graphql-client';
 export * from './react/hooks/use-invoices';
 export * from './react/hooks/use-join-shift-instance';
@@ -112,6 +113,11 @@ export type {
   SetManualBaselineResult,
 } from './repositories/accounting/accounting.repository';
 export { deriveDocumentStatus } from './repositories/accounting/accounting.repository';
+export type {
+  ExportFileResult,
+  RawExportLogEntry,
+} from './repositories/export/export.repository';
+export { ExportRepository } from './repositories/export/export.repository';
 export type {
   DiscoverEvent,
   EventInviteItem,
