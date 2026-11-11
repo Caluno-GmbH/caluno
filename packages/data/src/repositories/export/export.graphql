@@ -1,0 +1,19 @@
+mutation ExportTableCsv($input: ExportTableInput!) {
+  exportTableCsv(input: $input) {
+    filename
+    content
+  }
+}
+
+query ExportLogs($tableKind: ExportTable) {
+  exportLogs(tableKind: $tableKind) {
+    id
+    actorName
+    tableKind
+    columns
+    includedTechnicalIds
+    rowCount
+    subjectUserIds
+    occurredAt
+  }
+}
