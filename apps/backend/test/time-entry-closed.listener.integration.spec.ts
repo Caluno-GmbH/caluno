@@ -90,6 +90,7 @@ describe('TimeEntryClosedListener', () => {
       {
         renderAndAttachPdf: () => Promise.resolve(null),
       } as unknown as DocumentRenderingService,
+      new TenantScopeService(db, organizationUnitDataService),
       postHog,
     );
     listener = new TimeEntryClosedListener(

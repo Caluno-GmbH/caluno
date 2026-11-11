@@ -120,6 +120,7 @@ describe('ContractService', () => {
         renderAndAttachPdf: () => Promise.resolve(null),
         resolveRenderInputs: () => resolveRenderInputs(),
       } as unknown as DocumentRenderingService,
+      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as unknown as PostHogService,
     );
   });

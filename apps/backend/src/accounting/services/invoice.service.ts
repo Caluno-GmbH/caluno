@@ -19,6 +19,7 @@ import {
   NotFoundGraphQLError,
 } from '../../graphql/errors';
 import { OrganizationService } from '../../organization/organization.service';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -84,6 +85,7 @@ export class InvoiceService {
     private readonly documentProfileRequirementService: DocumentProfileRequirementService,
     private readonly documentRenderingService: DocumentRenderingService,
     private readonly organizationService: OrganizationService,
+    private readonly tenantScope: TenantScopeService,
     private readonly postHogService: PostHogService,
   ) {}
 
@@ -866,6 +868,29 @@ export class InvoiceService {
     return invoice;
   }
 
+  /**
+   * Unit to authorize a signing step against. A unit-scoped document always
+   * uses its own unit. A legacy document with no unit may fall back to the
+   * caller's header, but only when that header belongs to the document's
+   * organization.
+   */
+  private async signingAuthorizationUnitId(
+    documentUnitId: string | null,
+    headerUnitId: string,
+    templateOrganizationId: string,
+    notFoundMessage: string,
+  ): Promise<string> {
+    if (documentUnitId) {
+      return documentUnitId;
+    }
+    await this.tenantScope.assertOrganizationInScope(
+      headerUnitId,
+      templateOrganizationId,
+      notFoundMessage,
+    );
+    return headerUnitId;
+  }
+
   async signInvoice(
     invoiceId: string,
     userId: string,
@@ -886,12 +911,19 @@ export class InvoiceService {
       orderedSignatures,
     );
 
+    const authorizationUnitId = await this.signingAuthorizationUnitId(
+      invoice.organizationUnitId,
+      organizationUnitId,
+      invoice.documentTemplate.organizationId,
+      `Invoice with ID ${invoiceId} not found`,
+    );
+
     await this.documentSigningService.assertSigneeAuthorized(
       userId,
       invoice.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      organizationUnitId,
+      authorizationUnitId,
     );
 
     // The volunteer's own signature is the first step of the chain. Require
@@ -1016,12 +1048,19 @@ export class InvoiceService {
       );
     }
 
+    const authorizationUnitId = await this.signingAuthorizationUnitId(
+      invoice.organizationUnitId,
+      organizationUnitId,
+      invoice.documentTemplate.organizationId,
+      `Invoice with ID ${invoiceId} not found`,
+    );
+
     await this.documentSigningService.assertSigneeAuthorized(
       userId,
       invoice.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      organizationUnitId,
+      authorizationUnitId,
     );
 
     const updated = await this.db.transaction(async (tx) => {

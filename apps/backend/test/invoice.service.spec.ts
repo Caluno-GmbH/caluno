@@ -136,6 +136,7 @@ describe('InvoiceService', () => {
         renderAndAttachPdf: () => Promise.resolve(null),
         resolveRenderInputs: () => resolveRenderInputs(),
       } as unknown as DocumentRenderingService,
+      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as unknown as PostHogService,
     );
     service = new InvoiceService(
@@ -164,6 +165,7 @@ describe('InvoiceService', () => {
         },
       } as unknown as DocumentRenderingService,
       organizationService,
+      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as unknown as PostHogService,
     );
   });

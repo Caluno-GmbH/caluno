@@ -24,6 +24,7 @@ import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
 import { MembershipService } from '../src/membership/membership.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
+import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { PostHogService } from '../src/shared/observability/posthog.service';
 import { FilePurpose, FileStatus, FileVisibility } from '../src/storage/enums';
 import { FileService } from '../src/storage/services/file.service';
@@ -92,6 +93,7 @@ describe('BundleDownloadService', () => {
       {} as never,
       {} as never,
       {} as never,
+      new TenantScopeService(db, new OrganizationUnitDataService(db)),
       { capture: () => {} } as unknown as PostHogService,
     );
     const reimbursementRateService = new ReimbursementRateService(

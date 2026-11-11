@@ -8,6 +8,7 @@ import {
   ConflictGraphQLError,
   NotFoundGraphQLError,
 } from '../../graphql/errors';
+import { TenantScopeService } from '../../organization/tenant-scope.service';
 import {
   POSTHOG_EVENT,
   POSTHOG_SURFACE,
@@ -75,6 +76,7 @@ export class ContractService {
     private readonly documentNotificationService: DocumentNotificationService,
     private readonly documentProfileRequirementService: DocumentProfileRequirementService,
     private readonly documentRenderingService: DocumentRenderingService,
+    private readonly tenantScope: TenantScopeService,
     private readonly postHogService: PostHogService,
   ) {}
 
@@ -670,6 +672,29 @@ export class ContractService {
     return created;
   }
 
+  /**
+   * Unit to authorize a signing step against. A unit-scoped document always
+   * uses its own unit. A legacy document with no unit may fall back to the
+   * caller's header, but only when that header belongs to the document's
+   * organization.
+   */
+  private async signingAuthorizationUnitId(
+    documentUnitId: string | null,
+    headerUnitId: string,
+    templateOrganizationId: string,
+    notFoundMessage: string,
+  ): Promise<string> {
+    if (documentUnitId) {
+      return documentUnitId;
+    }
+    await this.tenantScope.assertOrganizationInScope(
+      headerUnitId,
+      templateOrganizationId,
+      notFoundMessage,
+    );
+    return headerUnitId;
+  }
+
   async signContract(
     contractId: string,
     userId: string,
@@ -693,12 +718,19 @@ export class ContractService {
       orderedSignatures,
     );
 
+    const authorizationUnitId = await this.signingAuthorizationUnitId(
+      contract.organizationUnitId,
+      organizationUnitId,
+      contract.documentTemplate.organizationId,
+      `Contract with ID ${contractId} not found`,
+    );
+
     await this.documentSigningService.assertSigneeAuthorized(
       userId,
       contract.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      organizationUnitId,
+      authorizationUnitId,
     );
 
     // The volunteer's own signature is the first step of the chain. Require
@@ -815,12 +847,19 @@ export class ContractService {
       );
     }
 
+    const authorizationUnitId = await this.signingAuthorizationUnitId(
+      contract.organizationUnitId,
+      organizationUnitId,
+      contract.documentTemplate.organizationId,
+      `Contract with ID ${contractId} not found`,
+    );
+
     await this.documentSigningService.assertSigneeAuthorized(
       userId,
       contract.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      organizationUnitId,
+      authorizationUnitId,
     );
 
     const updated = await this.db.transaction(async (tx) => {
