@@ -5252,7 +5252,6 @@ describe('ShiftService.updateShiftInstanceInviteStatus — required forms (VOLI-
       instance.id,
       ShiftInviteStatus.JOINED,
       admin.id,
-      true,
     );
 
     expect(updated.status).toBe(ShiftInviteStatus.JOINED);

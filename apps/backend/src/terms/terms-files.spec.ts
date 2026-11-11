@@ -27,7 +27,7 @@ describe('parseTermsFilename', () => {
   });
 
   it('returns null for unrelated or malformed names', () => {
-    expect(parseTermsFilename('datenschutzhinweise-2026-09-08.pdf')).toBeNull();
+    expect(parseTermsFilename('privacy-policy_2026-09-08_de.pdf')).toBeNull();
     expect(parseTermsFilename('terms_1.1_en.pdf')).toBeNull();
     expect(parseTermsFilename('terms_1.1_2026-09-10_fr.pdf')).toBeNull();
   });

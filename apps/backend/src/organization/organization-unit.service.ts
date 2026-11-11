@@ -1,6 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, count, countDistinct, eq, gte, isNull } from 'drizzle-orm';
-import { DEFAULT_OWNER_ROLE_NAME } from '../auth/constants';
+import {
+  DEFAULT_MEMBER_ROLE_NAME,
+  DEFAULT_OWNER_ROLE_NAME,
+} from '../auth/constants';
 import type { Database } from '../database/database.module';
 import { DATABASE_CONNECTION } from '../database/database-connection';
 import * as schema from '../database/schema';
@@ -206,7 +209,7 @@ export class OrganizationUnitService {
         })
         .returning();
 
-      await this.addOwnerMembership(userId, unit.id, organizationId, tx);
+      await this.addMemberMembership(userId, unit.id, organizationId, tx);
 
       return [unit];
     });
@@ -230,13 +233,49 @@ export class OrganizationUnitService {
     organizationId: string,
     tx?: Database,
   ): Promise<void> {
+    await this.addMembershipWithRole(
+      userId,
+      organizationUnitId,
+      organizationId,
+      DEFAULT_OWNER_ROLE_NAME,
+      tx,
+    );
+  }
+
+  /**
+   * Sub-org creators keep only the permissions they already inherit from the
+   * parent unit. The local membership exists so an admin can later assign a
+   * role to it; the internal Member role grants nothing.
+   */
+  async addMemberMembership(
+    userId: string,
+    organizationUnitId: string,
+    organizationId: string,
+    tx?: Database,
+  ): Promise<void> {
+    await this.addMembershipWithRole(
+      userId,
+      organizationUnitId,
+      organizationId,
+      DEFAULT_MEMBER_ROLE_NAME,
+      tx,
+    );
+  }
+
+  private async addMembershipWithRole(
+    userId: string,
+    organizationUnitId: string,
+    organizationId: string,
+    roleName: string,
+    tx?: Database,
+  ): Promise<void> {
     const db = tx ?? this.db;
 
-    const ownerRole = await db.query.roles.findFirst({
-      where: { organizationId, name: DEFAULT_OWNER_ROLE_NAME },
+    const role = await db.query.roles.findFirst({
+      where: { organizationId, name: roleName, isInternal: true },
     });
 
-    if (!ownerRole) throw new NotFoundGraphQLError('Owner role not found');
+    if (!role) throw new NotFoundGraphQLError(`${roleName} role not found`);
 
     const [membership] = await db
       .insert(schema.memberships)
@@ -245,7 +284,7 @@ export class OrganizationUnitService {
 
     await db.insert(schema.membershipRoles).values({
       membershipId: membership.id,
-      roleId: ownerRole.id,
+      roleId: role.id,
     });
   }
 
@@ -269,38 +308,16 @@ export class OrganizationUnitService {
       throw new NotFoundGraphQLError('Organization unit not found');
     }
 
+    // Moving a unit changes the ancestor chain that authorization and data
+    // scoping depend on. The UI never exposes it, so reject the field outright
+    // instead of re-parenting a branch (or creating a cycle) from the API.
+    if (input.parentId !== undefined) {
+      throw new BadRequestGraphQLError('Organization units cannot be moved');
+    }
+
     const name = input.name === undefined ? undefined : trimmed(input.name);
     if (name !== undefined && isBlank(name)) {
       throw new BadRequestGraphQLError('Organization unit name is required');
-    }
-
-    if (input.parentId === null) {
-      throw new BadRequestGraphQLError(
-        'parentId cannot be null for non-root organization units',
-      );
-    }
-
-    if (input.parentId === id) {
-      throw new BadRequestGraphQLError(
-        'Organization unit cannot be its own parent',
-      );
-    }
-
-    if (input.parentId) {
-      await this.tenantScopeService.assertResourceInScope(
-        headerUnitId,
-        input.parentId,
-        'Parent organization unit not found',
-      );
-      const parent = await this.findParent(input.parentId);
-      if (!parent) {
-        throw new NotFoundGraphQLError('Parent organization unit not found');
-      }
-      if (parent.organizationId !== unit.organizationId) {
-        throw new BadRequestGraphQLError(
-          'Parent organization unit must be in the same organization',
-        );
-      }
     }
 
     if (input.typeId) {

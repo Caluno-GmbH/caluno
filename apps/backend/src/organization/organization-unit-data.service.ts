@@ -56,9 +56,14 @@ export class OrganizationUnitDataService {
     organizationUnitId: string,
   ): Promise<string[]> {
     const chain: string[] = [];
+    const visited = new Set<string>();
     let currentId: string | null = organizationUnitId;
 
-    while (currentId) {
+    // A cycle should be impossible through the API (updates cannot re-parent
+    // units), but walk defensively so corrupt/legacy rows cannot hang every
+    // permission check that depends on this chain.
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
       const unit = await this.db.query.organizationUnits.findFirst({
         where: { id: currentId },
         columns: { id: true, parentId: true },

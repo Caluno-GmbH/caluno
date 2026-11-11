@@ -49,6 +49,7 @@ Route groups: `(auth)` unauthenticated, `(dashboard)/[orgUId]` protected + org-s
 - Server Actions for a domain in `actions.ts`; zod schemas in `schemas.ts` (e.g. `src/domain/shift/schemas.ts`).
 - Do not write GraphQL in this project — use `@repo/data` for data access.
 - Sheets use the `@sheet` parallel-route slot (`app/[locale]/admin/[orgUId]/@sheet/**`) with `FormSheet`/`useFormSheet`.
+- **Sheet routes:** a sheet needs only `@sheet/<path>/page.tsx` — no children stub, no `(.)` intercept. Unknown URLs are handled by `app/[locale]/[...rest]` (→ `app/[locale]/not-found.tsx`). Never add a catch-all under `admin/[orgUId]`: it competes with the `@sheet` slot and turns sheet URLs into 404s.
 - Internal volunteer pages render the internal page header (`DetailPageHeader` from `@repo/ui`) via a small client wrapper (`ProfilePageHeader`, `EventPageHeader`, …) with `onBack={router.back()}`; the body does not repeat the title when the header shows it. Exception: the `(root)` pages (home, `/check-in`, `/timesheets`) keep the custom `HomeHeader` greeting header.
 - The requirement-form builder (`domain/requirement-form/components/form-builder.tsx`) is a container composing `form-builder-{empty-state,block-list,add-block-dialog,preview}.tsx`; pure state logic lives in `form-builder-state.ts`. Blocks created through the block sheet (`forForm=true`) come back via the `?addBlock=<id>` search-param handshake and persist only on Save Form.
 - Client components that hold org-scoped draft/state (settings editors, template builders) and render under `/admin/[orgUId]` must be keyed by `orgUId` (`<Editor key={orgUId} … />`). Client-side org switches keep the component mounted, so unkeyed `useState`/refs show the previous org's values under the new org's URL — and a save then writes them cross-tenant.
@@ -107,9 +108,20 @@ exists (cached); set `CALUNO_EDITION=oss` to force OSS mode from a private
 checkout. EE UI slots load through `loadEeExtensions()` with `turbopackOptional`
 so Turbopack still compiles `'use client'` modules when present. Wire new EE UI
 only via `src/ee/index.ts` + `<EeSlot />` / `<EePage />` (`src/edition/`); keep
-business logic under `src/ee/`, not in OSS route stubs. Admin nav: contribute
+business logic under `src/ee/`, not in OSS route stubs. Same-URL EE override:
+`<EePage ee="…" fallback={OssPage} />` plus
+`export const generateMetadata = eePageMetadata({ ee, fallback })` — pass the
+OSS page component to `<EePage />` and its `generateMetadata` to
+`eePageMetadata` (no EE imports in the stub). No fallback → `notFound`. Admin nav: contribute
 via `EeExtensions.nav` (`kind: 'item' | 'section'`) with `before`-only placement
 (omit → append); merge happens in `components/navigation/admin-nav.ts`.
+Optional badge counts use `CountBadge?: ComponentType` on OSS items; EE
+contributions use serializable `countBadge?: EeCountBadgeName` — each badge
+fetches its own data (no shared nav count/task context; `MyTasksQuery` stays
+EE-only). The org layout passes serializable `eeNav` from `eeExtensions.nav`
+into the sidebar so EE items SSR with the menu; the sidebar resolves badges
+client-side from `@/ee/count-badges` so EE badge components and server page
+slots in `@/ee` never enter the client graph via RSC props.
 
 ### Locale switching
 

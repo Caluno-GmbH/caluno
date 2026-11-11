@@ -10,7 +10,7 @@ import {
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { PERMISSIONS } from '../src/auth/constants';
+import { DEFAULT_OWNER_ROLE_NAME, PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { OrganizationService } from '../src/organization/organization.service';
@@ -276,5 +276,59 @@ describe('updateOrganization', () => {
 
     expect(response.data?.updateOrganization ?? null).toBeNull();
     expect(response.errors?.[0]?.message.toLowerCase()).toContain('not found');
+  });
+});
+
+describe('createOrganization', () => {
+  let app: INestApplication;
+  let db: Database;
+  let testUserId: string;
+
+  beforeAll(async () => {
+    const context = await getGraphqlTestContext();
+    app = context.app;
+    db = context.db;
+    testUserId = context.testUserId;
+  });
+
+  afterEach(() => {
+    setAuthMockUserId(testUserId);
+  });
+
+  it('makes the creator the Owner of the new root', async () => {
+    const data = await graphqlRequestRequiringData<{
+      createOrganization: { id: string; root: { id: string } };
+    }>(
+      app,
+      {
+        query: `
+          mutation CreateOrganization($input: CreateOrganizationInput!) {
+            createOrganization(input: $input) {
+              id
+              root { id }
+            }
+          }
+        `,
+        variables: {
+          input: {
+            name: `Owner check org ${crypto.randomUUID()}`,
+            contactEmail: `owner-check-${crypto.randomUUID()}@example.com`,
+          },
+        },
+      },
+      'createOrganization',
+    );
+
+    const membership = await db.query.memberships.findFirst({
+      where: {
+        userId: testUserId,
+        organizationUnitId: data.createOrganization.root.id,
+      },
+      with: { roles: { with: { role: true } } },
+    });
+
+    expect(membership?.roles.map((mr) => mr.role?.name)).toEqual([
+      DEFAULT_OWNER_ROLE_NAME,
+    ]);
   });
 });

@@ -38,21 +38,21 @@ export class EventMutationResolver {
     eventId: string,
     organizationUnitId: string,
     status: EventInviteStatus,
-  ): Promise<boolean> {
+  ): Promise<void> {
     const isSelf = actorUserId === targetUserId;
     const isAdminOnlyTarget =
       status === EventInviteStatus.ADMIN_REJECTED ||
       status === EventInviteStatus.ADMIN_INVITED;
+
+    if (isSelf && !isAdminOnlyTarget) {
+      return;
+    }
 
     const hasPermission = await this.authService.hasRequiredPermissions(
       actorUserId,
       organizationUnitId,
       [PERMISSIONS.SHIFT_EDIT],
     );
-
-    if (isSelf && !isAdminOnlyTarget) {
-      return hasPermission;
-    }
 
     if (!hasPermission) {
       throw new ForbiddenGraphQLError(
@@ -61,7 +61,6 @@ export class EventMutationResolver {
     }
 
     await this.eventService.findById(eventId, organizationUnitId);
-    return hasPermission;
   }
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
@@ -185,7 +184,7 @@ export class EventMutationResolver {
   ): Promise<EventInvite> {
     const targetUserId = userId ?? session.user.id;
 
-    const hasPermission = await this.assertCanManageInviteForUser(
+    await this.assertCanManageInviteForUser(
       session.user.id,
       targetUserId,
       eventId,
@@ -198,7 +197,6 @@ export class EventMutationResolver {
       eventId,
       status,
       session.user.id,
-      hasPermission,
     );
     return this.eventInviteMapper.toModelOrThrow(invite);
   }

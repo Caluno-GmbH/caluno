@@ -944,6 +944,7 @@ export class MembershipService {
       await this.authService.assertOwnerRemains(
         tx,
         leaving.id,
+        leaving.organizationUnitId,
         this.rolesOf(current),
       );
 
@@ -1010,7 +1011,12 @@ export class MembershipService {
       });
       // Removing someone takes all their roles away, so the same rule applies.
       const roles = this.rolesOf(current);
-      await this.authService.assertOwnerRemains(tx, removing.id, roles);
+      await this.authService.assertOwnerRemains(
+        tx,
+        removing.id,
+        removing.organizationUnitId,
+        roles,
+      );
       await this.authService.assertCanAssignRoles(
         callerId,
         organizationUnitId,
@@ -1458,6 +1464,7 @@ export class MembershipService {
       await this.authService.assertOwnerRemains(
         tx,
         membership.id,
+        membership.organizationUnitId,
         this.rolesOf(removed),
       );
       // Both directions count: taking a role away is as sensitive as giving it.

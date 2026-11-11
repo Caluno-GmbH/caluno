@@ -1,14 +1,24 @@
-import { Badge, Card, CardContent } from '@repo/ui';
+import { PermissionKey } from '@repo/data';
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Card,
+  CardContent,
+} from '@repo/ui';
 import { Lock, Shield, ShieldCheck, Unlock } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { ActionBar } from '@/domain/role/components/action-bar';
+import { PermissionDetails } from '@/domain/role/components/permission-details';
+import { canManageRoles } from '@/domain/role/lib/role-access';
 import {
   internalRoleDescriptionKey,
   internalRoleKey,
-  permissionLabelKey,
-  permissionTitleKey,
 } from '@/domain/role/lib/role-label';
 import { getDataClient } from '@/lib/data-client';
+import { requireOrgAccess } from '@/lib/org-context-server';
+import { checkPermission } from '@/lib/permissions-server';
 import { requireFound } from '@/lib/require-found';
 
 interface RoleDetailsPageProps {
@@ -19,10 +29,15 @@ export default async function RoleDetailsPage({
   params,
 }: RoleDetailsPageProps) {
   const { orgUId, roleId, locale } = await params;
+  const { org } = await requireOrgAccess(orgUId);
+  const [hasRoleManage] = await checkPermission(
+    orgUId,
+    PermissionKey.RoleManage,
+  );
+  const canEdit = canManageRoles({ isRoot: org.isRoot, hasRoleManage });
 
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Role' });
-  const tp = await getTranslations({ locale, namespace: 'Role.permissions' });
   const [role, permissionGroups] = await Promise.all([
     requireFound(() => data.role.findById(roleId)),
     data.role.findPermissionGroups(),
@@ -59,6 +74,14 @@ export default async function RoleDetailsPage({
         />
       </div>
 
+      {!canEdit && (
+        <Alert>
+          <Lock />
+          <AlertTitle>{t('page.readOnlyTitle')}</AlertTitle>
+          <AlertDescription>{t('page.readOnlyDescription')}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <Card>
@@ -68,26 +91,7 @@ export default async function RoleDetailsPage({
                   {t('detail.noPermissions')}
                 </p>
               ) : (
-                <div className="space-y-4">
-                  {assignedGroups.map((group) => (
-                    <div key={group.key}>
-                      <h3 className="text-sm mb-2">
-                        {tp(permissionTitleKey(group.key))}
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {group.items.map((item) => (
-                          <Badge
-                            key={item.permission.id}
-                            variant="neutral"
-                            title={item.permission.description ?? undefined}
-                          >
-                            {tp(permissionLabelKey(item.permission.key))}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <PermissionDetails groups={assignedGroups} />
               )}
             </CardContent>
           </Card>

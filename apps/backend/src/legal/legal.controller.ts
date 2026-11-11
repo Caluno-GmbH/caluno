@@ -1,8 +1,17 @@
-import { Controller, Get, Header, StreamableFile } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Header,
+  NotFoundException,
+  Param,
+  StreamableFile,
+} from '@nestjs/common';
 import { AllowAnonymous } from '@thallesp/nestjs-better-auth';
 import { AllowUnacceptedTerms } from '../terms/guards/allow-unaccepted-terms.decorator';
 import { TermsService } from '../terms/services/terms.service';
 import { LegalService } from './legal.service';
+import { isPrivacyPolicyLocale } from './privacy-policy-files';
 
 export type LegalDocumentsSummary = {
   privacyNotice: { lastChangedOn: string };
@@ -16,11 +25,18 @@ export class LegalController {
     private readonly termsService: TermsService,
   ) {}
 
-  @Get('privacy-policy.pdf')
+  @Get('privacy-policy/:locale')
   @AllowAnonymous()
   @Header('Cache-Control', 'public, max-age=0, must-revalidate')
-  streamPrivacyPolicy(): StreamableFile {
-    return this.legalService.streamCurrentPrivacyPolicy();
+  streamPrivacyPolicy(@Param('locale') locale: string): StreamableFile {
+    if (!isPrivacyPolicyLocale(locale)) {
+      throw new BadRequestException('Unsupported privacy policy locale');
+    }
+    try {
+      return this.legalService.streamCurrentPrivacyPolicy(locale);
+    } catch {
+      throw new NotFoundException('Privacy policy document not found');
+    }
   }
 
   @Get('documents')

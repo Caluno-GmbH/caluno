@@ -11,8 +11,8 @@ import { emailOTP } from 'better-auth/plugins';
 import { Database } from '../database/database.module';
 import { resolveRequestLocale } from '../graphql/locale';
 import {
+  currentPrivacyPolicyVersion,
   defaultPrivacyPolicyDirectory,
-  resolvePrivacyPolicyDocument,
 } from '../legal/privacy-policy-files';
 import { formatUserName } from '../user/user-name';
 import { isBlank, trimmed } from '../utils';
@@ -208,7 +208,7 @@ export const createAuthConfig = ({
             }
 
             try {
-              const { version } = resolvePrivacyPolicyDocument(
+              const version = currentPrivacyPolicyVersion(
                 privacyPolicyDirectory,
               );
               const withPrivacy = applyPrivacyPolicyAcceptance(

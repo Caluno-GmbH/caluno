@@ -2751,7 +2751,6 @@ describe('EventService.updateEventInviteStatus — required forms (VOLI-1702)', 
       event.id,
       EventInviteStatus.JOINED,
       admin.id,
-      true,
     );
 
     expect(updated.status).toBe(EventInviteStatus.JOINED);

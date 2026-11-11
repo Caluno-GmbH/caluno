@@ -38,12 +38,16 @@ const privacyPolicyDirectory = mkdtempSync(
   join(tmpdir(), 'auth-privacy-policy-'),
 );
 writeFileSync(
-  join(privacyPolicyDirectory, 'datenschutzhinweise-2026-08-17.pdf'),
+  join(privacyPolicyDirectory, 'privacy-policy_2026-08-17_de.pdf'),
   'old',
 );
 writeFileSync(
-  join(privacyPolicyDirectory, 'datenschutzhinweise-2026-08-25.pdf'),
+  join(privacyPolicyDirectory, 'privacy-policy_2026-08-25_de.pdf'),
   'new',
+);
+writeFileSync(
+  join(privacyPolicyDirectory, 'privacy-policy_2026-08-25_en.pdf'),
+  'new-en',
 );
 
 const createFakeTermsService = (

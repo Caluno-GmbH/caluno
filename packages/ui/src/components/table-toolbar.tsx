@@ -329,7 +329,7 @@ function FilterSelect({
   icon,
 }: FilterSelectProps) {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value ?? ''} onValueChange={onChange}>
       <SelectTrigger
         aria-label={ariaLabel ?? placeholder}
         className="w-auto min-w-36"

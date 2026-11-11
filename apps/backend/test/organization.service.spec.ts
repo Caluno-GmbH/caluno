@@ -443,7 +443,6 @@ describe('OrganizationUnitService', () => {
           organizationId: organization.id,
           name: 'Renamed Child',
           typeId: type.id,
-          parentId: root.id,
         },
         (await createUser(db)).id,
         root.id,

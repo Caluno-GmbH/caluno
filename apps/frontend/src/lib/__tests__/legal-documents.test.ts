@@ -5,7 +5,7 @@ import {
   formatLastChanged,
   type LegalDocumentsSummary,
 } from '../legal-documents';
-import { PRIVACY_POLICY_PDF_URL } from '../privacy-policy';
+import { privacyPolicyPdfUrl } from '../privacy-policy';
 import { termsPdfUrl } from '../terms';
 
 const summary: LegalDocumentsSummary = {
@@ -18,7 +18,7 @@ describe('buildLegalDocumentCards', () => {
     expect(buildLegalDocumentCards(summary, 'de')).toEqual([
       {
         kind: 'privacyNotice',
-        href: PRIVACY_POLICY_PDF_URL,
+        href: privacyPolicyPdfUrl('de'),
         lastChangedOn: '2026-09-08',
       },
       {
@@ -29,10 +29,10 @@ describe('buildLegalDocumentCards', () => {
     ]);
   });
 
-  it('links the terms in the given locale', () => {
-    expect(buildLegalDocumentCards(summary, 'en')[1]?.href).toBe(
-      termsPdfUrl('en'),
-    );
+  it('links privacy and terms in the given locale', () => {
+    const cards = buildLegalDocumentCards(summary, 'en');
+    expect(cards[0]?.href).toBe(privacyPolicyPdfUrl('en'));
+    expect(cards[1]?.href).toBe(termsPdfUrl('en'));
   });
 
   it('keeps both cards without dates when the summary is missing', () => {

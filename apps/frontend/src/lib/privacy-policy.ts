@@ -1,6 +1,9 @@
+import type { Locale } from '@repo/data';
 import { API_URL } from '@/lib/constants';
 
-export const PRIVACY_POLICY_PDF_URL = `${API_URL}/legal/privacy-policy.pdf`;
+export function privacyPolicyPdfUrl(locale: Locale): string {
+  return `${API_URL}/legal/privacy-policy/${locale}`;
+}
 
 export function buildSignupPayload(input: {
   firstname: string;
