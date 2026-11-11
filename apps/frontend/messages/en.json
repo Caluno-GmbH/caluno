@@ -2874,6 +2874,13 @@
       }
     }
   },
+  "Export": {
+    "button": "Export",
+    "dialogTitle": "Export columns",
+    "dialogDescription": "Select the columns to include in the CSV export.",
+    "includeTechnicalIds": "Include technical IDs",
+    "exportAction": "Export"
+  },
   "MyDocuments": {
     "title": "My documents",
     "backLabel": "Back",

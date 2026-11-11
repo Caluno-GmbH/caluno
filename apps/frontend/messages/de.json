@@ -2874,6 +2874,13 @@
       }
     }
   },
+  "Export": {
+    "button": "Exportieren",
+    "dialogTitle": "Spalten exportieren",
+    "dialogDescription": "Wähle die Spalten aus, die in den CSV-Export aufgenommen werden sollen.",
+    "includeTechnicalIds": "Technische IDs einbeziehen",
+    "exportAction": "Exportieren"
+  },
   "MyDocuments": {
     "title": "Meine Dokumente",
     "backLabel": "Zurück",
