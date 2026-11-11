@@ -2861,6 +2861,13 @@
         "gender": "Geschlecht",
         "phone": "Telefon",
         "address": "Adresse"
+      },
+      "shifts": {
+        "title": "Titel",
+        "date": "Datum",
+        "location": "Ort",
+        "visibility": "Sichtbarkeit",
+        "staffing": "Besetzung"
       }
     },
     "log": {
