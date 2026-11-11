@@ -18,7 +18,10 @@ export function useExportTableCsv() {
   });
 }
 
-export function useExportLogs(tableKind?: ExportTable) {
+export function useExportLogs(
+  tableKind?: ExportTable,
+  options?: { enabled?: boolean },
+) {
   const sdk = useSdk();
   const repository = new ExportRepository(sdk);
 
@@ -26,6 +29,6 @@ export function useExportLogs(tableKind?: ExportTable) {
     queryKey: ['export', 'logs', tableKind],
     queryFn: () => repository.listExportLogs(tableKind),
     staleTime: 30 * 1000,
-    enabled: true,
+    enabled: options?.enabled ?? false,
   });
 }

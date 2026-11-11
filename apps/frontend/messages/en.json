@@ -2839,7 +2839,20 @@
     "includeTechnicalIds": "Include technical IDs",
     "exportAction": "Export",
     "cancel": "Cancel",
-    "exportFailed": "Export failed. Please try again."
+    "exportFailed": "Export failed. Please try again.",
+    "log": {
+      "downloadButton": "Download export log",
+      "downloadFailed": "Could not load the export log. Please try again.",
+      "csvHeaders": {
+        "timestamp": "Timestamp",
+        "actor": "Actor",
+        "table": "Table",
+        "columns": "Columns",
+        "rowCount": "Row Count",
+        "subjectCount": "Subject Count",
+        "subjectIds": "Subject IDs"
+      }
+    }
   },
   "MyDocuments": {
     "title": "My documents",
