@@ -2170,7 +2170,6 @@
     "table": {
       "copyEmailAria": "Copy {name}'s email address",
       "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
-      "downloadCsv": "Download CSV",
       "email": "Email",
       "emailCopied": "Email address copied to clipboard",
       "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
@@ -2853,6 +2852,15 @@
         "status": "Status",
         "createdBy": "Created By",
         "notes": "Notes"
+      },
+      "users": {
+        "name": "Name",
+        "email": "Email",
+        "roles": "Roles",
+        "dateOfBirth": "Date of Birth",
+        "gender": "Gender",
+        "phone": "Phone",
+        "address": "Address"
       }
     },
     "log": {

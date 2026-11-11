@@ -1,6 +1,10 @@
 'use client';
 
-import { MembershipRequestStatus } from '@repo/data';
+import {
+  ExportTable,
+  MembershipRequestStatus,
+  PermissionKey,
+} from '@repo/data';
 import {
   useMembershipRequestCount,
   useMembershipRequests,
@@ -41,6 +45,8 @@ import { debounce, useQueryStates } from 'nuqs';
 import { useMemo } from 'react';
 import { ButtonClipboard } from '@/components/button-clipboard';
 import { DataTable } from '@/components/data-table/data-table';
+import { ExportButton } from '@/components/export/export-button';
+import { ExportLogLine } from '@/components/export/export-log-line';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
@@ -55,6 +61,7 @@ import {
 } from '@/domain/role/lib/role-label';
 import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
+import { useVolunteerExportColumns } from '@/domain/volunteer/volunteer-export-columns';
 import {
   collectVolunteerEmails,
   deriveCityOptions,
@@ -74,7 +81,6 @@ import { copyToClipboard } from '@/lib/clipboard';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ConfigureViewButton } from './configure-view-button';
 import { CopyableEmailCell } from './copyable-email-cell';
-import { DownloadVolunteersCsvButton } from './download-volunteers-csv-button';
 import { VolunteerRequiredFormsPopover } from './required-forms-popover';
 import { RoleSelectCell } from './role-select-cell';
 import {
@@ -107,6 +113,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const tRole = useTranslations('Role');
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
+  const exportColumns = useVolunteerExportColumns();
 
   const [
     { q, sort, dir, page, pageSize, roles, gender, city, verified, cols },
@@ -465,11 +472,12 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
             {t('table.copyEmails', { count: visible.length })}
             <Copy className="size-4" />
           </Button>,
-          <DownloadVolunteersCsvButton
-            key="download-csv"
-            orgUId={orgUId}
-            rows={visible}
-            visibleColumnIds={cols}
+          <ExportButton
+            key="export"
+            tableKind={ExportTable.Users}
+            rowIds={visible.map((m) => m.id)}
+            columns={exportColumns}
+            permission={PermissionKey.VolunteerEdit}
           />,
         ]}
       >
@@ -579,6 +587,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           />
         </>
       )}
+      <ExportLogLine tableKind={ExportTable.Users} />
     </div>
   );
 }
