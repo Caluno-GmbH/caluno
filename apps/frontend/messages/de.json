@@ -2881,7 +2881,20 @@
     "includeTechnicalIds": "Technische IDs einbeziehen",
     "exportAction": "Exportieren",
     "cancel": "Abbrechen",
-    "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut."
+    "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut.",
+    "log": {
+      "downloadButton": "Exportprotokoll herunterladen",
+      "downloadFailed": "Das Exportprotokoll konnte nicht geladen werden. Bitte versuche es erneut.",
+      "csvHeaders": {
+        "timestamp": "Zeitstempel",
+        "actor": "Akteur",
+        "table": "Tabelle",
+        "columns": "Spalten",
+        "rowCount": "Zeilenanzahl",
+        "subjectCount": "Betroffene Anzahl",
+        "subjectIds": "Betroffene IDs"
+      }
+    }
   },
   "MyDocuments": {
     "title": "Meine Dokumente",
