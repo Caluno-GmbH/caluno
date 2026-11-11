@@ -167,6 +167,7 @@ describe('form submission queries tenant scope', () => {
     });
 
     expect(response.data?.formSubmissionsByForm?.items).toEqual([]);
+    expect(response.data?.formSubmissionsByForm?.pagination.total).toBe(0);
   });
 
   it('returns no foreign rows from formSubmissionsByForm in the caller org', async () => {
@@ -195,6 +196,7 @@ describe('form submission queries tenant scope', () => {
     });
 
     expect(response.errors).toBeUndefined();
+    expect(response.data?.formSubmissionsByForm?.pagination.total).toBe(1);
     const ids = response.data?.formSubmissionsByForm?.items.map((i) => i.id);
     expect(ids).toContain(own.id);
     expect(ids).not.toContain(foreign.id);
