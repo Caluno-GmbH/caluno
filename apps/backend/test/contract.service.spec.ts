@@ -83,11 +83,12 @@ describe('ContractService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const organizationUnitDataService = new OrganizationUnitDataService(db);
+    const tenantScope = new TenantScopeService(db, organizationUnitDataService);
     const authService = new AuthService(
       db,
       organizationUnitDataService,
       { capture: () => {} } as unknown as PostHogService,
-      new TenantScopeService(db, organizationUnitDataService),
+      tenantScope,
     );
     const documentTemplateService = new DocumentTemplateService(
       db,
@@ -99,7 +100,11 @@ describe('ContractService', () => {
       } as unknown as DocumentProfileRequirementService,
       organizationUnitDataService,
     );
-    const documentSigningService = new DocumentSigningService(db, authService);
+    const documentSigningService = new DocumentSigningService(
+      db,
+      authService,
+      tenantScope,
+    );
     service = new ContractService(
       db,
       documentTemplateService,
@@ -120,7 +125,6 @@ describe('ContractService', () => {
         renderAndAttachPdf: () => Promise.resolve(null),
         resolveRenderInputs: () => resolveRenderInputs(),
       } as unknown as DocumentRenderingService,
-      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as unknown as PostHogService,
     );
   });

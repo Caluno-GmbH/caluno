@@ -45,13 +45,14 @@ describe('DocumentSigningService', () => {
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
     const organizationUnitDataService = new OrganizationUnitDataService(db);
+    const tenantScope = new TenantScopeService(db, organizationUnitDataService);
     const authService = new AuthService(
       db,
       organizationUnitDataService,
       { capture: () => {} } as unknown as PostHogService,
-      new TenantScopeService(db, organizationUnitDataService),
+      tenantScope,
     );
-    service = new DocumentSigningService(db, authService);
+    service = new DocumentSigningService(db, authService, tenantScope);
   });
 
   describe('orderSignatures', () => {

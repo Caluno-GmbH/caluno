@@ -62,11 +62,12 @@ describe('TimeEntryClosedListener', () => {
 
     const postHog = { capture: () => {} } as unknown as PostHogService;
     organizationUnitDataService = new OrganizationUnitDataService(db);
+    const tenantScope = new TenantScopeService(db, organizationUnitDataService);
     const authService = new AuthService(
       db,
       organizationUnitDataService,
       postHog,
-      new TenantScopeService(db, organizationUnitDataService),
+      tenantScope,
     );
     const documentTemplateService = new DocumentTemplateService(
       db,
@@ -79,7 +80,7 @@ describe('TimeEntryClosedListener', () => {
     contractService = new ContractService(
       db,
       documentTemplateService,
-      new DocumentSigningService(db, authService),
+      new DocumentSigningService(db, authService, tenantScope),
       {
         notifyAwaitingVolunteerSignature: () => Promise.resolve(),
       } as unknown as DocumentNotificationService,
@@ -90,7 +91,6 @@ describe('TimeEntryClosedListener', () => {
       {
         renderAndAttachPdf: () => Promise.resolve(null),
       } as unknown as DocumentRenderingService,
-      new TenantScopeService(db, organizationUnitDataService),
       postHog,
     );
     listener = new TimeEntryClosedListener(

@@ -112,7 +112,11 @@ describe('InvoiceService', () => {
       } as unknown as DocumentProfileRequirementService,
       organizationUnitDataService,
     );
-    const documentSigningService = new DocumentSigningService(db, authService);
+    const documentSigningService = new DocumentSigningService(
+      db,
+      authService,
+      new TenantScopeService(db, organizationUnitDataService),
+    );
     const reimbursementRateService = new ReimbursementRateService(
       db,
       organizationUnitDataService,
@@ -136,7 +140,6 @@ describe('InvoiceService', () => {
         renderAndAttachPdf: () => Promise.resolve(null),
         resolveRenderInputs: () => resolveRenderInputs(),
       } as unknown as DocumentRenderingService,
-      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as unknown as PostHogService,
     );
     service = new InvoiceService(
@@ -165,7 +168,6 @@ describe('InvoiceService', () => {
         },
       } as unknown as DocumentRenderingService,
       organizationService,
-      new TenantScopeService(db, organizationUnitDataService),
       { capture: () => {} } as unknown as PostHogService,
     );
   });
