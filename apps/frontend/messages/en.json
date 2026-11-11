@@ -169,7 +169,6 @@
   "CheckIn": {
     "acceptMembershipButton": "Accept request",
     "acceptMembershipError": "We couldn't accept the membership. Please try again.",
-    "acceptMembershipSheetTitle": "Review membership",
     "alreadyCheckedInButton": "Go to check-out",
     "alreadyCheckedInDescription": "This volunteer already has an open check-in for this assignment.",
     "alreadyCheckedInTitle": "Already checked in",
@@ -220,8 +219,6 @@
     "acceptRequiresUnitManager": "Only someone who manages {unit} can accept this request.",
     "qrScannerTab": "QR Scanner",
     "readyBannerTitle": "Good to go",
-    "requiredFormMissing": "Still open",
-    "requiredFormSubmitted": "Submitted",
     "saveSelection": "Save selection",
     "scanACode": "Scan a code",
     "searchVolunteerPlaceholder": "Search for a volunteer",

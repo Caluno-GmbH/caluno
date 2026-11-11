@@ -64,12 +64,14 @@ export function useCheckInApproveMembershipRequest(organizationUnitId: string) {
   return useMutation({
     mutationFn: (requestId: string) =>
       repository.checkInApprove(requestId, organizationUnitId),
+    // Returning the readiness refetch keeps the mutation pending until the
+    // card has moved past the accepted request, so it cannot be tapped twice.
     onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['check-in-readiness', organizationUnitId],
-      });
       queryClient.invalidateQueries({ queryKey: ['check-in-context'] });
       queryClient.invalidateQueries({ queryKey: ['check-in-required-forms'] });
+      return queryClient.invalidateQueries({
+        queryKey: ['check-in-readiness', organizationUnitId],
+      });
     },
   });
 }

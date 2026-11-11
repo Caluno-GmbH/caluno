@@ -3,6 +3,7 @@
 import {
   type CheckInContextData,
   useCheckInAddToShiftInstance,
+  useCheckInApproveMembershipRequest,
   useCheckInContext,
   useCheckInInviteToOrganization,
   useCheckInReadiness,
@@ -39,7 +40,6 @@ import {
 } from '../../check-in-selection';
 import { setCheckInSuccessPayload } from '../../check-in-success-dialog';
 import { volunteerProfileHref } from '../../routes';
-import { AcceptMembershipSheet } from './accept-membership-sheet';
 import { AddToShiftOverCapacityDialog } from './add-to-shift-over-capacity-dialog';
 import { CheckInAgreementCard } from './check-in-agreement-card';
 import { CheckInReadinessCard } from './check-in-readiness-card';
@@ -84,7 +84,7 @@ export function ManualCheckInPage({
   const [didPreselect, setDidPreselect] = useState(false);
   const [withoutShift, setWithoutShift] = useState(false);
   const [openSheet, setOpenSheet] = useState<
-    'orgUnit' | 'date' | 'shift' | 'acceptMembership' | null
+    'orgUnit' | 'date' | 'shift' | null
   >(null);
   const [startTime, setStartTime] = useState(() => format(new Date(), 'HH:mm'));
   const [startTimeError, setStartTimeError] = useState<string | null>(null);
@@ -172,8 +172,7 @@ export function ManualCheckInPage({
     readiness?.canAcceptMembershipRequest ?? false;
 
   // Fetched while an acceptable request is pending, so a volunteer completing
-  // the required forms on their device is noticed (and shares the accept
-  // sheet's cache entry).
+  // the required forms on their device is noticed.
   // `null` while unknown (loading or errored) so the accept stays blocked.
   const { data: requiredForms, isError: isRequiredFormsError } =
     useCheckInVolunteerRequiredForms(
@@ -241,6 +240,9 @@ export function ManualCheckInPage({
     selection.orgUnitId,
   );
   const addToShiftMutation = useCheckInAddToShiftInstance(selection.orgUnitId);
+  const approveMembershipMutation = useCheckInApproveMembershipRequest(
+    selection.orgUnitId,
+  );
 
   const handleInviteToOrg = async () => {
     try {
@@ -248,6 +250,16 @@ export function ManualCheckInPage({
       setOrgInviteSentFor(selection.orgUnitId);
     } catch {
       toast.error(t('notMemberError'));
+    }
+  };
+
+  const handleAcceptMembership = async () => {
+    const requestId = readiness?.openMembershipRequestId;
+    if (!requestId) return;
+    try {
+      await approveMembershipMutation.mutateAsync(requestId);
+    } catch {
+      toast.error(t('acceptMembershipError'));
     }
   };
 
@@ -424,7 +436,8 @@ export function ManualCheckInPage({
               onInviteToOrg={handleInviteToOrg}
               isInviteToOrgPending={inviteToOrgMutation.isPending}
               isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
-              onOpenAcceptMembership={() => setOpenSheet('acceptMembership')}
+              onAcceptMembership={handleAcceptMembership}
+              isAcceptMembershipPending={approveMembershipMutation.isPending}
               onAddToShift={handleAddToShift}
               isAddToShiftPending={addToShiftMutation.isPending}
             />
@@ -585,17 +598,6 @@ export function ManualCheckInPage({
               selectedInstance: null,
             }));
           }}
-        />
-
-        <AcceptMembershipSheet
-          open={openSheet === 'acceptMembership'}
-          onOpenChange={(open) =>
-            setOpenSheet(open ? 'acceptMembership' : null)
-          }
-          organizationUnitId={selection.orgUnitId}
-          checkInId={checkInId}
-          membershipRequestId={readiness?.openMembershipRequestId ?? null}
-          onAccepted={() => setOpenSheet(null)}
         />
       </CardContent>
     </Card>

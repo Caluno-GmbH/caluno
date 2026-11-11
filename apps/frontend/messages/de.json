@@ -169,7 +169,6 @@
   "CheckIn": {
     "acceptMembershipButton": "Anfrage akzeptieren",
     "acceptMembershipError": "Die Mitgliedschaft ließ sich nicht akzeptieren. Versuch es bitte erneut.",
-    "acceptMembershipSheetTitle": "Mitgliedschaft prüfen",
     "alreadyCheckedInButton": "Zum Check-out",
     "alreadyCheckedInDescription": "Diese Person ist für diesen Einsatz bereits eingecheckt.",
     "alreadyCheckedInTitle": "Bereits eingecheckt",
@@ -220,8 +219,6 @@
     "acceptRequiresUnitManager": "Nur jemand, der {unit} verwaltet, kann diese Anfrage annehmen.",
     "qrScannerTab": "QR-Scanner",
     "readyBannerTitle": "Bereit zum Check-in",
-    "requiredFormMissing": "Noch offen",
-    "requiredFormSubmitted": "Eingereicht",
     "saveSelection": "Auswahl speichern",
     "scanACode": "Code scannen",
     "searchVolunteerPlaceholder": "Freiwillige:n suchen",

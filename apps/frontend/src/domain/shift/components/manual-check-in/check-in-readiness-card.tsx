@@ -33,7 +33,8 @@ type CheckInReadinessCardProps = {
   onInviteToOrg: () => void;
   isInviteToOrgPending: boolean;
   isInviteToOrgSent: boolean;
-  onOpenAcceptMembership: () => void;
+  onAcceptMembership: () => void;
+  isAcceptMembershipPending: boolean;
   onAddToShift: () => void;
   isAddToShiftPending: boolean;
 };
@@ -50,7 +51,8 @@ export function CheckInReadinessCard({
   onInviteToOrg,
   isInviteToOrgPending,
   isInviteToOrgSent,
-  onOpenAcceptMembership,
+  onAcceptMembership,
+  isAcceptMembershipPending,
   onAddToShift,
   isAddToShiftPending,
 }: CheckInReadinessCardProps) {
@@ -167,7 +169,8 @@ export function CheckInReadinessCard({
         title={title}
         description={t('pendingMembershipDescription')}
         buttonLabel={t('acceptMembershipButton')}
-        onAction={onOpenAcceptMembership}
+        onAction={onAcceptMembership}
+        isActionPending={isAcceptMembershipPending}
         className="border-destructive"
       />
     );
