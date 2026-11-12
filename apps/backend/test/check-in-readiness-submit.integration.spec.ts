@@ -36,6 +36,7 @@ import {
 import {
   assignRoleToMembership,
   createRole,
+  grantCheckInManage,
   grantPermissionToRole,
 } from './factories/role.factory';
 import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
@@ -103,19 +104,10 @@ async function createCheckInManager(
   managedUnitId: string,
 ): Promise<string> {
   const manager = await createUser(db);
-  const permission = await db.query.permissions.findFirst({
-    where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-  });
-  if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-  const role = await createRole(db, { organizationId });
-  await grantPermissionToRole(db, {
-    roleId: role.id,
-    permissionId: permission.id,
-  });
-  const membership = await addMembership(db, manager.id, managedUnitId);
-  await assignRoleToMembership(db, {
-    membershipId: membership.id,
-    roleId: role.id,
+  await grantCheckInManage(db, {
+    organizationId,
+    organizationUnitId: managedUnitId,
+    userId: manager.id,
   });
   return manager.id;
 }
@@ -148,20 +140,10 @@ describe('checkInReadiness query', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
 
     const shift = await createShift(db, { organizationUnitId: unit.id });
@@ -674,20 +656,10 @@ describe('checkInVolunteerRequiredForms query', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 
@@ -939,20 +911,10 @@ describe('checkInVolunteer mutation', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
 
     const shift = await createShift(db, { organizationUnitId: unit.id });
@@ -1045,25 +1007,10 @@ describe('checkInVolunteer mutation', () => {
     });
 
     // Caller holds check-in:manage on the child unit.
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-    const role = await createRole(db, {
+    await grantCheckInManage(db, {
       organizationId: org.organization.id,
-    });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const callerMembership = await addMembership(
-      db,
-      callerUserId,
-      childUnit.id,
-    );
-    await assignRoleToMembership(db, {
-      membershipId: callerMembership.id,
-      roleId: role.id,
+      organizationUnitId: childUnit.id,
+      userId: callerUserId,
     });
 
     const shift = await createShift(db, { organizationUnitId: childUnit.id });
@@ -1182,20 +1129,10 @@ describe('checkInInviteToOrganization mutation', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 
@@ -1291,20 +1228,10 @@ describe('checkInApproveMembershipRequest mutation', () => {
     // Caller holds ONLY check-in:manage — not volunteer:edit — proving the
     // new mutation does not depend on the existing approveMembershipRequest's
     // permission.
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 
@@ -1560,20 +1487,10 @@ describe('checkOutVolunteer mutation', () => {
 
     // Caller holds ONLY check-in:manage — the whole point of this mutation is
     // that shift:edit is not required.
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 

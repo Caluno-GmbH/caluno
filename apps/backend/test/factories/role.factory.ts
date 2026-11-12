@@ -1,5 +1,7 @@
+import { PERMISSIONS } from '../../src/auth/constants';
 import { type Database } from '../../src/database/database.module';
 import * as schema from '../../src/database/schema';
+import { addMembership } from './org.factory';
 
 type RoleEntity = typeof schema.roles.$inferSelect;
 type PermissionEntity = typeof schema.permissions.$inferSelect;
@@ -49,5 +51,30 @@ export const assignRoleToMembership = async (
   await db.insert(schema.membershipRoles).values({
     membershipId: args.membershipId,
     roleId: args.roleId,
+  });
+};
+
+/** Gives `userId` check-in:manage on `organizationUnitId` via a new role. */
+export const grantCheckInManage = async (
+  db: Database,
+  args: { organizationId: string; organizationUnitId: string; userId: string },
+): Promise<void> => {
+  const permission = await db.query.permissions.findFirst({
+    where: { key: PERMISSIONS.CHECK_IN_MANAGE },
+  });
+  if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
+  const role = await createRole(db, { organizationId: args.organizationId });
+  await grantPermissionToRole(db, {
+    roleId: role.id,
+    permissionId: permission.id,
+  });
+  const membership = await addMembership(
+    db,
+    args.userId,
+    args.organizationUnitId,
+  );
+  await assignRoleToMembership(db, {
+    membershipId: membership.id,
+    roleId: role.id,
   });
 };

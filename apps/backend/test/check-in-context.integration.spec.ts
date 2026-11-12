@@ -9,7 +9,6 @@ import {
   setDefaultTimeout,
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
-import { PERMISSIONS } from '../src/auth/constants';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { MembershipRequestStatus } from '../src/membership/enums';
@@ -21,11 +20,7 @@ import {
   createOrganizationWithType,
   createUnit,
 } from './factories/org.factory';
-import {
-  assignRoleToMembership,
-  createRole,
-  grantPermissionToRole,
-} from './factories/role.factory';
+import { grantCheckInManage } from './factories/role.factory';
 import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
 import { graphqlRequestRequiringData } from './helpers/graphql-request';
 import { getGraphqlTestContext } from './helpers/graphql-test-context';
@@ -124,23 +119,10 @@ describe('TimeTrackingService.getCheckInContext', () => {
       typeId: other.type.id,
       name: 'Other Unit',
     });
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) {
-      throw new Error('CHECK_IN_MANAGE permission not seeded');
-    }
-    const role = await createRole(db, {
+    await grantCheckInManage(db, {
       organizationId: other.organization.id,
-    });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const callerMembership = await addMembership(db, testUserId, otherUnit.id);
-    await assignRoleToMembership(db, {
-      membershipId: callerMembership.id,
-      roleId: role.id,
+      organizationUnitId: otherUnit.id,
+      userId: testUserId,
     });
 
     // Volunteer has an open entry there but no membership.
@@ -211,23 +193,10 @@ describe('TimeTrackingService.getCheckInContext', () => {
     await addMembership(db, volunteer.id, parentUnit.id);
 
     // Caller needs check-in:manage on the Batch org to manage its units.
-    const batchPermission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!batchPermission) {
-      throw new Error('CHECK_IN_MANAGE permission not seeded');
-    }
-    const batchRole = await createRole(db, {
+    await grantCheckInManage(db, {
       organizationId: org.organization.id,
-    });
-    await grantPermissionToRole(db, {
-      roleId: batchRole.id,
-      permissionId: batchPermission.id,
-    });
-    const batchMembership = await addMembership(db, testUserId, parentUnit.id);
-    await assignRoleToMembership(db, {
-      membershipId: batchMembership.id,
-      roleId: batchRole.id,
+      organizationUnitId: parentUnit.id,
+      userId: testUserId,
     });
 
     // A second org (only one root per org is allowed, so the "stranger"
@@ -241,21 +210,10 @@ describe('TimeTrackingService.getCheckInContext', () => {
       typeId: otherOrg.type.id,
       name: 'Stranger Unit',
     });
-    const strangerRole = await createRole(db, {
+    await grantCheckInManage(db, {
       organizationId: otherOrg.organization.id,
-    });
-    await grantPermissionToRole(db, {
-      roleId: strangerRole.id,
-      permissionId: batchPermission.id,
-    });
-    const strangerMembership = await addMembership(
-      db,
-      testUserId,
-      strangerUnit.id,
-    );
-    await assignRoleToMembership(db, {
-      membershipId: strangerMembership.id,
-      roleId: strangerRole.id,
+      organizationUnitId: strangerUnit.id,
+      userId: testUserId,
     });
 
     const result = await service.getCheckInContext(
@@ -406,30 +364,6 @@ describe('checkInContext query', () => {
       organizationUnitId: unitId,
       startedAt: new Date(),
       endedAt: null,
-    });
-  };
-
-  // Gives `userId` check-in:manage on `unitId` via a role in `organizationId`.
-  const grantCheckInManage = async (
-    organizationId: string,
-    unitId: string,
-    userId: string,
-  ) => {
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) {
-      throw new Error('CHECK_IN_MANAGE permission not seeded');
-    }
-    const role = await createRole(db, { organizationId });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, userId, unitId);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
     });
   };
 
@@ -632,7 +566,11 @@ describe('checkInContext query', () => {
       typeId: org.type.id,
       name: 'Pending Unit A',
     });
-    await grantCheckInManage(org.organization.id, unitA.id, testUserId);
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unitA.id,
+      userId: testUserId,
+    });
     await createMembershipRequest(db, {
       userId: volunteer.id,
       organizationUnitId: unitA.id,
