@@ -34,3 +34,20 @@ describe('resolveSelectedColumns', () => {
     expect(result).toEqual(['name', 'email', 'phone', 'notes']);
   });
 });
+
+const GROUPED: ExportColumnOption[] = [
+  { id: 'name', label: 'Name', defaultOn: true, optional: false },
+  { id: 'dob', label: 'DOB', defaultOn: false, optional: true, group: 'extendedUserInfo' },
+];
+
+describe('resolveSelectedColumns with groups', () => {
+  it('excludes grouped columns when the group is disabled or absent', () => {
+    expect(resolveSelectedColumns(GROUPED, ['dob'])).toEqual(['name']);
+    expect(resolveSelectedColumns(GROUPED, ['dob'], { extendedUserInfo: false })).toEqual(['name']);
+  });
+
+  it('includes a checked grouped column only when its group is enabled', () => {
+    expect(resolveSelectedColumns(GROUPED, ['dob'], { extendedUserInfo: true })).toEqual(['name', 'dob']);
+    expect(resolveSelectedColumns(GROUPED, [], { extendedUserInfo: true })).toEqual(['name']);
+  });
+});
