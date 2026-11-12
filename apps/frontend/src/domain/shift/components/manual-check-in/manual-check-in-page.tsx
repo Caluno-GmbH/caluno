@@ -2,33 +2,16 @@
 
 import {
   type CheckInContextData,
-  useCheckInAddToShiftInstance,
-  useCheckInApproveMembershipRequest,
-  useCheckInContext,
-  useCheckInInviteToOrganization,
-  useCheckInReadiness,
   useCheckInShiftInstances,
-  useCheckInVolunteerRequiredForms,
-  useQueryClient,
 } from '@repo/data/react';
-import { applyTimeToDate, Button, Card, CardContent } from '@repo/ui';
-import { endOfMonth, format, startOfMonth } from 'date-fns';
+import { Button, Card, CardContent } from '@repo/ui';
+import { endOfMonth, startOfMonth } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useMemo, useState, useTransition } from 'react';
-import { toast } from 'sonner';
-import { UserCard } from '@/components/user-card';
-import { checkInVolunteer } from '@/domain/time-entry/actions';
+import { useMemo, useState } from 'react';
 import { useRouter } from '@/i18n/navigation';
-import { useFormatting } from '@/lib/formatting/use-formatting';
 import { resolveAgreementTrigger } from '../../check-in-agreement';
-import { isCheckInAwaitingVolunteer } from '../../check-in-polling';
-import {
-  countMissingRequiredForms,
-  resolveCheckInReadiness,
-  resolveVisibleCheckInReadiness,
-  shouldShowIdVerification,
-} from '../../check-in-readiness';
+import { shouldShowIdVerification } from '../../check-in-readiness';
 import {
   applyDate,
   applyOrgUnit,
@@ -38,11 +21,11 @@ import {
   pickInitialInstance,
   toCheckInInstance,
 } from '../../check-in-selection';
-import { setCheckInSuccessPayload } from '../../check-in-success-dialog';
-import { volunteerProfileHref } from '../../routes';
+import { pendingVolunteerProfileHref } from '../../routes';
 import { AddToShiftOverCapacityDialog } from './add-to-shift-over-capacity-dialog';
 import { CheckInAgreementCard } from './check-in-agreement-card';
 import { CheckInReadinessCard } from './check-in-readiness-card';
+import { CheckInVolunteerIdentity } from './check-in-volunteer-identity';
 import { CheckInWithoutShiftWarningCard } from './check-in-without-shift-warning-card';
 import { DateSheet } from './date-sheet';
 import { IdVerificationCard } from './id-verification-card';
@@ -50,9 +33,10 @@ import { OrgUnitSheet } from './org-unit-sheet';
 import { ShiftInstanceStepper } from './shift-instance-stepper';
 import { ShiftSheet } from './shift-sheet';
 import { shouldShowShiftlessCheckInWarning } from './shiftless-check-in-warning';
-import { UnrelatedVolunteerCard } from './unrelated-volunteer-card';
 import { UnverifiedCheckInDialog } from './unverified-check-in-dialog';
-import { useCheckInPollWindow } from './use-check-in-poll-window';
+import { useCheckInLiveReadiness } from './use-check-in-live-readiness';
+import { useCheckInReadinessActions } from './use-check-in-readiness-actions';
+import { useCheckInSubmit } from './use-check-in-submit';
 
 type ManualCheckInPageProps = {
   checkInId: string;
@@ -68,11 +52,7 @@ export function ManualCheckInPage({
   initialOrgUnitId,
 }: ManualCheckInPageProps) {
   const t = useTranslations('CheckIn');
-  const tValidation = useTranslations('TimeEntry.validation');
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const { formatDate, formatTimeRange, formatTimeRelativeToStart } =
-    useFormatting();
 
   const [selection, setSelection] = useState<CheckInSelection>(() => ({
     orgUnitId: initialOrgUnitId,
@@ -86,8 +66,6 @@ export function ManualCheckInPage({
   const [openSheet, setOpenSheet] = useState<
     'orgUnit' | 'date' | 'shift' | null
   >(null);
-  const [startTime, setStartTime] = useState(() => format(new Date(), 'HH:mm'));
-  const [startTimeError, setStartTimeError] = useState<string | null>(null);
 
   // The visible month drives the fetch; it also feeds the calendar dots and
   // the day list, so one range query serves every consumer on the page.
@@ -115,46 +93,24 @@ export function ManualCheckInPage({
     }
   }
 
-  // Context, readiness and required forms poll on one shared interval. The
-  // poll window that decides it reads the query results, so its output is
-  // mirrored into this state (adjusted during render, below) and read here.
-  const [refetchInterval, setRefetchInterval] = useState<number | false>(false);
-
-  // The context is seeded by the server render and re-fetched while polling,
-  // so a volunteer who becomes related (sends a request) is revealed live.
-  // `volunteer` stays null while unrelated: no identity reaches the DOM.
-  const { data: liveContext } = useCheckInContext(checkInId, {
-    initialData: initialContext,
-    refetchInterval,
-  });
-  const context = liveContext ?? initialContext;
-  const volunteer = context.volunteer;
-
-  // Readiness always runs: with no instance chosen (or without-assignment)
-  // the null instance returns only the membership facts, so a freshly
-  // scanned volunteer can be invited before any shift is picked. The
-  // shift-scoped states stay hidden until a choice is made (see
-  // resolveVisibleCheckInReadiness). Every mutator in check-in-selection.ts
-  // writes shiftInstanceId and selectedInstance together, so they never
-  // disagree about which instance is current.
-  const { data: readiness } = useCheckInReadiness(
-    selection.orgUnitId,
+  // Every mutator in check-in-selection.ts writes shiftInstanceId and
+  // selectedInstance together, so they never disagree about which instance
+  // is current.
+  const {
+    volunteer,
+    readiness,
+    readinessState,
+    membershipRequest,
+    missingFormCount,
+    isPollExpired,
+    refresh,
+  } = useCheckInLiveReadiness({
     checkInId,
-    selection.shiftInstanceId,
-    { enabled: true, refetchInterval },
-  );
-  const readinessState = resolveVisibleCheckInReadiness(
-    readiness
-      ? resolveCheckInReadiness(
-          {
-            ...readiness,
-            membershipRequest: readiness.membershipRequest ?? null,
-          },
-          { requiresShift: !withoutShift },
-        )
-      : null,
-    { withoutShift, shiftInstanceId: selection.shiftInstanceId },
-  );
+    initialContext,
+    orgUnitId: selection.orgUnitId,
+    shiftInstanceId: selection.shiftInstanceId,
+    withoutShift,
+  });
 
   // Without a shift there is nothing to be ready *for*, so the card earns its
   // place only while it is blocking: not a member, or a membership request
@@ -165,54 +121,6 @@ export function ManualCheckInPage({
     readinessState === 'notMember' ||
     readinessState === 'pendingMembership' ||
     (!withoutShift && !!selection.shiftInstanceId);
-
-  // A check-in desk may only accept requests to units it manages; a request
-  // to an unmanaged ancestor shows no accept and no forms.
-  const canAcceptMembershipRequest =
-    readiness?.membershipRequest?.canAccept ?? false;
-
-  // Fetched while an acceptable request is pending, so a volunteer completing
-  // the required forms on their device is noticed.
-  // `null` while unknown (loading or errored) so the accept stays blocked.
-  const { data: requiredForms, isError: isRequiredFormsError } =
-    useCheckInVolunteerRequiredForms(
-      selection.orgUnitId,
-      checkInId,
-      readinessState === 'pendingMembership' && canAcceptMembershipRequest,
-      { refetchInterval },
-    );
-  const missingFormCount = countMissingRequiredForms({
-    forms: requiredForms,
-    isError: isRequiredFormsError,
-  });
-
-  // Polling runs while the admin waits on the volunteer, and the window
-  // restarts whenever anything the page shows changes.
-  const pollWindow = useCheckInPollWindow(
-    isCheckInAwaitingVolunteer({
-      isRelated: !!volunteer,
-      state: readinessState,
-    }),
-    JSON.stringify([
-      selection.orgUnitId,
-      volunteer?.id ?? null,
-      context.pendingOrganizationUnits.map((unit) => unit.id),
-      readiness
-        ? [
-            readiness.isMember,
-            readiness.isParticipating,
-            readiness.hasOpenTimeEntry,
-            readiness.shiftHasAvailableSeat,
-            readiness.idVerified,
-          ]
-        : null,
-      readiness?.membershipRequest ?? null,
-      missingFormCount,
-    ]),
-  );
-  if (pollWindow.refetchInterval !== refetchInterval) {
-    setRefetchInterval(pollWindow.refetchInterval);
-  }
 
   // Informational only: never gates the check-in button, unlike the
   // readiness card, which only earns its place while it blocks.
@@ -230,69 +138,19 @@ export function ManualCheckInPage({
         })
       : false;
 
-  // "Sent" is per org unit — tracked as the id it was sent for, so switching
-  // to a different unit re-arms the button instead of carrying a stale
-  // confirmation forward.
-  const [orgInviteSentFor, setOrgInviteSentFor] = useState<string | null>(null);
-  const [showOverCapacityConfirm, setShowOverCapacityConfirm] = useState(false);
-  const inviteToOrgMutation = useCheckInInviteToOrganization(
-    selection.orgUnitId,
-  );
-  const addToShiftMutation = useCheckInAddToShiftInstance(selection.orgUnitId);
-  const approveMembershipMutation = useCheckInApproveMembershipRequest(
-    selection.orgUnitId,
-  );
-
-  const handleInviteToOrg = async () => {
-    try {
-      await inviteToOrgMutation.mutateAsync(checkInId);
-      setOrgInviteSentFor(selection.orgUnitId);
-    } catch {
-      toast.error(t('notMemberError'));
-    }
-  };
-
-  const handleAcceptMembership = async () => {
-    const requestId = readiness?.membershipRequest?.id;
-    if (!requestId) return;
-    try {
-      await approveMembershipMutation.mutateAsync(requestId);
-    } catch {
-      toast.error(t('acceptMembershipError'));
-    }
-  };
-
-  const addToShift = async (allowOverCapacity: boolean) => {
-    if (!selection.shiftInstanceId) return;
-    try {
-      await addToShiftMutation.mutateAsync({
-        checkInId,
-        shiftInstanceId: selection.shiftInstanceId,
-        allowOverCapacity,
-      });
-    } catch {
-      toast.error(t('addToShiftError'));
-    }
-  };
-
-  // A full assignment needs an explicit "add anyway" before going over
-  // capacity; with a free seat the volunteer is added straight away.
-  const handleAddToShift = () => {
-    if (readiness?.shiftHasAvailableSeat) {
-      void addToShift(false);
-    } else {
-      setShowOverCapacityConfirm(true);
-    }
-  };
+  const actions = useCheckInReadinessActions({
+    checkInId,
+    orgUnitId: selection.orgUnitId,
+    shiftInstanceId: selection.shiftInstanceId,
+    membershipRequestId: membershipRequest?.id ?? null,
+    shiftHasAvailableSeat: readiness?.shiftHasAvailableSeat ?? false,
+  });
 
   const unitName =
     orgUnits.find((unit) => unit.id === selection.orgUnitId)?.name ?? '';
-  // A pending request may target an ancestor of the selected unit.
-  const requestUnitName =
-    readiness?.membershipRequest?.organizationUnitName ?? unitName;
   const profileHref =
     readiness?.canViewVolunteerProfile && volunteer
-      ? volunteerProfileHref(selection.orgUnitId, volunteer.id)
+      ? pendingVolunteerProfileHref(selection.orgUnitId, volunteer.id)
       : null;
 
   const [showUnverifiedConfirm, setShowUnverifiedConfirm] = useState(false);
@@ -305,76 +163,13 @@ export function ManualCheckInPage({
   // Holds back the green ready banner when a side-check (agreement/ID) is still open.
   const hasOutstandingReadyCheck = !!agreementTrigger || showIdVerification;
 
-  const [isSubmitPending, startSubmitTransition] = useTransition();
-
-  const handleSubmit = () => {
-    // `ready` implies membership, so the volunteer is related and known; the
-    // guard covers the poll gap before the context catches up.
-    if (!volunteer) return;
-    const startedAt = startTime
-      ? applyTimeToDate(selection.date ?? new Date(), startTime)
-      : null;
-    if (!startedAt || Number.isNaN(startedAt.getTime())) {
-      setStartTimeError(t('startTimeInvalid'));
-      return;
-    }
-
-    // Ended shifts are listed and the start defaults to now, so a start past
-    // the shift end is easy to hit. The backend rejects it; say so up front.
-    if (selection.selectedInstance) {
-      const shiftEnd = new Date(selection.selectedInstance.actualEndsAt);
-      if (startedAt.getTime() > shiftEnd.getTime()) {
-        setStartTimeError(
-          tValidation('startAfterShiftEnd', {
-            end: formatTimeRelativeToStart(shiftEnd, startedAt),
-          }),
-        );
-        return;
-      }
-    }
-    setStartTimeError(null);
-
-    startSubmitTransition(async () => {
-      const result = await checkInVolunteer({
-        organizationUnitId: selection.orgUnitId,
-        volunteerId: volunteer.id,
-        shiftInstanceId: selection.shiftInstanceId,
-        startedAt,
-      });
-
-      if (result?.serverError) {
-        toast.error(result.serverError);
-        await queryClient.invalidateQueries({
-          queryKey: ['check-in-readiness'],
-        });
-        return;
-      }
-
-      const startsAt = selection.selectedInstance
-        ? new Date(selection.selectedInstance.actualStartsAt)
-        : null;
-      const isToday =
-        !!startsAt && startsAt.toDateString() === new Date().toDateString();
-
-      setCheckInSuccessPayload({
-        volunteerName: volunteer.name,
-        volunteerImage: volunteer.image ?? null,
-        shiftTitle: selection.selectedInstance?.title ?? null,
-        timeRange: selection.selectedInstance
-          ? formatTimeRange(
-              selection.selectedInstance.actualStartsAt,
-              selection.selectedInstance.actualEndsAt,
-            )
-          : null,
-        dateLabel: startsAt
-          ? isToday
-            ? t('today')
-            : formatDate(startsAt)
-          : null,
-      });
-      router.push('/check-in');
-    });
-  };
+  const {
+    startTime,
+    changeStartTime,
+    startTimeError,
+    submit,
+    isSubmitPending,
+  } = useCheckInSubmit({ selection, volunteer });
 
   return (
     <Card>
@@ -405,18 +200,11 @@ export function ManualCheckInPage({
           }}
           onOpenShift={() => setOpenSheet('shift')}
           startTime={startTime}
-          onStartTimeChange={(value) => {
-            setStartTime(value);
-            setStartTimeError(null);
-          }}
+          onStartTimeChange={changeStartTime}
           startTimeError={startTimeError}
         />
 
-        {volunteer ? (
-          <UserCard user={volunteer} size="lg" hideEmail />
-        ) : (
-          <UnrelatedVolunteerCard />
-        )}
+        <CheckInVolunteerIdentity volunteer={volunteer} />
 
         {showShiftlessWarning && <CheckInWithoutShiftWarningCard />}
 
@@ -429,51 +217,28 @@ export function ManualCheckInPage({
               unitName={unitName}
               volunteerName={volunteer?.name ?? null}
               membershipRequest={
-                readiness?.membershipRequest
-                  ? {
-                      organizationUnitName: requestUnitName,
-                      canAccept: canAcceptMembershipRequest,
-                    }
-                  : null
+                membershipRequest && {
+                  // A pending request may target an ancestor of the
+                  // selected unit.
+                  organizationUnitName:
+                    membershipRequest.organizationUnitName ?? unitName,
+                  canAccept: membershipRequest.canAccept,
+                }
               }
               missingFormCount={missingFormCount}
               profileHref={profileHref}
-              onInviteToOrg={handleInviteToOrg}
-              isInviteToOrgPending={inviteToOrgMutation.isPending}
-              isInviteToOrgSent={orgInviteSentFor === selection.orgUnitId}
-              onAcceptMembership={handleAcceptMembership}
-              isAcceptMembershipPending={approveMembershipMutation.isPending}
-              onAddToShift={handleAddToShift}
-              isAddToShiftPending={addToShiftMutation.isPending}
+              onInviteToOrg={actions.inviteToOrg}
+              isInviteToOrgPending={actions.isInviteToOrgPending}
+              isInviteToOrgSent={actions.isInviteToOrgSent}
+              onAcceptMembership={actions.acceptMembership}
+              isAcceptMembershipPending={actions.isAcceptMembershipPending}
+              onAddToShift={actions.requestAddToShift}
+              isAddToShiftPending={actions.isAddToShiftPending}
             />
           )}
 
-        {pollWindow.expired && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              pollWindow.restart();
-              // Refresh now rather than one interval after the restart.
-              void queryClient.invalidateQueries({
-                queryKey: ['check-in-context', checkInId],
-              });
-              void queryClient.invalidateQueries({
-                queryKey: [
-                  'check-in-readiness',
-                  selection.orgUnitId,
-                  checkInId,
-                ],
-              });
-              void queryClient.invalidateQueries({
-                queryKey: [
-                  'check-in-required-forms',
-                  selection.orgUnitId,
-                  checkInId,
-                ],
-              });
-            }}
-          >
+        {isPollExpired && (
+          <Button type="button" variant="outline" onClick={refresh}>
             {t('pollExpiredButton')}
           </Button>
         )}
@@ -517,7 +282,7 @@ export function ManualCheckInPage({
               }
               className="w-full"
               disabled={isSubmitPending || !volunteer}
-              onClick={handleSubmit}
+              onClick={submit}
             >
               {t('checkInButton')}
             </Button>
@@ -528,21 +293,16 @@ export function ManualCheckInPage({
           onOpenChange={setShowUnverifiedConfirm}
           onConfirm={() => {
             setShowUnverifiedConfirm(false);
-            handleSubmit();
+            submit();
           }}
           isPending={isSubmitPending}
         />
 
         {volunteer && (
           <AddToShiftOverCapacityDialog
-            open={showOverCapacityConfirm}
-            onOpenChange={setShowOverCapacityConfirm}
+            {...actions.overCapacityConfirm}
             volunteerName={volunteer.name}
-            onConfirm={() => {
-              setShowOverCapacityConfirm(false);
-              void addToShift(true);
-            }}
-            isPending={addToShiftMutation.isPending}
+            isPending={actions.isAddToShiftPending}
           />
         )}
 

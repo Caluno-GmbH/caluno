@@ -4,9 +4,9 @@ import {
   checkOutPath,
   extractCheckInPath,
   parseShiftListQuery,
+  pendingVolunteerProfileHref,
   shiftDetailPath,
   shiftInvitePath,
-  volunteerProfileHref,
 } from '../routes';
 
 describe('checkInPath', () => {
@@ -136,15 +136,15 @@ describe('shiftInvitePath', () => {
   });
 });
 
-describe('volunteerProfileHref', () => {
+describe('pendingVolunteerProfileHref', () => {
   it('links to the pending volunteers sheet for the user', () => {
-    expect(volunteerProfileHref('u1', 'x')).toBe(
+    expect(pendingVolunteerProfileHref('u1', 'x')).toBe(
       '/admin/u1/volunteers?status=PENDING&sheet=volunteer-profile&userId=x',
     );
   });
 
   it('encodes the orgUId and userId', () => {
-    expect(volunteerProfileHref('a b', 'c&d')).toBe(
+    expect(pendingVolunteerProfileHref('a b', 'c&d')).toBe(
       '/admin/a%20b/volunteers?status=PENDING&sheet=volunteer-profile&userId=c%26d',
     );
   });

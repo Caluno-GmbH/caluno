@@ -25,7 +25,14 @@ export function checkOutPath(
   return `/check-in/${checkInId}/check-out?entryId=${encodeURIComponent(entryId)}${query ? `&${query}` : ''}`;
 }
 
-export function volunteerProfileHref(orgUId: string, userId: string): string {
+/**
+ * The volunteer's profile sheet on the pending membership requests tab of the
+ * volunteers list.
+ */
+export function pendingVolunteerProfileHref(
+  orgUId: string,
+  userId: string,
+): string {
   return `/admin/${encodeURIComponent(orgUId)}/volunteers?status=PENDING&sheet=volunteer-profile&userId=${encodeURIComponent(userId)}`;
 }
 
