@@ -2835,7 +2835,8 @@
     "button": "Exportieren",
     "dialogTitle": "Spalten exportieren",
     "dialogDescription": "Wähle die Spalten aus, die in den CSV-Export aufgenommen werden sollen.",
-    "includeTechnicalIds": "Technische IDs einbeziehen",
+    "includeTechnicalIds": "Technische IDs",
+    "includeTechnicalIdsDescription": "Interne ID-Spalten ergänzen, um Datensätze in anderen Systemen zuzuordnen",
     "exportAction": "Exportieren",
     "cancel": "Abbrechen",
     "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut.",
@@ -2869,6 +2870,37 @@
         "location": "Ort",
         "visibility": "Sichtbarkeit",
         "staffing": "Besetzung"
+      }
+    },
+    "descriptions": {
+      "timesheets": {
+        "volunteerName": "Die Person, die die Zeit geleistet hat",
+        "volunteerEmail": "Ihre E-Mail-Adresse zum Kontakt",
+        "shift": "Der Einsatz, zu dem die Zeit gehört",
+        "assignment": "Die zugeteilte Rolle oder Aufgabe",
+        "location": "Wo die Zeit geleistet wurde",
+        "startedAt": "Datum und Uhrzeit des Eincheckens",
+        "endedAt": "Datum und Uhrzeit des Auscheckens",
+        "duration": "Geleistete Gesamtzeit in Minuten",
+        "status": "Aktueller Status des Eintrags",
+        "createdBy": "Wer diesen Eintrag erfasst hat",
+        "notes": "Notizen zum Eintrag"
+      },
+      "users": {
+        "name": "Vollständiger Name der Person",
+        "email": "Haupt-E-Mail-Adresse zum Kontakt",
+        "roles": "Rollen in dieser Organisation",
+        "dateOfBirth": "Geburtsdatum, falls angegeben",
+        "gender": "Geschlecht, falls angegeben",
+        "phone": "Telefonnummer, falls angegeben",
+        "address": "Postanschrift, falls angegeben"
+      },
+      "shifts": {
+        "title": "Name des Einsatzes",
+        "date": "Wann der Einsatz stattfindet",
+        "location": "Wo der Einsatz stattfindet",
+        "visibility": "Wer sie sehen und sich eintragen kann",
+        "staffing": "Besetzte und benötigte Plätze"
       }
     },
     "log": {

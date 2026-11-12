@@ -24,5 +24,6 @@ export function useTimesheetExportColumns(): ExportColumnOption[] {
   return COLUMN_META.map((col) => ({
     ...col,
     label: t(`columns.timesheets.${col.id}`),
+    description: t(`descriptions.timesheets.${col.id}`),
   }));
 }

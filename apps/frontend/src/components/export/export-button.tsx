@@ -5,6 +5,7 @@ import { useExportTableCsv, useHasPermission } from '@repo/data/react';
 import {
   Button,
   Checkbox,
+  cn,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -13,8 +14,8 @@ import {
   DialogTitle,
   DialogTrigger,
   Label,
-  Switch,
 } from '@repo/ui';
+import { DownloadIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -103,7 +104,8 @@ export function ExportButton({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled}>
+        <Button variant="outline" disabled={disabled}>
+          <DownloadIcon className="size-4" />
           {t('button')}
         </Button>
       </DialogTrigger>
@@ -113,36 +115,29 @@ export function ExportButton({
           <DialogDescription>{t('dialogDescription')}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 py-2">
-          {columns.map((col) => {
-            const checkboxId = `export-col-${col.id}`;
-            const isChecked = !col.optional || checkedOptional.includes(col.id);
-            return (
-              <div key={col.id} className="flex items-center gap-2">
-                <Checkbox
-                  id={checkboxId}
-                  checked={isChecked}
-                  disabled={!col.optional}
-                  onCheckedChange={(checked) =>
-                    col.optional && toggleOptional(col.id, checked === true)
-                  }
-                />
-                <Label htmlFor={checkboxId} className="text-sm font-normal">
-                  {col.label}
-                </Label>
-              </div>
-            );
-          })}
+        <div className="-m-1 max-h-[55vh] overflow-y-auto p-1">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+            {columns.map((col) => (
+              <ColumnCheckbox
+                key={col.id}
+                id={`export-col-${col.id}`}
+                label={col.label}
+                description={col.description}
+                checked={!col.optional || checkedOptional.includes(col.id)}
+                disabled={!col.optional}
+                onCheckedChange={(checked) =>
+                  col.optional && toggleOptional(col.id, checked)
+                }
+              />
+            ))}
 
-          <div className="flex items-center gap-2 pt-2">
-            <Switch
-              id="export-include-ids"
+            <ColumnCheckbox
+              id="export-col-technical-ids"
+              label={t('includeTechnicalIds')}
+              description={t('includeTechnicalIdsDescription')}
               checked={includeTechnicalIds}
               onCheckedChange={setIncludeTechnicalIds}
             />
-            <Label htmlFor="export-include-ids" className="text-sm font-normal">
-              {t('includeTechnicalIds')}
-            </Label>
           </div>
         </div>
 
@@ -159,5 +154,50 @@ export function ExportButton({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface ColumnCheckboxProps {
+  id: string;
+  label: string;
+  description?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onCheckedChange: (checked: boolean) => void;
+}
+
+function ColumnCheckbox({
+  id,
+  label,
+  description,
+  checked,
+  disabled,
+  onCheckedChange,
+}: ColumnCheckboxProps) {
+  const descriptionId = description ? `${id}-description` : undefined;
+  return (
+    <div className="flex items-start gap-2.5">
+      <Checkbox
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        aria-describedby={descriptionId}
+        className="mt-0.5"
+        onCheckedChange={(next) => onCheckedChange(next === true)}
+      />
+      <div className={cn('grid gap-0.5', disabled && 'opacity-50')}>
+        <Label htmlFor={id} className="text-sm font-normal leading-snug">
+          {label}
+        </Label>
+        {description ? (
+          <p
+            id={descriptionId}
+            className="text-muted-foreground text-xs leading-snug"
+          >
+            {description}
+          </p>
+        ) : null}
+      </div>
+    </div>
   );
 }

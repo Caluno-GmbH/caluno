@@ -2835,7 +2835,8 @@
     "button": "Export",
     "dialogTitle": "Export columns",
     "dialogDescription": "Select the columns to include in the CSV export.",
-    "includeTechnicalIds": "Include technical IDs",
+    "includeTechnicalIds": "Technical IDs",
+    "includeTechnicalIdsDescription": "Add internal ID columns to match records in other systems",
     "exportAction": "Export",
     "cancel": "Cancel",
     "exportFailed": "Export failed. Please try again.",
@@ -2869,6 +2870,37 @@
         "location": "Location",
         "visibility": "Visibility",
         "staffing": "Staffing"
+      }
+    },
+    "descriptions": {
+      "timesheets": {
+        "volunteerName": "The volunteer who did the work",
+        "volunteerEmail": "Their contact email address",
+        "shift": "The appointment the time belongs to",
+        "assignment": "The role or task worked",
+        "location": "Where the time was worked",
+        "startedAt": "Check-in date and time",
+        "endedAt": "Check-out date and time",
+        "duration": "Total time worked, in minutes",
+        "status": "Current state of the entry",
+        "createdBy": "Who recorded this entry",
+        "notes": "Any notes added to the entry"
+      },
+      "users": {
+        "name": "The volunteer's full name",
+        "email": "Primary contact email",
+        "roles": "Roles held in this organisation",
+        "dateOfBirth": "Date of birth, if provided",
+        "gender": "Gender, if provided",
+        "phone": "Phone number, if provided",
+        "address": "Postal address, if provided"
+      },
+      "shifts": {
+        "title": "Name of the shift",
+        "date": "When the shift takes place",
+        "location": "Where the shift takes place",
+        "visibility": "Who can see and sign up for it",
+        "staffing": "Filled versus needed spots"
       }
     },
     "log": {

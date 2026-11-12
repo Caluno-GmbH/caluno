@@ -5,8 +5,8 @@ type ColumnMeta = Omit<ExportColumnOption, 'label'>;
 
 const COLUMN_META: ColumnMeta[] = [
   { id: 'name', optional: false, defaultOn: true },
-  { id: 'email', optional: false, defaultOn: true },
-  { id: 'roles', optional: false, defaultOn: true },
+  { id: 'email', optional: true, defaultOn: true },
+  { id: 'roles', optional: true, defaultOn: true },
   { id: 'dateOfBirth', optional: true, defaultOn: false },
   { id: 'gender', optional: true, defaultOn: false },
   { id: 'phone', optional: true, defaultOn: false },
@@ -20,5 +20,6 @@ export function useVolunteerExportColumns(): ExportColumnOption[] {
   return COLUMN_META.map((col) => ({
     ...col,
     label: t(`columns.users.${col.id}`),
+    description: t(`descriptions.users.${col.id}`),
   }));
 }

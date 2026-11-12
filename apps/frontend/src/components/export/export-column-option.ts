@@ -1,6 +1,7 @@
 export type ExportColumnOption = {
   id: string;
   label: string;
+  description?: string;
   defaultOn: boolean;
   optional: boolean;
 };

@@ -18,5 +18,6 @@ export function useShiftExportColumns(): ExportColumnOption[] {
   return COLUMN_META.map((col) => ({
     ...col,
     label: t(`columns.shifts.${col.id}`),
+    description: t(`descriptions.shifts.${col.id}`),
   }));
 }
