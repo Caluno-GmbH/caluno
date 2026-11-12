@@ -2,10 +2,16 @@ import type { ExportColumnOption } from './export-column-option';
 
 export const EXTENDED_USER_GROUP = 'extendedUserInfo';
 
-export type ExtendedUserFieldKey = 'dateOfBirth' | 'gender' | 'phone' | 'address';
+export type ExtendedUserFieldKey =
+  | 'dateOfBirth'
+  | 'gender'
+  | 'phone'
+  | 'address';
 
 const EXTENDED_USER_FIELDS: Array<
-  Omit<ExportColumnOption, 'label' | 'description'> & { profileKey: ExtendedUserFieldKey }
+  Omit<ExportColumnOption, 'label' | 'description'> & {
+    profileKey: ExtendedUserFieldKey;
+  }
 > = [
   {
     id: 'volunteerDateOfBirth',
@@ -39,6 +45,12 @@ const EXTENDED_USER_FIELDS: Array<
 
 export function extendedUserColumnMetas(
   alreadyPresent: ReadonlySet<ExtendedUserFieldKey>,
-): Array<Omit<ExportColumnOption, 'label' | 'description'> & { profileKey: ExtendedUserFieldKey }> {
-  return EXTENDED_USER_FIELDS.filter((field) => !alreadyPresent.has(field.profileKey));
+): Array<
+  Omit<ExportColumnOption, 'label' | 'description'> & {
+    profileKey: ExtendedUserFieldKey;
+  }
+> {
+  return EXTENDED_USER_FIELDS.filter(
+    (field) => !alreadyPresent.has(field.profileKey),
+  );
 }

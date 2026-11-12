@@ -1,10 +1,16 @@
-import { describe, expect, it } from 'bun:test';
-import { EXTENDED_USER_GROUP, extendedUserColumnMetas } from './extended-user-columns';
+import { expect, it } from 'bun:test';
+import {
+  EXTENDED_USER_GROUP,
+  extendedUserColumnMetas,
+} from './extended-user-columns';
 
 it('offers all four volunteer profile fields when none are already present', () => {
   const metas = extendedUserColumnMetas(new Set());
   expect(metas.map((m) => m.id)).toEqual([
-    'volunteerDateOfBirth', 'volunteerGender', 'volunteerPhone', 'volunteerAddress',
+    'volunteerDateOfBirth',
+    'volunteerGender',
+    'volunteerPhone',
+    'volunteerAddress',
   ]);
   for (const m of metas) {
     expect(m.optional).toBe(true);
@@ -16,5 +22,9 @@ it('offers all four volunteer profile fields when none are already present', () 
 it('drops a field the table already exposes', () => {
   const metas = extendedUserColumnMetas(new Set(['phone']));
   expect(metas.map((m) => m.id)).not.toContain('volunteerPhone');
-  expect(metas.map((m) => m.profileKey)).toEqual(['dateOfBirth', 'gender', 'address']);
+  expect(metas.map((m) => m.profileKey)).toEqual([
+    'dateOfBirth',
+    'gender',
+    'address',
+  ]);
 });

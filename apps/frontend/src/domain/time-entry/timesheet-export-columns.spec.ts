@@ -41,9 +41,14 @@ describe('TIMESHEET_EXPORT_COLUMNS', () => {
   });
 
   it('marks extended-group columns optional, default-off, grouped', () => {
-    const group = TIMESHEET_EXPORT_COLUMNS.filter((c) => c.group === 'extendedUserInfo');
+    const group = TIMESHEET_EXPORT_COLUMNS.filter(
+      (c) => c.group === 'extendedUserInfo',
+    );
     expect(group.map((c) => c.id)).toEqual([
-      'volunteerDateOfBirth', 'volunteerGender', 'volunteerPhone', 'volunteerAddress',
+      'volunteerDateOfBirth',
+      'volunteerGender',
+      'volunteerPhone',
+      'volunteerAddress',
     ]);
     for (const col of group) {
       expect(col.optional).toBe(true);
