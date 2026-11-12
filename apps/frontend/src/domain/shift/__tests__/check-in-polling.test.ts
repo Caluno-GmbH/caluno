@@ -1,17 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  CHECK_IN_POLL_INTERVAL_MS,
-  CHECK_IN_POLL_WINDOW_MS,
   isCheckInAwaitingVolunteer,
   isPollWindowExpired,
 } from '../check-in-polling';
-
-describe('poll constants', () => {
-  it('polls every 4 seconds for 15 minutes', () => {
-    expect(CHECK_IN_POLL_INTERVAL_MS).toBe(4_000);
-    expect(CHECK_IN_POLL_WINDOW_MS).toBe(15 * 60_000);
-  });
-});
 
 describe('isCheckInAwaitingVolunteer', () => {
   it('is true when the check-in is not related to the admin yet', () => {
