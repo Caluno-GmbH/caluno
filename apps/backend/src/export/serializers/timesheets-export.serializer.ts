@@ -4,6 +4,10 @@ export interface TimesheetExportRow {
   id: string;
   volunteerName: string | null | undefined;
   volunteerEmail: string | null | undefined;
+  volunteerDateOfBirth: Date | null;
+  volunteerGender: string | null | undefined;
+  volunteerPhone: string | null | undefined;
+  volunteerAddress: string | null | undefined;
   shift: string | null | undefined;
   assignment: string | null | undefined;
   location: string | null | undefined;
@@ -23,6 +27,10 @@ type ColumnDef = {
 const COLUMN_DEFS: Record<string, ColumnDef> = {
   volunteerName: { label: 'Volunteer Name', get: (r) => r.volunteerName },
   volunteerEmail: { label: 'Volunteer Email', get: (r) => r.volunteerEmail },
+  volunteerDateOfBirth: { label: 'Volunteer Date of Birth', get: (r) => formatBerlinDateTime(r.volunteerDateOfBirth) },
+  volunteerGender: { label: 'Volunteer Gender', get: (r) => r.volunteerGender },
+  volunteerPhone: { label: 'Volunteer Phone', get: (r) => r.volunteerPhone },
+  volunteerAddress: { label: 'Volunteer Address', get: (r) => r.volunteerAddress },
   shift: { label: 'Shift', get: (r) => r.shift },
   assignment: { label: 'Assignment', get: (r) => r.assignment },
   location: { label: 'Location', get: (r) => r.location },

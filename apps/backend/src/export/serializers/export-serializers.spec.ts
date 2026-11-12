@@ -23,6 +23,10 @@ describe('serializeTimesheetExport', () => {
     id: 'ts-1',
     volunteerName: 'Jane Doe',
     volunteerEmail: 'jane@example.com',
+    volunteerDateOfBirth: BERLIN_DATE,
+    volunteerGender: 'female',
+    volunteerPhone: '+49170000',
+    volunteerAddress: 'Hauptstr. 1, 20095 Hamburg',
     shift: 'Morning Shift',
     assignment: 'Reception',
     location: 'Main Hall',
@@ -64,8 +68,29 @@ describe('serializeTimesheetExport', () => {
     const csv = serializeTimesheetExport([baseRow], TIMESHEET_COLUMNS, false);
     const lines = csv.split('\r\n').filter(Boolean);
     expect(lines[0]).toBe(
-      'Volunteer Name,Volunteer Email,Shift,Assignment,Location,Started At,Ended At,Duration (min),Status,Created By,Notes',
+      'Volunteer Name,Volunteer Email,Volunteer Date of Birth,Volunteer Gender,Volunteer Phone,Volunteer Address,Shift,Assignment,Location,Started At,Ended At,Duration (min),Status,Created By,Notes',
     );
+  });
+
+  it('renders selected volunteer profile columns with Volunteer-prefixed labels', () => {
+    const csv = serializeTimesheetExport(
+      [baseRow],
+      ['volunteerName', 'volunteerDateOfBirth', 'volunteerGender', 'volunteerPhone', 'volunteerAddress'],
+      false,
+    );
+    const lines = csv.split('\r\n').filter(Boolean);
+    expect(lines[0]).toBe(
+      'Volunteer Name,Volunteer Date of Birth,Volunteer Gender,Volunteer Phone,Volunteer Address',
+    );
+    // DOB in Berlin time (UTC+1), phone guarded against formula injection
+    expect(lines[1]).toBe("Jane Doe,15.01.2024 11:30,female,'+49170000,\"Hauptstr. 1, 20095 Hamburg\"");
+  });
+
+  it('renders empty cells for a volunteer with no profile data', () => {
+    const row = { ...baseRow, volunteerDateOfBirth: null, volunteerGender: null, volunteerPhone: null, volunteerAddress: null };
+    const csv = serializeTimesheetExport([row], ['volunteerDateOfBirth', 'volunteerPhone', 'volunteerAddress'], false);
+    const lines = csv.split('\r\n').filter(Boolean);
+    expect(lines[1]).toBe(',,');
   });
 });
 
