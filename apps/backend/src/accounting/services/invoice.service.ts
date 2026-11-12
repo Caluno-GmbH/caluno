@@ -510,10 +510,9 @@ export class InvoiceService {
    * `isNonCompliant` is only the state at creation and never follows a
    * contract being signed later.
    *
-   * Hours are matched in the invoice's own volunteer and reimbursement type,
-   * and in its unit (an org-wide invoice falls back to the claimed entry's
-   * unit). Released claims are ignored. An invoice with no claimed hours is
-   * not flagged.
+   * Hours are matched in the invoice's own volunteer, reimbursement type, and
+   * unit. Released claims are ignored. An invoice with no claimed hours is not
+   * flagged.
    */
   async findInvoiceIdsWithoutActiveCover(
     invoiceIds: readonly string[],
@@ -542,11 +541,8 @@ export class InvoiceService {
           key,
           volunteerId: invoice.volunteerId,
           reimbursementTypeId: invoice.reimbursementTypeId,
-          // The invoice's unit is the document's scope and wins. Eligibility
-          // makes it equal to the entry's unit today (the root unit for an
-          // org-wide invoice), so this does not depend on that rule holding.
-          organizationUnitId:
-            invoice.organizationUnitId ?? entry.organizationUnitId,
+          // The invoice's unit is the document's scope and wins.
+          organizationUnitId: invoice.organizationUnitId,
           at: entry.startedAt,
         });
       }
@@ -595,13 +591,13 @@ export class InvoiceService {
     // exclusive in the database rather than by reasoning about dates.
     // Hours are also unit-scoped: eligibility uses the invoice's
     // organization unit.
-    const eligibilityUnitId =
+    const organizationUnitId =
       input.organizationUnitId ??
       (await this.organizationService.requireRootUnit(organizationId)).id;
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
       input.reimbursementTypeId,
-      eligibilityUnitId,
+      organizationUnitId,
       input.periodStart,
       input.periodEnd,
     );
@@ -631,7 +627,7 @@ export class InvoiceService {
       input.hourlyRateCents ??
       (await this.reimbursementRateService.getEffectiveRateCents(
         organizationId,
-        input.organizationUnitId,
+        organizationUnitId,
         input.reimbursementTypeId,
       ));
     if (!Number.isInteger(rateCents) || rateCents <= 0) {
@@ -645,7 +641,7 @@ export class InvoiceService {
       organizationId,
       input.reimbursementTypeId,
       DocumentKind.INVOICE,
-      input.organizationUnitId,
+      organizationUnitId,
     );
     const orderedSignees =
       await this.documentTemplateService.findOrderedTemplateSignees(
@@ -659,7 +655,7 @@ export class InvoiceService {
     const missingOrg =
       await this.documentProfileRequirementService.missingOrgProfileSources(
         organizationId,
-        input.organizationUnitId,
+        organizationUnitId,
         template.body,
       );
     if (missingOrg.length > 0) {
@@ -701,7 +697,7 @@ export class InvoiceService {
       await this.contractService.ensureDraftContract(
         organizationId,
         {
-          organizationUnitId: input.organizationUnitId,
+          organizationUnitId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
           anchorDate: entry.startedAt,
@@ -711,12 +707,8 @@ export class InvoiceService {
     }
 
     const fieldOverrides = toFieldOverridesMap(input.fieldOverrides);
-    // An org-wide template leaves `organizationUnitId` null, but the number
-    // still has to be unique within the body issuing it — so the series belongs
-    // to the unit if there is one, and to the organisation's root unit if not.
-    const documentNumberScopeUnitId =
-      input.organizationUnitId ??
-      (await this.organizationService.requireRootUnit(organizationId)).id;
+    // Document number series is scoped to the same unit the timesheet belongs to.
+    const documentNumberScopeUnitId = organizationUnitId;
     // The series restarts each January, so a document's year is part of which
     // counter it draws from. Taken from the period the timesheet covers rather
     // than from today, so a January document issued in February still belongs
@@ -747,7 +739,7 @@ export class InvoiceService {
           documentTemplateId: template.id,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
-          organizationUnitId: input.organizationUnitId,
+          organizationUnitId,
           invoiceStatus: this.nextInvoiceStatus(orderedSignees[0].signeeType),
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
@@ -848,7 +840,7 @@ export class InvoiceService {
       properties: {
         surface: POSTHOG_SURFACE.BACKOFFICE,
         organization_id: organizationId,
-        organization_unit_id: input.organizationUnitId ?? undefined,
+        organization_unit_id: organizationUnitId,
       },
     });
 
@@ -869,7 +861,7 @@ export class InvoiceService {
   async signInvoice(
     invoiceId: string,
     userId: string,
-    organizationUnitId: string,
+    _organizationUnitId: string,
   ): Promise<InvoiceEntity> {
     const invoice = await this.findInvoice(invoiceId);
     this.documentSigningService.assertAwaitingSignature(invoice.invoiceStatus, [
@@ -891,7 +883,7 @@ export class InvoiceService {
       invoice.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      organizationUnitId,
+      invoice.organizationUnitId,
     );
 
     // The volunteer's own signature is the first step of the chain. Require
@@ -998,7 +990,7 @@ export class InvoiceService {
     invoiceId: string,
     userId: string,
     reason: string,
-    organizationUnitId: string,
+    _organizationUnitId: string,
   ): Promise<InvoiceEntity> {
     this.documentSigningService.assertReason(reason);
     const invoice = await this.findInvoice(invoiceId);
@@ -1021,7 +1013,7 @@ export class InvoiceService {
       invoice.volunteerId,
       pending.signeeType,
       pending.requiredPermissionId,
-      organizationUnitId,
+      invoice.organizationUnitId,
     );
 
     const updated = await this.db.transaction(async (tx) => {
