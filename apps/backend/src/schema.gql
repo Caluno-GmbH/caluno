@@ -413,6 +413,35 @@ type EventPaginatedResponse {
   pagination: PaginationInfo!
 }
 
+type ExportFile {
+  content: String!
+  filename: String!
+}
+
+type ExportLogEntry {
+  actorName: String!
+  columns: [String!]!
+  id: ID!
+  includedTechnicalIds: Boolean!
+  occurredAt: DateTime!
+  rowCount: Int!
+  subjectUserIds: [ID!]!
+  tableKind: ExportTable!
+}
+
+enum ExportTable {
+  SHIFTS
+  TIMESHEETS
+  USERS
+}
+
+input ExportTableInput {
+  columns: [String!]!
+  includeTechnicalIds: Boolean!
+  rowIds: [ID!]!
+  tableKind: ExportTable!
+}
+
 enum FieldType {
   CHECKBOX
   DATE
@@ -678,35 +707,6 @@ enum MembershipRequestStatus {
   CANCELLED
   PENDING
   REJECTED
-}
-
-enum ExportTable {
-  TIMESHEETS
-  USERS
-  SHIFTS
-}
-
-type ExportFile {
-  filename: String!
-  content: String!
-}
-
-type ExportLogEntry {
-  id: ID!
-  actorName: String!
-  tableKind: ExportTable!
-  columns: [String!]!
-  includedTechnicalIds: Boolean!
-  rowCount: Int!
-  subjectUserIds: [ID!]!
-  occurredAt: DateTime!
-}
-
-input ExportTableInput {
-  tableKind: ExportTable!
-  rowIds: [ID!]!
-  columns: [String!]!
-  includeTechnicalIds: Boolean!
 }
 
 type Mutation {
