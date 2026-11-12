@@ -88,6 +88,10 @@ export class MembershipService {
    * Undoes a claim from {@link claimOrganizationUnitInvitation} whose email
    * could not be dispatched, so a retry can send right away. Matches the
    * claim's own timestamp, so a newer claim is never released.
+   *
+   * Hard delete by design, an exception to the soft-delete rule: a row only
+   * records when the last email went out, so it carries no history worth
+   * keeping, and a soft-deleted row would still block the next claim's upsert.
    */
   async releaseOrganizationUnitInvitation(
     userId: string,

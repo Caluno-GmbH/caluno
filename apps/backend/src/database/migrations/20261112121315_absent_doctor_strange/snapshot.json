@@ -2,7 +2,7 @@
   "type": "diff",
   "version": "9",
   "dialect": "postgres",
-  "id": "747e8200-83e3-4a24-afd8-f51bcd8f0faf",
+  "id": "21b4ea30-2e54-4dae-b4c2-7cd36655563b",
   "prevIds": ["1e1dd933-911b-422a-aa57-b0cf31b9e31c"],
   "footprints": [
     {
@@ -14,7 +14,8 @@
         "e|tbl|public.organization_unit_invitations",
         "n|rel|public.organization_unit_invitations",
         "n|type|public.organization_unit_invitations",
-        "n|rel|public.organization_unit_invitations_pkey"
+        "n|rel|public.organization_unit_invitations_pkey",
+        "n|rel|public.uq_organization_unit_invitations_user_id_organization_unit_id"
       ],
       "reads": ["n|sch|public"]
     },
@@ -72,6 +73,22 @@
       "row": {
         "schema": "public",
         "table": "organization_unit_invitations",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
         "name": "user_id",
         "type": "text",
         "typeSchema": null,
@@ -120,6 +137,38 @@
       "row": {
         "schema": "public",
         "table": "organization_unit_invitations",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
         "name": "organization_unit_invitations_user_id_users_id_fkey",
         "nameExplicit": false,
         "columns": ["user_id"],
@@ -153,9 +202,21 @@
         "schema": "public",
         "table": "organization_unit_invitations",
         "name": "organization_unit_invitations_pkey",
-        "columns": ["user_id", "organization_unit_id"],
+        "columns": ["id"],
         "nameExplicit": false,
         "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "uq_organization_unit_invitations_user_id_organization_unit_id",
+        "nameExplicit": true,
+        "columns": ["user_id", "organization_unit_id"],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
       }
     }
   ]
