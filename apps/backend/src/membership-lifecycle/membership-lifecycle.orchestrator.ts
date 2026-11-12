@@ -8,6 +8,7 @@ import type {
   MembershipRequestMetadata,
 } from '../membership/schemas/membership-request.schema';
 import { OrganizationService } from '../organization/organization.service';
+import { TenantScopeService } from '../organization/tenant-scope.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
 import { SubmitFormInput } from '../requirement-profile/inputs/submit-form.input';
 import type { FormSubmissionEntity } from '../requirement-profile/schemas/form-submission.schema';
@@ -30,6 +31,7 @@ export class MembershipLifecycleOrchestrator {
     private readonly formSubmissionService: FormSubmissionService,
     private readonly requiredFormService: RequiredFormService,
     private readonly organizationService: OrganizationService,
+    private readonly tenantScopeService: TenantScopeService,
   ) {}
 
   async approveMembershipRequest(
@@ -69,19 +71,23 @@ export class MembershipLifecycleOrchestrator {
     contextUnitId: string,
     reviewerId: string,
   ): Promise<MembershipRequestEntity> {
-    const request = await this.membershipService.findCheckInApprovableRequest(
-      requestId,
+    const request =
+      await this.membershipService.findPendingVolunteerRequestById(requestId);
+    // A pending request to an ancestor counts for the selected unit; any other
+    // unit's request is reported as not found, so its id is not confirmed.
+    await this.tenantScopeService.assertResourceInAncestorScope(
       contextUnitId,
+      request.organizationUnitId,
+      'Membership request not found',
     );
 
-    const manageableUnits =
-      await this.organizationService.findUnitsWithPermission(
+    const canManageRequestUnit =
+      await this.organizationService.hasPermissionInUnit(
         reviewerId,
         PERMISSIONS.CHECK_IN_MANAGE,
+        request.organizationUnitId,
       );
-    if (
-      !manageableUnits.some((unit) => unit.id === request.organizationUnitId)
-    ) {
+    if (!canManageRequestUnit) {
       throw new ForbiddenGraphQLError(
         'Only a check-in manager of the requested unit can accept this request',
       );

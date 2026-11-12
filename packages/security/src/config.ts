@@ -101,6 +101,7 @@ export const config = {
      */
     scopeHelpers: [
       'assertResourceInScope',
+      'assertResourceInAncestorScope',
       'assertUserInScope',
       'assertOrganizationInScope',
     ],

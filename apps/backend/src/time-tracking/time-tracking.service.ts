@@ -926,15 +926,16 @@ export class TimeTrackingService {
     callerUserId: string,
     requestUnitId: string,
   ): Promise<{ canAccept: boolean; unitName: string | null }> {
-    const [requestUnit, manageableUnits] = await Promise.all([
+    const [requestUnit, canAccept] = await Promise.all([
       this.organizationUnitDataService.findById(requestUnitId),
-      this.organizationService.findUnitsWithPermission(
+      this.organizationService.hasPermissionInUnit(
         callerUserId,
         PERMISSIONS.CHECK_IN_MANAGE,
+        requestUnitId,
       ),
     ]);
     return {
-      canAccept: manageableUnits.some((unit) => unit.id === requestUnitId),
+      canAccept,
       unitName: requestUnit?.name ?? null,
     };
   }

@@ -431,6 +431,7 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     findUnitsWithPermission: jest
       .fn()
       .mockResolvedValue(viewableUnitIds.map((id) => ({ id }))),
+    hasPermissionInUnit: jest.fn().mockResolvedValue(false),
   });
   const organizationUnitDataService = () => ({
     listInclusiveAncestorUnitIds: jest.fn().mockResolvedValue(['ou-1']),
