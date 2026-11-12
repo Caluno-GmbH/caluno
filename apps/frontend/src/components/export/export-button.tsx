@@ -53,10 +53,19 @@ export function ExportButton({
     .filter((c) => c.optional && c.defaultOn)
     .map((c) => c.id);
 
+  const groupIds = [
+    ...new Set(columns.filter((c) => c.group).map((c) => c.group as string)),
+  ];
+  const defaultEnabledGroups = Object.fromEntries(
+    groupIds.map((id) => [id, false]),
+  );
+
   const [open, setOpen] = useState(false);
   const [checkedOptional, setCheckedOptional] =
     useState<string[]>(defaultChecked);
   const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);
+  const [enabledGroups, setEnabledGroups] =
+    useState<Record<string, boolean>>(defaultEnabledGroups);
 
   if (!hasPermission) return null;
 
@@ -70,15 +79,17 @@ export function ExportButton({
     if (next) {
       setCheckedOptional(defaultChecked);
       setIncludeTechnicalIds(false);
+      setEnabledGroups(defaultEnabledGroups);
     }
     setOpen(next);
   };
 
   const handleExport = async () => {
-    const resolvedColumns = resolveSelectedColumns(columns, [
-      ...columns.filter((c) => !c.optional).map((c) => c.id),
-      ...checkedOptional,
-    ]);
+    const resolvedColumns = resolveSelectedColumns(
+      columns,
+      checkedOptional,
+      enabledGroups,
+    );
     try {
       setResolvingIds(true);
       const ids = getRowIds ? await getRowIds() : (rowIds ?? []);
@@ -117,19 +128,21 @@ export function ExportButton({
 
         <div className="-m-1 max-h-[55vh] overflow-y-auto p-1">
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-            {columns.map((col) => (
-              <ColumnCheckbox
-                key={col.id}
-                id={`export-col-${col.id}`}
-                label={col.label}
-                description={col.description}
-                checked={!col.optional || checkedOptional.includes(col.id)}
-                disabled={!col.optional}
-                onCheckedChange={(checked) =>
-                  col.optional && toggleOptional(col.id, checked)
-                }
-              />
-            ))}
+            {columns
+              .filter((col) => !col.group)
+              .map((col) => (
+                <ColumnCheckbox
+                  key={col.id}
+                  id={`export-col-${col.id}`}
+                  label={col.label}
+                  description={col.description}
+                  checked={!col.optional || checkedOptional.includes(col.id)}
+                  disabled={!col.optional}
+                  onCheckedChange={(checked) =>
+                    col.optional && toggleOptional(col.id, checked)
+                  }
+                />
+              ))}
 
             <ColumnCheckbox
               id="export-col-technical-ids"
@@ -139,6 +152,40 @@ export function ExportButton({
               onCheckedChange={setIncludeTechnicalIds}
             />
           </div>
+
+          {groupIds.map((groupId) => (
+            <div key={groupId} className="mt-4 rounded-md border p-3">
+              <ColumnCheckbox
+                id={`export-group-${groupId}`}
+                label={t(`group.${groupId}`)}
+                description={t(`group.${groupId}Description`)}
+                checked={enabledGroups[groupId] ?? false}
+                onCheckedChange={(checked) =>
+                  setEnabledGroups((prev) => ({ ...prev, [groupId]: checked }))
+                }
+              />
+              <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-4 pl-7 sm:grid-cols-2">
+                {columns
+                  .filter((col) => col.group === groupId)
+                  .map((col) => (
+                    <ColumnCheckbox
+                      key={col.id}
+                      id={`export-col-${col.id}`}
+                      label={col.label}
+                      description={col.description}
+                      checked={
+                        Boolean(enabledGroups[groupId]) &&
+                        checkedOptional.includes(col.id)
+                      }
+                      disabled={!enabledGroups[groupId]}
+                      onCheckedChange={(checked) =>
+                        col.optional && toggleOptional(col.id, checked)
+                      }
+                    />
+                  ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         <DialogFooter>
