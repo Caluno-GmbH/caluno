@@ -21,12 +21,14 @@ type CheckInReadinessCardProps = {
    */
   volunteerName: string | null;
   /**
-   * The unit an open membership request targets — the selected unit or an
-   * ancestor of it. Names the pending-membership card.
+   * The open membership request, or `null` without one. Its unit is the
+   * selected unit or an ancestor of it and names the pending-membership card;
+   * `canAccept` is whether the caller manages that unit.
    */
-  requestUnitName: string;
-  /** Whether the caller manages the request's unit and may accept it. */
-  canAcceptMembershipRequest: boolean;
+  membershipRequest: {
+    organizationUnitName: string;
+    canAccept: boolean;
+  } | null;
   /** `null` while the required forms are unknown (loading or errored). */
   missingFormCount: number | null;
   profileHref: string | null;
@@ -44,8 +46,7 @@ export function CheckInReadinessCard({
   checkInId,
   unitName,
   volunteerName,
-  requestUnitName,
-  canAcceptMembershipRequest,
+  membershipRequest,
   missingFormCount,
   profileHref,
   onInviteToOrg,
@@ -95,6 +96,7 @@ export function CheckInReadinessCard({
   }
 
   if (state === 'pendingMembership') {
+    const requestUnitName = membershipRequest?.organizationUnitName ?? unitName;
     const title = volunteerName
       ? t('pendingMembershipTitleNamed', {
           name: volunteerName,
@@ -102,7 +104,7 @@ export function CheckInReadinessCard({
         })
       : t('pendingMembershipTitle', { unit: requestUnitName });
     const view = resolvePendingMembershipView({
-      canAcceptMembershipRequest,
+      canAccept: membershipRequest?.canAccept ?? false,
       missingFormCount,
     });
 

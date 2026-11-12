@@ -60,7 +60,9 @@ const CHECK_IN_READINESS = `
   query CheckInReadiness($checkInId: String!, $shiftInstanceId: ID!) {
     checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
-      openMembershipRequestId
+      membershipRequest {
+        id
+      }
       shiftInviteStatus
       isParticipating
     }
@@ -71,7 +73,9 @@ const CHECK_IN_READINESS_WITHOUT_SHIFT = `
   query CheckInReadinessWithoutShift($checkInId: String!, $shiftInstanceId: ID) {
     checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
-      openMembershipRequestId
+      membershipRequest {
+        id
+      }
       shiftInviteStatus
       isParticipating
     }
@@ -90,9 +94,11 @@ const CHECK_IN_READINESS_PROFILE = `
 const CHECK_IN_READINESS_REQUEST_UNIT = `
   query CheckInReadinessRequestUnit($checkInId: String!, $shiftInstanceId: ID) {
     checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
-      openMembershipRequestId
-      canAcceptMembershipRequest
-      membershipRequestOrganizationUnitName
+      membershipRequest {
+        id
+        canAccept
+        organizationUnitName
+      }
     }
   }
 `;
@@ -161,7 +167,7 @@ describe('checkInReadiness query', () => {
     const data = await graphqlRequestRequiringData<{
       checkInReadiness: {
         isMember: boolean;
-        openMembershipRequestId: string | null;
+        membershipRequest: { id: string } | null;
         shiftInviteStatus: string | null;
         isParticipating: boolean;
       };
@@ -180,7 +186,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: false,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: null,
       isParticipating: false,
     });
@@ -194,7 +200,7 @@ describe('checkInReadiness query', () => {
     });
 
     const data = await graphqlRequestRequiringData<{
-      checkInReadiness: { openMembershipRequestId: string | null };
+      checkInReadiness: { membershipRequest: { id: string } | null };
     }>(
       app,
       {
@@ -208,7 +214,7 @@ describe('checkInReadiness query', () => {
       'checkInReadiness',
     );
 
-    expect(data.checkInReadiness.openMembershipRequestId).toBe(request.id);
+    expect(data.checkInReadiness.membershipRequest?.id).toBe(request.id);
   });
 
   it('reports participating for a member with a JOINED invite', async () => {
@@ -241,7 +247,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: true,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: 'JOINED',
       isParticipating: true,
     });
@@ -314,7 +320,7 @@ describe('checkInReadiness query', () => {
     const data = await graphqlRequestRequiringData<{
       checkInReadiness: {
         isMember: boolean;
-        openMembershipRequestId: string | null;
+        membershipRequest: { id: string } | null;
         shiftInviteStatus: string | null;
         isParticipating: boolean;
       };
@@ -330,7 +336,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: true,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: null,
       isParticipating: false,
     });
@@ -344,7 +350,7 @@ describe('checkInReadiness query', () => {
     });
 
     const data = await graphqlRequestRequiringData<{
-      checkInReadiness: { openMembershipRequestId: string | null };
+      checkInReadiness: { membershipRequest: { id: string } | null };
     }>(
       app,
       {
@@ -355,7 +361,7 @@ describe('checkInReadiness query', () => {
       'checkInReadiness',
     );
 
-    expect(data.checkInReadiness.openMembershipRequestId).toBe(request.id);
+    expect(data.checkInReadiness.membershipRequest?.id).toBe(request.id);
   });
 
   it('reports an unrelated volunteer as a non-member with no request', async () => {
@@ -364,7 +370,7 @@ describe('checkInReadiness query', () => {
     const data = await graphqlRequestRequiringData<{
       checkInReadiness: {
         isMember: boolean;
-        openMembershipRequestId: string | null;
+        membershipRequest: { id: string } | null;
       };
     }>(
       app,
@@ -378,7 +384,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: false,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: null,
       isParticipating: false,
     });
@@ -408,7 +414,7 @@ describe('checkInReadiness query', () => {
     });
 
     const data = await graphqlRequestRequiringData<{
-      checkInReadiness: { openMembershipRequestId: string | null };
+      checkInReadiness: { membershipRequest: { id: string } | null };
     }>(
       app,
       {
@@ -419,9 +425,7 @@ describe('checkInReadiness query', () => {
       'checkInReadiness',
     );
 
-    expect(data.checkInReadiness.openMembershipRequestId).toBe(
-      parentRequest.id,
-    );
+    expect(data.checkInReadiness.membershipRequest?.id).toBe(parentRequest.id);
   });
 
   it('ignores a pending request on a sibling unit', async () => {
@@ -444,7 +448,7 @@ describe('checkInReadiness query', () => {
     });
 
     const data = await graphqlRequestRequiringData<{
-      checkInReadiness: { openMembershipRequestId: string | null };
+      checkInReadiness: { membershipRequest: { id: string } | null };
     }>(
       app,
       {
@@ -455,7 +459,7 @@ describe('checkInReadiness query', () => {
       'checkInReadiness',
     );
 
-    expect(data.checkInReadiness.openMembershipRequestId).toBeNull();
+    expect(data.checkInReadiness.membershipRequest).toBeNull();
   });
 
   describe('membership request authority', () => {
@@ -463,9 +467,11 @@ describe('checkInReadiness query', () => {
       (
         await graphqlRequestRequiringData<{
           checkInReadiness: {
-            openMembershipRequestId: string | null;
-            canAcceptMembershipRequest: boolean;
-            membershipRequestOrganizationUnitName: string | null;
+            membershipRequest: {
+              id: string;
+              canAccept: boolean;
+              organizationUnitName: string | null;
+            } | null;
           };
         }>(
           app,
@@ -482,9 +488,7 @@ describe('checkInReadiness query', () => {
       const volunteer = await createUser(db);
 
       expect(await readRequestUnit(volunteer.checkInId, unitId)).toEqual({
-        openMembershipRequestId: null,
-        canAcceptMembershipRequest: false,
-        membershipRequestOrganizationUnitName: null,
+        membershipRequest: null,
       });
     });
 
@@ -502,9 +506,11 @@ describe('checkInReadiness query', () => {
       });
 
       expect(await readRequestUnit(volunteer.checkInId, childUnit.id)).toEqual({
-        openMembershipRequestId: parentRequest.id,
-        canAcceptMembershipRequest: true,
-        membershipRequestOrganizationUnitName: 'Readiness unit',
+        membershipRequest: {
+          id: parentRequest.id,
+          canAccept: true,
+          organizationUnitName: 'Readiness unit',
+        },
       });
     });
 
@@ -525,9 +531,11 @@ describe('checkInReadiness query', () => {
       );
 
       expect(await readRequestUnit(volunteer.checkInId, childUnit.id)).toEqual({
-        openMembershipRequestId: parentRequest.id,
-        canAcceptMembershipRequest: false,
-        membershipRequestOrganizationUnitName: 'Readiness unit',
+        membershipRequest: {
+          id: parentRequest.id,
+          canAccept: false,
+          organizationUnitName: 'Readiness unit',
+        },
       });
     });
   });

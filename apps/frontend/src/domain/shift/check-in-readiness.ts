@@ -16,7 +16,7 @@ export type CheckInReadinessState =
 export type CheckInReadinessFacts = {
   hasOpenTimeEntry: boolean;
   isMember: boolean;
-  openMembershipRequestId: string | null;
+  membershipRequest: { id: string } | null;
   isParticipating: boolean;
 };
 
@@ -35,7 +35,7 @@ export function resolveCheckInReadiness(
     return 'alreadyCheckedIn';
   }
   if (!facts.isMember) {
-    return facts.openMembershipRequestId ? 'pendingMembership' : 'notMember';
+    return facts.membershipRequest ? 'pendingMembership' : 'notMember';
   }
   if (requiresShift && !facts.isParticipating) {
     return 'notInShift';
@@ -82,13 +82,13 @@ export type PendingMembershipView =
  * required forms gate the accept and fail closed while unknown.
  */
 export function resolvePendingMembershipView({
-  canAcceptMembershipRequest,
+  canAccept,
   missingFormCount,
 }: {
-  canAcceptMembershipRequest: boolean;
+  canAccept: boolean;
   missingFormCount: number | null;
 }): PendingMembershipView {
-  if (!canAcceptMembershipRequest) return 'requiresUnitManager';
+  if (!canAccept) return 'requiresUnitManager';
   if (missingFormCount === null) return 'checkingForms';
   if (missingFormCount > 0) return 'formsOpen';
   return 'acceptable';

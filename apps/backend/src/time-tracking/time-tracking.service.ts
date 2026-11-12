@@ -819,9 +819,11 @@ export class TimeTrackingService {
     organizationUnitId: string,
   ): Promise<{
     isMember: boolean;
-    openMembershipRequestId: string | null;
-    canAcceptMembershipRequest: boolean;
-    membershipRequestOrganizationUnitName: string | null;
+    membershipRequest: {
+      id: string;
+      canAccept: boolean;
+      organizationUnitName: string | null;
+    } | null;
     shiftInviteStatus: ShiftInviteStatus | null;
     isParticipating: boolean;
     hasOpenTimeEntry: boolean;
@@ -887,18 +889,19 @@ export class TimeTrackingService {
     ]);
 
     const shiftInviteStatus = inviteStatuses[0]?.status ?? null;
-    const requestAuthority = pendingRequest
-      ? await this.resolveMembershipRequestAuthority(
-          callerUserId,
-          pendingRequest.organizationUnitId,
-        )
+    const membershipRequest = pendingRequest
+      ? {
+          id: pendingRequest.id,
+          ...(await this.resolveMembershipRequestAuthority(
+            callerUserId,
+            pendingRequest.organizationUnitId,
+          )),
+        }
       : null;
 
     return {
       isMember,
-      openMembershipRequestId: pendingRequest?.id ?? null,
-      canAcceptMembershipRequest: requestAuthority?.canAccept ?? false,
-      membershipRequestOrganizationUnitName: requestAuthority?.unitName ?? null,
+      membershipRequest,
       shiftInviteStatus,
       isParticipating: isParticipatingShiftInviteStatus(
         shiftInviteStatus ?? undefined,
@@ -925,7 +928,7 @@ export class TimeTrackingService {
   private async resolveMembershipRequestAuthority(
     callerUserId: string,
     requestUnitId: string,
-  ): Promise<{ canAccept: boolean; unitName: string | null }> {
+  ): Promise<{ canAccept: boolean; organizationUnitName: string | null }> {
     const [requestUnit, canAccept] = await Promise.all([
       this.organizationUnitDataService.findById(requestUnitId),
       this.organizationService.hasPermissionInUnit(
@@ -936,7 +939,7 @@ export class TimeTrackingService {
     ]);
     return {
       canAccept,
-      unitName: requestUnit?.name ?? null,
+      organizationUnitName: requestUnit?.name ?? null,
     };
   }
 

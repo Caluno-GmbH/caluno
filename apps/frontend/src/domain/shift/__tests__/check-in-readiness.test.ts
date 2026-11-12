@@ -14,7 +14,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: false,
         isMember: false,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: false,
       }),
     ).toBe('notMember');
@@ -25,7 +25,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: false,
         isMember: false,
-        openMembershipRequestId: 'req-1',
+        membershipRequest: { id: 'req-1' },
         isParticipating: false,
       }),
     ).toBe('pendingMembership');
@@ -36,7 +36,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: false,
         isMember: true,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: false,
       }),
     ).toBe('notInShift');
@@ -51,7 +51,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: false,
         isMember: true,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: false,
       }),
     ).toBe('notInShift');
@@ -62,7 +62,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: false,
         isMember: true,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: true,
       }),
     ).toBe('ready');
@@ -73,7 +73,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: false,
         isMember: false,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: false,
       }),
     ).toBe('notMember');
@@ -84,7 +84,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: true,
         isMember: true,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: true,
       }),
     ).toBe('alreadyCheckedIn');
@@ -95,7 +95,7 @@ describe('resolveCheckInReadiness', () => {
       resolveCheckInReadiness({
         hasOpenTimeEntry: true,
         isMember: false,
-        openMembershipRequestId: null,
+        membershipRequest: null,
         isParticipating: false,
       }),
     ).toBe('alreadyCheckedIn');
@@ -111,7 +111,7 @@ describe('resolveCheckInReadiness without a shift', () => {
         {
           hasOpenTimeEntry: false,
           isMember: true,
-          openMembershipRequestId: null,
+          membershipRequest: null,
           isParticipating: false,
         },
         noShift,
@@ -125,7 +125,7 @@ describe('resolveCheckInReadiness without a shift', () => {
         {
           hasOpenTimeEntry: true,
           isMember: true,
-          openMembershipRequestId: null,
+          membershipRequest: null,
           isParticipating: false,
         },
         noShift,
@@ -139,7 +139,7 @@ describe('resolveCheckInReadiness without a shift', () => {
         {
           hasOpenTimeEntry: false,
           isMember: false,
-          openMembershipRequestId: null,
+          membershipRequest: null,
           isParticipating: false,
         },
         noShift,
@@ -153,7 +153,7 @@ describe('resolveCheckInReadiness without a shift', () => {
         {
           hasOpenTimeEntry: false,
           isMember: false,
-          openMembershipRequestId: 'req-1',
+          membershipRequest: { id: 'req-1' },
           isParticipating: false,
         },
         noShift,
@@ -300,7 +300,7 @@ describe('resolvePendingMembershipView', () => {
     for (const missingFormCount of [null, 0, 2]) {
       expect(
         resolvePendingMembershipView({
-          canAcceptMembershipRequest: false,
+          canAccept: false,
           missingFormCount,
         }),
       ).toBe('requiresUnitManager');
@@ -310,7 +310,7 @@ describe('resolvePendingMembershipView', () => {
   it('checks the forms while they are unknown', () => {
     expect(
       resolvePendingMembershipView({
-        canAcceptMembershipRequest: true,
+        canAccept: true,
         missingFormCount: null,
       }),
     ).toBe('checkingForms');
@@ -319,7 +319,7 @@ describe('resolvePendingMembershipView', () => {
   it('reports open forms', () => {
     expect(
       resolvePendingMembershipView({
-        canAcceptMembershipRequest: true,
+        canAccept: true,
         missingFormCount: 1,
       }),
     ).toBe('formsOpen');
@@ -328,7 +328,7 @@ describe('resolvePendingMembershipView', () => {
   it('offers the accept once every form is submitted', () => {
     expect(
       resolvePendingMembershipView({
-        canAcceptMembershipRequest: true,
+        canAccept: true,
         missingFormCount: 0,
       }),
     ).toBe('acceptable');

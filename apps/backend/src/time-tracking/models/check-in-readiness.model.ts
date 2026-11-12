@@ -1,24 +1,30 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { ShiftInviteStatus } from '../../shift/enums';
 
+// The volunteer's open membership request to the selected unit or, failing
+// that, its nearest ancestor that has one.
+@ObjectType()
+export class CheckInMembershipRequest {
+  @Field(() => ID)
+  id!: string;
+
+  // Whether the caller may accept it: a check-in desk may only grant membership
+  // in units it manages, and the request may target an ancestor.
+  @Field(() => Boolean)
+  canAccept!: boolean;
+
+  // Name of the unit the request targets (the selected unit or an ancestor).
+  @Field(() => String, { nullable: true })
+  organizationUnitName?: string | null;
+}
+
 @ObjectType()
 export class CheckInReadiness {
   @Field(() => Boolean)
   isMember!: boolean;
 
-  @Field(() => ID, { nullable: true })
-  openMembershipRequestId?: string | null;
-
-  // Whether the caller may accept the open request: a check-in desk may only
-  // grant membership in units it manages, and the request may target an
-  // ancestor of the selected unit. False when there is no open request.
-  @Field(() => Boolean)
-  canAcceptMembershipRequest!: boolean;
-
-  // Name of the unit the open request targets (the selected unit or an
-  // ancestor); null when there is no open request.
-  @Field(() => String, { nullable: true })
-  membershipRequestOrganizationUnitName?: string | null;
+  @Field(() => CheckInMembershipRequest, { nullable: true })
+  membershipRequest?: CheckInMembershipRequest | null;
 
   @Field(() => ShiftInviteStatus, { nullable: true })
   shiftInviteStatus?: ShiftInviteStatus | null;

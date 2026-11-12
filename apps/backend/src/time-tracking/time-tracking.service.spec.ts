@@ -463,7 +463,11 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
 
     expect(readiness).toMatchObject({
       isMember: true,
-      openMembershipRequestId: 'mr-1',
+      membershipRequest: {
+        id: 'mr-1',
+        canAccept: false,
+        organizationUnitName: null,
+      },
       shiftInviteStatus: null,
       isParticipating: false,
       hasOpenTimeEntry: false,

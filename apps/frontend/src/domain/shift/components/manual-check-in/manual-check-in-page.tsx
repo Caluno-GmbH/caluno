@@ -148,7 +148,7 @@ export function ManualCheckInPage({
       ? resolveCheckInReadiness(
           {
             ...readiness,
-            openMembershipRequestId: readiness.openMembershipRequestId ?? null,
+            membershipRequest: readiness.membershipRequest ?? null,
           },
           { requiresShift: !withoutShift },
         )
@@ -169,7 +169,7 @@ export function ManualCheckInPage({
   // A check-in desk may only accept requests to units it manages; a request
   // to an unmanaged ancestor shows no accept and no forms.
   const canAcceptMembershipRequest =
-    readiness?.canAcceptMembershipRequest ?? false;
+    readiness?.membershipRequest?.canAccept ?? false;
 
   // Fetched while an acceptable request is pending, so a volunteer completing
   // the required forms on their device is noticed.
@@ -206,8 +206,7 @@ export function ManualCheckInPage({
             readiness.idVerified,
           ]
         : null,
-      readiness?.openMembershipRequestId ?? null,
-      canAcceptMembershipRequest,
+      readiness?.membershipRequest ?? null,
       missingFormCount,
     ]),
   );
@@ -254,7 +253,7 @@ export function ManualCheckInPage({
   };
 
   const handleAcceptMembership = async () => {
-    const requestId = readiness?.openMembershipRequestId;
+    const requestId = readiness?.membershipRequest?.id;
     if (!requestId) return;
     try {
       await approveMembershipMutation.mutateAsync(requestId);
@@ -290,7 +289,7 @@ export function ManualCheckInPage({
     orgUnits.find((unit) => unit.id === selection.orgUnitId)?.name ?? '';
   // A pending request may target an ancestor of the selected unit.
   const requestUnitName =
-    readiness?.membershipRequestOrganizationUnitName ?? unitName;
+    readiness?.membershipRequest?.organizationUnitName ?? unitName;
   const profileHref =
     readiness?.canViewVolunteerProfile && volunteer
       ? volunteerProfileHref(selection.orgUnitId, volunteer.id)
@@ -428,9 +427,15 @@ export function ManualCheckInPage({
               state={readinessState}
               checkInId={checkInId}
               unitName={unitName}
-              requestUnitName={requestUnitName}
               volunteerName={volunteer?.name ?? null}
-              canAcceptMembershipRequest={canAcceptMembershipRequest}
+              membershipRequest={
+                readiness?.membershipRequest
+                  ? {
+                      organizationUnitName: requestUnitName,
+                      canAccept: canAcceptMembershipRequest,
+                    }
+                  : null
+              }
               missingFormCount={missingFormCount}
               profileHref={profileHref}
               onInviteToOrg={handleInviteToOrg}
