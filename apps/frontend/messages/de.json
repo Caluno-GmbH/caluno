@@ -2853,7 +2853,11 @@
         "duration": "Dauer (Min.)",
         "status": "Status",
         "createdBy": "Erfasst von",
-        "notes": "Notizen"
+        "notes": "Notizen",
+        "volunteerDateOfBirth": "Geburtsdatum",
+        "volunteerGender": "Geschlecht",
+        "volunteerPhone": "Telefon",
+        "volunteerAddress": "Adresse"
       },
       "users": {
         "name": "Name",
@@ -2884,7 +2888,11 @@
         "duration": "Geleistete Gesamtzeit in Minuten",
         "status": "Aktueller Status des Eintrags",
         "createdBy": "Wer diesen Eintrag erfasst hat",
-        "notes": "Notizen zum Eintrag"
+        "notes": "Notizen zum Eintrag",
+        "volunteerDateOfBirth": "Geburtsdatum der Person",
+        "volunteerGender": "Geschlecht der Person",
+        "volunteerPhone": "Telefonnummer der Person",
+        "volunteerAddress": "Anschrift der Person"
       },
       "users": {
         "name": "Vollständiger Name der Person",
@@ -2902,6 +2910,10 @@
         "visibility": "Wer sie sehen und sich eintragen kann",
         "staffing": "Besetzte und benötigte Plätze"
       }
+    },
+    "group": {
+      "extendedUserInfo": "Erweiterte Personendaten",
+      "extendedUserInfoDescription": "Zusätzliche Profildaten der freiwilligen Person einbeziehen"
     },
     "log": {
       "downloadButton": "Exportprotokoll herunterladen",

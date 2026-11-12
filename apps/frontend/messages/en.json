@@ -2853,7 +2853,11 @@
         "duration": "Duration (min)",
         "status": "Status",
         "createdBy": "Created By",
-        "notes": "Notes"
+        "notes": "Notes",
+        "volunteerDateOfBirth": "Date of birth",
+        "volunteerGender": "Gender",
+        "volunteerPhone": "Phone",
+        "volunteerAddress": "Address"
       },
       "users": {
         "name": "Name",
@@ -2884,7 +2888,11 @@
         "duration": "Total time worked, in minutes",
         "status": "Current state of the entry",
         "createdBy": "Who recorded this entry",
-        "notes": "Any notes added to the entry"
+        "notes": "Any notes added to the entry",
+        "volunteerDateOfBirth": "The volunteer's date of birth",
+        "volunteerGender": "The volunteer's gender",
+        "volunteerPhone": "The volunteer's phone number",
+        "volunteerAddress": "The volunteer's postal address"
       },
       "users": {
         "name": "The volunteer's full name",
@@ -2902,6 +2910,10 @@
         "visibility": "Who can see and sign up for it",
         "staffing": "Filled versus needed spots"
       }
+    },
+    "group": {
+      "extendedUserInfo": "Extended user info",
+      "extendedUserInfoDescription": "Include the volunteer's additional profile data"
     },
     "log": {
       "downloadButton": "Download export log",
