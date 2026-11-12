@@ -120,7 +120,7 @@ export function ExportButton({
           {t('button')}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="data-[size=default]:sm:max-w-[45vw]">
         <DialogHeader>
           <DialogTitle>{t('dialogTitle')}</DialogTitle>
           <DialogDescription>{t('dialogDescription')}</DialogDescription>
