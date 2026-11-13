@@ -24,66 +24,100 @@ export function MembershipRequestRequiredForms({
   const { data: submissions } = useFormSubmissionsForVolunteer(userId);
 
   const requiredForms = orgUnit?.requiredForms ?? [];
+  const requiredFormIds = new Set(requiredForms.map((ref) => ref.form.id));
 
   const submittedFormIds = new Set(
     (submissions ?? []).map((s) => s.form?.id).filter(Boolean),
   );
 
-  if (requiredForms.length === 0) {
+  const otherSubmissions = (submissions ?? []).filter(
+    (s) => s.form?.id && !requiredFormIds.has(s.form.id),
+  );
+
+  if (requiredForms.length === 0 && otherSubmissions.length === 0) {
     return null;
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {t('title')}
-      </p>
-      <div className="space-y-2">
-        {requiredForms.map((ref) => {
-          const isSubmitted = submittedFormIds.has(ref.form.id);
-          const submission = (submissions ?? []).find(
-            (s) => s.form?.id === ref.form.id,
-          );
-          const content = (
-            <>
-              <div className="flex items-center gap-2">
-                {isSubmitted ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Circle className="h-4 w-4 text-amber-500" />
-                )}
-                <span>{ref.form.name}</span>
-              </div>
-              {isSubmitted && submission && (
-                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              )}
-            </>
-          );
+    <div className="space-y-4">
+      {requiredForms.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('title')}
+          </p>
+          <div className="space-y-2">
+            {requiredForms.map((ref) => {
+              const isSubmitted = submittedFormIds.has(ref.form.id);
+              const submission = (submissions ?? []).find(
+                (s) => s.form?.id === ref.form.id,
+              );
+              const content = (
+                <>
+                  <div className="flex items-center gap-2">
+                    {isSubmitted ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-amber-500" />
+                    )}
+                    <span>{ref.form.name}</span>
+                  </div>
+                  {isSubmitted && submission && (
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  )}
+                </>
+              );
 
-          if (isSubmitted && submission) {
-            return (
+              if (isSubmitted && submission) {
+                return (
+                  <Link
+                    key={ref.form.id}
+                    href={`/admin/${orgUId}/volunteers/form-submission/${submission.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent transition-colors"
+                  >
+                    {content}
+                  </Link>
+                );
+              }
+
+              return (
+                <div
+                  key={ref.form.id}
+                  className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
+                >
+                  {content}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {otherSubmissions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('otherTitle')}
+          </p>
+          <div className="space-y-2">
+            {otherSubmissions.map((submission) => (
               <Link
-                key={ref.form.id}
+                key={submission.id}
                 href={`/admin/${orgUId}/volunteers/form-submission/${submission.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between rounded-md border px-3 py-2 text-sm hover:bg-accent transition-colors"
               >
-                {content}
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>{submission.form?.name}</span>
+                </div>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               </Link>
-            );
-          }
-
-          return (
-            <div
-              key={ref.form.id}
-              className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-            >
-              {content}
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
