@@ -39,7 +39,7 @@ describe('serializeExportLogToCsv', () => {
 
   it('renders an empty log as header-only CSV', () => {
     const csv = serializeExportLogToCsv([], headers, fmtDate);
-    expect(csv).toBe(headers.join(',') + '\r\n');
+    expect(csv).toBe(`${headers.join(',')}\r\n`);
   });
 
   it('quotes cells containing a comma per RFC-4180', () => {

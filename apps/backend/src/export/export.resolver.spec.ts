@@ -58,7 +58,13 @@ function buildResolver(authHasPermissions = true) {
     authService as never,
   );
 
-  return { resolver, exportService, exportLogService, userService, authService };
+  return {
+    resolver,
+    exportService,
+    exportLogService,
+    userService,
+    authService,
+  };
 }
 
 describe('ExportResolver', () => {
@@ -132,7 +138,12 @@ describe('ExportResolver', () => {
 
     await expect(
       resolver.exportTimesheetsCsv(
-        { rowIds: ['t1'], columns: ['volunteerGender'], includeTechnicalIds: false, includeSubUnits: false },
+        {
+          rowIds: ['t1'],
+          columns: ['volunteerGender'],
+          includeTechnicalIds: false,
+          includeSubUnits: false,
+        },
         context,
         session,
       ),
@@ -149,7 +160,12 @@ describe('ExportResolver', () => {
     const { resolver, exportService } = buildResolver(true);
 
     await resolver.exportTimesheetsCsv(
-      { rowIds: ['t1'], columns: ['volunteerGender'], includeTechnicalIds: false, includeSubUnits: false },
+      {
+        rowIds: ['t1'],
+        columns: ['volunteerGender'],
+        includeTechnicalIds: false,
+        includeSubUnits: false,
+      },
       context,
       session,
     );
@@ -164,7 +180,12 @@ describe('ExportResolver', () => {
     const { resolver, authService, exportService } = buildResolver(false);
 
     await resolver.exportTimesheetsCsv(
-      { rowIds: ['t1'], columns: ['volunteerName', 'shift'], includeTechnicalIds: false, includeSubUnits: false },
+      {
+        rowIds: ['t1'],
+        columns: ['volunteerName', 'shift'],
+        includeTechnicalIds: false,
+        includeSubUnits: false,
+      },
       context,
       session,
     );

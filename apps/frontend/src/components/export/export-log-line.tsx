@@ -71,10 +71,7 @@ function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
         {t('log.downloadButton')}
       </Button>
       {armed && (
-        <ExportLogDownloader
-          tableKind={tableKind}
-          onDone={handleDone}
-        />
+        <ExportLogDownloader tableKind={tableKind} onDone={handleDone} />
       )}
     </div>
   );

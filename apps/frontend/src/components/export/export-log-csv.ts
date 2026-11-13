@@ -34,5 +34,5 @@ export function serializeExportLogToCsv(
     rows.push(cells.map(csvCell).join(','));
   }
 
-  return rows.join('\r\n') + '\r\n';
+  return `${rows.join('\r\n')}\r\n`;
 }

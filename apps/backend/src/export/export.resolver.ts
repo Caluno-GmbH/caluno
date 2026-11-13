@@ -1,11 +1,12 @@
 import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
+import { AuthService } from '../auth/auth.service';
 import { PERMISSIONS } from '../auth/constants';
 import { Permissions } from '../auth/decorators/permissions.decorator';
-import { AuthService } from '../auth/auth.service';
 import { ForbiddenGraphQLError } from '../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../graphql/graphql.context';
 import { UserService } from '../user/user.service';
+import { EXTENDED_PERSONAL_COLUMNS } from './collectors/timesheets-export.collector';
 import { ExportTable } from './enums';
 import {
   DEFAULT_EXPORT_LOG_PAGE_SIZE,
@@ -20,7 +21,6 @@ import {
   ExportLogEntry,
   ExportRowsInput,
 } from './models/export.model';
-import { EXTENDED_PERSONAL_COLUMNS } from './collectors/timesheets-export.collector';
 
 /**
  * CSV export of one table at a time.

@@ -44,11 +44,16 @@ function parseDate(value: string | null | undefined): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function formatAddress(user: {
-  street: string | null;
-  zip: string | null;
-  city: string | null;
-} | null | undefined): string | null {
+function formatAddress(
+  user:
+    | {
+        street: string | null;
+        zip: string | null;
+        city: string | null;
+      }
+    | null
+    | undefined,
+): string | null {
   if (!user) return null;
   const parts = [user.street, [user.zip, user.city].filter(Boolean).join(' ')]
     .map((part) => part?.trim())
@@ -131,7 +136,9 @@ export class TimesheetsExportCollector implements ExportCollector {
           cells: {
             volunteerName: volunteer?.name,
             volunteerEmail: volunteer?.email,
-            volunteerDateOfBirth: formatBerlinDate(parseDate(volunteer?.birthdate)),
+            volunteerDateOfBirth: formatBerlinDate(
+              parseDate(volunteer?.birthdate),
+            ),
             volunteerGender: volunteer?.gender,
             volunteerPhone: volunteer?.phone,
             volunteerAddress: formatAddress(volunteer),
