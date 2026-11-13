@@ -2839,6 +2839,8 @@
     "dialogDescription": "Select the columns to include in the CSV export.",
     "includeTechnicalIds": "Technical IDs",
     "includeTechnicalIdsDescription": "Add internal ID columns to match records in other systems",
+    "includeSubUnits": "Include sub-units",
+    "includeSubUnitsDescription": "Also export rows from child organisational units",
     "exportAction": "Export",
     "cancel": "Cancel",
     "exportFailed": "Export failed. Please try again.",

@@ -2839,6 +2839,8 @@
     "dialogDescription": "Wähle die Spalten aus, die in den CSV-Export aufgenommen werden sollen.",
     "includeTechnicalIds": "Technische IDs",
     "includeTechnicalIdsDescription": "Interne ID-Spalten ergänzen, um Datensätze in anderen Systemen zuzuordnen",
+    "includeSubUnits": "Untereinheiten einbeziehen",
+    "includeSubUnitsDescription": "Zeilen aus untergeordneten Organisationseinheiten ebenfalls exportieren",
     "exportAction": "Exportieren",
     "cancel": "Abbrechen",
     "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut.",
