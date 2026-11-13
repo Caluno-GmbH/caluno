@@ -7,7 +7,10 @@ export class DataError extends Error {
       statusCode?: number;
     },
   ) {
-    super(message);
+    super(
+      message,
+      options?.cause !== undefined ? { cause: options.cause } : undefined,
+    );
     this.name = 'DataError';
   }
 }

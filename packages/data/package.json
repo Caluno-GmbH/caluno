@@ -21,13 +21,13 @@
     "js-cookie": "^3.0.8"
   },
   "devDependencies": {
-    "@graphql-codegen/cli": "^7.4.6",
-    "@graphql-codegen/typescript": "^6.1.2",
-    "@graphql-codegen/typescript-graphql-request": "^7.1.0",
-    "@graphql-codegen/typescript-operations": "^6.2.0",
+    "@graphql-codegen/cli": "^8.0.0",
+    "@graphql-codegen/typescript": "^7.0.1",
+    "@graphql-codegen/typescript-graphql-request": "^8.0.1",
+    "@graphql-codegen/typescript-operations": "^7.0.1",
     "@repo/typescript-config": "*",
     "@tanstack/react-query": "^5.105.3",
-    "@tanstack/react-query-devtools": "^5.105.3",
+    "@tanstack/react-query-devtools": "^5.107.1",
     "@types/bun": "^1.4.4",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^24.19.2",

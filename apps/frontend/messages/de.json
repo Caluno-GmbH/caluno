@@ -711,6 +711,7 @@
       "title": "Mitgliedschaften"
     },
     "requiredForms": {
+      "otherTitle": "Andere Formulare",
       "title": "Erforderliche Formulare"
     },
     "status": {
@@ -1891,6 +1892,7 @@
       "title": "{shiftTitle} beitreten"
     },
     "fullNote": "Dieser Einsatz ist bereits voll besetzt.",
+    "instancesLoadFailed": "Die verfügbaren Termine konnten nicht geladen werden. Bitte lade die Seite neu.",
     "joinedNote": "Du bist für diesen Einsatz angemeldet.",
     "later": "Später",
     "locationDivider": "·",
