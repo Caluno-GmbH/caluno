@@ -5,7 +5,7 @@ import { TimeTrackingService } from '../../time-tracking/time-tracking.service';
 import { deriveTimeEntryStatus } from '../../time-tracking/utils/time-entry-status';
 import { UserService } from '../../user/user.service';
 import { ExportTable } from '../enums';
-import { formatBerlinDateTime } from '../export-csv.util';
+import { formatBerlinDate, formatBerlinDateTime } from '../export-csv.util';
 import type { ExportColumnDefinition } from '../serializers/export-serializer';
 import type {
   CollectedExport,
@@ -13,9 +13,20 @@ import type {
   ExportCollectorContext,
 } from './export-collector';
 
+export const EXTENDED_PERSONAL_COLUMNS: ReadonlySet<string> = new Set([
+  'volunteerDateOfBirth',
+  'volunteerGender',
+  'volunteerPhone',
+  'volunteerAddress',
+]);
+
 const COLUMNS: readonly ExportColumnDefinition[] = [
   { id: 'volunteerName', label: 'Volunteer Name' },
   { id: 'volunteerEmail', label: 'Volunteer Email' },
+  { id: 'volunteerDateOfBirth', label: 'Volunteer Date of Birth' },
+  { id: 'volunteerGender', label: 'Volunteer Gender' },
+  { id: 'volunteerPhone', label: 'Volunteer Phone' },
+  { id: 'volunteerAddress', label: 'Volunteer Address' },
   { id: 'shift', label: 'Shift' },
   { id: 'assignment', label: 'Assignment' },
   { id: 'location', label: 'Location' },
@@ -26,6 +37,29 @@ const COLUMNS: readonly ExportColumnDefinition[] = [
   { id: 'createdBy', label: 'Created By' },
   { id: 'notes', label: 'Notes' },
 ];
+
+function parseDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatAddress(
+  user:
+    | {
+        street: string | null;
+        zip: string | null;
+        city: string | null;
+      }
+    | null
+    | undefined,
+): string | null {
+  if (!user) return null;
+  const parts = [user.street, [user.zip, user.city].filter(Boolean).join(' ')]
+    .map((part) => part?.trim())
+    .filter((part): part is string => Boolean(part));
+  return parts.length > 0 ? parts.join(', ') : null;
+}
 
 function durationMinutes(startedAt: Date, endedAt: Date | null): number | null {
   if (!endedAt) return null;
@@ -102,6 +136,12 @@ export class TimesheetsExportCollector implements ExportCollector {
           cells: {
             volunteerName: volunteer?.name,
             volunteerEmail: volunteer?.email,
+            volunteerDateOfBirth: formatBerlinDate(
+              parseDate(volunteer?.birthdate),
+            ),
+            volunteerGender: volunteer?.gender,
+            volunteerPhone: volunteer?.phone,
+            volunteerAddress: formatAddress(volunteer),
             shift: instance?.master.title,
             assignment: instance?.overrideTitle ?? null,
             location: instance?.overrideLocation ?? instance?.master.location,

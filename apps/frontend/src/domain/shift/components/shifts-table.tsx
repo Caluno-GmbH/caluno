@@ -3,12 +3,16 @@
 import { tz } from '@date-fns/tz';
 import type { GetShiftsQuery, PaginationInfo } from '@repo/data';
 import {
+  ExportTable,
   formatRrulePattern,
   isSingleOccurrenceRrule,
+  PermissionKey,
   parseRruleEndDate,
+  ShiftFillFilter,
   ShiftVisibility,
+  SortOrder,
 } from '@repo/data';
-import { useReimbursementTypes } from '@repo/data/react';
+import { useReimbursementTypes, useSdk } from '@repo/data/react';
 import {
   ActionTooltip,
   Badge,
@@ -45,11 +49,14 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { SEARCH_DEBOUNCE_MS } from '@/components/data-table/table-params';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
+import { ExportButton } from '@/components/export/export-button';
+import { ExportLogLine } from '@/components/export/export-log-line';
 import { TYPE_COLOR } from '@/domain/accounting/components/doc-type-header';
 import { eventShiftEditPath } from '@/domain/event/routes';
 import type { ShiftFilterField } from '@/domain/shift/lib/shift-active-filters';
 import { buildShiftActiveFilters } from '@/domain/shift/lib/shift-active-filters';
 import { getVisibilityConfig } from '@/domain/shift/lib/shift-badge-config';
+import { useShiftExportColumns } from '@/domain/shift/shift-export-columns';
 import { Link } from '@/i18n/navigation';
 import { DEFAULT_TIMEZONE } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -185,6 +192,50 @@ export function ShiftsTable({
     { sort, dir, q, pageSize, location, visibility, dateFrom, dateTo, fill },
     setParams,
   ] = useQueryStates(shiftsSearchParams, { shallow: false });
+
+  const sdk = useSdk();
+  const exportColumns = useShiftExportColumns();
+
+  // The list is server-paginated, so fetch every shift matching the current
+  // filters (one page sized to the full total) to export the whole set, not
+  // just the visible page. Mirrors the shifts page's GetShifts arg mapping.
+  // Export is occurrence-level: expand each master to its instance ids so the
+  // CSV mirrors the table's occurrence rows (including cancelled ones).
+  const resolveAllFilteredShiftIds = useCallback(async (): Promise<
+    string[]
+  > => {
+    const data = await sdk.GetShifts({
+      limit: pagination.total > 0 ? pagination.total : 10000,
+      offset: 0,
+      sort,
+      order: dir === 'desc' ? SortOrder.Desc : SortOrder.Asc,
+      search: q || null,
+      dateFrom: dateFrom ? parseAsLocalDate.serialize(dateFrom) : null,
+      dateTo: dateTo ? parseAsLocalDate.serialize(dateTo) : null,
+      location: location || null,
+      visibility: visibility ?? null,
+      fill:
+        fill === 'below'
+          ? ShiftFillFilter.Below
+          : fill === 'full'
+            ? ShiftFillFilter.Full
+            : null,
+    });
+    return data.shifts.items.flatMap((item) =>
+      item.instances.map((instance) => instance.id),
+    );
+  }, [
+    sdk,
+    pagination.total,
+    sort,
+    dir,
+    q,
+    dateFrom,
+    dateTo,
+    location,
+    visibility,
+    fill,
+  ]);
 
   const returnQuery = useMemo(() => {
     const defaults = shiftsSearchParams;
@@ -657,6 +708,19 @@ export function ShiftsTable({
         onClearAll={onClearAll}
         resultCount={pagination.total}
         sheetTitle={t('filter.sheetTitle')}
+        actions={[
+          <ExportButton
+            key="export"
+            tableKind={ExportTable.Shifts}
+            columns={exportColumns}
+            permission={PermissionKey.ShiftEdit}
+            getRowIds={resolveAllFilteredShiftIds}
+            // Export mirrors the org-scoped shifts query; it does not honor
+            // eventId, so disable it in an event-scoped view to avoid
+            // exporting the whole org's shifts.
+            disabled={Boolean(eventId)}
+          />,
+        ]}
       >
         <TableToolbar.Search
           value={q}
@@ -758,6 +822,7 @@ export function ShiftsTable({
           name={t('page.paginationName')}
         />
       )}
+      <ExportLogLine tableKind={ExportTable.Shifts} />
     </div>
   );
 }

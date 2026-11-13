@@ -1,9 +1,12 @@
 import { Args, Context, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
+import { AuthService } from '../auth/auth.service';
 import { PERMISSIONS } from '../auth/constants';
 import { Permissions } from '../auth/decorators/permissions.decorator';
+import { ForbiddenGraphQLError } from '../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../graphql/graphql.context';
 import { UserService } from '../user/user.service';
+import { EXTENDED_PERSONAL_COLUMNS } from './collectors/timesheets-export.collector';
 import { ExportTable } from './enums';
 import {
   DEFAULT_EXPORT_LOG_PAGE_SIZE,
@@ -34,15 +37,26 @@ export class ExportResolver {
     private readonly exportLogService: ExportLogService,
     private readonly exportLogMapper: ExportLogMapper,
     private readonly userService: UserService,
+    private readonly authService: AuthService,
   ) {}
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
   @Mutation(() => ExportFile)
-  exportTimesheetsCsv(
+  async exportTimesheetsCsv(
     @Args('input') input: ExportRowsInput,
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<ExportFile> {
+    if (input.columns.some((c) => EXTENDED_PERSONAL_COLUMNS.has(c))) {
+      const allowed = await this.authService.hasRequiredPermissions(
+        session.user.id,
+        context.organizationUnitId,
+        [PERMISSIONS.VOLUNTEER_EDIT],
+      );
+      if (!allowed) {
+        throw new ForbiddenGraphQLError('Insufficient permissions');
+      }
+    }
     return this.exportService.generateExport(
       ExportTable.TIMESHEETS,
       this.toServiceInput(input, context, session),
