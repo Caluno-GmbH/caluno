@@ -4,23 +4,30 @@ import { type ExportTable, PermissionKey } from '@repo/data';
 import { useExportLogs } from '@repo/data/react';
 import { Button } from '@repo/ui';
 import { useTranslations } from 'next-intl';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { triggerDownload } from '@/lib/download/trigger-download';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { RequirePermission } from '../require-permission';
 import { serializeExportLogToCsv } from './export-log-csv';
 
-function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
+const EXPORT_LOG_LIMIT = 50;
+
+function ExportLogDownloader({ tableKind }: { tableKind: ExportTable }) {
   const t = useTranslations('Export');
   const { formatDateTime } = useFormatting();
-  const { isFetching, refetch } = useExportLogs(tableKind, { enabled: false });
+  const { data, error } = useExportLogs(tableKind, EXPORT_LOG_LIMIT, 0);
+  const downloaded = useRef(false);
 
-  const handleDownload = async () => {
-    const result = await refetch();
-    if (result.error || !result.data) {
+  useEffect(() => {
+    if (downloaded.current) return;
+    if (error) {
+      downloaded.current = true;
       toast.error(t('log.downloadFailed'));
       return;
     }
+    if (!data) return;
+    downloaded.current = true;
     const headers = [
       t('log.csvHeaders.timestamp'),
       t('log.csvHeaders.actor'),
@@ -30,11 +37,23 @@ function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
       t('log.csvHeaders.subjectCount'),
       t('log.csvHeaders.subjectIds'),
     ];
-    const csv = serializeExportLogToCsv(result.data, headers, (iso) =>
+    const csv = serializeExportLogToCsv(data, headers, (iso) =>
       formatDateTime(new Date(iso)),
     );
     triggerDownload(`export-log-${tableKind.toLowerCase()}.csv`, csv);
-  };
+  }, [data, error, t, formatDateTime, tableKind]);
+
+  return null;
+}
+
+function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
+  const t = useTranslations('Export');
+  const [armed, setArmed] = useState(false);
+  const { isFetching } = useExportLogs(
+    armed ? tableKind : undefined,
+    armed ? EXPORT_LOG_LIMIT : undefined,
+    armed ? 0 : undefined,
+  );
 
   return (
     <div className="flex items-center justify-end pt-1">
@@ -42,11 +61,12 @@ function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
         variant="ghost"
         size="sm"
         className="text-muted-foreground text-xs"
-        disabled={isFetching}
-        onClick={handleDownload}
+        disabled={armed && isFetching}
+        onClick={() => setArmed(true)}
       >
         {t('log.downloadButton')}
       </Button>
+      {armed && <ExportLogDownloader tableKind={tableKind} />}
     </div>
   );
 }
