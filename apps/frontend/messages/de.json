@@ -711,6 +711,7 @@
       "title": "Mitgliedschaften"
     },
     "requiredForms": {
+      "otherTitle": "Andere Formulare",
       "title": "Erforderliche Formulare"
     },
     "status": {
