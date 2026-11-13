@@ -4,7 +4,7 @@ import { type ExportTable, PermissionKey } from '@repo/data';
 import { useExportLogs } from '@repo/data/react';
 import { Button } from '@repo/ui';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { triggerDownload } from '@/lib/download/trigger-download';
 import { useFormatting } from '@/lib/formatting/use-formatting';
@@ -57,6 +57,7 @@ function ExportLogDownloader({
 function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
   const t = useTranslations('Export');
   const [armed, setArmed] = useState(false);
+  const handleDone = useCallback(() => setArmed(false), []);
 
   return (
     <div className="flex items-center justify-end pt-1">
@@ -72,7 +73,7 @@ function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
       {armed && (
         <ExportLogDownloader
           tableKind={tableKind}
-          onDone={() => setArmed(false)}
+          onDone={handleDone}
         />
       )}
     </div>
