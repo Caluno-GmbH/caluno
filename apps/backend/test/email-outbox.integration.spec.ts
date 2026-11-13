@@ -141,12 +141,30 @@ describe('EmailOutboxService', () => {
     expect(updatedEmail?.sentAt).toBeInstanceOf(Date);
   });
 
-  it('clears the email content once delivery reaches a final state', async () => {
+  it('clears the email content on SENT and CANCELLED', async () => {
+    const sentEmail = await enqueue({ text: 'Body' });
+    await service.drain();
+    const expiredEmail = await enqueue({
+      expiresAt: new Date(Date.now() - 60_000),
+    });
+    await service.drain();
+
+    for (const outboxEmail of [sentEmail, expiredEmail]) {
+      const updatedEmail = await findOutboxEmail(outboxEmail.id);
+      expect(updatedEmail?.html).toBeNull();
+      expect(updatedEmail?.textBody).toBeNull();
+      expect(updatedEmail?.attachments).toBeNull();
+      expect(updatedEmail?.subject).toBe(outboxEmail.subject);
+    }
+  });
+
+  it('keeps FAILED content and sets a 72h content expiry', async () => {
     sendOnce.mockImplementationOnce(async () => ({
       ok: false,
       retryable: false,
       error: new Error('invalid recipient'),
     }));
+    const beforeFail = Date.now();
     const failedEmail = await enqueue({
       attachments: [
         {
@@ -157,20 +175,60 @@ describe('EmailOutboxService', () => {
       ],
     });
     await service.drain();
-    const sentEmail = await enqueue({ text: 'Body' });
-    await service.drain();
-    const expiredEmail = await enqueue({
-      expiresAt: new Date(Date.now() - 60_000),
-    });
+
+    const updatedEmail = await findOutboxEmail(failedEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.FAILED);
+    expect(updatedEmail?.html).toBe('<p>Body</p>');
+    expect(updatedEmail?.attachments).toHaveLength(1);
+    expect(updatedEmail?.expiresAt).toBeInstanceOf(Date);
+    const expiresAtMs = updatedEmail!.expiresAt!.getTime();
+    expect(expiresAtMs).toBeGreaterThanOrEqual(
+      beforeFail + 72 * 60 * 60 * 1000 - 5_000,
+    );
+    expect(expiresAtMs).toBeLessThanOrEqual(
+      Date.now() + 72 * 60 * 60 * 1000 + 5_000,
+    );
+  });
+
+  it('preserves an earlier expiresAt when marking FAILED', async () => {
+    sendOnce.mockImplementationOnce(async () => ({
+      ok: false,
+      retryable: false,
+      error: new Error('invalid recipient'),
+    }));
+    const earlierExpiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const failedEmail = await enqueue({ expiresAt: earlierExpiresAt });
     await service.drain();
 
-    for (const outboxEmail of [failedEmail, sentEmail, expiredEmail]) {
-      const updatedEmail = await findOutboxEmail(outboxEmail.id);
-      expect(updatedEmail?.html).toBeNull();
-      expect(updatedEmail?.textBody).toBeNull();
-      expect(updatedEmail?.attachments).toBeNull();
-      expect(updatedEmail?.subject).toBe(outboxEmail.subject);
-    }
+    const updatedEmail = await findOutboxEmail(failedEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.FAILED);
+    expect(updatedEmail?.html).toBe('<p>Body</p>');
+    expect(updatedEmail?.expiresAt?.getTime()).toBe(earlierExpiresAt.getTime());
+  });
+
+  it('clears FAILED content once expiresAt is reached', async () => {
+    sendOnce.mockImplementationOnce(async () => ({
+      ok: false,
+      retryable: false,
+      error: new Error('invalid recipient'),
+    }));
+    const failedEmail = await enqueue({ text: 'Body' });
+    await service.drain();
+
+    await db
+      .update(schema.emailOutbox)
+      .set({ expiresAt: new Date(Date.now() - 60_000) })
+      .where(eq(schema.emailOutbox.id, failedEmail.id));
+
+    const clearedCount = await service.clearExpiredFailedEmailContent();
+
+    expect(clearedCount).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(failedEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.FAILED);
+    expect(updatedEmail?.html).toBeNull();
+    expect(updatedEmail?.textBody).toBeNull();
+    expect(updatedEmail?.attachments).toBeNull();
+    expect(updatedEmail?.subject).toBe(failedEmail.subject);
   });
 
   it('keeps the email content while a retry is pending', async () => {
