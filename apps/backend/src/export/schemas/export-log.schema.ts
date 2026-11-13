@@ -11,6 +11,7 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
+import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
 import { ExportTable } from '../enums';
 
 export const exportTableEnum = pgEnum('export_table', enumValues(ExportTable));
@@ -19,7 +20,9 @@ export const exportLogs = snakeCase.table(
   'export_logs',
   {
     ...idColumn,
-    organizationUnitId: uuid('organization_unit_id').notNull(),
+    organizationUnitId: uuid('organization_unit_id')
+      .notNull()
+      .references(() => organizationUnits.id, { onDelete: 'restrict' }),
     actorUserId: text('actor_user_id').references(() => users.id, {
       onDelete: 'restrict',
     }),

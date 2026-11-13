@@ -1,0 +1,2 @@
+ALTER TYPE "file_purpose" ADD VALUE 'export' BEFORE 'form_document';--> statement-breakpoint
+ALTER TABLE "export_logs" ADD CONSTRAINT "export_logs_organization_unit_id_organization_units_id_fkey" FOREIGN KEY ("organization_unit_id") REFERENCES "organization_units"("id") ON DELETE RESTRICT;

@@ -119,7 +119,9 @@ export type {
   RawEvent,
 } from './repositories/event/event.repository';
 export type {
+  ExportColumnItem,
   ExportFileResult,
+  ExportRequest,
   RawExportLogEntry,
 } from './repositories/export/export.repository';
 export { ExportRepository } from './repositories/export/export.repository';

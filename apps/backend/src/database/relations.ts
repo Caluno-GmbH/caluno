@@ -2,6 +2,7 @@ import { accountingRelations } from '../accounting/schemas/accounting.relations'
 import { authRelations } from '../auth/schemas/auth.relations';
 import { eventsRelations } from '../event/schemas/event.relations';
 import { eventInvitesRelations } from '../event/schemas/event-invite.relations';
+import { exportLogsRelations } from '../export/schemas/export-log.relations';
 import { membershipRelations } from '../membership/schemas/membership.relations';
 import { membershipRequestRelations } from '../membership/schemas/membership-request.relations';
 import { organizationRelations } from '../organization/schemas/organization.relations';
@@ -23,6 +24,7 @@ export const relations = {
   ...authRelations,
   ...eventsRelations,
   ...eventInvitesRelations,
+  ...exportLogsRelations,
   ...filesRelations,
   ...membershipRelations,
   ...membershipRequestRelations,

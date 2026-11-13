@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { csvCell, formatBerlinDateTime, rowsToCsv } from './export-csv.util';
+import {
+  csvCell,
+  formatBerlinDate,
+  formatBerlinDateTime,
+  rowsToCsv,
+} from './export-csv.util';
 
 describe('csvCell', () => {
   it('returns plain strings unchanged', () => {
@@ -28,7 +33,6 @@ describe('csvCell', () => {
   });
 
   it('applies injection guard then RFC quoting (guard prefix needs quoting)', () => {
-    // '=foo,bar' — after guard: "'=foo,bar" — contains comma so RFC-wrap → "\"'=foo,bar\""
     expect(csvCell('=foo,bar')).toBe('"\'=foo,bar"');
   });
 });
@@ -40,21 +44,27 @@ describe('formatBerlinDateTime', () => {
   });
 
   it('renders a UTC instant in Europe/Berlin wall-clock (summer CEST UTC+2)', () => {
-    // 2024-07-15 10:00 UTC → 12:00 CEST
-    const d = new Date('2024-07-15T10:00:00.000Z');
-    expect(formatBerlinDateTime(d)).toBe('15.07.2024 12:00');
+    const date = new Date('2024-07-15T10:00:00.000Z');
+    expect(formatBerlinDateTime(date)).toBe('15.07.2024 12:00');
   });
 
   it('renders a UTC instant in Europe/Berlin wall-clock (winter CET UTC+1)', () => {
-    // 2024-01-15 10:00 UTC → 11:00 CET
-    const d = new Date('2024-01-15T10:00:00.000Z');
-    expect(formatBerlinDateTime(d)).toBe('15.01.2024 11:00');
+    const date = new Date('2024-01-15T10:00:00.000Z');
+    expect(formatBerlinDateTime(date)).toBe('15.01.2024 11:00');
   });
 
   it('rolls to the next Berlin day near 23:30 UTC (summer)', () => {
-    // 2024-07-15 22:30 UTC → 2024-07-16 00:30 CEST
-    const d = new Date('2024-07-15T22:30:00.000Z');
-    expect(formatBerlinDateTime(d)).toBe('16.07.2024 00:30');
+    const date = new Date('2024-07-15T22:30:00.000Z');
+    expect(formatBerlinDateTime(date)).toBe('16.07.2024 00:30');
+  });
+});
+
+describe('formatBerlinDate', () => {
+  it('renders date-only values without a time', () => {
+    expect(formatBerlinDate(new Date('2024-01-15T10:00:00.000Z'))).toBe(
+      '15.01.2024',
+    );
+    expect(formatBerlinDate(null)).toBe('');
   });
 });
 

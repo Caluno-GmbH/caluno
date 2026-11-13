@@ -413,8 +413,13 @@ type EventPaginatedResponse {
   pagination: PaginationInfo!
 }
 
+type ExportColumn {
+  id: String!
+  label: String!
+}
+
 type ExportFile {
-  content: String!
+  downloadUrl: String!
   filename: String!
 }
 
@@ -429,17 +434,17 @@ type ExportLogEntry {
   tableKind: ExportTable!
 }
 
+input ExportRowsInput {
+  columns: [String!]!
+  includeSubUnits: Boolean! = false
+  includeTechnicalIds: Boolean! = false
+  rowIds: [ID!]!
+}
+
 enum ExportTable {
   SHIFTS
   TIMESHEETS
   USERS
-}
-
-input ExportTableInput {
-  columns: [String!]!
-  includeTechnicalIds: Boolean!
-  rowIds: [ID!]!
-  tableKind: ExportTable!
 }
 
 enum FieldType {
@@ -746,7 +751,9 @@ type Mutation {
   deleteShiftInstance(applyToAllFuture: Boolean, id: String!): ShiftInstance!
   deleteTimeEntry(id: ID!): TimeEntry!
   duplicateShift(id: String!, input: DuplicateShiftInput!): Shift!
-  exportTableCsv(input: ExportTableInput!): ExportFile!
+  exportShiftsCsv(input: ExportRowsInput!): ExportFile!
+  exportTimesheetsCsv(input: ExportRowsInput!): ExportFile!
+  exportUsersCsv(input: ExportRowsInput!): ExportFile!
   inviteMembersToEvent(eventId: ID!, memberIds: [String!]!): Event!
   joinEvent(eventId: ID!): JoinEventResult!
   joinOrganization(organizationUnitId: ID!): JoinOrganizationResult!
@@ -973,7 +980,8 @@ type Query {
   eventShiftInstanceStarts(eventId: ID!): [DateTime!]!
   eventShifts(eventId: ID!, limit: Int! = 10, offset: Int! = 0): ShiftPaginatedResponse!
   events(limit: Int! = 10, offset: Int! = 0): EventPaginatedResponse!
-  exportLogs(tableKind: ExportTable): [ExportLogEntry!]!
+  exportColumns(tableKind: ExportTable!): [ExportColumn!]!
+  exportLogs(limit: Int = 50, offset: Int = 0, tableKind: ExportTable): [ExportLogEntry!]!
   formBlock(id: String!): FormBlock
   formBlocks(limit: Int! = 10, offset: Int! = 0, organizationId: String!): FormBlockPaginatedResponse!
   formSubmission(id: String!): FormSubmission

@@ -68,6 +68,12 @@ export class FileService {
       throw new BadRequestException('Unsupported file purpose');
     }
 
+    if (rule.serverGeneratedOnly) {
+      throw new BadRequestException(
+        'This file purpose is generated server-side',
+      );
+    }
+
     if (rule.requiresOrganizationUnitId && !input.organizationUnitId) {
       throw new BadRequestException(
         'organizationUnitId is required for this file purpose',
@@ -454,6 +460,10 @@ export class FileService {
     file: FileEntity,
     organizationUnitId?: string | null,
   ): Promise<boolean> {
+    if (file.purpose === FilePurpose.EXPORT) {
+      return this.canDownloadExport(userId, file, organizationUnitId);
+    }
+
     if (file.purpose === FilePurpose.DOCUMENT) {
       const access = await this.findDocumentAccessByFileId(file.id);
       if (!access) {
@@ -484,6 +494,31 @@ export class FileService {
       scopedOrganizationUnitId,
       [PERMISSIONS.REQUIREMENT_PROFILE_VIEW],
     );
+  }
+
+  /**
+   * Export files are per-unit: any caller who may run either of the exports in
+   * that unit may download the file again after the presigned URL expired.
+   */
+  private async canDownloadExport(
+    userId: string,
+    file: FileEntity,
+    organizationUnitId?: string | null,
+  ): Promise<boolean> {
+    const scopedUnitId = organizationUnitId ?? file.organizationUnitId;
+    if (!scopedUnitId || file.organizationUnitId !== scopedUnitId) {
+      return false;
+    }
+
+    const checks = await Promise.all([
+      this.authService.hasRequiredPermissions(userId, scopedUnitId, [
+        PERMISSIONS.SHIFT_EDIT,
+      ]),
+      this.authService.hasRequiredPermissions(userId, scopedUnitId, [
+        PERMISSIONS.VOLUNTEER_EDIT,
+      ]),
+    ]);
+    return checks.some(Boolean);
   }
 
   /**
