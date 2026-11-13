@@ -45,7 +45,7 @@ describe('createBetterAuthPinoLogger', () => {
     });
   });
 
-  it('forwards extra args without dropping the message', () => {
+  it('merges plain-object args into the log record', () => {
     const { stream, lines } = captureLines();
     const pino = createPinoLogger({
       service: 'caluno-backend',
@@ -57,8 +57,38 @@ describe('createBetterAuthPinoLogger', () => {
     betterAuthLogger.log?.('warn', 'Invalid id token', { provider: 'google' });
 
     const [record] = lines();
-    expect(record?.msg).toBe('Invalid id token');
-    expect(record?.context).toBe('BetterAuth');
+    expect(record).toMatchObject({
+      msg: 'Invalid id token',
+      context: 'BetterAuth',
+      provider: 'google',
+    });
+  });
+
+  it('serializes Error args on err (Better Auth background-task style)', () => {
+    const { stream, lines } = captureLines();
+    const pino = createPinoLogger({
+      service: 'caluno-backend',
+      nodeEnv: 'production',
+      stream,
+    });
+    const betterAuthLogger = createBetterAuthPinoLogger(pino);
+    const failure = new Error('SMTP connection refused');
+
+    betterAuthLogger.log?.('error', 'Failed to run background task:', failure);
+
+    const [record] = lines();
+    expect(record).toMatchObject({
+      level: 'error',
+      context: 'BetterAuth',
+      msg: 'Failed to run background task:',
+    });
+    expect(record?.err).toMatchObject({
+      type: 'Error',
+      message: 'SMTP connection refused',
+    });
+    expect((record?.err as { stack?: string })?.stack).toContain(
+      'SMTP connection refused',
+    );
   });
 
   it('maps each level to the matching pino method', () => {
