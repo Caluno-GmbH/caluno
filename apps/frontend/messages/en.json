@@ -2843,6 +2843,7 @@
     "cancel": "Cancel",
     "exportFailed": "Export failed. Please try again.",
     "nothingToExport": "Nothing to export for the current filters.",
+    "missingVolunteerDataPermission": "You don't have permission to download volunteer data.",
     "columns": {
       "timesheets": {
         "volunteerName": "Volunteer Name",

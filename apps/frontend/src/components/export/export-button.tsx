@@ -1,6 +1,6 @@
 'use client';
 
-import type { ExportTable, PermissionKey } from '@repo/data';
+import { type ExportTable, PermissionKey } from '@repo/data';
 import { useExportTableCsv, useHasPermission } from '@repo/data/react';
 import {
   Button,
@@ -24,6 +24,7 @@ import {
   type ExportColumnOption,
   resolveSelectedColumns,
 } from './export-column-option';
+import { EXTENDED_USER_GROUP } from './extended-user-columns';
 
 interface ExportButtonProps {
   tableKind: ExportTable;
@@ -46,6 +47,9 @@ export function ExportButton({
 }: ExportButtonProps) {
   const t = useTranslations('Export');
   const hasPermission = useHasPermission(permission);
+  // Extended volunteer PII (the extendedUserInfo group) needs volunteer-edit
+  // rights, independent of the table's base permission.
+  const canExportVolunteerData = useHasPermission(PermissionKey.VolunteerEdit);
   const mutation = useExportTableCsv();
   const [resolvingIds, setResolvingIds] = useState(false);
 
@@ -153,39 +157,53 @@ export function ExportButton({
             />
           </div>
 
-          {groupIds.map((groupId) => (
-            <div key={groupId} className="mt-4 rounded-md border p-3">
-              <ColumnCheckbox
-                id={`export-group-${groupId}`}
-                label={t(`group.${groupId}`)}
-                description={t(`group.${groupId}Description`)}
-                checked={enabledGroups[groupId] ?? false}
-                onCheckedChange={(checked) =>
-                  setEnabledGroups((prev) => ({ ...prev, [groupId]: checked }))
-                }
-              />
-              <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-4 pl-7 sm:grid-cols-2">
-                {columns
-                  .filter((col) => col.group === groupId)
-                  .map((col) => (
-                    <ColumnCheckbox
-                      key={col.id}
-                      id={`export-col-${col.id}`}
-                      label={col.label}
-                      description={col.description}
-                      checked={
-                        Boolean(enabledGroups[groupId]) &&
-                        checkedOptional.includes(col.id)
-                      }
-                      disabled={!enabledGroups[groupId]}
-                      onCheckedChange={(checked) =>
-                        col.optional && toggleOptional(col.id, checked)
-                      }
-                    />
-                  ))}
+          {groupIds.map((groupId) => {
+            const groupLocked =
+              groupId === EXTENDED_USER_GROUP && !canExportVolunteerData;
+            return (
+              <div key={groupId} className="mt-4 rounded-md border p-3">
+                <ColumnCheckbox
+                  id={`export-group-${groupId}`}
+                  label={t(`group.${groupId}`)}
+                  description={t(`group.${groupId}Description`)}
+                  checked={!groupLocked && (enabledGroups[groupId] ?? false)}
+                  disabled={groupLocked}
+                  onCheckedChange={(checked) =>
+                    setEnabledGroups((prev) => ({
+                      ...prev,
+                      [groupId]: checked,
+                    }))
+                  }
+                />
+                {groupLocked ? (
+                  <p className="text-muted-foreground mt-3 text-center text-sm">
+                    {t('missingVolunteerDataPermission')}
+                  </p>
+                ) : (
+                  <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-4 pl-7 sm:grid-cols-2">
+                    {columns
+                      .filter((col) => col.group === groupId)
+                      .map((col) => (
+                        <ColumnCheckbox
+                          key={col.id}
+                          id={`export-col-${col.id}`}
+                          label={col.label}
+                          description={col.description}
+                          checked={
+                            Boolean(enabledGroups[groupId]) &&
+                            checkedOptional.includes(col.id)
+                          }
+                          disabled={!enabledGroups[groupId]}
+                          onCheckedChange={(checked) =>
+                            col.optional && toggleOptional(col.id, checked)
+                          }
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <DialogFooter>

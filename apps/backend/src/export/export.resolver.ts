@@ -21,6 +21,22 @@ const TABLE_KIND_PERMISSION: Record<ExportTable, string> = {
   [ExportTable.USERS]: PERMISSIONS.VOLUNTEER_EDIT,
 };
 
+// Extended personal profile fields carry volunteer PII. Exporting them requires
+// volunteer-management rights wherever they appear (e.g. the timesheets export,
+// which otherwise only needs SHIFT_EDIT) — the UI toggle is not a security gate.
+const EXTENDED_PERSONAL_COLUMNS = new Set<string>([
+  // timesheets export column ids
+  'volunteerDateOfBirth',
+  'volunteerGender',
+  'volunteerPhone',
+  'volunteerAddress',
+  // users export column ids
+  'dateOfBirth',
+  'gender',
+  'phone',
+  'address',
+]);
+
 @Resolver()
 export class ExportResolver {
   constructor(
@@ -36,11 +52,14 @@ export class ExportResolver {
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<ExportFile> {
-    const requiredPermission = TABLE_KIND_PERMISSION[input.tableKind];
+    const requiredPermissions = [TABLE_KIND_PERMISSION[input.tableKind]];
+    if (input.columns.some((column) => EXTENDED_PERSONAL_COLUMNS.has(column))) {
+      requiredPermissions.push(PERMISSIONS.VOLUNTEER_EDIT);
+    }
     const allowed = await this.authService.hasRequiredPermissions(
       session.user.id,
       context.organizationUnitId,
-      [requiredPermission],
+      requiredPermissions,
     );
     if (!allowed) {
       throw new ForbiddenGraphQLError('Insufficient permissions');

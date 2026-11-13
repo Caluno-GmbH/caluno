@@ -2843,6 +2843,7 @@
     "cancel": "Abbrechen",
     "exportFailed": "Export fehlgeschlagen. Bitte versuche es erneut.",
     "nothingToExport": "Für die aktuellen Filter gibt es nichts zu exportieren.",
+    "missingVolunteerDataPermission": "Du hast keine Berechtigung, Freiwilligendaten herunterzuladen.",
     "columns": {
       "timesheets": {
         "volunteerName": "Name",

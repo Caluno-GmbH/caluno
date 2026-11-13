@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
+import { PERMISSIONS } from '../src/auth/constants';
 import { ExportTable } from '../src/export/enums';
 import { ExportResolver } from '../src/export/export.resolver';
 import type { ExportTableInput } from '../src/export/models/export.model';
@@ -89,6 +90,80 @@ describe('ExportResolver', () => {
       });
       expect(result.filename).toBe('timesheets-export-20261111-1200.csv');
       expect(result.content).toBe('id,name\nrow-1,Alice');
+    });
+
+    it('requires VOLUNTEER_EDIT to export extended personal columns from timesheets', async () => {
+      const authService = {
+        // A user with SHIFT_EDIT but WITHOUT VOLUNTEER_EDIT.
+        hasRequiredPermissions: mock(
+          async (_userId: string, _orgUnitId: string, perms: string[]) =>
+            !perms.includes(PERMISSIONS.VOLUNTEER_EDIT),
+        ),
+      };
+      const exportService = {
+        generateExport: mock(async () => ({ filename: '', content: '' })),
+      };
+      const exportLogService = { listExportLogs: mock(async () => []) };
+      const userService = { findById: mock(async () => undefined) };
+
+      const resolver = new ExportResolver(
+        authService as never,
+        exportService as never,
+        exportLogService as never,
+        userService as never,
+      );
+
+      const input: ExportTableInput = {
+        tableKind: ExportTable.TIMESHEETS,
+        rowIds: ['row-1'],
+        // DOB is extended PII — must not be exportable without VOLUNTEER_EDIT.
+        columns: ['volunteerName', 'volunteerDateOfBirth'],
+        includeTechnicalIds: false,
+      };
+
+      await expect(
+        resolver.exportTableCsv(input, context, session),
+      ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
+
+      expect(authService.hasRequiredPermissions).toHaveBeenCalledWith(
+        'actor-1',
+        'unit-1',
+        [PERMISSIONS.SHIFT_EDIT, PERMISSIONS.VOLUNTEER_EDIT],
+      );
+      expect(exportService.generateExport).not.toHaveBeenCalled();
+    });
+
+    it('does not require VOLUNTEER_EDIT for timesheet exports without extended columns', async () => {
+      const authService = {
+        hasRequiredPermissions: mock(async () => true),
+      };
+      const exportService = {
+        generateExport: mock(async () => ({ filename: 'f', content: 'c' })),
+      };
+      const exportLogService = { listExportLogs: mock(async () => []) };
+      const userService = { findById: mock(async () => undefined) };
+
+      const resolver = new ExportResolver(
+        authService as never,
+        exportService as never,
+        exportLogService as never,
+        userService as never,
+      );
+
+      const input: ExportTableInput = {
+        tableKind: ExportTable.TIMESHEETS,
+        rowIds: ['row-1'],
+        columns: ['volunteerName', 'volunteerEmail', 'duration'],
+        includeTechnicalIds: false,
+      };
+
+      await resolver.exportTableCsv(input, context, session);
+
+      expect(authService.hasRequiredPermissions).toHaveBeenCalledWith(
+        'actor-1',
+        'unit-1',
+        [PERMISSIONS.SHIFT_EDIT],
+      );
     });
   });
 
