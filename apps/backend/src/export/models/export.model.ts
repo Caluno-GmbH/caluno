@@ -6,8 +6,18 @@ export class ExportFile {
   @Field(() => String)
   filename!: string;
 
+  /** Short-lived presigned GET; the CSV bytes never travel through GraphQL. */
   @Field(() => String)
-  content!: string;
+  downloadUrl!: string;
+}
+
+@ObjectType()
+export class ExportColumn {
+  @Field(() => String)
+  id!: string;
+
+  @Field(() => String)
+  label!: string;
 }
 
 @ObjectType()
@@ -38,16 +48,23 @@ export class ExportLogEntry {
 }
 
 @InputType()
-export class ExportTableInput {
-  @Field(() => ExportTable)
-  tableKind!: ExportTable;
-
+export class ExportRowsInput {
+  /**
+   * Rows the caller selected (membership ids for USERS, time-entry ids for
+   * TIMESHEETS, shift ids for SHIFTS). Rows outside the caller's unit — or its
+   * descendants when `includeSubUnits` is set — are dropped.
+   */
   @Field(() => [ID])
   rowIds!: string[];
 
+  /** Column ids from the `exportColumns` query. Unknown ids are rejected. */
   @Field(() => [String])
   columns!: string[];
 
-  @Field(() => Boolean)
-  includeTechnicalIds!: boolean;
+  @Field(() => Boolean, { defaultValue: false })
+  includeTechnicalIds = false;
+
+  /** Include rows from descendant organization units, not only the header unit. */
+  @Field(() => Boolean, { defaultValue: false })
+  includeSubUnits = false;
 }

@@ -52,6 +52,42 @@ export class OrganizationUnitDataService {
     });
   }
 
+  /**
+   * The unit and every descendant, breadth-first. Loads the organization's unit
+   * tree once; units cannot be re-parented through the API, and a corrupt
+   * parent cycle is skipped rather than walked forever.
+   */
+  async listInclusiveDescendantUnitIds(
+    organizationUnitId: string,
+  ): Promise<string[]> {
+    const organizationId =
+      await this.findOrganizationIdByUnitId(organizationUnitId);
+    const unitRows = await this.db.query.organizationUnits.findMany({
+      where: { organizationId },
+      columns: { id: true, parentId: true },
+    });
+
+    const childrenByParent = new Map<string | null, string[]>();
+    for (const unit of unitRows) {
+      const children = childrenByParent.get(unit.parentId) ?? [];
+      children.push(unit.id);
+      childrenByParent.set(unit.parentId, children);
+    }
+
+    const result: string[] = [];
+    const visited = new Set<string>();
+    const queue = [organizationUnitId];
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current || visited.has(current)) continue;
+      visited.add(current);
+      result.push(current);
+      queue.push(...(childrenByParent.get(current) ?? []));
+    }
+
+    return result;
+  }
+
   async listInclusiveAncestorUnitIds(
     organizationUnitId: string,
   ): Promise<string[]> {
