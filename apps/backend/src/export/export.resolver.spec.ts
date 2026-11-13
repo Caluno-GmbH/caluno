@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
+import { ForbiddenGraphQLError } from '../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../graphql/graphql.context';
 import { ExportTable } from './enums';
 import { ExportResolver } from './export.resolver';
@@ -18,7 +19,7 @@ const input: ExportRowsInput = {
   includeSubUnits: false,
 };
 
-function buildResolver() {
+function buildResolver(authHasPermissions = true) {
   const exportService = {
     generateExport: mock(async () => ({
       filename: 'users-export.csv',
@@ -44,15 +45,19 @@ function buildResolver() {
   const userService = {
     findByIds: mock(async () => [{ id: 'actor-1', name: 'Alice Admin' }]),
   };
+  const authService = {
+    hasRequiredPermissions: mock(async () => authHasPermissions),
+  };
 
   const resolver = new ExportResolver(
     exportService as never,
     exportLogService as never,
     new ExportLogMapper(),
     userService as never,
+    authService as never,
   );
 
-  return { resolver, exportService, exportLogService, userService };
+  return { resolver, exportService, exportLogService, userService, authService };
 }
 
 describe('ExportResolver', () => {
@@ -119,5 +124,45 @@ describe('ExportResolver', () => {
     expect(entries).toHaveLength(1);
     expect(entries[0]?.actorName).toBe('Alice Admin');
     expect(entries[0]?.subjectUserIds).toEqual(['user-1']);
+  });
+
+  it('rejects extended timesheet columns without volunteer:edit', async () => {
+    const { resolver } = buildResolver(false);
+
+    await expect(
+      resolver.exportTimesheetsCsv(
+        { rowIds: ['t1'], columns: ['volunteerGender'], includeTechnicalIds: false, includeSubUnits: false },
+        context,
+        session,
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
+  });
+
+  it('allows extended timesheet columns when caller has volunteer:edit', async () => {
+    const { resolver, exportService } = buildResolver(true);
+
+    await resolver.exportTimesheetsCsv(
+      { rowIds: ['t1'], columns: ['volunteerGender'], includeTechnicalIds: false, includeSubUnits: false },
+      context,
+      session,
+    );
+
+    expect(exportService.generateExport).toHaveBeenCalledWith(
+      ExportTable.TIMESHEETS,
+      expect.objectContaining({ columns: ['volunteerGender'] }),
+    );
+  });
+
+  it('does not check volunteer:edit for non-extended timesheet columns', async () => {
+    const { resolver, authService, exportService } = buildResolver(false);
+
+    await resolver.exportTimesheetsCsv(
+      { rowIds: ['t1'], columns: ['volunteerName', 'shift'], includeTechnicalIds: false, includeSubUnits: false },
+      context,
+      session,
+    );
+
+    expect(authService.hasRequiredPermissions).not.toHaveBeenCalled();
+    expect(exportService.generateExport).toHaveBeenCalled();
   });
 });
