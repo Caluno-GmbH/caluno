@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, inArray, lt, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
 import type { Database } from '../../../database/database.module';
 import { DATABASE_CONNECTION } from '../../../database/database-connection';
 import * as schema from '../../../database/schema';
@@ -49,6 +49,7 @@ const MAX_PER_RUN = 200;
 const STALE_SENDING_MS = 10 * 60 * 1000;
 const RUN_BUDGET_MS = 60 * 1000;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const FAILED_CONTENT_RETENTION_MS = 72 * 60 * 60 * 1000;
 
 const TERMINAL_STATUSES = [
   EmailDeliveryStatus.SENT,
@@ -236,6 +237,28 @@ export class EmailOutboxService {
       )
       .returning({ id: schema.emailOutbox.id });
     return purgedEmails.length;
+  }
+
+  async clearExpiredFailedEmailContent(): Promise<number> {
+    const clearedEmails = await this.db
+      .update(schema.emailOutbox)
+      .set({
+        ...CLEARED_CONTENT,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(schema.emailOutbox.status, EmailDeliveryStatus.FAILED),
+          lte(schema.emailOutbox.expiresAt, new Date()),
+          or(
+            isNotNull(schema.emailOutbox.html),
+            isNotNull(schema.emailOutbox.textBody),
+            isNotNull(schema.emailOutbox.attachments),
+          ),
+        ),
+      )
+      .returning({ id: schema.emailOutbox.id });
+    return clearedEmails.length;
   }
 
   private async findOutboxEmailById(
@@ -472,11 +495,20 @@ export class EmailOutboxService {
     outboxEmail: EmailOutboxEntity,
     deliveryError: Error,
   ): Promise<void> {
+    const failedContentExpiresAt = new Date(
+      Date.now() + FAILED_CONTENT_RETENTION_MS,
+    );
+    const expiresAt =
+      outboxEmail.expiresAt &&
+      outboxEmail.expiresAt.getTime() < failedContentExpiresAt.getTime()
+        ? outboxEmail.expiresAt
+        : failedContentExpiresAt;
+
     const [updatedEmail] = await this.db
       .update(schema.emailOutbox)
       .set({
-        ...CLEARED_CONTENT,
         status: EmailDeliveryStatus.FAILED,
+        expiresAt,
         lastError: summarizeError(deliveryError.message),
         updatedAt: new Date(),
       })
@@ -500,6 +532,7 @@ export class EmailOutboxService {
         email_id: outboxEmail.id,
         category: outboxEmail.category,
         attempts: outboxEmail.attempts,
+        expires_at: expiresAt.toISOString(),
         err: deliveryError.message,
       },
       'Email delivery failed permanently',
