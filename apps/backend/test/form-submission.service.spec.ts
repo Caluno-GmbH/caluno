@@ -6,7 +6,10 @@ import { eq } from 'drizzle-orm';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
-import { ForbiddenGraphQLError } from '../src/graphql/errors';
+import {
+  ForbiddenGraphQLError,
+  NotFoundGraphQLError,
+} from '../src/graphql/errors';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
 import { TenantScopeService } from '../src/organization/tenant-scope.service';
 import { RequiredFormTargetType } from '../src/requirement-profile/enums';
@@ -17,6 +20,7 @@ import { PostHogService } from '../src/shared/observability/posthog.service';
 import { UserService } from '../src/user/user.service';
 import {
   createFormSubmission,
+  createMembershipRequest,
   createRequirementForm,
   createUser,
   setEventRequiredForms,
@@ -156,6 +160,41 @@ describe('FormSubmissionService per-org-unit submissions', () => {
 
       expect(forOwner).toHaveLength(1);
       expect(forRequirer).toEqual([]);
+    });
+  });
+
+  describe('findByUserForAdmin', () => {
+    it('returns submissions for a pending applicant without a membership', async () => {
+      const { admin, rootUnit, unitA, volunteer } = await setupOrgWithUnits();
+      const { form } = await createRequirementForm(db, {
+        organizationId: rootUnit.organizationId,
+        organizationUnitId: rootUnit.id,
+        createdById: admin.id,
+      });
+      const submission = await createFormSubmission(db, {
+        formId: form.id,
+        userId: volunteer.id,
+        organizationUnitId: unitA.id,
+      });
+      await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitA.id,
+      });
+
+      const submissions = await formSubmissionService.findByUserForAdmin(
+        volunteer.id,
+        unitA.id,
+      );
+
+      expect(submissions.map((s) => s.id)).toEqual([submission.id]);
+    });
+
+    it('rejects a user with neither membership nor membership request', async () => {
+      const { unitA, volunteer } = await setupOrgWithUnits();
+
+      await expect(
+        formSubmissionService.findByUserForAdmin(volunteer.id, unitA.id),
+      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
     });
   });
 
