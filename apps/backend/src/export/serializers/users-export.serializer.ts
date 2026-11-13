@@ -1,4 +1,4 @@
-import { formatBerlinDateTime, rowsToCsv } from '../export-csv.util';
+import { formatBerlinDate, rowsToCsv } from '../export-csv.util';
 
 export interface UserExportRow {
   userId: string;
@@ -22,7 +22,7 @@ const COLUMN_DEFS: Record<string, ColumnDef> = {
   roles: { label: 'Roles', get: (r) => r.roles.join('; ') },
   dateOfBirth: {
     label: 'Date of Birth',
-    get: (r) => formatBerlinDateTime(r.dateOfBirth),
+    get: (r) => formatBerlinDate(r.dateOfBirth),
   },
   gender: { label: 'Gender', get: (r) => r.gender },
   phone: { label: 'Phone', get: (r) => r.phone },

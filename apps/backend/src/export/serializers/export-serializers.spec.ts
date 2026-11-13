@@ -82,8 +82,8 @@ describe('serializeTimesheetExport', () => {
     expect(lines[0]).toBe(
       'Volunteer Name,Volunteer Date of Birth,Volunteer Gender,Volunteer Phone,Volunteer Address',
     );
-    // DOB in Berlin time (UTC+1), phone guarded against formula injection
-    expect(lines[1]).toBe("Jane Doe,15.01.2024 11:30,female,'+49170000,\"Hauptstr. 1, 20095 Hamburg\"");
+    // DOB is date-only (no wall-clock time), phone guarded against formula injection
+    expect(lines[1]).toBe("Jane Doe,15.01.2024,female,'+49170000,\"Hauptstr. 1, 20095 Hamburg\"");
   });
 
   it('renders empty cells for a volunteer with no profile data', () => {
@@ -132,7 +132,7 @@ describe('serializeUserExport', () => {
     expect(lines[0]).toBe('Name,Email,Roles');
   });
 
-  it('includes dateOfBirth formatted in Berlin time when selected', () => {
+  it('includes dateOfBirth as a date-only value when selected', () => {
     const csv = serializeUserExport(
       [baseRow],
       ['name', 'email', 'roles', 'dateOfBirth'],
@@ -140,7 +140,8 @@ describe('serializeUserExport', () => {
     );
     const lines = csv.split('\r\n').filter(Boolean);
     expect(lines[0]).toContain('Date of Birth');
-    expect(lines[1]).toContain('15.01.2024 11:30');
+    expect(lines[1]).toContain('15.01.2024');
+    expect(lines[1]).not.toContain('15.01.2024 ');
   });
 
   it('appends userId column when includeTechnicalIds is true', () => {
@@ -167,7 +168,7 @@ describe('serializeShiftExport', () => {
   const baseRow: ShiftExportRow = {
     id: 'sh-1',
     title: 'Afternoon Shift',
-    firstDate: BERLIN_DATE,
+    date: BERLIN_DATE,
     location: 'Room B',
     visibility: 'public',
     staffing: '3/5',

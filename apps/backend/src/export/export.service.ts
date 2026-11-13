@@ -135,7 +135,7 @@ export class ExportService {
       ),
     ];
 
-    const [users, instances] = await Promise.all([
+    const [users, instances, orgUnit] = await Promise.all([
       userIds.length
         ? this.db.query.users.findMany({ where: { id: { in: userIds } } })
         : Promise.resolve<UserEntity[]>([]),
@@ -145,9 +145,21 @@ export class ExportService {
             with: { master: true },
           }) as Promise<InstanceWithMaster[]>)
         : Promise.resolve<InstanceWithMaster[]>([]),
+      this.db.query.organizationUnits.findFirst({
+        where: { id: organizationUnitId },
+        columns: { street: true, zipCode: true, city: true },
+      }),
     ]);
     const usersById = new Map(users.map((u) => [u.id, u]));
     const instancesById = new Map(instances.map((i) => [i.id, i]));
+    // Entries without a shift instance fall back to the org unit address.
+    const orgUnitAddress = orgUnit
+      ? formatAddress({
+          street: orgUnit.street,
+          zip: orgUnit.zipCode,
+          city: orgUnit.city,
+        })
+      : null;
 
     const rows: TimesheetExportRow[] = present.map((entry) => {
       const volunteer = usersById.get(entry.volunteerId);
@@ -159,7 +171,7 @@ export class ExportService {
         : undefined;
       return {
         id: entry.id,
-        volunteerName: volunteer?.name,
+        volunteerName: volunteer?.name ?? volunteer?.email,
         volunteerEmail: volunteer?.email,
         volunteerDateOfBirth: parseDate(volunteer?.birthdate),
         volunteerGender: volunteer?.gender,
@@ -167,12 +179,14 @@ export class ExportService {
         volunteerAddress: volunteer ? formatAddress(volunteer) : null,
         shift: instance?.master.title,
         assignment: instance?.overrideTitle ?? null,
-        location: instance?.overrideLocation ?? instance?.master.location,
+        location: instance
+          ? (instance.overrideLocation ?? instance.master.location ?? null)
+          : orgUnitAddress,
         startedAt: entry.startedAt,
         endedAt: entry.endedAt,
         durationMinutes: durationMinutes(entry.startedAt, entry.endedAt),
         status: deriveTimeEntryStatus(entry),
-        createdBy: createdBy?.name,
+        createdBy: createdBy?.name ?? createdBy?.email,
         notes: entry.notes,
       };
     });
@@ -226,17 +240,16 @@ export class ExportService {
   ): Promise<CollectedExport> {
     const { organizationUnitId, columns, includeTechnicalIds } = input;
 
-    // findByIds is NOT org-scoped — filter to the unit ourselves.
-    const shifts = (await this.shiftService.findByIds(input.rowIds)).filter(
-      (s) => s.organizationUnitId === organizationUnitId,
-    );
+    // rowIds are shift instance (occurrence) ids — one export row per occurrence,
+    // mirroring the table. findInstancesByIds is org-scoped; foreign/missing drop.
+    const instances = (
+      await this.shiftService.findInstancesByIds(
+        input.rowIds,
+        organizationUnitId,
+      )
+    ).filter((i): i is InstanceWithMaster => i !== null);
 
-    const instancesByMaster = await this.shiftService.findInstancesByMasterIds(
-      shifts.map((s) => s.id),
-      organizationUnitId,
-    );
-
-    const instanceIds = [...instancesByMaster.values()].flat().map((i) => i.id);
+    const instanceIds = instances.map((i) => i.id);
     const invites = instanceIds.length
       ? await this.shiftService.findInstanceInvitesByInstanceIds(
           instanceIds,
@@ -245,33 +258,24 @@ export class ExportService {
         )
       : [];
 
-    const participatingByInstance = new Map<string, number>();
+    const filledByInstance = new Map<string, number>();
     for (const invite of invites) {
-      participatingByInstance.set(
+      filledByInstance.set(
         invite.instanceId,
-        (participatingByInstance.get(invite.instanceId) ?? 0) + 1,
+        (filledByInstance.get(invite.instanceId) ?? 0) + 1,
       );
     }
 
-    const rows: ShiftExportRow[] = shifts.map((shift) => {
-      const instances = instancesByMaster.get(shift.id) ?? [];
-      const firstDate =
-        instances.length > 0
-          ? instances.reduce((earliest, inst) =>
-              inst.actualStartsAt < earliest.actualStartsAt ? inst : earliest,
-            ).actualStartsAt
-          : shift.originalStartsAt;
-      const filled = instances.reduce(
-        (sum, inst) => sum + (participatingByInstance.get(inst.id) ?? 0),
-        0,
-      );
+    const rows: ShiftExportRow[] = instances.map((instance) => {
+      const { master } = instance;
+      const max = instance.overrideMaxVolunteers ?? master.maxVolunteers;
       return {
-        id: shift.id,
-        title: shift.title,
-        firstDate,
-        location: shift.location,
-        visibility: shift.visibility,
-        staffing: formatStaffing(filled, shift.maxVolunteers),
+        id: instance.id,
+        title: instance.overrideTitle ?? master.title,
+        date: instance.actualStartsAt,
+        location: instance.overrideLocation ?? master.location,
+        visibility: master.visibility,
+        staffing: formatStaffing(filledByInstance.get(instance.id) ?? 0, max),
       };
     });
 

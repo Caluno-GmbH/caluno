@@ -51,4 +51,15 @@ describe('serializeExportLogToCsv', () => {
     const dataLine = csv.split('\r\n')[1];
     expect(dataLine).toContain('"Smith, John"');
   });
+
+  it('neutralizes formula-injection prefixes in cells', () => {
+    const injectionEntry: RawExportLogEntry = {
+      ...entry,
+      actorName: '=HYPERLINK("http://evil","x")',
+    };
+    const csv = serializeExportLogToCsv([injectionEntry], headers, fmtDate);
+    const dataLine = csv.split('\r\n')[1];
+    // Leading "'" neutralizer, then quoted because the value contains commas/quotes.
+    expect(dataLine).toContain('"\'=HYPERLINK(""http://evil"",""x"")"');
+  });
 });

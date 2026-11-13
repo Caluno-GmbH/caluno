@@ -1,10 +1,17 @@
 import type { RawExportLogEntry } from '@repo/data';
 
+const INJECTION_PREFIXES = new Set(['=', '+', '-', '@', '\t', '\r']);
+
 function csvCell(value: string): string {
-  if (/[,"\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  let str = value;
+  const first = str[0];
+  if (first !== undefined && INJECTION_PREFIXES.has(first)) {
+    str = `'${str}`;
   }
-  return value;
+  if (/[,"\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
 }
 
 export function serializeExportLogToCsv(

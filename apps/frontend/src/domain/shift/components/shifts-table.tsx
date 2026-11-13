@@ -199,6 +199,8 @@ export function ShiftsTable({
   // The list is server-paginated, so fetch every shift matching the current
   // filters (one page sized to the full total) to export the whole set, not
   // just the visible page. Mirrors the shifts page's GetShifts arg mapping.
+  // Export is occurrence-level: expand each master to its instance ids so the
+  // CSV mirrors the table's occurrence rows (including cancelled ones).
   const resolveAllFilteredShiftIds = useCallback(async (): Promise<
     string[]
   > => {
@@ -219,7 +221,9 @@ export function ShiftsTable({
             ? ShiftFillFilter.Full
             : null,
     });
-    return data.shifts.items.map((item) => item.id);
+    return data.shifts.items.flatMap((item) =>
+      item.instances.map((instance) => instance.id),
+    );
   }, [
     sdk,
     pagination.total,

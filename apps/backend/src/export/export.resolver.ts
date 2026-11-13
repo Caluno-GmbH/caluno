@@ -63,22 +63,38 @@ export class ExportResolver {
       context.organizationUnitId,
       tableKind,
     );
-    return Promise.all(
-      logs.map(async (log) => {
-        const actor = log.actorUserId
-          ? await this.userService.findById(log.actorUserId)
-          : undefined;
-        return {
-          id: log.id,
-          actorName: actor?.name ?? log.actorUserId ?? 'Unknown',
-          tableKind: log.tableKind,
-          columns: log.columns,
-          includedTechnicalIds: log.includedTechnicalIds,
-          rowCount: log.rowCount,
-          subjectUserIds: log.subjectUserIds,
-          occurredAt: log.occurredAt,
-        };
+
+    // Resolve each distinct actor once; an unresolved actor degrades to a
+    // placeholder rather than leaking its raw id or failing the whole query.
+    const actorIds = [
+      ...new Set(
+        logs
+          .map((log) => log.actorUserId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const actorNameById = new Map<string, string>();
+    await Promise.all(
+      actorIds.map(async (id) => {
+        try {
+          const actor = await this.userService.findById(id);
+          if (actor?.name) actorNameById.set(id, actor.name);
+        } catch {
+          // Leave unresolved; the placeholder below is used.
+        }
       }),
     );
+
+    return logs.map((log) => ({
+      id: log.id,
+      actorName:
+        (log.actorUserId && actorNameById.get(log.actorUserId)) ?? 'Unknown',
+      tableKind: log.tableKind,
+      columns: log.columns,
+      includedTechnicalIds: log.includedTechnicalIds,
+      rowCount: log.rowCount,
+      subjectUserIds: log.subjectUserIds,
+      occurredAt: log.occurredAt,
+    }));
   }
 }

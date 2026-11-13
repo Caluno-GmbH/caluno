@@ -6,9 +6,11 @@ import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import { ExportTable } from '../src/export/enums';
 import { ExportService } from '../src/export/export.service';
 import { ExportLogService } from '../src/export/export-log.service';
+import { SHIFT_COLUMNS } from '../src/export/serializers/shifts-export.serializer';
 import { USER_COLUMNS } from '../src/export/serializers/users-export.serializer';
 import { MembershipService } from '../src/membership/membership.service';
-import type { ShiftService } from '../src/shift/shift.service';
+import { ShiftInviteStatus } from '../src/shift/enums';
+import { ShiftService } from '../src/shift/shift.service';
 import type { TimeTrackingService } from '../src/time-tracking/time-tracking.service';
 import { createUser } from './factories';
 import {
@@ -17,6 +19,9 @@ import {
   createUnit,
 } from './factories/org.factory';
 import { assignRoleToMembership, createRole } from './factories/role.factory';
+import { createShift } from './factories/shift.factory';
+import { createShiftInstance } from './factories/shift-instance.factory';
+import { createShiftInstanceInvite } from './factories/shift-instance-invite.factory';
 import {
   closeTestingModuleAfterAll,
   ensureTestDatabase,
@@ -201,5 +206,94 @@ describe('ExportService', () => {
     expect(logs.length).toBe(1);
     expect(logs[0].rowCount).toBe(0);
     expect(logs[0].subjectUserIds).toEqual([]);
+  });
+
+  it('exports one row per shift occurrence with per-occurrence staffing', async () => {
+    const { organization, type } = await createOrganizationWithType(
+      db,
+      `Export Org ${crypto.randomUUID()}`,
+    );
+    const unit = await createUnit(db, {
+      organizationId: organization.id,
+      typeId: type.id,
+      name: 'unit',
+    });
+    const actor = await createUser(db);
+    const volunteer = await createUser(db);
+
+    const shift = await createShift(db, {
+      organizationUnitId: unit.id,
+      title: 'Recurring Shift',
+      location: 'Main Hall',
+      maxVolunteers: 5,
+    });
+    // createShift seeds a first occurrence; add a second of the same master.
+    const [firstInstance] = await db.query.shiftInstances.findMany({
+      where: { masterId: shift.id },
+    });
+    const secondInstance = await createShiftInstance(db, shift.id, {
+      actualStartsAt: new Date('2026-06-26T08:00:00.000Z'),
+      actualEndsAt: new Date('2026-06-26T10:00:00.000Z'),
+      occurrenceIndex: 2,
+    });
+    // The same volunteer participates in both occurrences.
+    await createShiftInstanceInvite(db, {
+      instanceId: firstInstance.id,
+      userId: volunteer.id,
+      status: ShiftInviteStatus.JOINED,
+    });
+    await createShiftInstanceInvite(db, {
+      instanceId: secondInstance.id,
+      userId: volunteer.id,
+      status: ShiftInviteStatus.JOINED,
+    });
+
+    // collectShifts only touches ShiftService's db-backed read methods.
+    const shiftService = new ShiftService(
+      db,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+    const service = new ExportService(
+      db,
+      {} as unknown as TimeTrackingService,
+      membershipService,
+      shiftService,
+      exportLogService,
+    );
+
+    const result = await service.generateExport({
+      tableKind: ExportTable.SHIFTS,
+      organizationUnitId: unit.id,
+      rowIds: [firstInstance.id, secondInstance.id],
+      columns: SHIFT_COLUMNS,
+      includeTechnicalIds: false,
+      actorUserId: actor.id,
+    });
+
+    const lines = result.content.trimEnd().split('\r\n');
+    expect(lines[0]).toBe('Title,Date,Location,Visibility,Staffing');
+    // One row per occurrence, not collapsed to a single master row.
+    expect(lines.length).toBe(3);
+    // Each occurrence counts its own single participant — not inflated to 2/5.
+    for (const line of lines.slice(1)) {
+      expect(line).toContain('Recurring Shift');
+      expect(line.endsWith('1/5')).toBe(true);
+    }
+
+    const logs = await exportLogService.listExportLogs(
+      unit.id,
+      ExportTable.SHIFTS,
+    );
+    expect(logs[0].rowCount).toBe(2);
+    expect(logs[0].subjectUserIds).toEqual([volunteer.id]);
   });
 });

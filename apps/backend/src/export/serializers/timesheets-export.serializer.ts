@@ -1,4 +1,8 @@
-import { formatBerlinDateTime, rowsToCsv } from '../export-csv.util';
+import {
+  formatBerlinDate,
+  formatBerlinDateTime,
+  rowsToCsv,
+} from '../export-csv.util';
 
 export interface TimesheetExportRow {
   id: string;
@@ -27,10 +31,16 @@ type ColumnDef = {
 const COLUMN_DEFS: Record<string, ColumnDef> = {
   volunteerName: { label: 'Volunteer Name', get: (r) => r.volunteerName },
   volunteerEmail: { label: 'Volunteer Email', get: (r) => r.volunteerEmail },
-  volunteerDateOfBirth: { label: 'Volunteer Date of Birth', get: (r) => formatBerlinDateTime(r.volunteerDateOfBirth) },
+  volunteerDateOfBirth: {
+    label: 'Volunteer Date of Birth',
+    get: (r) => formatBerlinDate(r.volunteerDateOfBirth),
+  },
   volunteerGender: { label: 'Volunteer Gender', get: (r) => r.volunteerGender },
   volunteerPhone: { label: 'Volunteer Phone', get: (r) => r.volunteerPhone },
-  volunteerAddress: { label: 'Volunteer Address', get: (r) => r.volunteerAddress },
+  volunteerAddress: {
+    label: 'Volunteer Address',
+    get: (r) => r.volunteerAddress,
+  },
   shift: { label: 'Shift', get: (r) => r.shift },
   assignment: { label: 'Assignment', get: (r) => r.assignment },
   location: { label: 'Location', get: (r) => r.location },

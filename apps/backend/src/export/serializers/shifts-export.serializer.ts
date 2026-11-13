@@ -3,7 +3,7 @@ import { formatBerlinDateTime, rowsToCsv } from '../export-csv.util';
 export interface ShiftExportRow {
   id: string;
   title: string | null | undefined;
-  firstDate: Date | null;
+  date: Date | null;
   location: string | null | undefined;
   visibility: string | null | undefined;
   staffing: string | null | undefined;
@@ -16,7 +16,7 @@ type ColumnDef = {
 
 const COLUMN_DEFS: Record<string, ColumnDef> = {
   title: { label: 'Title', get: (r) => r.title },
-  date: { label: 'Date', get: (r) => formatBerlinDateTime(r.firstDate) },
+  date: { label: 'Date', get: (r) => formatBerlinDateTime(r.date) },
   location: { label: 'Location', get: (r) => r.location },
   visibility: { label: 'Visibility', get: (r) => r.visibility },
   staffing: { label: 'Staffing', get: (r) => r.staffing },

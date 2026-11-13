@@ -43,3 +43,18 @@ export function formatBerlinDateTime(date: Date | null | undefined): string {
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
   return `${get('day')}.${get('month')}.${get('year')} ${get('hour')}:${get('minute')}`;
 }
+
+const berlinDateFormat = new Intl.DateTimeFormat('de-DE', {
+  timeZone: EXPORT_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+// Date-only fields (e.g. date of birth) must not carry a wall-clock time.
+export function formatBerlinDate(date: Date | null | undefined): string {
+  if (date === null || date === undefined) return '';
+  const parts = berlinDateFormat.formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('day')}.${get('month')}.${get('year')}`;
+}
