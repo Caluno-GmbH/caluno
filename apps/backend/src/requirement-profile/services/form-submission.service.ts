@@ -79,7 +79,12 @@ export class FormSubmissionService {
     const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(schema.formSubmissions)
-      .where(eq(schema.formSubmissions.formId, formId));
+      .where(
+        and(
+          eq(schema.formSubmissions.formId, formId),
+          eq(schema.formSubmissions.organizationUnitId, organizationUnitId),
+        ),
+      );
     return { items, total };
   }
 

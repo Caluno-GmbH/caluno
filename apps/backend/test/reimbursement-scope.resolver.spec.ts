@@ -409,6 +409,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
           resolvedBody: { header: {}, blocks: [], footer: {} },
           invoiceStatus: InvoiceStatus.READY,
           hourlyRateCents: 1000,
+          organizationUnitId: branchA.id,
           ...stubInvoiceDocumentNumber(branchA.id),
         })
         .returning();
@@ -551,6 +552,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
           documentTemplateId: input.documentTemplateId,
           volunteerId: input.volunteerId,
           reimbursementTypeId: input.reimbursementTypeId,
+          organizationUnitId: input.scopeUnitId,
           periodStart: new Date('2026-03-01T00:00:00.000Z'),
           periodEnd: new Date('2026-04-01T00:00:00.000Z'),
           totalAmountCents: input.totalAmountCents,

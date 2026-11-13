@@ -62,11 +62,12 @@ describe('TimeEntryClosedListener', () => {
 
     const postHog = { capture: () => {} } as unknown as PostHogService;
     organizationUnitDataService = new OrganizationUnitDataService(db);
+    const tenantScope = new TenantScopeService(db, organizationUnitDataService);
     const authService = new AuthService(
       db,
       organizationUnitDataService,
       postHog,
-      new TenantScopeService(db, organizationUnitDataService),
+      tenantScope,
     );
     const documentTemplateService = new DocumentTemplateService(
       db,

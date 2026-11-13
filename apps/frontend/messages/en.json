@@ -1,46 +1,4 @@
 {
-  "Todo": {
-    "empty": "Nothing is waiting for you.",
-    "loadFailed": "Waiting actions could not be loaded.",
-    "seeAll": "See all",
-    "groups": {
-      "volunteersAndShifts": "Volunteers and appointments",
-      "accounting": "Accounting"
-    },
-    "types": {
-      "contract": "Contract",
-      "timesheet": "Timesheet"
-    },
-    "back": "Back to to do",
-    "waiting": "{count, plural, one {# waiting} other {# waiting}}",
-    "appliedRelative": "Applied {when}",
-    "declinedAgo": "Declined {when}",
-    "signedAgo": "Signed {when}",
-    "short": "{missing, plural, one {# needed} other {# needed}}",
-    "filledOf": "{filled}/{total}",
-    "filledSpots": "{filled} of {total} spots filled",
-    "hours": "{hours} h",
-    "fillFilter": {
-      "summary": "{threshold} · {days}",
-      "days": "{count} days",
-      "staffing": "Staffing",
-      "daysAhead": "Days ahead",
-      "BELOW_MINIMUM": "Below minimum",
-      "NOT_FULL": "Not full",
-      "emptyBelowMinimum": "No assignments below minimum in the next {count} days",
-      "emptyNotFull": "No assignments that aren't full in the next {count} days"
-    },
-    "sections": {
-      "FILL_OPEN_ASSIGNMENTS": "Fill upcoming assignments",
-      "REVIEW_APPLICATIONS": "Review applications",
-      "APPROVE_SIGNUPS": "Approve sign-ups",
-      "DECLINED_DOCUMENTS": "Declined documents",
-      "CREATE_AGREEMENTS": "Create agreements",
-      "CREATE_TIMESHEETS": "Create timesheets",
-      "COUNTERSIGN_DOCUMENTS": "Countersign documents",
-      "SEND_TIMESHEET_BUNDLES": "Timesheet bundles ready to send"
-    }
-  },
   "Terms": {
     "accept": "Accept and continue",
     "accepting": "Accepting...",
@@ -819,7 +777,6 @@
     "orgUnits": "Org units",
     "organizationSettings": "Organisation settings",
     "organizations": "Organisations",
-    "todo": "To do",
     "profile": "Profile",
     "qrIdDescription": "Show this QR code on-site to confirm your attendance.",
     "qrIdTitle": "QR ID",
@@ -2076,7 +2033,6 @@
     "csv": {
       "volunteerName": "Volunteer Name",
       "volunteerEmail": "Volunteer Email",
-      "shift": "Appointment",
       "assignment": "Assignment",
       "location": "Location",
       "startedAt": "Started At",
@@ -2906,5 +2862,9 @@
       "saveError": "We couldn't save your details. Please try again.",
       "close": "Close"
     }
+  },
+  "AdminWelcome": {
+    "title": "Welcome to {orgUnitName}",
+    "metaTitle": "Welcome"
   }
 }

@@ -37,6 +37,7 @@ The backend has two test suites:
    - They spin up the real NestJS app and connect to a PostgreSQL database.
    - The preload script provisions a fresh isolated database (create → migrate → seed permissions) in a global `beforeAll` before any integration spec runs, then drops it in global `afterAll` when the process exits.
    - Run with `bun test apps/backend/test/` (or `bun test` from `apps/backend`).
+   - **EE-only** integration specs live under `test/ee/` (directory named `ee`, stripped by the OSS mirror). They may import `src/ee/**`; core specs under `test/` must not.
 
 ### Writing integration tests
 
@@ -203,7 +204,7 @@ src/
 ├── utils       # Shared generic code
 test/
 ```
-Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`, `task`) are self-contained NestJS modules:
+Domain modules (`organization`, `membership`, `user`, `shift`, `time-tracking`, `requirement-profile`, `notification`) are self-contained NestJS modules. The Todo/task GraphQL surface lives under `src/ee/task/` (loaded via `EeModule`); the historical `todo_fill_filters` table schema stays in OSS `src/task/schemas/` so existing migrations are not dropped:
 
 ```
 domain/
