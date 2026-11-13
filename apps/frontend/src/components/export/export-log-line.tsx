@@ -13,7 +13,13 @@ import { serializeExportLogToCsv } from './export-log-csv';
 
 const EXPORT_LOG_LIMIT = 50;
 
-function ExportLogDownloader({ tableKind }: { tableKind: ExportTable }) {
+function ExportLogDownloader({
+  tableKind,
+  onDone,
+}: {
+  tableKind: ExportTable;
+  onDone: () => void;
+}) {
   const t = useTranslations('Export');
   const { formatDateTime } = useFormatting();
   const { data, error } = useExportLogs(tableKind, EXPORT_LOG_LIMIT, 0);
@@ -24,6 +30,7 @@ function ExportLogDownloader({ tableKind }: { tableKind: ExportTable }) {
     if (error) {
       downloaded.current = true;
       toast.error(t('log.downloadFailed'));
+      onDone();
       return;
     }
     if (!data) return;
@@ -41,7 +48,8 @@ function ExportLogDownloader({ tableKind }: { tableKind: ExportTable }) {
       formatDateTime(new Date(iso)),
     );
     triggerDownload(`export-log-${tableKind.toLowerCase()}.csv`, csv);
-  }, [data, error, t, formatDateTime, tableKind]);
+    onDone();
+  }, [data, error, t, formatDateTime, tableKind, onDone]);
 
   return null;
 }
@@ -49,11 +57,6 @@ function ExportLogDownloader({ tableKind }: { tableKind: ExportTable }) {
 function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
   const t = useTranslations('Export');
   const [armed, setArmed] = useState(false);
-  const { isFetching } = useExportLogs(
-    armed ? tableKind : undefined,
-    armed ? EXPORT_LOG_LIMIT : undefined,
-    armed ? 0 : undefined,
-  );
 
   return (
     <div className="flex items-center justify-end pt-1">
@@ -61,12 +64,17 @@ function ExportLogLineInner({ tableKind }: { tableKind: ExportTable }) {
         variant="ghost"
         size="sm"
         className="text-muted-foreground text-xs"
-        disabled={armed && isFetching}
+        disabled={armed}
         onClick={() => setArmed(true)}
       >
         {t('log.downloadButton')}
       </Button>
-      {armed && <ExportLogDownloader tableKind={tableKind} />}
+      {armed && (
+        <ExportLogDownloader
+          tableKind={tableKind}
+          onDone={() => setArmed(false)}
+        />
+      )}
     </div>
   );
 }
