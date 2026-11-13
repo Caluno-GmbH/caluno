@@ -75,7 +75,13 @@ describe('serializeTimesheetExport', () => {
   it('renders selected volunteer profile columns with Volunteer-prefixed labels', () => {
     const csv = serializeTimesheetExport(
       [baseRow],
-      ['volunteerName', 'volunteerDateOfBirth', 'volunteerGender', 'volunteerPhone', 'volunteerAddress'],
+      [
+        'volunteerName',
+        'volunteerDateOfBirth',
+        'volunteerGender',
+        'volunteerPhone',
+        'volunteerAddress',
+      ],
       false,
     );
     const lines = csv.split('\r\n').filter(Boolean);
@@ -83,12 +89,24 @@ describe('serializeTimesheetExport', () => {
       'Volunteer Name,Volunteer Date of Birth,Volunteer Gender,Volunteer Phone,Volunteer Address',
     );
     // DOB is date-only (no wall-clock time), phone guarded against formula injection
-    expect(lines[1]).toBe("Jane Doe,15.01.2024,female,'+49170000,\"Hauptstr. 1, 20095 Hamburg\"");
+    expect(lines[1]).toBe(
+      'Jane Doe,15.01.2024,female,\'+49170000,"Hauptstr. 1, 20095 Hamburg"',
+    );
   });
 
   it('renders empty cells for a volunteer with no profile data', () => {
-    const row = { ...baseRow, volunteerDateOfBirth: null, volunteerGender: null, volunteerPhone: null, volunteerAddress: null };
-    const csv = serializeTimesheetExport([row], ['volunteerDateOfBirth', 'volunteerPhone', 'volunteerAddress'], false);
+    const row = {
+      ...baseRow,
+      volunteerDateOfBirth: null,
+      volunteerGender: null,
+      volunteerPhone: null,
+      volunteerAddress: null,
+    };
+    const csv = serializeTimesheetExport(
+      [row],
+      ['volunteerDateOfBirth', 'volunteerPhone', 'volunteerAddress'],
+      false,
+    );
     const lines = csv.split('\r\n').filter(Boolean);
     expect(lines[1]).toBe(',,');
   });
