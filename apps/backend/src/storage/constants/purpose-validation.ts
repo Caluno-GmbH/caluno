@@ -23,6 +23,8 @@ export interface PurposeValidationRule {
   allowedMimeTypes: readonly string[];
   requiredPermission: string;
   requiresOrganizationUnitId: boolean;
+  /** Only FileService.saveGeneratedFile may create it; never a client presign. */
+  serverGeneratedOnly?: boolean;
 }
 
 export const PURPOSE_VALIDATION_RULES: Record<
@@ -46,6 +48,17 @@ export const PURPOSE_VALIDATION_RULES: Record<
     allowedMimeTypes: ['application/pdf'],
     requiredPermission: 'org:view',
     requiresOrganizationUnitId: true,
+  },
+  // Server-generated CSV exports (who exported which rows) — private, written
+  // only through FileService.saveGeneratedFile, downloaded via a short-lived
+  // presigned GET after export-permission authz.
+  [FilePurpose.EXPORT]: {
+    visibility: 'private',
+    maxByteSize: 25 * 1024 * 1024,
+    allowedMimeTypes: ['text/csv'],
+    requiredPermission: 'org:view',
+    requiresOrganizationUnitId: true,
+    serverGeneratedOnly: true,
   },
   [FilePurpose.FORM_DOCUMENT]: {
     visibility: 'public',

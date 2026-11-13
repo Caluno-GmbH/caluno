@@ -24,6 +24,7 @@ import { type Database, DatabaseModule } from './database/database.module';
 import { DATABASE_CONNECTION } from './database/database-connection';
 import { loadEeModules } from './edition/load-ee-modules';
 import { EventModule } from './event/event.module';
+import { ExportModule } from './export/export.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { LoaderInterceptor } from './graphql/interceptors';
 import { resolveRequestLocale } from './graphql/locale';
@@ -279,6 +280,7 @@ const autoSchemaFile =
     BetterAuthModule,
     AuthModule,
     AccountingModule,
+    ExportModule,
     ...loadEeModules(),
   ],
   controllers: [],

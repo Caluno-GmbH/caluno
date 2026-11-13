@@ -304,6 +304,28 @@ export class MembershipService {
     });
   }
 
+  /**
+   * Memberships of exactly these units (the header unit, or the header unit and
+   * its descendants for an export). Never widens beyond the given ids.
+   */
+  async getMembershipsForUnits(unitIds: string[]): Promise<MembershipEntity[]> {
+    if (unitIds.length === 0) {
+      return [];
+    }
+
+    return this.db.query.memberships.findMany({
+      where: { organizationUnitId: { in: unitIds } },
+      with: {
+        user: true,
+        roles: {
+          with: {
+            role: true,
+          },
+        },
+      },
+    });
+  }
+
   async getMyMemberships(userId: string): Promise<MembershipEntity[]> {
     return this.db.query.memberships.findMany({
       where: { userId },

@@ -1,0 +1,295 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "c1171fc2-8b78-4abb-9fc7-1650b0ae0b92",
+  "prevIds": ["1e1dd933-911b-422a-aa57-b0cf31b9e31c"],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "export_table"],
+      "writes": [
+        "s|enum|public.export_table",
+        "n|enum|public.export_table",
+        "e|enum|public.export_table",
+        "n|type|public.export_table"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "export_logs"],
+      "writes": [
+        "s|tbl|public.export_logs",
+        "n|tbl|public.export_logs",
+        "e|tbl|public.export_logs",
+        "n|rel|public.export_logs",
+        "n|type|public.export_logs",
+        "n|rel|public.export_logs_pkey"
+      ],
+      "reads": ["n|sch|public", "n|enum|public.export_table"]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "export_logs",
+        "idx_export_logs_organization_unit_id_occurred_at"
+      ],
+      "writes": [
+        "s|idx|public.idx_export_logs_organization_unit_id_occurred_at",
+        "n|idx|public.idx_export_logs_organization_unit_id_occurred_at",
+        "e|idx|public.idx_export_logs_organization_unit_id_occurred_at",
+        "n|rel|public.idx_export_logs_organization_unit_id_occurred_at"
+      ],
+      "reads": [
+        "n|tbl|public.export_logs",
+        "n|sch|public",
+        "n|col|public.export_logs.organization_unit_id",
+        "n|col|public.export_logs.occurred_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "export_logs"],
+      "writes": [
+        "s|fk|public.export_logs.export_logs_actor_user_id_users_id_fkey",
+        "n|fk|public.export_logs.export_logs_actor_user_id_users_id_fkey",
+        "e|fk|public.export_logs.export_logs_actor_user_id_users_id_fkey",
+        "n|con|public.export_logs.export_logs_actor_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.export_logs",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.export_logs.actor_user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "export_logs",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "export_table",
+        "values": ["TIMESHEETS", "USERS", "SHIFTS"],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "organization_unit_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "actor_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "table_kind",
+        "type": "export_table",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "columns",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "included_technical_ids",
+        "type": "boolean",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "row_count",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "subject_user_ids",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "occurred_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "idx_export_logs_organization_unit_id_occurred_at",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_unit_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "occurred_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "export_logs_actor_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": ["actor_user_id"],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "export_logs_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}

@@ -42,6 +42,7 @@ export * from './react/hooks/use-contracts';
 export * from './react/hooks/use-document-templates';
 export * from './react/hooks/use-effective-rates';
 export * from './react/hooks/use-events';
+export * from './react/hooks/use-export';
 export * from './react/hooks/use-graphql-client';
 export * from './react/hooks/use-invoices';
 export * from './react/hooks/use-join-shift-instance';
@@ -117,6 +118,13 @@ export type {
   MyEvent,
   RawEvent,
 } from './repositories/event/event.repository';
+export type {
+  ExportColumnItem,
+  ExportFileResult,
+  ExportRequest,
+  RawExportLogEntry,
+} from './repositories/export/export.repository';
+export { ExportRepository } from './repositories/export/export.repository';
 export type {
   AvailableShiftInstance,
   AvailableShiftInstanceDayCount,
