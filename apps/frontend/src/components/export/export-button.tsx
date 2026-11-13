@@ -19,7 +19,7 @@ import { DownloadIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { triggerDownload } from '@/lib/download/trigger-download';
+import { triggerUrlDownload } from '@/lib/download/trigger-url-download';
 import {
   type ExportColumnOption,
   resolveSelectedColumns,
@@ -68,6 +68,7 @@ export function ExportButton({
   const [checkedOptional, setCheckedOptional] =
     useState<string[]>(defaultChecked);
   const [includeTechnicalIds, setIncludeTechnicalIds] = useState(false);
+  const [includeSubUnits, setIncludeSubUnits] = useState(false);
   const [enabledGroups, setEnabledGroups] =
     useState<Record<string, boolean>>(defaultEnabledGroups);
 
@@ -83,6 +84,7 @@ export function ExportButton({
     if (next) {
       setCheckedOptional(defaultChecked);
       setIncludeTechnicalIds(false);
+      setIncludeSubUnits(false);
       setEnabledGroups(defaultEnabledGroups);
     }
     setOpen(next);
@@ -106,8 +108,9 @@ export function ExportButton({
         rowIds: ids,
         columns: resolvedColumns,
         includeTechnicalIds,
+        includeSubUnits,
       });
-      triggerDownload(result.filename, result.content);
+      triggerUrlDownload(result.filename, result.downloadUrl);
       setOpen(false);
     } catch {
       toast.error(t('exportFailed'));
@@ -154,6 +157,14 @@ export function ExportButton({
               description={t('includeTechnicalIdsDescription')}
               checked={includeTechnicalIds}
               onCheckedChange={setIncludeTechnicalIds}
+            />
+
+            <ColumnCheckbox
+              id="export-col-include-subunits"
+              label={t('includeSubUnits')}
+              description={t('includeSubUnitsDescription')}
+              checked={includeSubUnits}
+              onCheckedChange={setIncludeSubUnits}
             />
           </div>
 
