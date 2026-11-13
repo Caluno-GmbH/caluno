@@ -229,8 +229,8 @@ describe('id verification mutations', () => {
 });
 
 const CHECK_IN_READINESS = `
-  query CheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID!) {
-    checkInReadiness(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
+  query CheckInReadiness($checkInId: String!, $shiftInstanceId: ID!) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
       isParticipating
       idVerificationEnabled
@@ -295,7 +295,10 @@ describe('checkInReadiness id verification facts', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -323,7 +326,10 @@ describe('checkInReadiness id verification facts', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -347,7 +353,10 @@ describe('checkInReadiness id verification facts', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',

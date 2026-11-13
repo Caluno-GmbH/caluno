@@ -3,6 +3,7 @@ import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { type AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { UserService } from '../../user/user.service';
 import { AddTimeEntryInput } from '../inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from '../inputs/close-time-enty-input';
 import { UpdateTimeEntryInput } from '../inputs/update-time-entry.input';
@@ -15,6 +16,7 @@ export class TimeTrackingMutationResolver {
   constructor(
     private readonly timeTrackingService: TimeTrackingService,
     private readonly entryMapper: TimeEntryMapper,
+    private readonly userService: UserService,
   ) {}
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
@@ -163,9 +165,11 @@ export class TimeTrackingMutationResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Mutation(() => Boolean)
   async checkInInviteToOrganization(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<boolean> {
+    const volunteerId =
+      await this.userService.resolveVolunteerIdByCheckInId(checkInId);
     await this.timeTrackingService.inviteVolunteerToOrganization(
       context.organizationUnitId,
       volunteerId,

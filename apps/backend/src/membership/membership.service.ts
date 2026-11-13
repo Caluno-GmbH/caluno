@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { AuthService } from '../auth/auth.service';
 import { DEFAULT_MEMBER_ROLE_NAME, PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
@@ -32,6 +32,9 @@ import {
   type MembershipRequestMetadata,
 } from './schemas/membership-request.schema';
 
+/** Minimum gap between two org unit invitation emails to the same volunteer. */
+export const ORGANIZATION_UNIT_INVITATION_COOLDOWN_MS = 10 * 60_000;
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -48,6 +51,66 @@ export class MembershipService {
     private readonly postHogService: PostHogService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
   ) {}
+
+  /**
+   * Atomically claims the right to send an org unit invitation email: a single
+   * upsert that only takes effect when no invitation went out within the
+   * cooldown, so concurrent callers cannot both send. Returns true when the
+   * send is allowed.
+   */
+  async claimOrganizationUnitInvitation(
+    userId: string,
+    organizationUnitId: string,
+    now: Date = new Date(),
+  ): Promise<boolean> {
+    const cooldownStart = new Date(
+      now.getTime() - ORGANIZATION_UNIT_INVITATION_COOLDOWN_MS,
+    );
+    const claimed = await this.db
+      .insert(schema.organizationUnitInvitations)
+      .values({ userId, organizationUnitId, lastSentAt: now })
+      .onConflictDoUpdate({
+        target: [
+          schema.organizationUnitInvitations.userId,
+          schema.organizationUnitInvitations.organizationUnitId,
+        ],
+        set: { lastSentAt: now },
+        setWhere: lte(
+          schema.organizationUnitInvitations.lastSentAt,
+          cooldownStart,
+        ),
+      })
+      .returning({ userId: schema.organizationUnitInvitations.userId });
+    return claimed.length > 0;
+  }
+
+  /**
+   * Undoes a claim from {@link claimOrganizationUnitInvitation} whose email
+   * could not be dispatched, so a retry can send right away. Matches the
+   * claim's own timestamp, so a newer claim is never released.
+   *
+   * Hard delete by design, an exception to the soft-delete rule: a row only
+   * records when the last email went out, so it carries no history worth
+   * keeping, and a soft-deleted row would still block the next claim's upsert.
+   */
+  async releaseOrganizationUnitInvitation(
+    userId: string,
+    organizationUnitId: string,
+    claimedAt: Date,
+  ): Promise<void> {
+    await this.db
+      .delete(schema.organizationUnitInvitations)
+      .where(
+        and(
+          eq(schema.organizationUnitInvitations.userId, userId),
+          eq(
+            schema.organizationUnitInvitations.organizationUnitId,
+            organizationUnitId,
+          ),
+          eq(schema.organizationUnitInvitations.lastSentAt, claimedAt),
+        ),
+      );
+  }
 
   private appendIntendedIdsToMetadata(
     metadata: MembershipRequestMetadata,
@@ -253,23 +316,60 @@ export class MembershipService {
   }
 
   /**
-   * The volunteer's open (PENDING) membership request against this exact
-   * unit, if any — used by the check-in readiness gate, which needs the
-   * request's own id rather than the derived `getMembershipState` enum.
+   * The volunteer's open (PENDING) membership request to the unit or, failing
+   * that, its nearest ancestor that has one — a pending request to a parent
+   * relates the volunteer to its whole subtree. Used by the check-in readiness
+   * gate, which needs the request's own id rather than the derived
+   * `getMembershipState` enum. Sibling and descendant requests never match.
    */
   async findPendingMembershipRequest(
     userId: string,
     organizationUnitId: string,
-  ): Promise<{ id: string } | null> {
-    const request = await this.db.query.membershipRequests.findFirst({
+  ): Promise<{ id: string; organizationUnitId: string } | undefined> {
+    // Ordered self-first, so the nearest unit with a request wins.
+    const unitIds =
+      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+        organizationUnitId,
+      );
+    if (unitIds.length === 0) return undefined;
+
+    const requests = await this.db.query.membershipRequests.findMany({
       where: {
         userId,
-        organizationUnitId,
+        organizationUnitId: { in: unitIds },
         status: MembershipRequestStatus.PENDING,
       },
-      columns: { id: true },
+      columns: { id: true, organizationUnitId: true },
     });
-    return request ?? null;
+    for (const unitId of unitIds) {
+      const match = requests.find(
+        (request) => request.organizationUnitId === unitId,
+      );
+      if (match) return { id: match.id, organizationUnitId: unitId };
+    }
+    return undefined;
+  }
+
+  /**
+   * A PENDING request of a volunteer, loaded by id. Not tenant-scoped: the
+   * caller must prove the request's unit is in scope via TenantScopeService.
+   */
+  async findPendingVolunteerRequestById(
+    requestId: string,
+  ): Promise<{ id: string; userId: string; organizationUnitId: string }> {
+    const request = await this.db.query.membershipRequests.findFirst({
+      where: { id: requestId, status: MembershipRequestStatus.PENDING },
+      columns: { id: true, userId: true, organizationUnitId: true },
+    });
+    if (!request?.userId || !request.organizationUnitId) {
+      throw new NotFoundGraphQLError('Membership request not found');
+    }
+
+    return {
+      id: request.id,
+      userId: request.userId,
+      organizationUnitId: request.organizationUnitId,
+    };
   }
 
   async getPendingOrganizationUnitIds(userId: string): Promise<string[]> {
@@ -433,16 +533,7 @@ export class MembershipService {
     userId: string,
     unitIds: string[],
   ): Promise<Set<string>> {
-    // Non-UUID strings can never match a uuid column; drop them so the
-    // `in` filter below never hits a cast error.
-    const validUnitIds = unitIds.filter((id) => UUID_RE.test(id));
-    if (validUnitIds.length === 0) return new Set();
-
-    const requestedUnits = await this.db.query.organizationUnits.findMany({
-      where: { id: { in: validUnitIds } },
-      columns: { id: true, organizationId: true },
-    });
-    if (requestedUnits.length === 0) return new Set();
+    if (!unitIds.some((id) => UUID_RE.test(id))) return new Set();
 
     const userMemberships = await this.db.query.memberships.findMany({
       where: { userId },
@@ -453,15 +544,75 @@ export class MembershipService {
       },
     });
 
-    // Member unit ids grouped by organization.
-    const memberUnitIdsByOrg = new Map<string, Set<string>>();
-    for (const membership of userMemberships) {
-      const unit = membership.organizationUnit;
+    return this.filterUnitsWithAnchorOrAncestor(
+      unitIds,
+      this.groupUnitIdsByOrganization(
+        userMemberships.map((membership) => membership.organizationUnit),
+      ),
+    );
+  }
+
+  /**
+   * Batched: returns the subset of `unitIds` that the user has a PENDING
+   * membership request to, either on the unit itself or on any of its
+   * ancestors within the same organization (a pending request to a parent
+   * unit relates the user to its whole subtree, like a membership would).
+   * Runs a constant number of queries regardless of `unitIds.length`.
+   */
+  async filterUnitsWithPendingRequest(
+    userId: string,
+    unitIds: string[],
+  ): Promise<Set<string>> {
+    if (!unitIds.some((id) => UUID_RE.test(id))) return new Set();
+
+    const pendingRequests = await this.db.query.membershipRequests.findMany({
+      where: { userId, status: MembershipRequestStatus.PENDING },
+      with: {
+        organizationUnit: {
+          columns: { id: true, organizationId: true },
+        },
+      },
+    });
+
+    return this.filterUnitsWithAnchorOrAncestor(
+      unitIds,
+      this.groupUnitIdsByOrganization(
+        pendingRequests.map((request) => request.organizationUnit),
+      ),
+    );
+  }
+
+  private groupUnitIdsByOrganization(
+    units: Array<{ id: string; organizationId: string | null } | null>,
+  ): Map<string, Set<string>> {
+    const unitIdsByOrg = new Map<string, Set<string>>();
+    for (const unit of units) {
       if (!unit?.organizationId) continue;
-      const set = memberUnitIdsByOrg.get(unit.organizationId) ?? new Set();
+      const set = unitIdsByOrg.get(unit.organizationId) ?? new Set();
       set.add(unit.id);
-      memberUnitIdsByOrg.set(unit.organizationId, set);
+      unitIdsByOrg.set(unit.organizationId, set);
     }
+    return unitIdsByOrg;
+  }
+
+  /**
+   * Returns the subset of `unitIds` that is, or has an ancestor in,
+   * `anchorUnitIdsByOrg` (anchor unit ids grouped by organization).
+   */
+  private async filterUnitsWithAnchorOrAncestor(
+    unitIds: string[],
+    anchorUnitIdsByOrg: Map<string, Set<string>>,
+  ): Promise<Set<string>> {
+    // Non-UUID strings can never match a uuid column; drop them so the
+    // `in` filter below never hits a cast error.
+    const validUnitIds = unitIds.filter((id) => UUID_RE.test(id));
+    if (validUnitIds.length === 0) return new Set();
+
+    const requestedUnits = await this.db.query.organizationUnits.findMany({
+      where: { id: { in: validUnitIds } },
+      columns: { id: true, organizationId: true },
+    });
+    if (requestedUnits.length === 0) return new Set();
 
     const organizationIds = [
       ...new Set(
@@ -481,25 +632,25 @@ export class MembershipService {
       parentByUnitId.set(unit.id, unit.parentId);
     }
 
-    const eligible = new Set<string>();
+    const matched = new Set<string>();
     for (const unit of requestedUnits) {
-      const memberUnitIds = unit.organizationId
-        ? memberUnitIdsByOrg.get(unit.organizationId)
+      const anchorUnitIds = unit.organizationId
+        ? anchorUnitIdsByOrg.get(unit.organizationId)
         : undefined;
-      if (!memberUnitIds || memberUnitIds.size === 0) continue;
+      if (!anchorUnitIds || anchorUnitIds.size === 0) continue;
 
-      // Walk upward; first member-owned ancestor wins.
+      // Walk upward; first anchor-owned ancestor wins.
       let currentUnitId: string | null = unit.id;
       while (currentUnitId) {
-        if (memberUnitIds.has(currentUnitId)) {
-          eligible.add(unit.id);
+        if (anchorUnitIds.has(currentUnitId)) {
+          matched.add(unit.id);
           break;
         }
         currentUnitId = parentByUnitId.get(currentUnitId) ?? null;
       }
     }
 
-    return eligible;
+    return matched;
   }
 
   private async notifyMembershipRequested(

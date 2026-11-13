@@ -7,15 +7,25 @@ import { Link } from '@/i18n/navigation';
 type BlockerCardProps = {
   icon: ReactNode;
   title: string;
-  description: string;
+  description: ReactNode;
   buttonLabel?: string | undefined;
   onAction?: (() => void) | undefined;
   isActionPending?: boolean | undefined;
   isActionDone?: boolean | undefined;
   doneLabel?: string | undefined;
+  /**
+   * Copy shown instead of `description` once the action is done, when the
+   * outcome needs its own explanation (what happens next, what to wait for).
+   */
+  doneDescription?: ReactNode;
   actionHref?: string | undefined;
   actionExternal?: boolean | undefined;
   className?: string | undefined;
+  /**
+   * Accessible name for the action button when its visible label is too terse
+   * to stand on its own (e.g. "Invite" on the not-a-member card).
+   */
+  actionAriaLabel?: string | undefined;
 };
 
 /**
@@ -32,10 +42,18 @@ export function BlockerCard({
   isActionPending,
   isActionDone,
   doneLabel,
+  doneDescription,
   actionHref,
   actionExternal,
   className,
+  actionAriaLabel,
 }: BlockerCardProps) {
+  const label = isActionDone && doneLabel ? doneLabel : buttonLabel;
+  // Once the action is done the label announces the new state, so the
+  // original action name stops applying.
+  const ariaLabel = isActionDone ? undefined : actionAriaLabel;
+  const shownDescription =
+    isActionDone && doneDescription ? doneDescription : description;
   return (
     <Card className={className}>
       <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
@@ -44,7 +62,9 @@ export function BlockerCard({
         </div>
         <div className="space-y-1">
           <p className="font-semibold">{title}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <div className="text-sm text-muted-foreground">
+            {shownDescription}
+          </div>
         </div>
         {actionHref && buttonLabel ? (
           <Button type="button" variant="default" asChild>
@@ -62,8 +82,10 @@ export function BlockerCard({
             variant="default"
             disabled={isActionPending || isActionDone}
             onClick={onAction}
+            title={ariaLabel}
+            aria-label={ariaLabel}
           >
-            {isActionDone && doneLabel ? doneLabel : buttonLabel}
+            {label}
           </Button>
         ) : null}
       </CardContent>

@@ -83,6 +83,7 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
   it('captures organization_unit_invite for the volunteer after the email is queued', async () => {
     const capture = jest.fn();
     const notifyOrganizationUnitInvited = jest.fn();
+    const claimOrganizationUnitInvitation = jest.fn().mockResolvedValue(true);
     const db = {
       query: {
         organizationUnits: {
@@ -96,7 +97,11 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
     };
     const service = new TimeTrackingService(
       db as never,
-      {} as never,
+      {
+        claimOrganizationUnitInvitation,
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(false),
+        findPendingMembershipRequest: jest.fn().mockResolvedValue(undefined),
+      } as never,
       {} as never,
       { capture } as unknown as PostHogService,
       {} as never,
@@ -119,6 +124,95 @@ describe('TimeTrackingService.inviteVolunteerToOrganization PostHog', () => {
         source: 'check_in',
       },
     });
+  });
+
+  it('skips the email and PostHog event while the invitation cooldown is active', async () => {
+    const capture = jest.fn();
+    const notifyOrganizationUnitInvited = jest.fn();
+    const db = {
+      query: {
+        organizationUnits: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'ou-1',
+            name: 'Unit',
+            organizationId: 'org-1',
+          }),
+        },
+      },
+    };
+    const service = new TimeTrackingService(
+      db as never,
+      {
+        claimOrganizationUnitInvitation: jest.fn().mockResolvedValue(false),
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(false),
+        findPendingMembershipRequest: jest.fn().mockResolvedValue(undefined),
+      } as never,
+      {} as never,
+      { capture } as unknown as PostHogService,
+      {} as never,
+      { findById: jest.fn().mockResolvedValue({ id: 'volunteer-1' }) } as never,
+      { notifyOrganizationUnitInvited } as never,
+      {} as never,
+      { emit: jest.fn() } as never,
+    );
+
+    await service.inviteVolunteerToOrganization('ou-1', 'volunteer-1');
+
+    expect(notifyOrganizationUnitInvited).not.toHaveBeenCalled();
+    expect(capture).not.toHaveBeenCalled();
+  });
+});
+
+describe('TimeTrackingService.inviteVolunteerToOrganization dispatch failure', () => {
+  it('releases the cooldown claim, skips PostHog and throws when the email cannot be dispatched', async () => {
+    const capture = jest.fn();
+    const claimOrganizationUnitInvitation = jest.fn().mockResolvedValue(true);
+    const releaseOrganizationUnitInvitation = jest
+      .fn()
+      .mockResolvedValue(undefined);
+    const service = new TimeTrackingService(
+      {
+        query: {
+          organizationUnits: {
+            findFirst: jest.fn().mockResolvedValue({
+              id: 'ou-1',
+              name: 'Unit',
+              organizationId: 'org-1',
+            }),
+          },
+        },
+      } as never,
+      {
+        claimOrganizationUnitInvitation,
+        releaseOrganizationUnitInvitation,
+        isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(false),
+        findPendingMembershipRequest: jest.fn().mockResolvedValue(undefined),
+      } as never,
+      {} as never,
+      { capture } as unknown as PostHogService,
+      {} as never,
+      { findById: jest.fn().mockResolvedValue({ id: 'volunteer-1' }) } as never,
+      {
+        notifyOrganizationUnitInvited: jest
+          .fn()
+          .mockRejectedValue(new Error('outbox unavailable')),
+      } as never,
+      {} as never,
+      { emit: jest.fn() } as never,
+    );
+
+    await expect(
+      service.inviteVolunteerToOrganization('ou-1', 'volunteer-1'),
+    ).rejects.toThrow('The invitation could not be sent. Please try again.');
+
+    const claimedAt = claimOrganizationUnitInvitation.mock.calls[0]?.[2];
+    expect(claimedAt).toBeInstanceOf(Date);
+    expect(releaseOrganizationUnitInvitation).toHaveBeenCalledWith(
+      'volunteer-1',
+      'ou-1',
+      claimedAt,
+    );
+    expect(capture).not.toHaveBeenCalled();
   });
 });
 
@@ -318,7 +412,9 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
 describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
   const membershipService = () => ({
     isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true),
-    findPendingMembershipRequest: jest.fn().mockResolvedValue({ id: 'mr-1' }),
+    findPendingMembershipRequest: jest
+      .fn()
+      .mockResolvedValue({ id: 'mr-1', organizationUnitId: 'ou-1' }),
     findMembershipInUnits: jest.fn().mockResolvedValue(null),
   });
   const shiftService = () => ({
@@ -329,6 +425,13 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     }),
     findInviteStatusesForUser: jest.fn(),
     hasOpenTimeEntry: jest.fn(),
+    hasAvailableSeat: jest.fn().mockResolvedValue(true),
+  });
+  const organizationService = (viewableUnitIds: string[] = []) => ({
+    findUnitsWithPermission: jest
+      .fn()
+      .mockResolvedValue(viewableUnitIds.map((id) => ({ id }))),
+    hasPermissionInUnit: jest.fn().mockResolvedValue(false),
   });
   const organizationUnitDataService = () => ({
     listInclusiveAncestorUnitIds: jest.fn().mockResolvedValue(['ou-1']),
@@ -344,7 +447,7 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       membershipService() as never,
       shift as never,
       {} as never,
-      {} as never,
+      organizationService() as never,
       {} as never,
       {} as never,
       organizationUnitDataService() as never,
@@ -352,6 +455,7 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
     );
 
     const readiness = await service.getCheckInReadiness(
+      'caller-1',
       'volunteer-1',
       null,
       'ou-1',
@@ -359,15 +463,22 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
 
     expect(readiness).toMatchObject({
       isMember: true,
-      openMembershipRequestId: 'mr-1',
+      membershipRequest: {
+        id: 'mr-1',
+        canAccept: false,
+        organizationUnitName: null,
+      },
       shiftInviteStatus: null,
       isParticipating: false,
       hasOpenTimeEntry: false,
       idVerificationEnabled: false,
       idVerified: false,
       membershipId: null,
+      canViewVolunteerProfile: false,
+      shiftHasAvailableSeat: true,
     });
     expect(shift.findInstanceById).not.toHaveBeenCalled();
+    expect(shift.hasAvailableSeat).not.toHaveBeenCalled();
     expect(shift.findInviteStatusesForUser).not.toHaveBeenCalled();
     expect(shift.hasOpenTimeEntry).not.toHaveBeenCalled();
   });
@@ -382,14 +493,19 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       membershipService() as never,
       shift as never,
       {} as never,
-      {} as never,
+      organizationService(['ou-1']) as never,
       {} as never,
       {} as never,
       organizationUnitDataService() as never,
       { emit: jest.fn() } as never,
     );
 
-    await service.getCheckInReadiness('volunteer-1', 'si-1', 'ou-1');
+    const readiness = await service.getCheckInReadiness(
+      'caller-1',
+      'volunteer-1',
+      'si-1',
+      'ou-1',
+    );
 
     expect(shift.findInstanceById).toHaveBeenCalledWith('si-1', 'ou-1');
     expect(shift.findInviteStatusesForUser).toHaveBeenCalledWith(
@@ -397,6 +513,40 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
       ['si-1'],
     );
     expect(shift.hasOpenTimeEntry).toHaveBeenCalledWith('si-1', 'volunteer-1');
+    expect(readiness.canViewVolunteerProfile).toBe(true);
+  });
+
+  it('reports no available seat using the instance override over the shift limit', async () => {
+    const shift = shiftService();
+    shift.findInstanceById.mockResolvedValue({
+      id: 'si-1',
+      overrideMaxVolunteers: 2,
+      master: { maxVolunteers: 5, organizationUnitId: 'ou-1' },
+    });
+    shift.findInviteStatusesForUser.mockResolvedValue([]);
+    shift.hasOpenTimeEntry.mockResolvedValue(false);
+    shift.hasAvailableSeat.mockResolvedValue(false);
+    const service = new TimeTrackingService(
+      { query: {} } as never,
+      membershipService() as never,
+      shift as never,
+      {} as never,
+      organizationService() as never,
+      {} as never,
+      {} as never,
+      organizationUnitDataService() as never,
+      { emit: jest.fn() } as never,
+    );
+
+    const readiness = await service.getCheckInReadiness(
+      'caller-1',
+      'volunteer-1',
+      'si-1',
+      'ou-1',
+    );
+
+    expect(shift.hasAvailableSeat).toHaveBeenCalledWith('si-1', 2);
+    expect(readiness.shiftHasAvailableSeat).toBe(false);
   });
 });
 

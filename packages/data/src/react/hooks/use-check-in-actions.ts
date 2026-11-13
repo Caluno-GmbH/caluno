@@ -18,28 +18,41 @@ export function useCheckInInviteToOrganization(organizationUnitId: string) {
   const repository = new TimeEntryRepository(sdk);
 
   return useMutation({
-    mutationFn: (volunteerId: string) =>
-      repository.checkInInviteToOrganization(organizationUnitId, volunteerId),
+    mutationFn: (checkInId: string) =>
+      repository.checkInInviteToOrganization(organizationUnitId, checkInId),
   });
 }
 
-export function useCheckInInviteToShiftInstance(organizationUnitId: string) {
+/**
+ * Adds the volunteer to the shift instance directly (no invitation round
+ * trip). Invalidates readiness so the card reflects the new participation.
+ */
+export function useCheckInAddToShiftInstance(organizationUnitId: string) {
   const sdk = useSdk();
+  const queryClient = useQueryClient();
   const repository = new ShiftRepository(sdk);
 
   return useMutation({
     mutationFn: ({
+      checkInId,
       shiftInstanceId,
-      volunteerId,
+      allowOverCapacity,
     }: {
+      checkInId: string;
       shiftInstanceId: string;
-      volunteerId: string;
+      allowOverCapacity: boolean;
     }) =>
-      repository.checkInInviteToShiftInstance(
+      repository.checkInAddToShiftInstance(
         organizationUnitId,
+        checkInId,
         shiftInstanceId,
-        volunteerId,
+        allowOverCapacity,
       ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['check-in-readiness', organizationUnitId],
+      });
+    },
   });
 }
 
@@ -51,8 +64,12 @@ export function useCheckInApproveMembershipRequest(organizationUnitId: string) {
   return useMutation({
     mutationFn: (requestId: string) =>
       repository.checkInApprove(requestId, organizationUnitId),
+    // Returning the readiness refetch keeps the mutation pending until the
+    // card has moved past the accepted request, so it cannot be tapped twice.
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      queryClient.invalidateQueries({ queryKey: ['check-in-context'] });
+      queryClient.invalidateQueries({ queryKey: ['check-in-required-forms'] });
+      return queryClient.invalidateQueries({
         queryKey: ['check-in-readiness', organizationUnitId],
       });
     },

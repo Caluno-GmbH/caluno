@@ -378,16 +378,17 @@ export class ShiftRepository extends BaseRepository {
     return data.checkInShifts;
   }
 
-  async checkInInviteToShiftInstance(
+  async checkInAddToShiftInstance(
     organizationUnitId: string,
+    checkInId: string,
     shiftInstanceId: string,
-    volunteerId: string,
+    allowOverCapacity: boolean,
   ): Promise<{ id: string }> {
-    const data = await this.sdk.CheckInInviteToShiftInstance(
-      { shiftInstanceId, volunteerId },
+    const data = await this.sdk.CheckInAddToShiftInstance(
+      { checkInId, shiftInstanceId, allowOverCapacity },
       { 'x-organization-unit-id': organizationUnitId },
     );
-    return { id: data.checkInInviteToShiftInstance.id };
+    return { id: data.checkInAddToShiftInstance.id };
   }
 
   async findMyShiftInstances(

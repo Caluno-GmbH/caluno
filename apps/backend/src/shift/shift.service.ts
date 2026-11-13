@@ -1779,21 +1779,23 @@ export class ShiftService {
   }
 
   /**
-   * Creates a single ADMIN_INVITED invite for one volunteer, without touching any
-   * other invite on the instance — unlike `updateMembersForShiftInstance`,
-   * which replaces the whole member list. Used by the check-in flow's
-   * "invite to shift" blocker action. Re-inviting resurrects an inactive
-   * (REJECTED/CANCELLED) row like `updateMembersForShiftInstance` does; the
-   * invite notification only goes out when the invite actually changes.
+   * Puts one volunteer straight onto a shift instance from the check-in flow,
+   * without touching any other invite on it. Whatever the volunteer's current
+   * invite is (none, invited, awaiting approval, waitlisted, cancelled, ...),
+   * it ends up JOINED — join approval and the waitlist are bypassed because a
+   * manager is acting at the door. Capacity is still enforced unless the
+   * manager explicitly allows going over it. Other waitlisted volunteers are
+   * neither moved nor notified; shift managers get the usual "joined" notice.
    */
-  async inviteVolunteerToShiftInstance(
-    shiftInstanceId: string,
+  async addVolunteerToShiftInstanceAtCheckIn(
+    instanceId: string,
     volunteerId: string,
     organizationUnitId: string,
+    options: { allowOverCapacity: boolean; actorUserId: string },
   ): Promise<ShiftInstanceEntity> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: {
-        id: shiftInstanceId,
+        id: instanceId,
         master: { organizationUnitId, isDeleted: false },
         isCancelled: false,
       },
@@ -1804,7 +1806,7 @@ export class ShiftService {
     });
     if (!instance) {
       throw new NotFoundGraphQLError(
-        `Shift instance with ID ${shiftInstanceId} not found`,
+        `Shift instance with ID ${instanceId} not found`,
       );
     }
 
@@ -1816,59 +1818,68 @@ export class ShiftService {
       throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
     }
 
-    const existingStatus = instance.invites.find(
-      (invite) => invite.userId === volunteerId,
-    )?.status as ShiftInviteStatus | undefined;
-    const hasActiveInvite =
-      existingStatus != null &&
-      ACTIVE_SHIFT_INVITE_STATUSES.includes(existingStatus);
+    // Capacity check and seat write run under a row lock on the instance, so
+    // concurrent adds cannot both take the last seat.
+    const { joined, existingStatus } = await this.db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.shiftInstances.id })
+        .from(schema.shiftInstances)
+        .where(eq(schema.shiftInstances.id, instanceId))
+        .for('update');
 
-    await this.db.transaction(async (tx) => {
-      await this.inviteMembersToShiftInstance(
-        tx,
-        instance,
-        [volunteerId],
-        ShiftInviteStatus.ADMIN_INVITED,
-      );
-      if (existingStatus != null && !hasActiveInvite) {
-        // The insert above no-ops on conflict; resurrect the inactive row.
-        await tx
-          .update(schema.shiftInstanceInvites)
-          .set({
-            status: ShiftInviteStatus.ADMIN_INVITED,
-            remindedAt: null,
-          })
-          .where(
-            and(
-              eq(schema.shiftInstanceInvites.instanceId, shiftInstanceId),
-              eq(schema.shiftInstanceInvites.userId, volunteerId),
-            ),
-          );
+      const [existingInvite] = await tx
+        .select({ status: schema.shiftInstanceInvites.status })
+        .from(schema.shiftInstanceInvites)
+        .where(
+          and(
+            eq(schema.shiftInstanceInvites.instanceId, instanceId),
+            eq(schema.shiftInstanceInvites.userId, volunteerId),
+          ),
+        );
+      const existingStatus = existingInvite?.status as
+        | ShiftInviteStatus
+        | undefined;
+      if (isParticipatingShiftInviteStatus(existingStatus)) {
+        // Already holds a seat; nothing to change, nothing to announce.
+        return { joined: false, existingStatus };
       }
-    });
 
-    if (!hasActiveInvite) {
-      void this.loadAndEmitShiftInstanceInvitedNotification(
-        instance.master,
-        instance,
-        [volunteerId],
-      );
-      const organizationId = await this.resolveOrganizationId(
-        instance.master.organizationUnitId,
-      );
-      this.postHogService.capture({
-        event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE,
-        userId: volunteerId,
-        properties: {
-          surface: POSTHOG_SURFACE.BACKOFFICE,
-          organization_id: organizationId,
-          organization_unit_id: instance.master.organizationUnitId,
-          shift_id: instance.master.id,
-          shift_instance_id: shiftInstanceId,
-          source: POSTHOG_JOIN_SOURCE.CHECK_IN,
-        },
-      });
-    }
+      if (!options.allowOverCapacity) {
+        const maxVolunteers =
+          instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
+        if (!(await this.hasAvailableSeat(instanceId, maxVolunteers, tx))) {
+          throw new ConflictGraphQLError('Shift instance is at full capacity');
+        }
+      }
+
+      await tx
+        .insert(schema.shiftInstanceInvites)
+        .values({
+          instanceId,
+          userId: volunteerId,
+          status: ShiftInviteStatus.JOINED,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.shiftInstanceInvites.instanceId,
+            schema.shiftInstanceInvites.userId,
+          ],
+          set: { status: ShiftInviteStatus.JOINED, remindedAt: null },
+        });
+      return { joined: true, existingStatus };
+    });
+    if (!joined) return instance;
+
+    void this.notifyShiftInstanceJoined(volunteerId, instance.master, instance);
+    await this.captureShiftInstanceInviteUpdate({
+      userId: volunteerId,
+      organizationUnitId,
+      shiftId: instance.master.id,
+      shiftInstanceId: instanceId,
+      source: POSTHOG_JOIN_SOURCE.CHECK_IN,
+      inviteStatus: ShiftInviteStatus.JOINED,
+      previousStatus: existingStatus,
+    });
 
     return instance;
   }
@@ -5551,7 +5562,7 @@ export class ShiftService {
     return participants?.current ?? 0;
   }
 
-  private async hasAvailableSeat(
+  async hasAvailableSeat(
     instanceId: string,
     maxVolunteers: number | null | undefined,
     db: Database = this.db,

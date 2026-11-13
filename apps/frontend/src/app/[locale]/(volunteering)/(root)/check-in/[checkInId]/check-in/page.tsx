@@ -30,11 +30,13 @@ export default async function VolunteeringCheckInPage({
   }
 
   // `eligibleOrganizationUnits` is the caller's check-in units intersected
-  // with the volunteer's memberships. Here it only orders the initial pick —
-  // every check-in unit stays selectable.
+  // with the volunteer's memberships; `pendingOrganizationUnits` likewise with
+  // their PENDING requests (a unit may appear in both). Here they only order
+  // the initial pick — every check-in unit stays selectable.
   const initialOrgUnitId = resolveInitialCheckInOrgUnit({
     orgUnitIds: checkInOrgUnits.map((unit) => unit.id),
     memberOrgUnitIds: context.eligibleOrganizationUnits.map((unit) => unit.id),
+    pendingOrgUnitIds: context.pendingOrganizationUnits.map((unit) => unit.id),
     orgUIdParam: orgUId,
   });
 
@@ -45,13 +47,13 @@ export default async function VolunteeringCheckInPage({
 
   return (
     <ManualCheckInPage
-      volunteer={context.volunteer}
+      checkInId={checkInId}
+      initialContext={context}
       orgUnits={checkInOrgUnits.map((unit) => ({
         id: unit.id,
         name: unit.name,
       }))}
       initialOrgUnitId={initialOrgUnitId}
-      checkInId={checkInId}
     />
   );
 }

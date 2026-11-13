@@ -225,10 +225,13 @@ query GetCheckInContext($checkInId: String!) {
     volunteer {
       id
       name
-      email
       image
     }
     eligibleOrganizationUnits {
+      id
+      name
+    }
+    pendingOrganizationUnits {
       id
       name
     }
@@ -257,19 +260,22 @@ query GetCheckInContext($checkInId: String!) {
   }
 }
 
-query GetCheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID) {
-  checkInReadiness(
-    volunteerId: $volunteerId
-    shiftInstanceId: $shiftInstanceId
-  ) {
+query GetCheckInReadiness($checkInId: String!, $shiftInstanceId: ID) {
+  checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
     isMember
-    openMembershipRequestId
+    membershipRequest {
+      id
+      canAccept
+      organizationUnitName
+    }
     shiftInviteStatus
     isParticipating
     hasOpenTimeEntry
     idVerificationEnabled
     idVerified
     membershipId
+    canViewVolunteerProfile
+    shiftHasAvailableSeat
     agreement {
       status
       reimbursementTypeName
@@ -280,8 +286,8 @@ query GetCheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID) {
   }
 }
 
-query GetCheckInVolunteerRequiredForms($volunteerId: ID!) {
-  checkInVolunteerRequiredForms(volunteerId: $volunteerId) {
+query GetCheckInVolunteerRequiredForms($checkInId: String!) {
+  checkInVolunteerRequiredForms(checkInId: $checkInId) {
     form {
       id
       name
@@ -306,8 +312,8 @@ mutation CheckInVolunteer(
   }
 }
 
-mutation CheckInInviteToOrganization($volunteerId: ID!) {
-  checkInInviteToOrganization(volunteerId: $volunteerId)
+mutation CheckInInviteToOrganization($checkInId: String!) {
+  checkInInviteToOrganization(checkInId: $checkInId)
 }
 
 mutation CheckOutVolunteer($timeEntryId: ID!) {

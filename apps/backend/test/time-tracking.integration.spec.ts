@@ -116,6 +116,7 @@ describe('TimeTrackingService', () => {
     expect(instanceId).toBeDefined();
 
     const before = await service.getCheckInReadiness(
+      testUserId,
       user.id,
       instanceId ?? '',
       organizationUnitId,
@@ -130,6 +131,7 @@ describe('TimeTrackingService', () => {
     });
 
     const after = await service.getCheckInReadiness(
+      testUserId,
       user.id,
       instanceId ?? '',
       organizationUnitId,

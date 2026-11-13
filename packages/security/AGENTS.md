@@ -63,6 +63,7 @@ Each finding lists `reachedFrom` (the resolver/controller handlers that call the
 Pass the loaded resource to a `TenantScopeService` helper (`apps/backend/src/organization/tenant-scope.service.ts`) before returning or writing it:
 
 - `assertResourceInScope(headerUnitId, resource.organizationUnitId)`: the resource's unit is the header unit or a descendant of it.
+- `assertResourceInAncestorScope(headerUnitId, resource.organizationUnitId)`: the resource's unit is the header unit or an ancestor of it (e.g. a pending membership request to a parent unit, which counts for the whole subtree).
 - `assertUserInScope(headerUnitId, userId)`: the user has a membership in scope (e.g. a volunteer).
 - `assertOrganizationInScope(headerUnitId, resource.organizationId)`: for resources scoped to an organization (e.g. roles).
 

@@ -54,11 +54,10 @@ export class MembershipLifecycleMutationResolver {
     @Session() session: UserSession,
   ): Promise<MembershipRequest> {
     const entity =
-      await this.membershipLifecycleOrchestrator.approveMembershipRequest(
+      await this.membershipLifecycleOrchestrator.checkInApproveMembershipRequest(
         requestId,
         context.organizationUnitId,
         session.user.id,
-        'check_in',
       );
     return this.membershipRequestMapper.toModelOrThrow(entity);
   }

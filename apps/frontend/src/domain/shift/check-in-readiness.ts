@@ -16,7 +16,7 @@ export type CheckInReadinessState =
 export type CheckInReadinessFacts = {
   hasOpenTimeEntry: boolean;
   isMember: boolean;
-  openMembershipRequestId: string | null;
+  membershipRequest: { id: string } | null;
   isParticipating: boolean;
 };
 
@@ -35,7 +35,7 @@ export function resolveCheckInReadiness(
     return 'alreadyCheckedIn';
   }
   if (!facts.isMember) {
-    return facts.openMembershipRequestId ? 'pendingMembership' : 'notMember';
+    return facts.membershipRequest ? 'pendingMembership' : 'notMember';
   }
   if (requiresShift && !facts.isParticipating) {
     return 'notInShift';
@@ -51,6 +51,47 @@ export function resolveCheckInReadiness(
  */
 export function alreadyCheckedInDecideHref(checkInId: string): string {
   return `/check-in/${checkInId}/decide`;
+}
+
+/**
+ * Required forms are a hard gate on accepting a membership request, so the
+ * gate fails closed: `null` (unknown — not loaded yet, or the query errored)
+ * must block the accept just like a positive count.
+ */
+export function countMissingRequiredForms({
+  forms,
+  isError,
+}: {
+  forms: ReadonlyArray<{ submitted: boolean }> | undefined;
+  isError: boolean;
+}): number | null {
+  if (!forms || isError) return null;
+  return forms.filter((form) => !form.submitted).length;
+}
+
+export type PendingMembershipView =
+  | 'requiresUnitManager'
+  | 'checkingForms'
+  | 'formsOpen'
+  | 'acceptable';
+
+/**
+ * What the pending-membership card offers. A check-in desk may only grant
+ * membership in units it manages, so a request to an ancestor the caller
+ * does not manage gets no accept and no forms UX at all. Otherwise the
+ * required forms gate the accept and fail closed while unknown.
+ */
+export function resolvePendingMembershipView({
+  canAccept,
+  missingFormCount,
+}: {
+  canAccept: boolean;
+  missingFormCount: number | null;
+}): PendingMembershipView {
+  if (!canAccept) return 'requiresUnitManager';
+  if (missingFormCount === null) return 'checkingForms';
+  if (missingFormCount > 0) return 'formsOpen';
+  return 'acceptable';
 }
 
 /**
@@ -71,4 +112,25 @@ export function shouldShowIdVerification(facts: {
     !facts.idVerified &&
     facts.membershipId !== null
   );
+}
+
+/**
+ * Readiness loads as soon as the page opens (a null shift returns only the
+ * membership facts), so the membership blockers show before any shift is
+ * chosen: a freshly scanned volunteer can be invited right away. Everything
+ * shift-scoped — not in shift, already checked in, ready and the check-in
+ * button behind it — waits until an instance or "without assignment" is
+ * chosen; before that the null-shift facts would read as "not in shift".
+ */
+export function resolveVisibleCheckInReadiness(
+  state: CheckInReadinessState | null,
+  selection: { withoutShift: boolean; shiftInstanceId: string | null },
+): CheckInReadinessState | null {
+  if (state === 'notMember' || state === 'pendingMembership') {
+    return state;
+  }
+  if (!selection.withoutShift && !selection.shiftInstanceId) {
+    return null;
+  }
+  return state;
 }

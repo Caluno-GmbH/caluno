@@ -16,7 +16,6 @@ import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { MembershipLifecycleMutationResolver } from '../src/membership-lifecycle/membership-lifecycle-mutation.resolver';
 import { ShiftInviteStatus } from '../src/shift/enums';
-import { ShiftMutationResolver } from '../src/shift/resolvers/shift-mutation.resolver';
 import { TimeTrackingMutationResolver } from '../src/time-tracking/resolvers/time-tracking-mutation.resolver';
 import { TimeTrackingQueryResolver } from '../src/time-tracking/resolvers/time-tracking-query.resolver';
 import {
@@ -37,6 +36,7 @@ import {
 import {
   assignRoleToMembership,
   createRole,
+  grantCheckInManage,
   grantPermissionToRole,
 } from './factories/role.factory';
 import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
@@ -57,10 +57,12 @@ const RUNNING_SHIFT_WINDOW = () => ({
 });
 
 const CHECK_IN_READINESS = `
-  query CheckInReadiness($volunteerId: ID!, $shiftInstanceId: ID!) {
-    checkInReadiness(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
+  query CheckInReadiness($checkInId: String!, $shiftInstanceId: ID!) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
-      openMembershipRequestId
+      membershipRequest {
+        id
+      }
       shiftInviteStatus
       isParticipating
     }
@@ -68,21 +70,61 @@ const CHECK_IN_READINESS = `
 `;
 
 const CHECK_IN_READINESS_WITHOUT_SHIFT = `
-  query CheckInReadinessWithoutShift($volunteerId: ID!, $shiftInstanceId: ID) {
-    checkInReadiness(volunteerId: $volunteerId, shiftInstanceId: $shiftInstanceId) {
+  query CheckInReadinessWithoutShift($checkInId: String!, $shiftInstanceId: ID) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
       isMember
-      openMembershipRequestId
+      membershipRequest {
+        id
+      }
       shiftInviteStatus
       isParticipating
     }
   }
 `;
 
+const CHECK_IN_READINESS_PROFILE = `
+  query CheckInReadinessProfile($checkInId: String!, $shiftInstanceId: ID) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
+      canViewVolunteerProfile
+      shiftHasAvailableSeat
+    }
+  }
+`;
+
+const CHECK_IN_READINESS_REQUEST_UNIT = `
+  query CheckInReadinessRequestUnit($checkInId: String!, $shiftInstanceId: ID) {
+    checkInReadiness(checkInId: $checkInId, shiftInstanceId: $shiftInstanceId) {
+      membershipRequest {
+        id
+        canAccept
+        organizationUnitName
+      }
+    }
+  }
+`;
+
+/** A new user holding only check-in:manage, on `managedUnitId` alone. */
+async function createCheckInManager(
+  db: Database,
+  organizationId: string,
+  managedUnitId: string,
+): Promise<string> {
+  const manager = await createUser(db);
+  await grantCheckInManage(db, {
+    organizationId,
+    organizationUnitId: managedUnitId,
+    userId: manager.id,
+  });
+  return manager.id;
+}
+
 describe('checkInReadiness query', () => {
   let app: INestApplication;
   let db: Database;
   let callerUserId: string;
   let unitId: string;
+  let organizationId: string;
+  let typeId: string;
   let instanceId: string;
 
   beforeAll(async () => {
@@ -95,6 +137,8 @@ describe('checkInReadiness query', () => {
       db,
       `Readiness ${crypto.randomUUID()}`,
     );
+    organizationId = org.organization.id;
+    typeId = org.type.id;
     const unit = await createUnit(db, {
       organizationId: org.organization.id,
       typeId: org.type.id,
@@ -102,20 +146,10 @@ describe('checkInReadiness query', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
 
     const shift = await createShift(db, { organizationUnitId: unit.id });
@@ -133,7 +167,7 @@ describe('checkInReadiness query', () => {
     const data = await graphqlRequestRequiringData<{
       checkInReadiness: {
         isMember: boolean;
-        openMembershipRequestId: string | null;
+        membershipRequest: { id: string } | null;
         shiftInviteStatus: string | null;
         isParticipating: boolean;
       };
@@ -141,7 +175,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -149,7 +186,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: false,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: null,
       isParticipating: false,
     });
@@ -163,18 +200,21 @@ describe('checkInReadiness query', () => {
     });
 
     const data = await graphqlRequestRequiringData<{
-      checkInReadiness: { openMembershipRequestId: string | null };
+      checkInReadiness: { membershipRequest: { id: string } | null };
     }>(
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
     );
 
-    expect(data.checkInReadiness.openMembershipRequestId).toBe(request.id);
+    expect(data.checkInReadiness.membershipRequest?.id).toBe(request.id);
   });
 
   it('reports participating for a member with a JOINED invite', async () => {
@@ -196,7 +236,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -204,7 +247,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: true,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: 'JOINED',
       isParticipating: true,
     });
@@ -228,7 +271,10 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: instanceId },
+        variables: {
+          checkInId: volunteer.checkInId,
+          shiftInstanceId: instanceId,
+        },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -257,7 +303,7 @@ describe('checkInReadiness query', () => {
     const response = await graphqlRequest(app, {
       query: CHECK_IN_READINESS,
       variables: {
-        volunteerId: volunteer.id,
+        checkInId: volunteer.checkInId,
         shiftInstanceId: foreignInstance.id,
       },
       // Caller's header names their OWN unit, not the foreign one.
@@ -274,7 +320,7 @@ describe('checkInReadiness query', () => {
     const data = await graphqlRequestRequiringData<{
       checkInReadiness: {
         isMember: boolean;
-        openMembershipRequestId: string | null;
+        membershipRequest: { id: string } | null;
         shiftInviteStatus: string | null;
         isParticipating: boolean;
       };
@@ -282,7 +328,7 @@ describe('checkInReadiness query', () => {
       app,
       {
         query: CHECK_IN_READINESS_WITHOUT_SHIFT,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: null },
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
@@ -290,7 +336,7 @@ describe('checkInReadiness query', () => {
 
     expect(data.checkInReadiness).toEqual({
       isMember: true,
-      openMembershipRequestId: null,
+      membershipRequest: null,
       shiftInviteStatus: null,
       isParticipating: false,
     });
@@ -304,25 +350,286 @@ describe('checkInReadiness query', () => {
     });
 
     const data = await graphqlRequestRequiringData<{
-      checkInReadiness: { openMembershipRequestId: string | null };
+      checkInReadiness: { membershipRequest: { id: string } | null };
     }>(
       app,
       {
         query: CHECK_IN_READINESS_WITHOUT_SHIFT,
-        variables: { volunteerId: volunteer.id, shiftInstanceId: null },
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInReadiness',
     );
 
-    expect(data.checkInReadiness.openMembershipRequestId).toBe(request.id);
+    expect(data.checkInReadiness.membershipRequest?.id).toBe(request.id);
+  });
+
+  it('reports an unrelated volunteer as a non-member with no request', async () => {
+    const volunteer = await createUser(db);
+
+    const data = await graphqlRequestRequiringData<{
+      checkInReadiness: {
+        isMember: boolean;
+        membershipRequest: { id: string } | null;
+      };
+    }>(
+      app,
+      {
+        query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
+        headers: { 'x-organization-unit-id': unitId },
+      },
+      'checkInReadiness',
+    );
+
+    expect(data.checkInReadiness).toEqual({
+      isMember: false,
+      membershipRequest: null,
+      shiftInviteStatus: null,
+      isParticipating: false,
+    });
+  });
+
+  it('returns NOT_FOUND for an unknown check-in id', async () => {
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+      variables: { checkInId: 'doesnotexist', shiftInstanceId: null },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+  });
+
+  it('matches a pending request on the parent unit while the child is selected', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Readiness child',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const parentRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInReadiness: { membershipRequest: { id: string } | null };
+    }>(
+      app,
+      {
+        query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInReadiness',
+    );
+
+    expect(data.checkInReadiness.membershipRequest?.id).toBe(parentRequest.id);
+  });
+
+  it('ignores a pending request on a sibling unit', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Readiness child A',
+      parentId: unitId,
+    });
+    const siblingUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Readiness child B',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: siblingUnit.id,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInReadiness: { membershipRequest: { id: string } | null };
+    }>(
+      app,
+      {
+        query: CHECK_IN_READINESS_WITHOUT_SHIFT,
+        variables: { checkInId: volunteer.checkInId, shiftInstanceId: null },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInReadiness',
+    );
+
+    expect(data.checkInReadiness.membershipRequest).toBeNull();
+  });
+
+  describe('membership request authority', () => {
+    const readRequestUnit = async (checkInId: string, contextUnitId: string) =>
+      (
+        await graphqlRequestRequiringData<{
+          checkInReadiness: {
+            membershipRequest: {
+              id: string;
+              canAccept: boolean;
+              organizationUnitName: string | null;
+            } | null;
+          };
+        }>(
+          app,
+          {
+            query: CHECK_IN_READINESS_REQUEST_UNIT,
+            variables: { checkInId, shiftInstanceId: null },
+            headers: { 'x-organization-unit-id': contextUnitId },
+          },
+          'checkInReadiness',
+        )
+      ).checkInReadiness;
+
+    it('reports no request unit and no accept for a volunteer without a request', async () => {
+      const volunteer = await createUser(db);
+
+      expect(await readRequestUnit(volunteer.checkInId, unitId)).toEqual({
+        membershipRequest: null,
+      });
+    });
+
+    it('lets a caller managing the parent accept a parent request from the child', async () => {
+      const childUnit = await createUnit(db, {
+        organizationId,
+        typeId,
+        name: 'Readiness authority child',
+        parentId: unitId,
+      });
+      const volunteer = await createUser(db);
+      const parentRequest = await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitId,
+      });
+
+      expect(await readRequestUnit(volunteer.checkInId, childUnit.id)).toEqual({
+        membershipRequest: {
+          id: parentRequest.id,
+          canAccept: true,
+          organizationUnitName: 'Readiness unit',
+        },
+      });
+    });
+
+    it('denies the accept to a caller managing only the child, still naming the parent', async () => {
+      const childUnit = await createUnit(db, {
+        organizationId,
+        typeId,
+        name: 'Readiness authority child only',
+        parentId: unitId,
+      });
+      const volunteer = await createUser(db);
+      const parentRequest = await createMembershipRequest(db, {
+        userId: volunteer.id,
+        organizationUnitId: unitId,
+      });
+      setAuthMockUserId(
+        await createCheckInManager(db, organizationId, childUnit.id),
+      );
+
+      expect(await readRequestUnit(volunteer.checkInId, childUnit.id)).toEqual({
+        membershipRequest: {
+          id: parentRequest.id,
+          canAccept: false,
+          organizationUnitName: 'Readiness unit',
+        },
+      });
+    });
+  });
+
+  it('reports canViewVolunteerProfile only for a caller holding volunteer:view', async () => {
+    const volunteer = await createUser(db);
+    const readCanView = async () =>
+      (
+        await graphqlRequestRequiringData<{
+          checkInReadiness: { canViewVolunteerProfile: boolean };
+        }>(
+          app,
+          {
+            query: CHECK_IN_READINESS_PROFILE,
+            variables: {
+              checkInId: volunteer.checkInId,
+              shiftInstanceId: null,
+            },
+            headers: { 'x-organization-unit-id': unitId },
+          },
+          'checkInReadiness',
+        )
+      ).checkInReadiness.canViewVolunteerProfile;
+
+    // The caller only holds check-in:manage.
+    expect(await readCanView()).toBe(false);
+
+    const viewer = await createUser(db);
+    const viewPermission = await db.query.permissions.findFirst({
+      where: { key: PERMISSIONS.VOLUNTEER_VIEW },
+    });
+    const managePermission = await db.query.permissions.findFirst({
+      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
+    });
+    if (!viewPermission || !managePermission) {
+      throw new Error('permissions not seeded');
+    }
+    const role = await createRole(db, { organizationId });
+    for (const permission of [viewPermission, managePermission]) {
+      await grantPermissionToRole(db, {
+        roleId: role.id,
+        permissionId: permission.id,
+      });
+    }
+    const membership = await addMembership(db, viewer.id, unitId);
+    await assignRoleToMembership(db, {
+      membershipId: membership.id,
+      roleId: role.id,
+    });
+    setAuthMockUserId(viewer.id);
+
+    expect(await readCanView()).toBe(true);
+  });
+
+  it('reports shiftHasAvailableSeat false when the instance is full', async () => {
+    const fullShift = await createShift(db, {
+      organizationUnitId: unitId,
+      maxVolunteers: 1,
+    });
+    const fullInstance = await createShiftInstance(db, fullShift.id);
+    const joined = await createUser(db);
+    await createShiftInstanceInvite(db, {
+      instanceId: fullInstance.id,
+      userId: joined.id,
+      status: ShiftInviteStatus.JOINED,
+    });
+    const volunteer = await createUser(db);
+
+    const readSeat = async (shiftInstanceId: string | null) =>
+      (
+        await graphqlRequestRequiringData<{
+          checkInReadiness: { shiftHasAvailableSeat: boolean };
+        }>(
+          app,
+          {
+            query: CHECK_IN_READINESS_PROFILE,
+            variables: { checkInId: volunteer.checkInId, shiftInstanceId },
+            headers: { 'x-organization-unit-id': unitId },
+          },
+          'checkInReadiness',
+        )
+      ).checkInReadiness.shiftHasAvailableSeat;
+
+    expect(await readSeat(fullInstance.id)).toBe(false);
+    // An instance without a seat limit, and no shift at all, never block.
+    expect(await readSeat(instanceId)).toBe(true);
+    expect(await readSeat(null)).toBe(true);
   });
 });
 
 describe('checkInVolunteerRequiredForms query', () => {
   const CHECK_IN_REQUIRED_FORMS = `
-    query CheckInVolunteerRequiredForms($volunteerId: ID!) {
-      checkInVolunteerRequiredForms(volunteerId: $volunteerId) {
+    query CheckInVolunteerRequiredForms($checkInId: String!) {
+      checkInVolunteerRequiredForms(checkInId: $checkInId) {
         form { id name }
         order
         submitted
@@ -336,6 +643,7 @@ describe('checkInVolunteerRequiredForms query', () => {
   let callerUserId: string;
   let unitId: string;
   let organizationId: string;
+  let typeId: string;
 
   beforeAll(async () => {
     const context = await getGraphqlTestContext();
@@ -348,6 +656,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       `RequiredForms ${crypto.randomUUID()}`,
     );
     organizationId = org.organization.id;
+    typeId = org.type.id;
     const unit = await createUnit(db, {
       organizationId: org.organization.id,
       typeId: org.type.id,
@@ -355,20 +664,10 @@ describe('checkInVolunteerRequiredForms query', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 
@@ -386,7 +685,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       app,
       {
         query: CHECK_IN_REQUIRED_FORMS,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInVolunteerRequiredForms',
@@ -421,7 +720,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       app,
       {
         query: CHECK_IN_REQUIRED_FORMS,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInVolunteerRequiredForms',
@@ -451,7 +750,7 @@ describe('checkInVolunteerRequiredForms query', () => {
       app,
       {
         query: CHECK_IN_REQUIRED_FORMS,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInVolunteerRequiredForms',
@@ -463,17 +762,127 @@ describe('checkInVolunteerRequiredForms query', () => {
     );
   });
 
+  it('returns the forms with submitted false for a volunteer with a pending request', async () => {
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+    const { form } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: unitId,
+      createdById: callerUserId,
+      name: 'Pending volunteer form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: unitId,
+      formIds: [form.id],
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInVolunteerRequiredForms: Array<{
+        form: { id: string; name: string };
+        order: number;
+        submitted: boolean;
+        submissionId: string | null;
+      }>;
+    }>(
+      app,
+      {
+        query: CHECK_IN_REQUIRED_FORMS,
+        variables: { checkInId: volunteer.checkInId },
+        headers: { 'x-organization-unit-id': unitId },
+      },
+      'checkInVolunteerRequiredForms',
+    );
+
+    expect(data.checkInVolunteerRequiredForms).toEqual([
+      {
+        form: { id: form.id, name: 'Pending volunteer form' },
+        order: 0,
+        submitted: false,
+        submissionId: null,
+      },
+    ]);
+  });
+
+  it("returns the parent unit's forms for a pending request on the parent while the child is selected", async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Required forms child',
+      parentId: unitId,
+    });
+    const { form: childForm } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: childUnit.id,
+      createdById: callerUserId,
+      name: 'Child-only form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: childUnit.id,
+      formIds: [childForm.id],
+    });
+    const { form: parentForm } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: unitId,
+      createdById: callerUserId,
+      name: 'Parent request form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: unitId,
+      formIds: [parentForm.id],
+    });
+    const volunteer = await createUser(db);
+    await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInVolunteerRequiredForms: Array<{
+        form: { id: string; name: string };
+        submitted: boolean;
+      }>;
+    }>(
+      app,
+      {
+        query: CHECK_IN_REQUIRED_FORMS,
+        variables: { checkInId: volunteer.checkInId },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInVolunteerRequiredForms',
+    );
+
+    expect(
+      data.checkInVolunteerRequiredForms.map((status) => status.form.id),
+    ).toEqual([parentForm.id]);
+  });
+
+  it('returns NOT_FOUND for an unknown check-in id', async () => {
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_REQUIRED_FORMS,
+      variables: { checkInId: 'doesnotexist' },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+  });
+
   it('rejects a volunteer who is not a member of the unit', async () => {
     const volunteer = await createUser(db); // no membership anywhere
 
     const response = await graphqlRequest(app, {
       query: CHECK_IN_REQUIRED_FORMS,
-      variables: { volunteerId: volunteer.id },
+      variables: { checkInId: volunteer.checkInId },
       headers: { 'x-organization-unit-id': unitId },
     });
 
     expect(response.errors?.[0]?.message).toBe(
-      'Volunteer is not a member of this unit',
+      'Volunteer is not a member of and has no pending request to this unit',
     );
   });
 });
@@ -510,20 +919,10 @@ describe('checkInVolunteer mutation', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
 
     const shift = await createShift(db, { organizationUnitId: unit.id });
@@ -616,25 +1015,10 @@ describe('checkInVolunteer mutation', () => {
     });
 
     // Caller holds check-in:manage on the child unit.
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-    const role = await createRole(db, {
+    await grantCheckInManage(db, {
       organizationId: org.organization.id,
-    });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const callerMembership = await addMembership(
-      db,
-      callerUserId,
-      childUnit.id,
-    );
-    await assignRoleToMembership(db, {
-      membershipId: callerMembership.id,
-      roleId: role.id,
+      organizationUnitId: childUnit.id,
+      userId: callerUserId,
     });
 
     const shift = await createShift(db, { organizationUnitId: childUnit.id });
@@ -695,15 +1079,6 @@ describe('check-in readiness/submit mutation permissions', () => {
     ).toEqual([PERMISSIONS.CHECK_IN_MANAGE]);
   });
 
-  it('gates checkInInviteToShiftInstance on check-in:manage', () => {
-    expect(
-      Reflect.getMetadata(
-        PERMISSIONS_KEY,
-        ShiftMutationResolver.prototype.checkInInviteToShiftInstance,
-      ),
-    ).toEqual([PERMISSIONS.CHECK_IN_MANAGE]);
-  });
-
   it('gates checkInInviteToOrganization on check-in:manage', () => {
     expect(
       Reflect.getMetadata(
@@ -733,200 +1108,10 @@ describe('check-in readiness/submit mutation permissions', () => {
   });
 });
 
-describe('checkInInviteToShiftInstance mutation', () => {
-  const CHECK_IN_INVITE_TO_SHIFT_INSTANCE = `
-    mutation CheckInInviteToShiftInstance($shiftInstanceId: ID!, $volunteerId: ID!) {
-      checkInInviteToShiftInstance(shiftInstanceId: $shiftInstanceId, volunteerId: $volunteerId) {
-        id
-      }
-    }
-  `;
-
-  let app: INestApplication;
-  let db: Database;
-  let callerUserId: string;
-  let unitId: string;
-
-  beforeAll(async () => {
-    const context = await getGraphqlTestContext();
-    app = context.app;
-    db = context.db;
-    callerUserId = context.testUserId;
-
-    const org = await createOrganizationWithType(
-      db,
-      `ShiftInvite ${crypto.randomUUID()}`,
-    );
-    const unit = await createUnit(db, {
-      organizationId: org.organization.id,
-      typeId: org.type.id,
-      name: 'Shift invite unit',
-    });
-    unitId = unit.id;
-
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
-    });
-  });
-
-  afterEach(() => {
-    setAuthMockUserId(callerUserId);
-  });
-
-  it('creates an ADMIN_INVITED invite and leaves other invites on the instance intact', async () => {
-    const shift = await createShift(db, { organizationUnitId: unitId });
-    const instance = await createShiftInstance(db, shift.id);
-    const alreadyInvited = await createUser(db);
-    await createShiftInstanceInvite(db, {
-      instanceId: instance.id,
-      userId: alreadyInvited.id,
-      status: ShiftInviteStatus.JOINED,
-    });
-    const volunteer = await createUser(db);
-    await addMembership(db, volunteer.id, unitId);
-
-    await graphqlRequestRequiringData(
-      app,
-      {
-        query: CHECK_IN_INVITE_TO_SHIFT_INSTANCE,
-        variables: { shiftInstanceId: instance.id, volunteerId: volunteer.id },
-        headers: { 'x-organization-unit-id': unitId },
-      },
-      'checkInInviteToShiftInstance',
-    );
-
-    const invites = await db.query.shiftInstanceInvites.findMany({
-      where: { instanceId: instance.id },
-    });
-    const byUserId = new Map(invites.map((i) => [i.userId, i.status]));
-
-    expect(byUserId.get(volunteer.id)).toBe(ShiftInviteStatus.ADMIN_INVITED);
-    expect(byUserId.get(alreadyInvited.id)).toBe(ShiftInviteStatus.JOINED);
-  });
-
-  it('resurrects a declined invite back to ADMIN_INVITED on re-invite', async () => {
-    const shift = await createShift(db, { organizationUnitId: unitId });
-    const instance = await createShiftInstance(db, shift.id);
-    const volunteer = await createUser(db);
-    await addMembership(db, volunteer.id, unitId);
-    await createShiftInstanceInvite(db, {
-      instanceId: instance.id,
-      userId: volunteer.id,
-      status: ShiftInviteStatus.VOLUNTEER_REJECTED,
-    });
-
-    await graphqlRequestRequiringData(
-      app,
-      {
-        query: CHECK_IN_INVITE_TO_SHIFT_INSTANCE,
-        variables: { shiftInstanceId: instance.id, volunteerId: volunteer.id },
-        headers: { 'x-organization-unit-id': unitId },
-      },
-      'checkInInviteToShiftInstance',
-    );
-
-    const invite = await db.query.shiftInstanceInvites.findFirst({
-      where: { instanceId: instance.id, userId: volunteer.id },
-    });
-    expect(invite?.status).toBe(ShiftInviteStatus.ADMIN_INVITED);
-  });
-
-  it('does not downgrade an active invite on re-invite', async () => {
-    const shift = await createShift(db, { organizationUnitId: unitId });
-    const instance = await createShiftInstance(db, shift.id);
-    const volunteer = await createUser(db);
-    await addMembership(db, volunteer.id, unitId);
-    await createShiftInstanceInvite(db, {
-      instanceId: instance.id,
-      userId: volunteer.id,
-      status: ShiftInviteStatus.JOINED,
-    });
-
-    await graphqlRequestRequiringData(
-      app,
-      {
-        query: CHECK_IN_INVITE_TO_SHIFT_INSTANCE,
-        variables: { shiftInstanceId: instance.id, volunteerId: volunteer.id },
-        headers: { 'x-organization-unit-id': unitId },
-      },
-      'checkInInviteToShiftInstance',
-    );
-
-    const invite = await db.query.shiftInstanceInvites.findFirst({
-      where: { instanceId: instance.id, userId: volunteer.id },
-    });
-    expect(invite?.status).toBe(ShiftInviteStatus.JOINED);
-  });
-
-  it('rejects a volunteer who is not a member of the unit', async () => {
-    const shift = await createShift(db, { organizationUnitId: unitId });
-    const instance = await createShiftInstance(db, shift.id);
-    const volunteer = await createUser(db); // no membership anywhere
-
-    const response = await graphqlRequest(app, {
-      query: CHECK_IN_INVITE_TO_SHIFT_INSTANCE,
-      variables: { shiftInstanceId: instance.id, volunteerId: volunteer.id },
-      headers: { 'x-organization-unit-id': unitId },
-    });
-
-    expect(response.errors?.[0]?.message).toBe(
-      'Volunteer is not a member of this unit',
-    );
-
-    const invite = await db.query.shiftInstanceInvites.findFirst({
-      where: { instanceId: instance.id, userId: volunteer.id },
-    });
-    expect(invite).toBeUndefined();
-  });
-
-  it('rejects a shift instance that belongs to a different org unit', async () => {
-    const otherOrg = await createOrganizationWithType(
-      db,
-      `OtherShiftInvite ${crypto.randomUUID()}`,
-    );
-    const otherUnit = await createUnit(db, {
-      organizationId: otherOrg.organization.id,
-      typeId: otherOrg.type.id,
-      name: 'Other shift invite unit',
-    });
-    const foreignShift = await createShift(db, {
-      organizationUnitId: otherUnit.id,
-    });
-    const foreignInstance = await createShiftInstance(db, foreignShift.id);
-    const volunteer = await createUser(db);
-
-    const response = await graphqlRequest(app, {
-      query: CHECK_IN_INVITE_TO_SHIFT_INSTANCE,
-      variables: {
-        shiftInstanceId: foreignInstance.id,
-        volunteerId: volunteer.id,
-      },
-      // Caller's header names their OWN unit, not the foreign one — the
-      // service must fail to find the instance scoped to that header rather
-      // than silently inviting across org boundaries.
-      headers: { 'x-organization-unit-id': unitId },
-    });
-
-    expect(response.errors?.[0]?.message).toContain('not found');
-  });
-});
-
 describe('checkInInviteToOrganization mutation', () => {
   const CHECK_IN_INVITE_TO_ORGANIZATION = `
-    mutation CheckInInviteToOrganization($volunteerId: ID!) {
-      checkInInviteToOrganization(volunteerId: $volunteerId)
+    mutation CheckInInviteToOrganization($checkInId: String!) {
+      checkInInviteToOrganization(checkInId: $checkInId)
     }
   `;
 
@@ -952,20 +1137,10 @@ describe('checkInInviteToOrganization mutation', () => {
     });
     unitId = unit.id;
 
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 
@@ -982,7 +1157,7 @@ describe('checkInInviteToOrganization mutation', () => {
       app,
       {
         query: CHECK_IN_INVITE_TO_ORGANIZATION,
-        variables: { volunteerId: volunteer.id },
+        variables: { checkInId: volunteer.checkInId },
         headers: { 'x-organization-unit-id': unitId },
       },
       'checkInInviteToOrganization',
@@ -1000,14 +1175,14 @@ describe('checkInInviteToOrganization mutation', () => {
     expect(request).toBeUndefined();
   });
 
-  it('rejects an unknown volunteer id', async () => {
+  it('rejects an unknown check-in id', async () => {
     const response = await graphqlRequest(app, {
       query: CHECK_IN_INVITE_TO_ORGANIZATION,
-      variables: { volunteerId: crypto.randomUUID() },
+      variables: { checkInId: crypto.randomUUID() },
       headers: { 'x-organization-unit-id': unitId },
     });
 
-    expect(response.errors?.[0]?.message).toBe('User not found');
+    expect(response.errors?.[0]?.message).toBe('Volunteer not found');
   });
 });
 
@@ -1025,6 +1200,8 @@ describe('checkInApproveMembershipRequest mutation', () => {
   let db: Database;
   let callerUserId: string;
   let unitId: string;
+  let organizationId: string;
+  let typeId: string;
 
   beforeAll(async () => {
     const context = await getGraphqlTestContext();
@@ -1036,6 +1213,8 @@ describe('checkInApproveMembershipRequest mutation', () => {
       db,
       `ApproveRequest ${crypto.randomUUID()}`,
     );
+    organizationId = org.organization.id;
+    typeId = org.type.id;
     const unit = await createUnit(db, {
       organizationId: org.organization.id,
       typeId: org.type.id,
@@ -1057,20 +1236,10 @@ describe('checkInApproveMembershipRequest mutation', () => {
     // Caller holds ONLY check-in:manage — not volunteer:edit — proving the
     // new mutation does not depend on the existing approveMembershipRequest's
     // permission.
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 
@@ -1103,6 +1272,192 @@ describe('checkInApproveMembershipRequest mutation', () => {
       where: { userId: volunteer.id, organizationUnitId: unitId },
     });
     expect(membership).toBeTruthy();
+  });
+
+  it('approves a parent-unit request from the child-unit context for a caller managing both, granting membership in the parent', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const parentRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInApproveMembershipRequest: { id: string; status: string };
+    }>(
+      app,
+      {
+        query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+        variables: { requestId: parentRequest.id },
+        headers: { 'x-organization-unit-id': childUnit.id },
+      },
+      'checkInApproveMembershipRequest',
+    );
+
+    expect(data.checkInApproveMembershipRequest.status).toBe('ACCEPTED');
+    const parentMembership = await db.query.memberships.findFirst({
+      where: { userId: volunteer.id, organizationUnitId: unitId },
+    });
+    expect(parentMembership).toBeTruthy();
+    const childMembership = await db.query.memberships.findFirst({
+      where: { userId: volunteer.id, organizationUnitId: childUnit.id },
+    });
+    expect(childMembership).toBeUndefined();
+  });
+
+  it('returns FORBIDDEN for a parent-unit request when the caller manages only the child', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child only',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const parentRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: unitId,
+    });
+    setAuthMockUserId(
+      await createCheckInManager(db, organizationId, childUnit.id),
+    );
+
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: parentRequest.id },
+      headers: { 'x-organization-unit-id': childUnit.id },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+    const stillPending = await db.query.membershipRequests.findFirst({
+      where: { id: parentRequest.id },
+    });
+    expect(stillPending?.status).toBe('PENDING');
+    const parentMembership = await db.query.memberships.findFirst({
+      where: { userId: volunteer.id, organizationUnitId: unitId },
+    });
+    expect(parentMembership).toBeUndefined();
+  });
+
+  it('returns NOT_FOUND for a request on a sibling unit of the context unit', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child A',
+      parentId: unitId,
+    });
+    const siblingUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve child B',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const siblingRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: siblingUnit.id,
+    });
+
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: siblingRequest.id },
+      headers: { 'x-organization-unit-id': childUnit.id },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+    const stillPending = await db.query.membershipRequests.findFirst({
+      where: { id: siblingRequest.id },
+    });
+    expect(stillPending?.status).toBe('PENDING');
+  });
+
+  it('returns NOT_FOUND for a request on a child unit while the parent is the context', async () => {
+    const childUnit = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve descendant',
+      parentId: unitId,
+    });
+    const volunteer = await createUser(db);
+    const childRequest = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: childUnit.id,
+    });
+
+    const response = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: childRequest.id },
+      headers: { 'x-organization-unit-id': unitId },
+    });
+
+    expect(response.errors?.[0]?.extensions?.code).toBe('NOT_FOUND');
+  });
+
+  it('returns CONFLICT while a required form of the request unit is missing, and approves once submitted', async () => {
+    // The parent's request is approved from the child context, so the
+    // parent's required forms gate it.
+    const formsParent = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve forms parent',
+      parentId: unitId,
+    });
+    const formsChild = await createUnit(db, {
+      organizationId,
+      typeId,
+      name: 'Approve forms grandchild',
+      parentId: formsParent.id,
+    });
+    const { form } = await createRequirementForm(db, {
+      organizationId,
+      organizationUnitId: formsParent.id,
+      createdById: callerUserId,
+      name: 'Approve gate form',
+      required: true,
+    });
+    await setRequiredForms(db, {
+      organizationUnitId: formsParent.id,
+      formIds: [form.id],
+    });
+    const volunteer = await createUser(db);
+    const request = await createMembershipRequest(db, {
+      userId: volunteer.id,
+      organizationUnitId: formsParent.id,
+    });
+
+    const blocked = await graphqlRequest(app, {
+      query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+      variables: { requestId: request.id },
+      headers: { 'x-organization-unit-id': formsChild.id },
+    });
+    expect(blocked.errors?.[0]?.extensions?.code).toBe('CONFLICT');
+    const stillPending = await db.query.membershipRequests.findFirst({
+      where: { id: request.id },
+    });
+    expect(stillPending?.status).toBe('PENDING');
+
+    await createFormSubmission(db, {
+      formId: form.id,
+      userId: volunteer.id,
+      organizationUnitId: formsParent.id,
+    });
+
+    const data = await graphqlRequestRequiringData<{
+      checkInApproveMembershipRequest: { id: string; status: string };
+    }>(
+      app,
+      {
+        query: CHECK_IN_APPROVE_MEMBERSHIP_REQUEST,
+        variables: { requestId: request.id },
+        headers: { 'x-organization-unit-id': formsChild.id },
+      },
+      'checkInApproveMembershipRequest',
+    );
+    expect(data.checkInApproveMembershipRequest.status).toBe('ACCEPTED');
   });
 });
 
@@ -1140,20 +1495,10 @@ describe('checkOutVolunteer mutation', () => {
 
     // Caller holds ONLY check-in:manage — the whole point of this mutation is
     // that shift:edit is not required.
-    const permission = await db.query.permissions.findFirst({
-      where: { key: PERMISSIONS.CHECK_IN_MANAGE },
-    });
-    if (!permission) throw new Error('CHECK_IN_MANAGE permission not seeded');
-
-    const role = await createRole(db, { organizationId: org.organization.id });
-    await grantPermissionToRole(db, {
-      roleId: role.id,
-      permissionId: permission.id,
-    });
-    const membership = await addMembership(db, callerUserId, unit.id);
-    await assignRoleToMembership(db, {
-      membershipId: membership.id,
-      roleId: role.id,
+    await grantCheckInManage(db, {
+      organizationId: org.organization.id,
+      organizationUnitId: unit.id,
+      userId: callerUserId,
     });
   });
 

@@ -1,0 +1,223 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "d2f8ca16-ea74-48a0-8eb2-6c1c34f329c9",
+  "prevIds": ["77b46b1f-3ecf-4878-8f6f-9f6de19f2c5c"],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "organization_unit_invitations"],
+      "writes": [
+        "s|tbl|public.organization_unit_invitations",
+        "n|tbl|public.organization_unit_invitations",
+        "e|tbl|public.organization_unit_invitations",
+        "n|rel|public.organization_unit_invitations",
+        "n|type|public.organization_unit_invitations",
+        "n|rel|public.organization_unit_invitations_pkey",
+        "n|rel|public.uq_organization_unit_invitations_user_id_organization_unit_id"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "organization_unit_invitations"],
+      "writes": [
+        "s|fk|public.organization_unit_invitations.organization_unit_invitations_user_id_users_id_fkey",
+        "n|fk|public.organization_unit_invitations.organization_unit_invitations_user_id_users_id_fkey",
+        "e|fk|public.organization_unit_invitations.organization_unit_invitations_user_id_users_id_fkey",
+        "n|con|public.organization_unit_invitations.organization_unit_invitations_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.organization_unit_invitations",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.organization_unit_invitations.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "organization_unit_invitations"],
+      "writes": [
+        "s|fk|public.organization_unit_invitations.organization_unit_invitations_opaCb4ITz7BU_fkey",
+        "n|fk|public.organization_unit_invitations.organization_unit_invitations_opaCb4ITz7BU_fkey",
+        "e|fk|public.organization_unit_invitations.organization_unit_invitations_opaCb4ITz7BU_fkey",
+        "n|con|public.organization_unit_invitations.organization_unit_invitations_opaCb4ITz7BU_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.organization_unit_invitations",
+        "n|sch|public",
+        "n|tbl|public.organization_units",
+        "n|sch|public",
+        "n|col|public.organization_unit_invitations.organization_unit_id",
+        "n|col|public.organization_units.id",
+        "e|uniqueness|public.organization_units.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "organization_unit_invitations",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "organization_unit_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "last_sent_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "organization_unit_invitations_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": ["user_id"],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "organization_unit_invitations_opaCb4ITz7BU_fkey",
+        "nameExplicit": false,
+        "columns": ["organization_unit_id"],
+        "schemaTo": "public",
+        "tableTo": "organization_units",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "organization_unit_invitations_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "organization_unit_invitations",
+        "name": "uq_organization_unit_invitations_user_id_organization_unit_id",
+        "nameExplicit": true,
+        "columns": ["user_id", "organization_unit_id"],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    }
+  ]
+}

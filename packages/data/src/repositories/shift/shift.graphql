@@ -654,13 +654,15 @@ query GetCheckInShifts($search: String) {
   }
 }
 
-mutation CheckInInviteToShiftInstance(
+mutation CheckInAddToShiftInstance(
+  $checkInId: String!
   $shiftInstanceId: ID!
-  $volunteerId: ID!
+  $allowOverCapacity: Boolean! = false
 ) {
-  checkInInviteToShiftInstance(
+  checkInAddToShiftInstance(
+    checkInId: $checkInId
     shiftInstanceId: $shiftInstanceId
-    volunteerId: $volunteerId
+    allowOverCapacity: $allowOverCapacity
   ) {
     id
   }
