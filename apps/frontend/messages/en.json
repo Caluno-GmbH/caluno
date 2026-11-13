@@ -1892,6 +1892,7 @@
       "title": "Join {shiftTitle}"
     },
     "fullNote": "This assignment is already full.",
+    "instancesLoadFailed": "We couldn't load available dates. Please refresh the page.",
     "joinedNote": "You're signed up for this assignment.",
     "later": "Later",
     "locationDivider": "·",
