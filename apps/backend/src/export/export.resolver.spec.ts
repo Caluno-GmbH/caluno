@@ -1,5 +1,6 @@
 import { describe, expect, it, mock } from 'bun:test';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
+import { PERMISSIONS } from '../auth/constants';
 import { ForbiddenGraphQLError } from '../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../graphql/graphql.context';
 import { ExportTable } from './enums';
@@ -127,7 +128,7 @@ describe('ExportResolver', () => {
   });
 
   it('rejects extended timesheet columns without volunteer:edit', async () => {
-    const { resolver } = buildResolver(false);
+    const { resolver, authService } = buildResolver(false);
 
     await expect(
       resolver.exportTimesheetsCsv(
@@ -136,6 +137,12 @@ describe('ExportResolver', () => {
         session,
       ),
     ).rejects.toBeInstanceOf(ForbiddenGraphQLError);
+
+    expect(authService.hasRequiredPermissions).toHaveBeenCalledWith(
+      session.user.id,
+      context.organizationUnitId,
+      [PERMISSIONS.VOLUNTEER_EDIT],
+    );
   });
 
   it('allows extended timesheet columns when caller has volunteer:edit', async () => {

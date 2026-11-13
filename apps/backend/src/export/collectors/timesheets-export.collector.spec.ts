@@ -74,8 +74,7 @@ describe('TimesheetsExportCollector', () => {
     expect(cells?.volunteerGender).toBe('female');
     expect(cells?.volunteerPhone).toBe('+49 123 456');
     expect(cells?.volunteerAddress).toBe('Main St 1, 20095 Hamburg');
-    expect(typeof cells?.volunteerDateOfBirth).toBe('string');
-    expect(cells?.volunteerDateOfBirth).toMatch(/\d{2}\.\d{2}\.\d{4}/);
+    expect(cells?.volunteerDateOfBirth).toBe('20.05.1990');
   });
 
   it('maps absent extended fields to null/empty', async () => {
