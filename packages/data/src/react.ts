@@ -112,17 +112,19 @@ export type {
 } from './repositories/accounting/accounting.repository';
 export { deriveDocumentStatus } from './repositories/accounting/accounting.repository';
 export type {
-  ExportFileResult,
-  RawExportLogEntry,
-} from './repositories/export/export.repository';
-export { ExportRepository } from './repositories/export/export.repository';
-export type {
   DiscoverEvent,
   EventInviteItem,
   EventListItem,
   MyEvent,
   RawEvent,
 } from './repositories/event/event.repository';
+export type {
+  ExportColumnItem,
+  ExportFileResult,
+  ExportRequest,
+  RawExportLogEntry,
+} from './repositories/export/export.repository';
+export { ExportRepository } from './repositories/export/export.repository';
 export type {
   AvailableShiftInstance,
   AvailableShiftInstanceDayCount,

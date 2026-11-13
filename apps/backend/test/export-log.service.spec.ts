@@ -7,6 +7,10 @@ import { ExportTable } from '../src/export/enums';
 import { ExportLogService } from '../src/export/export-log.service';
 import { createUser } from './factories';
 import {
+  createOrganizationWithType,
+  createUnit,
+} from './factories/org.factory';
+import {
   closeTestingModuleAfterAll,
   ensureTestDatabase,
 } from './helpers/ensure-test-database';
@@ -26,14 +30,25 @@ describe('ExportLogService', () => {
     service = new ExportLogService(db);
   });
 
+  const seedUnit = async () => {
+    const { organization, type } = await createOrganizationWithType(
+      db,
+      `Export Log Org ${crypto.randomUUID()}`,
+    );
+    return createUnit(db, {
+      organizationId: organization.id,
+      typeId: type.id,
+      name: `unit-${crypto.randomUUID()}`,
+    });
+  };
+
   it('records an export and lists it back for the org unit', async () => {
-    const orgUnitId = crypto.randomUUID();
+    const unit = await seedUnit();
     const actor = await createUser(db);
-    const actorUserId = actor.id;
 
     const recorded = await service.recordExport({
-      organizationUnitId: orgUnitId,
-      actorUserId,
+      organizationUnitId: unit.id,
+      actorUserId: actor.id,
       tableKind: ExportTable.TIMESHEETS,
       columns: ['name', 'hours'],
       includedTechnicalIds: false,
@@ -41,35 +56,33 @@ describe('ExportLogService', () => {
       subjectUserIds: ['u1', 'u2'],
     });
 
-    const logs = await service.listExportLogs(orgUnitId);
+    const logs = await service.listExportLogs(unit.id);
 
     expect(logs).toHaveLength(1);
-    expect(logs[0].tableKind).toBe(ExportTable.TIMESHEETS);
-    expect(logs[0].columns).toEqual(['name', 'hours']);
-    expect(logs[0].rowCount).toBe(3);
-    expect(logs[0].subjectUserIds).toEqual(['u1', 'u2']);
-    expect(logs[0].occurredAt).toBeTruthy();
-    expect(logs[0].id).toBe(recorded.id);
+    expect(logs[0]?.tableKind).toBe(ExportTable.TIMESHEETS);
+    expect(logs[0]?.columns).toEqual(['name', 'hours']);
+    expect(logs[0]?.rowCount).toBe(3);
+    expect(logs[0]?.subjectUserIds).toEqual(['u1', 'u2']);
+    expect(logs[0]?.occurredAt).toBeTruthy();
+    expect(logs[0]?.id).toBe(recorded.id);
   });
 
   it('filters the list by table kind', async () => {
-    const orgUnitId = crypto.randomUUID();
+    const unit = await seedUnit();
     const actor = await createUser(db);
-    const actorUserId = actor.id;
 
     await service.recordExport({
-      organizationUnitId: orgUnitId,
-      actorUserId,
+      organizationUnitId: unit.id,
+      actorUserId: actor.id,
       tableKind: ExportTable.TIMESHEETS,
       columns: ['name'],
       includedTechnicalIds: false,
       rowCount: 1,
       subjectUserIds: [],
     });
-
     await service.recordExport({
-      organizationUnitId: orgUnitId,
-      actorUserId,
+      organizationUnitId: unit.id,
+      actorUserId: actor.id,
       tableKind: ExportTable.USERS,
       columns: ['email'],
       includedTechnicalIds: true,
@@ -77,31 +90,31 @@ describe('ExportLogService', () => {
       subjectUserIds: [],
     });
 
-    const logs = await service.listExportLogs(orgUnitId, ExportTable.USERS);
+    const logs = await service.listExportLogs(unit.id, {
+      tableKind: ExportTable.USERS,
+    });
 
     expect(logs).toHaveLength(1);
-    expect(logs[0].tableKind).toBe(ExportTable.USERS);
+    expect(logs[0]?.tableKind).toBe(ExportTable.USERS);
   });
 
   it('scopes the list to the org unit', async () => {
-    const orgUnitIdA = crypto.randomUUID();
-    const orgUnitIdB = crypto.randomUUID();
+    const unitA = await seedUnit();
+    const unitB = await seedUnit();
     const actor = await createUser(db);
-    const actorUserId = actor.id;
 
     await service.recordExport({
-      organizationUnitId: orgUnitIdA,
-      actorUserId,
+      organizationUnitId: unitA.id,
+      actorUserId: actor.id,
       tableKind: ExportTable.SHIFTS,
       columns: ['date'],
       includedTechnicalIds: false,
       rowCount: 5,
       subjectUserIds: [],
     });
-
     await service.recordExport({
-      organizationUnitId: orgUnitIdB,
-      actorUserId,
+      organizationUnitId: unitB.id,
+      actorUserId: actor.id,
       tableKind: ExportTable.SHIFTS,
       columns: ['date'],
       includedTechnicalIds: false,
@@ -109,12 +122,30 @@ describe('ExportLogService', () => {
       subjectUserIds: [],
     });
 
-    const logsA = await service.listExportLogs(orgUnitIdA);
-    const logsB = await service.listExportLogs(orgUnitIdB);
+    expect(await service.listExportLogs(unitA.id)).toHaveLength(1);
+    expect((await service.listExportLogs(unitA.id))[0]?.rowCount).toBe(5);
+    expect(await service.listExportLogs(unitB.id)).toHaveLength(1);
+  });
 
-    expect(logsA).toHaveLength(1);
-    expect(logsA[0].organizationUnitId).toBe(orgUnitIdA);
-    expect(logsB).toHaveLength(1);
-    expect(logsB[0].organizationUnitId).toBe(orgUnitIdB);
+  it('paginates the list', async () => {
+    const unit = await seedUnit();
+    const actor = await createUser(db);
+
+    for (const rowCount of [1, 2, 3]) {
+      await service.recordExport({
+        organizationUnitId: unit.id,
+        actorUserId: actor.id,
+        tableKind: ExportTable.USERS,
+        columns: ['name'],
+        includedTechnicalIds: false,
+        rowCount,
+        subjectUserIds: [],
+      });
+    }
+
+    expect(await service.listExportLogs(unit.id, { limit: 2 })).toHaveLength(2);
+    expect(
+      await service.listExportLogs(unit.id, { limit: 2, offset: 2 }),
+    ).toHaveLength(1);
   });
 });

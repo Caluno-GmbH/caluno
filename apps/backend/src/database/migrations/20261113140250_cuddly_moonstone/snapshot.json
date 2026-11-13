@@ -1,0 +1,69 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "e467dbda-9d3a-4a40-8011-470ba57cfd04",
+  "prevIds": ["c1171fc2-8b78-4abb-9fc7-1650b0ae0b92"],
+  "footprints": [
+    {
+      "statementType": "alter_enum",
+      "statementTarget": ["enum", "public", "file_purpose"],
+      "writes": ["s|enum|public.file_purpose"],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "export_logs"],
+      "writes": [
+        "s|fk|public.export_logs.export_logs_organization_unit_id_organization_units_id_fkey",
+        "n|fk|public.export_logs.export_logs_organization_unit_id_organization_units_id_fkey",
+        "e|fk|public.export_logs.export_logs_organization_unit_id_organization_units_id_fkey",
+        "n|con|public.export_logs.export_logs_organization_unit_id_organization_units_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.export_logs",
+        "n|sch|public",
+        "n|tbl|public.organization_units",
+        "n|sch|public",
+        "n|col|public.export_logs.organization_unit_id",
+        "n|col|public.organization_units.id",
+        "e|uniqueness|public.organization_units.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "export_logs",
+        "name": "export_logs_organization_unit_id_organization_units_id_fkey",
+        "nameExplicit": false,
+        "columns": ["organization_unit_id"],
+        "schemaTo": "public",
+        "tableTo": "organization_units",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "enums\u0000[\"public\",\"file_purpose\"]",
+      "set": {
+        "values": [
+          "requirement_document",
+          "document",
+          "export",
+          "form_document",
+          "org_logo",
+          "organization_logo",
+          "event_image",
+          "shift_image",
+          "profile_picture"
+        ]
+      }
+    }
+  ]
+}

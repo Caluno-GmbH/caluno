@@ -6,6 +6,7 @@ export enum FileVisibility {
 export enum FilePurpose {
   REQUIREMENT_DOCUMENT = 'requirement_document',
   DOCUMENT = 'document',
+  EXPORT = 'export',
   FORM_DOCUMENT = 'form_document',
   ORG_LOGO = 'org_logo',
   ORGANIZATION_LOGO = 'organization_logo',
