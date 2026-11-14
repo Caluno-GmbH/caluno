@@ -18,7 +18,7 @@ test.describe('public event detail page', () => {
       `${BASE_URL}/en/events/00000000-0000-0000-0000-000000000000`,
     );
     await expect(
-      page.getByRole('heading', { name: 'This page could not be found.' }),
+      page.getByRole('heading', { name: 'Page not found' }),
     ).toBeVisible();
   });
 
