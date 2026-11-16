@@ -1,0 +1,248 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "ac05379a-0064-4ff2-a019-9ee30fcc446d",
+  "prevIds": [
+    "e467dbda-9d3a-4a40-8011-470ba57cfd04",
+    "77b46b1f-3ecf-4878-8f6f-9f6de19f2c5c"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "public",
+        "change_feed_entries"
+      ],
+      "writes": [
+        "s|tbl|public.change_feed_entries",
+        "n|tbl|public.change_feed_entries",
+        "e|tbl|public.change_feed_entries",
+        "n|rel|public.change_feed_entries",
+        "n|type|public.change_feed_entries",
+        "n|rel|public.change_feed_entries_pkey"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "change_feed_entries",
+        "idx_change_feed_entries_xid"
+      ],
+      "writes": [
+        "s|idx|public.idx_change_feed_entries_xid",
+        "n|idx|public.idx_change_feed_entries_xid",
+        "e|idx|public.idx_change_feed_entries_xid",
+        "n|rel|public.idx_change_feed_entries_xid"
+      ],
+      "reads": [
+        "n|tbl|public.change_feed_entries",
+        "n|sch|public",
+        "n|col|public.change_feed_entries.xid"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "change_feed_entries",
+        "idx_change_feed_entries_created_at"
+      ],
+      "writes": [
+        "s|idx|public.idx_change_feed_entries_created_at",
+        "n|idx|public.idx_change_feed_entries_created_at",
+        "e|idx|public.idx_change_feed_entries_created_at",
+        "n|rel|public.idx_change_feed_entries_created_at"
+      ],
+      "reads": [
+        "n|tbl|public.change_feed_entries",
+        "n|sch|public",
+        "n|col|public.change_feed_entries.created_at"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "change_feed_entries",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "id",
+        "type": "bigint",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": {
+          "type": "always",
+          "name": "change_feed_entries_id_seq",
+          "increment": "1",
+          "startWith": "1",
+          "minValue": "1",
+          "maxValue": "9223372036854775807",
+          "cache": 1,
+          "cycle": false
+        },
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "xid",
+        "type": "xid8",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "pg_current_xact_id()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "area",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "organization_unit_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "created_at",
+        "type": "timestamp with time zone",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "idx_change_feed_entries_xid",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "xid",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "idx_change_feed_entries_created_at",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "created_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "change_feed_entries",
+        "name": "change_feed_entries_pkey",
+        "columns": [
+          "id"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    }
+  ]
+}
