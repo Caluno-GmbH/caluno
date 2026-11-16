@@ -182,6 +182,8 @@
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
     "today": "Today",
+    "noPermissionDescription": "You don't have permission to check in volunteers. Ask an administrator of your organisation for check-in rights.",
+    "noPermissionTitle": "You can't do check-ins",
     "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
     "unavailableTitle": "Can't check in this person",
     "agreementNoTemplateTitle": "No agreement template set up",
