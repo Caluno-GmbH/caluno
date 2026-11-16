@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { type QueryClient, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import type { TimeEntryStatus } from '../../generated/base-types';
 import { TimeEntryRepository } from '../../repositories/time-entry/time-entry.repository';
@@ -12,6 +12,10 @@ export interface TimesheetBackendFilters {
   shiftId?: string | null;
   dateFrom?: string | null;
   dateTo?: string | null;
+}
+
+export function invalidateTimeEntryListQueries(queryClient: QueryClient) {
+  queryClient.invalidateQueries({ queryKey: ['time-entries-all'] });
 }
 
 export function useTimeEntriesAll(

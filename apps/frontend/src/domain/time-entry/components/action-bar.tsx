@@ -1,7 +1,10 @@
 'use client';
 
 import { TimeEntryStatus } from '@repo/data';
-import { useQueryClient } from '@repo/data/react';
+import {
+  invalidateTimeEntryListQueries,
+  useQueryClient,
+} from '@repo/data/react';
 import { ActionsCell, Button } from '@repo/ui';
 import { CheckCheck, Edit, Loader2, Trash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -54,6 +57,9 @@ export const ActionBar = ({
         toast.success(t('action.confirmSuccess'));
         // Confirmed hours become eligible for accounting; drop cached views.
         void queryClient.invalidateQueries({ queryKey: ['accounting'] });
+        // Confirming also flips the entry's status/confirmed hours, so refresh
+        // the timesheets list that renders this row.
+        invalidateTimeEntryListQueries(queryClient);
         router.refresh();
       }
     });
