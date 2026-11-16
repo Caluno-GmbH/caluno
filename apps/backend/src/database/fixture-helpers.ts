@@ -329,16 +329,55 @@ export const assertFixtureIdentitiesAvailable = async (
   }
 };
 
+export type AuthUserInput = {
+  email: string;
+  firstname: string;
+  lastname: string;
+  locale: 'en' | 'de';
+  image?: string;
+};
+
+/** Inserts a verified user plus its credential account under `id`. */
+export const insertAuthUser = async (
+  db: Database,
+  id: string,
+  hashedPassword: string,
+  input: AuthUserInput,
+): Promise<FixtureUser> => {
+  await db.insert(schema.users).values({
+    id,
+    name: formatUserName(input.firstname, input.lastname),
+    firstname: input.firstname,
+    lastname: input.lastname,
+    email: input.email,
+    emailVerified: true,
+    locale: input.locale,
+    image: input.image ?? null,
+  });
+
+  await db.insert(schema.accounts).values({
+    id: crypto.randomUUID(),
+    // better-auth resolves a credential account by `accountId === user.id`
+    // (see its sign-in route), so the account id must be the user id — the
+    // email here makes the fixture account unreachable for sign-in.
+    accountId: id,
+    providerId: 'credential',
+    userId: id,
+    password: hashedPassword,
+  });
+
+  return {
+    id,
+    email: input.email,
+    firstname: input.firstname,
+    lastname: input.lastname,
+  };
+};
+
 export const createAuthUser = async (
   db: Database,
   hashedPassword: string,
-  input: {
-    email: string;
-    firstname: string;
-    lastname: string;
-    locale: 'en' | 'de';
-    image?: string;
-  },
+  input: AuthUserInput,
 ): Promise<FixtureUser> => {
   const id = fixtureUserId(input.email);
 
@@ -379,34 +418,7 @@ export const createAuthUser = async (
     );
   }
 
-  await db.insert(schema.users).values({
-    id,
-    name: formatUserName(input.firstname, input.lastname),
-    firstname: input.firstname,
-    lastname: input.lastname,
-    email: input.email,
-    emailVerified: true,
-    locale: input.locale,
-    image: input.image ?? null,
-  });
-
-  await db.insert(schema.accounts).values({
-    id: crypto.randomUUID(),
-    // better-auth resolves a credential account by `accountId === user.id`
-    // (see its sign-in route), so the account id must be the user id — the
-    // email here makes the fixture account unreachable for sign-in.
-    accountId: id,
-    providerId: 'credential',
-    userId: id,
-    password: hashedPassword,
-  });
-
-  return {
-    id,
-    email: input.email,
-    firstname: input.firstname,
-    lastname: input.lastname,
-  };
+  return insertAuthUser(db, id, hashedPassword, input);
 };
 
 export const ensureMembershipWithRole = async (
