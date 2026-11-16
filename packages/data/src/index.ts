@@ -29,6 +29,7 @@ export * from './repositories/accounting/profile-source-keys';
 export * from './repositories/accounting/template-body.types';
 export * from './repositories/accounting/text-limits';
 export * from './repositories/base/base.repository';
+export * from './repositories/change-feed/change-feed.repository';
 export * from './repositories/event/event.repository';
 export * from './repositories/export/export.repository';
 export * from './repositories/membership/membership.repository';

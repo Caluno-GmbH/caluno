@@ -57,6 +57,24 @@ type BundleDownloadStatus {
   volunteer: User!
 }
 
+enum ChangeArea {
+  CONTRACTS
+  INVOICES
+  MEMBERSHIP_REQUESTS
+}
+
+type ChangeFeed {
+  changes: [ChangeFeedEntry!]!
+  cursor: String!
+  pollAfterMs: Int
+  reset: Boolean!
+}
+
+type ChangeFeedEntry {
+  area: ChangeArea!
+  id: ID!
+}
+
 type CheckInAgreement {
   canManageAgreements: Boolean!
   contractId: ID
@@ -964,6 +982,7 @@ type Query {
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
   bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
+  changesSince(cursor: String): ChangeFeed!
   checkInContext(checkInId: String!): CheckInContext
   checkInReadiness(shiftInstanceId: ID, volunteerId: ID!): CheckInReadiness!
   checkInShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!

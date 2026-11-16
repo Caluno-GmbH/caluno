@@ -1,0 +1,11 @@
+query ChangesSince($cursor: String) {
+  changesSince(cursor: $cursor) {
+    cursor
+    changes {
+      id
+      area
+    }
+    reset
+    pollAfterMs
+  }
+}
