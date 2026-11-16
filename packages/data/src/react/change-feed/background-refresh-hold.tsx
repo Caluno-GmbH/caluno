@@ -1,5 +1,6 @@
 'use client';
 
+import type { QueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useContext, useEffect } from 'react';
 
 /**
@@ -23,6 +24,11 @@ export type BackgroundRefreshHold = () => () => void;
 export interface BackgroundRefreshHoldState {
   hold: BackgroundRefreshHold;
   generation: number;
+  /**
+   * Adds a nested provider's QueryClient to the feed's invalidations until the
+   * returned unregister is called. Stable across poller recreations.
+   */
+  registerQueryClient: (queryClient: QueryClient) => () => void;
 }
 
 const BackgroundRefreshHoldContext =
@@ -43,6 +49,11 @@ export function BackgroundRefreshHoldProvider({
       {children}
     </BackgroundRefreshHoldContext.Provider>
   );
+}
+
+/** The nearest change feed's state, or null when no feed runs above. */
+export function useBackgroundRefreshHoldState(): BackgroundRefreshHoldState | null {
+  return useContext(BackgroundRefreshHoldContext);
 }
 
 /**

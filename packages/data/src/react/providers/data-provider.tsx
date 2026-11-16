@@ -11,7 +11,10 @@ import {
   shouldRetryQuery,
   shouldThrowRedirectError,
 } from '../../errors/next-redirect';
-import { BackgroundRefreshHoldProvider } from '../change-feed/background-refresh-hold';
+import {
+  BackgroundRefreshHoldProvider,
+  useBackgroundRefreshHoldState,
+} from '../change-feed/background-refresh-hold';
 import { useChangeFeed } from '../change-feed/use-change-feed';
 import {
   GraphQLClientProvider,
@@ -75,6 +78,7 @@ export function DataProvider({
   const [ownQueryClient] = useState(createQueryClient);
   const queryClient = customQueryClient ?? ownQueryClient;
 
+  const outerFeed = useBackgroundRefreshHoldState();
   const holdState = useChangeFeed({
     enabled: changeFeed,
     apiUrl,
@@ -82,6 +86,19 @@ export function DataProvider({
     locale,
     queryClient,
   });
+
+  // A nested page-level provider has its own QueryClient. It runs no poller of
+  // its own, so it registers with the layout's feed to receive its
+  // invalidations.
+  const registerWithOuterFeed = holdState
+    ? null
+    : outerFeed?.registerQueryClient;
+  useEffect(() => {
+    if (!registerWithOuterFeed) {
+      return;
+    }
+    return registerWithOuterFeed(queryClient);
+  }, [registerWithOuterFeed, queryClient]);
 
   useEffect(() => {
     function handlePageShow(event: PageTransitionEvent) {
@@ -109,30 +126,17 @@ export function DataProvider({
     });
   }, [apiUrl, organizationUnitId, locale]);
 
-  // Render the same subtree in both branches so the feed provider only wraps
-  // it when there is a live hold. A nested DataProvider with `changeFeed`
-  // disabled yields `holdState === null`; publishing that as a null context
-  // value would shadow an outer provider's hold and silently no-op a hold
-  // taken inside this subtree. Omitting the provider instead lets the outer
-  // value show through.
-  const content = (
-    <>
-      {children}
-      {showDevTools && <ReactQueryDevtools />}
-    </>
-  );
-
+  // A nested DataProvider without its own feed passes the outer feed through,
+  // so holds taken inside it still reach the layout's poller. Always rendering
+  // the provider keeps the subtree from remounting if `changeFeed` changes.
   return (
     <QueryClientProvider client={queryClient}>
       <GraphQLClientProvider value={graphqlClient}>
         <SdkOnErrorProvider onError={onError}>
-          {holdState ? (
-            <BackgroundRefreshHoldProvider value={holdState}>
-              {content}
-            </BackgroundRefreshHoldProvider>
-          ) : (
-            content
-          )}
+          <BackgroundRefreshHoldProvider value={holdState ?? outerFeed}>
+            {children}
+            {showDevTools && <ReactQueryDevtools />}
+          </BackgroundRefreshHoldProvider>
         </SdkOnErrorProvider>
       </GraphQLClientProvider>
     </QueryClientProvider>

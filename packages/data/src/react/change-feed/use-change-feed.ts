@@ -9,10 +9,11 @@ import { sdkErrorTranslation } from '../../errors/translate';
 import { getSdk } from '../../generated/graphql';
 import { ChangeFeedRepository } from '../../repositories/change-feed/change-feed.repository';
 import type { BackgroundRefreshHoldState } from './background-refresh-hold';
+import { ChangeFeedPoller } from './change-feed-poller';
 import {
-  ChangeFeedPoller,
-  queryMatchesChangedAreas,
-} from './change-feed-poller';
+  invalidateAllQueries,
+  invalidateChangedAreas,
+} from './invalidate-query-clients';
 
 export interface UseChangeFeedOptions {
   /** When false, nothing is built and no request ever fires. */
@@ -52,6 +53,16 @@ export function useChangeFeed({
   const pollerRef = useRef<ChangeFeedPoller | null>(null);
   const [generation, setGeneration] = useState(0);
 
+  // QueryClients of nested page-level providers. Kept outside the effect so
+  // registrations survive a poller recreation.
+  const nestedClientsRef = useRef(new Set<QueryClient>());
+  const registerQueryClientRef = useRef((nested: QueryClient) => {
+    nestedClientsRef.current.add(nested);
+    return () => {
+      nestedClientsRef.current.delete(nested);
+    };
+  });
+
   // Stable identity for the hold closure: it always resolves the current
   // poller, which may be recreated across effect runs.
   const holdRef = useRef<() => () => void>(() => {
@@ -86,12 +97,13 @@ export function useChangeFeed({
     const poller = new ChangeFeedPoller({
       fetchChanges: (cursor) => repository.changesSince(cursor),
       invalidateAreas: (areas) => {
-        void queryClient.invalidateQueries({
-          predicate: (query) => queryMatchesChangedAreas(query.meta, areas),
-        });
+        invalidateChangedAreas(
+          [queryClient, ...nestedClientsRef.current],
+          areas,
+        );
       },
       invalidateAll: () => {
-        void queryClient.invalidateQueries();
+        invalidateAllQueries([queryClient, ...nestedClientsRef.current]);
       },
       isUnauthenticated: isUnauthenticatedDataError,
       setTimer: (fn, ms) => globalThis.setTimeout(fn, ms),
@@ -142,6 +154,10 @@ export function useChangeFeed({
     if (!enabled) {
       return null;
     }
-    return { hold: holdRef.current, generation };
+    return {
+      hold: holdRef.current,
+      generation,
+      registerQueryClient: registerQueryClientRef.current,
+    };
   }, [enabled, generation]);
 }

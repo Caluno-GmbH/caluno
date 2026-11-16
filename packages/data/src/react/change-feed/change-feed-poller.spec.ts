@@ -9,7 +9,7 @@ import { ChangeArea } from './query-meta';
 const UNAUTHENTICATED = 'UNAUTHENTICATED';
 
 type FeedResult = Awaited<ReturnType<ChangeFeedPollerDeps['fetchChanges']>>;
-type ScriptedStep = FeedResult | Error;
+type ScriptedStep = FeedResult | Error | Promise<FeedResult>;
 
 async function flushPromises(): Promise<void> {
   await new Promise<void>((resolve) => {
@@ -334,6 +334,50 @@ describe('ChangeFeedPoller', () => {
     // The failed poll kept the cursor the successful answer returned.
     expect(harness.cursors).toEqual([null, null, 'cursor-1']);
     expect(harness.clock.delays).toEqual([5000, 2000, 2000]);
+
+    await harness.clock.advance(2000);
+    // The retry after that failure still sends the last good cursor.
+    expect(harness.cursors).toEqual([null, null, 'cursor-1', 'cursor-1']);
+  });
+
+  it('drops an answer that arrives after stop', async () => {
+    const harness = createHarness();
+    const answer = Promise.withResolvers<FeedResult>();
+    harness.script(answer.promise);
+
+    harness.poller.start();
+    harness.poller.stop();
+    answer.resolve(
+      feedResponse({
+        changes: [{ id: 'entry-1', area: ChangeArea.Contracts }],
+      }),
+    );
+    await flushPromises();
+
+    expect(harness.invalidations).toEqual([]);
+    expect(harness.clock.pending).toBe(0);
+  });
+
+  it('applies an answer that arrives after pause without scheduling the next poll', async () => {
+    const harness = createHarness();
+    const answer = Promise.withResolvers<FeedResult>();
+    harness.script(answer.promise, feedResponse({ cursor: 'cursor-2' }));
+
+    harness.poller.start();
+    harness.poller.pause();
+    answer.resolve(
+      feedResponse({
+        changes: [{ id: 'entry-1', area: ChangeArea.Contracts }],
+      }),
+    );
+    await flushPromises();
+
+    expect(harness.invalidations).toEqual([[ChangeArea.Contracts]]);
+    expect(harness.clock.pending).toBe(0);
+
+    harness.poller.resume();
+    await flushPromises();
+    expect(harness.cursors).toEqual([null, 'cursor-1']);
   });
 
   it('pause cancels the timer and resume polls immediately', async () => {
