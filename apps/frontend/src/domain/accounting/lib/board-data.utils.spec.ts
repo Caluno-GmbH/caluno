@@ -105,6 +105,7 @@ function makeInvoice(
     downloadUrl: null,
     missingProfileFields: [],
     missingOrgProfileFields: [],
+    lastEmailDelivery: null,
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
@@ -372,6 +373,37 @@ describe('mapInvoiceToBoardDoc', () => {
     );
 
     expect(doc.isNonCompliant).toBe(false);
+  });
+
+  it('carries who last emailed the timesheet to accounting, and when', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          failed: false,
+          deliveredByUser: { id: 'u-1', name: 'Julia Vorstand' },
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sentAt).toEqual(new Date('2026-08-03T10:00:00.000Z'));
+    expect(doc.sentBy).toBe('Julia Vorstand');
+  });
+
+  it('marks a timesheet whose last email failed', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          failed: true,
+          deliveredByUser: null,
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sendFailed).toBe(true);
   });
 
   it('maps an invoice to a board document', () => {
