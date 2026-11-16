@@ -11,6 +11,8 @@ import {
   shouldRetryQuery,
   shouldThrowRedirectError,
 } from '../../errors/next-redirect';
+import { BackgroundRefreshHoldProvider } from '../change-feed/background-refresh-hold';
+import { useChangeFeed } from '../change-feed/use-change-feed';
 import {
   GraphQLClientProvider,
   SdkOnErrorProvider,
@@ -30,6 +32,12 @@ export interface DataProviderProps {
    * navigation instead of a stored error.
    */
   onError?: (error: DataError) => void;
+  /**
+   * Mount the change-feed poller: a background `ChangesSince` poll that
+   * invalidates queries by `meta.changeAreas`. Defaults to `false`, so public
+   * pages and accept-terms never poll. Signed-in layouts opt in.
+   */
+  changeFeed?: boolean;
 }
 
 function createQueryClient(): QueryClient {
@@ -62,9 +70,18 @@ export function DataProvider({
   organizationUnitId,
   locale,
   onError,
+  changeFeed = false,
 }: DataProviderProps) {
   const [ownQueryClient] = useState(createQueryClient);
   const queryClient = customQueryClient ?? ownQueryClient;
+
+  const holdState = useChangeFeed({
+    enabled: changeFeed,
+    apiUrl,
+    organizationUnitId,
+    locale,
+    queryClient,
+  });
 
   useEffect(() => {
     function handlePageShow(event: PageTransitionEvent) {
@@ -92,12 +109,30 @@ export function DataProvider({
     });
   }, [apiUrl, organizationUnitId, locale]);
 
+  // Render the same subtree in both branches so the feed provider only wraps
+  // it when there is a live hold. A nested DataProvider with `changeFeed`
+  // disabled yields `holdState === null`; publishing that as a null context
+  // value would shadow an outer provider's hold and silently no-op a hold
+  // taken inside this subtree. Omitting the provider instead lets the outer
+  // value show through.
+  const content = (
+    <>
+      {children}
+      {showDevTools && <ReactQueryDevtools />}
+    </>
+  );
+
   return (
     <QueryClientProvider client={queryClient}>
       <GraphQLClientProvider value={graphqlClient}>
         <SdkOnErrorProvider onError={onError}>
-          {children}
-          {showDevTools && <ReactQueryDevtools />}
+          {holdState ? (
+            <BackgroundRefreshHoldProvider value={holdState}>
+              {content}
+            </BackgroundRefreshHoldProvider>
+          ) : (
+            content
+          )}
         </SdkOnErrorProvider>
       </GraphQLClientProvider>
     </QueryClientProvider>

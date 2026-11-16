@@ -60,6 +60,7 @@ export default async function OrgLayout({
         apiUrl={GRAPHQL_API_URL}
         organizationUnitId={orgUId}
         locale={locale}
+        changeFeed
       >
         {localeSeed && <LocaleCookieSeeder value={localeSeed} />}
         <OrgSyncProvider orgUId={orgUId}>
