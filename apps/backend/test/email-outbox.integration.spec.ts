@@ -14,6 +14,7 @@ import {
 import {
   EmailOutboxService,
   type EnqueueEmailInput,
+  FAILED_CONTENT_RETENTION_MS,
 } from '../src/notification/email/outbox/email-outbox.service';
 import {
   createOrganizationWithType,
@@ -158,7 +159,7 @@ describe('EmailOutboxService', () => {
     }
   });
 
-  it('keeps FAILED content and sets a 72h content expiry', async () => {
+  it('keeps FAILED content and sets a 120h content expiry', async () => {
     sendOnce.mockImplementationOnce(async () => ({
       ok: false,
       retryable: false,
@@ -183,10 +184,10 @@ describe('EmailOutboxService', () => {
     expect(updatedEmail?.expiresAt).toBeInstanceOf(Date);
     const expiresAtMs = updatedEmail!.expiresAt!.getTime();
     expect(expiresAtMs).toBeGreaterThanOrEqual(
-      beforeFail + 72 * 60 * 60 * 1000 - 5_000,
+      beforeFail + FAILED_CONTENT_RETENTION_MS - 5_000,
     );
     expect(expiresAtMs).toBeLessThanOrEqual(
-      Date.now() + 72 * 60 * 60 * 1000 + 5_000,
+      Date.now() + FAILED_CONTENT_RETENTION_MS + 5_000,
     );
   });
 
