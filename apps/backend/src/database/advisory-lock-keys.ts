@@ -17,4 +17,5 @@ export const ADVISORY_LOCK_KEYS = {
   timeEntryAutoCloseTick: 874_213_004,
   volunteerDigestTick: 874_213_005,
   verifiedUserSlackTick: 874_213_006,
+  changeFeedPruneTick: 874_213_007,
 } as const;
