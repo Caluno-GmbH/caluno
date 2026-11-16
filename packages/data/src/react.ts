@@ -22,6 +22,7 @@ export * from './generated/graphql';
 // Auth (better-auth client factory and enhanced methods)
 export * from './react/auth/auth-client';
 // Data fetching hooks
+export * from './react/hooks/use-accounting-delivery';
 export * from './react/hooks/use-accounting-setup-status';
 export * from './react/hooks/use-admin-user-profile';
 export * from './react/hooks/use-available-events';

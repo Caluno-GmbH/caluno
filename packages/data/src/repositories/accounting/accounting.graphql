@@ -265,6 +265,15 @@ fragment InvoiceSummaryFields on Invoice {
 query GetInvoices($filter: InvoiceFilterInput) {
   invoices(filter: $filter) {
     ...InvoiceSummaryFields
+    # Admin board only: who sent it to accounting is not volunteer-facing.
+    lastEmailDelivery {
+      occurredAt
+      failed
+      deliveredByUser {
+        id
+        name
+      }
+    }
   }
 }
 
@@ -641,5 +650,106 @@ query GetAccountingSetupStatus {
       hasInvoiceTemplate
       ready
     }
+  }
+}
+
+fragment AccountingDeliverySettingsFields on AccountingDeliverySettings {
+  deliveryMethod
+  deliveryMethodSource {
+    kind
+    sourceName
+  }
+  recipientEmail
+  recipientEmailSource {
+    kind
+    sourceName
+  }
+  emailSubject
+  emailSubjectSource {
+    kind
+    sourceName
+  }
+  ownDeliveryMethod
+  ownRecipientEmail
+  ownEmailSubject
+  inheritedDeliveryMethod
+  inheritedRecipientEmail
+  inheritedEmailSubject
+  defaultEmailSubject
+}
+
+query GetAccountingDeliverySettings {
+  accountingDeliverySettings {
+    ...AccountingDeliverySettingsFields
+  }
+}
+
+mutation UpdateAccountingDeliverySettings(
+  $input: UpdateAccountingDeliverySettingsInput!
+) {
+  updateAccountingDeliverySettings(input: $input) {
+    ...AccountingDeliverySettingsFields
+  }
+}
+
+query GetBundleSendPreview(
+  $volunteerId: ID!
+  $reimbursementTypeId: ID!
+  $invoiceIds: [ID!]
+) {
+  bundleSendPreview(
+    volunteerId: $volunteerId
+    reimbursementTypeId: $reimbursementTypeId
+    invoiceIds: $invoiceIds
+  ) {
+    issues
+    recipientEmail
+    subject
+    documentCount
+    fitsInEmail
+  }
+}
+
+mutation SendReimbursementBundle(
+  $volunteerId: ID!
+  $reimbursementTypeId: ID!
+  $invoiceIds: [ID!]
+  $acknowledgedIssues: [BundleDeliveryIssue!]!
+) {
+  sendReimbursementBundle(
+    volunteerId: $volunteerId
+    reimbursementTypeId: $reimbursementTypeId
+    invoiceIds: $invoiceIds
+    acknowledgedIssues: $acknowledgedIssues
+  ) {
+    id
+    occurredAt
+    recipientEmail
+    issues
+  }
+}
+
+query GetBundleDeliveries($limit: Int, $offset: Int) {
+  bundleDeliveries(limit: $limit, offset: $offset) {
+    id
+    method
+    volunteer {
+      id
+      name
+    }
+    reimbursementType {
+      id
+      key
+    }
+    invoiceIds
+    recipientEmail
+    subject
+    issues
+    emailStatus
+    deliveredByUser {
+      id
+      name
+    }
+    occurredAt
   }
 }

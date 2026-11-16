@@ -1,15 +1,20 @@
 import type {
+  BundleDeliveryIssue,
   ContractFilterInput,
   CreateContractInput,
   CreateDocumentTemplateInput,
   CreateInvoiceInput,
   DocumentKind,
   InvoiceFilterInput,
+  UpdateAccountingDeliverySettingsInput,
   UpdateDocumentTemplateInput,
 } from '../../generated/base-types';
 import type {
+  GetAccountingDeliverySettingsQuery,
   GetAccountingSetupStatusQuery,
+  GetBundleDeliveriesQuery,
   GetBundleDownloadStatusQuery,
+  GetBundleSendPreviewQuery,
   GetContractQuery,
   GetContractsQuery,
   GetDocumentTemplateQuery,
@@ -30,6 +35,7 @@ import type {
   MyDocumentSummaryQuery,
   MyDocumentsQuery,
   RecordBundleDownloadMutation,
+  SendReimbursementBundleMutation,
   SetManualBaselineMutation,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
@@ -53,7 +59,11 @@ export type ContractDetail = GetContractQuery['contract'];
 export type RawPendingSignee =
   GetPendingContractSigneeQuery['pendingContractSignee'];
 
-export type InvoiceSummary = GetInvoicesQuery['invoices'][number];
+type BoardInvoice = GetInvoicesQuery['invoices'][number];
+// `lastEmailDelivery` is selected by the admin board's GetInvoices only; the
+// volunteer and mutation queries share the rest of the shape.
+export type InvoiceSummary = Omit<BoardInvoice, 'lastEmailDelivery'> &
+  Partial<Pick<BoardInvoice, 'lastEmailDelivery'>>;
 export type InvoiceDetail = GetInvoiceQuery['invoice'];
 export type EligibleTimeEntry =
   GetEligibleTimeEntriesForInvoiceQuery['eligibleTimeEntriesForInvoice'][number];
@@ -82,6 +92,23 @@ export type RawBundleDownloadStatus =
   GetBundleDownloadStatusQuery['bundleDownloadStatus'];
 export type RecordedBundleDownload =
   RecordBundleDownloadMutation['recordBundleDownload'];
+
+// Prefixed with `Raw` because the GraphQL type names collide with the
+// same-named entity types exported from `generated/graphql.ts`.
+export type RawAccountingDeliverySettings =
+  GetAccountingDeliverySettingsQuery['accountingDeliverySettings'];
+export type RawBundleSendPreview =
+  GetBundleSendPreviewQuery['bundleSendPreview'];
+export type SentBundle =
+  SendReimbursementBundleMutation['sendReimbursementBundle'];
+export type RawBundleDelivery =
+  GetBundleDeliveriesQuery['bundleDeliveries'][number];
+
+export interface BundleRequest {
+  volunteerId: string;
+  reimbursementTypeId: string;
+  invoiceIds?: string[];
+}
 
 // Prefixed with `Raw` because `ManualBaseline` collides with the same-named
 // entity type exported from `generated/graphql.ts`.
@@ -362,6 +389,40 @@ export class AccountingRepository extends BaseRepository {
   async findAccountingSetupStatus(): Promise<RawAccountingSetupStatus> {
     const data = await this.sdk.GetAccountingSetupStatus();
     return data.accountingSetupStatus;
+  }
+
+  async findAccountingDeliverySettings(): Promise<RawAccountingDeliverySettings> {
+    const data = await this.sdk.GetAccountingDeliverySettings();
+    return data.accountingDeliverySettings;
+  }
+
+  async updateAccountingDeliverySettings(
+    input: UpdateAccountingDeliverySettingsInput,
+  ): Promise<RawAccountingDeliverySettings> {
+    const data = await this.sdk.UpdateAccountingDeliverySettings({ input });
+    return data.updateAccountingDeliverySettings;
+  }
+
+  async findBundleSendPreview(
+    request: BundleRequest,
+  ): Promise<RawBundleSendPreview> {
+    const data = await this.sdk.GetBundleSendPreview(request);
+    return data.bundleSendPreview;
+  }
+
+  async sendReimbursementBundle(
+    request: BundleRequest & { acknowledgedIssues: BundleDeliveryIssue[] },
+  ): Promise<SentBundle> {
+    const data = await this.sdk.SendReimbursementBundle(request);
+    return data.sendReimbursementBundle;
+  }
+
+  async findBundleDeliveries(options: {
+    limit?: number;
+    offset?: number;
+  }): Promise<RawBundleDelivery[]> {
+    const data = await this.sdk.GetBundleDeliveries(options);
+    return data.bundleDeliveries;
   }
 }
 
