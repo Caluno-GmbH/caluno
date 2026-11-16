@@ -49,7 +49,7 @@ const MAX_PER_RUN = 200;
 const STALE_SENDING_MS = 10 * 60 * 1000;
 const RUN_BUDGET_MS = 60 * 1000;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
-export const FAILED_CONTENT_RETENTION_MS = 120 * 60 * 60 * 1000;
+export const FAILED_CONTENT_RETENTION_MS = 5 * 24 * 60 * 60 * 1000;
 
 const TERMINAL_STATUSES = [
   EmailDeliveryStatus.SENT,
