@@ -1,6 +1,6 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { MembershipRequestRepository } from '../../repositories/membershipRequest/membershipRequest.repository';
 import { ShiftRepository } from '../../repositories/shift/shift.repository';
 import { TimeEntryRepository } from '../../repositories/time-entry/time-entry.repository';
@@ -43,6 +43,30 @@ export function useCheckInInviteToShiftInstance(organizationUnitId: string) {
   });
 }
 
+/**
+ * Approving a membership request turns a volunteer into a member, so every
+ * check-in view that reads membership state has to refetch: the manual
+ * check-in readiness, the pending-request queue, the nav badge count and the
+ * volunteer list (VOLI-1620).
+ */
+export function invalidateCheckInApproveQueries(
+  queryClient: QueryClient,
+  organizationUnitId: string,
+) {
+  queryClient.invalidateQueries({
+    queryKey: ['check-in-readiness', organizationUnitId],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['membershipRequests', organizationUnitId],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['membershipRequestCount', organizationUnitId],
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['organization-volunteers', organizationUnitId],
+  });
+}
+
 export function useCheckInApproveMembershipRequest(organizationUnitId: string) {
   const sdk = useSdk();
   const queryClient = useQueryClient();
@@ -51,10 +75,7 @@ export function useCheckInApproveMembershipRequest(organizationUnitId: string) {
   return useMutation({
     mutationFn: (requestId: string) =>
       repository.checkInApprove(requestId, organizationUnitId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['check-in-readiness', organizationUnitId],
-      });
-    },
+    onSuccess: () =>
+      invalidateCheckInApproveQueries(queryClient, organizationUnitId),
   });
 }
