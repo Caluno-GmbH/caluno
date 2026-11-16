@@ -38,7 +38,12 @@ export const fromGraphQLError = (error: any): DataError => {
     }
   }
 
-  return new DataError('An unexpected error occurred', { cause: error });
+  // A response without GraphQL errors (e.g. a plain 401 from a proxy) still
+  // carries its HTTP status, which the login redirect and the poller rely on.
+  return new DataError('An unexpected error occurred', {
+    statusCode: error?.response?.status,
+    cause: error,
+  });
 };
 
 /**
