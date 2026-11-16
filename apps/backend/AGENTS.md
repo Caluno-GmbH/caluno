@@ -7,6 +7,7 @@ The backend api for securely managing volunteers and shifts in multi-tiered orga
 - `bun run dev` - Start NestJS development server
 - `bun bootstrap` (from repo root) - Wipe local Postgres volume, migrate, seed permissions, load the demo fixtures, then start all dev servers
 - `bun run db:fixtures:demo` - Load the demo dataset (the app's data; run after migrate + seed)
+- `bun run db:fixtures:demo:into-org <org-id-or-slug | root-unit-id>` - One-off: copy the demo content (Nord/Süd/West sub-units, accounts, shifts, events, time entries) into an existing organization; content lives in `src/database/demo-content.ts`
 - `bun run db:fixtures:e2e` - Load the Testing e2e seed (run after migrate + seed; also on staging/release boot)
 - `bun run build` - Build a production bundle
 - `bun run lint` - Lint with Biome

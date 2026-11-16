@@ -47,6 +47,30 @@ export class EmailOutboxWorkerService {
     }
   }
 
+  @Cron(CronExpression.EVERY_HOUR)
+  async clearExpiredFailedEmailContent(): Promise<void> {
+    try {
+      const clearedCount = await this.outbox.clearExpiredFailedEmailContent();
+      if (clearedCount > 0) {
+        this.logger.log(
+          {
+            event: 'email_outbox.failed_content_cleared',
+            count: clearedCount,
+          },
+          'Cleared content from expired failed outbox emails',
+        );
+      }
+    } catch (clearError) {
+      this.logger.error(
+        {
+          event: 'email_outbox.failed_content_clear_failed',
+          err: clearError,
+        },
+        'Failed outbox content clear failed',
+      );
+    }
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_3AM, { timeZone: 'Europe/Berlin' })
   async purgeSettledEmails(): Promise<void> {
     try {

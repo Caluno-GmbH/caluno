@@ -157,10 +157,13 @@ it. `deliveredAt` is reserved for TEM delivery webhooks.
 
 ## Retention
 
-Entering `SENT`, `FAILED` or `CANCELLED` clears `html`, `text_body` and
-`attachments`, so OTPs, reset links and check-in PDFs are not kept once
-delivery is settled. Recipient, subject and status remain for troubleshooting.
-A daily job at 03:00 (Europe/Berlin) deletes final emails not updated for 30 days.
+Entering `SENT` or `CANCELLED` clears `html`, `text_body` and `attachments`,
+so OTPs, reset links and check-in PDFs are not kept once delivery succeeds or
+is cancelled. Entering `FAILED` keeps content and sets `expiresAt` to 72 hours
+from failure (or keeps an earlier existing `expiresAt`). An hourly job clears
+content from `FAILED` emails whose `expiresAt` has passed. Recipient, subject
+and status remain for troubleshooting. A daily job at 03:00 (Europe/Berlin)
+deletes final emails not updated for 30 days.
 
 ## Failure handling
 

@@ -30,6 +30,7 @@ export * from './repositories/accounting/template-body.types';
 export * from './repositories/accounting/text-limits';
 export * from './repositories/base/base.repository';
 export * from './repositories/event/event.repository';
+export * from './repositories/export/export.repository';
 export * from './repositories/membership/membership.repository';
 export * from './repositories/membershipRequest/membershipRequest.repository';
 export * from './repositories/organization/organization.repository';

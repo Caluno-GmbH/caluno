@@ -76,3 +76,15 @@ describe('purpose-validation image MIME restrictions', () => {
     },
   );
 });
+
+describe('purpose-validation EXPORT rules', () => {
+  it('stores exports as private, server-generated CSV files', () => {
+    const rule = PURPOSE_VALIDATION_RULES[FilePurpose.EXPORT];
+
+    expect(rule.visibility).toBe('private');
+    expect(rule.serverGeneratedOnly).toBe(true);
+    expect(rule.requiresOrganizationUnitId).toBe(true);
+    expect(isMimeTypeAllowed(rule, 'text/csv')).toBe(true);
+    expect(isMimeTypeAllowed(rule, 'application/pdf')).toBe(false);
+  });
+});

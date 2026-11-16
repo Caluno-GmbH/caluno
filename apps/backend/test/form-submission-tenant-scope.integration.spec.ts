@@ -216,4 +216,36 @@ describe('form submission queries tenant scope', () => {
     expect(response.errors?.[0]?.message).toMatch(/not found/i);
     expect(response.data?.formSubmissionsForVolunteer).toBeFalsy();
   });
+
+  it('returns formSubmissionsForVolunteer for a pending applicant', async () => {
+    const { createMembershipRequest } = await import('./factories/index.js');
+    const volunteerB = await createUser(db);
+    const { form } = await createRequirementForm(db, {
+      organizationId: orgBId,
+      organizationUnitId: unitBId,
+      createdById: testUserId,
+    });
+    const submission = await createFormSubmission(db, {
+      formId: form.id,
+      userId: volunteerB.id,
+      organizationUnitId: unitBId,
+    });
+    await createMembershipRequest(db, {
+      userId: volunteerB.id,
+      organizationUnitId: unitBId,
+    });
+
+    const response = await graphqlRequest<{
+      formSubmissionsForVolunteer?: { id: string }[];
+    }>(app, {
+      query: FORM_SUBMISSIONS_FOR_VOLUNTEER,
+      variables: { userId: volunteerB.id },
+      headers: { 'x-organization-unit-id': unitBId },
+    });
+
+    expect(response.errors).toBeUndefined();
+    expect(
+      response.data?.formSubmissionsForVolunteer?.map((s) => s.id),
+    ).toEqual([submission.id]);
+  });
 });

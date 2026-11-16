@@ -1,7 +1,9 @@
 import { JoinStatus, type PublicShiftInstance } from '@repo/data';
-import { getLocale } from 'next-intl/server';
+import { unstable_rethrow } from 'next/navigation';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { resolveLocale } from '@/i18n/routing';
 import { getDataClient } from '@/lib/data-client';
+import { logger } from '@/lib/logger';
 import { ShiftActionCard } from './shift-action-card';
 import type { Shift } from './shift-detail-content';
 
@@ -35,7 +37,23 @@ export const ShiftInstancesSidebar = async ({
 }: ShiftInstancesSectionProps) => {
   const locale = await getLocale();
   const data = await getDataClient({ locale: resolveLocale(locale) });
-  const instances = await data.shift.findPublicInstancesByShiftId(shift.id);
+
+  let instances: PublicShiftInstance[];
+  try {
+    instances = await data.shift.findPublicInstancesByShiftId(shift.id);
+  } catch (error) {
+    unstable_rethrow(error);
+    logger.error(
+      { err: error instanceof Error ? error : new Error(String(error)) },
+      'ShiftInstancesSidebar: failed to load public instances',
+    );
+    const t = await getTranslations('ShiftDetail');
+    return (
+      <p className="text-sm text-muted-foreground">
+        {t('instancesLoadFailed')}
+      </p>
+    );
+  }
 
   return (
     <ShiftActionCard

@@ -182,4 +182,68 @@ describe('FileService document download authz', () => {
       service.presignDownload('stranger', 'file-1'),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  it('presignDownload for EXPORT allows a caller with an export permission', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'export.csv',
+      },
+      hasPermission: (_userId, _unitId, keys) =>
+        keys.includes(PERMISSIONS.SHIFT_EDIT),
+    });
+
+    const result = await service.presignDownload('actor-1', 'file-1', 'unit-1');
+
+    expect(result.downloadUrl).toBe('https://signed.example/get');
+  });
+
+  it('presignDownload for EXPORT rejects a caller without export permissions', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'export.csv',
+      },
+      hasPermission: () => false,
+    });
+
+    await expect(
+      service.presignDownload('actor-1', 'file-1', 'unit-1'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('presignDownload for EXPORT rejects a caller from another unit', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'export.csv',
+      },
+      hasPermission: () => true,
+    });
+
+    await expect(
+      service.presignDownload('actor-1', 'file-1', 'unit-2'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
 });

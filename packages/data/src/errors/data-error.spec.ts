@@ -18,6 +18,20 @@ class OtherDataError extends Error {
   }
 }
 
+describe('DataError', () => {
+  it('passes options.cause to the native Error cause', () => {
+    const cause = new Error('socket hang up');
+    const error = new DataError('An unexpected error occurred', { cause });
+    expect(error.cause).toBe(cause);
+    expect(error.options?.cause).toBe(cause);
+  });
+
+  it('omits native cause when options.cause is absent', () => {
+    const error = new DataError('missing', { code: 'NOT_FOUND' });
+    expect(error.cause).toBeUndefined();
+  });
+});
+
 describe('isUnauthenticatedDataError', () => {
   it('returns true for UNAUTHENTICATED DataError', () => {
     const error = new DataError('Unauthorized', { code: 'UNAUTHENTICATED' });
