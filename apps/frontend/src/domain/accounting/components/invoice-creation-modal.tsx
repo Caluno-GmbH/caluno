@@ -14,6 +14,7 @@ import {
   useCurrentOrg,
   useEffectiveRates,
   useEligibleTimeEntriesForInvoice,
+  useHoldBackgroundRefresh,
   useManualBaseline,
   usePermissions,
   useReimbursementTypes,
@@ -244,6 +245,10 @@ export function InvoiceCreationModal({
   const [pendingBaselineCents, setPendingBaselineCents] = useState<
     number | null
   >(null);
+
+  // Hours, rate and fields are picked from live queries, so a background
+  // refetch while the coordinator composes would change the selection.
+  useHoldBackgroundRefresh(open);
 
   const eligibleQuery = useEligibleTimeEntriesForInvoice({
     volunteerId: volunteerId ?? undefined,
