@@ -182,6 +182,8 @@
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
     "today": "Heute",
+    "noPermissionDescription": "Du hast keine Berechtigung, Freiwillige einzuchecken. Wende dich an die Administration deiner Organisation, um Check-in-Rechte zu erhalten.",
+    "noPermissionTitle": "Keine Berechtigung zum Einchecken",
     "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
     "unavailableTitle": "Einchecken nicht möglich",
     "agreementNoTemplateTitle": "Keine Vertragsvorlage vorhanden",
