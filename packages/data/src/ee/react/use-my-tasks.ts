@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { ChangeArea } from '../../react/change-feed/query-meta';
 import { useSdk } from '../../react/hooks/use-graphql-client';
 import { TaskRepository } from '../task/task.repository';
 
@@ -17,5 +18,8 @@ export function useMyTasks(organizationUnitId: string) {
     enabled: organizationUnitId.length > 0,
     refetchInterval: MY_TASKS_POLL_MS,
     refetchOnWindowFocus: true,
+    meta: {
+      changeAreas: [ChangeArea.Contracts, ChangeArea.MembershipRequests],
+    },
   });
 }

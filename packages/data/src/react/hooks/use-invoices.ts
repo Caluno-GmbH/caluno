@@ -13,6 +13,7 @@ import {
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { ChangeArea } from '../change-feed/query-meta';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
@@ -25,6 +26,7 @@ export function useInvoices(filter?: InvoiceFilterInput) {
     queryFn: () => repository.findInvoices(filter),
     staleTime: 30 * 1000,
     refetchOnMount: 'always',
+    meta: { changeAreas: [ChangeArea.Invoices] },
   });
 }
 
@@ -41,6 +43,7 @@ export function useMyInvoices(
     queryKey: ['accounting', 'my-invoices', filter, organizationUnitId],
     queryFn: () => repository.findMyInvoices(filter),
     staleTime: 30 * 1000,
+    meta: { changeAreas: [ChangeArea.Invoices] },
   });
 }
 
@@ -53,6 +56,7 @@ export function useInvoice(id?: string) {
     queryFn: () => repository.findInvoiceById(id ?? ''),
     staleTime: 30 * 1000,
     enabled: !!id,
+    meta: { changeAreas: [ChangeArea.Invoices] },
   });
 }
 
