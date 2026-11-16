@@ -1,5 +1,16 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq, inArray, isNotNull, lt, lte, or, sql } from 'drizzle-orm';
+import {
+  and,
+  eq,
+  inArray,
+  isNotNull,
+  lt,
+  lte,
+  not,
+  or,
+  type SQL,
+  sql,
+} from 'drizzle-orm';
 import type { Database } from '../../../database/database.module';
 import { DATABASE_CONNECTION } from '../../../database/database-connection';
 import * as schema from '../../../database/schema';
@@ -233,6 +244,18 @@ export class EmailOutboxService {
         and(
           inArray(schema.emailOutbox.status, TERMINAL_STATUSES),
           lt(schema.emailOutbox.updatedAt, new Date(Date.now() - RETENTION_MS)),
+          // The accounting delivery log reads a bundle send's outcome from
+          // its outbox row, and a purged row reads as delivered. Failed rows
+          // keep only metadata (content is cleared after 5 days), so they stay.
+          not(
+            and(
+              eq(schema.emailOutbox.category, EmailCategory.ACCOUNTING_BUNDLE),
+              inArray(schema.emailOutbox.status, [
+                EmailDeliveryStatus.FAILED,
+                EmailDeliveryStatus.CANCELLED,
+              ]),
+            ) as SQL,
+          ),
         ),
       )
       .returning({ id: schema.emailOutbox.id });

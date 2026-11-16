@@ -475,8 +475,9 @@ export class ReimbursementRateService {
     reimbursementTypeId: string,
     downloadedByUserId: string,
     invoiceIds: string[] = [],
+    inTransaction?: Database,
   ): Promise<ReimbursementBundleDownloadEntity> {
-    return this.db.transaction(async (tx) => {
+    const record = async (tx: Database) => {
       const [row] = await tx
         .insert(schema.reimbursementBundleDownloads)
         .values({
@@ -494,24 +495,41 @@ export class ReimbursementRateService {
         })
         .returning();
 
-      if (invoiceIds.length > 0) {
-        await tx
-          .update(schema.invoices)
-          .set({ paidAt: new Date(), paidByUserId: downloadedByUserId })
-          .where(
-            // Only READY invoices — the terminal payable state — can be marked paid.
-            and(
-              inArray(schema.invoices.id, invoiceIds),
-              eq(schema.invoices.volunteerId, volunteerId),
-              eq(schema.invoices.reimbursementTypeId, reimbursementTypeId),
-              eq(schema.invoices.invoiceStatus, InvoiceStatus.READY),
-              isNull(schema.invoices.paidAt),
-            ),
-          );
-      }
+      await this.markInvoicesPaid(
+        tx,
+        volunteerId,
+        reimbursementTypeId,
+        downloadedByUserId,
+        invoiceIds,
+      );
 
       return row;
-    });
+    };
+    return inTransaction ? record(inTransaction) : this.db.transaction(record);
+  }
+
+  /** Handing a bundle to accounting (download or email) is taken as the payment. */
+  async markInvoicesPaid(
+    tx: Database,
+    volunteerId: string,
+    reimbursementTypeId: string,
+    paidByUserId: string,
+    invoiceIds: string[],
+  ): Promise<void> {
+    if (invoiceIds.length === 0) return;
+    await tx
+      .update(schema.invoices)
+      .set({ paidAt: new Date(), paidByUserId })
+      .where(
+        // Only READY invoices — the terminal payable state — can be marked paid.
+        and(
+          inArray(schema.invoices.id, invoiceIds),
+          eq(schema.invoices.volunteerId, volunteerId),
+          eq(schema.invoices.reimbursementTypeId, reimbursementTypeId),
+          eq(schema.invoices.invoiceStatus, InvoiceStatus.READY),
+          isNull(schema.invoices.paidAt),
+        ),
+      );
   }
 
   async getManualBaseline(

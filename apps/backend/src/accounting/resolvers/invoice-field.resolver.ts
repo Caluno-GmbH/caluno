@@ -11,6 +11,7 @@ import {
   InvoiceTimeEntryMapper,
   ReimbursementTypeMapper,
 } from '../mappers';
+import { InvoiceEmailDelivery } from '../models/bundle-delivery.model';
 import { DocumentTemplate } from '../models/document-template.model';
 import { Invoice } from '../models/invoice.model';
 import { InvoiceSignature } from '../models/invoice-signature.model';
@@ -26,6 +27,7 @@ import type { ReimbursementTypeEntity } from '../schemas/reimbursement-type.sche
 import { DocumentProfileRequirementService } from '../services/document-profile-requirement.service';
 import { AccountingOrganizationLoader } from './accounting-organization.loader';
 import { AccountingUserLoader } from './accounting-user.loader';
+import { BundleDeliveryLoader } from './bundle-delivery.loader';
 import { InvoiceLoader } from './invoice.loader';
 import { InvoiceCoverLoader } from './invoice-cover.loader';
 
@@ -213,5 +215,30 @@ export class InvoiceFieldResolver {
       return null;
     }
     return loader.userById.load(invoice.paidByUserId);
+  }
+
+  /**
+   * Accounting's own record, not the volunteer's: their own timesheet reads
+   * null, so `invoice(id)` / `myInvoices` never show which admin sent it.
+   */
+  @ResolveField(() => InvoiceEmailDelivery, { nullable: true })
+  async lastEmailDelivery(
+    @Parent() invoice: InvoiceEntity,
+    @Session() session: UserSession,
+    @Loader(BundleDeliveryLoader) deliveryLoader: BundleDeliveryLoader,
+    @Loader(AccountingUserLoader) userLoader: AccountingUserLoader,
+  ): Promise<InvoiceEmailDelivery | null> {
+    if (invoice.volunteerId === session.user.id) return null;
+    const delivery = await deliveryLoader.latestEmailByInvoiceId.load(
+      invoice.id,
+    );
+    if (!delivery) return null;
+    return {
+      occurredAt: delivery.occurredAt,
+      deliveredByUser: delivery.deliveredByUserId
+        ? await userLoader.userById.load(delivery.deliveredByUserId)
+        : null,
+      failed: delivery.failed,
+    };
   }
 }

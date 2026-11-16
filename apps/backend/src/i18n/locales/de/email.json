@@ -14,6 +14,22 @@
     "previewText": "Dein {brandName}-Bestätigungscode ist {otp}.",
     "subject": "Dein {brandName}-Bestätigungscode"
   },
+  "accountingBundle": {
+    "detailConfirmedIssues": "Gesendet trotz",
+    "detailPeriod": "Zeitraum",
+    "detailSentBy": "Gesendet von",
+    "detailType": "Pauschale",
+    "detailUnit": "Organisationseinheit",
+    "detailVolunteer": "Ehrenamtliche:r",
+    "heading": "Abrechnungsunterlagen",
+    "intro": "Im Anhang {count, plural, one {befindet sich der unterschriebene Stundennachweis} other {befinden sich die # unterschriebenen Stundennachweise}} von {volunteerName}, jeweils mit den Vereinbarungen, die ihn abdecken.",
+    "issueAlreadySent": "Diese Unterlagen wurden bereits gesendet",
+    "issueNoContract": "Für einige Stunden gibt es keine aktive Vereinbarung",
+    "issueOverLimit": "Der Jahresfreibetrag ist überschritten",
+    "previewText": "Abrechnungsunterlagen von {volunteerName} für {periodLabel}",
+    "typeEHRENAMT": "Ehrenamtspauschale",
+    "typeUEBUNGSLEITER": "Übungsleiterpauschale"
+  },
   "emailUnsubscribe": {
     "label": "E-Mail-Einstellungen verwalten",
     "prompt": "Du möchtest diese E-Mails nicht mehr erhalten? {link}."

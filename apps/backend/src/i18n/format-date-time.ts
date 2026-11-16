@@ -74,3 +74,11 @@ export function numericCalendarDate(date: Date): string {
     day: '2-digit',
   }).format(date);
 }
+
+export function formatLocaleMonthYear(date: Date, locale: Locale): string {
+  return new Intl.DateTimeFormat(formattingLocale(locale), {
+    month: 'long',
+    year: 'numeric',
+    timeZone: DEFAULT_TIME_ZONE,
+  }).format(date);
+}
