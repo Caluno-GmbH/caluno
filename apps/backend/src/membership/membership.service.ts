@@ -304,6 +304,28 @@ export class MembershipService {
     });
   }
 
+  /**
+   * Memberships of exactly these units (the header unit, or the header unit and
+   * its descendants for an export). Never widens beyond the given ids.
+   */
+  async getMembershipsForUnits(unitIds: string[]): Promise<MembershipEntity[]> {
+    if (unitIds.length === 0) {
+      return [];
+    }
+
+    return this.db.query.memberships.findMany({
+      where: { organizationUnitId: { in: unitIds } },
+      with: {
+        user: true,
+        roles: {
+          with: {
+            role: true,
+          },
+        },
+      },
+    });
+  }
+
   async getMyMemberships(userId: string): Promise<MembershipEntity[]> {
     return this.db.query.memberships.findMany({
       where: { userId },
@@ -944,6 +966,7 @@ export class MembershipService {
       await this.authService.assertOwnerRemains(
         tx,
         leaving.id,
+        leaving.organizationUnitId,
         this.rolesOf(current),
       );
 
@@ -1010,7 +1033,12 @@ export class MembershipService {
       });
       // Removing someone takes all their roles away, so the same rule applies.
       const roles = this.rolesOf(current);
-      await this.authService.assertOwnerRemains(tx, removing.id, roles);
+      await this.authService.assertOwnerRemains(
+        tx,
+        removing.id,
+        removing.organizationUnitId,
+        roles,
+      );
       await this.authService.assertCanAssignRoles(
         callerId,
         organizationUnitId,
@@ -1458,6 +1486,7 @@ export class MembershipService {
       await this.authService.assertOwnerRemains(
         tx,
         membership.id,
+        membership.organizationUnitId,
         this.rolesOf(removed),
       );
       // Both directions count: taking a role away is as sensitive as giving it.

@@ -158,6 +158,22 @@ export class ShiftService {
     });
   }
 
+  /** Batch load shifts by id, constrained to the given units (export scope). */
+  async findByIdsInUnits(
+    ids: string[],
+    unitIds: string[],
+  ): Promise<ShiftEntity[]> {
+    if (ids.length === 0 || unitIds.length === 0) return [];
+
+    return this.db.query.shifts.findMany({
+      where: {
+        id: { in: ids },
+        organizationUnitId: { in: unitIds },
+        isDeleted: false,
+      },
+    });
+  }
+
   async findOrgUnitsShift(
     id: string,
     organizationUnitId: string,
@@ -195,11 +211,18 @@ export class ShiftService {
   /** Batch load shift instances by ids, org-scoped via master shift. */
   async findInstancesByIds(
     ids: string[],
-    organizationUnitId: string,
+    organizationUnitId: string | string[],
   ): Promise<Array<(ShiftInstanceEntity & { master: ShiftEntity }) | null>> {
     if (ids.length === 0) return [];
     const instances = await this.db.query.shiftInstances.findMany({
-      where: { id: { in: ids }, master: { organizationUnitId } },
+      where: {
+        id: { in: ids },
+        master: {
+          organizationUnitId: Array.isArray(organizationUnitId)
+            ? { in: organizationUnitId }
+            : organizationUnitId,
+        },
+      },
       with: { master: true },
     });
     const byId = new Map(instances.map((i) => [i.id, i]));
@@ -386,17 +409,22 @@ export class ShiftService {
     }
   }
 
-  /** Instances of the given shifts in the org unit, keyed by masterId, ordered by start time. */
+  /** Instances of the given shifts in the org unit(s), keyed by masterId, ordered by start time. */
   async findInstancesByMasterIds(
     shiftIds: string[],
-    organizationUnitId: string,
+    organizationUnitId: string | string[],
   ): Promise<Map<string, ShiftInstanceEntity[]>> {
     if (shiftIds.length === 0) return new Map();
 
     const instances = await this.db.query.shiftInstances.findMany({
       where: {
         masterId: { in: shiftIds },
-        master: { organizationUnitId, isDeleted: false },
+        master: {
+          organizationUnitId: Array.isArray(organizationUnitId)
+            ? { in: organizationUnitId }
+            : organizationUnitId,
+          isDeleted: false,
+        },
       },
       orderBy: { actualStartsAt: 'asc' },
     });
@@ -3097,7 +3125,7 @@ export class ShiftService {
   /** Invites for many instances in one query (DataLoader batch). */
   async findInstanceInvitesByInstanceIds(
     instanceIds: string[],
-    organizationUnitId: string,
+    organizationUnitId: string | string[],
     statuses?: readonly ShiftInviteStatus[] | null,
   ): Promise<ShiftInstanceInviteEntity[]> {
     if (instanceIds.length === 0) {
@@ -3108,7 +3136,12 @@ export class ShiftService {
       where: {
         instanceId: { in: instanceIds },
         instance: {
-          master: { organizationUnitId, isDeleted: false },
+          master: {
+            organizationUnitId: Array.isArray(organizationUnitId)
+              ? { in: organizationUnitId }
+              : organizationUnitId,
+            isDeleted: false,
+          },
         },
         ...(statuses?.length ? { status: { in: [...statuses] } } : {}),
       },
@@ -4965,7 +4998,6 @@ export class ShiftService {
     shiftId: string,
     status: ShiftInviteStatus,
     actorUserId: string = userId,
-    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<ShiftInviteEntity> {
     const shift = await this.db.query.shifts.findFirst({
       where: { id: shiftId, isDeleted: false },
@@ -4998,7 +5030,11 @@ export class ShiftService {
         )
       : true;
     const isSelfAction = actorUserId === userId;
-    const isPrivilegedActor = actorHasElevatedPermission;
+    const isPrivilegedActor = await this.authService.hasRequiredPermissions(
+      actorUserId,
+      shift.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
 
     if (
       !isPrivilegedActor &&
@@ -5279,7 +5315,6 @@ export class ShiftService {
     instanceId: string,
     status: ShiftInviteStatus,
     actorUserId: string = userId,
-    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<ShiftInstanceInviteEntity> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: instanceId, isCancelled: false },
@@ -5302,7 +5337,11 @@ export class ShiftService {
       instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
     const hasSeat = await this.hasAvailableSeat(instanceId, maxVolunteers);
     const isSelfAction = actorUserId === userId;
-    const isPrivilegedActor = actorHasElevatedPermission;
+    const isPrivilegedActor = await this.authService.hasRequiredPermissions(
+      actorUserId,
+      instance.master.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
 
     if (
       !isPrivilegedActor &&

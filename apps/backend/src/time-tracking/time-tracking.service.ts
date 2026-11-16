@@ -476,6 +476,27 @@ export class TimeTrackingService {
     return entry;
   }
 
+  /**
+   * Batch load by id, constrained in SQL to the given unit ids (the header unit,
+   * or that unit plus its descendants for an export). Ids outside the scope are
+   * simply absent from the result.
+   */
+  async findManyByIdsInUnits(
+    ids: string[],
+    unitIds: string[],
+  ): Promise<TimeEntryEntity[]> {
+    if (ids.length === 0 || unitIds.length === 0) {
+      return [];
+    }
+
+    return this.db.query.timeEntries.findMany({
+      where: {
+        id: { in: ids },
+        organizationUnitId: { in: unitIds },
+      },
+    });
+  }
+
   private buildTimeEntryOrderBy(
     sort: TimeEntrySortField,
     order: SortOrder,

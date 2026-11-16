@@ -24,6 +24,7 @@ import { type Database, DatabaseModule } from './database/database.module';
 import { DATABASE_CONNECTION } from './database/database-connection';
 import { loadEeModules } from './edition/load-ee-modules';
 import { EventModule } from './event/event.module';
+import { ExportModule } from './export/export.module';
 import { GraphqlModule } from './graphql/graphql.module';
 import { LoaderInterceptor } from './graphql/interceptors';
 import { resolveRequestLocale } from './graphql/locale';
@@ -53,7 +54,6 @@ import { validatePostHogEnv } from './shared/observability/validate-posthog-env'
 import { validateSentryEnv } from './shared/observability/validate-sentry-env';
 import { ShiftModule } from './shift/shift.module';
 import { StorageModule } from './storage/storage.module';
-import { TaskModule } from './task/task.module';
 import { TermsAcceptedGuard } from './terms/guards/terms-accepted.guard';
 import { TermsService } from './terms/services/terms.service';
 import { TermsModule } from './terms/terms.module';
@@ -276,11 +276,11 @@ const autoSchemaFile =
     ShiftModule,
     EventModule,
     StorageModule,
-    TaskModule,
     TermsModule,
     BetterAuthModule,
     AuthModule,
     AccountingModule,
+    ExportModule,
     ...loadEeModules(),
   ],
   controllers: [],

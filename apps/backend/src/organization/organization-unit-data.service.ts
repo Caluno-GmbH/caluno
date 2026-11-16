@@ -52,13 +52,54 @@ export class OrganizationUnitDataService {
     });
   }
 
+  /**
+   * The unit and every descendant, breadth-first. Loads the organization's unit
+   * tree once; units cannot be re-parented through the API, and a corrupt
+   * parent cycle is skipped rather than walked forever.
+   */
+  async listInclusiveDescendantUnitIds(
+    organizationUnitId: string,
+  ): Promise<string[]> {
+    const organizationId =
+      await this.findOrganizationIdByUnitId(organizationUnitId);
+    const unitRows = await this.db.query.organizationUnits.findMany({
+      where: { organizationId },
+      columns: { id: true, parentId: true },
+    });
+
+    const childrenByParent = new Map<string | null, string[]>();
+    for (const unit of unitRows) {
+      const children = childrenByParent.get(unit.parentId) ?? [];
+      children.push(unit.id);
+      childrenByParent.set(unit.parentId, children);
+    }
+
+    const result: string[] = [];
+    const visited = new Set<string>();
+    const queue = [organizationUnitId];
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current || visited.has(current)) continue;
+      visited.add(current);
+      result.push(current);
+      queue.push(...(childrenByParent.get(current) ?? []));
+    }
+
+    return result;
+  }
+
   async listInclusiveAncestorUnitIds(
     organizationUnitId: string,
   ): Promise<string[]> {
     const chain: string[] = [];
+    const visited = new Set<string>();
     let currentId: string | null = organizationUnitId;
 
-    while (currentId) {
+    // A cycle should be impossible through the API (updates cannot re-parent
+    // units), but walk defensively so corrupt/legacy rows cannot hang every
+    // permission check that depends on this chain.
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
       const unit = await this.db.query.organizationUnits.findFirst({
         where: { id: currentId },
         columns: { id: true, parentId: true },

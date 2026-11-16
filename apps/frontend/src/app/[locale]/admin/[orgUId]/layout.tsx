@@ -52,6 +52,7 @@ export default async function OrgLayout({
   const permissionKeys = userPermissions.map((p) => p.key);
   const localeSeed = await resolveLocaleSeed(orgUId);
   const eeExtensions = await loadEeExtensions();
+  const eeNav = eeExtensions?.nav?.({ orgUId });
 
   return (
     <OrgProvider org={org} organizations={organizations}>
@@ -63,10 +64,7 @@ export default async function OrgLayout({
         {localeSeed && <LocaleCookieSeeder value={localeSeed} />}
         <OrgSyncProvider orgUId={orgUId}>
           <SidebarProvider>
-            <DashboardSidebar
-              permissions={permissionKeys}
-              eeNav={eeExtensions?.nav?.({ orgUId })}
-            />
+            <DashboardSidebar permissions={permissionKeys} eeNav={eeNav} />
             <SidebarInset>
               <PageHeaderProvider>
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">

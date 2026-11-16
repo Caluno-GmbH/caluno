@@ -80,7 +80,14 @@ function createShiftService(options: {
 
   return new ShiftService(
     db as never,
-    { findUsersWithPermission: jest.fn().mockResolvedValue([]) } as never,
+    {
+      findUsersWithPermission: jest.fn().mockResolvedValue([]),
+      hasRequiredPermissions: jest
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === 'admin-1'),
+        ),
+    } as never,
     {} as never,
     {} as never,
     {
@@ -333,6 +340,7 @@ function createJoinRequestService(options: {
     {
       findUsersWithPermission:
         options.findUsersWithPermission ?? jest.fn().mockResolvedValue([]),
+      hasRequiredPermissions: jest.fn().mockResolvedValue(false),
     } as never,
     {} as never,
     { isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true) } as never,

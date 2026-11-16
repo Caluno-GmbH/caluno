@@ -210,7 +210,14 @@ function createWaitlistService(options: {
 
   return new ShiftService(
     db as never,
-    { findUsersWithPermission: jest.fn().mockResolvedValue([]) } as never,
+    {
+      findUsersWithPermission: jest.fn().mockResolvedValue([]),
+      hasRequiredPermissions: jest
+        .fn()
+        .mockImplementation((userId: string) =>
+          Promise.resolve(userId === 'admin-1'),
+        ),
+    } as never,
     { findById: jest.fn().mockResolvedValue(undefined) } as never,
     { isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true) } as never,
     {
@@ -481,7 +488,10 @@ function createSeriesClaimService(options: { capture: jest.Mock }) {
 
   return new ShiftService(
     db as never,
-    { findUsersWithPermission: jest.fn().mockResolvedValue([]) } as never,
+    {
+      findUsersWithPermission: jest.fn().mockResolvedValue([]),
+      hasRequiredPermissions: jest.fn().mockResolvedValue(false),
+    } as never,
     { findById: jest.fn().mockResolvedValue(undefined) } as never,
     { isMemberOfUnitOrAncestor: jest.fn().mockResolvedValue(true) } as never,
     {} as never,

@@ -13,11 +13,9 @@ export class RequirementFormBlockRefFieldResolver {
   ) {}
 
   @AllowAnonymous()
-  @ResolveField(() => FormBlock, { nullable: true })
-  async block(
-    @Parent() ref: RequirementFormBlockRef,
-  ): Promise<FormBlock | null> {
+  @ResolveField(() => FormBlock)
+  async block(@Parent() ref: RequirementFormBlockRef): Promise<FormBlock> {
     const entity = await this.formBlockService.findById(ref.blockId);
-    return this.formBlockMapper.toModel(entity);
+    return this.formBlockMapper.toModelOrThrow(entity);
   }
 }

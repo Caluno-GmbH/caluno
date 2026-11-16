@@ -550,6 +550,112 @@ describe('documents flow — admin + volunteer', () => {
     );
   };
 
+  /**
+   * Gives the user accounting:manage in a brand-new org and returns that
+   * org's root unit. Used to prove privilege in one org cannot act on a
+   * document in another.
+   */
+  const createForeignAccountingManager = async (userId: string) => {
+    const permission = await db.query.permissions.findFirst({
+      where: { key: 'accounting:manage' },
+    });
+    if (!permission) throw new Error('accounting:manage permission missing');
+
+    const { organization, type } = await createOrganizationWithType(
+      db,
+      `Foreign sign org ${crypto.randomUUID()}`,
+    );
+    const root = await createUnit(db, {
+      organizationId: organization.id,
+      typeId: type.id,
+      name: 'root',
+    });
+    const membership = await addMembership(db, userId, root.id);
+    const role = await createRole(db, { organizationId: organization.id });
+    await grantPermissionToRole(db, {
+      roleId: role.id,
+      permissionId: permission.id,
+    });
+    await assignRoleToMembership(db, {
+      membershipId: membership.id,
+      roleId: role.id,
+    });
+    return { organizationId: organization.id, rootUnitId: root.id };
+  };
+
+  /**
+   * A contract signed by the volunteer and countersigned by the org, plus a
+   * timesheet the volunteer has signed and which now waits for the org's
+   * supervisor signature.
+   */
+  const createInvoiceAwaitingSupervisorSignature = async () => {
+    const { createContract } = await createContractAsAdmin();
+
+    setAuthMockUserId(org.volunteerId);
+    await graphqlRequestRequiringData(
+      app,
+      {
+        query: SIGN_CONTRACT,
+        variables: { contractId: createContract.id },
+        headers: orgHeader,
+      },
+      'signContract',
+    );
+    setAuthMockUserId(org.adminId);
+    await graphqlRequestRequiringData(
+      app,
+      {
+        query: SIGN_CONTRACT,
+        variables: { contractId: createContract.id },
+        headers: orgHeader,
+      },
+      'signContract',
+    );
+
+    const timeEntry = await createCompletedTimeEntry(db, {
+      organizationUnitId: org.organizationUnitId,
+      volunteerId: org.volunteerId,
+      reimbursementTypeId: org.reimbursementTypeId,
+      startedAt: new Date('2026-05-03T09:00:00.000Z'),
+      endedAt: new Date('2026-05-03T13:00:00.000Z'),
+    });
+
+    setAuthMockUserId(org.adminId);
+    const { createInvoice } = await graphqlRequestRequiringData<{
+      createInvoice: { id: string };
+    }>(
+      app,
+      {
+        query: CREATE_INVOICE,
+        variables: {
+          input: {
+            organizationUnitId: org.organizationUnitId,
+            reimbursementTypeId: org.reimbursementTypeId,
+            volunteerId: org.volunteerId,
+            timeEntryIds: [timeEntry.id],
+            periodStart: '2026-04-30T22:00:00.000Z',
+            periodEnd: '2026-05-31T22:00:00.000Z',
+          },
+        },
+        headers: orgHeader,
+      },
+      'createInvoice',
+    );
+
+    setAuthMockUserId(org.volunteerId);
+    await graphqlRequestRequiringData(
+      app,
+      {
+        query: SIGN_INVOICE,
+        variables: { invoiceId: createInvoice.id },
+        headers: orgHeader,
+      },
+      'signInvoice',
+    );
+
+    return createInvoice;
+  };
+
   describe('contract lifecycle', () => {
     // The paper trail has to read in lifecycle order whatever order the rows
     // come back in, and the countersign and activation rows of one signing
@@ -885,6 +991,94 @@ describe('documents flow — admin + volunteer', () => {
         documentKind: DocumentKind.CONTRACT,
         reason,
       });
+    });
+
+    it('rejects countersigning with a header from another org', async () => {
+      const { createContract } = await createContractAsAdmin();
+
+      setAuthMockUserId(org.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: orgHeader,
+        },
+        'signContract',
+      );
+
+      const foreign = await createForeignAccountingManager(org.volunteerId);
+
+      const response = await graphqlRequest<{
+        signContract?: { contractStatus: string };
+      }>(app, {
+        query: SIGN_CONTRACT,
+        variables: { contractId: createContract.id },
+        headers: { 'x-organization-unit-id': foreign.rootUnitId },
+      });
+
+      expect(response.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(response.data?.signContract).toBeFalsy();
+
+      setAuthMockUserId(org.adminId);
+      const detail = await graphqlRequestRequiringData<{
+        contract: { contractStatus: string };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: createContract.id },
+          headers: orgHeader,
+        },
+        'contract',
+      );
+      expect(detail.contract.contractStatus).toBe(
+        ContractStatus.AWAITING_NGO_SIGNATURE,
+      );
+    });
+
+    it('rejects declining with a header from another org', async () => {
+      const { createContract } = await createContractAsAdmin();
+
+      setAuthMockUserId(org.volunteerId);
+      await graphqlRequestRequiringData(
+        app,
+        {
+          query: SIGN_CONTRACT,
+          variables: { contractId: createContract.id },
+          headers: orgHeader,
+        },
+        'signContract',
+      );
+
+      const foreign = await createForeignAccountingManager(org.volunteerId);
+
+      const response = await graphqlRequest<{
+        declineContract?: { contractStatus: string };
+      }>(app, {
+        query: DECLINE_CONTRACT,
+        variables: { contractId: createContract.id, reason: 'not mine' },
+        headers: { 'x-organization-unit-id': foreign.rootUnitId },
+      });
+
+      expect(response.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(response.data?.declineContract).toBeFalsy();
+
+      setAuthMockUserId(org.adminId);
+      const detail = await graphqlRequestRequiringData<{
+        contract: { contractStatus: string };
+      }>(
+        app,
+        {
+          query: CONTRACT_DETAIL,
+          variables: { id: createContract.id },
+          headers: orgHeader,
+        },
+        'contract',
+      );
+      expect(detail.contract.contractStatus).toBe(
+        ContractStatus.AWAITING_NGO_SIGNATURE,
+      );
     });
   });
 
@@ -1729,6 +1923,70 @@ describe('documents flow — admin + volunteer', () => {
       );
       expect(pending.pendingContractSignee?.eligibleUserIds).not.toContain(
         orgB.adminId,
+      );
+    });
+
+    it('rejects countersigning an invoice with a header from another org', async () => {
+      const invoice = await createInvoiceAwaitingSupervisorSignature();
+      const foreign = await createForeignAccountingManager(org.volunteerId);
+
+      const response = await graphqlRequest<{
+        signInvoice?: { invoiceStatus: string };
+      }>(app, {
+        query: SIGN_INVOICE,
+        variables: { invoiceId: invoice.id },
+        headers: { 'x-organization-unit-id': foreign.rootUnitId },
+      });
+
+      expect(response.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(response.data?.signInvoice).toBeFalsy();
+
+      setAuthMockUserId(org.adminId);
+      const detail = await graphqlRequestRequiringData<{
+        invoice: { invoiceStatus: string };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL,
+          variables: { id: invoice.id },
+          headers: orgHeader,
+        },
+        'invoice',
+      );
+      expect(detail.invoice.invoiceStatus).toBe(
+        InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
+      );
+    });
+
+    it('rejects declining an invoice with a header from another org', async () => {
+      const invoice = await createInvoiceAwaitingSupervisorSignature();
+      const foreign = await createForeignAccountingManager(org.volunteerId);
+
+      const response = await graphqlRequest<{
+        declineInvoice?: { invoiceStatus: string };
+      }>(app, {
+        query: DECLINE_INVOICE,
+        variables: { invoiceId: invoice.id, reason: 'not mine' },
+        headers: { 'x-organization-unit-id': foreign.rootUnitId },
+      });
+
+      expect(response.errors?.[0]?.extensions?.code).toBe('FORBIDDEN');
+      expect(response.data?.declineInvoice).toBeFalsy();
+
+      setAuthMockUserId(org.adminId);
+      const detail = await graphqlRequestRequiringData<{
+        invoice: { invoiceStatus: string };
+      }>(
+        app,
+        {
+          query: INVOICE_DETAIL,
+          variables: { id: invoice.id },
+          headers: orgHeader,
+        },
+        'invoice',
+      );
+      expect(detail.invoice.invoiceStatus).toBe(
+        InvoiceStatus.AWAITING_SUPERVISOR_SIGNATURE,
       );
     });
   });

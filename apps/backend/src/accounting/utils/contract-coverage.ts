@@ -32,7 +32,7 @@ export interface CoverageContract {
   id: string;
   volunteerId: string;
   reimbursementTypeId: string;
-  organizationUnitId: string | null;
+  organizationUnitId: string;
   contractStatus: ContractStatus;
   periodStart: Date;
   periodEnd: Date;
@@ -102,8 +102,7 @@ function compareNewestFirst(a: CoverageContract, b: CoverageContract): number {
  * target key is present in the result; an uncovered one maps to an empty
  * list. A contract only covers hours of its own volunteer, reimbursement type
  * and organization unit — reimbursement types are global, so without the unit
- * a contract from another unit or organization would count. A contract
- * without a unit covers nothing.
+ * a contract from another unit or organization would count.
  *
  * Target keys must be unique. Repeating a key for an identical target is
  * allowed; reusing it for a different target throws, because the result map
@@ -116,7 +115,6 @@ export function matchCoveringContracts<C extends CoverageContract>(
 ): Map<string, C[]> {
   const byScope = new Map<string, C[]>();
   for (const contract of contracts) {
-    if (contract.organizationUnitId === null) continue;
     if (!contractCountsAsCover(contract.contractStatus, cover)) continue;
     const key = scopeKey(
       contract.volunteerId,

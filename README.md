@@ -115,6 +115,7 @@ From `apps/backend`:
 - `bun run db:migrate` - Run pending migrations
 - `bun run db:studio` - Open Drizzle Studio (database GUI)
 - `bun run db:fixtures:demo` - Load the demo dataset (the app's data)
+- `bun run --cwd apps/backend db:fixtures:demo:into-org <org-id-or-slug | root-unit-id>` - Copy the demo content into an existing organization
 - `bun run db:fixtures:e2e` - Load the Testing e2e seed
 
 ### Building

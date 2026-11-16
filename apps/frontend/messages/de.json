@@ -1,46 +1,4 @@
 {
-  "Todo": {
-    "empty": "Es wartet nichts auf dich.",
-    "loadFailed": "Die offenen Aufgaben konnten nicht geladen werden.",
-    "seeAll": "Alle anzeigen",
-    "groups": {
-      "volunteersAndShifts": "Freiwillige und Einsätze",
-      "accounting": "Buchhaltung"
-    },
-    "types": {
-      "contract": "Vereinbarung",
-      "timesheet": "Stundennachweis"
-    },
-    "back": "Zurück zu Zu erledigen",
-    "waiting": "{count, plural, one {# wartet} other {# warten}}",
-    "appliedRelative": "{when} beworben",
-    "declinedAgo": "Abgelehnt {when}",
-    "signedAgo": "Unterschrieben {when}",
-    "short": "{missing, plural, one {# nötig} other {# nötig}}",
-    "filledOf": "{filled}/{total}",
-    "filledSpots": "{filled} von {total} Plätzen besetzt",
-    "hours": "{hours} Std.",
-    "fillFilter": {
-      "summary": "{threshold} · {days}",
-      "days": "{count} Tage",
-      "staffing": "Besetzung",
-      "daysAhead": "Tage im Voraus",
-      "BELOW_MINIMUM": "Unter Minimum",
-      "NOT_FULL": "Nicht voll",
-      "emptyBelowMinimum": "Keine Einsätze unter Minimum in den nächsten {count} Tagen",
-      "emptyNotFull": "Keine Einsätze, die nicht voll sind, in den nächsten {count} Tagen"
-    },
-    "sections": {
-      "FILL_OPEN_ASSIGNMENTS": "Anstehende Einsätze besetzen",
-      "REVIEW_APPLICATIONS": "Anfragen prüfen",
-      "APPROVE_SIGNUPS": "Anmeldungen freigeben",
-      "DECLINED_DOCUMENTS": "Abgelehnte Dokumente",
-      "CREATE_AGREEMENTS": "Vereinbarungen erstellen",
-      "CREATE_TIMESHEETS": "Stundennachweise erstellen",
-      "COUNTERSIGN_DOCUMENTS": "Dokumente gegenzeichnen",
-      "SEND_TIMESHEET_BUNDLES": "Abrechnungen bereit zum Versand"
-    }
-  },
   "Terms": {
     "accept": "Akzeptieren und fortfahren",
     "accepting": "Wird akzeptiert...",
@@ -753,6 +711,7 @@
       "title": "Mitgliedschaften"
     },
     "requiredForms": {
+      "otherTitle": "Andere Formulare",
       "title": "Erforderliche Formulare"
     },
     "status": {
@@ -808,7 +767,6 @@
     "orgUnits": "Organisationseinheiten",
     "organizationSettings": "Organisationseinstellungen",
     "organizations": "Organisationen",
-    "todo": "Zu erledigen",
     "profile": "Profil",
     "qrIdDescription": "Zeig diesen QR-Code vor Ort, um deine Anwesenheit zu bestätigen.",
     "qrIdTitle": "QR-ID",
@@ -1399,6 +1357,8 @@
     "page": {
       "createButton": "Rolle erstellen",
       "empty": "Noch keine Rollen. Erstelle deine erste Rolle, um loszulegen.",
+      "readOnlyDescription": "Du hast keine Berechtigung, Rollen zu erstellen oder zu ändern. Rollen werden von Personen mit Rollenverwaltungsberechtigung in der obersten Einheit der Organisation verwaltet. Du kannst bestehende Rollen weiterhin an Mitglieder vergeben, wenn deine eigene Rolle es erlaubt.",
+      "readOnlyTitle": "Rollen werden von der obersten Einheit verwaltet",
       "subtitle": "Verwalte Rollen und Berechtigungen für die gesamte Organisation {orgName}",
       "title": "Rollen"
     },
@@ -1932,6 +1892,7 @@
       "title": "{shiftTitle} beitreten"
     },
     "fullNote": "Dieser Einsatz ist bereits voll besetzt.",
+    "instancesLoadFailed": "Die verfügbaren Termine konnten nicht geladen werden. Bitte lade die Seite neu.",
     "joinedNote": "Du bist für diesen Einsatz angemeldet.",
     "later": "Später",
     "locationDivider": "·",
@@ -2892,5 +2853,9 @@
       "saveError": "Wir konnten deine Angaben nicht speichern. Bitte versuche es erneut.",
       "close": "Schließen"
     }
+  },
+  "AdminWelcome": {
+    "title": "Willkommen bei {orgUnitName}",
+    "metaTitle": "Willkommen"
   }
 }

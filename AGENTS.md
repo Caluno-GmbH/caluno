@@ -36,15 +36,16 @@ Detection is presence-based: `hasEeEdition()` / `loadEeModules()` look for `src/
 
 ### Where code goes
 
-| Kind                        | Location                                                             | Notes                                                                                                   |
-| --------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| EE backend feature          | `apps/backend/src/ee/<feature>/`                                     | Aggregated by `ee.module.ts`; loaded only via `loadEeModules()`                                         |
-| EE DB schemas / migrations  | `apps/backend/src/ee/**/schemas/`, `apps/backend/src/ee/migrations/` | Separate Drizzle stream (`db:generate:ee`, ledger `__drizzle_migrations_ee`) — never in `src/database/` |
-| EE frontend UI              | `apps/frontend/src/ee/`                                              | Single manifest `src/ee/index.ts` (`eeExtensions`: nav + slots)                                         |
-| EE i18n copy                | `apps/frontend/messages/ee/{en,de}.json`                             | Never in shared `messages/{en,de}.json` (those ship to OSS)                                             |
-| EE data client              | `packages/data/src/ee/`                                              | Consumed as `@repo/data/ee` — only from EE UI (`apps/frontend/src/ee/**`)                               |
-| Edition bridges (OSS-safe)  | `apps/*/src/edition/`                                                | `hasEeEdition`, `EeSlot` / `EePage`, `loadEeModules` — these stay in the OSS tree                       |
-| Also private (not EE-named) | `scripts/ee-oss-mirror/denylist`                                     | Paths stripped from the public mirror (e.g. `packages/infra`)                                           |
+| Kind                         | Location                                                             | Notes                                                                                                   |
+| ---------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| EE backend feature           | `apps/backend/src/ee/<feature>/`                                     | Aggregated by `ee.module.ts`; loaded only via `loadEeModules()`                                         |
+| EE backend integration tests | `apps/backend/test/ee/`                                              | May import `src/ee/**`; stripped with other `ee` dirs                                                   |
+| EE DB schemas / migrations   | `apps/backend/src/ee/**/schemas/`, `apps/backend/src/ee/migrations/` | Separate Drizzle stream (`db:generate:ee`, ledger `__drizzle_migrations_ee`) — never in `src/database/` |
+| EE frontend UI               | `apps/frontend/src/ee/`                                              | Single manifest `src/ee/index.ts` (`eeExtensions`: nav + slots)                                         |
+| EE i18n copy                 | `apps/frontend/messages/ee/{en,de}.json`                             | Never in shared `messages/{en,de}.json` (those ship to OSS)                                             |
+| EE data client               | `packages/data/src/ee/`                                              | Consumed as `@repo/data/ee` — only from EE UI (`apps/frontend/src/ee/**`)                               |
+| Edition bridges (OSS-safe)   | `apps/*/src/edition/`                                                | `hasEeEdition`, `EeSlot` / `EePage`, `loadEeModules` — these stay in the OSS tree                       |
+| Also private (not EE-named)  | `scripts/ee-oss-mirror/denylist`                                     | Paths stripped from the public mirror (e.g. `packages/infra`)                                           |
 
 Thin App Router stubs that only render `<EePage />` / `<EeSlot />` may live in OSS route trees — they 404 or render nothing when EE is absent. Put no EE business logic in those stubs.
 

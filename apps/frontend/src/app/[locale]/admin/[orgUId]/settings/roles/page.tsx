@@ -1,8 +1,9 @@
 import { PermissionKey } from '@repo/data';
-import { Button } from '@repo/ui';
-import { PlusIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle, Button } from '@repo/ui';
+import { Lock, PlusIcon } from 'lucide-react';
 import { getTranslations } from 'next-intl/server';
 import { RolesTable } from '@/domain/role/components/roles-table';
+import { canManageRoles } from '@/domain/role/lib/role-access';
 import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { requireOrgAccess } from '@/lib/org-context-server';
@@ -22,7 +23,10 @@ export default async function RolesPage({ params }: RolesPageProps) {
     PermissionKey.RoleManage,
   );
   // Roles are org-wide; the backend only accepts role mutations from the top unit.
-  const canEdit = hasRoleManage && org.isRoot;
+  const canEdit = canManageRoles({
+    isRoot: org.isRoot,
+    hasRoleManage,
+  });
   const data = await getDataClient({ orgUId });
   const t = await getTranslations({ locale, namespace: 'Role' });
 
@@ -49,6 +53,14 @@ export default async function RolesPage({ params }: RolesPageProps) {
           </Button>
         )}
       </div>
+
+      {!canEdit && (
+        <Alert>
+          <Lock />
+          <AlertTitle>{t('page.readOnlyTitle')}</AlertTitle>
+          <AlertDescription>{t('page.readOnlyDescription')}</AlertDescription>
+        </Alert>
+      )}
 
       {roles.length > 0 ? (
         <RolesTable roles={roles} />

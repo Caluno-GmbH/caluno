@@ -907,7 +907,6 @@ export class EventService {
     eventId: string,
     status: EventInviteStatus,
     actorUserId: string = userId,
-    actorHasElevatedPermission: boolean = actorUserId !== userId,
   ): Promise<EventInviteEntity> {
     const event = await this.db.query.events.findFirst({
       where: { id: eventId, isDeleted: false },
@@ -925,7 +924,11 @@ export class EventService {
 
     // Idempotent no-op — matching status skips the shift cascade re-run.
     const isSelfAction = actorUserId === userId;
-    const isPrivilegedActor = actorHasElevatedPermission;
+    const isPrivilegedActor = await this.authService.hasRequiredPermissions(
+      actorUserId,
+      event.organizationUnitId,
+      [PERMISSIONS.SHIFT_EDIT],
+    );
 
     if (
       !isPrivilegedActor &&

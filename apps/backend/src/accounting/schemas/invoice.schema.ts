@@ -45,10 +45,9 @@ export const invoices = snakeCase.table(
     reimbursementTypeId: uuid('reimbursement_type_id')
       .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
       .notNull(),
-    organizationUnitId: uuid('organization_unit_id').references(
-      () => organizationUnits.id,
-      { onDelete: 'restrict' },
-    ),
+    organizationUnitId: uuid('organization_unit_id')
+      .references(() => organizationUnits.id, { onDelete: 'restrict' })
+      .notNull(),
     fileId: uuid('file_id').references(() => files.id, {
       onDelete: 'set null',
     }),
@@ -97,9 +96,9 @@ export const invoices = snakeCase.table(
     // `periodStart` in SQL, so the year is the one the app's calendar sees
     // rather than whatever time zone the database happens to run in.
     documentNumberYear: integer('document_number_year').notNull(),
-    // Which body's series the number belongs to. Resolved at creation, because
-    // `organizationUnitId` above is null for an org-wide template while the
-    // number still has to be unique within the organisation that issues it.
+    // Which body's series the number belongs to. Same unit as
+    // `organizationUnitId` at creation (kept separate so numbering stays
+    // stable if document scope rules ever diverge).
     documentNumberScopeUnitId: uuid('document_number_scope_unit_id')
       .notNull()
       .references(() => organizationUnits.id, { onDelete: 'restrict' }),

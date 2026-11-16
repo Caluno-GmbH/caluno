@@ -433,10 +433,15 @@ describe('DocumentTemplateService', () => {
 
     it('does not retroactively change a contract already issued from the template', async () => {
       const reimbursementType = await createReimbursementType(db);
-      const { organization } = await createOrganizationWithType(
+      const { organization, type } = await createOrganizationWithType(
         db,
         `Snapshot Org ${crypto.randomUUID()}`,
       );
+      const root = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'root',
+      });
       const editor = await createUser(db);
       const template = await service.createDocumentTemplate(
         organization.id,
@@ -455,6 +460,7 @@ describe('DocumentTemplateService', () => {
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
           reimbursementTypeId: reimbursementType.id,
+          organizationUnitId: root.id,
           contractStatus: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
           periodStart: new Date(),
           periodEnd: new Date(),

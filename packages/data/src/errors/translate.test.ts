@@ -39,6 +39,16 @@ describe('fromGraphQLError', () => {
     expect(fromGraphQLError(original)).toBe(original);
   });
 
+  it('wraps a transport failure with native and options cause', () => {
+    const transport = new TypeError('fetch failed');
+    const dataError = fromGraphQLError(transport);
+
+    expect(dataError).toBeInstanceOf(DataError);
+    expect(dataError.message).toBe('An unexpected error occurred');
+    expect(dataError.cause).toBe(transport);
+    expect(dataError.options?.cause).toBe(transport);
+  });
+
   it('preserves a duck-typed DataError across dual-package copies', () => {
     class OtherDataError extends Error {
       name = 'DataError';

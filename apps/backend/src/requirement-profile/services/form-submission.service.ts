@@ -79,7 +79,12 @@ export class FormSubmissionService {
     const [{ count: total }] = await this.db
       .select({ count: count() })
       .from(schema.formSubmissions)
-      .where(eq(schema.formSubmissions.formId, formId));
+      .where(
+        and(
+          eq(schema.formSubmissions.formId, formId),
+          eq(schema.formSubmissions.organizationUnitId, organizationUnitId),
+        ),
+      );
     return { items, total };
   }
 
@@ -171,11 +176,19 @@ export class FormSubmissionService {
     userId: string,
     orgUnitId: string,
   ): Promise<FormSubmissionEntity[]> {
-    await this.tenantScope.assertUserInScope(
-      orgUnitId,
-      userId,
-      'User not found',
-    );
+    // Pending/rejected applicants have submissions to review but no membership
+    // yet, so assertUserInScope alone would hide their forms from admins.
+    const membershipRequest = await this.db.query.membershipRequests.findFirst({
+      where: { userId, organizationUnitId: orgUnitId },
+      columns: { id: true },
+    });
+    if (!membershipRequest) {
+      await this.tenantScope.assertUserInScope(
+        orgUnitId,
+        userId,
+        'User not found',
+      );
+    }
     return this.findByUserAndOrgUnit(userId, orgUnitId);
   }
 

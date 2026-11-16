@@ -43,10 +43,9 @@ export const contracts = snakeCase.table(
     reimbursementTypeId: uuid('reimbursement_type_id')
       .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
       .notNull(),
-    organizationUnitId: uuid('organization_unit_id').references(
-      () => organizationUnits.id,
-      { onDelete: 'restrict' },
-    ),
+    organizationUnitId: uuid('organization_unit_id')
+      .references(() => organizationUnits.id, { onDelete: 'restrict' })
+      .notNull(),
     fileId: uuid('file_id').references(() => files.id, {
       onDelete: 'set null',
     }),

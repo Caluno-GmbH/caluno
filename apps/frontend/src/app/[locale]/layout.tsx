@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geologica, Merriweather, Source_Code_Pro } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
@@ -39,15 +39,28 @@ export async function generateMetadata({
 
   const isProduction =
     process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT === 'production';
+  const s = isProduction ? '' : '-dev';
 
   return {
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_WEB_URL ?? 'http://localhost:3000',
+    ),
     title: t('title'),
     description: t('description'),
     icons: {
-      icon: isProduction ? '/favicon.png' : '/favicon-dev.png',
+      // sizes on the .ico makes Chrome prefer the .svg when available
+      icon: [
+        { url: `/favicon${s}.ico`, sizes: '32x32' },
+        { url: `/icon${s}.svg`, type: 'image/svg+xml' },
+      ],
+      apple: `/apple-touch-icon${s}.png`,
     },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: '#CB4A4C',
+};
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));

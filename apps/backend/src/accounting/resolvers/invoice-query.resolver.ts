@@ -126,9 +126,6 @@ export class InvoiceQueryResolver {
     );
     // Eligibility is always for the document's unit — never the client header
     // (owners can omit/spoof x-organization-unit-id on My documents).
-    if (!invoice.organizationUnitId) {
-      throw new NotFoundGraphQLError('Invoice not found');
-    }
     return this.invoiceService.findPendingInvoiceSignee(
       invoiceId,
       invoice.organizationUnitId,
@@ -307,7 +304,7 @@ export class InvoiceQueryResolver {
   private async assertCanViewDocument(
     volunteerId: string,
     status: InvoiceStatus | undefined,
-    documentOrganizationUnitId: string | null | undefined,
+    documentOrganizationUnitId: string,
     session: UserSession,
     context: AuthenticatedGraphQLContext,
   ): Promise<void> {

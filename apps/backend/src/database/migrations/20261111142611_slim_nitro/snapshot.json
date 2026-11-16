@@ -1,0 +1,57 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "77b46b1f-3ecf-4878-8f6f-9f6de19f2c5c",
+  "prevIds": ["1e1dd933-911b-422a-aa57-b0cf31b9e31c"],
+  "footprints": [
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "contracts",
+        "organization_unit_id"
+      ],
+      "writes": ["s|colprop|public.contracts.organization_unit_id.notNull"],
+      "reads": [
+        "n|tbl|public.contracts",
+        "n|sch|public",
+        "n|col|public.contracts.organization_unit_id"
+      ],
+      "sqlHash": "11b5ec00fc1b4f52"
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "invoices",
+        "organization_unit_id"
+      ],
+      "writes": ["s|colprop|public.invoices.organization_unit_id.notNull"],
+      "reads": [
+        "n|tbl|public.invoices",
+        "n|sch|public",
+        "n|col|public.invoices.organization_unit_id"
+      ],
+      "sqlHash": "377eb4d5ba509ee6"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"contracts\",\"organization_unit_id\"]",
+      "set": {
+        "notNull": true
+      }
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"invoices\",\"organization_unit_id\"]",
+      "set": {
+        "notNull": true
+      }
+    }
+  ]
+}

@@ -112,9 +112,6 @@ export class ContractQueryResolver {
     );
     // Eligibility is always for the document's unit — never the client header
     // (owners can omit/spoof x-organization-unit-id on My documents).
-    if (!contract.organizationUnitId) {
-      throw new NotFoundGraphQLError('Contract not found');
-    }
     return this.contractService.findPendingContractSignee(
       contractId,
       contract.organizationUnitId,
@@ -124,7 +121,7 @@ export class ContractQueryResolver {
   private async assertCanViewDocument(
     volunteerId: string,
     status: ContractStatus | undefined,
-    documentOrganizationUnitId: string | null | undefined,
+    documentOrganizationUnitId: string,
     session: UserSession,
     context: AuthenticatedGraphQLContext,
   ): Promise<void> {

@@ -42,6 +42,7 @@ export * from './react/hooks/use-contracts';
 export * from './react/hooks/use-document-templates';
 export * from './react/hooks/use-effective-rates';
 export * from './react/hooks/use-events';
+export * from './react/hooks/use-export';
 export * from './react/hooks/use-graphql-client';
 export * from './react/hooks/use-invoices';
 export * from './react/hooks/use-join-shift-instance';
@@ -54,7 +55,6 @@ export * from './react/hooks/use-my-form-submissions';
 export * from './react/hooks/use-my-permissions';
 export * from './react/hooks/use-my-shift-instances';
 export * from './react/hooks/use-my-shift-instances-infinite';
-export * from './react/hooks/use-my-tasks';
 export * from './react/hooks/use-organization-volunteers';
 export * from './react/hooks/use-organizations';
 export * from './react/hooks/use-paid-shift-signup-volunteers';
@@ -69,7 +69,6 @@ export * from './react/hooks/use-shift-volunteers';
 export * from './react/hooks/use-terms';
 export * from './react/hooks/use-time-entries-all';
 export * from './react/hooks/use-time-entry-shift-instances';
-export * from './react/hooks/use-todo-fill-filter';
 export * from './react/hooks/use-unsubscribe-from-emails';
 export * from './react/hooks/use-update-event-invite-status';
 export * from './react/hooks/use-update-my-account-settings';
@@ -119,6 +118,13 @@ export type {
   MyEvent,
   RawEvent,
 } from './repositories/event/event.repository';
+export type {
+  ExportColumnItem,
+  ExportFileResult,
+  ExportRequest,
+  RawExportLogEntry,
+} from './repositories/export/export.repository';
+export { ExportRepository } from './repositories/export/export.repository';
 export type {
   AvailableShiftInstance,
   AvailableShiftInstanceDayCount,

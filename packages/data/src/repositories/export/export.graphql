@@ -1,0 +1,40 @@
+mutation ExportTimesheetsCsv($input: ExportRowsInput!) {
+  exportTimesheetsCsv(input: $input) {
+    filename
+    downloadUrl
+  }
+}
+
+mutation ExportShiftsCsv($input: ExportRowsInput!) {
+  exportShiftsCsv(input: $input) {
+    filename
+    downloadUrl
+  }
+}
+
+mutation ExportUsersCsv($input: ExportRowsInput!) {
+  exportUsersCsv(input: $input) {
+    filename
+    downloadUrl
+  }
+}
+
+query ExportColumns($tableKind: ExportTable!) {
+  exportColumns(tableKind: $tableKind) {
+    id
+    label
+  }
+}
+
+query ExportLogs($tableKind: ExportTable, $limit: Int, $offset: Int) {
+  exportLogs(tableKind: $tableKind, limit: $limit, offset: $offset) {
+    id
+    actorName
+    tableKind
+    columns
+    includedTechnicalIds
+    rowCount
+    subjectUserIds
+    occurredAt
+  }
+}
