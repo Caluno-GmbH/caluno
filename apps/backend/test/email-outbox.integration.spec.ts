@@ -182,7 +182,7 @@ describe('EmailOutboxService', () => {
     expect(updatedEmail?.html).toBe('<p>Body</p>');
     expect(updatedEmail?.attachments).toHaveLength(1);
     expect(updatedEmail?.expiresAt).toBeInstanceOf(Date);
-    const expiresAtMs = updatedEmail!.expiresAt!.getTime();
+    const expiresAtMs = updatedEmail?.expiresAt?.getTime();
     expect(expiresAtMs).toBeGreaterThanOrEqual(
       beforeFail + FAILED_CONTENT_RETENTION_MS - 5_000,
     );
