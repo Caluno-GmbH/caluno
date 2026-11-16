@@ -373,6 +373,11 @@ export function mapInvoiceToBoardDoc(
     declinedBy: invoice.declinedByUser?.name ?? undefined,
     declinedAt: invoice.declinedAt ? new Date(invoice.declinedAt) : undefined,
     declinedAtRole: mapDeclinedAtRole(invoice.declinedAtSigneeType),
+    sentAt: invoice.lastEmailDelivery
+      ? new Date(invoice.lastEmailDelivery.occurredAt)
+      : undefined,
+    sentBy: invoice.lastEmailDelivery?.deliveredByUser?.name ?? undefined,
+    sendFailed: invoice.lastEmailDelivery?.failed ?? undefined,
   };
 }
 
