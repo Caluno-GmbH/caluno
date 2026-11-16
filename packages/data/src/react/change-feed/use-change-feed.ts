@@ -28,7 +28,7 @@ export interface UseChangeFeedOptions {
  * Runs the change feed for one tab, internal to `DataProvider`. Builds a
  * background GraphQL client that mirrors the main one but translates errors
  * without an `onError` callback, so a background 401 goes quiet instead of
- * redirecting (Review Focus 5).
+ * redirecting.
  *
  * Returns the poller's `hold` seam paired with a `generation` counter (or null
  * when disabled) so the provider can hand it to `useHoldBackgroundRefresh`. The

@@ -19,6 +19,5 @@ import { ChangeFeedPruneSchedulerService } from './services/change-feed-prune-sc
     ChangeFeedQueryResolver,
     ChangeFeedPruneSchedulerService,
   ],
-  exports: [ChangeFeedService],
 })
 export class ChangeFeedModule {}

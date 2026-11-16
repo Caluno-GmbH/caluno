@@ -14,7 +14,7 @@ import {
   InvoiceStatus,
   SigneeType,
 } from '../src/accounting/enums';
-import { ChangeArea } from '../src/change-feed/change-area';
+import { ChangeArea } from '../src/change-feed/enums';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import {

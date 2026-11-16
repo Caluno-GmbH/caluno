@@ -16,7 +16,7 @@ import {
   SigneeType,
 } from '../src/accounting/enums';
 import { PermissionKey } from '../src/auth/enums';
-import { ChangeArea } from '../src/change-feed/change-area';
+import { ChangeArea } from '../src/change-feed/enums';
 import { encodeFeedCursor } from '../src/change-feed/feed-cursor';
 import type { ChangeFeedEntryInsert } from '../src/change-feed/schemas/change-feed-entry.schema';
 import { ChangeFeedService } from '../src/change-feed/services/change-feed.service';

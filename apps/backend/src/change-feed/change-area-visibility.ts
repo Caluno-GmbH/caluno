@@ -1,5 +1,5 @@
 import { PermissionKey } from '../auth/enums';
-import { ChangeArea } from './change-area';
+import { ChangeArea } from './enums';
 
 /**
  * Which permission a caller must hold on the header unit (or any of its

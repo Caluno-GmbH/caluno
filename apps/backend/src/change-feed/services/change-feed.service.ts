@@ -5,8 +5,8 @@ import { AuthService } from '../../auth/auth.service';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
-import { ChangeArea } from '../change-area';
 import { UNIT_AREA_PERMISSIONS } from '../change-area-visibility';
+import { ChangeArea } from '../enums';
 import {
   decodeFeedCursor,
   encodeFeedCursor,
@@ -143,6 +143,8 @@ export class ChangeFeedService {
       return { unitAreas: [], unitIds: [] };
     }
 
+    // One key lookup checked against every area, rather than one
+    // `hasRequiredPermissions` round-trip per area; inheritance is the same.
     const permissionKeys = await this.authService.findUserPermissionKeys(
       userId,
       organizationUnitId,
@@ -167,33 +169,16 @@ export class ChangeFeedService {
     unitAreas: ChangeArea[],
     unitIds: string[],
   ): SQL {
-    const clauses: SQL[] = [];
-
-    if (unitAreas.length > 0 && unitIds.length > 0) {
-      const unitClause = and(
-        inArray(changeFeedEntries.area, unitAreas),
-        inArray(changeFeedEntries.organizationUnitId, unitIds),
-      );
-      if (unitClause) {
-        clauses.push(unitClause);
-      }
+    const userClause = eq(changeFeedEntries.userId, userId);
+    if (unitAreas.length === 0 || unitIds.length === 0) {
+      return userClause;
     }
 
-    clauses.push(eq(changeFeedEntries.userId, userId));
-
-    const [first, ...rest] = clauses;
-    if (!first) {
-      // Unreachable: the user clause is always pushed above.
-      throw new Error('Visibility filter requires at least one clause');
-    }
-    if (rest.length === 0) {
-      return first;
-    }
-    const combined = or(...clauses);
-    if (!combined) {
-      throw new Error('Failed to combine visibility clauses');
-    }
-    return combined;
+    const unitClause = and(
+      inArray(changeFeedEntries.area, unitAreas),
+      inArray(changeFeedEntries.organizationUnitId, unitIds),
+    );
+    return or(unitClause, userClause) ?? userClause;
   }
 
   /**

@@ -284,7 +284,7 @@ describe('ChangeFeedPoller', () => {
     expect(harness.clock.pending).toBe(0);
 
     await harness.clock.advance(60000);
-    // Decision 15: a disabled feed stays quiet until the next page load.
+    // A disabled feed stays quiet until the next page load.
     harness.poller.resume();
     await flushPromises();
 

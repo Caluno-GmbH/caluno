@@ -78,7 +78,8 @@ export class ChangeFeedPoller {
     }
     this.paused = false;
     if (this.pollAfterMs === null) {
-      // A disabled feed stays quiet until the next page load (decision 15).
+      // A disabled feed stays quiet until the next page load: `disabled` sheds
+      // load from the backend, so a focus or reconnect must not poll it again.
       return;
     }
     this.clearTimer();
@@ -185,14 +186,7 @@ export class ChangeFeedPoller {
       }
       return;
     }
-    if (reset) {
-      this.deps.invalidateAll();
-      return;
-    }
-    if (areas.size === 0) {
-      return;
-    }
-    this.deps.invalidateAreas(areas);
+    this.dispatch(areas, reset);
   }
 
   private flushHeld(): void {
@@ -203,6 +197,10 @@ export class ChangeFeedPoller {
     if (this.stopped) {
       return;
     }
+    this.dispatch(areas, reset);
+  }
+
+  private dispatch(areas: ReadonlySet<ChangeArea>, reset: boolean): void {
     if (reset) {
       this.deps.invalidateAll();
       return;

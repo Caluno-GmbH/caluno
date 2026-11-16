@@ -1,12 +1,5 @@
-import { Field, ID, Int, ObjectType, registerEnumType } from '@nestjs/graphql';
-import { ChangeArea } from '../change-area';
-
-// Registered here (not in a separate enums barrel) so the enum is available as
-// soon as the model module is loaded, mirroring the area-specific ownership of
-// this slice.
-registerEnumType(ChangeArea, {
-  name: 'ChangeArea',
-});
+import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { ChangeArea } from '../enums';
 
 @ObjectType()
 export class ChangeFeedEntry {
