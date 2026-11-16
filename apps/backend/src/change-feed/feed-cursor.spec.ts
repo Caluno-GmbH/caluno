@@ -8,6 +8,17 @@ import {
 } from './feed-cursor';
 
 describe('feed cursor', () => {
+  it('round-trips the largest xid8 xmin', () => {
+    const cursor: FeedCursor = {
+      xmin: '18446744073709551615',
+      issuedAt: new Date(1_700_000_000_000),
+    };
+
+    expect(decodeFeedCursor(encodeFeedCursor(cursor))?.xmin).toBe(
+      '18446744073709551615',
+    );
+  });
+
   it('round-trips xmin and issue time', () => {
     const cursor: FeedCursor = {
       xmin: '123456',
@@ -46,6 +57,13 @@ describe('feed cursor', () => {
 
     // Not a valid base64url string (illegal characters).
     expect(decodeFeedCursor('!!!not-base64!!!')).toBeNull();
+
+    // An xmin beyond the xid8 range (2^64), which Postgres cannot cast.
+    const overflowingXmin = Buffer.from(
+      '18446744073709551616.1700000000000',
+      'utf8',
+    ).toString('base64url');
+    expect(decodeFeedCursor(overflowingXmin)).toBeNull();
   });
 
   it('is expired one millisecond after 24h and not before', () => {

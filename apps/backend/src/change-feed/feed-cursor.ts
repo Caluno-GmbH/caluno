@@ -19,6 +19,9 @@ export const FEED_RETENTION_MS = 24 * 60 * 60 * 1000;
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 const DIGITS_PATTERN = /^[0-9]+$/;
+// Largest value an xid8 can hold; a bigger xmin would make the `::xid8` cast
+// fail in the feed query.
+const MAX_XID8 = 2n ** 64n - 1n;
 
 export function encodeFeedCursor(cursor: FeedCursor): string {
   const payload = `${cursor.xmin}.${cursor.issuedAt.getTime()}`;
@@ -49,7 +52,11 @@ export function decodeFeedCursor(value: string): FeedCursor | null {
   }
 
   const [xmin, rawIssuedAt] = parts;
-  if (!DIGITS_PATTERN.test(xmin)) {
+  if (
+    !DIGITS_PATTERN.test(xmin) ||
+    xmin.length > 20 ||
+    BigInt(xmin) > MAX_XID8
+  ) {
     return null;
   }
 

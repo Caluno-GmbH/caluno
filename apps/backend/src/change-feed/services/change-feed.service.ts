@@ -17,6 +17,9 @@ import type { ChangeFeed, ChangeFeedEntry } from '../models/change-feed.model';
 import { changeFeedEntries } from '../schemas/change-feed-entry.schema';
 
 const DEFAULT_POLL_MS = 5000;
+const MAX_POLL_MS = 60 * 60 * 1000;
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Reads the append-only change feed for one caller.
@@ -127,12 +130,27 @@ export class ChangeFeedService {
    * Areas the caller may see unit-wide for the header unit, plus the header's
    * inclusive descendant units. With no header there is no unit scope at all —
    * only the caller's own user-scoped rows remain visible.
+   *
+   * Permissions are checked before the unit tree is read, so a malformed,
+   * deleted or foreign header unit degrades to "own rows only" instead of
+   * failing the poll, and a caller with no unit areas costs one lookup.
    */
   private async resolveVisibleScope(
     userId: string,
     organizationUnitId: string | undefined,
   ): Promise<{ unitAreas: ChangeArea[]; unitIds: string[] }> {
-    if (!organizationUnitId) {
+    if (!organizationUnitId || !UUID_PATTERN.test(organizationUnitId)) {
+      return { unitAreas: [], unitIds: [] };
+    }
+
+    const permissionKeys = await this.authService.findUserPermissionKeys(
+      userId,
+      organizationUnitId,
+    );
+    const unitAreas = Object.values(ChangeArea).filter((area) =>
+      UNIT_AREA_PERMISSIONS[area].every((key) => permissionKeys.has(key)),
+    );
+    if (unitAreas.length === 0) {
       return { unitAreas: [], unitIds: [] };
     }
 
@@ -140,18 +158,6 @@ export class ChangeFeedService {
       await this.organizationUnitDataService.listInclusiveDescendantUnitIds(
         organizationUnitId,
       );
-
-    const unitAreas: ChangeArea[] = [];
-    for (const area of Object.values(ChangeArea)) {
-      const hasPermission = await this.authService.hasRequiredPermissions(
-        userId,
-        organizationUnitId,
-        UNIT_AREA_PERMISSIONS[area],
-      );
-      if (hasPermission) {
-        unitAreas.push(area);
-      }
-    }
 
     return { unitAreas, unitIds };
   }
@@ -191,8 +197,10 @@ export class ChangeFeedService {
   }
 
   /**
-   * Read on every call (never cached at construction) so the poll interval can
-   * be changed, or polling disabled, without restarting the process.
+   * Read on every call rather than at construction. A value set in the
+   * environment is fixed when the process boots, so changing it takes a
+   * restart but no client release. Anything that is not a whole number of
+   * milliseconds up to an hour falls back to the default.
    */
   private resolvePollAfterMs(): number | null {
     const raw = this.configService.get<string>('CHANGE_FEED_POLL_MS');
@@ -206,7 +214,7 @@ export class ChangeFeedService {
     }
 
     const parsed = Number(raw);
-    if (!Number.isFinite(parsed) || parsed <= 0) {
+    if (!Number.isSafeInteger(parsed) || parsed <= 0 || parsed > MAX_POLL_MS) {
       return DEFAULT_POLL_MS;
     }
 

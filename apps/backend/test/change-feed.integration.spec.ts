@@ -289,6 +289,49 @@ describe('changesSince', () => {
     expect(ids).not.toContain(String(unitEntry.id));
   });
 
+  it("returns only own entries when an accounting manager sends another org's unit", async () => {
+    const managedFixture = await createFixture();
+    const foreignFixture = await createFixture();
+    const manager = await createMember(managedFixture, managedFixture.rootId, [
+      PermissionKey.ACCOUNTING_MANAGE,
+    ]);
+    const otherUser = await createUser(db);
+
+    const foreignEntry = await insertEntry({
+      area: ChangeArea.CONTRACTS,
+      organizationUnitId: foreignFixture.rootId,
+      userId: otherUser.id,
+    });
+    const ownEntry = await insertEntry({
+      area: ChangeArea.CONTRACTS,
+      organizationUnitId: managedFixture.rootId,
+      userId: manager.id,
+    });
+
+    setAuthMockUserId(manager.id);
+    const feed = await poll({ header: foreignFixture.rootId });
+    const ids = feed.changes.map((change) => change.id);
+
+    expect(ids).toContain(String(ownEntry.id));
+    expect(ids).not.toContain(String(foreignEntry.id));
+  });
+
+  it('returns own entries instead of failing for an unknown or malformed header unit', async () => {
+    const caller = await createUser(db);
+    const ownEntry = await insertEntry({
+      area: ChangeArea.INVOICES,
+      userId: caller.id,
+    });
+
+    setAuthMockUserId(caller.id);
+    for (const header of [crypto.randomUUID(), 'not-a-unit-id']) {
+      const feed = await poll({ header });
+      expect(feed.changes.map((change) => change.id)).toContain(
+        String(ownEntry.id),
+      );
+    }
+  });
+
   it("returns the caller's own contract entries without a header", async () => {
     const fixture = await createFixture();
     const caller = await createUser(db);
