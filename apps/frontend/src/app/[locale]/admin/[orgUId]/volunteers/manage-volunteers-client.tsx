@@ -1,7 +1,8 @@
 'use client';
 
-import { MembershipRequestStatus } from '@repo/data';
+import { MembershipRequestStatus, PermissionKey } from '@repo/data';
 import {
+  useHasPermission,
   useMembershipRequestCount,
   useMembershipRequests,
   useMemberships,
@@ -107,6 +108,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const tRole = useTranslations('Role');
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
+  const canCheckIn = useHasPermission(PermissionKey.CheckInManage);
 
   const [
     { q, sort, dir, page, pageSize, roles, gender, city, verified, cols },
@@ -281,18 +283,20 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           const membership = row.original;
           return (
             <ActionsCell>
-              <Link
-                href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
-                aria-label={t('action.checkInAria')}
-              >
-                <Button
-                  size="icon-sm"
-                  variant="outline"
-                  tooltip={t('action.checkInShiftAria')}
+              {canCheckIn && (
+                <Link
+                  href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
+                  aria-label={t('action.checkInAria')}
                 >
-                  <ScanQrCode />
-                </Button>
-              </Link>
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    tooltip={t('action.checkInShiftAria')}
+                  >
+                    <ScanQrCode />
+                  </Button>
+                </Link>
+              )}
               <RemoveMembershipButton
                 membershipId={membership.id}
                 volunteerName={membership.user.name}
@@ -302,7 +306,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         },
       },
     ],
-    [t, orgUId, openVolunteerSheet, formatDate],
+    [t, orgUId, openVolunteerSheet, formatDate, canCheckIn],
   );
 
   if (isPending) {
