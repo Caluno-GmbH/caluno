@@ -2,7 +2,11 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ReimbursementTypeKey } from '@repo/data';
-import { useReimbursementTypes } from '@repo/data/react';
+import {
+  invalidateTimeEntryQueries,
+  useQueryClient,
+  useReimbursementTypes,
+} from '@repo/data/react';
 import {
   Checkbox,
   Combobox,
@@ -69,6 +73,7 @@ export const TimeEntryForm = ({
   isEdit = false,
 }: TimeEntryFormProps) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const t = useTranslations('TimeEntry.form');
   const tValidation = useTranslations('TimeEntry.validation');
   const { formatTimeRelativeToStart } = useFormatting();
@@ -215,6 +220,10 @@ export const TimeEntryForm = ({
         setServerError(result.serverError);
       } else {
         await setOpen(false);
+        // The timesheets table is a client query (30s staleTime), so the route
+        // refresh alone leaves the edited or new row stale; accounting views
+        // derive from the entry's hours too.
+        invalidateTimeEntryQueries(queryClient);
         router.refresh();
       }
     });

@@ -1,10 +1,7 @@
 'use client';
 
 import { TimeEntryStatus } from '@repo/data';
-import {
-  invalidateTimeEntryListQueries,
-  useQueryClient,
-} from '@repo/data/react';
+import { invalidateTimeEntryQueries, useQueryClient } from '@repo/data/react';
 import { ActionsCell, Button } from '@repo/ui';
 import { CheckCheck, Edit, Loader2, Trash } from 'lucide-react';
 import { useTranslations } from 'next-intl';
@@ -43,6 +40,8 @@ export const ActionBar = ({
         toast.error(t('action.deleteError', { error: result.serverError }));
       } else {
         toast.success(t('action.deleteSuccess'));
+        // The list is cached for 30s; drop it so the deleted row disappears.
+        invalidateTimeEntryQueries(queryClient);
         router.push(`/admin/${organizationUnitId}/timesheets`);
       }
     });
@@ -59,7 +58,7 @@ export const ActionBar = ({
         void queryClient.invalidateQueries({ queryKey: ['accounting'] });
         // Confirming also flips the entry's status/confirmed hours, so refresh
         // the timesheets list that renders this row.
-        invalidateTimeEntryListQueries(queryClient);
+        invalidateTimeEntryQueries(queryClient);
         router.refresh();
       }
     });
