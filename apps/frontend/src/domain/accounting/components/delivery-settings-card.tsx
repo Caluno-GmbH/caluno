@@ -7,6 +7,7 @@ import {
 } from '@repo/data';
 import {
   useAccountingDeliverySettings,
+  useCurrentOrg,
   useUpdateAccountingDeliverySettings,
 } from '@repo/data/react';
 import {
@@ -209,6 +210,7 @@ function DeliverySettingsForm({
   const tCommon = useTranslations('Common');
   const methodLabel = useMethodLabel();
   const update = useUpdateAccountingDeliverySettings(organizationUnitId);
+  const { isRoot } = useCurrentOrg();
   const ids = {
     legend: useId(),
     method: useId(),
@@ -219,7 +221,8 @@ function DeliverySettingsForm({
   };
 
   const [method, setMethod] = useState<MethodChoice>(
-    settings.ownDeliveryMethod ?? 'inherit',
+    settings.ownDeliveryMethod ??
+      (isRoot ? settings.deliveryMethod : 'inherit'),
   );
   const [recipient, setRecipient] = useState(settings.ownRecipientEmail ?? '');
   const [subject, setSubject] = useState(settings.ownEmailSubject ?? '');
@@ -281,13 +284,15 @@ function DeliverySettingsForm({
           aria-labelledby={ids.legend}
           className="gap-3"
         >
-          <MethodOption
-            id={`${ids.method}-inherit`}
-            value="inherit"
-            label={t('methodInherit', {
-              value: methodLabel(settings.inheritedDeliveryMethod),
-            })}
-          />
+          {!isRoot && (
+            <MethodOption
+              id={`${ids.method}-inherit`}
+              value="inherit"
+              label={t('methodInherit', {
+                value: methodLabel(settings.inheritedDeliveryMethod),
+              })}
+            />
+          )}
           <MethodOption
             id={`${ids.method}-download`}
             value={BundleDeliveryMethod.Download}
