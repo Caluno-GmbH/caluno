@@ -91,7 +91,7 @@ export function BundleDeliveryLog({ orgUId }: { orgUId: string }) {
                     colSpan={8}
                     className="py-10 text-center text-sm text-muted-foreground"
                   >
-                    {t('empty')}
+                    {page > 0 ? t('noMore') : t('empty')}
                   </TableCell>
                 </TableRow>
               ) : (

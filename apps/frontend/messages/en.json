@@ -2431,7 +2431,7 @@
         "lastSent": "last sent by {by} on {at}",
         "neverSent": "not sent yet",
         "noRecipient": "Add an accounting email address in the accounting settings to send bundles.",
-        "sendSuccess": "Bundle sent to accounting",
+        "sendSuccess": "The bundle is on its way to accounting",
         "sendError": "We couldn’t send the bundle. Please try again.",
         "sendTooLarge": "This bundle is too large to send by email. Download it instead.",
         "sendIssuesChanged": "Something changed in the meantime. Please review the bundle and confirm again.",
@@ -2448,6 +2448,7 @@
           "confirm": "Send anyway"
         },
         "lastSendFailed": "last send failed on {at}",
+        "lastSending": "sending…",
         "downloadInstead": "Download instead",
         "settingsError": "Delivery settings unavailable"
       },
@@ -2533,7 +2534,8 @@
           "declined": "Declined",
           "templateMissingHint": "No template for this allowance type yet. Set it up under Accounting → Templates.",
           "sentBy": "Sent by {by} on {at}",
-          "sendFailed": "Sending failed on {at}"
+          "sendFailed": "Sending failed on {at}",
+          "sending": "Sending to accounting…"
         },
         "actions": {
           "create": "Preview and create",
@@ -2926,6 +2928,7 @@
         "ALREADY_SENT": "already sent"
       },
       "empty": "Nothing has been handed to accounting yet.",
+      "noMore": "No more entries.",
       "loadError": "We couldn’t load the delivery log. Please reload the page.",
       "previous": "Previous",
       "next": "Next"

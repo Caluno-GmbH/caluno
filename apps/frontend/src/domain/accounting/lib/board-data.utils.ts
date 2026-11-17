@@ -1,6 +1,7 @@
 import {
   ContractStatus,
   type ContractSummary,
+  EmailDeliveryStatus,
   InvoiceStatus,
   type InvoiceSummary,
   PermissionKey,
@@ -15,7 +16,12 @@ import {
   contractPeriodKind,
   isContractExpired,
 } from './billing-period';
-import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
+import type {
+  BoardDocument,
+  BoardVolunteer,
+  DocStatus,
+  SendState,
+} from './board-types';
 import { lifespanForPeriod } from './creation-modal.utils';
 import { centsToEuros } from './money';
 import { pauschaleForReimbursementTypeKey } from './reimbursement-type-mapping';
@@ -377,9 +383,19 @@ export function mapInvoiceToBoardDoc(
       ? new Date(invoice.lastEmailDelivery.occurredAt)
       : undefined,
     sentBy: invoice.lastEmailDelivery?.deliveredByUser?.name ?? undefined,
-    sendFailed: invoice.lastEmailDelivery?.failed ?? undefined,
+    sendState: invoice.lastEmailDelivery
+      ? SEND_STATE[invoice.lastEmailDelivery.status]
+      : undefined,
   };
 }
+
+const SEND_STATE: Record<EmailDeliveryStatus, SendState> = {
+  [EmailDeliveryStatus.Pending]: 'pending',
+  [EmailDeliveryStatus.Sending]: 'pending',
+  [EmailDeliveryStatus.Sent]: 'sent',
+  [EmailDeliveryStatus.Failed]: 'failed',
+  [EmailDeliveryStatus.Cancelled]: 'failed',
+};
 
 export function contractPeriodOverlapsYear(
   contract: RawContract,

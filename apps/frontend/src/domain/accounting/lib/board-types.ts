@@ -112,8 +112,10 @@ export interface BoardDocument {
   /** Timesheet only: when and by whom it was last emailed to accounting. */
   sentAt?: Date;
   sentBy?: string;
-  sendFailed?: boolean;
+  sendState?: SendState;
 }
+
+export type SendState = 'pending' | 'sent' | 'failed';
 
 export interface PauschalenLimit {
   used: number;

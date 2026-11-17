@@ -21,7 +21,7 @@ export default async function DeliveriesPage({ params }: DeliveriesPageProps) {
         <h1 className="page-title">{t('title')}</h1>
         <p className="text-muted-foreground mt-1">{t('subtitle')}</p>
       </div>
-      <BundleDeliveryLog orgUId={orgUId} />
+      <BundleDeliveryLog key={orgUId} orgUId={orgUId} />
     </div>
   );
 }

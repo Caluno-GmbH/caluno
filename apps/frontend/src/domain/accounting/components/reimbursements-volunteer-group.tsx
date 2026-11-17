@@ -42,6 +42,7 @@ import type {
   DocVolPair,
   FilterSettings,
   PauschalenLimit,
+  SendState,
 } from '../lib/board-types';
 import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
@@ -83,6 +84,12 @@ const STATUS_SORT_ORDER: DocStatus[] = [
 
 // ─── Bundle actions ───────────────────────────────────────────────────────────
 
+interface ShownBundle {
+  issues: BundleDeliveryIssue[];
+  recipientEmail: string;
+  subject: string;
+}
+
 interface BundleButtonProps {
   volunteerId: string;
   reimbursementTypeId: string | undefined;
@@ -92,7 +99,7 @@ interface BundleButtonProps {
   invoiceIds: string[];
   orgUId: string;
   volunteerName: string;
-  lastSent?: { at: Date; by?: string; failed: boolean };
+  lastSent?: { at: Date; by?: string; state?: SendState };
 }
 
 function useBundleDownload({
@@ -202,10 +209,7 @@ function BundleSendButton(props: BundleButtonProps) {
   const preview = useBundleSendPreview();
   const send = useSendReimbursementBundle();
   const { download, isDownloading } = useBundleDownload(props);
-  const [confirm, setConfirm] = useState<{
-    issues: BundleDeliveryIssue[];
-    recipientEmail: string;
-  } | null>(null);
+  const [confirm, setConfirm] = useState<ShownBundle | null>(null);
   const isBusy = preview.isPending || send.isPending || isDownloading;
 
   const offerDownload = () =>
@@ -226,14 +230,16 @@ function BundleSendButton(props: BundleButtonProps) {
     );
   };
 
-  const sendBundle = async (acknowledgedIssues: BundleDeliveryIssue[]) => {
+  const sendBundle = async (shown: ShownBundle) => {
     if (!reimbursementTypeId) return;
     try {
       await send.mutateAsync({
         volunteerId,
         reimbursementTypeId,
         invoiceIds,
-        acknowledgedIssues,
+        acknowledgedIssues: shown.issues,
+        expectedRecipientEmail: shown.recipientEmail,
+        expectedSubject: shown.subject,
       });
       toast.success(t('bundle.sendSuccess'));
     } catch (error) {
@@ -256,14 +262,16 @@ function BundleSendButton(props: BundleButtonProps) {
         toast.error(t('bundle.noRecipient'));
         return;
       }
-      if (result.issues.length > 0) {
-        setConfirm({
-          issues: result.issues,
-          recipientEmail: result.recipientEmail,
-        });
+      const shown = {
+        issues: result.issues,
+        recipientEmail: result.recipientEmail,
+        subject: result.subject,
+      };
+      if (shown.issues.length > 0) {
+        setConfirm(shown);
         return;
       }
-      await sendBundle([]);
+      await sendBundle(shown);
     } catch (error) {
       handleSendError(error);
     }
@@ -272,7 +280,8 @@ function BundleSendButton(props: BundleButtonProps) {
   const lastSentLine = () => {
     if (!lastSent) return t('bundle.neverSent');
     const at = formatDate(lastSent.at);
-    if (lastSent.failed) return t('bundle.lastSendFailed', { at });
+    if (lastSent.state === 'failed') return t('bundle.lastSendFailed', { at });
+    if (lastSent.state === 'pending') return t('bundle.lastSending');
     return t('bundle.lastSent', {
       by: lastSent.by ? abbreviateName(lastSent.by) : t('bundle.unknownUser'),
       at,
@@ -297,7 +306,7 @@ function BundleSendButton(props: BundleButtonProps) {
       <span
         className={cn(
           'text-xs text-right leading-snug',
-          lastSent?.failed ? 'text-alert' : 'text-muted-foreground',
+          lastSent?.state === 'failed' ? 'text-alert' : 'text-muted-foreground',
         )}
       >
         <span className="font-medium text-card-foreground">{typeLabel}</span> ·{' '}
@@ -316,7 +325,7 @@ function BundleSendButton(props: BundleButtonProps) {
           onOpenChange={(open) => {
             if (!open && !send.isPending) setConfirm(null);
           }}
-          onConfirm={() => void sendBundle(confirm?.issues ?? [])}
+          onConfirm={() => confirm && void sendBundle(confirm)}
         />
       </div>
     </div>
@@ -419,7 +428,7 @@ function VolunteerTableGroup({
   const readyByType: Partial<Record<PauschalenType, number>> = {};
   const readyIdsByType: Partial<Record<PauschalenType, string[]>> = {};
   const lastSentByType: Partial<
-    Record<PauschalenType, { at: Date; by?: string; failed: boolean }>
+    Record<PauschalenType, { at: Date; by?: string; state?: SendState }>
   > = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
@@ -431,7 +440,7 @@ function VolunteerTableGroup({
       lastSentByType[type] = {
         at: d.sentAt,
         by: d.sentBy,
-        failed: d.sendFailed ?? false,
+        state: d.sendState,
       };
     }
   }
@@ -536,12 +545,16 @@ function VolunteerTableGroup({
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale;
-          // Sent outranks the warnings: a faulty timesheet that went to
-          // accounting was sent on purpose.
-          // A failed send was not delivered, so its warnings stay.
-          const sendFailed = isTimesheet && !!doc.sentAt && !!doc.sendFailed;
-          const sentAt = isTimesheet && !sendFailed ? doc.sentAt : undefined;
-          const docNonCompliant = !sentAt && isTimesheetNonCompliant(doc);
+          // Sent (or on its way) outranks the warnings: a faulty timesheet
+          // that went to accounting was sent on purpose. A failed send was
+          // not delivered, so its warnings stay.
+          const sendState =
+            isTimesheet && doc.sentAt ? doc.sendState : undefined;
+          const sendFailed = sendState === 'failed';
+          const sending = sendState === 'pending';
+          const sentAt = sendState === 'sent' ? doc.sentAt : undefined;
+          const docNonCompliant =
+            !sentAt && !sending && isTimesheetNonCompliant(doc);
           const createBlocked =
             actionKey === 'create' &&
             documentCreationBlockedFor(
@@ -604,6 +617,11 @@ function VolunteerTableGroup({
                       })}
                     </span>
                   )}
+                  {sending && (
+                    <span className="text-sm text-muted-foreground">
+                      {t('docs.statusLabel.sending')}
+                    </span>
+                  )}
                   {sentAt && (
                     <span className="text-sm text-muted-foreground">
                       {t('docs.statusLabel.sentBy', {
@@ -623,7 +641,7 @@ function VolunteerTableGroup({
                       )}
                     </span>
                   )}
-                  {doc.isOverCap && !sentAt && (
+                  {doc.isOverCap && !sentAt && !sending && (
                     <span className="text-sm text-destructive">
                       {t('docs.statusLabel.overCap' as Parameters<typeof t>[0])}
                     </span>

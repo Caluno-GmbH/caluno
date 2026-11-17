@@ -2431,7 +2431,7 @@
         "lastSent": "zuletzt gesendet von {by} am {at}",
         "neverSent": "noch nicht gesendet",
         "noRecipient": "Hinterlege in den Abrechnungseinstellungen eine E-Mail-Adresse der Buchhaltung, um Pakete zu senden.",
-        "sendSuccess": "Paket an die Buchhaltung gesendet",
+        "sendSuccess": "Das Paket ist auf dem Weg zur Buchhaltung",
         "sendError": "Das Paket konnte nicht gesendet werden. Bitte versuche es erneut.",
         "sendTooLarge": "Dieses Paket ist zu groß für eine E-Mail. Lade es stattdessen herunter.",
         "sendIssuesChanged": "In der Zwischenzeit hat sich etwas geändert. Bitte prüfe das Paket und bestätige erneut.",
@@ -2448,6 +2448,7 @@
           "confirm": "Trotzdem senden"
         },
         "lastSendFailed": "letztes Senden fehlgeschlagen am {at}",
+        "lastSending": "wird gesendet …",
         "downloadInstead": "Stattdessen herunterladen",
         "settingsError": "Versandeinstellungen nicht verfügbar"
       },
@@ -2533,7 +2534,8 @@
           "declined": "Abgelehnt",
           "templateMissingHint": "Noch keine Vorlage für diese Pauschale. Richte sie unter Buchhaltung → Vorlagen ein.",
           "sentBy": "Gesendet von {by} am {at}",
-          "sendFailed": "Senden fehlgeschlagen am {at}"
+          "sendFailed": "Senden fehlgeschlagen am {at}",
+          "sending": "Wird an die Buchhaltung gesendet …"
         },
         "actions": {
           "create": "Überprüfen und erstellen",
@@ -2926,6 +2928,7 @@
         "ALREADY_SENT": "bereits gesendet"
       },
       "empty": "Bisher wurde nichts an die Buchhaltung übergeben.",
+      "noMore": "Keine weiteren Einträge.",
       "loadError": "Das Versandprotokoll konnte nicht geladen werden. Bitte lade die Seite neu.",
       "previous": "Zurück",
       "next": "Weiter"
