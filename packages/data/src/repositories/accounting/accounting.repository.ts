@@ -110,6 +110,13 @@ export interface BundleRequest {
   invoiceIds?: string[];
 }
 
+/** The recipient and subject are the ones the admin was shown; a change since is refused. */
+export interface SendBundleRequest extends BundleRequest {
+  acknowledgedIssues: BundleDeliveryIssue[];
+  expectedRecipientEmail: string;
+  expectedSubject: string;
+}
+
 // Prefixed with `Raw` because `ManualBaseline` collides with the same-named
 // entity type exported from `generated/graphql.ts`.
 export type RawManualBaseline = GetManualBaselineQuery['manualBaseline'];
@@ -411,7 +418,7 @@ export class AccountingRepository extends BaseRepository {
   }
 
   async sendReimbursementBundle(
-    request: BundleRequest & { acknowledgedIssues: BundleDeliveryIssue[] },
+    request: SendBundleRequest,
   ): Promise<SentBundle> {
     const data = await this.sdk.SendReimbursementBundle(request);
     return data.sendReimbursementBundle;

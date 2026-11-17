@@ -268,7 +268,7 @@ query GetInvoices($filter: InvoiceFilterInput) {
     # Admin board only: who sent it to accounting is not volunteer-facing.
     lastEmailDelivery {
       occurredAt
-      failed
+      status
       deliveredByUser {
         id
         name
@@ -715,12 +715,16 @@ mutation SendReimbursementBundle(
   $reimbursementTypeId: ID!
   $invoiceIds: [ID!]
   $acknowledgedIssues: [BundleDeliveryIssue!]!
+  $expectedRecipientEmail: String!
+  $expectedSubject: String!
 ) {
   sendReimbursementBundle(
     volunteerId: $volunteerId
     reimbursementTypeId: $reimbursementTypeId
     invoiceIds: $invoiceIds
     acknowledgedIssues: $acknowledgedIssues
+    expectedRecipientEmail: $expectedRecipientEmail
+    expectedSubject: $expectedSubject
   ) {
     id
     occurredAt

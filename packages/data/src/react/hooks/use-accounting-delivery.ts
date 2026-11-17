@@ -5,12 +5,10 @@ import {
   type RawAccountingDeliverySettings,
   type RawBundleDelivery,
   type RawBundleSendPreview,
+  type SendBundleRequest,
 } from '@repo/data';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type {
-  BundleDeliveryIssue,
-  UpdateAccountingDeliverySettingsInput,
-} from '../../generated/base-types';
+import type { UpdateAccountingDeliverySettingsInput } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { invalidateInvoiceQueries } from './use-invoices';
 import { useMutation } from './use-mutation';
@@ -69,9 +67,8 @@ export function useSendReimbursementBundle() {
   const repository = new AccountingRepository(sdk);
 
   return useMutation({
-    mutationFn: (
-      request: BundleRequest & { acknowledgedIssues: BundleDeliveryIssue[] },
-    ) => repository.sendReimbursementBundle(request),
+    mutationFn: (request: SendBundleRequest) =>
+      repository.sendReimbursementBundle(request),
     onSuccess: () => {
       invalidateInvoiceQueries(queryClient);
       queryClient.invalidateQueries({
