@@ -2428,7 +2428,7 @@
         "unknownUser": "unknown",
         "downloadError": "We couldn't download the bundle. Please try again.",
         "sendActionLabel": "Send bundle",
-        "lastSent": "last sent by {by} on {at}",
+        "lastSent": "last sent by <name>{by}</name> on {at}",
         "neverSent": "not sent yet",
         "noRecipient": "Add an accounting email address in the accounting settings to send bundles.",
         "sendSuccess": "The bundle is on its way to accounting",
@@ -2533,7 +2533,7 @@
           "timesheetMuted": "Recorded without an agreement",
           "declined": "Declined",
           "templateMissingHint": "No template for this allowance type yet. Set it up under Accounting → Templates.",
-          "sentBy": "Sent by {by} on {at}",
+          "sentBy": "Sent by <name>{by}</name> on {at}",
           "sendFailed": "Sending failed on {at}",
           "sending": "Sending to accounting…"
         },

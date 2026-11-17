@@ -24,7 +24,7 @@ import {
 } from '@repo/ui';
 import { ChevronDownIcon, FileTextIcon, SendIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
@@ -282,9 +282,10 @@ function BundleSendButton(props: BundleButtonProps) {
     const at = formatDate(lastSent.at);
     if (lastSent.state === 'failed') return t('bundle.lastSendFailed', { at });
     if (lastSent.state === 'pending') return t('bundle.lastSending');
-    return t('bundle.lastSent', {
+    return t.rich('bundle.lastSent', {
       by: lastSent.by ? abbreviateName(lastSent.by) : t('bundle.unknownUser'),
       at,
+      name: profileName,
     });
   };
 
@@ -332,6 +333,20 @@ function BundleSendButton(props: BundleButtonProps) {
   );
 }
 
+// Stubbed: no volunteer-profile route exists yet in this prototype — becomes
+// a real link there.
+function profileName(chunks: ReactNode) {
+  return (
+    <button
+      type="button"
+      className="text-primary hover:underline"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {chunks}
+    </button>
+  );
+}
+
 function BundleDownloadButton(props: BundleButtonProps) {
   const { volunteerId, reimbursementTypeId, typeLabel, readyCount } = props;
   const t = useTranslations('Accounting.reimbursements');
@@ -367,17 +382,7 @@ function BundleDownloadButton(props: BundleButtonProps) {
                   ? abbreviateName(status.downloadedByUser.name)
                   : t('bundle.unknownUser'),
                 at: formatDate(new Date(status.downloadedAt)),
-                // Stubbed: no volunteer-profile route exists yet
-                // in this prototype — becomes a real link there.
-                name: (chunks) => (
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {chunks}
-                  </button>
-                ),
+                name: profileName,
               })
             : t('bundle.neverDownloaded')}
       </span>
@@ -624,11 +629,12 @@ function VolunteerTableGroup({
                   )}
                   {sentAt && (
                     <span className="text-sm text-muted-foreground">
-                      {t('docs.statusLabel.sentBy', {
+                      {t.rich('docs.statusLabel.sentBy', {
                         by: doc.sentBy
                           ? abbreviateName(doc.sentBy)
                           : t('bundle.unknownUser'),
                         at: formatDate(sentAt),
+                        name: profileName,
                       })}
                     </span>
                   )}
