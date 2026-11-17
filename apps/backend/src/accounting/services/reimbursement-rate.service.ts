@@ -513,7 +513,7 @@ export class ReimbursementRateService {
     tx: Database,
     volunteerId: string,
     reimbursementTypeId: string,
-    paidByUserId: string,
+    paidByUserId: string | null,
     invoiceIds: string[],
   ): Promise<void> {
     if (invoiceIds.length === 0) return;

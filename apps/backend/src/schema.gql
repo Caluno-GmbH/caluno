@@ -657,8 +657,8 @@ type Invoice {
 
 type InvoiceEmailDelivery {
   deliveredByUser: User
-  failed: Boolean!
   occurredAt: DateTime!
+  status: EmailDeliveryStatus!
 }
 
 input InvoiceFilterInput {
@@ -841,7 +841,7 @@ type Mutation {
   removeMembership(id: ID!): Membership!
   removeMembershipRequest(id: ID!): MembershipRequest!
   requestOrganizationUnitDeletion(id: String!, message: String): OrganizationUnit!
-  sendReimbursementBundle(acknowledgedIssues: [BundleDeliveryIssue!]! = [], invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleDelivery!
+  sendReimbursementBundle(acknowledgedIssues: [BundleDeliveryIssue!]! = [], expectedRecipientEmail: String!, expectedSubject: String!, invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleDelivery!
   sendShiftInstanceCallOut(instanceId: String!): ShiftInstanceCallOutResult!
   setEventRequiredForms(eventId: ID!, formIds: [String!]!): [RequiredFormRef!]!
   setManualBaseline(amountCents: Int!, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline!

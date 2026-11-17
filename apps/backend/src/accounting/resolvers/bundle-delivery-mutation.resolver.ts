@@ -34,6 +34,8 @@ export class BundleDeliveryMutationResolver {
       defaultValue: [],
     })
     acknowledgedIssues: BundleDeliveryIssue[],
+    @Args('expectedRecipientEmail') expectedRecipientEmail: string,
+    @Args('expectedSubject') expectedSubject: string,
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<BundleDelivery> {
@@ -57,6 +59,8 @@ export class BundleDeliveryMutationResolver {
       sender: { id: session.user.id, name: session.user.name },
       locale: context.locale,
       acknowledgedIssues,
+      expectedRecipientEmail,
+      expectedSubject,
     });
     return {
       id: delivery.id,

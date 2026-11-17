@@ -9,7 +9,11 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
-import { emailOutbox } from '../../notification/schemas/email-outbox.schema';
+import { EmailDeliveryStatus } from '../../notification/email/outbox/email-outbox.enums';
+import {
+  emailDeliveryStatusEnum,
+  emailOutbox,
+} from '../../notification/schemas/email-outbox.schema';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
 import { BundleDeliveryIssue, BundleDeliveryMethod } from '../enums';
 import { bundleDeliveryMethodEnum } from './accounting-delivery-setting.schema';
@@ -50,10 +54,13 @@ export const reimbursementBundleDeliveries = snakeCase.table(
       .array()
       .notNull()
       .default([]),
-    // The outbox purges delivered rows after 30 days; the delivery outlives them.
+    // The outbox purges settled rows after 30 days; the delivery outlives
+    // them, so the outcome is copied onto `emailStatus` when the email settles.
     emailOutboxId: uuid('email_outbox_id').references(() => emailOutbox.id, {
       onDelete: 'set null',
     }),
+    emailStatus:
+      emailDeliveryStatusEnum('email_status').$type<EmailDeliveryStatus>(),
     deliveredByUserId: text('delivered_by_user_id').references(() => users.id, {
       onDelete: 'set null',
     }),

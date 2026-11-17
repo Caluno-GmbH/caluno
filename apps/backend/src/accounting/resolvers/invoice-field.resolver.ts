@@ -238,7 +238,7 @@ export class InvoiceFieldResolver {
       deliveredByUser: delivery.deliveredByUserId
         ? await userLoader.userById.load(delivery.deliveredByUserId)
         : null,
-      failed: delivery.failed,
+      status: delivery.status,
     };
   }
 }

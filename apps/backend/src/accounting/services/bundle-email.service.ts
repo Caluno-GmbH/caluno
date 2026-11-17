@@ -1,8 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { sql } from 'drizzle-orm';
+import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { eq, sql } from 'drizzle-orm';
 import { ADVISORY_LOCK_KEYS } from '../../database/advisory-lock-keys';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
+import * as schema from '../../database/schema';
 import {
   BadRequestGraphQLError,
   ConflictGraphQLError,
@@ -12,8 +13,14 @@ import {
 import type { Locale } from '../../graphql/locale';
 import { AppI18nService } from '../../i18n/app-i18n.service';
 import { createEmailTemplateContext } from '../../notification/email/email-template-context';
-import { EmailCategory } from '../../notification/email/outbox/email-outbox.enums';
-import { EmailOutboxService } from '../../notification/email/outbox/email-outbox.service';
+import {
+  EmailCategory,
+  EmailDeliveryStatus,
+} from '../../notification/email/outbox/email-outbox.enums';
+import {
+  EmailOutboxService,
+  type SettledEmailStatus,
+} from '../../notification/email/outbox/email-outbox.service';
 import { accountingBundleTemplate } from '../../notification/email/templates/accounting-bundle.template';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
 import { MAX_NAMED_INVOICES } from '../dto/download-bundle-query.dto';
@@ -69,7 +76,9 @@ export interface BundleSendPreview {
  * go out only when the sender confirmed each issue the server finds.
  */
 @Injectable()
-export class BundleEmailService {
+export class BundleEmailService implements OnModuleInit {
+  private readonly logger = new Logger(BundleEmailService.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
@@ -81,6 +90,13 @@ export class BundleEmailService {
     private readonly emailOutbox: EmailOutboxService,
     private readonly appI18n: AppI18nService,
   ) {}
+
+  onModuleInit(): void {
+    this.emailOutbox.onEmailSettled(
+      EmailCategory.ACCOUNTING_BUNDLE,
+      (tx, settled) => this.settle(tx, settled.emailId, settled.status),
+    );
+  }
 
   async preview(request: SendRequest): Promise<BundleSendPreview> {
     const { invoices, settings, issues, subject } = await this.prepare(request);
@@ -94,7 +110,11 @@ export class BundleEmailService {
   }
 
   async send(
-    request: SendRequest & { acknowledgedIssues: BundleDeliveryIssue[] },
+    request: SendRequest & {
+      acknowledgedIssues: BundleDeliveryIssue[];
+      expectedRecipientEmail: string;
+      expectedSubject: string;
+    },
   ): Promise<ReimbursementBundleDeliveryEntity> {
     const {
       invoices,
@@ -114,6 +134,16 @@ export class BundleEmailService {
     if (!recipientEmail) {
       throw new BadRequestGraphQLError(
         'No accounting email address is configured for this unit',
+      );
+    }
+    // The admin confirmed the address and subject the preview showed; a
+    // settings change since must not redirect the documents unseen.
+    if (
+      recipientEmail !== request.expectedRecipientEmail ||
+      subject !== request.expectedSubject
+    ) {
+      throw new ConflictGraphQLError(
+        'The accounting address or subject changed since the preview',
       );
     }
     // The client asks only for the issues it showed; anything new since
@@ -160,9 +190,8 @@ export class BundleEmailService {
       );
     }
 
-    // Queued, logged and marked paid together: the outbox delivers (and
-    // retries) after the commit, so a failed send never leaves a bundle paid
-    // without a log row, nor logged without a queued email.
+    // Queued and logged together. The invoices are marked paid only once the
+    // outbox reports the email sent (see `settle`).
     return this.db.transaction(async (tx) => {
       // The "already sent" check above ran outside this transaction. Two
       // sends of the same bundle at once would both pass it, so they queue
@@ -194,15 +223,12 @@ export class BundleEmailService {
             contentType: 'application/pdf',
           })),
           organizationUnitId: scope.organizationUnitId,
+          // A timed-out send may still have reached the provider; a retry
+          // could hand accounting the same documents twice. A failure shows
+          // on the board instead, and the admin resends.
+          maxAttempts: 1,
         },
         tx,
-      );
-      await this.reimbursementRateService.markInvoicesPaid(
-        tx,
-        scope.volunteerId,
-        scope.reimbursementTypeId,
-        sender.id,
-        invoices.filter((invoice) => !invoice.paidAt).map((i) => i.id),
       );
       return this.bundleDeliveryLogService.record(
         {
@@ -213,11 +239,45 @@ export class BundleEmailService {
           subject,
           issues,
           emailOutboxId: email.id,
+          emailStatus: EmailDeliveryStatus.PENDING,
           deliveredByUserId: sender.id,
         },
         tx,
       );
     });
+  }
+
+  private async settle(
+    tx: Database,
+    emailId: string,
+    status: SettledEmailStatus,
+  ): Promise<void> {
+    const [delivery] = await tx
+      .update(schema.reimbursementBundleDeliveries)
+      .set({ emailStatus: status })
+      .where(eq(schema.reimbursementBundleDeliveries.emailOutboxId, emailId))
+      .returning();
+    if (!delivery || status !== EmailDeliveryStatus.SENT) return;
+    try {
+      // A savepoint: the log must say the email went out even if the paid
+      // stamp fails, or the board would show the bundle as sending forever.
+      await tx.transaction((savepoint) =>
+        this.reimbursementRateService.markInvoicesPaid(
+          savepoint,
+          delivery.volunteerId,
+          delivery.reimbursementTypeId,
+          delivery.deliveredByUserId,
+          delivery.invoiceIds,
+        ),
+      );
+    } catch (error) {
+      this.logger.error(
+        `Bundle delivery ${delivery.id} was sent but its invoices could not be marked paid: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    }
   }
 
   private async prepare(request: SendRequest) {

@@ -20,6 +20,7 @@ import {
   SigneeType,
 } from '../accounting/enums';
 import { PERMISSIONS } from '../auth/constants';
+import { EmailDeliveryStatus } from '../notification/email/outbox/email-outbox.enums';
 import { TimeEntryClosureKind } from '../time-tracking/enums/time-entry-closure-kind.enum';
 import { DEMO_TEMPLATE_BODIES } from './demo-document-templates';
 import type { DemoOrganizationHandles } from './demo-organization';
@@ -275,6 +276,7 @@ export async function seedDemoAccounting(
         subject: isEmail
           ? `Abrechnung ${member.name} – ${monthLabel(timesheetMonth)} (Ehrenamtspauschale)`
           : null,
+        emailStatus: isEmail ? EmailDeliveryStatus.SENT : null,
         deliveredByUserId: coordinatorId,
         occurredAt,
       });

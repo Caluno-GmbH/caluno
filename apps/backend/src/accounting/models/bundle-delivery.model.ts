@@ -30,7 +30,6 @@ export class BundleDelivery {
   @Field(() => [BundleDeliveryIssue])
   issues!: BundleDeliveryIssue[];
 
-  /** EMAIL only; null once the outbox has purged a delivered message. */
   @Field(() => EmailDeliveryStatus, { nullable: true })
   emailStatus?: EmailDeliveryStatus | null;
 
@@ -49,6 +48,6 @@ export class InvoiceEmailDelivery {
   @Field(() => User, { nullable: true })
   deliveredByUser?: User | null;
 
-  @Field(() => Boolean)
-  failed!: boolean;
+  @Field(() => EmailDeliveryStatus)
+  status!: EmailDeliveryStatus;
 }

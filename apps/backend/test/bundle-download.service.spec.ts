@@ -1,4 +1,4 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { beforeAll, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import {
   BadRequestException,
   InternalServerErrorException,
@@ -6,7 +6,7 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { Test, type TestingModule } from '@nestjs/testing';
 import AdmZip from 'adm-zip';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { PDFDocument } from 'pdf-lib';
 import {
   AccountingSettingSourceKind,
@@ -31,7 +31,10 @@ import * as schema from '../src/database/schema';
 import { ConflictGraphQLError } from '../src/graphql/errors';
 import type { AppI18nService } from '../src/i18n/app-i18n.service';
 import { MembershipService } from '../src/membership/membership.service';
-import type { EmailTransportService } from '../src/notification/email/email-transport.service';
+import type {
+  EmailSendResult,
+  EmailTransportService,
+} from '../src/notification/email/email-transport.service';
 import { EmailDeliveryStatus } from '../src/notification/email/outbox/email-outbox.enums';
 import { EmailOutboxService } from '../src/notification/email/outbox/email-outbox.service';
 import { OrganizationUnitDataService } from '../src/organization/organization-unit-data.service';
@@ -69,6 +72,8 @@ describe('BundleDownloadService', () => {
   const renderCalls: string[] = [];
   let withoutActiveCover = new Set<string>();
   let emailService: BundleEmailService;
+  let outbox: EmailOutboxService;
+  let sendResult: EmailSendResult;
   let settingsService: AccountingDeliverySettingsService;
   /** The same for a covering contract's missing PDF; none by default. */
   let renderMissingContractPdf: (contractId: string) => Promise<string | null>;
@@ -145,6 +150,9 @@ describe('BundleDownloadService', () => {
     const appI18n = {
       createTranslator: () => ({ t: (key: string) => key }),
     } as unknown as AppI18nService;
+    outbox = new EmailOutboxService(db, {
+      sendOnce: async () => sendResult,
+    } as unknown as EmailTransportService);
     emailService = new BundleEmailService(
       db,
       service,
@@ -152,12 +160,14 @@ describe('BundleDownloadService', () => {
       deliveryLog,
       reimbursementRateService,
       unitData,
-      new EmailOutboxService(db, {} as EmailTransportService),
+      outbox,
       appI18n,
     );
+    emailService.onModuleInit();
   });
 
   beforeEach(() => {
+    sendResult = { ok: true, providerMessageId: null };
     withoutActiveCover = new Set();
     failUrlResolution = false;
     getBytesCalls = 0;
@@ -1137,6 +1147,20 @@ describe('BundleDownloadService', () => {
   describe('sending by email (VOLI-1766)', () => {
     const RECIPIENT = 'accounting@example.org';
 
+    // Other spec files leave queued emails in this process's test database;
+    // a drain handles at most 200, so clear them to reach this test's email.
+    beforeEach(async () => {
+      await db
+        .update(schema.emailOutbox)
+        .set({ status: EmailDeliveryStatus.CANCELLED })
+        .where(
+          inArray(schema.emailOutbox.status, [
+            EmailDeliveryStatus.PENDING,
+            EmailDeliveryStatus.SENDING,
+          ]),
+        );
+    });
+
     const configure = (s: Fixture, unitId = s.root.id) =>
       settingsService.update(
         unitId,
@@ -1160,8 +1184,22 @@ describe('BundleDownloadService', () => {
       locale: 'de' as const,
     });
 
-    const send = (s: Fixture, acknowledgedIssues: BundleDeliveryIssue[] = []) =>
-      emailService.send({ ...request(s), acknowledgedIssues });
+    const send = async (
+      s: Fixture,
+      acknowledgedIssues: BundleDeliveryIssue[] = [],
+    ) => {
+      const shown = await emailService.preview(request(s));
+      return emailService.send({
+        ...request(s),
+        acknowledgedIssues,
+        expectedRecipientEmail: shown.recipientEmail ?? '',
+        expectedSubject: shown.subject,
+      });
+    };
+
+    const isPaid = async (invoiceId: string) =>
+      (await db.query.invoices.findFirst({ where: { id: invoiceId } }))
+        ?.paidAt != null;
 
     const deliveriesOf = (s: Fixture) =>
       db.query.reimbursementBundleDeliveries.findMany({
@@ -1169,7 +1207,7 @@ describe('BundleDownloadService', () => {
         orderBy: { occurredAt: 'asc' },
       });
 
-    it('queues one email with a PDF per timesheet, marks them paid and logs the send', async () => {
+    it('queues one email with a PDF per timesheet, logs the send and marks them paid once sent', async () => {
       const s = await setup();
       await configure(s);
       await insertContract(s, JULY);
@@ -1188,6 +1226,7 @@ describe('BundleDownloadService', () => {
         .where(eq(schema.emailOutbox.id, delivery.emailOutboxId ?? ''));
       expect(email?.recipientEmail).toBe(RECIPIENT);
       expect(email?.status).toBe(EmailDeliveryStatus.PENDING);
+      expect(email?.maxAttempts).toBe(1);
       expect(email?.subject).toBe(`Abrechnung ${s.volunteer.name} – Juli 2026`);
       expect(email?.attachments?.map((file) => file.filename).sort()).toEqual(
         [timesheetName(a.id), timesheetName(b.id)].sort(),
@@ -1198,13 +1237,43 @@ describe('BundleDownloadService', () => {
         recipientEmail: RECIPIENT,
         subject: email?.subject,
         issues: [],
+        emailStatus: EmailDeliveryStatus.PENDING,
         deliveredByUserId: s.downloader.id,
       });
       expect([...delivery.invoiceIds].sort()).toEqual([a.id, b.id].sort());
+      expect(await isPaid(a.id)).toBe(false);
+
+      await outbox.drain();
+
+      const [settled] = await deliveriesOf(s);
+      expect(settled?.emailStatus).toBe(EmailDeliveryStatus.SENT);
       for (const id of [a.id, b.id]) {
         const stored = await db.query.invoices.findFirst({ where: { id } });
         expect(stored?.paidByUserId).toBe(s.downloader.id);
       }
+    });
+
+    it('refuses when the address changed after the preview was shown', async () => {
+      const s = await setup();
+      await configure(s);
+      await insertContract(s, JULY);
+      await readyTimesheet(s, [await entryAt(s, '2026-07-05T09:00:00.000Z')]);
+      const shown = await emailService.preview(request(s));
+      await settingsService.update(
+        s.root.id,
+        { recipientEmail: 'elsewhere@example.org' },
+        s.downloader.id,
+      );
+
+      await expect(
+        emailService.send({
+          ...request(s),
+          acknowledgedIssues: [],
+          expectedRecipientEmail: shown.recipientEmail ?? '',
+          expectedSubject: shown.subject,
+        }),
+      ).rejects.toBeInstanceOf(ConflictGraphQLError);
+      expect(await deliveriesOf(s)).toEqual([]);
     });
 
     it('refuses without a recipient and leaves nothing paid or logged', async () => {
@@ -1278,23 +1347,51 @@ describe('BundleDownloadService', () => {
       expect(await deliveriesOf(s)).toHaveLength(2);
     });
 
-    it('lets a bundle whose email failed go out again without asking, and says it failed', async () => {
+    it('records a sent email even when marking the invoices paid fails', async () => {
       const s = await setup();
       await configure(s);
       await insertContract(s, JULY);
       const invoice = await readyTimesheet(s, [
         await entryAt(s, '2026-07-05T09:00:00.000Z'),
       ]);
-      const first = await send(s);
-      await db
-        .update(schema.emailOutbox)
-        .set({ status: EmailDeliveryStatus.FAILED })
-        .where(eq(schema.emailOutbox.id, first.emailOutboxId ?? ''));
+      await send(s);
+      const markPaid = spyOn(
+        ReimbursementRateService.prototype,
+        'markInvoicesPaid',
+      ).mockRejectedValue(new Error('paid stamp failed'));
+
+      try {
+        await outbox.drain();
+      } finally {
+        markPaid.mockRestore();
+      }
+
+      const [delivery] = await deliveriesOf(s);
+      expect(delivery?.emailStatus).toBe(EmailDeliveryStatus.SENT);
+      expect(await isPaid(invoice.id)).toBe(false);
+    });
+
+    it('leaves a bundle whose email failed unpaid, says so, and lets it go out again without asking', async () => {
+      const s = await setup();
+      await configure(s);
+      await insertContract(s, JULY);
+      const invoice = await readyTimesheet(s, [
+        await entryAt(s, '2026-07-05T09:00:00.000Z'),
+      ]);
+      await send(s);
+      // A timeout: the provider may have taken it, so it is not retried.
+      sendResult = {
+        ok: false,
+        retryable: true,
+        error: new Error('timed out'),
+      };
+      await outbox.drain();
 
       const latest = await new BundleDeliveryLogService(
         db,
       ).findLatestEmailDeliveries([invoice.id]);
-      expect(latest.get(invoice.id)?.failed).toBe(true);
+      expect(latest.get(invoice.id)?.status).toBe(EmailDeliveryStatus.FAILED);
+      expect(await isPaid(invoice.id)).toBe(false);
       expect((await emailService.preview(request(s))).issues).toEqual([]);
 
       const again = await send(s);
@@ -1314,29 +1411,30 @@ describe('BundleDownloadService', () => {
       expect(await deliveriesOf(s)).toEqual([]);
     });
 
-    it('keeps a failed bundle email past the outbox retention, so it stays failed', async () => {
+    it('keeps the outcome in the log after the outbox purges the email', async () => {
       const s = await setup();
       await configure(s);
       await insertContract(s, JULY);
       await readyTimesheet(s, [await entryAt(s, '2026-07-05T09:00:00.000Z')]);
       const delivery = await send(s);
-      const longAgo = new Date(Date.now() - 60 * 86_400_000);
+      await outbox.drain();
       await db
         .update(schema.emailOutbox)
-        .set({ status: EmailDeliveryStatus.FAILED, updatedAt: longAgo })
+        .set({ updatedAt: new Date(Date.now() - 60 * 86_400_000) })
         .where(eq(schema.emailOutbox.id, delivery.emailOutboxId ?? ''));
 
-      await new EmailOutboxService(
-        db,
-        {} as EmailTransportService,
-      ).purgeSettledEmails();
+      await outbox.purgeSettledEmails();
 
-      const [kept] = await db
+      const [purged] = await db
         .select({ id: schema.emailOutbox.id })
         .from(schema.emailOutbox)
         .where(eq(schema.emailOutbox.id, delivery.emailOutboxId ?? ''));
-      expect(kept).toBeDefined();
-      expect((await emailService.preview(request(s))).issues).toEqual([]);
+      expect(purged).toBeUndefined();
+      const [logged] = await new BundleDeliveryLogService(db).list(s.root.id);
+      expect(logged?.emailStatus).toBe(EmailDeliveryStatus.SENT);
+      expect((await emailService.preview(request(s))).issues).toEqual([
+        BundleDeliveryIssue.ALREADY_SENT,
+      ]);
     });
 
     it('sends a bundle once when two sends race', async () => {
