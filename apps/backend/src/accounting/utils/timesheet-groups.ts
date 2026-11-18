@@ -1,11 +1,12 @@
 import type { EligibleTimesheetVolunteer } from '../accounting.types';
+import { ReimbursementTypeKey } from '../enums';
 import { billingMonthBoundsOf } from './billing-period';
 
 /** An eligible time entry as the timesheet grouping needs it: ended, and paid. */
 export interface TimesheetCandidateEntry {
   id: string;
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   startedAt: Date;
   endedAt: Date;
 }

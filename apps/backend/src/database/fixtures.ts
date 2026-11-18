@@ -1187,7 +1187,7 @@ async function ensureOverviewWaitingActions(
     const existing = await db.query.documentTemplates.findFirst({
       where: {
         organizationId: args.organizationId,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind,
         organizationUnitId: { isNull: true },
         isDeleted: false,
@@ -1199,7 +1199,7 @@ async function ensureOverviewWaitingActions(
       .insert(schema.documentTemplates)
       .values({
         organizationId: args.organizationId,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind,
         body: EMPTY_DOCUMENT_BODY,
         lastEditedAt: new Date(),
@@ -1240,7 +1240,7 @@ async function ensureOverviewWaitingActions(
       id: contractId,
       documentTemplateId: contractTemplate.id,
       volunteerId: volunteer.id,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeId: reimbursementType.key,
       organizationUnitId: args.rootUnitId,
       contractStatus: ContractStatus.AWAITING_NGO_SIGNATURE,
       periodStart: yearStart,
@@ -1273,7 +1273,7 @@ async function ensureOverviewWaitingActions(
       id: invoice.id,
       documentTemplateId: invoiceTemplate.id,
       volunteerId: invoice.volunteerId,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeId: reimbursementType.key,
       organizationUnitId: args.rootUnitId,
       invoiceStatus: invoice.status,
       periodStart: invoice.periodStart,

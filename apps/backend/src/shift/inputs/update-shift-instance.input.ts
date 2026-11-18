@@ -1,4 +1,5 @@
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { ShiftVisibility } from '../enums';
 
 @InputType()
@@ -25,7 +26,7 @@ export class UpdateShiftInstanceInput {
   maxVolunteers?: number | null;
 
   @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: string | null;
+  reimbursementTypeId?: ReimbursementTypeKey | null;
 
   @Field(() => String, { nullable: true })
   rrule?: string | null;

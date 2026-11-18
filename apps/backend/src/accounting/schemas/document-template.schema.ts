@@ -14,8 +14,11 @@ import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
 import { organizations } from '../../organization/schemas/organization.schema';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
-import { DocumentKind, RenewalCadence } from '../enums';
-import { reimbursementTypes } from './reimbursement-type.schema';
+import { DocumentKind, ReimbursementTypeKey, RenewalCadence } from '../enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from './reimbursement-type.schema';
 
 export const documentKindEnum = pgEnum(
   'document_kind',
@@ -45,8 +48,9 @@ export const documentTemplates = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'cascade' },
     ),
-    reimbursementTypeId: uuid('reimbursement_type_id')
-      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
     kind: documentKindEnum('kind').$type<DocumentKind>().notNull(),
     renewalCadence:

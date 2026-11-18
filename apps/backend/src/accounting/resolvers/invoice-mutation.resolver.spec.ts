@@ -2,6 +2,7 @@ import { describe, expect, it, mock } from 'bun:test';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { ForbiddenGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { ReimbursementTypeKey } from '../enums';
 import { InvoiceMutationResolver } from './invoice-mutation.resolver';
 
 describe('InvoiceMutationResolver.createInvoice tenancy', () => {
@@ -30,7 +31,7 @@ describe('InvoiceMutationResolver.createInvoice tenancy', () => {
         {
           organizationUnitId: siblingUnitId,
           volunteerId: 'volunteer-1',
-          reimbursementTypeId: 'type-1',
+          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
           timeEntryIds: ['entry-1'],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),

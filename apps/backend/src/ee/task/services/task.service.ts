@@ -178,9 +178,8 @@ export class TaskService {
         columns: { id: true, name: true },
       }),
       this.db.query.reimbursementTypes.findMany({
-        where: { id: { in: typeIds } },
+        where: { key: { in: typeIds } },
         columns: {
-          id: true,
           key: true,
           platformDefaultRateCents: true,
         },
@@ -192,9 +191,9 @@ export class TaskService {
     ]);
 
     const nameById = new Map(users.map((user) => [user.id, user.name]));
-    const typeById = new Map(types.map((type) => [type.id, type]));
+    const typeById = new Map(types.map((type) => [type.key, type]));
     const rateByTypeId = new Map(
-      rates.map((rate) => [rate.reimbursementType.id, rate.hourlyRateCents]),
+      rates.map((rate) => [rate.reimbursementType.key, rate.hourlyRateCents]),
     );
 
     return rows.flatMap((row) => {
@@ -245,13 +244,13 @@ export class TaskService {
         columns: { id: true, name: true },
       }),
       this.db.query.reimbursementTypes.findMany({
-        where: { id: { in: typeIds } },
-        columns: { id: true, key: true },
+        where: { key: { in: typeIds } },
+        columns: { key: true },
       }),
     ]);
 
     const nameById = new Map(users.map((user) => [user.id, user.name]));
-    const typeKeyById = new Map(types.map((type) => [type.id, type.key]));
+    const typeKeyById = new Map(types.map((type) => [type.key, type.key]));
 
     return rows.flatMap((row) => {
       const volunteerName = nameById.get(row.volunteerId);
@@ -512,7 +511,7 @@ export class TaskService {
       )
       .innerJoin(
         schema.reimbursementTypes,
-        eq(schema.reimbursementTypes.id, schema.contracts.reimbursementTypeId),
+        eq(schema.reimbursementTypes.key, schema.contracts.reimbursementTypeId),
       )
       .leftJoin(
         volunteerContractSignedAt,
@@ -569,7 +568,7 @@ export class TaskService {
       .innerJoin(schema.users, eq(schema.users.id, schema.invoices.volunteerId))
       .innerJoin(
         schema.reimbursementTypes,
-        eq(schema.reimbursementTypes.id, schema.invoices.reimbursementTypeId),
+        eq(schema.reimbursementTypes.key, schema.invoices.reimbursementTypeId),
       )
       .leftJoin(
         volunteerInvoiceSignedAt,

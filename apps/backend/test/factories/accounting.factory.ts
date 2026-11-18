@@ -75,7 +75,7 @@ export const createReimbursementRate = async (
   args: {
     organizationId: string;
     organizationUnitId?: string | null;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     hourlyRateCents: number;
   },
 ): Promise<ReimbursementRate> => {
@@ -99,7 +99,7 @@ export const createDocumentTemplate = async (
   args: {
     organizationId: string;
     organizationUnitId?: string | null;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     kind: DocumentKind;
     signees: Array<{
       order: number;
@@ -146,7 +146,7 @@ export const createTwoStepTemplate = async (
   db: Database,
   args: {
     organizationId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     kind: DocumentKind;
     requiredPermissionId: string;
     signeeTypes: [SigneeType, SigneeType];
@@ -174,7 +174,7 @@ export const createCompletedTimeEntry = async (
   args: {
     organizationUnitId: string;
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     startedAt: Date;
     endedAt: Date;
   },

@@ -200,13 +200,13 @@ describe('TaskService.myTasks', () => {
     const reimbursementType = await createReimbursementType(db);
     const contractTemplate = await createDocumentTemplate(db, {
       organizationId,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeId: reimbursementType.key,
       kind: DocumentKind.CONTRACT,
       signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
     });
     const invoiceTemplate = await createDocumentTemplate(db, {
       organizationId,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeId: reimbursementType.key,
       kind: DocumentKind.INVOICE,
       signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
     });
@@ -218,7 +218,7 @@ describe('TaskService.myTasks', () => {
       .values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         organizationUnitId,
         contractStatus: ContractStatus.AWAITING_NGO_SIGNATURE,
         periodStart,
@@ -233,7 +233,7 @@ describe('TaskService.myTasks', () => {
       .values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         organizationUnitId,
         contractStatus: ContractStatus.DECLINED,
         declinedAtSigneeType: SigneeType.PERMISSION_HOLDER,
@@ -249,7 +249,7 @@ describe('TaskService.myTasks', () => {
     const invoiceBase = {
       documentTemplateId: invoiceTemplate.id,
       volunteerId: volunteer.id,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeId: reimbursementType.key,
       organizationUnitId,
       resolvedBody: body,
       hourlyRateCents: 400,
@@ -414,7 +414,7 @@ describe('TaskService.myTasks', () => {
     let contractTemplate = await db.query.documentTemplates.findFirst({
       where: {
         organizationId,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.CONTRACT,
         isDeleted: false,
       },
@@ -422,7 +422,7 @@ describe('TaskService.myTasks', () => {
     if (!contractTemplate) {
       contractTemplate = await createDocumentTemplate(db, {
         organizationId,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.CONTRACT,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -437,7 +437,7 @@ describe('TaskService.myTasks', () => {
       .values({
         documentTemplateId: contractTemplate.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         organizationUnitId,
         contractStatus: ContractStatus.DRAFT,
         periodStart: new Date('2026-01-01T00:00:00.000Z'),

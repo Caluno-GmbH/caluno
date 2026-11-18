@@ -1,5 +1,6 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import DataLoader from 'dataloader';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { ReimbursementTypeMapper } from '../../accounting/mappers/reimbursement-type.mapper';
 import type { ReimbursementType } from '../../accounting/models/reimbursement-type.model';
 import type { Database } from '../../database/database.module';
@@ -49,13 +50,13 @@ export class TimeEntryLoader {
   });
 
   public readonly reimbursementTypeById = new DataLoader<
-    string,
+    ReimbursementTypeKey,
     ReimbursementType
   >(async (ids) => {
     const types = await this.db.query.reimbursementTypes.findMany({
-      where: { id: { in: [...ids] } },
+      where: { key: { in: [...ids] } },
     });
-    const byId = new Map(types.map((type) => [type.id, type]));
+    const byId = new Map(types.map((type) => [type.key, type]));
 
     return ids.map((id) => {
       const type = byId.get(id);

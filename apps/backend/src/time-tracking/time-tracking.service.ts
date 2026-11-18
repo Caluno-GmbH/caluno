@@ -13,6 +13,7 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm';
+import { ReimbursementTypeKey } from '../accounting/enums';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
@@ -84,7 +85,7 @@ export class TimeTrackingService {
   ): Promise<TimeEntryEntity> {
     assertEndAfterStart(input.startedAt, input.endedAt);
 
-    let reimbursementTypeId: string | null = null;
+    let reimbursementTypeId: ReimbursementTypeKey | null = null;
     if (input.shiftInstanceId) {
       const context = await this.resolveShiftInstanceContext(
         input.shiftInstanceId,
@@ -154,11 +155,16 @@ export class TimeTrackingService {
   }
 
   private async assertReimbursementTypeExists(
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
   ): Promise<void> {
-    const reimbursementType = await this.db.query.reimbursementTypes.findFirst({
-      where: { id: reimbursementTypeId },
-    });
+    // The key is a pg enum: reject out-of-range values before querying.
+    const reimbursementType = Object.values(ReimbursementTypeKey).includes(
+      reimbursementTypeId,
+    )
+      ? await this.db.query.reimbursementTypes.findFirst({
+          where: { key: reimbursementTypeId },
+        })
+      : undefined;
     if (!reimbursementType) {
       throw new NotFoundGraphQLError('Reimbursement type not found');
     }
@@ -167,7 +173,10 @@ export class TimeTrackingService {
   private async resolveShiftInstanceContext(
     shiftInstanceId: string,
     organizationUnitId: string,
-  ): Promise<{ reimbursementTypeId: string | null; actualEndsAt: Date }> {
+  ): Promise<{
+    reimbursementTypeId: ReimbursementTypeKey | null;
+    actualEndsAt: Date;
+  }> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: shiftInstanceId },
       with: { master: true },

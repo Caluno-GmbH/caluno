@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../src/accounting/enums';
 import 'reflect-metadata';
 import {
   beforeAll,
@@ -107,7 +108,7 @@ const setupPaidShiftOrg = async (db: Database) => {
     unitTypeId: type.id,
     adminId: admin.id,
     volunteerId: volunteer.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeId: reimbursementType.key,
   };
 };
 
@@ -116,7 +117,7 @@ const createPaidShiftWithJoinedVolunteer = async (
   args: {
     organizationUnitId: string;
     volunteerId: string;
-    reimbursementTypeId: string | null;
+    reimbursementTypeId: ReimbursementTypeKey | null;
     status?: ShiftInviteStatus;
     actualStartsAt?: Date;
   },

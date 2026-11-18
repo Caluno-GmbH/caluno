@@ -2,6 +2,7 @@ import { describe, expect, it, mock } from 'bun:test';
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { NotFoundGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { ReimbursementTypeKey } from '../enums';
 import { ContractMutationResolver } from './contract-mutation.resolver';
 
 describe('ContractMutationResolver.createContract tenancy', () => {
@@ -52,7 +53,7 @@ describe('ContractMutationResolver.createContract tenancy', () => {
 
   const baseInput = {
     volunteerId: memberVolunteerId,
-    reimbursementTypeId: 'type-1',
+    reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
     periodStart: new Date('2026-01-01T00:00:00.000Z'),
     periodEnd: new Date('2026-12-31T00:00:00.000Z'),
   };

@@ -8,7 +8,11 @@ import {
   timestamp,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { reimbursementTypes } from '../../accounting/schemas/reimbursement-type.schema';
+import { ReimbursementTypeKey } from '../../accounting/enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from '../../accounting/schemas/reimbursement-type.schema';
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
@@ -48,10 +52,9 @@ export const shifts = snakeCase.table(
     eventId: uuid('event_id').references(() => events.id, {
       onDelete: 'set null',
     }),
-    reimbursementTypeId: uuid('reimbursement_type_id').references(
-      () => reimbursementTypes.id,
-      { onDelete: 'restrict' },
-    ),
+    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' }),
     rrule: text('rrule'),
     originalStartsAt: timestamp('original_starts_at').notNull(),
     durationMinutes: integer('duration_minutes').notNull(),

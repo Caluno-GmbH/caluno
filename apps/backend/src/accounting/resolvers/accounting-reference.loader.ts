@@ -1,5 +1,6 @@
 import { Injectable, Scope } from '@nestjs/common';
 import DataLoader from 'dataloader';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { AuthService } from '../../auth/auth.service';
 import { PermissionMapper } from '../../auth/mappers/permission.mapper';
 import type { Permission } from '../../auth/models/permission.model';
@@ -25,7 +26,7 @@ export class AccountingReferenceLoader {
   ) {}
 
   public readonly reimbursementTypeById = new DataLoader<
-    string,
+    ReimbursementTypeKey,
     ReimbursementType
   >((ids) =>
     settleEach(ids, async (id) =>

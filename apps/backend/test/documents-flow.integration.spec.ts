@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../src/accounting/enums';
 import 'reflect-metadata';
 import {
   beforeAll,
@@ -345,14 +346,14 @@ const setupFlowOrg = async (db: Database) => {
 
   await createTwoStepTemplate(db, {
     organizationId: organization.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeId: reimbursementType.key,
     kind: DocumentKind.CONTRACT,
     requiredPermissionId: permission.id,
     signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
   });
   await createTwoStepTemplate(db, {
     organizationId: organization.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeId: reimbursementType.key,
     kind: DocumentKind.INVOICE,
     requiredPermissionId: permission.id,
     signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -363,7 +364,7 @@ const setupFlowOrg = async (db: Database) => {
     organizationUnitId: root.id,
     adminId: admin.id,
     volunteerId: volunteer.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeId: reimbursementType.key,
   };
 };
 
@@ -418,7 +419,7 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
     organizationId: organization.id,
     organizationUnitId: root.id,
     adminId: admin.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeId: reimbursementType.key,
     permissionId: permission.id,
   };
 };
@@ -458,7 +459,7 @@ const createCompletedTimeEntry = async (
   args: {
     organizationUnitId: string;
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     startedAt?: Date;
     endedAt?: Date;
   },

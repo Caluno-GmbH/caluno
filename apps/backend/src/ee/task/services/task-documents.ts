@@ -1,4 +1,4 @@
-import { DocumentKind } from '../../../accounting/enums';
+import { DocumentKind, ReimbursementTypeKey } from '../../../accounting/enums';
 import { PermissionKey } from '../../../auth/enums';
 import { TaskType } from '../enums/task-type.enum';
 import type { Task } from '../models/task.model';
@@ -7,7 +7,7 @@ export interface ContractTaskRow {
   id: string;
   volunteerId: string;
   volunteerName: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   reimbursementTypeKey: string;
   periodStart: Date;
   periodEnd: Date;
@@ -35,7 +35,7 @@ export interface InvoiceTaskRow extends ContractTaskRow {
 export interface TimesheetCreateRow {
   volunteerId: string;
   volunteerName: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   reimbursementTypeKey: string;
   periodStart: Date;
   periodEnd: Date;
@@ -49,7 +49,7 @@ export interface TimesheetCreateRow {
 export interface PaidShiftSignupRow {
   volunteerId: string;
   volunteerName: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   reimbursementTypeKey: string;
   periodStart: Date;
   periodEnd: Date;

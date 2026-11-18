@@ -14,6 +14,7 @@ import {
   BundleDeliveryIssue,
   BundleDeliveryMethod,
   InvoiceStatus,
+  ReimbursementTypeKey,
 } from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
 import { billingYearOf } from '../utils/billing-period';
@@ -30,7 +31,7 @@ interface BuiltBundle {
 
 export interface BundleScope {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   organizationUnitId: string;
 }
 
@@ -77,7 +78,7 @@ export class BundleDownloadService {
     organizationId: string,
     organizationUnitId: string,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     userId: string,
     invoiceIds?: string[],
   ): Promise<BuiltBundle> {
@@ -277,7 +278,7 @@ export class BundleDownloadService {
     }[],
     scope: {
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeId: ReimbursementTypeKey;
       organizationUnitId: string;
     },
   ): Promise<Map<string, ContractEntity[]>> {

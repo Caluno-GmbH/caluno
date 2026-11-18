@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { startOfAppDay } from '../../shift/utils/app-time';
-import { ContractStatus } from '../enums';
+import { ContractStatus, ReimbursementTypeKey } from '../enums';
 import {
   ContractCover,
   type CoverageContract,
@@ -13,7 +13,7 @@ import {
 } from './contract-coverage';
 
 const VOLUNTEER = 'volunteer-1';
-const TYPE = 'type-1';
+const TYPE = ReimbursementTypeKey.EHRENAMT;
 const UNIT = 'unit-1';
 
 let sequence = 0;
@@ -247,7 +247,7 @@ describe('matchCoveringContracts', () => {
   it('ignores contracts for another volunteer, type or unit', () => {
     const others = [
       contract({ volunteerId: 'volunteer-2' }),
-      contract({ reimbursementTypeId: 'type-2' }),
+      contract({ reimbursementTypeId: ReimbursementTypeKey.UEBUNGSLEITER }),
       contract({ organizationUnitId: 'unit-2' }),
     ];
     const result = matchCoveringContracts(

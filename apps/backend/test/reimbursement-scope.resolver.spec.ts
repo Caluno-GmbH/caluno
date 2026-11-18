@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import {
   DocumentKind,
   InvoiceStatus,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
 import { ReimbursementTypeMapper } from '../src/accounting/mappers';
@@ -192,7 +193,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       await expect(
         mutationResolver.setReimbursementRate(
-          reimbursementType.id,
+          reimbursementType.key,
           2_000,
           branchB.id,
           contextFor(branchA.id),
@@ -209,7 +210,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       await expect(
         mutationResolver.setReimbursementRate(
-          reimbursementType.id,
+          reimbursementType.key,
           2_000,
           root.id,
           contextFor(branchA.id),
@@ -225,7 +226,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const { branchA } = await setupOrgTree();
 
       const rate = await mutationResolver.setReimbursementRate(
-        reimbursementType.id,
+        reimbursementType.key,
         2_000,
         branchA.id,
         contextFor(branchA.id),
@@ -241,7 +242,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const { branchA, branchASub } = await setupOrgTree();
 
       const rate = await mutationResolver.setReimbursementRate(
-        reimbursementType.id,
+        reimbursementType.key,
         2_000,
         branchASub.id,
         contextFor(branchA.id),
@@ -319,7 +320,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await expect(
         mutationResolver.recordBundleDownload(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           undefined,
           contextFor(branchA.id),
           sessionFor(caller.id),
@@ -338,7 +339,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       const result = await mutationResolver.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         undefined,
         contextFor(branchA.id),
         sessionFor(caller.id),
@@ -358,7 +359,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       const result = await queryResolver.bundleDownloadStatus(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         contextFor(branchA.id),
       );
 
@@ -376,7 +377,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await expect(
         queryResolver.bundleDownloadStatus(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           contextFor(branchA.id),
         ),
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
@@ -392,7 +393,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const caller = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -401,7 +402,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         .values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           periodStart: new Date('2026-03-01T00:00:00.000Z'),
           periodEnd: new Date('2026-03-01T00:00:00.000Z'),
           totalAmountCents: 10_000,
@@ -416,7 +417,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       await mutationResolver.recordBundleDownload(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         [invoice.id],
         contextFor(branchA.id),
         sessionFor(caller.id),
@@ -444,7 +445,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await expect(
         mutationResolver.setManualBaseline(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           10_000,
           contextFor(branchA.id),
@@ -462,7 +463,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       const result = await mutationResolver.setManualBaseline(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         10_000,
         contextFor(branchA.id),
@@ -484,7 +485,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await expect(
         mutationResolver.setManualBaseline(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           -500,
           contextFor(branchA.id),
@@ -501,7 +502,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       const result = await queryResolver.manualBaseline(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         contextFor(branchA.id),
       );
@@ -518,7 +519,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await expect(
         queryResolver.manualBaseline(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           contextFor(branchA.id),
         ),
@@ -529,7 +530,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
   describe('yearlyUsage', () => {
     const createInvoiceTemplate = (
       organizationId: string,
-      reimbursementTypeId: string,
+      reimbursementTypeId: ReimbursementTypeKey,
     ) =>
       createDocumentTemplate(db, {
         organizationId,
@@ -541,7 +542,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
     const insertInvoice = async (input: {
       documentTemplateId: string;
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeId: ReimbursementTypeKey;
       totalAmountCents: number;
       invoiceStatus: InvoiceStatus;
       scopeUnitId: string;
@@ -575,7 +576,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await expect(
         queryResolver.yearlyUsage(
           volunteer.id,
-          reimbursementType.id,
+          reimbursementType.key,
           2026,
           undefined,
           undefined,
@@ -592,7 +593,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const caller = await createUser(db);
       await mutationResolver.setManualBaseline(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         5_000,
         contextFor(branchA.id),
@@ -600,12 +601,12 @@ describe('reimbursement-rate resolver unit scoping', () => {
       );
       const template = await createInvoiceTemplate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
       );
       await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
         scopeUnitId: branchA.id,
@@ -613,7 +614,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       const usage = await queryResolver.yearlyUsage(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         undefined,
         undefined,
@@ -631,12 +632,12 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await addMembership(db, volunteer.id, branchA.id);
       const template = await createInvoiceTemplate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
       );
       await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
         scopeUnitId: branchA.id,
@@ -644,7 +645,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const inProgress = await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         totalAmountCents: 4_000,
         invoiceStatus: InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
         scopeUnitId: branchA.id,
@@ -652,7 +653,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
 
       const usage = await queryResolver.yearlyUsage(
         volunteer.id,
-        reimbursementType.id,
+        reimbursementType.key,
         2026,
         undefined,
         inProgress.id,

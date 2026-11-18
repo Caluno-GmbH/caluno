@@ -11,6 +11,7 @@ import { OrganizationUnitService } from '../../organization/organization-unit.se
 import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
+import { ReimbursementTypeKey } from '../enums';
 import { ReimbursementRateMapper, ReimbursementTypeMapper } from '../mappers';
 import { BundleDownloadStatus } from '../models/bundle-download-status.model';
 import { ManualBaseline } from '../models/manual-baseline.model';
@@ -39,7 +40,7 @@ export class ReimbursementMutationResolver {
   @Mutation(() => ReimbursementRate)
   async setReimbursementRate(
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('hourlyRateCents', { type: () => Int }) hourlyRateCents: number,
     @Args('organizationUnitId', { type: () => ID, nullable: true })
     organizationUnitId: string | null | undefined,
@@ -74,7 +75,7 @@ export class ReimbursementMutationResolver {
   async recordBundleDownload(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('invoiceIds', { type: () => [ID], nullable: true })
     invoiceIds: string[] | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
@@ -120,7 +121,7 @@ export class ReimbursementMutationResolver {
   async setManualBaseline(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     @Args('amountCents', { type: () => Int }) amountCents: number,
     @Context() context: AuthenticatedGraphQLContext,

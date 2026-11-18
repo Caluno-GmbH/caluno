@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../src/accounting/enums';
 import 'reflect-metadata';
 import {
   afterEach,
@@ -167,7 +168,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
   let db: Database;
   let testUserId: string;
 
-  let typeId: string;
+  let typeId: ReimbursementTypeKey;
   let rootId: string;
   let unitAId: string;
   let unitBId: string;
@@ -292,7 +293,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
       roleId: ownerRole.id,
     });
 
-    typeId = (await createReimbursementType(db)).id;
+    typeId = (await createReimbursementType(db)).key;
   });
 
   afterEach(async () => {

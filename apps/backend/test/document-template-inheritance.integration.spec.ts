@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../src/accounting/enums';
 import 'reflect-metadata';
 import {
   afterEach,
@@ -76,7 +77,7 @@ interface ActiveTemplateData {
 interface SetupStatusData {
   accountingSetupStatus: {
     slots: {
-      reimbursementTypeId: string;
+      reimbursementTypeId: ReimbursementTypeKey;
       hasContractTemplate: boolean;
       hasInvoiceTemplate: boolean;
       ready: boolean;
@@ -91,7 +92,7 @@ describe('document templates resolve through the unit ancestor chain', () => {
   let testUserId: string;
 
   let organizationId: string;
-  let typeId: string;
+  let typeId: ReimbursementTypeKey;
   let rootId: string;
   let childId: string;
   let grandchildId: string;
@@ -205,7 +206,7 @@ describe('document templates resolve through the unit ancestor chain', () => {
       roleId: role.id,
     });
 
-    typeId = (await createReimbursementType(db)).id;
+    typeId = (await createReimbursementType(db)).key;
   });
 
   afterEach(async () => {

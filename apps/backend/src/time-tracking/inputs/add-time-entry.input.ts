@@ -1,4 +1,5 @@
 import { Field, InputType } from '@nestjs/graphql';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 
 @InputType()
 export class AddTimeEntryInput {
@@ -21,5 +22,5 @@ export class AddTimeEntryInput {
   // type. Left null, the entry is unpaid — the same as any entry created
   // before this field existed (see time-entry.schema.ts's default/check).
   @Field(() => String, { nullable: true })
-  reimbursementTypeId?: string | null;
+  reimbursementTypeId?: ReimbursementTypeKey | null;
 }

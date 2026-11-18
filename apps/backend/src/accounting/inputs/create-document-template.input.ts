@@ -1,6 +1,6 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-scalars';
-import { DocumentKind, RenewalCadence } from '../enums';
+import { DocumentKind, ReimbursementTypeKey, RenewalCadence } from '../enums';
 import { CreateTemplateSigneeInput } from './create-template-signee.input';
 
 @InputType()
@@ -11,7 +11,7 @@ export class CreateDocumentTemplateInput {
   organizationUnitId?: string | null;
 
   @Field(() => ID)
-  reimbursementTypeId!: string;
+  reimbursementTypeId!: ReimbursementTypeKey;
 
   @Field(() => DocumentKind)
   kind!: DocumentKind;

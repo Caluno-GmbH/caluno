@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import { startOfAppDay } from '../../shift/utils/app-time';
+import { ReimbursementTypeKey } from '../enums';
 import {
   groupTimesheetCandidates,
   type TimesheetCandidateEntry,
 } from './timesheet-groups';
 
 const VOLUNTEER = 'volunteer-1';
-const TYPE = 'type-1';
+const TYPE = ReimbursementTypeKey.EHRENAMT;
 
 let sequence = 0;
 function entry(
@@ -62,7 +63,9 @@ describe('groupTimesheetCandidates', () => {
       [
         entry(july(3), 1),
         entry(july(4), 1, { volunteerId: 'volunteer-2' }),
-        entry(july(5), 1, { reimbursementTypeId: 'type-2' }),
+        entry(july(5), 1, {
+          reimbursementTypeId: ReimbursementTypeKey.UEBUNGSLEITER,
+        }),
       ],
       new Set(),
       new Set(),

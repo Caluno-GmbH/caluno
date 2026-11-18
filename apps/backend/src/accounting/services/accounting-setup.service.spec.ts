@@ -5,12 +5,18 @@ import { AccountingSetupService } from './accounting-setup.service';
 function makeService(args: {
   missingOrgFields?: string[];
   orgProfile?: Record<string, unknown>;
-  templates?: { reimbursementTypeId: string; kind: DocumentKind }[];
+  templates?: {
+    reimbursementTypeId: ReimbursementTypeKey;
+    kind: DocumentKind;
+  }[];
   types?: { id: string; key: ReimbursementTypeKey }[];
 }) {
   const types = args.types ?? [
-    { id: 'type-ehrenamt', key: ReimbursementTypeKey.EHRENAMT },
-    { id: 'type-uebungsleiter', key: ReimbursementTypeKey.UEBUNGSLEITER },
+    { id: ReimbursementTypeKey.EHRENAMT, key: ReimbursementTypeKey.EHRENAMT },
+    {
+      id: ReimbursementTypeKey.UEBUNGSLEITER,
+      key: ReimbursementTypeKey.UEBUNGSLEITER,
+    },
   ];
   const db = {
     query: {
@@ -64,13 +70,16 @@ describe('AccountingSetupService.getSetupStatus', () => {
     // alone is not enough to create anything.
     const service = makeService({
       templates: [
-        { reimbursementTypeId: 'type-ehrenamt', kind: DocumentKind.INVOICE },
+        {
+          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          kind: DocumentKind.INVOICE,
+        },
       ],
     });
 
     const status = await service.getSetupStatus('org-1', 'unit-1');
     const ehrenamt = status.slots.find(
-      (s) => s.reimbursementTypeId === 'type-ehrenamt',
+      (s) => s.reimbursementTypeId === ReimbursementTypeKey.EHRENAMT,
     );
 
     expect(ehrenamt?.hasInvoiceTemplate).toBe(true);
@@ -82,20 +91,28 @@ describe('AccountingSetupService.getSetupStatus', () => {
   it('can create documents once any one slot has both templates', async () => {
     const service = makeService({
       templates: [
-        { reimbursementTypeId: 'type-ehrenamt', kind: DocumentKind.CONTRACT },
-        { reimbursementTypeId: 'type-ehrenamt', kind: DocumentKind.INVOICE },
+        {
+          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          kind: DocumentKind.CONTRACT,
+        },
+        {
+          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          kind: DocumentKind.INVOICE,
+        },
       ],
     });
 
     const status = await service.getSetupStatus('org-1', 'unit-1');
 
     expect(
-      status.slots.find((s) => s.reimbursementTypeId === 'type-ehrenamt')
-        ?.ready,
+      status.slots.find(
+        (s) => s.reimbursementTypeId === ReimbursementTypeKey.EHRENAMT,
+      )?.ready,
     ).toBe(true);
     expect(
-      status.slots.find((s) => s.reimbursementTypeId === 'type-uebungsleiter')
-        ?.ready,
+      status.slots.find(
+        (s) => s.reimbursementTypeId === ReimbursementTypeKey.UEBUNGSLEITER,
+      )?.ready,
     ).toBe(false);
     expect(status.canCreateDocuments).toBe(true);
   });

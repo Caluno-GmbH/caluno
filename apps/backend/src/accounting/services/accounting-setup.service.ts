@@ -7,7 +7,7 @@ import { DocumentProfileRequirementService } from './document-profile-requiremen
 import { DocumentTemplateService } from './document-template.service';
 
 export interface AccountingTemplateSlotStatus {
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   reimbursementTypeKey: ReimbursementTypeKey;
   hasContractTemplate: boolean;
   hasInvoiceTemplate: boolean;
@@ -76,7 +76,7 @@ export class AccountingSetupService {
 
     const slots = types.map((type) => {
       const forType = templates.filter(
-        (template) => template.reimbursementTypeId === type.id,
+        (template) => template.reimbursementTypeId === type.key,
       );
       const hasContractTemplate = forType.some(
         (template) => template.kind === DocumentKind.CONTRACT,
@@ -85,7 +85,7 @@ export class AccountingSetupService {
         (template) => template.kind === DocumentKind.INVOICE,
       );
       return {
-        reimbursementTypeId: type.id,
+        reimbursementTypeId: type.key,
         reimbursementTypeKey: type.key,
         hasContractTemplate,
         hasInvoiceTemplate,

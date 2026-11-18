@@ -10,7 +10,11 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { reimbursementTypes } from '../../accounting/schemas/reimbursement-type.schema';
+import { ReimbursementTypeKey } from '../../accounting/enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from '../../accounting/schemas/reimbursement-type.schema';
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
@@ -43,10 +47,9 @@ export const timeEntries = snakeCase.table(
     closureKind:
       timeEntryClosureKindEnum('closure_kind').$type<TimeEntryClosureKind>(),
     notes: text('notes'),
-    reimbursementTypeId: uuid('reimbursement_type_id').references(
-      () => reimbursementTypes.id,
-      { onDelete: 'restrict' },
-    ),
+    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' }),
     isPaid: boolean('is_paid').notNull().default(false),
     createdById: text('created_by_id').references(() => users.id, {
       onDelete: 'set null',

@@ -153,7 +153,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       startsAt: new Date(Date.now() - 3600_000),
       endsAt: new Date(Date.now() - 1800_000),
       visibility: ShiftVisibility.ALL_MEMBERS,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeId: reimbursementType.key,
     } as never);
 
     const [instance] = await db
@@ -186,7 +186,7 @@ describe('Time entry -> eligible timesheet flow', () => {
 
     const eligible = await invoiceService.findEligibleTimeEntries(
       volunteerId,
-      reimbursementType.id,
+      reimbursementType.key,
       organizationUnitId,
     );
     expect(eligible.map((e) => e.id)).toContain(entry.id);
@@ -197,7 +197,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       needingTimesheets.some(
         (row) =>
           row.volunteerId === volunteerId &&
-          row.reimbursementTypeId === reimbursementType.id,
+          row.reimbursementTypeId === reimbursementType.key,
       ),
     ).toBe(true);
   });

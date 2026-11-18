@@ -62,13 +62,13 @@ export class ShiftLoader {
   // Keyed by reimbursementTypeId (not shiftId) — many shifts can share the
   // same Pauschalentyp, so DataLoader dedups the repeated ids.
   public readonly reimbursementTypeKeyById = new DataLoader<
-    string,
+    ReimbursementTypeKey,
     ReimbursementTypeKey
   >(async (reimbursementTypeIds) => {
     const rows = await this.shiftService.findReimbursementTypeKeysByIds([
       ...reimbursementTypeIds,
     ]);
-    const byId = new Map(rows.map((row) => [row.id, row.key]));
+    const byId = new Map(rows.map((row) => [row.key, row.key]));
 
     return reimbursementTypeIds.map(
       (id) =>

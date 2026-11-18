@@ -96,7 +96,7 @@ export async function seedDemoAccounting(
       }
       const template = await ensureTemplate(db, {
         organizationId: org.organizationId,
-        reimbursementTypeId: type.id,
+        reimbursementTypeId: type.key,
         kind,
         body,
         editorId: coordinatorId,
@@ -166,7 +166,7 @@ export async function seedDemoAccounting(
     db,
     unitId,
     coordinatorId,
-    reimbursementTypeId: ehrenamt.id,
+    reimbursementTypeId: ehrenamt.key,
     hourlyRateCents: ehrenamt.platformDefaultRateCents,
     contractTemplate,
     invoiceTemplate,
@@ -216,7 +216,7 @@ export async function seedDemoAccounting(
       .values({
         organizationId: org.organizationId,
         volunteerId: overLimit.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeId: ehrenamt.key,
         year: timesheetMonth.year,
         amountCents: ehrenamt.yearlyLimitCents,
         updatedByUserId: coordinatorId,
@@ -269,7 +269,7 @@ export async function seedDemoAccounting(
         id: deliveryId,
         organizationUnitId: unitId,
         volunteerId: member.id,
-        reimbursementTypeId: ehrenamt.id,
+        reimbursementTypeId: ehrenamt.key,
         method: delivery.method,
         invoiceIds: [invoiceId],
         recipientEmail: isEmail ? ACCOUNTING_EMAIL : null,
@@ -290,7 +290,7 @@ export async function seedDemoAccounting(
           .insert(schema.reimbursementBundleDownloads)
           .values({
             volunteerId: member.id,
-            reimbursementTypeId: ehrenamt.id,
+            reimbursementTypeId: ehrenamt.key,
             downloadedAt: occurredAt,
             downloadedByUserId: coordinatorId,
           })
@@ -346,7 +346,7 @@ async function ensureTemplate(
   db: Database,
   args: {
     organizationId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     kind: DocumentKind;
     body: typeof schema.documentTemplates.$inferInsert.body;
     editorId: string;
@@ -400,7 +400,7 @@ interface DocumentContext {
   db: Database;
   unitId: string;
   coordinatorId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   hourlyRateCents: number;
   contractTemplate: typeof schema.documentTemplates.$inferSelect;
   invoiceTemplate: typeof schema.documentTemplates.$inferSelect;

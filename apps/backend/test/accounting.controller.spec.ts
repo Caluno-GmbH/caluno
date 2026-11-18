@@ -7,6 +7,7 @@ import {
 import type { UserSession } from '@thallesp/nestjs-better-auth';
 import { AccountingController } from '../src/accounting/accounting.controller';
 import type { DownloadBundleQueryDto } from '../src/accounting/dto/download-bundle-query.dto';
+import { ReimbursementTypeKey } from '../src/accounting/enums';
 import type { AccountingOrgAccessService } from '../src/accounting/services';
 import type { BundleDownloadService } from '../src/accounting/services/bundle-download.service';
 import {
@@ -17,7 +18,7 @@ import {
 const session = { user: { id: 'user-1' } } as UserSession;
 const query = {
   volunteerId: crypto.randomUUID(),
-  reimbursementTypeId: crypto.randomUUID(),
+  reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
 } as DownloadBundleQueryDto;
 
 const controllerWith = (access: () => Promise<string>) =>

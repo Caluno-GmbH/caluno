@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { DocumentKind } from '../../../accounting/enums';
+import { DocumentKind, ReimbursementTypeKey } from '../../../accounting/enums';
 import { billingYearBounds } from '../../../accounting/utils/billing-period';
 import { TaskType } from '../enums/task-type.enum';
 import {
@@ -26,7 +26,7 @@ function contract(overrides: Partial<ContractTaskRow> = {}): ContractTaskRow {
     id: 'contract-1',
     volunteerId: 'volunteer-1',
     volunteerName: 'Ada Lovelace',
-    reimbursementTypeId: 'rt-1',
+    reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
     reimbursementTypeKey: 'EHRENAMT',
     periodStart: start,
     periodEnd: end,
@@ -57,7 +57,7 @@ function timesheet(
   return {
     volunteerId: 'volunteer-1',
     volunteerName: 'Ada Lovelace',
-    reimbursementTypeId: 'rt-1',
+    reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
     reimbursementTypeKey: 'EHRENAMT',
     periodStart: start,
     periodEnd: end,
@@ -242,7 +242,7 @@ describe('document tasks', () => {
         {
           volunteerId: 'volunteer-1',
           volunteerName: 'Ada Lovelace',
-          reimbursementTypeId: 'rt-1',
+          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
           reimbursementTypeKey: 'EHRENAMT',
           periodStart: signupStart,
           periodEnd: end,
@@ -270,7 +270,9 @@ describe('document tasks', () => {
       ORG,
       {
         yearPeriod,
-        pairsWithOpenContract: new Set(['volunteer-1|rt-1']),
+        pairsWithOpenContract: new Set([
+          `volunteer-1|${ReimbursementTypeKey.EHRENAMT}`,
+        ]),
       },
     );
 

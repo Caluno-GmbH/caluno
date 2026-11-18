@@ -6,6 +6,7 @@
 import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { ReimbursementTypeKey } from '../accounting/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../shift/enums';
 import { expandShift } from '../shift/utils/rrule-expander';
 import { formatUserName } from '../user/user-name';
@@ -53,7 +54,7 @@ export type ShiftFixture = {
   location?: string;
   imageUrl?: string;
   joinRequiresApproval?: boolean;
-  reimbursementTypeId?: string;
+  reimbursementTypeId?: ReimbursementTypeKey;
   /** Invites inserted with this status instead of JOINED (does not count toward capacity). */
   pendingInviteUserIds?: string[];
   /**

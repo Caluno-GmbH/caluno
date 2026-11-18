@@ -1586,7 +1586,7 @@ export class ShiftService {
     startsAt: Date,
     endsAt: Date,
     eventId: string | null | undefined,
-    reimbursementTypeId: string | null | undefined,
+    reimbursementTypeId: ReimbursementTypeKey | null | undefined,
     organizationUnitId: string,
   ): Promise<void> {
     if (eventId) {
@@ -1622,7 +1622,7 @@ export class ShiftService {
       startsAt: Date;
       durationMinutes: number;
       eventId?: string | null;
-      reimbursementTypeId?: string | null;
+      reimbursementTypeId?: ReimbursementTypeKey | null;
       invitedMemberIds?: string[] | null;
       requiredFormIds?: string[] | null;
     },
@@ -2818,7 +2818,7 @@ export class ShiftService {
   private async snapshotPastInstanceTypes(
     tx: Database,
     shiftId: string,
-    previousReimbursementTypeId: string | null,
+    previousReimbursementTypeId: ReimbursementTypeKey | null,
   ): Promise<void> {
     if (!previousReimbursementTypeId) return;
 
@@ -3667,14 +3667,14 @@ export class ShiftService {
    * rate/limit amounts, so this intentionally returns just the key.
    */
   async findReimbursementTypeKeysByIds(
-    ids: string[],
-  ): Promise<{ id: string; key: ReimbursementTypeKey }[]> {
+    ids: ReimbursementTypeKey[],
+  ): Promise<{ key: ReimbursementTypeKey }[]> {
     if (ids.length === 0) {
       return [];
     }
     return this.db.query.reimbursementTypes.findMany({
-      where: { id: { in: ids } },
-      columns: { id: true, key: true },
+      where: { key: { in: ids } },
+      columns: { key: true },
     });
   }
 
@@ -3684,7 +3684,7 @@ export class ShiftService {
    * indicator entirely.
    */
   private async resolveReimbursementTypeKey(
-    reimbursementTypeId: string | null | undefined,
+    reimbursementTypeId: ReimbursementTypeKey | null | undefined,
   ): Promise<ReimbursementTypeKey | null> {
     if (!reimbursementTypeId) {
       return null;

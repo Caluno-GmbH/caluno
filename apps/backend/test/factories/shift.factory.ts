@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../../src/accounting/enums';
 import type { Database } from '../../src/database/database.module';
 import * as schema from '../../src/database/schema';
 import { ShiftVisibility } from '../../src/shift/enums';
@@ -22,7 +23,7 @@ export type CreateShiftOptions = {
   maxVolunteers?: number | null;
   minVolunteers?: number | null;
   eventId?: string | null;
-  reimbursementTypeId?: string | null;
+  reimbursementTypeId?: ReimbursementTypeKey | null;
 };
 
 /**

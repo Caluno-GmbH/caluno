@@ -14,7 +14,7 @@ import {
   POSTHOG_SURFACE,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
-import { DocumentKind, SigneeType } from '../enums';
+import { DocumentKind, ReimbursementTypeKey, SigneeType } from '../enums';
 import type { CreateDocumentTemplateInput } from '../inputs/create-document-template.input';
 import type { CreateTemplateSigneeInput } from '../inputs/create-template-signee.input';
 import type { UpdateDocumentTemplateInput } from '../inputs/update-document-template.input';
@@ -250,7 +250,7 @@ export class DocumentTemplateService {
    */
   async findActiveTemplate(
     organizationId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     kind: DocumentKind,
     organizationUnitId?: string | null,
   ): Promise<DocumentTemplateEntity> {
@@ -278,7 +278,7 @@ export class DocumentTemplateService {
     organizationId: string,
     organizationUnitId: string | null | undefined,
     filter: {
-      reimbursementTypeId?: string;
+      reimbursementTypeId?: ReimbursementTypeKey;
       kind?: DocumentKind;
       onlyEdited?: boolean;
     } = {},

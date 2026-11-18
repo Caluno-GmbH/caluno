@@ -65,7 +65,7 @@ describe('DocumentTemplateService', () => {
       const template = await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -91,7 +91,7 @@ describe('DocumentTemplateService', () => {
         service.createDocumentTemplate(
           organization.id,
           {
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeId: reimbursementType.key,
             kind: DocumentKind.CONTRACT,
             body: { header: {}, blocks: [], footer: {} },
             signees: [{ order: 0, signeeType: SigneeType.PERMISSION_HOLDER }],
@@ -113,7 +113,7 @@ describe('DocumentTemplateService', () => {
         service.createDocumentTemplate(
           organization.id,
           {
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeId: reimbursementType.key,
             kind: DocumentKind.CONTRACT,
             body: { header: {}, blocks: [], footer: {} },
             signees: [],
@@ -131,7 +131,7 @@ describe('DocumentTemplateService', () => {
       );
       const editor = await createUser(db);
       const input = {
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.CONTRACT,
         body: { header: {}, blocks: [], footer: {} },
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -157,7 +157,7 @@ describe('DocumentTemplateService', () => {
       });
       const editor = await createUser(db);
       const input = {
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.CONTRACT,
         body: { header: {}, blocks: [], footer: {} },
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -192,7 +192,7 @@ describe('DocumentTemplateService', () => {
       const editor = await createUser(db);
       const input = {
         organizationUnitId: unit.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.CONTRACT,
         body: { header: {}, blocks: [], footer: {} },
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -228,7 +228,7 @@ describe('DocumentTemplateService', () => {
           organization.id,
           {
             organizationUnitId: foreignUnit.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeId: reimbursementType.key,
             kind: DocumentKind.CONTRACT,
             body: { header: {}, blocks: [], footer: {} },
             signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -268,7 +268,7 @@ describe('DocumentTemplateService', () => {
           organization.id,
           {
             organizationUnitId: unit.id,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeId: reimbursementType.key,
             kind: DocumentKind.CONTRACT,
             body: {
               header: {
@@ -332,7 +332,7 @@ describe('DocumentTemplateService', () => {
           {
             // organizationUnitId omitted on purpose: this is the org-wide
             // default, the case that previously skipped the check.
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeId: reimbursementType.key,
             kind: DocumentKind.CONTRACT,
             body,
             signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -354,7 +354,7 @@ describe('DocumentTemplateService', () => {
       const template = await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -388,7 +388,7 @@ describe('DocumentTemplateService', () => {
       const template = await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -446,7 +446,7 @@ describe('DocumentTemplateService', () => {
       const template = await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: { title: 'v1' }, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -459,7 +459,7 @@ describe('DocumentTemplateService', () => {
         .values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           organizationUnitId: root.id,
           contractStatus: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
           periodStart: new Date(),
@@ -492,7 +492,7 @@ describe('DocumentTemplateService', () => {
       );
       const editor = await createUser(db);
       const input = {
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         body: { header: {}, blocks: [], footer: {} },
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -533,7 +533,7 @@ describe('DocumentTemplateService', () => {
       await expect(
         service.findActiveTemplate(
           organization.id,
-          reimbursementType.id,
+          reimbursementType.key,
           DocumentKind.CONTRACT,
         ),
       ).rejects.toBeInstanceOf(NotFoundGraphQLError);
@@ -554,7 +554,7 @@ describe('DocumentTemplateService', () => {
       const orgDefault = await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -564,7 +564,7 @@ describe('DocumentTemplateService', () => {
 
       const resolved = await service.findActiveTemplate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         DocumentKind.CONTRACT,
         unit.id,
       );
@@ -587,7 +587,7 @@ describe('DocumentTemplateService', () => {
       await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -598,7 +598,7 @@ describe('DocumentTemplateService', () => {
         organization.id,
         {
           organizationUnitId: unit.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -608,7 +608,7 @@ describe('DocumentTemplateService', () => {
 
       const resolved = await service.findActiveTemplate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         DocumentKind.CONTRACT,
         unit.id,
       );
@@ -643,7 +643,7 @@ describe('DocumentTemplateService', () => {
       const orgDefault = await service.createDocumentTemplate(
         organization.id,
         {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -654,7 +654,7 @@ describe('DocumentTemplateService', () => {
         organization.id,
         {
           organizationUnitId: unitA.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -664,7 +664,7 @@ describe('DocumentTemplateService', () => {
 
       const resolved = await service.findActiveTemplate(
         organization.id,
-        reimbursementType.id,
+        reimbursementType.key,
         DocumentKind.CONTRACT,
         unitB.id,
       );
@@ -685,7 +685,7 @@ describe('DocumentTemplateService', () => {
         .insert(schema.documentTemplates)
         .values({
           organizationId: organization.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           body: { header: {}, blocks: [], footer: {} },
         })

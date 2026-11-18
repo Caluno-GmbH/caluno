@@ -4,7 +4,7 @@ import { ReimbursementTypeKey } from '../enums';
 @ObjectType()
 export class AccountingTemplateSlotStatus {
   @Field(() => ID)
-  reimbursementTypeId!: string;
+  reimbursementTypeId!: ReimbursementTypeKey;
 
   @Field(() => ReimbursementTypeKey)
   reimbursementTypeKey!: ReimbursementTypeKey;

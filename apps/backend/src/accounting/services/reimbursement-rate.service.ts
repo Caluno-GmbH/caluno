@@ -21,7 +21,11 @@ import type {
   RateProvenance,
   YearlyUsage,
 } from '../accounting.types';
-import { InvoiceStatus, RateProvenanceKind } from '../enums';
+import {
+  InvoiceStatus,
+  RateProvenanceKind,
+  ReimbursementTypeKey,
+} from '../enums';
 import type { ReimbursementBundleDownloadEntity } from '../schemas/reimbursement-bundle-download.schema';
 import type { ManualBaselineEntity } from '../schemas/reimbursement-manual-baseline.schema';
 import type { ReimbursementRateEntity } from '../schemas/reimbursement-rate.schema';
@@ -43,7 +47,7 @@ export interface VolunteerYearlyUsageResult {
 /** Composite key for the unit-and-type override lookup map below. */
 const overrideKey = (
   organizationUnitId: string | null,
-  reimbursementTypeId: string,
+  reimbursementTypeId: ReimbursementTypeKey,
 ): string => `${organizationUnitId ?? 'org'}:${reimbursementTypeId}`;
 
 @Injectable()
@@ -112,7 +116,7 @@ export class ReimbursementRateService {
     ) => {
       for (const unitId of links) {
         const override = overrideByKey.get(
-          overrideKey(unitId, reimbursementType.id),
+          overrideKey(unitId, reimbursementType.key),
         );
         if (override) {
           return {
@@ -196,7 +200,7 @@ export class ReimbursementRateService {
    */
   async setReimbursementRate(
     organizationId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     hourlyRateCents: number,
     userId: string,
     organizationUnitId?: string,
@@ -271,7 +275,7 @@ export class ReimbursementRateService {
   async getYearlyUsage(
     organizationId: string,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     year: number,
     asOfDate?: Date,
     excludeInvoiceId?: string,
@@ -414,7 +418,7 @@ export class ReimbursementRateService {
       usageByType: types.map((reimbursementType) => {
         const usedCents =
           usedByVolunteerAndType.get(
-            `${volunteer.id}:${reimbursementType.id}`,
+            `${volunteer.id}:${reimbursementType.key}`,
           ) ?? 0;
         const limitCents = reimbursementType.yearlyLimitCents;
         return {
@@ -428,11 +432,15 @@ export class ReimbursementRateService {
   }
 
   async findReimbursementTypeById(
-    id: string,
+    id: ReimbursementTypeKey,
   ): Promise<ReimbursementTypeEntity> {
-    const reimbursementType = await this.db.query.reimbursementTypes.findFirst({
-      where: { id },
-    });
+    // The key is a pg enum: an out-of-range value would raise a DB error
+    // instead of resolving to "not found".
+    const reimbursementType = Object.values(ReimbursementTypeKey).includes(id)
+      ? await this.db.query.reimbursementTypes.findFirst({
+          where: { key: id },
+        })
+      : undefined;
     if (!reimbursementType) {
       throw new NotFoundGraphQLError(
         `Reimbursement type with ID ${id} not found`,
@@ -444,14 +452,14 @@ export class ReimbursementRateService {
   async getEffectiveRateCents(
     organizationId: string,
     organizationUnitId: string | null | undefined,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
   ): Promise<number> {
     const rates = await this.getEffectiveRates(
       organizationId,
       organizationUnitId,
     );
     const match = rates.find(
-      (rate) => rate.reimbursementType.id === reimbursementTypeId,
+      (rate) => rate.reimbursementType.key === reimbursementTypeId,
     );
     if (!match) {
       throw new NotFoundGraphQLError(
@@ -463,7 +471,7 @@ export class ReimbursementRateService {
 
   async getBundleDownloadStatus(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
   ): Promise<ReimbursementBundleDownloadEntity | undefined> {
     return this.db.query.reimbursementBundleDownloads.findFirst({
       where: { volunteerId, reimbursementTypeId },
@@ -472,7 +480,7 @@ export class ReimbursementRateService {
 
   async recordBundleDownload(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     downloadedByUserId: string,
     invoiceIds: string[] = [],
     inTransaction?: Database,
@@ -512,7 +520,7 @@ export class ReimbursementRateService {
   async markInvoicesPaid(
     tx: Database,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     paidByUserId: string | null,
     invoiceIds: string[],
   ): Promise<void> {
@@ -535,7 +543,7 @@ export class ReimbursementRateService {
   async getManualBaseline(
     organizationId: string,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     year: number,
   ): Promise<ManualBaselineEntity | undefined> {
     return this.db.query.reimbursementManualBaselines.findFirst({
@@ -546,7 +554,7 @@ export class ReimbursementRateService {
   async setManualBaseline(
     organizationId: string,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     year: number,
     amountCents: number,
     updatedByUserId: string,

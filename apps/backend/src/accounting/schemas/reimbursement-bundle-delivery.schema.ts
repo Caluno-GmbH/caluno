@@ -15,9 +15,16 @@ import {
   emailOutbox,
 } from '../../notification/schemas/email-outbox.schema';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
-import { BundleDeliveryIssue, BundleDeliveryMethod } from '../enums';
+import {
+  BundleDeliveryIssue,
+  BundleDeliveryMethod,
+  ReimbursementTypeKey,
+} from '../enums';
 import { bundleDeliveryMethodEnum } from './accounting-delivery-setting.schema';
-import { reimbursementTypes } from './reimbursement-type.schema';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from './reimbursement-type.schema';
 
 export const bundleDeliveryIssueEnum = pgEnum(
   'bundle_delivery_issue',
@@ -40,8 +47,9 @@ export const reimbursementBundleDeliveries = snakeCase.table(
     volunteerId: text('volunteer_id')
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
-    reimbursementTypeId: uuid('reimbursement_type_id')
-      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
     method: bundleDeliveryMethodEnum('method')
       .$type<BundleDeliveryMethod>()

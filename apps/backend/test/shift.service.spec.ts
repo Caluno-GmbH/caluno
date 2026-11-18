@@ -397,7 +397,7 @@ describe('ShiftService', () => {
         startsAt,
         endsAt,
         rrule: null,
-        reimbursementTypeId: shiftType.id,
+        reimbursementTypeId: shiftType.key,
       });
       const instance = await createShiftInstance(db, shift.id, {
         actualStartsAt: startsAt,
@@ -410,7 +410,7 @@ describe('ShiftService', () => {
           title: 'Coaching (override)',
           startsAt,
           endsAt,
-          reimbursementTypeId: overrideType.id,
+          reimbursementTypeId: overrideType.key,
         } as never,
         organizationUnitId,
       );
@@ -421,7 +421,7 @@ describe('ShiftService', () => {
         .where(eq(schema.shifts.id, shift.id));
 
       expect(updated.overrideReimbursementTypeId).toBeNull();
-      expect(refreshedShift?.reimbursementTypeId).toBe(overrideType.id);
+      expect(refreshedShift?.reimbursementTypeId).toBe(overrideType.key);
     });
 
     it('rejects a reimbursement type change on a past instance', async () => {
@@ -434,7 +434,7 @@ describe('ShiftService', () => {
         startsAt: new Date(Date.now() + 100000),
         endsAt: new Date(Date.now() + 200000),
         rrule: null,
-        reimbursementTypeId: shiftType.id,
+        reimbursementTypeId: shiftType.key,
       });
       const pastInstance = await createShiftInstance(db, shift.id, {
         actualStartsAt: startsAt,
@@ -448,7 +448,7 @@ describe('ShiftService', () => {
             title: 'late edit',
             startsAt,
             endsAt,
-            reimbursementTypeId: shiftType.id,
+            reimbursementTypeId: shiftType.key,
           } as never,
           organizationUnitId,
         ),
@@ -470,7 +470,7 @@ describe('ShiftService', () => {
         startsAt: new Date(Date.now() + 100000),
         endsAt: new Date(Date.now() + 200000),
         rrule: null,
-        reimbursementTypeId: oldType.id,
+        reimbursementTypeId: oldType.key,
       });
       const pastInstance = await createShiftInstance(db, shift.id, {
         actualStartsAt: daysAgo(2, 8),
@@ -488,7 +488,7 @@ describe('ShiftService', () => {
           shift.originalStartsAt.getTime() + shift.durationMinutes * 60000,
         ),
         visibility: shift.visibility,
-        reimbursementTypeId: newType.id,
+        reimbursementTypeId: newType.key,
       } as never);
 
       const [refreshedPast] = await db
@@ -504,9 +504,9 @@ describe('ShiftService', () => {
         .from(schema.shifts)
         .where(eq(schema.shifts.id, shift.id));
 
-      expect(refreshedPast?.overrideReimbursementTypeId).toBe(oldType.id);
+      expect(refreshedPast?.overrideReimbursementTypeId).toBe(oldType.key);
       expect(refreshedFuture?.overrideReimbursementTypeId).toBeNull();
-      expect(refreshedShift?.reimbursementTypeId).toBe(newType.id);
+      expect(refreshedShift?.reimbursementTypeId).toBe(newType.key);
     });
 
     it('does not overwrite an instance that already has its own override', async () => {
@@ -530,7 +530,7 @@ describe('ShiftService', () => {
         startsAt: new Date(Date.now() + 100000),
         endsAt: new Date(Date.now() + 200000),
         rrule: null,
-        reimbursementTypeId: oldType.id,
+        reimbursementTypeId: oldType.key,
       });
       const pastInstanceWithOwnOverride = await createShiftInstance(
         db,
@@ -538,7 +538,7 @@ describe('ShiftService', () => {
         {
           actualStartsAt: daysAgo(2, 8),
           actualEndsAt: daysAgo(2, 10),
-          overrideReimbursementTypeId: oldType.id,
+          overrideReimbursementTypeId: oldType.key,
         },
       );
 
@@ -549,7 +549,7 @@ describe('ShiftService', () => {
           shift.originalStartsAt.getTime() + shift.durationMinutes * 60000,
         ),
         visibility: shift.visibility,
-        reimbursementTypeId: newType.id,
+        reimbursementTypeId: newType.key,
       } as never);
 
       const [refreshed] = await db
@@ -557,7 +557,7 @@ describe('ShiftService', () => {
         .from(schema.shiftInstances)
         .where(eq(schema.shiftInstances.id, pastInstanceWithOwnOverride.id));
 
-      expect(refreshed?.overrideReimbursementTypeId).toBe(oldType.id);
+      expect(refreshed?.overrideReimbursementTypeId).toBe(oldType.key);
     });
   });
 
@@ -577,7 +577,7 @@ describe('ShiftService', () => {
         startsAt,
         endsAt,
         rrule: DAILY_RRULE,
-        reimbursementTypeId: oldType.id,
+        reimbursementTypeId: oldType.key,
       });
 
       // createShift only expands instances from `startsAt` onward, so add an
@@ -602,7 +602,7 @@ describe('ShiftService', () => {
           startsAt: futureInstance.actualStartsAt,
           endsAt: futureInstance.actualEndsAt,
           visibility: shift.visibility,
-          reimbursementTypeId: newType.id,
+          reimbursementTypeId: newType.key,
         } as never,
         organizationUnitId,
         { applyToAllFuture: true },
@@ -621,8 +621,8 @@ describe('ShiftService', () => {
         .from(schema.shiftInstances)
         .where(eq(schema.shiftInstances.id, futureInstance.id));
 
-      expect(refreshedShift?.reimbursementTypeId).toBe(newType.id);
-      expect(refreshedPast?.overrideReimbursementTypeId).toBe(oldType.id);
+      expect(refreshedShift?.reimbursementTypeId).toBe(newType.key);
+      expect(refreshedPast?.overrideReimbursementTypeId).toBe(oldType.key);
       expect(refreshedFuture?.overrideReimbursementTypeId).toBeNull();
     });
 
@@ -662,7 +662,7 @@ describe('ShiftService', () => {
           startsAt,
           endsAt,
           rrule: DAILY_RRULE,
-          reimbursementTypeId: oldType.id,
+          reimbursementTypeId: oldType.key,
         });
 
         const [editedInstance] = await getInstances(shift.id);
@@ -688,7 +688,7 @@ describe('ShiftService', () => {
             startsAt: editedStartsAt,
             endsAt: editedEndsAt,
             visibility: shift.visibility,
-            reimbursementTypeId: newType.id,
+            reimbursementTypeId: newType.key,
           } as never,
           organizationUnitId,
           { applyToAllFuture: true },
@@ -707,11 +707,11 @@ describe('ShiftService', () => {
           .from(schema.shiftInstances)
           .where(eq(schema.shiftInstances.id, editedInstance.id));
 
-        expect(refreshedShift?.reimbursementTypeId).toBe(newType.id);
+        expect(refreshedShift?.reimbursementTypeId).toBe(newType.key);
         expect(refreshedEarlierToday?.overrideReimbursementTypeId).toBe(
-          oldType.id,
+          oldType.key,
         );
-        expect(refreshedEdited?.overrideReimbursementTypeId).toBe(oldType.id);
+        expect(refreshedEdited?.overrideReimbursementTypeId).toBe(oldType.key);
       } finally {
         setSystemTime();
       }
@@ -2245,10 +2245,10 @@ describe('ShiftService', () => {
         startsAt: new Date(Date.now() + 100000),
         endsAt: new Date(Date.now() + 200000),
         visibility: ShiftVisibility.ALL_MEMBERS,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
       } as never);
 
-      expect(shift.reimbursementTypeId).toBe(reimbursementType.id);
+      expect(shift.reimbursementTypeId).toBe(reimbursementType.key);
     });
 
     it('leaves the shift type-less when not provided', async () => {
@@ -2283,7 +2283,7 @@ describe('ShiftService', () => {
           startsAt: new Date(Date.now() + 100000),
           endsAt: new Date(Date.now() + 200000),
           visibility: ShiftVisibility.ALL_MEMBERS,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
         } as never),
       ).rejects.toThrow(ForbiddenGraphQLError);
     });
@@ -2296,10 +2296,10 @@ describe('ShiftService', () => {
         startsAt: new Date(Date.now() + 100000),
         endsAt: new Date(Date.now() + 200000),
         visibility: ShiftVisibility.ALL_MEMBERS,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeId: reimbursementType.key,
       } as never);
 
-      expect(shift.reimbursementTypeId).toBe(reimbursementType.id);
+      expect(shift.reimbursementTypeId).toBe(reimbursementType.key);
     });
 
     it('does not gate a shift creation that never sets a reimbursement type, even on a disabled org', async () => {
@@ -2345,7 +2345,7 @@ describe('ShiftService', () => {
 
       await expect(
         shiftService.update(userId, shift.id, disabledUnit.id, {
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeId: reimbursementType.key,
         } as never),
       ).rejects.toThrow(ForbiddenGraphQLError);
     });
@@ -2386,7 +2386,7 @@ describe('ShiftService', () => {
             title: shift.title,
             startsAt,
             endsAt,
-            reimbursementTypeId: reimbursementType.id,
+            reimbursementTypeId: reimbursementType.key,
           } as never,
           disabledUnit.id,
         ),

@@ -22,6 +22,7 @@ import {
   ContractStatus,
   DocumentKind,
   DocumentStatusChange,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../enums';
 import type { CreateContractInput } from '../inputs/create-contract.input';
@@ -182,7 +183,7 @@ export class ContractService {
    */
   async findActiveContract(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     period: BillingPeriod = { start: new Date(), end: new Date() },
   ): Promise<ContractEntity | undefined> {
     const rows = await this.findActiveCoveringContracts(
@@ -220,7 +221,7 @@ export class ContractService {
   private async findActiveCoveringContracts(
     where: {
       volunteerId: string | { in: string[] };
-      reimbursementTypeId?: string;
+      reimbursementTypeId?: ReimbursementTypeKey;
     },
     period: BillingPeriod,
   ): Promise<ContractEntity[]> {
@@ -270,7 +271,7 @@ export class ContractService {
       string,
       {
         volunteerId: string;
-        reimbursementTypeId: string;
+        reimbursementTypeId: ReimbursementTypeKey;
         organizationUnitId: string;
       }
     >();
@@ -501,7 +502,7 @@ export class ContractService {
     input: {
       organizationUnitId?: string;
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeId: ReimbursementTypeKey;
       /** Instant that must be covered by an existing contract. */
       anchorDate: Date;
     },
@@ -623,7 +624,7 @@ export class ContractService {
     draft: {
       organizationUnitId: string;
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeId: ReimbursementTypeKey;
       periodStart: Date;
       periodEnd: Date;
     },

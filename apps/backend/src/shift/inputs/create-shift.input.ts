@@ -1,4 +1,5 @@
 import { Field, ID, InputType, Int, registerEnumType } from '@nestjs/graphql';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { ShiftInviteStatus, ShiftVisibility } from '../enums';
 
 registerEnumType(ShiftVisibility, {
@@ -18,7 +19,7 @@ export class CreateShiftInput {
   eventId?: string | null;
 
   @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: string | null;
+  reimbursementTypeId?: ReimbursementTypeKey | null;
 
   @Field(() => String, { nullable: true })
   instructions?: string | null;

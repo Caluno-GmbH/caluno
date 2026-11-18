@@ -13,7 +13,7 @@ import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
 import type { InvoiceFilter } from '../accounting.types';
 import { isIssuedDocument } from '../document-visibility';
-import { DocumentKind, InvoiceStatus } from '../enums';
+import { DocumentKind, InvoiceStatus, ReimbursementTypeKey } from '../enums';
 import { InvoiceFilterInput } from '../inputs/invoice-filter.input';
 import { InvoiceMapper, ReimbursementTypeMapper } from '../mappers';
 import { Invoice } from '../models/invoice.model';
@@ -136,7 +136,7 @@ export class InvoiceQueryResolver {
   async eligibleTimeEntriesForInvoice(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('periodStart', { type: () => Date, nullable: true })
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
@@ -159,7 +159,7 @@ export class InvoiceQueryResolver {
   async timeEntriesAwaitingReviewForInvoice(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('periodStart', { type: () => Date, nullable: true })
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
@@ -208,10 +208,10 @@ export class InvoiceQueryResolver {
     ]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const reimbursementTypeById = new Map(
-      reimbursementTypes.map((type) => [type.id, type]),
+      reimbursementTypes.map((type) => [type.key, type]),
     );
     const rateCentsByTypeId = new Map(
-      rates.map((rate) => [rate.reimbursementType.id, rate.hourlyRateCents]),
+      rates.map((rate) => [rate.reimbursementType.key, rate.hourlyRateCents]),
     );
 
     return rows.map((row) => {
@@ -273,7 +273,7 @@ export class InvoiceQueryResolver {
     ]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const reimbursementTypeById = new Map(
-      reimbursementTypes.map((type) => [type.id, type]),
+      reimbursementTypes.map((type) => [type.key, type]),
     );
 
     return rows.map((row) => {

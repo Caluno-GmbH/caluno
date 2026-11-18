@@ -1,10 +1,11 @@
+import { ReimbursementTypeKey } from '../enums';
 import { VolunteerAllowanceState } from './volunteer-allowance';
 import { VolunteerAllowanceService } from './volunteer-allowance.service';
 
 const UNIT = 'unit-1';
 const ORG = 'org-1';
-const EHREN = 'type-ehren';
-const UEBUNG = 'type-uebung';
+const EHREN = ReimbursementTypeKey.EHRENAMT;
+const UEBUNG = ReimbursementTypeKey.UEBUNGSLEITER;
 
 type Usage = { id: string; remainingCents: number; limitCents: number };
 
@@ -15,7 +16,7 @@ function build({
   hourlyRateCents = 20_00,
 }: {
   instance?: {
-    reimbursementTypeId: string | null;
+    reimbursementTypeId: ReimbursementTypeKey | null;
     start: string;
     end: string;
     unit?: string;
@@ -55,7 +56,7 @@ function build({
       Object.entries(usage).map(([id, types]) => ({
         volunteer: { id },
         usageByType: types.map((t) => ({
-          reimbursementType: { id: t.id },
+          reimbursementType: { key: t.id },
           usedCents: t.limitCents - t.remainingCents,
           limitCents: t.limitCents,
           remainingCents: t.remainingCents,

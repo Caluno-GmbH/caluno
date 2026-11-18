@@ -1,4 +1,4 @@
-import { ContractStatus } from '../enums';
+import { ContractStatus, ReimbursementTypeKey } from '../enums';
 
 /** Which contract statuses count as cover for a time entry. */
 export enum ContractCover {
@@ -23,7 +23,7 @@ export interface CoverageTarget {
    */
   key: string;
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   organizationUnitId: string;
   at: Date;
 }
@@ -31,7 +31,7 @@ export interface CoverageTarget {
 export interface CoverageContract {
   id: string;
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeId: ReimbursementTypeKey;
   organizationUnitId: string;
   contractStatus: ContractStatus;
   periodStart: Date;
@@ -42,7 +42,7 @@ export interface CoverageContract {
 export interface CoverableTimeEntry {
   id: string;
   volunteerId: string;
-  reimbursementTypeId: string | null;
+  reimbursementTypeId: ReimbursementTypeKey | null;
   organizationUnitId: string;
   startedAt: Date;
 }
@@ -72,7 +72,7 @@ const SCOPE_SEPARATOR = '\u0000';
 
 function scopeKey(
   volunteerId: string,
-  reimbursementTypeId: string,
+  reimbursementTypeId: ReimbursementTypeKey,
   organizationUnitId: string,
 ): string {
   return [volunteerId, reimbursementTypeId, organizationUnitId].join(

@@ -5,6 +5,7 @@ import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context'
 import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
+import { ReimbursementTypeKey } from '../enums';
 import { ReimbursementTypeMapper } from '../mappers';
 import { BundleDownloadStatus } from '../models/bundle-download-status.model';
 import { EffectiveRate } from '../models/effective-rate.model';
@@ -78,7 +79,7 @@ export class ReimbursementQueryResolver {
   async yearlyUsage(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     // Same cutoff the PDF uses (the document's period end), so the
     // already-received figure in the dialog matches the generated document.
@@ -148,7 +149,7 @@ export class ReimbursementQueryResolver {
   async bundleDownloadStatus(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<BundleDownloadStatus | null> {
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
@@ -174,7 +175,7 @@ export class ReimbursementQueryResolver {
   async manualBaseline(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
     @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ManualBaseline | null> {
@@ -201,7 +202,7 @@ export class ReimbursementQueryResolver {
 
   private async toBundleDownloadStatusModel(status: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     downloadedAt: Date;
     downloadedByUserId: string | null;
   }): Promise<BundleDownloadStatus> {
@@ -226,7 +227,7 @@ export class ReimbursementQueryResolver {
 
   private async toManualBaselineModel(baseline: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeId: ReimbursementTypeKey;
     year: number;
     amountCents: number;
     updatedAt: Date | null;

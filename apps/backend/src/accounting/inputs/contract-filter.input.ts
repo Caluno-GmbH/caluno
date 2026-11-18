@@ -1,5 +1,5 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
-import { ContractStatus } from '../enums';
+import { ContractStatus, ReimbursementTypeKey } from '../enums';
 
 @InputType()
 export class ContractFilterInput {
@@ -7,7 +7,7 @@ export class ContractFilterInput {
   volunteerId?: string | null;
 
   @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: string | null;
+  reimbursementTypeId?: ReimbursementTypeKey | null;
 
   @Field(() => ContractStatus, { nullable: true })
   status?: ContractStatus | null;

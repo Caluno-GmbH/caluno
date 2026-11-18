@@ -68,7 +68,7 @@ export class AgreementStatusService {
 
     // Direct DB read — ReimbursementRateService is not exported from AccountingModule.
     const typeRow = await this.db.query.reimbursementTypes.findFirst({
-      where: { id: typeId },
+      where: { key: typeId },
       columns: { key: true },
     });
     const reimbursementTypeName = typeRow

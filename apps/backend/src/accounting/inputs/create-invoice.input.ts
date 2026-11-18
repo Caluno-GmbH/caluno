@@ -1,4 +1,5 @@
 import { Field, ID, InputType, Int } from '@nestjs/graphql';
+import { ReimbursementTypeKey } from '../enums';
 import { DocumentFieldOverrideInput } from './document-field-override.input';
 
 @InputType()
@@ -14,7 +15,7 @@ export class CreateInvoiceInput {
   volunteerId!: string;
 
   @Field(() => ID)
-  reimbursementTypeId!: string;
+  reimbursementTypeId!: ReimbursementTypeKey;
 
   @Field(() => [ID])
   timeEntryIds!: string[];

@@ -40,6 +40,7 @@ import {
   DocumentKind,
   DocumentStatusChange,
   InvoiceStatus,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../enums';
 import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
@@ -176,7 +177,7 @@ export class InvoiceService {
    */
   async findEligibleTimeEntries(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
@@ -197,7 +198,7 @@ export class InvoiceService {
    */
   async findTimeEntriesAwaitingReview(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
@@ -215,7 +216,7 @@ export class InvoiceService {
   private async findUnclaimedTimeEntries(
     status: TimeEntryStatus,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeId: ReimbursementTypeKey,
     organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
@@ -301,7 +302,7 @@ export class InvoiceService {
           entry,
         ): entry is typeof entry & {
           endedAt: Date;
-          reimbursementTypeId: string;
+          reimbursementTypeId: ReimbursementTypeKey;
         } => entry.endedAt !== null && entry.reimbursementTypeId !== null,
       );
 
@@ -353,7 +354,7 @@ export class InvoiceService {
   ): Promise<
     Array<{
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeId: ReimbursementTypeKey;
       periodStart: Date;
       periodEnd: Date;
     }>
@@ -391,7 +392,7 @@ export class InvoiceService {
       string,
       {
         volunteerId: string;
-        reimbursementTypeId: string;
+        reimbursementTypeId: ReimbursementTypeKey;
         /** One instant per paid shift the volunteer joined. */
         dates: Date[];
       }

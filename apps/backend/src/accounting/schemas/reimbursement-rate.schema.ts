@@ -3,7 +3,11 @@ import { integer, snakeCase, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { organizations } from '../../organization/schemas/organization.schema';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
-import { reimbursementTypes } from './reimbursement-type.schema';
+import { ReimbursementTypeKey } from '../enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from './reimbursement-type.schema';
 
 export const reimbursementRates = snakeCase.table(
   'reimbursement_rates',
@@ -19,8 +23,9 @@ export const reimbursementRates = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'cascade' },
     ),
-    reimbursementTypeId: uuid('reimbursement_type_id')
-      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
     hourlyRateCents: integer('hourly_rate_cents').notNull(),
     ...timestampColumns,

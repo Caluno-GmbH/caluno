@@ -1,3 +1,5 @@
+import { ReimbursementTypeKey } from '../../accounting/enums';
+
 jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'abcdefghijkl',
 }));
@@ -107,13 +109,13 @@ describe('ShiftInstanceFieldResolver', () => {
       const result = await resolver.reimbursementTypeKey(
         instance({
           id: 'instance-1',
-          overrideReimbursementTypeId: 'rt-override',
+          overrideReimbursementTypeId: ReimbursementTypeKey.UEBUNGSLEITER,
         }),
         loader,
       );
 
       expect(result).toBe('EHRENAMT');
-      expect(keyLoad).toHaveBeenCalledWith('rt-override');
+      expect(keyLoad).toHaveBeenCalledWith(ReimbursementTypeKey.UEBUNGSLEITER);
       expect(shiftLoad).not.toHaveBeenCalled();
     });
 
