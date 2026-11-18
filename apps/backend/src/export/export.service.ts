@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { BadRequestGraphQLError } from '../graphql/errors';
+import type { Locale } from '../graphql/locale';
+import { AppI18nService } from '../i18n/app-i18n.service';
 import { OrganizationUnitDataService } from '../organization/organization-unit-data.service';
 import { FilePurpose } from '../storage/enums';
 import { FileService } from '../storage/services/file.service';
@@ -22,6 +24,7 @@ import {
 export interface GenerateExportInput {
   organizationUnitId: string;
   actorUserId: string;
+  locale: Locale;
   rowIds: string[];
   columns: string[];
   includeTechnicalIds: boolean;
@@ -42,6 +45,7 @@ export class ExportService {
     private readonly organizationUnitDataService: OrganizationUnitDataService,
     private readonly exportLogService: ExportLogService,
     private readonly fileService: FileService,
+    private readonly appI18n: AppI18nService,
   ) {
     this.collectorsByTable = new Map(
       collectors.map((collector) => [collector.tableKind, collector]),
@@ -81,6 +85,8 @@ export class ExportService {
       rows: collected.rows,
       includeTechnicalIds: input.includeTechnicalIds,
       technicalIdLabel: collector.technicalIdLabel,
+      technicalIdLabelKey: collector.technicalIdLabelKey,
+      translate: (key) => this.appI18n.translate(input.locale, key),
     });
 
     const orgUnit = await this.organizationUnitDataService.findById(
@@ -105,6 +111,7 @@ export class ExportService {
       tableKind,
       columns: selectedColumns.map((column) => column.id),
       includedTechnicalIds: input.includeTechnicalIds,
+      includedSubUnits: input.includeSubUnits,
       rowCount: collected.rows.length,
       subjectUserIds: collected.subjectUserIds,
     });

@@ -15,6 +15,8 @@ export interface RecordExportInput {
   tableKind: ExportTable;
   columns: string[];
   includedTechnicalIds: boolean;
+  /** Whether the export also covered descendant organisation units. */
+  includedSubUnits: boolean;
   rowCount: number;
   subjectUserIds: string[];
 }

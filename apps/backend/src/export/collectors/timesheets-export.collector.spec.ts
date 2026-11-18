@@ -28,10 +28,16 @@ function buildCollector(overrides?: {
   entries?: unknown[];
   users?: unknown[];
   instances?: unknown[];
+  organizationUnit?: unknown;
 }) {
   const entries = overrides?.entries ?? [baseEntry];
   const users = overrides?.users ?? [baseUser];
   const instances = overrides?.instances ?? [];
+  const organizationUnit = overrides?.organizationUnit ?? {
+    street: 'Org St 1',
+    zipCode: '10115',
+    city: 'Berlin',
+  };
 
   const timeTrackingService = {
     findManyByIdsInUnits: mock(async () => entries),
@@ -42,14 +48,24 @@ function buildCollector(overrides?: {
   const userService = {
     findByIds: mock(async () => users),
   };
+  const organizationUnitDataService = {
+    findById: mock(async () => organizationUnit),
+  };
 
   const collector = new TimesheetsExportCollector(
     timeTrackingService as never,
     shiftService as never,
     userService as never,
+    organizationUnitDataService as never,
   );
 
-  return { collector, timeTrackingService, shiftService, userService };
+  return {
+    collector,
+    timeTrackingService,
+    shiftService,
+    userService,
+    organizationUnitDataService,
+  };
 }
 
 const ctx = {
@@ -105,5 +121,62 @@ describe('TimesheetsExportCollector', () => {
     const { collector } = buildCollector();
     const result = await collector.collect(ctx);
     expect(result.subjectUserIds).toEqual(['u1']);
+  });
+
+  it('falls back to the email when the volunteer has no name', async () => {
+    const { collector } = buildCollector({
+      users: [{ ...baseUser, name: null }],
+    });
+
+    const result = await collector.collect(ctx);
+
+    expect(result.rows[0]?.cells.volunteerName).toBe('jane@example.com');
+  });
+
+  it('falls back to the email when the recorder has no name', async () => {
+    const { collector } = buildCollector({
+      entries: [{ ...baseEntry, createdById: 'u2' }],
+      users: [
+        baseUser,
+        { ...baseUser, id: 'u2', name: null, email: 'admin@example.com' },
+      ],
+    });
+
+    const result = await collector.collect(ctx);
+
+    expect(result.rows[0]?.cells.createdBy).toBe('admin@example.com');
+  });
+
+  it('falls back to the organisation-unit address for a shiftless entry', async () => {
+    const { collector, organizationUnitDataService } = buildCollector({
+      organizationUnit: {
+        street: 'Org St 1',
+        zipCode: '10115',
+        city: 'Berlin',
+      },
+    });
+
+    const result = await collector.collect(ctx);
+
+    expect(organizationUnitDataService.findById).toHaveBeenCalledWith('unit-1');
+    expect(result.rows[0]?.cells.location).toBe('Org St 1, 10115 Berlin');
+  });
+
+  it('prefers the shift-instance location over the organisation-unit address', async () => {
+    const { collector, organizationUnitDataService } = buildCollector({
+      entries: [{ ...baseEntry, shiftInstanceId: 'si-1' }],
+      instances: [
+        {
+          id: 'si-1',
+          overrideLocation: 'Side hall',
+          master: { location: 'Main hall' },
+        },
+      ],
+    });
+
+    const result = await collector.collect(ctx);
+
+    expect(result.rows[0]?.cells.location).toBe('Side hall');
+    expect(organizationUnitDataService.findById).not.toHaveBeenCalled();
   });
 });

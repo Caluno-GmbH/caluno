@@ -149,6 +149,7 @@ export class ExportResolver {
     return {
       organizationUnitId: context.organizationUnitId,
       actorUserId: session.user.id,
+      locale: context.locale,
       rowIds: input.rowIds,
       columns: input.columns,
       includeTechnicalIds: input.includeTechnicalIds,

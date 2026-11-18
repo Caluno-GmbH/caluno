@@ -226,6 +226,94 @@ describe('FileService document download authz', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('presignDownload for a USERS export requires volunteer:edit', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/users-export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'users-Lesepaten-export-20261118-1200.csv',
+      },
+      hasPermission: (_userId, _unitId, keys) =>
+        keys.includes(PERMISSIONS.SHIFT_EDIT),
+    });
+
+    await expect(
+      service.presignDownload('actor-1', 'file-1', 'unit-1'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('presignDownload for a USERS export allows volunteer:edit', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/users-export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'users-Lesepaten-export-20261118-1200.csv',
+      },
+      hasPermission: (_userId, _unitId, keys) =>
+        keys.includes(PERMISSIONS.VOLUNTEER_EDIT),
+    });
+
+    const result = await service.presignDownload('actor-1', 'file-1', 'unit-1');
+
+    expect(result.downloadUrl).toBe('https://signed.example/get');
+  });
+
+  it('presignDownload for a SHIFTS export rejects a volunteer-only caller', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/shifts-export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'shifts-Lesepaten-export-20261118-1200.csv',
+      },
+      hasPermission: (_userId, _unitId, keys) =>
+        keys.includes(PERMISSIONS.VOLUNTEER_EDIT),
+    });
+
+    await expect(
+      service.presignDownload('actor-1', 'file-1', 'unit-1'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('presignDownload for an untyped legacy export keeps either permission', async () => {
+    const { service } = buildService({
+      file: {
+        id: 'file-1',
+        storageKey: 'private/unit-1/user-uploader/export.csv',
+        visibility: FileVisibility.PRIVATE,
+        purpose: FilePurpose.EXPORT,
+        status: FileStatus.UPLOADED,
+        publicUrl: null,
+        organizationUnitId: 'unit-1',
+        uploadedByUserId: 'user-uploader',
+        filename: 'export.csv',
+      },
+      hasPermission: (_userId, _unitId, keys) =>
+        keys.includes(PERMISSIONS.SHIFT_EDIT),
+    });
+
+    const result = await service.presignDownload('actor-1', 'file-1', 'unit-1');
+
+    expect(result.downloadUrl).toBe('https://signed.example/get');
+  });
+
   it('presignDownload for EXPORT rejects a caller from another unit', async () => {
     const { service } = buildService({
       file: {
