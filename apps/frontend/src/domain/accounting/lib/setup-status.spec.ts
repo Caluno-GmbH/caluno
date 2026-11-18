@@ -8,7 +8,6 @@ import {
 } from './setup-status';
 
 const slot = (key: ReimbursementTypeKey, ready: boolean) => ({
-  reimbursementTypeId: `id-${key}`,
   reimbursementTypeKey: key,
   hasContractTemplate: ready,
   hasInvoiceTemplate: ready,
@@ -20,7 +19,6 @@ const slotWith = (
   hasContractTemplate: boolean,
   hasInvoiceTemplate: boolean,
 ) => ({
-  reimbursementTypeId: `id-${key}`,
   reimbursementTypeKey: key,
   hasContractTemplate,
   hasInvoiceTemplate,

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import { ReimbursementTypeKey } from '../../accounting/enums';
-import { resolveEffectiveReimbursementTypeId } from './effective-reimbursement-type';
+import { resolveEffectiveReimbursementTypeKey } from './effective-reimbursement-type';
 
-describe('resolveEffectiveReimbursementTypeId', () => {
+describe('resolveEffectiveReimbursementTypeKey', () => {
   it('prefers an explicit occurrence override over the master type', () => {
     expect(
-      resolveEffectiveReimbursementTypeId(
+      resolveEffectiveReimbursementTypeKey(
         ReimbursementTypeKey.UEBUNGSLEITER,
         ReimbursementTypeKey.EHRENAMT,
       ),
@@ -14,10 +14,10 @@ describe('resolveEffectiveReimbursementTypeId', () => {
 
   it('falls back to the master type when the occurrence has no override', () => {
     expect(
-      resolveEffectiveReimbursementTypeId(null, ReimbursementTypeKey.EHRENAMT),
+      resolveEffectiveReimbursementTypeKey(null, ReimbursementTypeKey.EHRENAMT),
     ).toBe(ReimbursementTypeKey.EHRENAMT);
     expect(
-      resolveEffectiveReimbursementTypeId(
+      resolveEffectiveReimbursementTypeKey(
         undefined,
         ReimbursementTypeKey.EHRENAMT,
       ),
@@ -25,9 +25,9 @@ describe('resolveEffectiveReimbursementTypeId', () => {
   });
 
   it('returns null when neither the override nor the master type is set', () => {
-    expect(resolveEffectiveReimbursementTypeId(null, null)).toBeNull();
+    expect(resolveEffectiveReimbursementTypeKey(null, null)).toBeNull();
     expect(
-      resolveEffectiveReimbursementTypeId(undefined, undefined),
+      resolveEffectiveReimbursementTypeKey(undefined, undefined),
     ).toBeNull();
   });
 });

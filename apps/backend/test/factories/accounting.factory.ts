@@ -75,7 +75,7 @@ export const createReimbursementRate = async (
   args: {
     organizationId: string;
     organizationUnitId?: string | null;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     hourlyRateCents: number;
   },
 ): Promise<ReimbursementRate> => {
@@ -84,7 +84,7 @@ export const createReimbursementRate = async (
     .values({
       organizationId: args.organizationId,
       organizationUnitId: args.organizationUnitId ?? null,
-      reimbursementTypeId: args.reimbursementTypeId,
+      reimbursementTypeKey: args.reimbursementTypeKey,
       hourlyRateCents: args.hourlyRateCents,
     })
     .returning();
@@ -99,7 +99,7 @@ export const createDocumentTemplate = async (
   args: {
     organizationId: string;
     organizationUnitId?: string | null;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     kind: DocumentKind;
     signees: Array<{
       order: number;
@@ -114,7 +114,7 @@ export const createDocumentTemplate = async (
     .values({
       organizationId: args.organizationId,
       organizationUnitId: args.organizationUnitId ?? null,
-      reimbursementTypeId: args.reimbursementTypeId,
+      reimbursementTypeKey: args.reimbursementTypeKey,
       kind: args.kind,
       body: args.body ?? EMPTY_BODY,
       // Mirror createDocumentTemplate: a saved template is stamped, so it is
@@ -146,7 +146,7 @@ export const createTwoStepTemplate = async (
   db: Database,
   args: {
     organizationId: string;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     kind: DocumentKind;
     requiredPermissionId: string;
     signeeTypes: [SigneeType, SigneeType];
@@ -155,7 +155,7 @@ export const createTwoStepTemplate = async (
 ) =>
   createDocumentTemplate(db, {
     organizationId: args.organizationId,
-    reimbursementTypeId: args.reimbursementTypeId,
+    reimbursementTypeKey: args.reimbursementTypeKey,
     kind: args.kind,
     body: args.body,
     signees: [
@@ -174,7 +174,7 @@ export const createCompletedTimeEntry = async (
   args: {
     organizationUnitId: string;
     volunteerId: string;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     startedAt: Date;
     endedAt: Date;
   },
@@ -196,7 +196,7 @@ export const createCompletedTimeEntry = async (
       shiftInstanceId: instance.id,
       organizationUnitId: args.organizationUnitId,
       volunteerId: args.volunteerId,
-      reimbursementTypeId: args.reimbursementTypeId,
+      reimbursementTypeKey: args.reimbursementTypeKey,
       startedAt: args.startedAt,
       endedAt: args.endedAt,
     })

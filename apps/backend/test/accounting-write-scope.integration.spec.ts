@@ -47,9 +47,9 @@ applyBunAuthMocks(mock.module);
 setDefaultTimeout(30_000);
 
 const SET_RATE = `
-  mutation SetRate($typeId: ID!, $cents: Int!, $unitId: ID) {
+  mutation SetRate($typeId: ReimbursementTypeKey!, $cents: Int!, $unitId: ID) {
     setReimbursementRate(
-      reimbursementTypeId: $typeId
+      reimbursementTypeKey: $typeId
       hourlyRateCents: $cents
       organizationUnitId: $unitId
     ) {
@@ -86,9 +86,9 @@ const DELETE_TEMPLATE = `
 `;
 
 const ACTIVE_TEMPLATE = `
-  query ActiveTemplate($typeId: ID!, $kind: DocumentKind!, $unitId: ID) {
+  query ActiveTemplate($typeId: ReimbursementTypeKey!, $kind: DocumentKind!, $unitId: ID) {
     activeDocumentTemplate(
-      reimbursementTypeId: $typeId
+      reimbursementTypeKey: $typeId
       kind: $kind
       organizationUnitId: $unitId
     ) {
@@ -132,18 +132,18 @@ const UPDATE_DELIVERY_SETTINGS = `
 `;
 
 const BUNDLE_SEND_PREVIEW = `
-  query BundleSendPreview($volunteerId: ID!, $typeId: ID!) {
-    bundleSendPreview(volunteerId: $volunteerId, reimbursementTypeId: $typeId) {
+  query BundleSendPreview($volunteerId: ID!, $typeId: ReimbursementTypeKey!) {
+    bundleSendPreview(volunteerId: $volunteerId, reimbursementTypeKey: $typeId) {
       documentCount
     }
   }
 `;
 
 const SEND_BUNDLE = `
-  mutation SendBundle($volunteerId: ID!, $typeId: ID!) {
+  mutation SendBundle($volunteerId: ID!, $typeId: ReimbursementTypeKey!) {
     sendReimbursementBundle(
       volunteerId: $volunteerId
-      reimbursementTypeId: $typeId
+      reimbursementTypeKey: $typeId
       expectedRecipientEmail: "accounting@example.org"
       expectedSubject: "Subject"
     ) {
@@ -201,7 +201,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
     db.query.reimbursementRates.findMany({
       where: {
         organizationId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         organizationUnitId: organizationUnitId ?? { isNull: true },
       },
     });
@@ -305,7 +305,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
     it('rejects an org-wide rate from a sub-unit and leaves the row alone', async () => {
       await createReimbursementRate(db, {
         organizationId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         hourlyRateCents: 1_000,
       });
       setAuthMockUserId(ownerOnAId);
@@ -386,7 +386,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
   describe('createDocumentTemplate', () => {
     const input = (organizationUnitId?: string) => ({
       organizationUnitId,
-      reimbursementTypeId: typeId,
+      reimbursementTypeKey: typeId,
       kind: DocumentKind.CONTRACT,
       body: BODY,
       signees: SIGNEES,
@@ -462,7 +462,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
       createDocumentTemplate(db, {
         organizationId,
         organizationUnitId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         kind: DocumentKind.CONTRACT,
         signees: SIGNEES,
       });
@@ -624,7 +624,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
       await createDocumentTemplate(db, {
         organizationId,
         organizationUnitId: unitBId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         kind: DocumentKind.CONTRACT,
         signees: SIGNEES,
       });
@@ -643,7 +643,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
       const template = await createDocumentTemplate(db, {
         organizationId,
         organizationUnitId: unitAId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         kind: DocumentKind.CONTRACT,
         signees: SIGNEES,
       });
@@ -666,7 +666,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
       createDocumentTemplate(db, {
         organizationId,
         organizationUnitId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         kind: DocumentKind.CONTRACT,
         signees: SIGNEES,
       });
@@ -740,7 +740,7 @@ describe('accounting writes are scoped to the header unit tree', () => {
         .values({
           organizationUnitId,
           volunteerId: volunteer.id,
-          reimbursementTypeId: typeId,
+          reimbursementTypeKey: typeId,
           method: BundleDeliveryMethod.DOWNLOAD,
           invoiceIds: [],
         })

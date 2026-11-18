@@ -64,8 +64,8 @@ export class DocumentTemplateQueryResolver {
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
   @Query(() => DocumentTemplate)
   async activeDocumentTemplate(
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('kind', { type: () => DocumentKind }) kind: DocumentKind,
     @Args('organizationUnitId', { type: () => ID, nullable: true })
     organizationUnitId: string | null | undefined,
@@ -87,7 +87,7 @@ export class DocumentTemplateQueryResolver {
     }
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       kind,
       organizationUnitId ?? context.organizationUnitId,
     );

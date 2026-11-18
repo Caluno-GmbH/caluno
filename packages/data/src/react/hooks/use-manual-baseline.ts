@@ -1,12 +1,13 @@
 'use client';
 import { AccountingRepository, type RawManualBaseline } from '@repo/data';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
 export function useManualBaseline(
   volunteerId?: string,
-  reimbursementTypeId?: string,
+  reimbursementTypeKey?: ReimbursementTypeKey,
   year?: number,
 ) {
   const sdk = useSdk();
@@ -17,17 +18,17 @@ export function useManualBaseline(
       'accounting',
       'manual-baseline',
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
     ],
     queryFn: () =>
       repository.findManualBaseline(
         volunteerId ?? '',
-        reimbursementTypeId ?? '',
+        reimbursementTypeKey!,
         year ?? new Date().getFullYear(),
       ),
     staleTime: 30 * 1000,
-    enabled: !!volunteerId && !!reimbursementTypeId && !!year,
+    enabled: !!volunteerId && !!reimbursementTypeKey && !!year,
   });
 }
 
@@ -39,17 +40,17 @@ export function useSetManualBaseline() {
   return useMutation({
     mutationFn: (input: {
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       year: number;
       amountCents: number;
     }) => repository.setManualBaseline(input),
-    onSuccess: (_, { volunteerId, reimbursementTypeId, year }) => {
+    onSuccess: (_, { volunteerId, reimbursementTypeKey, year }) => {
       queryClient.invalidateQueries({
         queryKey: [
           'accounting',
           'manual-baseline',
           volunteerId,
-          reimbursementTypeId,
+          reimbursementTypeKey,
           year,
         ],
       });

@@ -48,7 +48,7 @@ export const documentTemplates = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'cascade' },
     ),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
@@ -66,12 +66,12 @@ export const documentTemplates = snakeCase.table(
   },
   (table) => [
     uniqueIndex('uq_document_templates_org_default')
-      .on(table.organizationId, table.reimbursementTypeId, table.kind)
+      .on(table.organizationId, table.reimbursementTypeKey, table.kind)
       .where(
         sql`${table.organizationUnitId} IS NULL AND ${table.isDeleted} = false`,
       ),
     uniqueIndex('uq_document_templates_unit_override')
-      .on(table.organizationUnitId, table.reimbursementTypeId, table.kind)
+      .on(table.organizationUnitId, table.reimbursementTypeKey, table.kind)
       .where(
         sql`${table.organizationUnitId} IS NOT NULL AND ${table.isDeleted} = false`,
       ),

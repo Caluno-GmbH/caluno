@@ -29,8 +29,8 @@ export class BundleDeliveryQueryResolver {
   @Query(() => BundleSendPreview)
   async bundleSendPreview(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('invoiceIds', { type: () => [ID], nullable: true })
     invoiceIds: string[] | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
@@ -49,7 +49,7 @@ export class BundleDeliveryQueryResolver {
       organizationId,
       scope: {
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         organizationUnitId: context.organizationUnitId,
       },
       invoiceIds: invoiceIds ?? undefined,

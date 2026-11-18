@@ -163,7 +163,7 @@ describe('DocumentRenderingService', () => {
     ({
       id: 'contract-1',
       volunteerId: 'vol-1',
-      reimbursementTypeId: 'type-1',
+      reimbursementTypeKey: 'type-1',
       reimbursementType: {
         id: 'type-1',
         yearlyLimitCents: 300000,
@@ -236,7 +236,7 @@ describe('DocumentRenderingService', () => {
     ({
       id: 'invoice-1',
       volunteerId: 'vol-1',
-      reimbursementTypeId: 'type-1',
+      reimbursementTypeKey: 'type-1',
       reimbursementType: {
         id: 'type-1',
         yearlyLimitCents: 300000,

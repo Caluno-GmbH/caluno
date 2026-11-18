@@ -10,9 +10,9 @@ function makeBaseDeps() {
   const shiftService = {
     findInstanceById: jest.fn().mockResolvedValue({
       id: 'si-1',
-      overrideReimbursementTypeId: null,
+      overrideReimbursementTypeKey: null,
       master: {
-        reimbursementTypeId: 'rt-1',
+        reimbursementTypeKey: 'rt-1',
         organizationUnitId: 'ou-1',
       },
     }),
@@ -94,8 +94,8 @@ describe('AgreementStatusService.resolve', () => {
     const deps = makeBaseDeps();
     deps.shiftService.findInstanceById.mockResolvedValue({
       id: 'si-1',
-      overrideReimbursementTypeId: null,
-      master: { reimbursementTypeId: null, organizationUnitId: 'ou-1' },
+      overrideReimbursementTypeKey: null,
+      master: { reimbursementTypeKey: null, organizationUnitId: 'ou-1' },
     });
     const service = makeService(deps);
 

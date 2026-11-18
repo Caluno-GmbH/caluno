@@ -6,8 +6,8 @@ export class ContractFilterInput {
   @Field(() => ID, { nullable: true })
   volunteerId?: string | null;
 
-  @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: ReimbursementTypeKey | null;
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 
   @Field(() => ContractStatus, { nullable: true })
   status?: ContractStatus | null;

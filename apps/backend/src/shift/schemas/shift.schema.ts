@@ -52,7 +52,7 @@ export const shifts = snakeCase.table(
     eventId: uuid('event_id').references(() => events.id, {
       onDelete: 'set null',
     }),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' }),
     rrule: text('rrule'),
@@ -65,7 +65,7 @@ export const shifts = snakeCase.table(
     index('idx_shifts_org_unit_id').on(table.organizationUnitId),
     index('idx_shifts_created_by_id').on(table.createdById),
     index('idx_shifts_event_id').on(table.eventId),
-    index('idx_shifts_reimbursement_type_id').on(table.reimbursementTypeId),
+    index('idx_shifts_reimbursement_type_key').on(table.reimbursementTypeKey),
     index('idx_shifts_slug').on(table.slug),
     index('idx_shifts_is_deleted').on(table.isDeleted),
   ],

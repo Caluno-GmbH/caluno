@@ -47,7 +47,7 @@ export const reimbursementBundleDeliveries = snakeCase.table(
     volunteerId: text('volunteer_id')
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),

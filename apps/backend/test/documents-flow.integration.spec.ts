@@ -346,14 +346,14 @@ const setupFlowOrg = async (db: Database) => {
 
   await createTwoStepTemplate(db, {
     organizationId: organization.id,
-    reimbursementTypeId: reimbursementType.key,
+    reimbursementTypeKey: reimbursementType.key,
     kind: DocumentKind.CONTRACT,
     requiredPermissionId: permission.id,
     signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
   });
   await createTwoStepTemplate(db, {
     organizationId: organization.id,
-    reimbursementTypeId: reimbursementType.key,
+    reimbursementTypeKey: reimbursementType.key,
     kind: DocumentKind.INVOICE,
     requiredPermissionId: permission.id,
     signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -364,7 +364,7 @@ const setupFlowOrg = async (db: Database) => {
     organizationUnitId: root.id,
     adminId: admin.id,
     volunteerId: volunteer.id,
-    reimbursementTypeId: reimbursementType.key,
+    reimbursementTypeKey: reimbursementType.key,
   };
 };
 
@@ -419,7 +419,7 @@ const setupFlowOrgWithoutTemplates = async (db: Database) => {
     organizationId: organization.id,
     organizationUnitId: root.id,
     adminId: admin.id,
-    reimbursementTypeId: reimbursementType.key,
+    reimbursementTypeKey: reimbursementType.key,
     permissionId: permission.id,
   };
 };
@@ -459,7 +459,7 @@ const createCompletedTimeEntry = async (
   args: {
     organizationUnitId: string;
     volunteerId: string;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     startedAt?: Date;
     endedAt?: Date;
   },
@@ -479,7 +479,7 @@ const createCompletedTimeEntry = async (
       shiftInstanceId: instance.id,
       organizationUnitId: args.organizationUnitId,
       volunteerId: args.volunteerId,
-      reimbursementTypeId: args.reimbursementTypeId,
+      reimbursementTypeKey: args.reimbursementTypeKey,
       startedAt,
       endedAt, // 4 hours
       isPaid: true,
@@ -539,7 +539,7 @@ describe('documents flow — admin + volunteer', () => {
         variables: {
           input: {
             organizationUnitId: org.organizationUnitId,
-            reimbursementTypeId: org.reimbursementTypeId,
+            reimbursementTypeKey: org.reimbursementTypeKey,
             volunteerId: org.volunteerId,
             periodStart: '2025-12-31T23:00:00.000Z',
             periodEnd: '2026-12-31T23:00:00.000Z',
@@ -616,7 +616,7 @@ describe('documents flow — admin + volunteer', () => {
     const timeEntry = await createCompletedTimeEntry(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: org.volunteerId,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       startedAt: new Date('2026-05-03T09:00:00.000Z'),
       endedAt: new Date('2026-05-03T13:00:00.000Z'),
     });
@@ -631,7 +631,7 @@ describe('documents flow — admin + volunteer', () => {
         variables: {
           input: {
             organizationUnitId: org.organizationUnitId,
-            reimbursementTypeId: org.reimbursementTypeId,
+            reimbursementTypeKey: org.reimbursementTypeKey,
             volunteerId: org.volunteerId,
             timeEntryIds: [timeEntry.id],
             periodStart: '2026-04-30T22:00:00.000Z',
@@ -674,7 +674,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: own.organizationUnitId,
-              reimbursementTypeId: own.reimbursementTypeId,
+              reimbursementTypeKey: own.reimbursementTypeKey,
               volunteerId: own.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -735,7 +735,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: own.organizationUnitId,
         volunteerId: own.volunteerId,
-        reimbursementTypeId: own.reimbursementTypeId,
+        reimbursementTypeKey: own.reimbursementTypeKey,
       });
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string };
@@ -746,7 +746,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: own.organizationUnitId,
-              reimbursementTypeId: own.reimbursementTypeId,
+              reimbursementTypeKey: own.reimbursementTypeKey,
               volunteerId: own.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-06-30T22:00:00.000Z',
@@ -1112,7 +1112,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: org.organizationUnitId,
         volunteerId: org.volunteerId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        reimbursementTypeKey: org.reimbursementTypeKey,
       });
 
       const { createInvoice } = await graphqlRequestRequiringData<{
@@ -1129,7 +1129,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: org.organizationUnitId,
-              reimbursementTypeId: org.reimbursementTypeId,
+              reimbursementTypeKey: org.reimbursementTypeKey,
               volunteerId: org.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-06-30T22:00:00.000Z',
@@ -1244,7 +1244,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: own.organizationUnitId,
-              reimbursementTypeId: own.reimbursementTypeId,
+              reimbursementTypeKey: own.reimbursementTypeKey,
               volunteerId: own.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -1257,7 +1257,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: own.organizationUnitId,
         volunteerId: own.volunteerId,
-        reimbursementTypeId: own.reimbursementTypeId,
+        reimbursementTypeKey: own.reimbursementTypeKey,
       });
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string };
@@ -1268,7 +1268,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: own.organizationUnitId,
-              reimbursementTypeId: own.reimbursementTypeId,
+              reimbursementTypeKey: own.reimbursementTypeKey,
               volunteerId: own.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-06-30T22:00:00.000Z',
@@ -1360,7 +1360,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: org.organizationUnitId,
         volunteerId: org.volunteerId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        reimbursementTypeKey: org.reimbursementTypeKey,
         // August, so it does not overlap the July invoice from the lifecycle test.
         startedAt: new Date('2026-08-03T09:00:00.000Z'),
         endedAt: new Date('2026-08-03T13:00:00.000Z'),
@@ -1376,7 +1376,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: org.organizationUnitId,
-              reimbursementTypeId: org.reimbursementTypeId,
+              reimbursementTypeKey: org.reimbursementTypeKey,
               volunteerId: org.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-07-31T22:00:00.000Z',
@@ -1421,7 +1421,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: org.organizationUnitId,
         volunteerId: org.volunteerId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        reimbursementTypeKey: org.reimbursementTypeKey,
         startedAt: new Date('2026-09-03T09:00:00.000Z'),
         endedAt: new Date('2026-09-03T13:00:00.000Z'),
       });
@@ -1436,7 +1436,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: org.organizationUnitId,
-              reimbursementTypeId: org.reimbursementTypeId,
+              reimbursementTypeKey: org.reimbursementTypeKey,
               volunteerId: org.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-08-31T22:00:00.000Z',
@@ -1493,14 +1493,14 @@ describe('documents flow — admin + volunteer', () => {
       const rootEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: scoped.organizationUnitId,
         volunteerId: scoped.volunteerId,
-        reimbursementTypeId: scoped.reimbursementTypeId,
+        reimbursementTypeKey: scoped.reimbursementTypeKey,
         startedAt: new Date('2026-09-01T09:00:00.000Z'),
         endedAt: new Date('2026-09-01T13:00:00.000Z'),
       });
       const siblingEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: sibling.id,
         volunteerId: scoped.volunteerId,
-        reimbursementTypeId: scoped.reimbursementTypeId,
+        reimbursementTypeKey: scoped.reimbursementTypeKey,
         startedAt: new Date('2026-09-02T09:00:00.000Z'),
         endedAt: new Date('2026-09-02T13:00:00.000Z'),
       });
@@ -1514,7 +1514,7 @@ describe('documents flow — admin + volunteer', () => {
         variables: {
           input: {
             organizationUnitId: sibling.id,
-            reimbursementTypeId: scoped.reimbursementTypeId,
+            reimbursementTypeKey: scoped.reimbursementTypeKey,
             volunteerId: scoped.volunteerId,
             timeEntryIds: [siblingEntry.id],
             periodStart: '2026-08-31T22:00:00.000Z',
@@ -1533,7 +1533,7 @@ describe('documents flow — admin + volunteer', () => {
         variables: {
           input: {
             organizationUnitId: scoped.organizationUnitId,
-            reimbursementTypeId: scoped.reimbursementTypeId,
+            reimbursementTypeKey: scoped.reimbursementTypeKey,
             volunteerId: scoped.volunteerId,
             timeEntryIds: [siblingEntry.id],
             periodStart: '2026-08-31T22:00:00.000Z',
@@ -1555,7 +1555,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: scoped.organizationUnitId,
-              reimbursementTypeId: scoped.reimbursementTypeId,
+              reimbursementTypeKey: scoped.reimbursementTypeKey,
               volunteerId: scoped.volunteerId,
               timeEntryIds: [rootEntry.id],
               periodStart: '2026-08-31T22:00:00.000Z',
@@ -1602,7 +1602,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -1622,7 +1622,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgB.organizationUnitId,
-              reimbursementTypeId: orgB.reimbursementTypeId,
+              reimbursementTypeKey: orgB.reimbursementTypeKey,
               volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -1682,7 +1682,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -1696,7 +1696,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: orgA.organizationUnitId,
         volunteerId: orgA.volunteerId,
-        reimbursementTypeId: orgA.reimbursementTypeId,
+        reimbursementTypeKey: orgA.reimbursementTypeKey,
         startedAt: new Date('2026-09-01T09:00:00.000Z'),
         endedAt: new Date('2026-09-01T13:00:00.000Z'),
       });
@@ -1709,7 +1709,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-08-31T22:00:00.000Z',
@@ -1796,7 +1796,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: scoped.organizationUnitId,
-              reimbursementTypeId: scoped.reimbursementTypeId,
+              reimbursementTypeKey: scoped.reimbursementTypeKey,
               volunteerId: scoped.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -1837,7 +1837,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -1877,7 +1877,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2016,7 +2016,7 @@ describe('documents flow — admin + volunteer', () => {
         variables: {
           input: {
             organizationUnitId: disabledOrg.organizationUnitId,
-            reimbursementTypeId: disabledOrg.reimbursementTypeId,
+            reimbursementTypeKey: disabledOrg.reimbursementTypeKey,
             volunteerId: disabledOrg.volunteerId,
             periodStart: '2025-12-31T23:00:00.000Z',
             periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2080,7 +2080,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2099,7 +2099,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgA.organizationUnitId,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2118,7 +2118,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgASibling.id,
-              reimbursementTypeId: orgA.reimbursementTypeId,
+              reimbursementTypeKey: orgA.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2150,7 +2150,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgB.organizationUnitId,
-              reimbursementTypeId: orgB.reimbursementTypeId,
+              reimbursementTypeKey: orgB.reimbursementTypeKey,
               volunteerId: orgA.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2208,7 +2208,7 @@ describe('documents flow — admin + volunteer', () => {
         {
           organizationUnitId: draftOrg.organizationUnitId,
           volunteerId: draftOrg.volunteerId,
-          reimbursementTypeId: draftOrg.reimbursementTypeId,
+          reimbursementTypeKey: draftOrg.reimbursementTypeKey,
           anchorDate: new Date('2026-01-01T12:00:00.000Z'),
         },
         draftOrg.volunteerId,
@@ -2266,7 +2266,7 @@ describe('documents flow — admin + volunteer', () => {
         {
           organizationUnitId: draftOrg.organizationUnitId,
           volunteerId: draftOrg.volunteerId,
-          reimbursementTypeId: draftOrg.reimbursementTypeId,
+          reimbursementTypeKey: draftOrg.reimbursementTypeKey,
           anchorDate: new Date('2026-01-01T12:00:00.000Z'),
         },
         draftOrg.volunteerId,
@@ -2454,7 +2454,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: pdfOrg.organizationUnitId,
-              reimbursementTypeId: pdfOrg.reimbursementTypeId,
+              reimbursementTypeKey: pdfOrg.reimbursementTypeKey,
               volunteerId: pdfOrg.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2567,7 +2567,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: pdfOrg.organizationUnitId,
-              reimbursementTypeId: pdfOrg.reimbursementTypeId,
+              reimbursementTypeKey: pdfOrg.reimbursementTypeKey,
               volunteerId: pdfOrg.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2632,7 +2632,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: pdfOrg.organizationUnitId,
-              reimbursementTypeId: pdfOrg.reimbursementTypeId,
+              reimbursementTypeKey: pdfOrg.reimbursementTypeKey,
               volunteerId: pdfOrg.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2731,7 +2731,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: pdfOrg.organizationUnitId,
-              reimbursementTypeId: pdfOrg.reimbursementTypeId,
+              reimbursementTypeKey: pdfOrg.reimbursementTypeKey,
               volunteerId: pdfOrg.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2765,7 +2765,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: pdfOrg.organizationUnitId,
         volunteerId: pdfOrg.volunteerId,
-        reimbursementTypeId: pdfOrg.reimbursementTypeId,
+        reimbursementTypeKey: pdfOrg.reimbursementTypeKey,
       });
       const { createInvoice } = await graphqlRequestRequiringData<{
         createInvoice: { id: string; invoiceStatus: string };
@@ -2776,7 +2776,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: pdfOrg.organizationUnitId,
-              reimbursementTypeId: pdfOrg.reimbursementTypeId,
+              reimbursementTypeKey: pdfOrg.reimbursementTypeKey,
               volunteerId: pdfOrg.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-06-30T22:00:00.000Z',
@@ -2913,13 +2913,13 @@ describe('documents flow — admin + volunteer', () => {
       await createReimbursementRate(db, {
         organizationId: nested.organizationId,
         organizationUnitId: nested.organizationUnitId,
-        reimbursementTypeId: nested.reimbursementTypeId,
+        reimbursementTypeKey: nested.reimbursementTypeKey,
         hourlyRateCents: 1_000,
       });
       await createReimbursementRate(db, {
         organizationId: nested.organizationId,
         organizationUnitId: child.id,
-        reimbursementTypeId: nested.reimbursementTypeId,
+        reimbursementTypeKey: nested.reimbursementTypeKey,
         hourlyRateCents: 1_200,
       });
 
@@ -2933,7 +2933,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: grandchild.id,
-              reimbursementTypeId: nested.reimbursementTypeId,
+              reimbursementTypeKey: nested.reimbursementTypeKey,
               volunteerId: nested.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -2960,7 +2960,7 @@ describe('documents flow — admin + volunteer', () => {
       const timeEntry = await createCompletedTimeEntry(db, {
         organizationUnitId: grandchild.id,
         volunteerId: nested.volunteerId,
-        reimbursementTypeId: nested.reimbursementTypeId,
+        reimbursementTypeKey: nested.reimbursementTypeKey,
       });
       setAuthMockUserId(nested.adminId);
       const grandchildHeader = {
@@ -2975,7 +2975,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: grandchild.id,
-              reimbursementTypeId: nested.reimbursementTypeId,
+              reimbursementTypeKey: nested.reimbursementTypeKey,
               volunteerId: nested.volunteerId,
               timeEntryIds: [timeEntry.id],
               periodStart: '2026-06-30T22:00:00.000Z',
@@ -3088,7 +3088,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: gatedOrg.organizationUnitId,
-              reimbursementTypeId: gatedOrg.reimbursementTypeId,
+              reimbursementTypeKey: gatedOrg.reimbursementTypeKey,
               volunteerId: gatedOrg.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -3198,7 +3198,7 @@ describe('documents flow — admin + volunteer', () => {
         variables: {
           input: {
             organizationUnitId: orgGated.organizationUnitId,
-            reimbursementTypeId: orgGated.reimbursementTypeId,
+            reimbursementTypeKey: orgGated.reimbursementTypeKey,
             volunteerId: orgGated.volunteerId,
             periodStart: '2025-12-31T23:00:00.000Z',
             periodEnd: '2026-12-31T23:00:00.000Z',
@@ -3228,7 +3228,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: orgGated.organizationUnitId,
-              reimbursementTypeId: orgGated.reimbursementTypeId,
+              reimbursementTypeKey: orgGated.reimbursementTypeKey,
               volunteerId: orgGated.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -3324,7 +3324,7 @@ describe('documents flow — admin + volunteer', () => {
           variables: {
             input: {
               organizationUnitId: siblingUnit.id,
-              reimbursementTypeId: orgTwoUnits.reimbursementTypeId,
+              reimbursementTypeKey: orgTwoUnits.reimbursementTypeKey,
               volunteerId: orgTwoUnits.volunteerId,
               periodStart: '2025-12-31T23:00:00.000Z',
               periodEnd: '2026-12-31T23:00:00.000Z',
@@ -3371,14 +3371,14 @@ describe('documents flow — admin + volunteer', () => {
 
       await createTwoStepTemplate(db, {
         organizationId: statusOrg.organizationId,
-        reimbursementTypeId: statusOrg.reimbursementTypeId,
+        reimbursementTypeKey: statusOrg.reimbursementTypeKey,
         kind: DocumentKind.CONTRACT,
         requiredPermissionId: statusOrg.permissionId,
         signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
       });
       await createTwoStepTemplate(db, {
         organizationId: statusOrg.organizationId,
-        reimbursementTypeId: statusOrg.reimbursementTypeId,
+        reimbursementTypeKey: statusOrg.reimbursementTypeKey,
         kind: DocumentKind.INVOICE,
         requiredPermissionId: statusOrg.permissionId,
         signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -3434,7 +3434,7 @@ describe('documents flow — admin + volunteer', () => {
         await createDocumentTemplate(db, {
           organizationId: multiUnitOrg.organizationId,
           organizationUnitId: configuredUnit.id,
-          reimbursementTypeId: multiUnitOrg.reimbursementTypeId,
+          reimbursementTypeKey: multiUnitOrg.reimbursementTypeKey,
           kind,
           signees: [
             { order: 0, signeeType: SigneeType.VOLUNTEER },

@@ -35,7 +35,6 @@ import { STATUS_META } from './board-status';
 import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 
 const ehrenamtType = {
-  id: 'rt-ehrenamt',
   key: ReimbursementTypeKey.Ehrenamt,
   legalReference: '',
   yearlyLimitCents: 84_000,
@@ -43,7 +42,6 @@ const ehrenamtType = {
 };
 
 const _uebungsleiterType = {
-  id: 'rt-uebungsleiter',
   key: ReimbursementTypeKey.Uebungsleiter,
   legalReference: '',
   yearlyLimitCents: 300_000,
@@ -539,7 +537,7 @@ describe('buildBoardVolunteers', () => {
     const timesheetsToCreate = [
       {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         // July and August 2026 as Berlin calendar months.
         periodStart: '2026-06-30T22:00:00.000Z',
         periodEnd: '2026-07-31T22:00:00.000Z',
@@ -551,7 +549,7 @@ describe('buildBoardVolunteers', () => {
       },
       {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         periodStart: '2026-07-31T22:00:00.000Z',
         periodEnd: '2026-08-31T22:00:00.000Z',
         eligibleHours: 1,
@@ -676,7 +674,7 @@ describe('buildBoardVolunteers', () => {
         timesheetsToCreate: [
           {
             volunteerId: 'v-1',
-            reimbursementTypeId: 'rt-ehrenamt',
+            reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             // September 2026 as Berlin bounds.
             periodStart: '2026-08-31T22:00:00.000Z',
             periodEnd: '2026-09-30T22:00:00.000Z',
@@ -715,7 +713,7 @@ describe('buildBoardVolunteers', () => {
         timesheetsToCreate: [
           {
             volunteerId: 'v-1',
-            reimbursementTypeId: 'rt-ehrenamt',
+            reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             periodStart: '2026-07-31T22:00:00.000Z',
             periodEnd: '2026-08-31T22:00:00.000Z',
             eligibleHours: 5,
@@ -739,7 +737,7 @@ describe('buildBoardVolunteers', () => {
     it('shows a timesheet alongside a covering DRAFT contract', () => {
       const september = {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         // September 2026 as Berlin bounds.
         periodStart: '2026-08-31T22:00:00.000Z',
         periodEnd: '2026-09-30T22:00:00.000Z',
@@ -779,7 +777,7 @@ describe('buildBoardVolunteers', () => {
     it('shows a timesheet alongside a covering awaiting-signature contract', () => {
       const september = {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         periodStart: '2026-08-31T22:00:00.000Z',
         periodEnd: '2026-09-30T22:00:00.000Z',
         eligibleHours: 5,
@@ -826,7 +824,7 @@ describe('buildBoardVolunteers', () => {
       },
     ) => ({
       volunteerId: 'v-1',
-      reimbursementTypeId: 'rt-ehrenamt',
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
       periodStart,
       periodEnd,
       eligibleHours: 3,
@@ -1034,7 +1032,9 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
@@ -1048,7 +1048,9 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs).toHaveLength(1);
@@ -1068,7 +1070,9 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
@@ -1085,7 +1089,7 @@ describe('buildBoardVolunteers', () => {
       paidShiftSignups: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           // September 2026 as Berlin bounds.
           periodStart: '2026-08-31T22:00:00.000Z',
           periodEnd: '2026-09-30T22:00:00.000Z',
@@ -1112,7 +1116,7 @@ describe('buildBoardVolunteers', () => {
       paidShiftSignups: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           // September 2026 as Berlin bounds.
           periodStart: '2026-08-31T22:00:00.000Z',
           periodEnd: '2026-09-30T22:00:00.000Z',
@@ -1143,7 +1147,7 @@ describe('buildBoardVolunteers', () => {
         paidShiftSignups: [
           {
             volunteerId: 'v-1',
-            reimbursementTypeId: 'rt-ehrenamt',
+            reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             // March 2026 as Berlin bounds.
             periodStart: '2026-02-28T23:00:00.000Z',
             periodEnd: '2026-03-31T22:00:00.000Z',
@@ -1168,11 +1172,13 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
       paidShiftSignups: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           // September 2026 as Berlin bounds.
           periodStart: '2026-08-31T22:00:00.000Z',
           periodEnd: '2026-09-30T22:00:00.000Z',
@@ -1472,7 +1478,7 @@ describe('buildBoardVolunteers', () => {
       timesheetsToCreate: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 12,
@@ -1514,7 +1520,7 @@ describe('buildBoardVolunteers', () => {
       timesheetsToCreate: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 4,

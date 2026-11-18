@@ -31,7 +31,7 @@ function toInvoiceFilter(
 ): InvoiceFilter {
   return {
     volunteerId: filter?.volunteerId ?? undefined,
-    reimbursementTypeId: filter?.reimbursementTypeId ?? undefined,
+    reimbursementTypeKey: filter?.reimbursementTypeKey ?? undefined,
     status: filter?.status ?? undefined,
     periodStart: filter?.periodStart ?? undefined,
     periodEnd: filter?.periodEnd ?? undefined,
@@ -135,8 +135,8 @@ export class InvoiceQueryResolver {
   @Query(() => [TimeEntry])
   async eligibleTimeEntriesForInvoice(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('periodStart', { type: () => Date, nullable: true })
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
@@ -147,7 +147,7 @@ export class InvoiceQueryResolver {
     await this.assertCanAccessVolunteer(volunteerId, session, context);
     const entries = await this.invoiceService.findEligibleTimeEntries(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       context.organizationUnitId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
@@ -158,8 +158,8 @@ export class InvoiceQueryResolver {
   @Query(() => [TimeEntry])
   async timeEntriesAwaitingReviewForInvoice(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('periodStart', { type: () => Date, nullable: true })
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
@@ -170,7 +170,7 @@ export class InvoiceQueryResolver {
     await this.assertCanAccessVolunteer(volunteerId, session, context);
     const entries = await this.invoiceService.findTimeEntriesAwaitingReview(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       context.organizationUnitId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
@@ -217,7 +217,7 @@ export class InvoiceQueryResolver {
     return rows.map((row) => {
       const user = userById.get(row.volunteerId);
       const reimbursementType = reimbursementTypeById.get(
-        row.reimbursementTypeId,
+        row.reimbursementTypeKey,
       );
       if (!user) {
         throw new NotFoundGraphQLError(
@@ -226,7 +226,7 @@ export class InvoiceQueryResolver {
       }
       if (!reimbursementType) {
         throw new NotFoundGraphQLError(
-          `Reimbursement type with ID ${row.reimbursementTypeId} not found`,
+          `Reimbursement type with ID ${row.reimbursementTypeKey} not found`,
         );
       }
       return {
@@ -240,7 +240,7 @@ export class InvoiceQueryResolver {
         // issued document computes its own total at creation.
         estimatedAmountCents: Math.round(
           row.eligibleHours *
-            (rateCentsByTypeId.get(row.reimbursementTypeId) ??
+            (rateCentsByTypeId.get(row.reimbursementTypeKey) ??
               reimbursementType.platformDefaultRateCents),
         ),
         hasUncoveredHours: row.hasUncoveredHours,
@@ -279,7 +279,7 @@ export class InvoiceQueryResolver {
     return rows.map((row) => {
       const user = userById.get(row.volunteerId);
       const reimbursementType = reimbursementTypeById.get(
-        row.reimbursementTypeId,
+        row.reimbursementTypeKey,
       );
       if (!user) {
         throw new NotFoundGraphQLError(
@@ -288,7 +288,7 @@ export class InvoiceQueryResolver {
       }
       if (!reimbursementType) {
         throw new NotFoundGraphQLError(
-          `Reimbursement type with ID ${row.reimbursementTypeId} not found`,
+          `Reimbursement type with ID ${row.reimbursementTypeKey} not found`,
         );
       }
       return {

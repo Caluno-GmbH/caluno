@@ -41,7 +41,7 @@ describe('reimbursementManualBaselines schema', () => {
       .values({
         organizationId: organization.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         year: 2026,
         amountCents: 10_000,
       })
@@ -53,7 +53,7 @@ describe('reimbursementManualBaselines schema', () => {
         .values({
           organizationId: organization.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
           amountCents: 20_000,
         })
@@ -80,7 +80,7 @@ describe('reimbursementManualBaselines schema', () => {
       .values({
         organizationId: orgA.organization.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         year: 2026,
         amountCents: 10_000,
       })
@@ -92,7 +92,7 @@ describe('reimbursementManualBaselines schema', () => {
         .values({
           organizationId: orgB.organization.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
           amountCents: 20_000,
         })
@@ -115,7 +115,7 @@ describe('reimbursementManualBaselines schema', () => {
       .values({
         organizationId: organization.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         year: 2025,
         amountCents: 5_000,
       })
@@ -127,7 +127,7 @@ describe('reimbursementManualBaselines schema', () => {
         .values({
           organizationId: organization.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
           amountCents: 10_000,
         })

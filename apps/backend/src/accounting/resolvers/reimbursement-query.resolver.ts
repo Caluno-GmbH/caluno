@@ -78,8 +78,8 @@ export class ReimbursementQueryResolver {
   @Query(() => YearlyUsage)
   async yearlyUsage(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     // Same cutoff the PDF uses (the document's period end), so the
     // already-received figure in the dialog matches the generated document.
@@ -102,7 +102,7 @@ export class ReimbursementQueryResolver {
     return this.reimbursementRateService.getYearlyUsage(
       organizationId,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
       asOfDate ?? undefined,
       excludeInvoiceId ?? undefined,
@@ -148,8 +148,8 @@ export class ReimbursementQueryResolver {
   @Query(() => BundleDownloadStatus, { nullable: true })
   async bundleDownloadStatus(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<BundleDownloadStatus | null> {
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
@@ -163,7 +163,7 @@ export class ReimbursementQueryResolver {
 
     const status = await this.reimbursementRateService.getBundleDownloadStatus(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
     );
     if (!status) return null;
 
@@ -174,8 +174,8 @@ export class ReimbursementQueryResolver {
   @Query(() => ManualBaseline, { nullable: true })
   async manualBaseline(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ManualBaseline | null> {
@@ -192,7 +192,7 @@ export class ReimbursementQueryResolver {
     const baseline = await this.reimbursementRateService.getManualBaseline(
       organizationId,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
     );
     if (!baseline) return null;
@@ -202,14 +202,14 @@ export class ReimbursementQueryResolver {
 
   private async toBundleDownloadStatusModel(status: {
     volunteerId: string;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     downloadedAt: Date;
     downloadedByUserId: string | null;
   }): Promise<BundleDownloadStatus> {
     const [volunteer, reimbursementType, downloadedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(status.volunteerId),
       this.reimbursementRateService.findReimbursementTypeById(
-        status.reimbursementTypeId,
+        status.reimbursementTypeKey,
       ),
       status.downloadedByUserId
         ? this.userService.findById(status.downloadedByUserId)
@@ -227,7 +227,7 @@ export class ReimbursementQueryResolver {
 
   private async toManualBaselineModel(baseline: {
     volunteerId: string;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     year: number;
     amountCents: number;
     updatedAt: Date | null;
@@ -237,7 +237,7 @@ export class ReimbursementQueryResolver {
     const [volunteer, reimbursementType, updatedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(baseline.volunteerId),
       this.reimbursementRateService.findReimbursementTypeById(
-        baseline.reimbursementTypeId,
+        baseline.reimbursementTypeKey,
       ),
       baseline.updatedByUserId
         ? this.userService.findById(baseline.updatedByUserId)

@@ -472,7 +472,7 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementRates.organizationId, organization.id),
             eq(
-              schema.reimbursementRates.reimbursementTypeId,
+              schema.reimbursementRates.reimbursementTypeKey,
               reimbursementType.key,
             ),
           ),
@@ -508,7 +508,7 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementRates.organizationUnitId, root.id),
             eq(
-              schema.reimbursementRates.reimbursementTypeId,
+              schema.reimbursementRates.reimbursementTypeKey,
               reimbursementType.key,
             ),
           ),
@@ -543,7 +543,7 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementRates.organizationId, organization.id),
             eq(
-              schema.reimbursementRates.reimbursementTypeId,
+              schema.reimbursementRates.reimbursementTypeKey,
               reimbursementType.key,
             ),
           ),
@@ -562,7 +562,7 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -575,7 +575,7 @@ describe('ReimbursementRateService', () => {
         db.insert(schema.invoices).values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: root.id,
           periodStart: overrides.periodStart,
           periodEnd: overrides.periodStart,
@@ -626,14 +626,14 @@ describe('ReimbursementRateService', () => {
       const editor = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       await db.insert(schema.invoices).values({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -675,7 +675,7 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -688,7 +688,7 @@ describe('ReimbursementRateService', () => {
         db.insert(schema.invoices).values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: root.id,
           periodStart: overrides.periodStart,
           periodEnd: overrides.periodEnd,
@@ -743,7 +743,7 @@ describe('ReimbursementRateService', () => {
         const volunteer = await createUser(db);
         const template = await createDocumentTemplate(db, {
           organizationId: organization.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           kind: DocumentKind.INVOICE,
           signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
         });
@@ -756,7 +756,7 @@ describe('ReimbursementRateService', () => {
             .values({
               documentTemplateId: template.id,
               volunteerId: volunteer.id,
-              reimbursementTypeId: reimbursementType.key,
+              reimbursementTypeKey: reimbursementType.key,
               organizationUnitId: root.id,
               periodStart,
               periodEnd: periodStart,
@@ -849,20 +849,20 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const templateA = await createDocumentTemplate(db, {
         organizationId: orgA.organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateB = await createDocumentTemplate(db, {
         organizationId: orgB.organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       await db.insert(schema.invoices).values({
         documentTemplateId: templateA.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: orgA.root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -876,7 +876,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateB.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: orgB.root.id,
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
         periodEnd: new Date('2026-04-01T00:00:00.000Z'),
@@ -912,14 +912,14 @@ describe('ReimbursementRateService', () => {
       const volunteer = await createUser(db);
       const templateRoot = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         organizationUnitId: root.id,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateSibling = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         organizationUnitId: sibling.id,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
@@ -927,7 +927,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateRoot.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -941,7 +941,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateSibling.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: sibling.id,
         periodStart: new Date('2026-05-01T00:00:00.000Z'),
         periodEnd: new Date('2026-05-01T00:00:00.000Z'),
@@ -1014,7 +1014,7 @@ describe('ReimbursementRateService', () => {
       });
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: type.key,
+        reimbursementTypeKey: type.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -1023,7 +1023,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: type.key,
+        reimbursementTypeKey: type.key,
         organizationUnitId: unit.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -1069,13 +1069,13 @@ describe('ReimbursementRateService', () => {
       });
       const templateEhrenamt = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: ehrenamt.key,
+        reimbursementTypeKey: ehrenamt.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateUebungsleiter = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: uebungsleiter.key,
+        reimbursementTypeKey: uebungsleiter.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -1090,7 +1090,7 @@ describe('ReimbursementRateService', () => {
       const insertInvoice = (overrides: {
         documentTemplateId: string;
         volunteerId: string;
-        reimbursementTypeId: ReimbursementTypeKey;
+        reimbursementTypeKey: ReimbursementTypeKey;
         totalAmountCents: number;
         invoiceStatus: InvoiceStatus;
         periodStart: Date;
@@ -1098,7 +1098,7 @@ describe('ReimbursementRateService', () => {
         db.insert(schema.invoices).values({
           documentTemplateId: overrides.documentTemplateId,
           volunteerId: overrides.volunteerId,
-          reimbursementTypeId: overrides.reimbursementTypeId,
+          reimbursementTypeKey: overrides.reimbursementTypeKey,
           organizationUnitId: unit.id,
           periodStart: overrides.periodStart,
           periodEnd: overrides.periodStart,
@@ -1114,7 +1114,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateEhrenamt.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: ehrenamt.key,
+        reimbursementTypeKey: ehrenamt.key,
         totalAmountCents: 5_000,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-02-01T00:00:00.000Z'),
@@ -1122,7 +1122,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateEhrenamt.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: ehrenamt.key,
+        reimbursementTypeKey: ehrenamt.key,
         totalAmountCents: 2_000,
         invoiceStatus: InvoiceStatus.DECLINED,
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
@@ -1131,7 +1131,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateUebungsleiter.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: uebungsleiter.key,
+        reimbursementTypeKey: uebungsleiter.key,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-06-01T00:00:00.000Z'),
@@ -1139,7 +1139,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateUebungsleiter.id,
         volunteerId: volunteerA.id,
-        reimbursementTypeId: uebungsleiter.key,
+        reimbursementTypeKey: uebungsleiter.key,
         totalAmountCents: 50_000,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2025-06-01T00:00:00.000Z'),
@@ -1149,7 +1149,7 @@ describe('ReimbursementRateService', () => {
       await insertInvoice({
         documentTemplateId: templateEhrenamt.id,
         volunteerId: outsideVolunteer.id,
-        reimbursementTypeId: ehrenamt.key,
+        reimbursementTypeKey: ehrenamt.key,
         totalAmountCents: 9_999,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-02-01T00:00:00.000Z'),
@@ -1222,20 +1222,20 @@ describe('ReimbursementRateService', () => {
       await addMembership(db, volunteer.id, orgB.root.id);
       const templateA = await createDocumentTemplate(db, {
         organizationId: orgA.organization.id,
-        reimbursementTypeId: type.key,
+        reimbursementTypeKey: type.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const templateB = await createDocumentTemplate(db, {
         organizationId: orgB.organization.id,
-        reimbursementTypeId: type.key,
+        reimbursementTypeKey: type.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       await db.insert(schema.invoices).values({
         documentTemplateId: templateA.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: type.key,
+        reimbursementTypeKey: type.key,
         organizationUnitId: orgA.root.id,
         periodStart: new Date('2026-03-01T00:00:00.000Z'),
         periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -1249,7 +1249,7 @@ describe('ReimbursementRateService', () => {
       await db.insert(schema.invoices).values({
         documentTemplateId: templateB.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: type.key,
+        reimbursementTypeKey: type.key,
         organizationUnitId: orgB.root.id,
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
         periodEnd: new Date('2026-04-01T00:00:00.000Z'),
@@ -1352,7 +1352,7 @@ describe('ReimbursementRateService', () => {
       const rows = await db.query.reimbursementManualBaselines.findMany({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           year: 2026,
         },
       });
@@ -1479,7 +1479,7 @@ describe('ReimbursementRateService', () => {
       );
 
       expect(result.volunteerId).toBe(volunteer.id);
-      expect(result.reimbursementTypeId).toBe(type.key);
+      expect(result.reimbursementTypeKey).toBe(type.key);
       expect(result.downloadedByUserId).toBe(downloader.id);
       expect(result.downloadedAt).toBeInstanceOf(Date);
     });
@@ -1515,7 +1515,7 @@ describe('ReimbursementRateService', () => {
           and(
             eq(schema.reimbursementBundleDownloads.volunteerId, volunteer.id),
             eq(
-              schema.reimbursementBundleDownloads.reimbursementTypeId,
+              schema.reimbursementBundleDownloads.reimbursementTypeKey,
               type.key,
             ),
           ),
@@ -1530,7 +1530,7 @@ describe('ReimbursementRateService', () => {
       args: {
         templateId: string;
         volunteerId: string;
-        reimbursementTypeId: ReimbursementTypeKey;
+        reimbursementTypeKey: ReimbursementTypeKey;
         scopeUnitId: string;
         totalAmountCents?: number;
       },
@@ -1540,7 +1540,7 @@ describe('ReimbursementRateService', () => {
         .values({
           documentTemplateId: args.templateId,
           volunteerId: args.volunteerId,
-          reimbursementTypeId: args.reimbursementTypeId,
+          reimbursementTypeKey: args.reimbursementTypeKey,
           organizationUnitId: args.scopeUnitId,
           periodStart: new Date('2026-03-01T00:00:00.000Z'),
           periodEnd: new Date('2026-03-01T00:00:00.000Z'),
@@ -1562,14 +1562,14 @@ describe('ReimbursementRateService', () => {
       const downloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const invoice = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
@@ -1595,14 +1595,14 @@ describe('ReimbursementRateService', () => {
       const secondDownloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const invoice = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
@@ -1637,20 +1637,20 @@ describe('ReimbursementRateService', () => {
       const downloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const included = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
       const excluded = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 
@@ -1675,14 +1675,14 @@ describe('ReimbursementRateService', () => {
       const downloader = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
       const otherVolunteerInvoice = await insertReadyInvoice(db, {
         templateId: template.id,
         volunteerId: otherVolunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         scopeUnitId: root.id,
       });
 

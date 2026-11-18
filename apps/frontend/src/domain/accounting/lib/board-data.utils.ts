@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '@repo/data';
 import {
   ContractStatus,
   type ContractSummary,
@@ -448,7 +449,7 @@ export function monthsInRange(
 /** A volunteer's unclaimed hours for one reimbursement type in one Berlin month (see `volunteersNeedingTimesheets`). */
 export interface TimesheetToCreate {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: string;
   periodEnd: string;
   eligibleHours: number;
@@ -464,7 +465,7 @@ export interface TimesheetToCreate {
 /** A paid shift a volunteer joined whose month no open contract/invoice covers. */
 export interface PaidShiftSignup {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: string;
   periodEnd: string;
 }
@@ -509,7 +510,9 @@ export function buildBoardVolunteers({
     const limits: Partial<
       Record<PauschalenType, { used: number; total: number }>
     > = {};
-    const reimbursementTypeIds: Partial<Record<PauschalenType, string>> = {};
+    const reimbursementTypeKeys: Partial<
+      Record<PauschalenType, ReimbursementTypeKey>
+    > = {};
     const volunteerTimesheetsToCreate = timesheetsToCreate.filter(
       (timesheet) => timesheet.volunteerId === entry.volunteer.id,
     );
@@ -518,7 +521,7 @@ export function buildBoardVolunteers({
     );
     const eligibleTypeIds = new Set([
       ...(eligibleHoursVolunteers?.get(entry.volunteer.id) ?? []),
-      ...volunteerTimesheetsToCreate.map((t) => t.reimbursementTypeId),
+      ...volunteerTimesheetsToCreate.map((t) => t.reimbursementTypeKey),
     ]);
 
     for (const usage of entry.usageByType) {
@@ -529,12 +532,12 @@ export function buildBoardVolunteers({
         used: centsToEuros(usage.usedCents),
         total: centsToEuros(usage.limitCents),
       };
-      reimbursementTypeIds[type] = usage.reimbursementType.id;
+      reimbursementTypeKeys[type] = usage.reimbursementType.key;
 
       const contractsForType = contracts.filter(
         (c) =>
           c.volunteer.id === entry.volunteer.id &&
-          c.reimbursementType.id === usage.reimbursementType.id &&
+          c.reimbursementType.key === usage.reimbursementType.key &&
           contractPeriodOverlapsYear(c, year),
       );
 
@@ -546,7 +549,7 @@ export function buildBoardVolunteers({
         (c) => c.contractStatus === ContractStatus.Active,
       );
       const timesheetsForType = volunteerTimesheetsToCreate.filter(
-        (t) => t.reimbursementTypeId === usage.reimbursementType.id,
+        (t) => t.reimbursementTypeKey === usage.reimbursementType.key,
       );
       const months = monthsInRange(year, dateRange);
       const inSelectedMonths = (periodStart: string) => {
@@ -557,7 +560,7 @@ export function buildBoardVolunteers({
       // volunteer and Pauschale, the earliest uncovered month of the year, so a
       // filter here would hide a task that is still open.
       const paidShiftSignupsForType = volunteerPaidShiftSignups
-        .filter((s) => s.reimbursementTypeId === usage.reimbursementType.id)
+        .filter((s) => s.reimbursementTypeKey === usage.reimbursementType.key)
         .sort(
           (a, b) =>
             new Date(a.periodStart).getTime() -
@@ -572,7 +575,7 @@ export function buildBoardVolunteers({
         const invoicesForMonth = invoices.filter(
           (i) =>
             i.volunteer.id === entry.volunteer.id &&
-            i.reimbursementType.id === usage.reimbursementType.id &&
+            i.reimbursementType.key === usage.reimbursementType.key &&
             invoiceInMonth(i, y, month),
         );
         for (const invoice of invoicesForMonth) {
@@ -618,7 +621,7 @@ export function buildBoardVolunteers({
       // contract" row, so the missing Vereinbarung is visible instead of the
       // hours being silently attributed to an agreement for another period.
       if (
-        eligibleTypeIds?.has(usage.reimbursementType.id) ||
+        eligibleTypeIds?.has(usage.reimbursementType.key) ||
         paidShiftSignupsForType.length > 0
       ) {
         // The earliest month of this Pauschale with an hour no non-declined
@@ -698,7 +701,7 @@ export function buildBoardVolunteers({
         entry.usageByType.reduce((sum, u) => sum + u.limitCents, 0),
       ),
       limits,
-      reimbursementTypeIds,
+      reimbursementTypeKeys,
       documents,
     };
   });

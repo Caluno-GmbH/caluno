@@ -62,11 +62,11 @@ export class VolunteerAllowanceService {
         )
       : undefined;
     // Unpaid shifts don't show allowance states
-    if (shift && !shift.reimbursementTypeId) {
+    if (shift && !shift.reimbursementTypeKey) {
       return [];
     }
 
-    const paidTypeId = shift?.reimbursementTypeId ?? undefined;
+    const paidTypeId = shift?.reimbursementTypeKey ?? undefined;
     // The ceiling is per calendar year, so measure against the shift's year.
     const year = appDateParts(shift?.period.start ?? new Date()).year;
 
@@ -131,7 +131,7 @@ export class VolunteerAllowanceService {
     shiftInstanceId: string,
     organizationUnitId: string,
   ): Promise<{
-    reimbursementTypeId: ReimbursementTypeKey | null;
+    reimbursementTypeKey: ReimbursementTypeKey | null;
     durationMinutes: number;
     period: BillingPeriod;
   }> {
@@ -146,7 +146,7 @@ export class VolunteerAllowanceService {
       throw new NotFoundGraphQLError('Shift instance not found');
     }
     return {
-      reimbursementTypeId: instance.master.reimbursementTypeId,
+      reimbursementTypeKey: instance.master.reimbursementTypeKey,
       durationMinutes: Math.max(
         0,
         Math.round(

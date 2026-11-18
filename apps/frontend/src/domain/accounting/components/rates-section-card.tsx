@@ -115,7 +115,7 @@ function RateRow({
     }
     try {
       await setRate.mutateAsync({
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         hourlyRateCents: eurosToCents(num),
         organizationUnitId,
       });

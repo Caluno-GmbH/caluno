@@ -36,9 +36,9 @@ applyBunAuthMocks(mock.module);
 setDefaultTimeout(30_000);
 
 const ACTIVE_TEMPLATE = `
-  query ActiveTemplate($typeId: ID!, $kind: DocumentKind!, $unitId: ID) {
+  query ActiveTemplate($typeId: ReimbursementTypeKey!, $kind: DocumentKind!, $unitId: ID) {
     activeDocumentTemplate(
-      reimbursementTypeId: $typeId
+      reimbursementTypeKey: $typeId
       kind: $kind
       organizationUnitId: $unitId
     ) {
@@ -55,7 +55,7 @@ const SETUP_STATUS = `
   query SetupStatus {
     accountingSetupStatus {
       slots {
-        reimbursementTypeId
+        reimbursementTypeKey
         hasContractTemplate
         hasInvoiceTemplate
         ready
@@ -77,7 +77,7 @@ interface ActiveTemplateData {
 interface SetupStatusData {
   accountingSetupStatus: {
     slots: {
-      reimbursementTypeId: ReimbursementTypeKey;
+      reimbursementTypeKey: ReimbursementTypeKey;
       hasContractTemplate: boolean;
       hasInvoiceTemplate: boolean;
       ready: boolean;
@@ -108,7 +108,7 @@ describe('document templates resolve through the unit ancestor chain', () => {
     createDocumentTemplate(db, {
       organizationId,
       organizationUnitId,
-      reimbursementTypeId: typeId,
+      reimbursementTypeKey: typeId,
       kind,
       signees: SIGNEES,
     });
@@ -130,7 +130,7 @@ describe('document templates resolve through the unit ancestor chain', () => {
     });
     expect(response.errors).toBeUndefined();
     const slot = response.data?.accountingSetupStatus.slots.find(
-      (candidate) => candidate.reimbursementTypeId === typeId,
+      (candidate) => candidate.reimbursementTypeKey === typeId,
     );
     return { slot, status: response.data?.accountingSetupStatus };
   };

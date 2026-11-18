@@ -5,19 +5,19 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
   reimbursementTypes: {
     rates: r.many.reimbursementRates({
       from: r.reimbursementTypes.key,
-      to: r.reimbursementRates.reimbursementTypeId,
+      to: r.reimbursementRates.reimbursementTypeKey,
     }),
     documentTemplates: r.many.documentTemplates({
       from: r.reimbursementTypes.key,
-      to: r.documentTemplates.reimbursementTypeId,
+      to: r.documentTemplates.reimbursementTypeKey,
     }),
     contracts: r.many.contracts({
       from: r.reimbursementTypes.key,
-      to: r.contracts.reimbursementTypeId,
+      to: r.contracts.reimbursementTypeKey,
     }),
     invoices: r.many.invoices({
       from: r.reimbursementTypes.key,
-      to: r.invoices.reimbursementTypeId,
+      to: r.invoices.reimbursementTypeKey,
     }),
   },
   reimbursementRates: {
@@ -27,7 +27,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementRates.reimbursementTypeId,
+      from: r.reimbursementRates.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),
@@ -43,7 +43,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       to: r.organizationUnits.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.documentTemplates.reimbursementTypeId,
+      from: r.documentTemplates.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),
@@ -91,7 +91,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       to: r.organizationUnits.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.contracts.reimbursementTypeId,
+      from: r.contracts.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),
@@ -124,7 +124,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       to: r.organizationUnits.id,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.invoices.reimbursementTypeId,
+      from: r.invoices.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),
@@ -233,7 +233,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementBundleDeliveries.reimbursementTypeId,
+      from: r.reimbursementBundleDeliveries.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),
@@ -249,7 +249,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementBundleDownloads.reimbursementTypeId,
+      from: r.reimbursementBundleDownloads.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),
@@ -270,7 +270,7 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     reimbursementType: r.one.reimbursementTypes({
-      from: r.reimbursementManualBaselines.reimbursementTypeId,
+      from: r.reimbursementManualBaselines.reimbursementTypeKey,
       to: r.reimbursementTypes.key,
       optional: false,
     }),

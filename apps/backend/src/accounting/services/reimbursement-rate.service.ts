@@ -47,8 +47,8 @@ export interface VolunteerYearlyUsageResult {
 /** Composite key for the unit-and-type override lookup map below. */
 const overrideKey = (
   organizationUnitId: string | null,
-  reimbursementTypeId: ReimbursementTypeKey,
-): string => `${organizationUnitId ?? 'org'}:${reimbursementTypeId}`;
+  reimbursementTypeKey: ReimbursementTypeKey,
+): string => `${organizationUnitId ?? 'org'}:${reimbursementTypeKey}`;
 
 @Injectable()
 export class ReimbursementRateService {
@@ -105,7 +105,7 @@ export class ReimbursementRateService {
     // for each reimbursement type independently.
     const overrideByKey = new Map(
       overrides.map((override) => [
-        overrideKey(override.organizationUnitId, override.reimbursementTypeId),
+        overrideKey(override.organizationUnitId, override.reimbursementTypeKey),
         override,
       ]),
     );
@@ -200,7 +200,7 @@ export class ReimbursementRateService {
    */
   async setReimbursementRate(
     organizationId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     hourlyRateCents: number,
     userId: string,
     organizationUnitId?: string,
@@ -208,17 +208,17 @@ export class ReimbursementRateService {
     if (hourlyRateCents <= 0) {
       throw new BadRequestGraphQLError('Hourly rate must be greater than zero');
     }
-    await this.findReimbursementTypeById(reimbursementTypeId);
+    await this.findReimbursementTypeById(reimbursementTypeKey);
 
     const target = organizationUnitId ?? null;
 
     const rate = await this.db.transaction(async (tx) => {
       const existing = await tx.query.reimbursementRates.findFirst({
         where: target
-          ? { organizationUnitId: target, reimbursementTypeId }
+          ? { organizationUnitId: target, reimbursementTypeKey }
           : {
               organizationId,
-              reimbursementTypeId,
+              reimbursementTypeKey,
               organizationUnitId: { isNull: true },
             },
       });
@@ -237,7 +237,7 @@ export class ReimbursementRateService {
         .values({
           organizationId,
           organizationUnitId: target,
-          reimbursementTypeId,
+          reimbursementTypeKey,
           hourlyRateCents,
         })
         .returning();
@@ -275,19 +275,19 @@ export class ReimbursementRateService {
   async getYearlyUsage(
     organizationId: string,
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     year: number,
     asOfDate?: Date,
     excludeInvoiceId?: string,
   ): Promise<YearlyUsage> {
     const { start: yearStart, end: yearEnd } = billingYearBounds(year);
     const reimbursementType =
-      await this.findReimbursementTypeById(reimbursementTypeId);
+      await this.findReimbursementTypeById(reimbursementTypeKey);
 
     const conditions = [
       eq(schema.documentTemplates.organizationId, organizationId),
       eq(schema.invoices.volunteerId, volunteerId),
-      eq(schema.invoices.reimbursementTypeId, reimbursementTypeId),
+      eq(schema.invoices.reimbursementTypeKey, reimbursementTypeKey),
       gte(schema.invoices.periodStart, yearStart),
       lt(schema.invoices.periodStart, yearEnd),
     ];
@@ -316,7 +316,7 @@ export class ReimbursementRateService {
       this.getManualBaseline(
         organizationId,
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         year,
       ),
     ]);
@@ -365,7 +365,7 @@ export class ReimbursementRateService {
       this.db
         .select({
           volunteerId: schema.invoices.volunteerId,
-          reimbursementTypeId: schema.invoices.reimbursementTypeId,
+          reimbursementTypeKey: schema.invoices.reimbursementTypeKey,
           totalAmountCents: schema.invoices.totalAmountCents,
           invoiceStatus: schema.invoices.invoiceStatus,
         })
@@ -390,7 +390,7 @@ export class ReimbursementRateService {
         },
         columns: {
           volunteerId: true,
-          reimbursementTypeId: true,
+          reimbursementTypeKey: true,
           amountCents: true,
         },
       }),
@@ -399,14 +399,14 @@ export class ReimbursementRateService {
     const usedByVolunteerAndType = new Map<string, number>();
     for (const invoice of invoices) {
       if (invoice.invoiceStatus === InvoiceStatus.DECLINED) continue;
-      const key = `${invoice.volunteerId}:${invoice.reimbursementTypeId}`;
+      const key = `${invoice.volunteerId}:${invoice.reimbursementTypeKey}`;
       usedByVolunteerAndType.set(
         key,
         (usedByVolunteerAndType.get(key) ?? 0) + invoice.totalAmountCents,
       );
     }
     for (const baseline of baselines) {
-      const key = `${baseline.volunteerId}:${baseline.reimbursementTypeId}`;
+      const key = `${baseline.volunteerId}:${baseline.reimbursementTypeKey}`;
       usedByVolunteerAndType.set(
         key,
         (usedByVolunteerAndType.get(key) ?? 0) + baseline.amountCents,
@@ -452,18 +452,18 @@ export class ReimbursementRateService {
   async getEffectiveRateCents(
     organizationId: string,
     organizationUnitId: string | null | undefined,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
   ): Promise<number> {
     const rates = await this.getEffectiveRates(
       organizationId,
       organizationUnitId,
     );
     const match = rates.find(
-      (rate) => rate.reimbursementType.key === reimbursementTypeId,
+      (rate) => rate.reimbursementType.key === reimbursementTypeKey,
     );
     if (!match) {
       throw new NotFoundGraphQLError(
-        `Reimbursement type with ID ${reimbursementTypeId} not found`,
+        `Reimbursement type with ID ${reimbursementTypeKey} not found`,
       );
     }
     return match.hourlyRateCents;
@@ -471,16 +471,16 @@ export class ReimbursementRateService {
 
   async getBundleDownloadStatus(
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
   ): Promise<ReimbursementBundleDownloadEntity | undefined> {
     return this.db.query.reimbursementBundleDownloads.findFirst({
-      where: { volunteerId, reimbursementTypeId },
+      where: { volunteerId, reimbursementTypeKey },
     });
   }
 
   async recordBundleDownload(
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     downloadedByUserId: string,
     invoiceIds: string[] = [],
     inTransaction?: Database,
@@ -490,14 +490,14 @@ export class ReimbursementRateService {
         .insert(schema.reimbursementBundleDownloads)
         .values({
           volunteerId,
-          reimbursementTypeId,
+          reimbursementTypeKey,
           downloadedAt: new Date(),
           downloadedByUserId,
         })
         .onConflictDoUpdate({
           target: [
             schema.reimbursementBundleDownloads.volunteerId,
-            schema.reimbursementBundleDownloads.reimbursementTypeId,
+            schema.reimbursementBundleDownloads.reimbursementTypeKey,
           ],
           set: { downloadedAt: new Date(), downloadedByUserId },
         })
@@ -506,7 +506,7 @@ export class ReimbursementRateService {
       await this.markInvoicesPaid(
         tx,
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         downloadedByUserId,
         invoiceIds,
       );
@@ -520,7 +520,7 @@ export class ReimbursementRateService {
   async markInvoicesPaid(
     tx: Database,
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     paidByUserId: string | null,
     invoiceIds: string[],
   ): Promise<void> {
@@ -533,7 +533,7 @@ export class ReimbursementRateService {
         and(
           inArray(schema.invoices.id, invoiceIds),
           eq(schema.invoices.volunteerId, volunteerId),
-          eq(schema.invoices.reimbursementTypeId, reimbursementTypeId),
+          eq(schema.invoices.reimbursementTypeKey, reimbursementTypeKey),
           eq(schema.invoices.invoiceStatus, InvoiceStatus.READY),
           isNull(schema.invoices.paidAt),
         ),
@@ -543,18 +543,18 @@ export class ReimbursementRateService {
   async getManualBaseline(
     organizationId: string,
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     year: number,
   ): Promise<ManualBaselineEntity | undefined> {
     return this.db.query.reimbursementManualBaselines.findFirst({
-      where: { organizationId, volunteerId, reimbursementTypeId, year },
+      where: { organizationId, volunteerId, reimbursementTypeKey, year },
     });
   }
 
   async setManualBaseline(
     organizationId: string,
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     year: number,
     amountCents: number,
     updatedByUserId: string,
@@ -562,14 +562,14 @@ export class ReimbursementRateService {
     if (amountCents < 0) {
       throw new BadRequestGraphQLError('Amount must not be negative');
     }
-    await this.findReimbursementTypeById(reimbursementTypeId);
+    await this.findReimbursementTypeById(reimbursementTypeKey);
 
     const [row] = await this.db
       .insert(schema.reimbursementManualBaselines)
       .values({
         organizationId,
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         year,
         amountCents,
         updatedByUserId,
@@ -578,7 +578,7 @@ export class ReimbursementRateService {
         target: [
           schema.reimbursementManualBaselines.organizationId,
           schema.reimbursementManualBaselines.volunteerId,
-          schema.reimbursementManualBaselines.reimbursementTypeId,
+          schema.reimbursementManualBaselines.reimbursementTypeKey,
           schema.reimbursementManualBaselines.year,
         ],
         set: { amountCents, updatedByUserId },

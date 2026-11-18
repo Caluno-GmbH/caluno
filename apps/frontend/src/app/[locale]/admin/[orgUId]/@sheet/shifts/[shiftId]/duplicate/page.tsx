@@ -60,7 +60,7 @@ export default async function DuplicateShiftPage({
         recurrenceEndsAt: shift.recurrenceEndsAt,
         minVolunteers: shift.minVolunteers ?? undefined,
         maxVolunteers: shift.maxVolunteers ?? undefined,
-        reimbursementTypeId: shift.reimbursementTypeId ?? undefined,
+        reimbursementTypeKey: shift.reimbursementTypeKey ?? undefined,
       }}
     />
   );

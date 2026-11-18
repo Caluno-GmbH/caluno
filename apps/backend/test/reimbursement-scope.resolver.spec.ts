@@ -393,7 +393,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const caller = await createUser(db);
       const template = await createDocumentTemplate(db, {
         organizationId: organization.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -402,7 +402,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         .values({
           documentTemplateId: template.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-03-01T00:00:00.000Z'),
           periodEnd: new Date('2026-03-01T00:00:00.000Z'),
           totalAmountCents: 10_000,
@@ -530,11 +530,11 @@ describe('reimbursement-rate resolver unit scoping', () => {
   describe('yearlyUsage', () => {
     const createInvoiceTemplate = (
       organizationId: string,
-      reimbursementTypeId: ReimbursementTypeKey,
+      reimbursementTypeKey: ReimbursementTypeKey,
     ) =>
       createDocumentTemplate(db, {
         organizationId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         kind: DocumentKind.INVOICE,
         signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
       });
@@ -542,7 +542,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
     const insertInvoice = async (input: {
       documentTemplateId: string;
       volunteerId: string;
-      reimbursementTypeId: ReimbursementTypeKey;
+      reimbursementTypeKey: ReimbursementTypeKey;
       totalAmountCents: number;
       invoiceStatus: InvoiceStatus;
       scopeUnitId: string;
@@ -552,7 +552,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
         .values({
           documentTemplateId: input.documentTemplateId,
           volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           organizationUnitId: input.scopeUnitId,
           periodStart: new Date('2026-03-01T00:00:00.000Z'),
           periodEnd: new Date('2026-04-01T00:00:00.000Z'),
@@ -606,7 +606,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
         scopeUnitId: branchA.id,
@@ -637,7 +637,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         totalAmountCents: 10_000,
         invoiceStatus: InvoiceStatus.READY,
         scopeUnitId: branchA.id,
@@ -645,7 +645,7 @@ describe('reimbursement-rate resolver unit scoping', () => {
       const inProgress = await insertInvoice({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         totalAmountCents: 4_000,
         invoiceStatus: InvoiceStatus.AWAITING_VOLUNTEER_SIGNATURE,
         scopeUnitId: branchA.id,

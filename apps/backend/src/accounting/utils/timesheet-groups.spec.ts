@@ -19,7 +19,7 @@ function entry(
   return {
     id: `entry-${sequence}`,
     volunteerId: VOLUNTEER,
-    reimbursementTypeId: TYPE,
+    reimbursementTypeKey: TYPE,
     startedAt,
     endedAt: new Date(startedAt.getTime() + hours * 3_600_000),
     ...overrides,
@@ -64,7 +64,7 @@ describe('groupTimesheetCandidates', () => {
         entry(july(3), 1),
         entry(july(4), 1, { volunteerId: 'volunteer-2' }),
         entry(july(5), 1, {
-          reimbursementTypeId: ReimbursementTypeKey.UEBUNGSLEITER,
+          reimbursementTypeKey: ReimbursementTypeKey.UEBUNGSLEITER,
         }),
       ],
       new Set(),

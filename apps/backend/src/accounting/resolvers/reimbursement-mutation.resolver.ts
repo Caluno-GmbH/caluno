@@ -39,8 +39,8 @@ export class ReimbursementMutationResolver {
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
   @Mutation(() => ReimbursementRate)
   async setReimbursementRate(
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('hourlyRateCents', { type: () => Int }) hourlyRateCents: number,
     @Args('organizationUnitId', { type: () => ID, nullable: true })
     organizationUnitId: string | null | undefined,
@@ -62,7 +62,7 @@ export class ReimbursementMutationResolver {
 
     const rate = await this.reimbursementRateService.setReimbursementRate(
       organizationId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       hourlyRateCents,
       session.user.id,
       organizationUnitId ?? undefined,
@@ -74,8 +74,8 @@ export class ReimbursementMutationResolver {
   @Mutation(() => BundleDownloadStatus)
   async recordBundleDownload(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('invoiceIds', { type: () => [ID], nullable: true })
     invoiceIds: string[] | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
@@ -92,7 +92,7 @@ export class ReimbursementMutationResolver {
 
     const status = await this.reimbursementRateService.recordBundleDownload(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       session.user.id,
       invoiceIds ?? [],
     );
@@ -100,7 +100,7 @@ export class ReimbursementMutationResolver {
     const [volunteer, reimbursementType, downloadedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(status.volunteerId),
       this.reimbursementRateService.findReimbursementTypeById(
-        status.reimbursementTypeId,
+        status.reimbursementTypeKey,
       ),
       status.downloadedByUserId
         ? this.userService.findById(status.downloadedByUserId)
@@ -120,8 +120,8 @@ export class ReimbursementMutationResolver {
   @Mutation(() => ManualBaseline)
   async setManualBaseline(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     @Args('amountCents', { type: () => Int }) amountCents: number,
     @Context() context: AuthenticatedGraphQLContext,
@@ -151,7 +151,7 @@ export class ReimbursementMutationResolver {
     const baseline = await this.reimbursementRateService.setManualBaseline(
       organizationId,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
       amountCents,
       session.user.id,
@@ -160,7 +160,7 @@ export class ReimbursementMutationResolver {
     const [volunteer, reimbursementType, updatedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(baseline.volunteerId),
       this.reimbursementRateService.findReimbursementTypeById(
-        baseline.reimbursementTypeId,
+        baseline.reimbursementTypeKey,
       ),
       this.userService.findById(session.user.id),
     ]);

@@ -21,6 +21,6 @@ export class AddTimeEntryInput {
   // Marks this entry as paid/reimbursable time under the given Pauschale
   // type. Left null, the entry is unpaid — the same as any entry created
   // before this field existed (see time-entry.schema.ts's default/check).
-  @Field(() => String, { nullable: true })
-  reimbursementTypeId?: ReimbursementTypeKey | null;
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 }

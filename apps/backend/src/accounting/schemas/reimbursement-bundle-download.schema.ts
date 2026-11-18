@@ -14,7 +14,7 @@ export const reimbursementBundleDownloads = snakeCase.table(
     volunteerId: text('volunteer_id')
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
@@ -30,7 +30,7 @@ export const reimbursementBundleDownloads = snakeCase.table(
   (table) => [
     uniqueIndex('uq_reimbursement_bundle_downloads_volunteer_type').on(
       table.volunteerId,
-      table.reimbursementTypeId,
+      table.reimbursementTypeKey,
     ),
   ],
 );

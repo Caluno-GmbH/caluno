@@ -23,7 +23,7 @@ export const reimbursementRates = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'cascade' },
     ),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
@@ -32,10 +32,10 @@ export const reimbursementRates = snakeCase.table(
   },
   (table) => [
     uniqueIndex('uq_reimbursement_rates_org_default')
-      .on(table.organizationId, table.reimbursementTypeId)
+      .on(table.organizationId, table.reimbursementTypeKey)
       .where(sql`${table.organizationUnitId} IS NULL`),
     uniqueIndex('uq_reimbursement_rates_unit_override')
-      .on(table.organizationUnitId, table.reimbursementTypeId)
+      .on(table.organizationUnitId, table.reimbursementTypeKey)
       .where(sql`${table.organizationUnitId} IS NOT NULL`),
   ],
 );

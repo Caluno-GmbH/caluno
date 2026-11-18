@@ -54,7 +54,7 @@ export type ShiftFixture = {
   location?: string;
   imageUrl?: string;
   joinRequiresApproval?: boolean;
-  reimbursementTypeId?: ReimbursementTypeKey;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   /** Invites inserted with this status instead of JOINED (does not count toward capacity). */
   pendingInviteUserIds?: string[];
   /**
@@ -522,7 +522,7 @@ export const ensureShiftWithInvites = async (
       createdById,
       visibility: shift.visibility ?? ShiftVisibility.INVITED_MEMBERS,
       joinRequiresApproval: shift.joinRequiresApproval ?? false,
-      reimbursementTypeId: shift.reimbursementTypeId ?? null,
+      reimbursementTypeKey: shift.reimbursementTypeKey ?? null,
       maxVolunteers: shift.maxVolunteers ?? null,
       minVolunteers: shift.minVolunteers ?? null,
       originalStartsAt: shift.startsAt,

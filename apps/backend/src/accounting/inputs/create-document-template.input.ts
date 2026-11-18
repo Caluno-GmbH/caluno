@@ -10,8 +10,8 @@ export class CreateDocumentTemplateInput {
   @Field(() => ID, { nullable: true })
   organizationUnitId?: string | null;
 
-  @Field(() => ID)
-  reimbursementTypeId!: ReimbursementTypeKey;
+  @Field(() => ReimbursementTypeKey)
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   @Field(() => DocumentKind)
   kind!: DocumentKind;

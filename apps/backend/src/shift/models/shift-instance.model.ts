@@ -39,8 +39,8 @@ export class ShiftInstance {
   @Field(() => Int, { nullable: true })
   overrideMinVolunteers?: number | null;
 
-  @Field(() => ID, { nullable: true })
-  overrideReimbursementTypeId?: ReimbursementTypeKey | null;
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  overrideReimbursementTypeKey?: ReimbursementTypeKey | null;
 
   // Which Pauschalentyp compensates this occurrence, if any. Resolves the
   // occurrence's own override, falling back to the master shift's type; null

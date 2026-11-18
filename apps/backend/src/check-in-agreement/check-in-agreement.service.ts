@@ -10,7 +10,7 @@ import { DATABASE_CONNECTION } from '../database/database-connection';
 import { NotFoundGraphQLError } from '../graphql/errors';
 import { OrganizationUnitDataService } from '../organization/organization-unit-data.service';
 import { ShiftService } from '../shift/shift.service';
-import { resolveEffectiveReimbursementTypeId } from '../shift/utils/effective-reimbursement-type';
+import { resolveEffectiveReimbursementTypeKey } from '../shift/utils/effective-reimbursement-type';
 import { AgreementStatus } from './agreement-status.enum';
 import { CheckInAgreement } from './check-in-agreement.model';
 
@@ -50,9 +50,9 @@ export class AgreementStatusService {
       shiftInstanceId,
       organizationUnitId,
     );
-    const typeId = resolveEffectiveReimbursementTypeId(
-      instance.overrideReimbursementTypeId,
-      instance.master.reimbursementTypeId,
+    const typeId = resolveEffectiveReimbursementTypeKey(
+      instance.overrideReimbursementTypeKey,
+      instance.master.reimbursementTypeKey,
     );
 
     // No reimbursement type → agreement does not apply.
@@ -94,7 +94,7 @@ export class AgreementStatusService {
     const [contracts, templateExists] = await Promise.all([
       this.contractService.findContractsForOrganization(org.id, {
         volunteerId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey: typeId,
         organizationUnitId,
       }),
       this.documentTemplateService

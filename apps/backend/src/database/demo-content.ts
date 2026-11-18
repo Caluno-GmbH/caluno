@@ -911,7 +911,7 @@ export async function seedDemoContent(
         'Feste 1:1-Vorlesepatenschaft für ein Kita-Kind. Ablauf und Ansprechpartnerin vor Ort bespricht die Kita beim ersten Termin.',
       location: 'Kita Sonnenschein, Fruchtallee',
       imageUrl: KITA_IMAGE_URL,
-      reimbursementTypeId: uebungsleiterType?.key,
+      reimbursementTypeKey: uebungsleiterType?.key,
       inviteUserIds: nordMembers.slice(0, 2).map((member) => member.id),
     },
   );
@@ -951,7 +951,7 @@ export async function seedDemoContent(
     instructions:
       'Vorlesen bei Kaffee und Kuchen im Bürgerhaus. Zeitungsartikel, Kurzgeschichten oder was die Gruppe gerade interessiert.',
     location: 'Bürgerhaus Eimsbüttel, Café',
-    reimbursementTypeId: ehrenamtType?.key,
+    reimbursementTypeKey: ehrenamtType?.key,
     inviteUserIds: [],
   });
 
@@ -984,7 +984,7 @@ export async function seedDemoContent(
       'Einfache Texte und Bilderbücher zum lauten Vorlesen und Nachsprechen, für Familien und Erwachsene, die neu Deutsch lernen. Zweisprachige Bücher sind willkommen.',
     location: 'Familienzentrum Schnelsen, Gruppenraum',
     imageUrl: DEUTSCH_LERNEN_IMAGE_URL,
-    reimbursementTypeId: uebungsleiterType?.key,
+    reimbursementTypeKey: uebungsleiterType?.key,
     inviteUserIds: nordMembers.slice(2, 3).map((member) => member.id),
     extraInvites: nordMembers[0]
       ? [
@@ -1025,7 +1025,7 @@ export async function seedDemoContent(
       'Vorlesen für Kinder und Familien, während der Bücherbus an seiner Haltestelle steht. Findet alle zwei Wochen statt.',
     location: 'Bücherbus-Haltestelle Stellingen, Kieler Straße',
     imageUrl: BUECHERBUS_IMAGE_URL,
-    reimbursementTypeId: ehrenamtType?.key,
+    reimbursementTypeKey: ehrenamtType?.key,
     inviteUserIds: nordMembers.slice(0, 1).map((member) => member.id),
   });
 
@@ -1114,7 +1114,7 @@ export async function seedDemoContent(
     instructions:
       'Sechsteilige Vorlesereihe für Familien mit kleinen Kindern, thematisch rund um Jahreszeiten. Nach dem sechsten Termin endet die Reihe.',
     location: 'Familienzentrum Schnelsen, Spielraum',
-    reimbursementTypeId: ehrenamtType?.key,
+    reimbursementTypeKey: ehrenamtType?.key,
     inviteUserIds: nordMembers.slice(0, 2).map((member) => member.id),
   });
 
@@ -1135,7 +1135,7 @@ export async function seedDemoContent(
     location: string;
     joinedIds: string[];
     waitlistIds?: string[];
-    reimbursementTypeId?: ReimbursementTypeKey;
+    reimbursementTypeKey?: ReimbursementTypeKey;
   };
 
   const nordFillerShifts: NordFillerShift[] = [
@@ -1164,7 +1164,7 @@ export async function seedDemoContent(
         'Abendtermin für Eltern der Kita Sonnenschein: gemeinsam vorlesen und über Leseförderung austauschen.',
       location: 'Kita Sonnenschein, Elternraum',
       joinedIds: nordMembers[3] ? [nordMembers[3].id] : [], // unterbesetzt
-      reimbursementTypeId: uebungsleiterType?.key,
+      reimbursementTypeKey: uebungsleiterType?.key,
     },
     {
       title: 'Vorlesepause Bücherhalle Stellingen',
@@ -1280,7 +1280,7 @@ export async function seedDemoContent(
       maxVolunteers: fillerShift.maxVolunteers,
       instructions: fillerShift.instructions,
       location: fillerShift.location,
-      reimbursementTypeId: fillerShift.reimbursementTypeId,
+      reimbursementTypeKey: fillerShift.reimbursementTypeKey,
       inviteUserIds: fillerShift.joinedIds,
       extraInvites: fillerShift.waitlistIds?.length
         ? [
@@ -1555,7 +1555,7 @@ export async function seedDemoContent(
   // ─── Zeiterfassung (Use Case 3), getrennt nach Pauschalenart (Use Case 4) ───
   // (ehrenamtType/uebungsleiterType wurden bereits oben aufgelöst, direkt nach
   // dem Anlegen der Organisation, damit auch Einsätze weiter oben schon mit
-  // reimbursementTypeId getaggt werden konnten.)
+  // reimbursementTypeKey getaggt werden konnten.)
 
   if (!ehrenamtType || !uebungsleiterType) {
     console.warn(
@@ -1582,7 +1582,7 @@ export async function seedDemoContent(
           shiftInstanceId: lesenImElisabethstift.instanceId,
           organizationUnitId: org.unitIds.sued,
           volunteerId: member.id,
-          reimbursementTypeId: ehrenamtType.key,
+          reimbursementTypeKey: ehrenamtType.key,
           createdById: supervisor.id,
           startedAt: addHours(lesenImElisabethstift.instanceStartsAt, 0),
           endedAt: addHours(lesenImElisabethstift.instanceStartsAt, 1.5),
@@ -1594,7 +1594,7 @@ export async function seedDemoContent(
           shiftInstanceId: seniorenkreis.instanceId,
           organizationUnitId: org.unitIds.sued,
           volunteerId: member.id,
-          reimbursementTypeId: ehrenamtType.key,
+          reimbursementTypeKey: ehrenamtType.key,
           createdById: supervisor.id,
           startedAt: addHours(seniorenkreis.instanceStartsAt, index * 0.25),
           endedAt: addHours(seniorenkreis.instanceStartsAt, 2 + index * 0.25),
@@ -1608,7 +1608,7 @@ export async function seedDemoContent(
           shiftInstanceId: literaturKurs.instanceId,
           organizationUnitId: org.unitIds.west,
           volunteerId: member.id,
-          reimbursementTypeId: uebungsleiterType.key,
+          reimbursementTypeKey: uebungsleiterType.key,
           createdById: supervisor.id,
           startedAt: addHours(literaturKurs.instanceStartsAt, 0),
           endedAt: addHours(literaturKurs.instanceStartsAt, 1.5),
@@ -1648,7 +1648,7 @@ export async function seedDemoContent(
     const addManualEntry = (params: {
       volunteerId: string;
       organizationUnitId: string;
-      reimbursementTypeId: ReimbursementTypeKey;
+      reimbursementTypeKey: ReimbursementTypeKey;
       year: number;
       month: number;
       day: number;
@@ -1668,7 +1668,7 @@ export async function seedDemoContent(
         shiftInstanceId: null,
         organizationUnitId: params.organizationUnitId,
         volunteerId: params.volunteerId,
-        reimbursementTypeId: params.reimbursementTypeId,
+        reimbursementTypeKey: params.reimbursementTypeKey,
         createdById: supervisor.id,
         startedAt,
         endedAt: addHours(startedAt, params.durationHours),
@@ -1684,7 +1684,7 @@ export async function seedDemoContent(
       addManualEntry({
         volunteerId: demoUser.id,
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         year: augustYear,
         month: 8,
         day,
@@ -1703,7 +1703,7 @@ export async function seedDemoContent(
     type OtherEntryFixture = {
       volunteer: FixtureUser;
       organizationUnitId: string;
-      reimbursementTypeId: ReimbursementTypeKey;
+      reimbursementTypeKey: ReimbursementTypeKey;
       daysAgo: number;
       hour: number;
       minute?: number;
@@ -1716,7 +1716,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[0],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 7,
         hour: 9,
         minute: 30,
@@ -1726,7 +1726,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[1],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 14,
         hour: 9,
         minute: 30,
@@ -1736,7 +1736,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[2],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 21,
         hour: 9,
         minute: 30,
@@ -1746,7 +1746,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[3],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 28,
         hour: 9,
         minute: 30,
@@ -1756,7 +1756,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[4],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 10,
         hour: 16,
         minute: 30,
@@ -1766,7 +1766,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[5],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 24,
         hour: 16,
         minute: 30,
@@ -1776,7 +1776,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[13],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 5,
         hour: 16,
         minute: 30,
@@ -1786,7 +1786,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[14],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 15,
         hour: 9,
         minute: 30,
@@ -1797,7 +1797,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[6],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 3,
         hour: 15,
         minute: 30,
@@ -1807,7 +1807,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[7],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 9,
         hour: 16,
         durationHours: 1,
@@ -1816,7 +1816,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[8],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 13,
         hour: 11,
         durationHours: 1.25,
@@ -1826,7 +1826,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[9],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 17,
         hour: 15,
         minute: 30,
@@ -1836,7 +1836,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[10],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 20,
         hour: 16,
         durationHours: 1,
@@ -1845,7 +1845,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[11],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 27,
         hour: 11,
         durationHours: 1.25,
@@ -1855,7 +1855,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[12],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 31,
         hour: 15,
         minute: 30,
@@ -1865,7 +1865,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[15],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 22,
         hour: 16,
         durationHours: 1,
@@ -1874,7 +1874,7 @@ export async function seedDemoContent(
       {
         volunteer: additionalNordMembers[16],
         organizationUnitId: org.unitIds.nord,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 35,
         hour: 11,
         durationHours: 1.25,
@@ -1885,7 +1885,7 @@ export async function seedDemoContent(
       {
         volunteer: suedMembers[3],
         organizationUnitId: org.unitIds.sued,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 4,
         hour: 14,
         durationHours: 2,
@@ -1894,7 +1894,7 @@ export async function seedDemoContent(
       {
         volunteer: suedMembers[0],
         organizationUnitId: org.unitIds.sued,
-        reimbursementTypeId: ehrenamtType.key,
+        reimbursementTypeKey: ehrenamtType.key,
         daysAgo: 11,
         hour: 16,
         durationHours: 1.5,
@@ -1904,7 +1904,7 @@ export async function seedDemoContent(
       {
         volunteer: westMembers[2],
         organizationUnitId: org.unitIds.west,
-        reimbursementTypeId: uebungsleiterType.key,
+        reimbursementTypeKey: uebungsleiterType.key,
         daysAgo: 8,
         hour: 17,
         durationHours: 1.5,
@@ -1925,7 +1925,7 @@ export async function seedDemoContent(
       addManualEntry({
         volunteerId: entry.volunteer.id,
         organizationUnitId: entry.organizationUnitId,
-        reimbursementTypeId: entry.reimbursementTypeId,
+        reimbursementTypeKey: entry.reimbursementTypeKey,
         year: day.year,
         month: day.month,
         day: day.day,

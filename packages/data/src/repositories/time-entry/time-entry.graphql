@@ -37,7 +37,6 @@ query GetTimeEntry($id: String!) {
     }
     isPaid
     reimbursementType {
-      id
       key
     }
     volunteer {

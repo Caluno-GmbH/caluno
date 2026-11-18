@@ -18,7 +18,7 @@ import {
 const session = { user: { id: 'user-1' } } as UserSession;
 const query = {
   volunteerId: crypto.randomUUID(),
-  reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+  reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
 } as DownloadBundleQueryDto;
 
 const controllerWith = (access: () => Promise<string>) =>

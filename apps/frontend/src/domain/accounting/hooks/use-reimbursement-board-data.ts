@@ -57,7 +57,7 @@ export function useReimbursementBoardData({
     for (const entry of needsTimesheetQuery.data ?? []) {
       const types =
         eligibleHoursVolunteers.get(entry.volunteer.id) ?? new Set();
-      types.add(entry.reimbursementType.id);
+      types.add(entry.reimbursementType.key);
       eligibleHoursVolunteers.set(entry.volunteer.id, types);
     }
     // Volunteer id -> reimbursement type ids they signed up to a paid shift
@@ -65,7 +65,7 @@ export function useReimbursementBoardData({
     // backend scopes each row to the uncovered month.
     const paidShiftSignups = (paidShiftQuery.data ?? []).map((entry) => ({
       volunteerId: entry.volunteer.id,
-      reimbursementTypeId: entry.reimbursementType.id,
+      reimbursementTypeKey: entry.reimbursementType.key,
       periodStart: entry.periodStart,
       periodEnd: entry.periodEnd,
     }));
@@ -80,7 +80,7 @@ export function useReimbursementBoardData({
       paidShiftSignups,
       timesheetsToCreate: (needsTimesheetQuery.data ?? []).map((row) => ({
         volunteerId: row.volunteer.id,
-        reimbursementTypeId: row.reimbursementType.id,
+        reimbursementTypeKey: row.reimbursementType.key,
         periodStart: row.periodStart,
         periodEnd: row.periodEnd,
         eligibleHours: row.eligibleHours,

@@ -115,7 +115,7 @@ export class TaskService {
     const pairsWithOpenContract = new Set(
       contracts
         .filter((row) => row.status !== ContractStatus.DECLINED)
-        .map((row) => `${row.volunteerId}|${row.reimbursementTypeId}`),
+        .map((row) => `${row.volunteerId}|${row.reimbursementTypeKey}`),
     );
 
     return [
@@ -164,7 +164,7 @@ export class TaskService {
     if (rows.length === 0) return [];
 
     const volunteerIds = [...new Set(rows.map((row) => row.volunteerId))];
-    const typeIds = [...new Set(rows.map((row) => row.reimbursementTypeId))];
+    const typeIds = [...new Set(rows.map((row) => row.reimbursementTypeKey))];
 
     const unit = await this.db.query.organizationUnits.findFirst({
       where: { id: organizationUnitId },
@@ -197,17 +197,16 @@ export class TaskService {
     );
 
     return rows.flatMap((row) => {
-      const type = typeById.get(row.reimbursementTypeId);
+      const type = typeById.get(row.reimbursementTypeKey);
       const volunteerName = nameById.get(row.volunteerId);
       if (!type || !volunteerName) return [];
       const rateCents =
-        rateByTypeId.get(row.reimbursementTypeId) ??
+        rateByTypeId.get(row.reimbursementTypeKey) ??
         type.platformDefaultRateCents;
       return [
         {
           volunteerId: row.volunteerId,
           volunteerName,
-          reimbursementTypeId: row.reimbursementTypeId,
           reimbursementTypeKey: type.key,
           periodStart: row.periodStart,
           periodEnd: row.periodEnd,
@@ -236,7 +235,7 @@ export class TaskService {
     if (rows.length === 0) return [];
 
     const volunteerIds = [...new Set(rows.map((row) => row.volunteerId))];
-    const typeIds = [...new Set(rows.map((row) => row.reimbursementTypeId))];
+    const typeIds = [...new Set(rows.map((row) => row.reimbursementTypeKey))];
 
     const [users, types] = await Promise.all([
       this.db.query.users.findMany({
@@ -254,13 +253,12 @@ export class TaskService {
 
     return rows.flatMap((row) => {
       const volunteerName = nameById.get(row.volunteerId);
-      const reimbursementTypeKey = typeKeyById.get(row.reimbursementTypeId);
+      const reimbursementTypeKey = typeKeyById.get(row.reimbursementTypeKey);
       if (!volunteerName || !reimbursementTypeKey) return [];
       return [
         {
           volunteerId: row.volunteerId,
           volunteerName,
-          reimbursementTypeId: row.reimbursementTypeId,
           reimbursementTypeKey,
           periodStart: row.periodStart,
           periodEnd: row.periodEnd,
@@ -494,7 +492,6 @@ export class TaskService {
         id: schema.contracts.id,
         volunteerId: schema.contracts.volunteerId,
         volunteerName: schema.users.name,
-        reimbursementTypeId: schema.contracts.reimbursementTypeId,
         reimbursementTypeKey: schema.reimbursementTypes.key,
         periodStart: schema.contracts.periodStart,
         periodEnd: schema.contracts.periodEnd,
@@ -511,7 +508,10 @@ export class TaskService {
       )
       .innerJoin(
         schema.reimbursementTypes,
-        eq(schema.reimbursementTypes.key, schema.contracts.reimbursementTypeId),
+        eq(
+          schema.reimbursementTypes.key,
+          schema.contracts.reimbursementTypeKey,
+        ),
       )
       .leftJoin(
         volunteerContractSignedAt,
@@ -551,7 +551,6 @@ export class TaskService {
         id: schema.invoices.id,
         volunteerId: schema.invoices.volunteerId,
         volunteerName: schema.users.name,
-        reimbursementTypeId: schema.invoices.reimbursementTypeId,
         reimbursementTypeKey: schema.reimbursementTypes.key,
         periodStart: schema.invoices.periodStart,
         periodEnd: schema.invoices.periodEnd,
@@ -568,7 +567,7 @@ export class TaskService {
       .innerJoin(schema.users, eq(schema.users.id, schema.invoices.volunteerId))
       .innerJoin(
         schema.reimbursementTypes,
-        eq(schema.reimbursementTypes.key, schema.invoices.reimbursementTypeId),
+        eq(schema.reimbursementTypes.key, schema.invoices.reimbursementTypeKey),
       )
       .leftJoin(
         volunteerInvoiceSignedAt,

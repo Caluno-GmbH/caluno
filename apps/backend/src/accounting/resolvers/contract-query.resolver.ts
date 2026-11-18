@@ -21,7 +21,7 @@ function toContractFilter(
 ): ContractFilter {
   return {
     volunteerId: filter?.volunteerId ?? undefined,
-    reimbursementTypeId: filter?.reimbursementTypeId ?? undefined,
+    reimbursementTypeKey: filter?.reimbursementTypeKey ?? undefined,
     status: filter?.status ?? undefined,
     periodStart: filter?.periodStart ?? undefined,
     periodEnd: filter?.periodEnd ?? undefined,

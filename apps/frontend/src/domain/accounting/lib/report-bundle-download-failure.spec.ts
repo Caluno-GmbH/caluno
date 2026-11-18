@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
+import { ReimbursementTypeKey } from '@repo/data';
 
 const captureException = mock((_error: unknown, _context?: unknown) => 'id');
 mock.module('@sentry/nextjs', () => ({ captureException }));
@@ -7,7 +8,10 @@ const { reportBundleDownloadFailure } = await import(
   './report-bundle-download-failure'
 );
 
-const context = { volunteerId: 'vol-1', reimbursementTypeId: 'type-1' };
+const context = {
+  volunteerId: 'vol-1',
+  reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
+};
 
 describe('reportBundleDownloadFailure', () => {
   beforeEach(() => captureException.mockClear());

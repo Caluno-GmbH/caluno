@@ -43,7 +43,7 @@ export const contracts = snakeCase.table(
     volunteerId: text('volunteer_id')
       .references(() => users.id, { onDelete: 'restrict' })
       .notNull(),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
@@ -81,7 +81,7 @@ export const contracts = snakeCase.table(
     // by its leading columns the volunteer and volunteer + type filters.
     index('idx_contracts_volunteer_type_unit').on(
       table.volunteerId,
-      table.reimbursementTypeId,
+      table.reimbursementTypeKey,
       table.organizationUnitId,
     ),
   ],

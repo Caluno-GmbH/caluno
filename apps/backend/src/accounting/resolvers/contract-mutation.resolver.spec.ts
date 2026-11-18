@@ -53,7 +53,7 @@ describe('ContractMutationResolver.createContract tenancy', () => {
 
   const baseInput = {
     volunteerId: memberVolunteerId,
-    reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+    reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
     periodStart: new Date('2026-01-01T00:00:00.000Z'),
     periodEnd: new Date('2026-12-31T00:00:00.000Z'),
   };

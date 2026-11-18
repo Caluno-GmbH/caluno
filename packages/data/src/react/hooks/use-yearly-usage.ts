@@ -6,12 +6,13 @@ import {
   type RawYearlyUsage,
 } from '@repo/data';
 import { useQuery } from '@tanstack/react-query';
+import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
 /** A volunteer's usage for a coordinator; `excludeInvoiceId` leaves out the document being reissued or rendered. */
 export function useYearlyUsage(input: {
   volunteerId?: string;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   year?: number;
   /** ISO timestamp: only invoices whose period ended by then count. */
   asOfDate?: string;
@@ -26,13 +27,14 @@ export function useYearlyUsage(input: {
     queryFn: () =>
       repository.findYearlyUsage({
         volunteerId: input.volunteerId ?? '',
-        reimbursementTypeId: input.reimbursementTypeId ?? '',
+        reimbursementTypeKey: input.reimbursementTypeKey!,
         year: input.year ?? 0,
         asOfDate: input.asOfDate,
         excludeInvoiceId: input.excludeInvoiceId,
       }),
     staleTime: 30 * 1000,
-    enabled: !!input.volunteerId && !!input.reimbursementTypeId && !!input.year,
+    enabled:
+      !!input.volunteerId && !!input.reimbursementTypeKey && !!input.year,
   });
 }
 

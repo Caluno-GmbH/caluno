@@ -50,7 +50,7 @@ const PAID_SHIFT_SIGNUP_VOLUNTEERS = `
   query PaidShiftSignupVolunteers($year: Int!) {
     paidShiftSignupVolunteers(year: $year) {
       volunteer { id }
-      reimbursementType { id }
+      reimbursementType { key }
       periodStart
       periodEnd
     }
@@ -59,7 +59,7 @@ const PAID_SHIFT_SIGNUP_VOLUNTEERS = `
 
 type PaidShiftSignup = {
   volunteer: { id: string };
-  reimbursementType: { id: string };
+  reimbursementType: { key: string };
   periodStart: string;
   periodEnd: string;
 };
@@ -108,7 +108,7 @@ const setupPaidShiftOrg = async (db: Database) => {
     unitTypeId: type.id,
     adminId: admin.id,
     volunteerId: volunteer.id,
-    reimbursementTypeId: reimbursementType.key,
+    reimbursementTypeKey: reimbursementType.key,
   };
 };
 
@@ -117,7 +117,7 @@ const createPaidShiftWithJoinedVolunteer = async (
   args: {
     organizationUnitId: string;
     volunteerId: string;
-    reimbursementTypeId: ReimbursementTypeKey | null;
+    reimbursementTypeKey: ReimbursementTypeKey | null;
     status?: ShiftInviteStatus;
     actualStartsAt?: Date;
   },
@@ -125,7 +125,7 @@ const createPaidShiftWithJoinedVolunteer = async (
   const startsAt = args.actualStartsAt ?? new Date('2026-06-19T08:00:00.000Z');
   const shift = await createShift(db, {
     organizationUnitId: args.organizationUnitId,
-    reimbursementTypeId: args.reimbursementTypeId,
+    reimbursementTypeKey: args.reimbursementTypeKey,
     startsAt,
     endsAt: new Date(startsAt.getTime() + 2 * 60 * 60 * 1000),
   });
@@ -175,7 +175,7 @@ describe('paidShiftSignupVolunteers', () => {
     const existing = await db.query.documentTemplates.findFirst({
       where: {
         organizationId: org.organizationId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        reimbursementTypeKey: org.reimbursementTypeKey,
         kind: DocumentKind.CONTRACT,
       },
     });
@@ -185,7 +185,7 @@ describe('paidShiftSignupVolunteers', () => {
       .values({
         organizationId: org.organizationId,
         organizationUnitId: org.organizationUnitId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        reimbursementTypeKey: org.reimbursementTypeKey,
         kind: DocumentKind.CONTRACT,
         body: { header: {}, blocks: [], footer: {} },
       })
@@ -197,7 +197,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: org.volunteerId,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
     });
 
     const { paidShiftSignupVolunteers } = await query(2026);
@@ -205,7 +205,7 @@ describe('paidShiftSignupVolunteers', () => {
       expect.arrayContaining([
         expect.objectContaining({
           volunteer: { id: org.volunteerId },
-          reimbursementType: { id: org.reimbursementTypeId },
+          reimbursementType: { key: org.reimbursementTypeKey },
           // June 2026 as Berlin bounds (the default signup date).
           periodStart: '2026-05-31T22:00:00.000Z',
           periodEnd: '2026-06-30T22:00:00.000Z',
@@ -218,13 +218,13 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: org.volunteerId,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       actualStartsAt: new Date('2026-01-10T08:00:00.000Z'),
     });
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: org.volunteerId,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       actualStartsAt: new Date('2026-02-10T08:00:00.000Z'),
     });
 
@@ -232,7 +232,7 @@ describe('paidShiftSignupVolunteers', () => {
     const matches = paidShiftSignupVolunteers.filter(
       (entry) =>
         entry.volunteer.id === org.volunteerId &&
-        entry.reimbursementType.id === org.reimbursementTypeId,
+        entry.reimbursementType.key === org.reimbursementTypeKey,
     );
     expect(matches).toHaveLength(1);
   });
@@ -243,7 +243,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       actualStartsAt: new Date('2026-03-10T08:00:00.000Z'),
     });
 
@@ -251,7 +251,7 @@ describe('paidShiftSignupVolunteers', () => {
     await db.insert(schema.contracts).values({
       documentTemplateId: template.id,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       organizationUnitId: org.organizationUnitId,
       contractStatus: ContractStatus.ACTIVE,
       periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -275,7 +275,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       actualStartsAt: new Date('2026-09-10T08:00:00.000Z'),
     });
 
@@ -283,7 +283,7 @@ describe('paidShiftSignupVolunteers', () => {
     await db.insert(schema.contracts).values({
       documentTemplateId: template.id,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       organizationUnitId: org.organizationUnitId,
       contractStatus: ContractStatus.ACTIVE,
       // August 2026 as Berlin bounds.
@@ -308,7 +308,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       actualStartsAt: new Date('2026-04-10T08:00:00.000Z'),
     });
 
@@ -317,7 +317,7 @@ describe('paidShiftSignupVolunteers', () => {
       .values({
         organizationId: org.organizationId,
         organizationUnitId: org.organizationUnitId,
-        reimbursementTypeId: org.reimbursementTypeId,
+        reimbursementTypeKey: org.reimbursementTypeKey,
         kind: DocumentKind.INVOICE,
         body: { header: {}, blocks: [], footer: {} },
       })
@@ -325,7 +325,7 @@ describe('paidShiftSignupVolunteers', () => {
     await db.insert(schema.invoices).values({
       documentTemplateId: template.id,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       organizationUnitId: org.organizationUnitId,
       invoiceStatus: InvoiceStatus.READY,
       periodStart: new Date('2026-04-01T00:00:00.000Z'),
@@ -351,7 +351,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: other.id,
-      reimbursementTypeId: null,
+      reimbursementTypeKey: null,
       actualStartsAt: new Date('2026-05-10T08:00:00.000Z'),
     });
 
@@ -369,7 +369,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: org.organizationUnitId,
       volunteerId: other.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       status: ShiftInviteStatus.ADMIN_INVITED,
       actualStartsAt: new Date('2026-06-10T08:00:00.000Z'),
     });
@@ -388,7 +388,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: otherOrg.organizationUnitId,
       volunteerId: otherVolunteer.id,
-      reimbursementTypeId: otherOrg.reimbursementTypeId,
+      reimbursementTypeKey: otherOrg.reimbursementTypeKey,
       actualStartsAt: new Date('2026-07-10T08:00:00.000Z'),
     });
 
@@ -412,7 +412,7 @@ describe('paidShiftSignupVolunteers', () => {
     await createPaidShiftWithJoinedVolunteer(db, {
       organizationUnitId: sibling.id,
       volunteerId: siblingVolunteer.id,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       actualStartsAt: new Date('2026-08-10T08:00:00.000Z'),
     });
 

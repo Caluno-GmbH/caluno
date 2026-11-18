@@ -31,7 +31,7 @@ describe('InvoiceMutationResolver.createInvoice tenancy', () => {
         {
           organizationUnitId: siblingUnitId,
           volunteerId: 'volunteer-1',
-          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           timeEntryIds: ['entry-1'],
           periodStart: new Date('2026-07-01T00:00:00.000Z'),
           periodEnd: new Date('2026-07-31T00:00:00.000Z'),

@@ -31,7 +31,7 @@ interface BuiltBundle {
 
 export interface BundleScope {
   volunteerId: string;
-  reimbursementTypeId: ReimbursementTypeKey;
+  reimbursementTypeKey: ReimbursementTypeKey;
   organizationUnitId: string;
 }
 
@@ -78,11 +78,11 @@ export class BundleDownloadService {
     organizationId: string,
     organizationUnitId: string,
     volunteerId: string,
-    reimbursementTypeId: ReimbursementTypeKey,
+    reimbursementTypeKey: ReimbursementTypeKey,
     userId: string,
     invoiceIds?: string[],
   ): Promise<BuiltBundle> {
-    const scope = { volunteerId, reimbursementTypeId, organizationUnitId };
+    const scope = { volunteerId, reimbursementTypeKey, organizationUnitId };
     const invoices = await this.loadReadyInvoices(scope, invoiceIds);
     if (invoices.length === 0) {
       throw new BadRequestException(
@@ -118,7 +118,7 @@ export class BundleDownloadService {
     await this.db.transaction(async (tx) => {
       await this.reimbursementRateService.recordBundleDownload(
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         userId,
         invoices.filter((i) => !i.paidAt).map((i) => i.id),
         tx,
@@ -236,7 +236,7 @@ export class BundleDownloadService {
           this.reimbursementRateService.getYearlyUsage(
             organizationId,
             scope.volunteerId,
-            scope.reimbursementTypeId,
+            scope.reimbursementTypeKey,
             year,
           ),
         ),
@@ -278,7 +278,7 @@ export class BundleDownloadService {
     }[],
     scope: {
       volunteerId: string;
-      reimbursementTypeId: ReimbursementTypeKey;
+      reimbursementTypeKey: ReimbursementTypeKey;
       organizationUnitId: string;
     },
   ): Promise<Map<string, ContractEntity[]>> {

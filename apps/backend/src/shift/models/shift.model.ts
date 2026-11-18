@@ -56,9 +56,6 @@ export class Shift {
   @Field(() => String, { nullable: true })
   rrule?: string | null;
 
-  @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: ReimbursementTypeKey | null;
-
   // Which Pauschalentyp compensates volunteers for this shift, if any. Null
   // means the shift is unpaid. Intentionally exposes only the key — never
   // the rate/limit amounts — to volunteer-facing invite surfaces.

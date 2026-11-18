@@ -31,7 +31,7 @@ import { ShiftInstanceInvite } from '../models/shift-instance-invite.model';
 import type { ShiftEntity } from '../schemas/shift.schema';
 import type { ShiftInstanceEntity } from '../schemas/shift-instance.schema';
 import { ShiftService } from '../shift.service';
-import { resolveEffectiveReimbursementTypeId } from '../utils/effective-reimbursement-type';
+import { resolveEffectiveReimbursementTypeKey } from '../utils/effective-reimbursement-type';
 import { ShiftInstanceInvitesLoader } from './loader';
 import { ShiftLoader } from './shift.loader';
 import { ShiftInstanceLoader } from './shift-instance.loader';
@@ -69,13 +69,13 @@ export class ShiftInstanceFieldResolver {
     @Parent() instance: ShiftInstanceEntity,
     @Loader(ShiftLoader) loader: ShiftLoader,
   ): Promise<ReimbursementTypeKey | null> {
-    const master = instance.overrideReimbursementTypeId
+    const master = instance.overrideReimbursementTypeKey
       ? null
       : await loader.shiftById.load(instance.masterId);
 
-    const effectiveId = resolveEffectiveReimbursementTypeId(
-      instance.overrideReimbursementTypeId,
-      master?.reimbursementTypeId,
+    const effectiveId = resolveEffectiveReimbursementTypeKey(
+      instance.overrideReimbursementTypeKey,
+      master?.reimbursementTypeKey,
     );
 
     if (!effectiveId) {

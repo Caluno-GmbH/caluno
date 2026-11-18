@@ -156,7 +156,7 @@ describe('ContractService', () => {
     });
     const template = await createTwoStepTemplate(db, {
       organizationId: organization.id,
-      reimbursementTypeId: reimbursementType.key,
+      reimbursementTypeKey: reimbursementType.key,
       kind: DocumentKind.CONTRACT,
       requiredPermissionId: permission.id,
       signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -184,7 +184,7 @@ describe('ContractService', () => {
   const insertContract = async (args: {
     templateId: string;
     volunteerId: string;
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     organizationUnitId: string;
     status: ContractStatus;
     periodStart: Date;
@@ -196,7 +196,7 @@ describe('ContractService', () => {
       .values({
         documentTemplateId: args.templateId,
         volunteerId: args.volunteerId,
-        reimbursementTypeId: args.reimbursementTypeId,
+        reimbursementTypeKey: args.reimbursementTypeKey,
         organizationUnitId: args.organizationUnitId,
         contractStatus: args.status,
         periodStart: args.periodStart,
@@ -253,7 +253,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
           periodEnd: new Date('2026-12-31T00:00:00.000Z'),
         },
@@ -296,7 +296,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
           periodEnd: new Date('2026-12-31T00:00:00.000Z'),
         },
@@ -323,7 +323,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -346,7 +346,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
           periodEnd: new Date('2026-12-31T00:00:00.000Z'),
           fieldOverrides: [
@@ -374,7 +374,7 @@ describe('ContractService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.key,
+            reimbursementTypeKey: reimbursementType.key,
             periodStart: new Date('2026-01-01T00:00:00.000Z'),
             periodEnd: new Date('2026-12-31T00:00:00.000Z'),
             fieldOverrides: [{ fieldId: 'tasks', value: 'x'.repeat(301) }],
@@ -416,7 +416,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
           periodEnd: new Date('2026-12-31T00:00:00.000Z'),
         },
@@ -434,7 +434,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           anchorDate: new Date('2026-06-15T12:00:00.000Z'),
         },
         signer.id,
@@ -446,7 +446,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           // The Berlin calendar year, so it fully contains the year draft.
           periodStart: billingYearBounds(2026).start,
           periodEnd: billingYearBounds(2026).end,
@@ -457,7 +457,7 @@ describe('ContractService', () => {
       const remaining = await db.query.contracts.findMany({
         where: {
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
         },
       });
       expect(remaining.map((c) => c.id)).toEqual([contract.id]);
@@ -507,7 +507,7 @@ describe('ContractService', () => {
         });
         await createTwoStepTemplate(db, {
           organizationId: organization.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
           requiredPermissionId: permission.id,
           signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER],
@@ -524,7 +524,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: orgB.root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           anchorDate: new Date('2026-06-15T12:00:00.000Z'),
         },
         orgB.signer.id,
@@ -536,7 +536,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: orgA.root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
           periodEnd: new Date('2026-12-31T00:00:00.000Z'),
         },
@@ -557,7 +557,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           anchorDate: new Date('2027-06-15T12:00:00.000Z'),
         },
         signer.id,
@@ -568,7 +568,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01T00:00:00.000Z'),
           periodEnd: new Date('2026-12-31T00:00:00.000Z'),
         },
@@ -591,7 +591,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           // August 2026 as Berlin bounds.
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
@@ -604,7 +604,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           anchorDate: new Date('2026-09-15T12:00:00.000Z'),
         },
         signer.id,
@@ -625,7 +625,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
         },
@@ -637,7 +637,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           anchorDate: new Date('2026-08-15T12:00:00.000Z'),
         },
         signer.id,
@@ -656,7 +656,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -685,7 +685,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: f.root.id,
           volunteerId: f.volunteer.id,
-          reimbursementTypeId: f.reimbursementType.key,
+          reimbursementTypeKey: f.reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -734,7 +734,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -776,7 +776,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -796,7 +796,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -820,7 +820,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -840,7 +840,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -873,7 +873,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -908,7 +908,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2020-01-01T00:00:00.000Z'),
           periodEnd: new Date('2020-12-31T00:00:00.000Z'),
         },
@@ -932,7 +932,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date(Date.now() - 86_400_000),
           periodEnd: new Date(Date.now() + 86_400_000),
         },
@@ -957,7 +957,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           // August 2026 as Berlin bounds.
           periodStart: new Date('2026-07-31T22:00:00.000Z'),
           periodEnd: new Date('2026-08-31T22:00:00.000Z'),
@@ -1011,7 +1011,7 @@ describe('ContractService', () => {
       const base = {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         status: ContractStatus.ACTIVE,
       };
@@ -1029,7 +1029,7 @@ describe('ContractService', () => {
       const target = (key: string, at: Date): CoverageTarget => ({
         key,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         at,
       });
@@ -1053,7 +1053,7 @@ describe('ContractService', () => {
       await insertContract({
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         status: ContractStatus.ACTIVE,
         ...OCTOBER,
@@ -1061,7 +1061,7 @@ describe('ContractService', () => {
       const targets: CoverageTarget[] = Array.from({ length: 25 }, (_, i) => ({
         key: `entry-${i}`,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         at: noonOn(i + 1),
       }));
@@ -1103,7 +1103,7 @@ describe('ContractService', () => {
       expect(other.reimbursementType.key).toBe(reimbursementType.key);
       const shared = {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         status: ContractStatus.ACTIVE,
         ...OCTOBER,
       };
@@ -1129,7 +1129,7 @@ describe('ContractService', () => {
         {
           key: 'entry',
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: root.id,
           at: noonOn(15),
         },
@@ -1156,7 +1156,7 @@ describe('ContractService', () => {
       const otherVolunteer = await createUser(db);
       const base = {
         templateId: template.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         status: ContractStatus.ACTIVE,
         ...OCTOBER,
       };
@@ -1177,7 +1177,7 @@ describe('ContractService', () => {
       ): CoverageTarget => ({
         key,
         volunteerId,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId,
         at: noonOn(15),
       });
@@ -1200,7 +1200,7 @@ describe('ContractService', () => {
       const base = {
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         ...OCTOBER,
       };
@@ -1219,7 +1219,7 @@ describe('ContractService', () => {
         {
           key: 'entry',
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: root.id,
           at: noonOn(15),
         },
@@ -1243,7 +1243,7 @@ describe('ContractService', () => {
       const crossYear = await insertContract({
         templateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         status: ContractStatus.ACTIVE,
         periodStart: startOfAppDay(2026, 8, 1),
@@ -1252,7 +1252,7 @@ describe('ContractService', () => {
       const target = (key: string, at: Date): CoverageTarget => ({
         key,
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.key,
+        reimbursementTypeKey: reimbursementType.key,
         organizationUnitId: root.id,
         at,
       });
@@ -1288,7 +1288,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: s.root.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           anchorDate,
         },
         s.signer.id,
@@ -1375,7 +1375,7 @@ describe('ContractService', () => {
         s.organization.id,
         {
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           anchorDate: new Date('2026-06-15T10:00:00.000Z'),
         },
         s.signer.id,
@@ -1388,7 +1388,7 @@ describe('ContractService', () => {
       await insertContract({
         templateId: s.template.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.key,
+        reimbursementTypeKey: s.reimbursementType.key,
         organizationUnitId: s.root.id,
         status: ContractStatus.AWAITING_VOLUNTEER_SIGNATURE,
         ...OCTOBER,
@@ -1404,7 +1404,7 @@ describe('ContractService', () => {
       await insertContract({
         templateId: s.template.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.key,
+        reimbursementTypeKey: s.reimbursementType.key,
         organizationUnitId: s.root.id,
         status: ContractStatus.DECLINED,
         ...OCTOBER,
@@ -1419,7 +1419,7 @@ describe('ContractService', () => {
       await insertContract({
         templateId: s.template.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.key,
+        reimbursementTypeKey: s.reimbursementType.key,
         organizationUnitId: s.root.id,
         status: ContractStatus.ACTIVE,
         periodStart: startOfAppDay(2026, 9, 5),
@@ -1459,7 +1459,7 @@ describe('ContractService', () => {
       await insertContract({
         templateId: s.template.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.key,
+        reimbursementTypeKey: s.reimbursementType.key,
         organizationUnitId: sibling.id,
         status: ContractStatus.ACTIVE,
         ...OCTOBER,
@@ -1534,7 +1534,7 @@ describe('ContractService', () => {
           {
             organizationUnitId: root.id,
             volunteerId: volunteer.id,
-            reimbursementTypeId: reimbursementType.key,
+            reimbursementTypeKey: reimbursementType.key,
             anchorDate: new Date('2026-10-15T10:00:00.000Z'),
           },
           volunteer.id,
@@ -1553,7 +1553,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: s.root.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           anchorDate,
         },
         s.signer.id,
@@ -1569,7 +1569,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: s.root.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           periodStart: period.start,
           periodEnd: period.end,
           sourceDraftId: extra.sourceDraftId,
@@ -1662,7 +1662,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: b.root.id,
           volunteerId: a.volunteer.id,
-          reimbursementTypeId: a.reimbursementType.key,
+          reimbursementTypeKey: a.reimbursementType.key,
           anchorDate: new Date('2026-06-15T10:00:00.000Z'),
         },
         b.signer.id,
@@ -1690,7 +1690,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: sibling.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           anchorDate: new Date('2026-06-15T10:00:00.000Z'),
         },
         s.signer.id,
@@ -1714,7 +1714,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: sibling.id,
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           anchorDate: new Date('2026-06-15T10:00:00.000Z'),
         },
         s.signer.id,
@@ -1735,7 +1735,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: s.root.id,
           volunteerId: otherVolunteer.id,
-          reimbursementTypeId: s.reimbursementType.key,
+          reimbursementTypeKey: s.reimbursementType.key,
           anchorDate: new Date('2026-06-15T10:00:00.000Z'),
         },
         s.signer.id,
@@ -1777,7 +1777,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: first.root.id,
           volunteerId: first.volunteer.id,
-          reimbursementTypeId: first.reimbursementType.key,
+          reimbursementTypeKey: first.reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -1788,7 +1788,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: second.root.id,
           volunteerId: second.volunteer.id,
-          reimbursementTypeId: second.reimbursementType.key,
+          reimbursementTypeKey: second.reimbursementType.key,
           periodStart: new Date(),
           periodEnd: new Date(),
         },
@@ -1816,7 +1816,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01'),
           periodEnd: new Date('2026-12-31'),
         },
@@ -1827,7 +1827,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: sibling.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01'),
           periodEnd: new Date('2026-12-31'),
         },
@@ -1853,7 +1853,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-03-01'),
           periodEnd: new Date('2026-03-31'),
         },
@@ -1864,7 +1864,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: secondVolunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-06-01'),
           periodEnd: new Date('2026-06-30'),
         },
@@ -1893,7 +1893,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01'),
           periodEnd: new Date('2026-12-31'),
         },
@@ -1904,7 +1904,7 @@ describe('ContractService', () => {
         {
           organizationUnitId: root.id,
           volunteerId: volunteer.id,
-          reimbursementTypeId: reimbursementType.key,
+          reimbursementTypeKey: reimbursementType.key,
           periodStart: new Date('2026-01-01'),
           periodEnd: new Date('2026-12-31'),
         },

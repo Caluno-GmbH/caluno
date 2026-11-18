@@ -1,6 +1,5 @@
 query GetReimbursementTypes {
   reimbursementTypes {
-    id
     key
     legalReference
     yearlyLimitCents
@@ -11,7 +10,6 @@ query GetReimbursementTypes {
 query GetEffectiveRates($organizationUnitId: ID) {
   effectiveRates(organizationUnitId: $organizationUnitId) {
     reimbursementType {
-      id
       key
       legalReference
       yearlyLimitCents
@@ -29,12 +27,12 @@ query GetEffectiveRates($organizationUnitId: ID) {
 }
 
 mutation SetReimbursementRate(
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $hourlyRateCents: Int!
   $organizationUnitId: ID
 ) {
   setReimbursementRate(
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     hourlyRateCents: $hourlyRateCents
     organizationUnitId: $organizationUnitId
   ) {
@@ -45,14 +43,14 @@ mutation SetReimbursementRate(
 
 query GetYearlyUsage(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $year: Int!
   $asOfDate: DateTime
   $excludeInvoiceId: ID
 ) {
   yearlyUsage(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     year: $year
     asOfDate: $asOfDate
     excludeInvoiceId: $excludeInvoiceId
@@ -82,7 +80,6 @@ query GetRosterYearlyUsage($organizationUnitId: ID!, $year: Int!) {
     }
     usageByType {
       reimbursementType {
-        id
         key
       }
       usedCents
@@ -117,7 +114,6 @@ fragment ContractSummaryFields on Contract {
     image
   }
   reimbursementType {
-    id
     key
   }
   documentTemplate {
@@ -225,7 +221,6 @@ fragment InvoiceSummaryFields on Invoice {
     image
   }
   reimbursementType {
-    id
     key
   }
   documentTemplate {
@@ -328,7 +323,6 @@ query GetVolunteersNeedingTimesheets(
       name
     }
     reimbursementType {
-      id
       key
     }
     periodStart
@@ -348,7 +342,6 @@ query GetPaidShiftSignupVolunteers($year: Int!) {
       name
     }
     reimbursementType {
-      id
       key
     }
     periodStart
@@ -358,13 +351,13 @@ query GetPaidShiftSignupVolunteers($year: Int!) {
 
 query GetEligibleTimeEntriesForInvoice(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $periodStart: DateTime
   $periodEnd: DateTime
 ) {
   eligibleTimeEntriesForInvoice(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     periodStart: $periodStart
     periodEnd: $periodEnd
   ) {
@@ -384,13 +377,13 @@ query GetEligibleTimeEntriesForInvoice(
 
 query GetTimeEntriesAwaitingReviewForInvoice(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $periodStart: DateTime
   $periodEnd: DateTime
 ) {
   timeEntriesAwaitingReviewForInvoice(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     periodStart: $periodStart
     periodEnd: $periodEnd
   ) {
@@ -438,7 +431,6 @@ fragment DocumentTemplateSummaryFields on DocumentTemplate {
     name
   }
   reimbursementType {
-    id
     key
   }
   organizationUnit {
@@ -471,12 +463,12 @@ query GetDocumentTemplate($id: ID!) {
 
 query GetActiveDocumentTemplate(
   $kind: DocumentKind!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $organizationUnitId: ID
 ) {
   activeDocumentTemplate(
     kind: $kind
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     organizationUnitId: $organizationUnitId
   ) {
     ...DocumentTemplateSummaryFields
@@ -503,17 +495,19 @@ mutation DeleteDocumentTemplate($id: ID!) {
   deleteDocumentTemplate(id: $id)
 }
 
-query GetBundleDownloadStatus($volunteerId: ID!, $reimbursementTypeId: ID!) {
+query GetBundleDownloadStatus(
+  $volunteerId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
+) {
   bundleDownloadStatus(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
   ) {
     volunteer {
       id
       name
     }
     reimbursementType {
-      id
       key
     }
     downloadedAt
@@ -526,12 +520,12 @@ query GetBundleDownloadStatus($volunteerId: ID!, $reimbursementTypeId: ID!) {
 
 mutation RecordBundleDownload(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $invoiceIds: [ID!]
 ) {
   recordBundleDownload(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     invoiceIds: $invoiceIds
   ) {
     volunteer {
@@ -539,7 +533,6 @@ mutation RecordBundleDownload(
       name
     }
     reimbursementType {
-      id
       key
     }
     downloadedAt
@@ -552,12 +545,12 @@ mutation RecordBundleDownload(
 
 query GetManualBaseline(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $year: Int!
 ) {
   manualBaseline(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     year: $year
   ) {
     volunteer {
@@ -565,7 +558,6 @@ query GetManualBaseline(
       name
     }
     reimbursementType {
-      id
       key
     }
     year
@@ -580,13 +572,13 @@ query GetManualBaseline(
 
 mutation SetManualBaseline(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $year: Int!
   $amountCents: Int!
 ) {
   setManualBaseline(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     year: $year
     amountCents: $amountCents
   ) {
@@ -595,7 +587,6 @@ mutation SetManualBaseline(
       name
     }
     reimbursementType {
-      id
       key
     }
     year
@@ -644,7 +635,6 @@ query GetAccountingSetupStatus {
     missingOrgProfileFields
     canCreateDocuments
     slots {
-      reimbursementTypeId
       reimbursementTypeKey
       hasContractTemplate
       hasInvoiceTemplate
@@ -694,12 +684,12 @@ mutation UpdateAccountingDeliverySettings(
 
 query GetBundleSendPreview(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $invoiceIds: [ID!]
 ) {
   bundleSendPreview(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     invoiceIds: $invoiceIds
   ) {
     issues
@@ -712,7 +702,7 @@ query GetBundleSendPreview(
 
 mutation SendReimbursementBundle(
   $volunteerId: ID!
-  $reimbursementTypeId: ID!
+  $reimbursementTypeKey: ReimbursementTypeKey!
   $invoiceIds: [ID!]
   $acknowledgedIssues: [BundleDeliveryIssue!]!
   $expectedRecipientEmail: String!
@@ -720,7 +710,7 @@ mutation SendReimbursementBundle(
 ) {
   sendReimbursementBundle(
     volunteerId: $volunteerId
-    reimbursementTypeId: $reimbursementTypeId
+    reimbursementTypeKey: $reimbursementTypeKey
     invoiceIds: $invoiceIds
     acknowledgedIssues: $acknowledgedIssues
     expectedRecipientEmail: $expectedRecipientEmail
@@ -742,7 +732,6 @@ query GetBundleDeliveries($limit: Int, $offset: Int) {
       name
     }
     reimbursementType {
-      id
       key
     }
     invoiceIds

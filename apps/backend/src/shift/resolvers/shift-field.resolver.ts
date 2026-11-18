@@ -84,10 +84,10 @@ export class ShiftFieldResolver {
     @Parent() shift: ShiftEntity,
     @Loader(ShiftLoader) loader: ShiftLoader,
   ): Promise<ReimbursementTypeKey | null> {
-    if (!shift.reimbursementTypeId) {
+    if (!shift.reimbursementTypeKey) {
       return null;
     }
-    return loader.reimbursementTypeKeyById.load(shift.reimbursementTypeId);
+    return loader.reimbursementTypeKeyById.load(shift.reimbursementTypeKey);
   }
 
   @AllowAnonymous()

@@ -22,6 +22,6 @@ export class ReimbursementRateFieldResolver {
     @Parent() rate: ReimbursementRateEntity,
     @Loader(AccountingReferenceLoader) loader: AccountingReferenceLoader,
   ): Promise<ReimbursementType> {
-    return loader.reimbursementTypeById.load(rate.reimbursementTypeId);
+    return loader.reimbursementTypeById.load(rate.reimbursementTypeKey);
   }
 }

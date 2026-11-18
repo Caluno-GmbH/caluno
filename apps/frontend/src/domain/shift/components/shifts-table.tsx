@@ -1,7 +1,11 @@
 'use client';
 
 import { tz } from '@date-fns/tz';
-import type { GetShiftsQuery, PaginationInfo } from '@repo/data';
+import type {
+  GetShiftsQuery,
+  PaginationInfo,
+  ReimbursementTypeKey,
+} from '@repo/data';
 import {
   ExportTable,
   formatRrulePattern,
@@ -100,7 +104,7 @@ export interface ShiftMasterRow {
   location: string | null;
   minVolunteers: number | null;
   maxVolunteers: number | null;
-  reimbursementTypeId: string | null;
+  reimbursementTypeKey: ReimbursementTypeKey | null;
   /** True for single-occurrence shifts: rendered as one row with no sub-rows. */
   isOneOff: boolean;
   /** The sole instance of a one-off shift, surfaced on the master row itself. */
@@ -144,7 +148,7 @@ function toMasterRow(item: ApiShiftItem): ShiftMasterRow {
     location: item.location,
     minVolunteers: item.minVolunteers,
     maxVolunteers: item.maxVolunteers,
-    reimbursementTypeId: item.reimbursementTypeId,
+    reimbursementTypeKey: item.reimbursementTypeKey,
     isOneOff,
     singleInstance: isOneOff ? (instances[0] ?? null) : null,
     // A one-off shift is one row: no instance sub-rows underneath.
@@ -356,7 +360,7 @@ export function ShiftsTable({
           const item = row.original;
           if (item.kind === 'master') {
             const marker = resolvePauschaleMarker(
-              item.reimbursementTypeId,
+              item.reimbursementTypeKey,
               reimbursementTypes,
             );
             let subtitle: string;

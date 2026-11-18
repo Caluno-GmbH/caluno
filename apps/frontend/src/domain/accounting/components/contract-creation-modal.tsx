@@ -109,7 +109,7 @@ export function ContractCreationModal({
 
   const templateQuery = useActiveDocumentTemplate(
     apiDocumentKindFor('contract'),
-    reimbursementType?.id,
+    reimbursementType?.key,
     orgUId,
   );
   const templateDoc = templateQuery.data
@@ -245,7 +245,7 @@ export function ContractCreationModal({
     try {
       await createContract.mutateAsync({
         organizationUnitId: orgUId,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         volunteerId,
         sourceDraftId,
         periodStart: period.periodStart,

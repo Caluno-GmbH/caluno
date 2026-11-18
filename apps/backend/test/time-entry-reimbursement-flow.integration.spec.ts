@@ -54,7 +54,7 @@ describe('Time entry -> eligible timesheet flow', () => {
     }).compile();
     db = moduleRef.get<Database>(DATABASE_CONNECTION);
 
-    // Creating a shift with reimbursementTypeId calls
+    // Creating a shift with reimbursementTypeKey calls
     // AccountingOrgAccessService → OrganizationUnitService.findOrganizationIdByUnitId,
     // which delegates to OrganizationUnitDataService — stubbing that as `{}`
     // breaks the reimbursable path.
@@ -153,7 +153,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       startsAt: new Date(Date.now() - 3600_000),
       endsAt: new Date(Date.now() - 1800_000),
       visibility: ShiftVisibility.ALL_MEMBERS,
-      reimbursementTypeId: reimbursementType.key,
+      reimbursementTypeKey: reimbursementType.key,
     } as never);
 
     const [instance] = await db
@@ -197,7 +197,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       needingTimesheets.some(
         (row) =>
           row.volunteerId === volunteerId &&
-          row.reimbursementTypeId === reimbursementType.key,
+          row.reimbursementTypeKey === reimbursementType.key,
       ),
     ).toBe(true);
   });
@@ -243,7 +243,7 @@ describe('Time entry -> eligible timesheet flow', () => {
       volunteerId,
     );
 
-    expect(entry.reimbursementTypeId).toBeNull();
+    expect(entry.reimbursementTypeKey).toBeNull();
     expect(entry.isPaid).toBe(false);
 
     const after =

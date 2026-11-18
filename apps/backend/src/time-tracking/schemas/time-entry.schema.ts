@@ -47,7 +47,7 @@ export const timeEntries = snakeCase.table(
     closureKind:
       timeEntryClosureKindEnum('closure_kind').$type<TimeEntryClosureKind>(),
     notes: text('notes'),
-    reimbursementTypeId: reimbursementTypeKeyEnum('reimbursement_type_id')
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' }),
     isPaid: boolean('is_paid').notNull().default(false),
@@ -72,7 +72,7 @@ export const timeEntries = snakeCase.table(
       ),
     check(
       'chk_time_entries_paid_requires_reimbursement_type',
-      sql`${table.isPaid} = false OR ${table.reimbursementTypeId} IS NOT NULL`,
+      sql`${table.isPaid} = false OR ${table.reimbursementTypeKey} IS NOT NULL`,
     ),
   ],
 );

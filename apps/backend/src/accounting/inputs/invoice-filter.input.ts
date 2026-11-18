@@ -6,8 +6,8 @@ export class InvoiceFilterInput {
   @Field(() => ID, { nullable: true })
   volunteerId?: string | null;
 
-  @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: ReimbursementTypeKey | null;
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 
   @Field(() => InvoiceStatus, { nullable: true })
   status?: InvoiceStatus | null;

@@ -29,8 +29,8 @@ export const shiftInstances = snakeCase.table(
     overrideLocation: text('override_location'),
     overrideMaxVolunteers: integer('override_max_volunteers'),
     overrideMinVolunteers: integer('override_min_volunteers'),
-    overrideReimbursementTypeId: reimbursementTypeKeyEnum(
-      'override_reimbursement_type_id',
+    overrideReimbursementTypeKey: reimbursementTypeKeyEnum(
+      'override_reimbursement_type_key',
     )
       .$type<ReimbursementTypeKey>()
       .references(() => reimbursementTypes.key, { onDelete: 'restrict' }),

@@ -25,8 +25,8 @@ export class BundleDeliveryMutationResolver {
   @Mutation(() => BundleDelivery)
   async sendReimbursementBundle(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: ReimbursementTypeKey,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('invoiceIds', { type: () => [ID], nullable: true })
     invoiceIds: string[] | null | undefined,
     @Args('acknowledgedIssues', {
@@ -52,7 +52,7 @@ export class BundleDeliveryMutationResolver {
       organizationId,
       scope: {
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         organizationUnitId: context.organizationUnitId,
       },
       invoiceIds: invoiceIds ?? undefined,

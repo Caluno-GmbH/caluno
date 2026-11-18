@@ -18,8 +18,8 @@ export class CreateContractInput {
   @Field(() => ID)
   volunteerId!: string;
 
-  @Field(() => ID)
-  reimbursementTypeId!: ReimbursementTypeKey;
+  @Field(() => ReimbursementTypeKey)
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   @Field(() => Date)
   periodStart!: Date;

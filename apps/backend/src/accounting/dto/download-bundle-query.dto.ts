@@ -22,7 +22,7 @@ export class DownloadBundleQueryDto {
   volunteerId!: string;
 
   @IsEnum(ReimbursementTypeKey)
-  reimbursementTypeId!: ReimbursementTypeKey;
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   /**
    * The timesheets the board shows, as a comma separated list. Left out, every

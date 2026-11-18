@@ -6,7 +6,7 @@ function makeService(args: {
   missingOrgFields?: string[];
   orgProfile?: Record<string, unknown>;
   templates?: {
-    reimbursementTypeId: ReimbursementTypeKey;
+    reimbursementTypeKey: ReimbursementTypeKey;
     kind: DocumentKind;
   }[];
   types?: { id: string; key: ReimbursementTypeKey }[];
@@ -71,7 +71,7 @@ describe('AccountingSetupService.getSetupStatus', () => {
     const service = makeService({
       templates: [
         {
-          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           kind: DocumentKind.INVOICE,
         },
       ],
@@ -79,7 +79,7 @@ describe('AccountingSetupService.getSetupStatus', () => {
 
     const status = await service.getSetupStatus('org-1', 'unit-1');
     const ehrenamt = status.slots.find(
-      (s) => s.reimbursementTypeId === ReimbursementTypeKey.EHRENAMT,
+      (s) => s.reimbursementTypeKey === ReimbursementTypeKey.EHRENAMT,
     );
 
     expect(ehrenamt?.hasInvoiceTemplate).toBe(true);
@@ -92,11 +92,11 @@ describe('AccountingSetupService.getSetupStatus', () => {
     const service = makeService({
       templates: [
         {
-          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           kind: DocumentKind.CONTRACT,
         },
         {
-          reimbursementTypeId: ReimbursementTypeKey.EHRENAMT,
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           kind: DocumentKind.INVOICE,
         },
       ],
@@ -106,12 +106,12 @@ describe('AccountingSetupService.getSetupStatus', () => {
 
     expect(
       status.slots.find(
-        (s) => s.reimbursementTypeId === ReimbursementTypeKey.EHRENAMT,
+        (s) => s.reimbursementTypeKey === ReimbursementTypeKey.EHRENAMT,
       )?.ready,
     ).toBe(true);
     expect(
       status.slots.find(
-        (s) => s.reimbursementTypeId === ReimbursementTypeKey.UEBUNGSLEITER,
+        (s) => s.reimbursementTypeKey === ReimbursementTypeKey.UEBUNGSLEITER,
       )?.ready,
     ).toBe(false);
     expect(status.canCreateDocuments).toBe(true);

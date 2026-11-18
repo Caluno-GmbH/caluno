@@ -109,7 +109,7 @@ describe('ShiftInstanceFieldResolver', () => {
       const result = await resolver.reimbursementTypeKey(
         instance({
           id: 'instance-1',
-          overrideReimbursementTypeId: ReimbursementTypeKey.UEBUNGSLEITER,
+          overrideReimbursementTypeKey: ReimbursementTypeKey.UEBUNGSLEITER,
         }),
         loader,
       );
@@ -123,7 +123,7 @@ describe('ShiftInstanceFieldResolver', () => {
       const resolver = newResolver();
       const shiftLoad = jest
         .fn()
-        .mockResolvedValue({ reimbursementTypeId: 'rt-master' });
+        .mockResolvedValue({ reimbursementTypeKey: 'rt-master' });
       const keyLoad = jest.fn().mockResolvedValue('UEBUNGSLEITER');
       const loader = {
         shiftById: { load: shiftLoad },
@@ -134,7 +134,7 @@ describe('ShiftInstanceFieldResolver', () => {
         instance({
           id: 'instance-1',
           masterId: 'shift-1',
-          overrideReimbursementTypeId: null,
+          overrideReimbursementTypeKey: null,
         }),
         loader,
       );
@@ -148,7 +148,7 @@ describe('ShiftInstanceFieldResolver', () => {
       const resolver = newResolver();
       const shiftLoad = jest
         .fn()
-        .mockResolvedValue({ reimbursementTypeId: null });
+        .mockResolvedValue({ reimbursementTypeKey: null });
       const keyLoad = jest.fn();
       const loader = {
         shiftById: { load: shiftLoad },
@@ -159,7 +159,7 @@ describe('ShiftInstanceFieldResolver', () => {
         instance({
           id: 'instance-1',
           masterId: 'shift-1',
-          overrideReimbursementTypeId: null,
+          overrideReimbursementTypeKey: null,
         }),
         loader,
       );

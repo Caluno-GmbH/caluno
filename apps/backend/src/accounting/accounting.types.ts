@@ -10,7 +10,7 @@ import type { ReimbursementTypeEntity } from './schemas/reimbursement-type.schem
 
 export type ContractFilter = {
   volunteerId?: string;
-  reimbursementTypeId?: ReimbursementTypeKey;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   status?: ContractStatus;
   periodStart?: Date;
   periodEnd?: Date;
@@ -21,7 +21,7 @@ export type ContractFilter = {
 
 export type InvoiceFilter = {
   volunteerId?: string;
-  reimbursementTypeId?: ReimbursementTypeKey;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   status?: InvoiceStatus;
   periodStart?: Date;
   periodEnd?: Date;
@@ -49,7 +49,7 @@ export type EffectiveRate = {
  */
 export type EligibleTimesheetVolunteer = {
   volunteerId: string;
-  reimbursementTypeId: ReimbursementTypeKey;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: Date;
   periodEnd: Date;
   eligibleHours: number;
