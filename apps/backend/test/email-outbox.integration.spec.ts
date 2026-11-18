@@ -348,6 +348,32 @@ describe('EmailOutboxService', () => {
     expect(sendOnce).not.toHaveBeenCalled();
   });
 
+  it('cancels an email to any @*.internal recipient', async () => {
+    const outboxEmail = await enqueue({
+      to: `internal-${counter}@some-other-app.internal`,
+    });
+
+    const drainSummary = await service.drain();
+
+    expect(drainSummary.cancelled).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.CANCELLED);
+    expect(sendOnce).not.toHaveBeenCalled();
+  });
+
+  it('cancels an email to a bare @internal recipient', async () => {
+    const outboxEmail = await enqueue({
+      to: `internal-${counter}@Internal`,
+    });
+
+    const drainSummary = await service.drain();
+
+    expect(drainSummary.cancelled).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.CANCELLED);
+    expect(sendOnce).not.toHaveBeenCalled();
+  });
+
   it('gives up once maxAttempts is exhausted', async () => {
     sendOnce.mockImplementation(async () => ({
       ok: false,
