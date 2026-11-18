@@ -1,6 +1,6 @@
 'use client';
 import { AccountingRepository, type RawBundleDownloadStatus } from '@repo/data';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { invalidateInvoiceQueries } from './use-invoices';
@@ -20,11 +20,13 @@ export function useBundleDownloadStatus(
       volunteerId,
       reimbursementTypeKey,
     ],
-    queryFn: () =>
-      repository.findBundleDownloadStatus(
-        volunteerId ?? '',
-        reimbursementTypeKey!,
-      ),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findBundleDownloadStatus(
+            volunteerId ?? '',
+            reimbursementTypeKey,
+          )
+      : skipToken,
     staleTime: 30 * 1000,
     enabled: !!volunteerId && !!reimbursementTypeKey,
   });

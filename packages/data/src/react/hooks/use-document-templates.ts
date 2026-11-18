@@ -8,7 +8,13 @@ import {
   isNotFoundDataError,
   type UpdateDocumentTemplateInput,
 } from '@repo/data';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  queryOptions,
+  skipToken,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
@@ -52,12 +58,14 @@ export function useActiveDocumentTemplate(
       reimbursementTypeKey,
       organizationUnitId,
     ],
-    queryFn: () =>
-      repository.findActiveDocumentTemplate({
-        kind: kind as DocumentKind,
-        reimbursementTypeKey: reimbursementTypeKey!,
-        organizationUnitId,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findActiveDocumentTemplate({
+            kind: kind as DocumentKind,
+            reimbursementTypeKey,
+            organizationUnitId,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
     enabled: !!kind && !!reimbursementTypeKey,
   });
@@ -88,7 +96,8 @@ function resolvedTemplateQuery(
   slot: TemplateSlotRef,
   organizationUnitId: string,
 ) {
-  return {
+  const { reimbursementTypeKey } = slot;
+  return queryOptions({
     queryKey: [
       'accounting',
       'resolved-document-template',
@@ -97,17 +106,19 @@ function resolvedTemplateQuery(
       organizationUnitId,
     ],
     // The backend walks own unit, ancestors, then org-wide.
-    queryFn: (): Promise<DocumentTemplateDetail | null> =>
-      nullIfNotFound(() =>
-        repository.findActiveDocumentTemplate({
-          kind: slot.kind,
-          reimbursementTypeKey: slot.reimbursementTypeKey!,
-          organizationUnitId,
-        }),
-      ),
+    queryFn: reimbursementTypeKey
+      ? (): Promise<DocumentTemplateDetail | null> =>
+          nullIfNotFound(() =>
+            repository.findActiveDocumentTemplate({
+              kind: slot.kind,
+              reimbursementTypeKey,
+              organizationUnitId,
+            }),
+          )
+      : skipToken,
     staleTime: 30 * 1000,
     enabled: !!slot.reimbursementTypeKey,
-  };
+  });
 }
 
 /**

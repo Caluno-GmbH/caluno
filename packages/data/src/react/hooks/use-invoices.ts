@@ -11,6 +11,7 @@ import {
 } from '@repo/data';
 import {
   type QueryClient,
+  skipToken,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
@@ -78,16 +79,19 @@ export function useEligibleTimeEntriesForInvoice(input: {
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
+  const { reimbursementTypeKey } = input;
 
   return useQuery<EligibleTimeEntry[]>({
     queryKey: ['accounting', 'eligible-time-entries', input],
-    queryFn: () =>
-      repository.findEligibleTimeEntriesForInvoice({
-        volunteerId: input.volunteerId ?? '',
-        reimbursementTypeKey: input.reimbursementTypeKey!,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findEligibleTimeEntriesForInvoice({
+            volunteerId: input.volunteerId ?? '',
+            reimbursementTypeKey,
+            periodStart: input.periodStart,
+            periodEnd: input.periodEnd,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
     enabled: !!input.volunteerId && !!input.reimbursementTypeKey,
   });
@@ -101,16 +105,19 @@ export function useTimeEntriesAwaitingReviewForInvoice(input: {
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
+  const { reimbursementTypeKey } = input;
 
   return useQuery<AwaitingReviewTimeEntry[]>({
     queryKey: ['accounting', 'awaiting-review-time-entries', input],
-    queryFn: () =>
-      repository.findTimeEntriesAwaitingReviewForInvoice({
-        volunteerId: input.volunteerId ?? '',
-        reimbursementTypeKey: input.reimbursementTypeKey!,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findTimeEntriesAwaitingReviewForInvoice({
+            volunteerId: input.volunteerId ?? '',
+            reimbursementTypeKey,
+            periodStart: input.periodStart,
+            periodEnd: input.periodEnd,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
     enabled: !!input.volunteerId && !!input.reimbursementTypeKey,
   });

@@ -5,7 +5,7 @@ import {
   type RawVolunteerYearlyUsage,
   type RawYearlyUsage,
 } from '@repo/data';
-import { useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query';
 import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 
@@ -20,18 +20,21 @@ export function useYearlyUsage(input: {
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
+  const { reimbursementTypeKey } = input;
 
   return useQuery<RawYearlyUsage>({
     // Nested under 'yearly-usage' so setting an initial amount refreshes it.
     queryKey: ['accounting', 'yearly-usage', input],
-    queryFn: () =>
-      repository.findYearlyUsage({
-        volunteerId: input.volunteerId ?? '',
-        reimbursementTypeKey: input.reimbursementTypeKey!,
-        year: input.year ?? 0,
-        asOfDate: input.asOfDate,
-        excludeInvoiceId: input.excludeInvoiceId,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findYearlyUsage({
+            volunteerId: input.volunteerId ?? '',
+            reimbursementTypeKey,
+            year: input.year ?? 0,
+            asOfDate: input.asOfDate,
+            excludeInvoiceId: input.excludeInvoiceId,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
     enabled:
       !!input.volunteerId && !!input.reimbursementTypeKey && !!input.year,

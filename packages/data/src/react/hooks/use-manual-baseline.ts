@@ -1,6 +1,6 @@
 'use client';
 import { AccountingRepository, type RawManualBaseline } from '@repo/data';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
@@ -21,12 +21,14 @@ export function useManualBaseline(
       reimbursementTypeKey,
       year,
     ],
-    queryFn: () =>
-      repository.findManualBaseline(
-        volunteerId ?? '',
-        reimbursementTypeKey!,
-        year ?? new Date().getFullYear(),
-      ),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findManualBaseline(
+            volunteerId ?? '',
+            reimbursementTypeKey,
+            year ?? new Date().getFullYear(),
+          )
+      : skipToken,
     staleTime: 30 * 1000,
     enabled: !!volunteerId && !!reimbursementTypeKey && !!year,
   });
