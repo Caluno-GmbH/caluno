@@ -12,6 +12,7 @@ import {
   type EmailSendResult,
   EmailTransportService,
 } from '../email-transport.service';
+import { isSuppressedEmailRecipient } from '../suppressed-recipient';
 import { computeNextAttemptDelayMs } from './email-outbox.backoff';
 import { EmailCategory, EmailDeliveryStatus } from './email-outbox.enums';
 
@@ -390,6 +391,16 @@ export class EmailOutboxService {
           retryable: false,
           error: new Error('Email expired before delivery'),
         },
+      };
+    }
+
+    // Internal accounts never receive email. Report success so inline auth
+    // sends don't throw for them.
+    if (isSuppressedEmailRecipient(outboxEmail.recipientEmail)) {
+      await this.markOutboxEmailCancelled(outboxEmail);
+      return {
+        outcome: 'cancelled',
+        result: { ok: true, providerMessageId: null },
       };
     }
 
