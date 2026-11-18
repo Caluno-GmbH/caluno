@@ -7,12 +7,39 @@ input AcceptTermsInput {
   version: String!
 }
 
+type AccountingDeliverySettings {
+  defaultEmailSubject: String!
+  deliveryMethod: BundleDeliveryMethod!
+  deliveryMethodSource: AccountingSettingSource!
+  emailSubject: String!
+  emailSubjectSource: AccountingSettingSource!
+  inheritedDeliveryMethod: BundleDeliveryMethod!
+  inheritedEmailSubject: String!
+  inheritedRecipientEmail: String
+  ownDeliveryMethod: BundleDeliveryMethod
+  ownEmailSubject: String
+  ownRecipientEmail: String
+  recipientEmail: String
+  recipientEmailSource: AccountingSettingSource!
+}
+
 type AccountingOrgProfile {
   city: String
   legalRep: String
   name: String!
   street: String
   zipCode: String
+}
+
+type AccountingSettingSource {
+  kind: AccountingSettingSourceKind!
+  sourceName: String
+}
+
+enum AccountingSettingSourceKind {
+  DEFAULT
+  INHERITED
+  OWN
 }
 
 type AccountingSetupStatus {
@@ -50,11 +77,44 @@ enum AgreementStatus {
   NO_TEMPLATE
 }
 
+type BundleDelivery {
+  deliveredByUser: User
+  emailStatus: EmailDeliveryStatus
+  id: ID!
+  invoiceIds: [ID!]!
+  issues: [BundleDeliveryIssue!]!
+  method: BundleDeliveryMethod!
+  occurredAt: DateTime!
+  recipientEmail: String
+  reimbursementType: ReimbursementType
+  subject: String
+  volunteer: User
+}
+
+enum BundleDeliveryIssue {
+  ALREADY_SENT
+  NO_CONTRACT
+  OVER_LIMIT
+}
+
+enum BundleDeliveryMethod {
+  DOWNLOAD
+  EMAIL
+}
+
 type BundleDownloadStatus {
   downloadedAt: DateTime!
   downloadedByUser: User
   reimbursementType: ReimbursementType!
   volunteer: User!
+}
+
+type BundleSendPreview {
+  documentCount: Int!
+  fitsInEmail: Boolean!
+  issues: [BundleDeliveryIssue!]!
+  recipientEmail: String
+  subject: String!
 }
 
 type CheckInAgreement {
@@ -353,6 +413,14 @@ type EffectiveRate {
   reimbursementType: ReimbursementType!
 }
 
+enum EmailDeliveryStatus {
+  CANCELLED
+  FAILED
+  PENDING
+  SENDING
+  SENT
+}
+
 type Event {
   coverImageUrl: String
   coverUrl: String
@@ -570,6 +638,7 @@ type Invoice {
   invoiceStatus: InvoiceStatus!
   invoiceTimeEntries: [InvoiceTimeEntry!]!
   isNonCompliant: Boolean!
+  lastEmailDelivery: InvoiceEmailDelivery
   missingOrgProfileFields: [String!]!
   missingProfileFields: [String!]!
   paidAt: DateTime
@@ -584,6 +653,12 @@ type Invoice {
   totalHours: Float!
   updatedAt: DateTime
   volunteer: User!
+}
+
+type InvoiceEmailDelivery {
+  deliveredByUser: User
+  occurredAt: DateTime!
+  status: EmailDeliveryStatus!
 }
 
 input InvoiceFilterInput {
@@ -766,6 +841,7 @@ type Mutation {
   removeMembership(id: ID!): Membership!
   removeMembershipRequest(id: ID!): MembershipRequest!
   requestOrganizationUnitDeletion(id: String!, message: String): OrganizationUnit!
+  sendReimbursementBundle(acknowledgedIssues: [BundleDeliveryIssue!]! = [], expectedRecipientEmail: String!, expectedSubject: String!, invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleDelivery!
   sendShiftInstanceCallOut(instanceId: String!): ShiftInstanceCallOutResult!
   setEventRequiredForms(eventId: ID!, formIds: [String!]!): [RequiredFormRef!]!
   setManualBaseline(amountCents: Int!, reimbursementTypeId: ID!, volunteerId: ID!, year: Int!): ManualBaseline!
@@ -779,6 +855,7 @@ type Mutation {
   submitForm(input: SubmitFormInput!, organizationUnitId: ID!, token: String!): FormSubmission!
   submitRequiredForm(formId: String!, input: SubmitFormInput!, targetId: String!, targetType: RequiredFormTargetType!): FormSubmission!
   unsubscribeFromEmails: Boolean!
+  updateAccountingDeliverySettings(input: UpdateAccountingDeliverySettingsInput!): AccountingDeliverySettings!
   updateDocumentTemplate(id: ID!, input: UpdateDocumentTemplateInput!): DocumentTemplate!
   updateEvent(id: ID!, input: UpdateEventInput!): Event!
   updateEventInviteStatus(eventId: ID!, status: EventInviteStatus!, userId: String): EventInvite!
@@ -956,6 +1033,7 @@ enum PermissionKey {
 }
 
 type Query {
+  accountingDeliverySettings: AccountingDeliverySettings!
   accountingSetupStatus: AccountingSetupStatus!
   activeDocumentTemplate(kind: DocumentKind!, organizationUnitId: ID, reimbursementTypeId: ID!): DocumentTemplate!
   activeShiftInstances: [ShiftInstance!]!
@@ -963,7 +1041,9 @@ type Query {
   availableEvents(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): EventPaginatedResponse!
   availableShiftInstanceDayCounts(endsBefore: DateTime = null, excludeIntended: Boolean! = false, organizationUnitIds: [ID!], startsAfter: DateTime = null): [ShiftInstanceDayCount!]!
   availableShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, organizationUnitIds: [ID!], startsAfter: DateTime = null): ShiftInstancePaginatedResponse!
+  bundleDeliveries(limit: Int = 50, offset: Int = 0): [BundleDelivery!]!
   bundleDownloadStatus(reimbursementTypeId: ID!, volunteerId: ID!): BundleDownloadStatus
+  bundleSendPreview(invoiceIds: [ID!], reimbursementTypeId: ID!, volunteerId: ID!): BundleSendPreview!
   checkInContext(checkInId: String!): CheckInContext
   checkInReadiness(shiftInstanceId: ID, volunteerId: ID!): CheckInReadiness!
   checkInShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
@@ -1426,6 +1506,12 @@ type TodoFillAssignmentFilter {
 enum TodoFillThreshold {
   BELOW_MINIMUM
   NOT_FULL
+}
+
+input UpdateAccountingDeliverySettingsInput {
+  deliveryMethod: BundleDeliveryMethod
+  emailSubject: String
+  recipientEmail: String
 }
 
 input UpdateDocumentTemplateInput {

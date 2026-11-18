@@ -14,6 +14,22 @@
     "previewText": "Your {brandName} verification code is {otp}.",
     "subject": "Your {brandName} verification code"
   },
+  "accountingBundle": {
+    "detailConfirmedIssues": "Sent despite",
+    "detailPeriod": "Period",
+    "detailSentBy": "Sent by",
+    "detailType": "Reimbursement",
+    "detailUnit": "Organization unit",
+    "detailVolunteer": "Volunteer",
+    "heading": "Reimbursement documents",
+    "intro": "Attached {count, plural, one {is the signed timesheet} other {are the # signed timesheets}} of {volunteerName}, each with the agreements that cover it.",
+    "issueAlreadySent": "These documents were already sent before",
+    "issueNoContract": "Some hours have no active agreement",
+    "issueOverLimit": "The yearly allowance is exceeded",
+    "previewText": "Reimbursement documents of {volunteerName} for {periodLabel}",
+    "typeEHRENAMT": "Ehrenamtspauschale",
+    "typeUEBUNGSLEITER": "Übungsleiterpauschale"
+  },
   "emailUnsubscribe": {
     "label": "Manage your email preferences",
     "prompt": "Don't want these emails anymore? {link}."

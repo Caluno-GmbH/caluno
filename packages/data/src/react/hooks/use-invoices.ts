@@ -4,6 +4,7 @@ import {
   type AwaitingReviewTimeEntry,
   type CreateInvoiceInput,
   type EligibleTimeEntry,
+  EmailDeliveryStatus,
   type InvoiceDetail,
   type InvoiceFilterInput,
   type InvoiceSummary,
@@ -16,6 +17,12 @@ import {
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
+const SENDING_POLL_MS = 5_000;
+const SENDING_STATUSES: (EmailDeliveryStatus | undefined)[] = [
+  EmailDeliveryStatus.Pending,
+  EmailDeliveryStatus.Sending,
+];
+
 export function useInvoices(filter?: InvoiceFilterInput) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
@@ -25,6 +32,12 @@ export function useInvoices(filter?: InvoiceFilterInput) {
     queryFn: () => repository.findInvoices(filter),
     staleTime: 30 * 1000,
     refetchOnMount: 'always',
+    refetchInterval: (query) =>
+      query.state.data?.some((invoice) =>
+        SENDING_STATUSES.includes(invoice.lastEmailDelivery?.status),
+      )
+        ? SENDING_POLL_MS
+        : false,
   });
 }
 

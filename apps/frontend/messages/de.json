@@ -182,6 +182,8 @@
     "successDialogCloseButton": "Fertig",
     "successDialogTitle": "Erfolgreich eingecheckt",
     "today": "Heute",
+    "noPermissionDescription": "Du hast keine Berechtigung, Freiwillige einzuchecken. Wende dich an die Administration deiner Organisation, um Check-in-Rechte zu erhalten.",
+    "noPermissionTitle": "Keine Berechtigung zum Einchecken",
     "unavailableDescription": "Der gescannte Code gehört zu keiner Person aus deinen Organisationseinheiten.",
     "unavailableTitle": "Einchecken nicht möglich",
     "agreementNoTemplateTitle": "Keine Vertragsvorlage vorhanden",
@@ -2264,7 +2266,8 @@
       "subtitle": "Richte Vergütung und Dokumentvorlagen ein.",
       "tabs": {
         "rates": "Vergütung",
-        "templates": "Vorlagen"
+        "templates": "Vorlagen",
+        "delivery": "Versand"
       },
       "rates": {
         "sectionTitle": "Vergütung pro Stunde",
@@ -2288,6 +2291,39 @@
       "templates": {
         "sectionTitle": "Dokumentvorlagen",
         "sectionSubtitle": "Alle Vorlagen für Dokumente, die für die jeweilige Pauschale benötigt werden."
+      },
+      "delivery": {
+        "sectionTitle": "Übergabe an die Buchhaltung",
+        "sectionSubtitle": "Wie fertige Unterlagen-Pakete deine Buchhaltung erreichen. Untereinheiten übernehmen diese Einstellungen, solange sie keine eigenen festlegen.",
+        "methodLabel": "Fertige Pakete",
+        "methodDownload": "Herunterladen",
+        "methodDownloadHint": "Admins laden jedes Paket als ZIP-Datei herunter.",
+        "methodEmail": "Per E-Mail senden",
+        "methodEmailHint": "Admins senden das Paket jeder:s Ehrenamtlichen als eigene E-Mail. Es geht nichts raus, bevor ein Admin es sendet.",
+        "methodInherit": "Übernommen ({value})",
+        "recipientLabel": "E-Mail-Adresse der Buchhaltung",
+        "recipientHint": "Erhält deine fertigen Unterlagen-Pakete, sobald sie in der Buchhaltung verarbeitet werden können.",
+        "recipientPlaceholder": "buchhaltung@example.org",
+        "recipientNotSet": "Nicht festgelegt",
+        "showRecipient": "E-Mail-Adresse anzeigen",
+        "hideRecipient": "E-Mail-Adresse verbergen",
+        "subjectLabel": "Betreff der E-Mail",
+        "subjectHint": "Platzhalter: {placeholders}",
+        "inheritPlaceholder": "Übernommen: {value}",
+        "source": {
+          "own": "Für diese Einheit festgelegt",
+          "inheritedFrom": "Übernommen von {source}",
+          "default": "Standard"
+        },
+        "clearHint": "Leer lassen, um den übernommenen Wert zu verwenden.",
+        "saveSuccess": "Versandeinstellungen gespeichert",
+        "saveError": "Die Versandeinstellungen konnten nicht gespeichert werden. Bitte versuche es erneut.",
+        "loadError": "Die Versandeinstellungen konnten nicht geladen werden. Bitte lade die Seite neu.",
+        "errors": {
+          "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+          "unknownPlaceholder": "Verwende nur die oben aufgeführten Platzhalter.",
+          "recipientRequired": "Hinterlege eine E-Mail-Adresse der Buchhaltung, um Pakete per E-Mail zu senden."
+        }
       }
     },
     "setupAlert": {
@@ -2389,7 +2425,31 @@
         "lastDownloaded": "zuletzt heruntergeladen von <name>{by}</name> am {at}",
         "neverDownloaded": "noch nicht heruntergeladen",
         "unknownUser": "unbekannt",
-        "downloadError": "Das Paket ließ sich nicht herunterladen. Versuch es bitte erneut."
+        "downloadError": "Das Paket ließ sich nicht herunterladen. Versuch es bitte erneut.",
+        "sendActionLabel": "Paket senden",
+        "lastSent": "zuletzt gesendet von <name>{by}</name> am {at}",
+        "neverSent": "noch nicht gesendet",
+        "noRecipient": "Hinterlege in den Abrechnungseinstellungen eine E-Mail-Adresse der Buchhaltung, um Pakete zu senden.",
+        "sendSuccess": "Das Paket ist auf dem Weg zur Buchhaltung",
+        "sendError": "Das Paket konnte nicht gesendet werden. Bitte versuche es erneut.",
+        "sendTooLarge": "Dieses Paket ist zu groß für eine E-Mail. Lade es stattdessen herunter.",
+        "sendIssuesChanged": "In der Zwischenzeit hat sich etwas geändert. Bitte prüfe das Paket und bestätige erneut.",
+        "viewLog": "Versandprotokoll",
+        "confirmDialog": {
+          "title": "Paket trotzdem senden?",
+          "description": "Die Buchhaltung verarbeitet das Paket für {volunteer} so, wie es ist.",
+          "recipient": "An: {recipient}",
+          "issues": {
+            "NO_CONTRACT": "Für einige Stunden gibt es keine aktive Vereinbarung.",
+            "OVER_LIMIT": "Der Jahresfreibetrag der:s Ehrenamtlichen ist überschritten.",
+            "ALREADY_SENT": "Diese Unterlagen wurden bereits an die Buchhaltung gesendet."
+          },
+          "confirm": "Trotzdem senden"
+        },
+        "lastSendFailed": "letztes Senden fehlgeschlagen am {at}",
+        "lastSending": "wird gesendet …",
+        "downloadInstead": "Stattdessen herunterladen",
+        "settingsError": "Versandeinstellungen nicht verfügbar"
       },
       "batchBar": {
         "selected": "{count} ausgewählt",
@@ -2471,7 +2531,10 @@
           "contractMissing": "Keine Vereinbarung. Manuell anlegen.",
           "timesheetMuted": "Erfasst ohne Vereinbarung",
           "declined": "Abgelehnt",
-          "templateMissingHint": "Noch keine Vorlage für diese Pauschale. Richte sie unter Buchhaltung → Vorlagen ein."
+          "templateMissingHint": "Noch keine Vorlage für diese Pauschale. Richte sie unter Buchhaltung → Vorlagen ein.",
+          "sentBy": "Gesendet von <name>{by}</name> am {at}",
+          "sendFailed": "Senden fehlgeschlagen am {at}",
+          "sending": "Wird an die Buchhaltung gesendet …"
         },
         "actions": {
           "create": "Überprüfen und erstellen",
@@ -2831,6 +2894,43 @@
           "signees": "{count, plural, =1 {1 Unterschrift} other {# Unterschriften}}"
         }
       }
+    },
+    "deliveries": {
+      "title": "Versandprotokoll",
+      "subtitle": "Jedes Unterlagen-Paket, das diese Einheit an die Buchhaltung übergeben hat: wann, von wem und wohin.",
+      "back": "Abrechnungen",
+      "tableHead": {
+        "date": "Datum",
+        "volunteer": "Ehrenamtliche:r",
+        "type": "Pauschale",
+        "method": "Übergabe",
+        "recipient": "Empfänger",
+        "documents": "Unterlagen",
+        "by": "Von",
+        "status": "Status"
+      },
+      "method": {
+        "DOWNLOAD": "Heruntergeladen",
+        "EMAIL": "E-Mail"
+      },
+      "status": {
+        "PENDING": "In Warteschlange",
+        "SENDING": "Wird gesendet",
+        "SENT": "Gesendet",
+        "FAILED": "Fehlgeschlagen",
+        "CANCELLED": "Abgebrochen"
+      },
+      "withIssues": "Gesendet trotz: {issues}",
+      "issues": {
+        "NO_CONTRACT": "keine aktive Vereinbarung",
+        "OVER_LIMIT": "Jahresfreibetrag überschritten",
+        "ALREADY_SENT": "bereits gesendet"
+      },
+      "empty": "Bisher wurde nichts an die Buchhaltung übergeben.",
+      "noMore": "Keine weiteren Einträge.",
+      "loadError": "Das Versandprotokoll konnte nicht geladen werden. Bitte lade die Seite neu.",
+      "previous": "Zurück",
+      "next": "Weiter"
     }
   },
   "Export": {

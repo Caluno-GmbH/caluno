@@ -1,3 +1,4 @@
+export * from '../accounting/schemas/accounting-delivery-setting.schema';
 export * from '../accounting/schemas/contract.schema';
 export * from '../accounting/schemas/contract-signature.schema';
 export * from '../accounting/schemas/contract-status-change.schema';
@@ -6,6 +7,7 @@ export * from '../accounting/schemas/invoice.schema';
 export * from '../accounting/schemas/invoice-signature.schema';
 export * from '../accounting/schemas/invoice-status-change.schema';
 export * from '../accounting/schemas/invoice-time-entry.schema';
+export * from '../accounting/schemas/reimbursement-bundle-delivery.schema';
 export * from '../accounting/schemas/reimbursement-bundle-download.schema';
 export * from '../accounting/schemas/reimbursement-manual-baseline.schema';
 export * from '../accounting/schemas/reimbursement-rate.schema';

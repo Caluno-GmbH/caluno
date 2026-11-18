@@ -14,6 +14,7 @@ import {
 import {
   EmailOutboxService,
   type EnqueueEmailInput,
+  FAILED_CONTENT_RETENTION_MS,
 } from '../src/notification/email/outbox/email-outbox.service';
 import {
   createOrganizationWithType,
@@ -111,6 +112,49 @@ describe('EmailOutboxService', () => {
     expect(outboxEmail.attempts).toBe(0);
   });
 
+  it('tells the category handler how an email settled, in the same transaction', async () => {
+    const settled: { emailId: string; status: EmailDeliveryStatus }[] = [];
+    const scoped = new EmailOutboxService(db, { sendOnce } as never);
+    scoped.onEmailSettled(
+      EmailCategory.ACCOUNTING_BUNDLE,
+      async (tx, event) => {
+        const [row] = await tx
+          .select({ status: schema.emailOutbox.status })
+          .from(schema.emailOutbox)
+          .where(eq(schema.emailOutbox.id, event.emailId));
+        expect(row?.status).toBe(event.status);
+        settled.push(event);
+      },
+    );
+    const bundle = await scoped.enqueue(
+      buildEmailInput({ category: EmailCategory.ACCOUNTING_BUNDLE }),
+    );
+    await scoped.enqueue(buildEmailInput());
+
+    await scoped.drain();
+
+    expect(settled).toEqual([
+      { emailId: bundle.id, status: EmailDeliveryStatus.SENT },
+    ]);
+  });
+
+  it('keeps an email sent when its settled handler throws', async () => {
+    const scoped = new EmailOutboxService(db, { sendOnce } as never);
+    scoped.onEmailSettled(EmailCategory.ACCOUNTING_BUNDLE, async () => {
+      throw new Error('handler broke');
+    });
+    const bundle = await scoped.enqueue(
+      buildEmailInput({ category: EmailCategory.ACCOUNTING_BUNDLE }),
+    );
+
+    await scoped.drain();
+
+    expect((await findOutboxEmail(bundle.id))?.status).toBe(
+      EmailDeliveryStatus.SENT,
+    );
+    expect(sendOnce).toHaveBeenCalledTimes(1);
+  });
+
   it('discards an email enqueued in a rolled-back transaction', async () => {
     const emailInput = buildEmailInput();
     const rollback = new Error('rollback');
@@ -158,7 +202,7 @@ describe('EmailOutboxService', () => {
     }
   });
 
-  it('keeps FAILED content and sets a 72h content expiry', async () => {
+  it('keeps FAILED content and sets a 120h content expiry', async () => {
     sendOnce.mockImplementationOnce(async () => ({
       ok: false,
       retryable: false,
@@ -181,12 +225,12 @@ describe('EmailOutboxService', () => {
     expect(updatedEmail?.html).toBe('<p>Body</p>');
     expect(updatedEmail?.attachments).toHaveLength(1);
     expect(updatedEmail?.expiresAt).toBeInstanceOf(Date);
-    const expiresAtMs = updatedEmail!.expiresAt!.getTime();
+    const expiresAtMs = updatedEmail?.expiresAt?.getTime();
     expect(expiresAtMs).toBeGreaterThanOrEqual(
-      beforeFail + 72 * 60 * 60 * 1000 - 5_000,
+      beforeFail + FAILED_CONTENT_RETENTION_MS - 5_000,
     );
     expect(expiresAtMs).toBeLessThanOrEqual(
-      Date.now() + 72 * 60 * 60 * 1000 + 5_000,
+      Date.now() + FAILED_CONTENT_RETENTION_MS + 5_000,
     );
   });
 

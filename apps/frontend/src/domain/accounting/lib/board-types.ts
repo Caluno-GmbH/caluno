@@ -109,7 +109,13 @@ export interface BoardDocument {
   declinedAt?: Date;
   /** Which seat in the signing chain declined — determines where the pipeline/timeline gets cut off. */
   declinedAtRole?: SigneeRole;
+  /** Timesheet only: when and by whom it was last emailed to accounting. */
+  sentAt?: Date;
+  sentBy?: string;
+  sendState?: SendState;
 }
+
+export type SendState = 'pending' | 'sent' | 'failed';
 
 export interface PauschalenLimit {
   used: number;

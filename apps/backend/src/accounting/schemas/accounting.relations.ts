@@ -209,6 +209,39 @@ export const accountingRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
   },
+  accountingDeliverySettings: {
+    organization: r.one.organizations({
+      from: r.accountingDeliverySettings.organizationId,
+      to: r.organizations.id,
+      optional: false,
+    }),
+    organizationUnit: r.one.organizationUnits({
+      from: r.accountingDeliverySettings.organizationUnitId,
+      to: r.organizationUnits.id,
+      optional: false,
+    }),
+  },
+  reimbursementBundleDeliveries: {
+    organizationUnit: r.one.organizationUnits({
+      from: r.reimbursementBundleDeliveries.organizationUnitId,
+      to: r.organizationUnits.id,
+      optional: false,
+    }),
+    volunteer: r.one.users({
+      from: r.reimbursementBundleDeliveries.volunteerId,
+      to: r.users.id,
+      optional: false,
+    }),
+    reimbursementType: r.one.reimbursementTypes({
+      from: r.reimbursementBundleDeliveries.reimbursementTypeId,
+      to: r.reimbursementTypes.id,
+      optional: false,
+    }),
+    deliveredByUser: r.one.users({
+      from: r.reimbursementBundleDeliveries.deliveredByUserId,
+      to: r.users.id,
+    }),
+  },
   reimbursementBundleDownloads: {
     volunteer: r.one.users({
       from: r.reimbursementBundleDownloads.volunteerId,
