@@ -3,9 +3,7 @@
   "version": "9",
   "dialect": "postgres",
   "id": "66fb7ca4-8ea7-435e-b0ce-063d7a4d062a",
-  "prevIds": [
-    "623936f9-2094-47bc-ba0c-eb93022f83dc"
-  ],
+  "prevIds": ["623936f9-2094-47bc-ba0c-eb93022f83dc"],
   "footprints": [
     {
       "statementType": "add_column",
@@ -20,10 +18,7 @@
         "n|col|public.export_logs.included_sub_units",
         "e|col|public.export_logs.included_sub_units"
       ],
-      "reads": [
-        "n|tbl|public.export_logs",
-        "n|sch|public"
-      ]
+      "reads": ["n|tbl|public.export_logs", "n|sch|public"]
     }
   ],
   "deltas": [
