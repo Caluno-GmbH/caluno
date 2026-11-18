@@ -20,10 +20,10 @@
  * Given an organization, the sub-units go below its (oldest) root unit; given
  * a root unit id, below that unit.
  *
- * Accounts are plus-addressed onto the demo group, discriminated by the org
- * slug: `demo+<slug>@caluno.org` (demo volunteer), `demo+<slug>-owner@…`,
- * `demo+<slug>-member01@…`, … All use the password from
- * DEMO_FIXTURE_PASSWORD, default `abcd1234`.
+ * Accounts use the same role-keyed local parts as `demo-fixtures.ts`, just
+ * without the `demo+` prefix and on the org's own domain: `owner@<org
+ * slug>.internal`, `supervisor@<slug>.internal`, `member01@<slug>.internal`,
+ * … All use the password from DEMO_FIXTURE_PASSWORD, default `abcd1234`.
  */
 import { hashPassword } from 'better-auth/crypto';
 import { inArray } from 'drizzle-orm';
@@ -59,7 +59,6 @@ import * as schema from './schema';
 process.env.TZ = 'Europe/Berlin';
 
 const FIXTURE_PASSWORD = process.env.DEMO_FIXTURE_PASSWORD ?? 'abcd1234';
-const EMAIL_DOMAIN = 'caluno.org';
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -251,9 +250,10 @@ async function seedDemoFixturesIntoOrg() {
         unitIds[region.key] = await ensureRegionUnit(db, rootUnit, region);
       }
 
+      const emailDomain = `${organization.slug}.internal`;
       const emails: DemoEmails = {
-        role: (role) => `demo+${organization.slug}-${role}@${EMAIL_DOMAIN}`,
-        demoAccount: `demo+${organization.slug}@${EMAIL_DOMAIN}`,
+        role: (role) => `${role}@${emailDomain}`,
+        demoAccount: `demo@${emailDomain}`,
       };
 
       const createUser = async (input: AuthUserInput): Promise<FixtureUser> => {
