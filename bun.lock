@@ -9,7 +9,7 @@
         "@svgr/webpack": "^8.1.0",
         "turbo": "^2.11.10",
         "typescript": "6.0.3",
-        "typescript-language-server": "^6.0.3",
+        "typescript-language-server": "^6.1.0",
         "vite-plugin-svgr": "^5.2.0",
       },
     },
@@ -3398,7 +3398,7 @@
 
     "typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
-    "typescript-language-server": ["typescript-language-server@6.0.3", "", { "bin": { "typescript-language-server": "lib/cli.mjs" } }, "sha512-iAxKyLXRNbnxGfCGZ/j4ilAb0PSNommvTvcghF8B8sq5JFGDKEQwzNEFZ0KTYEwzcA7rtRa+2OPeouiFR8L5KA=="],
+    "typescript-language-server": ["typescript-language-server@6.1.0", "", { "bin": { "typescript-language-server": "lib/cli.mjs" } }, "sha512-/O/dr2CbvDS1W9jKJcBQxk4WagUQ97oBb8k/eq9cOslsbtAuC2BDPpkcULxE2SEZiPIJvVNLeNjLZe9hQl1zCQ=="],
 
     "uglify-js": ["uglify-js@3.19.3", "", { "bin": { "uglifyjs": "bin/uglifyjs" } }, "sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ=="],
 
