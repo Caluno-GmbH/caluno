@@ -11,6 +11,9 @@ export const SLACK_REPORTING_WEBHOOK_URL_ENV =
 /** Case-insensitive suffix match for fixture / demo accounts. */
 export const CALUNO_ORG_EMAIL_LIKE = '%@caluno.org' as const;
 
+/** Case-insensitive suffix match for internal accounts. */
+export const CALUNO_INTERNAL_EMAIL_LIKE = '%@caluno.internal' as const;
+
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
 export interface VerifiedUserSlackReportSummary {
@@ -23,8 +26,8 @@ export function buildVerifiedUserSlackMessage(count: number): string {
 }
 
 /**
- * Counts email-verified users (excluding *@caluno.org) and posts the total to
- * a Slack Incoming Webhook when `SLACK_REPORTING_WEBHOOK_URL` is set.
+ * Counts email-verified users (excluding *@caluno.org and *@caluno.internal)
+ * and posts the total to a Slack Incoming Webhook when `SLACK_REPORTING_WEBHOOK_URL` is set.
  */
 @Injectable()
 export class VerifiedUserSlackReportService {
@@ -37,7 +40,8 @@ export class VerifiedUserSlackReportService {
   ) {}
 
   async runTick(): Promise<VerifiedUserSlackReportSummary> {
-    const verifiedUserCount = await this.countVerifiedUsersExcludingCalunoOrg();
+    const verifiedUserCount =
+      await this.countVerifiedUsersExcludingCalunoAccounts();
     const webhookUrl = this.configService
       .get<string>(SLACK_REPORTING_WEBHOOK_URL_ENV)
       ?.trim();
@@ -67,7 +71,7 @@ export class VerifiedUserSlackReportService {
     };
   }
 
-  async countVerifiedUsersExcludingCalunoOrg(): Promise<number> {
+  async countVerifiedUsersExcludingCalunoAccounts(): Promise<number> {
     const [row] = await this.db
       .select({ total: sql<number>`count(*)::int` })
       .from(schema.users)
@@ -75,6 +79,7 @@ export class VerifiedUserSlackReportService {
         and(
           eq(schema.users.emailVerified, true),
           not(ilike(schema.users.email, CALUNO_ORG_EMAIL_LIKE)),
+          not(ilike(schema.users.email, CALUNO_INTERNAL_EMAIL_LIKE)),
         ),
       );
 
