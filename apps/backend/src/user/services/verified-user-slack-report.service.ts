@@ -11,8 +11,8 @@ export const SLACK_REPORTING_WEBHOOK_URL_ENV =
 /** Case-insensitive suffix match for fixture / demo accounts. */
 export const CALUNO_ORG_EMAIL_LIKE = '%@caluno.org' as const;
 
-/** Case-insensitive suffix match for internal accounts. */
-export const CALUNO_INTERNAL_EMAIL_LIKE = '%@caluno.internal' as const;
+/** Case-insensitive suffix match for internal accounts on any `.internal` domain. */
+export const CALUNO_INTERNAL_EMAIL_LIKE = '%@%.internal' as const;
 
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
@@ -26,7 +26,7 @@ export function buildVerifiedUserSlackMessage(count: number): string {
 }
 
 /**
- * Counts email-verified users (excluding *@caluno.org and *@caluno.internal)
+ * Counts email-verified users (excluding *@caluno.org and *@*.internal)
  * and posts the total to a Slack Incoming Webhook when `SLACK_REPORTING_WEBHOOK_URL` is set.
  */
 @Injectable()

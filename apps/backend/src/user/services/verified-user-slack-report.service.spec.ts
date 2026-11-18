@@ -53,7 +53,7 @@ describe('VerifiedUserSlackReportService', () => {
     return { service, getCapturedWhere: () => capturedWhere };
   }
 
-  it('counts only verified users outside *@caluno.org and *@caluno.internal', async () => {
+  it('counts only verified users outside *@caluno.org and *@*.internal', async () => {
     const { service, getCapturedWhere } = build({
       count: 7,
       webhookUrl: undefined,
