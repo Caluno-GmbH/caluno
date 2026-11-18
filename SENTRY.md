@@ -109,20 +109,20 @@ Not config-as-code — done once in the Sentry UI:
 
 - [ ] Create the Sentry organization with **EU data residency**.
 - [ ] Create the two projects: `caluno-frontend` (Next.js), `caluno-backend`
-  (NestJS/Node).
+      (NestJS/Node).
 - [ ] Alert rules: new issue in `production`; error-rate spike.
 - [ ] Per-app dashboards: error rate, p95, throughput, crash-free rate; plus a
-  shared release-health view.
+      shared release-health view.
 - [ ] Issue ownership rules (path-based code owners).
 - [ ] Link the **GitHub repository integration** — required for
-  `set-commits --auto` to resolve commits.
+      `set-commits --auto` to resolve commits.
 - [ ] Create the GitHub Actions **secret** `SENTRY_AUTH_TOKEN` (GitHub masks
-  secrets automatically in logs; if the org uses environment protection,
-  also create it as an environment secret scoped to the `staging` and
-  `production` environments).
+      secrets automatically in logs; if the org uses environment protection,
+      also create it as an environment secret scoped to the `staging` and
+      `production` environments).
 - [ ] Create the GitHub Actions **variables** `SENTRY_ORG`,
-  `SENTRY_PROJECT_FRONTEND`, `SENTRY_PROJECT_BACKEND`,
-  `NEXT_PUBLIC_SENTRY_DSN`.
+      `SENTRY_PROJECT_FRONTEND`, `SENTRY_PROJECT_BACKEND`,
+      `NEXT_PUBLIC_SENTRY_DSN`.
 
 ## Session Replay
 
