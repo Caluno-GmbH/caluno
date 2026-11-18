@@ -29,6 +29,7 @@ export const exportLogs = snakeCase.table(
     tableKind: exportTableEnum('table_kind').$type<ExportTable>().notNull(),
     columns: text('columns').array().notNull(),
     includedTechnicalIds: boolean('included_technical_ids').notNull(),
+    includedSubUnits: boolean('included_sub_units').notNull().default(false),
     rowCount: integer('row_count').notNull(),
     subjectUserIds: text('subject_user_ids').array().notNull(),
     occurredAt: timestamp('occurred_at').notNull().defaultNow(),

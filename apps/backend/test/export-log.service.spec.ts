@@ -52,6 +52,7 @@ describe('ExportLogService', () => {
       tableKind: ExportTable.TIMESHEETS,
       columns: ['name', 'hours'],
       includedTechnicalIds: false,
+      includedSubUnits: true,
       rowCount: 3,
       subjectUserIds: ['u1', 'u2'],
     });
@@ -61,6 +62,7 @@ describe('ExportLogService', () => {
     expect(logs).toHaveLength(1);
     expect(logs[0]?.tableKind).toBe(ExportTable.TIMESHEETS);
     expect(logs[0]?.columns).toEqual(['name', 'hours']);
+    expect(logs[0]?.includedSubUnits).toBe(true);
     expect(logs[0]?.rowCount).toBe(3);
     expect(logs[0]?.subjectUserIds).toEqual(['u1', 'u2']);
     expect(logs[0]?.occurredAt).toBeTruthy();
@@ -77,6 +79,7 @@ describe('ExportLogService', () => {
       tableKind: ExportTable.TIMESHEETS,
       columns: ['name'],
       includedTechnicalIds: false,
+      includedSubUnits: false,
       rowCount: 1,
       subjectUserIds: [],
     });
@@ -86,6 +89,7 @@ describe('ExportLogService', () => {
       tableKind: ExportTable.USERS,
       columns: ['email'],
       includedTechnicalIds: true,
+      includedSubUnits: false,
       rowCount: 2,
       subjectUserIds: [],
     });
@@ -109,6 +113,7 @@ describe('ExportLogService', () => {
       tableKind: ExportTable.SHIFTS,
       columns: ['date'],
       includedTechnicalIds: false,
+      includedSubUnits: false,
       rowCount: 5,
       subjectUserIds: [],
     });
@@ -118,6 +123,7 @@ describe('ExportLogService', () => {
       tableKind: ExportTable.SHIFTS,
       columns: ['date'],
       includedTechnicalIds: false,
+      includedSubUnits: false,
       rowCount: 7,
       subjectUserIds: [],
     });
@@ -138,6 +144,7 @@ describe('ExportLogService', () => {
         tableKind: ExportTable.USERS,
         columns: ['name'],
         includedTechnicalIds: false,
+        includedSubUnits: false,
         rowCount,
         subjectUserIds: [],
       });

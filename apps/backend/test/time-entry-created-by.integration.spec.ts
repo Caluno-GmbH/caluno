@@ -12,6 +12,7 @@ import type { INestApplication } from '@nestjs/common';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import { createUser } from './factories';
+import { addMembership } from './factories/org.factory';
 import { applyBunAuthMocks, setAuthMockUserId } from './helpers/auth-mocks';
 import { graphqlRequestRequiringData } from './helpers/graphql-request';
 import { getGraphqlTestContext } from './helpers/graphql-test-context';
@@ -42,6 +43,7 @@ describe('TimeEntry createdBy (who recorded it)', () => {
   it('records the acting user as createdBy on addTimeEntry', async () => {
     const admin = await createUser(db);
     const volunteer = await createUser(db);
+    await addMembership(db, volunteer.id, organizationUnitId);
     setAuthMockUserId(admin.id);
 
     const data = await graphqlRequestRequiringData<{
@@ -74,6 +76,7 @@ describe('TimeEntry createdBy (who recorded it)', () => {
   it('does not change createdBy on updateTimeEntry', async () => {
     const admin = await createUser(db);
     const volunteer = await createUser(db);
+    await addMembership(db, volunteer.id, organizationUnitId);
     setAuthMockUserId(admin.id);
 
     const created = await graphqlRequestRequiringData<{

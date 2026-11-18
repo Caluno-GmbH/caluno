@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PERMISSIONS } from '../../auth/constants';
 import { PARTICIPATING_SHIFT_INVITE_STATUSES } from '../../shared/invite-status';
+import type { ShiftEntity } from '../../shift/schemas/shift.schema';
+import type { ShiftInstanceEntity } from '../../shift/schemas/shift-instance.schema';
 import { ShiftService } from '../../shift/shift.service';
 import { ExportTable } from '../enums';
 import { formatBerlinDateTime } from '../export-csv.util';
@@ -12,12 +14,26 @@ import type {
 } from './export-collector';
 
 const COLUMNS: readonly ExportColumnDefinition[] = [
-  { id: 'title', label: 'Title' },
-  { id: 'date', label: 'Date' },
-  { id: 'location', label: 'Location' },
-  { id: 'visibility', label: 'Visibility' },
-  { id: 'staffing', label: 'Staffing' },
+  { id: 'title', label: 'Title', labelKey: 'export.columns.shifts.title' },
+  { id: 'date', label: 'Date', labelKey: 'export.columns.shifts.date' },
+  {
+    id: 'location',
+    label: 'Location',
+    labelKey: 'export.columns.shifts.location',
+  },
+  {
+    id: 'visibility',
+    label: 'Visibility',
+    labelKey: 'export.columns.shifts.visibility',
+  },
+  {
+    id: 'staffing',
+    label: 'Staffing',
+    labelKey: 'export.columns.shifts.staffing',
+  },
 ];
+
+type InstanceWithMaster = ShiftInstanceEntity & { master: ShiftEntity };
 
 function formatStaffing(filled: number, max: number | null): string {
   return max != null ? `${filled}/${max}` : String(filled);
@@ -28,29 +44,23 @@ export class ShiftsExportCollector implements ExportCollector {
   readonly tableKind = ExportTable.SHIFTS;
   readonly requiredPermission = PERMISSIONS.SHIFT_EDIT;
   readonly technicalIdLabel = 'ID';
+  readonly technicalIdLabelKey = 'export.technicalIds.shifts';
   readonly columns = COLUMNS;
 
   constructor(private readonly shiftService: ShiftService) {}
 
   async collect(context: ExportCollectorContext): Promise<CollectedExport> {
-    const shifts = await this.shiftService.findByIdsInUnits(
-      context.rowIds,
-      context.unitIds,
-    );
-    const shiftsById = new Map(shifts.map((shift) => [shift.id, shift]));
-    const selected = context.rowIds.flatMap((id) => {
-      const shift = shiftsById.get(id);
-      return shift ? [shift] : [];
-    });
+    // rowIds are shift instance (occurrence) ids — one export row per
+    // occurrence, mirroring the table. findInstancesByIds is unit-scoped;
+    // foreign/missing ids are dropped.
+    const instances = (
+      await this.shiftService.findInstancesByIds(
+        context.rowIds,
+        context.unitIds,
+      )
+    ).filter((instance): instance is InstanceWithMaster => instance !== null);
 
-    const instancesByMaster = await this.shiftService.findInstancesByMasterIds(
-      selected.map((shift) => shift.id),
-      context.unitIds,
-    );
-
-    const instanceIds = [...instancesByMaster.values()]
-      .flat()
-      .map((instance) => instance.id);
+    const instanceIds = instances.map((instance) => instance.id);
     const invites = instanceIds.length
       ? await this.shiftService.findInstanceInvitesByInstanceIds(
           instanceIds,
@@ -59,38 +69,30 @@ export class ShiftsExportCollector implements ExportCollector {
         )
       : [];
 
-    const participatingByInstance = new Map<string, number>();
+    const filledByInstance = new Map<string, number>();
     for (const invite of invites) {
-      participatingByInstance.set(
+      filledByInstance.set(
         invite.instanceId,
-        (participatingByInstance.get(invite.instanceId) ?? 0) + 1,
+        (filledByInstance.get(invite.instanceId) ?? 0) + 1,
       );
     }
 
     return {
-      rows: selected.map((shift) => {
-        const instances = instancesByMaster.get(shift.id) ?? [];
-        const firstDate =
-          instances.length > 0
-            ? instances.reduce((earliest, instance) =>
-                instance.actualStartsAt < earliest.actualStartsAt
-                  ? instance
-                  : earliest,
-              ).actualStartsAt
-            : shift.originalStartsAt;
-        const filled = instances.reduce(
-          (sum, instance) =>
-            sum + (participatingByInstance.get(instance.id) ?? 0),
-          0,
-        );
+      rows: instances.map((instance) => {
+        const { master } = instance;
+        const maxVolunteers =
+          instance.overrideMaxVolunteers ?? master.maxVolunteers;
         return {
-          technicalId: shift.id,
+          technicalId: instance.id,
           cells: {
-            title: shift.title,
-            date: formatBerlinDateTime(firstDate),
-            location: shift.location,
-            visibility: shift.visibility,
-            staffing: formatStaffing(filled, shift.maxVolunteers),
+            title: instance.overrideTitle ?? master.title,
+            date: formatBerlinDateTime(instance.actualStartsAt),
+            location: instance.overrideLocation ?? master.location,
+            visibility: master.visibility,
+            staffing: formatStaffing(
+              filledByInstance.get(instance.id) ?? 0,
+              maxVolunteers,
+            ),
           },
         };
       }),
