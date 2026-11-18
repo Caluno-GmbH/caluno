@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   ContractStatus,
   DocumentKind,
+  EmailDeliveryStatus,
   InvoiceStatus,
   PermissionKey,
   ReimbursementTypeKey,
@@ -105,6 +106,7 @@ function makeInvoice(
     downloadUrl: null,
     missingProfileFields: [],
     missingOrgProfileFields: [],
+    lastEmailDelivery: null,
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
@@ -372,6 +374,53 @@ describe('mapInvoiceToBoardDoc', () => {
     );
 
     expect(doc.isNonCompliant).toBe(false);
+  });
+
+  it('carries who last emailed the timesheet to accounting, and when', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: EmailDeliveryStatus.Sent,
+          deliveredByUser: { id: 'u-1', name: 'Julia Vorstand' },
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sentAt).toEqual(new Date('2026-08-03T10:00:00.000Z'));
+    expect(doc.sentBy).toBe('Julia Vorstand');
+    expect(doc.sendState).toBe('sent');
+  });
+
+  it('marks a timesheet whose email is still queued as sending', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: EmailDeliveryStatus.Pending,
+          deliveredByUser: null,
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sendState).toBe('pending');
+  });
+
+  it('marks a timesheet whose last email failed', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: EmailDeliveryStatus.Failed,
+          deliveredByUser: null,
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sendState).toBe('failed');
   });
 
   it('maps an invoice to a board document', () => {

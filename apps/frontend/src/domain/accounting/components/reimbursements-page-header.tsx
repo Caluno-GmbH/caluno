@@ -2,9 +2,10 @@
 
 import { useAccountingSetupStatus } from '@repo/data/react';
 import { Button } from '@repo/ui';
-import { AlertCircleIcon, PlusIcon } from 'lucide-react';
+import { AlertCircleIcon, HistoryIcon, PlusIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
+import { Link } from '@/i18n/navigation';
 import {
   documentCreationBlocker,
   templateReadinessByPauschale,
@@ -48,14 +49,22 @@ export function ReimbursementsPageHeader({
           <p className="text-muted-foreground mt-1">{subtitle}</p>
         </div>
 
-        <Button
-          className="h-10 shrink-0"
-          disabled={!canCreateDocuments}
-          onClick={() => setCreateDocOpen(true)}
-        >
-          <PlusIcon />
-          {t('createDocument')}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button asChild variant="outline" className="h-10">
+            <Link href={`/admin/${orgUId}/accounting/deliveries`}>
+              <HistoryIcon />
+              {t('bundle.viewLog')}
+            </Link>
+          </Button>
+          <Button
+            className="h-10"
+            disabled={!canCreateDocuments}
+            onClick={() => setCreateDocOpen(true)}
+          >
+            <PlusIcon />
+            {t('createDocument')}
+          </Button>
+        </div>
       </div>
 
       {blocker && <AccountingSetupAlert blocker={blocker} orgUId={orgUId} />}

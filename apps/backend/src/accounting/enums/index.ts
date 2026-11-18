@@ -49,3 +49,20 @@ export enum RateProvenanceKind {
   INHERITED = 'INHERITED',
   DEFAULT = 'DEFAULT',
 }
+
+export enum BundleDeliveryMethod {
+  DOWNLOAD = 'DOWNLOAD',
+  EMAIL = 'EMAIL',
+}
+
+export enum BundleDeliveryIssue {
+  NO_CONTRACT = 'NO_CONTRACT',
+  OVER_LIMIT = 'OVER_LIMIT',
+  ALREADY_SENT = 'ALREADY_SENT',
+}
+
+export enum AccountingSettingSourceKind {
+  OWN = 'OWN',
+  INHERITED = 'INHERITED',
+  DEFAULT = 'DEFAULT',
+}

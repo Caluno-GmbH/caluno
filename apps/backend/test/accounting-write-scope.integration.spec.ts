@@ -9,8 +9,18 @@ import {
   setDefaultTimeout,
 } from 'bun:test';
 import type { INestApplication } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-import { DocumentKind, SigneeType } from '../src/accounting/enums';
+import { eq, inArray } from 'drizzle-orm';
+import {
+  BundleDeliveryMethod,
+  DocumentKind,
+  SigneeType,
+} from '../src/accounting/enums';
+import { AccountingDeliverySettingsMutationResolver } from '../src/accounting/resolvers/accounting-delivery-settings-mutation.resolver';
+import { AccountingDeliverySettingsQueryResolver } from '../src/accounting/resolvers/accounting-delivery-settings-query.resolver';
+import { BundleDeliveryMutationResolver } from '../src/accounting/resolvers/bundle-delivery-mutation.resolver';
+import { BundleDeliveryQueryResolver } from '../src/accounting/resolvers/bundle-delivery-query.resolver';
+import { PERMISSIONS } from '../src/auth/constants';
+import { PERMISSIONS_KEY } from '../src/auth/decorators/permissions.decorator';
 import type { Database } from '../src/database/database.module';
 import * as schema from '../src/database/schema';
 import {
@@ -102,6 +112,53 @@ const GET_TEMPLATE = `
   }
 `;
 
+const DELIVERY_SETTINGS = `
+  query DeliverySettings {
+    accountingDeliverySettings {
+      deliveryMethod
+      recipientEmail
+      ownRecipientEmail
+    }
+  }
+`;
+
+const UPDATE_DELIVERY_SETTINGS = `
+  mutation UpdateDeliverySettings($input: UpdateAccountingDeliverySettingsInput!) {
+    updateAccountingDeliverySettings(input: $input) {
+      ownRecipientEmail
+    }
+  }
+`;
+
+const BUNDLE_SEND_PREVIEW = `
+  query BundleSendPreview($volunteerId: ID!, $typeId: ID!) {
+    bundleSendPreview(volunteerId: $volunteerId, reimbursementTypeId: $typeId) {
+      documentCount
+    }
+  }
+`;
+
+const SEND_BUNDLE = `
+  mutation SendBundle($volunteerId: ID!, $typeId: ID!) {
+    sendReimbursementBundle(
+      volunteerId: $volunteerId
+      reimbursementTypeId: $typeId
+      expectedRecipientEmail: "accounting@example.org"
+      expectedSubject: "Subject"
+    ) {
+      id
+    }
+  }
+`;
+
+const BUNDLE_DELIVERIES = `
+  query BundleDeliveries {
+    bundleDeliveries {
+      id
+    }
+  }
+`;
+
 const SIGNEES = [{ order: 1, signeeType: SigneeType.VOLUNTEER }];
 const BODY = { header: {}, blocks: [], footer: {} };
 
@@ -160,6 +217,20 @@ describe('accounting writes are scoped to the header unit tree', () => {
     await db
       .delete(schema.documentTemplates)
       .where(eq(schema.documentTemplates.organizationId, organizationId));
+    await db
+      .delete(schema.accountingDeliverySettings)
+      .where(
+        eq(schema.accountingDeliverySettings.organizationId, organizationId),
+      );
+    await db
+      .delete(schema.reimbursementBundleDeliveries)
+      .where(
+        inArray(schema.reimbursementBundleDeliveries.organizationUnitId, [
+          rootId,
+          unitAId,
+          unitBId,
+        ]),
+      );
   };
 
   beforeAll(async () => {
@@ -646,6 +717,141 @@ describe('accounting writes are scoped to the header unit tree', () => {
       expect(readable.errors).toBeUndefined();
       expect(readable.data?.documentTemplate.id).toBe(atRoot.id);
       expect(hidden.errors?.[0]?.message).toBe('Document template not found');
+    });
+  });
+
+  describe('bundle delivery settings, sending and log', () => {
+    const settingsRow = (organizationUnitId: string) =>
+      db.query.accountingDeliverySettings.findFirst({
+        where: { organizationUnitId },
+      });
+
+    const memberOf = async (unitId: string) => {
+      const user = await createUser(db);
+      await addMembership(db, user.id, unitId);
+      return user;
+    };
+
+    const logDeliveryOn = async (organizationUnitId: string) => {
+      const volunteer = await memberOf(organizationUnitId);
+      const [row] = await db
+        .insert(schema.reimbursementBundleDeliveries)
+        .values({
+          organizationUnitId,
+          volunteerId: volunteer.id,
+          reimbursementTypeId: typeId,
+          method: BundleDeliveryMethod.DOWNLOAD,
+          invoiceIds: [],
+        })
+        .returning();
+      return row;
+    };
+
+    // The GraphQL test app switches PermissionGuard off (it also enforces
+    // header-unit membership), so pin what it is told to enforce instead.
+    for (const [name, method] of [
+      [
+        'accountingDeliverySettings',
+        AccountingDeliverySettingsQueryResolver.prototype
+          .accountingDeliverySettings,
+      ],
+      [
+        'updateAccountingDeliverySettings',
+        AccountingDeliverySettingsMutationResolver.prototype
+          .updateAccountingDeliverySettings,
+      ],
+      [
+        'bundleSendPreview',
+        BundleDeliveryQueryResolver.prototype.bundleSendPreview,
+      ],
+      [
+        'bundleDeliveries',
+        BundleDeliveryQueryResolver.prototype.bundleDeliveries,
+      ],
+      [
+        'sendReimbursementBundle',
+        BundleDeliveryMutationResolver.prototype.sendReimbursementBundle,
+      ],
+    ] as const) {
+      it(`requires exactly accounting:manage for ${name}`, () => {
+        expect(Reflect.getMetadata(PERMISSIONS_KEY, method)).toEqual([
+          PERMISSIONS.ACCOUNTING_MANAGE,
+        ]);
+      });
+    }
+
+    it('keeps a unit own settings off its sibling', async () => {
+      setAuthMockUserId(ownerOnAId);
+      const update = await graphqlRequest(app, {
+        query: UPDATE_DELIVERY_SETTINGS,
+        variables: { input: { recipientEmail: 'unit-a@example.org' } },
+        headers: asHeader(unitAId),
+      });
+      setAuthMockUserId(ownerOnRootId);
+
+      const sibling = await graphqlRequest<{
+        accountingDeliverySettings: { recipientEmail: string | null };
+      }>(app, { query: DELIVERY_SETTINGS, headers: asHeader(unitBId) });
+
+      expect(update.errors).toBeUndefined();
+      expect(sibling.errors).toBeUndefined();
+      expect(
+        sibling.data?.accountingDeliverySettings.recipientEmail,
+      ).toBeNull();
+      expect(await settingsRow(unitBId)).toBeUndefined();
+    });
+
+    it('hides a volunteer outside the header unit tree', async () => {
+      const { organization, type } = await createOrganizationWithType(
+        db,
+        `Other Org ${crypto.randomUUID()}`,
+      );
+      const otherUnit = await createUnit(db, {
+        organizationId: organization.id,
+        typeId: type.id,
+        name: 'other',
+      });
+      const otherOrgVolunteer = await memberOf(otherUnit.id);
+      const siblingVolunteer = await memberOf(unitBId);
+      setAuthMockUserId(ownerOnAId);
+
+      for (const volunteer of [otherOrgVolunteer, siblingVolunteer]) {
+        const variables = { volunteerId: volunteer.id, typeId };
+        const preview = await graphqlRequest(app, {
+          query: BUNDLE_SEND_PREVIEW,
+          variables,
+          headers: asHeader(unitAId),
+        });
+        const send = await graphqlRequest(app, {
+          query: SEND_BUNDLE,
+          variables,
+          headers: asHeader(unitAId),
+        });
+
+        expect(preview.errors?.[0]?.message).toBe('Volunteer not found');
+        expect(send.errors?.[0]?.message).toBe('Volunteer not found');
+        expect(
+          await db.query.reimbursementBundleDeliveries.findMany({
+            where: { volunteerId: volunteer.id },
+          }),
+        ).toEqual([]);
+      }
+    });
+
+    it('lists only the header unit deliveries', async () => {
+      const own = await logDeliveryOn(unitAId);
+      await logDeliveryOn(unitBId);
+      await logDeliveryOn(rootId);
+      setAuthMockUserId(ownerOnAId);
+
+      const response = await graphqlRequest<{
+        bundleDeliveries: Array<{ id: string }>;
+      }>(app, { query: BUNDLE_DELIVERIES, headers: asHeader(unitAId) });
+
+      expect(response.errors).toBeUndefined();
+      expect(response.data?.bundleDeliveries.map((row) => row.id)).toEqual([
+        own?.id,
+      ]);
     });
   });
 });

@@ -1,0 +1,903 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "155782b9-dbaf-4cd6-b70a-e5579ed3f4ef",
+  "prevIds": [
+    "e467dbda-9d3a-4a40-8011-470ba57cfd04",
+    "77b46b1f-3ecf-4878-8f6f-9f6de19f2c5c"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "bundle_delivery_method"],
+      "writes": [
+        "s|enum|public.bundle_delivery_method",
+        "n|enum|public.bundle_delivery_method",
+        "e|enum|public.bundle_delivery_method",
+        "n|type|public.bundle_delivery_method"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_enum",
+      "statementTarget": ["enum", "public", "bundle_delivery_issue"],
+      "writes": [
+        "s|enum|public.bundle_delivery_issue",
+        "n|enum|public.bundle_delivery_issue",
+        "e|enum|public.bundle_delivery_issue",
+        "n|type|public.bundle_delivery_issue"
+      ],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "alter_enum",
+      "statementTarget": ["enum", "public", "email_category"],
+      "writes": ["s|enum|public.email_category"],
+      "reads": ["n|sch|public"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "accounting_delivery_settings"],
+      "writes": [
+        "s|tbl|public.accounting_delivery_settings",
+        "n|tbl|public.accounting_delivery_settings",
+        "e|tbl|public.accounting_delivery_settings",
+        "n|rel|public.accounting_delivery_settings",
+        "n|type|public.accounting_delivery_settings",
+        "n|rel|public.accounting_delivery_settings_pkey"
+      ],
+      "reads": ["n|sch|public", "n|enum|public.bundle_delivery_method"]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|tbl|public.reimbursement_bundle_deliveries",
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "e|tbl|public.reimbursement_bundle_deliveries",
+        "n|rel|public.reimbursement_bundle_deliveries",
+        "n|type|public.reimbursement_bundle_deliveries",
+        "n|rel|public.reimbursement_bundle_deliveries_pkey"
+      ],
+      "reads": [
+        "n|sch|public",
+        "n|enum|public.bundle_delivery_method",
+        "n|enum|public.bundle_delivery_issue"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "accounting_delivery_settings",
+        "uq_accounting_delivery_settings_unit"
+      ],
+      "writes": [
+        "s|idx|public.uq_accounting_delivery_settings_unit",
+        "n|idx|public.uq_accounting_delivery_settings_unit",
+        "e|idx|public.uq_accounting_delivery_settings_unit",
+        "n|rel|public.uq_accounting_delivery_settings_unit"
+      ],
+      "reads": [
+        "n|tbl|public.accounting_delivery_settings",
+        "n|sch|public",
+        "n|col|public.accounting_delivery_settings.organization_unit_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "reimbursement_bundle_deliveries",
+        "idx_reimbursement_bundle_deliveries_unit_occurred_at"
+      ],
+      "writes": [
+        "s|idx|public.idx_reimbursement_bundle_deliveries_unit_occurred_at",
+        "n|idx|public.idx_reimbursement_bundle_deliveries_unit_occurred_at",
+        "e|idx|public.idx_reimbursement_bundle_deliveries_unit_occurred_at",
+        "n|rel|public.idx_reimbursement_bundle_deliveries_unit_occurred_at"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.organization_unit_id",
+        "n|col|public.reimbursement_bundle_deliveries.occurred_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "reimbursement_bundle_deliveries",
+        "idx_reimbursement_bundle_deliveries_invoice_ids"
+      ],
+      "writes": [
+        "s|idx|public.idx_reimbursement_bundle_deliveries_invoice_ids",
+        "n|idx|public.idx_reimbursement_bundle_deliveries_invoice_ids",
+        "e|idx|public.idx_reimbursement_bundle_deliveries_invoice_ids",
+        "n|rel|public.idx_reimbursement_bundle_deliveries_invoice_ids"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.invoice_ids"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "accounting_delivery_settings"],
+      "writes": [
+        "s|fk|public.accounting_delivery_settings.accounting_delivery_settings_2WOvyvZM8A2f_fkey",
+        "n|fk|public.accounting_delivery_settings.accounting_delivery_settings_2WOvyvZM8A2f_fkey",
+        "e|fk|public.accounting_delivery_settings.accounting_delivery_settings_2WOvyvZM8A2f_fkey",
+        "n|con|public.accounting_delivery_settings.accounting_delivery_settings_2WOvyvZM8A2f_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.accounting_delivery_settings",
+        "n|sch|public",
+        "n|tbl|public.organizations",
+        "n|sch|public",
+        "n|col|public.accounting_delivery_settings.organization_id",
+        "n|col|public.organizations.id",
+        "e|uniqueness|public.organizations.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "accounting_delivery_settings"],
+      "writes": [
+        "s|fk|public.accounting_delivery_settings.accounting_delivery_settings_dVY1U9wsn2zb_fkey",
+        "n|fk|public.accounting_delivery_settings.accounting_delivery_settings_dVY1U9wsn2zb_fkey",
+        "e|fk|public.accounting_delivery_settings.accounting_delivery_settings_dVY1U9wsn2zb_fkey",
+        "n|con|public.accounting_delivery_settings.accounting_delivery_settings_dVY1U9wsn2zb_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.accounting_delivery_settings",
+        "n|sch|public",
+        "n|tbl|public.organization_units",
+        "n|sch|public",
+        "n|col|public.accounting_delivery_settings.organization_unit_id",
+        "n|col|public.organization_units.id",
+        "e|uniqueness|public.organization_units.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "accounting_delivery_settings"],
+      "writes": [
+        "s|fk|public.accounting_delivery_settings.accounting_delivery_settings_updated_by_user_id_users_id_fkey",
+        "n|fk|public.accounting_delivery_settings.accounting_delivery_settings_updated_by_user_id_users_id_fkey",
+        "e|fk|public.accounting_delivery_settings.accounting_delivery_settings_updated_by_user_id_users_id_fkey",
+        "n|con|public.accounting_delivery_settings.accounting_delivery_settings_updated_by_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.accounting_delivery_settings",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.accounting_delivery_settings.updated_by_user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_7U3XBinZqlyF_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_7U3XBinZqlyF_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_7U3XBinZqlyF_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_7U3XBinZqlyF_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|tbl|public.organization_units",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.organization_unit_id",
+        "n|col|public.organization_units.id",
+        "e|uniqueness|public.organization_units.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_volunteer_id_users_id_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_volunteer_id_users_id_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_volunteer_id_users_id_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_volunteer_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.volunteer_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|tbl|public.reimbursement_types",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.reimbursement_type_id",
+        "n|col|public.reimbursement_types.id",
+        "e|uniqueness|public.reimbursement_types.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_jZXO2ad08wW6_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_jZXO2ad08wW6_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_jZXO2ad08wW6_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_jZXO2ad08wW6_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|tbl|public.email_outbox",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.email_outbox_id",
+        "n|col|public.email_outbox.id",
+        "e|uniqueness|public.email_outbox.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": ["table", "public", "reimbursement_bundle_deliveries"],
+      "writes": [
+        "s|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_NQdqYzSta6JO_fkey",
+        "n|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_NQdqYzSta6JO_fkey",
+        "e|fk|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_NQdqYzSta6JO_fkey",
+        "n|con|public.reimbursement_bundle_deliveries.reimbursement_bundle_deliveries_NQdqYzSta6JO_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.reimbursement_bundle_deliveries",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.reimbursement_bundle_deliveries.delivered_by_user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "accounting_delivery_settings",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "reimbursement_bundle_deliveries",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "bundle_delivery_method",
+        "values": ["DOWNLOAD", "EMAIL"],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "bundle_delivery_issue",
+        "values": ["NO_CONTRACT", "OVER_LIMIT", "ALREADY_SENT"],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "organization_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "organization_unit_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "delivery_method",
+        "type": "bundle_delivery_method",
+        "typeSchema": "public",
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "recipient_email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "email_subject",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "updated_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "created_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "updated_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "gen_random_uuid()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "organization_unit_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "volunteer_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_type_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "method",
+        "type": "bundle_delivery_method",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "invoice_ids",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 1,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "recipient_email",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "subject",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "issues",
+        "type": "bundle_delivery_issue",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 1,
+        "default": "'{}'",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "email_outbox_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "delivered_by_user_id",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "occurred_at",
+        "type": "timestamp",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": "now()",
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "uq_accounting_delivery_settings_unit",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_unit_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": true,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "idx_reimbursement_bundle_deliveries_unit_occurred_at",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "organization_unit_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "occurred_at",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "idx_reimbursement_bundle_deliveries_invoice_ids",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "invoice_ids",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "gin",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "accounting_delivery_settings_2WOvyvZM8A2f_fkey",
+        "nameExplicit": false,
+        "columns": ["organization_id"],
+        "schemaTo": "public",
+        "tableTo": "organizations",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "accounting_delivery_settings_dVY1U9wsn2zb_fkey",
+        "nameExplicit": false,
+        "columns": ["organization_unit_id"],
+        "schemaTo": "public",
+        "tableTo": "organization_units",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "accounting_delivery_settings_updated_by_user_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": ["updated_by_user_id"],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_7U3XBinZqlyF_fkey",
+        "nameExplicit": false,
+        "columns": ["organization_unit_id"],
+        "schemaTo": "public",
+        "tableTo": "organization_units",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_volunteer_id_users_id_fkey",
+        "nameExplicit": false,
+        "columns": ["volunteer_id"],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "CASCADE",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_6VhCMas4r3gf_fkey",
+        "nameExplicit": false,
+        "columns": ["reimbursement_type_id"],
+        "schemaTo": "public",
+        "tableTo": "reimbursement_types",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "RESTRICT",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_jZXO2ad08wW6_fkey",
+        "nameExplicit": false,
+        "columns": ["email_outbox_id"],
+        "schemaTo": "public",
+        "tableTo": "email_outbox",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_NQdqYzSta6JO_fkey",
+        "nameExplicit": false,
+        "columns": ["delivered_by_user_id"],
+        "schemaTo": "public",
+        "tableTo": "users",
+        "columnsTo": ["id"],
+        "onUpdate": "NO ACTION",
+        "onDelete": "SET NULL",
+        "entityType": "fks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "accounting_delivery_settings",
+        "name": "accounting_delivery_settings_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "reimbursement_bundle_deliveries",
+        "name": "reimbursement_bundle_deliveries_pkey",
+        "columns": ["id"],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "alter",
+      "key": "enums\u0000[\"public\",\"email_category\"]",
+      "set": {
+        "values": [
+          "CALL_OUT",
+          "CALL_OUT_NO_RECIPIENTS",
+          "MANAGER_NOTIFICATION",
+          "DIGEST",
+          "INVITE_REMINDER",
+          "NOTIFICATION",
+          "AUTH",
+          "SUPPORT",
+          "ACCOUNTING_BUNDLE"
+        ]
+      }
+    }
+  ]
+}

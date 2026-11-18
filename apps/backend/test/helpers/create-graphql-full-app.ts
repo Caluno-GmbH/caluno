@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import { SchedulerRegistry } from '@nestjs/schedule';
 import { Test } from '@nestjs/testing';
 import { AuthGuard } from '@thallesp/nestjs-better-auth';
 import { AppModule } from '../../src/app.module';
@@ -37,5 +38,10 @@ export const createGraphqlFullTestApp = async (): Promise<INestApplication> => {
   });
 
   await app.init();
+  // Cron jobs (e.g. the 10-second outbox drain) would race specs that share
+  // this process's test database; specs drive those services directly.
+  for (const job of app.get(SchedulerRegistry).getCronJobs().values()) {
+    job.stop();
+  }
   return app;
 };

@@ -33,6 +33,20 @@ export interface EmailDeliveryOutcome {
   result: EmailSendResult;
 }
 
+export type SettledEmailStatus =
+  | EmailDeliveryStatus.SENT
+  | EmailDeliveryStatus.FAILED
+  | EmailDeliveryStatus.CANCELLED;
+
+/**
+ * Runs in the transaction that settles an email of its category, so a
+ * feature can record the outcome after the outbox purges the row.
+ */
+export type EmailSettledHandler = (
+  tx: Database,
+  settled: { emailId: string; status: SettledEmailStatus },
+) => Promise<void>;
+
 export interface DrainSummary {
   claimed: number;
   sent: number;
@@ -124,6 +138,15 @@ export class EmailOutboxService {
     private readonly db: Database,
     private readonly transport: EmailTransportService,
   ) {}
+
+  private readonly settledHandlers = new Map<
+    EmailCategory,
+    EmailSettledHandler
+  >();
+
+  onEmailSettled(category: EmailCategory, handler: EmailSettledHandler): void {
+    this.settledHandlers.set(category, handler);
+  }
 
   async enqueue(
     email: EnqueueEmailInput,
@@ -424,24 +447,30 @@ export class EmailOutboxService {
     outboxEmail: EmailOutboxEntity,
     providerMessageId: string | null,
   ): Promise<void> {
-    const [updatedEmail] = await this.db
-      .update(schema.emailOutbox)
-      .set({
-        ...CLEARED_CONTENT,
-        status: EmailDeliveryStatus.SENT,
-        sentAt: new Date(),
-        providerMessageId,
-        lastError: null,
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(schema.emailOutbox.id, outboxEmail.id),
-          eq(schema.emailOutbox.status, EmailDeliveryStatus.SENDING),
-          eq(schema.emailOutbox.attempts, outboxEmail.attempts),
-        ),
-      )
-      .returning({ id: schema.emailOutbox.id });
+    const updatedEmail = await this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(schema.emailOutbox)
+        .set({
+          ...CLEARED_CONTENT,
+          status: EmailDeliveryStatus.SENT,
+          sentAt: new Date(),
+          providerMessageId,
+          lastError: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.emailOutbox.id, outboxEmail.id),
+            eq(schema.emailOutbox.status, EmailDeliveryStatus.SENDING),
+            eq(schema.emailOutbox.attempts, outboxEmail.attempts),
+          ),
+        )
+        .returning({ id: schema.emailOutbox.id });
+      if (row) {
+        await this.runSettledHandler(tx, outboxEmail, EmailDeliveryStatus.SENT);
+      }
+      return row;
+    });
 
     if (!updatedEmail) {
       this.logStaleTransition(outboxEmail, EmailDeliveryStatus.SENT);
@@ -504,22 +533,32 @@ export class EmailOutboxService {
         ? outboxEmail.expiresAt
         : failedContentExpiresAt;
 
-    const [updatedEmail] = await this.db
-      .update(schema.emailOutbox)
-      .set({
-        status: EmailDeliveryStatus.FAILED,
-        expiresAt,
-        lastError: summarizeError(deliveryError.message),
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(schema.emailOutbox.id, outboxEmail.id),
-          eq(schema.emailOutbox.status, EmailDeliveryStatus.SENDING),
-          eq(schema.emailOutbox.attempts, outboxEmail.attempts),
-        ),
-      )
-      .returning({ id: schema.emailOutbox.id });
+    const updatedEmail = await this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(schema.emailOutbox)
+        .set({
+          status: EmailDeliveryStatus.FAILED,
+          expiresAt,
+          lastError: summarizeError(deliveryError.message),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.emailOutbox.id, outboxEmail.id),
+            eq(schema.emailOutbox.status, EmailDeliveryStatus.SENDING),
+            eq(schema.emailOutbox.attempts, outboxEmail.attempts),
+          ),
+        )
+        .returning({ id: schema.emailOutbox.id });
+      if (row) {
+        await this.runSettledHandler(
+          tx,
+          outboxEmail,
+          EmailDeliveryStatus.FAILED,
+        );
+      }
+      return row;
+    });
 
     if (!updatedEmail) {
       this.logStaleTransition(outboxEmail, EmailDeliveryStatus.FAILED);
@@ -539,25 +578,62 @@ export class EmailOutboxService {
     );
   }
 
+  private async runSettledHandler(
+    tx: Database,
+    outboxEmail: EmailOutboxEntity,
+    status: SettledEmailStatus,
+  ): Promise<void> {
+    const handler = this.settledHandlers.get(outboxEmail.category);
+    if (!handler) return;
+    try {
+      // A savepoint: a failing handler must not undo the status change, or
+      // a sent email would be reclaimed as stale and sent again.
+      await tx.transaction((savepoint) =>
+        handler(savepoint, { emailId: outboxEmail.id, status }),
+      );
+    } catch (error) {
+      this.logger.error(
+        {
+          event: 'email_outbox.settled_handler_failed',
+          email_id: outboxEmail.id,
+          category: outboxEmail.category,
+          status,
+          err: error instanceof Error ? error.message : String(error),
+        },
+        'Email settled handler failed',
+      );
+    }
+  }
+
   private async markOutboxEmailCancelled(
     outboxEmail: EmailOutboxEntity,
   ): Promise<void> {
-    const [updatedEmail] = await this.db
-      .update(schema.emailOutbox)
-      .set({
-        ...CLEARED_CONTENT,
-        status: EmailDeliveryStatus.CANCELLED,
-        lastError: 'Expired before delivery',
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(schema.emailOutbox.id, outboxEmail.id),
-          eq(schema.emailOutbox.status, EmailDeliveryStatus.SENDING),
-          eq(schema.emailOutbox.attempts, outboxEmail.attempts),
-        ),
-      )
-      .returning({ id: schema.emailOutbox.id });
+    const updatedEmail = await this.db.transaction(async (tx) => {
+      const [row] = await tx
+        .update(schema.emailOutbox)
+        .set({
+          ...CLEARED_CONTENT,
+          status: EmailDeliveryStatus.CANCELLED,
+          lastError: 'Expired before delivery',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(schema.emailOutbox.id, outboxEmail.id),
+            eq(schema.emailOutbox.status, EmailDeliveryStatus.SENDING),
+            eq(schema.emailOutbox.attempts, outboxEmail.attempts),
+          ),
+        )
+        .returning({ id: schema.emailOutbox.id });
+      if (row) {
+        await this.runSettledHandler(
+          tx,
+          outboxEmail,
+          EmailDeliveryStatus.CANCELLED,
+        );
+      }
+      return row;
+    });
 
     if (!updatedEmail) {
       this.logStaleTransition(outboxEmail, EmailDeliveryStatus.CANCELLED);
