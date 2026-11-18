@@ -31,7 +31,7 @@ export class AccountingReferenceLoader {
   >((ids) =>
     settleEach(ids, async (id) =>
       this.reimbursementTypeMapper.toModelOrThrow(
-        await this.reimbursementRateService.findReimbursementTypeById(id),
+        await this.reimbursementRateService.findReimbursementTypeByKey(id),
       ),
     ),
   );

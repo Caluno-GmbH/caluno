@@ -208,7 +208,7 @@ export class ReimbursementQueryResolver {
   }): Promise<BundleDownloadStatus> {
     const [volunteer, reimbursementType, downloadedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(status.volunteerId),
-      this.reimbursementRateService.findReimbursementTypeById(
+      this.reimbursementRateService.findReimbursementTypeByKey(
         status.reimbursementTypeKey,
       ),
       status.downloadedByUserId
@@ -236,7 +236,7 @@ export class ReimbursementQueryResolver {
   }): Promise<ManualBaseline> {
     const [volunteer, reimbursementType, updatedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(baseline.volunteerId),
-      this.reimbursementRateService.findReimbursementTypeById(
+      this.reimbursementRateService.findReimbursementTypeByKey(
         baseline.reimbursementTypeKey,
       ),
       baseline.updatedByUserId

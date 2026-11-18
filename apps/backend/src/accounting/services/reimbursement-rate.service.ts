@@ -208,7 +208,7 @@ export class ReimbursementRateService {
     if (hourlyRateCents <= 0) {
       throw new BadRequestGraphQLError('Hourly rate must be greater than zero');
     }
-    await this.findReimbursementTypeById(reimbursementTypeKey);
+    await this.findReimbursementTypeByKey(reimbursementTypeKey);
 
     const target = organizationUnitId ?? null;
 
@@ -282,7 +282,7 @@ export class ReimbursementRateService {
   ): Promise<YearlyUsage> {
     const { start: yearStart, end: yearEnd } = billingYearBounds(year);
     const reimbursementType =
-      await this.findReimbursementTypeById(reimbursementTypeKey);
+      await this.findReimbursementTypeByKey(reimbursementTypeKey);
 
     const conditions = [
       eq(schema.documentTemplates.organizationId, organizationId),
@@ -431,19 +431,19 @@ export class ReimbursementRateService {
     }));
   }
 
-  async findReimbursementTypeById(
-    id: ReimbursementTypeKey,
+  async findReimbursementTypeByKey(
+    key: ReimbursementTypeKey,
   ): Promise<ReimbursementTypeEntity> {
     // The key is a pg enum: an out-of-range value would raise a DB error
     // instead of resolving to "not found".
-    const reimbursementType = Object.values(ReimbursementTypeKey).includes(id)
+    const reimbursementType = Object.values(ReimbursementTypeKey).includes(key)
       ? await this.db.query.reimbursementTypes.findFirst({
-          where: { key: id },
+          where: { key },
         })
       : undefined;
     if (!reimbursementType) {
       throw new NotFoundGraphQLError(
-        `Reimbursement type with ID ${id} not found`,
+        `Reimbursement type with ID ${key} not found`,
       );
     }
     return reimbursementType;
@@ -562,7 +562,7 @@ export class ReimbursementRateService {
     if (amountCents < 0) {
       throw new BadRequestGraphQLError('Amount must not be negative');
     }
-    await this.findReimbursementTypeById(reimbursementTypeKey);
+    await this.findReimbursementTypeByKey(reimbursementTypeKey);
 
     const [row] = await this.db
       .insert(schema.reimbursementManualBaselines)

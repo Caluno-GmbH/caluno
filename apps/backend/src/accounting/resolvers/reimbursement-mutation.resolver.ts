@@ -99,7 +99,7 @@ export class ReimbursementMutationResolver {
 
     const [volunteer, reimbursementType, downloadedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(status.volunteerId),
-      this.reimbursementRateService.findReimbursementTypeById(
+      this.reimbursementRateService.findReimbursementTypeByKey(
         status.reimbursementTypeKey,
       ),
       status.downloadedByUserId
@@ -159,7 +159,7 @@ export class ReimbursementMutationResolver {
 
     const [volunteer, reimbursementType, updatedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(baseline.volunteerId),
-      this.reimbursementRateService.findReimbursementTypeById(
+      this.reimbursementRateService.findReimbursementTypeByKey(
         baseline.reimbursementTypeKey,
       ),
       this.userService.findById(session.user.id),

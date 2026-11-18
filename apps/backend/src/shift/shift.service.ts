@@ -3665,40 +3665,6 @@ export class ShiftService {
     return this.userService.findByIdOrThrow(createdById);
   }
 
-  /**
-   * Batch-resolve reimbursement type keys by id. Volunteer-facing surfaces
-   * only ever need the Pauschalentyp (EHRENAMT/UEBUNGSLEITER), never the
-   * rate/limit amounts, so this intentionally returns just the key.
-   */
-  async findReimbursementTypeKeysByIds(
-    ids: ReimbursementTypeKey[],
-  ): Promise<{ key: ReimbursementTypeKey }[]> {
-    if (ids.length === 0) {
-      return [];
-    }
-    return this.db.query.reimbursementTypes.findMany({
-      where: { key: { in: ids } },
-      columns: { key: true },
-    });
-  }
-
-  /**
-   * Volunteer-safe reimbursement type key for an id. Returns null when the id
-   * is absent (unpaid) or no longer resolves, so callers can omit the paid
-   * indicator entirely.
-   */
-  private async resolveReimbursementTypeKey(
-    reimbursementTypeKey: ReimbursementTypeKey | null | undefined,
-  ): Promise<ReimbursementTypeKey | null> {
-    if (!reimbursementTypeKey) {
-      return null;
-    }
-    const rows = await this.findReimbursementTypeKeysByIds([
-      reimbursementTypeKey,
-    ]);
-    return rows[0]?.key ?? null;
-  }
-
   private async loadAndEmitShiftInstanceInvitedNotification(
     shift: ShiftEntity,
     instance: ShiftInstanceEntity,
@@ -3717,11 +3683,9 @@ export class ShiftService {
         return;
       }
 
-      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
-        resolveEffectiveReimbursementTypeKey(
-          instance.overrideReimbursementTypeKey,
-          shift.reimbursementTypeKey,
-        ),
+      const reimbursementTypeKey = resolveEffectiveReimbursementTypeKey(
+        instance.overrideReimbursementTypeKey,
+        shift.reimbursementTypeKey,
       );
 
       this.notificationService.notifyShiftInstanceInvited({
@@ -4343,9 +4307,7 @@ export class ShiftService {
         })),
       );
 
-      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
-        shift.reimbursementTypeKey,
-      );
+      const reimbursementTypeKey = shift.reimbursementTypeKey;
 
       this.notificationService.notifyShiftInvited({
         organizationUnitId: organizationUnit.id,

@@ -4,7 +4,6 @@ import {
   Session,
   type UserSession,
 } from '@thallesp/nestjs-better-auth';
-import { ReimbursementTypeKey } from '../../accounting/enums';
 import { Loader } from '../../graphql/decorators/loader.decorator';
 import { Organization } from '../../organization/models/organization.model';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
@@ -76,18 +75,6 @@ export class ShiftFieldResolver {
     }
     const rows = await loader.instancesByShiftId.load(shift.id);
     return this.shiftInstanceMapper.toArray(rows);
-  }
-
-  @AllowAnonymous()
-  @ResolveField(() => ReimbursementTypeKey, { nullable: true })
-  async reimbursementTypeKey(
-    @Parent() shift: ShiftEntity,
-    @Loader(ShiftLoader) loader: ShiftLoader,
-  ): Promise<ReimbursementTypeKey | null> {
-    if (!shift.reimbursementTypeKey) {
-      return null;
-    }
-    return loader.reimbursementTypeKeyById.load(shift.reimbursementTypeKey);
   }
 
   @AllowAnonymous()

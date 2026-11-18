@@ -100,10 +100,8 @@ describe('ShiftInstanceFieldResolver', () => {
     it('resolves the occurrence override without loading the master shift', async () => {
       const resolver = newResolver();
       const shiftLoad = jest.fn();
-      const keyLoad = jest.fn().mockResolvedValue('EHRENAMT');
       const loader = {
         shiftById: { load: shiftLoad },
-        reimbursementTypeKeyById: { load: keyLoad },
       } as unknown as ShiftLoader;
 
       const result = await resolver.reimbursementTypeKey(
@@ -114,20 +112,17 @@ describe('ShiftInstanceFieldResolver', () => {
         loader,
       );
 
-      expect(result).toBe('EHRENAMT');
-      expect(keyLoad).toHaveBeenCalledWith(ReimbursementTypeKey.UEBUNGSLEITER);
+      expect(result).toBe('UEBUNGSLEITER');
       expect(shiftLoad).not.toHaveBeenCalled();
     });
 
     it('falls back to the master shift type when there is no override', async () => {
       const resolver = newResolver();
-      const shiftLoad = jest
-        .fn()
-        .mockResolvedValue({ reimbursementTypeKey: 'rt-master' });
-      const keyLoad = jest.fn().mockResolvedValue('UEBUNGSLEITER');
+      const shiftLoad = jest.fn().mockResolvedValue({
+        reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
+      });
       const loader = {
         shiftById: { load: shiftLoad },
-        reimbursementTypeKeyById: { load: keyLoad },
       } as unknown as ShiftLoader;
 
       const result = await resolver.reimbursementTypeKey(
@@ -139,9 +134,8 @@ describe('ShiftInstanceFieldResolver', () => {
         loader,
       );
 
-      expect(result).toBe('UEBUNGSLEITER');
+      expect(result).toBe('EHRENAMT');
       expect(shiftLoad).toHaveBeenCalledWith('shift-1');
-      expect(keyLoad).toHaveBeenCalledWith('rt-master');
     });
 
     it('returns null without resolving a key when the occurrence is unpaid', async () => {
@@ -152,7 +146,6 @@ describe('ShiftInstanceFieldResolver', () => {
       const keyLoad = jest.fn();
       const loader = {
         shiftById: { load: shiftLoad },
-        reimbursementTypeKeyById: { load: keyLoad },
       } as unknown as ShiftLoader;
 
       const result = await resolver.reimbursementTypeKey(

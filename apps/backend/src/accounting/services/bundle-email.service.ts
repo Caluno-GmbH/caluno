@@ -296,7 +296,7 @@ export class BundleEmailService implements OnModuleInit {
       );
     }
 
-    const [settings, issues, volunteer, reimbursementType] = await Promise.all([
+    const [settings, issues, volunteer] = await Promise.all([
       this.deliverySettingsService.resolve(scope.organizationUnitId, locale),
       this.bundleDownloadService.findIssues(organizationId, scope, invoices, {
         checkAlreadySent: true,
@@ -305,9 +305,6 @@ export class BundleEmailService implements OnModuleInit {
         where: { id: scope.volunteerId },
         columns: { name: true },
       }),
-      this.reimbursementRateService.findReimbursementTypeById(
-        scope.reimbursementTypeKey,
-      ),
     ]);
     if (!volunteer) throw new NotFoundGraphQLError('Volunteer not found');
 
@@ -316,7 +313,7 @@ export class BundleEmailService implements OnModuleInit {
       invoices.map((invoice) => invoice.periodStart),
       locale,
     );
-    const typeLabel = t(`accountingBundle.type${reimbursementType.key}`);
+    const typeLabel = t(`accountingBundle.type${scope.reimbursementTypeKey}`);
     const subject = renderBundleSubject(settings.emailSubject, {
       volunteer: volunteer.name,
       period: periodLabel,
