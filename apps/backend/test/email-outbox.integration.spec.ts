@@ -320,6 +320,34 @@ describe('EmailOutboxService', () => {
     expect(sendOnce).not.toHaveBeenCalled();
   });
 
+  it('cancels an email to a @caluno.internal recipient without calling the transport', async () => {
+    const outboxEmail = await enqueue({
+      to: `internal-${counter}@Caluno.Internal`,
+    });
+
+    const drainSummary = await service.drain();
+
+    expect(drainSummary.cancelled).toBeGreaterThanOrEqual(1);
+    const updatedEmail = await findOutboxEmail(outboxEmail.id);
+    expect(updatedEmail?.status).toBe(EmailDeliveryStatus.CANCELLED);
+    expect(sendOnce).not.toHaveBeenCalled();
+  });
+
+  it('reports an inline send to a @caluno.internal recipient as ok without sending', async () => {
+    const deliveryOutcome = await service.enqueueAndDeliver(
+      buildEmailInput({ to: 'internal@caluno.internal' }),
+    );
+
+    expect(deliveryOutcome.result).toEqual({
+      ok: true,
+      providerMessageId: null,
+    });
+    expect(deliveryOutcome.outboxEmail.status).toBe(
+      EmailDeliveryStatus.CANCELLED,
+    );
+    expect(sendOnce).not.toHaveBeenCalled();
+  });
+
   it('gives up once maxAttempts is exhausted', async () => {
     sendOnce.mockImplementation(async () => ({
       ok: false,
