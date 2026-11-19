@@ -1,9 +1,18 @@
 import { Field, InputType } from '@nestjs/graphql';
-import { IsEmail, IsEnum, IsOptional, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 import { BundleDeliveryMethod } from '../enums';
 import { MAX_BUNDLE_SUBJECT_LENGTH } from '../utils/bundle-email-subject';
 
-/** Null (or blank) clears the unit's own value, so it inherits again. */
+/**
+ * Null or a whitespace-only string clears the unit's own value, so it inherits
+ * again. An exactly empty string is stored as a deliberate empty value.
+ */
 @InputType()
 export class UpdateAccountingDeliverySettingsInput {
   @Field(() => BundleDeliveryMethod, { nullable: true })
@@ -13,6 +22,7 @@ export class UpdateAccountingDeliverySettingsInput {
 
   @Field(() => String, { nullable: true })
   @IsOptional()
+  @ValidateIf((input) => (input.recipientEmail?.trim() ?? '') !== '')
   @IsEmail()
   @MaxLength(254)
   recipientEmail?: string | null;

@@ -2309,9 +2309,8 @@
         "methodLabel": "Finished bundles",
         "methodDownload": "Download",
         "methodDownloadHint": "Admins download each bundle as a ZIP file.",
-        "methodEmail": "Send by email",
+        "methodEmail": "Email",
         "methodEmailHint": "Admins send each volunteer’s bundle as its own email. Nothing goes out until an admin sends it.",
-        "methodInherit": "Use inherited ({value})",
         "recipientLabel": "Accounting email address",
         "recipientHint": "Receives your finalized document bundles once they are ready to be processed into accounting.",
         "recipientPlaceholder": "accounting@example.org",
@@ -2319,21 +2318,34 @@
         "showRecipient": "Show email address",
         "hideRecipient": "Hide email address",
         "subjectLabel": "Email subject",
-        "subjectHint": "Placeholders: {placeholders}",
-        "inheritPlaceholder": "Inherited: {value}",
+        "subjectHint": "Click a variable to insert it at the cursor.",
         "source": {
-          "own": "Set for this unit",
+          "own": "Custom for this unit",
           "inheritedFrom": "Inherited from {source}",
-          "default": "Default"
+          "default": "Default",
+          "inherited": "Inherited"
         },
-        "clearHint": "Leave empty to use the inherited value.",
+        "reset": {
+          "inherited": "Reset to inherited"
+        },
+        "variables": {
+          "tooltip": "Insert {token} — {description}",
+          "volunteer": "the volunteer’s name",
+          "period": "the billing period",
+          "type": "the reimbursement type"
+        },
+        "downloadAlert": {
+          "title": "Email sending is off",
+          "description": "Recipient and subject only apply when bundles are sent by email. They are not saved while Download is selected."
+        },
         "saveSuccess": "Delivery settings saved",
         "saveError": "We couldn’t save the delivery settings. Please try again.",
         "loadError": "We couldn’t load the delivery settings. Please reload the page.",
         "errors": {
           "invalidEmail": "Please enter a valid email address.",
-          "unknownPlaceholder": "Use only the placeholders listed above.",
-          "recipientRequired": "Add an accounting email address to send bundles by email."
+          "unknownPlaceholder": "Use only the available variables.",
+          "recipientRequired": "Add an accounting email address to send bundles by email.",
+          "subjectTooLong": "Keep the subject to {max} characters or fewer."
         }
       }
     },
