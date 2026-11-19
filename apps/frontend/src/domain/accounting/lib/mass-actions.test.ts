@@ -15,7 +15,10 @@ import {
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 function makeDoc(
-  overrides: Partial<BoardDocument> & { id: string; status: BoardDocument['status'] },
+  overrides: Partial<BoardDocument> & {
+    id: string;
+    status: BoardDocument['status'];
+  },
 ): BoardDocument {
   return {
     pauschale: 'ehrenamt',
@@ -24,7 +27,9 @@ function makeDoc(
   };
 }
 
-function makeVol(overrides: Partial<BoardVolunteer> & { id: string }): BoardVolunteer {
+function makeVol(
+  overrides: Partial<BoardVolunteer> & { id: string },
+): BoardVolunteer {
   return {
     name: 'Test Volunteer',
     initials: 'TV',
@@ -55,8 +60,16 @@ const ANY_FILTERS = {
 
 describe('groupBundles', () => {
   it('groups one volunteer ehrenamt + uebungsleiter timesheet-ready docs into two BundleGroups', () => {
-    const docEP = makeDoc({ id: 'doc-ep-1', status: 'timesheet-ready', pauschale: 'ehrenamt' });
-    const docUL = makeDoc({ id: 'doc-ul-1', status: 'timesheet-ready', pauschale: 'uebungsleiter' });
+    const docEP = makeDoc({
+      id: 'doc-ep-1',
+      status: 'timesheet-ready',
+      pauschale: 'ehrenamt',
+    });
+    const docUL = makeDoc({
+      id: 'doc-ul-1',
+      status: 'timesheet-ready',
+      pauschale: 'uebungsleiter',
+    });
     const vol = makeVol({
       id: 'vol-1',
       name: 'Anna Müller',
@@ -87,8 +100,16 @@ describe('groupBundles', () => {
   });
 
   it('includes only timesheet-ready docs and ignores other statuses', () => {
-    const ready = makeDoc({ id: 'doc-ready', status: 'timesheet-ready', pauschale: 'ehrenamt' });
-    const signing = makeDoc({ id: 'doc-signing', status: 'timesheet-signing-coord', pauschale: 'ehrenamt' });
+    const ready = makeDoc({
+      id: 'doc-ready',
+      status: 'timesheet-ready',
+      pauschale: 'ehrenamt',
+    });
+    const signing = makeDoc({
+      id: 'doc-signing',
+      status: 'timesheet-signing-coord',
+      pauschale: 'ehrenamt',
+    });
     const vol = makeVol({ id: 'vol-2', documents: [ready, signing] });
 
     const pairs: DocVolPair[] = [
@@ -102,8 +123,16 @@ describe('groupBundles', () => {
   });
 
   it('groups multiple ready docs of the same pauschale into one BundleGroup', () => {
-    const doc1 = makeDoc({ id: 'ep-1', status: 'timesheet-ready', pauschale: 'ehrenamt' });
-    const doc2 = makeDoc({ id: 'ep-2', status: 'timesheet-ready', pauschale: 'ehrenamt' });
+    const doc1 = makeDoc({
+      id: 'ep-1',
+      status: 'timesheet-ready',
+      pauschale: 'ehrenamt',
+    });
+    const doc2 = makeDoc({
+      id: 'ep-2',
+      status: 'timesheet-ready',
+      pauschale: 'ehrenamt',
+    });
     const vol = makeVol({ id: 'vol-3', documents: [doc1, doc2] });
 
     const pairs: DocVolPair[] = [
@@ -119,7 +148,11 @@ describe('groupBundles', () => {
   });
 
   it('returns empty array when no timesheet-ready pairs', () => {
-    const doc = makeDoc({ id: 'doc-gen', status: 'timesheet-generate', pauschale: 'ehrenamt' });
+    const doc = makeDoc({
+      id: 'doc-gen',
+      status: 'timesheet-generate',
+      pauschale: 'ehrenamt',
+    });
     const vol = makeVol({ id: 'vol-4', documents: [doc] });
     const result = groupBundles([{ doc, vol }]);
     expect(result).toEqual([]);
@@ -140,7 +173,11 @@ describe('firstBlockingDocId', () => {
     // so if both appear, the generate one (earlier in sort order) may win —
     // but isOverCap only appears on timesheets in practice.
     // We test: an over-cap doc is detected.
-    const overCap = makeDoc({ id: 'over', status: 'timesheet-ready', isOverCap: true });
+    const overCap = makeDoc({
+      id: 'over',
+      status: 'timesheet-ready',
+      isOverCap: true,
+    });
     const normal = makeDoc({ id: 'ok', status: 'timesheet-ready' });
     const vol = makeVol({ id: 'vol-1', documents: [overCap, normal] });
     const result = firstBlockingDocId([
@@ -162,7 +199,11 @@ describe('firstBlockingDocId', () => {
     // The function must return vol-A's id — it does NOT re-sort by status.
     const missing = makeDoc({ id: 'miss', status: 'contract-missing' });
     const volA = makeVol({ id: 'vol-a', documents: [missing] });
-    const overCap = makeDoc({ id: 'ready-over', status: 'timesheet-ready', isOverCap: true });
+    const overCap = makeDoc({
+      id: 'ready-over',
+      status: 'timesheet-ready',
+      isOverCap: true,
+    });
     const volB = makeVol({ id: 'vol-b', documents: [overCap] });
     const result = firstBlockingDocId([
       { doc: missing, vol: volA },
@@ -258,7 +299,11 @@ describe('splitSendableBundles', () => {
 
   it('passes through extra fields on richer objects', () => {
     const previews = [
-      { recipientEmail: 'a@example.com', fitsInEmail: true, issues: ['warn-1'] },
+      {
+        recipientEmail: 'a@example.com',
+        fitsInEmail: true,
+        issues: ['warn-1'],
+      },
       { recipientEmail: null, fitsInEmail: true, issues: [] },
     ];
     const { sendable, needsAttention } = splitSendableBundles(previews);
@@ -305,8 +350,16 @@ describe('selectableDocIds', () => {
 
 describe('visibleDocPairsInOrder', () => {
   it('returns pairs sorted in display order across volunteers', () => {
-    const docGenerate = makeDoc({ id: 'gen', status: 'contract-generate', pauschale: 'ehrenamt' });
-    const docReady = makeDoc({ id: 'ready', status: 'timesheet-ready', pauschale: 'ehrenamt' });
+    const docGenerate = makeDoc({
+      id: 'gen',
+      status: 'contract-generate',
+      pauschale: 'ehrenamt',
+    });
+    const docReady = makeDoc({
+      id: 'ready',
+      status: 'timesheet-ready',
+      pauschale: 'ehrenamt',
+    });
     const vol = makeVol({ id: 'v1', documents: [docReady, docGenerate] });
 
     const pairs = visibleDocPairsInOrder([vol], ANY_FILTERS);

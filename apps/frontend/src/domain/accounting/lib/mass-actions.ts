@@ -142,15 +142,20 @@ export function groupBundles(pairs: DocVolPair[]): BundleGroup[] {
  * Returns `null` when none.
  */
 export function firstBlockingDocId(pairs: DocVolPair[]): string | null {
-  return pairs.find((p) => p.doc.isOverCap === true || p.doc.status === 'contract-missing')?.doc.id ?? null;
+  return (
+    pairs.find(
+      (p) => p.doc.isOverCap === true || p.doc.status === 'contract-missing',
+    )?.doc.id ?? null
+  );
 }
 
 // ─── Async result summary ─────────────────────────────────────────────────────
 
 /** Counts fulfilled vs rejected from a `Promise.allSettled` result array. */
-export function summarizeSettled<T>(
-  results: PromiseSettledResult<T>[],
-): { succeeded: number; failed: number } {
+export function summarizeSettled<T>(results: PromiseSettledResult<T>[]): {
+  succeeded: number;
+  failed: number;
+} {
   let succeeded = 0;
   let failed = 0;
   for (const r of results) {

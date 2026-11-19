@@ -13,8 +13,14 @@ function leafKeys(obj: unknown, prefix = ''): string[] {
 
 // Cast through unknown so we can access the not-yet-existing key without a
 // compile error while also getting a runtime undefined that the test catches.
-const reimbursements = (en.Accounting.reimbursements as unknown as Record<string, unknown>);
-const reimbursementsDe = (de.Accounting.reimbursements as unknown as Record<string, unknown>);
+const reimbursements = en.Accounting.reimbursements as unknown as Record<
+  string,
+  unknown
+>;
+const reimbursementsDe = de.Accounting.reimbursements as unknown as Record<
+  string,
+  unknown
+>;
 
 const enKeys = new Set(leafKeys(reimbursements['massActions']));
 const deKeys = new Set(leafKeys(reimbursementsDe['massActions']));
