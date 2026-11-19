@@ -11,12 +11,11 @@ query GetShift($id: String!) {
     createdAt
     maxVolunteers
     minVolunteers
-    reimbursementTypeId
+    reimbursementTypeKey
     rrule
     originalStartsAt
     durationMinutes
     organizationUnitId
-    reimbursementTypeKey
     requiredFormsCount
     requiredForms {
       ...RequiredFormRefFields
@@ -81,7 +80,7 @@ query GetShifts(
       location
       maxVolunteers
       minVolunteers
-      reimbursementTypeId
+      reimbursementTypeKey
       instances {
         id
         actualStartsAt
@@ -389,7 +388,7 @@ query GetShiftInstance($id: ID!) {
     overrideInstructions
     overrideMaxVolunteers
     overrideMinVolunteers
-    overrideReimbursementTypeId
+    overrideReimbursementTypeKey
     overrideJoinRequiresApproval
     isCancelled
     filledCount
@@ -405,7 +404,7 @@ query GetShiftInstance($id: ID!) {
       instructions
       minVolunteers
       maxVolunteers
-      reimbursementTypeId
+      reimbursementTypeKey
       joinRequiresApproval
       visibility
       rrule
@@ -457,7 +456,7 @@ query GetWeeklyShifts(
     isCancelled
     overrideMinVolunteers
     overrideMaxVolunteers
-    overrideReimbursementTypeId
+    overrideReimbursementTypeKey
     master {
       id
       title
@@ -465,7 +464,7 @@ query GetWeeklyShifts(
       maxVolunteers
       visibility
       rrule
-      reimbursementTypeId
+      reimbursementTypeKey
     }
     volunteers {
       id

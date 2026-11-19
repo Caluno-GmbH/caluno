@@ -6,6 +6,7 @@ import type {
   CreateInvoiceInput,
   DocumentKind,
   InvoiceFilterInput,
+  ReimbursementTypeKey,
   UpdateAccountingDeliverySettingsInput,
   UpdateDocumentTemplateInput,
 } from '../../generated/base-types';
@@ -106,7 +107,7 @@ export type RawBundleDelivery =
 
 export interface BundleRequest {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   invoiceIds?: string[];
 }
 
@@ -142,7 +143,7 @@ export class AccountingRepository extends BaseRepository {
   }
 
   async setReimbursementRate(input: {
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     hourlyRateCents: number;
     organizationUnitId?: string;
   }) {
@@ -152,7 +153,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findYearlyUsage(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     year: number;
     asOfDate?: string;
     excludeInvoiceId?: string;
@@ -256,7 +257,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findEligibleTimeEntriesForInvoice(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     periodStart?: string;
     periodEnd?: string;
   }): Promise<EligibleTimeEntry[]> {
@@ -266,7 +267,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findTimeEntriesAwaitingReviewForInvoice(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     periodStart?: string;
     periodEnd?: string;
   }): Promise<AwaitingReviewTimeEntry[]> {
@@ -319,7 +320,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findActiveDocumentTemplate(input: {
     kind: DocumentKind;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     organizationUnitId?: string;
   }): Promise<DocumentTemplateDetail> {
     const data = await this.sdk.GetActiveDocumentTemplate(input);
@@ -348,23 +349,23 @@ export class AccountingRepository extends BaseRepository {
 
   async findBundleDownloadStatus(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
   ): Promise<RawBundleDownloadStatus> {
     const data = await this.sdk.GetBundleDownloadStatus({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
     });
     return data.bundleDownloadStatus;
   }
 
   async recordBundleDownload(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     invoiceIds?: string[],
   ): Promise<RecordedBundleDownload> {
     const data = await this.sdk.RecordBundleDownload({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       invoiceIds,
     });
     return data.recordBundleDownload;
@@ -372,12 +373,12 @@ export class AccountingRepository extends BaseRepository {
 
   async findManualBaseline(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     year: number,
   ): Promise<RawManualBaseline> {
     const data = await this.sdk.GetManualBaseline({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
     });
     return data.manualBaseline;
@@ -385,7 +386,7 @@ export class AccountingRepository extends BaseRepository {
 
   async setManualBaseline(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     year: number;
     amountCents: number;
   }): Promise<SetManualBaselineResult> {

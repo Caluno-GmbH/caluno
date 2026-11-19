@@ -195,7 +195,7 @@ describe('BundleDownloadService', () => {
     });
     const templateArgs = {
       organizationId: organization.id,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeKey: reimbursementType.key,
       requiredPermissionId: permission.id,
       signeeTypes: [SigneeType.VOLUNTEER, SigneeType.PERMISSION_HOLDER] as [
         SigneeType,
@@ -262,7 +262,7 @@ describe('BundleDownloadService', () => {
       createdAt?: string;
       volunteerId?: string;
       unitId?: string;
-      reimbursementTypeId?: string;
+      reimbursementTypeKey?: ReimbursementTypeKey;
     } = {},
   ) => {
     const file = options.withFile === false ? null : await createPdfFile(s);
@@ -271,8 +271,8 @@ describe('BundleDownloadService', () => {
       .values({
         documentTemplateId: s.contractTemplate.id,
         volunteerId: options.volunteerId ?? s.volunteer.id,
-        reimbursementTypeId:
-          options.reimbursementTypeId ?? s.reimbursementType.id,
+        reimbursementTypeKey:
+          options.reimbursementTypeKey ?? s.reimbursementType.key,
         organizationUnitId: options.unitId ?? s.root.id,
         contractStatus: options.status ?? ContractStatus.ACTIVE,
         periodStart: new Date(period.start),
@@ -292,7 +292,7 @@ describe('BundleDownloadService', () => {
     createCompletedTimeEntry(db, {
       organizationUnitId: s.root.id,
       volunteerId: s.volunteer.id,
-      reimbursementTypeId: s.reimbursementType.id,
+      reimbursementTypeKey: s.reimbursementType.key,
       startedAt: new Date(startedAt),
       endedAt: new Date(new Date(startedAt).getTime() + 2 * 3_600_000),
     });
@@ -305,7 +305,7 @@ describe('BundleDownloadService', () => {
       paid?: boolean | Date;
       period?: { start: string; end: string };
       unitId?: string;
-      reimbursementTypeId?: string;
+      reimbursementTypeKey?: ReimbursementTypeKey;
       status?: InvoiceStatus;
       withFile?: boolean;
     } = {},
@@ -316,8 +316,8 @@ describe('BundleDownloadService', () => {
       .values({
         documentTemplateId: s.invoiceTemplate.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId:
-          options.reimbursementTypeId ?? s.reimbursementType.id,
+        reimbursementTypeKey:
+          options.reimbursementTypeKey ?? s.reimbursementType.key,
         organizationUnitId: options.unitId ?? s.root.id,
         invoiceStatus: options.status ?? InvoiceStatus.READY,
         periodStart: new Date((options.period ?? JULY).start),
@@ -351,7 +351,7 @@ describe('BundleDownloadService', () => {
       s.organization.id,
       s.root.id,
       s.volunteer.id,
-      s.reimbursementType.id,
+      s.reimbursementType.key,
       s.downloader.id,
     );
 
@@ -410,7 +410,7 @@ describe('BundleDownloadService', () => {
       const audit = await db.query.reimbursementBundleDownloads.findFirst({
         where: {
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
         },
       });
       expect(audit?.downloadedByUserId).toBe(s.downloader.id);
@@ -589,7 +589,7 @@ describe('BundleDownloadService', () => {
         s.organization.id,
         s.root.id,
         s.volunteer.id,
-        s.reimbursementType.id,
+        s.reimbursementType.key,
         otherUser.id,
       );
 
@@ -603,7 +603,7 @@ describe('BundleDownloadService', () => {
       const audit = await db.query.reimbursementBundleDownloads.findFirst({
         where: {
           volunteerId: s.volunteer.id,
-          reimbursementTypeId: s.reimbursementType.id,
+          reimbursementTypeKey: s.reimbursementType.key,
         },
       });
       expect(audit?.downloadedByUserId).toBe(otherUser.id);
@@ -679,7 +679,7 @@ describe('BundleDownloadService', () => {
         s.organization.id,
         s.root.id,
         s.volunteer.id,
-        s.reimbursementType.id,
+        s.reimbursementType.key,
         s.downloader.id,
         invoiceIds,
       );
@@ -766,7 +766,7 @@ describe('BundleDownloadService', () => {
       const otherType = await readyTimesheet(
         s,
         [await entryAt(s, '2026-07-12T09:00:00.000Z')],
-        { reimbursementTypeId: other.id },
+        { reimbursementTypeKey: other.key },
       );
 
       const { buffer } = await downloadOnly(s, [mine.id, otherType.id]);
@@ -1048,9 +1048,9 @@ describe('BundleDownloadService', () => {
       // issued; the type-B contract covers that date but is not this bundle's.
       await db
         .update(schema.timeEntries)
-        .set({ reimbursementTypeId: other.id })
+        .set({ reimbursementTypeKey: other.key })
         .where(eq(schema.timeEntries.id, entry.id));
-      await insertContract(s, JULY, { reimbursementTypeId: other.id });
+      await insertContract(s, JULY, { reimbursementTypeKey: other.key });
 
       const { buffer } = await download(s);
 
@@ -1176,7 +1176,7 @@ describe('BundleDownloadService', () => {
       organizationId: s.organization.id,
       scope: {
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.id,
+        reimbursementTypeKey: s.reimbursementType.key,
         organizationUnitId: s.root.id,
       },
       invoiceIds,
@@ -1323,7 +1323,7 @@ describe('BundleDownloadService', () => {
       await db.insert(schema.reimbursementManualBaselines).values({
         organizationId: s.organization.id,
         volunteerId: s.volunteer.id,
-        reimbursementTypeId: s.reimbursementType.id,
+        reimbursementTypeKey: s.reimbursementType.key,
         year: 2026,
         amountCents: s.reimbursementType.yearlyLimitCents,
       });

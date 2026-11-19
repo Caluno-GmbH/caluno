@@ -1,4 +1,5 @@
 'use client';
+import type { ReimbursementTypeKey } from '@repo/data';
 
 import { useReimbursementTypes } from '@repo/data/react';
 import { ActionTooltip, Badge, cn } from '@repo/ui';
@@ -16,7 +17,7 @@ type PauschaleMarkerProps = {
   /** The shift's effective reimbursement type id (instance override, falling
    * back to the master shift's type). Unpaid shifts pass null/undefined and
    * render nothing. */
-  reimbursementTypeId?: string | null;
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
   className?: string;
 };
 
@@ -27,12 +28,12 @@ type PauschaleMarkerProps = {
  * marker survives greyscale printing and doesn't rely on color alone.
  */
 export function PauschaleMarker({
-  reimbursementTypeId,
+  reimbursementTypeKey,
   className,
 }: PauschaleMarkerProps) {
   const { data: types } = useReimbursementTypes();
   const t = useTranslations('Shift.paidMarker');
-  const marker = resolvePauschaleMarker(reimbursementTypeId, types);
+  const marker = resolvePauschaleMarker(reimbursementTypeKey, types);
 
   if (!marker) {
     return null;

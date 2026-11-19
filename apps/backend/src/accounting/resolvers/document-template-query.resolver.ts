@@ -3,7 +3,7 @@ import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import { BadRequestGraphQLError } from '../../graphql/errors';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
-import { DocumentKind } from '../enums';
+import { DocumentKind, ReimbursementTypeKey } from '../enums';
 import { DocumentTemplateMapper } from '../mappers';
 import { DocumentTemplate } from '../models/document-template.model';
 import {
@@ -64,8 +64,8 @@ export class DocumentTemplateQueryResolver {
   @Permissions(PERMISSIONS.ACCOUNTING_MANAGE)
   @Query(() => DocumentTemplate)
   async activeDocumentTemplate(
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('kind', { type: () => DocumentKind }) kind: DocumentKind,
     @Args('organizationUnitId', { type: () => ID, nullable: true })
     organizationUnitId: string | null | undefined,
@@ -87,7 +87,7 @@ export class DocumentTemplateQueryResolver {
     }
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       kind,
       organizationUnitId ?? context.organizationUnitId,
     );

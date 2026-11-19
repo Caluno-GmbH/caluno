@@ -1,11 +1,8 @@
-import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { Field, Int, ObjectType } from '@nestjs/graphql';
 import { ReimbursementTypeKey } from '../enums';
 
 @ObjectType()
 export class ReimbursementType {
-  @Field(() => ID)
-  id!: string;
-
   @Field(() => ReimbursementTypeKey)
   key!: ReimbursementTypeKey;
 

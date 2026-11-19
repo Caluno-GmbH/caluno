@@ -33,7 +33,7 @@ export class TimeEntryClosedListener {
       const entry = await this.db.query.timeEntries.findFirst({
         where: { id: payload.timeEntryId },
       });
-      if (!entry?.endedAt || !entry.reimbursementTypeId) return;
+      if (!entry?.endedAt || !entry.reimbursementTypeKey) return;
 
       const organization =
         await this.organizationUnitDataService.findOrganizationByUnitId(
@@ -46,7 +46,7 @@ export class TimeEntryClosedListener {
         {
           organizationUnitId: entry.organizationUnitId,
           volunteerId: entry.volunteerId,
-          reimbursementTypeId: entry.reimbursementTypeId,
+          reimbursementTypeKey: entry.reimbursementTypeKey,
           anchorDate: new Date(entry.startedAt),
         },
         entry.volunteerId,

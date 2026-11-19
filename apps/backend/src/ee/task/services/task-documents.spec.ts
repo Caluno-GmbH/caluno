@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { DocumentKind } from '../../../accounting/enums';
+import { DocumentKind, ReimbursementTypeKey } from '../../../accounting/enums';
 import { billingYearBounds } from '../../../accounting/utils/billing-period';
 import { TaskType } from '../enums/task-type.enum';
 import {
@@ -26,8 +26,7 @@ function contract(overrides: Partial<ContractTaskRow> = {}): ContractTaskRow {
     id: 'contract-1',
     volunteerId: 'volunteer-1',
     volunteerName: 'Ada Lovelace',
-    reimbursementTypeId: 'rt-1',
-    reimbursementTypeKey: 'EHRENAMT',
+    reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
     periodStart: start,
     periodEnd: end,
     status: 'AWAITING_NGO_SIGNATURE',
@@ -57,8 +56,7 @@ function timesheet(
   return {
     volunteerId: 'volunteer-1',
     volunteerName: 'Ada Lovelace',
-    reimbursementTypeId: 'rt-1',
-    reimbursementTypeKey: 'EHRENAMT',
+    reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
     periodStart: start,
     periodEnd: end,
     eligibleHours: 5,
@@ -108,7 +106,7 @@ describe('document tasks', () => {
         invoice({
           id: 'other-type',
           status: 'READY',
-          reimbursementTypeKey: 'UEBUNGSLEITER',
+          reimbursementTypeKey: ReimbursementTypeKey.UEBUNGSLEITER,
         }),
       ],
       ORG,
@@ -125,7 +123,7 @@ describe('document tasks', () => {
       }),
       expect.objectContaining({
         data: expect.objectContaining({
-          reimbursementTypeKey: 'UEBUNGSLEITER',
+          reimbursementTypeKey: ReimbursementTypeKey.UEBUNGSLEITER,
           readyCount: 1,
         }),
       }),
@@ -242,8 +240,7 @@ describe('document tasks', () => {
         {
           volunteerId: 'volunteer-1',
           volunteerName: 'Ada Lovelace',
-          reimbursementTypeId: 'rt-1',
-          reimbursementTypeKey: 'EHRENAMT',
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           periodStart: signupStart,
           periodEnd: end,
         },
@@ -270,7 +267,9 @@ describe('document tasks', () => {
       ORG,
       {
         yearPeriod,
-        pairsWithOpenContract: new Set(['volunteer-1|rt-1']),
+        pairsWithOpenContract: new Set([
+          `volunteer-1|${ReimbursementTypeKey.EHRENAMT}`,
+        ]),
       },
     );
 

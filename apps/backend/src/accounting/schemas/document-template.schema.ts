@@ -14,8 +14,11 @@ import { idColumn, timestampColumns } from '../../database/database-columns';
 import { enumValues } from '../../database/typeutil';
 import { organizations } from '../../organization/schemas/organization.schema';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
-import { DocumentKind, RenewalCadence } from '../enums';
-import { reimbursementTypes } from './reimbursement-type.schema';
+import { DocumentKind, ReimbursementTypeKey, RenewalCadence } from '../enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from './reimbursement-type.schema';
 
 export const documentKindEnum = pgEnum(
   'document_kind',
@@ -45,8 +48,9 @@ export const documentTemplates = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'cascade' },
     ),
-    reimbursementTypeId: uuid('reimbursement_type_id')
-      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
     kind: documentKindEnum('kind').$type<DocumentKind>().notNull(),
     renewalCadence:
@@ -62,12 +66,12 @@ export const documentTemplates = snakeCase.table(
   },
   (table) => [
     uniqueIndex('uq_document_templates_org_default')
-      .on(table.organizationId, table.reimbursementTypeId, table.kind)
+      .on(table.organizationId, table.reimbursementTypeKey, table.kind)
       .where(
         sql`${table.organizationUnitId} IS NULL AND ${table.isDeleted} = false`,
       ),
     uniqueIndex('uq_document_templates_unit_override')
-      .on(table.organizationUnitId, table.reimbursementTypeId, table.kind)
+      .on(table.organizationUnitId, table.reimbursementTypeKey, table.kind)
       .where(
         sql`${table.organizationUnitId} IS NOT NULL AND ${table.isDeleted} = false`,
       ),

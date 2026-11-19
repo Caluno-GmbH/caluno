@@ -14,7 +14,7 @@ import {
   POSTHOG_SURFACE,
 } from '../../shared/observability/posthog.events';
 import { PostHogService } from '../../shared/observability/posthog.service';
-import { DocumentKind, SigneeType } from '../enums';
+import { DocumentKind, ReimbursementTypeKey, SigneeType } from '../enums';
 import type { CreateDocumentTemplateInput } from '../inputs/create-document-template.input';
 import type { CreateTemplateSigneeInput } from '../inputs/create-template-signee.input';
 import type { UpdateDocumentTemplateInput } from '../inputs/update-document-template.input';
@@ -92,7 +92,7 @@ export class DocumentTemplateService {
         organizationUnitId: input.organizationUnitId
           ? input.organizationUnitId
           : { isNull: true },
-        reimbursementTypeId: input.reimbursementTypeId,
+        reimbursementTypeKey: input.reimbursementTypeKey,
         kind: input.kind,
         isDeleted: false,
       },
@@ -109,7 +109,7 @@ export class DocumentTemplateService {
         .values({
           organizationId,
           organizationUnitId: input.organizationUnitId ?? null,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           kind: input.kind,
           renewalCadence: input.renewalCadence ?? null,
           invoiceNumberFormat: input.invoiceNumberFormat ?? null,
@@ -250,18 +250,18 @@ export class DocumentTemplateService {
    */
   async findActiveTemplate(
     organizationId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     kind: DocumentKind,
     organizationUnitId?: string | null,
   ): Promise<DocumentTemplateEntity> {
     const [template] = await this.findResolvedTemplates(
       organizationId,
       organizationUnitId,
-      { reimbursementTypeId, kind, onlyEdited: true },
+      { reimbursementTypeKey, kind, onlyEdited: true },
     );
     if (!template) {
       throw new NotFoundGraphQLError(
-        `No ${kind.toLowerCase()} template configured for reimbursement type ${reimbursementTypeId}`,
+        `No ${kind.toLowerCase()} template configured for reimbursement type ${reimbursementTypeKey}`,
       );
     }
     return template;
@@ -278,7 +278,7 @@ export class DocumentTemplateService {
     organizationId: string,
     organizationUnitId: string | null | undefined,
     filter: {
-      reimbursementTypeId?: string;
+      reimbursementTypeKey?: ReimbursementTypeKey;
       kind?: DocumentKind;
       onlyEdited?: boolean;
     } = {},
@@ -293,8 +293,8 @@ export class DocumentTemplateService {
       where: {
         organizationId,
         isDeleted: false,
-        ...(filter.reimbursementTypeId !== undefined && {
-          reimbursementTypeId: filter.reimbursementTypeId,
+        ...(filter.reimbursementTypeKey !== undefined && {
+          reimbursementTypeKey: filter.reimbursementTypeKey,
         }),
         ...(filter.kind !== undefined && { kind: filter.kind }),
         ...(filter.onlyEdited && { lastEditedAt: { isNotNull: true } }),
@@ -313,7 +313,7 @@ export class DocumentTemplateService {
 
     const bySlot = new Map<string, DocumentTemplateEntity>();
     for (const template of candidates) {
-      const slot = `${template.reimbursementTypeId}:${template.kind}`;
+      const slot = `${template.reimbursementTypeKey}:${template.kind}`;
       const current = bySlot.get(slot);
       if (!current || rankOf(template) < rankOf(current)) {
         bySlot.set(slot, template);

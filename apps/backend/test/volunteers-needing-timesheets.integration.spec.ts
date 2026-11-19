@@ -141,7 +141,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     const { organization, unit, reimbursementType, volunteer } = await setup();
     await rateService.setReimbursementRate(
       organization.id,
-      reimbursementType.id,
+      reimbursementType.key,
       2_000,
       volunteer.id,
       unit.id,
@@ -149,7 +149,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     timesheetRows = [
       {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 6.5,
@@ -176,7 +176,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     timesheetRows = [
       {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 2,
@@ -200,7 +200,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     timesheetRows = [
       {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 2,
@@ -226,7 +226,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     timesheetRows = [
       {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 2,
@@ -251,7 +251,7 @@ describe('volunteersNeedingTimesheets projection', () => {
     timesheetRows = [
       {
         volunteerId: volunteer.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         periodStart: new Date('2026-06-30T22:00:00.000Z'),
         periodEnd: new Date('2026-07-31T22:00:00.000Z'),
         eligibleHours: 2,

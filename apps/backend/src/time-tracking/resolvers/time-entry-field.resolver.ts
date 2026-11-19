@@ -86,9 +86,9 @@ export class TimeEntryFieldResolver {
     @Parent() timeEntry: TimeEntryEntity,
     @Loader(TimeEntryLoader) loader: TimeEntryLoader,
   ): Promise<ReimbursementType | null> {
-    if (!timeEntry.reimbursementTypeId) {
+    if (!timeEntry.reimbursementTypeKey) {
       return null;
     }
-    return loader.reimbursementTypeById.load(timeEntry.reimbursementTypeId);
+    return loader.reimbursementTypeById.load(timeEntry.reimbursementTypeKey);
   }
 }

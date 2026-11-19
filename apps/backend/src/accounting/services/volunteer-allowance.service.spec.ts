@@ -1,10 +1,11 @@
+import { ReimbursementTypeKey } from '../enums';
 import { VolunteerAllowanceState } from './volunteer-allowance';
 import { VolunteerAllowanceService } from './volunteer-allowance.service';
 
 const UNIT = 'unit-1';
 const ORG = 'org-1';
-const EHREN = 'type-ehren';
-const UEBUNG = 'type-uebung';
+const EHREN = ReimbursementTypeKey.EHRENAMT;
+const UEBUNG = ReimbursementTypeKey.UEBUNGSLEITER;
 
 type Usage = { id: string; remainingCents: number; limitCents: number };
 
@@ -15,7 +16,7 @@ function build({
   hourlyRateCents = 20_00,
 }: {
   instance?: {
-    reimbursementTypeId: string | null;
+    reimbursementTypeKey: ReimbursementTypeKey | null;
     start: string;
     end: string;
     unit?: string;
@@ -32,7 +33,7 @@ function build({
             actualEndsAt: new Date(instance.end),
             master: {
               organizationUnitId: instance.unit ?? UNIT,
-              reimbursementTypeId: instance.reimbursementTypeId,
+              reimbursementTypeKey: instance.reimbursementTypeKey,
             },
           }
         : undefined,
@@ -55,7 +56,7 @@ function build({
       Object.entries(usage).map(([id, types]) => ({
         volunteer: { id },
         usageByType: types.map((t) => ({
-          reimbursementType: { id: t.id },
+          reimbursementType: { key: t.id },
           usedCents: t.limitCents - t.remainingCents,
           limitCents: t.limitCents,
           remainingCents: t.remainingCents,
@@ -101,7 +102,7 @@ const ehren = (remainingCents: number): Usage => ({
 describe('VolunteerAllowanceService', () => {
   describe('paid shift instance', () => {
     const instance = {
-      reimbursementTypeId: EHREN,
+      reimbursementTypeKey: EHREN,
       start: '2026-09-10T08:00:00Z',
       end: '2026-09-10T12:00:00Z', // 4h × 20€ = 80€
     };
@@ -146,7 +147,7 @@ describe('VolunteerAllowanceService', () => {
     it("measures against the shift's own calendar year", async () => {
       const { service, getRosterYearlyUsage } = build({
         instance: {
-          reimbursementTypeId: EHREN,
+          reimbursementTypeKey: EHREN,
           start: '2027-01-15T08:00:00Z',
           end: '2027-01-15T10:00:00Z',
         },
@@ -174,7 +175,7 @@ describe('VolunteerAllowanceService', () => {
 
   describe('unpaid shift instance', () => {
     const unpaid = {
-      reimbursementTypeId: null,
+      reimbursementTypeKey: null,
       start: '2026-09-10T08:00:00Z',
       end: '2026-09-10T12:00:00Z',
     };
@@ -256,7 +257,7 @@ describe('VolunteerAllowanceService', () => {
   it('rejects an instance from another unit', async () => {
     const { service } = build({
       instance: {
-        reimbursementTypeId: EHREN,
+        reimbursementTypeKey: EHREN,
         start: '2026-09-10T08:00:00Z',
         end: '2026-09-10T12:00:00Z',
         unit: 'other-unit',

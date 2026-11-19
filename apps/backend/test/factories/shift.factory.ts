@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../../src/accounting/enums';
 import type { Database } from '../../src/database/database.module';
 import * as schema from '../../src/database/schema';
 import { ShiftVisibility } from '../../src/shift/enums';
@@ -22,7 +23,7 @@ export type CreateShiftOptions = {
   maxVolunteers?: number | null;
   minVolunteers?: number | null;
   eventId?: string | null;
-  reimbursementTypeId?: string | null;
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 };
 
 /**
@@ -58,7 +59,7 @@ export const createShift = async (
       maxVolunteers: options.maxVolunteers ?? null,
       minVolunteers: options.minVolunteers ?? null,
       eventId: options.eventId ?? null,
-      reimbursementTypeId: options.reimbursementTypeId ?? null,
+      reimbursementTypeKey: options.reimbursementTypeKey ?? null,
       rrule,
       originalStartsAt: startsAt,
       durationMinutes,

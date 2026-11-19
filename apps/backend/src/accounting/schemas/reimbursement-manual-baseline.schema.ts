@@ -8,7 +8,11 @@ import {
 import { users } from '../../auth/schemas/auth.schema';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { organizations } from '../../organization/schemas/organization.schema';
-import { reimbursementTypes } from './reimbursement-type.schema';
+import { ReimbursementTypeKey } from '../enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from './reimbursement-type.schema';
 
 export const reimbursementManualBaselines = snakeCase.table(
   'reimbursement_manual_baselines',
@@ -22,8 +26,9 @@ export const reimbursementManualBaselines = snakeCase.table(
     volunteerId: text('volunteer_id')
       .references(() => users.id, { onDelete: 'cascade' })
       .notNull(),
-    reimbursementTypeId: uuid('reimbursement_type_id')
-      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
     year: integer('year').notNull(),
     amountCents: integer('amount_cents').notNull(),
@@ -36,7 +41,7 @@ export const reimbursementManualBaselines = snakeCase.table(
     uniqueIndex('uq_reimbursement_manual_baselines_org_volunteer_type_year').on(
       table.organizationId,
       table.volunteerId,
-      table.reimbursementTypeId,
+      table.reimbursementTypeKey,
       table.year,
     ),
   ],

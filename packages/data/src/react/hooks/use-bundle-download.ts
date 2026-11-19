@@ -1,13 +1,14 @@
 'use client';
 import { AccountingRepository, type RawBundleDownloadStatus } from '@repo/data';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { invalidateInvoiceQueries } from './use-invoices';
 import { useMutation } from './use-mutation';
 
 export function useBundleDownloadStatus(
   volunteerId?: string,
-  reimbursementTypeId?: string,
+  reimbursementTypeKey?: ReimbursementTypeKey,
 ) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
@@ -17,15 +18,17 @@ export function useBundleDownloadStatus(
       'accounting',
       'bundle-download-status',
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
     ],
-    queryFn: () =>
-      repository.findBundleDownloadStatus(
-        volunteerId ?? '',
-        reimbursementTypeId ?? '',
-      ),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findBundleDownloadStatus(
+            volunteerId ?? '',
+            reimbursementTypeKey,
+          )
+      : skipToken,
     staleTime: 30 * 1000,
-    enabled: !!volunteerId && !!reimbursementTypeId,
+    enabled: !!volunteerId && !!reimbursementTypeKey,
   });
 }
 
@@ -37,25 +40,25 @@ export function useRecordBundleDownload() {
   return useMutation({
     mutationFn: ({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       invoiceIds,
     }: {
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       invoiceIds?: string[];
     }) =>
       repository.recordBundleDownload(
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         invoiceIds,
       ),
-    onSuccess: (_, { volunteerId, reimbursementTypeId, invoiceIds }) => {
+    onSuccess: (_, { volunteerId, reimbursementTypeKey, invoiceIds }) => {
       queryClient.invalidateQueries({
         queryKey: [
           'accounting',
           'bundle-download-status',
           volunteerId,
-          reimbursementTypeId,
+          reimbursementTypeKey,
         ],
       });
       if (invoiceIds?.length) {

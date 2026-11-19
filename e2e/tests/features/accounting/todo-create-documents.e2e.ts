@@ -108,8 +108,8 @@ test.describe('To do — create agreement / timesheet tasks', () => {
     }
 
     const types = await graphql<{
-      reimbursementTypes: { id: string; key: string }[];
-    }>(page, orgUnitId, `query { reimbursementTypes { id key } }`);
+      reimbursementTypes: { key: string }[];
+    }>(page, orgUnitId, `query { reimbursementTypes { key } }`);
     const ehrenamt = types.reimbursementTypes.find(
       (type) => type.key === 'EHRENAMT',
     );
@@ -131,7 +131,7 @@ test.describe('To do — create agreement / timesheet tasks', () => {
           volunteerId: volunteer.id,
           startedAt,
           endedAt,
-          reimbursementTypeId: ehrenamt.id,
+          reimbursementTypeKey: ehrenamt.key,
           notes: `e2e todo-create ${stamp}`,
         },
       },

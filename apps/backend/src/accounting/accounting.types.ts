@@ -1,11 +1,16 @@
 import { InferResultType } from '../database/typeutil';
 import type { RateProvenanceKind } from './enums';
-import { ContractStatus, InvoiceStatus, SigneeType } from './enums';
+import {
+  ContractStatus,
+  InvoiceStatus,
+  ReimbursementTypeKey,
+  SigneeType,
+} from './enums';
 import type { ReimbursementTypeEntity } from './schemas/reimbursement-type.schema';
 
 export type ContractFilter = {
   volunteerId?: string;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   status?: ContractStatus;
   periodStart?: Date;
   periodEnd?: Date;
@@ -16,7 +21,7 @@ export type ContractFilter = {
 
 export type InvoiceFilter = {
   volunteerId?: string;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   status?: InvoiceStatus;
   periodStart?: Date;
   periodEnd?: Date;
@@ -44,7 +49,7 @@ export type EffectiveRate = {
  */
 export type EligibleTimesheetVolunteer = {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   periodStart: Date;
   periodEnd: Date;
   eligibleHours: number;

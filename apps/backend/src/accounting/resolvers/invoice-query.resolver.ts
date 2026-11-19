@@ -13,7 +13,7 @@ import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
 import type { InvoiceFilter } from '../accounting.types';
 import { isIssuedDocument } from '../document-visibility';
-import { DocumentKind, InvoiceStatus } from '../enums';
+import { DocumentKind, InvoiceStatus, ReimbursementTypeKey } from '../enums';
 import { InvoiceFilterInput } from '../inputs/invoice-filter.input';
 import { InvoiceMapper, ReimbursementTypeMapper } from '../mappers';
 import { Invoice } from '../models/invoice.model';
@@ -31,7 +31,7 @@ function toInvoiceFilter(
 ): InvoiceFilter {
   return {
     volunteerId: filter?.volunteerId ?? undefined,
-    reimbursementTypeId: filter?.reimbursementTypeId ?? undefined,
+    reimbursementTypeKey: filter?.reimbursementTypeKey ?? undefined,
     status: filter?.status ?? undefined,
     periodStart: filter?.periodStart ?? undefined,
     periodEnd: filter?.periodEnd ?? undefined,
@@ -135,8 +135,8 @@ export class InvoiceQueryResolver {
   @Query(() => [TimeEntry])
   async eligibleTimeEntriesForInvoice(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('periodStart', { type: () => Date, nullable: true })
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
@@ -147,7 +147,7 @@ export class InvoiceQueryResolver {
     await this.assertCanAccessVolunteer(volunteerId, session, context);
     const entries = await this.invoiceService.findEligibleTimeEntries(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       context.organizationUnitId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
@@ -158,8 +158,8 @@ export class InvoiceQueryResolver {
   @Query(() => [TimeEntry])
   async timeEntriesAwaitingReviewForInvoice(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('periodStart', { type: () => Date, nullable: true })
     periodStart: Date | null | undefined,
     @Args('periodEnd', { type: () => Date, nullable: true })
@@ -170,7 +170,7 @@ export class InvoiceQueryResolver {
     await this.assertCanAccessVolunteer(volunteerId, session, context);
     const entries = await this.invoiceService.findTimeEntriesAwaitingReview(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       context.organizationUnitId,
       periodStart ?? undefined,
       periodEnd ?? undefined,
@@ -208,16 +208,16 @@ export class InvoiceQueryResolver {
     ]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const reimbursementTypeById = new Map(
-      reimbursementTypes.map((type) => [type.id, type]),
+      reimbursementTypes.map((type) => [type.key, type]),
     );
     const rateCentsByTypeId = new Map(
-      rates.map((rate) => [rate.reimbursementType.id, rate.hourlyRateCents]),
+      rates.map((rate) => [rate.reimbursementType.key, rate.hourlyRateCents]),
     );
 
     return rows.map((row) => {
       const user = userById.get(row.volunteerId);
       const reimbursementType = reimbursementTypeById.get(
-        row.reimbursementTypeId,
+        row.reimbursementTypeKey,
       );
       if (!user) {
         throw new NotFoundGraphQLError(
@@ -226,11 +226,12 @@ export class InvoiceQueryResolver {
       }
       if (!reimbursementType) {
         throw new NotFoundGraphQLError(
-          `Reimbursement type with ID ${row.reimbursementTypeId} not found`,
+          `Reimbursement type with ID ${row.reimbursementTypeKey} not found`,
         );
       }
       return {
         volunteer: this.userMapper.toModelOrThrow(user),
+        reimbursementTypeKey: row.reimbursementTypeKey,
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
         periodStart: row.periodStart,
@@ -240,7 +241,7 @@ export class InvoiceQueryResolver {
         // issued document computes its own total at creation.
         estimatedAmountCents: Math.round(
           row.eligibleHours *
-            (rateCentsByTypeId.get(row.reimbursementTypeId) ??
+            (rateCentsByTypeId.get(row.reimbursementTypeKey) ??
               reimbursementType.platformDefaultRateCents),
         ),
         hasUncoveredHours: row.hasUncoveredHours,
@@ -273,13 +274,13 @@ export class InvoiceQueryResolver {
     ]);
     const userById = new Map(users.map((user) => [user.id, user]));
     const reimbursementTypeById = new Map(
-      reimbursementTypes.map((type) => [type.id, type]),
+      reimbursementTypes.map((type) => [type.key, type]),
     );
 
     return rows.map((row) => {
       const user = userById.get(row.volunteerId);
       const reimbursementType = reimbursementTypeById.get(
-        row.reimbursementTypeId,
+        row.reimbursementTypeKey,
       );
       if (!user) {
         throw new NotFoundGraphQLError(
@@ -288,11 +289,12 @@ export class InvoiceQueryResolver {
       }
       if (!reimbursementType) {
         throw new NotFoundGraphQLError(
-          `Reimbursement type with ID ${row.reimbursementTypeId} not found`,
+          `Reimbursement type with ID ${row.reimbursementTypeKey} not found`,
         );
       }
       return {
         volunteer: this.userMapper.toModelOrThrow(user),
+        reimbursementTypeKey: row.reimbursementTypeKey,
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
         periodStart: row.periodStart,

@@ -37,7 +37,7 @@ export default async function UpdateShiftPage({
         recurrenceEndsAt: shift.recurrenceEndsAt,
         minVolunteers: shift.minVolunteers ?? undefined,
         maxVolunteers: shift.maxVolunteers ?? undefined,
-        reimbursementTypeId: shift.reimbursementTypeId ?? undefined,
+        reimbursementTypeKey: shift.reimbursementTypeKey ?? undefined,
       }}
     />
   );

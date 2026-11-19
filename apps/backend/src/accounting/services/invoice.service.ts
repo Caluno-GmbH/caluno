@@ -40,6 +40,7 @@ import {
   DocumentKind,
   DocumentStatusChange,
   InvoiceStatus,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../enums';
 import type { CreateInvoiceInput } from '../inputs/create-invoice.input';
@@ -135,9 +136,9 @@ export class InvoiceService {
     if (filter.volunteerId) {
       conditions.push(eq(schema.invoices.volunteerId, filter.volunteerId));
     }
-    if (filter.reimbursementTypeId) {
+    if (filter.reimbursementTypeKey) {
       conditions.push(
-        eq(schema.invoices.reimbursementTypeId, filter.reimbursementTypeId),
+        eq(schema.invoices.reimbursementTypeKey, filter.reimbursementTypeKey),
       );
     }
     if (filter.status) {
@@ -176,7 +177,7 @@ export class InvoiceService {
    */
   async findEligibleTimeEntries(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
@@ -184,7 +185,7 @@ export class InvoiceService {
     return this.findUnclaimedTimeEntries(
       TimeEntryStatus.CLOSED,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       organizationUnitId,
       periodStart,
       periodEnd,
@@ -197,7 +198,7 @@ export class InvoiceService {
    */
   async findTimeEntriesAwaitingReview(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
@@ -205,7 +206,7 @@ export class InvoiceService {
     return this.findUnclaimedTimeEntries(
       TimeEntryStatus.AUTO_CLOSED,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       organizationUnitId,
       periodStart,
       periodEnd,
@@ -215,14 +216,14 @@ export class InvoiceService {
   private async findUnclaimedTimeEntries(
     status: TimeEntryStatus,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     organizationUnitId: string,
     periodStart?: Date,
     periodEnd?: Date,
   ): Promise<TimeEntryEntity[]> {
     const conditions = [
       eq(schema.timeEntries.volunteerId, volunteerId),
-      eq(schema.timeEntries.reimbursementTypeId, reimbursementTypeId),
+      eq(schema.timeEntries.reimbursementTypeKey, reimbursementTypeKey),
       // A timesheet is issued in one unit; hours from a sibling unit must
       // never appear on it (or be claimable into it).
       eq(schema.timeEntries.organizationUnitId, organizationUnitId),
@@ -270,7 +271,7 @@ export class InvoiceService {
     const conditions = [
       eq(schema.timeEntries.organizationUnitId, organizationUnitId),
       timeEntryStatusCondition(TimeEntryStatus.CLOSED),
-      isNotNull(schema.timeEntries.reimbursementTypeId),
+      isNotNull(schema.timeEntries.reimbursementTypeKey),
       isNull(schema.invoiceTimeEntries.id),
     ];
     if (periodStart) {
@@ -301,8 +302,8 @@ export class InvoiceService {
           entry,
         ): entry is typeof entry & {
           endedAt: Date;
-          reimbursementTypeId: string;
-        } => entry.endedAt !== null && entry.reimbursementTypeId !== null,
+          reimbursementTypeKey: ReimbursementTypeKey;
+        } => entry.endedAt !== null && entry.reimbursementTypeKey !== null,
       );
 
     // One lookup for every entry of the result. "Cover" is any non-declined
@@ -341,7 +342,7 @@ export class InvoiceService {
    * timesheet candidates to the header org unit.
    *
    * "Paid" = the instance's effective reimbursement type is non-null
-   * (`shiftInstances.overrideReimbursementTypeId ?? shifts.reimbursementTypeId`).
+   * (`shiftInstances.overrideReimbursementTypeKey ?? shifts.reimbursementTypeKey`).
    * Returns one row per (volunteer, reimbursement type), excluding any pair
    * that already has a non-declined contract or an invoice in this unit
    * overlapping the requested year — those are already surfaced by the
@@ -353,7 +354,7 @@ export class InvoiceService {
   ): Promise<
     Array<{
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       periodStart: Date;
       periodEnd: Date;
     }>
@@ -363,9 +364,9 @@ export class InvoiceService {
     const rows = await this.db
       .select({
         volunteerId: schema.shiftInstanceInvites.userId,
-        overrideReimbursementTypeId:
-          schema.shiftInstances.overrideReimbursementTypeId,
-        shiftReimbursementTypeId: schema.shifts.reimbursementTypeId,
+        overrideReimbursementTypeKey:
+          schema.shiftInstances.overrideReimbursementTypeKey,
+        shiftReimbursementTypeKey: schema.shifts.reimbursementTypeKey,
         actualStartsAt: schema.shiftInstances.actualStartsAt,
       })
       .from(schema.shiftInstanceInvites)
@@ -391,19 +392,19 @@ export class InvoiceService {
       string,
       {
         volunteerId: string;
-        reimbursementTypeId: string;
+        reimbursementTypeKey: ReimbursementTypeKey;
         /** One instant per paid shift the volunteer joined. */
         dates: Date[];
       }
     >();
     for (const row of rows) {
-      const reimbursementTypeId =
-        row.overrideReimbursementTypeId ?? row.shiftReimbursementTypeId;
-      if (!reimbursementTypeId) continue;
-      const key = `${row.volunteerId}:${reimbursementTypeId}`;
+      const reimbursementTypeKey =
+        row.overrideReimbursementTypeKey ?? row.shiftReimbursementTypeKey;
+      if (!reimbursementTypeKey) continue;
+      const key = `${row.volunteerId}:${reimbursementTypeKey}`;
       const entry = signups.get(key) ?? {
         volunteerId: row.volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         dates: [],
       };
       if (row.actualStartsAt) entry.dates.push(row.actualStartsAt);
@@ -415,15 +416,15 @@ export class InvoiceService {
     const volunteerIds = [
       ...new Set(entries.map((entry) => entry.volunteerId)),
     ];
-    const reimbursementTypeIds = [
-      ...new Set(entries.map((entry) => entry.reimbursementTypeId)),
+    const reimbursementTypeKeys = [
+      ...new Set(entries.map((entry) => entry.reimbursementTypeKey)),
     ];
 
     const [contracts, invoices] = await Promise.all([
       this.db.query.contracts.findMany({
         where: {
           volunteerId: { in: volunteerIds },
-          reimbursementTypeId: { in: reimbursementTypeIds },
+          reimbursementTypeKey: { in: reimbursementTypeKeys },
           organizationUnitId,
           // An open (non-declined) contract is this pair's contract *task* —
           // create it if DRAFT, countersign it otherwise. That is distinct from
@@ -435,7 +436,7 @@ export class InvoiceService {
         },
         columns: {
           volunteerId: true,
-          reimbursementTypeId: true,
+          reimbursementTypeKey: true,
           periodStart: true,
           periodEnd: true,
         },
@@ -443,14 +444,14 @@ export class InvoiceService {
       this.db.query.invoices.findMany({
         where: {
           volunteerId: { in: volunteerIds },
-          reimbursementTypeId: { in: reimbursementTypeIds },
+          reimbursementTypeKey: { in: reimbursementTypeKeys },
           organizationUnitId,
           periodStart: { lt: yearEnd },
           periodEnd: { gt: yearStart },
         },
         columns: {
           volunteerId: true,
-          reimbursementTypeId: true,
+          reimbursementTypeKey: true,
           periodStart: true,
           periodEnd: true,
         },
@@ -467,12 +468,12 @@ export class InvoiceService {
       const contractsForPair = contracts.filter(
         (c) =>
           c.volunteerId === entry.volunteerId &&
-          c.reimbursementTypeId === entry.reimbursementTypeId,
+          c.reimbursementTypeKey === entry.reimbursementTypeKey,
       );
       const invoicesForPair = invoices.filter(
         (i) =>
           i.volunteerId === entry.volunteerId &&
-          i.reimbursementTypeId === entry.reimbursementTypeId,
+          i.reimbursementTypeKey === entry.reimbursementTypeKey,
       );
       return (
         contractsForPair.some((c) =>
@@ -495,7 +496,7 @@ export class InvoiceService {
       return [
         {
           volunteerId: entry.volunteerId,
-          reimbursementTypeId: entry.reimbursementTypeId,
+          reimbursementTypeKey: entry.reimbursementTypeKey,
           periodStart: month.start,
           periodEnd: month.end,
         },
@@ -540,7 +541,7 @@ export class InvoiceService {
         targets.push({
           key,
           volunteerId: invoice.volunteerId,
-          reimbursementTypeId: invoice.reimbursementTypeId,
+          reimbursementTypeKey: invoice.reimbursementTypeKey,
           // The invoice's unit is the document's scope and wins.
           organizationUnitId: invoice.organizationUnitId,
           at: entry.startedAt,
@@ -596,7 +597,7 @@ export class InvoiceService {
       (await this.organizationService.requireRootUnit(organizationId)).id;
     const eligibleEntries = await this.findEligibleTimeEntries(
       input.volunteerId,
-      input.reimbursementTypeId,
+      input.reimbursementTypeKey,
       organizationUnitId,
       input.periodStart,
       input.periodEnd,
@@ -628,7 +629,7 @@ export class InvoiceService {
       (await this.reimbursementRateService.getEffectiveRateCents(
         organizationId,
         organizationUnitId,
-        input.reimbursementTypeId,
+        input.reimbursementTypeKey,
       ));
     if (!Number.isInteger(rateCents) || rateCents <= 0) {
       throw new BadRequestGraphQLError(
@@ -639,7 +640,7 @@ export class InvoiceService {
 
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      input.reimbursementTypeId,
+      input.reimbursementTypeKey,
       DocumentKind.INVOICE,
       organizationUnitId,
     );
@@ -699,7 +700,7 @@ export class InvoiceService {
         {
           organizationUnitId,
           volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           anchorDate: entry.startedAt,
         },
         actorUserId,
@@ -738,7 +739,7 @@ export class InvoiceService {
         .values({
           documentTemplateId: template.id,
           volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           organizationUnitId,
           invoiceStatus: this.nextInvoiceStatus(orderedSignees[0].signeeType),
           periodStart: input.periodStart,
@@ -801,7 +802,7 @@ export class InvoiceService {
           .values({
             organizationId,
             volunteerId: input.volunteerId,
-            reimbursementTypeId: input.reimbursementTypeId,
+            reimbursementTypeKey: input.reimbursementTypeKey,
             year: documentNumberYear,
             amountCents: input.manualBaselineCents,
             updatedByUserId: actorUserId,
@@ -810,7 +811,7 @@ export class InvoiceService {
             target: [
               schema.reimbursementManualBaselines.organizationId,
               schema.reimbursementManualBaselines.volunteerId,
-              schema.reimbursementManualBaselines.reimbursementTypeId,
+              schema.reimbursementManualBaselines.reimbursementTypeKey,
               schema.reimbursementManualBaselines.year,
             ],
             set: {
