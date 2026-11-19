@@ -1,1 +1,0 @@
-CREATE INDEX "idx_contracts_volunteer_type_unit" ON "contracts" ("volunteer_id","reimbursement_type_id","organization_unit_id");

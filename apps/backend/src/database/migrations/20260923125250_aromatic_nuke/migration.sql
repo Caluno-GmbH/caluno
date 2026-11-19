@@ -1,1 +1,0 @@
-ALTER TABLE "shift_instances" ADD COLUMN "override_join_requires_approval" boolean;

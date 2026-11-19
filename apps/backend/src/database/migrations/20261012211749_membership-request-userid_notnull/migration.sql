@@ -1,1 +1,0 @@
-ALTER TABLE "membership_requests" ALTER COLUMN "user_id" SET NOT NULL;

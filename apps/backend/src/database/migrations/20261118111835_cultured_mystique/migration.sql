@@ -1,1 +1,0 @@
-ALTER TABLE "export_logs" ADD COLUMN "included_sub_units" boolean DEFAULT false NOT NULL;
