@@ -2689,6 +2689,8 @@
         "selectedCount": "{count, plural, =1 {1 document selected} other {{count} documents selected}}",
         "selectAll": "Select all",
         "selectRow": "Select row",
+        "deselectAll": "Deselect all",
+        "noActions": "No available actions",
         "countersignContracts": "{count, plural, =1 {Countersign 1 contract} other {Countersign {count} contracts}}",
         "countersignTimesheets": "{count, plural, =1 {Countersign 1 timesheet} other {Countersign {count} timesheets}}",
         "sendBundles": "{count, plural, =1 {Send 1 bundle} other {Send {count} bundles}}",

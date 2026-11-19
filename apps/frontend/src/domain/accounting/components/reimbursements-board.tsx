@@ -1135,6 +1135,7 @@ export function ReimbursementsBoard({
         onCountersignContracts={() => void handleMassCountersignContracts()}
         onCountersignTimesheets={() => void handleMassCountersignTimesheets()}
         onSendBundles={() => void handleMassBundles()}
+        onDeselectAll={() => toggleAll(false)}
       />
 
       <BundleBatchConfirmDialog

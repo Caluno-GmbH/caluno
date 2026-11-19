@@ -2689,6 +2689,8 @@
         "selectedCount": "{count, plural, =1 {1 Dokument ausgewählt} other {{count} Dokumente ausgewählt}}",
         "selectAll": "Alle auswählen",
         "selectRow": "Zeile auswählen",
+        "deselectAll": "Auswahl aufheben",
+        "noActions": "Keine verfügbaren Aktionen",
         "countersignContracts": "{count, plural, =1 {1 Vereinbarung gegenzeichnen} other {{count} Vereinbarungen gegenzeichnen}}",
         "countersignTimesheets": "{count, plural, =1 {1 Stundennachweis gegenzeichnen} other {{count} Stundennachweise gegenzeichnen}}",
         "sendBundles": "{count, plural, =1 {1 Paket senden} other {{count} Pakete senden}}",
