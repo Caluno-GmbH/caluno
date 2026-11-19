@@ -3,6 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui';
 import { useTranslations } from 'next-intl';
 import { useQueryParamTab } from '@/hooks/use-query-param-tab';
+import { DeliverySettingsCard } from './delivery-settings-card';
 import { RatesSectionCard } from './rates-section-card';
 import { TemplateListingPage } from './template/listing-page';
 
@@ -12,7 +13,7 @@ interface AccountingSettingsTabsProps {
   builderBasePath?: string;
 }
 
-const TAB_VALUES = ['rates', 'templates'] as const;
+const TAB_VALUES = ['rates', 'templates', 'delivery'] as const;
 
 export function AccountingSettingsTabs({
   orgUId,
@@ -33,6 +34,7 @@ export function AccountingSettingsTabs({
       <TabsList>
         <TabsTrigger value="rates">{tTabs('rates')}</TabsTrigger>
         <TabsTrigger value="templates">{tTabs('templates')}</TabsTrigger>
+        <TabsTrigger value="delivery">{tTabs('delivery')}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="rates" className="mt-6">
@@ -52,6 +54,13 @@ export function AccountingSettingsTabs({
             builderBasePath={builderBasePath}
           />
         </div>
+      </TabsContent>
+
+      <TabsContent value="delivery" className="mt-6">
+        <DeliverySettingsCard
+          canEdit={canEditRates}
+          organizationUnitId={orgUId}
+        />
       </TabsContent>
     </Tabs>
   );

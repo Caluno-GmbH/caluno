@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
   ContractStatus,
   DocumentKind,
+  EmailDeliveryStatus,
   InvoiceStatus,
   PermissionKey,
   ReimbursementTypeKey,
@@ -33,22 +34,6 @@ import {
 import { STATUS_META } from './board-status';
 import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 
-const ehrenamtType = {
-  id: 'rt-ehrenamt',
-  key: ReimbursementTypeKey.Ehrenamt,
-  legalReference: '',
-  yearlyLimitCents: 84_000,
-  platformDefaultRateCents: 450,
-};
-
-const _uebungsleiterType = {
-  id: 'rt-uebungsleiter',
-  key: ReimbursementTypeKey.Uebungsleiter,
-  legalReference: '',
-  yearlyLimitCents: 300_000,
-  platformDefaultRateCents: 1_200,
-};
-
 function makeContract(
   overrides: Partial<Parameters<typeof mapContractToBoardDoc>[0]> & {
     contractStatus?: ContractStatus;
@@ -72,11 +57,11 @@ function makeContract(
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
-    reimbursementType: ehrenamtType,
+    reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     documentTemplate: {
       id: 'dt-1',
       kind: DocumentKind.Contract,
-      reimbursementType: ehrenamtType,
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     },
     signatures: [],
     statusChanges: [],
@@ -105,14 +90,15 @@ function makeInvoice(
     downloadUrl: null,
     missingProfileFields: [],
     missingOrgProfileFields: [],
+    lastEmailDelivery: null,
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
-    reimbursementType: ehrenamtType,
+    reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     documentTemplate: {
       id: 'dt-2',
       kind: DocumentKind.Invoice,
-      reimbursementType: ehrenamtType,
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     },
     invoiceTimeEntries: [],
     signatures: [],
@@ -374,6 +360,53 @@ describe('mapInvoiceToBoardDoc', () => {
     expect(doc.isNonCompliant).toBe(false);
   });
 
+  it('carries who last emailed the timesheet to accounting, and when', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: EmailDeliveryStatus.Sent,
+          deliveredByUser: { id: 'u-1', name: 'Julia Vorstand' },
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sentAt).toEqual(new Date('2026-08-03T10:00:00.000Z'));
+    expect(doc.sentBy).toBe('Julia Vorstand');
+    expect(doc.sendState).toBe('sent');
+  });
+
+  it('marks a timesheet whose email is still queued as sending', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: EmailDeliveryStatus.Pending,
+          deliveredByUser: null,
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sendState).toBe('pending');
+  });
+
+  it('marks a timesheet whose last email failed', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastEmailDelivery: {
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: EmailDeliveryStatus.Failed,
+          deliveredByUser: null,
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.sendState).toBe('failed');
+  });
+
   it('maps an invoice to a board document', () => {
     const doc = mapInvoiceToBoardDoc(makeInvoice({}), 'ehrenamt', 'de');
     expect(doc.status).toBe('timesheet-signing-vol');
@@ -465,7 +498,7 @@ describe('buildBoardVolunteers', () => {
         usedCents: 0,
         limitCents: 84_000,
         remainingCents: 84_000,
-        reimbursementType: ehrenamtType,
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
       },
     ],
   };
@@ -490,7 +523,7 @@ describe('buildBoardVolunteers', () => {
     const timesheetsToCreate = [
       {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         // July and August 2026 as Berlin calendar months.
         periodStart: '2026-06-30T22:00:00.000Z',
         periodEnd: '2026-07-31T22:00:00.000Z',
@@ -502,7 +535,7 @@ describe('buildBoardVolunteers', () => {
       },
       {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         periodStart: '2026-07-31T22:00:00.000Z',
         periodEnd: '2026-08-31T22:00:00.000Z',
         eligibleHours: 1,
@@ -627,7 +660,7 @@ describe('buildBoardVolunteers', () => {
         timesheetsToCreate: [
           {
             volunteerId: 'v-1',
-            reimbursementTypeId: 'rt-ehrenamt',
+            reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             // September 2026 as Berlin bounds.
             periodStart: '2026-08-31T22:00:00.000Z',
             periodEnd: '2026-09-30T22:00:00.000Z',
@@ -666,7 +699,7 @@ describe('buildBoardVolunteers', () => {
         timesheetsToCreate: [
           {
             volunteerId: 'v-1',
-            reimbursementTypeId: 'rt-ehrenamt',
+            reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             periodStart: '2026-07-31T22:00:00.000Z',
             periodEnd: '2026-08-31T22:00:00.000Z',
             eligibleHours: 5,
@@ -690,7 +723,7 @@ describe('buildBoardVolunteers', () => {
     it('shows a timesheet alongside a covering DRAFT contract', () => {
       const september = {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         // September 2026 as Berlin bounds.
         periodStart: '2026-08-31T22:00:00.000Z',
         periodEnd: '2026-09-30T22:00:00.000Z',
@@ -730,7 +763,7 @@ describe('buildBoardVolunteers', () => {
     it('shows a timesheet alongside a covering awaiting-signature contract', () => {
       const september = {
         volunteerId: 'v-1',
-        reimbursementTypeId: 'rt-ehrenamt',
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
         periodStart: '2026-08-31T22:00:00.000Z',
         periodEnd: '2026-09-30T22:00:00.000Z',
         eligibleHours: 5,
@@ -777,7 +810,7 @@ describe('buildBoardVolunteers', () => {
       },
     ) => ({
       volunteerId: 'v-1',
-      reimbursementTypeId: 'rt-ehrenamt',
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
       periodStart,
       periodEnd,
       eligibleHours: 3,
@@ -985,7 +1018,9 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
@@ -999,7 +1034,9 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs).toHaveLength(1);
@@ -1019,7 +1056,9 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
     });
     const docs = volunteers[0]?.documents ?? [];
     expect(docs.some((d) => d.status === 'contract-generate')).toBe(false);
@@ -1036,7 +1075,7 @@ describe('buildBoardVolunteers', () => {
       paidShiftSignups: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           // September 2026 as Berlin bounds.
           periodStart: '2026-08-31T22:00:00.000Z',
           periodEnd: '2026-09-30T22:00:00.000Z',
@@ -1063,7 +1102,7 @@ describe('buildBoardVolunteers', () => {
       paidShiftSignups: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           // September 2026 as Berlin bounds.
           periodStart: '2026-08-31T22:00:00.000Z',
           periodEnd: '2026-09-30T22:00:00.000Z',
@@ -1094,7 +1133,7 @@ describe('buildBoardVolunteers', () => {
         paidShiftSignups: [
           {
             volunteerId: 'v-1',
-            reimbursementTypeId: 'rt-ehrenamt',
+            reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             // March 2026 as Berlin bounds.
             periodStart: '2026-02-28T23:00:00.000Z',
             periodEnd: '2026-03-31T22:00:00.000Z',
@@ -1119,11 +1158,13 @@ describe('buildBoardVolunteers', () => {
       invoices: [],
       year: 2026,
       locale: 'de',
-      eligibleHoursVolunteers: new Map([['v-1', new Set(['rt-ehrenamt'])]]),
+      eligibleHoursVolunteers: new Map([
+        ['v-1', new Set([ReimbursementTypeKey.Ehrenamt])],
+      ]),
       paidShiftSignups: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           // September 2026 as Berlin bounds.
           periodStart: '2026-08-31T22:00:00.000Z',
           periodEnd: '2026-09-30T22:00:00.000Z',
@@ -1146,7 +1187,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 0,
               limitCents: 84_000,
               remainingCents: 84_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1177,7 +1218,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 12_000,
               limitCents: 84_000,
               remainingCents: 72_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1219,7 +1260,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 12_000,
               limitCents: 84_000,
               remainingCents: 72_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1266,7 +1307,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 21_300,
               limitCents: 84_000,
               remainingCents: 62_700,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1313,7 +1354,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 110_000,
               limitCents: 100_000,
               remainingCents: -10_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1345,7 +1386,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 90_000,
               limitCents: 100_000,
               remainingCents: 10_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1377,7 +1418,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 90_000,
               limitCents: 100_000,
               remainingCents: 10_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1409,7 +1450,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 80_000,
               limitCents: 84_000,
               remainingCents: 4_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1423,7 +1464,7 @@ describe('buildBoardVolunteers', () => {
       timesheetsToCreate: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 12,
@@ -1451,7 +1492,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 80_000,
               limitCents: 84_000,
               remainingCents: 4_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1465,7 +1506,7 @@ describe('buildBoardVolunteers', () => {
       timesheetsToCreate: [
         {
           volunteerId: 'v-1',
-          reimbursementTypeId: 'rt-ehrenamt',
+          reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
           periodStart: '2026-06-30T22:00:00.000Z',
           periodEnd: '2026-07-31T22:00:00.000Z',
           eligibleHours: 4,
@@ -1494,7 +1535,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 21_300,
               limitCents: 84_000,
               remainingCents: 62_700,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },

@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, mock } from 'bun:test';
-import { and, eq, ilike, not } from 'drizzle-orm';
+import { and, eq, ilike, not, or } from 'drizzle-orm';
 import * as schema from '../../database/schema';
 import {
   buildVerifiedUserSlackMessage,
+  CALUNO_BARE_INTERNAL_EMAIL_LIKE,
+  CALUNO_INTERNAL_EMAIL_LIKE,
   CALUNO_ORG_EMAIL_LIKE,
   SLACK_REPORTING_WEBHOOK_URL_ENV,
   VerifiedUserSlackReportService,
@@ -52,7 +54,7 @@ describe('VerifiedUserSlackReportService', () => {
     return { service, getCapturedWhere: () => capturedWhere };
   }
 
-  it('counts only verified users outside *@caluno.org', async () => {
+  it('counts only verified users outside *@caluno.org, *@*.internal, and *@internal', async () => {
     const { service, getCapturedWhere } = build({
       count: 7,
       webhookUrl: undefined,
@@ -68,6 +70,12 @@ describe('VerifiedUserSlackReportService', () => {
       and(
         eq(schema.users.emailVerified, true),
         not(ilike(schema.users.email, CALUNO_ORG_EMAIL_LIKE)),
+        not(
+          or(
+            ilike(schema.users.email, CALUNO_INTERNAL_EMAIL_LIKE),
+            ilike(schema.users.email, CALUNO_BARE_INTERNAL_EMAIL_LIKE),
+          ),
+        ),
       ),
     );
   });

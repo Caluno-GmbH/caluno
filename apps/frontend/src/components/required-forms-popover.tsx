@@ -2,7 +2,7 @@
 
 import type { RequiredForm } from '@repo/data/react';
 import { Button, Popover, PopoverContent, PopoverTrigger } from '@repo/ui';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   RequiredFormsAddExisting,
   RequiredFormsDedupHint,
@@ -41,6 +41,17 @@ export function RequiredFormsPopover({
 }: RequiredFormsPopoverProps) {
   const [open, setOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // `disabled` comes from an async permission check that isn't resolved yet
+  // on first render. Trusting it before mount would make this render
+  // diverge from the server-rendered HTML (hydration mismatch), so stay
+  // fail-safe disabled until the real value is available.
+  const effectiveDisabled = mounted ? disabled : true;
 
   const effectiveEnabled = requiredForms.length > 0;
 
@@ -69,16 +80,6 @@ export function RequiredFormsPopover({
     }
   };
 
-  if (disabled) {
-    return (
-      <Button variant="outline" size={size} disabled>
-        {effectiveEnabled
-          ? t('pill.required', { count: requiredForms.length })
-          : t('pill.none')}
-      </Button>
-    );
-  }
-
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     onOpenChange?.(nextOpen);
@@ -87,7 +88,7 @@ export function RequiredFormsPopover({
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size={size}>
+        <Button variant="outline" size={size} disabled={effectiveDisabled}>
           <span
             className={`inline-flex h-2 w-2 shrink-0 rounded-full ${effectiveEnabled ? 'bg-green-500' : 'bg-muted-foreground'}`}
           />

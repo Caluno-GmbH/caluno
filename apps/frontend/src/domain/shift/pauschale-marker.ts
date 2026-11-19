@@ -5,7 +5,6 @@ import { pauschaleForReimbursementTypeKey } from '../accounting/lib/reimbursemen
 export type PauschaleMarkerKind = PauschalenType;
 
 export interface ReimbursementTypeLookup {
-  id: string;
   key: ReimbursementTypeKey;
 }
 
@@ -20,14 +19,14 @@ export interface ReimbursementTypeLookup {
  * intentionally no "unpaid" state: unpaid shifts carry no marker at all.
  */
 export function resolvePauschaleMarker(
-  reimbursementTypeId: string | null | undefined,
+  reimbursementTypeKey: ReimbursementTypeKey | null | undefined,
   types: ReimbursementTypeLookup[] | null | undefined,
 ): PauschaleMarkerKind | null {
-  if (!reimbursementTypeId || !types) {
+  if (!reimbursementTypeKey || !types) {
     return null;
   }
 
-  const match = types.find((type) => type.id === reimbursementTypeId);
+  const match = types.find((type) => type.key === reimbursementTypeKey);
   if (!match) {
     return null;
   }

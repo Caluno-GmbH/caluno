@@ -1,6 +1,18 @@
 'use client';
+import type { ReimbursementTypeKey } from '@repo/data';
 
-import { useBundleDownloadStatus, useQueryClient } from '@repo/data/react';
+import {
+  type BundleDeliveryIssue,
+  BundleDeliveryMethod,
+  DataError,
+} from '@repo/data';
+import {
+  useAccountingDeliverySettings,
+  useBundleDownloadStatus,
+  useBundleSendPreview,
+  useQueryClient,
+  useSendReimbursementBundle,
+} from '@repo/data/react';
 import {
   Button,
   cn,
@@ -11,9 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from '@repo/ui';
-import { ChevronDownIcon, FileTextIcon } from 'lucide-react';
+import { ChevronDownIcon, FileTextIcon, SendIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
@@ -31,6 +43,7 @@ import type {
   DocVolPair,
   FilterSettings,
   PauschalenLimit,
+  SendState,
 } from '../lib/board-types';
 import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
@@ -38,6 +51,7 @@ import {
   type TemplateReadinessByPauschale,
 } from '../lib/setup-status';
 import { AlertIconTooltip } from './alert-icon-tooltip';
+import { BundleSendConfirmDialog } from './bundle-send-confirm-dialog';
 import type { PauschalenType } from './doc-type-header';
 import { DocTypeHeader, getPauschaleKey } from './doc-type-header';
 import { LimitHeadroomBar } from './limit-headroom-bar';
@@ -69,46 +83,50 @@ const STATUS_SORT_ORDER: DocStatus[] = [
   'timesheet-declined',
 ];
 
-// ─── BundleDownloadButton ──────────────────────────────────────────────────────
+// ─── Bundle actions ───────────────────────────────────────────────────────────
 
-interface BundleDownloadButtonProps {
-  volunteerId: string;
-  reimbursementTypeId: string | undefined;
-  typeLabel: string;
-  readyCount: number;
-  /** The timesheets on screen, so the ZIP holds exactly those. */
-  invoiceIds: string[];
-  orgUId: string;
+interface ShownBundle {
+  issues: BundleDeliveryIssue[];
+  recipientEmail: string;
+  subject: string;
 }
 
-/**
- * Own component (not inlined in the readyTypes.map()) because it calls
- * hooks — useBundleDownloadStatus can't live inside a .map() callback
- * per rules-of-hooks.
- */
-function BundleDownloadButton({
+interface BundleButtonProps {
+  volunteerId: string;
+  reimbursementTypeKey: ReimbursementTypeKey | undefined;
+  typeLabel: string;
+  readyCount: number;
+  /** The timesheets on screen, so the bundle holds exactly those. */
+  invoiceIds: string[];
+  orgUId: string;
+  volunteerName: string;
+  lastSent?: { at: Date; by?: string; state?: SendState };
+}
+
+function useBundleDownload({
   volunteerId,
-  reimbursementTypeId,
-  typeLabel,
-  readyCount,
+  reimbursementTypeKey,
   invoiceIds,
   orgUId,
-}: BundleDownloadButtonProps) {
+  readyCount,
+}: Pick<
+  BundleButtonProps,
+  | 'volunteerId'
+  | 'reimbursementTypeKey'
+  | 'invoiceIds'
+  | 'orgUId'
+  | 'readyCount'
+>) {
   const t = useTranslations('Accounting.reimbursements');
-  const { formatDate } = useFormatting();
   const queryClient = useQueryClient();
-  const { data: status, isLoading } = useBundleDownloadStatus(
-    volunteerId,
-    reimbursementTypeId,
-  );
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const downloadBundle = async () => {
-    if (!reimbursementTypeId || isDownloading) return;
+  const download = async () => {
+    if (!reimbursementTypeKey || isDownloading) return;
     const url =
       `${API_URL}/accounting/reimbursement-bundle/download` +
       `?volunteerId=${encodeURIComponent(volunteerId)}` +
-      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}` +
+      `&reimbursementTypeKey=${encodeURIComponent(reimbursementTypeKey)}` +
       `&invoiceIds=${encodeURIComponent(invoiceIds.join(','))}`;
     setIsDownloading(true);
     try {
@@ -120,7 +138,7 @@ function BundleDownloadButton({
         toast.error(t('bundle.downloadError'));
         void reportBundleDownloadFailure(response, {
           volunteerId,
-          reimbursementTypeId,
+          reimbursementTypeKey,
         });
         return;
       }
@@ -141,11 +159,139 @@ function BundleDownloadButton({
       toast.error(t('bundle.downloadError'));
       void reportBundleDownloadFailure(error, {
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
       });
     } finally {
       setIsDownloading(false);
     }
+  };
+
+  return { download, isDownloading };
+}
+
+/** Own component (not inlined in the readyTypes.map()) because it calls hooks. */
+function BundleActionButton(props: BundleButtonProps) {
+  const t = useTranslations('Accounting.reimbursements');
+  const settingsQuery = useAccountingDeliverySettings(props.orgUId);
+  const settings = settingsQuery.data;
+
+  // Until the method is known, neither action: a download in an email unit
+  // would hand the bundle over the wrong way and mark it paid.
+  if (!settings) {
+    return (
+      <div className="flex flex-col items-end gap-1 max-w-[220px]">
+        <Button size="sm" variant="outline" className="shrink-0" disabled>
+          {settingsQuery.isError
+            ? t('bundle.settingsError')
+            : `${t('bundle.actionLabel')} · ${props.readyCount}`}
+        </Button>
+      </div>
+    );
+  }
+  // Without a resolved address an email unit falls back to downloading, so
+  // ready bundles are never stuck.
+  if (
+    settings.deliveryMethod === BundleDeliveryMethod.Email &&
+    settings.recipientEmail
+  ) {
+    return <BundleSendButton {...props} />;
+  }
+  return <BundleDownloadButton {...props} />;
+}
+
+function BundleSendButton(props: BundleButtonProps) {
+  const {
+    volunteerId,
+    reimbursementTypeKey,
+    typeLabel,
+    readyCount,
+    invoiceIds,
+    volunteerName,
+    lastSent,
+  } = props;
+  const t = useTranslations('Accounting.reimbursements');
+  const { formatDate } = useFormatting();
+  const preview = useBundleSendPreview();
+  const send = useSendReimbursementBundle();
+  const { download, isDownloading } = useBundleDownload(props);
+  const [confirm, setConfirm] = useState<ShownBundle | null>(null);
+  const isBusy = preview.isPending || send.isPending || isDownloading;
+
+  const offerDownload = () =>
+    toast.error(t('bundle.sendTooLarge'), {
+      action: {
+        label: t('bundle.downloadInstead'),
+        onClick: () => void download(),
+      },
+    });
+
+  const handleSendError = (error: unknown) => {
+    const code = error instanceof DataError ? error.options?.code : undefined;
+    if (code === 'UNPROCESSABLE_ENTITY') return offerDownload();
+    toast.error(
+      code === 'CONFLICT'
+        ? t('bundle.sendIssuesChanged')
+        : t('bundle.sendError'),
+    );
+  };
+
+  const sendBundle = async (shown: ShownBundle) => {
+    if (!reimbursementTypeKey) return;
+    try {
+      await send.mutateAsync({
+        volunteerId,
+        reimbursementTypeKey,
+        invoiceIds,
+        acknowledgedIssues: shown.issues,
+        expectedRecipientEmail: shown.recipientEmail,
+        expectedSubject: shown.subject,
+      });
+      toast.success(t('bundle.sendSuccess'));
+    } catch (error) {
+      handleSendError(error);
+    } finally {
+      setConfirm(null);
+    }
+  };
+
+  const startSend = async () => {
+    if (!reimbursementTypeKey || isBusy) return;
+    try {
+      const result = await preview.mutateAsync({
+        volunteerId,
+        reimbursementTypeKey,
+        invoiceIds,
+      });
+      if (!result.fitsInEmail) return offerDownload();
+      if (!result.recipientEmail) {
+        toast.error(t('bundle.noRecipient'));
+        return;
+      }
+      const shown = {
+        issues: result.issues,
+        recipientEmail: result.recipientEmail,
+        subject: result.subject,
+      };
+      if (shown.issues.length > 0) {
+        setConfirm(shown);
+        return;
+      }
+      await sendBundle(shown);
+    } catch (error) {
+      handleSendError(error);
+    }
+  };
+
+  const lastSentLine = () => {
+    if (!lastSent) return t('bundle.neverSent');
+    const at = formatDate(lastSent.at);
+    if (lastSent.state === 'failed') return t('bundle.lastSendFailed', { at });
+    if (lastSent.state === 'pending') return t('bundle.lastSending');
+    return t.rich('bundle.lastSent', {
+      by: lastSent.by ? abbreviateName(lastSent.by) : t('bundle.unknownUser'),
+      at,
+      name: profileName,
+    });
   };
 
   return (
@@ -154,10 +300,78 @@ function BundleDownloadButton({
         size="sm"
         variant="outline"
         className="gap-1.5 shrink-0"
-        disabled={!reimbursementTypeId || isDownloading}
+        disabled={!reimbursementTypeKey || isBusy}
         onClick={(e) => {
           e.stopPropagation();
-          downloadBundle();
+          void startSend();
+        }}
+      >
+        <SendIcon size={13} />
+        {t('bundle.sendActionLabel')} · {readyCount}
+      </Button>
+      <span
+        className={cn(
+          'text-xs text-right leading-snug',
+          lastSent?.state === 'failed' ? 'text-alert' : 'text-muted-foreground',
+        )}
+      >
+        <span className="font-medium text-card-foreground">{typeLabel}</span> ·{' '}
+        {lastSentLine()}
+      </span>
+      {/* The dialog portals out, but React events still bubble to the row. */}
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row toggling only */}
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row toggling only */}
+      <div onClick={(e) => e.stopPropagation()}>
+        <BundleSendConfirmDialog
+          open={confirm !== null}
+          volunteerName={volunteerName}
+          recipientEmail={confirm?.recipientEmail ?? ''}
+          issues={confirm?.issues ?? []}
+          isSending={send.isPending}
+          onOpenChange={(open) => {
+            if (!open && !send.isPending) setConfirm(null);
+          }}
+          onConfirm={() => confirm && void sendBundle(confirm)}
+        />
+      </div>
+    </div>
+  );
+}
+
+// Stubbed: no volunteer-profile route exists yet in this prototype — becomes
+// a real link there.
+function profileName(chunks: ReactNode) {
+  return (
+    <button
+      type="button"
+      className="text-primary hover:underline"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {chunks}
+    </button>
+  );
+}
+
+function BundleDownloadButton(props: BundleButtonProps) {
+  const { volunteerId, reimbursementTypeKey, typeLabel, readyCount } = props;
+  const t = useTranslations('Accounting.reimbursements');
+  const { formatDate } = useFormatting();
+  const { data: status, isLoading } = useBundleDownloadStatus(
+    volunteerId,
+    reimbursementTypeKey,
+  );
+  const { download, isDownloading } = useBundleDownload(props);
+
+  return (
+    <div className="flex flex-col items-end gap-1 max-w-[220px]">
+      <Button
+        size="sm"
+        variant="outline"
+        className="gap-1.5 shrink-0"
+        disabled={!reimbursementTypeKey || isDownloading}
+        onClick={(e) => {
+          e.stopPropagation();
+          void download();
         }}
       >
         <FileTextIcon size={13} />
@@ -173,17 +387,7 @@ function BundleDownloadButton({
                   ? abbreviateName(status.downloadedByUser.name)
                   : t('bundle.unknownUser'),
                 at: formatDate(new Date(status.downloadedAt)),
-                // Stubbed: no volunteer-profile route exists yet
-                // in this prototype — becomes a real link there.
-                name: (chunks) => (
-                  <button
-                    type="button"
-                    className="text-primary hover:underline"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {chunks}
-                  </button>
-                ),
+                name: profileName,
               })
             : t('bundle.neverDownloaded')}
       </span>
@@ -214,6 +418,7 @@ function VolunteerTableGroup({
 }: VolunteerTableGroupProps) {
   const t = useTranslations('Accounting.reimbursements');
   const tSections = useTranslations('Accounting.templates.sections');
+  const { formatDate } = useFormatting();
   const [isOpen, setIsOpen] = useState(true);
 
   // Ready-to-go (`nextAction: 'send'`) gets its own row set; every other
@@ -232,11 +437,22 @@ function VolunteerTableGroup({
   // into one download, since each type is its own reimbursement batch.
   const readyByType: Partial<Record<PauschalenType, number>> = {};
   const readyIdsByType: Partial<Record<PauschalenType, string[]>> = {};
+  const lastSentByType: Partial<
+    Record<PauschalenType, { at: Date; by?: string; state?: SendState }>
+  > = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
     const type = d.pauschale;
     readyByType[type] = (readyByType[type] ?? 0) + 1;
     readyIdsByType[type] = [...(readyIdsByType[type] ?? []), d.id];
+    const latest = lastSentByType[type];
+    if (d.sentAt && (!latest || d.sentAt > latest.at)) {
+      lastSentByType[type] = {
+        at: d.sentAt,
+        by: d.sentBy,
+        state: d.sendState,
+      };
+    }
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
   const TYPE_LABEL: Record<PauschalenType, string> = {
@@ -299,14 +515,18 @@ function VolunteerTableGroup({
             {readyTypes.length > 0 && (
               <div className="flex flex-col items-end gap-3">
                 {readyTypes.map((type) => (
-                  <BundleDownloadButton
+                  <BundleActionButton
                     key={type}
                     volunteerId={volunteer.id}
-                    reimbursementTypeId={volunteer.reimbursementTypeIds?.[type]}
+                    reimbursementTypeKey={
+                      volunteer.reimbursementTypeKeys?.[type]
+                    }
                     typeLabel={TYPE_LABEL[type]}
                     readyCount={readyByType[type] ?? 0}
                     invoiceIds={readyIdsByType[type] ?? []}
                     orgUId={orgUId}
+                    volunteerName={volunteer.name}
+                    lastSent={lastSentByType[type]}
                   />
                 ))}
               </div>
@@ -337,7 +557,16 @@ function VolunteerTableGroup({
           // started); timesheet-generate already has computed hours/amount.
           const rowAction = documentRowAction(doc);
           const effectivePauschale = doc.pauschale;
-          const docNonCompliant = isTimesheetNonCompliant(doc);
+          // Sent (or on its way) outranks the warnings: a faulty timesheet
+          // that went to accounting was sent on purpose. A failed send was
+          // not delivered, so its warnings stay.
+          const sendState =
+            isTimesheet && doc.sentAt ? doc.sendState : undefined;
+          const sendFailed = sendState === 'failed';
+          const sending = sendState === 'pending';
+          const sentAt = sendState === 'sent' ? doc.sentAt : undefined;
+          const docNonCompliant =
+            !sentAt && !sending && isTimesheetNonCompliant(doc);
           const createBlocked =
             actionKey === 'create' &&
             documentCreationBlockedFor(
@@ -393,6 +622,29 @@ function VolunteerTableGroup({
 
               <TableCell className="py-3 align-top text-left">
                 <div className="flex flex-col gap-1">
+                  {sendFailed && doc.sentAt && (
+                    <span className="text-sm text-alert">
+                      {t('docs.statusLabel.sendFailed', {
+                        at: formatDate(doc.sentAt),
+                      })}
+                    </span>
+                  )}
+                  {sending && (
+                    <span className="text-sm text-muted-foreground">
+                      {t('docs.statusLabel.sending')}
+                    </span>
+                  )}
+                  {sentAt && (
+                    <span className="text-sm text-muted-foreground">
+                      {t.rich('docs.statusLabel.sentBy', {
+                        by: doc.sentBy
+                          ? abbreviateName(doc.sentBy)
+                          : t('bundle.unknownUser'),
+                        at: formatDate(sentAt),
+                        name: profileName,
+                      })}
+                    </span>
+                  )}
                   {docNonCompliant && (
                     <span className="text-sm text-alert">
                       {t(
@@ -402,7 +654,7 @@ function VolunteerTableGroup({
                       )}
                     </span>
                   )}
-                  {doc.isOverCap && (
+                  {doc.isOverCap && !sentAt && !sending && (
                     <span className="text-sm text-destructive">
                       {t('docs.statusLabel.overCap' as Parameters<typeof t>[0])}
                     </span>

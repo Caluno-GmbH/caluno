@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '@repo/data';
 import z from 'zod';
 
 interface TimeEntrySchemaMessages {
@@ -22,7 +23,7 @@ export function timeEntrySchema(t: TimeEntrySchemaMessages) {
     startedAt: z.date(t.startedAtRequired),
     endedAt: z.date().nullable().optional(),
     notes: z.string().trim().optional(),
-    reimbursementTypeId: z.string().optional(),
+    reimbursementTypeKey: z.enum(ReimbursementTypeKey).optional(),
   });
 }
 
@@ -84,10 +85,10 @@ export function clientTimeEntrySchema(
           message: t.shiftInstanceRequired,
         });
       }
-      if (data.isPaidTime && !data.reimbursementTypeId) {
+      if (data.isPaidTime && !data.reimbursementTypeKey) {
         ctx.addIssue({
           code: 'custom',
-          path: ['reimbursementTypeId'],
+          path: ['reimbursementTypeKey'],
           message: t.reimbursementTypeRequired ?? 'Pauschale type is required',
         });
       }

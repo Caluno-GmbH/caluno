@@ -8,7 +8,14 @@ import {
   isNotFoundDataError,
   type UpdateDocumentTemplateInput,
 } from '@repo/data';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  queryOptions,
+  skipToken,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
@@ -37,7 +44,7 @@ export function useDocumentTemplate(id?: string) {
 
 export function useActiveDocumentTemplate(
   kind?: DocumentKind,
-  reimbursementTypeId?: string,
+  reimbursementTypeKey?: ReimbursementTypeKey,
   organizationUnitId?: string,
 ) {
   const sdk = useSdk();
@@ -48,23 +55,25 @@ export function useActiveDocumentTemplate(
       'accounting',
       'active-document-template',
       kind,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       organizationUnitId,
     ],
-    queryFn: () =>
-      repository.findActiveDocumentTemplate({
-        kind: kind as DocumentKind,
-        reimbursementTypeId: reimbursementTypeId ?? '',
-        organizationUnitId,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findActiveDocumentTemplate({
+            kind: kind as DocumentKind,
+            reimbursementTypeKey,
+            organizationUnitId,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
-    enabled: !!kind && !!reimbursementTypeId,
+    enabled: !!kind && !!reimbursementTypeKey,
   });
 }
 
 export interface TemplateSlotRef {
   kind: DocumentKind;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
 }
 
 /**
@@ -87,26 +96,29 @@ function resolvedTemplateQuery(
   slot: TemplateSlotRef,
   organizationUnitId: string,
 ) {
-  return {
+  const { reimbursementTypeKey } = slot;
+  return queryOptions({
     queryKey: [
       'accounting',
       'resolved-document-template',
       slot.kind,
-      slot.reimbursementTypeId,
+      slot.reimbursementTypeKey,
       organizationUnitId,
     ],
     // The backend walks own unit, ancestors, then org-wide.
-    queryFn: (): Promise<DocumentTemplateDetail | null> =>
-      nullIfNotFound(() =>
-        repository.findActiveDocumentTemplate({
-          kind: slot.kind,
-          reimbursementTypeId: slot.reimbursementTypeId ?? '',
-          organizationUnitId,
-        }),
-      ),
+    queryFn: reimbursementTypeKey
+      ? (): Promise<DocumentTemplateDetail | null> =>
+          nullIfNotFound(() =>
+            repository.findActiveDocumentTemplate({
+              kind: slot.kind,
+              reimbursementTypeKey,
+              organizationUnitId,
+            }),
+          )
+      : skipToken,
     staleTime: 30 * 1000,
-    enabled: !!slot.reimbursementTypeId,
-  };
+    enabled: !!slot.reimbursementTypeKey,
+  });
 }
 
 /**

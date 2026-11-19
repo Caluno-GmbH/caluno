@@ -692,7 +692,7 @@ export class DocumentRenderingService {
             .getYearlyUsage(
               template.organizationId,
               document.volunteerId,
-              document.reimbursementTypeId,
+              document.reimbursementTypeKey,
               billingYearOf(documentPeriodStart),
               documentPeriodEnd,
               document.id,
@@ -884,7 +884,7 @@ export class DocumentRenderingService {
     const contract = await this.db.query.contracts.findFirst({
       where: {
         volunteerId: document.volunteerId,
-        reimbursementTypeId: document.reimbursementTypeId,
+        reimbursementTypeKey: document.reimbursementTypeKey,
         periodStart: { lte: document.periodEnd },
         periodEnd: { gte: document.periodStart },
       },
@@ -938,7 +938,7 @@ export class DocumentRenderingService {
       return await this.reimbursementRateService.getEffectiveRateCents(
         organizationId,
         organizationUnitId,
-        document.reimbursementTypeId,
+        document.reimbursementTypeKey,
       );
     } catch {
       return undefined;

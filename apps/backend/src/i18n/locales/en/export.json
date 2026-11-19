@@ -1,0 +1,42 @@
+{
+  "columns": {
+    "timesheets": {
+      "volunteerName": "Volunteer Name",
+      "volunteerEmail": "Volunteer Email",
+      "volunteerDateOfBirth": "Volunteer Date of Birth",
+      "volunteerGender": "Volunteer Gender",
+      "volunteerPhone": "Volunteer Phone",
+      "volunteerAddress": "Volunteer Address",
+      "shift": "Shift",
+      "assignment": "Assignment",
+      "location": "Location",
+      "startedAt": "Started At",
+      "endedAt": "Ended At",
+      "duration": "Duration (min)",
+      "status": "Status",
+      "createdBy": "Created By",
+      "notes": "Notes"
+    },
+    "users": {
+      "name": "Name",
+      "email": "Email",
+      "roles": "Roles",
+      "dateOfBirth": "Date of Birth",
+      "gender": "Gender",
+      "phone": "Phone",
+      "address": "Address"
+    },
+    "shifts": {
+      "title": "Title",
+      "date": "Date",
+      "location": "Location",
+      "visibility": "Visibility",
+      "staffing": "Staffing"
+    }
+  },
+  "technicalIds": {
+    "timesheets": "ID",
+    "users": "User ID",
+    "shifts": "ID"
+  }
+}

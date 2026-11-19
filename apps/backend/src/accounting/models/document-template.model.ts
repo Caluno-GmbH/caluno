@@ -3,7 +3,7 @@ import { GraphQLJSON } from 'graphql-scalars';
 import { Organization } from '../../organization/models/organization.model';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
 import { User } from '../../user/models/user.model';
-import { DocumentKind, RenewalCadence } from '../enums';
+import { DocumentKind, ReimbursementTypeKey, RenewalCadence } from '../enums';
 import { ReimbursementType } from './reimbursement-type.model';
 import { TemplateSignee } from './template-signee.model';
 
@@ -19,6 +19,9 @@ export class DocumentTemplate {
   // it's an override scoped to just this unit.
   @Field(() => OrganizationUnit, { nullable: true })
   organizationUnit?: OrganizationUnit | null;
+
+  @Field(() => ReimbursementTypeKey)
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   @Field(() => ReimbursementType)
   reimbursementType!: ReimbursementType;

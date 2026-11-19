@@ -1,3 +1,5 @@
+import { ReimbursementTypeKey } from '../accounting/enums';
+
 jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'abcdefghijkl',
 }));
@@ -224,7 +226,7 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
           id: 'te-1',
           shiftInstanceId: 'si-1',
           volunteerId: 'volunteer-1',
-          reimbursementTypeId: 'override-type',
+          reimbursementTypeKey: 'override-type',
         },
       ]),
     });
@@ -234,10 +236,10 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
           findFirst: jest.fn().mockResolvedValue({
             id: 'si-1',
             actualEndsAt: FAR_FUTURE,
-            overrideReimbursementTypeId: 'override-type',
+            overrideReimbursementTypeKey: 'override-type',
             master: {
               organizationUnitId: 'ou-1',
-              reimbursementTypeId: 'master-type',
+              reimbursementTypeKey: 'master-type',
             },
           }),
         },
@@ -266,7 +268,7 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
 
     expect(insertValues).toHaveBeenCalledWith(
       expect.objectContaining({
-        reimbursementTypeId: 'override-type',
+        reimbursementTypeKey: 'override-type',
       }),
     );
     expect(insertValues.mock.calls[0][0]).not.toHaveProperty('isPaid');
@@ -286,10 +288,10 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
           findFirst: jest.fn().mockResolvedValue({
             id: 'si-2',
             actualEndsAt: FAR_FUTURE,
-            overrideReimbursementTypeId: null,
+            overrideReimbursementTypeKey: null,
             master: {
               organizationUnitId: 'ou-1',
-              reimbursementTypeId: 'master-type',
+              reimbursementTypeKey: 'master-type',
             },
           }),
         },
@@ -317,7 +319,7 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
     await service.addTimeEntry('ou-1', input, 'admin-1');
 
     expect(insertValues).toHaveBeenCalledWith(
-      expect.objectContaining({ reimbursementTypeId: 'master-type' }),
+      expect.objectContaining({ reimbursementTypeKey: 'master-type' }),
     );
     expect(insertValues.mock.calls[0][0]).not.toHaveProperty('isPaid');
   });
@@ -336,8 +338,8 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
           findFirst: jest.fn().mockResolvedValue({
             id: 'si-3',
             actualEndsAt: FAR_FUTURE,
-            overrideReimbursementTypeId: null,
-            master: { organizationUnitId: 'ou-1', reimbursementTypeId: null },
+            overrideReimbursementTypeKey: null,
+            master: { organizationUnitId: 'ou-1', reimbursementTypeKey: null },
           }),
         },
       },
@@ -364,7 +366,7 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
     await service.addTimeEntry('ou-1', input, 'admin-1');
 
     expect(insertValues).toHaveBeenCalledWith(
-      expect.objectContaining({ reimbursementTypeId: null }),
+      expect.objectContaining({ reimbursementTypeKey: null }),
     );
     expect(insertValues.mock.calls[0][0]).not.toHaveProperty('isPaid');
   });
@@ -403,7 +405,7 @@ describe('TimeTrackingService.addTimeEntry reimbursement type', () => {
 
     expect(db.query.shiftInstances.findFirst).not.toHaveBeenCalled();
     expect(insertValues).toHaveBeenCalledWith(
-      expect.objectContaining({ reimbursementTypeId: null }),
+      expect.objectContaining({ reimbursementTypeKey: null }),
     );
     expect(insertValues.mock.calls[0][0]).not.toHaveProperty('isPaid');
   });
@@ -420,8 +422,8 @@ describe('TimeTrackingService.getCheckInReadiness without a shift', () => {
   const shiftService = () => ({
     findInstanceById: jest.fn().mockResolvedValue({
       id: 'si-1',
-      overrideReimbursementTypeId: null,
-      master: { reimbursementTypeId: null, organizationUnitId: 'ou-1' },
+      overrideReimbursementTypeKey: null,
+      master: { reimbursementTypeKey: null, organizationUnitId: 'ou-1' },
     }),
     findInviteStatusesForUser: jest.fn(),
     hasOpenTimeEntry: jest.fn(),
@@ -640,8 +642,8 @@ describe('TimeTrackingService time validation', () => {
   const instance = (actualEndsAt: Date) => ({
     id: 'si-1',
     actualEndsAt,
-    overrideReimbursementTypeId: null,
-    master: { organizationUnitId: 'ou-1', reimbursementTypeId: null },
+    overrideReimbursementTypeKey: null,
+    master: { organizationUnitId: 'ou-1', reimbursementTypeKey: null },
   });
 
   const buildService = (overrides: {
@@ -1063,7 +1065,7 @@ describe('TimeTrackingService manual closes and review', () => {
           id: 'te-1',
           volunteerId: 'volunteer-1',
           endedAt: ENDED,
-          reimbursementTypeId: 'type-1',
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
         },
       ]),
     });
@@ -1079,7 +1081,7 @@ describe('TimeTrackingService manual closes and review', () => {
                     id: 'te-1',
                     volunteerId: 'volunteer-1',
                     endedAt: ENDED,
-                    reimbursementTypeId: 'type-1',
+                    reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
                   },
                 ],
         ),
@@ -1426,7 +1428,7 @@ describe('TimeTrackingService manual closes and review', () => {
           volunteerId: 'volunteer-1',
           startedAt: STARTED,
           endedAt: ENDED,
-          reimbursementTypeId: 'type-1',
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           closureKind: TimeEntryClosureKind.MANUAL,
         },
       });

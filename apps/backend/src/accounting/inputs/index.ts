@@ -4,4 +4,5 @@ export { CreateDocumentTemplateInput } from './create-document-template.input';
 export { CreateInvoiceInput } from './create-invoice.input';
 export { CreateTemplateSigneeInput } from './create-template-signee.input';
 export { InvoiceFilterInput } from './invoice-filter.input';
+export { UpdateAccountingDeliverySettingsInput } from './update-accounting-delivery-settings.input';
 export { UpdateDocumentTemplateInput } from './update-document-template.input';

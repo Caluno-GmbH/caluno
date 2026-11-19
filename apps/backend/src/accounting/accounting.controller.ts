@@ -72,18 +72,21 @@ export class AccountingController {
     if (!organizationUnitId) {
       throw new BadRequestException('Missing organization unit context.');
     }
+    let organizationId: string;
     try {
-      await this.accountingOrgAccessService.resolveEnabledOrganizationId(
-        organizationUnitId,
-      );
+      organizationId =
+        await this.accountingOrgAccessService.resolveEnabledOrganizationId(
+          organizationUnitId,
+        );
     } catch (error) {
       throw asHttpException(error);
     }
 
     const { buffer, zipName } = await this.bundleDownloadService.buildAndRecord(
+      organizationId,
       organizationUnitId,
       query.volunteerId,
-      query.reimbursementTypeId,
+      query.reimbursementTypeKey,
       session.user.id,
       query.invoiceIds,
     );

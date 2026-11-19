@@ -66,7 +66,7 @@ function makeInstance(
     overrideLocation: null,
     overrideMaxVolunteers: null,
     overrideMinVolunteers: null,
-    overrideReimbursementTypeId: null,
+    overrideReimbursementTypeKey: null,
     overrideJoinRequiresApproval: null,
     isException: false,
     isCancelled: false,

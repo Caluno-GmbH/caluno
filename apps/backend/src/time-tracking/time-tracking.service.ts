@@ -13,6 +13,7 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm';
+import { ReimbursementTypeKey } from '../accounting/enums';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
@@ -87,7 +88,7 @@ export class TimeTrackingService {
   ): Promise<TimeEntryEntity> {
     assertEndAfterStart(input.startedAt, input.endedAt);
 
-    let reimbursementTypeId: string | null = null;
+    let reimbursementTypeKey: ReimbursementTypeKey | null = null;
     if (input.shiftInstanceId) {
       const context = await this.resolveShiftInstanceContext(
         input.shiftInstanceId,
@@ -106,13 +107,13 @@ export class TimeTrackingService {
         }
       }
 
-      reimbursementTypeId = context.reimbursementTypeId;
+      reimbursementTypeKey = context.reimbursementTypeKey;
     }
 
-    if (input.reimbursementTypeId) {
-      await this.assertReimbursementTypeExists(input.reimbursementTypeId);
+    if (input.reimbursementTypeKey) {
+      await this.assertReimbursementTypeExists(input.reimbursementTypeKey);
     }
-    reimbursementTypeId = input.reimbursementTypeId ?? reimbursementTypeId;
+    reimbursementTypeKey = input.reimbursementTypeKey ?? reimbursementTypeKey;
 
     try {
       const [timeEntry] = await this.db
@@ -125,7 +126,7 @@ export class TimeTrackingService {
           endedAt: input.endedAt ?? null,
           closureKind: input.endedAt ? TimeEntryClosureKind.MANUAL : null,
           notes: input.notes,
-          reimbursementTypeId,
+          reimbursementTypeKey,
           createdById: actorUserId,
         })
         .returning();
@@ -157,11 +158,16 @@ export class TimeTrackingService {
   }
 
   private async assertReimbursementTypeExists(
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
   ): Promise<void> {
-    const reimbursementType = await this.db.query.reimbursementTypes.findFirst({
-      where: { id: reimbursementTypeId },
-    });
+    // The key is a pg enum: reject out-of-range values before querying.
+    const reimbursementType = Object.values(ReimbursementTypeKey).includes(
+      reimbursementTypeKey,
+    )
+      ? await this.db.query.reimbursementTypes.findFirst({
+          where: { key: reimbursementTypeKey },
+        })
+      : undefined;
     if (!reimbursementType) {
       throw new NotFoundGraphQLError('Reimbursement type not found');
     }
@@ -170,7 +176,10 @@ export class TimeTrackingService {
   private async resolveShiftInstanceContext(
     shiftInstanceId: string,
     organizationUnitId: string,
-  ): Promise<{ reimbursementTypeId: string | null; actualEndsAt: Date }> {
+  ): Promise<{
+    reimbursementTypeKey: ReimbursementTypeKey | null;
+    actualEndsAt: Date;
+  }> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: shiftInstanceId },
       with: { master: true },
@@ -186,16 +195,16 @@ export class TimeTrackingService {
     }
 
     return {
-      reimbursementTypeId:
-        instance.overrideReimbursementTypeId ??
-        instance.master.reimbursementTypeId ??
+      reimbursementTypeKey:
+        instance.overrideReimbursementTypeKey ??
+        instance.master.reimbursementTypeKey ??
         null,
       actualEndsAt: instance.actualEndsAt,
     };
   }
 
   private emitTimeEntryClosed(entry: TimeEntryEntity): void {
-    if (!entry.endedAt || !entry.reimbursementTypeId) return;
+    if (!entry.endedAt || !entry.reimbursementTypeKey) return;
     this.eventEmitter.emit(AccountingEvent.TIME_ENTRY_CLOSED, {
       timeEntryId: entry.id,
     });
@@ -305,8 +314,8 @@ export class TimeTrackingService {
       }
     }
 
-    if (input.reimbursementTypeId) {
-      await this.assertReimbursementTypeExists(input.reimbursementTypeId);
+    if (input.reimbursementTypeKey) {
+      await this.assertReimbursementTypeExists(input.reimbursementTypeKey);
     }
 
     try {

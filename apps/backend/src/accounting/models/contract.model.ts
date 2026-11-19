@@ -1,7 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-scalars';
 import { User } from '../../user/models/user.model';
-import { ContractStatus, SigneeType } from '../enums';
+import { ContractStatus, ReimbursementTypeKey, SigneeType } from '../enums';
 import { ContractSignature } from './contract-signature.model';
 import { ContractStatusChange } from './contract-status-change.model';
 import { DocumentTemplate } from './document-template.model';
@@ -17,6 +17,9 @@ export class Contract {
 
   @Field(() => User)
   volunteer!: User;
+
+  @Field(() => ReimbursementTypeKey)
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   @Field(() => ReimbursementType)
   reimbursementType!: ReimbursementType;

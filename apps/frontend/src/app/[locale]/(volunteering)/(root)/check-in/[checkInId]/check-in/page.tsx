@@ -25,6 +25,10 @@ export default async function VolunteeringCheckInPage({
     getMyCheckInOrgUnits(),
   ]);
 
+  if (checkInOrgUnits.length === 0) {
+    return <CheckInUnavailableCard reason="noPermission" />;
+  }
+
   if (!context) {
     return <CheckInUnavailableCard />;
   }

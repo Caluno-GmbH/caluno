@@ -1,7 +1,7 @@
 'use client';
 
 import type { GetTimeEntriesQuery } from '@repo/data';
-import { TimeEntryStatus } from '@repo/data';
+import { ExportTable, PermissionKey, TimeEntryStatus } from '@repo/data';
 import { useTimeEntriesAll } from '@repo/data/react';
 import {
   Alert,
@@ -25,28 +25,28 @@ import { parseISO } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQueryStates } from 'nuqs';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { DataTable } from '@/components/data-table/data-table';
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header';
 import { DataTablePagination } from '@/components/data-table/data-table-pagination';
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
+import { ExportButton } from '@/components/export/export-button';
+import { ExportLogLine } from '@/components/export/export-log-line';
 import {
   compareEntriesByDuration,
   resolveTimeEntryLocation,
   sumDurationMinutes,
 } from '@/domain/time-entry/location';
 import { describeRecorder } from '@/domain/time-entry/recorder';
-import { serializeTimesheetsToCsv } from '@/domain/time-entry/timesheets-csv';
+import { useTimesheetExportColumns } from '@/domain/time-entry/timesheet-export-columns';
 import { toTimesheetDateRange } from '@/domain/time-entry/timesheets-date-range';
 import { timesheetsSearchParams } from '@/domain/time-entry/timesheets-search-params';
 import { Link } from '@/i18n/navigation';
-import { triggerDownload } from '@/lib/download/trigger-download';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ActionBar } from './action-bar';
 import { CopyEmailsButton } from './copy-emails-button';
 import { CopyableEmail } from './copyable-email';
-import { DownloadCsvButton } from './download-csv-button';
 import { TimeEntryStatusBadge } from './time-entry-status-badge';
 import { TimesheetsToolbar } from './timesheets-toolbar';
 
@@ -105,8 +105,6 @@ export const TimesheetsTable = ({
     const resolved = readSort(next, { sort, dir });
     void setParams({ ...resolved, page: 1 });
   };
-
-  const [downloadRequested, setDownloadRequested] = useState(false);
 
   const dateRange = toTimesheetDateRange(dateFrom, dateTo);
 
@@ -206,27 +204,11 @@ export const TimesheetsTable = ({
 
   const canCopyEmails = hasActiveFilter && filteredEmails.length > 0;
 
-  useEffect(() => {
-    if (!downloadRequested || !filteredFull) return;
-    setDownloadRequested(false);
-    const today = new Date().toISOString().slice(0, 10);
-    const csvHeaders = [
-      t('csv.volunteerName'),
-      t('csv.volunteerEmail'),
-      t('csv.assignment'),
-      t('csv.location'),
-      t('csv.startedAt'),
-      t('csv.endedAt'),
-      t('csv.durationMinutes'),
-      t('csv.status'),
-      t('csv.createdBy'),
-      t('csv.notes'),
-    ];
-    triggerDownload(
-      `timesheets-${organizationUnitId}-${today}.csv`,
-      serializeTimesheetsToCsv(filteredFull, csvHeaders),
-    );
-  }, [downloadRequested, filteredFull, organizationUnitId, t]);
+  const exportColumns = useTimesheetExportColumns();
+  const filteredIds = useMemo(
+    () => (filteredFull ?? []).map((e) => e.id),
+    [filteredFull],
+  );
 
   const columns = useMemo<ColumnDef<DataTableFeatures, TimeEntry>[]>(
     () => [
@@ -456,12 +438,13 @@ export const TimesheetsTable = ({
           ...(canCopyEmails
             ? [<CopyEmailsButton key="copy-emails" emails={filteredEmails} />]
             : []),
-          <DownloadCsvButton
-            key="csv"
-            orgUnitId={organizationUnitId}
-            isLoadingFull={isLoadingFull && downloadRequested}
-            fullEntries={filteredFull}
-            onTriggerLoad={() => setDownloadRequested(true)}
+          <ExportButton
+            key="export"
+            tableKind={ExportTable.Timesheets}
+            rowIds={filteredIds}
+            columns={exportColumns}
+            permission={PermissionKey.ShiftEdit}
+            disabled={isLoadingFull}
           />,
         ]}
       />
@@ -499,6 +482,7 @@ export const TimesheetsTable = ({
           shallow
         />
       )}
+      <ExportLogLine tableKind={ExportTable.Timesheets} />
     </div>
   );
 };

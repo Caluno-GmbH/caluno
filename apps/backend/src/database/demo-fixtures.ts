@@ -27,6 +27,7 @@ import { hashPassword } from 'better-auth/crypto';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import { runFixtureSeed } from '../shared/observability/fixture-failure-reporter';
+import { seedDemoAccounting } from './demo-accounting';
 import {
   COORDINATOR,
   DEMO_REGIONS,
@@ -148,6 +149,13 @@ async function seedDemoFixtures() {
     coordinator,
     emails,
     createUser: (input) => createAuthUser(db, hashedPassword, input),
+  });
+
+  await seedDemoAccounting(db, {
+    org,
+    coordinatorId: coordinator.id,
+    memberEmail: (index) =>
+      emails.role(`member${String(index).padStart(2, '0')}`),
   });
 
   console.log(

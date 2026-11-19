@@ -2,12 +2,14 @@ import { Transform } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
   MaxLength,
 } from 'class-validator';
+import { ReimbursementTypeKey } from '../enums';
 
 /** Far above what one volunteer has ready; keeps the list and the query bounded. */
 export const MAX_NAMED_INVOICES = 100;
@@ -19,8 +21,8 @@ export class DownloadBundleQueryDto {
   @MaxLength(255)
   volunteerId!: string;
 
-  @IsUUID()
-  reimbursementTypeId!: string;
+  @IsEnum(ReimbursementTypeKey)
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   /**
    * The timesheets the board shows, as a comma separated list. Left out, every

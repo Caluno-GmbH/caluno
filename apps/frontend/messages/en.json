@@ -190,6 +190,8 @@
     "successDialogCloseButton": "Done",
     "successDialogTitle": "Successfully checked in",
     "today": "Today",
+    "noPermissionDescription": "You don't have permission to check in volunteers. Ask an administrator of your organisation for check-in rights.",
+    "noPermissionTitle": "You can't do check-ins",
     "unavailableDescription": "The scanned code doesn't match a volunteer in any of your org units.",
     "unavailableTitle": "Can't check in this person",
     "agreementNoTemplateTitle": "No agreement template set up",
@@ -2183,7 +2185,6 @@
     "table": {
       "copyEmailAria": "Copy {name}'s email address",
       "copyEmails": "{count, plural, one {Copy 1 email} other {Copy # emails}}",
-      "downloadCsv": "Download CSV",
       "email": "Email",
       "emailCopied": "Email address copied to clipboard",
       "emailsCopied": "{count, plural, one {1 email address copied} other {# email addresses copied}}",
@@ -2276,7 +2277,8 @@
       "subtitle": "Set up rates and document templates for volunteering reimbursements.",
       "tabs": {
         "rates": "Rates",
-        "templates": "Templates"
+        "templates": "Templates",
+        "delivery": "Delivery"
       },
       "rates": {
         "sectionTitle": "Hourly rate",
@@ -2300,6 +2302,39 @@
       "templates": {
         "sectionTitle": "Document templates",
         "sectionSubtitle": "All templates for documents needed for each allowance type."
+      },
+      "delivery": {
+        "sectionTitle": "Delivery to accounting",
+        "sectionSubtitle": "How finished document bundles reach your accounting team. Sub-units use these settings unless they set their own.",
+        "methodLabel": "Finished bundles",
+        "methodDownload": "Download",
+        "methodDownloadHint": "Admins download each bundle as a ZIP file.",
+        "methodEmail": "Send by email",
+        "methodEmailHint": "Admins send each volunteer’s bundle as its own email. Nothing goes out until an admin sends it.",
+        "methodInherit": "Use inherited ({value})",
+        "recipientLabel": "Accounting email address",
+        "recipientHint": "Receives your finalized document bundles once they are ready to be processed into accounting.",
+        "recipientPlaceholder": "accounting@example.org",
+        "recipientNotSet": "Not set",
+        "showRecipient": "Show email address",
+        "hideRecipient": "Hide email address",
+        "subjectLabel": "Email subject",
+        "subjectHint": "Placeholders: {placeholders}",
+        "inheritPlaceholder": "Inherited: {value}",
+        "source": {
+          "own": "Set for this unit",
+          "inheritedFrom": "Inherited from {source}",
+          "default": "Default"
+        },
+        "clearHint": "Leave empty to use the inherited value.",
+        "saveSuccess": "Delivery settings saved",
+        "saveError": "We couldn’t save the delivery settings. Please try again.",
+        "loadError": "We couldn’t load the delivery settings. Please reload the page.",
+        "errors": {
+          "invalidEmail": "Please enter a valid email address.",
+          "unknownPlaceholder": "Use only the placeholders listed above.",
+          "recipientRequired": "Add an accounting email address to send bundles by email."
+        }
       }
     },
     "setupAlert": {
@@ -2401,7 +2436,31 @@
         "lastDownloaded": "last downloaded by <name>{by}</name> on {at}",
         "neverDownloaded": "not downloaded yet",
         "unknownUser": "unknown",
-        "downloadError": "We couldn't download the bundle. Please try again."
+        "downloadError": "We couldn't download the bundle. Please try again.",
+        "sendActionLabel": "Send bundle",
+        "lastSent": "last sent by <name>{by}</name> on {at}",
+        "neverSent": "not sent yet",
+        "noRecipient": "Add an accounting email address in the accounting settings to send bundles.",
+        "sendSuccess": "The bundle is on its way to accounting",
+        "sendError": "We couldn’t send the bundle. Please try again.",
+        "sendTooLarge": "This bundle is too large to send by email. Download it instead.",
+        "sendIssuesChanged": "Something changed in the meantime. Please review the bundle and confirm again.",
+        "viewLog": "Delivery log",
+        "confirmDialog": {
+          "title": "Send this bundle anyway?",
+          "description": "Accounting will process the bundle for {volunteer} as it is.",
+          "recipient": "To: {recipient}",
+          "issues": {
+            "NO_CONTRACT": "Some hours have no active agreement.",
+            "OVER_LIMIT": "The volunteer is over the yearly allowance.",
+            "ALREADY_SENT": "These documents were already sent to accounting."
+          },
+          "confirm": "Send anyway"
+        },
+        "lastSendFailed": "last send failed on {at}",
+        "lastSending": "sending…",
+        "downloadInstead": "Download instead",
+        "settingsError": "Delivery settings unavailable"
       },
       "batchBar": {
         "selected": "{count} selected",
@@ -2483,7 +2542,10 @@
           "contractMissing": "No agreement. Create manually.",
           "timesheetMuted": "Recorded without an agreement",
           "declined": "Declined",
-          "templateMissingHint": "No template for this allowance type yet. Set it up under Accounting → Templates."
+          "templateMissingHint": "No template for this allowance type yet. Set it up under Accounting → Templates.",
+          "sentBy": "Sent by <name>{by}</name> on {at}",
+          "sendFailed": "Sending failed on {at}",
+          "sending": "Sending to accounting…"
         },
         "actions": {
           "create": "Preview and create",
@@ -2842,6 +2904,144 @@
           },
           "signees": "{count, plural, =1 {1 signature} other {# signatures}}"
         }
+      }
+    },
+    "deliveries": {
+      "title": "Delivery log",
+      "subtitle": "Every document bundle handed to accounting from this unit: when, by whom and where it went.",
+      "back": "Reimbursements",
+      "tableHead": {
+        "date": "Date",
+        "volunteer": "Volunteer",
+        "type": "Allowance",
+        "method": "Delivery",
+        "recipient": "Recipient",
+        "documents": "Documents",
+        "by": "By",
+        "status": "Status"
+      },
+      "method": {
+        "DOWNLOAD": "Downloaded",
+        "EMAIL": "Email"
+      },
+      "status": {
+        "PENDING": "Queued",
+        "SENDING": "Sending",
+        "SENT": "Sent",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled"
+      },
+      "withIssues": "Sent despite: {issues}",
+      "issues": {
+        "NO_CONTRACT": "no active agreement",
+        "OVER_LIMIT": "over the yearly allowance",
+        "ALREADY_SENT": "already sent"
+      },
+      "empty": "Nothing has been handed to accounting yet.",
+      "noMore": "No more entries.",
+      "loadError": "We couldn’t load the delivery log. Please reload the page.",
+      "previous": "Previous",
+      "next": "Next"
+    }
+  },
+  "Export": {
+    "button": "Export",
+    "dialogTitle": "Export columns",
+    "dialogDescription": "Select the columns to include in the CSV export.",
+    "includeTechnicalIds": "Technical IDs",
+    "includeTechnicalIdsDescription": "Add internal ID columns to match records in other systems",
+    "includeSubUnits": "Include sub-units",
+    "includeSubUnitsDescription": "Also export rows from child organisational units",
+    "exportAction": "Export",
+    "cancel": "Cancel",
+    "exportFailed": "Export failed. Please try again.",
+    "nothingToExport": "Nothing to export for the current filters.",
+    "missingVolunteerDataPermission": "You don't have permission to download volunteer data.",
+    "columns": {
+      "timesheets": {
+        "volunteerName": "Volunteer Name",
+        "volunteerEmail": "Volunteer Email",
+        "shift": "Appointment",
+        "assignment": "Assignment",
+        "location": "Location",
+        "startedAt": "Started At",
+        "endedAt": "Ended At",
+        "duration": "Duration (min)",
+        "status": "Status",
+        "createdBy": "Created By",
+        "notes": "Notes",
+        "volunteerDateOfBirth": "Date of birth",
+        "volunteerGender": "Gender",
+        "volunteerPhone": "Phone",
+        "volunteerAddress": "Address"
+      },
+      "users": {
+        "name": "Name",
+        "email": "Email",
+        "roles": "Roles",
+        "dateOfBirth": "Date of Birth",
+        "gender": "Gender",
+        "phone": "Phone",
+        "address": "Address"
+      },
+      "shifts": {
+        "title": "Title",
+        "date": "Date",
+        "location": "Location",
+        "visibility": "Visibility",
+        "staffing": "Staffing"
+      }
+    },
+    "descriptions": {
+      "timesheets": {
+        "volunteerName": "The volunteer who did the work",
+        "volunteerEmail": "Their contact email address",
+        "shift": "The appointment the time belongs to",
+        "assignment": "The role or task worked",
+        "location": "Where the time was worked",
+        "startedAt": "Check-in date and time",
+        "endedAt": "Check-out date and time",
+        "duration": "Total time worked, in minutes",
+        "status": "Current state of the entry",
+        "createdBy": "Who recorded this entry",
+        "notes": "Any notes added to the entry",
+        "volunteerDateOfBirth": "The volunteer's date of birth",
+        "volunteerGender": "The volunteer's gender",
+        "volunteerPhone": "The volunteer's phone number",
+        "volunteerAddress": "The volunteer's postal address"
+      },
+      "users": {
+        "name": "The volunteer's full name",
+        "email": "Primary contact email",
+        "roles": "Roles held in this organisation",
+        "dateOfBirth": "Date of birth, if provided",
+        "gender": "Gender, if provided",
+        "phone": "Phone number, if provided",
+        "address": "Postal address, if provided"
+      },
+      "shifts": {
+        "title": "Name of the shift",
+        "date": "When the shift takes place",
+        "location": "Where the shift takes place",
+        "visibility": "Who can see and sign up for it",
+        "staffing": "Filled versus needed spots"
+      }
+    },
+    "group": {
+      "extendedUserInfo": "Extended user info",
+      "extendedUserInfoDescription": "Include the volunteer's additional profile data"
+    },
+    "log": {
+      "downloadButton": "Download export log",
+      "downloadFailed": "Could not load the export log. Please try again.",
+      "csvHeaders": {
+        "timestamp": "Timestamp",
+        "actor": "Actor",
+        "table": "Table",
+        "columns": "Columns",
+        "rowCount": "Row Count",
+        "subjectCount": "Subject Count",
+        "subjectIds": "Subject IDs"
       }
     }
   },

@@ -291,7 +291,7 @@ export function TemplateBuilder({
         }
         await createTemplate.mutateAsync({
           kind: apiDocumentKindFor(slotKind),
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           organizationUnitId: orgUId,
           body,
           invoiceNumberFormat,

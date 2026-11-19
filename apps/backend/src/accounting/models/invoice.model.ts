@@ -1,7 +1,7 @@
 import { Field, Float, ID, Int, ObjectType } from '@nestjs/graphql';
 import { GraphQLJSON } from 'graphql-scalars';
 import { User } from '../../user/models/user.model';
-import { InvoiceStatus, SigneeType } from '../enums';
+import { InvoiceStatus, ReimbursementTypeKey, SigneeType } from '../enums';
 import { DocumentTemplate } from './document-template.model';
 import { InvoiceSignature } from './invoice-signature.model';
 import { InvoiceStatusChange } from './invoice-status-change.model';
@@ -18,6 +18,9 @@ export class Invoice {
 
   @Field(() => User)
   volunteer!: User;
+
+  @Field(() => ReimbursementTypeKey)
+  reimbursementTypeKey!: ReimbursementTypeKey;
 
   @Field(() => ReimbursementType)
   reimbursementType!: ReimbursementType;
