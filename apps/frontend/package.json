@@ -24,7 +24,7 @@
     "@teispace/next-themes": "^3.1.1",
     "@yudiel/react-qr-scanner": "^2.6.0",
     "@zxcvbn-ts/core": "^4.2.0",
-    "@zxcvbn-ts/language-common": "^4.1.3",
+    "@zxcvbn-ts/language-common": "^4.2.0",
     "@zxcvbn-ts/language-de": "^4.1.1",
     "@zxcvbn-ts/language-en": "^4.1.2",
     "better-auth": "1.7.18",
