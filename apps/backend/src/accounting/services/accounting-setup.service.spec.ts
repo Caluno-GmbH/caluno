@@ -9,14 +9,10 @@ function makeService(args: {
     reimbursementTypeKey: ReimbursementTypeKey;
     kind: DocumentKind;
   }[];
-  types?: { id: string; key: ReimbursementTypeKey }[];
 }) {
-  const types = args.types ?? [
-    { id: ReimbursementTypeKey.EHRENAMT, key: ReimbursementTypeKey.EHRENAMT },
-    {
-      id: ReimbursementTypeKey.UEBUNGSLEITER,
-      key: ReimbursementTypeKey.UEBUNGSLEITER,
-    },
+  const types = [
+    { key: ReimbursementTypeKey.EHRENAMT },
+    { key: ReimbursementTypeKey.UEBUNGSLEITER },
   ];
   const db = {
     query: {

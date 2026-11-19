@@ -5,7 +5,7 @@ import type {
   ContractWithRelations,
   InvoiceWithRelations,
 } from '../accounting.types';
-import { SigneeType } from '../enums';
+import { ReimbursementTypeKey, SigneeType } from '../enums';
 import {
   DocumentRenderingService,
   letterheadLines,
@@ -163,9 +163,9 @@ describe('DocumentRenderingService', () => {
     ({
       id: 'contract-1',
       volunteerId: 'vol-1',
-      reimbursementTypeKey: 'type-1',
+      reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
       reimbursementType: {
-        id: 'type-1',
+        key: ReimbursementTypeKey.EHRENAMT,
         yearlyLimitCents: 300000,
         platformDefaultRateCents: 1500,
       },
@@ -236,9 +236,9 @@ describe('DocumentRenderingService', () => {
     ({
       id: 'invoice-1',
       volunteerId: 'vol-1',
-      reimbursementTypeKey: 'type-1',
+      reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
       reimbursementType: {
-        id: 'type-1',
+        key: ReimbursementTypeKey.EHRENAMT,
         yearlyLimitCents: 300000,
         platformDefaultRateCents: 1500,
       },
@@ -416,7 +416,11 @@ describe('DocumentRenderingService', () => {
         } as never,
       }),
     );
-    expect(rateCallArgs).toEqual(['org-1', 'sub-unit', 'type-1']);
+    expect(rateCallArgs).toEqual([
+      'org-1',
+      'sub-unit',
+      ReimbursementTypeKey.EHRENAMT,
+    ]);
   });
 
   describe('signature seats', () => {
@@ -988,7 +992,7 @@ describe('DocumentRenderingService', () => {
       expect(yearlyUsageCallArgs).toEqual([
         'org-1',
         'vol-1',
-        'type-1',
+        ReimbursementTypeKey.EHRENAMT,
         2025,
         new Date('2025-01-31'),
         'invoice-1',

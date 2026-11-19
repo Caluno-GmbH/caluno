@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '../accounting/enums';
 import { NotFoundGraphQLError } from '../graphql/errors';
 import { AgreementStatus } from './agreement-status.enum';
 import { AgreementStatusService } from './check-in-agreement.service';
@@ -12,7 +13,7 @@ function makeBaseDeps() {
       id: 'si-1',
       overrideReimbursementTypeKey: null,
       master: {
-        reimbursementTypeKey: 'rt-1',
+        reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
         organizationUnitId: 'ou-1',
       },
     }),

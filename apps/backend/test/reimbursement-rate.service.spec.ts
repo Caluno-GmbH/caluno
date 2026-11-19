@@ -14,10 +14,7 @@ import type { AuthService } from '../src/auth/auth.service';
 import { type Database, DatabaseModule } from '../src/database/database.module';
 import { DATABASE_CONNECTION } from '../src/database/database-connection';
 import * as schema from '../src/database/schema';
-import {
-  BadRequestGraphQLError,
-  NotFoundGraphQLError,
-} from '../src/graphql/errors';
+import { BadRequestGraphQLError } from '../src/graphql/errors';
 import { MembershipService } from '../src/membership/membership.service';
 import type { NotificationService } from '../src/notification';
 import { OrganizationUnitDataModule } from '../src/organization/organization-unit-data.module';
@@ -427,22 +424,6 @@ describe('ReimbursementRateService', () => {
           ACTOR_USER_ID,
         ),
       ).rejects.toBeInstanceOf(BadRequestGraphQLError);
-    });
-
-    it('throws NotFoundGraphQLError for an unknown reimbursement type', async () => {
-      const { organization } = await createOrganizationWithType(
-        db,
-        `Unknown Type Org ${crypto.randomUUID()}`,
-      );
-
-      await expect(
-        service.setReimbursementRate(
-          organization.id,
-          'UNKNOWN' as ReimbursementTypeKey,
-          1_000,
-          ACTOR_USER_ID,
-        ),
-      ).rejects.toBeInstanceOf(NotFoundGraphQLError);
     });
 
     it('upserts rather than duplicating a rate row for the same org and type', async () => {

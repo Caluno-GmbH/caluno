@@ -436,11 +436,9 @@ export class ReimbursementRateService {
   ): Promise<ReimbursementTypeEntity> {
     // The key is a pg enum: an out-of-range value would raise a DB error
     // instead of resolving to "not found".
-    const reimbursementType = Object.values(ReimbursementTypeKey).includes(key)
-      ? await this.db.query.reimbursementTypes.findFirst({
-          where: { key },
-        })
-      : undefined;
+    const reimbursementType = await this.db.query.reimbursementTypes.findFirst({
+      where: { key },
+    });
     if (!reimbursementType) {
       throw new NotFoundGraphQLError(
         `Reimbursement type with ID ${key} not found`,

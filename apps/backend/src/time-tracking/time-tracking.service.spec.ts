@@ -1,3 +1,5 @@
+import { ReimbursementTypeKey } from '../accounting/enums';
+
 jest.mock('nanoid', () => ({
   customAlphabet: () => () => 'abcdefghijkl',
 }));
@@ -913,7 +915,7 @@ describe('TimeTrackingService manual closes and review', () => {
           id: 'te-1',
           volunteerId: 'volunteer-1',
           endedAt: ENDED,
-          reimbursementTypeKey: 'type-1',
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
         },
       ]),
     });
@@ -929,7 +931,7 @@ describe('TimeTrackingService manual closes and review', () => {
                     id: 'te-1',
                     volunteerId: 'volunteer-1',
                     endedAt: ENDED,
-                    reimbursementTypeKey: 'type-1',
+                    reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
                   },
                 ],
         ),
@@ -1276,7 +1278,7 @@ describe('TimeTrackingService manual closes and review', () => {
           volunteerId: 'volunteer-1',
           startedAt: STARTED,
           endedAt: ENDED,
-          reimbursementTypeKey: 'type-1',
+          reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
           closureKind: TimeEntryClosureKind.MANUAL,
         },
       });
