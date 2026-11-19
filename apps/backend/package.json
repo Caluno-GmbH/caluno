@@ -40,8 +40,8 @@
   "dependencies": {
     "@apollo/server": "^5.5.1",
     "@as-integrations/express5": "^1.1.2",
-    "@aws-sdk/client-s3": "^3.1166.0",
-    "@aws-sdk/s3-request-presigner": "^3.1166.0",
+    "@aws-sdk/client-s3": "^3.1172.0",
+    "@aws-sdk/s3-request-presigner": "^3.1172.0",
     "@better-auth/drizzle-adapter": "1.7.18",
     "@messageformat/core": "^3.4.1",
     "@nestjs/apollo": "^14.2.0",
