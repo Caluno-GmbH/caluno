@@ -448,7 +448,7 @@ function VolunteerTableGroup({
         )}
         onClick={() => setIsOpen((o) => !o)}
       >
-        <TableCell className="align-middle py-4 w-10">
+        <TableCell className="align-middle py-4 w-[26px]">
           {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row toggling only */}
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row toggling only */}
           <div onClick={(e) => e.stopPropagation()}>
@@ -590,7 +590,7 @@ function VolunteerTableGroup({
                 if (rowAction === 'open') onDocumentClick(doc, volunteer);
               }}
             >
-              <TableCell className="py-3 align-top w-10">
+              <TableCell className="py-3 align-top w-[26px]">
                 {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row action on checkbox click */}
                 {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row action on checkbox click */}
                 <div onClick={(e) => e.stopPropagation()}>
@@ -827,7 +827,7 @@ export function ReimbursementsTable({
       <Table className="table-fixed min-w-[860px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
-            <TableHead className="w-10">
+            <TableHead className="w-[26px]">
               <div className="opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
                 <Checkbox
                   checked={
