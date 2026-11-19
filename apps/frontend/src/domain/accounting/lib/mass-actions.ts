@@ -1,4 +1,3 @@
-import type { PauschalenType } from '../components/doc-type-header';
 import { visibleDocumentsForVolunteer } from './board-filters';
 import type {
   BoardDocument,
@@ -6,6 +5,7 @@ import type {
   DocStatus,
   DocVolPair,
   FilterSettings,
+  PauschalenType,
 } from './board-types';
 
 // ─── Display sort ──────────────────────────────────────────────────────────────
@@ -142,11 +142,7 @@ export function groupBundles(pairs: DocVolPair[]): BundleGroup[] {
  * Returns `null` when none.
  */
 export function firstBlockingDocId(pairs: DocVolPair[]): string | null {
-  const sorted = sortDocsForDisplay(pairs.map((p) => p.doc));
-  const blocker = sorted.find(
-    (d) => d.isOverCap === true || d.status === 'contract-missing',
-  );
-  return blocker?.id ?? null;
+  return pairs.find((p) => p.doc.isOverCap === true || p.doc.status === 'contract-missing')?.doc.id ?? null;
 }
 
 // ─── Async result summary ─────────────────────────────────────────────────────

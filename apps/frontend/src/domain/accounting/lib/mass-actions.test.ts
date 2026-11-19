@@ -156,15 +156,17 @@ describe('firstBlockingDocId', () => {
     expect(firstBlockingDocId([{ doc: missing, vol }])).toBe('miss');
   });
 
-  it('returns the doc that comes first in display sort order when multiple blockers exist', () => {
-    // contract-missing (index 4 in STATUS_SORT_ORDER) vs timesheet-ready (index 7)
-    // so contract-missing wins
-    const ready = makeDoc({ id: 'ready-over', status: 'timesheet-ready', isOverCap: true });
+  it('returns the first blocker in given display order spanning two volunteers', () => {
+    // vol-A has a contract-missing doc; vol-B has an over-cap timesheet.
+    // pairs arrive in display order: vol-A's doc first, vol-B's doc second.
+    // The function must return vol-A's id — it does NOT re-sort by status.
     const missing = makeDoc({ id: 'miss', status: 'contract-missing' });
-    const vol = makeVol({ id: 'vol-1', documents: [ready, missing] });
+    const volA = makeVol({ id: 'vol-a', documents: [missing] });
+    const overCap = makeDoc({ id: 'ready-over', status: 'timesheet-ready', isOverCap: true });
+    const volB = makeVol({ id: 'vol-b', documents: [overCap] });
     const result = firstBlockingDocId([
-      { doc: ready, vol },
-      { doc: missing, vol },
+      { doc: missing, vol: volA },
+      { doc: overCap, vol: volB },
     ]);
     expect(result).toBe('miss');
   });

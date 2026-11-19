@@ -1,6 +1,8 @@
 import type { PauschalenType } from '../components/doc-type-header';
 import type { SigneeRole } from '../components/template/types';
 
+export type { PauschalenType };
+
 export type DocStatus =
   | 'contract-generate'
   | 'contract-draft'
