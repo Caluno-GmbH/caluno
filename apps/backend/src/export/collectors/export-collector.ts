@@ -32,6 +32,7 @@ export interface ExportCollector {
   readonly tableKind: ExportTable;
   readonly requiredPermission: Permission;
   readonly technicalIdLabel: string;
+  readonly technicalIdLabelKey: string;
   readonly columns: readonly ExportColumnDefinition[];
   collect(context: ExportCollectorContext): Promise<CollectedExport>;
 }

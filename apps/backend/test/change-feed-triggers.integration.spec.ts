@@ -12,6 +12,7 @@ import {
   ContractStatus,
   DocumentKind,
   InvoiceStatus,
+  type ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
 import { ChangeArea } from '../src/change-feed/enums';
@@ -43,7 +44,7 @@ type Fixture = { organizationId: string; unitId: string };
 
 describe('change feed triggers', () => {
   let db: Database;
-  let reimbursementTypeId: string;
+  let reimbursementTypeKey: ReimbursementTypeKey;
 
   const createFixture = async (): Promise<Fixture> => {
     const { organization, type } = await createOrganizationWithType(
@@ -63,7 +64,7 @@ describe('change feed triggers', () => {
     createDocumentTemplate(db, {
       organizationId: fixture.organizationId,
       organizationUnitId: fixture.unitId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       kind,
       signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
     });
@@ -75,7 +76,7 @@ describe('change feed triggers', () => {
       .values({
         documentTemplateId: template.id,
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         organizationUnitId: fixture.unitId,
         contractStatus: ContractStatus.ACTIVE,
         periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -94,7 +95,7 @@ describe('change feed triggers', () => {
       .values({
         documentTemplateId: template.id,
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         organizationUnitId: fixture.unitId,
         invoiceStatus: InvoiceStatus.READY,
         periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -133,7 +134,7 @@ describe('change feed triggers', () => {
     const context = await getGraphqlTestContext();
     db = context.db;
     const reimbursementType = await createReimbursementType(db);
-    reimbursementTypeId = reimbursementType.id;
+    reimbursementTypeKey = reimbursementType.key;
   });
 
   it('records a contracts entry with unit and volunteer on insert, update and delete', async () => {

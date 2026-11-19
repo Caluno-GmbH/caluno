@@ -2,7 +2,10 @@ import { Args, Context, ID, Mutation, Resolver } from '@nestjs/graphql';
 import { Session, type UserSession } from '@thallesp/nestjs-better-auth';
 import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { ForbiddenGraphQLError } from '../../graphql/errors';
 import { type AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
+import { MembershipService } from '../../membership/membership.service';
+import { UserService } from '../../user/user.service';
 import { AddTimeEntryInput } from '../inputs/add-time-entry.input';
 import { CloseTimeEntryInput } from '../inputs/close-time-enty-input';
 import { UpdateTimeEntryInput } from '../inputs/update-time-entry.input';
@@ -15,6 +18,8 @@ export class TimeTrackingMutationResolver {
   constructor(
     private readonly timeTrackingService: TimeTrackingService,
     private readonly entryMapper: TimeEntryMapper,
+    private readonly userService: UserService,
+    private readonly membershipService: MembershipService,
   ) {}
 
   @Permissions(PERMISSIONS.SHIFT_EDIT)
@@ -24,6 +29,18 @@ export class TimeTrackingMutationResolver {
     @Context() context: AuthenticatedGraphQLContext,
     @Session() session: UserSession,
   ): Promise<TimeEntry> {
+    // A client-supplied volunteer id must belong to the unit (or an ancestor),
+    // exactly like the manager check-in path. Without this, a time entry could
+    // be created for a user from another unit/organisation and the export
+    // would then disclose their personal data.
+    const isMember = await this.membershipService.isMemberOfUnitOrAncestor(
+      input.volunteerId,
+      context.organizationUnitId,
+    );
+    if (!isMember) {
+      throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
+    }
+
     const entity = await this.timeTrackingService.addTimeEntry(
       context.organizationUnitId,
       input,
@@ -163,9 +180,11 @@ export class TimeTrackingMutationResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Mutation(() => Boolean)
   async checkInInviteToOrganization(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<boolean> {
+    const volunteerId =
+      await this.userService.resolveVolunteerIdByCheckInId(checkInId);
     await this.timeTrackingService.inviteVolunteerToOrganization(
       context.organizationUnitId,
       volunteerId,

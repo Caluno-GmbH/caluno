@@ -5,24 +5,29 @@ import { TimeEntryRepository } from '../../repositories/time-entry/time-entry.re
 import { useSdk } from './use-graphql-client';
 
 /**
- * Enabled only while the accept-membership sheet is open — the sheet is the
- * only consumer, and there is no reason to keep this fetched otherwise.
+ * The required forms gating a check-in membership approval. Consumers enable
+ * it only while it matters: the check-in page while a membership request is
+ * pending (polling via `refetchInterval` to notice forms the volunteer submits
+ * on their device), and the accept-membership sheet while it is open. Both
+ * share one cache entry.
  */
 export function useCheckInVolunteerRequiredForms(
   organizationUnitId: string,
-  volunteerId: string,
+  checkInId: string,
   enabled: boolean,
+  options?: { refetchInterval?: number | false },
 ) {
   const sdk = useSdk();
   const repository = new TimeEntryRepository(sdk);
 
   return useQuery({
-    queryKey: ['check-in-required-forms', organizationUnitId, volunteerId],
+    queryKey: ['check-in-required-forms', organizationUnitId, checkInId],
     queryFn: () =>
       repository.getCheckInVolunteerRequiredForms(
         organizationUnitId,
-        volunteerId,
+        checkInId,
       ),
-    enabled: !!organizationUnitId && !!volunteerId && enabled,
+    enabled: !!organizationUnitId && !!checkInId && enabled,
+    refetchInterval: options?.refetchInterval,
   });
 }

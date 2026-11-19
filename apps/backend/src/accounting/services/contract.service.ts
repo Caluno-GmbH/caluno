@@ -22,6 +22,7 @@ import {
   ContractStatus,
   DocumentKind,
   DocumentStatusChange,
+  ReimbursementTypeKey,
   SigneeType,
 } from '../enums';
 import type { CreateContractInput } from '../inputs/create-contract.input';
@@ -123,9 +124,9 @@ export class ContractService {
     if (filter.volunteerId) {
       conditions.push(eq(schema.contracts.volunteerId, filter.volunteerId));
     }
-    if (filter.reimbursementTypeId) {
+    if (filter.reimbursementTypeKey) {
       conditions.push(
-        eq(schema.contracts.reimbursementTypeId, filter.reimbursementTypeId),
+        eq(schema.contracts.reimbursementTypeKey, filter.reimbursementTypeKey),
       );
     }
     if (filter.status) {
@@ -182,11 +183,11 @@ export class ContractService {
    */
   async findActiveContract(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     period: BillingPeriod = { start: new Date(), end: new Date() },
   ): Promise<ContractEntity | undefined> {
     const rows = await this.findActiveCoveringContracts(
-      { volunteerId, reimbursementTypeId },
+      { volunteerId, reimbursementTypeKey },
       period,
     );
     return rows[0];
@@ -210,7 +211,7 @@ export class ContractService {
     );
     for (const row of rows) {
       const typeIds = typeIdsByVolunteerId.get(row.volunteerId) ?? new Set();
-      typeIds.add(row.reimbursementTypeId);
+      typeIds.add(row.reimbursementTypeKey);
       typeIdsByVolunteerId.set(row.volunteerId, typeIds);
     }
     return typeIdsByVolunteerId;
@@ -220,7 +221,7 @@ export class ContractService {
   private async findActiveCoveringContracts(
     where: {
       volunteerId: string | { in: string[] };
-      reimbursementTypeId?: string;
+      reimbursementTypeKey?: ReimbursementTypeKey;
     },
     period: BillingPeriod,
   ): Promise<ContractEntity[]> {
@@ -270,7 +271,7 @@ export class ContractService {
       string,
       {
         volunteerId: string;
-        reimbursementTypeId: string;
+        reimbursementTypeKey: ReimbursementTypeKey;
         organizationUnitId: string;
       }
     >();
@@ -278,12 +279,12 @@ export class ContractService {
       scopes.set(
         [
           target.volunteerId,
-          target.reimbursementTypeId,
+          target.reimbursementTypeKey,
           target.organizationUnitId,
         ].join('\u0000'),
         {
           volunteerId: target.volunteerId,
-          reimbursementTypeId: target.reimbursementTypeId,
+          reimbursementTypeKey: target.reimbursementTypeKey,
           organizationUnitId: target.organizationUnitId,
         },
       );
@@ -312,7 +313,7 @@ export class ContractService {
     assertFieldOverrideLengths(input.fieldOverrides);
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      input.reimbursementTypeId,
+      input.reimbursementTypeKey,
       DocumentKind.CONTRACT,
       input.organizationUnitId,
     );
@@ -362,7 +363,10 @@ export class ContractService {
           and(
             eq(schema.documentTemplates.organizationId, organizationId),
             eq(schema.contracts.volunteerId, input.volunteerId),
-            eq(schema.contracts.reimbursementTypeId, input.reimbursementTypeId),
+            eq(
+              schema.contracts.reimbursementTypeKey,
+              input.reimbursementTypeKey,
+            ),
             eq(schema.contracts.contractStatus, ContractStatus.DRAFT),
             or(
               and(
@@ -396,7 +400,7 @@ export class ContractService {
         .values({
           documentTemplateId: template.id,
           volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           organizationUnitId,
           contractStatus: this.nextContractStatus(orderedSignees[0].signeeType),
           periodStart: input.periodStart,
@@ -501,7 +505,7 @@ export class ContractService {
     input: {
       organizationUnitId?: string;
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       /** Instant that must be covered by an existing contract. */
       anchorDate: Date;
     },
@@ -512,7 +516,7 @@ export class ContractService {
     const target: CoverageTarget = {
       key: 'anchor',
       volunteerId: input.volunteerId,
-      reimbursementTypeId: input.reimbursementTypeId,
+      reimbursementTypeKey: input.reimbursementTypeKey,
       organizationUnitId,
       at: input.anchorDate,
     };
@@ -531,7 +535,7 @@ export class ContractService {
 
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      input.reimbursementTypeId,
+      input.reimbursementTypeKey,
       DocumentKind.CONTRACT,
       input.organizationUnitId,
     );
@@ -552,7 +556,7 @@ export class ContractService {
       // volunteer, type and unit: serialise the check and the insert.
       const lockKey = [
         input.volunteerId,
-        input.reimbursementTypeId,
+        input.reimbursementTypeKey,
         organizationUnitId,
       ].join(':');
       await tx.execute(
@@ -567,7 +571,7 @@ export class ContractService {
         {
           organizationUnitId,
           volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           periodStart: period.start,
           periodEnd: period.end,
         },
@@ -583,7 +587,7 @@ export class ContractService {
   ): Promise<ContractEntity> {
     const template = await this.documentTemplateService.findActiveTemplate(
       organizationId,
-      input.reimbursementTypeId,
+      input.reimbursementTypeKey,
       DocumentKind.CONTRACT,
       input.organizationUnitId,
     );
@@ -602,7 +606,7 @@ export class ContractService {
         {
           organizationUnitId,
           volunteerId: input.volunteerId,
-          reimbursementTypeId: input.reimbursementTypeId,
+          reimbursementTypeKey: input.reimbursementTypeKey,
           periodStart: input.periodStart,
           periodEnd: input.periodEnd,
         },
@@ -623,7 +627,7 @@ export class ContractService {
     draft: {
       organizationUnitId: string;
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       periodStart: Date;
       periodEnd: Date;
     },
@@ -634,7 +638,7 @@ export class ContractService {
       .values({
         documentTemplateId: template.id,
         volunteerId: draft.volunteerId,
-        reimbursementTypeId: draft.reimbursementTypeId,
+        reimbursementTypeKey: draft.reimbursementTypeKey,
         organizationUnitId: draft.organizationUnitId,
         contractStatus: ContractStatus.DRAFT,
         periodStart: draft.periodStart,

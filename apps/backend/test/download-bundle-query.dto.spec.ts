@@ -5,6 +5,7 @@ import {
   DownloadBundleQueryDto,
   MAX_NAMED_INVOICES,
 } from '../src/accounting/dto/download-bundle-query.dto';
+import { ReimbursementTypeKey } from '../src/accounting/enums';
 
 const id = () => crypto.randomUUID();
 
@@ -18,7 +19,7 @@ describe('DownloadBundleQueryDto', () => {
     const [a, b] = [id(), id()];
     const { dto, errors } = await check({
       volunteerId: id(),
-      reimbursementTypeId: id(),
+      reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
       invoiceIds: `${a},${b}`,
     });
     expect(errors).toHaveLength(0);
@@ -29,7 +30,7 @@ describe('DownloadBundleQueryDto', () => {
     for (const invoiceIds of [undefined, '']) {
       const { dto, errors } = await check({
         volunteerId: id(),
-        reimbursementTypeId: id(),
+        reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
         invoiceIds,
       });
       expect(errors).toHaveLength(0);
@@ -40,7 +41,7 @@ describe('DownloadBundleQueryDto', () => {
   it('rejects an id that is not a uuid', async () => {
     const { errors } = await check({
       volunteerId: id(),
-      reimbursementTypeId: id(),
+      reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
       invoiceIds: `${id()},not-a-uuid`,
     });
     expect(errors.map((e) => e.property)).toEqual(['invoiceIds']);
@@ -50,7 +51,7 @@ describe('DownloadBundleQueryDto', () => {
     const many = Array.from({ length: MAX_NAMED_INVOICES + 1 }, id).join(',');
     const { errors } = await check({
       volunteerId: id(),
-      reimbursementTypeId: id(),
+      reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
       invoiceIds: many,
     });
     expect(errors.map((e) => e.property)).toEqual(['invoiceIds']);
@@ -59,7 +60,7 @@ describe('DownloadBundleQueryDto', () => {
   it('accepts a volunteer id issued by better auth', async () => {
     const { errors } = await check({
       volunteerId: '3dbX9t0w3VkUbdO2BLzPA8fsBCAe3gAN',
-      reimbursementTypeId: id(),
+      reimbursementTypeKey: ReimbursementTypeKey.EHRENAMT,
     });
     expect(errors).toHaveLength(0);
   });
@@ -67,10 +68,10 @@ describe('DownloadBundleQueryDto', () => {
   it('rejects an empty volunteer or a type that is not a uuid', async () => {
     const { errors } = await check({
       volunteerId: '',
-      reimbursementTypeId: 'y',
+      reimbursementTypeKey: 'y',
     });
     expect(errors.map((e) => e.property).sort()).toEqual([
-      'reimbursementTypeId',
+      'reimbursementTypeKey',
       'volunteerId',
     ]);
   });

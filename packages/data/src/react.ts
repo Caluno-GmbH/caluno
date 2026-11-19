@@ -30,6 +30,7 @@ export {
 // (meta.changeAreas) reaches consumers that only import from '@repo/data/react'.
 export * from './react/change-feed/query-meta';
 // Data fetching hooks
+export * from './react/hooks/use-accounting-delivery';
 export * from './react/hooks/use-accounting-setup-status';
 export * from './react/hooks/use-admin-user-profile';
 export * from './react/hooks/use-available-events';
@@ -40,6 +41,7 @@ export * from './react/hooks/use-block';
 export * from './react/hooks/use-bundle-download';
 export * from './react/hooks/use-check-in';
 export * from './react/hooks/use-check-in-actions';
+export * from './react/hooks/use-check-in-context';
 export * from './react/hooks/use-check-in-readiness';
 export * from './react/hooks/use-check-in-required-forms';
 export * from './react/hooks/use-check-in-shift-instances';

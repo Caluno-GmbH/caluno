@@ -13,6 +13,7 @@ import { and, eq } from 'drizzle-orm';
 import {
   ContractStatus,
   DocumentKind,
+  type ReimbursementTypeKey,
   SigneeType,
 } from '../src/accounting/enums';
 import { PermissionKey } from '../src/auth/enums';
@@ -78,7 +79,7 @@ describe('changesSince', () => {
   let app: INestApplication;
   let db: Database;
   let testUserId: string;
-  let reimbursementTypeId: string;
+  let reimbursementTypeKey: ReimbursementTypeKey;
 
   const createFixture = async (): Promise<Fixture> => {
     const { organization, type } = await createOrganizationWithType(
@@ -170,7 +171,7 @@ describe('changesSince', () => {
     createDocumentTemplate(db, {
       organizationId: fixture.organizationId,
       organizationUnitId: fixture.rootId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       kind: DocumentKind.CONTRACT,
       signees: [{ order: 0, signeeType: SigneeType.VOLUNTEER }],
     });
@@ -180,7 +181,7 @@ describe('changesSince', () => {
     app = context.app;
     db = context.db;
     testUserId = context.testUserId;
-    reimbursementTypeId = (await createReimbursementType(db)).id;
+    reimbursementTypeKey = (await createReimbursementType(db)).key;
   });
 
   afterEach(() => {
@@ -455,7 +456,7 @@ describe('changesSince', () => {
       await tx.insert(schema.contracts).values({
         documentTemplateId: template.id,
         volunteerId: volunteer.id,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         organizationUnitId: fixture.rootId,
         contractStatus: ContractStatus.ACTIVE,
         periodStart: new Date('2026-01-01T00:00:00.000Z'),

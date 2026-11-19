@@ -497,8 +497,10 @@ export class FileService {
   }
 
   /**
-   * Export files are per-unit: any caller who may run either of the exports in
-   * that unit may download the file again after the presigned URL expired.
+   * Export files are per-unit. The filename starts with the table kind that
+   * produced it (`ExportService` builds `<tableKind>-…csv`), so a users export
+   * — which contains volunteer profile data — is not downloadable by a
+   * shift-only caller. Untyped/legacy names keep the either-permission check.
    */
   private async canDownloadExport(
     userId: string,
@@ -510,14 +512,13 @@ export class FileService {
       return false;
     }
 
-    const checks = await Promise.all([
-      this.authService.hasRequiredPermissions(userId, scopedUnitId, [
-        PERMISSIONS.SHIFT_EDIT,
-      ]),
-      this.authService.hasRequiredPermissions(userId, scopedUnitId, [
-        PERMISSIONS.VOLUNTEER_EDIT,
-      ]),
-    ]);
+    const checks = await Promise.all(
+      exportDownloadPermissions(file.filename).map((permission) =>
+        this.authService.hasRequiredPermissions(userId, scopedUnitId, [
+          permission,
+        ]),
+      ),
+    );
     return checks.some(Boolean);
   }
 
@@ -596,5 +597,21 @@ export class FileService {
       .update(schema.files)
       .set({ status: FileStatus.FAILED })
       .where(eq(schema.files.id, fileId));
+  }
+}
+
+/**
+ * Permissions that may download a generated export, keyed by the table kind in
+ * the filename (`ExportService` writes `<tableKind>-…csv`). A legacy or
+ * unknown name keeps the historical either-permission check.
+ */
+function exportDownloadPermissions(filename: string): string[] {
+  switch (filename.split('-')[0]) {
+    case 'users':
+      return [PERMISSIONS.VOLUNTEER_EDIT];
+    case 'shifts':
+      return [PERMISSIONS.SHIFT_EDIT];
+    default:
+      return [PERMISSIONS.SHIFT_EDIT, PERMISSIONS.VOLUNTEER_EDIT];
   }
 }

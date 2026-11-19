@@ -14,13 +14,17 @@ import type {
 } from './export-collector';
 
 const COLUMNS: readonly ExportColumnDefinition[] = [
-  { id: 'name', label: 'Name' },
-  { id: 'email', label: 'Email' },
-  { id: 'roles', label: 'Roles' },
-  { id: 'dateOfBirth', label: 'Date of Birth' },
-  { id: 'gender', label: 'Gender' },
-  { id: 'phone', label: 'Phone' },
-  { id: 'address', label: 'Address' },
+  { id: 'name', label: 'Name', labelKey: 'export.columns.users.name' },
+  { id: 'email', label: 'Email', labelKey: 'export.columns.users.email' },
+  { id: 'roles', label: 'Roles', labelKey: 'export.columns.users.roles' },
+  {
+    id: 'dateOfBirth',
+    label: 'Date of Birth',
+    labelKey: 'export.columns.users.dateOfBirth',
+  },
+  { id: 'gender', label: 'Gender', labelKey: 'export.columns.users.gender' },
+  { id: 'phone', label: 'Phone', labelKey: 'export.columns.users.phone' },
+  { id: 'address', label: 'Address', labelKey: 'export.columns.users.address' },
 ];
 
 type MembershipWithRelations = MembershipEntity & {
@@ -50,6 +54,7 @@ export class UsersExportCollector implements ExportCollector {
   readonly tableKind = ExportTable.USERS;
   readonly requiredPermission = PERMISSIONS.VOLUNTEER_EDIT;
   readonly technicalIdLabel = 'User ID';
+  readonly technicalIdLabelKey = 'export.technicalIds.users';
   readonly columns = COLUMNS;
 
   constructor(private readonly membershipService: MembershipService) {}

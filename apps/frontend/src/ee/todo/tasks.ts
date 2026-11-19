@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '@repo/data';
 import { MembershipRequestStatus } from '@repo/data';
 import { idsSharingTitleAndDay } from '@/lib/formatting/relative-day';
 
@@ -100,7 +101,7 @@ export interface OverviewTask {
   /** ISO timestamp used to order a merged list. */
   sortAt?: string;
   /** Raw reimbursement type key, when the card carries one. */
-  reimbursementTypeKey?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   /** Agreement or timesheet, for document cards. */
   documentKind?: 'contract' | 'invoice';
 }

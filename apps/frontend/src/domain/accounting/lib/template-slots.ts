@@ -74,10 +74,10 @@ export function findReimbursementType<T extends { key: string }>(
 export function slotRefFor(
   pauschale: PauschalenType,
   kind: 'contract' | 'invoice',
-  types: readonly Pick<RawReimbursementType, 'id' | 'key'>[] | undefined,
+  types: readonly Pick<RawReimbursementType, 'key'>[] | undefined,
 ): TemplateSlotRef {
   return {
     kind: apiDocumentKindFor(kind),
-    reimbursementTypeId: findReimbursementType(pauschale, types)?.id,
+    reimbursementTypeKey: findReimbursementType(pauschale, types)?.key,
   };
 }

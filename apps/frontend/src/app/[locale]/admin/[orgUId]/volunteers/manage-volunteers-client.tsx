@@ -1,7 +1,12 @@
 'use client';
 
-import { MembershipRequestStatus } from '@repo/data';
 import {
+  ExportTable,
+  MembershipRequestStatus,
+  PermissionKey,
+} from '@repo/data';
+import {
+  useHasPermission,
   useMembershipRequestCount,
   useMembershipRequests,
   useMemberships,
@@ -46,6 +51,8 @@ import { DataTablePagination } from '@/components/data-table/data-table-paginati
 import type { DataTableFeatures } from '@/components/data-table/features';
 import { SEARCH_DEBOUNCE_MS } from '@/components/data-table/table-params';
 import { readSort, toSorting } from '@/components/data-table/table-sort';
+import { ExportButton } from '@/components/export/export-button';
+import { ExportLogLine } from '@/components/export/export-log-line';
 import MembershipRequestCard from '@/domain/membership-requests/components/membership-request-card';
 import { RemoveMembershipButton } from '@/domain/memberships/components/remove-membership-button';
 import { organizationUnitUrl } from '@/domain/organization/share';
@@ -55,6 +62,7 @@ import {
 } from '@/domain/role/lib/role-label';
 import { EmptyVolunteerMatches } from '@/domain/volunteer/empty-volunteer-matches';
 import { EmptyVolunteers } from '@/domain/volunteer/empty-volunteers';
+import { useVolunteerExportColumns } from '@/domain/volunteer/volunteer-export-columns';
 import {
   collectVolunteerEmails,
   deriveCityOptions,
@@ -74,7 +82,6 @@ import { copyToClipboard } from '@/lib/clipboard';
 import { useFormatting } from '@/lib/formatting/use-formatting';
 import { ConfigureViewButton } from './configure-view-button';
 import { CopyableEmailCell } from './copyable-email-cell';
-import { DownloadVolunteersCsvButton } from './download-volunteers-csv-button';
 import { VolunteerRequiredFormsPopover } from './required-forms-popover';
 import { RoleSelectCell } from './role-select-cell';
 import {
@@ -107,6 +114,8 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
   const tRole = useTranslations('Role');
   const { data, isPending } = useMemberships(orgUId);
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
+  const exportColumns = useVolunteerExportColumns();
+  const canCheckIn = useHasPermission(PermissionKey.CheckInManage);
 
   const [
     { q, sort, dir, page, pageSize, roles, gender, city, verified, cols },
@@ -281,18 +290,20 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           const membership = row.original;
           return (
             <ActionsCell>
-              <Link
-                href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
-                aria-label={t('action.checkInAria')}
-              >
-                <Button
-                  size="icon-sm"
-                  variant="outline"
-                  tooltip={t('action.checkInShiftAria')}
+              {canCheckIn && (
+                <Link
+                  href={`/check-in/${membership.user.checkInId}/check-in?orgUId=${orgUId}`}
+                  aria-label={t('action.checkInAria')}
                 >
-                  <ScanQrCode />
-                </Button>
-              </Link>
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    tooltip={t('action.checkInShiftAria')}
+                  >
+                    <ScanQrCode />
+                  </Button>
+                </Link>
+              )}
               <RemoveMembershipButton
                 membershipId={membership.id}
                 volunteerName={membership.user.name}
@@ -302,7 +313,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
         },
       },
     ],
-    [t, orgUId, openVolunteerSheet, formatDate],
+    [t, orgUId, openVolunteerSheet, formatDate, canCheckIn],
   );
 
   if (isPending) {
@@ -465,11 +476,12 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
             {t('table.copyEmails', { count: visible.length })}
             <Copy className="size-4" />
           </Button>,
-          <DownloadVolunteersCsvButton
-            key="download-csv"
-            orgUId={orgUId}
-            rows={visible}
-            visibleColumnIds={cols}
+          <ExportButton
+            key="export"
+            tableKind={ExportTable.Users}
+            rowIds={visible.map((m) => m.id)}
+            columns={exportColumns}
+            permission={PermissionKey.VolunteerEdit}
           />,
         ]}
       >
@@ -579,6 +591,7 @@ function ApprovedTab({ orgUId }: { orgUId: string }) {
           />
         </>
       )}
+      <ExportLogLine tableKind={ExportTable.Users} />
     </div>
   );
 }

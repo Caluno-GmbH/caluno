@@ -131,6 +131,7 @@ describe('ExportService', () => {
     const result = await exportService.generateExport(ExportTable.USERS, {
       organizationUnitId: root.id,
       actorUserId: actor.id,
+      locale: 'en',
       rowIds: [membership.id],
       columns: ['email', 'name'],
       includeTechnicalIds: true,
@@ -154,6 +155,24 @@ describe('ExportService', () => {
     expect(logs[0]?.actorUserId).toBe(actor.id);
   });
 
+  it('writes CSV headers in the export locale', async () => {
+    const { root } = await seedOrganization();
+    const { membership } = await seedMember(root.id);
+    const actor = await createUser(db);
+
+    await exportService.generateExport(ExportTable.USERS, {
+      organizationUnitId: root.id,
+      actorUserId: actor.id,
+      locale: 'de',
+      rowIds: [membership.id],
+      columns: ['email', 'name'],
+      includeTechnicalIds: true,
+      includeSubUnits: false,
+    });
+
+    expect(csvLines(lastSaved())[0]).toBe('Name,E-Mail,Benutzer-ID');
+  });
+
   it('drops membership ids from another unit unless sub-units are included', async () => {
     const { root, child } = await seedOrganization();
     const rootMember = await seedMember(root.id);
@@ -165,6 +184,7 @@ describe('ExportService', () => {
       {
         organizationUnitId: root.id,
         actorUserId: actor.id,
+        locale: 'en',
         rowIds: [rootMember.membership.id, childMember.membership.id],
         columns: ['email'],
         includeTechnicalIds: false,
@@ -178,6 +198,7 @@ describe('ExportService', () => {
     await exportService.generateExport(ExportTable.USERS, {
       organizationUnitId: root.id,
       actorUserId: actor.id,
+      locale: 'en',
       rowIds: [rootMember.membership.id, childMember.membership.id],
       columns: ['email'],
       includeTechnicalIds: false,
@@ -209,6 +230,7 @@ describe('ExportService', () => {
     const input = {
       organizationUnitId: root.id,
       actorUserId: actor.id,
+      locale: 'en' as const,
       rowIds: [rootEntry.id, childEntry.id],
       columns: ['volunteerEmail'],
       includeTechnicalIds: false,
@@ -243,10 +265,22 @@ describe('ExportService', () => {
       title: `Child Shift ${crypto.randomUUID()}`,
     });
 
+    const rootInstance = await db.query.shiftInstances.findFirst({
+      where: { masterId: rootShift.id },
+    });
+    const childInstance = await db.query.shiftInstances.findFirst({
+      where: { masterId: childShift.id },
+    });
+    if (!rootInstance || !childInstance) {
+      throw new Error('Expected the shift factory to create occurrences');
+    }
+
+    // Shifts export is occurrence-level: row ids are shift-instance ids.
     const input = {
       organizationUnitId: root.id,
       actorUserId: actor.id,
-      rowIds: [rootShift.id, childShift.id],
+      locale: 'en' as const,
+      rowIds: [rootInstance.id, childInstance.id],
       columns: ['title'],
       includeTechnicalIds: false,
     };
@@ -273,6 +307,7 @@ describe('ExportService', () => {
     const result = await exportService.generateExport(ExportTable.USERS, {
       organizationUnitId: root.id,
       actorUserId: actor.id,
+      locale: 'en',
       rowIds: [],
       columns: ['name', 'email'],
       includeTechnicalIds: false,
@@ -296,6 +331,7 @@ describe('ExportService', () => {
       exportService.generateExport(ExportTable.USERS, {
         organizationUnitId: root.id,
         actorUserId: actor.id,
+        locale: 'en',
         rowIds: [],
         columns: ['name', 'not-a-column'],
         includeTechnicalIds: false,
@@ -313,6 +349,7 @@ describe('ExportService', () => {
       exportService.generateExport(ExportTable.USERS, {
         organizationUnitId: root.id,
         actorUserId: actor.id,
+        locale: 'en',
         rowIds: Array.from({ length: MAX_EXPORT_ROW_IDS + 1 }, () =>
           crypto.randomUUID(),
         ),

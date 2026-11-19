@@ -126,7 +126,7 @@ export const TimeEntryForm = ({
       shiftInstanceId: '',
       volunteerId: '',
       hasShift: initialValues?.hasShift ?? true,
-      isPaidTime: !!initialValues?.reimbursementTypeId,
+      isPaidTime: !!initialValues?.reimbursementTypeKey,
       ...initialValues,
     },
   });
@@ -136,7 +136,7 @@ export const TimeEntryForm = ({
   const startedAt = watch('startedAt');
   const endedAt = watch('endedAt');
   const isPaidTime = watch('isPaidTime');
-  const reimbursementTypeId = watch('reimbursementTypeId');
+  const reimbursementTypeKey = watch('reimbursementTypeKey');
   const volunteerId = watch('volunteerId');
 
   const volunteerOptions = useMemo<VolunteerOption[]>(
@@ -210,8 +210,8 @@ export const TimeEntryForm = ({
     const payload = formData.hasShift
       ? formData
       : { ...formData, shiftId: undefined, shiftInstanceId: undefined };
-    payload.reimbursementTypeId = formData.isPaidTime
-      ? formData.reimbursementTypeId
+    payload.reimbursementTypeKey = formData.isPaidTime
+      ? formData.reimbursementTypeKey
       : undefined;
 
     startTransition(async () => {
@@ -287,7 +287,7 @@ export const TimeEntryForm = ({
             onCheckedChange={(checked) => {
               setValue('isPaidTime', !!checked, { shouldValidate: true });
               if (!checked) {
-                setValue('reimbursementTypeId', undefined, {
+                setValue('reimbursementTypeKey', undefined, {
                   shouldValidate: true,
                 });
               }
@@ -300,30 +300,32 @@ export const TimeEntryForm = ({
 
       {isPaidTime && (
         <Field>
-          <FieldLabel htmlFor="reimbursementTypeId">
+          <FieldLabel htmlFor="reimbursementTypeKey">
             {t('pauschaleTypeLabel')}{' '}
             <span className="text-destructive">*</span>
           </FieldLabel>
           <Select
-            value={reimbursementTypeId}
+            value={reimbursementTypeKey}
             onValueChange={(value) =>
-              setValue('reimbursementTypeId', value, { shouldValidate: true })
+              setValue('reimbursementTypeKey', value as ReimbursementTypeKey, {
+                shouldValidate: true,
+              })
             }
             disabled={pending || reimbursementTypesQuery.isLoading}
           >
-            <SelectTrigger id="reimbursementTypeId">
+            <SelectTrigger id="reimbursementTypeKey">
               <SelectValue placeholder={t('pauschaleTypePlaceholder')} />
             </SelectTrigger>
             <SelectContent>
               {(reimbursementTypesQuery.data ?? []).map((type) => (
-                <SelectItem key={type.id} value={type.id}>
+                <SelectItem key={type.key} value={type.key}>
                   {pauschaleLabel(type.key)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          {errors.reimbursementTypeId && (
-            <FieldError>{errors.reimbursementTypeId.message}</FieldError>
+          {errors.reimbursementTypeKey && (
+            <FieldError>{errors.reimbursementTypeKey.message}</FieldError>
           )}
         </Field>
       )}

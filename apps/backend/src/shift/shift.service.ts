@@ -104,7 +104,7 @@ import {
   getDurationMinutes,
   isValidShiftDurationMinutes,
 } from './utils/duration';
-import { resolveEffectiveReimbursementTypeId } from './utils/effective-reimbursement-type';
+import { resolveEffectiveReimbursementTypeKey } from './utils/effective-reimbursement-type';
 import { parseRruleDays, parseRruleUntil } from './utils/parse-rrule';
 import { expandShift } from './utils/rrule-expander';
 import { localDateKey, syncShiftInstances } from './utils/shift-instance-sync';
@@ -1470,7 +1470,7 @@ export class ShiftService {
       shiftInput.startsAt,
       shiftInput.endsAt,
       eventId,
-      shiftInput.reimbursementTypeId,
+      shiftInput.reimbursementTypeKey,
       organizationUnitId,
     );
 
@@ -1490,7 +1490,7 @@ export class ShiftService {
         startsAt: shiftInput.startsAt,
         durationMinutes,
         eventId,
-        reimbursementTypeId: shiftInput.reimbursementTypeId,
+        reimbursementTypeKey: shiftInput.reimbursementTypeKey,
         invitedMemberIds,
         requiredFormIds,
       }),
@@ -1542,7 +1542,7 @@ export class ShiftService {
       shiftInput.startsAt,
       shiftInput.endsAt,
       eventId,
-      shiftInput.reimbursementTypeId,
+      shiftInput.reimbursementTypeKey,
       organizationUnitId,
     );
 
@@ -1562,7 +1562,7 @@ export class ShiftService {
         startsAt: shiftInput.startsAt,
         durationMinutes,
         eventId,
-        reimbursementTypeId: shiftInput.reimbursementTypeId,
+        reimbursementTypeKey: shiftInput.reimbursementTypeKey,
         invitedMemberIds: undefined,
         requiredFormIds,
       }),
@@ -1586,7 +1586,7 @@ export class ShiftService {
     startsAt: Date,
     endsAt: Date,
     eventId: string | null | undefined,
-    reimbursementTypeId: string | null | undefined,
+    reimbursementTypeKey: ReimbursementTypeKey | null | undefined,
     organizationUnitId: string,
   ): Promise<void> {
     if (eventId) {
@@ -1598,7 +1598,7 @@ export class ShiftService {
       );
     }
 
-    if (reimbursementTypeId) {
+    if (reimbursementTypeKey) {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         organizationUnitId,
       );
@@ -1622,7 +1622,7 @@ export class ShiftService {
       startsAt: Date;
       durationMinutes: number;
       eventId?: string | null;
-      reimbursementTypeId?: string | null;
+      reimbursementTypeKey?: ReimbursementTypeKey | null;
       invitedMemberIds?: string[] | null;
       requiredFormIds?: string[] | null;
     },
@@ -1645,7 +1645,7 @@ export class ShiftService {
         originalStartsAt: params.startsAt,
         durationMinutes: params.durationMinutes,
         eventId: params.eventId ?? null,
-        reimbursementTypeId: params.reimbursementTypeId ?? null,
+        reimbursementTypeKey: params.reimbursementTypeKey ?? null,
       })
       .returning();
 
@@ -1807,21 +1807,23 @@ export class ShiftService {
   }
 
   /**
-   * Creates a single ADMIN_INVITED invite for one volunteer, without touching any
-   * other invite on the instance — unlike `updateMembersForShiftInstance`,
-   * which replaces the whole member list. Used by the check-in flow's
-   * "invite to shift" blocker action. Re-inviting resurrects an inactive
-   * (REJECTED/CANCELLED) row like `updateMembersForShiftInstance` does; the
-   * invite notification only goes out when the invite actually changes.
+   * Puts one volunteer straight onto a shift instance from the check-in flow,
+   * without touching any other invite on it. Whatever the volunteer's current
+   * invite is (none, invited, awaiting approval, waitlisted, cancelled, ...),
+   * it ends up JOINED — join approval and the waitlist are bypassed because a
+   * manager is acting at the door. Capacity is still enforced unless the
+   * manager explicitly allows going over it. Other waitlisted volunteers are
+   * neither moved nor notified; shift managers get the usual "joined" notice.
    */
-  async inviteVolunteerToShiftInstance(
-    shiftInstanceId: string,
+  async addVolunteerToShiftInstanceAtCheckIn(
+    instanceId: string,
     volunteerId: string,
     organizationUnitId: string,
+    options: { allowOverCapacity: boolean; actorUserId: string },
   ): Promise<ShiftInstanceEntity> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: {
-        id: shiftInstanceId,
+        id: instanceId,
         master: { organizationUnitId, isDeleted: false },
         isCancelled: false,
       },
@@ -1832,7 +1834,7 @@ export class ShiftService {
     });
     if (!instance) {
       throw new NotFoundGraphQLError(
-        `Shift instance with ID ${shiftInstanceId} not found`,
+        `Shift instance with ID ${instanceId} not found`,
       );
     }
 
@@ -1844,59 +1846,68 @@ export class ShiftService {
       throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
     }
 
-    const existingStatus = instance.invites.find(
-      (invite) => invite.userId === volunteerId,
-    )?.status as ShiftInviteStatus | undefined;
-    const hasActiveInvite =
-      existingStatus != null &&
-      ACTIVE_SHIFT_INVITE_STATUSES.includes(existingStatus);
+    // Capacity check and seat write run under a row lock on the instance, so
+    // concurrent adds cannot both take the last seat.
+    const { joined, existingStatus } = await this.db.transaction(async (tx) => {
+      await tx
+        .select({ id: schema.shiftInstances.id })
+        .from(schema.shiftInstances)
+        .where(eq(schema.shiftInstances.id, instanceId))
+        .for('update');
 
-    await this.db.transaction(async (tx) => {
-      await this.inviteMembersToShiftInstance(
-        tx,
-        instance,
-        [volunteerId],
-        ShiftInviteStatus.ADMIN_INVITED,
-      );
-      if (existingStatus != null && !hasActiveInvite) {
-        // The insert above no-ops on conflict; resurrect the inactive row.
-        await tx
-          .update(schema.shiftInstanceInvites)
-          .set({
-            status: ShiftInviteStatus.ADMIN_INVITED,
-            remindedAt: null,
-          })
-          .where(
-            and(
-              eq(schema.shiftInstanceInvites.instanceId, shiftInstanceId),
-              eq(schema.shiftInstanceInvites.userId, volunteerId),
-            ),
-          );
+      const [existingInvite] = await tx
+        .select({ status: schema.shiftInstanceInvites.status })
+        .from(schema.shiftInstanceInvites)
+        .where(
+          and(
+            eq(schema.shiftInstanceInvites.instanceId, instanceId),
+            eq(schema.shiftInstanceInvites.userId, volunteerId),
+          ),
+        );
+      const existingStatus = existingInvite?.status as
+        | ShiftInviteStatus
+        | undefined;
+      if (isParticipatingShiftInviteStatus(existingStatus)) {
+        // Already holds a seat; nothing to change, nothing to announce.
+        return { joined: false, existingStatus };
       }
-    });
 
-    if (!hasActiveInvite) {
-      void this.loadAndEmitShiftInstanceInvitedNotification(
-        instance.master,
-        instance,
-        [volunteerId],
-      );
-      const organizationId = await this.resolveOrganizationId(
-        instance.master.organizationUnitId,
-      );
-      this.postHogService.capture({
-        event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE,
-        userId: volunteerId,
-        properties: {
-          surface: POSTHOG_SURFACE.BACKOFFICE,
-          organization_id: organizationId,
-          organization_unit_id: instance.master.organizationUnitId,
-          shift_id: instance.master.id,
-          shift_instance_id: shiftInstanceId,
-          source: POSTHOG_JOIN_SOURCE.CHECK_IN,
-        },
-      });
-    }
+      if (!options.allowOverCapacity) {
+        const maxVolunteers =
+          instance.overrideMaxVolunteers ?? instance.master.maxVolunteers;
+        if (!(await this.hasAvailableSeat(instanceId, maxVolunteers, tx))) {
+          throw new ConflictGraphQLError('Shift instance is at full capacity');
+        }
+      }
+
+      await tx
+        .insert(schema.shiftInstanceInvites)
+        .values({
+          instanceId,
+          userId: volunteerId,
+          status: ShiftInviteStatus.JOINED,
+        })
+        .onConflictDoUpdate({
+          target: [
+            schema.shiftInstanceInvites.instanceId,
+            schema.shiftInstanceInvites.userId,
+          ],
+          set: { status: ShiftInviteStatus.JOINED, remindedAt: null },
+        });
+      return { joined: true, existingStatus };
+    });
+    if (!joined) return instance;
+
+    void this.notifyShiftInstanceJoined(volunteerId, instance.master, instance);
+    await this.captureShiftInstanceInviteUpdate({
+      userId: volunteerId,
+      organizationUnitId,
+      shiftId: instance.master.id,
+      shiftInstanceId: instanceId,
+      source: POSTHOG_JOIN_SOURCE.CHECK_IN,
+      inviteStatus: ShiftInviteStatus.JOINED,
+      previousStatus: existingStatus,
+    });
 
     return instance;
   }
@@ -2233,7 +2244,7 @@ export class ShiftService {
     organizationUnitId: string,
     options: { applyToAllFuture?: boolean; actorUserId?: string } = {},
   ): Promise<ShiftInstanceEntity> {
-    if (input.reimbursementTypeId) {
+    if (input.reimbursementTypeKey) {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         organizationUnitId,
       );
@@ -2560,7 +2571,7 @@ export class ShiftService {
         overrideInstructions: input.instructions ?? null,
         overrideMinVolunteers: input.minVolunteers ?? null,
         overrideMaxVolunteers: input.maxVolunteers ?? null,
-        overrideReimbursementTypeId: input.reimbursementTypeId ?? null,
+        overrideReimbursementTypeKey: input.reimbursementTypeKey ?? null,
         actualStartsAt: input.startsAt,
         actualEndsAt: input.endsAt,
         isException: true,
@@ -2646,8 +2657,8 @@ export class ShiftService {
           : null;
 
     const typeChanged =
-      input.reimbursementTypeId !== undefined &&
-      input.reimbursementTypeId !== shift.reimbursementTypeId;
+      input.reimbursementTypeKey !== undefined &&
+      input.reimbursementTypeKey !== shift.reimbursementTypeKey;
 
     const [updatedShift] = await tx
       .update(schema.shifts)
@@ -2660,8 +2671,8 @@ export class ShiftService {
         maxVolunteers: input.maxVolunteers ?? null,
         ...(input.visibility ? { visibility: input.visibility } : {}),
         ...(imageUrl !== undefined ? { imageUrl } : {}),
-        ...(input.reimbursementTypeId !== undefined
-          ? { reimbursementTypeId: input.reimbursementTypeId }
+        ...(input.reimbursementTypeKey !== undefined
+          ? { reimbursementTypeKey: input.reimbursementTypeKey }
           : {}),
         rrule: newRrule,
         originalStartsAt: newOriginalStartsAt,
@@ -2744,7 +2755,7 @@ export class ShiftService {
           overrideInstructions: null,
           overrideMinVolunteers: null,
           overrideMaxVolunteers: null,
-          overrideReimbursementTypeId: null,
+          overrideReimbursementTypeKey: null,
           isException: false,
         })
         .where(
@@ -2765,7 +2776,7 @@ export class ShiftService {
           overrideInstructions: null,
           overrideMinVolunteers: null,
           overrideMaxVolunteers: null,
-          overrideReimbursementTypeId: null,
+          overrideReimbursementTypeKey: null,
           isException: false,
           actualStartsAt: sql`date_trunc('day', ${schema.shiftInstances.actualStartsAt}) + ${startTime}::interval`,
           actualEndsAt: sql`(date_trunc('day', ${schema.shiftInstances.actualStartsAt}) + ${startTime}::interval) + (${durationMinutes}::int * interval '1 minute')`,
@@ -2780,17 +2791,17 @@ export class ShiftService {
     }
 
     // Runs after the override-reset blocks above (not before): those blocks
-    // clear overrideReimbursementTypeId for every instance whose
+    // clear overrideReimbursementTypeKey for every instance whose
     // actualStartsAt >= fromDate, which on a multi-occurrence day can include
     // an instance that has already ended. Snapshotting first would have that
     // reset immediately wipe the freeze this call just wrote. Idempotent —
-    // only touches instances with overrideReimbursementTypeId IS NULL and
+    // only touches instances with overrideReimbursementTypeKey IS NULL and
     // actualEndsAt < now() — so running it last is safe and closes the gap.
     if (typeChanged) {
       await this.snapshotPastInstanceTypes(
         tx,
         shift.id,
-        shift.reimbursementTypeId,
+        shift.reimbursementTypeKey,
       );
     }
 
@@ -2818,17 +2829,17 @@ export class ShiftService {
   private async snapshotPastInstanceTypes(
     tx: Database,
     shiftId: string,
-    previousReimbursementTypeId: string | null,
+    previousReimbursementTypeKey: ReimbursementTypeKey | null,
   ): Promise<void> {
-    if (!previousReimbursementTypeId) return;
+    if (!previousReimbursementTypeKey) return;
 
     await tx
       .update(schema.shiftInstances)
-      .set({ overrideReimbursementTypeId: previousReimbursementTypeId })
+      .set({ overrideReimbursementTypeKey: previousReimbursementTypeKey })
       .where(
         and(
           eq(schema.shiftInstances.masterId, shiftId),
-          isNull(schema.shiftInstances.overrideReimbursementTypeId),
+          isNull(schema.shiftInstances.overrideReimbursementTypeKey),
           lt(schema.shiftInstances.actualEndsAt, new Date()),
         ),
       );
@@ -3293,7 +3304,7 @@ export class ShiftService {
       ...shiftInput
     } = input;
 
-    if (shiftInput.reimbursementTypeId) {
+    if (shiftInput.reimbursementTypeKey) {
       await this.accountingOrgAccessService.resolveEnabledOrganizationId(
         organizationUnitId,
       );
@@ -3340,18 +3351,22 @@ export class ShiftService {
         imageFileId !== undefined;
 
       const typeChanged =
-        shiftInput.reimbursementTypeId !== undefined &&
-        shiftInput.reimbursementTypeId !== shift.reimbursementTypeId;
+        shiftInput.reimbursementTypeKey !== undefined &&
+        shiftInput.reimbursementTypeKey !== shift.reimbursementTypeKey;
 
       // When a shift previously had no type and gets one for the first
-      // time, `shift.reimbursementTypeId` is null here, so no snapshot is
+      // time, `shift.reimbursementTypeKey` is null here, so no snapshot is
       // taken — there's nothing meaningful to preserve in a nullable
       // override column ("no type" and "inherit from master" aren't
       // distinguishable). Already-occurred instances will start reflecting
       // the newly-set master type if a new time entry is ever created
       // against them later. Known, accepted limitation.
       if (typeChanged) {
-        await this.snapshotPastInstanceTypes(tx, id, shift.reimbursementTypeId);
+        await this.snapshotPastInstanceTypes(
+          tx,
+          id,
+          shift.reimbursementTypeKey,
+        );
       }
 
       if (hasValuesToUpdate) {
@@ -3661,40 +3676,6 @@ export class ShiftService {
     return this.userService.findByIdOrThrow(createdById);
   }
 
-  /**
-   * Batch-resolve reimbursement type keys by id. Volunteer-facing surfaces
-   * only ever need the Pauschalentyp (EHRENAMT/UEBUNGSLEITER), never the
-   * rate/limit amounts, so this intentionally returns just the key.
-   */
-  async findReimbursementTypeKeysByIds(
-    ids: string[],
-  ): Promise<{ id: string; key: ReimbursementTypeKey }[]> {
-    if (ids.length === 0) {
-      return [];
-    }
-    return this.db.query.reimbursementTypes.findMany({
-      where: { id: { in: ids } },
-      columns: { id: true, key: true },
-    });
-  }
-
-  /**
-   * Volunteer-safe reimbursement type key for an id. Returns null when the id
-   * is absent (unpaid) or no longer resolves, so callers can omit the paid
-   * indicator entirely.
-   */
-  private async resolveReimbursementTypeKey(
-    reimbursementTypeId: string | null | undefined,
-  ): Promise<ReimbursementTypeKey | null> {
-    if (!reimbursementTypeId) {
-      return null;
-    }
-    const rows = await this.findReimbursementTypeKeysByIds([
-      reimbursementTypeId,
-    ]);
-    return rows[0]?.key ?? null;
-  }
-
   private async loadAndEmitShiftInstanceInvitedNotification(
     shift: ShiftEntity,
     instance: ShiftInstanceEntity,
@@ -3713,11 +3694,9 @@ export class ShiftService {
         return;
       }
 
-      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
-        resolveEffectiveReimbursementTypeId(
-          instance.overrideReimbursementTypeId,
-          shift.reimbursementTypeId,
-        ),
+      const reimbursementTypeKey = resolveEffectiveReimbursementTypeKey(
+        instance.overrideReimbursementTypeKey,
+        shift.reimbursementTypeKey,
       );
 
       this.notificationService.notifyShiftInstanceInvited({
@@ -4339,9 +4318,7 @@ export class ShiftService {
         })),
       );
 
-      const reimbursementTypeKey = await this.resolveReimbursementTypeKey(
-        shift.reimbursementTypeId,
-      );
+      const reimbursementTypeKey = shift.reimbursementTypeKey;
 
       this.notificationService.notifyShiftInvited({
         organizationUnitId: organizationUnit.id,
@@ -5584,7 +5561,7 @@ export class ShiftService {
     return participants?.current ?? 0;
   }
 
-  private async hasAvailableSeat(
+  async hasAvailableSeat(
     instanceId: string,
     maxVolunteers: number | null | undefined,
     db: Database = this.db,

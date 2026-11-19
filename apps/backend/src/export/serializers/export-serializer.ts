@@ -5,7 +5,10 @@ export type ExportCell = string | number | null | undefined;
 
 export interface ExportColumnDefinition {
   id: string;
+  /** English fallback used when no translation is available. */
   label: string;
+  /** i18n key for the CSV header (see the export.json locale catalogs). */
+  labelKey: string;
 }
 
 export interface ExportRow {
@@ -47,9 +50,24 @@ export function serializeExport(options: {
   rows: readonly ExportRow[];
   includeTechnicalIds: boolean;
   technicalIdLabel: string;
+  technicalIdLabelKey?: string;
+  /** Resolves a label key; a missing key comes back unchanged. */
+  translate?: (key: string) => string;
 }): string {
-  const header = options.columns.map((column) => column.label);
-  if (options.includeTechnicalIds) header.push(options.technicalIdLabel);
+  const translated = (key: string | undefined, fallback: string): string => {
+    if (!key || !options.translate) return fallback;
+    const value = options.translate(key);
+    return value === key ? fallback : value;
+  };
+
+  const header = options.columns.map((column) =>
+    translated(column.labelKey, column.label),
+  );
+  if (options.includeTechnicalIds) {
+    header.push(
+      translated(options.technicalIdLabelKey, options.technicalIdLabel),
+    );
+  }
 
   const dataRows = options.rows.map((row) => {
     const cells = options.columns.map((column) => row.cells[column.id]);

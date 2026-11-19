@@ -37,7 +37,7 @@ export default async function VolunteeringDecidePage({
 
   const checkInOrgUnits = await getMyCheckInOrgUnits();
   if (checkInOrgUnits.length === 0) {
-    redirect({ href: '/check-in', locale });
+    return <CheckInUnavailableCard reason="noPermission" />;
   }
 
   const data = await getDataClient();
@@ -73,7 +73,9 @@ export default async function VolunteeringDecidePage({
 
   return (
     <div className="max-w-2xl px-4 py-8 space-y-6">
-      <UserCard user={context.volunteer} size="lg" />
+      {context.volunteer && (
+        <UserCard user={context.volunteer} size="lg" hideEmail />
+      )}
 
       <Card>
         <CardHeader>

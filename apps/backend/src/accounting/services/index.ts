@@ -1,3 +1,4 @@
+export { AccountingDeliverySettingsService } from './accounting-delivery-settings.service';
 export { AccountingOrgAccessService } from './accounting-org-access.service';
 export { AccountingScopeService } from './accounting-scope.service';
 export {
@@ -5,7 +6,9 @@ export {
   type AccountingSetupStatusResult,
   type AccountingTemplateSlotStatus,
 } from './accounting-setup.service';
+export { BundleDeliveryLogService } from './bundle-delivery-log.service';
 export { BundleDownloadService } from './bundle-download.service';
+export { BundleEmailService } from './bundle-email.service';
 export { ContractService } from './contract.service';
 export { DocumentNotificationService } from './document-notification.service';
 export { DocumentProfileRequirementService } from './document-profile-requirement.service';

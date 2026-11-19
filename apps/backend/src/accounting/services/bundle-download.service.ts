@@ -10,9 +10,16 @@ import { PDFDocument } from 'pdf-lib';
 import type { Database } from '../../database/database.module';
 import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { FileService } from '../../storage/services/file.service';
-import { InvoiceStatus } from '../enums';
+import {
+  BundleDeliveryIssue,
+  BundleDeliveryMethod,
+  InvoiceStatus,
+  ReimbursementTypeKey,
+} from '../enums';
 import type { ContractEntity } from '../schemas/contract.schema';
+import { billingYearOf } from '../utils/billing-period';
 import { ContractCover, type CoverageTarget } from '../utils/contract-coverage';
+import { BundleDeliveryLogService } from './bundle-delivery-log.service';
 import { ContractService } from './contract.service';
 import { InvoiceService } from './invoice.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
@@ -22,9 +29,26 @@ interface BuiltBundle {
   zipName: string;
 }
 
+export interface BundleScope {
+  volunteerId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
+  organizationUnitId: string;
+}
+
+export interface BundleDocument {
+  invoiceId: string;
+  filename: string;
+  content: Buffer;
+}
+
+export type ReadyInvoice = Awaited<
+  ReturnType<BundleDownloadService['loadReadyInvoices']>
+>[number];
+
 /**
  * Assembles the ready-to-go documents for a volunteer + reimbursement type
- * into a single downloadable ZIP and records the download (audit row + marking
+ * (for a ZIP download, or for `BundleEmailService` to send) and records the
+ * download (audit row + marking
  * the READY invoices as paid) once the bundle is built.
  *
  * The bundle holds one PDF per READY timesheet of that type the board shows
@@ -47,22 +71,85 @@ export class BundleDownloadService {
     private readonly reimbursementRateService: ReimbursementRateService,
     private readonly contractService: ContractService,
     private readonly invoiceService: InvoiceService,
+    private readonly bundleDeliveryLogService: BundleDeliveryLogService,
   ) {}
 
   async buildAndRecord(
+    organizationId: string,
     organizationUnitId: string,
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     userId: string,
     invoiceIds?: string[],
   ): Promise<BuiltBundle> {
-    const scope = { volunteerId, reimbursementTypeId, organizationUnitId };
-    // Every READY timesheet, paid or not: there is no payment integration, so
-    // a download is taken as the payment and a repeated one hands over the same
-    // documents again. The board names the timesheets it shows, so the ZIP
-    // holds what is on screen; they are still matched in this volunteer, type
-    // and unit and must be READY.
-    const invoices = await this.db.query.invoices.findMany({
+    const scope = { volunteerId, reimbursementTypeKey, organizationUnitId };
+    const invoices = await this.loadReadyInvoices(scope, invoiceIds);
+    if (invoices.length === 0) {
+      throw new BadRequestException(
+        'No ready documents to download for this volunteer and reimbursement type.',
+      );
+    }
+
+    // The issues only annotate the log row; they never block a download.
+    const [documents, issues] = await Promise.all([
+      this.assembleDocuments(invoices, scope, userId),
+      this.findIssues(organizationId, scope, invoices).catch(
+        (error: unknown) => {
+          this.logger.warn(
+            `Bundle download: issues for the log could not be found: ${reasonOf(error)}`,
+          );
+          return [];
+        },
+      ),
+    ]);
+
+    // `noSort` keeps the timesheets in the order they were added in.
+    const zip = new AdmZip(undefined, { noSort: true });
+    for (const document of documents) {
+      zip.addFile(document.filename, document.content);
+    }
+    const buffer = zip.toBuffer();
+
+    // Record the download (audit row + mark the READY invoices as paid). Only
+    // once the ZIP is built, and `loadTimesheetPdf` throws when a timesheet's
+    // file cannot be resolved, fetched or read, so nothing is marked paid for a
+    // ZIP that lacks one of its timesheets. Timesheets paid by an earlier download keep
+    // their stamp; the audit row still records this one.
+    await this.db.transaction(async (tx) => {
+      await this.reimbursementRateService.recordBundleDownload(
+        volunteerId,
+        reimbursementTypeKey,
+        userId,
+        invoices.filter((i) => !i.paidAt).map((i) => i.id),
+        tx,
+      );
+      await this.bundleDeliveryLogService.record(
+        {
+          ...scope,
+          method: BundleDeliveryMethod.DOWNLOAD,
+          invoiceIds: invoices.map((i) => i.id),
+          issues,
+          deliveredByUserId: userId,
+        },
+        tx,
+      );
+    });
+
+    return {
+      buffer,
+      zipName: `Abrechnung-${volunteerId.slice(0, 8)}.zip`,
+    };
+  }
+
+  /**
+   * Every READY timesheet, paid or not: there is no payment integration, so
+   * handing a bundle over is taken as the payment and a repeated one hands
+   * over the same documents again. The board names the timesheets it shows,
+   * so the bundle holds what is on screen; they are still matched in this
+   * volunteer, type and unit and must be READY.
+   */
+  async loadReadyInvoices(scope: BundleScope, invoiceIds?: string[]) {
+    return this.db.query.invoices.findMany({
       where: {
         ...scope,
         invoiceStatus: InvoiceStatus.READY,
@@ -75,21 +162,21 @@ export class BundleDownloadService {
         },
       },
     });
+  }
 
+  async assembleDocuments(
+    invoices: ReadyInvoice[],
+    scope: BundleScope,
+    userId: string,
+  ): Promise<BundleDocument[]> {
     const contractsByInvoice = await this.findCoveringContracts(
       invoices,
       scope,
     );
 
-    if (invoices.length === 0) {
-      throw new BadRequestException(
-        'No ready documents to download for this volunteer and reimbursement type.',
-      );
-    }
-
     // A READY timesheet without a PDF had its rendering fail when it was
     // signed; it is rendered now rather than left out of the bundle.
-    const timesheets: ((typeof invoices)[number] & { fileId: string })[] = [];
+    const timesheets: (ReadyInvoice & { fileId: string })[] = [];
     for (const invoice of invoices) {
       const fileId =
         invoice.fileId ?? (await this.renderMissingTimesheet(invoice, userId));
@@ -108,37 +195,67 @@ export class BundleDownloadService {
       return pdf;
     };
 
-    // `noSort` keeps the timesheets in the order they were added in.
-    const zip = new AdmZip(undefined, { noSort: true });
+    const documents: BundleDocument[] = [];
     for (const invoice of timesheets) {
-      const name = `Stundennachweis-${invoice.id.slice(0, 8)}-${invoice.id.slice(8, 12)}.pdf`;
-      const parts: PDFDocument[] = [await this.loadTimesheetPdf(name, invoice)];
+      const filename = `Stundennachweis-${invoice.id.slice(0, 8)}-${invoice.id.slice(8, 12)}.pdf`;
+      const parts: PDFDocument[] = [
+        await this.loadTimesheetPdf(filename, invoice),
+      ];
       for (const contract of contractsByInvoice.get(invoice.id) ?? []) {
         const pdf = await contractPdf(contract);
         if (pdf) parts.push(pdf);
       }
-      zip.addFile(name, await mergePdfs(parts));
+      documents.push({
+        invoiceId: invoice.id,
+        filename,
+        content: await mergePdfs(parts),
+      });
     }
-    const buffer = zip.toBuffer();
+    return documents;
+  }
 
-    // Record the download (audit row + mark the READY invoices as paid). Only
-    // once the ZIP is built, and `loadTimesheetPdf` throws when a timesheet's
-    // file cannot be resolved, fetched or read, so nothing is marked paid for a
-    // ZIP that lacks one of its timesheets. Timesheets paid by an earlier download keep
-    // their stamp; the audit row still records this one.
-    if (invoices.length > 0) {
-      await this.reimbursementRateService.recordBundleDownload(
-        volunteerId,
-        reimbursementTypeId,
-        userId,
-        invoices.filter((i) => !i.paidAt).map((i) => i.id),
-      );
+  /**
+   * What makes a bundle faulty, matching the board's flags: an hour without
+   * an ACTIVE contract right now, or a billing year of its timesheets over
+   * the yearly allowance. `checkAlreadySent` adds a repeated email send.
+   */
+  async findIssues(
+    organizationId: string,
+    scope: BundleScope,
+    invoices: ReadyInvoice[],
+    options: { checkAlreadySent?: boolean } = {},
+  ): Promise<BundleDeliveryIssue[]> {
+    const invoiceIds = invoices.map((invoice) => invoice.id);
+    const years = [
+      ...new Set(invoices.map((invoice) => billingYearOf(invoice.periodStart))),
+    ];
+    const [withoutCover, usages, alreadySent] = await Promise.all([
+      this.invoiceService.findInvoiceIdsWithoutActiveCover(invoiceIds),
+      Promise.all(
+        years.map((year) =>
+          this.reimbursementRateService.getYearlyUsage(
+            organizationId,
+            scope.volunteerId,
+            scope.reimbursementTypeKey,
+            year,
+          ),
+        ),
+      ),
+      options.checkAlreadySent
+        ? this.bundleDeliveryLogService.hasEmailDelivery(
+            scope.organizationUnitId,
+            invoiceIds,
+          )
+        : Promise.resolve(false),
+    ]);
+
+    const issues: BundleDeliveryIssue[] = [];
+    if (withoutCover.size > 0) issues.push(BundleDeliveryIssue.NO_CONTRACT);
+    if (usages.some((usage) => usage.usedCents > usage.limitCents)) {
+      issues.push(BundleDeliveryIssue.OVER_LIMIT);
     }
-
-    return {
-      buffer,
-      zipName: `Abrechnung-${volunteerId.slice(0, 8)}.zip`,
-    };
+    if (alreadySent) issues.push(BundleDeliveryIssue.ALREADY_SENT);
+    return issues;
   }
 
   /**
@@ -161,7 +278,7 @@ export class BundleDownloadService {
     }[],
     scope: {
       volunteerId: string;
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       organizationUnitId: string;
     },
   ): Promise<Map<string, ContractEntity[]>> {

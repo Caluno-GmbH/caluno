@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '@repo/data';
 import { parseISO } from 'date-fns';
 import {
   billingMonthOf,
@@ -34,7 +35,7 @@ export function mapOverviewTask(
     href: task.link,
     details: detailsFor(task, locale, labels?.reimbursementType),
     sortAt: sortAtFor(task),
-    reimbursementTypeKey: readString(task.data, 'reimbursementTypeKey'),
+    reimbursementTypeKey: readReimbursementTypeKey(task.data),
     documentKind: documentKind(type, task.data),
   };
 }
@@ -246,6 +247,13 @@ function formatHours(
 function formatAmount(cents: number | undefined): string | undefined {
   if (cents === undefined) return undefined;
   return formatHourlyRate(centsToEuros(cents));
+}
+
+function readReimbursementTypeKey(
+  data: Record<string, unknown>,
+): ReimbursementTypeKey | undefined {
+  const value = readString(data, 'reimbursementTypeKey');
+  return Object.values(ReimbursementTypeKey).find((key) => key === value);
 }
 
 function readString(

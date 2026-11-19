@@ -1,13 +1,13 @@
 import { Field, ID, InputType } from '@nestjs/graphql';
-import { InvoiceStatus } from '../enums';
+import { InvoiceStatus, ReimbursementTypeKey } from '../enums';
 
 @InputType()
 export class InvoiceFilterInput {
   @Field(() => ID, { nullable: true })
   volunteerId?: string | null;
 
-  @Field(() => ID, { nullable: true })
-  reimbursementTypeId?: string | null;
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 
   @Field(() => InvoiceStatus, { nullable: true })
   status?: InvoiceStatus | null;

@@ -9,6 +9,7 @@ import { checkInPath } from '@/domain/shift/routes';
 import { Link } from '@/i18n/navigation';
 import { getDataClient } from '@/lib/data-client';
 import { getFormatting } from '@/lib/formatting/formatting-server';
+import { getMyCheckInOrgUnits } from '@/lib/org-context-server';
 
 interface VolunteeringCheckOutPageProps {
   params: Promise<{ checkInId: string }>;
@@ -23,9 +24,18 @@ export default async function VolunteeringCheckOutPage({
   const { entryId, orgUId } = await searchParams;
 
   const data = await getDataClient();
-  const context = await data.timeEntry.getCheckInContext(checkInId);
+  const [context, checkInOrgUnits] = await Promise.all([
+    data.timeEntry.getCheckInContext(checkInId),
+    getMyCheckInOrgUnits(),
+  ]);
 
-  if (!context) {
+  if (checkInOrgUnits.length === 0) {
+    return <CheckInUnavailableCard reason="noPermission" />;
+  }
+
+  // Check-out is only for a volunteer the caller is related to; an unrelated
+  // one has no open entry in the caller's units to close anyway.
+  if (!context?.volunteer) {
     return <CheckInUnavailableCard />;
   }
 
@@ -71,7 +81,7 @@ export default async function VolunteeringCheckOutPage({
             </CardContent>
           </Card>
 
-          <UserCard user={context.volunteer} size="lg" />
+          <UserCard user={context.volunteer} size="lg" hideEmail />
 
           <div className="mt-2 bottom-0 left-4 right-4 z-50 pb-[calc(1rem+env(safe-area-inset-bottom))] md:static md:w-full">
             <CheckOutButton

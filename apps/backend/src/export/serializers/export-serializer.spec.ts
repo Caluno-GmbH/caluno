@@ -7,9 +7,9 @@ import {
 } from './export-serializer';
 
 const COLUMNS: readonly ExportColumnDefinition[] = [
-  { id: 'name', label: 'Name' },
-  { id: 'email', label: 'Email' },
-  { id: 'notes', label: 'Notes' },
+  { id: 'name', label: 'Name', labelKey: 'export.columns.users.name' },
+  { id: 'email', label: 'Email', labelKey: 'export.columns.users.email' },
+  { id: 'notes', label: 'Notes', labelKey: 'export.columns.users.notes' },
 ];
 
 describe('resolveExportColumns', () => {
@@ -62,6 +62,36 @@ describe('serializeExport', () => {
     });
 
     expect(csv.split('\r\n')[1]).toBe("'=SUM(A1)");
+  });
+
+  it('localizes headers through the translate callback', () => {
+    const csv = serializeExport({
+      columns: resolveExportColumns(COLUMNS, ['name', 'email']),
+      rows: [],
+      includeTechnicalIds: true,
+      technicalIdLabel: 'User ID',
+      technicalIdLabelKey: 'export.technicalIds.users',
+      translate: (key) => {
+        if (key === 'export.columns.users.name') return 'Nom';
+        if (key === 'export.columns.users.email') return 'E-mail';
+        if (key === 'export.technicalIds.users') return 'Identifiant';
+        return key;
+      },
+    });
+
+    expect(csv).toBe('Nom,E-mail,Identifiant\r\n');
+  });
+
+  it('falls back to the English label when a key has no translation', () => {
+    const csv = serializeExport({
+      columns: resolveExportColumns(COLUMNS, ['name']),
+      rows: [],
+      includeTechnicalIds: false,
+      technicalIdLabel: 'ID',
+      translate: (key) => key,
+    });
+
+    expect(csv).toBe('Name\r\n');
   });
 
   it('emits a header-only file for an empty selection', () => {

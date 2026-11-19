@@ -1,6 +1,10 @@
 import { registerEnumType } from '@nestjs/graphql';
+import { EmailDeliveryStatus } from '../../notification/email/outbox/email-outbox.enums';
 import { VolunteerAllowanceState } from '../services/volunteer-allowance';
 import {
+  AccountingSettingSourceKind,
+  BundleDeliveryIssue,
+  BundleDeliveryMethod,
   ContractStatus,
   DocumentKind,
   DocumentStatusChange,
@@ -45,4 +49,20 @@ registerEnumType(RateProvenanceKind, {
 
 registerEnumType(VolunteerAllowanceState, {
   name: 'VolunteerAllowanceState',
+});
+
+registerEnumType(BundleDeliveryMethod, {
+  name: 'BundleDeliveryMethod',
+});
+
+registerEnumType(BundleDeliveryIssue, {
+  name: 'BundleDeliveryIssue',
+});
+
+registerEnumType(AccountingSettingSourceKind, {
+  name: 'AccountingSettingSourceKind',
+});
+
+registerEnumType(EmailDeliveryStatus, {
+  name: 'EmailDeliveryStatus',
 });

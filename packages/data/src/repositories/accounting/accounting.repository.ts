@@ -1,15 +1,21 @@
 import type {
+  BundleDeliveryIssue,
   ContractFilterInput,
   CreateContractInput,
   CreateDocumentTemplateInput,
   CreateInvoiceInput,
   DocumentKind,
   InvoiceFilterInput,
+  ReimbursementTypeKey,
+  UpdateAccountingDeliverySettingsInput,
   UpdateDocumentTemplateInput,
 } from '../../generated/base-types';
 import type {
+  GetAccountingDeliverySettingsQuery,
   GetAccountingSetupStatusQuery,
+  GetBundleDeliveriesQuery,
   GetBundleDownloadStatusQuery,
+  GetBundleSendPreviewQuery,
   GetContractQuery,
   GetContractsQuery,
   GetDocumentTemplateQuery,
@@ -30,6 +36,7 @@ import type {
   MyDocumentSummaryQuery,
   MyDocumentsQuery,
   RecordBundleDownloadMutation,
+  SendReimbursementBundleMutation,
   SetManualBaselineMutation,
 } from '../../generated/graphql';
 import { BaseRepository } from '../base/base.repository';
@@ -53,7 +60,11 @@ export type ContractDetail = GetContractQuery['contract'];
 export type RawPendingSignee =
   GetPendingContractSigneeQuery['pendingContractSignee'];
 
-export type InvoiceSummary = GetInvoicesQuery['invoices'][number];
+type BoardInvoice = GetInvoicesQuery['invoices'][number];
+// `lastEmailDelivery` is selected by the admin board's GetInvoices only; the
+// volunteer and mutation queries share the rest of the shape.
+export type InvoiceSummary = Omit<BoardInvoice, 'lastEmailDelivery'> &
+  Partial<Pick<BoardInvoice, 'lastEmailDelivery'>>;
 export type InvoiceDetail = GetInvoiceQuery['invoice'];
 export type EligibleTimeEntry =
   GetEligibleTimeEntriesForInvoiceQuery['eligibleTimeEntriesForInvoice'][number];
@@ -83,6 +94,30 @@ export type RawBundleDownloadStatus =
 export type RecordedBundleDownload =
   RecordBundleDownloadMutation['recordBundleDownload'];
 
+// Prefixed with `Raw` because the GraphQL type names collide with the
+// same-named entity types exported from `generated/graphql.ts`.
+export type RawAccountingDeliverySettings =
+  GetAccountingDeliverySettingsQuery['accountingDeliverySettings'];
+export type RawBundleSendPreview =
+  GetBundleSendPreviewQuery['bundleSendPreview'];
+export type SentBundle =
+  SendReimbursementBundleMutation['sendReimbursementBundle'];
+export type RawBundleDelivery =
+  GetBundleDeliveriesQuery['bundleDeliveries'][number];
+
+export interface BundleRequest {
+  volunteerId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
+  invoiceIds?: string[];
+}
+
+/** The recipient and subject are the ones the admin was shown; a change since is refused. */
+export interface SendBundleRequest extends BundleRequest {
+  acknowledgedIssues: BundleDeliveryIssue[];
+  expectedRecipientEmail: string;
+  expectedSubject: string;
+}
+
 // Prefixed with `Raw` because `ManualBaseline` collides with the same-named
 // entity type exported from `generated/graphql.ts`.
 export type RawManualBaseline = GetManualBaselineQuery['manualBaseline'];
@@ -108,7 +143,7 @@ export class AccountingRepository extends BaseRepository {
   }
 
   async setReimbursementRate(input: {
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     hourlyRateCents: number;
     organizationUnitId?: string;
   }) {
@@ -118,7 +153,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findYearlyUsage(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     year: number;
     asOfDate?: string;
     excludeInvoiceId?: string;
@@ -222,7 +257,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findEligibleTimeEntriesForInvoice(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     periodStart?: string;
     periodEnd?: string;
   }): Promise<EligibleTimeEntry[]> {
@@ -232,7 +267,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findTimeEntriesAwaitingReviewForInvoice(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     periodStart?: string;
     periodEnd?: string;
   }): Promise<AwaitingReviewTimeEntry[]> {
@@ -285,7 +320,7 @@ export class AccountingRepository extends BaseRepository {
 
   async findActiveDocumentTemplate(input: {
     kind: DocumentKind;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     organizationUnitId?: string;
   }): Promise<DocumentTemplateDetail> {
     const data = await this.sdk.GetActiveDocumentTemplate(input);
@@ -314,23 +349,23 @@ export class AccountingRepository extends BaseRepository {
 
   async findBundleDownloadStatus(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
   ): Promise<RawBundleDownloadStatus> {
     const data = await this.sdk.GetBundleDownloadStatus({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
     });
     return data.bundleDownloadStatus;
   }
 
   async recordBundleDownload(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     invoiceIds?: string[],
   ): Promise<RecordedBundleDownload> {
     const data = await this.sdk.RecordBundleDownload({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       invoiceIds,
     });
     return data.recordBundleDownload;
@@ -338,12 +373,12 @@ export class AccountingRepository extends BaseRepository {
 
   async findManualBaseline(
     volunteerId: string,
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
     year: number,
   ): Promise<RawManualBaseline> {
     const data = await this.sdk.GetManualBaseline({
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
     });
     return data.manualBaseline;
@@ -351,7 +386,7 @@ export class AccountingRepository extends BaseRepository {
 
   async setManualBaseline(input: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     year: number;
     amountCents: number;
   }): Promise<SetManualBaselineResult> {
@@ -362,6 +397,40 @@ export class AccountingRepository extends BaseRepository {
   async findAccountingSetupStatus(): Promise<RawAccountingSetupStatus> {
     const data = await this.sdk.GetAccountingSetupStatus();
     return data.accountingSetupStatus;
+  }
+
+  async findAccountingDeliverySettings(): Promise<RawAccountingDeliverySettings> {
+    const data = await this.sdk.GetAccountingDeliverySettings();
+    return data.accountingDeliverySettings;
+  }
+
+  async updateAccountingDeliverySettings(
+    input: UpdateAccountingDeliverySettingsInput,
+  ): Promise<RawAccountingDeliverySettings> {
+    const data = await this.sdk.UpdateAccountingDeliverySettings({ input });
+    return data.updateAccountingDeliverySettings;
+  }
+
+  async findBundleSendPreview(
+    request: BundleRequest,
+  ): Promise<RawBundleSendPreview> {
+    const data = await this.sdk.GetBundleSendPreview(request);
+    return data.bundleSendPreview;
+  }
+
+  async sendReimbursementBundle(
+    request: SendBundleRequest,
+  ): Promise<SentBundle> {
+    const data = await this.sdk.SendReimbursementBundle(request);
+    return data.sendReimbursementBundle;
+  }
+
+  async findBundleDeliveries(options: {
+    limit?: number;
+    offset?: number;
+  }): Promise<RawBundleDelivery[]> {
+    const data = await this.sdk.GetBundleDeliveries(options);
+    return data.bundleDeliveries;
   }
 }
 
