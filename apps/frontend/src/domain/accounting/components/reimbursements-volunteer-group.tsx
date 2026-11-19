@@ -34,11 +34,11 @@ import {
   isTimesheetNonCompliant,
   visibleDocumentsForVolunteer,
 } from '../lib/board-filters';
+import { sortDocsForDisplay } from '../lib/mass-actions';
 import { STATUS_META } from '../lib/board-status';
 import type {
   BoardDocument,
   BoardVolunteer,
-  DocStatus,
   DocVolPair,
   FilterSettings,
   PauschalenLimit,
@@ -65,22 +65,6 @@ function abbreviateName(name: string): string {
   return `${first?.[0] ?? ''}. ${rest.join(' ')}`;
 }
 
-const STATUS_SORT_ORDER: DocStatus[] = [
-  'contract-generate',
-  'contract-draft',
-  'contract-expired',
-  'timesheet-generate',
-  'contract-missing',
-  'contract-signing-coord',
-  'timesheet-signing-coord',
-  'timesheet-ready',
-  'contract-signing-vol',
-  'timesheet-signing-vol',
-  'contract-active',
-  'timesheet-muted',
-  'contract-declined',
-  'timesheet-declined',
-];
 
 // ─── Bundle actions ───────────────────────────────────────────────────────────
 
@@ -421,10 +405,7 @@ function VolunteerTableGroup({
   // `vol.documents`, so compliance checks stay accurate regardless of view.
   const visibleDocs = visibleDocumentsForVolunteer(volunteer, filterSettings);
 
-  const sortedDocs = [...visibleDocs].sort(
-    (a, b) =>
-      STATUS_SORT_ORDER.indexOf(a.status) - STATUS_SORT_ORDER.indexOf(b.status),
-  );
+  const sortedDocs = sortDocsForDisplay(visibleDocs);
 
   if (sortedDocs.length === 0) return null;
 
