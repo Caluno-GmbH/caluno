@@ -26,9 +26,12 @@ import { ChevronDownIcon, FileTextIcon, SendIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
-import { API_URL } from '@/lib/constants';
 import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
+import {
+  requestBundleDownload,
+  triggerBlobDownload,
+} from '../lib/download-bundle';
 import { documentRowAction } from '../lib/board-data.utils';
 import {
   isTimesheetNonCompliant,
@@ -102,34 +105,15 @@ function useBundleDownload({
 
   const download = async () => {
     if (!reimbursementTypeId || isDownloading) return;
-    const url =
-      `${API_URL}/accounting/reimbursement-bundle/download` +
-      `?volunteerId=${encodeURIComponent(volunteerId)}` +
-      `&reimbursementTypeId=${encodeURIComponent(reimbursementTypeId)}` +
-      `&invoiceIds=${encodeURIComponent(invoiceIds.join(','))}`;
     setIsDownloading(true);
     try {
-      const response = await fetch(url, {
-        credentials: 'include',
-        headers: { 'x-organization-unit-id': orgUId },
+      const blob = await requestBundleDownload({
+        volunteerId,
+        reimbursementTypeId,
+        invoiceIds,
+        orgUId,
       });
-      if (!response.ok) {
-        toast.error(t('bundle.downloadError'));
-        void reportBundleDownloadFailure(response, {
-          volunteerId,
-          reimbursementTypeId,
-        });
-        return;
-      }
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = objectUrl;
-      anchor.download = `Abrechnung-${volunteerId.slice(0, 8)}.zip`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
+      triggerBlobDownload(blob, `Abrechnung-${volunteerId.slice(0, 8)}.zip`);
       // The bundle download records the audit row and marks the READY
       // invoices as paid, so refresh the board + "last downloaded" hint.
       queryClient.invalidateQueries({ queryKey: ['accounting'] });
