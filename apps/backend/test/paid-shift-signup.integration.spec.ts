@@ -50,7 +50,7 @@ const PAID_SHIFT_SIGNUP_VOLUNTEERS = `
   query PaidShiftSignupVolunteers($year: Int!) {
     paidShiftSignupVolunteers(year: $year) {
       volunteer { id }
-      reimbursementType { key }
+      reimbursementTypeKey
       periodStart
       periodEnd
     }
@@ -59,7 +59,7 @@ const PAID_SHIFT_SIGNUP_VOLUNTEERS = `
 
 type PaidShiftSignup = {
   volunteer: { id: string };
-  reimbursementType: { key: string };
+  reimbursementTypeKey: string;
   periodStart: string;
   periodEnd: string;
 };
@@ -205,7 +205,7 @@ describe('paidShiftSignupVolunteers', () => {
       expect.arrayContaining([
         expect.objectContaining({
           volunteer: { id: org.volunteerId },
-          reimbursementType: { key: org.reimbursementTypeKey },
+          reimbursementTypeKey: org.reimbursementTypeKey,
           // June 2026 as Berlin bounds (the default signup date).
           periodStart: '2026-05-31T22:00:00.000Z',
           periodEnd: '2026-06-30T22:00:00.000Z',
@@ -232,7 +232,7 @@ describe('paidShiftSignupVolunteers', () => {
     const matches = paidShiftSignupVolunteers.filter(
       (entry) =>
         entry.volunteer.id === org.volunteerId &&
-        entry.reimbursementType.key === org.reimbursementTypeKey,
+        entry.reimbursementTypeKey === org.reimbursementTypeKey,
     );
     expect(matches).toHaveLength(1);
   });

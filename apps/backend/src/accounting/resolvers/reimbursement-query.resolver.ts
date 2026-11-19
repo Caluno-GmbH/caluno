@@ -134,6 +134,7 @@ export class ReimbursementQueryResolver {
     return usage.map((entry) => ({
       volunteer: this.userMapper.toModelOrThrow(entry.volunteer),
       usageByType: entry.usageByType.map((typeUsage) => ({
+        reimbursementTypeKey: typeUsage.reimbursementType.key,
         reimbursementType: this.reimbursementTypeMapper.toModelOrThrow(
           typeUsage.reimbursementType,
         ),
@@ -218,6 +219,7 @@ export class ReimbursementQueryResolver {
 
     return {
       volunteer: this.userMapper.toModelOrThrow(volunteer),
+      reimbursementTypeKey: reimbursementType.key,
       reimbursementType:
         this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
       downloadedAt: status.downloadedAt,
@@ -246,6 +248,7 @@ export class ReimbursementQueryResolver {
 
     return {
       volunteer: this.userMapper.toModelOrThrow(volunteer),
+      reimbursementTypeKey: reimbursementType.key,
       reimbursementType:
         this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
       year: baseline.year,

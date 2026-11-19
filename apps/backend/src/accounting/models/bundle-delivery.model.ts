@@ -1,7 +1,11 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { EmailDeliveryStatus } from '../../notification/email/outbox/email-outbox.enums';
 import { User } from '../../user/models/user.model';
-import { BundleDeliveryIssue, BundleDeliveryMethod } from '../enums';
+import {
+  BundleDeliveryIssue,
+  BundleDeliveryMethod,
+  ReimbursementTypeKey,
+} from '../enums';
 import { ReimbursementType } from './reimbursement-type.model';
 
 @ObjectType()
@@ -14,6 +18,9 @@ export class BundleDelivery {
 
   @Field(() => User, { nullable: true })
   volunteer?: User | null;
+
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 
   @Field(() => ReimbursementType, { nullable: true })
   reimbursementType?: ReimbursementType | null;

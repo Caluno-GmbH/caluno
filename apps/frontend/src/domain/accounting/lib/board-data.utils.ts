@@ -525,19 +525,17 @@ export function buildBoardVolunteers({
     ]);
 
     for (const usage of entry.usageByType) {
-      const type = pauschaleForReimbursementTypeKey(
-        usage.reimbursementType.key,
-      );
+      const type = pauschaleForReimbursementTypeKey(usage.reimbursementTypeKey);
       limits[type] = {
         used: centsToEuros(usage.usedCents),
         total: centsToEuros(usage.limitCents),
       };
-      reimbursementTypeKeys[type] = usage.reimbursementType.key;
+      reimbursementTypeKeys[type] = usage.reimbursementTypeKey;
 
       const contractsForType = contracts.filter(
         (c) =>
           c.volunteer.id === entry.volunteer.id &&
-          c.reimbursementType.key === usage.reimbursementType.key &&
+          c.reimbursementTypeKey === usage.reimbursementTypeKey &&
           contractPeriodOverlapsYear(c, year),
       );
 
@@ -549,7 +547,7 @@ export function buildBoardVolunteers({
         (c) => c.contractStatus === ContractStatus.Active,
       );
       const timesheetsForType = volunteerTimesheetsToCreate.filter(
-        (t) => t.reimbursementTypeKey === usage.reimbursementType.key,
+        (t) => t.reimbursementTypeKey === usage.reimbursementTypeKey,
       );
       const months = monthsInRange(year, dateRange);
       const inSelectedMonths = (periodStart: string) => {
@@ -560,7 +558,7 @@ export function buildBoardVolunteers({
       // volunteer and Pauschale, the earliest uncovered month of the year, so a
       // filter here would hide a task that is still open.
       const paidShiftSignupsForType = volunteerPaidShiftSignups
-        .filter((s) => s.reimbursementTypeKey === usage.reimbursementType.key)
+        .filter((s) => s.reimbursementTypeKey === usage.reimbursementTypeKey)
         .sort(
           (a, b) =>
             new Date(a.periodStart).getTime() -
@@ -575,7 +573,7 @@ export function buildBoardVolunteers({
         const invoicesForMonth = invoices.filter(
           (i) =>
             i.volunteer.id === entry.volunteer.id &&
-            i.reimbursementType.key === usage.reimbursementType.key &&
+            i.reimbursementTypeKey === usage.reimbursementTypeKey &&
             invoiceInMonth(i, y, month),
         );
         for (const invoice of invoicesForMonth) {
@@ -621,7 +619,7 @@ export function buildBoardVolunteers({
       // contract" row, so the missing Vereinbarung is visible instead of the
       // hours being silently attributed to an agreement for another period.
       if (
-        eligibleTypeIds?.has(usage.reimbursementType.key) ||
+        eligibleTypeIds?.has(usage.reimbursementTypeKey) ||
         paidShiftSignupsForType.length > 0
       ) {
         // The earliest month of this Pauschale with an hour no non-declined

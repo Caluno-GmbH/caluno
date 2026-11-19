@@ -591,9 +591,9 @@ export function InvoiceCreationModal({
       ?.filter(
         (row) =>
           row.volunteer.id === volunteerId &&
-          row.reimbursementType.key !== reimbursementType?.key,
+          row.reimbursementTypeKey !== reimbursementType?.key,
       )
-      .map((row) => row.reimbursementType.key),
+      .map((row) => row.reimbursementTypeKey),
   });
   const hoursEmptyMessage =
     emptyReason?.kind === 'outside-period'

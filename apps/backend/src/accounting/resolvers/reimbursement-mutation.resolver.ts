@@ -109,6 +109,7 @@ export class ReimbursementMutationResolver {
 
     return {
       volunteer: this.userMapper.toModelOrThrow(volunteer),
+      reimbursementTypeKey: reimbursementType.key,
       reimbursementType:
         this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
       downloadedAt: status.downloadedAt,
@@ -167,6 +168,7 @@ export class ReimbursementMutationResolver {
 
     return {
       volunteer: this.userMapper.toModelOrThrow(volunteer),
+      reimbursementTypeKey: reimbursementType.key,
       reimbursementType:
         this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
       year: baseline.year,

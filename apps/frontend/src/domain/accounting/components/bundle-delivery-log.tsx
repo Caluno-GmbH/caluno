@@ -130,8 +130,8 @@ function DeliveryRow({ row }: { row: RawBundleDelivery }) {
   const t = useTranslations('Accounting.deliveries');
   const tSections = useTranslations('Accounting.templates.sections');
   const { formatDateTime } = useFormatting();
-  const pauschale = row.reimbursementType
-    ? pauschaleForReimbursementTypeKey(row.reimbursementType.key)
+  const pauschale = row.reimbursementTypeKey
+    ? pauschaleForReimbursementTypeKey(row.reimbursementTypeKey)
     : undefined;
 
   return (

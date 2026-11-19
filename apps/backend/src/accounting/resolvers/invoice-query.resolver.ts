@@ -231,6 +231,7 @@ export class InvoiceQueryResolver {
       }
       return {
         volunteer: this.userMapper.toModelOrThrow(user),
+        reimbursementTypeKey: row.reimbursementTypeKey,
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
         periodStart: row.periodStart,
@@ -293,6 +294,7 @@ export class InvoiceQueryResolver {
       }
       return {
         volunteer: this.userMapper.toModelOrThrow(user),
+        reimbursementTypeKey: row.reimbursementTypeKey,
         reimbursementType:
           this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
         periodStart: row.periodStart,

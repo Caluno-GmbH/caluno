@@ -82,6 +82,7 @@ export class BundleDeliveryQueryResolver {
       id: row.id,
       method: row.method,
       volunteer: row.volunteer,
+      reimbursementTypeKey: row.reimbursementType?.key ?? null,
       reimbursementType: this.reimbursementTypeMapper.toModel(
         row.reimbursementType,
       ),

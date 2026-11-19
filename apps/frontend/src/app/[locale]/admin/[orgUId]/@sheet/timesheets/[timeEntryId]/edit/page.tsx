@@ -36,7 +36,7 @@ export default async function TimeEntryUpdatePage({
         startedAt: new Date(entry.startedAt),
         endedAt: entry.endedAt ? new Date(entry.endedAt) : undefined,
         notes: entry.notes ?? undefined,
-        reimbursementTypeKey: entry.reimbursementType?.key ?? undefined,
+        reimbursementTypeKey: entry.reimbursementTypeKey ?? undefined,
       }}
     />
   );

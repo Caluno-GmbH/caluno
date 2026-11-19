@@ -79,9 +79,7 @@ query GetRosterYearlyUsage($organizationUnitId: ID!, $year: Int!) {
       image
     }
     usageByType {
-      reimbursementType {
-        key
-      }
+      reimbursementTypeKey
       usedCents
       limitCents
       remainingCents
@@ -113,9 +111,7 @@ fragment ContractSummaryFields on Contract {
     name
     image
   }
-  reimbursementType {
-    key
-  }
+  reimbursementTypeKey
   documentTemplate {
     id
     kind
@@ -220,9 +216,7 @@ fragment InvoiceSummaryFields on Invoice {
     name
     image
   }
-  reimbursementType {
-    key
-  }
+  reimbursementTypeKey
   documentTemplate {
     id
     kind
@@ -322,9 +316,7 @@ query GetVolunteersNeedingTimesheets(
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     periodStart
     periodEnd
     eligibleHours
@@ -341,9 +333,7 @@ query GetPaidShiftSignupVolunteers($year: Int!) {
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     periodStart
     periodEnd
   }
@@ -430,9 +420,7 @@ fragment DocumentTemplateSummaryFields on DocumentTemplate {
     id
     name
   }
-  reimbursementType {
-    key
-  }
+  reimbursementTypeKey
   organizationUnit {
     id
     name
@@ -507,9 +495,7 @@ query GetBundleDownloadStatus(
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     downloadedAt
     downloadedByUser {
       id
@@ -532,9 +518,7 @@ mutation RecordBundleDownload(
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     downloadedAt
     downloadedByUser {
       id
@@ -557,9 +541,7 @@ query GetManualBaseline(
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     year
     amountCents
     updatedAt
@@ -586,9 +568,7 @@ mutation SetManualBaseline(
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     year
     amountCents
     updatedAt
@@ -731,9 +711,7 @@ query GetBundleDeliveries($limit: Int, $offset: Int) {
       id
       name
     }
-    reimbursementType {
-      key
-    }
+    reimbursementTypeKey
     invoiceIds
     recipientEmail
     subject

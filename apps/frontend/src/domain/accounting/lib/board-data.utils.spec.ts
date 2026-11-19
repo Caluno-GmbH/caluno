@@ -34,20 +34,6 @@ import {
 import { STATUS_META } from './board-status';
 import type { BoardDocument, BoardVolunteer, DocStatus } from './board-types';
 
-const ehrenamtType = {
-  key: ReimbursementTypeKey.Ehrenamt,
-  legalReference: '',
-  yearlyLimitCents: 84_000,
-  platformDefaultRateCents: 450,
-};
-
-const _uebungsleiterType = {
-  key: ReimbursementTypeKey.Uebungsleiter,
-  legalReference: '',
-  yearlyLimitCents: 300_000,
-  platformDefaultRateCents: 1_200,
-};
-
 function makeContract(
   overrides: Partial<Parameters<typeof mapContractToBoardDoc>[0]> & {
     contractStatus?: ContractStatus;
@@ -71,11 +57,11 @@ function makeContract(
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
-    reimbursementType: ehrenamtType,
+    reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     documentTemplate: {
       id: 'dt-1',
       kind: DocumentKind.Contract,
-      reimbursementType: ehrenamtType,
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     },
     signatures: [],
     statusChanges: [],
@@ -108,11 +94,11 @@ function makeInvoice(
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
-    reimbursementType: ehrenamtType,
+    reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     documentTemplate: {
       id: 'dt-2',
       kind: DocumentKind.Invoice,
-      reimbursementType: ehrenamtType,
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     },
     invoiceTimeEntries: [],
     signatures: [],
@@ -512,7 +498,7 @@ describe('buildBoardVolunteers', () => {
         usedCents: 0,
         limitCents: 84_000,
         remainingCents: 84_000,
-        reimbursementType: ehrenamtType,
+        reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
       },
     ],
   };
@@ -1201,7 +1187,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 0,
               limitCents: 84_000,
               remainingCents: 84_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1232,7 +1218,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 12_000,
               limitCents: 84_000,
               remainingCents: 72_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1274,7 +1260,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 12_000,
               limitCents: 84_000,
               remainingCents: 72_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1321,7 +1307,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 21_300,
               limitCents: 84_000,
               remainingCents: 62_700,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1368,7 +1354,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 110_000,
               limitCents: 100_000,
               remainingCents: -10_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1400,7 +1386,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 90_000,
               limitCents: 100_000,
               remainingCents: 10_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1432,7 +1418,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 90_000,
               limitCents: 100_000,
               remainingCents: 10_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1464,7 +1450,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 80_000,
               limitCents: 84_000,
               remainingCents: 4_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1506,7 +1492,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 80_000,
               limitCents: 84_000,
               remainingCents: 4_000,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
@@ -1549,7 +1535,7 @@ describe('buildBoardVolunteers', () => {
               usedCents: 21_300,
               limitCents: 84_000,
               remainingCents: 62_700,
-              reimbursementType: ehrenamtType,
+              reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
             },
           ],
         },
