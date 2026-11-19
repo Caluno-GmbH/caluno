@@ -441,7 +441,7 @@ export class ReimbursementRateService {
     });
     if (!reimbursementType) {
       throw new NotFoundGraphQLError(
-        `Reimbursement type with ID ${key} not found`,
+        `Reimbursement type with key ${key} was not found`,
       );
     }
     return reimbursementType;

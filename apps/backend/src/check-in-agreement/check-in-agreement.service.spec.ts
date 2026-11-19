@@ -36,21 +36,12 @@ function makeBaseDeps() {
     findOrganizationByUnitId: jest.fn().mockResolvedValue({ id: 'org-1' }),
   };
 
-  const db = {
-    query: {
-      reimbursementTypes: {
-        findFirst: jest.fn().mockResolvedValue({ key: 'EHRENAMT' }),
-      },
-    },
-  };
-
   return {
     shiftService,
     contractService,
     documentTemplateService,
     authService,
     organizationUnitDataService,
-    db,
   };
 }
 
@@ -61,7 +52,6 @@ function makeService(deps: ReturnType<typeof makeBaseDeps>) {
     deps.documentTemplateService as never,
     deps.authService as never,
     deps.organizationUnitDataService as never,
-    deps.db as never,
   );
 }
 
