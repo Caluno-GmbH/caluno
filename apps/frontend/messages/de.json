@@ -2684,6 +2684,32 @@
         "contractError": "Die Vereinbarung ließ sich für {name} nicht ablehnen.",
         "invoice": "Stundennachweis für {name} abgelehnt.",
         "invoiceError": "Der Stundennachweis ließ sich für {name} nicht ablehnen."
+      },
+      "massActions": {
+        "selectedCount": "{count, plural, =1 {1 Dokument ausgewählt} other {{count} Dokumente ausgewählt}}",
+        "selectAll": "Alle auswählen",
+        "selectRow": "Zeile auswählen",
+        "countersignContracts": "{count, plural, =1 {1 Vereinbarung gegenzeichnen} other {{count} Vereinbarungen gegenzeichnen}}",
+        "countersignTimesheets": "{count, plural, =1 {1 Stundennachweis gegenzeichnen} other {{count} Stundennachweise gegenzeichnen}}",
+        "sendBundles": "{count, plural, =1 {1 Paket senden} other {{count} Pakete senden}}",
+        "downloadBundles": "{count, plural, =1 {1 Paket herunterladen} other {{count} Pakete herunterladen}}",
+        "countersignContractsDone": "{count, plural, =1 {1 Vereinbarung gegengezeichnet} other {{count} Vereinbarungen gegengezeichnet}}",
+        "countersignContractsPartial": "{done} von {total} Vereinbarungen gegengezeichnet, {failed} fehlgeschlagen",
+        "countersignTimesheetsDone": "{count, plural, =1 {1 Stundennachweis gegengezeichnet} other {{count} Stundennachweise gegengezeichnet}}",
+        "countersignTimesheetsPartial": "{done} von {total} Stundennachweisen gegengezeichnet, {failed} fehlgeschlagen",
+        "bundlesSentDone": "{count, plural, =1 {1 Paket gesendet} other {{count} Pakete gesendet}}",
+        "bundlesDownloadedDone": "{count, plural, =1 {1 Paket heruntergeladen} other {{count} Pakete heruntergeladen}}",
+        "bundlesNeedAttention": "{count, plural, =1 {1 Paket erfordert Aufmerksamkeit} other {{count} Pakete erfordern Aufmerksamkeit}}",
+        "blockedByIssues": "Einige ausgewählte Dokumente haben Probleme, die zuerst behoben werden müssen.",
+        "confirm": {
+          "title": "Pakete senden?",
+          "description": "Die folgenden Pakete werden an die Buchhaltung gesendet.",
+          "bundleLine": "{name} · {type} · {email}",
+          "issuesLabel": "Hat Probleme",
+          "needsAttentionLabel": "Erfordert Aufmerksamkeit",
+          "send": "Senden",
+          "cancel": "Abbrechen"
+        }
       }
     },
     "templates": {

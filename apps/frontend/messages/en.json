@@ -2684,6 +2684,32 @@
         "contractError": "We couldn't decline the agreement for {name}.",
         "invoice": "Timesheet declined for {name}.",
         "invoiceError": "We couldn't decline the timesheet for {name}."
+      },
+      "massActions": {
+        "selectedCount": "{count, plural, =1 {1 document selected} other {{count} documents selected}}",
+        "selectAll": "Select all",
+        "selectRow": "Select row",
+        "countersignContracts": "{count, plural, =1 {Countersign 1 contract} other {Countersign {count} contracts}}",
+        "countersignTimesheets": "{count, plural, =1 {Countersign 1 timesheet} other {Countersign {count} timesheets}}",
+        "sendBundles": "{count, plural, =1 {Send 1 bundle} other {Send {count} bundles}}",
+        "downloadBundles": "{count, plural, =1 {Download 1 bundle} other {Download {count} bundles}}",
+        "countersignContractsDone": "{count, plural, =1 {1 contract countersigned} other {{count} contracts countersigned}}",
+        "countersignContractsPartial": "{done} of {total} contracts countersigned, {failed} failed",
+        "countersignTimesheetsDone": "{count, plural, =1 {1 timesheet countersigned} other {{count} timesheets countersigned}}",
+        "countersignTimesheetsPartial": "{done} of {total} timesheets countersigned, {failed} failed",
+        "bundlesSentDone": "{count, plural, =1 {1 bundle sent} other {{count} bundles sent}}",
+        "bundlesDownloadedDone": "{count, plural, =1 {1 bundle downloaded} other {{count} bundles downloaded}}",
+        "bundlesNeedAttention": "{count, plural, =1 {1 bundle needs attention} other {{count} bundles need attention}}",
+        "blockedByIssues": "Some selected documents have issues to solve first.",
+        "confirm": {
+          "title": "Send bundles?",
+          "description": "The following bundles will be sent to accounting.",
+          "bundleLine": "{name} · {type} · {email}",
+          "issuesLabel": "Has issues",
+          "needsAttentionLabel": "Needs attention",
+          "send": "Send",
+          "cancel": "Cancel"
+        }
       }
     },
     "templates": {
