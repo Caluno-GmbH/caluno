@@ -1,8 +1,7 @@
-import type { ReimbursementTypeKey } from '@repo/data';
-
-('use client');
+'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { ReimbursementTypeKey } from '@repo/data';
 import {
   useCurrentOrg,
   useOrganizationUnit,
