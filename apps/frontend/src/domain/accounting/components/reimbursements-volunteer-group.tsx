@@ -14,6 +14,7 @@ import {
 } from '@repo/data/react';
 import {
   Button,
+  Checkbox,
   cn,
   Table,
   TableBody,
@@ -28,16 +29,11 @@ import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
 import { formatEuro } from '@/lib/formatting/formats';
 import { useFormatting } from '@/lib/formatting/use-formatting';
-import {
-  requestBundleDownload,
-  triggerBlobDownload,
-} from '../lib/download-bundle';
 import { documentRowAction } from '../lib/board-data.utils';
 import {
   isTimesheetNonCompliant,
   visibleDocumentsForVolunteer,
 } from '../lib/board-filters';
-import { sortDocsForDisplay } from '../lib/mass-actions';
 import { STATUS_META } from '../lib/board-status';
 import type {
   BoardDocument,
@@ -47,6 +43,11 @@ import type {
   PauschalenLimit,
   SendState,
 } from '../lib/board-types';
+import {
+  requestBundleDownload,
+  triggerBlobDownload,
+} from '../lib/download-bundle';
+import { sortDocsForDisplay } from '../lib/mass-actions';
 import { reportBundleDownloadFailure } from '../lib/report-bundle-download-failure';
 import {
   documentCreationBlockedFor,
@@ -67,7 +68,6 @@ function abbreviateName(name: string): string {
   const [first, ...rest] = parts;
   return `${first?.[0] ?? ''}. ${rest.join(' ')}`;
 }
-
 
 // ─── Bundle actions ───────────────────────────────────────────────────────────
 
@@ -368,6 +368,11 @@ interface VolunteerTableGroupProps {
   filterSettings: FilterSettings;
   canCreateDocuments: boolean;
   templateReadiness: TemplateReadinessByPauschale;
+  selectedIds: ReadonlySet<string>;
+  onToggleDoc: (id: string) => void;
+  onToggleVolunteer: (vol: BoardVolunteer, select: boolean) => void;
+  highlightedDocId: string | null;
+  registerRowRef: (id: string, el: HTMLElement | null) => void;
 }
 
 function VolunteerTableGroup({
@@ -378,6 +383,11 @@ function VolunteerTableGroup({
   filterSettings,
   canCreateDocuments,
   templateReadiness,
+  selectedIds,
+  onToggleDoc,
+  onToggleVolunteer,
+  highlightedDocId,
+  registerRowRef,
 }: VolunteerTableGroupProps) {
   const t = useTranslations('Accounting.reimbursements');
   const tSections = useTranslations('Accounting.templates.sections');
@@ -420,6 +430,14 @@ function VolunteerTableGroup({
     uebungsleiter: t('toolbar.typeUL'),
   };
 
+  const visibleDocIds = sortedDocs.map((d) => d.id);
+  const selectedVolCount = visibleDocIds.filter((id) =>
+    selectedIds.has(id),
+  ).length;
+  const volAllSelected =
+    visibleDocIds.length > 0 && selectedVolCount === visibleDocIds.length;
+  const volAnySelected = selectedVolCount > 0 && !volAllSelected;
+
   return (
     <>
       {/* Volunteer group header */}
@@ -430,6 +448,19 @@ function VolunteerTableGroup({
         )}
         onClick={() => setIsOpen((o) => !o)}
       >
+        <TableCell className="align-middle py-4 w-10">
+          {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row toggling only */}
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row toggling only */}
+          <div onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={
+                volAllSelected ? true : volAnySelected ? 'indeterminate' : false
+              }
+              onCheckedChange={(v) => onToggleVolunteer(volunteer, v === true)}
+              aria-label={t('massActions.selectAll' as Parameters<typeof t>[0])}
+            />
+          </div>
+        </TableCell>
         <TableCell className="align-middle overflow-hidden py-4">
           <div className="min-w-0 overflow-hidden">
             <div className="flex items-center gap-2 min-w-0">
@@ -540,12 +571,15 @@ function VolunteerTableGroup({
           return (
             <TableRow
               key={doc.id}
+              ref={(el) => registerRowRef(doc.id, el)}
               className={cn(
                 'transition-colors',
                 canOpenSheet
                   ? 'cursor-pointer hover:bg-muted/30'
                   : 'cursor-default',
                 !isActive && !meta.isYourAction && !isGenerate && 'bg-muted/20',
+                highlightedDocId === doc.id &&
+                  'outline outline-2 outline-destructive outline-offset-[-2px]',
               )}
               onClick={() => {
                 if (rowAction === 'create') {
@@ -556,6 +590,19 @@ function VolunteerTableGroup({
                 if (rowAction === 'open') onDocumentClick(doc, volunteer);
               }}
             >
+              <TableCell className="py-3 align-top w-10">
+                {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row action on checkbox click */}
+                {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row action on checkbox click */}
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedIds.has(doc.id)}
+                    onCheckedChange={() => onToggleDoc(doc.id)}
+                    aria-label={t(
+                      'massActions.selectRow' as Parameters<typeof t>[0],
+                    )}
+                  />
+                </div>
+              </TableCell>
               <TableCell
                 className={cn(
                   'pl-6 py-3 align-top overflow-hidden',
@@ -746,6 +793,14 @@ interface ReimbursementsTableProps {
   filterSettings: FilterSettings;
   canCreateDocuments: boolean;
   templateReadiness: TemplateReadinessByPauschale;
+  selectedIds: ReadonlySet<string>;
+  onToggleDoc: (id: string) => void;
+  onToggleVolunteer: (vol: BoardVolunteer, select: boolean) => void;
+  onToggleAll: (select: boolean) => void;
+  allSelected: boolean;
+  anySelected: boolean;
+  highlightedDocId: string | null;
+  registerRowRef: (id: string, el: HTMLElement | null) => void;
 }
 
 export function ReimbursementsTable({
@@ -756,6 +811,14 @@ export function ReimbursementsTable({
   filterSettings,
   canCreateDocuments,
   templateReadiness,
+  selectedIds,
+  onToggleDoc,
+  onToggleVolunteer,
+  onToggleAll,
+  allSelected,
+  anySelected,
+  highlightedDocId,
+  registerRowRef,
 }: ReimbursementsTableProps) {
   const t = useTranslations('Accounting.reimbursements');
 
@@ -764,6 +827,19 @@ export function ReimbursementsTable({
       <Table className="table-fixed min-w-[860px]">
         <TableHeader>
           <TableRow className="hover:bg-transparent">
+            <TableHead className="w-10">
+              <div className="opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <Checkbox
+                  checked={
+                    allSelected ? true : anySelected ? 'indeterminate' : false
+                  }
+                  onCheckedChange={(v) => onToggleAll(v === true)}
+                  aria-label={t(
+                    'massActions.selectAll' as Parameters<typeof t>[0],
+                  )}
+                />
+              </div>
+            </TableHead>
             <TableHead className="w-52">{t('tableHead.volunteer')}</TableHead>
             <TableHead className="w-36">{t('tableHead.status')}</TableHead>
             <TableHead className="w-14 text-right">
@@ -788,6 +864,11 @@ export function ReimbursementsTable({
               filterSettings={filterSettings}
               canCreateDocuments={canCreateDocuments}
               templateReadiness={templateReadiness}
+              selectedIds={selectedIds}
+              onToggleDoc={onToggleDoc}
+              onToggleVolunteer={onToggleVolunteer}
+              highlightedDocId={highlightedDocId}
+              registerRowRef={registerRowRef}
             />
           ))}
         </TableBody>

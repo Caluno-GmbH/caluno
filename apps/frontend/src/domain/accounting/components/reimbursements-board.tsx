@@ -627,6 +627,14 @@ export function ReimbursementsBoard({
           filterSettings={effectiveFilterSettings}
           canCreateDocuments={canCreateDocuments}
           templateReadiness={templateReadiness}
+          selectedIds={new Set()}
+          onToggleDoc={() => undefined}
+          onToggleVolunteer={() => undefined}
+          onToggleAll={() => undefined}
+          allSelected={false}
+          anySelected={false}
+          highlightedDocId={null}
+          registerRowRef={() => undefined}
         />
       )}
 
