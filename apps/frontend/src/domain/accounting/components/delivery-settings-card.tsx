@@ -11,32 +11,43 @@ import {
   useUpdateAccountingDeliverySettings,
 } from '@repo/data/react';
 import {
+  ActionTooltip,
+  Alert,
+  AlertDescription,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
+  cn,
   FieldLegend,
   FieldSet,
   Input,
   Label,
-  RadioGroup,
-  RadioGroupItem,
   Separator,
   Skeleton,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@repo/ui';
-import { AlertCircleIcon, EyeIcon, EyeOffIcon } from 'lucide-react';
+import { AlertCircleIcon, Info, Plus, Undo2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { type ReactNode, useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import {
+  type GuardedNavigation,
+  stripKnownLocalePrefix,
+  useUnsavedChangesGuard,
+} from '@/hooks/use-unsaved-changes-guard';
+import { useRouter } from '@/i18n/navigation';
 import {
   BUNDLE_SUBJECT_PLACEHOLDERS,
   hasUnknownSubjectPlaceholder,
   isValidEmail,
-  maskEmail,
 } from '../lib/delivery-settings';
-
-type MethodChoice = BundleDeliveryMethod | 'inherit';
-
-const PLACEHOLDER_LIST = BUNDLE_SUBJECT_PLACEHOLDERS.map(
-  (name) => `{${name}}`,
-).join(', ');
 
 interface DeliverySettingsCardProps {
   canEdit: boolean;
@@ -49,7 +60,6 @@ export function DeliverySettingsCard({
 }: DeliverySettingsCardProps) {
   const t = useTranslations('Accounting.settings.delivery');
   const query = useAccountingDeliverySettings(organizationUnitId);
-  const [editing, setEditing] = useState(false);
 
   if (query.isLoading) return <DeliverySettingsSkeleton />;
   if (query.isError || !query.data) {
@@ -67,188 +77,177 @@ export function DeliverySettingsCard({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold">{t('sectionTitle')}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('sectionSubtitle')}
-          </p>
-        </div>
-        {canEdit && !editing && <EditButton onClick={() => setEditing(true)} />}
+      <div>
+        <h2 className="text-xl font-semibold">{t('sectionTitle')}</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          {t('sectionSubtitle')}
+        </p>
       </div>
-      {editing ? (
-        <DeliverySettingsForm
-          settings={query.data}
-          organizationUnitId={organizationUnitId}
-          onDone={() => setEditing(false)}
-        />
-      ) : (
-        <DeliverySettingsSummary settings={query.data} />
+      <DeliverySettingsForm
+        settings={query.data}
+        organizationUnitId={organizationUnitId}
+        canEdit={canEdit}
+      />
+    </div>
+  );
+}
+
+/** Splices `token` into `text` at [start, end), returns new string and new caret pos. */
+function insertAtSelection(
+  text: string,
+  token: string,
+  start: number,
+  end: number,
+): { next: string; caret: number } {
+  const next = text.slice(0, start) + token + text.slice(end);
+  return { next, caret: start + token.length };
+}
+
+// Purely informational: the source line attaches under the field title as muted
+// helper text, with the reset-to-inherited action sitting to its right.
+function InheritanceNote({
+  sourceKind,
+  sourceName,
+  onReset,
+}: {
+  sourceKind: AccountingSettingSourceKind;
+  sourceName: string | null | undefined;
+  onReset: () => void;
+}) {
+  const t = useTranslations('Accounting.settings.delivery');
+  const isOwn = sourceKind === AccountingSettingSourceKind.Own;
+  const text = isOwn
+    ? t('source.own')
+    : sourceKind === AccountingSettingSourceKind.Inherited
+      ? t('source.inheritedFrom', { source: sourceName ?? '' })
+      : t('source.default');
+
+  return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <span>
+        <span aria-hidden="true">· </span>
+        {text}
+      </span>
+      {isOwn && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-auto gap-1 px-0 py-0 text-xs font-normal text-muted-foreground"
+          onClick={onReset}
+        >
+          <Undo2 className="size-3" />
+          {t('resetToInherited')}
+        </Button>
       )}
     </div>
   );
 }
 
-function EditButton({ onClick }: { onClick: () => void }) {
-  const tCommon = useTranslations('Common');
-  return (
-    <Button size="sm" variant="outline" type="button" onClick={onClick}>
-      {tCommon('edit')}
-    </Button>
-  );
-}
-
-function useSourceLine() {
-  const t = useTranslations('Accounting.settings.delivery');
-  return (source: RawAccountingDeliverySettings['deliveryMethodSource']) => {
-    switch (source.kind) {
-      case AccountingSettingSourceKind.Own:
-        return t('source.own');
-      case AccountingSettingSourceKind.Inherited:
-        return t('source.inheritedFrom', { source: source.sourceName ?? '' });
-      default:
-        return t('source.default');
-    }
-  };
-}
-
-function useMethodLabel() {
-  const t = useTranslations('Accounting.settings.delivery');
-  return (method: BundleDeliveryMethod) =>
-    method === BundleDeliveryMethod.Email
-      ? t('methodEmail')
-      : t('methodDownload');
-}
-
-function SummaryRow({
-  label,
-  source,
-  children,
-}: {
-  label: string;
-  source: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <p className="text-sm font-medium text-card-foreground">{label}</p>
-      <div className="text-right space-y-0.5 min-w-0">
-        <div className="text-sm text-card-foreground break-words">
-          {children}
-        </div>
-        <p className="text-sm text-muted-foreground">{source}</p>
-      </div>
-    </div>
-  );
-}
-
-function DeliverySettingsSummary({
-  settings,
-}: {
-  settings: RawAccountingDeliverySettings;
-}) {
-  const t = useTranslations('Accounting.settings.delivery');
-  const sourceLine = useSourceLine();
-  const methodLabel = useMethodLabel();
-  const [revealed, setRevealed] = useState(false);
-  const recipient = settings.recipientEmail;
-
-  return (
-    <div className="space-y-4">
-      <SummaryRow
-        label={t('methodLabel')}
-        source={sourceLine(settings.deliveryMethodSource)}
-      >
-        {methodLabel(settings.deliveryMethod)}
-      </SummaryRow>
-      <Separator />
-      <SummaryRow
-        label={t('recipientLabel')}
-        source={sourceLine(settings.recipientEmailSource)}
-      >
-        {recipient ? (
-          <span className="inline-flex items-center gap-1.5">
-            <span className="tabular-nums">
-              {revealed ? recipient : maskEmail(recipient)}
-            </span>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="size-6"
-              aria-label={revealed ? t('hideRecipient') : t('showRecipient')}
-              onClick={() => setRevealed((value) => !value)}
-            >
-              {revealed ? <EyeOffIcon size={14} /> : <EyeIcon size={14} />}
-            </Button>
-          </span>
-        ) : (
-          <span className="text-muted-foreground">{t('recipientNotSet')}</span>
-        )}
-      </SummaryRow>
-      <Separator />
-      <SummaryRow
-        label={t('subjectLabel')}
-        source={sourceLine(settings.emailSubjectSource)}
-      >
-        {settings.emailSubject}
-      </SummaryRow>
-    </div>
-  );
-}
+const SUBJECT_MAX_LENGTH = 200;
 
 function DeliverySettingsForm({
   settings,
   organizationUnitId,
-  onDone,
+  canEdit,
 }: {
   settings: RawAccountingDeliverySettings;
   organizationUnitId: string;
-  onDone: () => void;
+  canEdit: boolean;
 }) {
   const t = useTranslations('Accounting.settings.delivery');
   const tCommon = useTranslations('Common');
-  const methodLabel = useMethodLabel();
   const update = useUpdateAccountingDeliverySettings(organizationUnitId);
   const { isRoot } = useCurrentOrg();
+  const router = useRouter();
   const ids = {
     legend: useId(),
-    method: useId(),
     recipient: useId(),
     recipientHint: useId(),
+    recipientError: useId(),
     subject: useId(),
-    subjectHint: useId(),
+    subjectError: useId(),
   };
 
-  const [method, setMethod] = useState<MethodChoice>(
-    settings.ownDeliveryMethod ??
-      (isRoot ? settings.deliveryMethod : 'inherit'),
+  // Per-field tri-state: null = "inherit" (send null to clear override), value = own override.
+  const [ownMethod, setOwnMethod] = useState<BundleDeliveryMethod | null>(
+    settings.ownDeliveryMethod ?? null,
   );
-  const [recipient, setRecipient] = useState(settings.ownRecipientEmail ?? '');
-  const [subject, setSubject] = useState(settings.ownEmailSubject ?? '');
+  const [ownRecipient, setOwnRecipient] = useState<string | null>(
+    settings.ownRecipientEmail ?? null,
+  );
+  const [ownSubject, setOwnSubject] = useState<string | null>(
+    settings.ownEmailSubject ?? null,
+  );
   const [errors, setErrors] = useState<{
     recipient?: string;
     subject?: string;
   }>({});
+  const [pendingNavigation, setPendingNavigation] =
+    useState<GuardedNavigation | null>(null);
 
-  const effectiveMethod =
-    method === 'inherit' ? settings.inheritedDeliveryMethod : method;
-  const effectiveRecipient =
-    recipient.trim() || settings.inheritedRecipientEmail;
+  const subjectInputRef = useRef<HTMLInputElement>(null);
+  // Track caret so chip inserts land at the right position.
+  const caretRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+
+  // The displayed (editable) value for each field: own override or fall back to inherited.
+  const effectiveMethod = ownMethod ?? settings.inheritedDeliveryMethod;
+  const displayRecipient =
+    ownRecipient ?? settings.inheritedRecipientEmail ?? '';
+  const displaySubject = ownSubject ?? settings.inheritedEmailSubject ?? '';
+
+  // Dirty if any field differs from what the server gave us. Recipient/subject
+  // are normalized the same way handleSave persists them, so clearing a field
+  // to whitespace (which saves as null) doesn't leave the form stuck dirty.
+  const dirty =
+    ownMethod !== (settings.ownDeliveryMethod ?? null) ||
+    (ownRecipient?.trim() || null) !== (settings.ownRecipientEmail ?? null) ||
+    (ownSubject?.trim() || null) !== (settings.ownEmailSubject ?? null);
+
+  const { release: releaseNavigationGuard } = useUnsavedChangesGuard({
+    enabled: dirty,
+    onPrompt: setPendingNavigation,
+  });
+
+  function handleLeave() {
+    const target = pendingNavigation;
+    setPendingNavigation(null);
+    if (!target) return;
+    releaseNavigationGuard();
+    if (target.type === 'back') {
+      if (target.delta === null) {
+        router.push(`/admin/${organizationUnitId}`);
+        return;
+      }
+      window.history.go(target.delta);
+      return;
+    }
+    router.push(stripKnownLocalePrefix(target.href));
+  }
+
+  function handleCancel() {
+    setOwnMethod(settings.ownDeliveryMethod ?? null);
+    setOwnRecipient(settings.ownRecipientEmail ?? null);
+    setOwnSubject(settings.ownEmailSubject ?? null);
+    setErrors({});
+  }
 
   function validate() {
     const next: typeof errors = {};
-    const trimmedRecipient = recipient.trim();
-    if (trimmedRecipient && !isValidEmail(trimmedRecipient)) {
-      next.recipient = t('errors.invalidEmail');
-    } else if (
-      effectiveMethod === BundleDeliveryMethod.Email &&
-      !effectiveRecipient
-    ) {
-      next.recipient = t('errors.recipientRequired');
-    }
-    if (hasUnknownSubjectPlaceholder(subject)) {
-      next.subject = t('errors.unknownPlaceholder');
+    // The recipient/subject fields are inert while bundles are downloaded, so
+    // don't block the save on values the user currently has no way to edit.
+    if (effectiveMethod === BundleDeliveryMethod.Email) {
+      const trimmedRecipient = (ownRecipient ?? '').trim();
+      const effectiveRecipient =
+        trimmedRecipient || settings.inheritedRecipientEmail;
+      if (trimmedRecipient && !isValidEmail(trimmedRecipient)) {
+        next.recipient = t('errors.invalidEmail');
+      } else if (!effectiveRecipient) {
+        next.recipient = t('errors.recipientRequired');
+      }
+      if (hasUnknownSubjectPlaceholder(ownSubject ?? '')) {
+        next.subject = t('errors.unknownPlaceholder');
+      }
     }
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -257,148 +256,294 @@ function DeliverySettingsForm({
   async function handleSave() {
     if (!validate()) return;
     try {
-      // Empty values clear the unit's own setting, so it inherits again.
       await update.mutateAsync({
-        deliveryMethod: method === 'inherit' ? null : method,
-        recipientEmail: recipient.trim() || null,
-        emailSubject: subject.trim() || null,
+        // null clears the unit's own setting so it inherits again.
+        deliveryMethod: ownMethod,
+        recipientEmail: ownRecipient?.trim() || null,
+        emailSubject: ownSubject?.trim() || null,
       });
       toast.success(t('saveSuccess'));
-      onDone();
     } catch {
-      // The form checks what the server checks; a rejection here means the
-      // inherited values changed meanwhile, so a reload shows the current state.
       toast.error(t('saveError'));
     }
   }
 
+  function selectMethod(value: BundleDeliveryMethod) {
+    setOwnMethod(value);
+    // On Download the recipient/subject fields go inert, so drop any errors
+    // that would otherwise linger under the now-disabled inputs.
+    if (value === BundleDeliveryMethod.Download) {
+      setErrors({});
+    }
+  }
+
+  function handleInsertPlaceholder(name: string) {
+    const token = `{${name}}`;
+    const current = ownSubject ?? settings.inheritedEmailSubject ?? '';
+    const len = current.length;
+    // Append at the end when the field was never focused, and clamp possibly
+    // stale offsets so a prior (longer) value can't splice out of bounds.
+    const focused = subjectInputRef.current === document.activeElement;
+    const start = Math.min(focused ? caretRef.current.start : len, len);
+    const end = Math.min(focused ? caretRef.current.end : len, len);
+    const { next, caret } = insertAtSelection(current, token, start, end);
+    // Match the Input's maxLength, which setState would otherwise bypass.
+    if (next.length > SUBJECT_MAX_LENGTH) return;
+    setOwnSubject(next);
+    setErrors((prev) => ({ ...prev, subject: undefined }));
+    // Restore focus and caret after React re-render.
+    requestAnimationFrame(() => {
+      const el = subjectInputRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+      caretRef.current = { start: caret, end: caret };
+    });
+  }
+
+  const emailGroupDisabled = effectiveMethod === BundleDeliveryMethod.Download;
+
   return (
     <div className="space-y-6">
       <FieldSet className="gap-0">
-        <FieldLegend variant="label" className="mb-2" id={ids.legend}>
-          {t('methodLabel')}
-        </FieldLegend>
-        <RadioGroup
-          value={method}
-          onValueChange={(value) => setMethod(value as MethodChoice)}
-          aria-labelledby={ids.legend}
-          className="gap-3"
-        >
+        <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+          <FieldLegend
+            variant="label"
+            className="mb-0 font-semibold"
+            id={ids.legend}
+          >
+            {t('methodLabel')}
+          </FieldLegend>
           {!isRoot && (
-            <MethodOption
-              id={`${ids.method}-inherit`}
-              value="inherit"
-              label={t('methodInherit', {
-                value: methodLabel(settings.inheritedDeliveryMethod),
-              })}
+            <InheritanceNote
+              sourceKind={settings.deliveryMethodSource.kind}
+              sourceName={settings.deliveryMethodSource.sourceName}
+              onReset={() => setOwnMethod(null)}
             />
           )}
-          <MethodOption
-            id={`${ids.method}-download`}
+        </div>
+        {/* Value is driven by each item's onClick (not onValueChange) so that
+            clicking the already-active option still pins it as an own override
+            instead of firing a deselect. */}
+        <ToggleGroup
+          type="single"
+          value={effectiveMethod}
+          aria-labelledby={ids.legend}
+          variant="outline"
+          disabled={!canEdit}
+        >
+          <ToggleGroupItem
             value={BundleDeliveryMethod.Download}
-            label={t('methodDownload')}
-            hint={t('methodDownloadHint')}
-          />
-          <MethodOption
-            id={`${ids.method}-email`}
+            onClick={() => selectMethod(BundleDeliveryMethod.Download)}
+          >
+            {t('methodDownload')}
+          </ToggleGroupItem>
+          <ToggleGroupItem
             value={BundleDeliveryMethod.Email}
-            label={t('methodEmail')}
-            hint={t('methodEmailHint')}
-          />
-        </RadioGroup>
+            onClick={() => selectMethod(BundleDeliveryMethod.Email)}
+          >
+            {t('methodEmail')}
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          {effectiveMethod === BundleDeliveryMethod.Email
+            ? t('methodEmailHint')
+            : t('methodDownloadHint')}
+        </p>
       </FieldSet>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={ids.recipient}>{t('recipientLabel')}</Label>
-        <p id={ids.recipientHint} className="text-sm text-muted-foreground">
-          {t('recipientHint')}
-        </p>
-        <Input
-          id={ids.recipient}
-          type="email"
-          autoComplete="off"
-          value={recipient}
-          onChange={(e) => {
-            setRecipient(e.target.value);
-            setErrors((prev) => ({ ...prev, recipient: undefined }));
-          }}
-          placeholder={
-            settings.inheritedRecipientEmail
-              ? t('inheritPlaceholder', {
-                  value: maskEmail(settings.inheritedRecipientEmail),
-                })
-              : t('recipientPlaceholder')
-          }
-          aria-invalid={!!errors.recipient}
-          aria-describedby={ids.recipientHint}
-          className="max-w-md"
-        />
-        {errors.recipient && (
-          <p className="text-sm text-destructive" role="alert">
-            {errors.recipient}
-          </p>
-        )}
-      </div>
+      <Separator />
 
-      <div className="space-y-1.5">
-        <Label htmlFor={ids.subject}>{t('subjectLabel')}</Label>
-        <Input
-          id={ids.subject}
-          value={subject}
-          maxLength={200}
-          onChange={(e) => {
-            setSubject(e.target.value);
-            setErrors((prev) => ({ ...prev, subject: undefined }));
-          }}
-          placeholder={t('inheritPlaceholder', {
-            value: settings.inheritedEmailSubject,
-          })}
-          aria-invalid={!!errors.subject}
-          aria-describedby={ids.subjectHint}
-        />
-        <p id={ids.subjectHint} className="text-sm text-muted-foreground">
-          {t('subjectHint', { placeholders: PLACEHOLDER_LIST })} ·{' '}
-          {t('clearHint')}
-        </p>
-        {errors.subject && (
-          <p className="text-sm text-destructive" role="alert">
-            {errors.subject}
-          </p>
+      {/* Under Download the email settings are inert: the fieldset disables every
+          control and the wrapper dims the whole group, labels and hints included.
+          The Alert stays at full opacity to explain why. */}
+      <fieldset disabled={emailGroupDisabled || !canEdit} className="space-y-4">
+        {emailGroupDisabled && (
+          <Alert className="max-w-xl">
+            <Info />
+            <AlertDescription>{t('emailGroupDisabledHint')}</AlertDescription>
+          </Alert>
         )}
-      </div>
+        <div
+          className={cn(
+            'space-y-4 transition-opacity',
+            emailGroupDisabled && 'opacity-60 [&_:disabled]:opacity-100',
+          )}
+        >
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Label htmlFor={ids.recipient}>{t('recipientLabel')}</Label>
+              {!isRoot && (
+                <InheritanceNote
+                  sourceKind={settings.recipientEmailSource.kind}
+                  sourceName={settings.recipientEmailSource.sourceName}
+                  onReset={() => setOwnRecipient(null)}
+                />
+              )}
+            </div>
+            <Input
+              id={ids.recipient}
+              type="email"
+              autoComplete="off"
+              disabled={emailGroupDisabled}
+              value={displayRecipient}
+              onChange={(e) => {
+                setOwnRecipient(e.target.value);
+                setErrors((prev) => ({ ...prev, recipient: undefined }));
+              }}
+              onBlur={() => {
+                const trimmed = (ownRecipient ?? '').trim();
+                if (trimmed && !isValidEmail(trimmed)) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    recipient: t('errors.invalidEmail'),
+                  }));
+                }
+              }}
+              placeholder={t('recipientPlaceholder')}
+              aria-invalid={!!errors.recipient}
+              aria-describedby={
+                errors.recipient
+                  ? `${ids.recipientHint} ${ids.recipientError}`
+                  : ids.recipientHint
+              }
+              className="max-w-xl"
+            />
+            {errors.recipient && (
+              <p
+                id={ids.recipientError}
+                className="text-sm text-destructive"
+                role="alert"
+              >
+                {errors.recipient}
+              </p>
+            )}
+            <p id={ids.recipientHint} className="text-sm text-muted-foreground">
+              {t('recipientHint')}
+            </p>
+          </div>
 
-      <div className="flex gap-2">
-        <Button type="button" onClick={handleSave} disabled={update.isPending}>
-          {tCommon('save')}
-        </Button>
-        <Button type="button" variant="ghost" onClick={onDone}>
-          {tCommon('cancel')}
-        </Button>
-      </div>
-    </div>
-  );
-}
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <Label htmlFor={ids.subject}>{t('subjectLabel')}</Label>
+              {!isRoot && (
+                <InheritanceNote
+                  sourceKind={settings.emailSubjectSource.kind}
+                  sourceName={settings.emailSubjectSource.sourceName}
+                  onReset={() => setOwnSubject(null)}
+                />
+              )}
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="max-w-xl flex-1 space-y-1">
+                <Input
+                  id={ids.subject}
+                  ref={subjectInputRef}
+                  disabled={emailGroupDisabled}
+                  value={displaySubject}
+                  maxLength={SUBJECT_MAX_LENGTH}
+                  onChange={(e) => {
+                    setOwnSubject(e.target.value);
+                    setErrors((prev) => ({ ...prev, subject: undefined }));
+                  }}
+                  onSelect={(e) => {
+                    const el = e.currentTarget;
+                    caretRef.current = {
+                      start: el.selectionStart ?? 0,
+                      end: el.selectionEnd ?? 0,
+                    };
+                  }}
+                  aria-invalid={!!errors.subject}
+                  aria-describedby={
+                    errors.subject ? ids.subjectError : undefined
+                  }
+                  className="w-full"
+                />
+                {errors.subject && (
+                  <p
+                    id={ids.subjectError}
+                    className="text-sm text-destructive"
+                    role="alert"
+                  >
+                    {errors.subject}
+                  </p>
+                )}
+                <p className="text-right text-xs text-muted-foreground tabular-nums">
+                  {displaySubject.length}/{SUBJECT_MAX_LENGTH}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                {BUNDLE_SUBJECT_PLACEHOLDERS.map((name) => (
+                  <ActionTooltip
+                    key={name}
+                    label={t(`placeholder.${name}` as Parameters<typeof t>[0])}
+                  >
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10"
+                      // Disable rather than silently no-op when the token would
+                      // push the subject past its max length.
+                      disabled={
+                        emailGroupDisabled ||
+                        displaySubject.length + name.length + 2 >
+                          SUBJECT_MAX_LENGTH
+                      }
+                      onClick={() => handleInsertPlaceholder(name)}
+                    >
+                      <Plus className="size-3.5" />
+                      <span className="font-mono">{`{${name}}`}</span>
+                    </Button>
+                  </ActionTooltip>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
 
-function MethodOption({
-  id,
-  value,
-  label,
-  hint,
-}: {
-  id: string;
-  value: MethodChoice;
-  label: string;
-  hint?: string;
-}) {
-  return (
-    <div className="flex items-start gap-2">
-      <RadioGroupItem value={value} id={id} className="mt-0.5" />
-      <label htmlFor={id} className="cursor-pointer text-sm leading-tight">
-        <span className="font-medium text-card-foreground">{label}</span>
-        {hint && (
-          <span className="block mt-0.5 text-muted-foreground">{hint}</span>
-        )}
-      </label>
+      {canEdit && (
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={!dirty || update.isPending}
+          >
+            {tCommon('cancel')}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={!dirty || update.isPending}
+          >
+            {update.isPending ? tCommon('saving') : tCommon('save')}
+          </Button>
+        </div>
+      )}
+
+      <AlertDialog
+        open={pendingNavigation !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingNavigation(null);
+        }}
+      >
+        <AlertDialogContent className="sm:max-w-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('unsavedChangesTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('unsavedChangesDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('unsavedChangesStay')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLeave} variant="destructive">
+              {t('unsavedChangesLeave')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -410,12 +555,27 @@ function DeliverySettingsSkeleton() {
         <Skeleton className="h-7 w-48" />
         <Skeleton className="h-4 w-96" />
       </div>
-      {[0, 1, 2].map((row) => (
-        <div key={row} className="flex items-center justify-between gap-4">
-          <Skeleton className="h-4 w-36" />
-          <Skeleton className="h-4 w-48" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-10 w-64 rounded-md" />
+      </div>
+      <Separator />
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-9 max-w-xl rounded-md" />
+          <Skeleton className="h-4 w-72" />
         </div>
-      ))}
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-9 max-w-xl rounded-md" />
+          <div className="flex gap-2 pt-1">
+            <Skeleton className="h-8 w-24 rounded-md" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+            <Skeleton className="h-8 w-24 rounded-md" />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

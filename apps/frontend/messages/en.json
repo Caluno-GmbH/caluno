@@ -2300,28 +2300,32 @@
         "methodDownloadHint": "Admins download each bundle as a ZIP file.",
         "methodEmail": "Send by email",
         "methodEmailHint": "Admins send each volunteer’s bundle as its own email. Nothing goes out until an admin sends it.",
-        "methodInherit": "Use inherited ({value})",
         "recipientLabel": "Accounting email address",
         "recipientHint": "Receives your finalized document bundles once they are ready to be processed into accounting.",
         "recipientPlaceholder": "accounting@example.org",
-        "recipientNotSet": "Not set",
-        "showRecipient": "Show email address",
-        "hideRecipient": "Hide email address",
         "subjectLabel": "Email subject",
-        "subjectHint": "Placeholders: {placeholders}",
-        "inheritPlaceholder": "Inherited: {value}",
+        "emailGroupDisabledHint": "These settings apply when bundles are sent by email.",
+        "resetToInherited": "Reset to inherited",
         "source": {
-          "own": "Set for this unit",
+          "own": "Custom for this unit",
           "inheritedFrom": "Inherited from {source}",
           "default": "Default"
         },
-        "clearHint": "Leave empty to use the inherited value.",
+        "placeholder": {
+          "volunteer": "The volunteer’s full name.",
+          "period": "The accounting period (e.g. January 2025).",
+          "type": "The allowance type (e.g. Ehrenamtspauschale)."
+        },
+        "unsavedChangesTitle": "Unsaved changes",
+        "unsavedChangesDescription": "You have unsaved changes. If you leave now, your changes will be lost.",
+        "unsavedChangesLeave": "Leave without saving",
+        "unsavedChangesStay": "Keep editing",
         "saveSuccess": "Delivery settings saved",
         "saveError": "We couldn’t save the delivery settings. Please try again.",
         "loadError": "We couldn’t load the delivery settings. Please reload the page.",
         "errors": {
           "invalidEmail": "Please enter a valid email address.",
-          "unknownPlaceholder": "Use only the placeholders listed above.",
+          "unknownPlaceholder": "Use only the available variables.",
           "recipientRequired": "Add an accounting email address to send bundles by email."
         }
       }

@@ -2300,28 +2300,32 @@
         "methodDownloadHint": "Admins laden jedes Paket als ZIP-Datei herunter.",
         "methodEmail": "Per E-Mail senden",
         "methodEmailHint": "Admins senden das Paket jeder:s Ehrenamtlichen als eigene E-Mail. Es geht nichts raus, bevor ein Admin es sendet.",
-        "methodInherit": "Übernommen ({value})",
         "recipientLabel": "E-Mail-Adresse der Buchhaltung",
         "recipientHint": "Erhält deine fertigen Unterlagen-Pakete, sobald sie in der Buchhaltung verarbeitet werden können.",
         "recipientPlaceholder": "buchhaltung@example.org",
-        "recipientNotSet": "Nicht festgelegt",
-        "showRecipient": "E-Mail-Adresse anzeigen",
-        "hideRecipient": "E-Mail-Adresse verbergen",
         "subjectLabel": "Betreff der E-Mail",
-        "subjectHint": "Platzhalter: {placeholders}",
-        "inheritPlaceholder": "Übernommen: {value}",
+        "emailGroupDisabledHint": "Diese Einstellungen gelten, wenn Pakete per E-Mail gesendet werden.",
+        "resetToInherited": "Auf übernommenen Wert zurücksetzen",
         "source": {
-          "own": "Für diese Einheit festgelegt",
+          "own": "Individuell für diese Einheit",
           "inheritedFrom": "Übernommen von {source}",
           "default": "Standard"
         },
-        "clearHint": "Leer lassen, um den übernommenen Wert zu verwenden.",
+        "placeholder": {
+          "volunteer": "Vollständiger Name der ehrenamtlichen Person.",
+          "period": "Der Abrechnungszeitraum, z. B. Januar 2025.",
+          "type": "Die Pauschalenart, z. B. Ehrenamtspauschale."
+        },
+        "unsavedChangesTitle": "Nicht gespeicherte Änderungen",
+        "unsavedChangesDescription": "Du hast nicht gespeicherte Änderungen. Wenn du die Seite jetzt verlässt, gehen deine Änderungen verloren.",
+        "unsavedChangesLeave": "Ohne Speichern verlassen",
+        "unsavedChangesStay": "Weiter bearbeiten",
         "saveSuccess": "Versandeinstellungen gespeichert",
         "saveError": "Die Versandeinstellungen konnten nicht gespeichert werden. Bitte versuche es erneut.",
         "loadError": "Die Versandeinstellungen konnten nicht geladen werden. Bitte lade die Seite neu.",
         "errors": {
           "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
-          "unknownPlaceholder": "Verwende nur die oben aufgeführten Platzhalter.",
+          "unknownPlaceholder": "Verwende nur die verfügbaren Variablen.",
           "recipientRequired": "Hinterlege eine E-Mail-Adresse der Buchhaltung, um Pakete per E-Mail zu senden."
         }
       }
