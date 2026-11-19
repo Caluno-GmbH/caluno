@@ -1,0 +1,24 @@
+{
+  "name": "@repo/load-test",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed": "bun run --cwd ../../apps/backend db:fixtures:load-test",
+    "data": "bun run --cwd ../../apps/backend load-test:data",
+    "operations": "bun scripts/extract-operations.ts",
+    "smoke": "bun run operations && mkdir -p results && K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=results/smoke.html k6 run -e PROFILE=smoke src/test.ts",
+    "load": "bun run operations && mkdir -p results && K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=results/load.html k6 run -e PROFILE=load src/test.ts",
+    "stress": "bun run operations && mkdir -p results && K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=results/stress.html k6 run -e PROFILE=stress src/test.ts",
+    "spike": "bun run operations && mkdir -p results && K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=results/spike.html k6 run -e PROFILE=spike src/test.ts",
+    "soak": "bun run operations && mkdir -p results && K6_WEB_DASHBOARD=true K6_WEB_DASHBOARD_EXPORT=results/soak.html k6 run -e PROFILE=soak src/test.ts",
+    "check-types": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/bun": "^1.4.4",
+    "@types/k6": "^2.3.1",
+    "@types/node": "^24.19.2",
+    "typescript": "^6.0.3"
+  }
+}
