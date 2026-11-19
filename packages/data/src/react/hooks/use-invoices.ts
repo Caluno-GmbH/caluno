@@ -11,9 +11,11 @@ import {
 } from '@repo/data';
 import {
   type QueryClient,
+  skipToken,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
@@ -71,47 +73,53 @@ export function useInvoice(id?: string) {
 
 export function useEligibleTimeEntriesForInvoice(input: {
   volunteerId?: string;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   periodStart?: string;
   periodEnd?: string;
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
+  const { reimbursementTypeKey } = input;
 
   return useQuery<EligibleTimeEntry[]>({
     queryKey: ['accounting', 'eligible-time-entries', input],
-    queryFn: () =>
-      repository.findEligibleTimeEntriesForInvoice({
-        volunteerId: input.volunteerId ?? '',
-        reimbursementTypeId: input.reimbursementTypeId ?? '',
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findEligibleTimeEntriesForInvoice({
+            volunteerId: input.volunteerId ?? '',
+            reimbursementTypeKey,
+            periodStart: input.periodStart,
+            periodEnd: input.periodEnd,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
-    enabled: !!input.volunteerId && !!input.reimbursementTypeId,
+    enabled: !!input.volunteerId && !!input.reimbursementTypeKey,
   });
 }
 
 export function useTimeEntriesAwaitingReviewForInvoice(input: {
   volunteerId?: string;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   periodStart?: string;
   periodEnd?: string;
 }) {
   const sdk = useSdk();
   const repository = new AccountingRepository(sdk);
+  const { reimbursementTypeKey } = input;
 
   return useQuery<AwaitingReviewTimeEntry[]>({
     queryKey: ['accounting', 'awaiting-review-time-entries', input],
-    queryFn: () =>
-      repository.findTimeEntriesAwaitingReviewForInvoice({
-        volunteerId: input.volunteerId ?? '',
-        reimbursementTypeId: input.reimbursementTypeId ?? '',
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-      }),
+    queryFn: reimbursementTypeKey
+      ? () =>
+          repository.findTimeEntriesAwaitingReviewForInvoice({
+            volunteerId: input.volunteerId ?? '',
+            reimbursementTypeKey,
+            periodStart: input.periodStart,
+            periodEnd: input.periodEnd,
+          })
+      : skipToken,
     staleTime: 30 * 1000,
-    enabled: !!input.volunteerId && !!input.reimbursementTypeId,
+    enabled: !!input.volunteerId && !!input.reimbursementTypeKey,
   });
 }
 

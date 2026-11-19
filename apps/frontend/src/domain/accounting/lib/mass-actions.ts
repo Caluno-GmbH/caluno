@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '@repo/data';
 import { visibleDocumentsForVolunteer } from './board-filters';
 import type {
   BoardDocument,
@@ -102,7 +103,7 @@ export interface BundleGroup {
   volunteerId: string;
   volunteerName: string;
   pauschale: PauschalenType;
-  reimbursementTypeId?: string;
+  reimbursementTypeKey?: ReimbursementTypeKey;
   invoiceIds: string[];
 }
 
@@ -125,7 +126,7 @@ export function groupBundles(pairs: DocVolPair[]): BundleGroup[] {
         volunteerId: vol.id,
         volunteerName: vol.name,
         pauschale: doc.pauschale,
-        reimbursementTypeId: vol.reimbursementTypeIds?.[doc.pauschale],
+        reimbursementTypeKey: vol.reimbursementTypeKeys?.[doc.pauschale],
         invoiceIds: [doc.id],
       });
     }

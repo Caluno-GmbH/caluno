@@ -521,7 +521,7 @@ export function ReimbursementsBoard({
         };
         const previewResults: PreviewResult[] = await Promise.all(
           groups.map(async (group) => {
-            if (!group.reimbursementTypeId) {
+            if (!group.reimbursementTypeKey) {
               return {
                 group,
                 recipientEmail: null,
@@ -533,7 +533,7 @@ export function ReimbursementsBoard({
             try {
               const result = await preview.mutateAsync({
                 volunteerId: group.volunteerId,
-                reimbursementTypeId: group.reimbursementTypeId,
+                reimbursementTypeKey: group.reimbursementTypeKey,
                 invoiceIds: group.invoiceIds,
               });
               return { group, ...result };
@@ -571,11 +571,11 @@ export function ReimbursementsBoard({
         // Download mode — no dialog.
         const results = await Promise.allSettled(
           groups
-            .filter((g) => g.reimbursementTypeId !== undefined)
+            .filter((g) => g.reimbursementTypeKey !== undefined)
             .map((g) =>
               requestBundleDownload({
                 volunteerId: g.volunteerId,
-                reimbursementTypeId: g.reimbursementTypeId as string,
+                reimbursementTypeKey: g.reimbursementTypeKey as string,
                 invoiceIds: g.invoiceIds,
                 orgUId,
               }).then((blob) =>
@@ -587,7 +587,7 @@ export function ReimbursementsBoard({
             ),
         );
         const noTypeCount = groups.filter(
-          (g) => g.reimbursementTypeId === undefined,
+          (g) => g.reimbursementTypeKey === undefined,
         ).length;
         const { succeeded, failed } = summarizeSettled(results);
         queryClient.invalidateQueries({ queryKey: ['accounting'] });
@@ -623,11 +623,11 @@ export function ReimbursementsBoard({
     try {
       const results = await Promise.allSettled(
         toSend.map((p) => {
-          if (!p.group.reimbursementTypeId)
+          if (!p.group.reimbursementTypeKey)
             return Promise.reject(new Error('no-type'));
           return send.mutateAsync({
             volunteerId: p.group.volunteerId,
-            reimbursementTypeId: p.group.reimbursementTypeId,
+            reimbursementTypeKey: p.group.reimbursementTypeKey,
             invoiceIds: p.group.invoiceIds,
             acknowledgedIssues: p.issues,
             expectedRecipientEmail: p.recipientEmail,

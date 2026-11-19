@@ -3,7 +3,11 @@ import { integer, snakeCase, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { idColumn, timestampColumns } from '../../database/database-columns';
 import { organizations } from '../../organization/schemas/organization.schema';
 import { organizationUnits } from '../../organization/schemas/organization-unit.schema';
-import { reimbursementTypes } from './reimbursement-type.schema';
+import { ReimbursementTypeKey } from '../enums';
+import {
+  reimbursementTypeKeyEnum,
+  reimbursementTypes,
+} from './reimbursement-type.schema';
 
 export const reimbursementRates = snakeCase.table(
   'reimbursement_rates',
@@ -19,18 +23,19 @@ export const reimbursementRates = snakeCase.table(
       () => organizationUnits.id,
       { onDelete: 'cascade' },
     ),
-    reimbursementTypeId: uuid('reimbursement_type_id')
-      .references(() => reimbursementTypes.id, { onDelete: 'restrict' })
+    reimbursementTypeKey: reimbursementTypeKeyEnum('reimbursement_type_key')
+      .$type<ReimbursementTypeKey>()
+      .references(() => reimbursementTypes.key, { onDelete: 'restrict' })
       .notNull(),
     hourlyRateCents: integer('hourly_rate_cents').notNull(),
     ...timestampColumns,
   },
   (table) => [
     uniqueIndex('uq_reimbursement_rates_org_default')
-      .on(table.organizationId, table.reimbursementTypeId)
+      .on(table.organizationId, table.reimbursementTypeKey)
       .where(sql`${table.organizationUnitId} IS NULL`),
     uniqueIndex('uq_reimbursement_rates_unit_override')
-      .on(table.organizationUnitId, table.reimbursementTypeId)
+      .on(table.organizationUnitId, table.reimbursementTypeKey)
       .where(sql`${table.organizationUnitId} IS NOT NULL`),
   ],
 );

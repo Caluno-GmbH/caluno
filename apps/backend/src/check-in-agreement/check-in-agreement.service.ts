@@ -1,16 +1,14 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ContractStatus, DocumentKind } from '../accounting/enums';
 import { ContractService } from '../accounting/services/contract.service';
 import { DocumentTemplateService } from '../accounting/services/document-template.service';
 import { PAUSCHALE_TYPE_LABELS } from '../accounting/utils/reimbursement-type-labels';
 import { AuthService } from '../auth/auth.service';
 import { PERMISSIONS } from '../auth/constants';
-import type { Database } from '../database/database.module';
-import { DATABASE_CONNECTION } from '../database/database-connection';
 import { NotFoundGraphQLError } from '../graphql/errors';
 import { OrganizationUnitDataService } from '../organization/organization-unit-data.service';
 import { ShiftService } from '../shift/shift.service';
-import { resolveEffectiveReimbursementTypeId } from '../shift/utils/effective-reimbursement-type';
+import { resolveEffectiveReimbursementTypeKey } from '../shift/utils/effective-reimbursement-type';
 import { AgreementStatus } from './agreement-status.enum';
 import { CheckInAgreement } from './check-in-agreement.model';
 
@@ -22,8 +20,6 @@ export class AgreementStatusService {
     private readonly documentTemplateService: DocumentTemplateService,
     private readonly authService: AuthService,
     private readonly organizationUnitDataService: OrganizationUnitDataService,
-    @Inject(DATABASE_CONNECTION)
-    private readonly db: Database,
   ) {}
 
   async resolveAgreement(params: {
@@ -50,13 +46,13 @@ export class AgreementStatusService {
       shiftInstanceId,
       organizationUnitId,
     );
-    const typeId = resolveEffectiveReimbursementTypeId(
-      instance.overrideReimbursementTypeId,
-      instance.master.reimbursementTypeId,
+    const reimbursementTypeKey = resolveEffectiveReimbursementTypeKey(
+      instance.overrideReimbursementTypeKey,
+      instance.master.reimbursementTypeKey,
     );
 
     // No reimbursement type → agreement does not apply.
-    if (!typeId) {
+    if (!reimbursementTypeKey) {
       return this.buildResult(
         AgreementStatus.NOT_APPLICABLE,
         null,
@@ -66,14 +62,7 @@ export class AgreementStatusService {
       );
     }
 
-    // Direct DB read — ReimbursementRateService is not exported from AccountingModule.
-    const typeRow = await this.db.query.reimbursementTypes.findFirst({
-      where: { id: typeId },
-      columns: { key: true },
-    });
-    const reimbursementTypeName = typeRow
-      ? PAUSCHALE_TYPE_LABELS[typeRow.key]
-      : null;
+    const reimbursementTypeName = PAUSCHALE_TYPE_LABELS[reimbursementTypeKey];
 
     const org =
       await this.organizationUnitDataService.findOrganizationByUnitId(
@@ -94,13 +83,13 @@ export class AgreementStatusService {
     const [contracts, templateExists] = await Promise.all([
       this.contractService.findContractsForOrganization(org.id, {
         volunteerId,
-        reimbursementTypeId: typeId,
+        reimbursementTypeKey,
         organizationUnitId,
       }),
       this.documentTemplateService
         .findActiveTemplate(
           org.id,
-          typeId,
+          reimbursementTypeKey,
           DocumentKind.CONTRACT,
           organizationUnitId,
         )

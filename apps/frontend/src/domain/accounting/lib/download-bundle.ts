@@ -2,20 +2,20 @@ import { API_URL } from '@/lib/constants';
 
 export function buildBundleDownloadUrl(args: {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: string;
   invoiceIds: string[];
 }): string {
   return (
     `${API_URL}/accounting/reimbursement-bundle/download` +
     `?volunteerId=${encodeURIComponent(args.volunteerId)}` +
-    `&reimbursementTypeId=${encodeURIComponent(args.reimbursementTypeId)}` +
+    `&reimbursementTypeKey=${encodeURIComponent(args.reimbursementTypeKey)}` +
     `&invoiceIds=${encodeURIComponent(args.invoiceIds.join(','))}`
   );
 }
 
 export async function requestBundleDownload(args: {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: string;
   invoiceIds: string[];
   orgUId: string;
 }): Promise<Blob> {

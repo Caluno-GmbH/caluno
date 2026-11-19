@@ -20,7 +20,23 @@ function createInviteService(options: {
   existingStatus?: ShiftInviteStatus;
   capture: jest.Mock;
 }) {
+  // Rows for any `select().from().where()`: the instance lock (`.for`) and
+  // the volunteer's current invite, read inside the add-at-check-in tx.
+  const inviteRows = options.existingStatus
+    ? [{ status: options.existingStatus }]
+    : [];
+  const select = jest.fn().mockReturnValue({
+    from: jest.fn().mockReturnValue({
+      where: jest.fn().mockImplementation(() =>
+        Object.assign(Promise.resolve(inviteRows), {
+          for: jest.fn().mockResolvedValue([{ id: 'si-1' }]),
+        }),
+      ),
+    }),
+  });
   const db = {
+    select,
+    transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(db),
     query: {
       shiftInstances: {
         findFirst: jest.fn().mockResolvedValue({
@@ -45,22 +61,11 @@ function createInviteService(options: {
         }),
       },
     },
-    transaction: jest
-      .fn()
-      .mockImplementation(async (fn: (tx: object) => unknown) =>
-        fn({
-          insert: jest.fn().mockReturnValue({
-            values: jest.fn().mockReturnValue({
-              onConflictDoNothing: jest.fn().mockResolvedValue(undefined),
-            }),
-          }),
-          update: jest.fn().mockReturnValue({
-            set: jest.fn().mockReturnValue({
-              where: jest.fn().mockResolvedValue(undefined),
-            }),
-          }),
-        }),
-      ),
+    insert: jest.fn().mockReturnValue({
+      values: jest.fn().mockReturnValue({
+        onConflictDoUpdate: jest.fn().mockResolvedValue(undefined),
+      }),
+    }),
   };
 
   return new ShiftService(
@@ -80,15 +85,26 @@ function createInviteService(options: {
   );
 }
 
-describe('ShiftService.inviteVolunteerToShiftInstance PostHog', () => {
-  it('captures shift_instance_invite with check_in source for a new door invite', async () => {
-    const capture = jest.fn();
-    const service = createInviteService({ capture });
+describe('ShiftService.addVolunteerToShiftInstanceAtCheckIn PostHog', () => {
+  const addAtCheckIn = (service: ShiftService) =>
+    service.addVolunteerToShiftInstanceAtCheckIn(
+      'si-1',
+      'volunteer-1',
+      'ou-1',
+      { allowOverCapacity: true, actorUserId: 'manager-1' },
+    );
 
-    await service.inviteVolunteerToShiftInstance('si-1', 'volunteer-1', 'ou-1');
+  it('captures a check_in sourced invite update with the new JOINED status', async () => {
+    const capture = jest.fn();
+    const service = createInviteService({
+      capture,
+      existingStatus: ShiftInviteStatus.ADMIN_INVITED,
+    });
+
+    await addAtCheckIn(service);
 
     expect(capture).toHaveBeenCalledWith({
-      event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE,
+      event: POSTHOG_EVENT.SHIFT_INSTANCE_INVITE_UPDATE,
       userId: 'volunteer-1',
       properties: {
         surface: POSTHOG_SURFACE.BACKOFFICE,
@@ -97,18 +113,20 @@ describe('ShiftService.inviteVolunteerToShiftInstance PostHog', () => {
         shift_id: 'shift-1',
         shift_instance_id: 'si-1',
         source: POSTHOG_JOIN_SOURCE.CHECK_IN,
+        invite_status: ShiftInviteStatus.JOINED,
+        previous_status: ShiftInviteStatus.ADMIN_INVITED,
       },
     });
   });
 
-  it('does not capture when the volunteer already has an active invite', async () => {
+  it('does not capture when the volunteer already joined', async () => {
     const capture = jest.fn();
     const service = createInviteService({
       capture,
-      existingStatus: ShiftInviteStatus.ADMIN_INVITED,
+      existingStatus: ShiftInviteStatus.JOINED,
     });
 
-    await service.inviteVolunteerToShiftInstance('si-1', 'volunteer-1', 'ou-1');
+    await addAtCheckIn(service);
 
     expect(capture).not.toHaveBeenCalled();
   });

@@ -137,11 +137,11 @@ export class TimeEntryRepository extends BaseRepository {
 
   async getCheckInReadiness(
     organizationUnitId: string,
-    volunteerId: string,
+    checkInId: string,
     shiftInstanceId: string | null,
   ): Promise<GetCheckInReadinessQuery['checkInReadiness']> {
     const data = await this.sdk.GetCheckInReadiness(
-      { volunteerId, shiftInstanceId },
+      { checkInId, shiftInstanceId },
       { 'x-organization-unit-id': organizationUnitId },
     );
     return data.checkInReadiness;
@@ -149,12 +149,12 @@ export class TimeEntryRepository extends BaseRepository {
 
   async getCheckInVolunteerRequiredForms(
     organizationUnitId: string,
-    volunteerId: string,
+    checkInId: string,
   ): Promise<
     GetCheckInVolunteerRequiredFormsQuery['checkInVolunteerRequiredForms']
   > {
     const data = await this.sdk.GetCheckInVolunteerRequiredForms(
-      { volunteerId },
+      { checkInId },
       { 'x-organization-unit-id': organizationUnitId },
     );
     return data.checkInVolunteerRequiredForms;
@@ -188,10 +188,10 @@ export class TimeEntryRepository extends BaseRepository {
 
   async checkInInviteToOrganization(
     organizationUnitId: string,
-    volunteerId: string,
+    checkInId: string,
   ): Promise<boolean> {
     const data = await this.sdk.CheckInInviteToOrganization(
-      { volunteerId },
+      { checkInId },
       { 'x-organization-unit-id': organizationUnitId },
     );
     return data.checkInInviteToOrganization;

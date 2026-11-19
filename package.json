@@ -9,6 +9,7 @@
     "lint": "turbo run format-and-lint",
     "format": "turbo run format-and-lint:fix",
     "check-types": "turbo run check-types",
+    "all-checks": "turbo run all-checks",
     "check": "turbo run all-checks && bun test",
     "format-and-lint": "biome check .",
     "format-and-lint:fix": "biome check . --write",
@@ -28,11 +29,11 @@
     "oss:copy": "bun run scripts/ee-oss-mirror/oss-copy.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.6",
+    "@biomejs/biome": "^2.6.8",
     "@svgr/webpack": "^8.1.0",
     "turbo": "^2.11.10",
     "typescript": "6.0.3",
-    "typescript-language-server": "^6.0.3",
+    "typescript-language-server": "^6.1.0",
     "vite-plugin-svgr": "^5.2.0"
   },
   "engines": {

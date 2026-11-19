@@ -1,3 +1,4 @@
+import { ReimbursementTypeKey } from '@repo/data';
 import { startOfDay } from 'date-fns';
 import z from 'zod';
 
@@ -57,7 +58,7 @@ function shiftShape(t: ShiftSchemaMessages) {
     imageFileId: z.uuid().nullish(),
     minVolunteers: z.number().int().nonnegative().nullable().optional(),
     maxVolunteers: z.number().int().nonnegative().nullable().optional(),
-    reimbursementTypeId: z.string().nullable().optional(),
+    reimbursementTypeKey: z.enum(ReimbursementTypeKey).nullable().optional(),
     requiredFormIds: z.array(z.string()).optional(),
   });
 }

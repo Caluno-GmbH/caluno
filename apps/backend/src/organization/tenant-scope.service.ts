@@ -45,6 +45,30 @@ export class TenantScopeService {
   }
 
   /**
+   * The resource's unit must be the header unit or one of its ancestors — for
+   * resources that reach down into the header unit, e.g. a pending membership
+   * request to a parent unit, which counts for the whole subtree. Rejects
+   * descendants, siblings and other organizations.
+   */
+  async assertResourceInAncestorScope(
+    headerUnitId: string,
+    resourceUnitId: string | null | undefined,
+    notFoundMessage = 'Resource not found',
+  ): Promise<void> {
+    if (!resourceUnitId) {
+      throw new NotFoundGraphQLError(notFoundMessage);
+    }
+
+    const ancestorUnitIds =
+      await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
+        headerUnitId,
+      );
+    if (!ancestorUnitIds.includes(resourceUnitId)) {
+      throw new NotFoundGraphQLError(notFoundMessage);
+    }
+  }
+
+  /**
    * Builds a check for whether a unit sits on the header unit's branch: the
    * header unit itself, one of its ancestors, or one of its descendants.
    * Siblings and other organizations are off the branch. The header chain is

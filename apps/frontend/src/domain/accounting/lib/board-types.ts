@@ -1,3 +1,4 @@
+import type { ReimbursementTypeKey } from '@repo/data';
 import type { PauschalenType } from '../components/doc-type-header';
 import type { SigneeRole } from '../components/template/types';
 
@@ -132,7 +133,7 @@ export interface BoardVolunteer {
   totalCap: number;
   limits?: Partial<Record<PauschalenType, PauschalenLimit>>;
   /** Maps each pauschale type the volunteer is eligible for to its reimbursement type id. */
-  reimbursementTypeIds?: Partial<Record<PauschalenType, string>>;
+  reimbursementTypeKeys?: Partial<Record<PauschalenType, ReimbursementTypeKey>>;
   documents: BoardDocument[];
 }
 

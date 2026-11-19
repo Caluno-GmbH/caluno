@@ -4,6 +4,7 @@ import { DATABASE_CONNECTION } from '../../database/database-connection';
 import { NotFoundGraphQLError } from '../../graphql/errors';
 import { MembershipService } from '../../membership/membership.service';
 import { appDateParts } from '../../shift/utils/app-time';
+import { ReimbursementTypeKey } from '../enums';
 import type { BillingPeriod } from '../utils/billing-period';
 import { ContractService } from './contract.service';
 import { ReimbursementRateService } from './reimbursement-rate.service';
@@ -61,11 +62,11 @@ export class VolunteerAllowanceService {
         )
       : undefined;
     // Unpaid shifts don't show allowance states
-    if (shift && !shift.reimbursementTypeId) {
+    if (shift && !shift.reimbursementTypeKey) {
       return [];
     }
 
-    const paidTypeId = shift?.reimbursementTypeId ?? undefined;
+    const paidTypeId = shift?.reimbursementTypeKey ?? undefined;
     // The ceiling is per calendar year, so measure against the shift's year.
     const year = appDateParts(shift?.period.start ?? new Date()).year;
 
@@ -113,7 +114,7 @@ export class VolunteerAllowanceService {
         typeIds.map((typeId) => {
           const typeUsage = usageByVolunteerId
             .get(volunteerId)
-            ?.find((entry) => entry.reimbursementType.id === typeId);
+            ?.find((entry) => entry.reimbursementType.key === typeId);
           return computeVolunteerAllowanceState({
             hasActiveAgreement: Boolean(contractTypeIds?.has(typeId)),
             remainingCents: typeUsage?.remainingCents ?? 0,
@@ -130,7 +131,7 @@ export class VolunteerAllowanceService {
     shiftInstanceId: string,
     organizationUnitId: string,
   ): Promise<{
-    reimbursementTypeId: string | null;
+    reimbursementTypeKey: ReimbursementTypeKey | null;
     durationMinutes: number;
     period: BillingPeriod;
   }> {
@@ -145,7 +146,7 @@ export class VolunteerAllowanceService {
       throw new NotFoundGraphQLError('Shift instance not found');
     }
     return {
-      reimbursementTypeId: instance.master.reimbursementTypeId,
+      reimbursementTypeKey: instance.master.reimbursementTypeKey,
       durationMinutes: Math.max(
         0,
         Math.round(

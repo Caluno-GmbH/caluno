@@ -1,10 +1,11 @@
+import type { ReimbursementTypeKey } from '@repo/data';
 import * as Sentry from '@sentry/nextjs';
 
 const FEATURE = 'accounting-bundle-download';
 
 interface BundleDownloadContext {
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
 }
 
 /** The message a Nest HTTP exception sends in its JSON body, if there is one. */

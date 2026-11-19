@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { ReimbursementTypeKey } from '@repo/data';
 import type { BoardDocument, BoardVolunteer, DocVolPair } from './board-types';
 import {
   contractIdsToCountersign,
@@ -74,7 +75,10 @@ describe('groupBundles', () => {
       id: 'vol-1',
       name: 'Anna Müller',
       documents: [docEP, docUL],
-      reimbursementTypeIds: { ehrenamt: 'rt-ep-1', uebungsleiter: 'rt-ul-1' },
+      reimbursementTypeKeys: {
+        ehrenamt: ReimbursementTypeKey.Ehrenamt,
+        uebungsleiter: ReimbursementTypeKey.Uebungsleiter,
+      },
     });
 
     const pairs: DocVolPair[] = [
@@ -92,11 +96,11 @@ describe('groupBundles', () => {
     expect(ep?.volunteerId).toBe('vol-1');
     expect(ep?.volunteerName).toBe('Anna Müller');
     expect(ep?.invoiceIds).toEqual(['doc-ep-1']);
-    expect(ep?.reimbursementTypeId).toBe('rt-ep-1');
+    expect(ep?.reimbursementTypeKey).toBe(ReimbursementTypeKey.Ehrenamt);
 
     expect(ul).toBeDefined();
     expect(ul?.invoiceIds).toEqual(['doc-ul-1']);
-    expect(ul?.reimbursementTypeId).toBe('rt-ul-1');
+    expect(ul?.reimbursementTypeKey).toBe(ReimbursementTypeKey.Uebungsleiter);
   });
 
   it('includes only timesheet-ready docs and ignores other statuses', () => {

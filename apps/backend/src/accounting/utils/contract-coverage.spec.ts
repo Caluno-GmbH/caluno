@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { startOfAppDay } from '../../shift/utils/app-time';
-import { ContractStatus } from '../enums';
+import { ContractStatus, ReimbursementTypeKey } from '../enums';
 import {
   ContractCover,
   type CoverageContract,
@@ -13,7 +13,7 @@ import {
 } from './contract-coverage';
 
 const VOLUNTEER = 'volunteer-1';
-const TYPE = 'type-1';
+const TYPE = ReimbursementTypeKey.EHRENAMT;
 const UNIT = 'unit-1';
 
 let sequence = 0;
@@ -22,7 +22,7 @@ function contract(overrides: Partial<CoverageContract> = {}): CoverageContract {
   return {
     id: `contract-${sequence}`,
     volunteerId: VOLUNTEER,
-    reimbursementTypeId: TYPE,
+    reimbursementTypeKey: TYPE,
     organizationUnitId: UNIT,
     contractStatus: ContractStatus.ACTIVE,
     // October 2026, Berlin bounds.
@@ -40,7 +40,7 @@ function target(
   return {
     key: 'entry-1',
     volunteerId: VOLUNTEER,
-    reimbursementTypeId: TYPE,
+    reimbursementTypeKey: TYPE,
     organizationUnitId: UNIT,
     at,
     ...overrides,
@@ -247,7 +247,7 @@ describe('matchCoveringContracts', () => {
   it('ignores contracts for another volunteer, type or unit', () => {
     const others = [
       contract({ volunteerId: 'volunteer-2' }),
-      contract({ reimbursementTypeId: 'type-2' }),
+      contract({ reimbursementTypeKey: ReimbursementTypeKey.UEBUNGSLEITER }),
       contract({ organizationUnitId: 'unit-2' }),
     ];
     const result = matchCoveringContracts(
@@ -315,7 +315,7 @@ describe('coverageTargetsForTimeEntries', () => {
         {
           id: 'entry-9',
           volunteerId: VOLUNTEER,
-          reimbursementTypeId: TYPE,
+          reimbursementTypeKey: TYPE,
           organizationUnitId: UNIT,
           startedAt,
         },
@@ -324,7 +324,7 @@ describe('coverageTargetsForTimeEntries', () => {
       {
         key: 'entry-9',
         volunteerId: VOLUNTEER,
-        reimbursementTypeId: TYPE,
+        reimbursementTypeKey: TYPE,
         organizationUnitId: UNIT,
         at: startedAt,
       },
@@ -337,7 +337,7 @@ describe('coverageTargetsForTimeEntries', () => {
         {
           id: 'unpaid',
           volunteerId: VOLUNTEER,
-          reimbursementTypeId: null,
+          reimbursementTypeKey: null,
           organizationUnitId: UNIT,
           startedAt: berlinNoon(2026, 9, 15),
         },

@@ -5,6 +5,7 @@ import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context'
 import { TenantScopeService } from '../../organization/tenant-scope.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
 import { UserService } from '../../user/user.service';
+import { ReimbursementTypeKey } from '../enums';
 import { ReimbursementTypeMapper } from '../mappers';
 import { BundleDownloadStatus } from '../models/bundle-download-status.model';
 import { EffectiveRate } from '../models/effective-rate.model';
@@ -77,8 +78,8 @@ export class ReimbursementQueryResolver {
   @Query(() => YearlyUsage)
   async yearlyUsage(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     // Same cutoff the PDF uses (the document's period end), so the
     // already-received figure in the dialog matches the generated document.
@@ -101,7 +102,7 @@ export class ReimbursementQueryResolver {
     return this.reimbursementRateService.getYearlyUsage(
       organizationId,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
       asOfDate ?? undefined,
       excludeInvoiceId ?? undefined,
@@ -133,6 +134,7 @@ export class ReimbursementQueryResolver {
     return usage.map((entry) => ({
       volunteer: this.userMapper.toModelOrThrow(entry.volunteer),
       usageByType: entry.usageByType.map((typeUsage) => ({
+        reimbursementTypeKey: typeUsage.reimbursementType.key,
         reimbursementType: this.reimbursementTypeMapper.toModelOrThrow(
           typeUsage.reimbursementType,
         ),
@@ -147,8 +149,8 @@ export class ReimbursementQueryResolver {
   @Query(() => BundleDownloadStatus, { nullable: true })
   async bundleDownloadStatus(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<BundleDownloadStatus | null> {
     await this.accountingOrgAccessService.resolveEnabledOrganizationId(
@@ -162,7 +164,7 @@ export class ReimbursementQueryResolver {
 
     const status = await this.reimbursementRateService.getBundleDownloadStatus(
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
     );
     if (!status) return null;
 
@@ -173,8 +175,8 @@ export class ReimbursementQueryResolver {
   @Query(() => ManualBaseline, { nullable: true })
   async manualBaseline(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('year', { type: () => Int }) year: number,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<ManualBaseline | null> {
@@ -191,7 +193,7 @@ export class ReimbursementQueryResolver {
     const baseline = await this.reimbursementRateService.getManualBaseline(
       organizationId,
       volunteerId,
-      reimbursementTypeId,
+      reimbursementTypeKey,
       year,
     );
     if (!baseline) return null;
@@ -201,14 +203,14 @@ export class ReimbursementQueryResolver {
 
   private async toBundleDownloadStatusModel(status: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     downloadedAt: Date;
     downloadedByUserId: string | null;
   }): Promise<BundleDownloadStatus> {
     const [volunteer, reimbursementType, downloadedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(status.volunteerId),
-      this.reimbursementRateService.findReimbursementTypeById(
-        status.reimbursementTypeId,
+      this.reimbursementRateService.findReimbursementTypeByKey(
+        status.reimbursementTypeKey,
       ),
       status.downloadedByUserId
         ? this.userService.findById(status.downloadedByUserId)
@@ -217,6 +219,7 @@ export class ReimbursementQueryResolver {
 
     return {
       volunteer: this.userMapper.toModelOrThrow(volunteer),
+      reimbursementTypeKey: reimbursementType.key,
       reimbursementType:
         this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
       downloadedAt: status.downloadedAt,
@@ -226,7 +229,7 @@ export class ReimbursementQueryResolver {
 
   private async toManualBaselineModel(baseline: {
     volunteerId: string;
-    reimbursementTypeId: string;
+    reimbursementTypeKey: ReimbursementTypeKey;
     year: number;
     amountCents: number;
     updatedAt: Date | null;
@@ -235,8 +238,8 @@ export class ReimbursementQueryResolver {
   }): Promise<ManualBaseline> {
     const [volunteer, reimbursementType, updatedByUser] = await Promise.all([
       this.userService.findByIdOrThrow(baseline.volunteerId),
-      this.reimbursementRateService.findReimbursementTypeById(
-        baseline.reimbursementTypeId,
+      this.reimbursementRateService.findReimbursementTypeByKey(
+        baseline.reimbursementTypeKey,
       ),
       baseline.updatedByUserId
         ? this.userService.findById(baseline.updatedByUserId)
@@ -245,6 +248,7 @@ export class ReimbursementQueryResolver {
 
     return {
       volunteer: this.userMapper.toModelOrThrow(volunteer),
+      reimbursementTypeKey: reimbursementType.key,
       reimbursementType:
         this.reimbursementTypeMapper.toModelOrThrow(reimbursementType),
       year: baseline.year,

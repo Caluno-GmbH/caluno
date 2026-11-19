@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { ReimbursementTypeKey } from '@repo/data';
 import { clientTimeEntrySchema, serverCheckInVolunteerSchema } from './schemas';
 
 const messages = {
@@ -37,7 +38,7 @@ describe('clientTimeEntrySchema', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find(
-        (i) => i.path[0] === 'reimbursementTypeId',
+        (i) => i.path[0] === 'reimbursementTypeKey',
       );
       expect(issue?.message).toBe('Pauschale type is required');
     }
@@ -47,7 +48,7 @@ describe('clientTimeEntrySchema', () => {
     const result = clientTimeEntrySchema(messages).safeParse({
       ...baseValues,
       isPaidTime: true,
-      reimbursementTypeId: 'reimbursement-type-1',
+      reimbursementTypeKey: ReimbursementTypeKey.Ehrenamt,
     });
     expect(result.success).toBe(true);
   });

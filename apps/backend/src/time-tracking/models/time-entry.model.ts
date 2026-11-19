@@ -1,4 +1,5 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { ReimbursementTypeKey } from '../../accounting/enums';
 import { ReimbursementType } from '../../accounting/models/reimbursement-type.model';
 import { createPaginatedResponseType } from '../../graphql/paginated-response.model';
 import { OrganizationUnit } from '../../organization/models/organization-unit.model';
@@ -22,6 +23,9 @@ export class TimeEntry {
 
   @Field(() => String, { nullable: true })
   notes?: string | null;
+
+  @Field(() => ReimbursementTypeKey, { nullable: true })
+  reimbursementTypeKey?: ReimbursementTypeKey | null;
 
   @Field(() => ReimbursementType, { nullable: true })
   reimbursementType?: ReimbursementType | null;

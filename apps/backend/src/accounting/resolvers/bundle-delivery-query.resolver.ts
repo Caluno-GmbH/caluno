@@ -4,6 +4,7 @@ import { PERMISSIONS } from '../../auth/constants';
 import { Permissions } from '../../auth/decorators/permissions.decorator';
 import type { AuthenticatedGraphQLContext } from '../../graphql/graphql.context';
 import { TenantScopeService } from '../../organization/tenant-scope.service';
+import { ReimbursementTypeKey } from '../enums';
 import { ReimbursementTypeMapper } from '../mappers';
 import { BundleDelivery } from '../models/bundle-delivery.model';
 import { BundleSendPreview } from '../models/bundle-send-preview.model';
@@ -28,8 +29,8 @@ export class BundleDeliveryQueryResolver {
   @Query(() => BundleSendPreview)
   async bundleSendPreview(
     @Args('volunteerId', { type: () => ID }) volunteerId: string,
-    @Args('reimbursementTypeId', { type: () => ID })
-    reimbursementTypeId: string,
+    @Args('reimbursementTypeKey', { type: () => ReimbursementTypeKey })
+    reimbursementTypeKey: ReimbursementTypeKey,
     @Args('invoiceIds', { type: () => [ID], nullable: true })
     invoiceIds: string[] | null | undefined,
     @Context() context: AuthenticatedGraphQLContext,
@@ -48,7 +49,7 @@ export class BundleDeliveryQueryResolver {
       organizationId,
       scope: {
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         organizationUnitId: context.organizationUnitId,
       },
       invoiceIds: invoiceIds ?? undefined,
@@ -81,6 +82,7 @@ export class BundleDeliveryQueryResolver {
       id: row.id,
       method: row.method,
       volunteer: row.volunteer,
+      reimbursementTypeKey: row.reimbursementType?.key ?? null,
       reimbursementType: this.reimbursementTypeMapper.toModel(
         row.reimbursementType,
       ),

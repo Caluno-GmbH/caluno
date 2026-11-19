@@ -1,4 +1,5 @@
 'use client';
+import type { ReimbursementTypeKey } from '@repo/data';
 
 import {
   type BundleDeliveryIssue,
@@ -79,7 +80,7 @@ interface ShownBundle {
 
 interface BundleButtonProps {
   volunteerId: string;
-  reimbursementTypeId: string | undefined;
+  reimbursementTypeKey: ReimbursementTypeKey | undefined;
   typeLabel: string;
   readyCount: number;
   /** The timesheets on screen, so the bundle holds exactly those. */
@@ -91,25 +92,29 @@ interface BundleButtonProps {
 
 function useBundleDownload({
   volunteerId,
-  reimbursementTypeId,
+  reimbursementTypeKey,
   invoiceIds,
   orgUId,
   readyCount,
 }: Pick<
   BundleButtonProps,
-  'volunteerId' | 'reimbursementTypeId' | 'invoiceIds' | 'orgUId' | 'readyCount'
+  | 'volunteerId'
+  | 'reimbursementTypeKey'
+  | 'invoiceIds'
+  | 'orgUId'
+  | 'readyCount'
 >) {
   const t = useTranslations('Accounting.reimbursements');
   const queryClient = useQueryClient();
   const [isDownloading, setIsDownloading] = useState(false);
 
   const download = async () => {
-    if (!reimbursementTypeId || isDownloading) return;
+    if (!reimbursementTypeKey || isDownloading) return;
     setIsDownloading(true);
     try {
       const blob = await requestBundleDownload({
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         invoiceIds,
         orgUId,
       });
@@ -122,7 +127,7 @@ function useBundleDownload({
       toast.error(t('bundle.downloadError'));
       void reportBundleDownloadFailure(error, {
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
       });
     } finally {
       setIsDownloading(false);
@@ -165,7 +170,7 @@ function BundleActionButton(props: BundleButtonProps) {
 function BundleSendButton(props: BundleButtonProps) {
   const {
     volunteerId,
-    reimbursementTypeId,
+    reimbursementTypeKey,
     typeLabel,
     readyCount,
     invoiceIds,
@@ -199,11 +204,11 @@ function BundleSendButton(props: BundleButtonProps) {
   };
 
   const sendBundle = async (shown: ShownBundle) => {
-    if (!reimbursementTypeId) return;
+    if (!reimbursementTypeKey) return;
     try {
       await send.mutateAsync({
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         invoiceIds,
         acknowledgedIssues: shown.issues,
         expectedRecipientEmail: shown.recipientEmail,
@@ -218,11 +223,11 @@ function BundleSendButton(props: BundleButtonProps) {
   };
 
   const startSend = async () => {
-    if (!reimbursementTypeId || isBusy) return;
+    if (!reimbursementTypeKey || isBusy) return;
     try {
       const result = await preview.mutateAsync({
         volunteerId,
-        reimbursementTypeId,
+        reimbursementTypeKey,
         invoiceIds,
       });
       if (!result.fitsInEmail) return offerDownload();
@@ -263,7 +268,7 @@ function BundleSendButton(props: BundleButtonProps) {
         size="sm"
         variant="outline"
         className="gap-1.5 shrink-0"
-        disabled={!reimbursementTypeId || isBusy}
+        disabled={!reimbursementTypeKey || isBusy}
         onClick={(e) => {
           e.stopPropagation();
           void startSend();
@@ -316,12 +321,12 @@ function profileName(chunks: ReactNode) {
 }
 
 function BundleDownloadButton(props: BundleButtonProps) {
-  const { volunteerId, reimbursementTypeId, typeLabel, readyCount } = props;
+  const { volunteerId, reimbursementTypeKey, typeLabel, readyCount } = props;
   const t = useTranslations('Accounting.reimbursements');
   const { formatDate } = useFormatting();
   const { data: status, isLoading } = useBundleDownloadStatus(
     volunteerId,
-    reimbursementTypeId,
+    reimbursementTypeKey,
   );
   const { download, isDownloading } = useBundleDownload(props);
 
@@ -331,7 +336,7 @@ function BundleDownloadButton(props: BundleButtonProps) {
         size="sm"
         variant="outline"
         className="gap-1.5 shrink-0"
-        disabled={!reimbursementTypeId || isDownloading}
+        disabled={!reimbursementTypeKey || isDownloading}
         onClick={(e) => {
           e.stopPropagation();
           void download();
@@ -509,7 +514,9 @@ function VolunteerTableGroup({
                   <BundleActionButton
                     key={type}
                     volunteerId={volunteer.id}
-                    reimbursementTypeId={volunteer.reimbursementTypeIds?.[type]}
+                    reimbursementTypeKey={
+                      volunteer.reimbursementTypeKeys?.[type]
+                    }
                     typeLabel={TYPE_LABEL[type]}
                     readyCount={readyByType[type] ?? 0}
                     invoiceIds={readyIdsByType[type] ?? []}

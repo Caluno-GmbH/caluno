@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   and,
@@ -13,6 +13,7 @@ import {
   type SQL,
   sql,
 } from 'drizzle-orm';
+import { ReimbursementTypeKey } from '../accounting/enums';
 import { PERMISSIONS } from '../auth/constants';
 import type { UserEntity } from '../auth/schemas/auth.schema';
 import type { Database } from '../database/database.module';
@@ -25,6 +26,7 @@ import {
   ForbiddenGraphQLError,
   NotFoundGraphQLError,
 } from '../graphql/errors';
+import { InternalServerGraphQLError } from '../graphql/errors/internal-server.error';
 import { PaginationInput } from '../graphql/pagination.input';
 import { MembershipService } from '../membership/membership.service';
 import { NotificationService } from '../notification';
@@ -64,6 +66,8 @@ import {
 
 @Injectable()
 export class TimeTrackingService {
+  private readonly logger = new Logger(TimeTrackingService.name);
+
   constructor(
     @Inject(DATABASE_CONNECTION)
     private readonly db: Database,
@@ -84,7 +88,7 @@ export class TimeTrackingService {
   ): Promise<TimeEntryEntity> {
     assertEndAfterStart(input.startedAt, input.endedAt);
 
-    let reimbursementTypeId: string | null = null;
+    let reimbursementTypeKey: ReimbursementTypeKey | null = null;
     if (input.shiftInstanceId) {
       const context = await this.resolveShiftInstanceContext(
         input.shiftInstanceId,
@@ -103,13 +107,13 @@ export class TimeTrackingService {
         }
       }
 
-      reimbursementTypeId = context.reimbursementTypeId;
+      reimbursementTypeKey = context.reimbursementTypeKey;
     }
 
-    if (input.reimbursementTypeId) {
-      await this.assertReimbursementTypeExists(input.reimbursementTypeId);
+    if (input.reimbursementTypeKey) {
+      await this.assertReimbursementTypeExists(input.reimbursementTypeKey);
     }
-    reimbursementTypeId = input.reimbursementTypeId ?? reimbursementTypeId;
+    reimbursementTypeKey = input.reimbursementTypeKey ?? reimbursementTypeKey;
 
     try {
       const [timeEntry] = await this.db
@@ -122,7 +126,7 @@ export class TimeTrackingService {
           endedAt: input.endedAt ?? null,
           closureKind: input.endedAt ? TimeEntryClosureKind.MANUAL : null,
           notes: input.notes,
-          reimbursementTypeId,
+          reimbursementTypeKey,
           createdById: actorUserId,
         })
         .returning();
@@ -154,11 +158,16 @@ export class TimeTrackingService {
   }
 
   private async assertReimbursementTypeExists(
-    reimbursementTypeId: string,
+    reimbursementTypeKey: ReimbursementTypeKey,
   ): Promise<void> {
-    const reimbursementType = await this.db.query.reimbursementTypes.findFirst({
-      where: { id: reimbursementTypeId },
-    });
+    // The key is a pg enum: reject out-of-range values before querying.
+    const reimbursementType = Object.values(ReimbursementTypeKey).includes(
+      reimbursementTypeKey,
+    )
+      ? await this.db.query.reimbursementTypes.findFirst({
+          where: { key: reimbursementTypeKey },
+        })
+      : undefined;
     if (!reimbursementType) {
       throw new NotFoundGraphQLError('Reimbursement type not found');
     }
@@ -167,7 +176,10 @@ export class TimeTrackingService {
   private async resolveShiftInstanceContext(
     shiftInstanceId: string,
     organizationUnitId: string,
-  ): Promise<{ reimbursementTypeId: string | null; actualEndsAt: Date }> {
+  ): Promise<{
+    reimbursementTypeKey: ReimbursementTypeKey | null;
+    actualEndsAt: Date;
+  }> {
     const instance = await this.db.query.shiftInstances.findFirst({
       where: { id: shiftInstanceId },
       with: { master: true },
@@ -183,16 +195,16 @@ export class TimeTrackingService {
     }
 
     return {
-      reimbursementTypeId:
-        instance.overrideReimbursementTypeId ??
-        instance.master.reimbursementTypeId ??
+      reimbursementTypeKey:
+        instance.overrideReimbursementTypeKey ??
+        instance.master.reimbursementTypeKey ??
         null,
       actualEndsAt: instance.actualEndsAt,
     };
   }
 
   private emitTimeEntryClosed(entry: TimeEntryEntity): void {
-    if (!entry.endedAt || !entry.reimbursementTypeId) return;
+    if (!entry.endedAt || !entry.reimbursementTypeKey) return;
     this.eventEmitter.emit(AccountingEvent.TIME_ENTRY_CLOSED, {
       timeEntryId: entry.id,
     });
@@ -302,8 +314,8 @@ export class TimeTrackingService {
       }
     }
 
-    if (input.reimbursementTypeId) {
-      await this.assertReimbursementTypeExists(input.reimbursementTypeId);
+    if (input.reimbursementTypeKey) {
+      await this.assertReimbursementTypeExists(input.reimbursementTypeKey);
     }
 
     try {
@@ -654,18 +666,24 @@ export class TimeTrackingService {
 
   /**
    * Cross-org-unit check-in context for the volunteering-side decide page.
-   * Intentionally not scoped by ctx.organizationUnitId: eligibility is the
-   * intersection of the caller's check-in:manage units and the volunteer's
-   * memberships, enforced here (mirrors the ungated checkIn/checkOut mutations).
-   * Returns null when that intersection is empty, so the query never leaks
-   * the volunteer's identity to callers with no legitimate relationship.
+   * Intentionally not scoped by ctx.organizationUnitId: it is derived from the
+   * caller's check-in:manage units, enforced here (mirrors the ungated
+   * checkIn/checkOut mutations).
+   *
+   * Returns null when the caller manages no unit or the check-in ID is
+   * unknown. Otherwise, per ADR 0001, any volunteer's QR code resolves: the
+   * volunteer's identity is only revealed when they are related to a managed
+   * unit (membership, or a pending request, on the unit or an ancestor).
+   * For an unrelated volunteer `volunteer` is null and every list is empty, so
+   * the response carries no name, avatar, email or ID.
    */
   async getCheckInContext(
     callerUserId: string,
     checkInId: string,
   ): Promise<{
-    volunteer: UserEntity;
+    volunteer: UserEntity | null;
     eligibleOrganizationUnits: schema.OrganizationUnitEntity[];
+    pendingOrganizationUnits: schema.OrganizationUnitEntity[];
     openTimeEntries: TimeEntryEntityWithRelations[];
   } | null> {
     const volunteer = await this.userService.findByCheckInId(checkInId);
@@ -678,49 +696,65 @@ export class TimeTrackingService {
         callerUserId,
         PERMISSIONS.CHECK_IN_MANAGE,
       );
-
-    // Batched: one round of queries for all units, not two per unit.
-    const eligibleUnitIds =
-      await this._membershipService.filterUnitsWhereMemberOrAncestor(
-        volunteer.id,
-        manageableUnits.map((unit) => unit.id),
-      );
-    const eligibleUnits = manageableUnits.filter((unit) =>
-      eligibleUnitIds.has(unit.id),
-    );
-    eligibleUnits.sort((a, b) => a.name.localeCompare(b.name));
-
-    // No overlap between the caller's check-in:manage units and the
-    // volunteer's memberships: the caller has no legitimate relationship to
-    // this QR code, so don't leak the volunteer's identity.
-    if (eligibleUnits.length === 0) {
+    if (manageableUnits.length === 0) {
       return null;
     }
 
-    const openTimeEntries = await this.db.query.timeEntries.findMany({
-      where: {
-        volunteerId: volunteer.id,
-        organizationUnitId: { in: eligibleUnits.map((unit) => unit.id) },
-        endedAt: { isNull: true },
-      },
-      // Eager-load shiftInstance: the TimeEntry.shiftInstance field
-      // resolver falls back to ShiftService.findInstanceById, which is
-      // scoped to ctx.organizationUnitId — unavailable/wrong for this
-      // cross-unit (and often headerless) query.
-      with: { shiftInstance: true },
-      orderBy: { startedAt: 'asc' },
-    });
+    // Batched: one round of queries for all units, not two per unit.
+    const manageableUnitIds = manageableUnits.map((unit) => unit.id);
+    const [eligibleUnitIds, pendingUnitIds] = await Promise.all([
+      this._membershipService.filterUnitsWhereMemberOrAncestor(
+        volunteer.id,
+        manageableUnitIds,
+      ),
+      this._membershipService.filterUnitsWithPendingRequest(
+        volunteer.id,
+        manageableUnitIds,
+      ),
+    ]);
+    const byName = (
+      a: schema.OrganizationUnitEntity,
+      b: schema.OrganizationUnitEntity,
+    ) => a.name.localeCompare(b.name);
+    const eligibleUnits = manageableUnits
+      .filter((unit) => eligibleUnitIds.has(unit.id))
+      .sort(byName);
+    const pendingUnits = manageableUnits
+      .filter((unit) => pendingUnitIds.has(unit.id))
+      .sort(byName);
+
+    const openTimeEntries =
+      eligibleUnits.length === 0
+        ? []
+        : await this.db.query.timeEntries.findMany({
+            where: {
+              volunteerId: volunteer.id,
+              organizationUnitId: { in: eligibleUnits.map((unit) => unit.id) },
+              endedAt: { isNull: true },
+            },
+            // Eager-load shiftInstance: the TimeEntry.shiftInstance field
+            // resolver falls back to ShiftService.findInstanceById, which is
+            // scoped to ctx.organizationUnitId — unavailable/wrong for this
+            // cross-unit (and often headerless) query.
+            with: { shiftInstance: true },
+            orderBy: { startedAt: 'asc' },
+          });
+
+    // No relationship to any managed unit: don't leak the volunteer's identity.
+    const isRelated = eligibleUnits.length > 0 || pendingUnits.length > 0;
 
     return {
-      volunteer,
+      volunteer: isRelated ? volunteer : null,
       eligibleOrganizationUnits: eligibleUnits,
+      pendingOrganizationUnits: pendingUnits,
       openTimeEntries,
     };
   }
 
   /**
    * Emails a public join link — creates no membership and no request itself
-   * (spec decision 5). The recipient's own join is what later unblocks
+   * (spec decision 5). A volunteer who is already a member or has a pending
+   * request (on the unit or an ancestor) is skipped. The recipient's own join is what later unblocks
    * check-in, via `checkInReadiness`'s `pendingMembership` state.
    */
   async inviteVolunteerToOrganization(
@@ -740,11 +774,52 @@ export class TimeTrackingService {
       throw new NotFoundGraphQLError('User not found');
     }
 
-    this.notificationService.notifyOrganizationUnitInvited({
-      organizationUnitId,
-      organizationUnitName: organizationUnit.name,
-      userId: volunteerId,
-    });
+    // Already a member, or already asked to join (this unit or an ancestor):
+    // nothing to invite to. Like a cooldown skip, indistinguishable to the
+    // caller, and it consumes no cooldown slot.
+    const [isMember, pendingRequest] = await Promise.all([
+      this._membershipService.isMemberOfUnitOrAncestor(
+        volunteerId,
+        organizationUnitId,
+      ),
+      this._membershipService.findPendingMembershipRequest(
+        volunteerId,
+        organizationUnitId,
+      ),
+    ]);
+    if (isMember || pendingRequest) return;
+
+    // Cooldown: a skipped send is indistinguishable to the caller.
+    const claimedAt = new Date();
+    const claimed =
+      await this._membershipService.claimOrganizationUnitInvitation(
+        volunteerId,
+        organizationUnitId,
+        claimedAt,
+      );
+    if (!claimed) return;
+
+    // The claim is taken before dispatch so concurrent callers cannot both
+    // send; a failed dispatch releases it, so a retry can send immediately.
+    try {
+      await this.notificationService.notifyOrganizationUnitInvited({
+        organizationUnitId,
+        organizationUnitName: organizationUnit.name,
+        userId: volunteerId,
+      });
+    } catch (error) {
+      this.logger.error(
+        `Organization unit invitation dispatch failed for ${volunteerId} in ${organizationUnitId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      await this._membershipService.releaseOrganizationUnitInvitation(
+        volunteerId,
+        organizationUnitId,
+        claimedAt,
+      );
+      throw new InternalServerGraphQLError(
+        'The invitation could not be sent. Please try again.',
+      );
+    }
 
     this.postHogService.capture({
       event: POSTHOG_EVENT.ORGANIZATION_UNIT_INVITE,
@@ -768,28 +843,35 @@ export class TimeTrackingService {
    * so TimeTrackingModule stays independent of AccountingModule.
    */
   async getCheckInReadiness(
+    callerUserId: string,
     volunteerId: string,
     shiftInstanceId: string | null,
     organizationUnitId: string,
   ): Promise<{
     isMember: boolean;
-    openMembershipRequestId: string | null;
+    membershipRequest: {
+      id: string;
+      canAccept: boolean;
+      organizationUnitName: string | null;
+    } | null;
     shiftInviteStatus: ShiftInviteStatus | null;
     isParticipating: boolean;
     hasOpenTimeEntry: boolean;
     idVerificationEnabled: boolean;
     idVerified: boolean;
     membershipId: string | null;
+    canViewVolunteerProfile: boolean;
+    shiftHasAvailableSeat: boolean;
     volunteerId: string;
     organizationUnitId: string;
     shiftInstanceId: string | null;
   }> {
-    if (shiftInstanceId) {
-      await this.shiftService.findInstanceById(
-        shiftInstanceId,
-        organizationUnitId,
-      );
-    }
+    const instance = shiftInstanceId
+      ? await this.shiftService.findInstanceById(
+          shiftInstanceId,
+          organizationUnitId,
+        )
+      : null;
 
     const unitIds =
       await this.organizationUnitDataService.listInclusiveAncestorUnitIds(
@@ -803,6 +885,8 @@ export class TimeTrackingService {
       hasOpenTimeEntry,
       unit,
       membership,
+      viewableUnits,
+      shiftHasAvailableSeat,
     ] = await Promise.all([
       this._membershipService.isMemberOfUnitOrAncestor(
         volunteerId,
@@ -822,13 +906,32 @@ export class TimeTrackingService {
         : false,
       this.organizationUnitDataService.findById(organizationUnitId),
       this._membershipService.findMembershipInUnits(volunteerId, unitIds),
+      this.organizationService.findUnitsWithPermission(
+        callerUserId,
+        PERMISSIONS.VOLUNTEER_VIEW,
+      ),
+      instance
+        ? this.shiftService.hasAvailableSeat(
+            instance.id,
+            instance.overrideMaxVolunteers ?? instance.master.maxVolunteers,
+          )
+        : true,
     ]);
 
     const shiftInviteStatus = inviteStatuses[0]?.status ?? null;
+    const membershipRequest = pendingRequest
+      ? {
+          id: pendingRequest.id,
+          ...(await this.resolveMembershipRequestAuthority(
+            callerUserId,
+            pendingRequest.organizationUnitId,
+          )),
+        }
+      : null;
 
     return {
       isMember,
-      openMembershipRequestId: pendingRequest?.id ?? null,
+      membershipRequest,
       shiftInviteStatus,
       isParticipating: isParticipatingShiftInviteStatus(
         shiftInviteStatus ?? undefined,
@@ -837,9 +940,36 @@ export class TimeTrackingService {
       idVerificationEnabled: unit?.idVerificationEnabled ?? false,
       idVerified: membership?.idVerifiedAt != null,
       membershipId: membership?.id ?? null,
+      canViewVolunteerProfile: viewableUnits.some(
+        (viewable) => viewable.id === organizationUnitId,
+      ),
+      shiftHasAvailableSeat,
       volunteerId,
       organizationUnitId,
       shiftInstanceId,
+    };
+  }
+
+  /**
+   * For an open membership request: the name of the unit it targets (the
+   * selected unit or an ancestor) and whether the caller may accept it — a
+   * check-in desk may only grant membership in units it manages.
+   */
+  private async resolveMembershipRequestAuthority(
+    callerUserId: string,
+    requestUnitId: string,
+  ): Promise<{ canAccept: boolean; organizationUnitName: string | null }> {
+    const [requestUnit, canAccept] = await Promise.all([
+      this.organizationUnitDataService.findById(requestUnitId),
+      this.organizationService.hasPermissionInUnit(
+        callerUserId,
+        PERMISSIONS.CHECK_IN_MANAGE,
+        requestUnitId,
+      ),
+    ]);
+    return {
+      canAccept,
+      organizationUnitName: requestUnit?.name ?? null,
     };
   }
 

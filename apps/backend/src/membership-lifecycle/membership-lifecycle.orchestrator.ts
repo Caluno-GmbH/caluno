@@ -1,10 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PERMISSIONS } from '../auth/constants';
 import { EventService } from '../event/event.service';
+import { ConflictGraphQLError, ForbiddenGraphQLError } from '../graphql/errors';
 import { MembershipService } from '../membership/membership.service';
 import type {
   MembershipRequestEntity,
   MembershipRequestMetadata,
 } from '../membership/schemas/membership-request.schema';
+import { OrganizationService } from '../organization/organization.service';
+import { TenantScopeService } from '../organization/tenant-scope.service';
 import { RequiredFormTargetType } from '../requirement-profile/enums';
 import { SubmitFormInput } from '../requirement-profile/inputs/submit-form.input';
 import type { FormSubmissionEntity } from '../requirement-profile/schemas/form-submission.schema';
@@ -26,6 +30,8 @@ export class MembershipLifecycleOrchestrator {
     private readonly eventService: EventService,
     private readonly formSubmissionService: FormSubmissionService,
     private readonly requiredFormService: RequiredFormService,
+    private readonly organizationService: OrganizationService,
+    private readonly tenantScopeService: TenantScopeService,
   ) {}
 
   async approveMembershipRequest(
@@ -50,6 +56,60 @@ export class MembershipLifecycleOrchestrator {
     );
 
     return membershipRequest;
+  }
+
+  /**
+   * Check-in desk approval: the request may target the context unit or an
+   * ancestor of it, and membership is granted in the request's own unit.
+   * Authority model: a check-in desk may only grant membership in units it
+   * manages, so the caller needs check-in:manage on the request's unit itself
+   * — managing the selected child unit does not cover a parent's request.
+   * Required forms of that unit are a hard gate.
+   */
+  async checkInApproveMembershipRequest(
+    requestId: string,
+    contextUnitId: string,
+    reviewerId: string,
+  ): Promise<MembershipRequestEntity> {
+    const request =
+      await this.membershipService.findPendingVolunteerRequestById(requestId);
+    // A pending request to an ancestor counts for the selected unit; any other
+    // unit's request is reported as not found, so its id is not confirmed.
+    await this.tenantScopeService.assertResourceInAncestorScope(
+      contextUnitId,
+      request.organizationUnitId,
+      'Membership request not found',
+    );
+
+    const canManageRequestUnit =
+      await this.organizationService.hasPermissionInUnit(
+        reviewerId,
+        PERMISSIONS.CHECK_IN_MANAGE,
+        request.organizationUnitId,
+      );
+    if (!canManageRequestUnit) {
+      throw new ForbiddenGraphQLError(
+        'Only a check-in manager of the requested unit can accept this request',
+      );
+    }
+
+    const requiredFormsSatisfied =
+      await this.requiredFormService.areRequiredFormsSatisfied(request.userId, {
+        targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
+        targetId: request.organizationUnitId,
+      });
+    if (!requiredFormsSatisfied) {
+      throw new ConflictGraphQLError(
+        'Cannot approve: required forms are not submitted.',
+      );
+    }
+
+    return this.approveMembershipRequest(
+      request.id,
+      request.organizationUnitId,
+      reviewerId,
+      'check_in',
+    );
   }
 
   async rejectMembershipRequest(

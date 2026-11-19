@@ -128,3 +128,53 @@ describe('OrganizationService.findUnitsWithPermission', () => {
     expect(result.map((unit) => unit.id).sort()).toEqual(['unit-1', 'unit-2']);
   });
 });
+
+describe('OrganizationService.hasPermissionInUnit', () => {
+  function serviceWithUnits(unitIds: string[]) {
+    const service = new OrganizationService(
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+    const findUnitsWithPermission = jest
+      .spyOn(service, 'findUnitsWithPermission')
+      .mockResolvedValue(unitIds.map((id) => ({ id })) as never);
+    return { service, findUnitsWithPermission };
+  }
+
+  it('is true when the unit is among the units holding the permission', async () => {
+    const { service, findUnitsWithPermission } = serviceWithUnits([
+      'unit-1',
+      'unit-2',
+    ]);
+
+    await expect(
+      service.hasPermissionInUnit(
+        'user-1',
+        PermissionKey.CHECK_IN_MANAGE,
+        'unit-2',
+      ),
+    ).resolves.toBe(true);
+    expect(findUnitsWithPermission).toHaveBeenCalledWith(
+      'user-1',
+      PermissionKey.CHECK_IN_MANAGE,
+    );
+  });
+
+  it('is false when the unit does not hold the permission', async () => {
+    const { service } = serviceWithUnits(['unit-2']);
+
+    await expect(
+      service.hasPermissionInUnit(
+        'user-1',
+        PermissionKey.CHECK_IN_MANAGE,
+        'unit-1',
+      ),
+    ).resolves.toBe(false);
+  });
+});

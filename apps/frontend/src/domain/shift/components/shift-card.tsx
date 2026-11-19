@@ -152,8 +152,9 @@ export function ShiftCard({
 
   const title = instance.overrideTitle ?? instance.master.title;
 
-  const reimbursementTypeId =
-    instance.overrideReimbursementTypeId ?? instance.master.reimbursementTypeId;
+  const reimbursementTypeKey =
+    instance.overrideReimbursementTypeKey ??
+    instance.master.reimbursementTypeKey;
 
   return (
     <Card className="min-w-0 rounded-xl gap-1 shadow-sm pt-4 pb-2 px-2 overflow-hidden">
@@ -215,7 +216,7 @@ export function ShiftCard({
         </div>
 
         <PauschaleMarker
-          reimbursementTypeId={reimbursementTypeId}
+          reimbursementTypeKey={reimbursementTypeKey}
           className="self-start"
         />
 

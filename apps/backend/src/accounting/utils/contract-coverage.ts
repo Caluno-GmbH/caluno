@@ -1,4 +1,4 @@
-import { ContractStatus } from '../enums';
+import { ContractStatus, ReimbursementTypeKey } from '../enums';
 
 /** Which contract statuses count as cover for a time entry. */
 export enum ContractCover {
@@ -23,7 +23,7 @@ export interface CoverageTarget {
    */
   key: string;
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   organizationUnitId: string;
   at: Date;
 }
@@ -31,7 +31,7 @@ export interface CoverageTarget {
 export interface CoverageContract {
   id: string;
   volunteerId: string;
-  reimbursementTypeId: string;
+  reimbursementTypeKey: ReimbursementTypeKey;
   organizationUnitId: string;
   contractStatus: ContractStatus;
   periodStart: Date;
@@ -42,7 +42,7 @@ export interface CoverageContract {
 export interface CoverableTimeEntry {
   id: string;
   volunteerId: string;
-  reimbursementTypeId: string | null;
+  reimbursementTypeKey: ReimbursementTypeKey | null;
   organizationUnitId: string;
   startedAt: Date;
 }
@@ -72,10 +72,10 @@ const SCOPE_SEPARATOR = '\u0000';
 
 function scopeKey(
   volunteerId: string,
-  reimbursementTypeId: string,
+  reimbursementTypeKey: ReimbursementTypeKey,
   organizationUnitId: string,
 ): string {
-  return [volunteerId, reimbursementTypeId, organizationUnitId].join(
+  return [volunteerId, reimbursementTypeKey, organizationUnitId].join(
     SCOPE_SEPARATOR,
   );
 }
@@ -83,7 +83,7 @@ function scopeKey(
 function isSameTarget(a: CoverageTarget, b: CoverageTarget): boolean {
   return (
     a.volunteerId === b.volunteerId &&
-    a.reimbursementTypeId === b.reimbursementTypeId &&
+    a.reimbursementTypeKey === b.reimbursementTypeKey &&
     a.organizationUnitId === b.organizationUnitId &&
     a.at.getTime() === b.at.getTime()
   );
@@ -118,7 +118,7 @@ export function matchCoveringContracts<C extends CoverageContract>(
     if (!contractCountsAsCover(contract.contractStatus, cover)) continue;
     const key = scopeKey(
       contract.volunteerId,
-      contract.reimbursementTypeId,
+      contract.reimbursementTypeKey,
       contract.organizationUnitId,
     );
     const group = byScope.get(key);
@@ -144,7 +144,7 @@ export function matchCoveringContracts<C extends CoverageContract>(
       byScope.get(
         scopeKey(
           target.volunteerId,
-          target.reimbursementTypeId,
+          target.reimbursementTypeKey,
           target.organizationUnitId,
         ),
       ) ?? [];
@@ -164,11 +164,11 @@ export function coverageTargetsForTimeEntries(
 ): CoverageTarget[] {
   const targets: CoverageTarget[] = [];
   for (const entry of entries) {
-    if (!entry.reimbursementTypeId) continue;
+    if (!entry.reimbursementTypeKey) continue;
     targets.push({
       key: entry.id,
       volunteerId: entry.volunteerId,
-      reimbursementTypeId: entry.reimbursementTypeId,
+      reimbursementTypeKey: entry.reimbursementTypeKey,
       organizationUnitId: entry.organizationUnitId,
       at: entry.startedAt,
     });

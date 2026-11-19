@@ -78,7 +78,7 @@ const setupOrg = async (
     .where(eq(schema.organizations.id, organization.id));
   await createReimbursementRate(db, {
     organizationId: organization.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeKey: reimbursementType.key,
     hourlyRateCents: 20_00,
   });
 
@@ -104,7 +104,7 @@ const setupOrg = async (
       .values({
         organizationId: organization.id,
         organizationUnitId: unit.id,
-        reimbursementTypeId: reimbursementType.id,
+        reimbursementTypeKey: reimbursementType.key,
         kind: DocumentKind.CONTRACT,
         body: { header: {}, blocks: [], footer: {} },
       })
@@ -115,7 +115,7 @@ const setupOrg = async (
       (await db.query.documentTemplates.findFirst({
         where: {
           organizationId: organization.id,
-          reimbursementTypeId: reimbursementType.id,
+          reimbursementTypeKey: reimbursementType.key,
           kind: DocumentKind.CONTRACT,
         },
       }));
@@ -123,7 +123,7 @@ const setupOrg = async (
     await db.insert(schema.contracts).values({
       documentTemplateId: documentTemplate.id,
       volunteerId,
-      reimbursementTypeId: reimbursementType.id,
+      reimbursementTypeKey: reimbursementType.key,
       organizationUnitId: unit.id,
       contractStatus: ContractStatus.ACTIVE,
       periodStart: new Date('2026-01-01T00:00:00.000Z'),
@@ -136,7 +136,7 @@ const setupOrg = async (
     const startsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
     const shift = await createShift(db, {
       organizationUnitId: unitId,
-      reimbursementTypeId: paid ? reimbursementType.id : null,
+      reimbursementTypeKey: paid ? reimbursementType.key : null,
       startsAt,
       endsAt: new Date(startsAt.getTime() + 2 * 60 * 60 * 1000), // 2h × 20€
     });
@@ -151,7 +151,7 @@ const setupOrg = async (
     organizationId: organization.id,
     unitId: unit.id,
     plannerId: planner.id,
-    reimbursementTypeId: reimbursementType.id,
+    reimbursementTypeKey: reimbursementType.key,
     member,
     withActiveContract,
     shiftInstanceId,
@@ -205,7 +205,7 @@ describe('volunteerAllowanceStates', () => {
     await db.insert(schema.reimbursementManualBaselines).values({
       organizationId: org.organizationId,
       volunteerId: nearCeiling,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       year: 2026,
       amountCents: 830_00, // 10 € left, the 2h shift costs 40 €
     });
@@ -226,7 +226,7 @@ describe('volunteerAllowanceStates', () => {
     await db.insert(schema.reimbursementManualBaselines).values({
       organizationId: org.organizationId,
       volunteerId: nearCeiling,
-      reimbursementTypeId: org.reimbursementTypeId,
+      reimbursementTypeKey: org.reimbursementTypeKey,
       year: 2026,
       amountCents: 830_00,
     });

@@ -6,7 +6,6 @@ import * as schema from '../../database/schema';
 import { BadRequestGraphQLError } from '../../graphql/errors';
 import type { Locale } from '../../graphql/locale';
 import { OrganizationUnitDataService } from '../../organization/organization-unit-data.service';
-import { isBlank } from '../../utils';
 import { AccountingSettingSourceKind, BundleDeliveryMethod } from '../enums';
 import type { UpdateAccountingDeliverySettingsInput } from '../inputs';
 import type {
@@ -25,6 +24,16 @@ type SettingField = 'deliveryMethod' | 'recipientEmail' | 'emailSubject';
 interface ResolvedField<T> {
   value: T | null;
   source: AccountingSettingSource;
+}
+
+/**
+ * Null or a whitespace-only string clears the override, so the field inherits
+ * again. An exactly empty string is a deliberate empty value.
+ */
+function normalizeOptionalText(value: string | null): string | null {
+  if (value === null) return null;
+  const trimmed = value.trim();
+  return trimmed === '' && value !== '' ? null : trimmed;
 }
 
 @Injectable()
@@ -123,9 +132,7 @@ export class AccountingDeliverySettingsService {
       values.deliveryMethod = input.deliveryMethod;
     }
     if (input.recipientEmail !== undefined) {
-      const recipient = isBlank(input.recipientEmail)
-        ? null
-        : (input.recipientEmail?.trim() ?? null);
+      const recipient = normalizeOptionalText(input.recipientEmail);
       // GraphQL inputs are not run through a ValidationPipe, so the input's
       // decorators document the rule and this enforces it.
       if (recipient && (!isEmail(recipient) || recipient.length > 254)) {
@@ -142,9 +149,7 @@ export class AccountingDeliverySettingsService {
       throw new BadRequestGraphQLError('Unknown delivery method');
     }
     if (input.emailSubject !== undefined) {
-      const subject = isBlank(input.emailSubject)
-        ? null
-        : (input.emailSubject?.trim() ?? null);
+      const subject = normalizeOptionalText(input.emailSubject);
       if (subject && subject.length > MAX_BUNDLE_SUBJECT_LENGTH) {
         throw new BadRequestGraphQLError('The subject is too long');
       }

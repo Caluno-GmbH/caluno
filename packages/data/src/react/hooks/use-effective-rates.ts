@@ -1,6 +1,7 @@
 'use client';
 import { AccountingRepository, type RawEffectiveRate } from '@repo/data';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ReimbursementTypeKey } from '../../generated/base-types';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
@@ -23,7 +24,7 @@ export function useSetReimbursementRate() {
 
   return useMutation({
     mutationFn: (input: {
-      reimbursementTypeId: string;
+      reimbursementTypeKey: ReimbursementTypeKey;
       hourlyRateCents: number;
       organizationUnitId?: string;
     }) => repository.setReimbursementRate(input),
