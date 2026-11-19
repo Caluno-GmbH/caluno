@@ -609,8 +609,12 @@ export function ReimbursementsBoard({
     }
   }
 
-  async function handleBatchConfirm() {
-    if (batchSendable.length === 0) {
+  async function handleBatchConfirm(keysToSend: string[]) {
+    const keySet = new Set(keysToSend);
+    const toSend = batchSendable.filter((p) =>
+      keySet.has(`${p.group.volunteerId}::${p.group.pauschale}`),
+    );
+    if (toSend.length === 0) {
       setBatchDialogOpen(false);
       return;
     }
@@ -618,7 +622,7 @@ export function ReimbursementsBoard({
     const needsAttentionCount = batchNeedsAttention.length;
     try {
       const results = await Promise.allSettled(
-        batchSendable.map((p) => {
+        toSend.map((p) => {
           if (!p.group.reimbursementTypeId)
             return Promise.reject(new Error('no-type'));
           return send.mutateAsync({
@@ -1141,7 +1145,7 @@ export function ReimbursementsBoard({
         onOpenChange={(open) => {
           if (!open && !send.isPending) setBatchDialogOpen(false);
         }}
-        onConfirm={() => void handleBatchConfirm()}
+        onConfirm={(keysToSend) => void handleBatchConfirm(keysToSend)}
       />
     </div>
   );

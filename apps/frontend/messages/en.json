@@ -2704,10 +2704,12 @@
         "confirm": {
           "title": "Send bundles?",
           "description": "The following bundles will be sent to accounting.",
-          "bundleLine": "{name} · {type} · {email}",
-          "issuesLabel": "Has issues",
+          "recipientLine": "To {email}",
+          "docCount": "{count, plural, one {# document} other {# documents}}",
           "needsAttentionLabel": "Needs attention",
-          "send": "Send",
+          "issuesGroupLabel": "Has issues — confirm each to send",
+          "sendAnyway": "Send anyway",
+          "sendCount": "{count, plural, =0 {Send} one {Send # bundle} other {Send # bundles}}",
           "cancel": "Cancel"
         }
       }

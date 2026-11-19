@@ -2704,10 +2704,12 @@
         "confirm": {
           "title": "Pakete senden?",
           "description": "Die folgenden Pakete werden an die Buchhaltung gesendet.",
-          "bundleLine": "{name} · {type} · {email}",
-          "issuesLabel": "Hat Probleme",
+          "recipientLine": "An {email}",
+          "docCount": "{count, plural, one {# Dokument} other {# Dokumente}}",
           "needsAttentionLabel": "Erfordert Aufmerksamkeit",
-          "send": "Senden",
+          "issuesGroupLabel": "Mit Problemen — zum Senden bestätigen",
+          "sendAnyway": "Trotzdem senden",
+          "sendCount": "{count, plural, =0 {Senden} one {# Paket senden} other {# Pakete senden}}",
           "cancel": "Abbrechen"
         }
       }
