@@ -30,7 +30,7 @@ export function kioskJourney(data: SetupData) {
   });
   graphql(session, 'GetCheckInContext', { checkInId: volunteer.checkInId });
   graphql(session, 'GetCheckInReadiness', {
-    volunteerId: volunteer.id,
+    checkInId: volunteer.checkInId,
     shiftInstanceId: unit.checkInInstanceId,
   });
   const checkIn = graphql(session, 'CheckInVolunteer', {
