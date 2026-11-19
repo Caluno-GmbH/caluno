@@ -405,9 +405,6 @@ export function ReimbursementsBoard({
   const [batchNeedsAttention, setBatchNeedsAttention] = useState<
     NeedsAttentionItem[]
   >([]);
-  // Keep the pending send data available when the user confirms the dialog.
-  const pendingSendRef = useRef<{ sendable: SendableItem[] }>({ sendable: [] });
-
   // ─── Mass countersign handlers ───────────────────────────────────────────────
   async function handleMassCountersignContracts() {
     const pairs = resolveSelectedPairs(
@@ -419,37 +416,40 @@ export function ReimbursementsBoard({
     const ids = contractIdsToCountersign(pairs);
     if (ids.length === 0) return;
     setBusyAction('contracts');
-    const results = await Promise.allSettled(
-      ids.map((id) => signContract.mutateAsync(id)),
-    );
-    const { succeeded, failed } = summarizeSettled(results);
-    if (failed === 0) {
-      toast.success(
-        t('massActions.countersignContractsDone', { count: succeeded }),
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => signContract.mutateAsync(id)),
       );
-    } else {
-      toast.warning(
-        t('massActions.countersignContractsPartial', {
-          done: succeeded,
-          total: ids.length,
-          failed,
-        }),
+      const { succeeded, failed } = summarizeSettled(results);
+      if (failed === 0) {
+        toast.success(
+          t('massActions.countersignContractsDone', { count: succeeded }),
+        );
+      } else {
+        toast.warning(
+          t('massActions.countersignContractsPartial', {
+            done: succeeded,
+            total: ids.length,
+            failed,
+          }),
+        );
+      }
+      // Remove successfully acted ids from selection.
+      const succeededIds = new Set(
+        results
+          .map((r, i) => (r.status === 'fulfilled' ? ids[i] : null))
+          .filter((id): id is string => id !== null),
       );
-    }
-    // Remove successfully acted ids from selection.
-    const succeededIds = new Set(
-      results
-        .map((r, i) => (r.status === 'fulfilled' ? ids[i] : null))
-        .filter((id): id is string => id !== null),
-    );
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      succeededIds.forEach((id) => {
-        next.delete(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        succeededIds.forEach((id) => {
+          next.delete(id);
+        });
+        return next;
       });
-      return next;
-    });
-    setBusyAction(null);
+    } finally {
+      setBusyAction(null);
+    }
   }
 
   async function handleMassCountersignTimesheets() {
@@ -462,36 +462,39 @@ export function ReimbursementsBoard({
     const ids = timesheetIdsToCountersign(pairs);
     if (ids.length === 0) return;
     setBusyAction('timesheets');
-    const results = await Promise.allSettled(
-      ids.map((id) => signInvoice.mutateAsync(id)),
-    );
-    const { succeeded, failed } = summarizeSettled(results);
-    if (failed === 0) {
-      toast.success(
-        t('massActions.countersignTimesheetsDone', { count: succeeded }),
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) => signInvoice.mutateAsync(id)),
       );
-    } else {
-      toast.warning(
-        t('massActions.countersignTimesheetsPartial', {
-          done: succeeded,
-          total: ids.length,
-          failed,
-        }),
+      const { succeeded, failed } = summarizeSettled(results);
+      if (failed === 0) {
+        toast.success(
+          t('massActions.countersignTimesheetsDone', { count: succeeded }),
+        );
+      } else {
+        toast.warning(
+          t('massActions.countersignTimesheetsPartial', {
+            done: succeeded,
+            total: ids.length,
+            failed,
+          }),
+        );
+      }
+      const succeededIds = new Set(
+        results
+          .map((r, i) => (r.status === 'fulfilled' ? ids[i] : null))
+          .filter((id): id is string => id !== null),
       );
-    }
-    const succeededIds = new Set(
-      results
-        .map((r, i) => (r.status === 'fulfilled' ? ids[i] : null))
-        .filter((id): id is string => id !== null),
-    );
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      succeededIds.forEach((id) => {
-        next.delete(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        succeededIds.forEach((id) => {
+          next.delete(id);
+        });
+        return next;
       });
-      return next;
-    });
-    setBusyAction(null);
+    } finally {
+      setBusyAction(null);
+    }
   }
 
   // ─── Mass bundle handler ─────────────────────────────────────────────────────
@@ -506,139 +509,145 @@ export function ReimbursementsBoard({
     if (groups.length === 0) return;
     setBusyAction('bundles');
 
-    if (bundleMode === 'send') {
-      // Run previews for each group; failures count as needs-attention.
-      type PreviewResult = {
-        group: ReturnType<typeof groupBundles>[number];
-        recipientEmail: string | null;
-        fitsInEmail: boolean;
-        issues: import('@repo/data').BundleDeliveryIssue[];
-        subject: string;
-      };
-      const previewResults: PreviewResult[] = await Promise.all(
-        groups.map(async (group) => {
-          if (!group.reimbursementTypeId) {
-            return {
-              group,
-              recipientEmail: null,
-              fitsInEmail: false,
-              issues: [],
-              subject: '',
-            };
-          }
-          try {
-            const result = await preview.mutateAsync({
-              volunteerId: group.volunteerId,
-              reimbursementTypeId: group.reimbursementTypeId,
-              invoiceIds: group.invoiceIds,
-            });
-            return { group, ...result };
-          } catch {
-            return {
-              group,
-              recipientEmail: null,
-              fitsInEmail: false,
-              issues: [],
-              subject: '',
-            };
-          }
-        }),
-      );
+    try {
+      if (bundleMode === 'send') {
+        // Run previews for each group; failures count as needs-attention.
+        type PreviewResult = {
+          group: ReturnType<typeof groupBundles>[number];
+          recipientEmail: string | null;
+          fitsInEmail: boolean;
+          issues: import('@repo/data').BundleDeliveryIssue[];
+          subject: string;
+        };
+        const previewResults: PreviewResult[] = await Promise.all(
+          groups.map(async (group) => {
+            if (!group.reimbursementTypeId) {
+              return {
+                group,
+                recipientEmail: null,
+                fitsInEmail: false,
+                issues: [],
+                subject: '',
+              };
+            }
+            try {
+              const result = await preview.mutateAsync({
+                volunteerId: group.volunteerId,
+                reimbursementTypeId: group.reimbursementTypeId,
+                invoiceIds: group.invoiceIds,
+              });
+              return { group, ...result };
+            } catch {
+              return {
+                group,
+                recipientEmail: null,
+                fitsInEmail: false,
+                issues: [],
+                subject: '',
+              };
+            }
+          }),
+        );
 
-      const { sendable, needsAttention: rawNeedsAttention } =
-        splitSendableBundles(previewResults);
+        const { sendable, needsAttention: rawNeedsAttention } =
+          splitSendableBundles(previewResults);
 
-      const dialogSendable: SendableItem[] = sendable.map((p) => ({
-        group: p.group,
-        recipientEmail: p.recipientEmail as string,
-        issues: p.issues,
-        subject: p.subject,
-      }));
-      const dialogNeedsAttention: NeedsAttentionItem[] = rawNeedsAttention.map(
-        (p) => ({
+        const dialogSendable: SendableItem[] = sendable.map((p) => ({
           group: p.group,
-          reason: !p.recipientEmail ? 'no-recipient' : 'too-large',
-        }),
-      );
+          recipientEmail: p.recipientEmail as string,
+          issues: p.issues,
+          subject: p.subject,
+        }));
+        const dialogNeedsAttention: NeedsAttentionItem[] =
+          rawNeedsAttention.map((p) => ({
+            group: p.group,
+            reason: !p.recipientEmail ? 'no-recipient' : 'too-large',
+          }));
 
-      pendingSendRef.current = { sendable: dialogSendable };
-      setBatchSendable(dialogSendable);
-      setBatchNeedsAttention(dialogNeedsAttention);
-      setBatchDialogOpen(true);
-      setBusyAction(null);
-    } else {
-      // Download mode — no dialog.
-      const results = await Promise.allSettled(
-        groups
-          .filter((g) => g.reimbursementTypeId !== undefined)
-          .map((g) =>
-            requestBundleDownload({
-              volunteerId: g.volunteerId,
-              reimbursementTypeId: g.reimbursementTypeId as string,
-              invoiceIds: g.invoiceIds,
-              orgUId,
-            }).then((blob) =>
-              triggerBlobDownload(
-                blob,
-                `Abrechnung-${g.volunteerId.slice(0, 8)}.zip`,
+        setBatchSendable(dialogSendable);
+        setBatchNeedsAttention(dialogNeedsAttention);
+        setBatchDialogOpen(true);
+      } else {
+        // Download mode — no dialog.
+        const results = await Promise.allSettled(
+          groups
+            .filter((g) => g.reimbursementTypeId !== undefined)
+            .map((g) =>
+              requestBundleDownload({
+                volunteerId: g.volunteerId,
+                reimbursementTypeId: g.reimbursementTypeId as string,
+                invoiceIds: g.invoiceIds,
+                orgUId,
+              }).then((blob) =>
+                triggerBlobDownload(
+                  blob,
+                  `Abrechnung-${g.volunteerId.slice(0, 8)}.zip`,
+                ),
               ),
             ),
-          ),
-      );
-      const noTypeCount = groups.filter(
-        (g) => g.reimbursementTypeId === undefined,
-      ).length;
-      const { succeeded, failed } = summarizeSettled(results);
-      queryClient.invalidateQueries({ queryKey: ['accounting'] });
-      const totalFailed = failed + noTypeCount;
-      if (totalFailed > 0) {
-        toast.warning(
-          t('massActions.bundlesDownloadedDone', { count: succeeded }) +
-            ' · ' +
-            t('massActions.bundlesNeedAttention', { count: totalFailed }),
         );
-      } else {
-        toast.success(
-          t('massActions.bundlesDownloadedDone', { count: succeeded }),
-        );
+        const noTypeCount = groups.filter(
+          (g) => g.reimbursementTypeId === undefined,
+        ).length;
+        const { succeeded, failed } = summarizeSettled(results);
+        queryClient.invalidateQueries({ queryKey: ['accounting'] });
+        const totalFailed = failed + noTypeCount;
+        if (totalFailed > 0) {
+          toast.warning(
+            t('massActions.bundlesDownloadedDone', { count: succeeded }) +
+              ' · ' +
+              t('massActions.bundlesNeedAttention', { count: totalFailed }),
+          );
+        } else {
+          toast.success(
+            t('massActions.bundlesDownloadedDone', { count: succeeded }),
+          );
+        }
       }
+    } finally {
       setBusyAction(null);
     }
   }
 
   async function handleBatchConfirm() {
-    const { sendable } = pendingSendRef.current;
-    if (sendable.length === 0) {
+    if (batchSendable.length === 0) {
       setBatchDialogOpen(false);
       return;
     }
+    setBusyAction('bundles');
     const needsAttentionCount = batchNeedsAttention.length;
-    const results = await Promise.allSettled(
-      sendable.map((p) => {
-        if (!p.group.reimbursementTypeId)
-          return Promise.reject(new Error('no-type'));
-        return send.mutateAsync({
-          volunteerId: p.group.volunteerId,
-          reimbursementTypeId: p.group.reimbursementTypeId,
-          invoiceIds: p.group.invoiceIds,
-          acknowledgedIssues: p.issues,
-          expectedRecipientEmail: p.recipientEmail,
-          expectedSubject: p.subject,
-        });
-      }),
-    );
-    const { succeeded, failed } = summarizeSettled(results);
-    const totalNeedsAttention = failed + needsAttentionCount;
-    if (totalNeedsAttention > 0) {
-      toast.warning(
-        t('massActions.bundlesSentDone', { count: succeeded }) +
-          ' · ' +
-          t('massActions.bundlesNeedAttention', { count: totalNeedsAttention }),
+    try {
+      const results = await Promise.allSettled(
+        batchSendable.map((p) => {
+          if (!p.group.reimbursementTypeId)
+            return Promise.reject(new Error('no-type'));
+          return send.mutateAsync({
+            volunteerId: p.group.volunteerId,
+            reimbursementTypeId: p.group.reimbursementTypeId,
+            invoiceIds: p.group.invoiceIds,
+            acknowledgedIssues: p.issues,
+            expectedRecipientEmail: p.recipientEmail,
+            expectedSubject: p.subject,
+          });
+        }),
       );
-    } else {
-      toast.success(t('massActions.bundlesSentDone', { count: succeeded }));
+      const { succeeded, failed } = summarizeSettled(results);
+      const totalNeedsAttention = failed + needsAttentionCount;
+      if (totalNeedsAttention > 0) {
+        toast.warning(
+          t('massActions.bundlesSentDone', { count: succeeded }) +
+            ' · ' +
+            t('massActions.bundlesNeedAttention', {
+              count: totalNeedsAttention,
+            }),
+        );
+      } else {
+        toast.success(t('massActions.bundlesSentDone', { count: succeeded }));
+      }
+    } finally {
+      setBusyAction(null);
+      setBatchDialogOpen(false);
     }
-    setBatchDialogOpen(false);
   }
 
   // ─── Derived selection counts ────────────────────────────────────────────────
