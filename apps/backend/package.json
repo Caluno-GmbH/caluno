@@ -33,7 +33,8 @@
     "db:seed": "bun run src/database/seed.ts",
     "db:fixtures:e2e": "bun run src/database/fixtures.ts",
     "db:fixtures:demo": "bun run src/database/demo-fixtures.ts",
-    "db:fixtures:demo:into-org": "bun run src/database/demo-fixtures-into-org.ts",
+    "db:fixtures:load-test": "bun run src/database/load-test-fixtures.ts",
+    "load-test:data": "bun run src/database/load-test-data.cli.ts",
     "db:studio": "drizzle-kit studio",
     "terms:publish": "bun run src/terms/publish-terms.cli.ts"
   },
