@@ -2309,9 +2309,8 @@
         "methodLabel": "Fertige Pakete",
         "methodDownload": "Herunterladen",
         "methodDownloadHint": "Admins laden jedes Paket als ZIP-Datei herunter.",
-        "methodEmail": "Per E-Mail senden",
+        "methodEmail": "E-Mail",
         "methodEmailHint": "Admins senden das Paket jeder:s Ehrenamtlichen als eigene E-Mail. Es geht nichts raus, bevor ein Admin es sendet.",
-        "methodInherit": "Übernommen ({value})",
         "recipientLabel": "E-Mail-Adresse der Buchhaltung",
         "recipientHint": "Erhält deine fertigen Unterlagen-Pakete, sobald sie in der Buchhaltung verarbeitet werden können.",
         "recipientPlaceholder": "buchhaltung@example.org",
@@ -2319,21 +2318,34 @@
         "showRecipient": "E-Mail-Adresse anzeigen",
         "hideRecipient": "E-Mail-Adresse verbergen",
         "subjectLabel": "Betreff der E-Mail",
-        "subjectHint": "Platzhalter: {placeholders}",
-        "inheritPlaceholder": "Übernommen: {value}",
+        "subjectHint": "Klicke auf eine Variable, um sie an der Cursorposition einzufügen.",
         "source": {
-          "own": "Für diese Einheit festgelegt",
+          "own": "Für diese Einheit angepasst",
           "inheritedFrom": "Übernommen von {source}",
-          "default": "Standard"
+          "default": "Standard",
+          "inherited": "Übernommen"
         },
-        "clearHint": "Leer lassen, um den übernommenen Wert zu verwenden.",
+        "reset": {
+          "inherited": "Auf übernommenen Wert zurücksetzen"
+        },
+        "variables": {
+          "tooltip": "{token} einfügen – {description}",
+          "volunteer": "der Name der ehrenamtlichen Person",
+          "period": "der Abrechnungszeitraum",
+          "type": "die Erstattungsart"
+        },
+        "downloadAlert": {
+          "title": "E-Mail-Versand ist aus",
+          "description": "Empfänger und Betreff gelten nur beim Versand per E-Mail. Bei „Herunterladen“ werden sie nicht gespeichert."
+        },
         "saveSuccess": "Versandeinstellungen gespeichert",
         "saveError": "Die Versandeinstellungen konnten nicht gespeichert werden. Bitte versuche es erneut.",
         "loadError": "Die Versandeinstellungen konnten nicht geladen werden. Bitte lade die Seite neu.",
         "errors": {
           "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
-          "unknownPlaceholder": "Verwende nur die oben aufgeführten Platzhalter.",
-          "recipientRequired": "Hinterlege eine E-Mail-Adresse der Buchhaltung, um Pakete per E-Mail zu senden."
+          "unknownPlaceholder": "Verwende nur die verfügbaren Variablen.",
+          "recipientRequired": "Hinterlege eine E-Mail-Adresse der Buchhaltung, um Pakete per E-Mail zu senden.",
+          "subjectTooLong": "Der Betreff darf höchstens {max} Zeichen lang sein."
         }
       }
     },
