@@ -11,6 +11,7 @@ ENV NODE_ENV=production
 COPY package.json bun.lock turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/bundle-email/package.json ./packages/bundle-email/
 COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
@@ -23,6 +24,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --ignore-scripts
 
 COPY apps/backend ./apps/backend
+COPY packages/bundle-email ./packages/bundle-email
 COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
@@ -37,6 +39,7 @@ RUN bun run --cwd packages/data codegen
 RUN bun run --cwd packages/observability build
 RUN bun run --cwd packages/lifespan build
 RUN bun run --cwd packages/password-policy build
+RUN bun run --cwd packages/bundle-email build
 
 # Build the NestJS backend
 WORKDIR /app/apps/backend
@@ -68,6 +71,7 @@ ENV NODE_ENV=production
 COPY package.json bun.lock turbo.json ./
 COPY apps/backend/package.json ./apps/backend/
 COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/bundle-email/package.json ./packages/bundle-email/
 COPY packages/data/package.json ./packages/data/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/observability/package.json ./packages/observability/
@@ -79,6 +83,7 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --production --ignore-scripts
 
 COPY apps/backend ./apps/backend
+COPY packages/bundle-email ./packages/bundle-email
 COPY packages/data ./packages/data
 COPY packages/ui ./packages/ui
 COPY packages/observability ./packages/observability
@@ -89,6 +94,7 @@ COPY packages/typescript-config ./packages/typescript-config
 COPY --from=builder /app/packages/observability/dist ./packages/observability/dist
 COPY --from=builder /app/packages/lifespan/dist ./packages/lifespan/dist
 COPY --from=builder /app/packages/password-policy/dist ./packages/password-policy/dist
+COPY --from=builder /app/packages/bundle-email/dist ./packages/bundle-email/dist
 
 ARG SENTRY_RELEASE
 ENV SENTRY_RELEASE=${SENTRY_RELEASE}
