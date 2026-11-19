@@ -8,6 +8,8 @@ Everything runs on GitHub-hosted runners (`ubuntu-latest`).
 | `cd-staging.yml`          | `push` → `main`                         | Gate alongside build/push, then deploy to staging.                                                                               |
 | `cd-release.yml`          | `push` → `release`                      | Same, to the release environment, applied unattended.                                                                            |
 | `cd-production.yml`       | `push` → `production`                   | Same, to production, with approval on the apply.                                                                                 |
+| `cd-load-test.yml`        | `pull_request` release → `production`   | Deploys to the production-sized `load-test` environment, runs k6, scales it back to zero. Manual runs pick the k6 profile.       |
+| `reusable-load-test.yml`  | `workflow_call`                         | k6 against a deployed environment (`packages/load-test`).                                                                        |
 | `e2e-staging-nightly.yml` | nightly 00:00 UTC + `workflow_dispatch` | Full Playwright suite against staging; Slack to `#alerts-staging` on failure.                                                    |
 | `reusable-e2e.yml`        | `workflow_call`                         | Shared Playwright job (staging nightly + release CD).                                                                            |
 | `mirror-images.yml`       | weekly + `workflow_dispatch`            | Refreshes the GHCR base-image mirror.                                                                                            |
@@ -135,11 +137,11 @@ exported by `cache-to`, and CI runners are ephemeral.
    which only provides standard 2-vCPU/7 GB Linux runners; larger runners need
    Team or Enterprise.
 
-4. **Environments** — create `staging`, `release` and `production` (Settings →
+4. **Environments** — create `staging`, `release`, `load-test` and `production` (Settings →
    Environments), and add a **required reviewers** rule to `production`: that
    approval is what holds the production `terraform apply` until a human accepts
-   it. `staging` and `release` have no required reviewers, so their applies run
-   automatically on push to `main` and `release`. Deploys are serialized per
+   it. `staging`, `release` and `load-test` have no required reviewers, so their
+   applies run automatically. Deploys are serialized per
    environment by a workflow-level concurrency group with
    `cancel-in-progress: false`.
 
@@ -154,7 +156,7 @@ exported by `cache-to`, and CI runners are ephemeral.
      for local builds.
    - Terraform is installed with `hashicorp/setup-terraform`, so it is not
      mirrored. The pinned version lives in `TF_VERSION` in `ci.yml` and
-     `reusable-deploy.yml` — keep the two in sync.
+     `reusable-deploy.yml` (and `cd-load-test.yml`) — keep them in sync.
 
 6. **Release environment (one-time)** — before the first push to `release` can
    apply end to end:
@@ -174,7 +176,23 @@ exported by `cache-to`, and CI runners are ephemeral.
      2. Re-run CD (or `terraform apply`) so domain attachment / ACME can
         succeed.
 
-7. **Branch protection** — on `main`, `release` and `production`, require pull
+7. **Load-test environment (one-time)** — `cd-load-test.yml` creates it on the
+   first `release → production` pull request (or a manual run on `release`):
+   - Create Scaleway Secret Manager secret `caluno-load-test-posthog-api-key`
+     before the first run, as for release.
+   - DNS, in the same two passes as release: `load-test.app.caluno.org`,
+     `load-test.api.caluno.org` (container endpoints) and
+     `load-test.mailbox.caluno.org` (A record → `mailpit_ip`), then re-run.
+   - The CI Scaleway key must be able to read
+     `caluno-load-test-better-auth-secret`; the k6 job derives its session
+     cookies from it.
+   - Between runs the containers sit at zero; the database (`DB-GP-XS`) and
+     the Mailpit instance keep running and billing.
+   - `TF_VERSION` in `cd-load-test.yml` follows the same rule as below.
+
+8. **Branch protection** — on `main`, `release` and `production`, require pull
    requests and require the status check named **`CI`**. That job aggregates the
-   rest, so path-filtered skips don't leave a merge blocked. Do the same in the
+   rest, so path-filtered skips don't leave a merge blocked. On `production`,
+   also require **`Load test passed`** (it reports skipped, which passes, on
+   pull requests that don't come from `release`). Do the same in the
    submodule repos for their own checks.

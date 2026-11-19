@@ -1,0 +1,142 @@
+# Load-tests what a `release → production` pull request would ship: deploys
+# it to the production-sized `load-test` environment, runs k6, then scales the
+# containers back to zero. "Load test passed" is the required check on
+# `production`. See packages/load-test/README.md.
+name: CD · Load test
+
+on:
+  pull_request:
+    branches: [production]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: k6 profile
+        type: choice
+        options: [load, stress, spike, soak, smoke]
+        default: load
+      target-users:
+        description: Concurrent users to hold
+        type: number
+        default: 200
+
+# Never cancelled mid-apply. Pushes during a run queue up, and only the latest
+# queued one runs afterwards.
+concurrency:
+  group: cd-load-test
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  # Keep in sync with ci.yml.
+  TF_VERSION: 1.15.9
+  TF_ROOT: packages/infra
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+
+jobs:
+  deploy:
+    name: Deploy
+    # Hotfix pull requests into production skip the load test.
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'release'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      environment: load-test
+      moving-tag: load-test
+      api-url: https://load-test.api.caluno.org
+      web-url: https://load-test.app.caluno.org
+      # Production's minimum, so the run has no cold starts production never sees.
+      min-scale-override: "1"
+    secrets: inherit
+
+  load-test:
+    name: Load test
+    needs: [deploy]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reusable-load-test.yml
+    with:
+      environment: load-test
+      api-url: https://load-test.api.caluno.org
+      web-url: https://load-test.app.caluno.org
+      profile: ${{ inputs.profile || 'load' }}
+      target-users: ${{ inputs.target-users || 200 }}
+    secrets: inherit
+
+  # Only after k6 ran: a failed deploy may not have pushed this commit's
+  # images, and applying would point the containers at missing tags.
+  scale-down:
+    name: Scale back to zero
+    needs: [load-test]
+    if: always() && needs.load-test.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      TF_VAR_image_tag: ${{ github.sha }}
+      TF_VAR_active_environment: load-test
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
+      SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
+      SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+      SCW_DEFAULT_PROJECT_ID: ${{ vars.SCW_DEFAULT_PROJECT_ID }}
+      SCW_DEFAULT_REGION: ${{ vars.SCW_DEFAULT_REGION }}
+      SCW_DEFAULT_ZONE: ${{ vars.SCW_DEFAULT_ZONE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.SCW_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.SCW_SECRET_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          persist-credentials: false
+          token: ${{ secrets.ORG_REPO_PAT }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+      - uses: actions/cache@v5
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: tf-plugins-${{ runner.os }}-${{ hashFiles('packages/infra/.terraform.lock.hcl') }}
+          restore-keys: |
+            tf-plugins-${{ runner.os }}-
+      - name: Apply the idle minimum from terraform.tfvars
+        working-directory: ${{ env.TF_ROOT }}
+        run: |
+          terraform init -backend-config="key=load-test/terraform.tfstate"
+          terraform apply -auto-approve -no-color -var-file="terraform.tfvars"
+
+  # A skipped job counts as passing, so this is the required check rather
+  # than the k6 job itself.
+  passed:
+    name: Load test passed
+    needs: [load-test]
+    if: >-
+      always()
+      && (github.event_name == 'workflow_dispatch' || github.head_ref == 'release')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Notify Slack
+        continue-on-error: true
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            text: "${{ needs.load-test.result == 'success' && ':white_check_mark: load test passed' || ':x: load test failed' }}"
+            blocks:
+              - type: section
+                text:
+                  type: mrkdwn
+                  text: "${{ needs.load-test.result == 'success' && ':white_check_mark: *load test* passed' || ':x: *load test* failed' }}\n`${{ github.sha }}` · <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> (k6 report in artifacts) · ${{ github.actor }}"
+      - name: Require a passing k6 run
+        env:
+          RESULT: ${{ needs.load-test.result }}
+        run: |
+          [ "$RESULT" = success ] || { echo "::error::k6 load test: $RESULT"; exit 1; }

@@ -39,6 +39,11 @@ on:
         type: string
         required: false
         default: ""
+      min-scale-override:
+        description: Minimum container count for this deploy, overriding terraform.tfvars (load-test raises its idle 0 for a run).
+        type: string
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -187,8 +192,11 @@ jobs:
       - name: Plan
         id: plan
         working-directory: ${{ env.TF_ROOT }}
+        env:
+          MIN_SCALE_OVERRIDE: ${{ inputs.min-scale-override }}
         run: |
           set -o pipefail
+          [ -z "$MIN_SCALE_OVERRIDE" ] || export TF_VAR_min_scale_override="$MIN_SCALE_OVERRIDE"
           # -detailed-exitcode: 0 = no changes, 2 = changes, anything else fails.
           set +e
           terraform plan -detailed-exitcode -no-color \
