@@ -14,6 +14,7 @@ import { RequiredFormTargetType } from '../../requirement-profile/enums';
 import { RequirementForm } from '../../requirement-profile/models/requirement-form.model';
 import { RequiredFormService } from '../../requirement-profile/services/required-form.service';
 import { UserMapper } from '../../user/mappers/user.mapper';
+import { UserService } from '../../user/user.service';
 import { TimeEntrySortField, TimeEntryStatus } from '../enums';
 import { TimeEntryMapper } from '../mappers/time-entry.mapper';
 import { CheckInContext } from '../models/check-in-context.model';
@@ -33,6 +34,7 @@ export class TimeTrackingQueryResolver {
     private readonly organizationUnitMapper: OrganizationUnitMapper,
     private readonly requiredFormService: RequiredFormService,
     private readonly membershipService: MembershipService,
+    private readonly userService: UserService,
   ) {}
 
   @Permissions(PERMISSIONS.SHIFT_VIEW)
@@ -93,12 +95,16 @@ export class TimeTrackingQueryResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Query(() => CheckInReadiness)
   async checkInReadiness(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Args('shiftInstanceId', { type: () => ID, nullable: true })
     shiftInstanceId: string | null,
     @Context() context: AuthenticatedGraphQLContext,
+    @Session() session: UserSession,
   ): Promise<CheckInReadiness> {
+    const volunteerId =
+      await this.userService.resolveVolunteerIdByCheckInId(checkInId);
     return this.timeTrackingService.getCheckInReadiness(
+      session.user.id,
       volunteerId,
       shiftInstanceId,
       context.organizationUnitId,
@@ -108,22 +114,39 @@ export class TimeTrackingQueryResolver {
   @Permissions(PERMISSIONS.CHECK_IN_MANAGE)
   @Query(() => [RequiredFormWithStatus])
   async checkInVolunteerRequiredForms(
-    @Args('volunteerId', { type: () => ID }) volunteerId: string,
+    @Args('checkInId') checkInId: string,
     @Context() context: AuthenticatedGraphQLContext,
   ): Promise<RequiredFormWithStatus[]> {
+    const volunteerId =
+      await this.userService.resolveVolunteerIdByCheckInId(checkInId);
+
+    // A member sees the selected unit's forms. A pending applicant sees the
+    // forms of the unit their request targets (possibly an ancestor), since
+    // those gate approval, so they can be filled in at the desk.
+    let targetUnitId = context.organizationUnitId;
     const isMember = await this.membershipService.isMemberOfUnitOrAncestor(
       volunteerId,
       context.organizationUnitId,
     );
     if (!isMember) {
-      throw new ForbiddenGraphQLError('Volunteer is not a member of this unit');
+      const pendingRequest =
+        await this.membershipService.findPendingMembershipRequest(
+          volunteerId,
+          context.organizationUnitId,
+        );
+      if (!pendingRequest) {
+        throw new ForbiddenGraphQLError(
+          'Volunteer is not a member of and has no pending request to this unit',
+        );
+      }
+      targetUnitId = pendingRequest.organizationUnitId;
     }
 
     const statuses = await this.requiredFormService.getRequiredFormStatuses(
       volunteerId,
       {
         targetType: RequiredFormTargetType.ORGANIZATION_UNIT,
-        targetId: context.organizationUnitId,
+        targetId: targetUnitId,
       },
     );
 
@@ -158,9 +181,9 @@ export class TimeTrackingQueryResolver {
   }
 
   // Cross-org-unit check-in context: intentionally NOT @Permissions()-gated
-  // (like checkIn/checkOut); the service intersects the caller's
-  // check-in:manage units with the volunteer's memberships and returns null
-  // when that intersection is empty.
+  // (like checkIn/checkOut); the service derives it from the caller's
+  // check-in:manage units, returns null when there are none, and only reveals
+  // the volunteer when related to a managed unit (ADR 0001).
   @Query(() => CheckInContext, { nullable: true })
   async checkInContext(
     @Args('checkInId') checkInId: string,
@@ -175,9 +198,12 @@ export class TimeTrackingQueryResolver {
     }
 
     return {
-      volunteer: this.userMapper.toModelOrThrow(context.volunteer),
+      volunteer: this.userMapper.toModel(context.volunteer),
       eligibleOrganizationUnits: this.organizationUnitMapper.toArray(
         context.eligibleOrganizationUnits,
+      ),
+      pendingOrganizationUnits: this.organizationUnitMapper.toArray(
+        context.pendingOrganizationUnits,
       ),
       openTimeEntries: this.timeEntryMapper.toArray(context.openTimeEntries),
     };

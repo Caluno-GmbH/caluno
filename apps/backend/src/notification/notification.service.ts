@@ -26,6 +26,15 @@ export interface ResolveUserNotificationDataOptions {
   event: NotificationEvent;
 }
 
+export interface SendNotificationOptions
+  extends ResolveUserNotificationDataOptions {
+  /**
+   * Rethrow a failed render/enqueue instead of only logging it, for callers
+   * that await the dispatch and must react to a failure.
+   */
+  throwOnSendFailure?: boolean;
+}
+
 type OrganizationCreatedInput =
   NotificationEventPayloadMap[typeof NotificationEvent.ORGANIZATION_CREATED];
 
@@ -183,7 +192,7 @@ export class NotificationService {
 
   async sendNotification(
     userIds: string | string[],
-    options: ResolveUserNotificationDataOptions,
+    options: SendNotificationOptions,
     callback: (recipient: UserNotificationData) => Promise<{
       subject: string;
       html: string;
@@ -222,6 +231,7 @@ export class NotificationService {
           this.logger.error(
             `Failed to send email for ${recipient.userId}:${maskEmail(recipient.email)}: ${error instanceof Error ? error.message : String(error)}`,
           );
+          if (options.throwOnSendFailure) throw error;
         }
       }),
     );
@@ -349,8 +359,18 @@ export class NotificationService {
     this.emitter.emit(NotificationEvent.EVENT_CANCELLED, input);
   }
 
-  notifyOrganizationUnitInvited(input: OrganizationUnitInvitedInput): void {
-    this.emitter.emit(NotificationEvent.ORGANIZATION_UNIT_INVITED, input);
+  /**
+   * Awaitable: resolves once the invitation email is enqueued and rejects
+   * when rendering or enqueueing it fails, so the caller can release its
+   * resend cooldown claim.
+   */
+  async notifyOrganizationUnitInvited(
+    input: OrganizationUnitInvitedInput,
+  ): Promise<void> {
+    await this.emitter.emitAsync(
+      NotificationEvent.ORGANIZATION_UNIT_INVITED,
+      input,
+    );
   }
 
   notifyEventRemoved(input: EventRemovedInput): void {

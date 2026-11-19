@@ -30,6 +30,7 @@ function buildResolver(isMember = true) {
   const resolver = new TimeTrackingMutationResolver(
     timeTrackingService as never,
     entryMapper as never,
+    {} as never,
     membershipService as never,
   );
 
