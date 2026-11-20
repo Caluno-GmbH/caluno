@@ -58,6 +58,7 @@ export function AccountingSettingsTabs({
 
       <TabsContent value="delivery" className="mt-6">
         <DeliverySettingsCard
+          key={orgUId}
           canEdit={canEditRates}
           organizationUnitId={orgUId}
         />

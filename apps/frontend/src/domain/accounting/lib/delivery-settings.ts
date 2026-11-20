@@ -1,19 +1,14 @@
+import {
+  BUNDLE_SUBJECT_PLACEHOLDERS,
+  MAX_BUNDLE_SUBJECT_LENGTH,
+  unknownSubjectPlaceholders,
+} from '@repo/bundle-email';
 import { z } from 'zod';
 
-/** Mirrors `BUNDLE_SUBJECT_PLACEHOLDERS` in the backend's bundle-email-subject.ts. */
-export const BUNDLE_SUBJECT_PLACEHOLDERS = [
-  'volunteer',
-  'period',
-  'type',
-] as const;
-
-const PLACEHOLDER_PATTERN = /\{([^{}]*)\}/g;
+export { BUNDLE_SUBJECT_PLACEHOLDERS, MAX_BUNDLE_SUBJECT_LENGTH };
 
 export function hasUnknownSubjectPlaceholder(subject: string): boolean {
-  const known = new Set<string>(BUNDLE_SUBJECT_PLACEHOLDERS);
-  return [...subject.matchAll(PLACEHOLDER_PATTERN)].some(
-    (match) => !known.has(match[1] ?? ''),
-  );
+  return unknownSubjectPlaceholders(subject).length > 0;
 }
 
 /** "accounting@example.org" -> "ac•••@example.org" */

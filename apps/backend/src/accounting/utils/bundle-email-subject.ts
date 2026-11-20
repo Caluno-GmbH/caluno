@@ -1,16 +1,18 @@
+import {
+  BUNDLE_SUBJECT_PLACEHOLDERS,
+  type BundleSubjectPlaceholder,
+  MAX_BUNDLE_SUBJECT_LENGTH,
+  unknownSubjectPlaceholders,
+} from '@repo/bundle-email';
 import type { Locale } from '../../graphql/locale';
 import { formatLocaleMonthYear } from '../../i18n/format-date-time';
 
-export const BUNDLE_SUBJECT_PLACEHOLDERS = [
-  'volunteer',
-  'period',
-  'type',
-] as const;
-
-export type BundleSubjectPlaceholder =
-  (typeof BUNDLE_SUBJECT_PLACEHOLDERS)[number];
-
-export const MAX_BUNDLE_SUBJECT_LENGTH = 200;
+export {
+  BUNDLE_SUBJECT_PLACEHOLDERS,
+  type BundleSubjectPlaceholder,
+  MAX_BUNDLE_SUBJECT_LENGTH,
+  unknownSubjectPlaceholders,
+};
 
 // Not in the i18n catalogs: nestjs-i18n would treat the placeholders as its
 // own interpolation arguments.
@@ -20,13 +22,6 @@ export const DEFAULT_BUNDLE_SUBJECT: Record<Locale, string> = {
 };
 
 const PLACEHOLDER_PATTERN = /\{([^{}]*)\}/g;
-
-export function unknownSubjectPlaceholders(subject: string): string[] {
-  const known = new Set<string>(BUNDLE_SUBJECT_PLACEHOLDERS);
-  return [...subject.matchAll(PLACEHOLDER_PATTERN)]
-    .map((match) => match[1] ?? '')
-    .filter((name) => !known.has(name));
-}
 
 /**
  * Fills the placeholders and folds line breaks, which would otherwise end

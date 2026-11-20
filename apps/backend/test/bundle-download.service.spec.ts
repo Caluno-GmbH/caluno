@@ -1548,6 +1548,35 @@ describe('BundleDownloadService', () => {
       expect(resolved.emailSubject).toBe(resolved.defaultEmailSubject);
     });
 
+    it('keeps an intentionally empty value instead of inheriting', async () => {
+      const s = await setup();
+      await settingsService.update(
+        s.root.id,
+        {
+          recipientEmail: 'root@example.org',
+          emailSubject: 'Root {volunteer}',
+        },
+        s.downloader.id,
+      );
+      await settingsService.update(
+        s.root.id,
+        { recipientEmail: '', emailSubject: '' },
+        s.downloader.id,
+      );
+
+      const resolved = await settingsService.resolve(s.root.id, 'en');
+      expect(resolved.recipientEmail).toBe('');
+      expect(resolved.recipientEmailSource).toEqual({
+        kind: AccountingSettingSourceKind.OWN,
+        sourceName: null,
+      });
+      expect(resolved.emailSubject).toBe('');
+      expect(resolved.emailSubjectSource).toEqual({
+        kind: AccountingSettingSourceKind.OWN,
+        sourceName: null,
+      });
+    });
+
     it('rejects a recipient that is not an email address', async () => {
       const s = await setup();
       await expect(
