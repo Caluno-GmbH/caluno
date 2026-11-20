@@ -331,6 +331,11 @@ export const createAuthConfig = ({
       }),
     },
     trustedOrigins,
+    rateLimit: {
+      customRules: {
+        '/get-session': false,
+      },
+    },
     ...(cookieDomain && {
       advanced: {
         crossSubDomainCookies: {

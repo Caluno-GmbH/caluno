@@ -143,6 +143,12 @@ describe('createAuthConfig', () => {
     });
   });
 
+  it('does not rate-limit get-session', () => {
+    expect(authConfig().rateLimit?.customRules).toEqual({
+      '/get-session': false,
+    });
+  });
+
   describe('password policy hook', () => {
     const run = (path: string, body: Record<string, unknown>) => {
       const findUserByEmail = jest.fn(async () => null);
