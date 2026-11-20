@@ -1,5 +1,6 @@
 import type { ReimbursementTypeKey } from '@repo/data';
 import {
+  BundleDeliveryMethod,
   ContractStatus,
   type ContractSummary,
   EmailDeliveryStatus,
@@ -380,14 +381,26 @@ export function mapInvoiceToBoardDoc(
     declinedBy: invoice.declinedByUser?.name ?? undefined,
     declinedAt: invoice.declinedAt ? new Date(invoice.declinedAt) : undefined,
     declinedAtRole: mapDeclinedAtRole(invoice.declinedAtSigneeType),
-    sentAt: invoice.lastEmailDelivery
-      ? new Date(invoice.lastEmailDelivery.occurredAt)
+    deliveredVia: invoice.lastDelivery
+      ? invoice.lastDelivery.method === BundleDeliveryMethod.Email
+        ? 'email'
+        : 'download'
       : undefined,
-    sentBy: invoice.lastEmailDelivery?.deliveredByUser?.name ?? undefined,
-    sendState: invoice.lastEmailDelivery
-      ? SEND_STATE[invoice.lastEmailDelivery.status]
+    sentAt: invoice.lastDelivery
+      ? new Date(invoice.lastDelivery.occurredAt)
       : undefined,
+    sentBy: invoice.lastDelivery?.deliveredByUser?.name ?? undefined,
+    sendState: mapDeliveryToSendState(invoice.lastDelivery),
   };
+}
+
+function mapDeliveryToSendState(
+  lastDelivery: RawInvoice['lastDelivery'],
+): SendState | undefined {
+  if (!lastDelivery) return undefined;
+  // A download is terminal: it has no email status and is always "sent".
+  if (lastDelivery.method !== BundleDeliveryMethod.Email) return 'sent';
+  return lastDelivery.status ? SEND_STATE[lastDelivery.status] : undefined;
 }
 
 const SEND_STATE: Record<EmailDeliveryStatus, SendState> = {

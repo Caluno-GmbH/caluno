@@ -3,6 +3,7 @@ import DataLoader from 'dataloader';
 import { RegisterLoader } from '../../graphql/interceptors';
 import {
   BundleDeliveryLogService,
+  type InvoiceDeliveryRecord,
   type LatestEmailDelivery,
 } from '../services/bundle-delivery-log.service';
 
@@ -20,5 +21,14 @@ export class BundleDeliveryLoader {
     const latest =
       await this.bundleDeliveryLogService.findLatestEmailDeliveries(invoiceIds);
     return invoiceIds.map((id) => latest.get(id) ?? null);
+  });
+
+  public readonly deliveriesByInvoiceId = new DataLoader<
+    string,
+    InvoiceDeliveryRecord[]
+  >(async (invoiceIds) => {
+    const byInvoice =
+      await this.bundleDeliveryLogService.findDeliveriesByInvoiceId(invoiceIds);
+    return invoiceIds.map((id) => byInvoice.get(id) ?? []);
   });
 }

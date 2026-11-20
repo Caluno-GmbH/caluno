@@ -2516,6 +2516,8 @@
           "timelineCountersigned": "Countersigned",
           "timelineActivated": "Activated",
           "timelineDeclined": "Declined",
+          "timelineSent": "Sent to accounting",
+          "timelineDownloaded": "Downloaded",
           "declineReasonTitle": "Decline reason",
           "noAction": "Nothing to do",
           "pdfView": "View PDF",
@@ -2553,6 +2555,7 @@
           "declined": "Declined",
           "templateMissingHint": "No template for this allowance type yet. Set it up under Accounting → Templates.",
           "sentBy": "Sent by <name>{by}</name> on {at}",
+          "downloadedBy": "Downloaded by <name>{by}</name> on {at}",
           "sendFailed": "Sending failed on {at}",
           "sending": "Sending to accounting…"
         },

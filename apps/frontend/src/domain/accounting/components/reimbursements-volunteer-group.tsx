@@ -8,7 +8,6 @@ import {
 } from '@repo/data';
 import {
   useAccountingDeliverySettings,
-  useBundleDownloadStatus,
   useBundleSendPreview,
   useQueryClient,
   useSendReimbursementBundle,
@@ -42,7 +41,6 @@ import type {
   DocVolPair,
   FilterSettings,
   PauschalenLimit,
-  SendState,
 } from '../lib/board-types';
 import {
   requestBundleDownload,
@@ -85,13 +83,13 @@ interface ShownBundle {
 interface BundleButtonProps {
   volunteerId: string;
   reimbursementTypeKey: ReimbursementTypeKey | undefined;
+  /** Allowance-type name shown under the button to tell stacked bundles apart. */
   typeLabel: string;
   readyCount: number;
   /** The timesheets on screen, so the bundle holds exactly those. */
   invoiceIds: string[];
   orgUId: string;
   volunteerName: string;
-  lastSent?: { at: Date; by?: string; state?: SendState };
 }
 
 function useBundleDownload({
@@ -155,7 +153,7 @@ function BundleActionButton(props: BundleButtonProps) {
         <Button size="sm" variant="outline" className="shrink-0" disabled>
           {settingsQuery.isError
             ? t('bundle.settingsError')
-            : `${t('bundle.actionLabel')} · ${props.readyCount}`}
+            : `${t('bundle.actionLabel')} · ${props.typeLabel} · ${props.readyCount}`}
         </Button>
       </div>
     );
@@ -179,10 +177,8 @@ function BundleSendButton(props: BundleButtonProps) {
     readyCount,
     invoiceIds,
     volunteerName,
-    lastSent,
   } = props;
   const t = useTranslations('Accounting.reimbursements');
-  const { formatDate } = useFormatting();
   const preview = useBundleSendPreview();
   const send = useSendReimbursementBundle();
   const { download, isDownloading } = useBundleDownload(props);
@@ -252,18 +248,6 @@ function BundleSendButton(props: BundleButtonProps) {
     }
   };
 
-  const lastSentLine = () => {
-    if (!lastSent) return t('bundle.neverSent');
-    const at = formatDate(lastSent.at);
-    if (lastSent.state === 'failed') return t('bundle.lastSendFailed', { at });
-    if (lastSent.state === 'pending') return t('bundle.lastSending');
-    return t.rich('bundle.lastSent', {
-      by: lastSent.by ? abbreviateName(lastSent.by) : t('bundle.unknownUser'),
-      at,
-      name: profileName,
-    });
-  };
-
   return (
     <div className="flex flex-col items-end gap-1 max-w-[220px]">
       <Button
@@ -277,17 +261,8 @@ function BundleSendButton(props: BundleButtonProps) {
         }}
       >
         <SendIcon size={13} />
-        {t('bundle.sendActionLabel')} · {readyCount}
+        {t('bundle.sendActionLabel')} · {typeLabel} · {readyCount}
       </Button>
-      <span
-        className={cn(
-          'text-xs text-right leading-snug',
-          lastSent?.state === 'failed' ? 'text-alert' : 'text-muted-foreground',
-        )}
-      >
-        <span className="font-medium text-card-foreground">{typeLabel}</span> ·{' '}
-        {lastSentLine()}
-      </span>
       {/* The dialog portals out, but React events still bubble to the row. */}
       {/* biome-ignore lint/a11y/noStaticElementInteractions: stops row toggling only */}
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: stops row toggling only */}
@@ -323,13 +298,8 @@ function profileName(chunks: ReactNode) {
 }
 
 function BundleDownloadButton(props: BundleButtonProps) {
-  const { volunteerId, reimbursementTypeKey, typeLabel, readyCount } = props;
+  const { reimbursementTypeKey, readyCount, typeLabel } = props;
   const t = useTranslations('Accounting.reimbursements');
-  const { formatDate } = useFormatting();
-  const { data: status, isLoading } = useBundleDownloadStatus(
-    volunteerId,
-    reimbursementTypeKey,
-  );
   const { download, isDownloading } = useBundleDownload(props);
 
   return (
@@ -345,22 +315,8 @@ function BundleDownloadButton(props: BundleButtonProps) {
         }}
       >
         <FileTextIcon size={13} />
-        {t('bundle.actionLabel')} · {readyCount}
+        {t('bundle.actionLabel')} · {typeLabel} · {readyCount}
       </Button>
-      <span className="text-xs text-muted-foreground text-right leading-snug">
-        <span className="font-medium text-card-foreground">{typeLabel}</span> ·{' '}
-        {isLoading
-          ? null
-          : status
-            ? t.rich('bundle.lastDownloaded', {
-                by: status.downloadedByUser?.name
-                  ? abbreviateName(status.downloadedByUser.name)
-                  : t('bundle.unknownUser'),
-                at: formatDate(new Date(status.downloadedAt)),
-                name: profileName,
-              })
-            : t('bundle.neverDownloaded')}
-      </span>
     </div>
   );
 }
@@ -414,22 +370,11 @@ function VolunteerTableGroup({
   // into one download, since each type is its own reimbursement batch.
   const readyByType: Partial<Record<PauschalenType, number>> = {};
   const readyIdsByType: Partial<Record<PauschalenType, string[]>> = {};
-  const lastSentByType: Partial<
-    Record<PauschalenType, { at: Date; by?: string; state?: SendState }>
-  > = {};
   for (const d of sortedDocs) {
     if (d.status !== 'timesheet-ready') continue;
     const type = d.pauschale;
     readyByType[type] = (readyByType[type] ?? 0) + 1;
     readyIdsByType[type] = [...(readyIdsByType[type] ?? []), d.id];
-    const latest = lastSentByType[type];
-    if (d.sentAt && (!latest || d.sentAt > latest.at)) {
-      lastSentByType[type] = {
-        at: d.sentAt,
-        by: d.sentBy,
-        state: d.sendState,
-      };
-    }
   }
   const readyTypes = Object.keys(readyByType) as PauschalenType[];
   const TYPE_LABEL: Record<PauschalenType, string> = {
@@ -524,7 +469,6 @@ function VolunteerTableGroup({
                     invoiceIds={readyIdsByType[type] ?? []}
                     orgUId={orgUId}
                     volunteerName={volunteer.name}
-                    lastSent={lastSentByType[type]}
                   />
                 ))}
               </div>
@@ -650,13 +594,18 @@ function VolunteerTableGroup({
                   )}
                   {sentAt && (
                     <span className="text-sm text-muted-foreground">
-                      {t.rich('docs.statusLabel.sentBy', {
-                        by: doc.sentBy
-                          ? abbreviateName(doc.sentBy)
-                          : t('bundle.unknownUser'),
-                        at: formatDate(sentAt),
-                        name: profileName,
-                      })}
+                      {t.rich(
+                        doc.deliveredVia === 'download'
+                          ? 'docs.statusLabel.downloadedBy'
+                          : 'docs.statusLabel.sentBy',
+                        {
+                          by: doc.sentBy
+                            ? abbreviateName(doc.sentBy)
+                            : t('bundle.unknownUser'),
+                          at: formatDate(sentAt),
+                          name: profileName,
+                        },
+                      )}
                     </span>
                   )}
                   {docNonCompliant && (

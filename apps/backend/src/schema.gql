@@ -638,6 +638,7 @@ type Invoice {
   declinedAt: DateTime
   declinedAtSigneeType: SigneeType
   declinedByUser: User
+  deliveries: [InvoiceDelivery!]!
   documentTemplate: DocumentTemplate!
   downloadUrl: String
 
@@ -650,6 +651,7 @@ type Invoice {
   invoiceStatus: InvoiceStatus!
   invoiceTimeEntries: [InvoiceTimeEntry!]!
   isNonCompliant: Boolean!
+  lastDelivery: InvoiceDelivery
   lastEmailDelivery: InvoiceEmailDelivery
   missingOrgProfileFields: [String!]!
   missingProfileFields: [String!]!
@@ -666,6 +668,14 @@ type Invoice {
   totalHours: Float!
   updatedAt: DateTime
   volunteer: User!
+}
+
+type InvoiceDelivery {
+  deliveredByUser: User
+  id: ID!
+  method: BundleDeliveryMethod!
+  occurredAt: DateTime!
+  status: EmailDeliveryStatus
 }
 
 type InvoiceEmailDelivery {

@@ -2516,6 +2516,8 @@
           "timelineCountersigned": "Gegengezeichnet",
           "timelineActivated": "Aktiviert",
           "timelineDeclined": "Abgelehnt",
+          "timelineSent": "An die Buchhaltung gesendet",
+          "timelineDownloaded": "Heruntergeladen",
           "declineReasonTitle": "Ablehnungsgrund",
           "noAction": "Nichts zu tun",
           "pdfView": "PDF anzeigen",
@@ -2553,6 +2555,7 @@
           "declined": "Abgelehnt",
           "templateMissingHint": "Noch keine Vorlage für diese Pauschale. Richte sie unter Buchhaltung → Vorlagen ein.",
           "sentBy": "Gesendet von <name>{by}</name> am {at}",
+          "downloadedBy": "Heruntergeladen von <name>{by}</name> am {at}",
           "sendFailed": "Senden fehlgeschlagen am {at}",
           "sending": "Wird an die Buchhaltung gesendet …"
         },

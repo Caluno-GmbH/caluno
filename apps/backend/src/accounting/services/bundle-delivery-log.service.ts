@@ -22,6 +22,14 @@ export interface LatestEmailDelivery {
   deliveredByUserId: string | null;
   status: EmailDeliveryStatus;
 }
+
+export interface InvoiceDeliveryRecord {
+  id: string;
+  method: BundleDeliveryMethod;
+  occurredAt: Date;
+  deliveredByUserId: string | null;
+  status: EmailDeliveryStatus | null;
+}
 export const DEFAULT_DELIVERY_LOG_PAGE_SIZE = 50;
 
 @Injectable()
@@ -133,5 +141,47 @@ export class BundleDeliveryLogService {
       }
     }
     return latest;
+  }
+
+  async findDeliveriesByInvoiceId(
+    invoiceIds: readonly string[],
+  ): Promise<Map<string, InvoiceDeliveryRecord[]>> {
+    const byInvoice = new Map<string, InvoiceDeliveryRecord[]>();
+    if (invoiceIds.length === 0) return byInvoice;
+
+    const deliveries = schema.reimbursementBundleDeliveries;
+    const rows = await this.db
+      .select({
+        id: deliveries.id,
+        invoiceIds: deliveries.invoiceIds,
+        method: deliveries.method,
+        occurredAt: deliveries.occurredAt,
+        deliveredByUserId: deliveries.deliveredByUserId,
+        emailStatus: deliveries.emailStatus,
+      })
+      .from(deliveries)
+      .where(arrayOverlaps(deliveries.invoiceIds, [...invoiceIds]))
+      .orderBy(desc(deliveries.occurredAt));
+
+    const wanted = new Set(invoiceIds);
+    for (const row of rows) {
+      const record: InvoiceDeliveryRecord = {
+        id: row.id,
+        method: row.method,
+        occurredAt: row.occurredAt,
+        deliveredByUserId: row.deliveredByUserId,
+        status: row.emailStatus ?? null,
+      };
+      for (const invoiceId of row.invoiceIds) {
+        if (!wanted.has(invoiceId)) continue;
+        const list = byInvoice.get(invoiceId);
+        if (list) {
+          list.push(record);
+        } else {
+          byInvoice.set(invoiceId, [record]);
+        }
+      }
+    }
+    return byInvoice;
   }
 }

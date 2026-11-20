@@ -1,5 +1,6 @@
 'use client';
 
+import { BundleDeliveryMethod } from '@repo/data';
 import {
   useContract,
   useInvoice,
@@ -334,7 +335,26 @@ function buildTimeline(
     }
   }
 
-  return entries;
+  const deliveries = detail && 'deliveries' in detail ? detail.deliveries : [];
+  for (const delivery of deliveries) {
+    entries.push({
+      id: delivery.id,
+      label:
+        delivery.method === BundleDeliveryMethod.Email
+          ? t('timelineSent')
+          : t('timelineDownloaded'),
+      actor: delivery.deliveredByUser?.name ?? t('timeline.actorOrg'),
+      date: new Date(delivery.occurredAt),
+    });
+  }
+
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort(
+      (a, b) =>
+        a.entry.date.getTime() - b.entry.date.getTime() || a.index - b.index,
+    )
+    .map(({ entry }) => entry);
 }
 
 // ─── DocumentSheet ────────────────────────────────────────────────────────────

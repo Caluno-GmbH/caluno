@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  BundleDeliveryMethod,
   ContractStatus,
   DocumentKind,
   EmailDeliveryStatus,
@@ -91,6 +92,7 @@ function makeInvoice(
     missingProfileFields: [],
     missingOrgProfileFields: [],
     lastEmailDelivery: null,
+    lastDelivery: null,
     createdAt: '2026-07-01T00:00:00.000Z',
     updatedAt: null,
     volunteer: { id: 'v-1', name: 'Anna Müller', image: null },
@@ -363,15 +365,36 @@ describe('mapInvoiceToBoardDoc', () => {
   it('carries who last emailed the timesheet to accounting, and when', () => {
     const doc = mapInvoiceToBoardDoc(
       makeInvoice({
-        lastEmailDelivery: {
+        lastDelivery: {
+          method: BundleDeliveryMethod.Email,
           occurredAt: '2026-08-03T10:00:00.000Z',
           status: EmailDeliveryStatus.Sent,
-          deliveredByUser: { id: 'u-1', name: 'Julia Vorstand' },
+          deliveredByUser: { name: 'Julia Vorstand' },
         },
       }),
       'ehrenamt',
       'de',
     );
+    expect(doc.deliveredVia).toBe('email');
+    expect(doc.sentAt).toEqual(new Date('2026-08-03T10:00:00.000Z'));
+    expect(doc.sentBy).toBe('Julia Vorstand');
+    expect(doc.sendState).toBe('sent');
+  });
+
+  it('marks a downloaded timesheet as delivered via download, terminally sent', () => {
+    const doc = mapInvoiceToBoardDoc(
+      makeInvoice({
+        lastDelivery: {
+          method: BundleDeliveryMethod.Download,
+          occurredAt: '2026-08-03T10:00:00.000Z',
+          status: null,
+          deliveredByUser: { name: 'Julia Vorstand' },
+        },
+      }),
+      'ehrenamt',
+      'de',
+    );
+    expect(doc.deliveredVia).toBe('download');
     expect(doc.sentAt).toEqual(new Date('2026-08-03T10:00:00.000Z'));
     expect(doc.sentBy).toBe('Julia Vorstand');
     expect(doc.sendState).toBe('sent');
@@ -380,7 +403,8 @@ describe('mapInvoiceToBoardDoc', () => {
   it('marks a timesheet whose email is still queued as sending', () => {
     const doc = mapInvoiceToBoardDoc(
       makeInvoice({
-        lastEmailDelivery: {
+        lastDelivery: {
+          method: BundleDeliveryMethod.Email,
           occurredAt: '2026-08-03T10:00:00.000Z',
           status: EmailDeliveryStatus.Pending,
           deliveredByUser: null,
@@ -395,7 +419,8 @@ describe('mapInvoiceToBoardDoc', () => {
   it('marks a timesheet whose last email failed', () => {
     const doc = mapInvoiceToBoardDoc(
       makeInvoice({
-        lastEmailDelivery: {
+        lastDelivery: {
+          method: BundleDeliveryMethod.Email,
           occurredAt: '2026-08-03T10:00:00.000Z',
           status: EmailDeliveryStatus.Failed,
           deliveredByUser: null,

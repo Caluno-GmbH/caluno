@@ -61,10 +61,14 @@ export type RawPendingSignee =
   GetPendingContractSigneeQuery['pendingContractSignee'];
 
 type BoardInvoice = GetInvoicesQuery['invoices'][number];
-// `lastEmailDelivery` is selected by the admin board's GetInvoices only; the
-// volunteer and mutation queries share the rest of the shape.
-export type InvoiceSummary = Omit<BoardInvoice, 'lastEmailDelivery'> &
-  Partial<Pick<BoardInvoice, 'lastEmailDelivery'>>;
+// `lastEmailDelivery` and `lastDelivery` are selected by the admin board's
+// GetInvoices only; the volunteer and mutation queries share the rest of the
+// shape.
+export type InvoiceSummary = Omit<
+  BoardInvoice,
+  'lastEmailDelivery' | 'lastDelivery'
+> &
+  Partial<Pick<BoardInvoice, 'lastEmailDelivery' | 'lastDelivery'>>;
 export type InvoiceDetail = GetInvoiceQuery['invoice'];
 export type EligibleTimeEntry =
   GetEligibleTimeEntriesForInvoiceQuery['eligibleTimeEntriesForInvoice'][number];

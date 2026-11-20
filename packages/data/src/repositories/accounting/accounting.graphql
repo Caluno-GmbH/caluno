@@ -254,7 +254,9 @@ fragment InvoiceSummaryFields on Invoice {
 query GetInvoices($filter: InvoiceFilterInput) {
   invoices(filter: $filter) {
     ...InvoiceSummaryFields
-    # Admin board only: who sent it to accounting is not volunteer-facing.
+    # Admin board only: how it reached accounting is not volunteer-facing.
+    # lastEmailDelivery drives the "still sending" poll; lastDelivery drives
+    # the per-row sent/downloaded status.
     lastEmailDelivery {
       occurredAt
       status
@@ -262,6 +264,14 @@ query GetInvoices($filter: InvoiceFilterInput) {
         id
         name
       }
+    }
+    lastDelivery {
+      method
+      occurredAt
+      deliveredByUser {
+        name
+      }
+      status
     }
   }
 }
@@ -276,6 +286,14 @@ query GetInvoice($id: ID!) {
   invoice(id: $id) {
     ...InvoiceSummaryFields
     resolvedBody
+    deliveries {
+      id
+      method
+      occurredAt
+      deliveredByUser {
+        name
+      }
+    }
     invoiceTimeEntries {
       id
       timeEntry {

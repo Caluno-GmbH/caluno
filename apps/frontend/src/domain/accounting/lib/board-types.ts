@@ -112,6 +112,8 @@ export interface BoardDocument {
   declinedAt?: Date;
   /** Which seat in the signing chain declined — determines where the pipeline/timeline gets cut off. */
   declinedAtRole?: SigneeRole;
+  /** How this timesheet was last handed to accounting — picks the status verb (emailed vs downloaded). */
+  deliveredVia?: 'email' | 'download';
   /** Timesheet only: when and by whom it was last emailed to accounting. */
   sentAt?: Date;
   sentBy?: string;
