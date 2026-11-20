@@ -1,7 +1,11 @@
 'use client';
 
 import { MembershipRequestStatus, ShiftInviteStatus } from '@repo/data';
-import { useVolunteerAllowanceStates } from '@repo/data/react';
+import {
+  invalidateTimeEntryQueries,
+  useQueryClient,
+  useVolunteerAllowanceStates,
+} from '@repo/data/react';
 import {
   Badge,
   Button,
@@ -84,6 +88,7 @@ export function ShiftInstanceVolunteersPanel({
   const tTimeEntryStatus = useTranslations('TimeEntry.status');
   const tVolunteer = useTranslations('Volunteer.action');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { open: openVolunteerSheet } = useSheetTrigger('volunteer-profile');
   const [, startTransition] = useTransition();
 
@@ -382,6 +387,7 @@ export function ShiftInstanceVolunteersPanel({
             return;
           }
           toast.success(t('checkIn.volunteerCheckedOut'), { id: toastId });
+          invalidateTimeEntryQueries(queryClient);
           router.refresh();
         } catch {
           toast.error(t('checkIn.checkOutError'), { id: toastId });

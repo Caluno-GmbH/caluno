@@ -28,7 +28,7 @@ export default async function VolunteeringOrgLayout({
   const isAdmin = await isAnAdminstrator();
 
   return (
-    <AppDataProvider apiUrl={GRAPHQL_API_URL} locale={locale}>
+    <AppDataProvider apiUrl={GRAPHQL_API_URL} locale={locale} changeFeed>
       {localeSeed && <LocaleCookieSeeder value={localeSeed} />}
       <div className="flex min-h-screen flex-col">
         <main className="grow pb-24">{children}</main>

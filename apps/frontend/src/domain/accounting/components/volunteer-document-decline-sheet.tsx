@@ -1,5 +1,6 @@
 'use client';
 
+import { useHoldBackgroundRefresh } from '@repo/data/react';
 import {
   Button,
   Label,
@@ -35,6 +36,7 @@ export function VolunteerDocumentDeclineSheet({
   const t = useTranslations('MembershipDetail.documents.declineSheet');
   const tCommon = useTranslations('Common');
   const [reason, setReason] = useState('');
+  useHoldBackgroundRefresh(open && reason !== '');
 
   function handleOpenChange(next: boolean) {
     if (!next) setReason('');

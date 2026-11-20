@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { MembershipRequestStatus } from '../../generated/base-types';
+import { ChangeArea } from '../change-feed/query-meta';
 import { useSdk } from './use-graphql-client';
 import { useMutation } from './use-mutation';
 
@@ -27,6 +28,7 @@ export function useMembershipRequests(
       }),
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
+    meta: { changeAreas: [ChangeArea.MembershipRequests] },
   });
 }
 
@@ -44,6 +46,7 @@ export function useMembershipRequestCount(
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
     enabled: !!organizationUnitId && enabled,
+    meta: { changeAreas: [ChangeArea.MembershipRequests] },
   });
 }
 

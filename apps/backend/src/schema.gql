@@ -118,6 +118,24 @@ type BundleSendPreview {
   subject: String!
 }
 
+enum ChangeArea {
+  CONTRACTS
+  INVOICES
+  MEMBERSHIP_REQUESTS
+}
+
+type ChangeFeed {
+  changes: [ChangeFeedEntry!]!
+  cursor: String!
+  pollAfterMs: Int
+  reset: Boolean!
+}
+
+type ChangeFeedEntry {
+  area: ChangeArea!
+  id: ID!
+}
+
 type CheckInAgreement {
   canManageAgreements: Boolean!
   contractId: ID
@@ -1069,6 +1087,7 @@ type Query {
   bundleDeliveries(limit: Int = 50, offset: Int = 0): [BundleDelivery!]!
   bundleDownloadStatus(reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): BundleDownloadStatus
   bundleSendPreview(invoiceIds: [ID!], reimbursementTypeKey: ReimbursementTypeKey!, volunteerId: ID!): BundleSendPreview!
+  changesSince(cursor: String): ChangeFeed!
   checkInContext(checkInId: String!): CheckInContext
   checkInReadiness(checkInId: String!, shiftInstanceId: ID): CheckInReadiness!
   checkInShiftInstances(endsBefore: DateTime = null, limit: Int! = 15, offset: Int! = 0, startsAfter: DateTime = null): [ShiftInstance!]!
